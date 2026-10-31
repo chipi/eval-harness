@@ -263,13 +263,20 @@ def _cost(params: dict[str, Any], usage: Any, tin: int | None, tout: int | None)
     return (bill, True) if bill is not None else (price(params, tin, tout), False)
 
 
+def _client_kw(params: dict[str, Any]) -> dict[str, Any]:
+    """The client's own options from the params: `call_timeout_s`, the arm's call limit (seconds), as the
+    SDK's `timeout`. Unset, the SDK's default stands (10 minutes for both)."""
+    limit = params.get("call_timeout_s")
+    return {"timeout": float(limit)} if limit else {}
+
+
 def _openai_shaped(prompt: str, params: dict[str, Any], r: Route) -> Completion:
     from openai import OpenAI  # noqa: PLC0415
 
     body = {_BODY_PARAMS[k]: params[k] for k in _BODY_PARAMS if params.get(k) is not None}
     if r.provider == "openrouter":
         body["usage"] = {"include": True}  # OpenRouter returns what it billed only when asked
-    resp = OpenAI(api_key=r.key, base_url=r.base_url).chat.completions.create(
+    resp = OpenAI(api_key=r.key, base_url=r.base_url, **_client_kw(params)).chat.completions.create(
         model=params["model"],
         temperature=float(params.get("temperature", 0.0)),
         max_tokens=int(params["max_tokens"]),
@@ -303,7 +310,7 @@ def _openai_shaped(prompt: str, params: dict[str, Any], r: Route) -> Completion:
 def _anthropic(prompt: str, params: dict[str, Any], r: Route) -> Completion:
     import anthropic  # noqa: PLC0415
 
-    msg = anthropic.Anthropic(api_key=r.key, base_url=r.base_url).messages.create(
+    msg = anthropic.Anthropic(api_key=r.key, base_url=r.base_url, **_client_kw(params)).messages.create(
         model=params["model"],
         max_tokens=int(params["max_tokens"]),
         messages=[{"role": "user", "content": prompt}],

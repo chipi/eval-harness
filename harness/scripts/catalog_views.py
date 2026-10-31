@@ -783,7 +783,7 @@ def arms(argv) -> int:
 def _onboarding(r: dict) -> str:
     if r["status"] == "none":
         return "none"
-    return f"{'pass' if r['status'] == 'vetted' else 'check'} {r['onboarded']}"
+    return f"{ {'vetted': 'pass', 'onboarded': 'probed'}.get(r['status'], 'check') } {r['onboarded']}"
 
 
 def _best(r: dict) -> str:
@@ -802,8 +802,8 @@ def models(argv) -> int:
     )
     ap.add_argument(
         "--status",
-        choices=("vetted", "check", "none"),
-        help="only models whose every deployment's onboarding passed (vetted), any flagged something (check), or none ran (none)",
+        choices=("vetted", "onboarded", "check", "none"),
+        help="only models whose onboarding passed and an arm passed its smoke (vetted), whose onboarding passed with no arm smoked (onboarded), any flagged something (check), or none ran (none)",
     )
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
@@ -932,12 +932,19 @@ def models(argv) -> int:
         print("  none recorded")
     print("\narms:")
     if r["arms"]:
+        cfg_fn = getattr(A, "arm_config", None)
         _table(
-            ["arm id", "goal", "arm smoke", "result"],
+            ["arm id", "goal", "its settings", "arm smoke", "result"],
             [
                 [
                     a["arm"],
                     a["goal"]["goal_id"] if a["goal"] else "—",
+                    ", ".join(
+                        cm.arm_settings(
+                            rec, ((cfg_fn(a["arm"]) if callable(cfg_fn) else {}) or {}).get("params") or {}
+                        )
+                    )
+                    or "—",
                     cm.SMOKE_WORDS[a["smoke"]],
                     f"{a['measure']} {_fmt(a['value'])}" if a["measure"] else "—",
                 ]

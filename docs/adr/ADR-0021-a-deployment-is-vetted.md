@@ -16,8 +16,10 @@ not the machine that answered.
 ## Decision (proposed)
 
 - The unit that is onboarded, smoked and fingerprinted is a **deployment**: a model at one place, as one build,
-  behind one server or route. A model record holds several; each has its own onboarding, and a record is vetted
-  only when every one of its deployments passed.
+  behind one server or route. A model record holds several; each has its own onboarding. A record whose every
+  deployment passed its onboarding is *onboarded*; it is *vetted* once an arm that names it has also passed its
+  smoke on the task's own items (the onboarding probe is one toy question: it registers a model, it does not
+  vet it).
 - Determinism, speed and the build are a deployment's facts, never a model's: `--repeat` reads the named
   deployment's onboarding, and a record's `capabilities` hold only what is true wherever it runs.
 - The fingerprint's `deployment` part is that deployment (from the record when the arm names it); the machine

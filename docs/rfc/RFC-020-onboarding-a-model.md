@@ -65,8 +65,10 @@ One file per model the project uses, with the fields that apply to its kind (`ll
 - **capabilities**, measured: for an LLM whether it reasons and whether reasoning can be turned off (and how:
   `reasoning_effort: none`, or only low / medium / high), JSON mode, context length; for an ML model its labels
   or output shape.
-- **settings**, chosen: for an LLM `reasoning_effort`, `max_tokens`, the call limit, temperature; for an ML model
-  device, precision, batch size. With one line on why each was chosen.
+- **settings**, chosen: what holds whatever the task. For an LLM `reasoning_effort` (or `reasoning`); for an ML
+  model device, precision, batch size. With one line on why each was chosen. A reply cap, a call limit and a
+  temperature are a task's, so its arms set them; the schema refuses them in a record (review, 2026-10-31: a
+  record's triage-sized cap would otherwise reach every other experiment's arms).
 - **history**: each change of build or settings, with its date and why.
 
 `validate` checks the schema, and that every arm naming a record exists in `data/models/`.
@@ -90,14 +92,14 @@ model or a baseline is onboarded through an arm that runs it, `--config <arm.yam
 | reasoning (LLM) | whether it reasons by default; whether the record's setting turns it off; a loop or an unbounded reply is flagged |
 | format (LLM) | whether JSON mode returns valid JSON |
 | determinism | the same request twice gives the same output, or not (repeats on that machine measure nothing, or something) |
-| limits | the longest normal reply against `max_tokens`, the slowest normal call against the call limit |
+| cut off | the probe's reply against the probe's own 1024-token cap; a task's caps and call limits are its arms', checked by `evh arm-smoke` (long, slow, cut off) |
 
 `ONBOARD PASS` or `ONBOARD CHECK` with the flags. A hosted model is onboarded the same way, through its gateway.
 
 ### 3. An arm uses a record: `model_record: <model_id>` and `deployment: <id>`
 
 An arm's config names the record instead of repeating it, and the deployment it runs on; its `params` inherit
-the record's settings and override only what the task needs (a task's longer replies, its call limit). The run
+the record's settings, override what the task must, and add its own (its reply cap, its call limit). The run
 records `model_record` and `deployment_id`, and its fingerprint's deployment part comes from that deployment
 (RFC-021), so a result can always be traced to the build and the machine it ran on.
 
@@ -140,7 +142,9 @@ smoked.
 
 - **Models** (`models.html`): one row per record: the model and its kind, its deployments' builds (marked when
   the same tag is a different build on two deployments), where it runs, the chosen settings, the onboarding
-  (vetted when every deployment passed, to check when any flagged, not onboarded otherwise), the arms and goals
+  (vetted when every deployment's onboarding passed and an arm's smoke passed; onboarded when the onboarding
+  passed and no arm has been smoked; to check when an onboarding flagged something; not onboarded otherwise), the
+  arms and goals
   that use it, and their best result. Filters: kind, self-hosted / hosted, open / proprietary, onboarding status,
   builds differ.
 - **A model's page**: each deployment with its build, its server or device, whether it matches, and its own

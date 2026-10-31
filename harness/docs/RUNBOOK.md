@@ -1009,7 +1009,7 @@ defaults as much as the models. Settle them before the full run, on purpose, and
 ```bash
 evh model-onboard gemma4-12b --deployment mac   # once per deployment: build, reasoning, JSON, determinism
 evh arm-smoke --config configs/my_arm.yaml       # once per arm, on its own task, before its full run
-evh models                                       # what is onboarded, vetted, and where it runs
+evh models                                       # what is onboarded, vetted (an arm smoke passed), where it runs
 ```
 
 1. **Pin the build, per deployment.** Record the tag and its digest in the model record
@@ -1031,13 +1031,17 @@ evh models                                       # what is onboarded, vetted, an
      reasoning model can loop without ever answering.
    - *A reply cap* (`max_tokens`): a few times the longest normal answer. Without one, a reply is
      unbounded and a loop runs until the call limit.
-   - *A call limit*: a few times the slowest normal call, not the slowest model's. A generous limit on a
-     fast model only makes its failures slow.
+   - *A call limit* (`call_timeout_s`, seconds; the built-in providers pass it to the SDK as its timeout,
+     whose own default is 10 minutes): a few times the slowest normal call, not the slowest model's. A
+     generous limit on a fast model only makes its failures slow.
    - *The server's own settings*: context length, quantization, KV cache — the same everywhere the arm
      runs.
-4. **Write them down** in the model record: each deployment's build, the settings with one line of why
-   (`settings_why`), each change in `history`, and the smokes that chose them, so the next person runs the
-   same arm the same way. The catalog's Models page shows them.
+4. **Write them down**, each where it holds. In the model record: each deployment's build, the settings
+   that hold whatever the task (reasoning; an ML model's device and precision) with one line of why
+   (`settings_why`), and each change in `history`. In the arm: the task's own (its reply cap, its call
+   limit), with a comment saying why; the schema refuses them in a record, where they would reach every
+   other experiment's arms. The arm smokes are kept in the record, and an arm smoke that passed is what makes
+   the model *vetted* on the Models page.
 5. **Know what a repeat measures.** A self-hosted model at temperature 0 gives the same output on the same
    machine every time: a second pass there adds nothing. The spread comes from other machines and other
    builds; a hosted model's repeats do vary.

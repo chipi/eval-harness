@@ -79,19 +79,23 @@ fingerprint that names where a model really ran.
   for a hosted one its provider id and route, an endpoint, and its own onboarding. Replaces `data/models.yaml`.
 - **FR2 Onboarding.** `evh model-onboard <id> --deployment <d>` probes an LLM through the deployment's endpoint:
   the digest its server reports against the record's, reasoning at the default and with the record's settings,
-  JSON, determinism, speed, limits. An ML model or a baseline is onboarded through an arm (`--config`).
-  `ONBOARD PASS` or `ONBOARD CHECK`; the record's settings are never changed by it.
+  JSON, determinism, speed (the last two written to the deployment, not the record), and a probe reply cut off.
+  A build the server serves differently is flagged, and the record takes it with a history entry for the one
+  replaced. An ML model or a baseline is onboarded through an arm (`--config`). `ONBOARD PASS` or `ONBOARD
+  CHECK`; the record's settings are never changed by it.
 - **FR3 Arm smoke.** `evh arm-smoke --config <arm>` runs any arm's first items and writes no run: runs, valid
   output for the scorer, a projection of the full run, build pinned, determinism, cost; for an LLM, each model
   call (a provider's `_meta`, or an adapter's `meta["calls"]`): reasoning, slow, long, cut off, no answer, and a
   hosted call served off its pinned route. Written into the record.
-- **FR4 Arms name a record.** `model_record:` and `deployment:` in a config; the record's settings under the
-  config's params; the run records both.
+- **FR4 Arms name a record.** `model_record:` and `deployment:` in a config; the record's settings (what holds
+  whatever the task: reasoning, an ML model's device and precision) under the config's params, which add the
+  task's own (its reply cap, its call limit); the run records both.
 - **FR5 Fingerprint v5.** `instrument`, `data`, `deployment`, `settings`, each hashed, `hash` over the four; the
   runner outside the hash; `evh run-compare` names the part that moved; the inspector's speed warning tells a
   deployment from a runner. `evh fingerprint-migrate` moves a project's committed runs, once.
 - **FR6 The catalog.** The Models page, a page per model with its deployments and their onboarding, a smoke badge
-  on the arms page, a models tile; `evh models` the same (and over `evh mcp`).
+  on the arms page, a models tile; `evh models` the same (and over `evh mcp`). A model is *vetted* only when an
+  arm that names it passed its smoke; its onboarding alone makes it *onboarded*.
 - **FR7 Advice, not refusal.** `validate` notes an arm never smoked, a reasoning model with no `max_tokens`, and a
   tag that is a different build on two deployments; `--repeat` notes when a deployment's passes will be identical.
 

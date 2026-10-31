@@ -45,15 +45,12 @@ deployments:
           max_tokens: 1024
       deterministic: true
       json_valid: true
+      tokens_per_s: 28.4
 settings:
   reasoning_effort: none
-  max_tokens: 1024
-  call_timeout_s: 30
 settings_why:
   reasoning_effort: at the server's default it reasoned in a loop and never answered
     (triage, 2026-10-31)
-  max_tokens: a triage decision is 60-400 tokens; 1024 bounds a reply
-  call_timeout_s: a normal call is 2-10 s; 30 s ends a stuck one fast
 history:
 - at: '2026-10-31'
   what: reasoning_effort
@@ -61,9 +58,12 @@ history:
   to: none
   why: gemma4:12b looped in its reasoning on the triage prompt; with none it answered
     in 7.7 s
+- at: '2026-10-31'
+  what: max_tokens, call_timeout_s
+  from: 1024, 30 s
+  to: (the arms')
+  why: a reply cap and a call limit are a task's; the triage arms set them (review E6)
 capabilities:
   reasons: true
-  deterministic: true
   reasoning_off: 'reasoning_effort: none'
-  tokens_per_s: 28.4
   json_mode: true

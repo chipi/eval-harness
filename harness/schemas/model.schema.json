@@ -61,8 +61,15 @@
     },
     "settings": {
       "type": "object",
-      "description": "The settings chosen for it, passed to every arm that names the record (an arm may override them).",
-      "additionalProperties": {"type": ["string", "number", "boolean", "null"]}
+      "description": "How the model is set up whatever the task, passed to every arm that names the record (an arm may override them): an LLM's reasoning; an ML model's device, precision and batch size. A reply cap or a call limit is a task's: the arm sets it.",
+      "properties": {
+        "reasoning_effort": {"type": ["string", "null"]},
+        "reasoning": {"type": ["string", "boolean", "object", "null"]},
+        "device": {"type": ["string", "null"]},
+        "precision": {"type": ["string", "null"]},
+        "batch_size": {"type": ["integer", "null"]}
+      },
+      "additionalProperties": false
     },
     "settings_why": {"type": "object", "additionalProperties": {"type": "string"}, "description": "One line per setting: why it was chosen."},
     "smokes": {"type": "object", "additionalProperties": {"$ref": "#/$defs/smoke"}, "description": "The latest arm smoke (evh arm-smoke) of each arm that names the record, by config id."},

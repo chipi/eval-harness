@@ -49,13 +49,16 @@ with tempfile.TemporaryDirectory() as td:
             "model_id": "set",
             "kind": "llm",
             "aliases": ["set:1b"],
-            "settings": {"reasoning_effort": "none", "max_tokens": 1024},
+            "settings": {"reasoning_effort": "none"},
         },
     )
-    got = _models.resolve({"config_id": "a", "model_record": "set", "params": {"max_tokens": 2048}}, data)
+    got = _models.resolve(
+        {"config_id": "a", "model_record": "set", "params": {"reasoning_effort": "low", "max_tokens": 2048}},
+        data,
+    )
     check(
         "resolve: the record's settings under the config's params, the config wins, model from the alias",
-        got["params"] == {"reasoning_effort": "none", "max_tokens": 2048, "model": "set:1b"},
+        got["params"] == {"reasoning_effort": "low", "max_tokens": 2048, "model": "set:1b"},
         got,
     )
     check(
@@ -82,7 +85,7 @@ with tempfile.TemporaryDirectory() as td:
             "model_id": "dep",
             "kind": "llm",
             "aliases": ["dep:1b"],
-            "settings": {"max_tokens": 64},
+            "settings": {"reasoning_effort": "none"},
             "deployments": [{"id": "mac", "where": "mac"}, {"id": "dgx", "where": "dgx"}],
         },
     )
@@ -97,7 +100,9 @@ with tempfile.TemporaryDirectory() as td:
     got = _models.resolve({"config_id": "a", "model_record": "dep", "deployment": "mac", "params": {}}, data)
     check(
         "resolve: a config naming a deployment keeps both, and takes the record's settings",
-        got["model_record"] == "dep" and got["deployment"] == "mac" and got["params"]["max_tokens"] == 64,
+        got["model_record"] == "dep"
+        and got["deployment"] == "mac"
+        and got["params"]["reasoning_effort"] == "none",
         got,
     )
     for name, cfg, words in (

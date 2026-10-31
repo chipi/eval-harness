@@ -45,22 +45,27 @@ that can move a result is never a patch release without saying so under **Change
   `twitter:card`, and with **`evh catalog --card URL`** the image a shared link shows. The pages stay
   `noindex`.
 - **Onboarding models, once, for every experiment** (RFC-020). A project keeps a **model record** per model,
-  `data/models/<model_id>.yaml`: its aliases, weights and licence, what it can do, the settings chosen for it
-  (`reasoning_effort`, `max_tokens`, the call limit; device, precision for an ML model) with why, its history,
+  `data/models/<model_id>.yaml`: its aliases, weights and licence, what it can do, the settings that hold
+  whatever the task (`reasoning_effort`; device, precision, batch size for an ML model) with why, its history,
   and its **deployments** (each place and build it runs: machine or host, server and version, digest, revision
   or hash, the route for a hosted one), each onboarded on its own.
   - **`evh model-onboard <id> --deployment <d>`** probes an LLM through the deployment's endpoint: the digest the
-    server reports, whether it reasons at the default and with the record's settings, JSON, determinism, speed,
-    limits; an ML model or a baseline through an arm (`--config`). `ONBOARD PASS` or `ONBOARD CHECK`.
+    server reports, whether it reasons at the default and with the record's settings, JSON, determinism and
+    speed (the deployment's, not the record's); a different build than the record's is flagged and kept in its
+    history. An ML model or a baseline through an arm (`--config`). `ONBOARD PASS` or `ONBOARD CHECK`.
   - **`evh arm-smoke --config <arm>`** runs any arm on a few items before its full run and writes no run: runs,
     valid output for the scorer, a projection of the full run's time and cost, build pinned, determinism; for an
     LLM every model call (reasoning, slow, long, cut off, no answer, from a provider's `_meta` or an adapter's
     `meta["calls"]`). `SMOKE PASS` or `SMOKE CHECK`, written into the record.
   - An arm names a record and a deployment (**`model_record:`**, **`deployment:`**): the record's settings go under
-    its params; the run records both. **V18** checks the records; `validate` notes an arm never smoked, a
+    its params, which add the task's own (its reply cap, its call limit: a record refuses them, since they would
+    reach every other experiment's arms); the run records both. **V18** checks the records; `validate` notes an arm never smoked, a
     reasoning model with no `max_tokens`, a tag that is a different build on two deployments.
   - The catalog's **Models** page and a page per model, a smoke badge on the arms page, a models tile; **`evh
-    models`** for the same (and over `evh mcp`).
+    models`** for the same (and over `evh mcp`). A model is *vetted* when an arm that names it passed its smoke;
+    its onboarding alone makes it *onboarded*.
+- **`call_timeout_s`, an arm's call limit, for the built-in providers**: the SDK client's timeout (its own
+  default is 10 minutes). The RUNBOOK told arms to set a call limit only the triage adapter honoured.
 - **The triage example's adapter takes `reasoning_effort` and `max_tokens` per arm**, reports every model call
   for `arm-smoke`, and records a call that fails the same way twice at temperature 0 as the fleet's own "no
   terminal decision" (`no_decision`, `deferred`).

@@ -127,8 +127,8 @@ with tempfile.TemporaryDirectory() as td:
                     },
                 },
             ],
-            "settings": {"reasoning_effort": "none", "max_tokens": 1024, "call_timeout_s": 30},
-            "settings_why": {"max_tokens": "a decision is 60-400 tokens"},
+            "settings": {"reasoning_effort": "none"},
+            "settings_why": {"reasoning_effort": "at the default it never answered"},
             "history": [
                 {
                     "at": "2026-10-31",
@@ -216,24 +216,34 @@ with tempfile.TemporaryDirectory() as td:
     check(
         "settings line: an LLM's reasoning, tokens and limit; an ML model's device, precision, batch; defaults",
         [cm.settings_line(rec[k]) for k in ("gem", "span", "bare")]
-        == ["reasoning off · 1024 tokens · 30 s", "cpu · fp32 · batch 1", "defaults"],
+        == ["reasoning off", "cpu · fp32 · batch 1", "defaults"],
     )
-    one_dep = lambda status: {"deployments": [{"id": "a", "where": "x", "onboarding": {"status": status}}]}  # noqa: E731
-    mixed = {"deployments": [*one_dep("pass")["deployments"], {"id": "b", "where": "y"}]}
+    smoked = {"smokes": {"arm_v1": {"status": "pass", "at": "2026-10-31"}}}
+    one_dep = lambda status, **kw: {  # noqa: E731
+        "deployments": [{"id": "a", "where": "x", "onboarding": {"status": status}}],
+        **kw,
+    }
+    mixed = {"deployments": [*one_dep("pass")["deployments"], {"id": "b", "where": "y"}], **smoked}
     check(
-        "status: vetted when every deployment passed, check when any flagged, none otherwise (or no deployment)",
+        "status: vetted needs every probe passed and an arm smoke passed; probes alone are onboarded; any "
+        "flagged probe is check; none otherwise (or no deployment)",
         [
             cm.status_of(r)
             for r in (
+                one_dep("pass", **smoked),
                 one_dep("pass"),
-                {"deployments": [*one_dep("pass")["deployments"], *one_dep("check")["deployments"]]},
-                one_dep("check"),
+                one_dep("pass", smokes={"arm_v1": {"status": "check", "at": "2026-10-31"}}),
+                {
+                    "deployments": [*one_dep("pass")["deployments"], *one_dep("check")["deployments"]],
+                    **smoked,
+                },
+                one_dep("check", **smoked),
                 mixed,
-                {"deployments": [{"id": "a", "where": "x", "onboarding": {"status": "pass"}}] * 2},
+                {"deployments": [{"id": "a", "where": "x", "onboarding": {"status": "pass"}}] * 2, **smoked},
                 {},
             )
         ]
-        == ["vetted", "check", "check", "none", "vetted", "none"],
+        == ["vetted", "onboarded", "onboarded", "check", "check", "none", "vetted", "none"],
     )
     check(
         "build differs: the same tag with another digest on a machine is named, the first build is the record's",
@@ -255,13 +265,13 @@ with tempfile.TemporaryDirectory() as td:
     )
     check(
         "models page: hero counts vetted, to check and not onboarded",
-        "4 models: 1 vetted, 1 to check, 2 not onboarded yet" in models,
+        "4 models: 1 vetted, 0 onboarded with no arm smoked, 1 to check, 2 not onboarded yet" in models,
     )
     gem = rows_of(models, "gem")
     check(
         "models page: a differing build is badged, settings and onboarding shown, the stale machine muted",
         "differs" in gem
-        and "reasoning off · 1024 tokens · 30 s" in gem
+        and "reasoning off" in gem
         and "pass" in gem
         and '<span class="muted">dgx</span>' in gem
         and 'data-differs="yes"' in gem
@@ -315,7 +325,7 @@ with tempfile.TemporaryDirectory() as td:
             for x in (
                 "Apache-2.0",
                 "gem-alias",
-                "a decision is 60-400 tokens",
+                "at the default it never answered",
                 "differs:",
                 "vllm 26",
                 "deterministic",
@@ -329,7 +339,7 @@ with tempfile.TemporaryDirectory() as td:
         and "reasoning_effort: (server default) → none" in page,
     )
     check(
-        "model page: each arm's smoke from the record's smokes, and the settings an arm overrides",
+        "model page: each arm's smoke from the record's smokes, and the settings the arm sets",
         "max_tokens 2048" in page and "slow" in page and "pass" in page,
     )
     bare = (out / "models" / "bare.html").read_text()
@@ -381,7 +391,7 @@ with tempfile.TemporaryDirectory() as td:
     check(
         "evh models: a row per record with kind, where, settings, onboarding and arms",
         all(k in listing for k in ("gem", "hosted-x", "span", "bare"))
-        and "reasoning off · 1024 tokens · 30 s" in listing
+        and "reasoning off" in listing
         and "pass 2026-10-31" in listing
         and "gem:1b@aaaaaaaaaaaa, gem:1b@bbbbbbbbbbbb (differs)" in listing
         and re.search(r"gem .*g1 .*g1 #\d+ of \d+", listing),
@@ -402,6 +412,7 @@ with tempfile.TemporaryDirectory() as td:
         "no model matches" in view(A, ["models", "--kind", "baseline", "--status", "vetted"]),
     )
     one = view(A, ["models", "--model", "gem"])
+    check("evh models --model: each arm's own settings, as on its page", "max_tokens 2048" in one, one[-800:])
     check(
         "evh models --model: facts, deployments with what differs, each one's onboarding, history, arms with their smoke",
         all(
@@ -409,8 +420,8 @@ with tempfile.TemporaryDirectory() as td:
             for x in (
                 "Gem 1B",
                 "Apache-2.0",
-                "setting max_tokens",
-                "a decision is 60-400 tokens",
+                "setting reasoning_effort",
+                "at the default it never answered",
                 "differs:",
                 "deployments:",
                 "onboarding:",
@@ -481,10 +492,11 @@ with tempfile.TemporaryDirectory() as td:
     )
     row = rows_of(models, "gemma4-12b")
     check(
-        "committed records: gemma4-12b is vetted and self-hosted on mac",
-        'data-status="vetted"' in row
+        "committed records: gemma4-12b is onboarded (no arm smoked yet) and self-hosted on mac",
+        'data-status="onboarded"' in row
         and 'data-where="self-hosted"' in row
-        and "reasoning off · 1024 tokens · 30 s" in row,
+        and "reasoning off" in row
+        and "1024 tokens" not in row,
     )
     cli = view(A, ["models", "--model", "gemma4-12b"])
     check(

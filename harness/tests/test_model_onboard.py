@@ -73,7 +73,7 @@ with tempfile.TemporaryDirectory() as td:
                 "endpoint": {"provider": "openai", "base_url": base, "model": "fake:1b"},
             }
         ],
-        "settings": {"reasoning_effort": "none", "max_tokens": 256, "call_timeout_s": 30},
+        "settings": {"reasoning_effort": "none"},
     }
     f = data / "models" / "fake-1b.yaml"
     f.write_text(yaml.safe_dump(rec))
@@ -97,11 +97,17 @@ with tempfile.TemporaryDirectory() as td:
         caps.get("reasons") is True and caps.get("reasoning_off") == "reasoning_effort: none",
         caps,
     )
+    report = (got["deployments"][0].get("onboarding") or {}).get("report") or {}
     check(
-        "onboard: JSON valid and deterministic are recorded",
-        caps.get("json_mode") is True and caps.get("deterministic") is True,
-        caps,
+        "onboard: JSON mode is the model's; determinism and speed are the deployment's",
+        caps.get("json_mode") is True
+        and "deterministic" not in caps
+        and "tokens_per_s" not in caps
+        and report.get("deterministic") is True
+        and isinstance(report.get("tokens_per_s"), float),
+        (caps, report),
     )
+    check("onboard: a digest the build extends is no change", not got.get("history"), got.get("history"))
     check(
         "onboard: the build's full digest and checked_at are written",
         got["deployments"][0]["digest"].startswith("abc123def456")
@@ -115,7 +121,7 @@ with tempfile.TemporaryDirectory() as td:
     )
     check("onboard: the settings are never changed", got["settings"] == rec["settings"])
 
-    rec2 = {**rec, "settings": {"max_tokens": 256}}
+    rec2 = {**rec, "settings": {}}
     f.write_text(yaml.safe_dump(rec2))
     run = subprocess.run(
         [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
@@ -142,6 +148,17 @@ with tempfile.TemporaryDirectory() as td:
         "onboard: a build the server serves differently is flagged",
         run.returncode == 1 and "build: here serves abc123def456" in run.stdout,
         run.stdout[-600:],
+    )
+    got3 = yaml.safe_load(f.read_text())
+    hist = got3.get("history") or []
+    check(
+        "onboard: the record takes the build it found, and its history keeps the one replaced",
+        got3["deployments"][0]["digest"].startswith("abc123def456")
+        and len(hist) == 1
+        and hist[0]["what"] == "deployment here: digest"
+        and hist[0]["from"] == "ffffffffffff"
+        and hist[0]["to"].startswith("abc123def456"),
+        hist,
     )
 
     other = {**rec["deployments"][0], "id": "there", "where": "there"}

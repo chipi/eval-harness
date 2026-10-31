@@ -48,9 +48,9 @@ class _Resp:
 
 
 class _OpenAI:
-    def __init__(self, api_key=None, base_url=None):
+    def __init__(self, api_key=None, base_url=None, **opts):
         seen.clear()
-        seen.update(sdk="openai", api_key=api_key, base_url=base_url)
+        seen.update(sdk="openai", api_key=api_key, base_url=base_url, opts=opts)
         self.chat = types.SimpleNamespace(completions=types.SimpleNamespace(create=self._create))
 
     def _create(self, **kw):
@@ -59,9 +59,9 @@ class _OpenAI:
 
 
 class _Anthropic:
-    def __init__(self, api_key=None, base_url=None):
+    def __init__(self, api_key=None, base_url=None, **opts):
         seen.clear()
-        seen.update(sdk="anthropic", api_key=api_key, base_url=base_url)
+        seen.update(sdk="anthropic", api_key=api_key, base_url=base_url, opts=opts)
         self.messages = types.SimpleNamespace(create=self._create)
 
     def _create(self, **kw):
@@ -144,6 +144,21 @@ check(
     seen.get("api_key") == "sk-openai-test-key"
     and seen.get("base_url") is None
     and not seen["kw"].get("extra_body"),
+    str(seen),
+)
+check("openai: no call limit set, the SDK's own default stands", seen.get("opts") == {}, str(seen))
+adapter.call_system("text", {"provider": "openai", "model": "gpt-x", "call_timeout_s": 30})
+check(
+    "openai: the arm's call_timeout_s is the client's timeout, never sent in the request",
+    seen.get("opts") == {"timeout": 30.0} and "call_timeout_s" not in str(seen["kw"]),
+    str(seen),
+)
+os.environ["ANTHROPIC_API_KEY"] = "sk-ant-test"
+adapter.call_system("t", {"provider": "anthropic", "model": "claude-x", "call_timeout_s": 45})
+os.environ.pop("ANTHROPIC_API_KEY")
+check(
+    "anthropic: the arm's call_timeout_s is the client's timeout",
+    seen.get("opts") == {"timeout": 45.0},
     str(seen),
 )
 os.environ["OPENAI_BASE_URL"] = "http://127.0.0.1:8000/v1"

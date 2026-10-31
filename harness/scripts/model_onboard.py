@@ -13,7 +13,8 @@ provider: an OpenAI-shaped server such as Ollama or vLLM, LiteLLM, OpenRouter, A
   format        whether a JSON answer comes back as valid JSON, with the record's settings
   speed         tokens out per second
   determinism   the same request twice, the same answer or not
-  limits        a reply that hits max_tokens, a call over half the record's call limit
+  cut off       a reply that hits the probe's own cap (a task's caps and call limits are its arms', checked by
+                `evh arm-smoke`)
 
 An ML model or a baseline is onboarded through an arm that runs it: `evh arm-smoke`'s checks on two
 items, with the facts its adapter reports (device, precision, load time).
@@ -45,7 +46,10 @@ PROBE = (
     "Answer with one JSON object and nothing else, in the form "
     '{"answer": "yes" or "no", "reason": "<one short sentence>"}. Question: is 17 a prime number?'
 )
-CALL_PARAMS = ("reasoning_effort", "reasoning", "temperature", "max_tokens")
+#: The settings a model record holds: how the model is asked to behave, whatever the task. A reply cap or a
+#: call limit is a task's, so it is set by the arm (RFC-020, review E6).
+CALL_PARAMS = ("reasoning_effort", "reasoning")
+PROBE_MAX_TOKENS = 1024
 
 
 def ollama_digest(base_url: str, tag: str) -> str | None:
@@ -68,12 +72,16 @@ def _call(params: dict[str, Any]) -> tuple[Any, float]:
     from evaluation_harness._providers import complete  # noqa: PLC0415
 
     t0 = time.perf_counter()
-    c = complete(PROBE, params, role="arm", max_tokens=int(params.get("max_tokens") or 1024))
+    c = complete(PROBE, params, role="arm", max_tokens=int(params.get("max_tokens") or PROBE_MAX_TOKENS))
     return c, time.perf_counter() - t0
 
 
 def _reasoned(c: Any) -> bool:
     return bool((c.reasoning_tokens or 0) > 0 or (c.meta or {}).get("reasoning_chars"))
+
+
+#: Facts of one deployment, never of the model: an older record that holds them at its top loses them.
+DEPLOYMENT_FACTS = ("deterministic", "tokens_per_s")
 
 
 def probe_llm(rec: dict[str, Any], dep: dict[str, Any]) -> tuple[dict[str, Any], list[str], dict[str, Any]]:
@@ -83,7 +91,6 @@ def probe_llm(rec: dict[str, Any], dep: dict[str, Any]) -> tuple[dict[str, Any],
         die(f"{rec['model_id']}: deployment {dep.get('id')!r} has no endpoint (provider, model) to probe")
     base = {k: ep[k] for k in ("provider", "base_url", "model", "api_key_env") if ep.get(k)}
     settings = {k: v for k, v in (rec.get("settings") or {}).items() if k in CALL_PARAMS}
-    limit = float((rec.get("settings") or {}).get("call_timeout_s") or 0) or None
     flags: list[str] = []
     report: dict[str, Any] = {"endpoint": {k: v for k, v in base.items() if k != "api_key_env"}}
 
@@ -120,7 +127,9 @@ def probe_llm(rec: dict[str, Any], dep: dict[str, Any]) -> tuple[dict[str, Any],
     except ValueError:
         valid_json = False
     deterministic = again.text == chosen.text
-    caps = {"reasons": report["default"]["reasoned"], "deterministic": deterministic}
+    # The model's own facts. Determinism and speed belong to a deployment (one machine's build and
+    # hardware), so they stay in its onboarding report.
+    caps: dict[str, Any] = {"reasons": report["default"]["reasoned"]}
     if report["default"]["reasoned"]:
         if "reasoning_effort" in settings or "reasoning" in settings:
             caps["reasoning_off"] = (
@@ -137,14 +146,12 @@ def probe_llm(rec: dict[str, Any], dep: dict[str, Any]) -> tuple[dict[str, Any],
                 else "reasoning: it reasons by default and the record sets no reasoning_effort"
             )
     if chosen.tokens_out and s_chosen:
-        caps["tokens_per_s"] = round(chosen.tokens_out / s_chosen, 1)
+        report["tokens_per_s"] = round(chosen.tokens_out / s_chosen, 1)
     caps["json_mode"] = valid_json
     if not valid_json:
         flags.append("format: the JSON probe's answer is not valid JSON")
     if chosen.finish_reason == "length":
-        flags.append("limits: the reply hit max_tokens")
-    if limit and s_chosen > limit / 2:
-        flags.append(f"limits: one call took {s_chosen:.1f} s, over half the {limit:.0f} s call limit")
+        flags.append(f"cut off: the probe's reply hit its {PROBE_MAX_TOKENS}-token cap")
     if not (chosen.text or "").strip():
         flags.append("no answer: an empty reply with the record's settings")
     report["deterministic"] = deterministic
@@ -195,13 +202,31 @@ def main() -> int:
             f"  record's settings {c['settings'] or '(none)'}: {c['s']} s, {c['tokens_out']} tokens out, reasoned: {c['reasoned']}, end {c['finish']}"
         )
         print(
-            f"  JSON valid: {report['json_valid']}  deterministic: {report['deterministic']}  tokens/s: {caps.get('tokens_per_s')}"
+            f"  JSON valid: {report['json_valid']}  deterministic: {report['deterministic']}  tokens/s: {report.get('tokens_per_s')}"
         )
-        if report.get("digest_found"):
-            dep["digest"] = report["digest_found"]
+        found = report.get("digest_found")
+        if (
+            found
+            and dep.get("digest")
+            and not (found.startswith(dep["digest"]) or dep["digest"].startswith(found))
+        ):
+            # A different build behind the same tag (flagged above): the record takes the build it found, and
+            # its history keeps the one it replaced.
+            rec.setdefault("history", []).append(
+                {
+                    "at": now()[:10],
+                    "what": f"deployment {dep['id']}: digest",
+                    "from": dep["digest"],
+                    "to": found,
+                    "why": "model-onboard found a different build on the server",
+                }
+            )
+        if found:
+            dep["digest"] = found
         dep["checked_at"] = now()
+        kept = {k: v for k, v in (rec.get("capabilities") or {}).items() if k not in DEPLOYMENT_FACTS}
         rec["capabilities"] = {
-            **(rec.get("capabilities") or {}),
+            **kept,
             **{k: v for k, v in caps.items() if v is not None or k == "reasoning_off"},
         }
         where = dep["where"]

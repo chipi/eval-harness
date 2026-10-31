@@ -20,7 +20,12 @@ STALE_DAYS = 30
 
 #: The onboarding status a record's chip and `evh models --status` name, by the status it records.
 STATUS = {"pass": "vetted", "check": "check"}
-STATUS_WORDS = {"vetted": "vetted", "check": "to check", "none": "not onboarded"}
+STATUS_WORDS = {
+    "vetted": "vetted",
+    "onboarded": "onboarded, no arm smoked",
+    "check": "to check",
+    "none": "not onboarded",
+}
 #: How an arm that uses a record says whether it was smoked (`evh arm-smoke`): pass, check or none.
 SMOKE_WORDS = {"pass": "smoked", "check": "smoke: check", "none": "not smoked"}
 SMOKE_BADGE = {k: f'<span class="role">{v}</span>' for k, v in SMOKE_WORDS.items()}
@@ -66,12 +71,18 @@ def deployments_of(rec: dict) -> list[dict]:
 
 
 def status_of(rec: dict) -> str:
-    """vetted (every deployment's onboarding passed, and there is one), check (any flagged something) or
-    none."""
+    """vetted: every deployment's onboarding passed and an arm that names the record passed its smoke (`evh
+    arm-smoke`, on the task's own items); onboarded: the probes passed and no arm has (the probe is one toy
+    question: it registers a model, it does not vet it); check: an onboarding flagged something; none: no
+    onboarding ran. An arm whose smoke flagged something says so on its own badge: that is the arm's settings,
+    not the model."""
     seen = [STATUS.get((d.get("onboarding") or {}).get("status", ""), "none") for d in deployments_of(rec)]
+    if "check" in seen:
+        return "check"
     if seen and all(x == "vetted" for x in seen):
-        return "vetted"
-    return "check" if "check" in seen else "none"
+        smokes = [(x or {}).get("status") for x in (rec.get("smokes") or {}).values() if isinstance(x, dict)]
+        return "vetted" if "pass" in smokes else "onboarded"
+    return "none"
 
 
 def hosting(rec: dict) -> str:
@@ -117,23 +128,32 @@ def build_diffs(rec: dict) -> list[str]:
 
 
 def settings_line(rec: dict) -> str:
-    """The chosen settings in a line: "reasoning off · 1024 tokens · 30 s" for an LLM, "cpu · fp32 · batch 1"
-    for an ML model; "defaults" when none is chosen."""
+    """The chosen settings in a line: "reasoning off" for an LLM, "cpu · fp32 · batch 1" for an ML model;
+    "defaults" when none is chosen."""
     s = dict(rec.get("settings") or {})
     parts = []
     if rec.get("kind") == "llm":
         eff = s.pop("reasoning_effort", None)
         if eff is not None:
             parts.append("reasoning off" if str(eff) == "none" else f"reasoning {eff}")
-        for key, tpl in (("max_tokens", "{} tokens"), ("call_timeout_s", "{} s")):
-            if (v := s.pop(key, None)) is not None:
-                parts.append(tpl.format(v))
     else:
         for key, tpl in (("device", "{}"), ("precision", "{}"), ("batch_size", "batch {}")):
             if (v := s.pop(key, None)) is not None:
                 parts.append(tpl.format(v))
     parts += [f"{k} {v}" for k, v in s.items()]
     return " · ".join(parts) or "defaults"
+
+
+#: The settings a task chooses for its arms (a reply cap, a call limit, a temperature): never a record's.
+TASK_SETTINGS = ("max_tokens", "call_timeout_s", "temperature")
+
+
+def arm_settings(rec: dict, params: dict) -> list[str]:
+    """What an arm sets beyond its record: each record setting it overrides, then the task's own settings
+    ("reasoning_effort low", "max_tokens 1024")."""
+    mine = rec.get("settings") or {}
+    over = [f"{k} {params[k]}" for k, v in mine.items() if k in params and params[k] != v]
+    return over + [f"{k} {params[k]}" for k in TASK_SETTINGS if k in params and k not in mine]
 
 
 def day(s) -> str:
@@ -258,7 +278,7 @@ def onboarding_cell(r: dict) -> str:
     """The models table's onboarding cell: pass, check or not onboarded, with its date."""
     if r["status"] == "none":
         return '<span class="muted">not onboarded</span>'
-    word = "pass" if r["status"] == "vetted" else "check"
+    word = {"vetted": "pass", "onboarded": "probed"}.get(r["status"], "check")
     title = f' title="{e("; ".join(r["flags"]))}"' if r["flags"] else ""
     return f'<span{title}>{word}</span><br><small class="muted">{e(r["onboarded"])}</small>'
 
@@ -327,7 +347,7 @@ def render_models(A, by_ds: dict, out, nav: list, arms_rows: list[dict] | None =
     ]
     facets += [
         ("status", v, STATUS_WORDS[v])
-        for v in ("vetted", "check", "none")
+        for v in ("vetted", "onboarded", "check", "none")
         if any(r["status"] == v for r in rows)
     ]
     if any(r["differs"] for r in rows):
@@ -337,13 +357,15 @@ def render_models(A, by_ds: dict, out, nav: list, arms_rows: list[dict] | None =
         for f, v, n in facets
     )
     n_vetted = sum(r["status"] == "vetted" for r in rows)
+    n_onb = sum(r["status"] == "onboarded" for r in rows)
     n_check = sum(r["status"] == "check" for r in rows)
     body = cb.hero(
         "models",
         "Models",
-        f"{len(rows)} models: {n_vetted} vetted, {n_check} to check, {len(rows) - n_vetted - n_check} not onboarded yet. "
-        "A model is onboarded once (its deployment on every machine, what it can do, the settings chosen for it, a "
-        "smoke behind each deployment) and used by any experiment's arms.",
+        f"{len(rows)} models: {n_vetted} vetted, {n_onb} onboarded with no arm smoked, {n_check} to check, "
+        f"{len(rows) - n_vetted - n_onb - n_check} not onboarded yet. A model is onboarded once (its deployment on "
+        "every machine, what it can do, the settings chosen for it) and vetted when an arm passes its smoke on the "
+        "task's own items; then any experiment's arms use it.",
         cp.bar(w["first"], w["until"]),
     )
     if rows:
@@ -563,11 +585,7 @@ def render_model(A, r: dict, out, nav: list) -> None:
     ars = []
     for a in r["arms"]:
         params = ((cfg_fn(a["arm"]) if callable(cfg_fn) else {}) or {}).get("params") or {}
-        over = [
-            f"{k} {params[k]}"
-            for k, v in (rec.get("settings") or {}).items()
-            if k in params and params[k] != v
-        ]
+        over = arm_settings(rec, params)
         sm = (rec.get("smokes") or {}).get(a["config"])
         ars.append(
             [
@@ -584,7 +602,7 @@ def render_model(A, r: dict, out, nav: list) -> None:
     body += cb.block(
         "04",
         "arms",
-        cb.table("modelarms", ["arm", "goal", "settings it overrides", "arm smoke", "result"], ars)
+        cb.table("modelarms", ["arm", "goal", "its settings", "arm smoke", "result"], ars)
         if ars
         else '<p class="muted">No arm uses this model yet: name it with <code>model_record</code> in a config.</p>',
     )
