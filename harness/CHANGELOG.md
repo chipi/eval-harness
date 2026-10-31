@@ -56,8 +56,9 @@ that can move a result is never a patch release without saying so under **Change
   - **`evh arm-smoke --config <arm>`** runs any arm on a few items before its full run and writes no run: runs,
     valid output for the scorer, a projection of the full run's time and cost, build pinned, determinism; for an
     LLM every model call (reasoning, slow, long, cut off, no answer, from a provider's `_meta` or an adapter's
-    `meta["calls"]`; a reply is long against the arm's own median, so a summarising arm is not flagged for
-    being one). `SMOKE PASS` or `SMOKE CHECK`, written into the record.
+    `meta["calls"]`; a reply is long past half the arm's reply cap, or with no cap against the arm's own median,
+    so neither a summarising arm nor an agent's short probe calls beside its answers make a long reply).
+    `SMOKE PASS` or `SMOKE CHECK`, written into the record.
   - An arm names a record and a deployment (**`model_record:`**, **`deployment:`**): the record's settings go under
     its params, which add the task's own (its reply cap, its call limit: a record refuses them, since they would
     reach every other experiment's arms); the run records both. **V18** checks the records, and the arm configs in `data/configs` and those validate.json's `configs` globs name; `validate` notes an arm never smoked, a
@@ -86,7 +87,9 @@ that can move a result is never a patch release without saying so under **Change
   default is 10 minutes). The RUNBOOK told arms to set a call limit only the triage adapter honoured.
 - **The triage example's adapter takes `reasoning_effort` and `max_tokens` per arm**, reports every model call
   for `arm-smoke`, and records a call that fails the same way twice at temperature 0 as the fleet's own "no
-  terminal decision" (`no_decision`, `deferred`).
+  terminal decision" (`no_decision`, `deferred`). With `reply_in_tool_call: <name>` it reads an answer a server
+  returns as a tool call to that name, with no text: Ollama 0.40 does that to every gpt-oss answer, and the fleet,
+  which reads only the text, got nothing.
 
 ### Changed
 
@@ -156,7 +159,8 @@ that can move a result is never a patch release without saying so under **Change
   and a reasoning setting sent through LiteLLM is named in `allowed_openai_params`: most hosted model groups refused
   `reasoning_effort` without it (`UnsupportedParamsError`).
 - **A record can accept a flag as the model's nature** (`accepted: {reasoning: "<why>"}`): onboarding and arm smokes
-  report it as accepted and pass (gpt-oss reasons whatever it is asked).
+  report it as accepted and pass (gpt-oss reasons whatever it is asked). A deployment accepts kinds of its own
+  beside the record's: a hosted gateway's build cannot be pinned, and its repeats at temperature 0 vary.
 - **A round with more than 40 arms is compared.** Its evidence asked the inspector for one comparison of every
   arm, which refuses past 40, and the refusal left the rows empty without a word (the triage round, 52 arms). Past
   the inspector's limit the round runs the same paired test on the scores directly; a refusal becomes a note.

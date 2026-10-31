@@ -1063,7 +1063,9 @@ evh models                                       # what is onboarded, vetted (an
      probe again, until it passes or what remains is the model's own nature. Some models cannot stop reasoning
      (gpt-oss: `none` and `low` both reason; a hosted route answers "Reasoning is mandatory"): set the least they
      take and accept the flag in the record, `accepted: {reasoning: "<why>"}`. Onboarding and arm smokes then
-     report it as accepted, with the why, and do not count it against the status.
+     report it as accepted, with the why, and do not count it against the status. What one deployment always
+     raises goes on that deployment, `accepted` under it: a hosted gateway has no build to pin (`where it ran`)
+     and its repeats vary (`determinism`); another deployment of the same model is still checked.
    - Several machines may be onboarded at once: each command writes only its own deployment (or smoke) into the
      record, re-read under a lock, so one never erases another's result.
 5. **Know what a repeat measures.** A self-hosted model at temperature 0 gives the same output on the same

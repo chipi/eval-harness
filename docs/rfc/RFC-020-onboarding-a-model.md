@@ -124,7 +124,7 @@ would and writes no run. Every arm gets the general checks, from what every run 
 |---|---|
 | reasoning | a call reasoned and the arm sets no `reasoning_effort` |
 | slow call | a call used more than half its time limit |
-| long reply | a reply far longer than the arm's normal ones |
+| long reply | a reply past half the arm's `max_tokens`; with no cap, far longer than the arm's normal ones |
 | cut off | `finish_reason` length: raise `max_tokens` |
 | no answer | an empty reply, or a failed or timed-out call |
 
@@ -155,7 +155,9 @@ arms were smoked, and a model counts as vetted once one of them passed.
 
 *Added while onboarding the triage models (2026-10-31):* a record's `accepted` names flag kinds a person accepted
 as the model's own nature, with why (gpt-oss cannot stop reasoning; `low` is the least it takes): onboarding and arm
-smokes report them as `accepted` and pass. Commands that write a record re-read it under a lock and change only their
+smokes report them as `accepted` and pass. A deployment may accept kinds of its own (a hosted gateway: `where it ran`,
+no build to pin; `determinism`, repeats vary), read only for that deployment's smokes. A reply cap sets what is long
+(past half the cap): against the median, an agent's short probe calls made every answer long. Commands that write a record re-read it under a lock and change only their
 part (`_models.update_record`), since probing one model on three machines at once is ordinary.
 
 *Not built as first written:* the settings history has no "smoke / result before and after" columns (a history
