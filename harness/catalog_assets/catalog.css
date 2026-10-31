@@ -457,6 +457,7 @@ small.filed { font: 600 10px/1 var(--mono); letter-spacing: .04em; text-transfor
 .decision { padding: 12px 16px; margin: 6px 0 12px; border: 1px solid var(--hair); border-left: 3px solid var(--s1); border-radius: 10px; background: var(--surface); }
 .decision p { margin: 4px 0; }
 .decision ul { margin: 6px 0; padding-left: 18px; }
+#datasets td, #datasets td a { overflow-wrap: anywhere; white-space: normal; }
 span.tag { display: block; width: fit-content; max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11px/1.5 var(--mono); color: var(--ink); background: var(--surface-2); border: 1px solid var(--hair); border-radius: 10px; padding: 0 7px; margin: 2px 0; }
 span.tag b { font-weight: 400; color: var(--muted); }
 span.tag-rec { font: 600 10px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--accent-ink); background: var(--s1); padding: 2px 5px; border-radius: 4px; }
