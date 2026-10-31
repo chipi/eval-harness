@@ -1,6 +1,6 @@
 # ADR-0019 — Datasets from production: a capture lane beside the method (0.6.0)
 
-**Status:** Accepted (2026-10-30), to be built in 0.6.0.
+**Status:** Accepted (2026-10-30), built in 0.6.0.
 **Date:** 2026-10-30
 **Detail:** [PRD-014](../prd/PRD-014-datasets-from-production.md) (requirements),
 [RFC-019](../rfc/RFC-019-datasets-from-production.md) (design),

@@ -2361,21 +2361,20 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | 
                 ],
             }
         )
-        lines = [f"<li>changed: {e(c)}</li>" for c in r.get("changes") or []]
-        # Retirements grouped by their reason, the carried arms behind one line: an arm a line made round 3's panel
-        # fifty-four lines of the same two sentences (owner, 2026-10-31).
+        # An opened round, one heading per part: a single list mixing changes, arms, scoring and evidence read as
+        # data tossed in (owner, 2026-10-31).
+        changed = [f"<li>{e(c)}</li>" for c in r.get("changes") or []]
         by_reason: dict = {}
         for x in r.get("retired") or []:
             by_reason.setdefault(x["reason"], []).append(x["config_id"])
-        lines += [
-            f"<li>retired {len(cs)}: {e(why)}<br><small>{', '.join(_config_link(A, r, c) for c in cs)}</small></li>"
-            for why, cs in by_reason.items()
-        ]
         carried = r.get("carried") or []
-        lines += (
+        arms_li = [
+            f"<li><b>retired {len(cs)}</b>: {e(why)}<br><small>{', '.join(_config_link(A, r, c) for c in cs)}</small></li>"
+            for why, cs in by_reason.items()
+        ] + (
             [
                 (
-                    f'<li><details class="inline"><summary>carried in unchanged: {len(carried)}</summary>'
+                    f'<li><details class="inline"><summary><b>carried in unchanged {len(carried)}</b></summary>'
                     f"<small>{', '.join(_config_link(A, r, c) for c in carried)}</small></details></li>"
                 )
             ]
@@ -2383,20 +2382,20 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | 
             else []
         )
         # The scorer it is judged by, and each change of it (RFC-022): `evh rounds` prints the same lines.
-        lines += [f"<li>judged by <code>{e(r['scorer'])}</code></li>"] if r.get("scorer") else []
-        lines += [
-            f"<li>scoring {e(str(sc.get('at', ''))[:10])}: {e(sc.get('why', ''))} (<code>{e(sc.get('scorer', ''))}</code>, "
+        scoring_li = ([f"<li>judged by <code>{e(r['scorer'])}</code></li>"] if r.get("scorer") else []) + [
+            f"<li>{e(str(sc.get('at', ''))[:10])}: {e(sc.get('why', ''))} (<code>{e(sc.get('scorer', ''))}</code>, "
             f"{int(sc.get('runs') or 0)} run(s) re-scored into {e(', '.join(sc.get('written') or []) or '—')})</li>"
             for sc in r.get("scoring") or []
         ]
-        sugg = ""
+        evidence_li: list = []
+        sugg, notes = "", ""
         if r.get("status") == "open" and getattr(A, "data_dir", None) == _common.DATA:
             try:
                 from evaluation_harness.rounds import evidence  # noqa: PLC0415
 
                 ev = evidence(g["goal_id"], r)
-                lines += [
-                    f"<li>against {e(v['label'])} (<code>{e(v['other'].rsplit('/', 1)[-1])}</code>): "
+                evidence_li = [
+                    f"<li>the leader against {e(v['label'])} (<code>{e(v['other'].rsplit('/', 1)[-1])}</code>): "
                     f"{e(v['verdict'])}, Δ {v['delta']:+.4f}, p {fmt_p(v['p'])}</li>"
                     for v in ev["against"]
                 ]
@@ -2409,9 +2408,10 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | 
                     )
                     + "</li>"
                     for what, cmd in ev["suggest"]
-                ) + "".join(f'<li class="muted">{e(n)}</li>' for n in ev["notes"])
+                )
+                notes = "".join(f"<li>{e(n)}</li>" for n in ev["notes"])
             except SystemExit:
-                sugg = ""
+                sugg = notes = ""
         # One section per round: its header is the row the rounds table had, its body the detail that sat in a
         # second list below the table; one place per round, folded until opened (owner, 2026-10-31).
         cells = rows[-1]["cells"]
@@ -2426,10 +2426,29 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | 
             )
             if x
         )
-        body = (f"<ul>{''.join(lines)}</ul>" if lines else "") + (
-            f'<p class="small"><b>suggested next</b>, each as the command that does it (the catalog only reads):</p><ul class="suggest">{sugg}</ul>'
-            if sugg
-            else ""
+
+        def part(title: str, items: list | str, note: str = "", cls: str = "") -> str:
+            inner = "".join(items) if isinstance(items, list) else items
+            if not inner:
+                return ""
+            return (
+                f'<h4 class="rc-h">{title}</h4>'
+                + (f'<p class="small muted">{note}</p>' if note else "")
+                + f"<ul{f' class={chr(34)}{cls}{chr(34)}' if cls else ''}>{inner}</ul>"
+            )
+
+        body = (
+            part("what changed", changed)
+            + part("arms", arms_li)
+            + part("scoring", scoring_li)
+            + part("evidence", evidence_li)
+            + part(
+                "suggested next",
+                sugg,
+                "each as the command that does it; the catalog only reads",
+                "suggest",
+            )
+            + part("notes", notes, cls="muted")
         )
         details.append(
             f'<details class="roundcard {rows[-1]["cls"]}" id="round-{e(r["round_id"])}">'

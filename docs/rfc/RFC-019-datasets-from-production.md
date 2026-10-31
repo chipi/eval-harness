@@ -1,6 +1,6 @@
 # RFC-019: Datasets from production: a lane beside the method
 
-- **Status**: Draft (third, 2026-10-30), being built for 0.6.0: brought in line with the engineering plan after
+- **Status**: Built for 0.6.0 (2026-10-31). Drafted third 2026-10-30: brought in line with the engineering plan after
   three independent reviews; accepted when the build lands. ADR-0020 (second references are silver) is the
   owner's call.
 - **Authors**: Marko Dragoljevic
@@ -126,7 +126,7 @@ any public surface.
 - **It never overwrites a reference.**
 - **Outcomes live in the capture.** Reading them again later makes a newer capture and a newer reference, never
   an edit.
-- **Which reference decides** ([ADR-0020](../adr/ADR-0020-second-references-are-silver.md), proposed): a goal
+- **Which reference decides** ([ADR-0020](../adr/ADR-0020-second-references-are-silver.md), accepted): a goal
   decides on `gold/<D>`. Every other reference on the dataset is `silver/<name>`, with its caveat, and is read
   through `rescore --reference-id`. The goal page then shows exactly one recommendation, and the others beside
   it.

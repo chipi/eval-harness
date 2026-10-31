@@ -1,6 +1,6 @@
 # PRD-015: Models, onboarded once, for every experiment
 
-- **Status**: Draft (2026-10-31), written after the build as its retrospective (the owner's request); 0.6.0
+- **Status**: Built for 0.6.0 (2026-10-31); written after the build as its retrospective (the owner's request); 0.6.0
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: [RFC-020](../rfc/RFC-020-onboarding-a-model.md) (records, onboarding, arm smoke, the Models
   page), [RFC-021](../rfc/RFC-021-fingerprint-v5.md) (fingerprint v5: the deployment, the settings, the runner)

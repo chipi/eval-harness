@@ -20,8 +20,24 @@ Change the pin to `@v0.6.0`. Two formats change, and both are migrated by a scri
   the old file the record's alias. Write a record per entry (`model_id`, `kind`, `aliases`, `weights`,
   `licence`) and delete the file; `validate` (V1, V18) checks them.
 
-Everything else is added and optional: `evh model-onboard`, `evh arm-smoke`, `evh models`, `model_record:` and
-`deployment:` in a config.
+Three behaviours change without a migration:
+
+- **The local catalog reads only what git keeps.** A `data/runs-*` directory your `.gitignore` ignores is no
+  longer shown, as it was never in a clone or the published catalog. Runs you meant to keep: re-allow the
+  directory in `.gitignore` and commit them, or move them into `data/runs`.
+- **`experiment-run` and `rescore` warn** when they write to a directory git ignores or outside the project's
+  data (throwaway `data/runs-smoke*` and `data/runs-tune*` stay silent), and `validate` notes one that holds
+  finished runs.
+- **`evh rescore` writes to one designated place**, `data/runs-rescored/<scorer>/<source>/`, unless `--out` names
+  another; the catalog, the goals and the rounds read an arm from its latest re-score there.
+
+Everything else is added and optional: the capture lane (`evh capture`, `importer-check`, `captures`,
+`capture-scrub`, `dataset-from-capture`, `reference-from-outcomes`, `dataset-split`, `text: hidden`; RFC-019);
+model onboarding (`evh model-onboard`, `evh arm-smoke`, `evh models`, `model_record:` and `deployment:` in a
+config; RFC-020); scoring that evolves (`evh score-preview`, `evh rescore --goal --round --why`,
+`round-open --keep all --scoring` and `--adopt`, a goal axis's `limit: baseline`; RFC-022); `call_timeout_s` for
+the built-in providers. `evh init`'s `.gitignore` now ignores `data/runs-smoke*/` and `data/runs-tune*/`; add the
+two lines to an existing project's to keep scratch runs out of git.
 
 ## From 0.4.4 to 0.5.0
 

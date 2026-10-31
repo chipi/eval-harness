@@ -310,7 +310,9 @@ try:
         and 'id="round-r1"' in page
         and '<details class="roundcard' in page
         and " open>" not in page[page.find('<details class="roundcard') :][:200]
-        and bool(__import__("re").search(r"retired \d+: ", page)),
+        and bool(__import__("re").search(r"retired \d+</b>: ", page))
+        and '<h4 class="rc-h">arms</h4>' in page
+        and '<h4 class="rc-h">suggested next</h4>' in page,
         page[page.find('<details class="roundcard') :][:600],
     )
 finally:

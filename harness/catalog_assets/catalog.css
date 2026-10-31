@@ -378,6 +378,8 @@ details.roundcard > summary::-webkit-details-marker { display: none; }
 details.roundcard > summary .rc-round::before { content: "▸ "; color: var(--muted); }
 details.roundcard[open] > summary .rc-round::before { content: "▾ "; }
 details.roundcard .rc-arms, details.roundcard .rc-arms a { overflow-wrap: anywhere; }
+details.roundcard .rc-h { font: 500 11px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 4px; }
+details.roundcard .rc-body ul { margin: 0; padding-left: 20px; }
 details.roundcard .rc-body { padding: 0 14px 12px; border-top: 1px solid var(--hair); font-size: 14px; line-height: 1.55; }
 @media (max-width: 760px) { .rc-head { display: none; } details.roundcard > summary { grid-template-columns: 1fr; gap: 6px; } }
 tr.t-retired td { opacity: 0.55; }

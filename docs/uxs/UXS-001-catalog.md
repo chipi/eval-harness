@@ -394,19 +394,19 @@ The page explains the goal, then answers, then shows how it got there and the ev
      best** button when the best changed, and a line counting what is inside ("k change(s) · k
      retired · k carried · judged by <scorer> · suggested next"). The open round carries the
      `--accent` edge (`t-open`). Under 760 px the header stacks into one column;
-   - inside: "changed: …"; the retirements grouped by reason ("retired k: <reason>" with the
-     configs under it); "carried in unchanged: k" folded over its configs; "judged by `<scorer>`"
-     and each "scoring <date>: <why> (`<scorer>`, N run(s) re-scored into <dirs>)" (RFC-022; its
-     arms read from their re-scores, as the goal reads them); and, for the open round, the leader
-     against the previous round's best, the baseline it started from and the arm that wrote a
-     silver reference of the dataset ("against the arm that wrote silver/<id> (`<config>`):
-     <verdict>, Δ, p"), then **suggested next, each as the command that does it (the catalog only
-     reads)**: each suggestion with its command in a code chip that selects whole on one click and a
-     **copy** button beside it (it reads "copied" for a moment, or "selected" with the chip selected
-     where the browser refuses the clipboard); a suggestion past 200 characters (a list of tied
-     arms) folds behind its opening words. Then notes such as the spend against the budget, the
-     cost per item, and the reference the round is read against with the arms not compared (scored
-     against another).
+   - inside, a heading per part, each shown only when it has something (owner, 2026-10-31: one list read as
+     data tossed in): **what changed** (each change); **arms** ("**retired k**: <reason>" with the configs
+     under it, one line per reason; "**carried in unchanged k**" folded over its configs); **scoring** ("judged
+     by `<scorer>`" and each "<date>: <why> (`<scorer>`, N run(s) re-scored into <dirs>)", RFC-022; its arms
+     read from their re-scores, as the goal reads them); and, for the open round, **evidence** (the leader
+     against the previous round's best, the baseline it started from and the arm that wrote a silver reference
+     of the dataset: "the leader against <which> (`<config>`): <verdict>, Δ, p"), **suggested next** ("each as
+     the command that does it; the catalog only reads": each suggestion with its command in a code chip that
+     selects whole on one click and a **copy** button beside it, which reads "copied" for a moment, or
+     "selected" with the chip selected where the browser refuses the clipboard; a suggestion past 200
+     characters, a list of tied arms, folds behind its opening words), and **notes** (the spend against the
+     budget, the cost per item, the arms read from their re-score, the reference the round is read against
+     with the arms not compared).
 5. **One section per dataset of the goal**, titled with the dataset and its role:
    - the dataset (linked), its size, role and "made from" link; its notes; its references
      (with "written by" for silver);

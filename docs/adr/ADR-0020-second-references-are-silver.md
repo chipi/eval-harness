@@ -1,6 +1,6 @@
 # ADR-0020 — A dataset's second reference is silver, with a caveat that says what it is (0.6.0)
 
-**Status:** Proposed (2026-10-30): the owner's vocabulary call.
+**Status:** Accepted (owner, 2026-10-31), built in 0.6.0. Proposed 2026-10-30 as the owner's vocabulary call.
 **Date:** 2026-10-30
 **Detail:** [RFC-019](../rfc/RFC-019-datasets-from-production.md) (references from outcomes),
 [PRD-002](../prd/PRD-002-references.md) (references: gold, silver)

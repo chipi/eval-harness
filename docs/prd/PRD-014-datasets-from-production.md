@@ -1,6 +1,6 @@
 # PRD-014: Datasets from production
 
-- **Status**: Draft (2026-10-30), aimed at 0.6.0
+- **Status**: Built for 0.6.0 (2026-10-31); drafted 2026-10-30
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the datasets page: tags, origin, versions side by side)
 - **Related RFC**: [RFC-019](../rfc/RFC-019-datasets-from-production.md)

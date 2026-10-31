@@ -1,6 +1,6 @@
 # RFC-020: Onboarding models, once, for every experiment
 
-- **Status**: Draft (third, 2026-10-31), being built for 0.6.0. The owner's decisions of 2026-10-31: a model is
+- **Status**: Built for 0.6.0 (2026-10-31), from its third draft. The owner's decisions of 2026-10-31: a model is
   onboarded once for the project and reused by every experiment; records live in `data/models/`; one general
   command checks an arm on its own task, `evh arm-smoke`, with an LLM layer on top; the catalog gets a Models
   page; it ships in 0.6.0.

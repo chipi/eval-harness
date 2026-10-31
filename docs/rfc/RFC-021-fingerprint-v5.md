@@ -1,6 +1,6 @@
 # RFC-021: Fingerprint v5: the deployment, the settings, and the runner
 
-- **Status**: Draft (first, 2026-10-31), being built for 0.6.0 on the owner's go of 2026-10-31 ("let's do this
+- **Status**: Built for 0.6.0 (2026-10-31), from its first draft, on the owner's go of 2026-10-31 ("let's do this
   refactor now, before we proceed"). Supersedes [RFC-001](RFC-001-fingerprint-and-code-identity.md)'s `host` and
   `system_under_test` parts; keeps its code identity (`_codeid`) and its data part as they are.
 - **Authors**: Marko Dragoljevic

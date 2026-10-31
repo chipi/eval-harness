@@ -1,6 +1,6 @@
 # ADR-0021 — A deployment, not a model, is what is vetted and fingerprinted (0.6.0)
 
-**Status:** Proposed (2026-10-31)
+**Status:** Accepted (owner, 2026-10-31), built in 0.6.0.
 **Date:** 2026-10-31
 **Detail:** [RFC-020](../rfc/RFC-020-onboarding-a-model.md) (records, onboarding),
 [RFC-021](../rfc/RFC-021-fingerprint-v5.md) (fingerprint v5), [PRD-015](../prd/PRD-015-models-onboarded-once.md)
