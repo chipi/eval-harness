@@ -49,6 +49,17 @@ def migrate_fingerprint(fp: dict[str, Any], params: dict[str, Any] | None = None
         arm = out.setdefault("arm", {})
         if labels or "labels" not in arm:
             arm["labels"] = {**(arm.get("labels") or {}), **labels} or None
+        dep, runner = out.get("deployment") or {}, out.get("runner") or {}
+        # Only with the run's own params: without them nothing says the system was not remote.
+        if (
+            params
+            and dep.get("source") == "params"
+            and not dep.get("in_process")
+            and not fpmod.is_remote(params)
+        ):
+            # Nothing remote was called: the runner's libraries ran the system, so they are the deployment's.
+            dep["in_process"], dep["libraries"] = True, runner.get("libraries")
+            runner["libraries"] = None
         return fpmod.seal(out, whole=fp.get("hash") is not None)
     if fp.get("version") != 4:
         raise ValueError(f"fingerprint version {fp.get('version')!r}: only 4 is migrated")
@@ -60,7 +71,7 @@ def migrate_fingerprint(fp: dict[str, Any], params: dict[str, Any] | None = None
     if declared.get("identity_declared"):
         deployment = fpmod._adapter_deployment(declared, run_params, libraries)
     else:
-        deployment = fpmod._params_deployment(run_params, declared)
+        deployment = fpmod._params_deployment(run_params, declared, libraries)
     out = {
         "version": fpmod.VERSION,
         "instrument": fp.get("instrument"),

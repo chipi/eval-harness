@@ -500,7 +500,9 @@ def _adapter_deployment(
     }
 
 
-def _params_deployment(params: dict[str, Any], declared: dict[str, Any] | None = None) -> dict[str, Any]:
+def _params_deployment(
+    params: dict[str, Any], declared: dict[str, Any] | None = None, libraries: dict[str, str] | None = None
+) -> dict[str, Any]:
     """source: params. Neither a record nor an adapter said who the system is: the deployment is what the
     params say, with no digest. Honest about the gap, as v4 was about a missing revision. What a hook
     returned while declining to claim an identity (a baseline's code hash) is kept under `declared`."""
@@ -523,8 +525,9 @@ def _params_deployment(params: dict[str, Any], declared: dict[str, Any] | None =
         if routing
         else None,
         "provider": params.get("provider"),
-        "in_process": False,
-        "libraries": None,
+        # As for an adapter's deployment: nothing remote was called, so the runner's libraries ran it.
+        "in_process": not is_remote(params),
+        "libraries": (libraries or None) if not is_remote(params) else None,
         "declared": _declared_extra(declared, model),
     }
     if declared.get("error"):
@@ -557,7 +560,7 @@ def deployment_of(
             return dep
     if declared.get("identity_declared"):
         return _adapter_deployment(declared, params, libraries)
-    return _params_deployment(params, declared)
+    return _params_deployment(params, declared, libraries)
 
 
 def part_sha256(part: Any) -> str:

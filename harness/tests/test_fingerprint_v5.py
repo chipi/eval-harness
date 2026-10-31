@@ -516,6 +516,27 @@ check(
     re_sealed["arm"],
 )
 
+local_v5 = mig.migrate_fingerprint(v4({"identity_declared": False}, {"model": "lead3"}))
+check("migrate: a local system with no hook is in process", local_v5["deployment"]["in_process"] is True)
+older_local = json.loads(json.dumps(local_v5))
+older_local["deployment"].update(in_process=False, libraries=None)
+older_local["runner"]["libraries"] = {"numpy": "2.0"}
+check(
+    "migrate: an earlier v5 local one, given its params, moves the libraries to the deployment",
+    (
+        lambda f: (
+            f["deployment"]["in_process"]
+            and f["deployment"]["libraries"] == {"numpy": "2.0"}
+            and f["runner"]["libraries"] is None
+        )
+    )(mig.migrate_fingerprint(older_local, {"model": "lead3"})),
+)
+check(
+    "migrate: without the run's params it changes nothing (a gateway run must not turn local)",
+    mig.migrate_fingerprint(m_params)["deployment"]["in_process"] is False
+    and mig.migrate_fingerprint(older_local)["deployment"]["in_process"] is False,
+)
+
 # the tool, over a small tree: counts, the baseline's hash, idempotence, derived runs take their source's parts
 with tempfile.TemporaryDirectory() as td:
     data = Path(td) / "data"

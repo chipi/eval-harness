@@ -31,6 +31,7 @@ COMMIT, PROMPT_SHA = "f07efa9", "c2ece738"
 
 
 def item_prompt_shas(run: Path) -> set:
+    """The fleet's prompt hashes the run's decided items recorded."""
     shas = set()
     for line in (run / "predictions.jsonl").read_text(encoding="utf-8").splitlines():
         sha = (json.loads(line).get("_meta") or {}).get("prompt_sha")
@@ -64,6 +65,7 @@ def backfill(m: dict) -> dict:
 
 
 def main() -> int:
+    """Check the fleet checkout, then backfill (or count) every triage run; exit 1 on any refusal."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--apply", action="store_true", help="write the metrics (default: report only)")
     args = ap.parse_args()

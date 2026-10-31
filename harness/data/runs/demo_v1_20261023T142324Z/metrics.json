@@ -26,8 +26,13 @@
       "declared": null,
       "hosted": null,
       "id": null,
-      "in_process": false,
-      "libraries": null,
+      "in_process": true,
+      "libraries": {
+        "anthropic": "1.15.0",
+        "numpy": "2.4.6",
+        "openai": "3.33.0",
+        "rouge-score": "0.1.2"
+      },
       "model": null,
       "provider": "echo",
       "server": null,
@@ -46,8 +51,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "97312131d3d2f45fca9d47cca0d38f25f454b1f10f051abdb0b0d7c957fd6fa5",
-    "hash": "e3ef0535d5df8f120d4f1cc04252aaec563630a3997cb216f54b3c1ab7fd3971",
+    "deployment_sha256": "87a3c9f9b0fdd2b074130542c92d3dfb7d20779c03815da4ecf3661584028ca9",
+    "hash": "d41eebada6e1b8efec4ed05cfbb65cb7b23893b1ff9c69d7857c163004e6b1db",
     "instrument": {
       "adapter": {
         "id": "scripts/adapter.py",
@@ -65,12 +70,7 @@
     "runner": {
       "cpu_count": 32,
       "label": null,
-      "libraries": {
-        "anthropic": "1.15.0",
-        "numpy": "2.4.6",
-        "openai": "3.33.0",
-        "rouge-score": "0.1.2"
-      },
+      "libraries": null,
       "platform": "Linux/x86_64",
       "processor": null,
       "python": "3.11.17",

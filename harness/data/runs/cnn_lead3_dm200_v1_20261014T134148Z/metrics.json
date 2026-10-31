@@ -34,8 +34,14 @@
       },
       "hosted": null,
       "id": "lead_3",
-      "in_process": false,
-      "libraries": null,
+      "in_process": true,
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.0",
+        "transformers": "4.55.4"
+      },
       "model": "lead_3",
       "provider": "lead_k",
       "server": null,
@@ -54,8 +60,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "f6c7dbcb125b7f6815d67f6fbb1be427a3a57c2eed57e6261b57dc932ec5ca73",
-    "hash": "b0a0f88208e6e7e3457e3569d9e4a23eebeb4cce4dbb52388a28617c644e035f",
+    "deployment_sha256": "f1c91b3217d7f28943e02595e01fa0d86d8285254b39c77aa99ed15fd377f04d",
+    "hash": "daea3b20d80091733158db032f79e2b887f53392ff31f7157ab3532e4a270eb6",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -70,13 +76,7 @@
     "runner": {
       "cpu_count": 4,
       "label": null,
-      "libraries": {
-        "numpy": "2.4.6",
-        "openai": "3.19.2",
-        "rouge-score": "0.1.2",
-        "torch": "2.14.0",
-        "transformers": "4.55.4"
-      },
+      "libraries": null,
       "platform": "Linux/x86_64",
       "processor": "x86_64",
       "python": "3.11.15",

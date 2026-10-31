@@ -33,8 +33,14 @@
       },
       "hosted": null,
       "id": "length",
-      "in_process": false,
-      "libraries": null,
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
       "model": "length",
       "provider": "length",
       "server": null,
@@ -53,8 +59,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "1cdcc7d4278b1e6bc7821e11a13fb936293017fdf0eec9af8e6f52f7233df269",
-    "hash": "8f4372941518051fa0794f57d14ac7da3b4f521df4a6bce650ba224a409cf6ba",
+    "deployment_sha256": "70b79f6aaec30d5459915b85970790fe3b2e590ab4d732b102e04cdd67b605c9",
+    "hash": "30baf2dd55bae97098b8d22fd225dc2b6b27dcb955266eca6001a2d54721511b",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -69,13 +75,7 @@
     "runner": {
       "cpu_count": 4,
       "label": null,
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.31.0",
-        "rouge-score": "0.1.2",
-        "torch": "2.14.1",
-        "transformers": "4.55.4"
-      },
+      "libraries": null,
       "platform": "Linux/x86_64",
       "processor": "x86_64",
       "python": "3.11.15",

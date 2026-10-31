@@ -118,6 +118,10 @@ that can move a result is never a patch release without saying so under **Change
   URL. The 130 triage runs are backfilled with the fleet they replayed (`tools/backfill_triage_fleet.py`:
   the fleet's code hash and commit `f07efa9`, the prompt's hash, each checked against what the runs'
   own items recorded) and re-sealed.
+- **A system that ran in the harness's own process, with no hook, is in process.** A deployment taken
+  from the params was always `in_process: false`, so a local baseline (Lead-3, a keyword rule) kept its
+  libraries on the runner instead of the deployment. `evh fingerprint-migrate` brings existing v5
+  fingerprints to the rule when it has the run's params (11 runs here, one baseline's hash).
 
 ## 0.5.0 — 2026-10-29
 
