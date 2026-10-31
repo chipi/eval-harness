@@ -831,27 +831,29 @@ class _Conds:
         return self.by_arm[arm]
 
 
-catalog_serve.A = _Conds(
-    {
-        "a": {"deployment.machine": "dgx", "machine.platform": "Linux"},
-        "b": {"deployment.machine": "mac", "machine.platform": "Linux"},
-    }
-)
-w = " ".join(catalog_serve._conditions(["a", "b"], "latency_ms")["warnings"])
+def _warnings(by_arm: dict, metric: str) -> str:
+    catalog_serve.A = _Conds(by_arm)  # type: ignore[assignment]  # a stand-in with only conditions()
+    got = catalog_serve._conditions(["a", "b"], metric) or {}
+    return " ".join(got.get("warnings") or [])
+
+
+across = {
+    "a": {"deployment.machine": "dgx", "machine.platform": "Linux"},
+    "b": {"deployment.machine": "mac", "machine.platform": "Linux"},
+}
+runners = {
+    "a": {"deployment.machine": "dgx", "machine.platform": "Linux"},
+    "b": {"deployment.machine": "dgx", "machine.platform": "Darwin"},
+}
+w = _warnings(across, "latency_ms")
 check("inspector: latency across deployments is named as the deployment's", "across deployments" in w, w)
-catalog_serve.A = _Conds(
-    {
-        "a": {"deployment.machine": "dgx", "machine.platform": "Linux"},
-        "b": {"deployment.machine": "dgx", "machine.platform": "Darwin"},
-    }
-)
-w = " ".join(catalog_serve._conditions(["a", "b"], "latency_ms")["warnings"])
+w = _warnings(runners, "latency_ms")
 check(
     "inspector: latency from different runners is named as the runners'",
     "different runners" in w and "deployments" not in w,
     w,
 )
-w = " ".join(catalog_serve._conditions(["a", "b"], "correct")["warnings"])
+w = _warnings(runners, "correct")
 check("inspector: a quality measure from different runners carries no warning", w == "", w)
 
 sys.exit(summary())
