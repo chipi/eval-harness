@@ -288,14 +288,17 @@ if (
     import threading
 
     seen: list = []
+    as_tool_call = {"on": False}
 
     class Fake(http.server.BaseHTTPRequestHandler):
         def do_POST(self):
             seen.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
             reply = {"action": "decide", "disposition": "escalate", "reason": "r", "question": "q"}
-            data = json.dumps(
-                {"choices": [{"message": {"content": json.dumps(reply)}}], "usage": {}}
-            ).encode()
+            message = {"content": json.dumps(reply)}
+            if as_tool_call["on"]:  # Ollama 0.40's shape for gpt-oss: no text, the answer in a call
+                fn = {"name": "assistant", "arguments": json.dumps(reply)}
+                message = {"content": "", "tool_calls": [{"type": "function", "function": fn}]}
+            data = json.dumps({"choices": [{"message": message}], "usage": {}}).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(data)))
@@ -344,6 +347,36 @@ if (
         "reasoning_effort" not in seen[-1] and "max_tokens" not in seen[-1],
         seen[-1],
     )
+    as_tool_call["on"] = True
+    res = adapter.call_system(json.dumps(r1["body"]), {"provider": "gateway", "model": "m", "url": url})
+    check(
+        "adapter: a reply as a tool call is no answer without reply_in_tool_call (what the fleet itself gets)",
+        (res.meta.get("calls") or [{}])[0].get("answered") is False and res.extra["no_decision"] == 1.0,
+        (res.meta.get("calls"), res.extra),
+    )
+    res = adapter.call_system(
+        json.dumps(r1["body"]),
+        {"provider": "gateway", "model": "m", "url": url, "reply_in_tool_call": "assistant"},
+    )
+    got_calls = res.meta.get("calls") or [{}]
+    check(
+        "adapter: with reply_in_tool_call, the call's arguments are the reply, and the call says so",
+        json.loads(res.output).get("disposition") == "escalate"
+        and res.extra["no_decision"] == 0.0
+        and got_calls[0].get("answered") is True
+        and got_calls[0].get("reply_from_tool_call") is True,
+        (res.output, got_calls),
+    )
+    res = adapter.call_system(
+        json.dumps(r1["body"]),
+        {"provider": "gateway", "model": "m", "url": url, "reply_in_tool_call": "other"},
+    )
+    check(
+        "adapter: a tool call to another name is not read as the reply",
+        res.extra["no_decision"] == 1.0,
+        res.extra,
+    )
+    as_tool_call["on"] = False
     srv.shutdown()
 else:
     print("  --   adapter through the fleet: skipped (TRIAGE_FLEET_SRC names no checkout)")

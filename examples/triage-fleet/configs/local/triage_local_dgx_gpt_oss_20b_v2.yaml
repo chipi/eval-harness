@@ -1,6 +1,7 @@
 # Round 3: triage_local_dgx_gpt_oss_20b_v1 again, with gpt-oss-20b's onboarded settings
 # The record supplies reasoning_effort (its settings_why says why); the arm sets the task's own: a reply cap
 # (a triage decision is 64-414 tokens; 1024 bounds a runaway) and the call limit round 1 used.
+# Ollama 0.40 hands gpt-oss's answer over as a tool call to "assistant"; reply_in_tool_call reads it (owner, 2026-10-31).
 config_id: triage_local_dgx_gpt_oss_20b_v2
 dataset_id: orrery_triage_v1_labelled
 adapter: ../../adapter.py
@@ -17,3 +18,4 @@ params:
   usd_per_mtok_in: 0
   usd_per_mtok_out: 0
   max_tokens: 1024
+  reply_in_tool_call: assistant

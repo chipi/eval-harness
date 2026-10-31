@@ -26,6 +26,10 @@ params:
   max_tokens optional: a cap on each reply's tokens. The fleet sends none, so a reply is unbounded
   usd_per_mtok_in, usd_per_mtok_out   the model's prices, for cost (the fleet knows only its own)
   stub_disposition   with provider stub: the decision it always reaches (default dismiss)
+  reply_in_tool_call   optional: a function name; a reply with no text and one tool call to that name is read
+             as its text. Ollama 0.40 turns gpt-oss's answer, addressed to the recipient "assistant", into such a
+             call, and the fleet reads only the text (probed on the Mac, 2026-10-31). Production on that server
+             would still get nothing; the arm measures the model's judgment
 """
 
 from __future__ import annotations
@@ -115,6 +119,17 @@ def _fleet() -> Any:
         else:
             choice = (resp.get("choices") or [{}])[0]
             msg = choice.get("message") or {}
+            tools = msg.get("tool_calls") or []
+            name = _FLEET.get("reply_in_tool_call")
+            if (
+                name
+                and not (msg.get("content") or "").strip()
+                and len(tools) == 1
+                and (tools[0].get("function") or {}).get("name") == name
+            ):
+                args = tools[0]["function"].get("arguments")
+                msg["content"] = args if isinstance(args, str) else json.dumps(args)
+                rec["reply_from_tool_call"] = True
             usage = resp.get("usage") or {}
             rec.update(
                 tokens_out=usage.get("completion_tokens"),
@@ -213,6 +228,7 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
         _FLEET["timeout"] = params.get("call_timeout_s")
         _FLEET["body_extra"] = {k: params[k] for k in ("reasoning_effort", "max_tokens") if k in params}
         _FLEET["via_gateway"] = not params.get("url")  # no url of its own: the fleet's LiteLLM gateway
+        _FLEET["reply_in_tool_call"] = params.get("reply_in_tool_call")
     else:
         raise ValueError(f"provider {provider!r}: gateway or stub")
     t0 = time.monotonic()
