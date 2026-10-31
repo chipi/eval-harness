@@ -241,25 +241,24 @@ smokes:
         max_tokens: 1024
         call_timeout_s: 600
   triage_local_mac_qwen38_27b_v2:
-    status: check
-    at: '2026-10-31T14:29:50Z'
-    flags:
-    - 'long reply: 2 call(s) over 3x the arm''s median of 77 tokens (max 244)'
+    status: pass
+    at: '2026-10-31T14:43:03Z'
+    flags: []
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 40.46
+        s: 40.63
         output_chars: 1523
         cost_usd: 0.0
         scored: true
         deterministic: true
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 31.65
+        s: 32.17
         output_chars: 2492
         cost_usd: 0.0
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 33.83
+        s: 33.51
         output_chars: 2381
         cost_usd: 0.0
         scored: true
@@ -269,77 +268,77 @@ smokes:
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 26.14
+        s: 25.75
       - tokens_out: 59
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 3.68
+        s: 3.78
       - tokens_out: 65
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 3.79
+        s: 3.71
       - tokens_out: 129
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 6.85
+        s: 7.39
       - tokens_out: 72
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 8.16
+        s: 8.23
       - tokens_out: 76
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.68
+        s: 4.74
       - tokens_out: 78
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 5.09
+        s: 5.06
       - tokens_out: 244
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 13.72
+        s: 14.13
       - tokens_out: 88
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 8.95
+        s: 8.72
       - tokens_out: 89
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.45
+        s: 4.58
       - tokens_out: 76
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.83
+        s: 4.84
       - tokens_out: 241
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 15.62
+        s: 15.38
       projection:
         items: 65
-        minutes: 38.3
-        worst_minutes: 43.8
+        minutes: 38.4
+        worst_minutes: 44.0
         usd: 0.0
       settings:
         model: qwen3.8:27b
