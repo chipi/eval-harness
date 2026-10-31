@@ -1,6 +1,6 @@
 # Triage experiment: results so far (live)
 
-Updated 2026-10-31T04:23Z. Every finished run re-scored under the owner's rules of 2026-10-30: the combined cost (a missed real problem = 5 false alarms; @3 and @10 shown) decides, among the arms whose false alarms are at or under the ceiling (production's mean over its 4 passes: 85 of 124 = 21.25 of 31, 0.6855; set 2026-10-30, replacing its single pass of 21). 65 owner-labelled decisions (34 real problems, 31 noise). One pass per arm unless the passes column says more; the paired test and the repeats decide, not this table. Self-hosted arms run on Ollama 0.40.13; their cost in tokens is $0.
+Updated 2026-10-31T07:24Z. Every finished run re-scored under the owner's rules of 2026-10-30: the combined cost (a missed real problem = 5 false alarms; @3 and @10 shown) decides, among the arms whose false alarms are at or under the ceiling (production's mean over its 4 passes: 85 of 124 = 21.25 of 31, 0.6855; set 2026-10-30, replacing its single pass of 21). 65 owner-labelled decisions (34 real problems, 31 noise). One pass per arm unless the passes column says more; the paired test and the repeats decide, not this table. Self-hosted arms run on Ollama 0.40.13; their cost in tokens is $0.
 
 | # | model | where | passes | cost @5 | @3 | @10 | misses /34 | false alarms /31 | model's own cost @5 | no decision /65 | $ / decision | s / decision | ceiling |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -28,23 +28,25 @@ Updated 2026-10-31T04:23Z. Every finished run re-scored under the owner's rules 
 | 22 | baseline_pro | OpenRouter | 4 | **0.769** | 0.592 | 1.212 | 5.7 | 21.2 | 1.712 | 0 | 0.00508 | 25.4 | ok |
 | 23 | ministral_3_14b | X3 (AMD) | 1 | **0.815** | 0.600 | 1.354 | 7.0 | 18.0 | 2.508 | 0 | 0.00000 | 22.1 | ok |
 | 24 | qwen38_27b | DGX (NVIDIA) | 1 | **0.831** | 0.615 | 1.369 | 7.0 | 19.0 | 2.354 | 0 | 0.00000 | 37.8 | ok |
-| 25 | mistral_medium_35 | OpenRouter (open weights) | 1 | **0.877** | 0.631 | 1.492 | 8.0 | 17.0 | 1.662 | 0 | 0.01154 | 6.1 | ok |
-| 26 | qwen38_27b | X3 (AMD) | 1 | **0.908** | 0.662 | 1.523 | 8.0 | 19.0 | 2.292 | 0 | 0.00000 | 46.2 | ok |
-| 27 | mistral_medium_35_128b | DGX (NVIDIA) | 1 | **1.000** | 0.723 | 1.692 | 9.0 | 20.0 | 1.662 | 0 | 0.00000 | 117.5 | ok |
-| 28 | qwen38_27b | Mac (M4 Pro) | 1 | **1.046** | 0.738 | 1.815 | 10.0 | 18.0 | 2.277 | 0 | 0.00000 | 69.7 | ok |
-| 29 | qwen35_122b | OpenRouter (open weights) | 1 | **1.077** | 0.769 | 1.846 | 10.0 | 20.0 | 1.692 | 0 | 0.00335 | 17.7 | ok |
-| 30 | qwen35_122b | DGX (NVIDIA) | 1 | **1.138** | 0.800 | 1.985 | 11.0 | 19.0 | 1.800 | 0 | 0.00000 | 38.0 | ok |
-| 31 | llama31_8b | Mac (M4 Pro) | 1 | **0.415** | 0.415 | 0.415 | 0.0 | 27.0 | 1.062 | 0 | 0.00000 | 7.8 | out |
-| 32 | llama31_8b | X3 (AMD) | 1 | **0.415** | 0.415 | 0.415 | 0.0 | 27.0 | 1.062 | 0 | 0.00000 | 5.8 | out |
-| 33 | gpt_61_sol | OpenRouter | 4 | **0.604** | 0.504 | 0.854 | 3.2 | 23.0 | 0.531 | 0 | 0.01090 | 12.1 | out |
-| 34 | gemini_4_argon | OpenRouter | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.185 | 0 | 0.01362 | 30.1 | out |
-| 35 | kimi_k31_pro | OpenRouter | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 0.969 | 0 | 0.01913 | 46.1 | out |
-| 36 | nemotron_35_lightning_30b | DGX (NVIDIA) | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.138 | 0 | 0.00000 | 40.0 | out |
-| 37 | nemotron_35_lightning_30b | Mac (M4 Pro) | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.446 | 0 | 0.00000 | 66.0 | out |
-| 38 | phi4_14b | Mac (M4 Pro) | 1 | **0.754** | 0.600 | 1.138 | 5.0 | 24.0 | 0.785 | 0 | 0.00000 | 21.8 | out |
-| 39 | phi4_14b | X3 (AMD) | 1 | **0.769** | 0.615 | 1.154 | 5.0 | 25.0 | 0.862 | 0 | 0.00000 | 16.9 | out |
-| 40 | mistral_large_4 | OpenRouter | 1 | **0.800** | 0.615 | 1.262 | 6.0 | 22.0 | 1.923 | 0 | 0.00687 | 17.3 | out |
-| 41 | llama4_scout | DGX (NVIDIA) | 1 | **1.262** | 0.923 | 2.108 | 11.0 | 27.0 | 1.569 | 0 | 0.00000 | 13.4 | out |
+| 25 | stub_dismiss | OpenRouter | 1 | **0.862** | 0.646 | 1.400 | 7.0 | 21.0 | 2.615 | 0 | 0.00000 | 0.0 | ok |
+| 26 | mistral_medium_35 | OpenRouter (open weights) | 1 | **0.877** | 0.631 | 1.492 | 8.0 | 17.0 | 1.662 | 0 | 0.01154 | 6.1 | ok |
+| 27 | qwen38_27b | X3 (AMD) | 1 | **0.908** | 0.662 | 1.523 | 8.0 | 19.0 | 2.292 | 0 | 0.00000 | 46.2 | ok |
+| 28 | mistral_medium_35_128b | DGX (NVIDIA) | 1 | **1.000** | 0.723 | 1.692 | 9.0 | 20.0 | 1.662 | 0 | 0.00000 | 117.5 | ok |
+| 29 | qwen38_27b | Mac (M4 Pro) | 1 | **1.046** | 0.738 | 1.815 | 10.0 | 18.0 | 2.277 | 0 | 0.00000 | 69.7 | ok |
+| 30 | qwen35_122b | OpenRouter (open weights) | 1 | **1.077** | 0.769 | 1.846 | 10.0 | 20.0 | 1.692 | 0 | 0.00335 | 17.7 | ok |
+| 31 | qwen35_122b | DGX (NVIDIA) | 1 | **1.138** | 0.800 | 1.985 | 11.0 | 19.0 | 1.800 | 0 | 0.00000 | 38.0 | ok |
+| 32 | llama31_8b | Mac (M4 Pro) | 1 | **0.415** | 0.415 | 0.415 | 0.0 | 27.0 | 1.062 | 0 | 0.00000 | 7.8 | out |
+| 33 | llama31_8b | X3 (AMD) | 1 | **0.415** | 0.415 | 0.415 | 0.0 | 27.0 | 1.062 | 0 | 0.00000 | 5.8 | out |
+| 34 | stub_escalate | OpenRouter | 1 | **0.477** | 0.477 | 0.477 | 0.0 | 31.0 | 0.477 | 0 | 0.00000 | 0.0 | out |
+| 35 | gpt_61_sol | OpenRouter | 4 | **0.604** | 0.504 | 0.854 | 3.2 | 23.0 | 0.531 | 0 | 0.01090 | 12.1 | out |
+| 36 | gemini_4_argon | OpenRouter | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.185 | 0 | 0.01362 | 30.1 | out |
+| 37 | kimi_k31_pro | OpenRouter | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 0.969 | 0 | 0.01913 | 46.1 | out |
+| 38 | nemotron_35_lightning_30b | DGX (NVIDIA) | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.138 | 0 | 0.00000 | 40.0 | out |
+| 39 | nemotron_35_lightning_30b | Mac (M4 Pro) | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.446 | 0 | 0.00000 | 66.0 | out |
+| 40 | phi4_14b | Mac (M4 Pro) | 1 | **0.754** | 0.600 | 1.138 | 5.0 | 24.0 | 0.785 | 0 | 0.00000 | 21.8 | out |
+| 41 | phi4_14b | X3 (AMD) | 1 | **0.769** | 0.615 | 1.154 | 5.0 | 25.0 | 0.862 | 0 | 0.00000 | 16.9 | out |
+| 42 | mistral_large_4 | OpenRouter | 1 | **0.800** | 0.615 | 1.262 | 6.0 | 22.0 | 1.923 | 0 | 0.00687 | 17.3 | out |
+| 43 | llama4_scout | DGX (NVIDIA) | 1 | **1.262** | 0.923 | 2.108 | 11.0 | 27.0 | 1.569 | 0 | 0.00000 | 13.4 | out |
 
 ## Read with care
 
