@@ -156,80 +156,74 @@ accepted:
 smokes:
   triage_hosted_gpt_oss_120b_v2:
     status: pass
-    at: '2026-10-31T14:39:00Z'
+    at: '2026-10-31T14:45:18Z'
     flags: []
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 9.9
-        output_chars: 903
-        cost_usd: 0.0005675999999999999
+        s: 6.68
+        output_chars: 1254
+        cost_usd: 0.0005875499999999999
         scored: true
         deterministic: false
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 4.76
-        output_chars: 1314
-        cost_usd: 0.0007525499999999999
+        s: 5.41
+        output_chars: 1353
+        cost_usd: 0.0007591499999999999
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 5.43
-        output_chars: 1175
-        cost_usd: 0.00076815
+        s: 4.84
+        output_chars: 808
+        cost_usd: 0.0005105999999999999
         scored: true
       calls:
-      - tokens_out: 156
-        reasoning_tokens: 114
-        reasoning_chars: 456
+      - tokens_out: 79
+        reasoning_tokens: 0
+        reasoning_chars: 99
         finish_reason: stop
         answered: true
-        s: 1.77
-      - tokens_out: 191
-        reasoning_tokens: 74
-        reasoning_chars: 372
+        s: 1.22
+      - tokens_out: 302
+        reasoning_tokens: 47
+        reasoning_chars: 217
         finish_reason: stop
         answered: true
-        s: 8.13
-      - tokens_out: 55
+        s: 5.45
+      - tokens_out: 59
         reasoning_tokens: 0
         reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 1.29
-      - tokens_out: 88
-        reasoning_tokens: 0
-        reasoning_chars: 138
-        finish_reason: stop
-        answered: true
-        s: 1.62
-      - tokens_out: 143
-        reasoning_tokens: 40
-        reasoning_chars: 159
-        finish_reason: stop
-        answered: true
-        s: 1.86
-      - tokens_out: 53
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 1.0
-      - tokens_out: 94
-        reasoning_tokens: 48
-        reasoning_chars: 190
-        finish_reason: stop
-        answered: true
-        s: 3.42
-      - tokens_out: 176
-        reasoning_tokens: 0
-        reasoning_chars: 337
         finish_reason: stop
         answered: true
         s: 1.01
+      - tokens_out: 85
+        reasoning_tokens: 12
+        reasoning_chars: 60
+        finish_reason: stop
+        answered: true
+        s: 2.52
+      - tokens_out: 148
+        reasoning_tokens: 40
+        reasoning_chars: 158
+        finish_reason: stop
+        answered: true
+        s: 1.88
+      - tokens_out: 82
+        reasoning_tokens: 20
+        reasoning_chars: 79
+        finish_reason: stop
+        answered: true
+        s: 3.49
+      - tokens_out: 148
+        reasoning_tokens: 43
+        reasoning_chars: 246
+        finish_reason: stop
+        answered: true
+        s: 1.35
       projection:
         items: 65
-        minutes: 7.3
-        worst_minutes: 10.7
-        usd: 0.0452
+        minutes: 6.1
+        worst_minutes: 7.2
+        usd: 0.0402
       settings:
         model: eval-gpt-oss-120b
         reasoning_effort: low

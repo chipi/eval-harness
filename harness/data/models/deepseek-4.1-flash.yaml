@@ -64,70 +64,46 @@ history:
 smokes:
   triage_deepseek_41flash_v2:
     status: pass
-    at: '2026-10-31T14:37:28Z'
+    at: '2026-10-31T14:43:43Z'
     flags: []
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 4.27
-        output_chars: 1928
-        cost_usd: 0.00042591999999999993
+        s: 4.66
+        output_chars: 2003
+        cost_usd: 0.000438645
         scored: true
         deterministic: false
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 5.26
-        output_chars: 2219
-        cost_usd: 0.000444225
+        s: 3.76
+        output_chars: 2144
+        cost_usd: 0.000435
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 13.18
-        output_chars: 1877
-        cost_usd: 0.0004259
+        s: 2.75
+        output_chars: 1752
+        cost_usd: 0.00038825
         scored: true
       calls:
-      - tokens_out: 53
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 0.83
-      - tokens_out: 58
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 1.12
-      - tokens_out: 58
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 1.15
-      - tokens_out: 217
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 1.18
-      - tokens_out: 55
+      - tokens_out: 54
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
         s: 0.74
-      - tokens_out: 61
+      - tokens_out: 59
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.38
-      - tokens_out: 63
+        s: 0.78
+      - tokens_out: 58
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
         s: 0.85
-      - tokens_out: 232
+      - tokens_out: 240
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
@@ -138,30 +114,54 @@ smokes:
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 0.75
-      - tokens_out: 48
+        s: 0.85
+      - tokens_out: 62
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.92
-      - tokens_out: 60
+        s: 0.77
+      - tokens_out: 62
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 0.79
-      - tokens_out: 221
+        s: 0.83
+      - tokens_out: 216
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 8.71
+        s: 1.3
+      - tokens_out: 46
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.63
+      - tokens_out: 40
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.56
+      - tokens_out: 49
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.72
+      - tokens_out: 178
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 0.83
       projection:
         items: 65
-        minutes: 8.2
-        worst_minutes: 14.3
-        usd: 0.0281
+        minutes: 4.0
+        worst_minutes: 5.0
+        usd: 0.0273
       settings:
         model: eval-deepseek-41flash
         reasoning_effort: none

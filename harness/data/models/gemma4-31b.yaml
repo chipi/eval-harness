@@ -177,24 +177,24 @@ history:
 smokes:
   triage_local_x3_gemma4_31b_v2:
     status: check
-    at: '2026-10-31T14:38:20Z'
+    at: '2026-10-31T14:44:47Z'
     flags:
     - 'determinism: item 1 twice gave different outputs (repeats will vary)'
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 27.03
+        s: 26.89
         output_chars: 1524
         cost_usd: 0.0
         scored: true
         deterministic: false
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 20.02
+        s: 20.79
         output_chars: 1895
         cost_usd: 0.0
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 13.75
+        s: 14.3
         output_chars: 1292
         cost_usd: 0.0
         scored: true
@@ -204,71 +204,71 @@ smokes:
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 13.19
+        s: 13.27
       - tokens_out: 56
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 3.27
+        s: 3.19
       - tokens_out: 72
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.19
+        s: 4.1
       - tokens_out: 115
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 6.38
+        s: 6.33
       - tokens_out: 54
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 3.65
+        s: 3.69
       - tokens_out: 52
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 3.45
+        s: 3.42
       - tokens_out: 82
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.94
+        s: 5.31
       - tokens_out: 148
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 7.98
+        s: 8.36
       - tokens_out: 56
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 3.56
+        s: 3.74
       - tokens_out: 59
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 3.41
+        s: 3.62
       - tokens_out: 123
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 6.78
+        s: 6.94
       projection:
         items: 65
-        minutes: 22.0
-        worst_minutes: 29.3
+        minutes: 22.4
+        worst_minutes: 29.1
         usd: 0.0
       settings:
         model: gemma4:31b
@@ -277,104 +277,104 @@ smokes:
         call_timeout_s: 600
   triage_hosted_gemma4_31b_v2:
     status: pass
-    at: '2026-10-31T14:38:33Z'
+    at: '2026-10-31T14:44:56Z'
     flags: []
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 9.32
-        output_chars: 1598
-        cost_usd: 0.0011546
+        s: 8.84
+        output_chars: 1518
+        cost_usd: 0.0011564000000000001
         scored: true
         deterministic: false
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 7.56
-        output_chars: 1923
-        cost_usd: 0.0012346000000000002
+        s: 9.38
+        output_chars: 1978
+        cost_usd: 0.0012188000000000001
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 6.99
-        output_chars: 1766
-        cost_usd: 0.0012156
+        s: 14.85
+        output_chars: 1816
+        cost_usd: 0.0012084
         scored: true
       calls:
-      - tokens_out: 42
+      - tokens_out: 45
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.27
-      - tokens_out: 57
+        s: 1.53
+      - tokens_out: 55
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.32
-      - tokens_out: 74
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 3.29
-      - tokens_out: 124
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 3.44
-      - tokens_out: 46
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 1.34
-      - tokens_out: 54
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 1.23
-      - tokens_out: 89
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 1.84
-      - tokens_out: 161
+        s: 1.73
+      - tokens_out: 82
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
         s: 3.15
-      - tokens_out: 56
+      - tokens_out: 113
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.45
-      - tokens_out: 53
+        s: 2.42
+      - tokens_out: 30
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.14
-      - tokens_out: 79
+        s: 1.52
+      - tokens_out: 58
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.84
-      - tokens_out: 162
+        s: 1.7
+      - tokens_out: 78
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.55
+        s: 2.0
+      - tokens_out: 170
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.15
+      - tokens_out: 47
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.2
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.1
+      - tokens_out: 74
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.03
+      - tokens_out: 172
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 9.53
       projection:
         items: 65
-        minutes: 8.6
-        worst_minutes: 10.1
-        usd: 0.0781
+        minutes: 11.9
+        worst_minutes: 16.1
+        usd: 0.0776
       settings:
         model: eval-gemma-31b
         reasoning_effort: none

@@ -345,3 +345,108 @@ smokes:
         reasoning_effort: none
         max_tokens: 1024
         call_timeout_s: 600
+  triage_local_dgx_qwen38_27b_v2:
+    status: pass
+    at: '2026-10-31T14:45:27Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 23.18
+        output_chars: 1515
+        cost_usd: 0.0
+        scored: true
+        deterministic: true
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 22.22
+        output_chars: 2652
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 23.09
+        output_chars: 2440
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - tokens_out: 64
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 11.46
+      - tokens_out: 72
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.24
+      - tokens_out: 64
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.14
+      - tokens_out: 127
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 5.34
+      - tokens_out: 87
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.38
+      - tokens_out: 91
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.27
+      - tokens_out: 85
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.51
+      - tokens_out: 263
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 11.06
+      - tokens_out: 89
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.79
+      - tokens_out: 84
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.89
+      - tokens_out: 84
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.62
+      - tokens_out: 252
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 11.8
+      projection:
+        items: 65
+        minutes: 24.7
+        worst_minutes: 25.1
+        usd: 0.0
+      settings:
+        model: qwen3.8:27b
+        reasoning_effort: none
+        max_tokens: 1024
+        call_timeout_s: 600
