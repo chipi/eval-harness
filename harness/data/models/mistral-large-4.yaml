@@ -74,104 +74,110 @@ accepted:
 smokes:
   triage_mistral_large_4_v2:
     status: pass
-    at: '2026-10-31T14:42:14Z'
+    at: '2026-10-31T14:49:15Z'
     flags: []
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 15.03
-        output_chars: 2218
-        cost_usd: 0.0078505
+        s: 16.7
+        output_chars: 2093
+        cost_usd: 0.0071798999999999995
         scored: true
         deterministic: false
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 14.01
-        output_chars: 1252
-        cost_usd: 0.005511799999999999
+        s: 22.29
+        output_chars: 1546
+        cost_usd: 0.007581
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 23.51
-        output_chars: 1887
-        cost_usd: 0.0057386
+        s: 27.99
+        output_chars: 1988
+        cost_usd: 0.0059885
         scored: true
       calls:
-      - tokens_out: 575
-        reasoning_tokens: 508
-        reasoning_chars: 2202
+      - tokens_out: 286
+        reasoning_tokens: 221
+        reasoning_chars: 925
         finish_reason: stop
         answered: true
-        s: 4.19
-      - tokens_out: 126
-        reasoning_tokens: 53
-        reasoning_chars: 250
-        finish_reason: stop
-        answered: true
-        s: 1.44
+        s: 2.3
       - tokens_out: 124
-        reasoning_tokens: 46
-        reasoning_chars: 225
-        finish_reason: stop
-        answered: true
-        s: 1.32
-      - tokens_out: 1182
-        reasoning_tokens: 912
-        reasoning_chars: 4154
-        finish_reason: stop
-        answered: true
-        s: 8.09
-      - tokens_out: 415
-        reasoning_tokens: 375
-        reasoning_chars: 1593
-        finish_reason: stop
-        answered: true
-        s: 6.68
-      - tokens_out: 84
-        reasoning_tokens: 32
-        reasoning_chars: 159
-        finish_reason: stop
-        answered: true
-        s: 1.94
-      - tokens_out: 872
-        reasoning_tokens: 704
-        reasoning_chars: 3345
-        finish_reason: stop
-        answered: true
-        s: 5.38
-      - tokens_out: 417
-        reasoning_tokens: 366
-        reasoning_chars: 1614
-        finish_reason: stop
-        answered: true
-        s: 4.28
-      - tokens_out: 115
         reasoning_tokens: 53
         reasoning_chars: 250
         finish_reason: stop
         answered: true
-        s: 1.19
-      - tokens_out: 119
-        reasoning_tokens: 51
-        reasoning_chars: 219
+        s: 2.18
+      - tokens_out: 123
+        reasoning_tokens: 45
+        reasoning_chars: 199
         finish_reason: stop
         answered: true
-        s: 1.27
-      - tokens_out: 337
-        reasoning_tokens: 276
-        reasoning_chars: 1244
+        s: 1.93
+      - tokens_out: 1158
+        reasoning_tokens: 913
+        reasoning_chars: 4140
         finish_reason: stop
         answered: true
-        s: 2.06
-      - tokens_out: 1937
-        reasoning_tokens: 1761
-        reasoning_chars: 7833
+        s: 10.29
+      - tokens_out: 331
+        reasoning_tokens: 273
+        reasoning_chars: 1216
         finish_reason: stop
         answered: true
-        s: 14.71
+        s: 5.18
+      - tokens_out: 102
+        reasoning_tokens: 40
+        reasoning_chars: 188
+        finish_reason: stop
+        answered: true
+        s: 4.83
+      - tokens_out: 156
+        reasoning_tokens: 80
+        reasoning_chars: 389
+        finish_reason: stop
+        answered: true
+        s: 2.08
+      - tokens_out: 1243
+        reasoning_tokens: 1113
+        reasoning_chars: 4741
+        finish_reason: stop
+        answered: true
+        s: 10.2
+      - tokens_out: 449
+        reasoning_tokens: 392
+        reasoning_chars: 1713
+        finish_reason: stop
+        answered: true
+        s: 3.71
+      - tokens_out: 114
+        reasoning_tokens: 44
+        reasoning_chars: 220
+        finish_reason: stop
+        answered: true
+        s: 1.59
+      - tokens_out: 151
+        reasoning_tokens: 69
+        reasoning_chars: 304
+        finish_reason: stop
+        answered: true
+        s: 1.57
+      - tokens_out: 377
+        reasoning_tokens: 299
+        reasoning_chars: 1287
+        finish_reason: stop
+        answered: true
+        s: 2.32
+      - tokens_out: 795
+        reasoning_tokens: 571
+        reasoning_chars: 2847
+        finish_reason: stop
+        answered: true
+        s: 18.8
       projection:
         items: 65
-        minutes: 19.0
-        worst_minutes: 25.5
-        usd: 0.4139
+        minutes: 24.2
+        worst_minutes: 30.3
+        usd: 0.4496
       settings:
         model: eval-mistral-large-4
         reasoning_effort: low

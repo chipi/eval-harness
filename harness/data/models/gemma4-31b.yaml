@@ -385,23 +385,23 @@ smokes:
       record''s deployment)'
   triage_local_mac_gemma4_31b_v2:
     status: pass
-    at: '2026-10-31T14:39:34Z'
+    at: '2026-10-31T14:46:01Z'
     flags: []
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 50.72
+        s: 54.62
         output_chars: 1589
         cost_usd: 0.0
         scored: true
         deterministic: true
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 37.64
+        s: 36.92
         output_chars: 1941
         cost_usd: 0.0
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 35.19
+        s: 34.91
         output_chars: 1751
         cost_usd: 0.0
         scored: true
@@ -411,77 +411,77 @@ smokes:
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 26.71
+        s: 31.47
       - tokens_out: 56
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.7
+        s: 4.53
       - tokens_out: 82
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 8.1
+        s: 7.72
       - tokens_out: 125
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 11.22
+        s: 10.89
       - tokens_out: 54
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 10.66
+        s: 10.2
       - tokens_out: 57
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 5.97
+        s: 6.12
       - tokens_out: 83
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 7.92
+        s: 7.61
       - tokens_out: 159
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 13.09
+        s: 12.99
       - tokens_out: 54
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 9.46
+        s: 9.41
       - tokens_out: 54
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 6.07
+        s: 5.15
       - tokens_out: 78
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 7.17
+        s: 7.3
       - tokens_out: 157
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 12.48
+        s: 13.05
       projection:
         items: 65
-        minutes: 44.6
-        worst_minutes: 54.9
+        minutes: 45.7
+        worst_minutes: 59.2
         usd: 0.0
       settings:
         model: gemma4:31b-it-q4_K_M

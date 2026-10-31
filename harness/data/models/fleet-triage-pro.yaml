@@ -63,104 +63,110 @@ history:
     at length and the next not at all'
 smokes:
   triage_baseline_pro_noreason_v1:
-    status: check
-    at: '2026-10-31T14:29:00Z'
-    flags:
-    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
-    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
-      record''s deployment)'
-    - 'long reply: 1 call(s) over 3x the arm''s median of 74 tokens (max 270)'
+    status: pass
+    at: '2026-10-31T14:49:58Z'
+    flags: []
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 14.06
-        output_chars: 1568
-        cost_usd: 0.0047736
+        s: 13.99
+        output_chars: 1792
+        cost_usd: 0.004893552
         scored: true
         deterministic: false
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 8.23
-        output_chars: 1669
-        cost_usd: 0.0036622079999999997
+        s: 8.57
+        output_chars: 2265
+        cost_usd: 0.005072256
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 7.62
-        output_chars: 2170
-        cost_usd: 0.005060832
+        s: 6.82
+        output_chars: 1691
+        cost_usd: 0.004878863999999999
         scored: true
       calls:
-      - tokens_out: 64
+      - tokens_out: 69
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 3.61
+        s: 2.73
       - tokens_out: 63
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.39
-      - tokens_out: 75
+        s: 3.16
+      - tokens_out: 92
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 3.74
-      - tokens_out: 151
+        s: 2.91
+      - tokens_out: 186
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.32
-      - tokens_out: 63
+        s: 5.19
+      - tokens_out: 51
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.87
-      - tokens_out: 74
+        s: 1.22
+      - tokens_out: 73
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.58
-      - tokens_out: 189
+        s: 1.19
+      - tokens_out: 69
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.78
+        s: 1.64
+      - tokens_out: 256
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.51
       - tokens_out: 61
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.29
-      - tokens_out: 64
+        s: 1.25
+      - tokens_out: 62
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.37
-      - tokens_out: 74
+        s: 1.2
+      - tokens_out: 67
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.96
-      - tokens_out: 270
+        s: 1.86
+      - tokens_out: 173
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.99
+        s: 2.51
       projection:
         items: 65
-        minutes: 10.8
+        minutes: 10.6
         worst_minutes: 15.2
-        usd: 0.2924
+        usd: 0.3216
       settings:
         model: eval-fleet-triage-pro
         reasoning_effort: none
         max_tokens: 1024
+    accepted:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
+      record''s deployment)'

@@ -139,74 +139,74 @@ history:
 smokes:
   triage_hosted_qwen35_122b_v2:
     status: pass
-    at: '2026-10-31T14:39:18Z'
+    at: '2026-10-31T14:45:38Z'
     flags: []
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 3.98
-        output_chars: 955
-        cost_usd: 0.0009711
+        s: 4.63
+        output_chars: 991
+        cost_usd: 0.00098332
         scored: true
         deterministic: false
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 5.55
-        output_chars: 1672
-        cost_usd: 0.0015971800000000001
+        s: 5.36
+        output_chars: 1700
+        cost_usd: 0.00161824
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 3.36
-        output_chars: 771
-        cost_usd: 0.00098826
+        s: 4.67
+        output_chars: 829
+        cost_usd: 0.00103194
         scored: true
       calls:
-      - tokens_out: 59
+      - tokens_out: 58
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.06
-      - tokens_out: 113
+        s: 1.84
+      - tokens_out: 120
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.92
+        s: 2.8
       - tokens_out: 55
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.55
-      - tokens_out: 76
+        s: 1.75
+      - tokens_out: 75
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.96
-      - tokens_out: 153
+        s: 1.77
+      - tokens_out: 164
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.03
-      - tokens_out: 65
+        s: 1.84
+      - tokens_out: 75
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.06
-      - tokens_out: 106
+        s: 2.22
+      - tokens_out: 116
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.3
+        s: 2.45
       projection:
         items: 65
-        minutes: 4.7
-        worst_minutes: 6.0
-        usd: 0.0771
+        minutes: 5.3
+        worst_minutes: 5.8
+        usd: 0.0787
       settings:
         model: eval-qwen35-122b
         reasoning_effort: none

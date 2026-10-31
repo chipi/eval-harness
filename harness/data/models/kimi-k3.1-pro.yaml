@@ -64,104 +64,104 @@ history:
 smokes:
   triage_kimi_k31_pro_v2:
     status: pass
-    at: '2026-10-31T14:41:07Z'
+    at: '2026-10-31T14:47:29Z'
     flags: []
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 23.03
-        output_chars: 2533
-        cost_usd: 0.01535
+        s: 27.92
+        output_chars: 2358
+        cost_usd: 0.015622
         scored: true
         deterministic: false
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 30.53
-        output_chars: 2312
-        cost_usd: 0.01545
+        s: 23.09
+        output_chars: 2029
+        cost_usd: 0.014834
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 24.0
-        output_chars: 1858
-        cost_usd: 0.014342
+        s: 28.09
+        output_chars: 1903
+        cost_usd: 0.014432
         scored: true
       calls:
-      - tokens_out: 43
+      - tokens_out: 48
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.42
-      - tokens_out: 46
+        s: 6.87
+      - tokens_out: 60
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.19
-      - tokens_out: 58
+        s: 3.46
+      - tokens_out: 71
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 3.17
-      - tokens_out: 348
+        s: 7.6
+      - tokens_out: 332
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 11.26
-      - tokens_out: 57
+        s: 9.98
+      - tokens_out: 54
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 5.09
-      - tokens_out: 69
+        s: 2.95
+      - tokens_out: 61
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 5.17
-      - tokens_out: 74
+        s: 4.54
+      - tokens_out: 71
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 8.71
-      - tokens_out: 244
+        s: 5.64
+      - tokens_out: 202
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 11.56
+        s: 9.96
       - tokens_out: 49
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.95
-      - tokens_out: 64
+        s: 8.31
+      - tokens_out: 53
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.92
-      - tokens_out: 55
+        s: 4.48
+      - tokens_out: 72
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.78
-      - tokens_out: 192
+        s: 5.2
+      - tokens_out: 196
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 9.35
+        s: 10.09
       projection:
         items: 65
-        minutes: 28.0
-        worst_minutes: 33.1
-        usd: 0.9781
+        minutes: 28.6
+        worst_minutes: 30.4
+        usd: 0.9726
       settings:
         model: eval-kimi-k31-pro
         reasoning_effort: none

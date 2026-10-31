@@ -244,104 +244,85 @@ smokes:
         call_timeout_s: 600
   triage_local_mac_gpt_oss_20b_v2:
     status: check
-    at: '2026-10-31T14:26:21Z'
+    at: '2026-10-31T14:46:41Z'
     flags:
-    - 'no answer: 12 call(s) failed or came back empty'
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 16.77
-        output_chars: 179
-        cost_usd: null
+        s: 17.75
+        output_chars: 1322
+        cost_usd: 0.0
         scored: true
-        deterministic: true
+        deterministic: false
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 4.82
-        output_chars: 179
-        cost_usd: null
+        s: 9.44
+        output_chars: 1394
+        cost_usd: 0.0
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 6.19
-        output_chars: 179
-        cost_usd: null
+        s: 4.99
+        output_chars: 814
+        cost_usd: 0.0
         scored: true
       calls:
-      - tokens_out: 78
+      - reply_from_tool_call: true
+        tokens_out: 78
         reasoning_tokens: 0
         reasoning_chars: 24
         finish_reason: tool_calls
-        answered: false
-        s: 11.94
-      - tokens_out: 78
+        answered: true
+        s: 12.32
+      - reply_from_tool_call: true
+        tokens_out: 78
         reasoning_tokens: 0
-        reasoning_chars: 24
+        reasoning_chars: 58
         finish_reason: tool_calls
-        answered: false
-        s: 1.62
-      - tokens_out: 78
+        answered: true
+        s: 1.89
+      - tokens_out: 146
         reasoning_tokens: 0
-        reasoning_chars: 24
-        finish_reason: tool_calls
-        answered: false
-        s: 1.6
-      - tokens_out: 78
-        reasoning_tokens: 0
-        reasoning_chars: 24
-        finish_reason: tool_calls
-        answered: false
-        s: 1.61
-      - tokens_out: 55
+        reasoning_chars: 213
+        finish_reason: stop
+        answered: true
+        s: 3.55
+      - reply_from_tool_call: true
+        tokens_out: 55
         reasoning_tokens: 0
         reasoning_chars: 33
         finish_reason: tool_calls
-        answered: false
-        s: 1.33
-      - tokens_out: 55
+        answered: true
+        s: 1.49
+      - reply_from_tool_call: true
+        tokens_out: 130
+        reasoning_tokens: 0
+        reasoning_chars: 377
+        finish_reason: tool_calls
+        answered: true
+        s: 3.01
+      - tokens_out: 205
+        reasoning_tokens: 0
+        reasoning_chars: 466
+        finish_reason: stop
+        answered: true
+        s: 4.94
+      - reply_from_tool_call: true
+        tokens_out: 57
         reasoning_tokens: 0
         reasoning_chars: 33
         finish_reason: tool_calls
-        answered: false
-        s: 1.15
-      - tokens_out: 55
+        answered: true
+        s: 1.55
+      - tokens_out: 141
         reasoning_tokens: 0
-        reasoning_chars: 33
-        finish_reason: tool_calls
-        answered: false
-        s: 1.17
-      - tokens_out: 55
-        reasoning_tokens: 0
-        reasoning_chars: 33
-        finish_reason: tool_calls
-        answered: false
-        s: 1.17
-      - tokens_out: 71
-        reasoning_tokens: 0
-        reasoning_chars: 85
-        finish_reason: tool_calls
-        answered: false
-        s: 1.65
-      - tokens_out: 71
-        reasoning_tokens: 0
-        reasoning_chars: 85
-        finish_reason: tool_calls
-        answered: false
-        s: 1.48
-      - tokens_out: 71
-        reasoning_tokens: 0
-        reasoning_chars: 85
-        finish_reason: tool_calls
-        answered: false
-        s: 1.48
-      - tokens_out: 71
-        reasoning_tokens: 0
-        reasoning_chars: 85
-        finish_reason: tool_calls
-        answered: false
-        s: 1.58
+        reasoning_chars: 299
+        finish_reason: stop
+        answered: true
+        s: 3.43
       projection:
         items: 65
-        minutes: 10.0
-        worst_minutes: 18.2
+        minutes: 11.6
+        worst_minutes: 19.2
         usd: 0.0
       settings:
         model: gpt-oss:20b
