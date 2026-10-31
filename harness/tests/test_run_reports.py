@@ -130,12 +130,13 @@ try:
     back.write_text("1")
     r = evh("experiment-run", "--config", "data/configs/refused.yaml", "--resume", gone.name if gone else "")
     rows = [json.loads(x) for x in (gone / "predictions.jsonl").read_text().splitlines()] if gone else []
+    answers = list((gone / "outputs").glob("*.txt")) if gone else []
     check(
         "resumed with the server back, the refused item is called again and every item is an answer",
         r.returncode == 0
         and len(rows) == len(rows_plain)
-        and all(p.read_text() != "no decision" for p in (gone / "outputs").glob("*.txt"))
-        and len(list((gone / "outputs").glob("*.txt"))) == len(rows_plain),
+        and all(p.read_text() != "no decision" for p in answers)
+        and len(answers) == len(rows_plain),
         ((r.stdout + r.stderr)[-300:], len(rows), len(rows_plain)),
     )
     r = evh("experiment-run", "--config", config("broken", model_error=True))
