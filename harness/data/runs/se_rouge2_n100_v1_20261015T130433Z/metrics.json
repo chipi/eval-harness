@@ -10,7 +10,11 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_rouge2_n100_v1"
+      "config_id": "se_rouge2_n100_v1",
+      "labels": {
+        "family": "rouge",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -50,7 +54,7 @@
       }
     },
     "deployment_sha256": "dbc856fa004de7942780f10c27535c9cced74b616459427f412665fb0170cc26",
-    "hash": "27672996bde376194e61412ffe75763a28b5f4813e753f35977c63202856019b",
+    "hash": "1941686f8ee4b59f60ff869354bf5d4fb60ace5b6abefe92741a595d16e17a9c",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -61,7 +65,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "e2582feb5d0d1357feaaf9f62094e64a07d3b44eecc390d003393e8090abd629",
+    "instrument_sha256": "811a89ab82100a8bb586c026679bcf973654b99a86f8893ca1e0967f0ec923e4",
     "runner": {
       "cpu_count": 4,
       "label": null,
@@ -78,11 +82,9 @@
       "release": "6.18.44-fc-v114"
     },
     "settings": {
-      "family": "rouge",
-      "metric": "rouge2",
-      "price_tier": "free"
+      "metric": "rouge2"
     },
-    "settings_sha256": "f770a946219ea0f30eb88b675b542c9f5d33eb79739b705db1db3be72784858d",
+    "settings_sha256": "b9ef056b8757d237f6087faf4f411db8d666d26e01fd591804b08ed81486e680",
     "version": 5
   },
   "goal": "summary_judge_summeval",

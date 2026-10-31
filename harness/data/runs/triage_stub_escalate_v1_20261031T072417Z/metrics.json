@@ -10,7 +10,8 @@
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {
     "arm": {
-      "config_id": "triage_stub_escalate_v1"
+      "config_id": "triage_stub_escalate_v1",
+      "labels": null
     },
     "data": {
       "dataset_id": "orrery_triage_v1_labelled",
@@ -46,7 +47,7 @@
       }
     },
     "deployment_sha256": "3bf91d719fdaaf0859edebb9e9b9f9201e2c7b8444c878861fd5bc03d743b61b",
-    "hash": "8eef16078199421292a6c8c23aca3120e9fb46c53c1b712ae49bf0fc9d474d1c",
+    "hash": "8b46afc8e07cf282013fa51fb8ecf831e19704620e484a0e56b131469a63aec2",
     "instrument": {
       "adapter": {
         "id": "examples/triage-fleet/adapter.py",
@@ -60,7 +61,7 @@
         "version": "0.5.0"
       }
     },
-    "instrument_sha256": "a150e2c7a4b3a92895b4ca34bb4354b2919042ca52eadb162b51b6be6d18734e",
+    "instrument_sha256": "e5be13869598e40f100e34ad0809f29d19e9d5ceefc488fd8dfdca11b04c3629",
     "runner": {
       "cpu_count": 32,
       "label": null,

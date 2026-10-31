@@ -10,7 +10,12 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_constant_n200_v1"
+      "config_id": "db_constant_n200_v1",
+      "labels": {
+        "family": "baseline",
+        "label": "Company",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -69,7 +74,7 @@
       }
     },
     "deployment_sha256": "c3142d1dcf6bddc7bd74513d942d3cd2a0960d6aa61e1e4a97d378a1de6b130e",
-    "hash": "ef7edac30a0674db1afe2bfa1366e1e9cd5e86e1d18837ff8bbac0ff5bb687e8",
+    "hash": "00a46ff5aab825d31a8eba4587e87a58fc082e80137a6d8f852af13cd2ac29e0",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -80,7 +85,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "fec8534672877f4568a4192238d3f523618f25f73fccefe00e7abb035341d09d",
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -90,12 +95,8 @@
       "python": "3.11.8",
       "release": "24.6.0"
     },
-    "settings": {
-      "family": "baseline",
-      "label": "Company",
-      "price_tier": "free"
-    },
-    "settings_sha256": "9eb67ab7da26f795ef6eafb3d66266f5209896b80e89c5cfe2e010fab7d6563f",
+    "settings": {},
+    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

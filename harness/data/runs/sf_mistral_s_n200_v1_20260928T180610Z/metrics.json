@@ -19,7 +19,13 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "sf_mistral_s_n200_v1"
+      "config_id": "sf_mistral_s_n200_v1",
+      "labels": {
+        "family": "mistral",
+        "price_tier": "small",
+        "usd_per_mtok_in": 0.05,
+        "usd_per_mtok_out": 0.15
+      }
     },
     "data": {
       "dataset_id": "scifact_200",
@@ -93,7 +99,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "55bfd3e775ce09ed440b29c9e112196bb109602116754b89cb49f02e21416702",
+    "instrument_sha256": "59bd4823b11d4fa42d260bd525fa5bead37c6e7ee4bde26f5c0715bb9bebb8de",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -113,9 +119,7 @@
         },
         "temperature": 0.0
       },
-      "family": "mistral",
       "max_tokens": 700,
-      "price_tier": "small",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
@@ -123,11 +127,9 @@
       "rerank_k": 20,
       "snippet_chars": 900,
       "temperature": 0.0,
-      "top_k": 100,
-      "usd_per_mtok_in": 0.05,
-      "usd_per_mtok_out": 0.15
+      "top_k": 100
     },
-    "settings_sha256": "ba068f04ef914562596d385a5981b8dd2adbc9c85fe36ea5c99225f561afe9ff",
+    "settings_sha256": "e5ee121ec55c5d6477664172ebd344c6761f6b631ae9fc229579402e907a63cf",
     "version": 5
   },
   "goal": "scientific_retrieval_scifact",

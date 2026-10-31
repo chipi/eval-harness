@@ -10,7 +10,11 @@
   "dataset_id": "cnn_dailymail_200",
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_bart_s_n200_v1"
+      "config_id": "cnn_bart_s_n200_v1",
+      "labels": {
+        "family": "bart",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -52,7 +56,7 @@
       }
     },
     "deployment_sha256": "f03e3ed009fd173b1501628cffe43385ace426b5d845291550444291dccced5e",
-    "hash": "3e837d919922804a07b02163e16728f83037ea27aafc793b41560fd8f37dbd0b",
+    "hash": "a5e969a837ca15f8929fbe14443defe6a08bb7d80847ec74be6015304eafb5d9",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -63,7 +67,7 @@
         "dirty": true
       }
     },
-    "instrument_sha256": "c94b1f524bea4b0661deb7f701da0e08e63a5af0a33eacd86af93ebfca8161cf",
+    "instrument_sha256": "2e977aba55c3ea93a025237950c77e1160e0957e5598602699054eafeca2a1f9",
     "runner": {
       "cpu_count": 4,
       "label": null,
@@ -75,15 +79,13 @@
     },
     "settings": {
       "early_stopping": true,
-      "family": "bart",
       "length_penalty": 2.0,
       "max_length": 142,
       "min_length": 56,
       "no_repeat_ngram_size": 3,
-      "num_beams": 4,
-      "price_tier": "free"
+      "num_beams": 4
     },
-    "settings_sha256": "b1f4fbaba7089b2e89a68ea7dcfd164d4cb3445597862243826ad81080cf92c4",
+    "settings_sha256": "656435dcd94a2e6c1a0f2804bc3184adf0e955e8cf36a710519ed655ba6ac508",
     "version": 5
   },
   "goal": "news_summary_cnn",

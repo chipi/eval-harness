@@ -19,7 +19,13 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "sf_glm_s_e5first_n200_v1"
+      "config_id": "sf_glm_s_e5first_n200_v1",
+      "labels": {
+        "family": "glm",
+        "price_tier": "small",
+        "usd_per_mtok_in": 0.06,
+        "usd_per_mtok_out": 0.22
+      }
     },
     "data": {
       "dataset_id": "scifact_200",
@@ -96,7 +102,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "e49f4eeca014b4b7de9ee37bfc1e7424170465b9dffa7c98914438d1363ab596",
+    "instrument_sha256": "51eee82b5839570ceaab95c6500bde9987874ffedc27b28f32c4ac67d1268d4f",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -116,13 +122,11 @@
         },
         "temperature": 0.0
       },
-      "family": "glm",
       "first_stage": "dense",
       "first_stage_doc_prefix": "passage: ",
       "first_stage_model": "intfloat/e5-base-v2",
       "first_stage_query_prefix": "query: ",
       "max_tokens": 700,
-      "price_tier": "small",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
@@ -130,11 +134,9 @@
       "rerank_k": 20,
       "snippet_chars": 900,
       "temperature": 0.0,
-      "top_k": 100,
-      "usd_per_mtok_in": 0.06,
-      "usd_per_mtok_out": 0.22
+      "top_k": 100
     },
-    "settings_sha256": "d53a4e598ba26716be5191a1e44fae35d8588822fde2d6e87564224c8a84e86b",
+    "settings_sha256": "50f466979c53e46ac3b32f2ce14444d5e4e9254cf82f9fb8e1cdc1b790d08400",
     "version": 5
   },
   "goal": "scientific_retrieval_scifact",

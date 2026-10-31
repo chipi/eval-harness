@@ -1,0 +1,153 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "d89de14a60f73add43e53b87f695dd598eeeb4e7",
+    "source": "git"
+  },
+  "config_id": "triage_hosted_qwen3_30b_a3b_v1",
+  "created_at": "2026-10-31T11:08:49Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "derived": {
+    "at": "2026-10-31T11:08:49Z",
+    "from": "triage_hosted_qwen3_30b_a3b_v1_20261030T232632Z",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/triage-fleet/adapter.py",
+      "sha256": "cd35dc1ffcccb0b8a3f95fc84c4d3966ba3634c705d049d42e7b2327f8b61c0b"
+    }
+  },
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_hosted_qwen3_30b_a3b_v1",
+      "labels": {
+        "usd_per_mtok_in": 0.1,
+        "usd_per_mtok_out": 0.3
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled",
+      "items_sha256": "d428aca49adc8e762dcbbcad6c9a1dba1ac4e4e3315ff26025af975faba1176a",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled",
+      "reference_tier": "gold",
+      "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
+    },
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": "eval-qwen3-30b-a3b",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-qwen3-30b-a3b",
+      "provider": "gateway",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "b696c4de500fadd77824786bb23919f7046b05f1d61d8885652a6d01ffd7d4c2",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "cd35dc1ffcccb0b8a3f95fc84c4d3966ba3634c705d049d42e7b2327f8b61c0b"
+      },
+      "harness": {
+        "code_sha256": "0ab386969208f46c7448153422d5a5ab07833d963869b69fc216a6cd28feb110",
+        "commit": "d89de14a60f7",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "instrument_sha256": "912efff15063e905ebe606efd46e8efba1d1853ef2505cea7d8448b47de171ae",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {},
+    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "version": 5
+  },
+  "goal": "triage_orrery",
+  "metric_directions": {
+    "deferred": "lower",
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "model_triage_cost": "lower",
+    "no_decision": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower",
+    "triage_cost": "lower",
+    "triage_cost_p10": "lower",
+    "triage_cost_p3": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 65,
+  "params": {
+    "model": "eval-qwen3-30b-a3b",
+    "provider": "gateway",
+    "usd_per_mtok_in": 0.1,
+    "usd_per_mtok_out": 0.3
+  },
+  "primary_metric": "triage_cost",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "triage_hosted_qwen3_30b_a3b_v1_20261030T232632Z",
+  "scores": {
+    "correct": 0.6461538462,
+    "cost_usd": 0.0006998969,
+    "escalated": 0.3076923077,
+    "false_alarm": 0.5161290323,
+    "false_dismiss": 0.1764705882,
+    "latency_ms": 17976.0585257569,
+    "model_correct": 0.5846153846,
+    "model_escalated": 0.0,
+    "model_false_alarm": 0.2580645161,
+    "model_false_dismiss": 0.5294117647,
+    "model_triage_cost": 1.5076923077,
+    "n_probes": 2.7230769231,
+    "no_decision": 0.0,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 5666.8307692308,
+    "tokens_out": 444.0461538462,
+    "total_cost_usd": 0.0454933,
+    "total_tokens_in": 368344.0,
+    "total_tokens_out": 28863.0,
+    "triage_cost": 0.7076923077,
+    "triage_cost_p10": 1.1692307692,
+    "triage_cost_p3": 0.5230769231
+  },
+  "source_created_at": "2026-10-30T23:46:01Z"
+}

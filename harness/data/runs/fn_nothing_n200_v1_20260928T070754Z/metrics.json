@@ -24,7 +24,11 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "fn_nothing_n200_v1"
+      "config_id": "fn_nothing_n200_v1",
+      "labels": {
+        "family": "baseline",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "few_nerd_280",
@@ -95,7 +99,7 @@
         "dirty": true
       }
     },
-    "instrument_sha256": "d06f81c7832f4523a73ab88db8009b61514e012d29081d0ae119f47b490aa701",
+    "instrument_sha256": "e4ee62504d4173b243fbf8bffe949f8caf93698b3e3a175a76472b6348fe3522",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -105,11 +109,8 @@
       "python": "3.11.8",
       "release": "24.6.0"
     },
-    "settings": {
-      "family": "baseline",
-      "price_tier": "free"
-    },
-    "settings_sha256": "80498a650b2ba3bad6dd41a29b2f9d21226d1978c74c79dbdec0e3d680a22e94",
+    "settings": {},
+    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
     "version": 5
   },
   "goal": "entities_few_nerd",

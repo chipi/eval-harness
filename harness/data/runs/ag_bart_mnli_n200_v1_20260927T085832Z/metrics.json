@@ -10,7 +10,11 @@
   "dataset_id": "ag_news_200",
   "fingerprint": {
     "arm": {
-      "config_id": "ag_bart_mnli_n200_v1"
+      "config_id": "ag_bart_mnli_n200_v1",
+      "labels": {
+        "family": "bart",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "ag_news_200",
@@ -65,7 +69,7 @@
       }
     },
     "deployment_sha256": "e6a413f5d1b68a728ea8e6e4e576aac91762e63eeca97ce409f57ffc3fb09e91",
-    "hash": "483fdf7cac5f0205e5861fa98f31723e30e7accd34846d6d9fb5b3297c69861a",
+    "hash": "b4b1756827fbd17d8a3196a43f99b68aa247bd543ccba49ac308c096b79fbce7",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -76,7 +80,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "237e3b2ea03b64d4a1e2a7cdd7d8839afbeb26b2197aea0b2dd44801664a6703",
+    "instrument_sha256": "4ce9ff50ed29a71be8d4a04f4f0ea3e3faa9a19979c7d104fe7b959ce65b864b",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -87,11 +91,9 @@
       "release": "24.6.0"
     },
     "settings": {
-      "family": "bart",
-      "hypothesis_template": "This news article is about {}.",
-      "price_tier": "free"
+      "hypothesis_template": "This news article is about {}."
     },
-    "settings_sha256": "19ca515b59080e5605ca02447292cb15e238a8a198d64d2a3e8de95e88105cb3",
+    "settings_sha256": "394ced68ec9f0ffe23ae374b2462446c3c854b6d35409f359012cc820bb958b2",
     "version": 5
   },
   "goal": "news_topic_ag",

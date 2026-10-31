@@ -19,7 +19,11 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "sf_mpnet_n200_v1"
+      "config_id": "sf_mpnet_n200_v1",
+      "labels": {
+        "family": "mpnet",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "scifact_200",
@@ -88,7 +92,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "55bfd3e775ce09ed440b29c9e112196bb109602116754b89cb49f02e21416702",
+    "instrument_sha256": "59bd4823b11d4fa42d260bd525fa5bead37c6e7ee4bde26f5c0715bb9bebb8de",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -101,11 +105,9 @@
     "settings": {
       "corpus_id": "scifact",
       "encode_batch": 32,
-      "family": "mpnet",
-      "price_tier": "free",
       "top_k": 100
     },
-    "settings_sha256": "26818b3882b134a79fdf8d226cb1e172eabbd93336977c3fc34105d54cdb1621",
+    "settings_sha256": "a675ec864f6ed404150d6180297bf154a4e7811c71bd426100dfcf12e5278390",
     "version": 5
   },
   "goal": "scientific_retrieval_scifact",

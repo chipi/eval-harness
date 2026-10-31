@@ -10,7 +10,11 @@
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {
     "arm": {
-      "config_id": "triage_deepseek_41flash_v1"
+      "config_id": "triage_deepseek_41flash_v1",
+      "labels": {
+        "usd_per_mtok_in": 0.045,
+        "usd_per_mtok_out": 0.5
+      }
     },
     "data": {
       "dataset_id": "orrery_triage_v1_labelled",
@@ -46,7 +50,7 @@
       }
     },
     "deployment_sha256": "d0181f412fd0662c987879f8d49449e37e3a2a1566589191e452ca9ee3cfa3b5",
-    "hash": "c94366522e90f0f18eb370f63931002991a2ca8850540c4cb284b5b9d194cea8",
+    "hash": "bb2ed344da1c37a3c82e324e4480c39f4ae0a1a0e179d227fdfc1b72916109cc",
     "instrument": {
       "adapter": {
         "id": "examples/triage-fleet/adapter.py",
@@ -60,7 +64,7 @@
         "version": "0.5.0"
       }
     },
-    "instrument_sha256": "fc30a7cbe4c92fa001c5695d52dad9447779e055ef63b07bf9cb6a7f0045ca39",
+    "instrument_sha256": "866af50ac4a3e7d90cab1e4ea6721d198d4d6698f934780228065ea31b10cd22",
     "runner": {
       "cpu_count": 32,
       "label": null,
@@ -75,11 +79,8 @@
       "python": "3.14.7",
       "release": "7.2.5-3-omarchy"
     },
-    "settings": {
-      "usd_per_mtok_in": 0.045,
-      "usd_per_mtok_out": 0.5
-    },
-    "settings_sha256": "a10a1204a758e9936a708dc552c333a23b047fc0f896547780220773b117e764",
+    "settings": {},
+    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
     "version": 5
   },
   "goal": "triage_orrery",

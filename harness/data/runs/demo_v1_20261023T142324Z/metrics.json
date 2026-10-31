@@ -10,7 +10,8 @@
   "dataset_id": "smoke_v1",
   "fingerprint": {
     "arm": {
-      "config_id": "demo_v1"
+      "config_id": "demo_v1",
+      "labels": null
     },
     "data": {
       "dataset_id": "smoke_v1",
@@ -46,7 +47,7 @@
       }
     },
     "deployment_sha256": "97312131d3d2f45fca9d47cca0d38f25f454b1f10f051abdb0b0d7c957fd6fa5",
-    "hash": "ec8a75b360bfd7c1d396980fbe1c10473245ec9937f29271a1550fb140d40c39",
+    "hash": "e3ef0535d5df8f120d4f1cc04252aaec563630a3997cb216f54b3c1ab7fd3971",
     "instrument": {
       "adapter": {
         "id": "scripts/adapter.py",
@@ -60,7 +61,7 @@
         "version": "0.4.0"
       }
     },
-    "instrument_sha256": "760148cf92178154c92065170eaca1bbe8583c4a4732fab4342f4a21ff785136",
+    "instrument_sha256": "faebb79f6d3096fbb48e925ccf904872841602e1804f3a24f0204c7cbf92c4c8",
     "runner": {
       "cpu_count": 32,
       "label": null,

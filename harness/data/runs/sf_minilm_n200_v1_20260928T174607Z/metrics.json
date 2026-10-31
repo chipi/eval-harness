@@ -19,7 +19,11 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "sf_minilm_n200_v1"
+      "config_id": "sf_minilm_n200_v1",
+      "labels": {
+        "family": "minilm",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "scifact_200",
@@ -88,7 +92,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "55bfd3e775ce09ed440b29c9e112196bb109602116754b89cb49f02e21416702",
+    "instrument_sha256": "59bd4823b11d4fa42d260bd525fa5bead37c6e7ee4bde26f5c0715bb9bebb8de",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -101,11 +105,9 @@
     "settings": {
       "corpus_id": "scifact",
       "encode_batch": 64,
-      "family": "minilm",
-      "price_tier": "free",
       "top_k": 100
     },
-    "settings_sha256": "a8fb6c5e6def16f796c638d1c03d05b89ef83bd6eb85a2273dd9bc5e01fb7c66",
+    "settings_sha256": "4c9798279b1d866e7ff9ba1a85d3342ec79ec502776aee5a509e5c10665ac826",
     "version": 5
   },
   "goal": "scientific_retrieval_scifact",

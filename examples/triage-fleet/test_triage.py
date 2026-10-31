@@ -206,6 +206,15 @@ if (
     res = adapter.call_system(json.dumps(r1["body"]), {"provider": "stub", "stub_disposition": "escalate"})
     got = json.loads(res.output)
     check("adapter: the fleet decides, through its gates", got.get("disposition") == "escalate", got)
+    fp_hook = adapter.fingerprint({"provider": "gateway", "model": "m"})
+    check(
+        "adapter: its fingerprint hook names the fleet's code by content and the system prompt's sha256",
+        len(fp_hook.get("fleet_code_sha256") or "") == 64
+        and len(fp_hook.get("prompt_sha256") or "") == 64
+        and fp_hook.get("id") == "m"
+        and fp_hook == adapter.fingerprint({"provider": "gateway", "model": "m"}),
+        fp_hook,
+    )
     check(
         "adapter: tokens recorded, cost unpriced without prices",
         res.tokens_in == 1000 and res.cost_usd is None,

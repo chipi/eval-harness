@@ -10,7 +10,13 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_llama_m_n200_v1"
+      "config_id": "db_llama_m_n200_v1",
+      "labels": {
+        "family": "llama",
+        "price_tier": "mid",
+        "usd_per_mtok_in": 0.12,
+        "usd_per_mtok_out": 0.3
+      }
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -75,7 +81,7 @@
       }
     },
     "deployment_sha256": "c1397007dc72f252696c8f211d54ff0c381428cbcbc47f512cd3bda7965c9641",
-    "hash": "736bf9c26438a8cf12d16d5bf204aae446ef1d84a8bf28772644a513380e0195",
+    "hash": "df0c10889f6953780a0b2cee8e9b0847ade67edc9840c54b674b82dde23c70f3",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -86,7 +92,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "fec8534672877f4568a4192238d3f523618f25f73fccefe00e7abb035341d09d",
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -106,18 +112,14 @@
         },
         "temperature": 0.0
       },
-      "family": "llama",
       "max_tokens": 200,
-      "price_tier": "mid",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 0.12,
-      "usd_per_mtok_out": 0.3
+      "temperature": 0.0
     },
-    "settings_sha256": "11a72b998b7685ac7ffa9ef35076838aa7567f1a1240639c45d42490920fb981",
+    "settings_sha256": "8c14a70088b07911142861674fddd4995b5eada33c659017f1a5f215c9879b04",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

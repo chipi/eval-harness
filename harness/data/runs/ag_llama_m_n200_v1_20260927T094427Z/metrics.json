@@ -10,7 +10,13 @@
   "dataset_id": "ag_news_200",
   "fingerprint": {
     "arm": {
-      "config_id": "ag_llama_m_n200_v1"
+      "config_id": "ag_llama_m_n200_v1",
+      "labels": {
+        "family": "llama",
+        "price_tier": "mid",
+        "usd_per_mtok_in": 0.12,
+        "usd_per_mtok_out": 0.3
+      }
     },
     "data": {
       "dataset_id": "ag_news_200",
@@ -65,7 +71,7 @@
       }
     },
     "deployment_sha256": "5aeaabfe613d70b0654e8eb9ad5a65cdf67f2bf50ff4e509d747466559e40c8a",
-    "hash": "edd8f464977922dbb1059a10882f7c29053e280af7785ebc1fec867aad30a6ab",
+    "hash": "cd9c53292a9445e31de24cf9aefc07cd07529b98fed2312b19e07fddbcdc284f",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -76,7 +82,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "237e3b2ea03b64d4a1e2a7cdd7d8839afbeb26b2197aea0b2dd44801664a6703",
+    "instrument_sha256": "4ce9ff50ed29a71be8d4a04f4f0ea3e3faa9a19979c7d104fe7b959ce65b864b",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -99,18 +105,14 @@
         },
         "temperature": 0.0
       },
-      "family": "llama",
       "max_tokens": 200,
-      "price_tier": "mid",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 0.12,
-      "usd_per_mtok_out": 0.3
+      "temperature": 0.0
     },
-    "settings_sha256": "06050e193c3512d9b6b8f24f007a719ddc204791045ccfd802e83d5a5b5399d0",
+    "settings_sha256": "8596728a1a33134fe522b6c7f9123a09395b873d893bcb4cc4b7eb74d2be66dc",
     "version": 5
   },
   "goal": "news_topic_ag",

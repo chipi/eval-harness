@@ -10,7 +10,11 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_keyword_n200_v1"
+      "config_id": "db_keyword_n200_v1",
+      "labels": {
+        "family": "baseline",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -70,7 +74,7 @@
       }
     },
     "deployment_sha256": "d5014ca285ccb90713c4dbdc27dbee91f5fcd82b77259842f53e9522e302c398",
-    "hash": "b704d7362d0f35d0f9395b7da31b97cd482d1c71da4261ebe16dab51305c2a82",
+    "hash": "6e3919e2a957652ed0f33b76f82509eb4632c3a506837fc1e2dd0bc8c9a3f761",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -81,7 +85,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "fec8534672877f4568a4192238d3f523618f25f73fccefe00e7abb035341d09d",
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -91,11 +95,8 @@
       "python": "3.11.8",
       "release": "24.6.0"
     },
-    "settings": {
-      "family": "baseline",
-      "price_tier": "free"
-    },
-    "settings_sha256": "80498a650b2ba3bad6dd41a29b2f9d21226d1978c74c79dbdec0e3d680a22e94",
+    "settings": {},
+    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

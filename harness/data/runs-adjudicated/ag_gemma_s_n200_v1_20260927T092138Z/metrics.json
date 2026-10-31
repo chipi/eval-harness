@@ -19,7 +19,13 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "ag_gemma_s_n200_v1"
+      "config_id": "ag_gemma_s_n200_v1",
+      "labels": {
+        "family": "gemma",
+        "price_tier": "small",
+        "usd_per_mtok_in": 0.07,
+        "usd_per_mtok_out": 0.15
+      }
     },
     "data": {
       "dataset_id": "ag_news_200",
@@ -89,7 +95,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "ba10a3d061dbeea0451b8b0f96b3b6e6c6815a12d05fd7769beff3f8ccb8dc71",
+    "instrument_sha256": "cdec71ac0739190e10c68874977e48b6b4d863fcc29700f4b8d380451255279d",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -112,18 +118,14 @@
         },
         "temperature": 0.0
       },
-      "family": "gemma",
       "max_tokens": 200,
-      "price_tier": "small",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 0.07,
-      "usd_per_mtok_out": 0.15
+      "temperature": 0.0
     },
-    "settings_sha256": "66c883cba764b79d34c3d391ed0121f08ae9d33e81235f19fe4c4081e48ff66e",
+    "settings_sha256": "8596728a1a33134fe522b6c7f9123a09395b873d893bcb4cc4b7eb74d2be66dc",
     "version": 5
   },
   "goal": "news_topic_ag",

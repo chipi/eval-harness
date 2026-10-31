@@ -10,7 +10,11 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_unievalpub_n100_v1"
+      "config_id": "se_unievalpub_n100_v1",
+      "labels": {
+        "family": "unieval",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -65,7 +69,7 @@
       }
     },
     "deployment_sha256": "05cc027da9273ed3be353b051945f03a85cc43de814ceea8483374b7eebfcf9d",
-    "hash": "b67392d32aacd803b53d3d823f81106c3d0b1fd803d3c7ebdf02de7a02021384",
+    "hash": "a3b41a56cf8ab1c3005e3b65b899dc81c95a1a03b883c89a213d585e784a6795",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -76,7 +80,7 @@
         "dirty": true
       }
     },
-    "instrument_sha256": "9531ee37043593afae88cb3a367c86bf0ab5e5664f474d6cc5110d5dfb31c980",
+    "instrument_sha256": "48aaf589fefcf826e8fe5f98fa9ba5b2cc7933e9233edd414a42f2f52784aa21",
     "runner": {
       "cpu_count": 32,
       "label": "omarchy",
@@ -88,11 +92,9 @@
     },
     "settings": {
       "batch_size": 8,
-      "family": "unieval",
-      "inputs": "published",
-      "price_tier": "free"
+      "inputs": "published"
     },
-    "settings_sha256": "cfbdc597387cae446cb6148aafcaf98623e06967422cbfd792e6dfc52f67556d",
+    "settings_sha256": "d597f54bf59c76bdcdff8f190a33d899ccfc63b160cda2786420603b85c45e50",
     "version": 5
   },
   "goal": "summary_judge_summeval",

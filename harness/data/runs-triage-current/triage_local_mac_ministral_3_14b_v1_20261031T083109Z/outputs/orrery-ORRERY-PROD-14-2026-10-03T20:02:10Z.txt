@@ -1,0 +1,1 @@
+{"disposition": "escalate", "model_disposition": "escalate", "question": "triager did not reach a disposition", "reason": "no terminal decision: triager call failed: HTTP Error 500: Internal Server Error (twice)"}

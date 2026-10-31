@@ -10,7 +10,11 @@
   "dataset_id": "ag_news_200",
   "fingerprint": {
     "arm": {
-      "config_id": "ag_keyword_n200_v1"
+      "config_id": "ag_keyword_n200_v1",
+      "labels": {
+        "family": "baseline",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "ag_news_200",
@@ -62,7 +66,7 @@
       }
     },
     "deployment_sha256": "fba7981ed0dc93d5479f237ab2980bb0eaffc4592e614fbbe861adef962ca667",
-    "hash": "2f652510f443ed330db3e715d52c4089724d8bc1d400ee7511da989166f498c0",
+    "hash": "f489a2c3e1260fe92f576a174c8da27e3621f81118331e971dbb73694665b8cd",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -73,7 +77,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "237e3b2ea03b64d4a1e2a7cdd7d8839afbeb26b2197aea0b2dd44801664a6703",
+    "instrument_sha256": "4ce9ff50ed29a71be8d4a04f4f0ea3e3faa9a19979c7d104fe7b959ce65b864b",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -83,11 +87,8 @@
       "python": "3.11.8",
       "release": "24.6.0"
     },
-    "settings": {
-      "family": "baseline",
-      "price_tier": "free"
-    },
-    "settings_sha256": "80498a650b2ba3bad6dd41a29b2f9d21226d1978c74c79dbdec0e3d680a22e94",
+    "settings": {},
+    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
     "version": 5
   },
   "goal": "news_topic_ag",

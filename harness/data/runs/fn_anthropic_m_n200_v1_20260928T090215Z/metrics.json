@@ -24,7 +24,13 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "fn_anthropic_m_n200_v1"
+      "config_id": "fn_anthropic_m_n200_v1",
+      "labels": {
+        "family": "anthropic",
+        "price_tier": "mid",
+        "usd_per_mtok_in": 3.0,
+        "usd_per_mtok_out": 15.0
+      }
     },
     "data": {
       "dataset_id": "few_nerd_280",
@@ -93,7 +99,7 @@
         "dirty": true
       }
     },
-    "instrument_sha256": "d06f81c7832f4523a73ab88db8009b61514e012d29081d0ae119f47b490aa701",
+    "instrument_sha256": "e4ee62504d4173b243fbf8bffe949f8caf93698b3e3a175a76472b6348fe3522",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -119,18 +125,14 @@
         },
         "temperature": 0.0
       },
-      "family": "anthropic",
       "max_tokens": 600,
-      "price_tier": "mid",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 3.0,
-      "usd_per_mtok_out": 15.0
+      "temperature": 0.0
     },
-    "settings_sha256": "05b4cb645ca2443f04fa4532d2faebcb581e0a9fd4f8a65f4d55830370ef453a",
+    "settings_sha256": "e2b8cf6f3e5f9d1e393b4013a011d2b3306ad9fbd4c5dd0a0c14ca69c7d86cec",
     "version": 5
   },
   "goal": "entities_few_nerd",

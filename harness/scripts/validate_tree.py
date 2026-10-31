@@ -64,8 +64,10 @@ from evaluation_harness._common import (
     ROOT,
     RUNS,
     SCHEMAS,
+    THROWAWAY_RUNS,
     data_rel,
     goal_policy,
+    ignored_by_git,
     load_goals,
     load_module,
     lower_is_better,
@@ -1252,6 +1254,21 @@ def v18_model_records() -> None:
     check(f"V18 model records — {len(recs)} record(s)", not bad, f"{len(bad)} problem(s)")
 
 
+def note_uncommitted_runs() -> None:
+    """A note, never a failure: finished runs in a runs directory git ignores. They are on this disk only;
+    a fresh clone, CI and the published catalog never see them, so a result kept there splits the record
+    in two (the self-hosted triage runs sat in data/runs-local that way). Throwaway names are skipped."""
+    for d in sorted(DATA.glob("runs*")):
+        if not d.is_dir() or d.name.startswith(THROWAWAY_RUNS) or not ignored_by_git(d):
+            continue
+        n = sum(1 for r in d.iterdir() if (r / "metrics.json").is_file())
+        if n:
+            notes.append(
+                f"{data_rel(d)}: {n} finished run(s) that git ignores, so they are not committed and no catalog "
+                "shows them. Move measured runs to data/runs, or re-allow a derived set in .gitignore."
+            )
+
+
 def main() -> int:
     """Run all integrity checks over the eval tree; exit 1 if any fails."""
     # `--help` prints help. It used to fall through and run the whole validation, which
@@ -1281,6 +1298,7 @@ def main() -> int:
         v16_references,
         v17_captures,
         v18_model_records,
+        note_uncommitted_runs,
     ):
         fn()
     for n in notes:

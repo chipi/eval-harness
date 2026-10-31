@@ -1,0 +1,138 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "dfb8cca7e5fd560fa2b1c7f4cbfc963d07e6656e",
+    "source": "git"
+  },
+  "config_id": "triage_local_x3_llama31_8b_v1",
+  "created_at": "2026-10-30T15:07:38Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_local_x3_llama31_8b_v1",
+      "labels": {
+        "usd_per_mtok_in": 0,
+        "usd_per_mtok_out": 0
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled",
+      "items_sha256": "d428aca49adc8e762dcbbcad6c9a1dba1ac4e4e3315ff26025af975faba1176a",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled",
+      "reference_tier": "gold",
+      "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
+    },
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": "llama3.1:8b@x3",
+      "in_process": false,
+      "libraries": null,
+      "model": "llama3.1:8b",
+      "provider": "gateway",
+      "server": {
+        "name": null,
+        "settings": null,
+        "url": "http://127.0.0.1:11434/v1/chat/completions",
+        "version": null
+      },
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": "x3"
+      }
+    },
+    "deployment_sha256": "168b195b5f38f3558789ebf76f302d3a14cc9507cef5a6291dcee96519bd6f5f",
+    "hash": "3ddd9408b38b669c356036383357ff18d921799afd10ed395175884e3a38f4c2",
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "9e899d6853cb4065ab07f1d44c08120d0a19ad282abdfdc0e95a3e63262cca81"
+      },
+      "harness": {
+        "code_sha256": "0ab386969208f46c7448153422d5a5ab07833d963869b69fc216a6cd28feb110",
+        "commit": "dfb8cca7e5fd",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "instrument_sha256": "881169d7397bb940df048ea000fa9384e2471bd9860717dbcaa02d6ddf9daa33",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {},
+    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "version": 5
+  },
+  "goal": "triage_orrery",
+  "metric_directions": {
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 65,
+  "params": {
+    "machine": "x3",
+    "model": "llama3.1:8b",
+    "provider": "gateway",
+    "url": "http://127.0.0.1:11434/v1/chat/completions",
+    "usd_per_mtok_in": 0,
+    "usd_per_mtok_out": 0
+  },
+  "primary_metric": "false_dismiss",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "triage_local_x3_llama31_8b_v1_20261030T150117Z",
+  "scores": {
+    "correct": 0.584615,
+    "cost_usd": 0.0,
+    "escalated": 0.184615,
+    "false_alarm": 0.870968,
+    "false_dismiss": 0.0,
+    "latency_ms": 5836.822282,
+    "model_correct": 0.461538,
+    "model_escalated": 0.0,
+    "model_false_alarm": 0.774194,
+    "model_false_dismiss": 0.264706,
+    "n_probes": 2.769231,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 5275.615385,
+    "tokens_out": 214.276923,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 342915.0,
+    "total_tokens_out": 13928.0
+  }
+}

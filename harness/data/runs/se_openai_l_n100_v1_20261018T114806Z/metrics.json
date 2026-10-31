@@ -10,7 +10,13 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_openai_l_n100_v1"
+      "config_id": "se_openai_l_n100_v1",
+      "labels": {
+        "family": "openai",
+        "price_tier": "large",
+        "usd_per_mtok_in": 2.5,
+        "usd_per_mtok_out": 15.0
+      }
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -56,7 +62,7 @@
       }
     },
     "deployment_sha256": "4139572b4aaf8898eca9cc953114e199ab16fb7474da65e70a28435e4ed43793",
-    "hash": "9c81b20331693110b9e5e153c96664684b385952f988e0b9e17200f76d6c07ab",
+    "hash": "3d48379383f298cdf7cadb481de5ba86c0355b02b496b635028eaea8ebcd14c6",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -67,7 +73,7 @@
         "dirty": true
       }
     },
-    "instrument_sha256": "0ca253fac61afcc5a71d2722a8d085090fb72fcb4c039839291aa5e09d28f428",
+    "instrument_sha256": "e6437e0946ecf508a329ab2c33c286e0448540e7def56433a515aa168eecc221",
     "runner": {
       "cpu_count": 32,
       "label": "omarchy",
@@ -91,18 +97,14 @@
         },
         "temperature": 0.0
       },
-      "family": "openai",
       "max_tokens": 1500,
-      "price_tier": "large",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 2.5,
-      "usd_per_mtok_out": 15.0
+      "temperature": 0.0
     },
-    "settings_sha256": "6c44836e3c00da7df73489873ba12ead1249c5221635f27e19bd45977ebcb956",
+    "settings_sha256": "88319b7c02881c89e35207aafde4204cc1d8a021eb01acf2e39f027f18118b8a",
     "version": 5
   },
   "goal": "summary_judge_summeval",

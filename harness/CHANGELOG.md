@@ -100,6 +100,13 @@ that can move a result is never a patch release without saying so under **Change
 - **The site's links to its home page** point at `/`, never `index.html` (analytics counted the two
   apart, search engines saw two addresses for one page), and each of its pages names its own address
   as `<link rel="canonical">` and `og:url`, checked by `site/build.py --check`.
+- **Runs written where git does not keep them are named.** `EVAL_RUNS_DIR` pointed at any
+  `data/runs-*` directory that `.gitignore` does not re-allow wrote runs that were never committed
+  and that no catalog showed, without a word: 35 self-hosted triage runs sat in `data/runs-local`
+  that way. `experiment-run` and `rescore` now print a `WARNING` when they write to such a directory
+  (throwaway `runs-smoke*` and `runs-tune*` stay silent), and `evh validate` notes one that holds
+  finished runs. The RUNBOOK's scratch example is `data/runs-smoke`, the throwaway name git already
+  ignores.
 
 ## 0.5.0 — 2026-10-29
 

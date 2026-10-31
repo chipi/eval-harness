@@ -49,6 +49,7 @@ from evaluation_harness._common import (
     die,
     how,
     read_json,
+    warn_if_ignored,
     write_json,
 )
 from evaluation_harness._fingerprint import references_digest, seal
@@ -337,6 +338,7 @@ def main() -> int:
     item_source = _item_sources(args.dataset_id)
     print(f"rescoring {len(todo)} run(s) -> {args.out}")
     args.out.mkdir(parents=True, exist_ok=True)
+    warn_if_ignored(args.out)
 
     adapters: dict[str, Any] = {}
     written = 0

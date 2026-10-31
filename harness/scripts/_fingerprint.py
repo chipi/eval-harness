@@ -332,9 +332,24 @@ def _model_identity(
     return out
 
 
+#: Params that describe an arm for its readers and do not change what the system does: its prices
+#: (cost is computed from them after the call) and its labels. Recorded as the arm's labels, outside the hash.
+LABEL_KEYS = ("usd_per_mtok_in", "usd_per_mtok_out", "price_tier", "family", "label", "notes")
+
+
 def settings_of(params: dict[str, Any] | None) -> dict[str, Any]:
-    """How the system was asked: every param that is neither a deployment key nor a credential."""
-    return {k: v for k, v in identity_params(dict(params or {})).items() if k not in DEPLOYMENT_KEYS}
+    """How the system was asked: every param that changes what the system does, so neither a deployment
+    key, a credential, nor a label (LABEL_KEYS)."""
+    return {
+        k: v
+        for k, v in identity_params(dict(params or {})).items()
+        if k not in DEPLOYMENT_KEYS and k not in LABEL_KEYS
+    }
+
+
+def labels_of(params: dict[str, Any] | None) -> dict[str, Any]:
+    """The arm's labels and prices (LABEL_KEYS), recorded with the arm and outside every hash."""
+    return {k: v for k, v in dict(params or {}).items() if k in LABEL_KEYS}
 
 
 #: What an adapter's hook may declare about HOW the system was asked, not which system it is: settings.
@@ -526,14 +541,18 @@ def deployment_of(
     """The deployment, from the best source there is: the model record and deployment the arm names,
     else the adapter's declared identity, else the params."""
     cfg = cfg or {}
+    declared = _model_identity(hook, params)
     if cfg.get("model_record") and cfg.get("deployment"):
         from evaluation_harness import _models  # noqa: PLC0415
 
         rec = _models.find(data_dir, cfg["model_record"])
         entry = _models.deployment_of(rec, cfg["deployment"]) if rec else None
         if entry is not None:
-            return _record_deployment(cfg["model_record"], entry, params)
-    declared = _model_identity(hook, params)
+            dep = _record_deployment(cfg["model_record"], entry, params)
+            # The record says where and as which build; the hook still says what only the adapter knows
+            # (its prompt's hash, the code it replays), so a record never hides those.
+            dep["declared"] = _declared_extra(declared, dep["model"])
+            return dep
     if declared.get("identity_declared"):
         return _adapter_deployment(declared, params, libraries)
     return _params_deployment(params, declared)
@@ -545,11 +564,26 @@ def part_sha256(part: Any) -> str:
     return hashlib.sha256(json.dumps(part, sort_keys=True, default=str).encode()).hexdigest()
 
 
+def hashed_view(part: str, value: Any) -> Any:
+    """What of a part its hash covers. The instrument is its code, by behaviour: the harness's
+    `code_sha256` and the adapter's `sha256`. The commit, a dirty tree, the version string, an installed
+    copy and the adapter's path are provenance, recorded beside it: two runs of the same code made on
+    different days are the same instrument. Every other part is hashed whole."""
+    if part != "instrument" or not isinstance(value, dict):
+        return value
+    harness = value.get("harness") or {}
+    adapter = value.get("adapter") or {}
+    return {
+        "harness": {"code_sha256": harness.get("code_sha256")},
+        "adapter": {"sha256": adapter.get("sha256")},
+    }
+
+
 def seal(fp: dict[str, Any], *, whole: bool = True) -> dict[str, Any]:
     """Fill in each hashed part's sha256 and, when `whole`, the one hash over the four. A derived run
     (rescored, judged) keeps the whole hash null: its parts were not measured together."""
     for part in PARTS:
-        fp[f"{part}_sha256"] = part_sha256(fp.get(part))
+        fp[f"{part}_sha256"] = part_sha256(hashed_view(part, fp.get(part)))
     fp["hash"] = combined_hash(fp) if whole else None
     return fp
 
@@ -622,7 +656,7 @@ def build_fingerprint(
         "deployment": deployment,
         "settings": settings_of(params),
         "runner": _runner_identity(None if deployment["in_process"] else libraries),
-        "arm": {"config_id": config_id},
+        "arm": {"config_id": config_id, "labels": labels_of(params) or None},
     }
     split_declared(fp["deployment"], fp["settings"])
     return seal(fp)

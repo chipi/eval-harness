@@ -19,7 +19,11 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "ag_bert_base_fy_n200_v1"
+      "config_id": "ag_bert_base_fy_n200_v1",
+      "labels": {
+        "family": "bert",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "ag_news_200",
@@ -92,7 +96,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "9c9f990e20adc6efc64be21984d2bb41ac2e162ef15d3b60aa3e97a623504488",
+    "instrument_sha256": "cdec71ac0739190e10c68874977e48b6b4d863fcc29700f4b8d380451255279d",
     "runner": {
       "cpu_count": 4,
       "label": null,
@@ -103,16 +107,14 @@
       "release": "6.18.44-fc-v50"
     },
     "settings": {
-      "family": "bert",
       "label_order": [
         "World",
         "Sports",
         "Business",
         "Sci/Tech"
-      ],
-      "price_tier": "free"
+      ]
     },
-    "settings_sha256": "6b6e6358522237bd145540a1e8ddace0f27dc47b115f416193722871afc0dcb5",
+    "settings_sha256": "43d3d5a6236eb57db905910b73121f6449b8eae837538ab3505a6cb90bcc9f29",
     "version": 5
   },
   "goal": "news_topic_ag",

@@ -10,7 +10,11 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_coverage_n100_v1"
+      "config_id": "se_coverage_n100_v1",
+      "labels": {
+        "family": "coverage",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -50,7 +54,7 @@
       }
     },
     "deployment_sha256": "cf932e7a82bdfa652a88ccb859c42f7a917dd63c62ad2dd8ac64e322b9573995",
-    "hash": "fa667b75331fcdb9a046929c3bda53f42bc3f1d35ba434d04e0fa01cd8d2f040",
+    "hash": "c25c9f0141aedbfa06a94a4084c45a2a231bd3ed3b1487a6f6cf784db6c9c967",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -61,7 +65,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "5bfd53d53056c63a4480e58d49eef29bff5f22b3b292b07580f8c3085d89fd52",
+    "instrument_sha256": "e6437e0946ecf508a329ab2c33c286e0448540e7def56433a515aa168eecc221",
     "runner": {
       "cpu_count": 4,
       "label": null,
@@ -77,11 +81,8 @@
       "python": "3.11.15",
       "release": "6.18.44-fc-v114"
     },
-    "settings": {
-      "family": "coverage",
-      "price_tier": "free"
-    },
-    "settings_sha256": "44f85f95ea02cc5ba7fb9e1988158f7d7becca45c8e859ed4a477327848dbf90",
+    "settings": {},
+    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
     "version": 5
   },
   "goal": "summary_judge_summeval",

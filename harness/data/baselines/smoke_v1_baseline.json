@@ -7,7 +7,7 @@
     "source": "git"
   },
   "dataset_id": "smoke_v1",
-  "fingerprint_hash": "ec8a75b360bfd7c1d396980fbe1c10473245ec9937f29271a1550fb140d40c39",
+  "fingerprint_hash": "e3ef0535d5df8f120d4f1cc04252aaec563630a3997cb216f54b3c1ab7fd3971",
   "promoted_at": "2026-10-23T14:23:35Z",
   "promoted_from": "demo_v1_20261023T142324Z",
   "reason": "The worked example a fresh clone ships: the bundled demo arm on smoke_v1, so V6 and the walked loop resolve inside the committed set.",

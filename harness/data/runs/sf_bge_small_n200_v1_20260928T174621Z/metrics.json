@@ -19,7 +19,11 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "sf_bge_small_n200_v1"
+      "config_id": "sf_bge_small_n200_v1",
+      "labels": {
+        "family": "bge",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "scifact_200",
@@ -88,7 +92,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "55bfd3e775ce09ed440b29c9e112196bb109602116754b89cb49f02e21416702",
+    "instrument_sha256": "59bd4823b11d4fa42d260bd525fa5bead37c6e7ee4bde26f5c0715bb9bebb8de",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -102,12 +106,10 @@
       "corpus_id": "scifact",
       "doc_prefix": "",
       "encode_batch": 64,
-      "family": "bge",
-      "price_tier": "free",
       "query_prefix": "Represent this sentence for searching relevant passages: ",
       "top_k": 100
     },
-    "settings_sha256": "e35447f52c67b908d9637d3bf0c82b4f149ec7db0785926504c93555e75b8f6b",
+    "settings_sha256": "31577d2ca0ab26ec7d0b509d44f86de3bdb7af6810ba891db70759fd5bdedeb8",
     "version": 5
   },
   "goal": "scientific_retrieval_scifact",

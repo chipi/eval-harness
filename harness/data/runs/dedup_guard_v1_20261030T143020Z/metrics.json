@@ -10,7 +10,8 @@
   "dataset_id": "fleet_dedup_v1",
   "fingerprint": {
     "arm": {
-      "config_id": "dedup_guard_v1"
+      "config_id": "dedup_guard_v1",
+      "labels": null
     },
     "data": {
       "dataset_id": "fleet_dedup_v1",
@@ -46,7 +47,7 @@
       }
     },
     "deployment_sha256": "a6d874bdfb82800a8a502d612ea24fa10b57cf9a6b88a734524bf56eb18d0f9e",
-    "hash": "e9b379dd62f7ed4f6a2189ef5ef144203d6cdb3b09e40c05f2881908b06f62f8",
+    "hash": "6b9768000001eb2a41ad5daacd7f1f40656718530f4f42f0e7de60858454aecc",
     "instrument": {
       "adapter": {
         "id": "examples/signal-fleet-dedup/adapter.py",
@@ -60,7 +61,7 @@
         "version": "0.5.0"
       }
     },
-    "instrument_sha256": "4a541d8b2f27cffde4265f3e81f101463d240203c2e21a394fabb1e560434aa5",
+    "instrument_sha256": "da6ea413c336bb24942353a81d092db0cef8a320779d33b03eb1ee8f1e1508c3",
     "runner": {
       "cpu_count": 32,
       "label": null,

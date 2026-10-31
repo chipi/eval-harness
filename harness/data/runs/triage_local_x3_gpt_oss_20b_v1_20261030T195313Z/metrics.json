@@ -1,0 +1,158 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "db4bbc22e00d9373d830a0d7ca62f00b28844436",
+    "source": "git"
+  },
+  "config_id": "triage_local_x3_gpt_oss_20b_v1",
+  "created_at": "2026-10-30T20:11:31Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_local_x3_gpt_oss_20b_v1",
+      "labels": {
+        "usd_per_mtok_in": 0,
+        "usd_per_mtok_out": 0
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled",
+      "items_sha256": "d428aca49adc8e762dcbbcad6c9a1dba1ac4e4e3315ff26025af975faba1176a",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled",
+      "reference_tier": "gold",
+      "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
+    },
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": "gpt-oss:20b@x3",
+      "in_process": false,
+      "libraries": null,
+      "model": "gpt-oss:20b",
+      "provider": "gateway",
+      "server": {
+        "name": null,
+        "settings": null,
+        "url": "http://127.0.0.1:11434/v1/chat/completions",
+        "version": null
+      },
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": "x3"
+      }
+    },
+    "deployment_sha256": "4808586a70103cf6ad67e4eb9db8c038a2e5cf3560b08d8a55ec768830c0e43e",
+    "hash": "fcb8d76b23908938726e6899dd927383e8b02b0fbc2e4c317eeb2bcc3c8522b8",
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "663c89dd6a24c414ce4229c5b067581cced2becf0a44e4660847dce8420c564a"
+      },
+      "harness": {
+        "code_sha256": "0ab386969208f46c7448153422d5a5ab07833d963869b69fc216a6cd28feb110",
+        "commit": "db4bbc22e00d",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "instrument_sha256": "e5be13869598e40f100e34ad0809f29d19e9d5ceefc488fd8dfdca11b04c3629",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "call_timeout_s": 600
+    },
+    "settings_sha256": "c3b758820d4155159fb13368136fcad4d28504b0f3f210b73bb02994f8bd7c81",
+    "version": 5
+  },
+  "goal": "triage_orrery",
+  "metric_directions": {
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "model_triage_cost": "lower",
+    "no_decision": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower",
+    "triage_cost": "lower",
+    "triage_cost_p10": "lower",
+    "triage_cost_p3": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 65,
+  "params": {
+    "call_timeout_s": 600,
+    "machine": "x3",
+    "model": "gpt-oss:20b",
+    "provider": "gateway",
+    "url": "http://127.0.0.1:11434/v1/chat/completions",
+    "usd_per_mtok_in": 0,
+    "usd_per_mtok_out": 0
+  },
+  "primary_metric": "triage_cost",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "resume": {
+    "carried_extra_keys": [
+      "n_probes",
+      "table_miss"
+    ],
+    "replayed_items": 1
+  },
+  "run_id": "triage_local_x3_gpt_oss_20b_v1_20261030T195313Z",
+  "scores": {
+    "correct": 0.661538,
+    "cost_usd": 0.0,
+    "escalated": 0.415385,
+    "false_alarm": 0.677419,
+    "false_dismiss": 0.029412,
+    "latency_ms": 17235.040921,
+    "model_correct": 0.584615,
+    "model_escalated": 0.246154,
+    "model_false_alarm": 0.580645,
+    "model_false_dismiss": 0.264706,
+    "model_triage_cost": 0.969231,
+    "n_probes": 0.738462,
+    "no_decision": 0.25,
+    "resumed": 0.015385,
+    "table_miss": 0.0,
+    "tokens_in": 2897.571429,
+    "tokens_out": 721.734694,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 141981.0,
+    "total_tokens_out": 35365.0,
+    "triage_cost": 0.4,
+    "triage_cost_p10": 0.476923,
+    "triage_cost_p3": 0.369231
+  }
+}

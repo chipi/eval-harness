@@ -10,7 +10,13 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_mistral_m_n200_v1"
+      "config_id": "db_mistral_m_n200_v1",
+      "labels": {
+        "family": "mistral",
+        "price_tier": "mid",
+        "usd_per_mtok_in": 0.4,
+        "usd_per_mtok_out": 2.0
+      }
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -75,7 +81,7 @@
       }
     },
     "deployment_sha256": "36df2a4889b229af5ad03d6ed0fe4ae9b6205c749f31f313d0cd19a0a4dd89ad",
-    "hash": "44a6e274729f71eaf6ea7cfa5d0fe9eaffa9cbac4fe1ea145ff3ed606091233b",
+    "hash": "1858aa19f0dd2ad238ab14ac1819cde84497490a469ccb2df1fbe6a61c212de9",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -86,7 +92,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "fec8534672877f4568a4192238d3f523618f25f73fccefe00e7abb035341d09d",
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -106,18 +112,14 @@
         },
         "temperature": 0.0
       },
-      "family": "mistral",
       "max_tokens": 200,
-      "price_tier": "mid",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 0.4,
-      "usd_per_mtok_out": 2.0
+      "temperature": 0.0
     },
-    "settings_sha256": "d04bfe6bc813c35a71bcbd35884bdbc388fad81543144a77d3cf3f8ff4bdf59b",
+    "settings_sha256": "8c14a70088b07911142861674fddd4995b5eada33c659017f1a5f215c9879b04",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

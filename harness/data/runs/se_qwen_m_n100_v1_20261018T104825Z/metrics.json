@@ -10,7 +10,13 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_qwen_m_n100_v1"
+      "config_id": "se_qwen_m_n100_v1",
+      "labels": {
+        "family": "qwen",
+        "price_tier": "mid",
+        "usd_per_mtok_in": 0.2,
+        "usd_per_mtok_out": 0.8
+      }
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -56,7 +62,7 @@
       }
     },
     "deployment_sha256": "ff53b2e346ca91f4cfd1abf5cf03e67f7051894f3020b456fb6cbfa55fc43bbd",
-    "hash": "2725efbe1209ed3a74e8cf87da8db8055744e1a70bc2c5cc205de4c7f8f34b2e",
+    "hash": "e460ddbee19d61ed3e9ff34f20566bd31b230123e92aa29d74ea42ea8b47f221",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -67,7 +73,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "b0c66ef6862893c2f1ba3d8a6e663f9f63c7645ed783e2242849e6998e91ba8b",
+    "instrument_sha256": "e6437e0946ecf508a329ab2c33c286e0448540e7def56433a515aa168eecc221",
     "runner": {
       "cpu_count": 32,
       "label": "omarchy",
@@ -91,18 +97,14 @@
         },
         "temperature": 0.0
       },
-      "family": "qwen",
       "max_tokens": 1500,
-      "price_tier": "mid",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 0.2,
-      "usd_per_mtok_out": 0.8
+      "temperature": 0.0
     },
-    "settings_sha256": "610b43c7064243519ac608f2a1549283cfdb7ba57e1b61ca8c920353fc765f37",
+    "settings_sha256": "88319b7c02881c89e35207aafde4204cc1d8a021eb01acf2e39f027f18118b8a",
     "version": 5
   },
   "goal": "summary_judge_summeval",

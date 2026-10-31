@@ -10,7 +10,11 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_bartscore_n100_v1"
+      "config_id": "se_bartscore_n100_v1",
+      "labels": {
+        "family": "bart",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -60,7 +64,7 @@
       }
     },
     "deployment_sha256": "0dbef56c61cf883573108eeabeb7e461559ea681a1b63dc467bc7ab1ae7143c2",
-    "hash": "ae90eba505dd1e6f880f23f97ed5328fbe210faf6d820275608aa6dbc64e8530",
+    "hash": "ea3f9ac0cc667e872c3c4fe9266f17e530bd683aa3a632c26a730f89521b9c1f",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -71,7 +75,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "cfe968562af4623798d330cf154928b8814da3b0325a8b40613b24df6d6c9b44",
+    "instrument_sha256": "e6437e0946ecf508a329ab2c33c286e0448540e7def56433a515aa168eecc221",
     "runner": {
       "cpu_count": 4,
       "label": null,
@@ -81,11 +85,8 @@
       "python": "3.11.15",
       "release": "6.18.44-fc-v114"
     },
-    "settings": {
-      "family": "bart",
-      "price_tier": "free"
-    },
-    "settings_sha256": "7439b81fe5eaea4efc62ac7567355aa4dedfc8e2538c4bd4bf99f890031c68f8",
+    "settings": {},
+    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
     "version": 5
   },
   "goal": "summary_judge_summeval",

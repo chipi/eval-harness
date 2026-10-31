@@ -65,6 +65,7 @@ from evaluation_harness._common import (
     load_goals,
     now,
     read_json,
+    warn_if_ignored,
     write_json,
     write_text_atomic,
 )
@@ -717,6 +718,7 @@ def main() -> int:
         )
 
     resume_dir, prior_rows = _resume_source(args.resume, cfg)
+    warn_if_ignored(RUNS)
 
     made: list[Path] = []
 
@@ -906,6 +908,7 @@ def main() -> int:
         # usable partial results" from "produced nothing".
         print("\n  Stopped early by the cost cap — exit 2. Partial results above are kept.")
         return 2
+    warn_if_ignored(RUNS)
     return 0
 
 

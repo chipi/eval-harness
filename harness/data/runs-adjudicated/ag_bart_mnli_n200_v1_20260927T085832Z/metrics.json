@@ -19,7 +19,11 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "ag_bart_mnli_n200_v1"
+      "config_id": "ag_bart_mnli_n200_v1",
+      "labels": {
+        "family": "bart",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "ag_news_200",
@@ -89,7 +93,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "ba10a3d061dbeea0451b8b0f96b3b6e6c6815a12d05fd7769beff3f8ccb8dc71",
+    "instrument_sha256": "cdec71ac0739190e10c68874977e48b6b4d863fcc29700f4b8d380451255279d",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -100,11 +104,9 @@
       "release": "24.6.0"
     },
     "settings": {
-      "family": "bart",
-      "hypothesis_template": "This news article is about {}.",
-      "price_tier": "free"
+      "hypothesis_template": "This news article is about {}."
     },
-    "settings_sha256": "19ca515b59080e5605ca02447292cb15e238a8a198d64d2a3e8de95e88105cb3",
+    "settings_sha256": "394ced68ec9f0ffe23ae374b2462446c3c854b6d35409f359012cc820bb958b2",
     "version": 5
   },
   "goal": "news_topic_ag",

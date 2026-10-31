@@ -207,6 +207,18 @@ data/runs-adjudicated/*/*
 !data/runs-adjudicated/*/outputs/**
 data/runs-adjudicated/*/outputs/_rows.jsonl
 
+# data/runs-triage-current/ — every triage run re-scored ($0) with the triage adapter's current scorer.
+# The adapter's score() changed seven times while the experiment ran, so the runs in data/runs carry
+# seven scorings; these carry one, and the goal page and `evh goals` read them. Re-made with
+# `evh rescore --dataset-id orrery_triage_v1_labelled --match triage_ --out data/runs-triage-current`.
+!data/runs-triage-current/
+data/runs-triage-current/*/*
+!data/runs-triage-current/*/metrics.json
+!data/runs-triage-current/*/predictions.jsonl
+!data/runs-triage-current/*/outputs
+!data/runs-triage-current/*/outputs/**
+data/runs-triage-current/*/outputs/_rows.jsonl
+
 # data/runs-silver/ — the CNN arms re-scored ($0) against silver/cnn_dailymail_200, the frontier
 # arm's summaries: a silver group beside gold on the goal page, where silver's family bias shows.
 # Their outputs are the same bytes as the measured runs' in data/runs.

@@ -24,7 +24,11 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "fn_span_marker_n200_v1"
+      "config_id": "fn_span_marker_n200_v1",
+      "labels": {
+        "family": "span_marker",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "few_nerd_280",
@@ -97,7 +101,7 @@
         "dirty": true
       }
     },
-    "instrument_sha256": "d06f81c7832f4523a73ab88db8009b61514e012d29081d0ae119f47b490aa701",
+    "instrument_sha256": "e4ee62504d4173b243fbf8bffe949f8caf93698b3e3a175a76472b6348fe3522",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -108,11 +112,9 @@
       "release": "24.6.0"
     },
     "settings": {
-      "coarsen": true,
-      "family": "span_marker",
-      "price_tier": "free"
+      "coarsen": true
     },
-    "settings_sha256": "50d68d0a989d944a998b8d55ff70695876b34ae05c34e1cfe5ae1b17fe13e3b6",
+    "settings_sha256": "f0c92dc8c06bfbc569cf814f9afa1dc410244f2cedba166b0b7d1225800c3bcf",
     "version": 5
   },
   "goal": "entities_few_nerd",

@@ -10,7 +10,13 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_anthropic_l_n200_v1"
+      "config_id": "db_anthropic_l_n200_v1",
+      "labels": {
+        "family": "anthropic",
+        "price_tier": "large",
+        "usd_per_mtok_in": 5.0,
+        "usd_per_mtok_out": 25.0
+      }
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -75,7 +81,7 @@
       }
     },
     "deployment_sha256": "a2b5a469dfbbb2be8c44c69bcc8736f5ac8c9721f1bad0784b88b9ae30d416c1",
-    "hash": "4ea7d69d424e58187186384981bf35c0edec8bbe43182d10f7caeb8a0bf08d1f",
+    "hash": "7dd447dddb0a21721029ab59647b4c1c0fcd02050a7d52aa5647811c71616eb5",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -86,7 +92,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "fec8534672877f4568a4192238d3f523618f25f73fccefe00e7abb035341d09d",
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -106,18 +112,14 @@
         },
         "temperature": 0.0
       },
-      "family": "anthropic",
       "max_tokens": 200,
-      "price_tier": "large",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 5.0,
-      "usd_per_mtok_out": 25.0
+      "temperature": 0.0
     },
-    "settings_sha256": "7be0c5792cb98a241428c41231b4fe4e0a44ba7c908c77661c7dd47d3e41e741",
+    "settings_sha256": "8c14a70088b07911142861674fddd4995b5eada33c659017f1a5f215c9879b04",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

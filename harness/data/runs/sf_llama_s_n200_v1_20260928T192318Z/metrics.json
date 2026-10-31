@@ -19,7 +19,13 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "sf_llama_s_n200_v1"
+      "config_id": "sf_llama_s_n200_v1",
+      "labels": {
+        "family": "llama",
+        "price_tier": "small",
+        "usd_per_mtok_in": 0.08,
+        "usd_per_mtok_out": 0.3
+      }
     },
     "data": {
       "dataset_id": "scifact_200",
@@ -93,7 +99,7 @@
         "dirty": true
       }
     },
-    "instrument_sha256": "818a0113166726f2fb126249e4ca1028530afe8af4405e6e985620c5455b530d",
+    "instrument_sha256": "59bd4823b11d4fa42d260bd525fa5bead37c6e7ee4bde26f5c0715bb9bebb8de",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -113,9 +119,7 @@
         },
         "temperature": 0.0
       },
-      "family": "llama",
       "max_tokens": 700,
-      "price_tier": "small",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
@@ -123,11 +127,9 @@
       "rerank_k": 20,
       "snippet_chars": 900,
       "temperature": 0.0,
-      "top_k": 100,
-      "usd_per_mtok_in": 0.08,
-      "usd_per_mtok_out": 0.3
+      "top_k": 100
     },
-    "settings_sha256": "9ed7e7b7d931067347acbf350db1800ae6f13301627d8b5c962637fd42df4584",
+    "settings_sha256": "e5ee121ec55c5d6477664172ebd344c6761f6b631ae9fc229579402e907a63cf",
     "version": 5
   },
   "goal": "scientific_retrieval_scifact",

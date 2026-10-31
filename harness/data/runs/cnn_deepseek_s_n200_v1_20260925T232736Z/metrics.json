@@ -10,7 +10,13 @@
   "dataset_id": "cnn_dailymail_200",
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_deepseek_s_n200_v1"
+      "config_id": "cnn_deepseek_s_n200_v1",
+      "labels": {
+        "family": "deepseek",
+        "price_tier": "small",
+        "usd_per_mtok_in": 0.1,
+        "usd_per_mtok_out": 0.4
+      }
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -56,7 +62,7 @@
       }
     },
     "deployment_sha256": "dcd887b1e853306c8de6685c1ecb56c89f134d98a4ec92b79c8f14bfe7cc85f2",
-    "hash": "00e4378f4ca5f3bd87b1e8d9f5e51a65300b08e300b38fd14fae2dc3e1dcc382",
+    "hash": "5dca6af5bc2d40f456cd02cb9a5d4b35efba4e28b1d46b3eeff3d599a54f7eb2",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -67,7 +73,7 @@
         "dirty": true
       }
     },
-    "instrument_sha256": "3a70c7832c41514327c426912b2d87b2f7560b786c61bba8fe3adc5fbdb4cdc6",
+    "instrument_sha256": "48b0995cdbe59571df2f99a5aed38fdb0ea553e3d8286b0a822f609585f9aede",
     "runner": {
       "cpu_count": 12,
       "label": null,
@@ -89,18 +95,14 @@
         },
         "temperature": 0.0
       },
-      "family": "deepseek",
       "max_tokens": 1200,
-      "price_tier": "small",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 0.1,
-      "usd_per_mtok_out": 0.4
+      "temperature": 0.0
     },
-    "settings_sha256": "93b759c3d9d9bc16d3e815ed1f70b11e74de84666172491962d993b0d9288406",
+    "settings_sha256": "3a1994b513b8640a68e264b318c09dda581082a53ddb3403a465b6399b9eba7e",
     "version": 5
   },
   "goal": "news_summary_cnn",

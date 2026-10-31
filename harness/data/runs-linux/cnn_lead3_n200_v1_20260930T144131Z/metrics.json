@@ -10,7 +10,11 @@
   "dataset_id": "cnn_dailymail_200",
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_lead3_n200_v1"
+      "config_id": "cnn_lead3_n200_v1",
+      "labels": {
+        "family": "lead",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -51,7 +55,7 @@
       }
     },
     "deployment_sha256": "f6c7dbcb125b7f6815d67f6fbb1be427a3a57c2eed57e6261b57dc932ec5ca73",
-    "hash": "91bc8cbf839ecf23476b7046fcdeb0421105fd57afbfc2dc6170751a1f2fe6f0",
+    "hash": "affbdbd58202023b51759abc6dacc8951baf484e2eaf734107742d6ff2f765d1",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -62,7 +66,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "9f3bead9ddbb99bc0c2688032ce4f558cca8b308ca2ba49d5b00328d2eb66e52",
+    "instrument_sha256": "2e977aba55c3ea93a025237950c77e1160e0957e5598602699054eafeca2a1f9",
     "runner": {
       "cpu_count": 4,
       "label": null,
@@ -79,11 +83,9 @@
       "release": "6.18.44-fc-v50"
     },
     "settings": {
-      "family": "lead",
-      "price_tier": "free",
       "sentences": 3
     },
-    "settings_sha256": "0af6a1d3ee86a854c33ef93c88f26c2991ac4393cb79fcc31c2ce16b139823fe",
+    "settings_sha256": "82916077176e645db0fac8e5442ddd10ec012f07cf0ebe05a276d2925e1476da",
     "version": 5
   },
   "goal": "news_summary_cnn",

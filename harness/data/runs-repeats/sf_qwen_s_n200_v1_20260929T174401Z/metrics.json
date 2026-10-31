@@ -19,7 +19,13 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "sf_qwen_s_n200_v1"
+      "config_id": "sf_qwen_s_n200_v1",
+      "labels": {
+        "family": "qwen",
+        "price_tier": "small",
+        "usd_per_mtok_in": 0.05,
+        "usd_per_mtok_out": 0.2
+      }
     },
     "data": {
       "dataset_id": "scifact_200",
@@ -96,7 +102,7 @@
         "dirty": true
       }
     },
-    "instrument_sha256": "e7c27acfe681dbced2dc056fedeb8b50b8558717b267a7890b3a9818276c5e9e",
+    "instrument_sha256": "4eb0b06bdc100bbf43a908604f012942ef6cc7354c70307bb1531799a6f80033",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -116,9 +122,7 @@
         },
         "temperature": 0.0
       },
-      "family": "qwen",
       "max_tokens": 700,
-      "price_tier": "small",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
@@ -126,11 +130,9 @@
       "rerank_k": 20,
       "snippet_chars": 900,
       "temperature": 0.0,
-      "top_k": 100,
-      "usd_per_mtok_in": 0.05,
-      "usd_per_mtok_out": 0.2
+      "top_k": 100
     },
-    "settings_sha256": "f675989c4c0aae6351a074f62848f774d3635c04aa93b8272936bd6c91f2c64a",
+    "settings_sha256": "e5ee121ec55c5d6477664172ebd344c6761f6b631ae9fc229579402e907a63cf",
     "version": 5
   },
   "goal": "scientific_retrieval_scifact",

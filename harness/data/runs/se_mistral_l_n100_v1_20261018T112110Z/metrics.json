@@ -10,7 +10,13 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_mistral_l_n100_v1"
+      "config_id": "se_mistral_l_n100_v1",
+      "labels": {
+        "family": "mistral",
+        "price_tier": "large",
+        "usd_per_mtok_in": 0.6,
+        "usd_per_mtok_out": 1.8
+      }
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -56,7 +62,7 @@
       }
     },
     "deployment_sha256": "a38ffb6505ccfa349463b03e380eb5d63e7bf8b98d58f01b94b162dab8a577d3",
-    "hash": "db34bccd81d065939f0d8d86ec53967f16709816e000bebcff918bed0002766f",
+    "hash": "f45a2798baeb5cb73ca3f0f1bf32eeba7c7dc5e37ec68049fb97b5e08608590b",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -67,7 +73,7 @@
         "dirty": true
       }
     },
-    "instrument_sha256": "0ca253fac61afcc5a71d2722a8d085090fb72fcb4c039839291aa5e09d28f428",
+    "instrument_sha256": "e6437e0946ecf508a329ab2c33c286e0448540e7def56433a515aa168eecc221",
     "runner": {
       "cpu_count": 32,
       "label": "omarchy",
@@ -91,18 +97,14 @@
         },
         "temperature": 0.0
       },
-      "family": "mistral",
       "max_tokens": 1500,
-      "price_tier": "large",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 0.6,
-      "usd_per_mtok_out": 1.8
+      "temperature": 0.0
     },
-    "settings_sha256": "26ace136b54fa0dcbddd667cd2d2e50236e56c80aeeb7da3777e76721d400cd6",
+    "settings_sha256": "88319b7c02881c89e35207aafde4204cc1d8a021eb01acf2e39f027f18118b8a",
     "version": 5
   },
   "goal": "summary_judge_summeval",

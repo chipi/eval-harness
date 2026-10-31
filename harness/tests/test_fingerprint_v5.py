@@ -69,10 +69,70 @@ check(
     and not {"host", "system_under_test"} & set(fp),
     sorted(fp),
 )
-check("v5: the arm is its config id alone", fp["arm"] == {"config_id": "c1"}, fp["arm"])
 check(
-    "v5: each hashed part has its own sha256, over that part",
-    all(fp[f"{p}_sha256"] == sha(fp[p]) for p in ("instrument", "data", "deployment", "settings")),
+    "v5: the arm is its config id (and its labels, none here)",
+    fp["arm"] == {"config_id": "c1", "labels": None},
+    fp["arm"],
+)
+check(
+    "v5: each hashed part has its own sha256, over what that part's hash covers",
+    all(
+        fp[f"{p}_sha256"] == sha(fpmod.hashed_view(p, fp[p]))
+        for p in ("instrument", "data", "deployment", "settings")
+    ),
+)
+check(
+    "v5: the instrument's hash covers its code only (the harness's code_sha256, the adapter's sha256)",
+    fpmod.hashed_view("instrument", fp["instrument"])
+    == {
+        "harness": {"code_sha256": fp["instrument"]["harness"]["code_sha256"]},
+        "adapter": {"sha256": fp["instrument"]["adapter"]["sha256"]},
+    },
+)
+later = json.loads(json.dumps(fp))
+later["instrument"]["harness"].update(commit="ffffffffffff", dirty=True, version="9.9.9")
+later["instrument"]["adapter"]["id"] = "moved/adapter.py"
+check(
+    "v5: another commit, a dirty tree, another version string or path, same code: the same instrument",
+    fpmod.seal(later)["instrument_sha256"] == fp["instrument_sha256"],
+)
+later["instrument"]["adapter"]["sha256"] = "0" * 64
+check(
+    "v5: other adapter code: another instrument",
+    fpmod.seal(later)["instrument_sha256"] != fp["instrument_sha256"],
+)
+priced = build({**base_params, "usd_per_mtok_in": 2.0, "price_tier": "mid", "family": "gem"})
+check(
+    "v5: prices and labels are the arm's labels, outside every hash: a price edit moves nothing",
+    priced["settings"] == fp["settings"]
+    and priced["hash"] == fp["hash"]
+    and priced["arm"]["labels"] == {"usd_per_mtok_in": 2.0, "price_tier": "mid", "family": "gem"},
+    priced["arm"],
+)
+with tempfile.TemporaryDirectory() as rd:
+    (Path(rd) / "models").mkdir()
+    (Path(rd) / "models" / "gem.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "model_id": "gem",
+                "kind": "llm",
+                "aliases": ["m:1b"],
+                "deployments": [{"id": "dgx", "where": "dgx"}],
+            }
+        )
+    )
+    rec_fp = build(
+        base_params,
+        cfg={"model_record": "gem", "deployment": "dgx"},
+        data_dir=Path(rd),
+        model_hook=lambda p: {"id": p["model"], "prompt_sha256": "q" * 64, "fleet_commit": "f07efa9"},
+    )
+check(
+    "source record: the adapter's hook still declares its prompt hash (a setting) and what it replays",
+    rec_fp["deployment"]["source"] == "record"
+    and rec_fp["settings"].get("declared") == {"prompt_sha256": "q" * 64}
+    and (rec_fp["deployment"].get("declared") or {}).get("fleet_commit") == "f07efa9",
+    (rec_fp["settings"], rec_fp["deployment"].get("declared")),
 )
 check(
     "v5: hash is one sha256 over the four parts' own hashes",
@@ -425,19 +485,36 @@ check(
     and m_params["deployment"]["weights"]["digest"] is None
     and m_params["deployment"]["libraries"] is None
     and m_params["runner"]["libraries"] == {"openai": "3.1", "numpy": "2.0"}
-    and m_params["settings"] == {"usd_per_mtok_in": 2.0},
+    and m_params["settings"] == {}
+    and m_params["arm"]["labels"] == {"usd_per_mtok_in": 2.0},
     m_params,
 )
 check(
     "migrate: the hashes are those a fresh build computes (parts, then the hash over them)",
-    all(m_params[f"{p}_sha256"] == sha(m_params[p]) for p in fpmod.PARTS)
+    all(m_params[f"{p}_sha256"] == sha(fpmod.hashed_view(p, m_params[p])) for p in fpmod.PARTS)
     and m_params["hash"] == fpmod.combined_hash(m_params),
 )
 check(
     "migrate: a derived run keeps its whole hash null and re-hashes its parts",
     mig.migrate_fingerprint(v4({"identity_declared": False}, {"model": "m"}, derived=True))["hash"] is None,
 )
-check("migrate: a v5 fingerprint is returned as it is", mig.migrate_fingerprint(m_params) is m_params)
+check(
+    "migrate: a v5 fingerprint already at the current rules comes back the same",
+    mig.migrate_fingerprint(m_params) == m_params,
+)
+older_v5 = json.loads(json.dumps(m_params))
+older_v5["settings"]["usd_per_mtok_out"] = 4.0
+older_v5["arm"].pop("labels")
+older_v5["instrument_sha256"] = "stale"
+re_sealed = mig.migrate_fingerprint(older_v5)
+check(
+    "migrate: an earlier v5 one is brought to the current rules: its price leaves the settings, its hashes re-sealed",
+    re_sealed["settings"] == {}
+    and re_sealed["arm"]["labels"] == {"usd_per_mtok_out": 4.0}
+    and re_sealed["instrument_sha256"] == m_params["instrument_sha256"]
+    and mig.migrate_fingerprint(re_sealed) == re_sealed,
+    re_sealed["arm"],
+)
 
 # the tool, over a small tree: counts, the baseline's hash, idempotence, derived runs take their source's parts
 with tempfile.TemporaryDirectory() as td:

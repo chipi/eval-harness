@@ -1,0 +1,151 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "500793a6486393fda7ecb83da624b704dae30fe4",
+    "source": "git"
+  },
+  "config_id": "triage_local_x3_gemma4_31b_v1",
+  "created_at": "2026-10-30T18:46:05Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_local_x3_gemma4_31b_v1",
+      "labels": {
+        "usd_per_mtok_in": 0,
+        "usd_per_mtok_out": 0
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled",
+      "items_sha256": "d428aca49adc8e762dcbbcad6c9a1dba1ac4e4e3315ff26025af975faba1176a",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled",
+      "reference_tier": "gold",
+      "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
+    },
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": "gemma4:31b@x3",
+      "in_process": false,
+      "libraries": null,
+      "model": "gemma4:31b",
+      "provider": "gateway",
+      "server": {
+        "name": null,
+        "settings": null,
+        "url": "http://127.0.0.1:11434/v1/chat/completions",
+        "version": null
+      },
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": "x3"
+      }
+    },
+    "deployment_sha256": "767aa79396b2f2f92e59b0bb1688f5b8653573c1dccb48b3707c3ad2665815c5",
+    "hash": "2d69dfcbc24a91b614e57c4c1a868d8e57a902596d10e0a44044746e782f4044",
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "663c89dd6a24c414ce4229c5b067581cced2becf0a44e4660847dce8420c564a"
+      },
+      "harness": {
+        "code_sha256": "0ab386969208f46c7448153422d5a5ab07833d963869b69fc216a6cd28feb110",
+        "commit": "500793a64863",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "instrument_sha256": "e5be13869598e40f100e34ad0809f29d19e9d5ceefc488fd8dfdca11b04c3629",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "call_timeout_s": 600
+    },
+    "settings_sha256": "c3b758820d4155159fb13368136fcad4d28504b0f3f210b73bb02994f8bd7c81",
+    "version": 5
+  },
+  "goal": "triage_orrery",
+  "metric_directions": {
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "model_triage_cost": "lower",
+    "no_decision": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower",
+    "triage_cost": "lower",
+    "triage_cost_p10": "lower",
+    "triage_cost_p3": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 65,
+  "params": {
+    "call_timeout_s": 600,
+    "machine": "x3",
+    "model": "gemma4:31b",
+    "provider": "gateway",
+    "url": "http://127.0.0.1:11434/v1/chat/completions",
+    "usd_per_mtok_in": 0,
+    "usd_per_mtok_out": 0
+  },
+  "primary_metric": "triage_cost",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "triage_local_x3_gemma4_31b_v1_20261030T172801Z",
+  "scores": {
+    "correct": 0.6,
+    "cost_usd": 0.0,
+    "escalated": 0.353846,
+    "false_alarm": 0.645161,
+    "false_dismiss": 0.147059,
+    "latency_ms": 72057.99312,
+    "model_correct": 0.492308,
+    "model_escalated": 0.0,
+    "model_false_alarm": 0.387097,
+    "model_false_dismiss": 0.588235,
+    "model_triage_cost": 1.723077,
+    "n_probes": 1.892308,
+    "no_decision": 0.0,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 4045.476923,
+    "tokens_out": 1340.646154,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 262956.0,
+    "total_tokens_out": 87142.0,
+    "triage_cost": 0.692308,
+    "triage_cost_p10": 1.076923,
+    "triage_cost_p3": 0.538462
+  }
+}

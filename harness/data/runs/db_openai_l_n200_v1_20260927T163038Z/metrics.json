@@ -10,7 +10,13 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_openai_l_n200_v1"
+      "config_id": "db_openai_l_n200_v1",
+      "labels": {
+        "family": "openai",
+        "price_tier": "large",
+        "usd_per_mtok_in": 2.5,
+        "usd_per_mtok_out": 15.0
+      }
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -75,7 +81,7 @@
       }
     },
     "deployment_sha256": "3384087b1287cee199f64b36e937156d7f623888a3fed51c85f069268eae529e",
-    "hash": "7a458cb8099ab4a84b541dfdf1417e9e3e99b5fe028e7f58d98e283b60f35550",
+    "hash": "f7214289fb638cea282074995ea62dec4a83cc36108d5eff1229bddbfa8a6f71",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -86,7 +92,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "fec8534672877f4568a4192238d3f523618f25f73fccefe00e7abb035341d09d",
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -106,18 +112,14 @@
         },
         "temperature": 0.0
       },
-      "family": "openai",
       "max_tokens": 200,
-      "price_tier": "large",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 2.5,
-      "usd_per_mtok_out": 15.0
+      "temperature": 0.0
     },
-    "settings_sha256": "fb0831facc46cca10eef01fc7ca696f07eeac64d7bc9c38098f0378e80d981da",
+    "settings_sha256": "8c14a70088b07911142861674fddd4995b5eada33c659017f1a5f215c9879b04",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

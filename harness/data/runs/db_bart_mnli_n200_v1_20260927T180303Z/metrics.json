@@ -10,7 +10,11 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_bart_mnli_n200_v1"
+      "config_id": "db_bart_mnli_n200_v1",
+      "labels": {
+        "family": "bart",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -75,7 +79,7 @@
       }
     },
     "deployment_sha256": "6893fa8fb25520c4a803f8384220ffacd66c756cbe364785442ea4cefbdeb61b",
-    "hash": "abd12ad18a7e2f615d62ad8f5c49191d44138b54f63a25d37304fd907da6e832",
+    "hash": "a60387551ea7a0d2335b95304f3a7b8c17f26b7b6d5fa610c30fe6adf6ca37c7",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -86,7 +90,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "fec8534672877f4568a4192238d3f523618f25f73fccefe00e7abb035341d09d",
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -97,11 +101,9 @@
       "release": "24.6.0"
     },
     "settings": {
-      "family": "bart",
-      "hypothesis_template": "This text is about {}.",
-      "price_tier": "free"
+      "hypothesis_template": "This text is about {}."
     },
-    "settings_sha256": "327a913998a67a75cce2349f1373637c41205185ef6ed80ade8b989b36911b04",
+    "settings_sha256": "20db8dad23a90d7bd900db2cce6a2023fccc94a7f4ba43c38bd61d5034e20659",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

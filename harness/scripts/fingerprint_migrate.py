@@ -40,9 +40,16 @@ DEPLOYMENT_PARTS = ("deployment", "settings", "runner")
 
 def migrate_fingerprint(fp: dict[str, Any], params: dict[str, Any] | None = None) -> dict[str, Any]:
     """The v5 fingerprint of a v4 one. `params` are the run's params when the fingerprint's own `arm.params`
-    are missing; a fingerprint that is already v5 is returned unchanged."""
+    are missing. A v5 one is brought to v5's current rules (prices and labels out of the settings, the
+    instrument hashed by its code) and re-sealed; one already there comes back the same."""
     if fp.get("version") == fpmod.VERSION:
-        return fp
+        out: dict[str, Any] = json.loads(json.dumps(fp))
+        settings = out.get("settings") or {}
+        labels = {k: settings.pop(k) for k in fpmod.LABEL_KEYS if k in settings}
+        arm = out.setdefault("arm", {})
+        if labels or "labels" not in arm:
+            arm["labels"] = {**(arm.get("labels") or {}), **labels} or None
+        return fpmod.seal(out, whole=fp.get("hash") is not None)
     if fp.get("version") != 4:
         raise ValueError(f"fingerprint version {fp.get('version')!r}: only 4 is migrated")
     arm = fp.get("arm") or {}
@@ -54,14 +61,14 @@ def migrate_fingerprint(fp: dict[str, Any], params: dict[str, Any] | None = None
         deployment = fpmod._adapter_deployment(declared, run_params, libraries)
     else:
         deployment = fpmod._params_deployment(run_params, declared)
-    out: dict[str, Any] = {
+    out = {
         "version": fpmod.VERSION,
         "instrument": fp.get("instrument"),
         "data": fp.get("data"),
         "deployment": deployment,
         "settings": fpmod.settings_of(run_params),
         "runner": {**(fp.get("host") or {}), "libraries": None if deployment["in_process"] else libraries},
-        "arm": {"config_id": arm.get("config_id")},
+        "arm": {"config_id": arm.get("config_id"), "labels": fpmod.labels_of(run_params) or None},
     }
     for k, v in fp.items():
         if k not in {"version", "instrument", "data", "system_under_test", "host", "arm", "hash"}:
@@ -111,9 +118,18 @@ def main() -> int:
             by_name.setdefault(f.parent.name, []).append(f)
         for f, doc in docs.items():
             fp = doc.get("fingerprint")
-            if not isinstance(fp, dict) or fp.get("version") != 4 or bool(doc.get("derived")) != derived:
+            if (
+                not isinstance(fp, dict)
+                or fp.get("version") not in (4, 5)
+                or bool(doc.get("derived")) != derived
+            ):
                 continue
             new = migrate_fingerprint(fp, doc.get("params"))
+            if fp.get("version") == 5:
+                if new != fp:
+                    old_hash[f] = fp.get("hash")
+                    migrated[f] = {**doc, "fingerprint": new}
+                continue
             if derived:
                 sources = by_name.get((doc.get("derived") or {}).get("from", ""), [])
                 if len(sources) == 1:

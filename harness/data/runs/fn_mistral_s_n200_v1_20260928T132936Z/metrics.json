@@ -24,7 +24,13 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "fn_mistral_s_n200_v1"
+      "config_id": "fn_mistral_s_n200_v1",
+      "labels": {
+        "family": "mistral",
+        "price_tier": "small",
+        "usd_per_mtok_in": 0.05,
+        "usd_per_mtok_out": 0.15
+      }
     },
     "data": {
       "dataset_id": "few_nerd_280",
@@ -94,7 +100,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "a8f6f68fd60a4d2dca1681bedac8a3b0ce362cbaa585c078b349ee5ee10f9d6f",
+    "instrument_sha256": "e4ee62504d4173b243fbf8bffe949f8caf93698b3e3a175a76472b6348fe3522",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -120,18 +126,14 @@
         },
         "temperature": 0.0
       },
-      "family": "mistral",
       "max_tokens": 600,
-      "price_tier": "small",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 0.05,
-      "usd_per_mtok_out": 0.15
+      "temperature": 0.0
     },
-    "settings_sha256": "ea3785e3dfd0d59afde47c2472529c727965af39bd201eb427e6daac5a24a458",
+    "settings_sha256": "e2b8cf6f3e5f9d1e393b4013a011d2b3306ad9fbd4c5dd0a0c14ca69c7d86cec",
     "version": 5
   },
   "goal": "entities_few_nerd",

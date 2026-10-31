@@ -1,0 +1,163 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "302296f2b239f5f2fca806d755276ade5f41887a",
+    "source": "git"
+  },
+  "config_id": "triage_local_x3_qwen38_27b_v1",
+  "created_at": "2026-10-31T11:08:50Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "derived": {
+    "at": "2026-10-31T11:08:50Z",
+    "from": "triage_local_x3_qwen38_27b_v1_20261030T163759Z",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/triage-fleet/adapter.py",
+      "sha256": "cd35dc1ffcccb0b8a3f95fc84c4d3966ba3634c705d049d42e7b2327f8b61c0b"
+    }
+  },
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_local_x3_qwen38_27b_v1",
+      "labels": {
+        "usd_per_mtok_in": 0,
+        "usd_per_mtok_out": 0
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled",
+      "items_sha256": "d428aca49adc8e762dcbbcad6c9a1dba1ac4e4e3315ff26025af975faba1176a",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled",
+      "reference_tier": "gold",
+      "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
+    },
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": "qwen3.8:27b@x3",
+      "in_process": false,
+      "libraries": null,
+      "model": "qwen3.8:27b",
+      "provider": "gateway",
+      "server": {
+        "name": null,
+        "settings": null,
+        "url": "http://127.0.0.1:11434/v1/chat/completions",
+        "version": null
+      },
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": "x3"
+      }
+    },
+    "deployment_sha256": "c99019ad5af60e7aeed9a45038ebc767db1d80e484e0b5524a86585e6029c505",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "cd35dc1ffcccb0b8a3f95fc84c4d3966ba3634c705d049d42e7b2327f8b61c0b"
+      },
+      "harness": {
+        "code_sha256": "0ab386969208f46c7448153422d5a5ab07833d963869b69fc216a6cd28feb110",
+        "commit": "302296f2b239",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "instrument_sha256": "912efff15063e905ebe606efd46e8efba1d1853ef2505cea7d8448b47de171ae",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "call_timeout_s": 600
+    },
+    "settings_sha256": "c3b758820d4155159fb13368136fcad4d28504b0f3f210b73bb02994f8bd7c81",
+    "version": 5
+  },
+  "goal": "triage_orrery",
+  "metric_directions": {
+    "deferred": "lower",
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "model_triage_cost": "lower",
+    "no_decision": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower",
+    "triage_cost": "lower",
+    "triage_cost_p10": "lower",
+    "triage_cost_p3": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 65,
+  "params": {
+    "call_timeout_s": 600,
+    "machine": "x3",
+    "model": "qwen3.8:27b",
+    "provider": "gateway",
+    "url": "http://127.0.0.1:11434/v1/chat/completions",
+    "usd_per_mtok_in": 0,
+    "usd_per_mtok_out": 0
+  },
+  "primary_metric": "triage_cost",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "run_id": "triage_local_x3_qwen38_27b_v1_20261030T163759Z",
+  "scores": {
+    "correct": 0.4923076923,
+    "cost_usd": 0.0,
+    "escalated": 0.4615384615,
+    "false_alarm": 0.6129032258,
+    "false_dismiss": 0.2352941176,
+    "latency_ms": 46161.2241170441,
+    "model_correct": 0.4307692308,
+    "model_escalated": 0.0,
+    "model_false_alarm": 0.2903225806,
+    "model_false_dismiss": 0.8235294118,
+    "model_triage_cost": 2.2923076923,
+    "n_probes": 1.4769230769,
+    "no_decision": 0.0,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 3395.4769230769,
+    "tokens_out": 992.4461538462,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 220706.0,
+    "total_tokens_out": 64509.0,
+    "triage_cost": 0.9076923077,
+    "triage_cost_p10": 1.5230769231,
+    "triage_cost_p3": 0.6615384615
+  },
+  "source_created_at": "2026-10-30T17:28:01Z"
+}

@@ -138,6 +138,31 @@ def _fleet() -> Any:
     return triage
 
 
+#: The fleet modules a replay runs: what the decision depends on besides the model.
+FLEET_MODULES = ("triage.py", "probes.py", "guards.py", "config.py")
+
+
+def fingerprint(params: dict[str, Any]) -> dict[str, Any]:
+    """What the replay is, for the run's fingerprint: the fleet's code by content (and its commit when the
+    checkout says or TRIAGE_FLEET_COMMIT names it), and the sha256 of the system prompt it sends, which the
+    harness keeps as a setting. The model is the deployment's, not declared here."""
+    import hashlib  # noqa: PLC0415
+
+    triage = _fleet()
+    mvp = Path(triage.__file__).parent
+    code = hashlib.sha256()
+    for name in FLEET_MODULES:
+        f = mvp / name
+        code.update(name.encode() + b"\0" + (f.read_bytes() if f.is_file() else b""))
+    commit = os.environ.get("TRIAGE_FLEET_COMMIT") or params.get("fleet_commit")
+    return {
+        "id": params.get("model") or params.get("provider"),
+        "fleet_code_sha256": code.hexdigest(),
+        "fleet_commit": commit,
+        "prompt_sha256": hashlib.sha256(triage._sys().encode()).hexdigest(),
+    }
+
+
 def _stub_call(disposition: str):
     """A stand-in for the model: asks for one probe, then decides `disposition` citing it."""
 

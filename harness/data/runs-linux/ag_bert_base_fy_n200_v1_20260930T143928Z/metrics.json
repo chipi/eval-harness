@@ -10,7 +10,11 @@
   "dataset_id": "ag_news_200",
   "fingerprint": {
     "arm": {
-      "config_id": "ag_bert_base_fy_n200_v1"
+      "config_id": "ag_bert_base_fy_n200_v1",
+      "labels": {
+        "family": "bert",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "ag_news_200",
@@ -68,7 +72,7 @@
       }
     },
     "deployment_sha256": "64c67bfc83c2a088fcbbbb02dd06c1143bc42c3b6a66a3f649a80d9d50df0616",
-    "hash": "f6d63221de20ac9432392a5d0a1ec01780a7257fb90e6fe5bbcc93220f259fab",
+    "hash": "58268e7bb37ce57a565c69c97bd6cc69ad287105150ae8afe21a7c4a29c976ef",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -79,7 +83,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "6dde5e7a95abd3eabd1213f877eea1f3077424b3ffe3396ce09f473fefa4c36e",
+    "instrument_sha256": "5334e5b759556c0ef100503c05d1daa9c29a464936eaf0fde261f23c1af3a8b0",
     "runner": {
       "cpu_count": 4,
       "label": null,
@@ -90,16 +94,14 @@
       "release": "6.18.44-fc-v50"
     },
     "settings": {
-      "family": "bert",
       "label_order": [
         "World",
         "Sports",
         "Business",
         "Sci/Tech"
-      ],
-      "price_tier": "free"
+      ]
     },
-    "settings_sha256": "6b6e6358522237bd145540a1e8ddace0f27dc47b115f416193722871afc0dcb5",
+    "settings_sha256": "43d3d5a6236eb57db905910b73121f6449b8eae837538ab3505a6cb90bcc9f29",
     "version": 5
   },
   "goal": "news_topic_ag",

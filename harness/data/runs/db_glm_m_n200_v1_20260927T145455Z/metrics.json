@@ -10,7 +10,13 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_glm_m_n200_v1"
+      "config_id": "db_glm_m_n200_v1",
+      "labels": {
+        "family": "glm",
+        "price_tier": "mid",
+        "usd_per_mtok_in": 0.15,
+        "usd_per_mtok_out": 0.6
+      }
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -75,7 +81,7 @@
       }
     },
     "deployment_sha256": "52ae176052b77b15cb9e4df0f4c97853346cbe12f0df720a87cb83181c7079d0",
-    "hash": "5f4036531b24c53e1b7e9aeff9ffda32fa07d2851b0b2d1189d52d1c716d4a79",
+    "hash": "e464779ebede6f793ada8b6b7ac40d814ece4dacfc86b6dfb2805bd7e14ac419",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -86,7 +92,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "fec8534672877f4568a4192238d3f523618f25f73fccefe00e7abb035341d09d",
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -106,18 +112,14 @@
         },
         "temperature": 0.0
       },
-      "family": "glm",
       "max_tokens": 200,
-      "price_tier": "mid",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 0.15,
-      "usd_per_mtok_out": 0.6
+      "temperature": 0.0
     },
-    "settings_sha256": "a448d029a8889564ba88432ba3318312fb131f583ee7208a43dfa07ccd95c292",
+    "settings_sha256": "8c14a70088b07911142861674fddd4995b5eada33c659017f1a5f215c9879b04",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

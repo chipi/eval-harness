@@ -10,7 +10,11 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_bert_base_fy_n200_v1"
+      "config_id": "db_bert_base_fy_n200_v1",
+      "labels": {
+        "family": "bert",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -88,7 +92,7 @@
       }
     },
     "deployment_sha256": "0c3d2b6d9c3d9f3004b10b4202dbde642476434e43f0f1d17e96f0f5bb69e591",
-    "hash": "1a8f27a3b7e73ad04f5848ef35c86f90bd84edb57fdc16ca766426481b43543c",
+    "hash": "bdda287a52cb18707af2b0ecbc5948e49bd1b2b70f72dbcb8dc9f49f70af55e0",
     "instrument": {
       "adapter": {
         "id": "examples/classification-dbpedia-14/adapter.py",
@@ -99,7 +103,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "b32d5f486fb78a3978b51f704ea64893fcbf9263e3a457d77f80ad736f0d1ab4",
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
     "runner": {
       "cpu_count": 4,
       "label": null,
@@ -110,7 +114,6 @@
       "release": "6.18.44-fc-v50"
     },
     "settings": {
-      "family": "bert",
       "label_order": [
         "Company",
         "EducationalInstitution",
@@ -126,10 +129,9 @@
         "Album",
         "Film",
         "WrittenWork"
-      ],
-      "price_tier": "free"
+      ]
     },
-    "settings_sha256": "9c30d84609bbf0821139a46160e45d893fc959d5c3ecfb223a793078ba7f614b",
+    "settings_sha256": "3485aeb6c75b2013eeb7e4a4c58cd38bc9cafacd4160b725ad02550baf875262",
     "version": 5
   },
   "goal": "entity_topic_dbpedia",

@@ -10,7 +10,13 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_deepseek_s_n100_v1"
+      "config_id": "se_deepseek_s_n100_v1",
+      "labels": {
+        "family": "deepseek",
+        "price_tier": "small",
+        "usd_per_mtok_in": 0.1,
+        "usd_per_mtok_out": 0.4
+      }
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -56,7 +62,7 @@
       }
     },
     "deployment_sha256": "7a71553c29cbe620b6e13c79a2c0160e0c920542f6de879db8234c6054733c43",
-    "hash": "d745318208370c6763a2bf1669d230513d9af6778d283b24d9b5e18ee4ed8e18",
+    "hash": "fa5cbf19fd0155ea9f1814668dabb917903fb4c7181a4733daff7ca4156dd147",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -67,7 +73,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "b0c66ef6862893c2f1ba3d8a6e663f9f63c7645ed783e2242849e6998e91ba8b",
+    "instrument_sha256": "e6437e0946ecf508a329ab2c33c286e0448540e7def56433a515aa168eecc221",
     "runner": {
       "cpu_count": 32,
       "label": "omarchy",
@@ -91,18 +97,14 @@
         },
         "temperature": 0.0
       },
-      "family": "deepseek",
       "max_tokens": 1500,
-      "price_tier": "small",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 0.1,
-      "usd_per_mtok_out": 0.4
+      "temperature": 0.0
     },
-    "settings_sha256": "9ab058611dec939c5d1a16cc9ef695513f69f0687e568289ca642c21f7f2147f",
+    "settings_sha256": "88319b7c02881c89e35207aafde4204cc1d8a021eb01acf2e39f027f18118b8a",
     "version": 5
   },
   "goal": "summary_judge_summeval",

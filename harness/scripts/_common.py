@@ -208,6 +208,43 @@ class CostCapExceeded(RuntimeError):
     """
 
 
+def ignored_by_git(path: Path) -> bool:
+    """Whether git ignores `path` (a runs directory, say): runs written there are not committed, and a
+    published catalog, which copies only what git tracks, will not show them. False outside a checkout."""
+    import subprocess  # noqa: PLC0415
+
+    # A run's metrics file, not the directory: the re-allow blocks admit `<dir>/<run>/metrics.json`
+    # under a denied `data/runs-*/`, so only that path answers the question. Absolute, because `-C`
+    # moves git's working directory and a relative probe would then name some other file.
+    probe = Path(path).resolve() / "_probe_run" / "metrics.json"
+    anchor = next((p for p in probe.parents if p.exists()), Path.cwd())
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(anchor), "check-ignore", "-q", str(probe)], capture_output=True, timeout=10
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return r.returncode == 0
+
+
+#: Directory names that are throwaway by convention (.gitignore denies them by glob): writing there is the point.
+THROWAWAY_RUNS = ("runs-smoke", "runs-tune")
+
+
+def warn_if_ignored(runs_dir: Path) -> None:
+    """Say, loudly, when runs are about to land where git will not keep them. Silent for the throwaway
+    directories (runs-smoke*, runs-tune*), where not keeping them is the intent."""
+    if Path(runs_dir).name.startswith(THROWAWAY_RUNS) or not ignored_by_git(runs_dir):
+        return
+    print(
+        f"  WARNING: {runs_dir} is ignored by git: the runs written there are not committed, and a published "
+        "catalog will not show them. Measured runs go in data/runs (the default: leave EVAL_RUNS_DIR unset). "
+        "A derived set (re-scored, re-judged) keeps the measured runs' config_ids, so it needs its own "
+        "directory: re-allow it in .gitignore beside the others under '--- re-allowed'. Throwaway passes go "
+        "in data/runs-smoke*."
+    )
+
+
 def now() -> str:
     """Return the current UTC time in ISO 8601 format."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

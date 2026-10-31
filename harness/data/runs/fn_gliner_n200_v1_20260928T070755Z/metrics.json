@@ -24,7 +24,11 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "fn_gliner_n200_v1"
+      "config_id": "fn_gliner_n200_v1",
+      "labels": {
+        "family": "gliner",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "few_nerd_280",
@@ -97,7 +101,7 @@
         "dirty": true
       }
     },
-    "instrument_sha256": "d06f81c7832f4523a73ab88db8009b61514e012d29081d0ae119f47b490aa701",
+    "instrument_sha256": "e4ee62504d4173b243fbf8bffe949f8caf93698b3e3a175a76472b6348fe3522",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -108,11 +112,9 @@
       "release": "24.6.0"
     },
     "settings": {
-      "family": "gliner",
-      "price_tier": "free",
       "threshold": 0.5
     },
-    "settings_sha256": "bf56ddff3797155981972f7fec48e5cf6a28da7d84e551f11be2a11472b11fc5",
+    "settings_sha256": "946d776af3a744ba35d19c42e0903577b099e26e5e3c9aa4d921ef4745ef89e1",
     "version": 5
   },
   "goal": "entities_few_nerd",

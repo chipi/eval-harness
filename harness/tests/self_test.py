@@ -668,6 +668,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_models.py", "model records: the weights facts, and what V18 catches"),
         ("test_arm_smoke.py", "evh arm-smoke: the calls it reads, the projection, every flag"),
         (
+            "test_runs_location.py",
+            "where runs land: a warning for a git-ignored runs directory, and validate's note",
+        ),
+        (
             "test_fingerprint_v5.py",
             "fingerprint v5: the parts and their hashes, the runner outside the hash, the deployment sources, the migration, run-compare",
         ),

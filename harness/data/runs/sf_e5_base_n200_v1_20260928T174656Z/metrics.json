@@ -19,7 +19,11 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "sf_e5_base_n200_v1"
+      "config_id": "sf_e5_base_n200_v1",
+      "labels": {
+        "family": "e5",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "scifact_200",
@@ -88,7 +92,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "55bfd3e775ce09ed440b29c9e112196bb109602116754b89cb49f02e21416702",
+    "instrument_sha256": "59bd4823b11d4fa42d260bd525fa5bead37c6e7ee4bde26f5c0715bb9bebb8de",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -102,12 +106,10 @@
       "corpus_id": "scifact",
       "doc_prefix": "passage: ",
       "encode_batch": 32,
-      "family": "e5",
-      "price_tier": "free",
       "query_prefix": "query: ",
       "top_k": 100
     },
-    "settings_sha256": "d5c05ca47978ef1a4de500121070f4ffefc6e28d8f34e3453cdbc9048e2bf571",
+    "settings_sha256": "6a0d5c97d49dbf96ab3a08665d1a51cef1dd7f4146de17f06fa69d742c7bb4ca",
     "version": 5
   },
   "goal": "scientific_retrieval_scifact",

@@ -52,7 +52,11 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_bart_l_n200_v1"
+      "config_id": "cnn_bart_l_n200_v1",
+      "labels": {
+        "family": "bart",
+        "price_tier": "free"
+      }
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -110,7 +114,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "f6ece696dd1ae2ced3072b929f02359e0d898a490a6b1465a292cf8e670d5b98",
+    "instrument_sha256": "1ce00cf9648035ddc811da06a89cf8d2ed855f2fac3f5ed3e5e3f6d0bbba01df",
     "runner": {
       "cpu_count": 12,
       "label": "mac-dev",
@@ -122,15 +126,13 @@
     },
     "settings": {
       "early_stopping": true,
-      "family": "bart",
       "length_penalty": 2.0,
       "max_length": 142,
       "min_length": 56,
       "no_repeat_ngram_size": 3,
-      "num_beams": 4,
-      "price_tier": "free"
+      "num_beams": 4
     },
-    "settings_sha256": "b1f4fbaba7089b2e89a68ea7dcfd164d4cb3445597862243826ad81080cf92c4",
+    "settings_sha256": "656435dcd94a2e6c1a0f2804bc3184adf0e955e8cf36a710519ed655ba6ac508",
     "version": 5
   },
   "goal": "news_summary_cnn",

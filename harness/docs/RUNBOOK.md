@@ -379,7 +379,21 @@ dirty tree with `*` — their `build.ref` does not describe what actually ran.
 **Commit before you measure** — dataset, configs, references — so the runs you keep are
 clean the first time. Re-running an arm into `data/runs` after the fact leaves two
 measurements of one config, which `evh validate` refuses (V8); explore in a scratch
-directory instead (`EVAL_RUNS_DIR=data/runs-scratch`).
+directory instead (`EVAL_RUNS_DIR=data/runs-smoke`).
+
+**Where runs go.** Measured runs go in `data/runs`: leave `EVAL_RUNS_DIR` unset, on every
+machine, so a run made on a laptop and one made on a GPU box land in the same place. Git
+ignores every other `data/runs-*` directory unless `.gitignore` re-allows it by name, and an
+ignored run is not committed, so a fresh clone, CI and the published catalog never see it.
+Two kinds of directory sit beside `data/runs` on purpose:
+
+- **throwaway** (`data/runs-smoke*`, `data/runs-tune*`): smoke passes and sweeps, never committed;
+- **derived sets** (`data/runs-repeats`, `data/runs-triage-current`, `data/runs-judged/<scorer>` …):
+  re-scored or repeated runs that keep the measured runs' `config_id`s, so they cannot share
+  `data/runs` (V8). Each one has its own re-allow block in `.gitignore`.
+
+`experiment-run` and `rescore` print a `WARNING` when they write to a directory git ignores
+that is neither, and `evh validate` notes any such directory that already holds finished runs.
 
 `experiment-run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness

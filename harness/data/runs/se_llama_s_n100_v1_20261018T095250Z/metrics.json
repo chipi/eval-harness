@@ -10,7 +10,13 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_llama_s_n100_v1"
+      "config_id": "se_llama_s_n100_v1",
+      "labels": {
+        "family": "llama",
+        "price_tier": "small",
+        "usd_per_mtok_in": 0.08,
+        "usd_per_mtok_out": 0.3
+      }
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -56,7 +62,7 @@
       }
     },
     "deployment_sha256": "59f654dfa1ac50c6fc28ed5ad61e71168fcf5781b9ae0f30efc48ec88344676a",
-    "hash": "5cae37d4ebb30b2916d44a0f39342ce1a80099c6c3d8778eaf969168014011f9",
+    "hash": "30f262f5c962debe0ddf27f51068f20e7ef0afaf122701952dbb00d9cd47ebcb",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -67,7 +73,7 @@
         "dirty": false
       }
     },
-    "instrument_sha256": "b0c66ef6862893c2f1ba3d8a6e663f9f63c7645ed783e2242849e6998e91ba8b",
+    "instrument_sha256": "e6437e0946ecf508a329ab2c33c286e0448540e7def56433a515aa168eecc221",
     "runner": {
       "cpu_count": 32,
       "label": "omarchy",
@@ -91,18 +97,14 @@
         },
         "temperature": 0.0
       },
-      "family": "llama",
       "max_tokens": 1500,
-      "price_tier": "small",
       "prompt_file": "prompt.txt",
       "reasoning": {
         "enabled": false
       },
-      "temperature": 0.0,
-      "usd_per_mtok_in": 0.08,
-      "usd_per_mtok_out": 0.3
+      "temperature": 0.0
     },
-    "settings_sha256": "067a6b85109457ef5713cd2e8d7233d743e26b8b9142d81ccb07630dbbd8190f",
+    "settings_sha256": "88319b7c02881c89e35207aafde4204cc1d8a021eb01acf2e39f027f18118b8a",
     "version": 5
   },
   "goal": "summary_judge_summeval",
