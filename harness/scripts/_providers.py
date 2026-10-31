@@ -156,6 +156,21 @@ def _either(name: str, role: str) -> str:
     return f"{JUDGE_PREFIX}{name} or {name}" if role == "judge" else name
 
 
+#: Ollama's port: a server there takes any key, on this machine or another one on the network.
+OLLAMA_PORT = 11434
+
+
+def keyless(base: str | None) -> bool:
+    """Whether an OpenAI-shaped address needs no key: on this machine (localhost, 127.x, ::1) or Ollama's port."""
+    if not base:
+        return False
+    from urllib.parse import urlparse  # noqa: PLC0415
+
+    u = urlparse(base)
+    host = (u.hostname or "").lower()
+    return host in ("localhost", "::1") or host.startswith("127.") or u.port == OLLAMA_PORT
+
+
 def route(params: dict[str, Any], role: str) -> Route:
     """Where `params` would be sent, resolved without calling anything. Missing pieces are None
     (`problems` says which); an unknown provider is a ValueError."""
@@ -173,6 +188,10 @@ def route(params: dict[str, Any], role: str) -> Route:
     else:
         base_var, base = None, None
     base = base or spec.base_default
+    if provider == "openai" and not key and keyless(base):
+        # A local server, or Ollama anywhere, takes any key and the client only wants one present: asking a
+        # newcomer for OPENAI_API_KEY to reach their own Ollama was a step with no purpose (owner, 2026-10-31).
+        key_var, key = "(none: a local server)", "not-needed"
     # An address given with the suffix already (a LiteLLM proxy written as http://host:4000/v1, as its own docs
     # show it) keeps one: appending again sent every call to /v1/v1, which the proxy answers 404.
     if base and spec.base_suffix and not base.rstrip("/").endswith(spec.base_suffix):

@@ -387,4 +387,26 @@ check(
 )
 
 clear()
+local = {"provider": "openai", "model": "llama3.1:8b"}
+check(
+    "openai: a local server or Ollama's port needs no OPENAI_API_KEY (Ollama takes any key)",
+    _providers.problems({**local, "base_url": "http://127.0.0.1:11434/v1"}, "arm") == []
+    and _providers.problems({**local, "base_url": "http://localhost:8000/v1"}, "arm") == []
+    and _providers.problems({**local, "base_url": "http://100.69.49.126:11434/v1"}, "arm") == []
+    and _providers.route({**local, "base_url": "http://127.0.0.1:11434/v1"}, "arm").key == "not-needed",
+)
+check(
+    "openai: any other address still needs the key, and says so",
+    any(
+        "OPENAI_API_KEY is not set" in p
+        for p in _providers.problems({**local, "base_url": "https://api.example.com/v1"}, "arm")
+    )
+    and any("OPENAI_API_KEY is not set" in p for p in _providers.problems(local, "arm")),
+)
+os.environ["OPENAI_API_KEY"] = "sk-real"
+check(
+    "openai: a key that is set is used, local or not",
+    _providers.route({**local, "base_url": "http://127.0.0.1:11434/v1"}, "arm").key == "sk-real",
+)
+clear()
 sys.exit(summary())
