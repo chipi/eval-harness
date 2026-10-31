@@ -1,6 +1,6 @@
 # Triage experiment: results so far (live)
 
-Updated 2026-10-31T08:46Z. Every finished run re-scored under the owner's rules of 2026-10-30: the combined cost (a missed real problem = 5 false alarms; @3 and @10 shown) decides, among the arms whose false alarms are at or under the ceiling (production's mean over its 4 passes: 85 of 124 = 21.25 of 31, 0.6855; set 2026-10-30, replacing its single pass of 21). 65 owner-labelled decisions (34 real problems, 31 noise). One pass per arm unless the passes column says more; the paired test and the repeats decide, not this table. Self-hosted arms run on Ollama 0.40.13; their cost in tokens is $0.
+Updated 2026-10-31T09:02Z. Every finished run re-scored under the owner's rules of 2026-10-30: the combined cost (a missed real problem = 5 false alarms; @3 and @10 shown) decides, among the arms whose false alarms are at or under the ceiling (production's mean over its 4 passes: 85 of 124 = 21.25 of 31, 0.6855; set 2026-10-30, replacing its single pass of 21). 65 owner-labelled decisions (34 real problems, 31 noise). One pass per arm unless the passes column says more; the paired test and the repeats decide, not this table. Self-hosted arms run on Ollama 0.40.13; their cost in tokens is $0.
 
 | # | model | where | passes | cost @5 | @3 | @10 | misses /34 | false alarms /31 | model's own cost @5 | no decision /65 | $ / decision | s / decision | ceiling |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -14,11 +14,11 @@ Updated 2026-10-31T08:46Z. Every finished run re-scored under the owner's rules 
 | 8 | nemotron_35_bolt_e4b | X3 (AMD) | 1 | **0.600** | 0.477 | 0.908 | 4.0 | 19.0 | 1.015 | 0 | 0.00000 | 22.3 | ok |
 | 9 | haiku_55 | OpenRouter | 4 | **0.604** | 0.481 | 0.912 | 4.0 | 19.2 | 0.962 | 0 | 0.00102 | 7.6 | ok |
 | 10 | gpt_6_luna | OpenRouter | 4 | **0.615** | 0.500 | 0.904 | 3.7 | 21.3 | 0.665 | 0 | 0.00069 | 11.7 | ok |
-| 11 | gpt_oss_120b | DGX (NVIDIA) | 1 | **0.615** | 0.492 | 0.923 | 4.0 | 20.0 | 1.600 | 0 | 0.00000 | 16.0 | ok |
-| 12 | gpt_oss_120b | OpenRouter (open weights) | 1 | **0.677** | 0.523 | 1.062 | 5.0 | 19.0 | 1.646 | 0 | 0.00085 | 17.0 | ok |
-| 13 | gemma4_31b | DGX (NVIDIA) | 1 | **0.677** | 0.523 | 1.062 | 5.0 | 19.0 | 1.631 | 0 | 0.00000 | 58.9 | ok |
-| 14 | nemotron_35_super_120b | DGX (NVIDIA) | 1 | **0.677** | 0.523 | 1.062 | 5.0 | 19.0 | 1.508 | 0 | 0.00000 | 41.0 | ok |
-| 15 | gemma4_31b | Mac (M4 Pro) | 1 | **0.677** | 0.523 | 1.062 | 5.0 | 19.0 | 1.646 | 0 | 0.00000 | 100.9 | ok |
+| 11 | gpt_oss_120b | OpenRouter (open weights) | 1 | **0.677** | 0.523 | 1.062 | 5.0 | 19.0 | 1.646 | 0 | 0.00085 | 17.0 | ok |
+| 12 | gemma4_31b | DGX (NVIDIA) | 1 | **0.677** | 0.523 | 1.062 | 5.0 | 19.0 | 1.631 | 0 | 0.00000 | 58.9 | ok |
+| 13 | nemotron_35_super_120b | DGX (NVIDIA) | 1 | **0.677** | 0.523 | 1.062 | 5.0 | 19.0 | 1.508 | 0 | 0.00000 | 41.0 | ok |
+| 14 | gemma4_31b | Mac (M4 Pro) | 1 | **0.677** | 0.523 | 1.062 | 5.0 | 19.0 | 1.646 | 0 | 0.00000 | 100.9 | ok |
+| 15 | gpt_oss_120b | DGX (NVIDIA) | 1 | **0.692** | 0.538 | 1.077 | 5.0 | 20.0 | 1.523 | 0 | 0.00000 | 14.8 | ok |
 | 16 | gemma4_31b | X3 (AMD) | 1 | **0.692** | 0.538 | 1.077 | 5.0 | 20.0 | 1.723 | 0 | 0.00000 | 72.1 | ok |
 | 17 | qwen3_30b_a3b | OpenRouter (open weights) | 1 | **0.708** | 0.523 | 1.169 | 6.0 | 16.0 | 1.508 | 0 | 0.00070 | 18.0 | ok |
 | 18 | sonnet_55 | OpenRouter | 1 | **0.708** | 0.554 | 1.092 | 5.0 | 21.0 | 1.492 | 0 | 0.02266 | 12.0 | ok |
@@ -62,9 +62,9 @@ Updated 2026-10-31T08:46Z. Every finished run re-scored under the owner's rules 
   real problem, so the empty replies help its misses. Its own decisions score 1.431, against 0.554 for the whole
   step. The "no decision" column counts these; runs made before the column existed would have crashed instead, so
   their 0 is real.
-- **gpt-oss:120b on the DGX** ran an older build (pulled 2026-06-05, model layer `6be6d66a`); the current build
+- **gpt-oss:120b on the DGX** first ran an older build (pulled 2026-06-05, model layer `6be6d66a`, cost 0.615); the current build
   (`a5b03e4c`, on X3 since 2026-10-30) differs in its weights only. The owner chose a re-pull and a re-run
-  (2026-10-30); this row is kept until then, and then leaves the set of record.
+  (2026-10-30). Re-run 2026-10-31 on the current build: 0.692 (5 misses, 20 false alarms); the June run left the table.
 - **Self-hosted runs are deterministic per machine, not across machines** (measured 2026-10-30). The fleet calls
   the model at `temperature: 0` with JSON mode (`mvp/triage.py:255`). A second Bolt e4b pass on X3 matched the
   first byte for byte: 65 of 65 raw outputs identical, 0 decisions different. Against the DGX and the Mac, all 65
