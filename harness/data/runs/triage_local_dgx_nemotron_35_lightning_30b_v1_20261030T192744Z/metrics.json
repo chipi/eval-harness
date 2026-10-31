@@ -26,7 +26,10 @@
     },
     "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
     "deployment": {
-      "declared": null,
+      "declared": {
+        "fleet_code_sha256": "248e25030011aab82f5798eeb7c74fd03f2d7cfd04866b8b017d3740663727d9",
+        "fleet_commit": "f07efa9"
+      },
       "hosted": null,
       "id": "nemotron-3.5-lightning:30b@dgx",
       "in_process": false,
@@ -39,14 +42,14 @@
         "url": "http://100.69.49.126:11434/v1/chat/completions",
         "version": null
       },
-      "source": "params",
+      "source": "adapter",
       "weights": {
         "digest": null,
         "file_hash": null,
         "precision": null,
         "quantization": null,
         "revision": null,
-        "revision_source": null
+        "revision_source": "unavailable"
       },
       "where": {
         "backend": null,
@@ -54,8 +57,8 @@
         "machine": "dgx"
       }
     },
-    "deployment_sha256": "b0639038020582aeedb49506c60bca75691d51dc23d6f6da5f0555a3e08af15c",
-    "hash": "6cfc4ae090ed94b7a42e94aa95b355ffde88f1c4fde9eb4459a8d7cbd6f1eb7c",
+    "deployment_sha256": "8a90fe6452d56d324d3df6e1f879b05016fdc4472bab7d7df75a19bb5828ceb1",
+    "hash": "baced2765ae896fa1ffd21d5f0c6cb59e13447ef3c660d461c38ec2ff0017602",
     "instrument": {
       "adapter": {
         "id": "examples/triage-fleet/adapter.py",
@@ -85,9 +88,12 @@
       "release": "7.2.5-3-omarchy"
     },
     "settings": {
-      "call_timeout_s": 600
+      "call_timeout_s": 600,
+      "declared": {
+        "prompt_sha256": "77f26d87ad9f4d117cd1cbdbd5be9bbb5fcd9666294055c37376fe6938bd1131"
+      }
     },
-    "settings_sha256": "c3b758820d4155159fb13368136fcad4d28504b0f3f210b73bb02994f8bd7c81",
+    "settings_sha256": "aac1d46742fa446a3a8dca6e5ab4285f55bde594fbd4acc9fc272de82114ad2a",
     "version": 5
   },
   "goal": "triage_orrery",

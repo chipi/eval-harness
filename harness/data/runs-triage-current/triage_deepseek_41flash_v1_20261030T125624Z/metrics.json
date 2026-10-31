@@ -35,22 +35,29 @@
     },
     "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
     "deployment": {
-      "declared": null,
-      "hosted": null,
+      "declared": {
+        "fleet_code_sha256": "248e25030011aab82f5798eeb7c74fd03f2d7cfd04866b8b017d3740663727d9",
+        "fleet_commit": "f07efa9"
+      },
+      "hosted": {
+        "provider": "gateway",
+        "provider_id": null,
+        "route": null
+      },
       "id": "eval-deepseek-41flash",
       "in_process": false,
       "libraries": null,
       "model": "eval-deepseek-41flash",
       "provider": "gateway",
       "server": null,
-      "source": "params",
+      "source": "adapter",
       "weights": {
         "digest": null,
         "file_hash": null,
         "precision": null,
         "quantization": null,
         "revision": null,
-        "revision_source": null
+        "revision_source": "unavailable"
       },
       "where": {
         "backend": null,
@@ -58,7 +65,7 @@
         "machine": null
       }
     },
-    "deployment_sha256": "d0181f412fd0662c987879f8d49449e37e3a2a1566589191e452ca9ee3cfa3b5",
+    "deployment_sha256": "32c4a4867cfbfc4715ab315008682def22f2e026c5b9162e2ac23ac89a6cea68",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -89,8 +96,12 @@
       "python": "3.14.7",
       "release": "7.2.5-3-omarchy"
     },
-    "settings": {},
-    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "settings": {
+      "declared": {
+        "prompt_sha256": "77f26d87ad9f4d117cd1cbdbd5be9bbb5fcd9666294055c37376fe6938bd1131"
+      }
+    },
+    "settings_sha256": "cb112319a55187ab7f0a7b1b310f901d796aa0711f9eca2a777f7ac55f28d74c",
     "version": 5
   },
   "goal": "triage_orrery",

@@ -26,22 +26,29 @@
     },
     "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
     "deployment": {
-      "declared": null,
-      "hosted": null,
+      "declared": {
+        "fleet_code_sha256": "248e25030011aab82f5798eeb7c74fd03f2d7cfd04866b8b017d3740663727d9",
+        "fleet_commit": "f07efa9"
+      },
+      "hosted": {
+        "provider": "gateway",
+        "provider_id": null,
+        "route": null
+      },
       "id": "eval-claude-haiku-55",
       "in_process": false,
       "libraries": null,
       "model": "eval-claude-haiku-55",
       "provider": "gateway",
       "server": null,
-      "source": "params",
+      "source": "adapter",
       "weights": {
         "digest": null,
         "file_hash": null,
         "precision": null,
         "quantization": null,
         "revision": null,
-        "revision_source": null
+        "revision_source": "unavailable"
       },
       "where": {
         "backend": null,
@@ -49,8 +56,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "1da967eba9c64b8c88d4977cda6fe0ea5658e9e329a875940ebf24ae30715bb3",
-    "hash": "3e61a9f24906a26f0ccd233efc003fdbdd86a90b9f68d281e28734cbf68e8fbb",
+    "deployment_sha256": "3e18e0b860ea9704f5aa92445f03b6c3295467f09aa6901bec6e4787fac1d884",
+    "hash": "a057574e37f82df2d9396d9a9097f4ea872510099b774fd03059be0320ec74b1",
     "instrument": {
       "adapter": {
         "id": "examples/triage-fleet/adapter.py",
@@ -79,8 +86,12 @@
       "python": "3.14.7",
       "release": "7.2.5-3-omarchy"
     },
-    "settings": {},
-    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "settings": {
+      "declared": {
+        "prompt_sha256": "77f26d87ad9f4d117cd1cbdbd5be9bbb5fcd9666294055c37376fe6938bd1131"
+      }
+    },
+    "settings_sha256": "cb112319a55187ab7f0a7b1b310f901d796aa0711f9eca2a777f7ac55f28d74c",
     "version": 5
   },
   "goal": "triage_orrery",

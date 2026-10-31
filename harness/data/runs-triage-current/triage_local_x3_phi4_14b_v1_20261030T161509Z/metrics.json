@@ -35,7 +35,10 @@
     },
     "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
     "deployment": {
-      "declared": null,
+      "declared": {
+        "fleet_code_sha256": "248e25030011aab82f5798eeb7c74fd03f2d7cfd04866b8b017d3740663727d9",
+        "fleet_commit": "f07efa9"
+      },
       "hosted": null,
       "id": "phi4:14b@x3",
       "in_process": false,
@@ -48,14 +51,14 @@
         "url": "http://127.0.0.1:11434/v1/chat/completions",
         "version": null
       },
-      "source": "params",
+      "source": "adapter",
       "weights": {
         "digest": null,
         "file_hash": null,
         "precision": null,
         "quantization": null,
         "revision": null,
-        "revision_source": null
+        "revision_source": "unavailable"
       },
       "where": {
         "backend": null,
@@ -63,7 +66,7 @@
         "machine": "x3"
       }
     },
-    "deployment_sha256": "0ddf569a8e5773e857088a612fe7ef69fb12d263faee5d25602397dbe96bfc76",
+    "deployment_sha256": "1b62828f16b1d97473c23eb600dbc89da91402353d94c70d8e3b5f5a03a2d3fc",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
     "instrument": {
@@ -95,9 +98,12 @@
       "release": "7.2.5-3-omarchy"
     },
     "settings": {
-      "call_timeout_s": 600
+      "call_timeout_s": 600,
+      "declared": {
+        "prompt_sha256": "77f26d87ad9f4d117cd1cbdbd5be9bbb5fcd9666294055c37376fe6938bd1131"
+      }
     },
-    "settings_sha256": "c3b758820d4155159fb13368136fcad4d28504b0f3f210b73bb02994f8bd7c81",
+    "settings_sha256": "aac1d46742fa446a3a8dca6e5ab4285f55bde594fbd4acc9fc272de82114ad2a",
     "version": 5
   },
   "goal": "triage_orrery",

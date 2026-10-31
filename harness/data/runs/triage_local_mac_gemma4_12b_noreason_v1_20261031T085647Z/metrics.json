@@ -26,7 +26,10 @@
     },
     "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
     "deployment": {
-      "declared": null,
+      "declared": {
+        "fleet_code_sha256": "248e25030011aab82f5798eeb7c74fd03f2d7cfd04866b8b017d3740663727d9",
+        "fleet_commit": "f07efa9"
+      },
       "hosted": null,
       "id": "gemma4:12b@mac",
       "in_process": false,
@@ -39,14 +42,14 @@
         "url": "http://127.0.0.1:11435/v1/chat/completions",
         "version": null
       },
-      "source": "params",
+      "source": "adapter",
       "weights": {
         "digest": null,
         "file_hash": null,
         "precision": null,
         "quantization": null,
         "revision": null,
-        "revision_source": null
+        "revision_source": "unavailable"
       },
       "where": {
         "backend": null,
@@ -54,8 +57,8 @@
         "machine": "mac"
       }
     },
-    "deployment_sha256": "782654b3991e42d518ef0524fc560cb9d08b8f6cd0ae8375772bce58ed973cf3",
-    "hash": "ccac960bdd8a67fb43e11d93137c63476e5d4b23910e197ea186910ec09b5f07",
+    "deployment_sha256": "19e05373f9b2e229c9eb67ecc292fb416d0c90cc1d8cc36ab4fae52a723bea83",
+    "hash": "bb932fe9fe2038e0b3c6561b038db8b52f61bfe3ccd8e2ecc95cac201a523f8b",
     "instrument": {
       "adapter": {
         "id": "examples/triage-fleet/adapter.py",
@@ -86,10 +89,13 @@
     },
     "settings": {
       "call_timeout_s": 30,
+      "declared": {
+        "prompt_sha256": "77f26d87ad9f4d117cd1cbdbd5be9bbb5fcd9666294055c37376fe6938bd1131"
+      },
       "max_tokens": 1024,
       "reasoning_effort": "none"
     },
-    "settings_sha256": "1b011dadda1d75815db34893219a3bc30d317e9210f88a016251dfb785acfdff",
+    "settings_sha256": "0bb3e952239e1be69854be0143ec0598119084b8df1d9a03f9329a034aeec546",
     "version": 5
   },
   "goal": "triage_orrery",

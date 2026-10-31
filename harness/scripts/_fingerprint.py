@@ -470,13 +470,14 @@ def _adapter_deployment(
     in_process = not is_remote(params)
     model = params.get("model") or declared.get("id")
     provider = params.get("provider") or declared.get("provider")
+    url = params.get("base_url") or params.get("url")
     hosted = (
         {
             "provider": provider,
             "provider_id": declared.get("id") if declared.get("id") not in (None, model) else None,
             "route": params.get("provider_routing") or declared.get("provider_routing"),
         }
-        if provider in REMOTE_PROVIDERS and not (params.get("url") or params.get("base_url"))
+        if provider in REMOTE_PROVIDERS and not url
         else None
     )
     return {
@@ -488,7 +489,8 @@ def _adapter_deployment(
             revision_source=declared.get("revision_source"),
             precision=declared.get("precision"),
         ),
-        "server": None,
+        # The server the adapter called, as the params name it: a hook says what the model is, not where.
+        "server": {"name": None, "version": None, "settings": None, "url": url} if url else None,
         "where": {"machine": params.get("machine"), "backend": None, "device": declared.get("device")},
         "hosted": hosted,
         "provider": provider,

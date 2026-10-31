@@ -113,6 +113,11 @@ that can move a result is never a patch release without saying so under **Change
   the re-score. A re-score against the same reference now stands in for the run it re-read on the
   goal pages, in `evh goals` and in the recommendation, which says how many arms it read that way.
   `evh goals --goal` also prints a dataset's notes, as its page did.
+- **A deployment the adapter's hook declares keeps the server it was called on.** Its `server` was
+  always null, so a self-hosted run whose adapter has a `fingerprint()` hook lost its Ollama or vLLM
+  URL. The 130 triage runs are backfilled with the fleet they replayed (`tools/backfill_triage_fleet.py`:
+  the fleet's code hash and commit `f07efa9`, the prompt's hash, each checked against what the runs'
+  own items recorded) and re-sealed.
 
 ## 0.5.0 — 2026-10-29
 

@@ -26,22 +26,29 @@
     },
     "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
     "deployment": {
-      "declared": null,
-      "hosted": null,
+      "declared": {
+        "fleet_code_sha256": "248e25030011aab82f5798eeb7c74fd03f2d7cfd04866b8b017d3740663727d9",
+        "fleet_commit": "f07efa9"
+      },
+      "hosted": {
+        "provider": "gateway",
+        "provider_id": null,
+        "route": null
+      },
       "id": "eval-gemini-4-argon",
       "in_process": false,
       "libraries": null,
       "model": "eval-gemini-4-argon",
       "provider": "gateway",
       "server": null,
-      "source": "params",
+      "source": "adapter",
       "weights": {
         "digest": null,
         "file_hash": null,
         "precision": null,
         "quantization": null,
         "revision": null,
-        "revision_source": null
+        "revision_source": "unavailable"
       },
       "where": {
         "backend": null,
@@ -49,8 +56,8 @@
         "machine": null
       }
     },
-    "deployment_sha256": "9cddadf72045894c285669a5a09d4d51eeb2a254afe11dbeb4047a317c294d0e",
-    "hash": "d3eb35ea4d0252c3c4388feba340af8f714690812f6f741eab96e24aa0e76412",
+    "deployment_sha256": "62d79c7aafa028daec04e2cd487eb88b6d3a2880e5ce585506e3fbe8995d697e",
+    "hash": "dab934689a5912890142abbf95396fd674218e95c50533410501c4bc3367cf10",
     "instrument": {
       "adapter": {
         "id": "examples/triage-fleet/adapter.py",
@@ -79,8 +86,12 @@
       "python": "3.14.7",
       "release": "7.2.5-3-omarchy"
     },
-    "settings": {},
-    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "settings": {
+      "declared": {
+        "prompt_sha256": "77f26d87ad9f4d117cd1cbdbd5be9bbb5fcd9666294055c37376fe6938bd1131"
+      }
+    },
+    "settings_sha256": "cb112319a55187ab7f0a7b1b310f901d796aa0711f9eca2a777f7ac55f28d74c",
     "version": 5
   },
   "goal": "triage_orrery",

@@ -26,7 +26,10 @@
     },
     "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
     "deployment": {
-      "declared": null,
+      "declared": {
+        "fleet_code_sha256": "248e25030011aab82f5798eeb7c74fd03f2d7cfd04866b8b017d3740663727d9",
+        "fleet_commit": "f07efa9"
+      },
       "hosted": null,
       "id": "qwen3:30b-a3b-instruct-2507-q4_K_M@x3",
       "in_process": false,
@@ -39,14 +42,14 @@
         "url": "http://127.0.0.1:11434/v1/chat/completions",
         "version": null
       },
-      "source": "params",
+      "source": "adapter",
       "weights": {
         "digest": null,
         "file_hash": null,
         "precision": null,
         "quantization": null,
         "revision": null,
-        "revision_source": null
+        "revision_source": "unavailable"
       },
       "where": {
         "backend": null,
@@ -54,8 +57,8 @@
         "machine": "x3"
       }
     },
-    "deployment_sha256": "182b1a822bd154fb83a2511bc12d15dafe2bf2f776f873c7f9beed5dcbd5f0fd",
-    "hash": "7e217c14ea300f530fb251f00013de59fc2891bca09ad38c74538447ebe5cc06",
+    "deployment_sha256": "726d40688fbec83bfcac14584e5111bf0f89cd23d291076b2439a7b70e90c3ea",
+    "hash": "3e3dca3664d9ca80b3607420939ac4341a203bd7c6104773fdfe5d70095d7bbe",
     "instrument": {
       "adapter": {
         "id": "examples/triage-fleet/adapter.py",
@@ -85,9 +88,12 @@
       "release": "7.2.5-3-omarchy"
     },
     "settings": {
-      "call_timeout_s": 600
+      "call_timeout_s": 600,
+      "declared": {
+        "prompt_sha256": "77f26d87ad9f4d117cd1cbdbd5be9bbb5fcd9666294055c37376fe6938bd1131"
+      }
     },
-    "settings_sha256": "c3b758820d4155159fb13368136fcad4d28504b0f3f210b73bb02994f8bd7c81",
+    "settings_sha256": "aac1d46742fa446a3a8dca6e5ab4285f55bde594fbd4acc9fc272de82114ad2a",
     "version": 5
   },
   "goal": "triage_orrery",

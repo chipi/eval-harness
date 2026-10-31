@@ -933,4 +933,22 @@ check(
 w = _warnings(runners, "correct")
 check("inspector: a quality measure from different runners carries no warning", w == "", w)
 
+# A hook says what the model is, not where it was served: the server the params name stays (it was None
+# for every hook-sourced deployment, so a self-hosted triage run lost its Ollama URL).
+served = fpmod.deployment_of(
+    params={"provider": "openrouter", "model": "phi4:14b", "url": "http://box:11434/v1/chat/completions"},
+    cfg=None,
+    data_dir=Path(tempfile.gettempdir()),
+    hook=lambda p: {"id": p["model"], "prompt_sha256": "p" * 64},
+    libraries={"openai": "3"},
+)
+check(
+    "adapter source: the server URL from the params is kept, and a served model is not hosted",
+    served["source"] == "adapter"
+    and (served["server"] or {}).get("url") == "http://box:11434/v1/chat/completions"
+    and served["hosted"] is None
+    and served["in_process"] is False,
+    served,
+)
+
 sys.exit(summary())
