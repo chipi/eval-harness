@@ -1,20 +1,27 @@
-# RFC-020: Onboarding a model before an experiment
+# RFC-020: Onboarding models, once, for every experiment
 
-- **Status**: Draft (second, 2026-10-31), for the owner's review; proposed for 0.6.0. The owner agreed the shape
-  on 2026-10-31: one general command for every arm, `evh arm-smoke`, with an LLM layer on top.
+- **Status**: Draft (third, 2026-10-31), being built for 0.6.0. The owner's decisions of 2026-10-31: a model is
+  onboarded once for the project and reused by every experiment; records live in `data/models/`; one general
+  command checks an arm on its own task, `evh arm-smoke`, with an LLM layer on top; the catalog gets a Models
+  page; it ships in 0.6.0.
 - **Authors**: Marko Dragoljevic
 - **Related**: [RFC-019](RFC-019-datasets-from-production.md) (its triage example is where the gap showed);
-  RUNBOOK §16 (the manual procedure this RFC turns into tooling)
+  [UXS-001](../uxs/UXS-001-catalog.md) (the Models page); RUNBOOK §16 (the procedure)
 
 ## Abstract
 
-An arm is a model *and how it is run*: its build, its device, its settings. Leave a setting unset and a server,
-a provider or a library chooses it, differently for each model, and the experiment then compares those choices
-as much as the models. Nothing today checks what an arm actually does before its full run spends the time or the
-money. This RFC adds an **optional onboarding step**: `evh arm-smoke`, a short run of a few items that checks any
-arm (an LLM, an ML model, a baseline) and projects what the full run will cost, with an **LLM layer** that turns
-on when the arm makes LLM calls; and a **model record** that keeps each model's build and chosen settings with
-the smoke behind them. Nothing changes for a project that skips it.
+An arm is a model *and how it is run*: its build, where it runs, its settings. Leave a setting unset and a
+server, a provider or a library chooses it, differently for each model, and the experiment then compares those
+choices as much as the models. This RFC makes setting a model up a project's own, reusable step, in two levels:
+
+1. **Onboard a model, once.** `evh model-onboard` writes its **model record** (`data/models/<id>.yaml`): the
+   build on every machine that runs it, what it can do, the settings chosen for it, and a task-independent smoke
+   behind them. The model is then ready for any experiment, and listed on the catalog's **Models** page.
+2. **Use it in an experiment.** An arm names the record and inherits its build and settings, overriding only what
+   its task needs; **`evh arm-smoke`** checks the arm on its own task's items (valid output for its scorer, time,
+   a projection of the full run) before the run spends anything.
+
+Both are optional: a project that onboards nothing and smokes nothing sees no change.
 
 ## Motivation
 
@@ -45,12 +52,56 @@ the build and the output distribution printed, shows before the run.
 
 ## Proposal
 
-### 1. `evh arm-smoke --config <arm> [--items 3]`
+### 1. The model record: `data/models/<model_id>.yaml`
 
-Runs the arm's first items the way `experiment-run` would and writes no run. The report has sections; each
-appears when the arm gives it something to show.
+One file per model the project uses, with the fields that apply to its kind (`llm`, `ml`, `baseline`):
 
-**For every arm**, from what every run already produces (the `Result`: output, time, tokens, cost, extras):
+- **build**, per place it runs: the tag and digest (Ollama, a registry), the revision (Hugging Face), or a file
+  hash; the quantization or precision; for a hosted model, the provider id and the route.
+- **where**: each machine or host, with its server and server settings (version, context length, KV cache) or
+  its device; and the build found there when last checked.
+- **capabilities**, measured: for an LLM whether it reasons and whether reasoning can be turned off (and how:
+  `reasoning_effort: none`, or only low / medium / high), JSON mode, context length; for an ML model its labels
+  or output shape.
+- **settings**, chosen: for an LLM `reasoning_effort`, `max_tokens`, the call limit, temperature; for an ML model
+  device, precision, batch size. With one line on why each was chosen.
+- **onboarding smoke**: its report, date and machine (below).
+- **history**: each change of build or settings, with its date and the smoke behind it.
+
+`validate` checks the schema, and that every arm naming a record exists in `data/models/`.
+
+**It replaces `data/models.yaml`.** That file keys each model a run records (`params.model`) to its weights (open
+or proprietary) and licence, for the arms page's weights filter (`models.schema.json`). Its entries move into the
+records (`weights`, `licence`, and `aliases`: the ids runs record for the model, `eval-gemma-31b` and
+`gemma4:31b` alike), the file and its schema go, and the weights filter reads the records. No second file and no
+shim: the committed data is migrated (0.6.0's rule for formats nobody depends on yet).
+
+### 2. Onboarding: `evh model-onboard <model_id> [--where ...]`
+
+Task-independent, once per model and machine, and again when the build changes. It probes the model with a few
+fixed requests of its kind and writes the result into the record:
+
+| probe | what it records, and flags |
+|---|---|
+| build | the digest, revision or hash on each machine; **differs between machines** is flagged |
+| speed | tokens per second (LLM), items per second and load time (ML) |
+| reasoning (LLM) | whether it reasons by default; whether the record's setting turns it off; a loop or an unbounded reply is flagged |
+| format (LLM) | whether JSON mode returns valid JSON |
+| determinism | the same request twice gives the same output, or not (repeats on that machine measure nothing, or something) |
+| limits | the longest normal reply against `max_tokens`, the slowest normal call against the call limit |
+
+`ONBOARD PASS` or `ONBOARD CHECK` with the flags. A hosted model is onboarded the same way, through its gateway.
+
+### 3. An arm uses a record: `model: <model_id>`
+
+An arm's config names the record instead of repeating it; its `params` inherit the record's settings and
+override only what the task needs (a task's longer replies, its call limit). The run records the record's id and
+the build it ran on, so a result can always be traced to how the model was set up.
+
+### 4. `evh arm-smoke --config <arm> [--items 3]`
+
+Task-specific, once per arm before its first full run: runs the arm's first items the way `experiment-run`
+would and writes no run. Every arm gets the general checks, from what every run already produces (the `Result`):
 
 | check | flags when |
 |---|---|
@@ -79,33 +130,40 @@ are printed, and load time is kept apart from per-item time in the projection.
 apply to it. The inspector shows the latest smoke on the arm's page (CLI parity). The triage example's
 `smoke.py` is the first, adapter-side version of the LLM section.
 
-### 2. The model record: `data/models/<model_id>.yaml`
+The report is written into the record's history for that arm, so the Models page can show which arms were
+smoked.
 
-One file per model a project tests, with the fields that apply to it: the build (tag and digest, or revision,
-or file hash), where it runs and on what (server and its settings; device, precision), the chosen settings (for
-an LLM `reasoning_effort`, `max_tokens`, the call limit; for an ML model batch size, precision), and the smoke
-that chose them (its report, date, machine). A config may name it (`model_record: <id>`); `validate` then checks
-the config's settings and recorded build against the record's. The catalog lists the records with the arms that
-use them.
+### 5. The catalog: a Models page, and a page per model (UXS-001)
 
-### 3. Validation, advisory
+- **Models** (`models.html`): one row per record: the model and its kind, the build (marked when machines
+  differ), where it runs, the chosen settings, the onboarding smoke (pass / check / none, its date and flags),
+  the arms and goals that use it, and their best result. Filters: kind, where, smoke status, "differs from its
+  record".
+- **A model's page**: the build on each machine, matched or not; the onboarding report in full; the settings'
+  history (gemma4:12b: "default reasoning → reasoning off, 2026-10-31", with the smoke and the result before and
+  after); its arms, each with its arm smoke.
+- **The arms page** gets a badge per arm: its model record, and "smoked" or "not smoked".
+- **CLI parity**: `evh models` lists the same; `evh models --model <id>` shows one.
 
-`validate` warns, never fails: an arm that names a record but differs from it; an arm whose record marks a
-reasoning model and that sets no `max_tokens`; an arm with no smoke on file. A project that keeps no records sees
+### 6. Validation, advisory
+
+`validate` warns, never fails: an arm whose settings or build differ from its record; a reasoning model's arm with
+no `max_tokens`; an arm never smoked; a record whose machines' builds differ. A project that keeps no records sees
 no warnings.
 
-### 4. Repeats
+### 7. Repeats
 
-`experiment-run --repeat` on an arm whose smoke found it deterministic says the passes will be identical on that
-machine, and points at other machines or builds for spread.
+`experiment-run --repeat` on an arm whose record found its model deterministic on that machine says the passes
+will be identical there, and points at other machines or builds for spread.
 
 ## Not in scope
 
-- Choosing settings for a project: the smoke measures and flags; a person decides.
+- Choosing settings for a project: onboarding and the smoke measure and flag; a person decides.
 - Pulling models or managing servers.
 - Tuning prompts (the triage goal's 0.7.0 work).
 
-## Open questions for the owner
+## The first records
 
-1. Model records in `data/models/`, or inside the arm configs only?
-2. 0.6.0, with the capture lane, or its own release?
+The triage experiment's models, about 25, are onboarded from what is already measured and a probe each where it
+is not: their builds on X3, the DGX and the Mac, their reasoning, and the settings round 2 of `triage_orrery`
+runs them with.

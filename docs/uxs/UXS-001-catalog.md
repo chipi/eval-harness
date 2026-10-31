@@ -548,6 +548,48 @@ tile opens it grouped by config (`arms.html?group=config`).
 - Notes, when the adapter has any (runs left out, and why).
 - Command: `evh arms --arm <arm id or config id>`; `evh arms [--dataset-id <id>]` lists them.
 
+## The models page
+
+The project's onboarded models (RFC-020): what each one is, how it is set up, whether it was vetted, and
+where it is used. A models tile on the home page opens it, beside arms.
+
+- Hero: kicker `models`, "Models", "N models onboarded: K vetted, L to check. A model is onboarded once (its
+  build on every machine, what it can do, the settings chosen for it, a smoke behind them) and used by any
+  experiment's arms.", then the period bar.
+- `01 every model`:
+  - **only** chips: llm, ml, baseline; self-hosted, hosted; open weights, proprietary; vetted (onboarding
+    passed), to check (onboarding flagged), not onboarded (an arm's model with no record); builds differ (a
+    machine's build is not the record's).
+  - the table: **model** (linked; its kind under it), **build** (tag and digest, revision or hash, shortened;
+    a "differs" badge when a machine's build is not the record's), **where** (each machine or host, muted when
+    its build was last checked more than 30 days ago), **settings** (for an LLM "reasoning off · 1024 tokens
+    · 30 s"; for an ML model "cpu · fp32 · batch 1"; "defaults" when none is chosen), **onboarding** (pass /
+    check / none, its date, the flags on hover), **arms** (count, linked to the arms page filtered to them),
+    **goals**, **best result** (its best arm's place in each goal, "#8 of 52 on triage_orrery"). Filterable.
+- `02 what changed in the period`: **when**, **model**, **what** (onboarded; build changed on `<machine>`;
+  settings changed, from what to what; onboarding re-run), only the period's.
+- Command: `evh models [--kind llm|ml|baseline] [--where self-hosted|hosted] [--status vetted|check|none]`.
+
+## The model page
+
+- Hero: kicker `model`, the model's name and kind, then its facts: **weights** and **licence**, **aliases**
+  (the ids runs record for it), **settings** (each with its one line of why), **onboarding** (pass or check,
+  date, machine).
+- `01 builds`: one row per place it runs: **where**, **server or device** (with its settings: version, context
+  length; or device and precision), **build** (in full), **matches the record** (yes, or what differs),
+  **checked** (date).
+- `02 onboarding`: the latest onboarding report in full: each probe, its measurement and its flag; the smoke's
+  items and calls for an LLM (time, tokens out, reasoning, answer, how it ended).
+- `03 settings history`: **when**, **what changed** (from, to), **why**, **smoke before / after**, **result
+  before / after** (the arm's deciding measure on the goal it ran in): gemma4:12b "reasoning default → none,
+  2026-10-31: never answered → 0.585".
+- `04 arms`: every arm that names it: **arm** (linked), **goal**, **settings it overrides**, **arm smoke** (pass /
+  check / none, date), **result**.
+- Command: `evh models --model <id>`.
+
+On the arms page each arm's row gets its model record under the model column, linked, and a smoke badge:
+"smoked", "smoke: check", or "not smoked".
+
 ## The metric page
 
 - Hero: kicker `metric`, the metric's name, then **better** (higher, lower, or "neutral: a

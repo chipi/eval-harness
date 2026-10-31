@@ -28,7 +28,7 @@ Other statuses: **Rejected** and **Withdrawn**, each with the reason kept.
 | RFC | Title | Related PRD | Status | Description |
 | --- | ----- | ----------- | ------ | ----------- |
 | [RFC-019](RFC-019-datasets-from-production.md) | Datasets from production: a lane beside the method | [PRD-014](../prd/PRD-014-datasets-from-production.md) | Draft (third; building, 0.6.0) | New commands end in ordinary datasets and references: importers (jsonl, tsv, github, langfuse built in), captures, datasets from a capture, references from outcomes over flat fields, splits; second references silver (ADR-0020, proposed); `text: hidden` on every public surface; stateless; designed on a triage fleet |
-| [RFC-020](RFC-020-onboarding-a-model.md) | Onboarding a model before an experiment | — | Draft (second; for review) | `evh arm-smoke` for any arm (LLM, ML, baseline): runs, valid output, time and a full-run projection, build pinned, determinism, cost; an LLM layer (reasoning, slow, long, cut-off, no answer) when the arm calls an LLM; a model record per model; advisory validation; designed on the triage and Few-NERD experiments |
+| [RFC-020](RFC-020-onboarding-a-model.md) | Onboarding models, once, for every experiment | — | Draft (third; building, 0.6.0) | Model records in `data/models/` written by `evh model-onboard` (build per machine, capabilities, settings, a task-independent smoke); arms name a record; `evh arm-smoke` per arm on its task: runs, valid output, time and a full-run projection, build pinned, determinism, cost; an LLM layer (reasoning, slow, long, cut-off, no answer) when the arm calls an LLM; a catalog Models page and a page per model; advisory validation; designed on the triage and Few-NERD experiments |
 
 ## Completed RFCs
 
