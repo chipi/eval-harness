@@ -977,6 +977,36 @@ evh dataset-split prod_v1 --heldout 0.3 --seed 7 --key fingerprint     # prod_v1
 - **`text: hidden`** (`dataset-from-capture --hide-text`) keeps a dataset's text, and every text derived
   from it, off every public surface, for data a project may measure but not publish.
 
+## 16. Set up a model before you test it
+
+An arm is a model *and how it is called*. Servers and providers choose defaults for what an arm leaves
+unset — whether the model reasons first, how long a reply may run, which build of the weights a tag
+names — and those defaults differ from model to model. An arm that leaves them unset compares the
+defaults as much as the models. Settle them before the full run, on purpose, and write them down.
+
+1. **Pin the build.** Record the tag and its digest. One tag name can name different builds on different
+   machines (an MLX build on a Mac, an older pull on another host): compare digests across every machine
+   that will run the arm, and against the registry, before the first run.
+2. **Smoke a few items.** Run three or so with the arm's own settings and measure every model call: time,
+   tokens out, whether it reasoned, whether an answer came back, why it ended. The triage example's
+   `examples/triage-fleet/smoke.py` does this and flags what to revisit; a project's own adapter can do
+   the same in a few lines by wrapping its model call.
+3. **Choose the settings on purpose.**
+   - *Reasoning*: off (`reasoning_effort: none`) unless the task needs it; some models only offer low,
+     medium or high. Left to the default, one model reasons at length and the next not at all, and a
+     reasoning model can loop without ever answering.
+   - *A reply cap* (`max_tokens`): a few times the longest normal answer. Without one, a reply is
+     unbounded and a loop runs until the call limit.
+   - *A call limit*: a few times the slowest normal call, not the slowest model's. A generous limit on a
+     fast model only makes its failures slow.
+   - *The server's own settings*: context length, quantization, KV cache — the same everywhere the arm
+     runs.
+4. **Write them down** beside the configs (the triage example keeps `MODELS.md`): each model's build,
+   settings and the smoke that chose them, so the next person runs the same arm the same way.
+5. **Know what a repeat measures.** A self-hosted model at temperature 0 gives the same output on the same
+   machine every time: a second pass there adds nothing. The spread comes from other machines and other
+   builds; a hosted model's repeats do vary.
+
 ## Exit codes
 
 Every command, `make` target and `evh` subcommand, for scripts and CI that branch on them:
