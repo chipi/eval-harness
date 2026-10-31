@@ -64,109 +64,104 @@ history:
     at length and the next not at all'
 smokes:
   triage_gpt_6_luna_v2:
-    status: check
-    at: '2026-10-31T14:24:24Z'
-    flags:
-    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
-    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
-      record''s deployment)'
+    status: pass
+    at: '2026-10-31T14:37:55Z'
+    flags: []
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 7.96
-        output_chars: 1028
-        cost_usd: 0.0006274000000000001
+        s: 6.86
+        output_chars: 1004
+        cost_usd: 0.0006912
         scored: true
         deterministic: false
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 7.91
-        output_chars: 1329
-        cost_usd: 0.000712
+        s: 6.62
+        output_chars: 1299
+        cost_usd: 0.0006653
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 5.6
-        output_chars: 848
-        cost_usd: 0.0005336000000000001
+        s: 5.46
+        output_chars: 964
+        cost_usd: 0.0005301
         scored: true
       calls:
-      - tokens_out: 106
+      - tokens_out: 155
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.57
-      - tokens_out: 52
+        s: 2.26
+      - tokens_out: 61
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.33
-      - tokens_out: 48
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 1.8
+        s: 1.47
       - tokens_out: 51
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.65
-      - tokens_out: 94
+        s: 1.44
+      - tokens_out: 93
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.6
-      - tokens_out: 153
+        s: 1.69
+      - tokens_out: 97
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.89
-      - tokens_out: 51
+        s: 1.91
+      - tokens_out: 47
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.49
-      - tokens_out: 58
+        s: 1.68
+      - tokens_out: 50
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.72
+        s: 1.21
       - tokens_out: 114
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.83
+      - tokens_out: 148
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.18
+      - tokens_out: 50
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.47
+      - tokens_out: 112
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
         s: 1.81
-      - tokens_out: 153
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 2.23
-      - tokens_out: 49
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 1.51
-      - tokens_out: 114
-        reasoning_tokens: 0
-        reasoning_chars: 0
-        finish_reason: stop
-        answered: true
-        s: 1.86
       projection:
         items: 65
-        minutes: 7.8
-        worst_minutes: 8.6
-        usd: 0.0406
+        minutes: 6.8
+        worst_minutes: 7.4
+        usd: 0.0409
       settings:
         model: eval-gpt-6-luna
         reasoning_effort: none
         max_tokens: 1024
+    accepted:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
+      record''s deployment)'

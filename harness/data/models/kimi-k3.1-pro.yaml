@@ -63,109 +63,110 @@ history:
     at length and the next not at all'
 smokes:
   triage_kimi_k31_pro_v2:
-    status: check
-    at: '2026-10-31T14:27:13Z'
-    flags:
-    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
-    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
-      record''s deployment)'
+    status: pass
+    at: '2026-10-31T14:41:07Z'
+    flags: []
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 26.66
-        output_chars: 1732
-        cost_usd: 0.014452
+        s: 23.03
+        output_chars: 2533
+        cost_usd: 0.01535
         scored: true
         deterministic: false
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 22.03
-        output_chars: 1754
-        cost_usd: 0.01368
+        s: 30.53
+        output_chars: 2312
+        cost_usd: 0.01545
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 26.95
-        output_chars: 1803
-        cost_usd: 0.014118
+        s: 24.0
+        output_chars: 1858
+        cost_usd: 0.014342
         scored: true
       calls:
-      - tokens_out: 63
+      - tokens_out: 43
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.47
-      - tokens_out: 61
+        s: 4.42
+      - tokens_out: 46
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 5.04
-      - tokens_out: 84
+        s: 4.19
+      - tokens_out: 58
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 8.51
-      - tokens_out: 174
+        s: 3.17
+      - tokens_out: 348
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 8.63
-      - tokens_out: 50
+        s: 11.26
+      - tokens_out: 57
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.73
-      - tokens_out: 44
+        s: 5.09
+      - tokens_out: 69
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.44
-      - tokens_out: 60
+        s: 5.17
+      - tokens_out: 74
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.55
-      - tokens_out: 130
+        s: 8.71
+      - tokens_out: 244
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 8.31
-      - tokens_out: 50
+        s: 11.56
+      - tokens_out: 49
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 5.53
-      - tokens_out: 51
+        s: 4.95
+      - tokens_out: 64
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 4.48
-      - tokens_out: 66
+        s: 4.92
+      - tokens_out: 55
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 6.44
-      - tokens_out: 173
+        s: 4.78
+      - tokens_out: 192
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 10.5
+        s: 9.35
       projection:
         items: 65
-        minutes: 27.3
-        worst_minutes: 29.2
-        usd: 0.9154
+        minutes: 28.0
+        worst_minutes: 33.1
+        usd: 0.9781
       settings:
         model: eval-kimi-k31-pro
         reasoning_effort: none
         max_tokens: 1024
+    accepted:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
+      record''s deployment)'

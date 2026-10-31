@@ -135,24 +135,24 @@ history:
 smokes:
   triage_local_x3_nemotron_35_bolt_e4b_v2:
     status: check
-    at: '2026-10-31T14:25:27Z'
+    at: '2026-10-31T14:38:46Z'
     flags:
     - 'determinism: item 1 twice gave different outputs (repeats will vary)'
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 10.36
+        s: 9.91
         output_chars: 1627
         cost_usd: 0.0
         scored: true
         deterministic: false
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 5.6
+        s: 5.67
         output_chars: 1874
         cost_usd: 0.0
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 5.2
+        s: 5.24
         output_chars: 1555
         cost_usd: 0.0
         scored: true
@@ -162,19 +162,19 @@ smokes:
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 5.77
+        s: 5.3
       - tokens_out: 62
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.17
+        s: 1.15
       - tokens_out: 84
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.23
+        s: 1.27
       - tokens_out: 125
         reasoning_tokens: 0
         reasoning_chars: 0
@@ -192,19 +192,19 @@ smokes:
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 0.89
+        s: 0.91
       - tokens_out: 70
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.35
+        s: 1.37
       - tokens_out: 151
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.52
+        s: 2.56
       - tokens_out: 40
         reasoning_tokens: 0
         reasoning_chars: 0
@@ -216,23 +216,23 @@ smokes:
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 0.96
+        s: 0.97
       - tokens_out: 82
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.24
+        s: 1.26
       - tokens_out: 119
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.18
+        s: 2.19
       projection:
         items: 65
-        minutes: 7.6
-        worst_minutes: 11.2
+        minutes: 7.5
+        worst_minutes: 10.7
         usd: 0.0
       settings:
         model: nemotron-3.5-bolt:e4b-q4_K_M
@@ -241,23 +241,23 @@ smokes:
         call_timeout_s: 600
   triage_local_mac_nemotron_35_bolt_e4b_v2:
     status: pass
-    at: '2026-10-31T14:26:54Z'
+    at: '2026-10-31T14:40:07Z'
     flags: []
     report:
       items:
       - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
-        s: 14.58
+        s: 13.89
         output_chars: 1593
         cost_usd: 0.0
         scored: true
         deterministic: true
       - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
-        s: 6.21
+        s: 6.37
         output_chars: 1782
         cost_usd: 0.0
         scored: true
       - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
-        s: 6.61
+        s: 6.73
         output_chars: 1658
         cost_usd: 0.0
         scored: true
@@ -267,13 +267,13 @@ smokes:
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 9.59
+        s: 9.1
       - tokens_out: 65
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.36
+        s: 1.22
       - tokens_out: 83
         reasoning_tokens: 0
         reasoning_chars: 0
@@ -285,13 +285,13 @@ smokes:
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.11
+        s: 2.06
       - tokens_out: 43
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 0.98
+        s: 1.01
       - tokens_out: 68
         reasoning_tokens: 0
         reasoning_chars: 0
@@ -303,41 +303,41 @@ smokes:
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.63
+        s: 1.65
       - tokens_out: 141
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.43
+        s: 2.53
       - tokens_out: 40
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.04
+        s: 1.03
       - tokens_out: 71
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.35
+        s: 1.39
       - tokens_out: 90
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 1.5
+        s: 1.49
       - tokens_out: 147
         reasoning_tokens: 0
         reasoning_chars: 0
         finish_reason: stop
         answered: true
-        s: 2.72
+        s: 2.82
       projection:
         items: 65
-        minutes: 9.9
-        worst_minutes: 15.8
+        minutes: 9.7
+        worst_minutes: 15.0
         usd: 0.0
       settings:
         model: nemotron-3.5-bolt:e4b-q4_K_M
