@@ -42,6 +42,7 @@ behaviour. The release notes ([CHANGELOG](../../harness/CHANGELOG.md)) say what 
 | [PRD-006](PRD-006-datasets-versions-fields.md) | Datasets, versions and item fields | Implemented (v0.4.0) | [RFC-006](../rfc/RFC-006-item-fields-and-url-items.md), [ADR-0003](../adr/ADR-0003-item-fields-and-url-items.md) | Versions with lineage, typed item fields outside the identity, items at a pinned URL |
 | [PRD-007](PRD-007-packaging-and-providers.md) | One install, your own keys | Implemented (v0.4.0) | [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) | The `evh` package, the project's own data, the adapter seam, hosted providers with keys you bring |
 | [PRD-014](PRD-014-datasets-from-production.md) | Datasets from production | Draft (aim 0.6.0) | [RFC-019](../rfc/RFC-019-datasets-from-production.md), [ADR-0019](../adr/ADR-0019-capture-lane.md), [ADR-0020](../adr/ADR-0020-second-references-are-silver.md) | Importers, captures, datasets from a capture, references from outcomes, splits, text kept off public surfaces |
+| [PRD-015](PRD-015-models-onboarded-once.md) | Models, onboarded once, for every experiment | Draft (0.6.0; written after the build) | [RFC-020](../rfc/RFC-020-onboarding-a-model.md), [RFC-021](../rfc/RFC-021-fingerprint-v5.md), [ADR-0021](../adr/ADR-0021-a-deployment-is-vetted.md) | Model records and deployments, onboarding, arm smoke, the Models page, fingerprint v5, and their limits as built |
 
 ## Adding one
 

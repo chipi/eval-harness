@@ -104,6 +104,9 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | the arms page: every arm, grouped, filtered (local / hosted, price tier) | `evh arms [--by dataset\|config\|model\|provider\|scored] [--where local\|hosted] [--tier T]` | `make arms` |
 | the arms page: the configs, with their rank on each goal | `evh arms --configs` | `make arms ARGS=--configs` |
 | an arm page: metrics, cost and speed, runs, config, conditions, rounds | `evh arms --arm <arm id or config id>` | `make arms ARM=<id>` |
+| the models page: every model record, its deployments, settings, onboarding, arms (0.6.0, RFC-020) | `evh models [--kind K] [--where self-hosted\|hosted] [--status vetted\|check\|none]` | |
+| a model page: its deployments and their onboarding, settings history, arms | `evh models --model <id>` | |
+| (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard <id> --deployment <d>`, `evh arm-smoke --config <arm>` | |
 | reference pages | `evh references [--reference-id <id>]` | `make references` |
 | the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
 | a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metrics --metric <metric>` | `make metrics METRIC=<metric>` |

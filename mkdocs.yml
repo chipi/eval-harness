@@ -61,6 +61,7 @@ nav:
           - "PRD-006: Datasets, versions and item fields": prd/PRD-006-datasets-versions-fields.md
           - "PRD-007: One install, your own keys": prd/PRD-007-packaging-and-providers.md
           - "PRD-014: Datasets from production (draft, 0.6.0)": prd/PRD-014-datasets-from-production.md
+          - "PRD-015: Models, onboarded once, for every experiment (draft, 0.6.0)": prd/PRD-015-models-onboarded-once.md
       - Experience (UXS):
           - Index: uxs/index.md
           - "UXS-001: The catalog": uxs/UXS-001-catalog.md
@@ -89,6 +90,7 @@ nav:
           - "ADR-0018: The catalog's period is counted from today, in the browser (0.4.2)": adr/ADR-0018-period-from-today.md
           - "ADR-0019: Datasets from production, a capture lane beside the method (0.6.0)": adr/ADR-0019-capture-lane.md
           - "ADR-0020: A dataset's second reference is silver (proposed, 0.6.0)": adr/ADR-0020-second-references-are-silver.md
+          - "ADR-0021: A deployment, not a model, is what is vetted and fingerprinted (proposed, 0.6.0)": adr/ADR-0021-a-deployment-is-vetted.md
   - The experiments:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md

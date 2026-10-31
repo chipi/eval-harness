@@ -5,7 +5,7 @@
   command checks an arm on its own task, `evh arm-smoke`, with an LLM layer on top; the catalog gets a Models
   page; it ships in 0.6.0.
 - **Authors**: Marko Dragoljevic
-- **Related**: [RFC-019](RFC-019-datasets-from-production.md) (its triage example is where the gap showed);
+- **Related**: [PRD-015](../prd/PRD-015-models-onboarded-once.md), [ADR-0021](../adr/ADR-0021-a-deployment-is-vetted.md); [RFC-019](RFC-019-datasets-from-production.md) (its triage example is where the gap showed);
   [UXS-001](../uxs/UXS-001-catalog.md) (the Models page); RUNBOOK §16 (the procedure)
 
 ## Abstract

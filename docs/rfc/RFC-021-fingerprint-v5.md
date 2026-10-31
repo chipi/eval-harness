@@ -4,7 +4,7 @@
   refactor now, before we proceed"). Supersedes [RFC-001](RFC-001-fingerprint-and-code-identity.md)'s `host` and
   `system_under_test` parts; keeps its code identity (`_codeid`) and its data part as they are.
 - **Authors**: Marko Dragoljevic
-- **Related**: [RFC-020](RFC-020-onboarding-a-model.md) (model records; their builds become deployments here);
+- **Related**: [PRD-015](../prd/PRD-015-models-onboarded-once.md), [ADR-0021](../adr/ADR-0021-a-deployment-is-vetted.md); [RFC-020](RFC-020-onboarding-a-model.md) (model records; their builds become deployments here);
   [RFC-002](RFC-002-run-records-and-derived-runs.md) (the run record that carries the fingerprint);
   0.7.0's plan to run experiments on other machines (the runner)
 
