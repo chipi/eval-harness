@@ -223,9 +223,9 @@ def drive(base: str, overview: str = "") -> None:
         page.goto(base + "index.html")
         page.click('.nav details.navgroup[data-group="experiments"] > summary')
         check(
-            "menu: Experiments opens Arms, Configs and Metrics",
+            "menu: Experiments opens Arms, Configs, Models and Metrics",
             page.locator('.nav details.navgroup[data-group="experiments"] .navlist a').all_inner_texts()
-            == ["Arms", "Configs", "Metrics"],
+            == ["Arms", "Configs", "Models", "Metrics"],
         )
         page.goto(base + "arms.html#p30d")
         rows = page.locator("table#arms tbody tr:not(.grouphead)")
