@@ -90,8 +90,25 @@ that can move a result is never a patch release without saying so under **Change
   terminal decision" (`no_decision`, `deferred`). With `reply_in_tool_call: <name>` it reads an answer a server
   returns as a tool call to that name, with no text: Ollama 0.40 does that to every gpt-oss answer, and the fleet,
   which reads only the text, got nothing.
+- **No key for a local server**: the `openai` provider asks for no `OPENAI_API_KEY` when its address is on this
+  machine (localhost, 127.x, ::1) or on Ollama's port, 11434; Ollama takes any key. Any other address still
+  needs one, and a key that is set is used.
+- **Tutorial 7, set up a model before you test it**: a model record, onboarding it where it runs, an arm that
+  names it, a smoke before the full run; on your own machine with Ollama.
 
 ### Changed
+
+- **The goal page explains, then answers, then shows how it got there**: what it is for first; then the answer
+  so far, led by the latest round's conclusion when one closed after the baseline was promoted (the promotion's
+  reason folded under it); then its rounds, one folded section each, headed by its row (round and status, the
+  conclusion, what it set out to learn, arms and best), and inside it a heading per part (what changed, arms
+  with retirements grouped by reason and the carried ones folded, scoring, evidence, suggested next, notes). The
+  rounds table is gone.
+- **The Models page has one line per cell**: the first build and "+k", the deployments' ids, "N goals" with the
+  first named, the single best placing with "+k more"; vetted records first. **A model's page** has one folded
+  section per deployment, holding its build and its own onboarding with the flags it accepts and why; its arms
+  table names each arm's deployment and reads a re-scored arm as the goals do.
+- **The datasets table shows each tag as a chip.**
 
 - **Fingerprint v5** (RFC-021): what each part identifies. `instrument` (the harness and the adapter's code),
   `data`, `deployment` (the system under test as it executed: from the arm's model record and deployment, the

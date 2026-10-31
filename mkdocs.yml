@@ -40,6 +40,7 @@ nav:
       - 4 · Experiment rounds and dataset versions: tutorials/4-rounds-and-versions.md
       - 5 · The catalog and the inspector: tutorials/5-catalog-and-inspector.md
       - 6 · Datasets from production: tutorials/6-datasets-from-production.md
+      - 7 · Set up a model before you test it: tutorials/7-set-up-a-model.md
   - The harness:
       - Concepts: harness/CONCEPTS.md
       - Integration: harness/INTEGRATION.md

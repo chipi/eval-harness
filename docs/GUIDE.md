@@ -365,6 +365,7 @@ Each tutorial starts from where this page ends, or from a project of your own:
 | [**4 · Experiment rounds and dataset versions**](tutorials/4-rounds-and-versions.md) | round on round: keep what wins, drop what lost, record why; a new version of a dataset that remembers where it came from |
 | [**5 · The catalog and the inspector**](tutorials/5-catalog-and-inspector.md) | pages over your runs, an inspector that tests arms item by item, and the `evh` command behind every view |
 | [**6 · Datasets from production**](tutorials/6-datasets-from-production.md) | what your system did in production, kept as a capture: a dataset from it, labels from what happened afterwards, dev and heldout |
+| [**7 · Set up a model before you test it**](tutorials/7-set-up-a-model.md) | a model record, onboarding it where it runs (its build, whether it reasons, JSON, determinism), an arm that names it, a smoke before the full run; on your own machine with Ollama |
 
 And the references, for when you know what you are looking for:
 [INTEGRATION](../harness/docs/INTEGRATION.md) (your system in the harness: the adapter, what
