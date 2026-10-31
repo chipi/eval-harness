@@ -1,0 +1,68 @@
+model_id: gemma4-12b
+kind: llm
+name: Gemma 4 12B
+aliases:
+- gemma4:12b
+weights: open
+licence: Apache-2.0
+builds:
+- where: mac
+  server: ollama 0.40.13
+  server_settings:
+    context_length: 32768
+  tag: gemma4:12b
+  digest: 6114515d63c17436a7c0417d82820ac65ad643e2806c5a3c89cb62846436ed0b
+  quantization: Q4_K_M
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11435/v1
+    model: gemma4:12b
+  checked_at: '2026-10-31T09:35:13Z'
+settings:
+  reasoning_effort: none
+  max_tokens: 1024
+  call_timeout_s: 30
+settings_why:
+  reasoning_effort: at the server's default it reasoned in a loop and never answered
+    (triage, 2026-10-31)
+  max_tokens: a triage decision is 60-400 tokens; 1024 bounds a reply
+  call_timeout_s: a normal call is 2-10 s; 30 s ends a stuck one fast
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: gemma4:12b looped in its reasoning on the triage prompt; with none it answered
+    in 7.7 s
+capabilities:
+  reasons: true
+  deterministic: true
+  reasoning_off: 'reasoning_effort: none'
+  tokens_per_s: 28.4
+  json_mode: true
+onboarding:
+  status: pass
+  at: '2026-10-31T09:35:13Z'
+  where: mac
+  flags: []
+  report:
+    endpoint:
+      provider: openai
+      base_url: http://127.0.0.1:11435/v1
+      model: gemma4:12b
+    digest_found: 6114515d63c17436a7c0417d82820ac65ad643e2806c5a3c89cb62846436ed0b
+    default:
+      s: 8.98
+      tokens_out: 146
+      reasoned: true
+      finish: stop
+    chosen:
+      s: 0.81
+      tokens_out: 23
+      reasoned: false
+      finish: stop
+      settings:
+        reasoning_effort: none
+        max_tokens: 1024
+    deterministic: true
+    json_valid: true

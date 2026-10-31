@@ -280,7 +280,12 @@ def _openai_shaped(prompt: str, params: dict[str, Any], r: Route) -> Completion:
     tin, tout = getattr(usage, "prompt_tokens", None), getattr(usage, "completion_tokens", None)
     cost, was_billed = _cost(params, usage, tin, tout)
     choice = resp.choices[0]
+    # A server that returns the model's reasoning beside its answer (Ollama, vLLM: `reasoning` or
+    # `reasoning_content`) says whether it reasoned even when its usage does not count reasoning tokens.
+    extra = getattr(choice.message, "model_extra", None) or {}
+    said = extra.get("reasoning") or extra.get("reasoning_content") or ""
     return Completion(
+        meta={"reasoning_chars": len(said)} if said else {},
         text=choice.message.content or "",
         tokens_in=tin,
         tokens_out=tout,

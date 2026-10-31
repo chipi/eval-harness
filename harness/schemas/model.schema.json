@@ -30,6 +30,12 @@
           "file_hash": {"type": "string"},
           "quantization": {"type": "string"},
           "provider_id": {"type": "string", "description": "A hosted model's id at its provider."},
+          "endpoint": {
+            "type": "object",
+            "description": "How to reach this build for onboarding: a built-in provider (openai for an OpenAI-shaped server such as Ollama or vLLM, litellm, openrouter, anthropic), its base_url, the model name there, and api_key_env when it needs a key.",
+            "additionalProperties": false,
+            "properties": {"provider": {"type": "string"}, "base_url": {"type": "string"}, "model": {"type": "string"}, "api_key_env": {"type": "string"}}
+          },
           "checked_at": {"type": "string", "description": "When the build there was last checked (ISO date or time)."}
         }
       }
