@@ -198,22 +198,6 @@ check(
     == ["person", "fleet"],
 )
 
-# ── the smoke's verdict ──────────────────────────────────────────────────────────────────────
-import smoke  # noqa: E402
-
-clean = [{"s": 5.0, "tokens_out": 120, "reasoning_chars": 0, "content_chars": 300, "finish": "stop"}]
-check("smoke: a clean call raises no flag", smoke.flags_for(clean, [{"s": 5.0}], 30) == [])
-noisy = [
-    {"s": 20.0, "tokens_out": 900, "reasoning_chars": 4000, "content_chars": 0, "finish": "length"},
-    {"s": 2.0, "error": "TimeoutError: timed out"},
-]
-got_flags = " ".join(smoke.flags_for(noisy, [{"no_decision": True}], 30))
-check(
-    "smoke: reasoning, slow, long, cut off and no answer are each flagged",
-    all(w in got_flags for w in ("reasoning:", "slow call:", "long reply:", "cut off:", "no answer:")),
-    got_flags,
-)
-
 # ── the adapter through the fleet's code (stand-in model) ──────────────────────────────────
 if (
     os.environ.get("TRIAGE_FLEET_SRC")
@@ -285,9 +269,15 @@ if (
     srv = http.server.HTTPServer(("127.0.0.1", 0), Fake)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     url = f"http://127.0.0.1:{srv.server_port}/v1/chat/completions"
-    adapter.call_system(
+    res = adapter.call_system(
         json.dumps(r1["body"]),
         {"provider": "gateway", "model": "m", "url": url, "reasoning_effort": "none", "max_tokens": 512},
+    )
+    reported = res.meta.get("calls") or []
+    check(
+        "adapter: each model call is reported for evh arm-smoke (time, how it ended, answered)",
+        len(reported) == 1 and reported[0].get("answered") is True and "s" in reported[0],
+        reported,
     )
     check(
         "adapter: reasoning_effort and max_tokens reach the model call",

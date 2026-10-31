@@ -987,10 +987,11 @@ defaults as much as the models. Settle them before the full run, on purpose, and
 1. **Pin the build.** Record the tag and its digest. One tag name can name different builds on different
    machines (an MLX build on a Mac, an older pull on another host): compare digests across every machine
    that will run the arm, and against the registry, before the first run.
-2. **Smoke a few items.** Run three or so with the arm's own settings and measure every model call: time,
-   tokens out, whether it reasoned, whether an answer came back, why it ended. The triage example's
-   `examples/triage-fleet/smoke.py` does this and flags what to revisit (RFC-020 proposes it for every arm as `evh arm-smoke`); a project's own adapter can do
-   the same in a few lines by wrapping its model call.
+2. **Smoke a few items.** `evh arm-smoke --config <arm>` runs three with the arm's own settings and writes
+   no run: each item's time and output, whether the scorer can read it, a projection of the full run, and
+   whether the same item twice gives the same output. For an LLM arm it measures every model call: tokens
+   out, whether it reasoned, whether an answer came back, why it ended. An adapter that makes several calls
+   per item reports them as `meta["calls"]` (the triage example does). SMOKE CHECK lists what to revisit.
 3. **Choose the settings on purpose.**
    - *Reasoning*: off (`reasoning_effort: none`) unless the task needs it; some models only offer low,
      medium or high. Left to the default, one model reasons at length and the next not at all, and a

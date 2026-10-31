@@ -100,7 +100,29 @@ def _fleet() -> Any:
         if _FLEET.get("timeout"):  # an arm's call_timeout_s, over the fleet's own (90 s)
             k["timeout"] = _FLEET["timeout"]
         body.update(_FLEET.get("body_extra") or {})  # an arm's reasoning_effort / max_tokens
-        return real_post(url, body, *a, **k)
+        # Each call measured for `evh arm-smoke` (RFC-020): time, tokens, reasoning, how it ended.
+        rec: dict[str, Any] = {}
+        t0 = time.monotonic()
+        try:
+            resp = real_post(url, body, *a, **k)
+        except Exception as exc:
+            rec["error"] = f"{type(exc).__name__}: {exc}"[:160]
+            raise
+        else:
+            choice = (resp.get("choices") or [{}])[0]
+            msg = choice.get("message") or {}
+            usage = resp.get("usage") or {}
+            rec.update(
+                tokens_out=usage.get("completion_tokens"),
+                reasoning_tokens=(usage.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0,
+                reasoning_chars=len(msg.get("reasoning") or msg.get("reasoning_content") or ""),
+                finish_reason=choice.get("finish_reason"),
+                answered=bool((msg.get("content") or "").strip()),
+            )
+            return resp
+        finally:
+            rec["s"] = round(time.monotonic() - t0, 2)
+            _FLEET.setdefault("calls", []).append(rec)
 
     triage.post_json = tagged
     real_gate = triage._gate
@@ -164,6 +186,7 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
         raise ValueError(f"provider {provider!r}: gateway or stub")
     t0 = time.monotonic()
     _FLEET["model_disposition"] = None
+    _FLEET["calls"] = []
     deferred = None
     try:
         out = triage.investigate(item["signal"], probe_table=item["probes"])
@@ -211,7 +234,12 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
             "no_decision": float(no_decision),
             "deferred": float(deferred is not None),
         },
-        meta={"model": meta.get("model"), "prompt_sha": meta.get("prompt_sha"), "gates": meta.get("gates")},
+        meta={
+            "model": meta.get("model"),
+            "prompt_sha": meta.get("prompt_sha"),
+            "gates": meta.get("gates"),
+            "calls": list(_FLEET.get("calls") or []),
+        },
     )
 
 

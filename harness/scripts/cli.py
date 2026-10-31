@@ -49,6 +49,7 @@ COMMANDS = {
         "the checksummed manifest of a reference a fetch script built",
     ),
     "experiment-run": ("experiment_run.py", "run one arm over a dataset (--dry-run to cost it)"),
+    "arm-smoke": ("arm_smoke.py", "smoke an arm on a few items before its full run: checks, projection, flags"),
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
     "runs-list": ("list_runs.py", "list runs (or baselines)"),
     "rescore": ("rescore.py", "re-score stored outputs against references, for $0"),
