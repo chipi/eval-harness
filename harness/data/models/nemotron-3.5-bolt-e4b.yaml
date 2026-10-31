@@ -78,6 +78,7 @@ deployments:
       tokens_per_s: 103.4
       deterministic: true
       json_valid: true
+  server: ollama 0.40.13
 - id: mac
   where: mac
   tag: nemotron-3.5-bolt:e4b-q4_K_M

@@ -78,6 +78,7 @@ deployments:
       tokens_per_s: 80.1
       deterministic: true
       json_valid: true
+  server: ollama 0.40.13
 - id: mac
   where: mac
   tag: qwen3:30b-a3b-instruct-2507-q4_K_M

@@ -78,6 +78,7 @@ deployments:
       tokens_per_s: 24.8
       deterministic: true
       json_valid: false
+  server: ollama 0.40.13
 - id: mac
   where: mac
   tag: ministral-3:14b

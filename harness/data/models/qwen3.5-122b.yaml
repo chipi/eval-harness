@@ -79,6 +79,7 @@ deployments:
       tokens_per_s: 18.9
       deterministic: true
       json_valid: true
+  server: ollama 0.40.13
 - id: hosted
   where: homelab LiteLLM (the fleet's gateway)
   tag: eval-qwen35-122b

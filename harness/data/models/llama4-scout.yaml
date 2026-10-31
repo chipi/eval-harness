@@ -76,6 +76,7 @@ deployments:
       tokens_per_s: 17.1
       deterministic: true
       json_valid: true
+  server: ollama 0.40.13
 capabilities:
   reasons: false
   json_mode: true

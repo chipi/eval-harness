@@ -82,6 +82,7 @@ deployments:
       json_valid: true
     accepted:
     - 'reasoning: it still reasons with the record''s settings'
+  server: ollama 0.40.13
 - id: mac
   where: mac
   tag: gpt-oss:20b

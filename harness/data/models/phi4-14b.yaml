@@ -76,6 +76,7 @@ deployments:
       tokens_per_s: 23.0
       deterministic: true
       json_valid: true
+  server: ollama 0.40.13
 - id: mac
   where: mac
   tag: phi4:14b
