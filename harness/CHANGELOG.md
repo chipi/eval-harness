@@ -56,10 +56,11 @@ that can move a result is never a patch release without saying so under **Change
   - **`evh arm-smoke --config <arm>`** runs any arm on a few items before its full run and writes no run: runs,
     valid output for the scorer, a projection of the full run's time and cost, build pinned, determinism; for an
     LLM every model call (reasoning, slow, long, cut off, no answer, from a provider's `_meta` or an adapter's
-    `meta["calls"]`). `SMOKE PASS` or `SMOKE CHECK`, written into the record.
+    `meta["calls"]`; a reply is long against the arm's own median, so a summarising arm is not flagged for
+    being one). `SMOKE PASS` or `SMOKE CHECK`, written into the record.
   - An arm names a record and a deployment (**`model_record:`**, **`deployment:`**): the record's settings go under
     its params, which add the task's own (its reply cap, its call limit: a record refuses them, since they would
-    reach every other experiment's arms); the run records both. **V18** checks the records; `validate` notes an arm never smoked, a
+    reach every other experiment's arms); the run records both. **V18** checks the records, and the arm configs in `data/configs` and those validate.json's `configs` globs name; `validate` notes an arm never smoked, a
     reasoning model with no `max_tokens`, a tag that is a different build on two deployments.
   - The catalog's **Models** page and a page per model, a smoke badge on the arms page, a models tile; **`evh
     models`** for the same (and over `evh mcp`). A model is *vetted* when an arm that names it passed its smoke;
@@ -105,6 +106,9 @@ that can move a result is never a patch release without saying so under **Change
 - **The site's links to its home page** point at `/`, never `index.html` (analytics counted the two
   apart, search engines saw two addresses for one page), and each of its pages names its own address
   as `<link rel="canonical">` and `og:url`, checked by `site/build.py --check`.
+- **`validate` checks every git-tracked runs directory**, those `committed` in validate.json with their floors
+  and every other one: a directory re-allowed in `.gitignore` but not added to the list was never checked
+  (`data/runs-triage-current`, 65 runs).
 - **Runs written where git does not keep them are named.** `EVAL_RUNS_DIR` pointed at any
   `data/runs-*` directory that `.gitignore` does not re-allow wrote runs that were never committed
   and that no catalog showed, without a word: 35 self-hosted triage runs sat in `data/runs-local`

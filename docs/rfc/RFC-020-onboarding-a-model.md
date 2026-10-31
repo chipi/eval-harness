@@ -133,10 +133,10 @@ are printed, and load time is kept apart from per-item time in the projection.
 
 `SMOKE PASS` or `SMOKE CHECK` with the flags; exit 0 or 1. One command, no setup: an arm gets the sections that
 apply to it. The inspector shows the latest smoke on the arm's page (CLI parity). The triage example's
-`smoke.py` is the first, adapter-side version of the LLM section.
+`smoke.py` was the first, adapter-side version of the LLM section; `evh arm-smoke` replaced it.
 
-The report is written into the record's history for that arm, so the Models page can show which arms were
-smoked.
+The report is written into the record's `smokes`, by the arm's config id, so the Models page can show which
+arms were smoked, and a model counts as vetted once one of them passed.
 
 ### 5. The catalog: a Models page, and a page per model (UXS-001)
 

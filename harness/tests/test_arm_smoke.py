@@ -65,8 +65,12 @@ bad_items: list[dict[str, Any]] = [
     {"s": 1.0, "output_chars": 10, "scored": False, "score_error": "KeyError"},
 ]
 bad_items[0]["deterministic"] = False
+normal = {"s": 2.0, "tokens_out": 100, "reasoning_tokens": 0, "finish_reason": "stop", "answered": True}
 bad_calls = [
     {"s": 20.0, "tokens_out": 900, "reasoning_tokens": 500, "finish_reason": "length", "answered": False},
+    normal,
+    normal,
+    normal,
 ]
 text = " ".join(arm_smoke.flags_for(bad_items, bad_calls, {"call_timeout_s": 30, "_build_pinned": False}))
 for word in (
@@ -84,6 +88,21 @@ for word in (
 check(
     "flags: reasoning is not flagged when the arm sets reasoning_effort",
     "reasoning:" not in " ".join(arm_smoke.flags_for(clean_items, bad_calls, {"reasoning_effort": "high"})),
+)
+
+summaries = [{**normal, "tokens_out": n} for n in (700, 800, 900)]
+check(
+    "flags: long is relative to the arm's own replies; a summarising arm's are all long, none is flagged",
+    not any(
+        "long reply" in f for f in arm_smoke.flags_for(clean_items, summaries, {"reasoning_effort": "none"})
+    ),
+)
+check(
+    "flags: with fewer calls than a median needs, no reply is called long",
+    not any(
+        "long reply" in f
+        for f in arm_smoke.flags_for(clean_items, bad_calls[:1], {"reasoning_effort": "none"})
+    ),
 )
 
 # a hosted deployment's route

@@ -580,14 +580,18 @@ What it holds *your* project to is yours to declare, in `data/validate.json` (al
   "floors": {"runs-adjudicated": 12},
   "scorer_sources": [{"dir": "runs-adjudicated", "glob": "*", "path": ["derived", "with", "scorer"],
                       "module": "../my_scorer.py", "callable": "scorer_id"}],
-  "duplicate_ok": [["my_v1", "smoke_arm_v1"]]
+  "duplicate_ok": [["my_v1", "smoke_arm_v1"]],
+  "configs": ["arms/*.yaml"]
 }
 ```
 
-`committed` is the run directories your reports cite; without it, every git-tracked
-`data/runs*` directory is checked. `floors` makes deleting cited runs fail. `scorer_sources`
-lets V10 check that derived runs carry the current scorer's hash (`module` is a path from the
-project root). `duplicate_ok` names the (dataset, config) pairs allowed to repeat.
+`committed` is the run directories your reports cite, each with its `floors`; every other
+git-tracked `data/runs*` directory is checked too, so one re-allowed in `.gitignore` is never
+skipped. `floors` makes deleting cited runs fail. `scorer_sources` lets V10 check that derived
+runs carry the current scorer's hash (`module` is a path from the project root). `duplicate_ok`
+names the (dataset, config) pairs allowed to repeat. `configs` adds globs (from the project root)
+of arm configs kept outside `data/configs`, so V18's notes on the arms that name a model record
+see them.
 
 The duplicate-score check catches a specific and nasty failure: two
 independent arms do not agree to full float precision. When they do, one of them

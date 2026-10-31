@@ -34,7 +34,10 @@ from evaluation_harness import _models
 from evaluation_harness._adapter import load_adapter, score_wants_source
 from evaluation_harness._common import DATA, MATERIALIZED, die, load_dataset, now
 
-LONG_REPLY = 300  # tokens: a decision or an answer of a few sentences is 60-400
+#: A reply is long when it is this many times the arm's median reply (RFC-020: "far longer than the arm's
+#: normal ones"), over at least LONG_FLOOR tokens, among at least LONG_MIN_CALLS calls. A fixed count was a
+#: triage reply's length: a summarising arm would have flagged every item.
+LONG_FACTOR, LONG_FLOOR, LONG_MIN_CALLS = 3, 64, 3
 ML_FACTS = ("device", "precision", "load_ms", "batch_size", "dtype")
 
 
@@ -112,11 +115,20 @@ def flags_for(items: list[dict[str, Any]], calls: list[dict[str, Any]], params: 
                 out.append(
                     f"slow call: {len(slow)} call(s) over half the {limit:.0f} s limit (max {max(c['s'] for c in slow):.1f} s)"
                 )
-        long = [c for c in calls if (c.get("tokens_out") or 0) > LONG_REPLY]
-        if long:
-            out.append(
-                f"long reply: {len(long)} call(s) over {LONG_REPLY} tokens (max {max(c['tokens_out'] for c in long)})"
+        sizes = sorted(c["tokens_out"] for c in calls if c.get("tokens_out"))
+        if len(sizes) >= LONG_MIN_CALLS:
+            median = (
+                sizes[len(sizes) // 2]
+                if len(sizes) % 2
+                else (sizes[len(sizes) // 2 - 1] + sizes[len(sizes) // 2]) / 2
             )
+            bar = max(LONG_FACTOR * median, LONG_FLOOR)
+            long = [n for n in sizes if n > bar]
+            if long:
+                out.append(
+                    f"long reply: {len(long)} call(s) over {LONG_FACTOR}x the arm's median of {median:g} tokens "
+                    f"(max {max(long)})"
+                )
         cut = [c for c in calls if c.get("finish_reason") == "length"]
         if cut:
             out.append(f"cut off: {len(cut)} reply(ies) hit max_tokens")

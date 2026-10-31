@@ -15,12 +15,14 @@ what the operator later said it was.
 |---|---|
 | `fetch.py` | downloads `v1` (each file sha256-pinned) and restores the capture's records and the datasets' items |
 | `importer.py` | one record per decision: the body is what the agent sees (`{signal, probes}`); fields (evidence level, who decided, what production decided, `labelled`); the outcome fields the rules read, with each issue's verdict from the operator's close comment |
-| `adapter.py` | replays a decision through the fleet's `investigate()`, tracing off, every call tagged `evh-eval`; an arm may name its own server (`url`, for a self-hosted Ollama). `score()` gives `false_dismiss`, `false_alarm`, `correct`, `escalated` as the fleet decided, and `model_*` the same for the model's own decision before the gates |
+| `adapter.py` | replays a decision through the fleet's `investigate()`, tracing off, every call tagged `evh-eval`; an arm may name its own server (`url`, for a self-hosted Ollama). `score()` gives `triage_cost` (a missed real problem costs 5 false alarms; `_p3` and `_p10` beside it), `false_dismiss`, `false_alarm`, `correct`, `escalated` as the fleet decided, and `model_*` the same for the model's own decision before the gates |
 | `label_sheet.py`, `label_with_model.py`, `write_verdicts.py`, `write_gold.py` | how the gold was made: a sheet of the operator's issue verdicts, a labeller model's proposal for each exact decision (answered by the operator where it disagreed), `verdicts.jsonl`, and `gold/<dataset>` from its owner rows |
 | `outcomes.yaml` | the rules from an outcome to a label: `silver/…_outcomes`, shown beside gold, never deciding |
-| `fieldset_triage.yaml`, `goal_triage.yaml` | the item fields; the goal (`false_dismiss` decides, lower; frugal) |
 | `configs/` | hosted arms (proprietary, and open-weight models' hosted twins); `configs/local/` the same open-weight models self-hosted (Ollama 0.40.13) on three machines |
 | `test_triage.py` | the scorer, the importer, the adapter through the fleet's code |
+
+The goal and the item fields are the project's own, one copy each: `harness/data/goals/triage_orrery.yaml`
+(`triage_cost` decides, lower; a ceiling on false alarms; frugal) and `harness/data/fields/triage.yaml`.
 
 ```bash
 python examples/triage-fleet/fetch.py                       # needs the revision public, or a token

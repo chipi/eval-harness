@@ -914,6 +914,15 @@ try:
         and "orphan.yaml: deployment 'dgx' is used without a model_record" in v.stdout,
         v.stdout[-900:],
     )
+    (proj / "arms").mkdir()
+    (proj / "arms" / "elsewhere.yaml").write_text("config_id: elsewhere_v1\ndeployment: dgx\n")
+    (proj / "data" / "validate.json").write_text(json.dumps({"configs": ["arms/*.yaml"]}))
+    v = evh("validate")
+    check(
+        "V18: a config outside data/configs is read when validate.json's `configs` names it",
+        v.returncode != 0 and "elsewhere.yaml: deployment 'dgx' is used without a model_record" in v.stdout,
+        v.stdout[-900:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

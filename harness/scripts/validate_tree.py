@@ -1214,10 +1214,20 @@ def v17_captures() -> None:
     )
 
 
+def config_files() -> list[Path]:
+    """The arm configs V18 reads: data/configs, and the globs `configs` in validate.json names (relative to
+    the project root), for a project that keeps its arms elsewhere (this repository's are in examples/)."""
+    found = set(CONFIGS.glob("*.yaml"))
+    for pattern in policy().get("configs") or []:
+        found |= {f for f in ROOT.glob(pattern) if f.is_file()}
+    return sorted(found)
+
+
 def v18_model_records() -> None:
     """V18: the model records (RFC-020, optional; their schema is V1's): each file named by its id, no
     alias claimed by two records, a deployment id used twice in one record, every config that names a record
-    (`model_record:`) naming one that exists, and `deployment:` only beside a `model_record:` that has it."""
+    (`model_record:`) naming one that exists, and `deployment:` only beside a `model_record:` that has it. The
+    configs are config_files(): data/configs and the globs validate.json's `configs` adds."""
     import yaml  # noqa: PLC0415
     from evaluation_harness import _models  # noqa: PLC0415
 
@@ -1226,7 +1236,7 @@ def v18_model_records() -> None:
         print("  --   V18 model records (none)")
         return
     bad = _models.problems(DATA)
-    for c in sorted(CONFIGS.glob("*.yaml")):
+    for c in config_files():
         cfg = yaml.safe_load(c.read_text(encoding="utf-8")) or {}
         rid = cfg.get("model_record") if isinstance(cfg, dict) else None
         dep = cfg.get("deployment") if isinstance(cfg, dict) else None
