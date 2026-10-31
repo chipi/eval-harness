@@ -6,7 +6,7 @@
                    [--by G] [--where W] [--tier T] [--weights K] [--quality Q] [--configs]
                                                      the arms page: grouped, filtered; the configs
     evh models     [--kind K] [--where W] [--status S] [--model ID]
-                                                     every model record, or one: builds, onboarding, history, arms
+                                                     every model record, or one: deployments, onboarding, history, arms
     evh references [--reference-id ID]               every reference, or one: who wrote it, what is scored against it
     evh metrics    [--dataset-id ID] [--metric M]    what each metric measures, or one in full with the arms recording it
     evh goals      [--goal ID]                       every goal, or one: its answer on each of its datasets
@@ -671,7 +671,11 @@ def arms(argv) -> int:
                         r["model"] or "—",
                         (r["provider"] or "—") + (" (local)" if r["local"] else ""),
                         *(
-                            [f"{r['record']} ({cm.SMOKE_WORDS[r['smoke']]})" if r["record"] else "—"]
+                            [
+                                f"{r['record']}{'@' + r['deployment'] if r['deployment'] else ''} ({cm.SMOKE_WORDS[r['smoke']]})"
+                                if r["record"]
+                                else "—"
+                            ]
                             if has_record
                             else []
                         ),
@@ -742,7 +746,9 @@ def arms(argv) -> int:
     cfg = cfg_fn(a["arm"]) if callable(cfg_fn) else {}
     if cfg.get("params"):
         print(
-            f"\nconfig {cfg.get('config_id', '')} (adapter {cfg.get('adapter') or '—'}; credentials are never shown):"
+            f"\nconfig {cfg.get('config_id', '')} (adapter {cfg.get('adapter') or '—'}"
+            + (f"; deployment {cfg['deployment']}" if cfg.get("deployment") else "")
+            + "; credentials are never shown):"
         )
         for k, x in sorted(cfg["params"].items()):
             print(f"  {k:20} {x}")
@@ -792,12 +798,12 @@ def models(argv) -> int:
     ap.add_argument(
         "--where",
         choices=("self-hosted", "hosted"),
-        help="only models that run on our machines (a build with a server or device, no provider id), or only hosted ones",
+        help="only models that run on our machines (a deployment with a server or device, no provider id), or only hosted ones",
     )
     ap.add_argument(
         "--status",
         choices=("vetted", "check", "none"),
-        help="only models whose onboarding passed (vetted), flagged something (check), or never ran (none)",
+        help="only models whose every deployment's onboarding passed (vetted), any flagged something (check), or none ran (none)",
     )
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
@@ -821,7 +827,7 @@ def models(argv) -> int:
                 "where",
                 "weights",
                 "build",
-                "machines",
+                "deployments",
                 "settings",
                 "onboarding",
                 "arms",
@@ -835,7 +841,7 @@ def models(argv) -> int:
                     r["hosting"] or "—",
                     r["weights"] or "—",
                     ", ".join(r["build"]) + (" (differs)" if r["differs"] else "") if r["build"] else "—",
-                    ", ".join(b["where"] for b in r["builds"]) or "—",
+                    ", ".join(b["id"] for b in r["deployments"]) or "—",
                     r["settings"],
                     _onboarding(r),
                     len(r["arms"]),
@@ -856,44 +862,54 @@ def models(argv) -> int:
         ("licence", r["licence"] or "—"),
         ("aliases", ", ".join(rec.get("aliases") or [])),
         ("where", r["hosting"] or "—"),
-        (
-            "onboarding",
-            _onboarding(r)
-            + (f" on {rec['onboarding']['where']}" if rec.get("onboarding", {}).get("where") else ""),
-        ),
+        ("onboarding", _onboarding(r)),
     ):
         print(f"  {k:15} {x}")
     why = rec.get("settings_why") or {}
     for k, x in (rec.get("settings") or {}).items():
         print(f"  setting {k:12} {x}" + (f"  ({why[k]})" if why.get(k) else ""))
-    print("\nbuilds:")
-    if r["builds"]:
+    print("\ndeployments:")
+    if r["deployments"]:
         _table(
-            ["where", "server or device", "build", "matches the record", "checked"],
+            [
+                "deployment",
+                "where",
+                "server or device",
+                "build",
+                "matches the record",
+                "checked",
+                "onboarding",
+            ],
             [
                 [
-                    b["where"],
-                    b.get("server") or b.get("device") or "—",
+                    b["id"],
+                    b["where"] + (f" ({b['backend']})" if b.get("backend") else ""),
+                    b.get("server") or b.get("device") or b.get("backend") or "—",
                     cm.build_text(b),
                     f"differs: {diff}" if diff else "yes",
                     cm.day(b.get("checked_at")) or "—",
+                    f"{o['status']} {cm.day(o.get('at'))}" if (o := b.get("onboarding") or {}) else "none",
                 ]
-                for b, diff in zip(r["builds"], r["diffs"], strict=True)
+                for b, diff in zip(r["deployments"], r["diffs"], strict=True)
             ],
         )
     else:
         print("  none recorded")
-    onb = rec.get("onboarding") or {}
     print("\nonboarding:")
-    if onb:
-        print(
-            f"  {onb.get('status')} {cm.day(onb.get('at'))}"
-            + (f" on {onb['where']}" if onb.get("where") else "")
-        )
-        for k, v in (onb.get("report") or {}).items():
-            print(f"  {k.replace('_', ' '):16} {cm.kv(v) if isinstance(v, dict) else v}")
-        for f in onb.get("flags") or []:
-            print(f"  flag: {f}")
+    if r["deployments"]:
+        for dep in r["deployments"]:
+            onb = dep.get("onboarding") or {}
+            if not onb:
+                print(f"  {dep['id']}: not onboarded: evh model-onboard {r['id']} --deployment {dep['id']}")
+                continue
+            print(
+                f"  {dep['id']}: {onb.get('status')} {cm.day(onb.get('at'))}"
+                + (f" on {onb['where']}" if onb.get("where") else "")
+            )
+            for k, v in (onb.get("report") or {}).items():
+                print(f"    {k.replace('_', ' '):16} {cm.kv(v) if isinstance(v, dict) else v}")
+            for f in onb.get("flags") or []:
+                print(f"    flag: {f}")
     else:
         print(f"  not onboarded: evh model-onboard {r['id']}")
     print("\nsettings history:")

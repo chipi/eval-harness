@@ -10,21 +10,7 @@
   "dataset_id": "ag_news_200",
   "fingerprint": {
     "arm": {
-      "config_id": "ag_glm_m_n200_v1",
-      "params": {
-        "family": "glm",
-        "max_tokens": 200,
-        "model": "eval-glm-46",
-        "price_tier": "mid",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 0.15,
-        "usd_per_mtok_out": 0.6
-      }
+      "config_id": "ag_glm_m_n200_v1"
     },
     "data": {
       "dataset_id": "ag_news_200",
@@ -34,38 +20,13 @@
       "reference_tier": "gold",
       "references_sha256": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
     },
-    "hash": "5e5cae615de11ed4532e47820503cc5230e560d84d4d01a9015a76cf3f5b7fbe",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/classification-ag-news/adapter.py",
-        "sha256": "8e4dffce35059b76949a0c95860cbcb5bd372fbdb6bdf33e0e55f4df78045b94"
-      },
-      "harness": {
-        "commit": "1e80be6531e2",
-        "dirty": false
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
+    "data_sha256": "42c37455220776fdf99bbc061bb396453b6fed3842e8ae4d76e316d3392cd318",
+    "deployment": {
+      "declared": {
         "alias": "eval-glm-46",
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/z-ai/glm-4.6",
         "id_source": "proxy-model-info",
-        "identity_declared": true,
         "labels": [
           "World",
           "Sports",
@@ -80,12 +41,71 @@
         "reasoning": {
           "enabled": false
         },
-        "revision": null,
-        "revision_source": "api-model-string",
         "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-glm-46",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-glm-46",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
       }
     },
-    "version": 4
+    "deployment_sha256": "ee27bbce23dff3aad19be902d8e97d8a54d60835b82cd48a5138899edd928e14",
+    "hash": "f78503f9673e9ab6ff0a5295f47bda85bf9b492cfdfdf0352796533e81d52ec5",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-ag-news/adapter.py",
+        "sha256": "8e4dffce35059b76949a0c95860cbcb5bd372fbdb6bdf33e0e55f4df78045b94"
+      },
+      "harness": {
+        "commit": "1e80be6531e2",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "237e3b2ea03b64d4a1e2a7cdd7d8839afbeb26b2197aea0b2dd44801664a6703",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "family": "glm",
+      "max_tokens": 200,
+      "price_tier": "mid",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 0.15,
+      "usd_per_mtok_out": 0.6
+    },
+    "settings_sha256": "88489d541796fe92c3293f3b502b5c0f1c434271faab5a927617b2bdd6fa033e",
+    "version": 5
   },
   "goal": "news_topic_ag",
   "metric_kinds": {

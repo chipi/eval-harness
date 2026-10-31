@@ -10,16 +10,7 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_unievalpub_n100_v1",
-      "params": {
-        "batch_size": 8,
-        "family": "unieval",
-        "inputs": "published",
-        "model": "MingZhong/unieval-sum",
-        "price_tier": "free",
-        "provider": "unieval",
-        "revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0"
-      }
+      "config_id": "se_unievalpub_n100_v1"
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -29,15 +20,52 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "0f27d05764bf7fd5117f889069b3d51ac2fbe40d051a924f3af0252618ce6bb3",
-    "host": {
-      "cpu_count": 32,
-      "label": "omarchy",
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.11.16",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "code_sha256": "205321c4291e768e3f3d374af95a6f1e5db79a6573def4f542ca0adcedb839ed",
+        "inputs": "published",
+        "loaded_dtype": "float32",
+        "loaded_revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0",
+        "nltk": "3.10.3",
+        "pin_satisfied": true,
+        "unieval_inputs_sha256": "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b8e3e3ec81",
+        "unieval_inputs_url": "https://raw.githubusercontent.com/maszhongming/UniEval/d33e7b6cfebe97b2bafe435adbd818230d5a416a/reproduce/data/summarization/summeval.json",
+        "weight_files": [
+          "pytorch_model.bin:3132623525"
+        ],
+        "weights_licence": "not stated on the model card (MingZhong/unieval-sum)"
+      },
+      "hosted": null,
+      "id": "MingZhong/unieval-sum",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "model": "MingZhong/unieval-sum",
+      "provider": "unieval",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0",
+        "revision_source": "hf-snapshot"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
     },
+    "deployment_sha256": "05cc027da9273ed3be353b051945f03a85cc43de814ceea8483374b7eebfcf9d",
+    "hash": "b67392d32aacd803b53d3d823f81106c3d0b1fd803d3c7ebdf02de7a02021384",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -48,36 +76,24 @@
         "dirty": true
       }
     },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.31.0",
-        "rouge-score": "0.1.2",
-        "torch": "2.14.1",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "code_sha256": "205321c4291e768e3f3d374af95a6f1e5db79a6573def4f542ca0adcedb839ed",
-        "device": "cpu",
-        "id": "MingZhong/unieval-sum",
-        "identity_declared": true,
-        "inputs": "published",
-        "loaded_dtype": "float32",
-        "loaded_revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0",
-        "nltk": "3.10.3",
-        "pin_satisfied": true,
-        "precision": "fp32",
-        "revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0",
-        "revision_source": "hf-snapshot",
-        "unieval_inputs_sha256": "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b8e3e3ec81",
-        "unieval_inputs_url": "https://raw.githubusercontent.com/maszhongming/UniEval/d33e7b6cfebe97b2bafe435adbd818230d5a416a/reproduce/data/summarization/summeval.json",
-        "weight_files": [
-          "pytorch_model.bin:3132623525"
-        ],
-        "weights_licence": "not stated on the model card (MingZhong/unieval-sum)"
-      }
+    "instrument_sha256": "9531ee37043593afae88cb3a367c86bf0ab5e5664f474d6cc5110d5dfb31c980",
+    "runner": {
+      "cpu_count": 32,
+      "label": "omarchy",
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.16",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "batch_size": 8,
+      "family": "unieval",
+      "inputs": "published",
+      "price_tier": "free"
+    },
+    "settings_sha256": "cfbdc597387cae446cb6148aafcaf98623e06967422cbfd792e6dfc52f67556d",
+    "version": 5
   },
   "goal": "summary_judge_summeval",
   "metric_kinds": {

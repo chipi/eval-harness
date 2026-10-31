@@ -10,21 +10,7 @@
   "dataset_id": "cnn_dailymail_200",
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_deepseek_s_n200_v1",
-      "params": {
-        "family": "deepseek",
-        "max_tokens": 1200,
-        "model": "eval-deepseek-flash",
-        "price_tier": "small",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 0.1,
-        "usd_per_mtok_out": 0.4
-      }
+      "config_id": "cnn_deepseek_s_n200_v1"
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -34,15 +20,44 @@
       "reference_tier": "gold",
       "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
-    "hash": "e9096134e7a028fa3845f54732eb2eac19d68da1f16137f59e6e670ecac4d128",
-    "host": {
-      "cpu_count": 12,
-      "label": null,
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
+    "data_sha256": "a9b234845c4f4d69a498556c1f6324f5839721e805795a1f3d5946301307a0e8",
+    "deployment": {
+      "declared": {
+        "alias": "eval-deepseek-flash",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/deepseek/deepseek-v4-flash",
+        "id_source": "proxy-model-info",
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-deepseek-flash",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-deepseek-flash",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "2f7641a9e68e06234bf72d84368e400aefcc25b51f64e23e80586b2429391e0f",
+    "hash": "9541925d58962605453f8d7c908bf73a83885e86a4bb976f3aae3f258e67ede8",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -53,29 +68,34 @@
         "dirty": true
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "3a70c7832c41514327c426912b2d87b2f7560b786c61bba8fe3adc5fbdb4cdc6",
+    "runner": {
+      "cpu_count": 12,
+      "label": null,
       "libraries": {
         "numpy": "2.4.6",
         "openai": "3.19.2",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "alias": "eval-deepseek-flash",
-        "endpoint": "http://127.0.0.1:4001",
-        "id": "openrouter/deepseek/deepseek-v4-flash",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": 0.0
-      }
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
     },
-    "version": 4
+    "settings": {
+      "family": "deepseek",
+      "max_tokens": 1200,
+      "price_tier": "small",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 0.1,
+      "usd_per_mtok_out": 0.4
+    },
+    "settings_sha256": "5db5928da7fd4a4a967b856461a0073602642443318057bca0934648a8e84f24",
+    "version": 5
   },
   "goal": "news_summary_cnn",
   "metric_kinds": {

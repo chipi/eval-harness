@@ -10,13 +10,7 @@
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {
     "arm": {
-      "config_id": "triage_hosted_gemma4_31b_v1",
-      "params": {
-        "model": "eval-gemma-31b",
-        "provider": "gateway",
-        "usd_per_mtok_in": 0.2,
-        "usd_per_mtok_out": 0.4
-      }
+      "config_id": "triage_hosted_gemma4_31b_v1"
     },
     "data": {
       "dataset_id": "orrery_triage_v1_labelled",
@@ -26,15 +20,33 @@
       "reference_tier": "gold",
       "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
     },
-    "hash": "fabe332f643f501d680f2bca646899ee8f5716ae659fada604d6141048128b9c",
-    "host": {
-      "cpu_count": 32,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.14.7",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": "eval-gemma-31b",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gemma-31b",
+      "provider": "gateway",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "0b5518db95811038d195fa8a7140ae174dbf1ec3a86e4c330d4c4b72985d897c",
+    "hash": "71cb9138fb89c79742a398d50b1a0f011cf0376d9cb46cb5cf361f64034be165",
     "instrument": {
       "adapter": {
         "id": "examples/triage-fleet/adapter.py",
@@ -48,18 +60,27 @@
         "version": "0.5.0"
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "7c96973a48f5398b692a8fa09a753fc73e5a81e0ed8b89576b665b3723b4b798",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
       "libraries": {
         "anthropic": "2.3.0",
         "numpy": "2.5.4",
         "openai": "3.41.0",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "identity_declared": false
-      }
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "usd_per_mtok_in": 0.2,
+      "usd_per_mtok_out": 0.4
+    },
+    "settings_sha256": "abe1b007e0f5becb152121e013078033bf6d03bc2e474ee630a87e2f5c79b363",
+    "version": 5
   },
   "goal": "triage_orrery",
   "metric_directions": {

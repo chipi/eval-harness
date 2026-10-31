@@ -49,7 +49,7 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
     "weights", "record", "smoke", "quality", "scored", "how", "roles", "goal", "measure", "value", "lower", "repeats",
     "cost", "latency", "first", "last"}. `weights` is "open", "proprietary" or "" (unknown: the
     adapter's model_facts does not list the model). `record` is the model record the arm uses ("" when
-    none) and `smoke` that record's latest smoke of the arm's config: pass, check or none ("" without a
+    none), `deployment` the deployment of it its config named ("" when none) and `smoke` that record's latest smoke of the arm's config: pass, check or none ("" without a
     record). `quality` is "ties the leader" when a goal's
     decision ties the arm with its quality leader (the leader too), "below the leader" when it
     weighs the arm and does not, "" when no decision weighs it. A role "over a limit" is an arm a
@@ -130,6 +130,7 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                     ),
                     "weights": (facts.get(p.get("model") or "") or {}).get("weights") or "",
                     "record": (records.get(a["arm"]) or {}).get("model_id", ""),
+                    "deployment": (c or {}).get("deployment") or "",
                     "smoke": cm.smoke_of(records[a["arm"]], cid) if a["arm"] in records else "",
                     "quality": quality.get(a["arm"], ""),
                     "scored": "judge" if a["judge"] else (tiers.get(a["reference"]) or "none"),
@@ -277,7 +278,9 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                     (f"<code>{e(r['model'])}</code>" if r["model"] else "—")
                     + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>'
                     + (
-                        f"<br>{cm.model_link(r['record'])} {cm.SMOKE_BADGE[r['smoke']]}"
+                        f"<br>{cm.model_link(r['record'])}"
+                        + (f' <small class="muted">@ {e(r["deployment"])}</small>' if r["deployment"] else "")
+                        + f" {cm.SMOKE_BADGE[r['smoke']]}"
                         if r["record"]
                         else ""
                     ),

@@ -10,11 +10,7 @@
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {
     "arm": {
-      "config_id": "triage_stub_escalate_v1",
-      "params": {
-        "provider": "stub",
-        "stub_disposition": "escalate"
-      }
+      "config_id": "triage_stub_escalate_v1"
     },
     "data": {
       "dataset_id": "orrery_triage_v1_labelled",
@@ -24,15 +20,33 @@
       "reference_tier": "gold",
       "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
     },
-    "hash": "6ddec2a64195334583b7a46e7f2387ae4daafd3f3c91eaadce3dec143dd6d6de",
-    "host": {
-      "cpu_count": 32,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.14.7",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": null,
+      "in_process": false,
+      "libraries": null,
+      "model": null,
+      "provider": "stub",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "3bf91d719fdaaf0859edebb9e9b9f9201e2c7b8444c878861fd5bc03d743b61b",
+    "hash": "8eef16078199421292a6c8c23aca3120e9fb46c53c1b712ae49bf0fc9d474d1c",
     "instrument": {
       "adapter": {
         "id": "examples/triage-fleet/adapter.py",
@@ -46,18 +60,26 @@
         "version": "0.5.0"
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "a150e2c7a4b3a92895b4ca34bb4354b2919042ca52eadb162b51b6be6d18734e",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
       "libraries": {
         "anthropic": "2.3.0",
         "numpy": "2.5.4",
         "openai": "3.41.0",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "identity_declared": false
-      }
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "stub_disposition": "escalate"
+    },
+    "settings_sha256": "9e069e3cec88177df9adaaa352243b1b635fc55261227772adf4704ccbdc5937",
+    "version": 5
   },
   "goal": "triage_orrery",
   "metric_directions": {

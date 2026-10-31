@@ -19,25 +19,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "sf_mistral_s_n200_v1",
-      "params": {
-        "corpus_id": "scifact",
-        "family": "mistral",
-        "max_tokens": 700,
-        "model": "eval-mistral-small",
-        "price_tier": "small",
-        "prompt_file": "prompt.txt",
-        "provider": "rerank",
-        "reasoning": {
-          "enabled": false
-        },
-        "rerank_k": 20,
-        "snippet_chars": 900,
-        "temperature": 0.0,
-        "top_k": 100,
-        "usd_per_mtok_in": 0.05,
-        "usd_per_mtok_out": 0.15
-      }
+      "config_id": "sf_mistral_s_n200_v1"
     },
     "data": {
       "dataset_id": "scifact_200",
@@ -47,36 +29,9 @@
       "reference_tier": "gold",
       "references_sha256": "b522e08017ebc7dd71c5627bccfdd688c5124096df8a5e6454684141bc361d99"
     },
-    "hash": null,
-    "hash_invalid_because": "rankings were rebuilt from stored LLM replies with a parser this fingerprint does not describe; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/retrieval-scifact/adapter.py",
-        "sha256": "46cd2bd89061c9f3bff0493cce7ab292dd6f9b1bae7c7e482af0aebdd1479cee"
-      },
-      "harness": {
-        "commit": "0e20aaeb3dca",
-        "dirty": false
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "scikit-learn": "1.9.1",
-        "sentence-transformers": "3.4.1",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
+    "data_sha256": "058780bbc950f96a825d2dd346f0d32254049af0c805c8c758540c1829cf079f",
+    "deployment": {
+      "declared": {
         "alias": "eval-mistral-small",
         "bm25": {
           "b": 0.75,
@@ -89,8 +44,6 @@
         "corpus_sha256": "297643e2d005109d9fc25d460c080faa45b0cc3ad881ea002941c67b6e41984e",
         "endpoint": "http://127.0.0.1:4001",
         "first_stage": "bm25",
-        "id": "eval-mistral-small",
-        "identity_declared": true,
         "max_tokens": 700,
         "prompt_sha256": "a81ef5d8b150e4c31bfbaee6bfd9f98b1d56dd27dfbdcc15511154f79066abbe",
         "provider": "rerank",
@@ -98,16 +51,82 @@
           "enabled": false
         },
         "rerank_k": 20,
-        "revision": null,
-        "revision_source": "unavailable",
         "scorer_sha256": "51d9e8bd57bc2e75ceccce80b7d60157c42f9959cadf3d7e9cf738f73fd10d04",
         "snippet_chars": 900,
         "temperature": 0.0,
         "tokenizer_sha256": "67a185c8c30efefa133188f15ba429328086f837a642a17e347a5a2ee437b79d",
         "top_k": 100
+      },
+      "hosted": null,
+      "id": "eval-mistral-small",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "sentence-transformers": "3.4.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": "eval-mistral-small",
+      "provider": "rerank",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
       }
     },
-    "version": 4
+    "deployment_sha256": "7920c08afd3509e2eb146046ecffba781acb9cf09383eed9566b689d19f6408d",
+    "hash": null,
+    "hash_invalid_because": "rankings were rebuilt from stored LLM replies with a parser this fingerprint does not describe; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/retrieval-scifact/adapter.py",
+        "sha256": "46cd2bd89061c9f3bff0493cce7ab292dd6f9b1bae7c7e482af0aebdd1479cee"
+      },
+      "harness": {
+        "commit": "0e20aaeb3dca",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "55bfd3e775ce09ed440b29c9e112196bb109602116754b89cb49f02e21416702",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "corpus_id": "scifact",
+      "family": "mistral",
+      "max_tokens": 700,
+      "price_tier": "small",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "rerank_k": 20,
+      "snippet_chars": 900,
+      "temperature": 0.0,
+      "top_k": 100,
+      "usd_per_mtok_in": 0.05,
+      "usd_per_mtok_out": 0.15
+    },
+    "settings_sha256": "ea1f61bb4771bca2dcd7646a1c97771f4f107c0eeba6b630f99bab6dc068e6fc",
+    "version": 5
   },
   "goal": "scientific_retrieval_scifact",
   "metric_kinds": {

@@ -52,21 +52,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_openai_m_n200_v1",
-      "params": {
-        "family": "openai",
-        "max_tokens": 1200,
-        "model": "eval-gpt-55",
-        "price_tier": "mid",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 1.25,
-        "usd_per_mtok_out": 10.0
-      }
+      "config_id": "cnn_openai_m_n200_v1"
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -76,16 +62,45 @@
       "reference_tier": "gold",
       "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
+    "data_sha256": "a9b234845c4f4d69a498556c1f6324f5839721e805795a1f3d5946301307a0e8",
+    "deployment": {
+      "declared": {
+        "alias": "eval-gpt-55",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/openai/gpt-5.5",
+        "id_source": "proxy-model-info",
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-gpt-55",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gpt-55",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "4fdd2eb4de4592e5de31678861b60162e6cf3c4ffd18ce602b469b40de92ba9c",
     "hash": null,
     "hash_invalid_because": "scores were produced by a judge scorer, not the adapter this fingerprint was built from; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": null,
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
     "instrument": {
       "adapter": {
         "id": "judge-score:judge-summ-v2",
@@ -96,29 +111,34 @@
         "dirty": true
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "ed357018a953ba8c300e8aff8b55c31d561f47b0bfb52a8f68d059741e4edcf1",
+    "runner": {
+      "cpu_count": 12,
+      "label": null,
       "libraries": {
         "numpy": "2.4.6",
         "openai": "3.19.2",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "alias": "eval-gpt-55",
-        "endpoint": "http://127.0.0.1:4001",
-        "id": "openrouter/openai/gpt-5.5",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": 0.0
-      }
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
     },
-    "version": 4
+    "settings": {
+      "family": "openai",
+      "max_tokens": 1200,
+      "price_tier": "mid",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 1.25,
+      "usd_per_mtok_out": 10.0
+    },
+    "settings_sha256": "3d145565c6bb736d4783dba7198f4f2c8c8d8bb57a70ee7a799bac118aa2052d",
+    "version": 5
   },
   "goal": "news_summary_cnn",
   "metric_kinds": {

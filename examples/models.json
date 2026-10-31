@@ -49,6 +49,7 @@
     "eval-qwen-37plus": "openrouter/qwen/qwen3.7-plus",
     "eval-qwen-3max": "openrouter/qwen/qwen3-max",
     "eval-qwen-flash": "openrouter/qwen/qwen3.8-flash",
+    "eval-qwen3-30b-a3b": "openrouter/qwen/qwen3-30b-a3b-instruct-2507",
     "eval-qwen35-122b": "openrouter/qwen/qwen3.5-122b-a10b"
   }
 }

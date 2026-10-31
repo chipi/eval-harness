@@ -10,13 +10,7 @@
   "dataset_id": "cnn_dailymail_200",
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_lead3_n200_v1",
-      "params": {
-        "family": "lead",
-        "price_tier": "free",
-        "provider": "lead_k",
-        "sentences": 3
-      }
+      "config_id": "cnn_lead3_n200_v1"
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -26,15 +20,38 @@
       "reference_tier": "gold",
       "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
-    "hash": "c5e07c3f257cf17607c643a23ac17771632d2d3c8dae813af094c3bff5342d5b",
-    "host": {
-      "cpu_count": 4,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": "x86_64",
-      "python": "3.11.15",
-      "release": "6.18.44-fc-v50"
+    "data_sha256": "a9b234845c4f4d69a498556c1f6324f5839721e805795a1f3d5946301307a0e8",
+    "deployment": {
+      "declared": {
+        "code_sha256": "99a10bbfc32e7c725e222e06add9b27df37d0ee2b0c81d4dded58727723259db",
+        "k": 3,
+        "kind": "deterministic baseline, no model and no network",
+        "provider": "lead_k"
+      },
+      "hosted": null,
+      "id": "lead_3",
+      "in_process": false,
+      "libraries": null,
+      "model": "lead_3",
+      "provider": "lead_k",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "not-a-model"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "f6c7dbcb125b7f6815d67f6fbb1be427a3a57c2eed57e6261b57dc932ec5ca73",
+    "hash": "91bc8cbf839ecf23476b7046fcdeb0421105fd57afbfc2dc6170751a1f2fe6f0",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -45,7 +62,10 @@
         "dirty": false
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "9f3bead9ddbb99bc0c2688032ce4f558cca8b308ca2ba49d5b00328d2eb66e52",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
       "libraries": {
         "numpy": "2.4.6",
         "openai": "3.19.2",
@@ -53,18 +73,18 @@
         "torch": "2.14.0",
         "transformers": "4.55.4"
       },
-      "model": {
-        "code_sha256": "99a10bbfc32e7c725e222e06add9b27df37d0ee2b0c81d4dded58727723259db",
-        "id": "lead_3",
-        "identity_declared": false,
-        "k": 3,
-        "kind": "deterministic baseline, no model and no network",
-        "provider": "lead_k",
-        "revision": null,
-        "revision_source": "not-a-model"
-      }
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v50"
     },
-    "version": 4
+    "settings": {
+      "family": "lead",
+      "price_tier": "free",
+      "sentences": 3
+    },
+    "settings_sha256": "0af6a1d3ee86a854c33ef93c88f26c2991ac4393cb79fcc31c2ce16b139823fe",
+    "version": 5
   },
   "goal": "news_summary_cnn",
   "metric_kinds": {

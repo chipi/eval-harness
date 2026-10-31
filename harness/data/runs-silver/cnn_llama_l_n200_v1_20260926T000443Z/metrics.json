@@ -19,21 +19,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_llama_l_n200_v1",
-      "params": {
-        "family": "llama",
-        "max_tokens": 1200,
-        "model": "eval-llama-maverick",
-        "price_tier": "large",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 0.18,
-        "usd_per_mtok_out": 0.6
-      }
+      "config_id": "cnn_llama_l_n200_v1"
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -46,16 +32,45 @@
       "references_sha256": "b7cd73d14c009e1ee5559a332cfc37143e24b4debcc75d1fdda9235a85b26f3d",
       "references_sha256_at_measurement": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
+    "data_sha256": "66c42ddae2a884ddffb4093bb47f43bf49bf2f06d0a15cb5cbea3b59da33260f",
+    "deployment": {
+      "declared": {
+        "alias": "eval-llama-maverick",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/meta-llama/llama-4-maverick",
+        "id_source": "proxy-model-info",
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-llama-maverick",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-llama-maverick",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "0acf71daf3b677a78f48299582077ccc03fc57d493ff9bf9ac8cbdcbed756ce4",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": null,
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -66,29 +81,34 @@
         "dirty": true
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "4ac8b6ebc1b000e66e9bef04ac134517946270d5cdd1c96178bf9cd1ae03ceb8",
+    "runner": {
+      "cpu_count": 12,
+      "label": null,
       "libraries": {
         "numpy": "2.4.6",
         "openai": "3.19.2",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "alias": "eval-llama-maverick",
-        "endpoint": "http://127.0.0.1:4001",
-        "id": "openrouter/meta-llama/llama-4-maverick",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": 0.0
-      }
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
     },
-    "version": 4
+    "settings": {
+      "family": "llama",
+      "max_tokens": 1200,
+      "price_tier": "large",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 0.18,
+      "usd_per_mtok_out": 0.6
+    },
+    "settings_sha256": "e79bc7c542d2322dae3b338ddd7021e2d6f17f38c0ebffc2f8f638207f66ead8",
+    "version": 5
   },
   "goal": "news_summary_cnn",
   "metric_descriptions": {

@@ -27,6 +27,12 @@ concept and has no business in this file.
 A missing revision is recorded as missing. The core does not invent one — two runs of
 "the same model" that cannot prove they used the same weights should say so rather than
 imply a reproducibility they do not have.
+
+VERSION 5 (RFC-021) splits the fingerprint by what each part identifies: the instrument and
+the data (as in v4), the DEPLOYMENT (the system under test as it executed: weights, server,
+hardware), the SETTINGS (how it was asked) and the RUNNER (where `evh` ran, outside the hash).
+Each hashed part has its own sha256 and `hash` is one hash over the four, so "did anything move"
+is one comparison and "what moved" is four.
 """
 
 from __future__ import annotations
@@ -45,7 +51,28 @@ import subprocess
 from pathlib import Path
 from typing import Any, Callable
 
-from evaluation_harness._providers import identity_params
+from evaluation_harness._providers import PROVIDERS, identity_params
+
+VERSION = 5
+
+#: The parts the hash covers, in the order they are combined. `runner` and `arm` are recorded only.
+PARTS = ("instrument", "data", "deployment", "settings")
+
+#: Params that say WHERE and ON WHAT the model ran: they describe the deployment, so they are not
+#: settings. Credentials (`api_key_env`, see `_providers.identity_params`) are in no part.
+DEPLOYMENT_KEYS = (
+    "model",
+    "url",
+    "base_url",
+    "machine",
+    "provider",
+    "provider_routing",
+    "revision",
+    "device",
+    "precision",
+    "deployment",
+    "model_record",
+)
 
 #: Reported when installed, WITHOUT importing them. importlib.metadata reads distribution
 #: metadata off disk, so the core can say "torch 2.2.2" while having no torch dependency
@@ -305,6 +332,201 @@ def _model_identity(
     return out
 
 
+def settings_of(params: dict[str, Any] | None) -> dict[str, Any]:
+    """How the system was asked: every param that is neither a deployment key nor a credential."""
+    return {k: v for k, v in identity_params(dict(params or {})).items() if k not in DEPLOYMENT_KEYS}
+
+
+def _runner_identity(libraries: dict[str, str] | None) -> dict[str, Any]:
+    """Where `evh` ran: the host, and the client libraries it called the system with (None when the
+    model ran in this process: then they are the deployment's)."""
+    return {**_host_identity(), "libraries": libraries}
+
+
+def _split_server(text: Any) -> tuple[str | None, str | None]:
+    """("ollama", "0.40.13") from a record's "ollama 0.40.13"."""
+    name, _, version = str(text or "").strip().partition(" ")
+    return (name or None), (version.strip() or None)
+
+
+def _weights(**kw: Any) -> dict[str, Any]:
+    out: dict[str, Any] = {
+        "digest": None,
+        "revision": None,
+        "revision_source": None,
+        "file_hash": None,
+        "quantization": None,
+        "precision": None,
+    }
+    out.update({k: v for k, v in kw.items() if v is not None})
+    return out
+
+
+def _derived_id(model: Any, machine: Any) -> str | None:
+    return "@".join(str(x) for x in (model, machine) if x) or None
+
+
+def _record_deployment(record_id: str, entry: dict[str, Any], params: dict[str, Any]) -> dict[str, Any]:
+    """source: record. The deployment entry of a model record (data/models/<id>.yaml), as last onboarded."""
+    ep = entry.get("endpoint") or {}
+    name, version = _split_server(entry.get("server"))
+    hosted = bool(
+        entry.get("provider_id") or entry.get("provider_routing") or entry.get("backend") == "hosted"
+    )
+    return {
+        "id": f"{record_id}@{entry['id']}",
+        "model": params.get("model") or ep.get("model") or entry.get("tag") or entry.get("provider_id"),
+        "source": "record",
+        "weights": _weights(
+            digest=entry.get("digest"),
+            revision=entry.get("revision"),
+            file_hash=entry.get("file_hash"),
+            quantization=entry.get("quantization"),
+        ),
+        "server": {"name": name, "version": version, "settings": entry.get("server_settings"), "url": None},
+        "where": {
+            "machine": entry.get("where"),
+            "backend": entry.get("backend"),
+            "device": entry.get("device"),
+        },
+        "hosted": {
+            "provider": entry.get("where"),
+            "provider_id": entry.get("provider_id"),
+            "route": entry.get("provider_routing"),
+        }
+        if hosted
+        else None,
+        "provider": ep.get("provider"),
+        "in_process": False,
+        "libraries": None,
+        "declared": None,
+    }
+
+
+#: What an adapter's hook returns that has a home in the deployment; the rest is kept under `declared`.
+_MAPPED = ("identity_declared", "error", "id", "revision", "revision_source", "device", "precision")
+
+
+def _declared_extra(declared: dict[str, Any], model: Any) -> dict[str, Any] | None:
+    """Whatever else the hook returned (weight files, a prompt hash, the upstream id behind an alias, ...)."""
+    extra = {k: v for k, v in declared.items() if k not in _MAPPED}
+    if declared.get("id") not in (None, model):
+        extra["id"] = declared["id"]
+    return extra or None
+
+
+#: Providers that call a system somewhere else: the built-in hosted ones and an adapter's own gateway.
+REMOTE_PROVIDERS = (*PROVIDERS, "gateway")
+
+
+def is_remote(params: dict[str, Any]) -> bool:
+    """The system under test runs somewhere else: the arm calls a URL, or a hosted provider or a gateway."""
+    return bool(params.get("url") or params.get("base_url") or params.get("provider") in REMOTE_PROVIDERS)
+
+
+def _adapter_deployment(
+    declared: dict[str, Any], params: dict[str, Any], libraries: dict[str, str]
+) -> dict[str, Any]:
+    """source: adapter. The adapter's `fingerprint(params)` hook, in v4's vocabulary. In process (a local ML
+    model) the runner's libraries ran the model, so they are the deployment's; called somewhere else (a
+    hosted model, a gateway, a server) they only sent the request, so they stay the runner's."""
+    in_process = not is_remote(params)
+    model = params.get("model") or declared.get("id")
+    return {
+        "id": _derived_id(model, params.get("machine")),
+        "model": model,
+        "source": "adapter",
+        "weights": _weights(
+            revision=declared.get("revision"),
+            revision_source=declared.get("revision_source"),
+            precision=declared.get("precision"),
+        ),
+        "server": None,
+        "where": {"machine": params.get("machine"), "backend": None, "device": declared.get("device")},
+        "hosted": None,
+        "provider": params.get("provider"),
+        "in_process": in_process,
+        "libraries": libraries if in_process else None,
+        "declared": _declared_extra(declared, model),
+    }
+
+
+def _params_deployment(params: dict[str, Any], declared: dict[str, Any] | None = None) -> dict[str, Any]:
+    """source: params. Neither a record nor an adapter said who the system is: the deployment is what the
+    params say, with no digest. Honest about the gap, as v4 was about a missing revision. What a hook
+    returned while declining to claim an identity (a baseline's code hash) is kept under `declared`."""
+    declared = declared or {}
+    model = params.get("model") or declared.get("id")
+    url = params.get("base_url") or params.get("url")
+    routing = params.get("provider_routing")
+    out: dict[str, Any] = {
+        "id": _derived_id(model, params.get("machine")),
+        "model": model,
+        "source": "params",
+        "weights": _weights(
+            revision=params.get("revision"),
+            revision_source=declared.get("revision_source"),
+            precision=params.get("precision"),
+        ),
+        "server": {"name": None, "version": None, "settings": None, "url": url} if url else None,
+        "where": {"machine": params.get("machine"), "backend": None, "device": params.get("device")},
+        "hosted": {"provider": params.get("provider"), "provider_id": None, "route": routing}
+        if routing
+        else None,
+        "provider": params.get("provider"),
+        "in_process": False,
+        "libraries": None,
+        "declared": _declared_extra(declared, model),
+    }
+    if declared.get("error"):
+        out["declared_error"] = declared["error"]
+    return out
+
+
+def deployment_of(
+    *,
+    params: dict[str, Any],
+    cfg: dict[str, Any] | None,
+    data_dir: Path,
+    hook: Callable[[dict[str, Any]], dict[str, Any]] | None,
+    libraries: dict[str, str],
+) -> dict[str, Any]:
+    """The deployment, from the best source there is: the model record and deployment the arm names,
+    else the adapter's declared identity, else the params."""
+    cfg = cfg or {}
+    if cfg.get("model_record") and cfg.get("deployment"):
+        from evaluation_harness import _models  # noqa: PLC0415
+
+        rec = _models.find(data_dir, cfg["model_record"])
+        entry = _models.deployment_of(rec, cfg["deployment"]) if rec else None
+        if entry is not None:
+            return _record_deployment(cfg["model_record"], entry, params)
+    declared = _model_identity(hook, params)
+    if declared.get("identity_declared"):
+        return _adapter_deployment(declared, params, libraries)
+    return _params_deployment(params, declared)
+
+
+def part_sha256(part: Any) -> str:
+    """The hash of one part. sort_keys so field order cannot change the answer; default=str so an
+    unexpected type from an adapter's hook degrades to a stable string instead of raising."""
+    return hashlib.sha256(json.dumps(part, sort_keys=True, default=str).encode()).hexdigest()
+
+
+def seal(fp: dict[str, Any], *, whole: bool = True) -> dict[str, Any]:
+    """Fill in each hashed part's sha256 and, when `whole`, the one hash over the four. A derived run
+    (rescored, judged) keeps the whole hash null: its parts were not measured together."""
+    for part in PARTS:
+        fp[f"{part}_sha256"] = part_sha256(fp.get(part))
+    fp["hash"] = combined_hash(fp) if whole else None
+    return fp
+
+
+def combined_hash(fp: dict[str, Any]) -> str:
+    """sha256 over the four parts' own hashes."""
+    return part_sha256({part: fp.get(f"{part}_sha256") for part in PARTS})
+
+
 def build_fingerprint(
     *,
     root: Path,
@@ -318,38 +540,37 @@ def build_fingerprint(
     model_hook: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
     data_dir: Path | None = None,
     adapter_sha256: str | None = None,
+    cfg: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """The full fingerprint, plus one hash over all of it. `data_dir` is the project's data
-    root (`_common.DATA`, which honours EVAL_DATA_DIR); it defaults to `<root>/data`.
+    """The full fingerprint, with a sha256 per hashed part and one hash over the four. `data_dir` is
+    the project's data root (`_common.DATA`, which honours EVAL_DATA_DIR); it defaults to
+    `<root>/data`. `cfg` is the arm's resolved config: the model record and deployment it names
+    (`model_record`, `deployment`) are where the deployment comes from, best first.
 
     The hash is the point: comparing two runs field by field is work nobody does, and a
     single differing hash answers "did anything else move?" at a glance. If it matches,
     you varied one thing. If it does not, you have not run the experiment you think you
-    have — and the fields say which part drifted.
+    have — and the part hashes say which part drifted.
     """
+    libraries = _installed_versions()
+    deployment = deployment_of(
+        params=dict(params or {}),
+        cfg=cfg,
+        data_dir=data_dir or root / "data",
+        hook=model_hook,
+        libraries=libraries,
+    )
     fp: dict[str, Any] = {
-        # v2 adds data.references_sha256. A v1 fingerprint cannot be compared to a v2
-        # one on the hash alone, because v2 hashes strictly more -- the version says so
-        # rather than leaving a reader to discover it from a mismatch.
-        # VERSION 3 as of 2026-09-30. v2 added `data.references_sha256`; v3 changed
-        # what that digest covers -- every file in the reference directory, not just
-        # `*.txt`, so a silver set's manifest.json (which records WHICH MODEL authored
-        # it) is inside the hash. A v2 and a v3 digest over the same directory differ
-        # whenever a non-.txt file is present, so they are not comparable and the
-        # version must say so. Left at 2 when the rule changed; found by external
-        # review.
-        # VERSION 4 as of 2026-10-24: code is hashed by behaviour (_codeid: the syntax tree
-        # without docstrings, comments, formatting or METRIC_DESCRIPTIONS), the adapter and the
-        # harness alike, and a reference manifest's caveat is outside the reference digest.
-        # Documentation never moves a fingerprint; v3 digests are not comparable with v4's.
-        "version": 4,
+        # v2 added data.references_sha256; v3 widened what it covers to every file in the reference
+        # directory (a silver set's manifest says WHICH MODEL authored it); v4 (2026-10-24) hashed
+        # code by behaviour (_codeid), so documentation never moves a fingerprint. v5 (2026-10-31,
+        # RFC-021) splits the system under test into a deployment and settings and moves the host out
+        # of the hash. Versions hash different things: the version says so rather than leaving a
+        # reader to discover it from a mismatch.
+        "version": VERSION,
         "instrument": {
             "harness": _harness_identity(root, data_dir),
             "adapter": _adapter_identity(adapter_path, adapter_id, adapter_sha256),
-        },
-        "system_under_test": {
-            "model": _model_identity(model_hook, params),
-            "libraries": _installed_versions(),
         },
         "data": {
             "dataset_id": dataset.get("dataset_id"),
@@ -363,16 +584,15 @@ def build_fingerprint(
             # file, get different scores, and the fingerprint stays identical --
             # `compare_runs` then reports "reference identical" while comparing two
             # different measurements. That is the exact failure this whole structure
-            # exists to prevent, and it applied to references for as long as the
-            # comment two fields above has been telling you a name is not an identity.
+            # exists to prevent.
             "references_sha256": references_digest(root, reference_id, data_dir),
         },
-        "host": _host_identity(),
-        # Which key paid for the calls (`api_key_env`) is not what was measured.
-        "arm": {"config_id": config_id, "params": identity_params(dict(params or {}))},
+        "deployment": deployment,
+        "settings": settings_of(params),
+        "runner": _runner_identity(None if deployment["in_process"] else libraries),
+        "arm": {"config_id": config_id},
     }
-    fp["hash"] = _hash_of(fp)
-    return fp
+    return seal(fp)
 
 
 #: The manifest fields a reference's identity depends on: who (or what) authored its texts.
@@ -434,25 +654,22 @@ def items_digest(dataset: dict[str, Any]) -> str | None:
     return h.hexdigest()
 
 
-def _hash_of(fingerprint: dict[str, Any]) -> str:
-    """SHA256 over the fingerprint, minus the hash field itself.
-
-    sort_keys so field order cannot change the answer; default=str so an unexpected type
-    from an adapter's hook degrades to a stable string instead of raising.
-    """
-    body = {k: v for k, v in fingerprint.items() if k != "hash"}
-    return hashlib.sha256(json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()
+def moved_parts(a: dict[str, Any], b: dict[str, Any]) -> list[str]:
+    """The hashed parts (`PARTS`) whose content differs between two fingerprints, from the parts
+    themselves rather than their stored hashes."""
+    return [p for p in PARTS if part_sha256(a.get(p)) != part_sha256(b.get(p))]
 
 
 def differing_paths(a: dict[str, Any], b: dict[str, Any], _prefix: str = "") -> list[str]:
     """Dotted paths where two fingerprints disagree — what `run-compare` should name.
 
-    "The hashes differ" is true and useless. "system_under_test.model.revision differs"
-    tells you whether you compared two models or two machines.
+    "The hashes differ" is true and useless. "deployment.weights.digest differs"
+    tells you whether you compared two models or two machines. The hashes themselves
+    (`hash`, and each part's `<part>_sha256`) are the summary of the paths, not a path.
     """
     out: list[str] = []
     for key in sorted(set(a) | set(b)):
-        if key == "hash":
+        if not _prefix and (key == "hash" or key in {f"{p}_sha256" for p in PARTS}):
             continue
         av, bv = a.get(key), b.get(key)
         path = f"{_prefix}{key}"

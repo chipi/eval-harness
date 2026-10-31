@@ -19,21 +19,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_gemma_m_n200_v1",
-      "params": {
-        "family": "gemma",
-        "max_tokens": 1200,
-        "model": "eval-gemma-26b",
-        "price_tier": "mid",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 0.07,
-        "usd_per_mtok_out": 0.15
-      }
+      "config_id": "cnn_gemma_m_n200_v1"
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -46,16 +32,45 @@
       "references_sha256": "b7cd73d14c009e1ee5559a332cfc37143e24b4debcc75d1fdda9235a85b26f3d",
       "references_sha256_at_measurement": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
+    "data_sha256": "66c42ddae2a884ddffb4093bb47f43bf49bf2f06d0a15cb5cbea3b59da33260f",
+    "deployment": {
+      "declared": {
+        "alias": "eval-gemma-26b",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/google/gemma-4-26b-a4b-it",
+        "id_source": "proxy-model-info",
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-gemma-26b",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gemma-26b",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "918fcf0e7f2e3f47a212eb2d7784721e74f356f2057505ff12964ad96e3bfb02",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": null,
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -66,29 +81,34 @@
         "dirty": true
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "915d441b77b695d2ec349c529d7eefb451077820f9bb98064ece826de3237429",
+    "runner": {
+      "cpu_count": 12,
+      "label": null,
       "libraries": {
         "numpy": "2.4.6",
         "openai": "3.19.2",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "alias": "eval-gemma-26b",
-        "endpoint": "http://127.0.0.1:4001",
-        "id": "openrouter/google/gemma-4-26b-a4b-it",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": 0.0
-      }
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
     },
-    "version": 4
+    "settings": {
+      "family": "gemma",
+      "max_tokens": 1200,
+      "price_tier": "mid",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 0.07,
+      "usd_per_mtok_out": 0.15
+    },
+    "settings_sha256": "e289e35ed2cb678c8216a896e16e97a15ef06e20d283b4234a6958cf8f38019f",
+    "version": 5
   },
   "goal": "news_summary_cnn",
   "metric_descriptions": {

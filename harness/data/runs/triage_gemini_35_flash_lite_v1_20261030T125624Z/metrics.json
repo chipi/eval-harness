@@ -10,13 +10,7 @@
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {
     "arm": {
-      "config_id": "triage_gemini_35_flash_lite_v1",
-      "params": {
-        "model": "eval-gemini-35-flash-lite",
-        "provider": "gateway",
-        "usd_per_mtok_in": 0.3,
-        "usd_per_mtok_out": 2.5
-      }
+      "config_id": "triage_gemini_35_flash_lite_v1"
     },
     "data": {
       "dataset_id": "orrery_triage_v1_labelled",
@@ -26,15 +20,33 @@
       "reference_tier": "gold",
       "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
     },
-    "hash": "bc3d86acfd4ab3151ad65c87018986f6b6f362f59b328ce5be1dc9f02af02a2b",
-    "host": {
-      "cpu_count": 32,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.14.7",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": "eval-gemini-35-flash-lite",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gemini-35-flash-lite",
+      "provider": "gateway",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "1cf8b1545f4f7e30d64423a2a8e45932c678aa2f2f80d2ae5014de9f4c7121e7",
+    "hash": "5102b907f34b882edc28ba52a1be8d41ec1f4014e75474fe2388035614458b80",
     "instrument": {
       "adapter": {
         "id": "examples/triage-fleet/adapter.py",
@@ -48,18 +60,27 @@
         "version": "0.5.0"
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "fc30a7cbe4c92fa001c5695d52dad9447779e055ef63b07bf9cb6a7f0045ca39",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
       "libraries": {
         "anthropic": "2.3.0",
         "numpy": "2.5.4",
         "openai": "3.41.0",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "identity_declared": false
-      }
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "usd_per_mtok_in": 0.3,
+      "usd_per_mtok_out": 2.5
+    },
+    "settings_sha256": "bd7158a8b5eaea02fd5883bb4e7a99c1786117b443e8d3133341a4f7d00317de",
+    "version": 5
   },
   "goal": "triage_orrery",
   "metric_directions": {

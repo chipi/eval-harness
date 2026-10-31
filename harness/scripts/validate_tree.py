@@ -620,7 +620,7 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
     #: The callable returns either a str (one hash) or a dict of named hashes, and
     #: EVERY key of that dict is compared -- naming one key here is how the parser went
     #: unwatched. `data/runs` predates `scorer_sha256` and states `parser_sha256` alone,
-    #: under `system_under_test.model`, so that is what is compared there.
+    #: under the fingerprint's `deployment.declared`, so that is what is compared there.
     #: Declared per project in validate.json `scorer_sources`; a project without them has
     #: nothing for V10 to compare.
     SOURCES = [
@@ -1209,8 +1209,8 @@ def v17_captures() -> None:
 
 def v18_model_records() -> None:
     """V18: the model records (RFC-020, optional; their schema is V1's): each file named by its id, no
-    alias claimed by two records, every config that names a record (`model_record:`) naming one that
-    exists."""
+    alias claimed by two records, a deployment id used twice in one record, every config that names a record
+    (`model_record:`) naming one that exists, and `deployment:` only beside a `model_record:` that has it."""
     import yaml  # noqa: PLC0415
     from evaluation_harness import _models  # noqa: PLC0415
 
@@ -1222,10 +1222,16 @@ def v18_model_records() -> None:
     for c in sorted(CONFIGS.glob("*.yaml")):
         cfg = yaml.safe_load(c.read_text(encoding="utf-8")) or {}
         rid = cfg.get("model_record") if isinstance(cfg, dict) else None
+        dep = cfg.get("deployment") if isinstance(cfg, dict) else None
+        if dep and not rid:
+            bad.append(f"{c.name}: deployment {dep!r} is used without a model_record")
         if rid and rid not in recs:
             bad.append(f"{c.name}: model_record {rid!r} has no data/models/{rid}.yaml")
         elif rid:
             rec = _models.find(DATA, rid) or {}
+            if dep and _models.deployment_of(rec, dep) is None:
+                bad.append(f"{c.name}: deployment {dep!r} is not one of {rid}'s deployments")
+                continue
             params = _models.resolve(cfg, DATA).get("params") or {}
             if cfg.get("config_id") not in (rec.get("smokes") or {}):
                 notes.append(f"{c.name}: never smoked (evh arm-smoke --config {c.name})")
@@ -1233,7 +1239,7 @@ def v18_model_records() -> None:
                 notes.append(f"{c.name}: {rid} reasons, and no max_tokens bounds its replies")
     for r in _models.load(DATA):
         by_tag: dict[str, set[str]] = {}
-        for b in r.get("builds") or []:
+        for b in r.get("deployments") or []:
             if b.get("tag") and b.get("digest"):
                 by_tag.setdefault(b["tag"], set()).add(b["digest"][:12])
         for tag, digests in by_tag.items():

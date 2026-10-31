@@ -10,21 +10,7 @@
   "dataset_id": "cnn_dailymail_dm200",
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_bart_l_dm200_v1",
-      "params": {
-        "device": "cpu",
-        "early_stopping": true,
-        "family": "bart",
-        "length_penalty": 2.0,
-        "max_length": 142,
-        "min_length": 56,
-        "model": "facebook/bart-large-cnn",
-        "no_repeat_ngram_size": 3,
-        "num_beams": 4,
-        "precision": "fp32",
-        "price_tier": "free",
-        "provider": "hf_local"
-      }
+      "config_id": "cnn_bart_l_dm200_v1"
     },
     "data": {
       "dataset_id": "cnn_dailymail_dm200",
@@ -34,15 +20,45 @@
       "reference_tier": "gold",
       "references_sha256": "7fc293bc2d9661e3b23d2bb1af8981f5e4bab10e4ab3c83b36e03f571fcef8cc"
     },
-    "hash": "d0ef0f8159729f4919f99a17d3f1cd14fa7cd2d7480f16630d26244948128a1f",
-    "host": {
-      "cpu_count": 4,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": "x86_64",
-      "python": "3.11.15",
-      "release": "6.18.44-fc-v114"
+    "data_sha256": "b6cad540b3ebb8d82b0209949ddb828fb5383da16aa8c58ce0c1053d69c0d225",
+    "deployment": {
+      "declared": {
+        "loaded_dtype": "float32",
+        "loaded_revision": "37f520fa929c961707657b28798b30c003dd100b",
+        "weight_files": [
+          "model.safetensors:1625222120"
+        ]
+      },
+      "hosted": null,
+      "id": "facebook/bart-large-cnn",
+      "in_process": true,
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.0",
+        "transformers": "4.55.4"
+      },
+      "model": "facebook/bart-large-cnn",
+      "provider": "hf_local",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "37f520fa929c961707657b28798b30c003dd100b",
+        "revision_source": "hf-snapshot"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
     },
+    "deployment_sha256": "b1dd594e739c8c307df1b5f5cd31041aa133cc7eeb7bb1e815e93c9575a1b88c",
+    "hash": "cb4c8ceddc4e3630388d29bc0ede5fb702986a19ea1e8891f7a8bbb124e916c3",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -53,29 +69,28 @@
         "dirty": false
       }
     },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "2.4.6",
-        "openai": "3.19.2",
-        "rouge-score": "0.1.2",
-        "torch": "2.14.0",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "device": "cpu",
-        "id": "facebook/bart-large-cnn",
-        "identity_declared": true,
-        "loaded_dtype": "float32",
-        "loaded_revision": "37f520fa929c961707657b28798b30c003dd100b",
-        "precision": "fp32",
-        "revision": "37f520fa929c961707657b28798b30c003dd100b",
-        "revision_source": "hf-snapshot",
-        "weight_files": [
-          "model.safetensors:1625222120"
-        ]
-      }
+    "instrument_sha256": "87f84d601296e5afa92205b3499ac37fd87ba8666270e18cce71ba720884f067",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v114"
     },
-    "version": 4
+    "settings": {
+      "early_stopping": true,
+      "family": "bart",
+      "length_penalty": 2.0,
+      "max_length": 142,
+      "min_length": 56,
+      "no_repeat_ngram_size": 3,
+      "num_beams": 4,
+      "price_tier": "free"
+    },
+    "settings_sha256": "b1f4fbaba7089b2e89a68ea7dcfd164d4cb3445597862243826ad81080cf92c4",
+    "version": 5
   },
   "goal": "news_summary_cnn",
   "metric_kinds": {

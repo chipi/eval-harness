@@ -19,21 +19,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "ag_bert_base_fy_n200_v1",
-      "params": {
-        "device": "cpu",
-        "family": "bert",
-        "label_order": [
-          "World",
-          "Sports",
-          "Business",
-          "Sci/Tech"
-        ],
-        "model": "fabriceyhc/bert-base-uncased-ag_news",
-        "precision": "fp32",
-        "price_tier": "free",
-        "provider": "hf_local"
-      }
+      "config_id": "ag_bert_base_fy_n200_v1"
     },
     "data": {
       "dataset_id": "ag_news_200",
@@ -46,38 +32,10 @@
       "references_sha256": "636e963d2e500587d0642c40b48ac32040d237eb160bf00e20696ccea4649534",
       "references_sha256_at_measurement": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
     },
-    "hash": null,
-    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
-    "host": {
-      "cpu_count": 4,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": "x86_64",
-      "python": "3.11.15",
-      "release": "6.18.44-fc-v50"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/classification-ag-news/adapter.py",
-        "sha256": "ee92fea1f9920fd82b44a05ca1f35823d17f67adc3bf0bb73f07d357d0e583bd"
-      },
-      "harness": {
-        "commit": "4068ea23007d",
-        "dirty": false
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "torch": "2.14.0",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "device": "cpu",
+    "data_sha256": "5f960d37e68d6cacd7850691b01c342690a21bb175321128c73ce2eb610e87a7",
+    "deployment": {
+      "declared": {
         "encoder_window": 512,
-        "id": "fabriceyhc/bert-base-uncased-ag_news",
-        "identity_declared": true,
         "label_order": [
           "World",
           "Sports",
@@ -92,13 +50,70 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "f8adae1bc43c3446a7ba737f6d22c89f8f2685a18cadd64ecd79dec453260390",
+        "provider": "hf_local"
+      },
+      "hosted": null,
+      "id": "fabriceyhc/bert-base-uncased-ag_news",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.14.0",
+        "transformers": "4.55.4"
+      },
+      "model": "fabriceyhc/bert-base-uncased-ag_news",
+      "provider": "hf_local",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
         "precision": "fp32",
-        "provider": "hf_local",
+        "quantization": null,
         "revision": null,
         "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
       }
     },
-    "version": 4
+    "deployment_sha256": "64c67bfc83c2a088fcbbbb02dd06c1143bc42c3b6a66a3f649a80d9d50df0616",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-ag-news/adapter.py",
+        "sha256": "ee92fea1f9920fd82b44a05ca1f35823d17f67adc3bf0bb73f07d357d0e583bd"
+      },
+      "harness": {
+        "commit": "4068ea23007d",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "9c9f990e20adc6efc64be21984d2bb41ac2e162ef15d3b60aa3e97a623504488",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v50"
+    },
+    "settings": {
+      "family": "bert",
+      "label_order": [
+        "World",
+        "Sports",
+        "Business",
+        "Sci/Tech"
+      ],
+      "price_tier": "free"
+    },
+    "settings_sha256": "6b6e6358522237bd145540a1e8ddace0f27dc47b115f416193722871afc0dcb5",
+    "version": 5
   },
   "goal": "news_topic_ag",
   "metric_kinds": {

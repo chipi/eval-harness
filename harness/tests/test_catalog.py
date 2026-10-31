@@ -514,9 +514,9 @@ try:
         mj = data4 / "runs" / rid / "metrics.json"
         m = json.loads(mj.read_text())
         m["fingerprint"] = {
-            "version": 4,
-            "host": {"platform": machine, "cpu_count": 8},
-            "system_under_test": {"libraries": {"numpy": "2.0"}},
+            "version": 5,
+            "runner": {"platform": machine, "cpu_count": 8, "libraries": {"numpy": "2.0"}},
+            "deployment": {"where": {"machine": "dgx", "backend": "cuda"}, "server": {"name": "ollama"}},
             "instrument": {
                 "harness": {"version": "0.4.0"},
                 "adapter": {"id": "adapter.py", "sha256": scorer * 32},
@@ -533,7 +533,7 @@ try:
     )
     differ = {d["name"] for d in c4.get("differ", [])}
     check(
-        "compare: the conditions that differ (machine, scorer), not those that match (library, items)",
+        "compare: the conditions that differ (runner, scorer), not those that match (library, deployment, items)",
         differ == {"machine.platform", "scorer.sha256"} and c4.get("fields", 0) >= 8,
         c4,
     )

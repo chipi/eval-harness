@@ -2,7 +2,8 @@
 
     models.html          every model record: its build, where it runs, the settings chosen, whether it
                          was vetted, the arms and goals that use it, and what changed in the period
-    models/<id>.html     one record: builds, the onboarding report, the settings history, its arms
+    models/<id>.html     one record: its deployments, each one's onboarding report, the settings history,
+                         its arms
 
 `evh models` prints the same rows (`model_rows`). The records are data/models/<id>.yaml (_models.py); the
 adapter's `models()` says which arms use each. The grouping and facets are catalog_assets/group.js, the
@@ -14,7 +15,7 @@ from __future__ import annotations
 import html
 from datetime import date, timedelta
 
-#: A build last checked longer ago than this is shown muted: it may no longer be what runs there.
+#: A deployment last checked longer ago than this is shown muted: it may no longer be what runs there.
 STALE_DAYS = 30
 
 #: The onboarding status a record's chip and `evh models --status` name, by the status it records.
@@ -59,18 +60,27 @@ def smoke_of(rec: dict, config_id: str) -> str:
     return str(status) if status in ("pass", "check") else "none"
 
 
+def deployments_of(rec: dict) -> list[dict]:
+    return [d for d in rec.get("deployments") or [] if isinstance(d, dict)]
+
+
 def status_of(rec: dict) -> str:
-    """vetted (onboarding passed), check (it flagged something) or none."""
-    return STATUS.get((rec.get("onboarding") or {}).get("status", ""), "none")
+    """vetted (every deployment's onboarding passed, and there is one), check (any flagged something) or
+    none."""
+    seen = [STATUS.get((d.get("onboarding") or {}).get("status", ""), "none") for d in deployments_of(rec)]
+    if seen and all(x == "vetted" for x in seen):
+        return "vetted"
+    return "check" if "check" in seen else "none"
 
 
 def hosting(rec: dict) -> str:
-    """self-hosted when a build runs on a machine (it names a server, a device or just a place) and none
-    has a provider id; hosted when a build has a provider id; "" for a record with no builds."""
-    builds = rec.get("builds") or []
-    if any(b.get("provider_id") for b in builds):
+    """self-hosted when a deployment runs on a machine (it names a server, a device or just a place) and
+    none has a provider id; hosted when one has a provider id or the hosted backend; "" for a record with no
+    deployments."""
+    deps = deployments_of(rec)
+    if any(d.get("provider_id") or d.get("backend") == "hosted" for d in deps):
         return "hosted"
-    return "self-hosted" if any(b.get("server") or b.get("device") or b.get("where") for b in builds) else ""
+    return "self-hosted" if any(d.get("server") or d.get("device") or d.get("where") for d in deps) else ""
 
 
 def identity(b: dict) -> str:
@@ -82,17 +92,17 @@ def short(s: str, n: int = 12) -> str:
 
 
 def build_text(b: dict) -> str:
-    """A build as one short token: its tag or provider id, then the first characters of its digest,
-    revision or hash."""
+    """A deployment's build as one short token: its tag or provider id, then the first characters of its
+    digest, revision or hash."""
     return "@".join(x for x in (b.get("tag") or b.get("provider_id") or "", short(identity(b))) if x) or "—"
 
 
 def build_diffs(rec: dict) -> list[str]:
-    """Per build, "" when it is the record's build for its tag (the first one listed) or matches it, else
+    """Per deployment, "" when it is the record's build for its tag (the first one listed) or matches it, else
     what differs: the same tag on two machines with different digests, revisions or hashes."""
     first: dict = {}
     out = []
-    for b in rec.get("builds") or []:
+    for b in deployments_of(rec):
         ref = first.setdefault(b.get("tag") or b.get("provider_id") or "", b)
         mine, theirs = identity(b), identity(ref)
         out.append(
@@ -128,14 +138,14 @@ def day(s) -> str:
 
 
 def first_day(rec: dict, arm_days: list[str]) -> str:
-    """The day a record is new from: its earliest onboarding, history or build check, else its first arm's
-    first run; "" when none is dated."""
+    """The day a record is new from: its earliest onboarding, history or deployment check, else its first
+    arm's first run; "" when none is dated."""
     days = [
         day(x)
         for x in [
-            (rec.get("onboarding") or {}).get("at"),
+            *((d.get("onboarding") or {}).get("at") for d in deployments_of(rec)),
             *(h.get("at") for h in rec.get("history") or []),
-            *(b.get("checked_at") for b in rec.get("builds") or []),
+            *(d.get("checked_at") for d in deployments_of(rec)),
         ]
         if x
     ]
@@ -152,7 +162,8 @@ def stale(b: dict, today: date | None = None) -> bool:
 
 def model_rows(A, by_ds: dict, arms_rows: list[dict] | None = None) -> list[dict]:
     """One row per model record: {"id", "name", "kind", "hosting", "weights", "licence", "status",
-    "onboarded", "flags", "build", "builds", "differs", "settings", "arms" (the arm rows of
+    "onboarded" (the latest deployment onboarding's day), "flags", "build", "deployments", "differs",
+    "settings", "arms" (the arm rows of
     catalog_arms.arm_rows), "goals", "best" ([(goal, dataset, rank, of)]), "record"}. `best` is the
     record's best arm's place on each goal's deciding measure among the arms the goal's decision weighs."""
     from evaluation_harness import catalog_arms as ca  # noqa: PLC0415
@@ -180,9 +191,9 @@ def model_rows(A, by_ds: dict, arms_rows: list[dict] | None = None) -> list[dict
                 goals.setdefault(r["goal"]["goal_id"], r["goal"])
         for g, *_ in best.values():
             goals.setdefault(g["goal_id"], g)
-        onb = rec.get("onboarding") or {}
+        deps = deployments_of(rec)
+        onbs = [(d, d.get("onboarding") or {}) for d in deps]
         diffs = build_diffs(rec)
-        builds = rec.get("builds") or []
         out.append(
             {
                 "id": rec["model_id"],
@@ -192,10 +203,12 @@ def model_rows(A, by_ds: dict, arms_rows: list[dict] | None = None) -> list[dict
                 "weights": rec.get("weights") or "",
                 "licence": rec.get("licence") or "",
                 "status": status_of(rec),
-                "onboarded": day(onb.get("at")),
-                "flags": list(onb.get("flags") or []),
-                "build": list(dict.fromkeys(build_text(b) for b in builds)),
-                "builds": builds,
+                "onboarded": max((day(o.get("at")) for _d, o in onbs), default=""),
+                "flags": [
+                    (f"{d['id']}: {f}" if len(deps) > 1 else f) for d, o in onbs for f in o.get("flags") or []
+                ],
+                "build": list(dict.fromkeys(build_text(b) for b in deps)),
+                "deployments": deps,
                 "diffs": diffs,
                 "differs": any(diffs),
                 "settings": settings_line(rec),
@@ -209,15 +222,21 @@ def model_rows(A, by_ds: dict, arms_rows: list[dict] | None = None) -> list[dict
 
 
 def changes(rows: list[dict]) -> list[tuple]:
-    """What changed for the models, newest first: (day, model id, what). Onboarding, then each entry of
-    a record's history (what, from, to)."""
+    """What changed for the models, newest first: (day, model id, what). Each deployment's onboarding, then
+    each entry of a record's history (what, from, to)."""
     out = []
     for r in rows:
         rec = r["record"]
-        onb = rec.get("onboarding") or {}
-        if onb.get("at"):
-            where = f" on {onb['where']}" if onb.get("where") else ""
-            out.append((day(onb["at"]), r["id"], f"onboarded{where}: {STATUS_WORDS[r['status']]}"))
+        for d in r["deployments"]:
+            onb = d.get("onboarding") or {}
+            if onb.get("at"):
+                out.append(
+                    (
+                        day(onb["at"]),
+                        r["id"],
+                        f"onboarded {d['id']}: {STATUS_WORDS[STATUS.get(onb.get('status', ''), 'none')]}",
+                    )
+                )
         for h in rec.get("history") or []:
             moved = f" {h.get('from', '—')} → {h.get('to', '—')}" if "from" in h or "to" in h else ""
             out.append(
@@ -261,7 +280,7 @@ def render_models(A, by_ds: dict, out, nav: list, arms_rows: list[dict] | None =
     for r in rows:
         where = "<br>".join(
             f'<span class="muted">{e(b["where"])}</span>' if stale(b, today) else e(b["where"])
-            for b in r["builds"]
+            for b in r["deployments"]
         )
         trs.append(
             {
@@ -316,8 +335,8 @@ def render_models(A, by_ds: dict, out, nav: list, arms_rows: list[dict] | None =
         "models",
         "Models",
         f"{len(rows)} models: {n_vetted} vetted, {n_check} to check, {len(rows) - n_vetted - n_check} not onboarded yet. "
-        "A model is onboarded once (its build on every machine, what it can do, the settings chosen for it, a smoke "
-        "behind them) and used by any experiment's arms.",
+        "A model is onboarded once (its deployment on every machine, what it can do, the settings chosen for it, a "
+        "smoke behind each deployment) and used by any experiment's arms.",
         cp.bar(w["first"], w["until"]),
     )
     if rows:
@@ -400,7 +419,6 @@ def render_model(A, r: dict, out, nav: list) -> None:
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
 
     rec = r["record"]
-    onb = rec.get("onboarding") or {}
     why = rec.get("settings_why") or {}
     settings = "<br>".join(
         f"<code>{e(k)}</code> {e(v)}" + (f' <small class="muted">{e(why[k])}</small>' if why.get(k) else "")
@@ -413,8 +431,9 @@ def render_model(A, r: dict, out, nav: list) -> None:
         ("settings", settings or "defaults"),
         (
             "onboarding",
-            smoke_text(onb) + (f" on {e(onb['where'])}" if onb.get("where") else "")
-            if onb
+            f"{STATUS_WORDS[r['status']]}"
+            + (f' <small class="muted">{e(r["onboarded"])}</small>' if r["onboarded"] else "")
+            if r["status"] != "none"
             else "not onboarded: <code>evh model-onboard</code>",
         ),
     ]
@@ -425,13 +444,13 @@ def render_model(A, r: dict, out, nav: list) -> None:
         "A model record: onboarded once for the project and used by any experiment's arms.",
         f'<dl class="kv">{dl}</dl><p class="btns"><a class="btn" href="../models.html">Every model</a></p>',
     )
-    if r["builds"]:
+    if r["deployments"]:
         brs = []
-        for b, diff in zip(r["builds"], r["diffs"], strict=True):
+        for b, diff in zip(r["deployments"], r["diffs"], strict=True):
             run = " ".join(
                 x
                 for x in (
-                    e(b.get("server") or b.get("device") or "—"),
+                    e(b.get("server") or b.get("device") or b.get("backend") or "—"),
                     f'<small class="muted">{e(kv(b["server_settings"]))}</small>'
                     if b.get("server_settings")
                     else "",
@@ -445,22 +464,43 @@ def render_model(A, r: dict, out, nav: list) -> None:
             )
             brs.append(
                 [
-                    e(b["where"]),
+                    f"<code>{e(b['id'])}</code>",
+                    e(b["where"])
+                    + (f' <small class="muted">{e(b["backend"])}</small>' if b.get("backend") else ""),
                     run,
                     ident or "—",
                     f"differs: {e(diff)}" if diff else "yes",
                     f'<span data-v="{e(day(b.get("checked_at")))}"'
                     + (' class="muted"' if stale(b) else "")
                     + f">{e(day(b.get('checked_at'))) or '—'}</span>",
+                    smoke_text(b.get("onboarding") or {}),
                 ]
             )
-        builds = cb.table(
-            "builds", ["where", "server or device", "build", "matches the record", "checked"], brs
+        deployments = cb.table(
+            "deployments",
+            [
+                "deployment",
+                "where",
+                "server or device",
+                "build",
+                "matches the record",
+                "checked",
+                "onboarding",
+            ],
+            brs,
         )
     else:
-        builds = '<p class="muted">No build is recorded for this model.</p>'
-    body += cb.block("01", "builds", builds)
-    if onb:
+        deployments = '<p class="muted">No deployment is recorded for this model.</p>'
+    body += cb.block("01", "deployments", deployments)
+    inner = ""
+    for dep in r["deployments"]:
+        onb = dep.get("onboarding") or {}
+        if not onb:
+            inner += (
+                f'<p class="muted"><code>{e(dep["id"])}</code> not onboarded yet: '
+                f"<code>evh model-onboard {e(r['id'])} --deployment {e(dep['id'])}</code>.</p>"
+            )
+            continue
         rep = onb.get("report") or {}
         flags = list(onb.get("flags") or [])
         used: set = set()
@@ -477,19 +517,20 @@ def render_model(A, r: dict, out, nav: list) -> None:
                 ]
             )
         rest = [f for f in flags if f not in used]
-        inner = (
-            f'<p class="small">{smoke_text(onb)}'
+        inner += (
+            f'<p class="small"><code>{e(dep["id"])}</code> {smoke_text(onb)}'
             + (f" on {e(onb['where'])}" if onb.get("where") else "")
             + "</p>"
-            + (cb.table("probes", ["probe", "measurement", "flag"], probes) if probes else "")
-            + (f'<p class="small">Other flags: {e("; ".join(rest))}</p>' if rest else "")
             + (
-                f'<p class="small muted">What it can do: {e(kv(rec["capabilities"]))}</p>'
-                if rec.get("capabilities")
+                cb.table(f"probes-{cb.slug(dep['id'])}", ["probe", "measurement", "flag"], probes)
+                if probes
                 else ""
             )
+            + (f'<p class="small">Other flags: {e("; ".join(rest))}</p>' if rest else "")
         )
-    else:
+    if rec.get("capabilities"):
+        inner += f'<p class="small muted">What it can do: {e(kv(rec["capabilities"]))}</p>'
+    if not r["deployments"]:
         inner = f'<p class="muted">Not onboarded yet: <code>evh model-onboard {e(r["id"])}</code>.</p>'
     body += cb.block("02", "onboarding", inner)
     hist = [

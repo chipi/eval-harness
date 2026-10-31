@@ -10,13 +10,7 @@
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {
     "arm": {
-      "config_id": "triage_baseline_pro_v1",
-      "params": {
-        "model": "eval-fleet-triage-pro",
-        "provider": "gateway",
-        "usd_per_mtok_in": 0.816,
-        "usd_per_mtok_out": 1.632
-      }
+      "config_id": "triage_baseline_pro_v1"
     },
     "data": {
       "dataset_id": "orrery_triage_v1_labelled",
@@ -26,15 +20,33 @@
       "reference_tier": "gold",
       "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
     },
-    "hash": "4bab408e4453390da7d67385bb973a6824e85c55a992adb162825f95168a80f7",
-    "host": {
-      "cpu_count": 32,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.14.7",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": "eval-fleet-triage-pro",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-fleet-triage-pro",
+      "provider": "gateway",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "ecf96151d8680a3f8ae2ca859d298453c296ecfa5ecb1b777763c6cd0f00872e",
+    "hash": "c8177d53706adb5f89f20dbb75445723a3fbeedbc8c1dce3ae846b5d12bb6194",
     "instrument": {
       "adapter": {
         "id": "examples/triage-fleet/adapter.py",
@@ -48,18 +60,27 @@
         "version": "0.5.0"
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "2184844ffe9089e04308faaa4831c3f2f5e028b9d535c9dd442614d9d5fcea09",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
       "libraries": {
         "anthropic": "2.3.0",
         "numpy": "2.5.4",
         "openai": "3.41.0",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "identity_declared": false
-      }
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "usd_per_mtok_in": 0.816,
+      "usd_per_mtok_out": 1.632
+    },
+    "settings_sha256": "a9925e3d65cfda03c8de9899f8394e43dfd68038c2ec8dc721bccc3b17c89aac",
+    "version": 5
   },
   "goal": "triage_orrery",
   "metric_directions": {

@@ -10,21 +10,7 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_openai_l_n100_v1",
-      "params": {
-        "family": "openai",
-        "max_tokens": 1500,
-        "model": "eval-gpt-6sol",
-        "price_tier": "large",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 2.5,
-        "usd_per_mtok_out": 15.0
-      }
+      "config_id": "se_openai_l_n100_v1"
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -34,15 +20,44 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "02fc2f4b1cdf5c9d10055ef10d890f6a8812b1eaae172ad829727b90a84c3efd",
-    "host": {
-      "cpu_count": 32,
-      "label": "omarchy",
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.11.16",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "alias": "eval-gpt-6sol",
+        "endpoint": "http://homelab:4001",
+        "id": "openrouter/openai/gpt-6-sol",
+        "id_source": "proxy-model-info",
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-gpt-6sol",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gpt-6sol",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "0a604ee37c1760a2515665332eecc41c53cb0d0b54ba40de6deedd85e8f18419",
+    "hash": "af8e7f5d87583f55a1932311bf2d4fe64876d37c985e400ef23087cdf0c30982",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -53,7 +68,10 @@
         "dirty": true
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "0ca253fac61afcc5a71d2722a8d085090fb72fcb4c039839291aa5e09d28f428",
+    "runner": {
+      "cpu_count": 32,
+      "label": "omarchy",
       "libraries": {
         "numpy": "1.26.4",
         "openai": "3.31.0",
@@ -61,23 +79,25 @@
         "torch": "2.14.1",
         "transformers": "4.55.4"
       },
-      "model": {
-        "alias": "eval-gpt-6sol",
-        "endpoint": "http://homelab:4001",
-        "id": "openrouter/openai/gpt-6-sol",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": 0.0
-      }
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.16",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "family": "openai",
+      "max_tokens": 1500,
+      "price_tier": "large",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 2.5,
+      "usd_per_mtok_out": 15.0
+    },
+    "settings_sha256": "bc0d1d1d8545a7607033889b5ab73cd7c0ee8a207e6edc8a287d5e3c8fff7657",
+    "version": 5
   },
   "goal": "summary_judge_summeval",
   "metric_kinds": {

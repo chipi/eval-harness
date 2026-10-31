@@ -51,7 +51,7 @@ from evaluation_harness._common import (
     read_json,
     write_json,
 )
-from evaluation_harness._fingerprint import references_digest
+from evaluation_harness._fingerprint import references_digest, seal
 from evaluation_harness._record import aggregate_scores, derived_record
 from evaluation_harness._runs import runs_on
 
@@ -291,7 +291,9 @@ def _rescored_fingerprint(
                 f"    WARNING: {run_name}: the reference files have CHANGED since "
                 f"this run was measured; scores here are against the current ones"
             )
-    fp["hash"] = None
+    # The deployment and the settings are the source run's, carried as they are; the instrument and the
+    # data are re-hashed. The whole hash stays null: these parts were not measured together.
+    seal(fp, whole=False)
     fp["hash_invalid_because"] = (
         "scores were recomputed by a different scorer than the one this "
         "fingerprint was built from; see derived.with"

@@ -10,10 +10,7 @@
   "dataset_id": "fleet_dedup_v1",
   "fingerprint": {
     "arm": {
-      "config_id": "dedup_pinned_f07efa9_v1",
-      "params": {
-        "fleet_commit": "f07efa9"
-      }
+      "config_id": "dedup_pinned_f07efa9_v1"
     },
     "data": {
       "dataset_id": "fleet_dedup_v1",
@@ -23,15 +20,33 @@
       "reference_tier": null,
       "references_sha256": null
     },
-    "hash": "50ea2a8fd81d0a942ab057f471a1cfa7024a0aa611df42a47b212c6ce493c163",
-    "host": {
-      "cpu_count": 32,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.14.7",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "75587994752ce54a9ba3101bafe56e86faacc8bad010fdc8479b432686931d3f",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": null,
+      "in_process": false,
+      "libraries": null,
+      "model": null,
+      "provider": null,
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "a6d874bdfb82800a8a502d612ea24fa10b57cf9a6b88a734524bf56eb18d0f9e",
+    "hash": "0005252432db636166d68a7d745bdf0e873e7df9b200efed895ce2186596a50c",
     "instrument": {
       "adapter": {
         "id": "examples/signal-fleet-dedup/adapter.py",
@@ -45,18 +60,26 @@
         "version": "0.5.0"
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "182790a2e25803e17225a2e1b34465865742cf4b986f9802057f31b65f868c5b",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
       "libraries": {
         "anthropic": "2.3.0",
         "numpy": "2.5.4",
         "openai": "3.41.0",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "identity_declared": false
-      }
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "fleet_commit": "f07efa9"
+    },
+    "settings_sha256": "879d492c9136e181686660ce215e02207bc6fd85f862f04a7dc671301d5720cc",
+    "version": 5
   },
   "metric_directions": {
     "class_match": "higher",

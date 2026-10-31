@@ -402,6 +402,21 @@ def test_fingerprint_reports_library_versions_without_importing_them() -> None:
     check("fingerprint: reports something installed", isinstance(versions, dict))
 
 
+def _declared_identity(m: dict) -> dict:
+    """What a run's adapter declared about its system under test, from the v5 deployment: the hook's own
+    keys (`declared`), with the id (kept in `declared` only when it is not the model asked for) and the
+    revision that have a place of their own."""
+    dep = (m.get("fingerprint") or {}).get("deployment") or {}
+    declared = dep.get("declared") or {}
+    weights = dep.get("weights") or {}
+    return {
+        **declared,
+        "id": declared.get("id") or dep.get("model"),
+        "revision": weights.get("revision"),
+        "revision_source": weights.get("revision_source"),
+    }
+
+
 def test_fingerprint_does_not_invent_a_revision() -> None:
     """A model the adapter cannot version is recorded as unversioned.
 
@@ -597,7 +612,7 @@ def test_fingerprint_hash_changes_when_anything_does() -> None:
     check("fingerprint: changes when a param moves", base["hash"] != moved["hash"])
     check(
         "fingerprint: names the field that moved",
-        differing_paths(base, moved) == ["arm.params.sentences"],
+        differing_paths(base, moved) == ["settings.sentences"],
         f"got {differing_paths(base, moved)}",
     )
     # Different DATA must move it too — dataset_id is a name, the item hashes are identity.
@@ -652,6 +667,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_hidden_text.py", "text: hidden: none of a hidden dataset's text on any public surface"),
         ("test_models.py", "model records: the weights facts, and what V18 catches"),
         ("test_arm_smoke.py", "evh arm-smoke: the calls it reads, the projection, every flag"),
+        (
+            "test_fingerprint_v5.py",
+            "fingerprint v5: the parts and their hashes, the runner outside the hash, the deployment sources, the migration, run-compare",
+        ),
         ("test_catalog_models.py", "the Models page, a page per model, the arms badge, evh models"),
         (
             "test_model_onboard.py",
@@ -774,9 +793,9 @@ def test_fingerprint_version_is_read_somewhere() -> None:
         adapter_id="a",
         adapter_path=None,
     )
-    # v4 since 2026-10-24: code hashed by behaviour (_codeid), a manifest's caveat outside the
-    # reference digest; documentation never moves a fingerprint.
-    check("new fingerprints are version 4", fp.get("version") == 4, str(fp.get("version")))
+    # v5 since 2026-10-31 (RFC-021): the deployment and the settings are parts of their own, the host
+    # (now the runner) is outside the hash; v4 hashed code by behaviour (_codeid), and that stays.
+    check("new fingerprints are version 5", fp.get("version") == 5, str(fp.get("version")))
 
 
 def test_verdict_honours_declared_kinds() -> None:
@@ -2325,7 +2344,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     for d in ("runs", "runs-pair", "runs-repeats", "runs-linux"):
         for f in (ROOT / "data" / d).glob("*/metrics.json"):
             m = json.loads(f.read_text())
-            sut = ((m.get("fingerprint") or {}).get("system_under_test") or {}).get("model") or {}
+            sut = _declared_identity(m)
             if sut.get("id_source") == "proxy-model-info" and sut.get("id") != table.get(sut.get("alias")):
                 wrong.append(f.parent.name)
     check("models.json: agrees with every upstream id a committed run resolved", not wrong, f"{wrong[:3]}")
@@ -2366,9 +2385,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     clash = []
     for d in ("runs", "runs-pair", "runs-repeats", "runs-linux"):
         for f in (ROOT / "data" / d).glob("*/metrics.json"):
-            sut = ((json.loads(f.read_text()).get("fingerprint") or {}).get("system_under_test") or {}).get(
-                "model"
-            ) or {}
+            sut = _declared_identity(json.loads(f.read_text()))
             if sut.get("revision_source") in ("hf-snapshot", "loaded-model"):
                 got = sut.get("loaded_revision") or sut.get("revision")
                 if sut.get("id") in pins and pins[sut["id"]] != got:

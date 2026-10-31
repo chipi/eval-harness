@@ -116,7 +116,7 @@ COMMANDS = {
     "arms": ("view_arms.py", "every arm, or one: its metrics, runs, config, conditions and rounds"),
     "models": (
         "view_models.py",
-        "every model record, or one: its builds, onboarding, settings history and arms",
+        "every model record, or one: its deployments, onboarding, settings history and arms",
     ),
     "references": ("view_references.py", "every reference, or one: who wrote it, what is scored against it"),
     "metrics": ("view_metrics.py", "what each metric measures, or one in full with the arms recording it"),

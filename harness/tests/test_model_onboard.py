@@ -12,6 +12,7 @@ import sys
 import tempfile
 import threading
 from pathlib import Path
+from typing import Any
 
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE))
@@ -59,12 +60,13 @@ base = f"http://127.0.0.1:{srv.server_port}/v1"
 with tempfile.TemporaryDirectory() as td:
     data = Path(td) / "data"
     (data / "models").mkdir(parents=True)
-    rec = {
+    rec: dict[str, Any] = {
         "model_id": "fake-1b",
         "kind": "llm",
         "aliases": ["fake:1b"],
-        "builds": [
+        "deployments": [
             {
+                "id": "here",
                 "where": "here",
                 "tag": "fake:1b",
                 "digest": "abc123def456",
@@ -77,7 +79,7 @@ with tempfile.TemporaryDirectory() as td:
     f.write_text(yaml.safe_dump(rec))
     env = {**os.environ, "EVAL_DATA_DIR": str(data), "OPENAI_API_KEY": "local"}
     run = subprocess.run(
-        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--where", "here"],
+        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
         capture_output=True,
         text=True,
         env=env,
@@ -102,20 +104,21 @@ with tempfile.TemporaryDirectory() as td:
     )
     check(
         "onboard: the build's full digest and checked_at are written",
-        got["builds"][0]["digest"].startswith("abc123def456")
-        and len(got["builds"][0]["digest"]) == 64
-        and got["builds"][0].get("checked_at"),
-        got["builds"][0],
+        got["deployments"][0]["digest"].startswith("abc123def456")
+        and len(got["deployments"][0]["digest"]) == 64
+        and got["deployments"][0].get("checked_at"),
+        got["deployments"][0],
     )
     check(
-        "onboard: the onboarding is recorded as pass", (got.get("onboarding") or {}).get("status") == "pass"
+        "onboard: the onboarding is recorded as pass, in the deployment",
+        (got["deployments"][0].get("onboarding") or {}).get("status") == "pass" and "onboarding" not in got,
     )
     check("onboard: the settings are never changed", got["settings"] == rec["settings"])
 
     rec2 = {**rec, "settings": {"max_tokens": 256}}
     f.write_text(yaml.safe_dump(rec2))
     run = subprocess.run(
-        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--where", "here"],
+        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
         capture_output=True,
         text=True,
         env=env,
@@ -127,10 +130,10 @@ with tempfile.TemporaryDirectory() as td:
         and "reasoning: it reasons by default and the record sets no reasoning_effort" in out,
         out[-600:],
     )
-    rec3 = {**rec, "builds": [{**rec["builds"][0], "digest": "ffffffffffff"}]}
+    rec3 = {**rec, "deployments": [{**rec["deployments"][0], "digest": "ffffffffffff"}]}
     f.write_text(yaml.safe_dump(rec3))
     run = subprocess.run(
-        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--where", "here"],
+        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
         capture_output=True,
         text=True,
         env=env,
@@ -139,6 +142,36 @@ with tempfile.TemporaryDirectory() as td:
         "onboard: a build the server serves differently is flagged",
         run.returncode == 1 and "build: here serves abc123def456" in run.stdout,
         run.stdout[-600:],
+    )
+
+    other = {**rec["deployments"][0], "id": "there", "where": "there"}
+    f.write_text(yaml.safe_dump({**rec, "deployments": [rec["deployments"][0], other]}))
+    run = subprocess.run(
+        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    check(
+        "onboard: with two deployments one must be named",
+        run.returncode != 0 and "--deployment: one of here, there" in run.stdout + run.stderr,
+        (run.stdout + run.stderr)[-400:],
+    )
+    run = subprocess.run(
+        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "there"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    got = yaml.safe_load(f.read_text())
+    deps = {d["id"]: d for d in got["deployments"]}
+    check(
+        "onboard: --deployment writes the onboarding into that deployment only",
+        deps["there"].get("onboarding", {}).get("status") in ("pass", "check")
+        and "onboarding" not in deps["here"]
+        and "checked_at" in deps["there"]
+        and "checked_at" not in deps["here"],
+        {k: sorted(v) for k, v in deps.items()},
     )
 
 srv.shutdown()

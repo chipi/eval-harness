@@ -10,12 +10,7 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_keyword_n200_v1",
-      "params": {
-        "family": "baseline",
-        "price_tier": "free",
-        "provider": "keyword"
-      }
+      "config_id": "db_keyword_n200_v1"
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -25,33 +20,10 @@
       "reference_tier": "gold",
       "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
     },
-    "hash": "0b498c569f4e5e559b8c91eb207705292d4f6084512a6a5a9df310a93aaed8cc",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/classification-dbpedia-14/adapter.py",
-        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
-      },
-      "harness": {
-        "commit": "73604a08b84a",
-        "dirty": false
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "openai": "3.19.2"
-      },
-      "model": {
+    "data_sha256": "ba266b3e1c4e465a922638baee9aea990c34420aa92c1b6ab2f97610c3e981e1",
+    "deployment": {
+      "declared": {
         "default_label": "Company",
-        "id": "keyword",
-        "identity_declared": true,
         "labels": [
           "Company",
           "EducationalInstitution",
@@ -71,12 +43,60 @@
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
         "provider": "keyword",
-        "revision": null,
-        "revision_source": "unavailable",
         "rules_sha256": "11c73c5a84b9c4b10215e72ade9c0cdeb5c0a29f3949f3ff079cd95157db6dbd"
+      },
+      "hosted": null,
+      "id": "keyword",
+      "in_process": true,
+      "libraries": {
+        "openai": "3.19.2"
+      },
+      "model": "keyword",
+      "provider": "keyword",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
       }
     },
-    "version": 4
+    "deployment_sha256": "d5014ca285ccb90713c4dbdc27dbee91f5fcd82b77259842f53e9522e302c398",
+    "hash": "b704d7362d0f35d0f9395b7da31b97cd482d1c71da4261ebe16dab51305c2a82",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-dbpedia-14/adapter.py",
+        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
+      },
+      "harness": {
+        "commit": "73604a08b84a",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "fec8534672877f4568a4192238d3f523618f25f73fccefe00e7abb035341d09d",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "family": "baseline",
+      "price_tier": "free"
+    },
+    "settings_sha256": "80498a650b2ba3bad6dd41a29b2f9d21226d1978c74c79dbdec0e3d680a22e94",
+    "version": 5
   },
   "goal": "entity_topic_dbpedia",
   "metric_kinds": {

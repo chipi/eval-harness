@@ -10,21 +10,7 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_anthropic_s_n200_v1",
-      "params": {
-        "family": "anthropic",
-        "max_tokens": 200,
-        "model": "eval-claude-haiku",
-        "price_tier": "small",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 1.0,
-        "usd_per_mtok_out": 5.0
-      }
+      "config_id": "db_anthropic_s_n200_v1"
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -34,35 +20,13 @@
       "reference_tier": "gold",
       "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
     },
-    "hash": "85b514e4789cc04582c7158e4797a9b98419f1c785e1ffd7afd84a7a31510104",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/classification-dbpedia-14/adapter.py",
-        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
-      },
-      "harness": {
-        "commit": "73604a08b84a",
-        "dirty": false
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "openai": "3.19.2"
-      },
-      "model": {
+    "data_sha256": "ba266b3e1c4e465a922638baee9aea990c34420aa92c1b6ab2f97610c3e981e1",
+    "deployment": {
+      "declared": {
         "alias": "eval-claude-haiku",
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/anthropic/claude-haiku-4.5",
         "id_source": "proxy-model-info",
-        "identity_declared": true,
         "labels": [
           "Company",
           "EducationalInstitution",
@@ -87,12 +51,68 @@
         "reasoning": {
           "enabled": false
         },
-        "revision": null,
-        "revision_source": "api-model-string",
         "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-claude-haiku",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-claude-haiku",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
       }
     },
-    "version": 4
+    "deployment_sha256": "05449b0ad8eab0435786ae04d33340d5271c9afb95f0740c35da49a7039c09b0",
+    "hash": "1c0494ebe92c4d577bb38b994b0e208388e233ee05d0dd83570bcb92eef24c21",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-dbpedia-14/adapter.py",
+        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
+      },
+      "harness": {
+        "commit": "73604a08b84a",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "fec8534672877f4568a4192238d3f523618f25f73fccefe00e7abb035341d09d",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": {
+        "openai": "3.19.2"
+      },
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "family": "anthropic",
+      "max_tokens": 200,
+      "price_tier": "small",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 1.0,
+      "usd_per_mtok_out": 5.0
+    },
+    "settings_sha256": "f9b1e1cf3d228c626d7bb1fe6faca59512f03c20f49f770556bc3dfd711799f3",
+    "version": 5
   },
   "goal": "entity_topic_dbpedia",
   "metric_kinds": {

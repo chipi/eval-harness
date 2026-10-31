@@ -52,21 +52,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_anthropic_l_n200_v1",
-      "params": {
-        "family": "anthropic",
-        "max_tokens": 1200,
-        "model": "eval-opus-5",
-        "price_tier": "large",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 5.0,
-        "usd_per_mtok_out": 25.0
-      }
+      "config_id": "cnn_anthropic_l_n200_v1"
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -76,16 +62,45 @@
       "reference_tier": "gold",
       "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
+    "data_sha256": "a9b234845c4f4d69a498556c1f6324f5839721e805795a1f3d5946301307a0e8",
+    "deployment": {
+      "declared": {
+        "alias": "eval-opus-5",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/anthropic/claude-opus-5",
+        "id_source": "proxy-model-info",
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-opus-5",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-opus-5",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "d5f8159fad14bb88afcdee6bf8898ed10d3bd3b4865265d8d81abd9b8a9304b5",
     "hash": null,
     "hash_invalid_because": "scores were produced by a judge scorer, not the adapter this fingerprint was built from; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": null,
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
     "instrument": {
       "adapter": {
         "id": "judge-score:judge-summ-v2",
@@ -96,29 +111,34 @@
         "dirty": false
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "2c46dce8fc6dfc335743b89b3cde0ec9daab9da03b3e594fdc5595a2a4cd5ab0",
+    "runner": {
+      "cpu_count": 12,
+      "label": null,
       "libraries": {
         "numpy": "2.4.6",
         "openai": "3.19.2",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "alias": "eval-opus-5",
-        "endpoint": "http://127.0.0.1:4001",
-        "id": "openrouter/anthropic/claude-opus-5",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": 0.0
-      }
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
     },
-    "version": 4
+    "settings": {
+      "family": "anthropic",
+      "max_tokens": 1200,
+      "price_tier": "large",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 5.0,
+      "usd_per_mtok_out": 25.0
+    },
+    "settings_sha256": "ca54a1332d8c0ab90b162d662daefe73b4fb922c1e232595044507469b12fd8e",
+    "version": 5
   },
   "goal": "news_summary_cnn",
   "metric_kinds": {

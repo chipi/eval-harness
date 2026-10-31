@@ -24,21 +24,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "fn_glm_s_n200_v1",
-      "params": {
-        "family": "glm",
-        "max_tokens": 600,
-        "model": "eval-glm-45-air",
-        "price_tier": "small",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 0.06,
-        "usd_per_mtok_out": 0.22
-      }
+      "config_id": "fn_glm_s_n200_v1"
     },
     "data": {
       "dataset_id": "few_nerd_280",
@@ -48,41 +34,12 @@
       "reference_tier": "gold",
       "references_sha256": "7cdd09fe0084ba29c616ab65fbfa08bf149e9006819641e9e91fe502ebe15a2b"
     },
-    "hash": null,
-    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/ner-few-nerd/adapter.py",
-        "sha256": "d147da55107305786c21b75ac87d748b9ea4fb3e57ebdff622aafecd826559b1"
-      },
-      "harness": {
-        "commit": "107aef1af2e4",
-        "dirty": false
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "datasets": "5.0.1",
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "scikit-learn": "1.9.1",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
+    "data_sha256": "cecb78ae587a106dae95259e45ea0cddd1c4619f465fc6a4dff35011c4706b47",
+    "deployment": {
+      "declared": {
         "alias": "eval-glm-45-air",
         "endpoint": "http://127.0.0.1:4001",
-        "id": "eval-glm-45-air",
         "id_source": "alias-unresolved",
-        "identity_declared": true,
         "labels": [
           "art",
           "building",
@@ -101,13 +58,75 @@
         "reasoning": {
           "enabled": false
         },
-        "revision": null,
-        "revision_source": "unavailable",
         "scorer_sha256": "fa44fe291ad128ab1633f2e07aa84d2dcb06d2226a58b697b621992ef98c2d78",
         "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-glm-45-air",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-glm-45-air",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
       }
     },
-    "version": 4
+    "deployment_sha256": "6e7db9f8bf204bbff1bebf5e40ac385f57d68236311372928ec766eb49721715",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/ner-few-nerd/adapter.py",
+        "sha256": "d147da55107305786c21b75ac87d748b9ea4fb3e57ebdff622aafecd826559b1"
+      },
+      "harness": {
+        "commit": "107aef1af2e4",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "e4d23a874d3f3825f9871c2555f81ffe0c1db76fcbe7b5468f2032f737dc7e85",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": {
+        "datasets": "5.0.1",
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "family": "glm",
+      "max_tokens": 600,
+      "price_tier": "small",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 0.06,
+      "usd_per_mtok_out": 0.22
+    },
+    "settings_sha256": "43dae39c4d54676bacb846d5dc02fc365b21b38c8fe94298a249e94f308b80f2",
+    "version": 5
   },
   "goal": "entities_few_nerd",
   "metric_kinds": {

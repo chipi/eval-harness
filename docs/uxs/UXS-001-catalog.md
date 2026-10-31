@@ -556,23 +556,24 @@ The project's model records (RFC-020): what each one is, how it is set up, wheth
 is used. A models tile on the home page opens it, beside arms.
 
 - Hero: kicker `models`, "Models", "N models: K vetted, L to check, M not onboarded yet. A model is onboarded
-  once (its build on every machine, what it can do, the settings chosen for it, a smoke behind them) and used
-  by any experiment's arms.", then the period bar.
+  once (its deployment on every machine, what it can do, the settings chosen for it, a smoke behind each
+  deployment) and used by any experiment's arms.", then the period bar.
 - `01 every model` (without records: how to add one):
   - **only** chips, each shown only when some record has the value: llm, ml, baseline; self-hosted, hosted;
-    open weights, proprietary; vetted (onboarding passed), to check (onboarding flagged), not onboarded (no
-    onboarding in the record); builds differ. Within one kind any chip picked keeps a row; across kinds all
-    must. Self-hosted is a record with a build on a machine (it names a server, a device or a place) and none
-    with a provider id; hosted is a record with a build that has a provider id; a record with no builds is
-    neither. Builds differ is the same tag with a different digest, revision or hash on two machines.
+    open weights, proprietary; vetted (every deployment's onboarding passed, and there is one), to check (any
+    deployment's onboarding flagged), not onboarded (otherwise); builds differ. Within one kind any chip picked
+    keeps a row; across kinds all must. Self-hosted is a record with a deployment on a machine (it names a
+    server, a device or a place) and none with a provider id; hosted is a record with a deployment that has a
+    provider id (or the hosted backend); a record with no deployments is neither. Builds differ is the same tag
+    with a different digest, revision or hash in two deployments.
   - the table: **model** (linked; its kind under it), **build** (tag and digest, revision or hash, shortened;
-    a "differs" badge when a machine's build is not the record's), **where** (each machine or host, muted when
-    its build was last checked more than 30 days ago), **settings** (for an LLM "reasoning off · 1024 tokens
-    · 30 s"; for an ML model "cpu · fp32 · batch 1"; "defaults" when none is chosen), **onboarding** (pass /
-    check / "not onboarded", its date, the flags on hover), **arms** (count, linked to the arms page filtered
+    a "differs" badge when a deployment's build is not the record's), **where** (each deployment's machine or
+    host, muted when it was last checked more than 30 days ago), **settings** (for an LLM "reasoning off · 1024 tokens
+    · 30 s"; for an ML model "cpu · fp32 · batch 1"; "defaults" when none is chosen), **onboarding** (the
+    record's, from its deployments': pass / check / "not onboarded", the latest date, the flags on hover), **arms** (count, linked to the arms page filtered
     to them by the record's id: `arms.html?q=<id>`), **goals**, **best result** (its best arm's place in each
     goal, "#8 of 52"). Filterable.
-- `02 what changed in the period`: **when**, **model**, **what** (onboarded, with the machine and the verdict;
+- `02 what changed in the period`: **when**, **model**, **what** (a deployment onboarded, with its id and the verdict;
   each entry of the record's history, "reasoning_effort (server default) → none (why)"), only the period's.
   A record's history is free text, so a build change shows only when its `history` says so.
 - Command: `evh models [--kind llm|ml|baseline] [--where self-hosted|hosted] [--status vetted|check|none]`.
@@ -582,16 +583,19 @@ is used. A models tile on the home page opens it, beside arms.
 `models/<id>.html`.
 
 - Hero: kicker `model`, the model's name and kind, then its facts: **weights** and **licence**, **aliases**
-  (the ids runs record for it), **settings** (each with its one line of why), **onboarding** (pass or check,
-  date, machine). A button back to the models page.
-- `01 builds`: one row per place it runs: **where**, **server or device** (with its settings: version, context
-  length; or device and precision), **build** (tag, provider id, digest, revision, hash, quantization, in
-  full), **matches the record** (yes, or what differs: the first build of a tag is the record's), **checked**
-  (date, muted when more than 30 days old).
-- `02 onboarding`: the latest onboarding report: its verdict, date and machine, each probe of the report with its
-  measurement and the flags that name it, the other flags, and what the model can do (its capabilities). For an
-  LLM the report's default and chosen calls carry the time, tokens out, whether it reasoned and how it ended.
-  A record never onboarded says so, with the command.
+  (the ids runs record for it), **settings** (each with its one line of why), **onboarding** (vetted, to check
+  or not onboarded, from its deployments', and the latest date). A button back to the models page.
+- `01 deployments`: one row per place it runs (RFC-021): **deployment** (its id, which an arm names with
+  `deployment:`), **where** (machine or host, and its backend), **server or device** (with its settings:
+  version, context length; or device and precision), **build** (tag, provider id, digest, revision, hash,
+  quantization, in full), **matches the record** (yes, or what differs: the first deployment of a tag is the
+  record's), **checked** (date, muted when more than 30 days old), **onboarding** (that deployment's: pass or
+  check, date, flags on hover).
+- `02 onboarding`: each deployment's own latest onboarding report: its id, verdict, date and machine, each probe
+  of the report with its measurement and the flags that name it, the other flags; then what the model can do
+  (its capabilities, the record's). For an LLM the report's default and chosen calls carry the time, tokens
+  out, whether it reasoned and how it ended. A deployment never onboarded says so, with the command
+  (`evh model-onboard <id> --deployment <id>`); a record with no deployment says so too.
 - `03 settings history`: **when**, **what changed** (from, to), **why**, newest first.
 - `04 arms`: every arm that uses it, by `model_record` or by an alias: **arm** (linked), **goal**, **settings it
   overrides** (the arm's params that differ from the record's), **arm smoke** (pass / check / none, date, flags
@@ -603,9 +607,12 @@ history entry carries `at`, `what`, `from`, `to`, `why` and nothing links it to 
 models page lists records only: an arm's model with no record is not a row of its own, and there is no "not
 onboarded" chip for it.
 
-On the arms page each arm that uses a record gets it under the model column, linked, and a badge: "smoked",
-"smoke: check", or "not smoked" (the record's latest arm smoke of the arm's config). `evh arms` shows the same
-in a "model record" column, when any arm has a record.
+On the arms page each arm that uses a record gets it under the model column, linked, with the deployment its
+config named after it ("@ dgx"), and a badge: "smoked", "smoke: check", or "not smoked" (the record's latest
+arm smoke of the arm's config). `evh arms` shows the same in a "model record" column ("gem@dgx (smoked)"),
+when any arm has a record. An arm's page names the deployment beside its config, and its conditions list the
+runner (`machine.*`, `library.*`: where `evh` ran, outside the fingerprint's hash) and where the system under
+test ran (`deployment.machine`, `deployment.backend`, `deployment.server`).
 
 ## The metric page
 

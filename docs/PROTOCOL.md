@@ -60,7 +60,7 @@ about the inputs ([REPORT_SUMMEVAL §3.3](../research/REPORT_SUMMEVAL.md)).
 
 ## The hardware
 
-Every run on the site records the machine it ran on (`fingerprint.host`), and
+Every run on the site records the machine it ran on (`fingerprint.runner`), and
 [`evidence/hardware.json`](evidence/hardware.json) maps those records to machines, each
 described from the machine itself:
 

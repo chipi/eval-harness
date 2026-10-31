@@ -554,7 +554,8 @@ def main() -> int:
         die(f"no config at {args.config}")
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
     # A config may name a model record (RFC-020, optional): its settings come from the record, under the
-    # config's own params, so every arm of that model runs the way it was onboarded.
+    # config's own params, so every arm of that model runs the way it was onboarded. With `deployment:` it
+    # also names where it runs (RFC-021): the fingerprint takes the deployment's facts from the record.
     from evaluation_harness import _models  # noqa: PLC0415
 
     try:
@@ -684,6 +685,7 @@ def main() -> int:
         adapter_id=adapter_id,
         adapter_path=adapter_path,
         model_hook=model_fingerprint,
+        cfg=cfg,
     )
     print(f"  fingerprint {fingerprint['hash'][:12]}")
     # A DIRTY TREE IS NOT A VERSION. The fingerprint records it, but a field nobody reads
@@ -807,6 +809,7 @@ def main() -> int:
             goal=cfg.get("goal") or None,
             round=cfg.get("round") or None,
             model_record=cfg.get("model_record") or None,
+            deployment_id=cfg.get("deployment") or None,
             format=cfg.get("format") or None,
             reference_tier=result["reference_tier"] or None,
             reference_coverage=coverage

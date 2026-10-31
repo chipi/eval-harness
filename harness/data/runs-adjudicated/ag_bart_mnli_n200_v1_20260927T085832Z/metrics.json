@@ -19,16 +19,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "ag_bart_mnli_n200_v1",
-      "params": {
-        "device": "cpu",
-        "family": "bart",
-        "hypothesis_template": "This news article is about {}.",
-        "model": "facebook/bart-large-mnli",
-        "precision": "fp32",
-        "price_tier": "free",
-        "provider": "hf_zeroshot"
-      }
+      "config_id": "ag_bart_mnli_n200_v1"
     },
     "data": {
       "dataset_id": "ag_news_200",
@@ -41,16 +32,53 @@
       "references_sha256": "636e963d2e500587d0642c40b48ac32040d237eb160bf00e20696ccea4649534",
       "references_sha256_at_measurement": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
     },
+    "data_sha256": "5f960d37e68d6cacd7850691b01c342690a21bb175321128c73ce2eb610e87a7",
+    "deployment": {
+      "declared": {
+        "hypothesis_template": "This news article is about {}.",
+        "labels": [
+          "World",
+          "Sports",
+          "Business",
+          "Sci/Tech"
+        ],
+        "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
+        "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
+        "provider": "hf_zeroshot",
+        "weight_files": [
+          "model.safetensors:1629437147"
+        ]
+      },
+      "hosted": null,
+      "id": "facebook/bart-large-mnli",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": "facebook/bart-large-mnli",
+      "provider": "hf_zeroshot",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "d7645e127eaf1aefc7862fd59a17a5aa8558b8ce",
+        "revision_source": "hf-snapshot"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
+    },
+    "deployment_sha256": "e6a413f5d1b68a728ea8e6e4e576aac91762e63eeca97ce409f57ffc3fb09e91",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -61,36 +89,23 @@
         "dirty": false
       }
     },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "device": "cpu",
-        "hypothesis_template": "This news article is about {}.",
-        "id": "facebook/bart-large-mnli",
-        "identity_declared": true,
-        "labels": [
-          "World",
-          "Sports",
-          "Business",
-          "Sci/Tech"
-        ],
-        "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
-        "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "precision": "fp32",
-        "provider": "hf_zeroshot",
-        "revision": "d7645e127eaf1aefc7862fd59a17a5aa8558b8ce",
-        "revision_source": "hf-snapshot",
-        "weight_files": [
-          "model.safetensors:1629437147"
-        ]
-      }
+    "instrument_sha256": "ba10a3d061dbeea0451b8b0f96b3b6e6c6815a12d05fd7769beff3f8ccb8dc71",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
     },
-    "version": 4
+    "settings": {
+      "family": "bart",
+      "hypothesis_template": "This news article is about {}.",
+      "price_tier": "free"
+    },
+    "settings_sha256": "19ca515b59080e5605ca02447292cb15e238a8a198d64d2a3e8de95e88105cb3",
+    "version": 5
   },
   "goal": "news_topic_ag",
   "metric_kinds": {

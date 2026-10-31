@@ -10,11 +10,7 @@
   "dataset_id": "smoke_v1",
   "fingerprint": {
     "arm": {
-      "config_id": "demo_v1",
-      "params": {
-        "provider": "echo",
-        "sentences": 3
-      }
+      "config_id": "demo_v1"
     },
     "data": {
       "dataset_id": "smoke_v1",
@@ -24,15 +20,33 @@
       "reference_tier": "silver",
       "references_sha256": "53ea94646f17bf2867a8572696b30623563a2d09828989e56cd1d11f8b910ead"
     },
-    "hash": "09f9130688c1808660f4974780099de7e04b1808072a2db22c43eceea723a860",
-    "host": {
-      "cpu_count": 32,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.11.17",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "9ab76392243cd520c6421c7cc9492edf2592066c752ddb7dec45c21b8c1703a9",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": null,
+      "in_process": false,
+      "libraries": null,
+      "model": null,
+      "provider": "echo",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "97312131d3d2f45fca9d47cca0d38f25f454b1f10f051abdb0b0d7c957fd6fa5",
+    "hash": "ec8a75b360bfd7c1d396980fbe1c10473245ec9937f29271a1550fb140d40c39",
     "instrument": {
       "adapter": {
         "id": "scripts/adapter.py",
@@ -46,18 +60,26 @@
         "version": "0.4.0"
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "760148cf92178154c92065170eaca1bbe8583c4a4732fab4342f4a21ff785136",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
       "libraries": {
         "anthropic": "1.15.0",
         "numpy": "2.4.6",
         "openai": "3.33.0",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "identity_declared": false
-      }
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.17",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "sentences": 3
+    },
+    "settings_sha256": "82916077176e645db0fac8e5442ddd10ec012f07cf0ebe05a276d2925e1476da",
+    "version": 5
   },
   "metric_directions": {},
   "metric_kinds": {

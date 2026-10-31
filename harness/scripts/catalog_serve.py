@@ -558,7 +558,9 @@ def _conditions(arms: list, metric: str) -> dict | None:
         )
     if "data.items_sha256" in names:
         warnings.append("Measured on different item bytes.")
-    if any(n.startswith("machine.") for n in names) and (metric in SPEED_KEYS or "latency" in metric):
+    if any(n.startswith(("machine.", "deployment.")) for n in names) and (
+        metric in SPEED_KEYS or "latency" in metric
+    ):
         warnings.append(
             f"{metric} compared across machines: the difference may be the machine's, not the arm's."
         )

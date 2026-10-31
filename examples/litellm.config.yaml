@@ -151,6 +151,10 @@ model_list:
     litellm_params:
       model: openrouter/qwen/qwen3.8-flash
       api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: eval-qwen3-30b-a3b
+    litellm_params:
+      model: openrouter/qwen/qwen3-30b-a3b-instruct-2507
+      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: eval-qwen35-122b
     litellm_params:
       model: openrouter/qwen/qwen3.5-122b-a10b

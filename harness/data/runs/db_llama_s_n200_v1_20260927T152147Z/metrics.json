@@ -10,21 +10,7 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_llama_s_n200_v1",
-      "params": {
-        "family": "llama",
-        "max_tokens": 200,
-        "model": "eval-llama-scout",
-        "price_tier": "small",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 0.08,
-        "usd_per_mtok_out": 0.3
-      }
+      "config_id": "db_llama_s_n200_v1"
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -34,35 +20,13 @@
       "reference_tier": "gold",
       "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
     },
-    "hash": "b1b01ae75936a79b34406318fcc96bf441470d4eb6c02941f402e944dbc030df",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/classification-dbpedia-14/adapter.py",
-        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
-      },
-      "harness": {
-        "commit": "73604a08b84a",
-        "dirty": false
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "openai": "3.19.2"
-      },
-      "model": {
+    "data_sha256": "ba266b3e1c4e465a922638baee9aea990c34420aa92c1b6ab2f97610c3e981e1",
+    "deployment": {
+      "declared": {
         "alias": "eval-llama-scout",
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/meta-llama/llama-4-scout",
         "id_source": "proxy-model-info",
-        "identity_declared": true,
         "labels": [
           "Company",
           "EducationalInstitution",
@@ -87,12 +51,68 @@
         "reasoning": {
           "enabled": false
         },
-        "revision": null,
-        "revision_source": "api-model-string",
         "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-llama-scout",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-llama-scout",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
       }
     },
-    "version": 4
+    "deployment_sha256": "69e719606422e2207db110e150d832ebe3c696b866fee400017e4663873debeb",
+    "hash": "2984746dade5767f5aaa19bfbb449eb2a52d9da4bee91cca8ca46c9c40cc6d4f",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-dbpedia-14/adapter.py",
+        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
+      },
+      "harness": {
+        "commit": "73604a08b84a",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "fec8534672877f4568a4192238d3f523618f25f73fccefe00e7abb035341d09d",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": {
+        "openai": "3.19.2"
+      },
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "family": "llama",
+      "max_tokens": 200,
+      "price_tier": "small",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 0.08,
+      "usd_per_mtok_out": 0.3
+    },
+    "settings_sha256": "fabe301c47a5d8e785ffea6e01939b37f6af5b8fbf973db13e14efd52fc248db",
+    "version": 5
   },
   "goal": "entity_topic_dbpedia",
   "metric_kinds": {

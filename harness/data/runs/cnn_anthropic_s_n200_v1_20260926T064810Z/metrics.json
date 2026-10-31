@@ -10,21 +10,7 @@
   "dataset_id": "cnn_dailymail_200",
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_anthropic_s_n200_v1",
-      "params": {
-        "family": "anthropic",
-        "max_tokens": 1200,
-        "model": "eval-claude-haiku",
-        "price_tier": "small",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 1.0,
-        "usd_per_mtok_out": 5.0
-      }
+      "config_id": "cnn_anthropic_s_n200_v1"
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -34,15 +20,44 @@
       "reference_tier": "gold",
       "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
-    "hash": "66d819ada7d6daebc6560740e5f217ad4810c48d8d5d2b76716994a0f2d42575",
-    "host": {
-      "cpu_count": 12,
-      "label": null,
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
+    "data_sha256": "a9b234845c4f4d69a498556c1f6324f5839721e805795a1f3d5946301307a0e8",
+    "deployment": {
+      "declared": {
+        "alias": "eval-claude-haiku",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/anthropic/claude-haiku-4.5",
+        "id_source": "proxy-model-info",
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-claude-haiku",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-claude-haiku",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "a4c9e26f24fbae8e490e0a6e093c96dd5ed19f519995bb39588564d51475e3ca",
+    "hash": "ffb5527a80d0235a3169ecb6e56082f85b884435d5c7403582eb802042d477d6",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -53,29 +68,34 @@
         "dirty": true
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "02c91be76b7fdec14894c4abb58f11bd5299e101de5a1602ece5d5d29cc30ff5",
+    "runner": {
+      "cpu_count": 12,
+      "label": null,
       "libraries": {
         "numpy": "2.4.6",
         "openai": "3.19.2",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "alias": "eval-claude-haiku",
-        "endpoint": "http://127.0.0.1:4001",
-        "id": "openrouter/anthropic/claude-haiku-4.5",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": 0.0
-      }
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
     },
-    "version": 4
+    "settings": {
+      "family": "anthropic",
+      "max_tokens": 1200,
+      "price_tier": "small",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 1.0,
+      "usd_per_mtok_out": 5.0
+    },
+    "settings_sha256": "cb06ce057da6856f4ba0f8c06e1e9b1f4e1b44fc0e068a7fba4c8fb229b1b63c",
+    "version": 5
   },
   "goal": "news_summary_cnn",
   "metric_kinds": {

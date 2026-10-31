@@ -10,21 +10,7 @@
   "dataset_id": "cnn_dailymail_200",
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_openai_l_n200_v1",
-      "params": {
-        "family": "openai",
-        "max_tokens": 1200,
-        "model": "eval-gpt-6sol",
-        "price_tier": "large",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 2.5,
-        "usd_per_mtok_out": 15.0
-      }
+      "config_id": "cnn_openai_l_n200_v1"
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -34,15 +20,44 @@
       "reference_tier": "gold",
       "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
-    "hash": "3f5aa21e94b438fc7056683fcfbfbe679b8a61fbfb4c371d8a991ee7e68336e2",
-    "host": {
-      "cpu_count": 12,
-      "label": null,
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
+    "data_sha256": "a9b234845c4f4d69a498556c1f6324f5839721e805795a1f3d5946301307a0e8",
+    "deployment": {
+      "declared": {
+        "alias": "eval-gpt-6sol",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/openai/gpt-6-sol",
+        "id_source": "proxy-model-info",
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-gpt-6sol",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gpt-6sol",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "638e056b3ddbe747aa87e8fe2b428dcc141f28836037bdd73faa38065831c670",
+    "hash": "a756791f758d71506bb6380c2873a03067125c9c8b0b7184d90e5d86435c96ae",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -53,29 +68,34 @@
         "dirty": true
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "3a70c7832c41514327c426912b2d87b2f7560b786c61bba8fe3adc5fbdb4cdc6",
+    "runner": {
+      "cpu_count": 12,
+      "label": null,
       "libraries": {
         "numpy": "2.4.6",
         "openai": "3.19.2",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "alias": "eval-gpt-6sol",
-        "endpoint": "http://127.0.0.1:4001",
-        "id": "openrouter/openai/gpt-6-sol",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": 0.0
-      }
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
     },
-    "version": 4
+    "settings": {
+      "family": "openai",
+      "max_tokens": 1200,
+      "price_tier": "large",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 2.5,
+      "usd_per_mtok_out": 15.0
+    },
+    "settings_sha256": "65eb27320959784032d7cca8463ccde40a5b789f70899310f0d8260fff67a431",
+    "version": 5
   },
   "goal": "news_summary_cnn",
   "metric_kinds": {

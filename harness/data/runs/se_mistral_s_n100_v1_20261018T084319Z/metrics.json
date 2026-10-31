@@ -10,21 +10,7 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_mistral_s_n100_v1",
-      "params": {
-        "family": "mistral",
-        "max_tokens": 1500,
-        "model": "eval-mistral-small",
-        "price_tier": "small",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 0.05,
-        "usd_per_mtok_out": 0.15
-      }
+      "config_id": "se_mistral_s_n100_v1"
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -34,15 +20,44 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "045f9e9767602cb694d17970e08a2f2a5c66c02dd2afd559421bd8dd9d1a9924",
-    "host": {
-      "cpu_count": 32,
-      "label": "omarchy",
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.11.16",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "alias": "eval-mistral-small",
+        "endpoint": "http://homelab:4001",
+        "id": "openrouter/mistralai/mistral-small-3.2-24b-instruct",
+        "id_source": "proxy-model-info",
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-mistral-small",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-mistral-small",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "9ea6fb401e1ff6933ce8d08a6c32b6efb84762d91085e88c4869e97dbc2c75a2",
+    "hash": "2a0921712c93a6087fbe5bc241b31092ada15a15425fa378abea80716edde3de",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -53,7 +68,10 @@
         "dirty": false
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "b0c66ef6862893c2f1ba3d8a6e663f9f63c7645ed783e2242849e6998e91ba8b",
+    "runner": {
+      "cpu_count": 32,
+      "label": "omarchy",
       "libraries": {
         "numpy": "1.26.4",
         "openai": "3.31.0",
@@ -61,23 +79,25 @@
         "torch": "2.14.1",
         "transformers": "4.55.4"
       },
-      "model": {
-        "alias": "eval-mistral-small",
-        "endpoint": "http://homelab:4001",
-        "id": "openrouter/mistralai/mistral-small-3.2-24b-instruct",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": 0.0
-      }
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.16",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "family": "mistral",
+      "max_tokens": 1500,
+      "price_tier": "small",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 0.05,
+      "usd_per_mtok_out": 0.15
+    },
+    "settings_sha256": "18c69750bcc85e3187b5834f8104338a627b36dd953b59cd6adf8a0750aae436",
+    "version": 5
   },
   "goal": "summary_judge_summeval",
   "metric_kinds": {

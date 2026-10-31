@@ -10,12 +10,7 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_coverage_n100_v1",
-      "params": {
-        "family": "coverage",
-        "price_tier": "free",
-        "provider": "coverage"
-      }
+      "config_id": "se_coverage_n100_v1"
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -25,15 +20,37 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "fc2b687b22ce3f911f6edb95e0d873a0829b57bfe176908d9b60505f7213e403",
-    "host": {
-      "cpu_count": 4,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": "x86_64",
-      "python": "3.11.15",
-      "release": "6.18.44-fc-v114"
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "code_sha256": "179869e520cf9a699c742872001a96810db0a2e8a65e20826997f6ae55973958",
+        "kind": "deterministic metric, no model and no network",
+        "provider": "coverage"
+      },
+      "hosted": null,
+      "id": "coverage",
+      "in_process": false,
+      "libraries": null,
+      "model": "coverage",
+      "provider": "coverage",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "not-a-model"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "cf932e7a82bdfa652a88ccb859c42f7a917dd63c62ad2dd8ac64e322b9573995",
+    "hash": "fa667b75331fcdb9a046929c3bda53f42bc3f1d35ba434d04e0fa01cd8d2f040",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -44,7 +61,10 @@
         "dirty": false
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "5bfd53d53056c63a4480e58d49eef29bff5f22b3b292b07580f8c3085d89fd52",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
       "libraries": {
         "numpy": "1.26.4",
         "openai": "3.31.0",
@@ -52,17 +72,17 @@
         "torch": "2.14.1",
         "transformers": "4.55.4"
       },
-      "model": {
-        "code_sha256": "179869e520cf9a699c742872001a96810db0a2e8a65e20826997f6ae55973958",
-        "id": "coverage",
-        "identity_declared": false,
-        "kind": "deterministic metric, no model and no network",
-        "provider": "coverage",
-        "revision": null,
-        "revision_source": "not-a-model"
-      }
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v114"
     },
-    "version": 4
+    "settings": {
+      "family": "coverage",
+      "price_tier": "free"
+    },
+    "settings_sha256": "44f85f95ea02cc5ba7fb9e1988158f7d7becca45c8e859ed4a477327848dbf90",
+    "version": 5
   },
   "goal": "summary_judge_summeval",
   "metric_kinds": {

@@ -24,21 +24,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "fn_gemma_l_n200_v1",
-      "params": {
-        "family": "gemma",
-        "max_tokens": 600,
-        "model": "eval-gemma-31b",
-        "price_tier": "large",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 0.1,
-        "usd_per_mtok_out": 0.2
-      }
+      "config_id": "fn_gemma_l_n200_v1"
     },
     "data": {
       "dataset_id": "few_nerd_280",
@@ -48,41 +34,12 @@
       "reference_tier": "gold",
       "references_sha256": "7cdd09fe0084ba29c616ab65fbfa08bf149e9006819641e9e91fe502ebe15a2b"
     },
-    "hash": null,
-    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/ner-few-nerd/adapter.py",
-        "sha256": "d147da55107305786c21b75ac87d748b9ea4fb3e57ebdff622aafecd826559b1"
-      },
-      "harness": {
-        "commit": "b3cc5d861cf2",
-        "dirty": true
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "datasets": "5.0.1",
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "scikit-learn": "1.9.1",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
+    "data_sha256": "cecb78ae587a106dae95259e45ea0cddd1c4619f465fc6a4dff35011c4706b47",
+    "deployment": {
+      "declared": {
         "alias": "eval-gemma-31b",
         "endpoint": "http://127.0.0.1:4001",
-        "id": "eval-gemma-31b",
         "id_source": "alias-unresolved",
-        "identity_declared": true,
         "labels": [
           "art",
           "building",
@@ -101,12 +58,74 @@
         "reasoning": {
           "enabled": false
         },
-        "revision": null,
-        "revision_source": "unavailable",
         "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-gemma-31b",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gemma-31b",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
       }
     },
-    "version": 4
+    "deployment_sha256": "02ca2ba70e79423b3dc7a5670562656b45a1c5a2f4cd4d916d2df02cd4811cc5",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/ner-few-nerd/adapter.py",
+        "sha256": "d147da55107305786c21b75ac87d748b9ea4fb3e57ebdff622aafecd826559b1"
+      },
+      "harness": {
+        "commit": "b3cc5d861cf2",
+        "dirty": true
+      }
+    },
+    "instrument_sha256": "d06f81c7832f4523a73ab88db8009b61514e012d29081d0ae119f47b490aa701",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": {
+        "datasets": "5.0.1",
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "family": "gemma",
+      "max_tokens": 600,
+      "price_tier": "large",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 0.1,
+      "usd_per_mtok_out": 0.2
+    },
+    "settings_sha256": "f70b83dc0f6f8e787bcaa2730f8fd3181a362773e19d052905f0e1bb3ec9495f",
+    "version": 5
   },
   "goal": "entities_few_nerd",
   "metric_kinds": {

@@ -10,21 +10,7 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_glm_m_n100_v1",
-      "params": {
-        "family": "glm",
-        "max_tokens": 1500,
-        "model": "eval-glm-46",
-        "price_tier": "mid",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 0.15,
-        "usd_per_mtok_out": 0.6
-      }
+      "config_id": "se_glm_m_n100_v1"
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -34,15 +20,44 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "2f11da2c1923a49e9e7d8051e3f712efd6861e2ad54e7b0284624b5e4f2b852c",
-    "host": {
-      "cpu_count": 32,
-      "label": "omarchy",
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.11.16",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "alias": "eval-glm-46",
+        "endpoint": "http://homelab:4001",
+        "id": "openrouter/z-ai/glm-4.6",
+        "id_source": "proxy-model-info",
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-glm-46",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-glm-46",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "004ce205a7ef234c622f41998aacec5f752d35d194f7791238cfc5dc1e194b2b",
+    "hash": "36295ad97872f7f34d35af5f28612b38237a2e482d4dc4ee0bd8a43d833814db",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -53,7 +68,10 @@
         "dirty": false
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "b0c66ef6862893c2f1ba3d8a6e663f9f63c7645ed783e2242849e6998e91ba8b",
+    "runner": {
+      "cpu_count": 32,
+      "label": "omarchy",
       "libraries": {
         "numpy": "1.26.4",
         "openai": "3.31.0",
@@ -61,23 +79,25 @@
         "torch": "2.14.1",
         "transformers": "4.55.4"
       },
-      "model": {
-        "alias": "eval-glm-46",
-        "endpoint": "http://homelab:4001",
-        "id": "openrouter/z-ai/glm-4.6",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": 0.0
-      }
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.16",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "family": "glm",
+      "max_tokens": 1500,
+      "price_tier": "mid",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 0.15,
+      "usd_per_mtok_out": 0.6
+    },
+    "settings_sha256": "b612909016c5a99dc97d2aa14622ead0d4f089d084d0437d3a1743e676bcac34",
+    "version": 5
   },
   "goal": "summary_judge_summeval",
   "metric_kinds": {

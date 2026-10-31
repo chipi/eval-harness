@@ -10,13 +10,7 @@
   "dataset_id": "ag_news_200",
   "fingerprint": {
     "arm": {
-      "config_id": "ag_constant_n200_v1",
-      "params": {
-        "family": "baseline",
-        "label": "World",
-        "price_tier": "free",
-        "provider": "constant"
-      }
+      "config_id": "ag_constant_n200_v1"
     },
     "data": {
       "dataset_id": "ag_news_200",
@@ -26,15 +20,49 @@
       "reference_tier": "gold",
       "references_sha256": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
     },
-    "hash": "4676b7c1898630880a035ee1c940ee9b32f1bf7f432b62335fef5c2d617b9a25",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
+    "data_sha256": "42c37455220776fdf99bbc061bb396453b6fed3842e8ae4d76e316d3392cd318",
+    "deployment": {
+      "declared": {
+        "label": "World",
+        "labels": [
+          "World",
+          "Sports",
+          "Business",
+          "Sci/Tech"
+        ],
+        "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
+        "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
+        "provider": "constant"
+      },
+      "hosted": null,
+      "id": "constant:World",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": "constant:World",
+      "provider": "constant",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "038fca89ddb842e83bbd1a7e308f47b547ab7dde95274506f48dba3a251e3f52",
+    "hash": "17fdfe1fbb65abd4986b3f2ed8d6c07b6e9380148dbfc37df57dc95771b59f96",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -45,31 +73,23 @@
         "dirty": false
       }
     },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "id": "constant:World",
-        "identity_declared": true,
-        "label": "World",
-        "labels": [
-          "World",
-          "Sports",
-          "Business",
-          "Sci/Tech"
-        ],
-        "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
-        "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "provider": "constant",
-        "revision": null,
-        "revision_source": "unavailable"
-      }
+    "instrument_sha256": "237e3b2ea03b64d4a1e2a7cdd7d8839afbeb26b2197aea0b2dd44801664a6703",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
     },
-    "version": 4
+    "settings": {
+      "family": "baseline",
+      "label": "World",
+      "price_tier": "free"
+    },
+    "settings_sha256": "fea42bfcc2b3fd922d58671fa0eb6da1e8347b9dd52e121cd2ebe74e6dc327e9",
+    "version": 5
   },
   "goal": "news_topic_ag",
   "metric_kinds": {

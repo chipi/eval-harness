@@ -224,7 +224,7 @@ def hardware() -> list:
     for exp in EXPERIMENTS:
         for _arm, d in _runs("runs", exp["dataset"], exp["prefix"], exp["suffix"]).items():
             fp = json.loads((d / "metrics.json").read_text()).get("fingerprint") or {}
-            host = fp.get("host") or {}
+            host = fp.get("runner") or {}
             hits = [
                 m
                 for m in machines

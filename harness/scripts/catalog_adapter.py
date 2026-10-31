@@ -170,8 +170,10 @@ class Adapter(Protocol):
     # harness's own metrics' descriptions and the rest as undescribed.
     # def metric_descriptions(self) -> dict[str, str]: ...
     # Optional: what an arm was measured under, {"machine.platform": ..., "library.torch": ...,
-    # "harness.version": ..., "scorer.sha256": ..., "data.items_sha256": ...,
+    # "deployment.machine": ..., "harness.version": ..., "scorer.sha256": ..., "data.items_sha256": ...,
     # "reference.sha256": ...}; the inspector lists what differs between the arms it compares.
+    # `machine.*` is the runner (where evh ran, outside the fingerprint's hash), `deployment.*` where
+    # the system under test ran.
     # def conditions(self, arm: str) -> dict[str, str]: ...
     # Optional: the promoted baselines (run-promote), [{"baseline_id", "dataset", "run", "arm",
     # "reason", "promoted_at", "tier", "goal"}]; the pages lead with them, the answer so far.
@@ -212,8 +214,9 @@ class Adapter(Protocol):
     # "derived"}] ("derived": "" for a measured run, else how it was made: rescore, judge,
     # reparse); the arm page lists them and the home page's activity counts them.
     # def arm_runs(self, arm: str) -> list[dict]: ...
-    # Optional: what an arm was asked to do, {"config_id", "params", "adapter"}, params without
-    # credentials; the arm page shows it.
+    # Optional: what an arm was asked to do, {"config_id", "params", "adapter", "deployment"}, params
+    # without credentials, "deployment" the model-record deployment its config named ("" for none);
+    # the arm page shows it.
     # def arm_config(self, arm: str) -> dict: ...
     # Optional: what was spent and when, [{"at", "usd", "tokens", "kind": "arm" | "judge",
     # "dataset", "what", "arm" (a measured run's arm, optional)}] (usd or tokens None when unknown), each measured run and each judging
@@ -232,11 +235,19 @@ def item_fields(A, dataset: str) -> dict:
 def _flat_conditions(fp: dict) -> dict[str, str]:
     """A run fingerprint's conditions as {group.field: value} (see HarnessAdapter.conditions)."""
     out: dict[str, str] = {}
-    for k, v in (fp.get("host") or {}).items():
-        if v is not None:
+    runner = fp.get("runner") or {}
+    for k, v in runner.items():
+        if v is not None and k != "libraries":
             out[f"machine.{k}"] = str(v)
-    for k, v in ((fp.get("system_under_test") or {}).get("libraries") or {}).items():
+    dep = fp.get("deployment") or {}
+    for k, v in (runner.get("libraries") or dep.get("libraries") or {}).items():
         out[f"library.{k}"] = str(v)
+    for k, v in (dep.get("where") or {}).items():
+        if v:
+            out[f"deployment.{k}"] = str(v)
+    server = dep.get("server") or {}
+    if server.get("name"):
+        out["deployment.server"] = " ".join(x for x in (server["name"], server.get("version")) if x)
     inst = fp.get("instrument") or {}
     harness = inst.get("harness") or {}
     for k in ("version", "code_sha256"):
@@ -818,6 +829,7 @@ class HarnessAdapter:
             "config_id": m.get("config_id") or arm.rsplit("/", 1)[-1],
             "params": shown_params(m.get("params") or {}),
             "adapter": m.get("adapter") or "",
+            "deployment": m.get("deployment_id") or "",
         }
 
     @_memo

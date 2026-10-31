@@ -58,6 +58,7 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "examples" / "_shared"))
 sys.path.insert(0, str(ROOT / "harness"))  # the evaluation_harness package (a link to scripts/)
 
+from evaluation_harness._fingerprint import seal  # noqa: E402
 from evaluation_harness._record import derived_record  # noqa: E402
 from retrieval import parse_ranking, score_ranking, scorer_sha256  # noqa: E402
 
@@ -169,7 +170,7 @@ def main() -> int:
         )
         fp = json.loads(json.dumps(new.get("fingerprint") or {}))
         if fp:
-            fp["hash"] = None
+            seal(fp, whole=False)
             fp["hash_invalid_because"] = (
                 "rankings were rebuilt from stored LLM replies with a parser this "
                 "fingerprint does not describe; see derived.with"

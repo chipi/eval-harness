@@ -10,13 +10,7 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_random_n100_v1",
-      "params": {
-        "family": "baseline",
-        "price_tier": "free",
-        "provider": "random",
-        "seed": 20261015
-      }
+      "config_id": "se_random_n100_v1"
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -26,15 +20,37 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "28723d344a3ac64bd7ee5a315cdb73ea728c28652a56ad308b1f733fb7af0c5d",
-    "host": {
-      "cpu_count": 4,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": "x86_64",
-      "python": "3.11.15",
-      "release": "6.18.44-fc-v114"
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "code_sha256": "b255bb830e5865a770e0c205350dda86d61eb243da688a2e078781904b467578",
+        "kind": "deterministic metric, no model and no network",
+        "provider": "random"
+      },
+      "hosted": null,
+      "id": "random",
+      "in_process": false,
+      "libraries": null,
+      "model": "random",
+      "provider": "random",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "not-a-model"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "0795d6253fa2e4d33a8debe1ae639c793ca198e6d0826be4863c08f45f2382a5",
+    "hash": "ac670514f542ca9a3a3edc33fabaf91c4673d4fc3b15264bae4e8790324a0d83",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -45,7 +61,10 @@
         "dirty": false
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "e2582feb5d0d1357feaaf9f62094e64a07d3b44eecc390d003393e8090abd629",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
       "libraries": {
         "numpy": "1.26.4",
         "openai": "3.31.0",
@@ -53,17 +72,18 @@
         "torch": "2.14.1",
         "transformers": "4.55.4"
       },
-      "model": {
-        "code_sha256": "b255bb830e5865a770e0c205350dda86d61eb243da688a2e078781904b467578",
-        "id": "random",
-        "identity_declared": false,
-        "kind": "deterministic metric, no model and no network",
-        "provider": "random",
-        "revision": null,
-        "revision_source": "not-a-model"
-      }
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v114"
     },
-    "version": 4
+    "settings": {
+      "family": "baseline",
+      "price_tier": "free",
+      "seed": 20261015
+    },
+    "settings_sha256": "3e89a9c6ea9b7ba99450d7fbbc1d1867f6d88c64d2caeb24fd720c1c4f4cca95",
+    "version": 5
   },
   "goal": "summary_judge_summeval",
   "metric_kinds": {

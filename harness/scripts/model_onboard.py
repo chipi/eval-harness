@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Onboard a model once, for every experiment (RFC-020): probe it and write what was found into its record.
 
-    evh model-onboard <model_id> --where <build>          an LLM: probes through the build's endpoint
+    evh model-onboard <model_id> --deployment <id>        an LLM: probes through the deployment's endpoint
     evh model-onboard <model_id> --config <arm.yaml>      an ML model or a baseline: through an arm that runs it
+                                                          (--deployment names the deployment it is written to)
 
-An LLM is probed task-independently, through the endpoint its record gives for that build (a built-in
+An LLM is probed task-independently, through the endpoint its record gives for that deployment (a built-in
 provider: an OpenAI-shaped server such as Ollama or vLLM, LiteLLM, OpenRouter, Anthropic):
 
   build         the digest the server reports for the tag (Ollama), against the record's
@@ -17,8 +18,8 @@ provider: an OpenAI-shaped server such as Ollama or vLLM, LiteLLM, OpenRouter, A
 An ML model or a baseline is onboarded through an arm that runs it: `evh arm-smoke`'s checks on two
 items, with the facts its adapter reports (device, precision, load time).
 
-ONBOARD PASS (exit 0) or ONBOARD CHECK with the flags (exit 1). The record's `onboarding`, the build's
-`digest` and `checked_at`, and its `capabilities` are written; its settings are never changed: a person
+ONBOARD PASS (exit 0) or ONBOARD CHECK with the flags (exit 1). The deployment's `onboarding`, `digest` and
+`checked_at`, and the record's `capabilities` are written; its settings are never changed: a person
 chooses them, and records why.
 """
 
@@ -75,29 +76,27 @@ def _reasoned(c: Any) -> bool:
     return bool((c.reasoning_tokens or 0) > 0 or (c.meta or {}).get("reasoning_chars"))
 
 
-def probe_llm(rec: dict[str, Any], build: dict[str, Any]) -> tuple[dict[str, Any], list[str], dict[str, Any]]:
-    """(report, flags, capabilities) of an LLM through one build's endpoint."""
-    ep = build.get("endpoint") or {}
+def probe_llm(rec: dict[str, Any], dep: dict[str, Any]) -> tuple[dict[str, Any], list[str], dict[str, Any]]:
+    """(report, flags, capabilities) of an LLM through one deployment's endpoint."""
+    ep = dep.get("endpoint") or {}
     if not ep.get("provider") or not ep.get("model"):
-        die(f"{rec['model_id']}: build {build.get('where')!r} has no endpoint (provider, model) to probe")
+        die(f"{rec['model_id']}: deployment {dep.get('id')!r} has no endpoint (provider, model) to probe")
     base = {k: ep[k] for k in ("provider", "base_url", "model", "api_key_env") if ep.get(k)}
     settings = {k: v for k, v in (rec.get("settings") or {}).items() if k in CALL_PARAMS}
     limit = float((rec.get("settings") or {}).get("call_timeout_s") or 0) or None
     flags: list[str] = []
     report: dict[str, Any] = {"endpoint": {k: v for k, v in base.items() if k != "api_key_env"}}
 
-    if build.get("tag") and ep.get("base_url"):
-        found = ollama_digest(ep["base_url"], build["tag"])
+    if dep.get("tag") and ep.get("base_url"):
+        found = ollama_digest(ep["base_url"], dep["tag"])
         report["digest_found"] = found
         if (
             found
-            and build.get("digest")
-            and not found.startswith(build["digest"])
-            and not build["digest"].startswith(found)
+            and dep.get("digest")
+            and not found.startswith(dep["digest"])
+            and not dep["digest"].startswith(found)
         ):
-            flags.append(
-                f"build: {build['where']} serves {found[:12]}, the record says {build['digest'][:12]}"
-            )
+            flags.append(f"build: {dep['id']} serves {found[:12]}, the record says {dep['digest'][:12]}")
 
     default, s_default = _call({**base, "max_tokens": 4096})
     report["default"] = {
@@ -156,7 +155,9 @@ def probe_llm(rec: dict[str, Any], build: dict[str, Any]) -> tuple[dict[str, Any
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("model_id")
-    ap.add_argument("--where", help="the build to probe (an LLM): a `where` in the record's builds")
+    ap.add_argument(
+        "--deployment", help="the deployment to probe and write: an `id` in the record's deployments"
+    )
     ap.add_argument("--config", type=Path, help="an arm that runs the model (an ML model or a baseline)")
     args = ap.parse_args()
     import yaml  # noqa: PLC0415
@@ -169,22 +170,22 @@ def main() -> int:
     path = _models.records_dir(DATA) / f"{args.model_id}.yaml"
     print(f"model-onboard: {args.model_id} ({rec.get('kind')})")
     if rec.get("kind") == "llm":
-        builds = rec.get("builds") or []
-        build = (
-            next((b for b in builds if b.get("where") == args.where), None)
-            if args.where
-            else (builds[0] if len(builds) == 1 else None)
+        deployments = rec.get("deployments") or []
+        dep = (
+            _models.deployment_of(rec, args.deployment)
+            if args.deployment
+            else (deployments[0] if len(deployments) == 1 else None)
         )
-        if build is None:
+        if dep is None:
             die(
-                f"--where: one of {', '.join(b.get('where', '?') for b in builds) or '(no builds in the record)'}"
+                f"--deployment: one of {', '.join(x.get('id', '?') for x in deployments) or '(no deployments in the record)'}"
             )
-        report, flags, caps = probe_llm(rec, build)
+        report, flags, caps = probe_llm(rec, dep)
         d, c = report["default"], report["chosen"]
-        print(f"  {build['where']}: {report['endpoint']}")
+        print(f"  {dep['id']} ({dep['where']}): {report['endpoint']}")
         if "digest_found" in report:
             print(
-                f"  build: the server reports {str(report['digest_found'])[:12]}, the record {str(build.get('digest'))[:12]}"
+                f"  build: the server reports {str(report['digest_found'])[:12]}, the record {str(dep.get('digest'))[:12]}"
             )
         print(
             f"  default settings: {d['s']} s, {d['tokens_out']} tokens out, reasoned: {d['reasoned']}, end {d['finish']}"
@@ -196,13 +197,13 @@ def main() -> int:
             f"  JSON valid: {report['json_valid']}  deterministic: {report['deterministic']}  tokens/s: {caps.get('tokens_per_s')}"
         )
         if report.get("digest_found"):
-            build["digest"] = report["digest_found"]
-        build["checked_at"] = now()
+            dep["digest"] = report["digest_found"]
+        dep["checked_at"] = now()
         rec["capabilities"] = {
             **(rec.get("capabilities") or {}),
             **{k: v for k, v in caps.items() if v is not None or k == "reasoning_off"},
         }
-        where = build["where"]
+        where = dep["where"]
     else:
         if not args.config:
             die(
@@ -224,13 +225,23 @@ def main() -> int:
         flags = [ln.strip()[2:] for ln in out.stdout.splitlines() if ln.startswith("  - ")]
         report = {"via_arm": str(args.config), "smoke": out.stdout[-4000:]}
         where = "via " + args.config.stem
+        deployments = rec.setdefault("deployments", [])
+        dep = _models.deployment_of(rec, args.deployment) if args.deployment else None
+        if args.deployment and dep is None:
+            dep = {"id": args.deployment, "where": "local"}
+            deployments.append(dep)
+        elif dep is None and len(deployments) == 1:
+            dep = deployments[0]
+        elif dep is None:
+            dep = {"id": "local", "where": "local"}
+            deployments.append(dep)
     status = "pass" if not flags else "check"
-    rec["onboarding"] = {"status": status, "at": now(), "where": where, "flags": flags, "report": report}
+    dep["onboarding"] = {"status": status, "at": now(), "where": where, "flags": flags, "report": report}
     path.write_text(yaml.safe_dump(rec, sort_keys=False, allow_unicode=True), encoding="utf-8")
     print("ONBOARD PASS" if not flags else "ONBOARD CHECK")
     for f in flags:
         print(f"  - {f}")
-    print(f"  written into data/models/{args.model_id}.yaml")
+    print(f"  written into data/models/{args.model_id}.yaml (deployment {dep['id']})")
     return 0 if not flags else 1
 
 

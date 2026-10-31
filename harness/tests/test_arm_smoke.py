@@ -7,6 +7,7 @@ python tests/test_arm_smoke.py
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness import arm_smoke
@@ -58,7 +59,7 @@ check(
     "flags: a clean arm raises none",
     arm_smoke.flags_for(clean_items, clean_calls, {"call_timeout_s": 30, "reasoning_effort": "none"}) == [],
 )
-bad_items = [
+bad_items: list[dict[str, Any]] = [
     {"s": 1.0, "error": "TimeoutError: timed out"},
     {"s": 1.0, "output_chars": 0},
     {"s": 1.0, "output_chars": 10, "scored": False, "score_error": "KeyError"},
@@ -83,6 +84,36 @@ for word in (
 check(
     "flags: reasoning is not flagged when the arm sets reasoning_effort",
     "reasoning:" not in " ".join(arm_smoke.flags_for(clean_items, bad_calls, {"reasoning_effort": "high"})),
+)
+
+# a hosted deployment's route
+served = [{"s": 1.0, "tokens_out": 50, "finish_reason": "stop", "answered": True, "upstream": "novita"}]
+check(
+    "flags: a call served by an upstream the deployment's route does not pin is raised, naming both",
+    any(
+        "route:" in f and "novita" in f and "nebius" in f
+        for f in arm_smoke.flags_for(clean_items, served, {"_route": ["nebius"], "reasoning_effort": "none"})
+    ),
+)
+check(
+    "flags: a call served by the pinned upstream, or with no route pinned, raises nothing",
+    arm_smoke.flags_for(clean_items, served, {"_route": ["novita"], "reasoning_effort": "none"}) == []
+    and arm_smoke.flags_for(clean_items, served, {"reasoning_effort": "none"}) == [],
+)
+check(
+    "route_of: a list, or the provider's routing object (only, else order), else nothing",
+    arm_smoke.route_of({"provider_routing": ["a", "b"]}) == ["a", "b"]
+    and arm_smoke.route_of({"provider_routing": {"only": ["a"], "order": ["b"]}}) == ["a"]
+    and arm_smoke.route_of({"provider_routing": {"order": ["b"]}}) == ["b"]
+    and arm_smoke.route_of({}) == []
+    and arm_smoke.route_of(None) == [],
+)
+check(
+    "calls_of: the upstream a call reports is kept",
+    arm_smoke.calls_of(SimpleNamespace(meta={"finish_reason": "stop", "provider": "novita"}, output="y"))[0][
+        "upstream"
+    ]
+    == "novita",
 )
 
 sys.exit(summary())

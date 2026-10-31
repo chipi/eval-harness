@@ -10,21 +10,7 @@
   "dataset_id": "cnn_dailymail_200",
   "fingerprint": {
     "arm": {
-      "config_id": "cnn_glm_m_n200_v1",
-      "params": {
-        "family": "glm",
-        "max_tokens": 1200,
-        "model": "eval-glm-46",
-        "price_tier": "mid",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 0.15,
-        "usd_per_mtok_out": 0.6
-      }
+      "config_id": "cnn_glm_m_n200_v1"
     },
     "data": {
       "dataset_id": "cnn_dailymail_200",
@@ -34,15 +20,44 @@
       "reference_tier": "gold",
       "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
-    "hash": "d491cbaaea347cfe61967c0cb1134fc8793c369514e9bc572611c389982af81d",
-    "host": {
-      "cpu_count": 12,
-      "label": null,
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
+    "data_sha256": "a9b234845c4f4d69a498556c1f6324f5839721e805795a1f3d5946301307a0e8",
+    "deployment": {
+      "declared": {
+        "alias": "eval-glm-46",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/z-ai/glm-4.6",
+        "id_source": "proxy-model-info",
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "hosted": null,
+      "id": "eval-glm-46",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-glm-46",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "337bf46feac9f991518dd516d6d81a8abf82f5465073b5ad353298e77a2fbcb3",
+    "hash": "db563128b94005fbfff59ca161fb2d6bf30a820ce6e85df601ce60c7bff14de2",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -53,29 +68,34 @@
         "dirty": true
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "02c91be76b7fdec14894c4abb58f11bd5299e101de5a1602ece5d5d29cc30ff5",
+    "runner": {
+      "cpu_count": 12,
+      "label": null,
       "libraries": {
         "numpy": "2.4.6",
         "openai": "3.19.2",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "alias": "eval-glm-46",
-        "endpoint": "http://127.0.0.1:4001",
-        "id": "openrouter/z-ai/glm-4.6",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": 0.0
-      }
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
     },
-    "version": 4
+    "settings": {
+      "family": "glm",
+      "max_tokens": 1200,
+      "price_tier": "mid",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 0.15,
+      "usd_per_mtok_out": 0.6
+    },
+    "settings_sha256": "72116d15191dd696a5da912d569650a6c9dca2e8c64ddf7aeb753f11e038a4f2",
+    "version": 5
   },
   "goal": "news_summary_cnn",
   "metric_kinds": {

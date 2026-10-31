@@ -11,7 +11,9 @@ adapter reports as `meta["calls"]`) and flags reasoning, slow calls, long replie
 calls with no answer. An ML adapter's facts (`meta`: device, precision, load time) are printed beside.
 
 SMOKE PASS (exit 0) or SMOKE CHECK with the flags (exit 1). When the config names a model record
-(`model_record:`), the report is written into the record's `smokes` under the config's id.
+(`model_record:`), the report is written into the record's `smokes` under the config's id. With
+`deployment:` the build is checked against that deployment, and a hosted deployment's pinned route
+(`provider_routing`) against the upstream provider each call reports.
 """
 
 from __future__ import annotations
@@ -54,9 +56,19 @@ def calls_of(res: Any) -> list[dict[str, Any]]:
                 or 0,
                 "finish_reason": meta.get("finish_reason"),
                 "answered": bool(getattr(res, "output", "")),
+                "upstream": meta.get("provider"),
             }
         ]
     return []
+
+
+def route_of(deployment: dict[str, Any] | None) -> list[str]:
+    """The upstream providers a hosted deployment pins (`provider_routing`: a list, or the provider's
+    routing object with `only` or `order`); [] when it pins none."""
+    routing = (deployment or {}).get("provider_routing")
+    if isinstance(routing, dict):
+        routing = routing.get("only") or routing.get("order")
+    return [str(x) for x in routing] if isinstance(routing, list) else []
 
 
 def flags_for(items: list[dict[str, Any]], calls: list[dict[str, Any]], params: dict[str, Any]) -> list[str]:
@@ -76,8 +88,16 @@ def flags_for(items: list[dict[str, Any]], calls: list[dict[str, Any]], params: 
     if items and items[0].get("deterministic") is False:
         out.append("determinism: item 1 twice gave different outputs (repeats will vary)")
     if not params.get("_build_pinned", True):
-        out.append("where it ran: the build is not pinned (no digest, revision or hash in the model record)")
+        out.append(
+            "where it ran: the build is not pinned (no digest, revision or hash in the model record's deployment)"
+        )
     limit = float(params.get("call_timeout_s") or params.get("timeout_s") or 0) or None
+    route = params.get("_route") or []
+    strays = sorted({str(c["upstream"]) for c in calls if c.get("upstream") and c["upstream"] not in route})
+    if route and strays:
+        out.append(
+            f"route: call(s) served by {', '.join(strays)}, the deployment pins {', '.join(route)} (provider_routing)"
+        )
     if calls:
         reasoned = [
             c for c in calls if (c.get("reasoning_tokens") or 0) > 0 or (c.get("reasoning_chars") or 0) > 0
@@ -140,11 +160,13 @@ def main() -> int:
     mat = MATERIALIZED / ds["dataset_id"]
     params = dict(cfg.get("params") or {})
     rec = _models.find(DATA, cfg["model_record"]) if cfg.get("model_record") else None
-    builds = (rec or {}).get("builds") or []
+    named = _models.deployment_of(rec, cfg["deployment"]) if rec and cfg.get("deployment") else None
+    deployments = [named] if named else (rec or {}).get("deployments") or []
     params_for_flags = {
         **params,
         "_build_pinned": (not rec)
-        or any(b.get("digest") or b.get("revision") or b.get("file_hash") for b in builds),
+        or any(d.get("digest") or d.get("revision") or d.get("file_hash") for d in deployments),
+        "_route": route_of(named),
     }
 
     from evaluation_harness.experiment_run import _reference_for  # noqa: PLC0415

@@ -271,12 +271,21 @@ def main() -> int:
             ("arms", ["--by", "config", "--period", "30d"], "ok:config tickets_lead2_v1"),
             ("arms", ["--configs"], "ok:rank on each goal"),
             ("arms", ["--quality", "ties"], "ok:no arm matches: only arms a goal's decision weighs"),
-            ("arms", ["--weights", "open"], "ok:no arm matches: an arm's weights come from the model records (data/models/)"),
+            (
+                "arms",
+                ["--weights", "open"],
+                "ok:no arm matches: an arm's weights come from the model records (data/models/",
+            ),
             ("arms", [], "ok:runs/tickets_v1/tickets_lead2_v1"),
             ("arms", ["--arm", "runs/tickets_v1/tickets_lead2_v1"], "ok:metrics:"),
             ("arms", ["--arm", "tickets_lead2_v1"], "ok:scored against"),
             ("arms", ["--arm", "runs/tickets_v1/no_such_v1"], "no arm"),
             ("goals", [], "ok"),
+            # Model records (RFC-020, optional): installed, each answers in words; the flows are
+            # test_model_onboard.py, test_arm_smoke.py and test_catalog_models.py.
+            ("models", [], "ok:no model records"),
+            ("model-onboard", ["no_such_model"], "no model record 'no_such_model'"),
+            ("arm-smoke", ["--config", "no_such.yaml"], "no config at no_such.yaml"),
             ("search", ["lead2"], "ok:evh inspect --runs runs/tickets_v1/tickets_lead2_v1"),
             ("search", ["no_such_thing"], "No match."),
             # lead2 against lead1 on gold: the p of tutorial 3 step 4 (3/32 = 0.09375, printed 0.0938; exact over 2^6)

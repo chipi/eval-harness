@@ -740,9 +740,12 @@ def collect(A: Adapter) -> dict:
 
 
 def _machine(A: Adapter, arm: str) -> str:
-    """The machine an arm ran on, in a few words (EVAL_HOST_LABEL when set), from its conditions."""
+    """The machine an arm ran on, in a few words: the deployment's machine when its fingerprint names one,
+    else the runner's (EVAL_HOST_LABEL when set), from its conditions."""
     fn = getattr(A, "conditions", None)
     c = fn(arm) if callable(fn) else {}
+    if c.get("deployment.machine"):
+        return c["deployment.machine"]
     if c.get("machine.label"):
         return c["machine.label"]
     bits = [c.get("machine.platform"), c.get("machine.cpu_count") and f"{c['machine.cpu_count']} CPUs"]
@@ -3092,6 +3095,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         extra = (
             f'<p class="small muted">config <code>{e(cfg.get("config_id", ""))}</code>'
             + (f" · adapter <code>{e(cfg['adapter'])}</code>" if cfg.get("adapter") else "")
+            + (f" · deployment <code>{e(cfg['deployment'])}</code>" if cfg.get("deployment") else "")
             + " · credentials are never shown</p>"
         )
         body += block(f"{n:02d}", "config", extra + f'<dl class="kv">{kv}</dl>')

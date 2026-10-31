@@ -80,6 +80,7 @@ from evaluation_harness._common import (
     write_json,
     write_text_atomic,
 )
+from evaluation_harness._fingerprint import seal
 from evaluation_harness._providers import identity_params
 from evaluation_harness._record import aggregate_scores, derived_record
 from evaluation_harness._retry import call_with_retries
@@ -307,7 +308,7 @@ def validation_problems(
                 f"judge {j['id']!r}: run {r['run']} used prompt file "
                 f"{rec.get('prompt_file')!r}, the scorer uses {Path(sc['prompt']['file']).name!r}"
             )
-        ran = (((m.get("fingerprint") or {}).get("system_under_test") or {}).get("model") or {}).get(
+        ran = (((m.get("fingerprint") or {}).get("deployment") or {}).get("declared") or {}).get(
             "prompt_sha256"
         )
         if not ran:
@@ -378,7 +379,7 @@ def discover_arms(dataset_id: str, match: str, runs_dir: Path = RUNS) -> list[di
                 "run": d.name,
                 "dir": d,
                 "family": (m.get("params") or {}).get("family")
-                or (m.get("fingerprint", {}).get("arm", {}).get("params") or {}).get("family"),
+                or (m.get("fingerprint", {}).get("settings") or {}).get("family"),
             }
         )
     return arms
@@ -1006,7 +1007,7 @@ def write_scored_runs(
                 # By behaviour (_codeid): documentation in judge_score.py is not a new scorer.
                 "sha256": file_sha256(self_path),
             }
-            fp["hash"] = None
+            seal(fp, whole=False)
             fp["hash_invalid_because"] = (
                 "scores were produced by a judge scorer, not the adapter this fingerprint "
                 "was built from; see derived.with"

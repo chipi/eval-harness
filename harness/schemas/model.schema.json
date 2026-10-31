@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "model",
-  "description": "A model record (RFC-020), optional: data/models/<model_id>.yaml. A model is onboarded once for the project and used by any experiment's arms: its build on every machine that runs it, what it can do, the settings chosen for it and the smoke behind them. `aliases` are the ids runs record for it (params.model); the arms page's weights filter and the catalog's Models page read the records.",
+  "description": "A model record (RFC-020), optional: data/models/<model_id>.yaml. A model is onboarded once for the project and used by any experiment's arms: its deployment on every machine that runs it, what it can do, the settings chosen for it and the smoke behind them. `aliases` are the ids runs record for it (params.model); the arms page's weights filter and the catalog's Models page read the records.",
   "type": "object",
   "required": ["model_id", "kind", "aliases"],
   "additionalProperties": false,
@@ -12,15 +12,17 @@
     "aliases": {"type": "array", "minItems": 1, "items": {"type": "string"}, "description": "The ids runs record for this model (params.model): a gateway alias, an Ollama tag, a Hugging Face repo."},
     "weights": {"enum": ["open", "proprietary"], "description": "open: the weights can be downloaded; proprietary: only its vendor serves it."},
     "licence": {"type": "string", "description": "The licence of open weights, as its publisher states it."},
-    "builds": {
+    "deployments": {
       "type": "array",
-      "description": "One entry per place the model runs.",
+      "description": "One entry per place the model runs (RFC-021): the system under test as it executes. An arm names one with `deployment: <id>`; `evh model-onboard <model_id> --deployment <id>` probes it and writes its onboarding.",
       "items": {
         "type": "object",
-        "required": ["where"],
+        "required": ["id", "where"],
         "additionalProperties": false,
         "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$", "description": "Unique in the record: mac, dgx, x3, openrouter-nebius."},
           "where": {"type": "string", "description": "A machine (x3, dgx, mac) or a host (openrouter, a gateway)."},
+          "backend": {"anyOf": [{"enum": ["cuda", "rocm", "metal", "cpu", "hosted"]}, {"type": "string"}], "description": "What computes it: cuda, rocm, metal, cpu or hosted, or another name."},
           "server": {"type": "string", "description": "What serves it there, with its version: \"ollama 0.40.13\", \"vllm 26.05\"."},
           "server_settings": {"type": "object", "description": "The server's settings that change the model's behaviour: context length, KV cache, flash attention."},
           "device": {"type": "string"},
@@ -30,13 +32,15 @@
           "file_hash": {"type": "string"},
           "quantization": {"type": "string"},
           "provider_id": {"type": "string", "description": "A hosted model's id at its provider."},
+          "provider_routing": {"type": ["array", "object"], "description": "A hosted deployment's pinned route: the upstream providers it may be served by (a list), or the provider's routing object."},
           "endpoint": {
             "type": "object",
-            "description": "How to reach this build for onboarding: a built-in provider (openai for an OpenAI-shaped server such as Ollama or vLLM, litellm, openrouter, anthropic), its base_url, the model name there, and api_key_env when it needs a key.",
+            "description": "How to reach this deployment for onboarding: a built-in provider (openai for an OpenAI-shaped server such as Ollama or vLLM, litellm, openrouter, anthropic), its base_url, the model name there, and api_key_env when it needs a key.",
             "additionalProperties": false,
             "properties": {"provider": {"type": "string"}, "base_url": {"type": "string"}, "model": {"type": "string"}, "api_key_env": {"type": "string"}}
           },
-          "checked_at": {"type": "string", "description": "When the build there was last checked (ISO date or time)."}
+          "checked_at": {"type": "string", "description": "When the deployment was last checked (ISO date or time)."},
+          "onboarding": {"$ref": "#/$defs/smoke", "description": "The latest task-independent onboarding of this deployment (evh model-onboard)."}
         }
       }
     },
@@ -61,7 +65,6 @@
       "additionalProperties": {"type": ["string", "number", "boolean", "null"]}
     },
     "settings_why": {"type": "object", "additionalProperties": {"type": "string"}, "description": "One line per setting: why it was chosen."},
-    "onboarding": {"$ref": "#/$defs/smoke", "description": "The latest task-independent onboarding (evh model-onboard)."},
     "smokes": {"type": "object", "additionalProperties": {"$ref": "#/$defs/smoke"}, "description": "The latest arm smoke (evh arm-smoke) of each arm that names the record, by config id."},
     "history": {
       "type": "array",

@@ -1,7 +1,7 @@
 """Model records (RFC-020), optional: data/models/<model_id>.yaml, one file per model the project uses.
 
-A record says what a model is (its aliases: the ids runs record for it), where and as which build it runs,
-what it can do, the settings chosen for it and the smoke behind them. A project that keeps none has none of
+A record says what a model is (its aliases: the ids runs record for it), its deployments (each place and
+build it runs, with its own onboarding), what it can do and the settings chosen for it. A project that keeps none has none of
 this; `facts()` is then empty, as `data/models.yaml` was before the records replaced it.
 """
 
@@ -61,17 +61,28 @@ def facts(data_dir: Path) -> dict[str, dict[str, str]]:
     return out
 
 
+def deployment_of(rec: dict[str, Any], deployment_id: str) -> dict[str, Any] | None:
+    """The record's deployment with this id, or None."""
+    return next((d for d in rec.get("deployments") or [] if d.get("id") == deployment_id), None)
+
+
 def resolve(cfg: dict[str, Any], data_dir: Path) -> dict[str, Any]:
     """A config with the model record it names (`model_record: <id>`) applied: the record's settings
     under the config's own params (the config wins), `model` from the record's first alias when the config
-    gives none, and `model_record` kept so the run records which record it ran with. A config naming no
-    record is returned as it is; one naming a record that does not exist raises ValueError."""
+    gives none, and `model_record` kept so the run records which record it ran with. `deployment: <id>`
+    (kept too) names one of the record's deployments. A config naming no record is returned as it is; one
+    naming a record or deployment that does not exist, or a deployment without a record, raises ValueError."""
     rid = cfg.get("model_record")
     if not rid:
+        if cfg.get("deployment"):
+            raise ValueError(f"deployment {cfg['deployment']!r} names no model_record")
         return cfg
     rec = find(data_dir, rid)
     if rec is None:
         raise ValueError(f"model_record {rid!r}: no {records_dir(data_dir) / (rid + '.yaml')}")
+    if cfg.get("deployment") and deployment_of(rec, cfg["deployment"]) is None:
+        known = ", ".join(d.get("id", "?") for d in rec.get("deployments") or []) or "none"
+        raise ValueError(f"deployment {cfg['deployment']!r}: {rid} has no such deployment (known: {known})")
     params = {**(rec.get("settings") or {}), **(cfg.get("params") or {})}
     if "model" not in params and rec.get("aliases"):
         params["model"] = rec["aliases"][0]
@@ -80,7 +91,7 @@ def resolve(cfg: dict[str, Any], data_dir: Path) -> dict[str, Any]:
 
 def problems(data_dir: Path) -> list[str]:
     """What a record set gets wrong beyond its schema: a file named other than its id, an alias two records
-    claim."""
+    claim, a deployment id used twice in one record."""
     out = []
     seen: dict[str, str] = {}
     base = records_dir(data_dir)
@@ -95,4 +106,7 @@ def problems(data_dir: Path) -> list[str]:
             if a in seen and seen[a] != f.stem:
                 out.append(f"alias {a!r} is claimed by {seen[a]} and {f.stem}")
             seen.setdefault(a, f.stem)
+        ids = [d.get("id") for d in doc.get("deployments") or []]
+        for dep in sorted({i for i in ids if ids.count(i) > 1}, key=str):
+            out.append(f"{f.name}: deployment id {dep!r} is used more than once")
     return out

@@ -10,13 +10,7 @@
   "dataset_id": "orrery_triage_v1_labelled",
   "fingerprint": {
     "arm": {
-      "config_id": "triage_hosted_qwen3_30b_a3b_v1",
-      "params": {
-        "model": "eval-qwen3-30b-a3b",
-        "provider": "gateway",
-        "usd_per_mtok_in": 0.1,
-        "usd_per_mtok_out": 0.3
-      }
+      "config_id": "triage_hosted_qwen3_30b_a3b_v1"
     },
     "data": {
       "dataset_id": "orrery_triage_v1_labelled",
@@ -26,15 +20,33 @@
       "reference_tier": "gold",
       "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
     },
-    "hash": "103e9a96f08ee658597af1a0efd7dc9996e2c8a09691220f5d9dd13ed0bc7573",
-    "host": {
-      "cpu_count": 32,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.14.7",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": "eval-qwen3-30b-a3b",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-qwen3-30b-a3b",
+      "provider": "gateway",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "b696c4de500fadd77824786bb23919f7046b05f1d61d8885652a6d01ffd7d4c2",
+    "hash": "c9d4c69c5bab3dca105a7d8234ff02fc7d06f5a73ee0e617f5dcc4949126d194",
     "instrument": {
       "adapter": {
         "id": "examples/triage-fleet/adapter.py",
@@ -48,18 +60,27 @@
         "version": "0.5.0"
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "e306fbc453bb29c770abf53d3af50e740c01ee08673434b751fba2bce46c132d",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
       "libraries": {
         "anthropic": "2.3.0",
         "numpy": "2.5.4",
         "openai": "3.41.0",
         "rouge-score": "0.1.2"
       },
-      "model": {
-        "identity_declared": false
-      }
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "usd_per_mtok_in": 0.1,
+      "usd_per_mtok_out": 0.3
+    },
+    "settings_sha256": "18b22dddbafcc654229a646849e3658c1a724e9092a6f227d76effb3f53db7d6",
+    "version": 5
   },
   "goal": "triage_orrery",
   "metric_directions": {

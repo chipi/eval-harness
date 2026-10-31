@@ -984,9 +984,14 @@ unset — whether the model reasons first, how long a reply may run, which build
 names — and those defaults differ from model to model. An arm that leaves them unset compares the
 defaults as much as the models. Settle them before the full run, on purpose, and write them down.
 
-1. **Pin the build.** Record the tag and its digest. One tag name can name different builds on different
-   machines (an MLX build on a Mac, an older pull on another host): compare digests across every machine
-   that will run the arm, and against the registry, before the first run.
+1. **Pin the build, per deployment.** Record the tag and its digest in the model record
+   (`data/models/<model>.yaml`) as one entry of `deployments`, one per place the model runs (`mac`, `dgx`,
+   `x3`, a hosted route with its `provider_routing`). One tag name can name different builds on different
+   machines (an MLX build on a Mac, an older pull on another host): compare digests across every deployment
+   that will run the arm, and against the registry, before the first run. `evh model-onboard <model>
+   --deployment dgx` probes one deployment and writes its onboarding. An arm names the record and the
+   deployment (`model_record: gem`, `deployment: dgx`); its run's fingerprint then takes the weights, server
+   and hardware from that entry (`source: record`), and `metrics.json` records `deployment_id`.
 2. **Smoke a few items.** `evh arm-smoke --config <arm>` runs three with the arm's own settings and writes
    no run: each item's time and output, whether the scorer can read it, a projection of the full run, and
    whether the same item twice gives the same output. For an LLM arm it measures every model call: tokens
@@ -1002,8 +1007,9 @@ defaults as much as the models. Settle them before the full run, on purpose, and
      fast model only makes its failures slow.
    - *The server's own settings*: context length, quantization, KV cache — the same everywhere the arm
      runs.
-4. **Write them down** beside the configs (the triage example keeps `MODELS.md`): each model's build,
-   settings and the smoke that chose them, so the next person runs the same arm the same way.
+4. **Write them down** in the model record, beside the configs (the triage example keeps `MODELS.md`):
+   each deployment's build, the settings and the smoke that chose them, so the next person runs the same arm
+   the same way.
 5. **Know what a repeat measures.** A self-hosted model at temperature 0 gives the same output on the same
    machine every time: a second pass there adds nothing. The spread comes from other machines and other
    builds; a hosted model's repeats do vary.
@@ -1089,7 +1095,10 @@ In order, because each is cheaper than the next:
    ranks arms, it does not establish correctness.
 6. Did a source change? `evh dataset-materialize --dataset-id ... --force`
    re-verifies every hash.
-7. Do the runs share their conditions? `evh inspect --runs a,b` names every fingerprint field
-   that differs (machine, libraries, harness, scorer, items, reference bytes).
+7. Do the runs share their conditions? `evh run-compare` names the fingerprint part that moved
+   (instrument, data, deployment, settings); `evh inspect --runs a,b` names every condition that differs
+   (the runner's machine and libraries, where the deployment ran, harness, scorer, items, reference bytes).
+   The runner (where `evh` ran) is outside the fingerprint's hash: the same deployment run from two machines
+   is the same measurement, and the runner is shown as a condition.
 
 Most "regressions" are one of the first three.

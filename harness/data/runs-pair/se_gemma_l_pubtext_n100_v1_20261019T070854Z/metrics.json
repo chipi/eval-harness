@@ -10,22 +10,7 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_gemma_l_pubtext_n100_v1",
-      "params": {
-        "family": "gemma",
-        "inputs": "published",
-        "max_tokens": 1500,
-        "model": "eval-gemma-31b",
-        "price_tier": "large",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
-        "usd_per_mtok_in": 0.1,
-        "usd_per_mtok_out": 0.2
-      }
+      "config_id": "se_gemma_l_pubtext_n100_v1"
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -35,15 +20,47 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "8f49e15d4deda8fb0affd516a75bdd17018627f9efd407cf941b9ad79223ebc9",
-    "host": {
-      "cpu_count": 32,
-      "label": "omarchy",
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.11.16",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "alias": "eval-gemma-31b",
+        "endpoint": "http://homelab:4001",
+        "id": "openrouter/google/gemma-4-31b-it",
+        "id_source": "proxy-model-info",
+        "inputs": "published",
+        "original_release_sha256": "f0d4166e0cdeb439b387c4449634b067b7e9f721b9ef4c2b722f6b7550d3d6ab",
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "provider_routing": null,
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0,
+        "unieval_inputs_sha256": "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b8e3e3ec81"
+      },
+      "hosted": null,
+      "id": "eval-gemma-31b",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gemma-31b",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "1f1e3d73e9f465394fc841d3805f2821643a1cf01886388ec5e65d22a4997bbe",
+    "hash": "8133e0abd163410c5c1de101f899a4b370f93155c700670070de936ac811257e",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -54,7 +71,10 @@
         "dirty": true
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "6508023ba48f3215c13e70e98954aa1c99f6b253313a5955e968b78fc2a5957f",
+    "runner": {
+      "cpu_count": 32,
+      "label": "omarchy",
       "libraries": {
         "numpy": "1.26.4",
         "openai": "3.31.0",
@@ -62,26 +82,26 @@
         "torch": "2.14.1",
         "transformers": "4.55.4"
       },
-      "model": {
-        "alias": "eval-gemma-31b",
-        "endpoint": "http://homelab:4001",
-        "id": "openrouter/google/gemma-4-31b-it",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "inputs": "published",
-        "original_release_sha256": "f0d4166e0cdeb439b387c4449634b067b7e9f721b9ef4c2b722f6b7550d3d6ab",
-        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
-        "provider_routing": null,
-        "reasoning": {
-          "enabled": false
-        },
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": 0.0,
-        "unieval_inputs_sha256": "b109068754e58722f7e50f1bef70cf121eb34c9015fc3486f51bc5b8e3e3ec81"
-      }
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.16",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "family": "gemma",
+      "inputs": "published",
+      "max_tokens": 1500,
+      "price_tier": "large",
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0,
+      "usd_per_mtok_in": 0.1,
+      "usd_per_mtok_out": 0.2
+    },
+    "settings_sha256": "0d4af549f416e34a2edc3d0d90a259fbde99141f6da01c4d67004a94e500875a",
+    "version": 5
   },
   "goal": "summary_judge_summeval",
   "metric_kinds": {

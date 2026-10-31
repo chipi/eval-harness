@@ -28,7 +28,7 @@ from evaluation_harness.catalog_adapter import HarnessAdapter
 COMMITTED = Path(__file__).resolve().parents[1] / "data" / "models"
 
 
-def run(data, run_id, config, params, record=None):
+def run(data, run_id, config, params, record=None, deployment=None):
     d = data / "runs" / run_id
     (d / "outputs").mkdir(parents=True)
     m = {
@@ -43,6 +43,8 @@ def run(data, run_id, config, params, record=None):
     }
     if record:
         m["model_record"] = record
+    if deployment:
+        m["deployment_id"] = deployment
     (d / "metrics.json").write_text(json.dumps(m))
     (d / "predictions.jsonl").write_text(
         "".join(json.dumps({"item_id": f"i{i}", "acc": 0.5}) + "\n" for i in range(4))
@@ -92,20 +94,37 @@ with tempfile.TemporaryDirectory() as td:
             "aliases": ["gem:1b", "gem-alias"],
             "weights": "open",
             "licence": "Apache-2.0",
-            "builds": [
+            "deployments": [
                 {
+                    "id": "mac",
                     "where": "mac",
                     "server": "ollama 0.40",
                     "tag": "gem:1b",
                     "digest": "a" * 64,
                     "checked_at": "2026-10-31",
+                    "onboarding": {
+                        "status": "pass",
+                        "at": "2026-10-31T09:00:00Z",
+                        "where": "mac",
+                        "flags": [],
+                        "report": {"deterministic": True, "chosen": {"s": 0.8, "reasoned": False}},
+                    },
                 },
                 {
+                    "id": "dgx",
                     "where": "dgx",
+                    "backend": "cuda",
                     "server": "vllm 26",
                     "tag": "gem:1b",
                     "digest": "b" * 64,
                     "checked_at": "2020-01-01",
+                    "onboarding": {
+                        "status": "pass",
+                        "at": "2026-10-30T09:00:00Z",
+                        "where": "dgx",
+                        "flags": [],
+                        "report": {"tokens_per_second": 41},
+                    },
                 },
             ],
             "settings": {"reasoning_effort": "none", "max_tokens": 1024, "call_timeout_s": 30},
@@ -119,13 +138,6 @@ with tempfile.TemporaryDirectory() as td:
                     "why": "it looped",
                 }
             ],
-            "onboarding": {
-                "status": "pass",
-                "at": "2026-10-31T09:00:00Z",
-                "where": "mac",
-                "flags": [],
-                "report": {"deterministic": True, "chosen": {"s": 0.8, "reasoned": False}},
-            },
             "smokes": {
                 "cfg_a": {"status": "pass", "at": "2026-10-31"},
                 "cfg_b": {"status": "check", "at": "2026-10-31", "flags": ["slow"]},
@@ -139,13 +151,19 @@ with tempfile.TemporaryDirectory() as td:
             "kind": "llm",
             "aliases": ["hosted-x"],
             "weights": "proprietary",
-            "builds": [{"where": "openrouter", "provider_id": "vendor/x"}],
-            "onboarding": {
-                "status": "check",
-                "at": "2026-10-30",
-                "flags": ["reasons without a bound"],
-                "report": {},
-            },
+            "deployments": [
+                {
+                    "id": "openrouter",
+                    "where": "openrouter",
+                    "provider_id": "vendor/x",
+                    "onboarding": {
+                        "status": "check",
+                        "at": "2026-10-30",
+                        "flags": ["reasons without a bound"],
+                        "report": {},
+                    },
+                }
+            ],
         },
     )
     record(
@@ -176,7 +194,7 @@ with tempfile.TemporaryDirectory() as td:
             }
         )
     )
-    run(data, "r1", "cfg_a", {"model": "gem:1b"}, record="gem")
+    run(data, "r1", "cfg_a", {"model": "gem:1b"}, record="gem", deployment="mac")
     run(data, "r2", "cfg_b", {"model": "gem-alias", "max_tokens": 2048})
     run(data, "r3", "cfg_c", {"model": "org/span"})
     run(data, "r4", "cfg_d", {"model": "unlisted-model"})
@@ -191,7 +209,7 @@ with tempfile.TemporaryDirectory() as td:
 
     rec = {x["record"]["model_id"]: x["record"] for x in A.models()}
     check(
-        "hosting: provider id is hosted, a build on a machine is self-hosted, no builds is neither",
+        "hosting: provider id is hosted, a deployment on a machine is self-hosted, no deployments is neither",
         [cm.hosting(rec[k]) for k in ("gem", "hosted-x", "span", "bare")]
         == ["self-hosted", "hosted", "", ""],
     )
@@ -199,6 +217,23 @@ with tempfile.TemporaryDirectory() as td:
         "settings line: an LLM's reasoning, tokens and limit; an ML model's device, precision, batch; defaults",
         [cm.settings_line(rec[k]) for k in ("gem", "span", "bare")]
         == ["reasoning off · 1024 tokens · 30 s", "cpu · fp32 · batch 1", "defaults"],
+    )
+    one_dep = lambda status: {"deployments": [{"id": "a", "where": "x", "onboarding": {"status": status}}]}  # noqa: E731
+    mixed = {"deployments": [*one_dep("pass")["deployments"], {"id": "b", "where": "y"}]}
+    check(
+        "status: vetted when every deployment passed, check when any flagged, none otherwise (or no deployment)",
+        [
+            cm.status_of(r)
+            for r in (
+                one_dep("pass"),
+                {"deployments": [*one_dep("pass")["deployments"], *one_dep("check")["deployments"]]},
+                one_dep("check"),
+                mixed,
+                {"deployments": [{"id": "a", "where": "x", "onboarding": {"status": "pass"}}] * 2},
+                {},
+            )
+        ]
+        == ["vetted", "check", "check", "none", "vetted", "none"],
     )
     check(
         "build differs: the same tag with another digest on a machine is named, the first build is the record's",
@@ -268,12 +303,13 @@ with tempfile.TemporaryDirectory() as td:
     )
     check(
         "models page: what changed lists the onboardings and the settings change",
-        "onboarded on mac: vetted" in models
+        "onboarded mac: vetted" in models
+        and "onboarded dgx: vetted" in models
         and "reasoning_effort (server default) → none (it looped)" in models,
     )
     page = (out / "models" / "gem.html").read_text()
     check(
-        "model page: facts, builds with what differs, the onboarding probes, history and its arms",
+        "model page: facts, deployments with what differs, each one's onboarding probes, history and its arms",
         all(
             x in page
             for x in (
@@ -283,6 +319,9 @@ with tempfile.TemporaryDirectory() as td:
                 "differs:",
                 "vllm 26",
                 "deterministic",
+                "tokens per second",
+                "<code>mac</code>",
+                "<code>dgx</code>",
                 "it looped",
             )
         )
@@ -295,11 +334,11 @@ with tempfile.TemporaryDirectory() as td:
     )
     bare = (out / "models" / "bare.html").read_text()
     check(
-        "model page: a record with no builds, onboarding, history or arms says so",
+        "model page: a record with no deployments, history or arms says so",
         all(
             x in bare
             for x in (
-                "No build is recorded",
+                "No deployment is recorded",
                 "Not onboarded yet",
                 "No change of settings",
                 "No arm uses this model",
@@ -318,6 +357,15 @@ with tempfile.TemporaryDirectory() as td:
         and '<span class="role">smoke: check</span>' in b_row
         and '<span class="role">not smoked</span>' in c_row
         and 'href="models/span.html"' in c_row,
+    )
+    check(
+        "arms page: the deployment an arm's config named is beside its record",
+        "@ mac</small>" in a_row and "@" not in b_row.split("models/gem.html")[-1].split("</td>")[0],
+    )
+    check(
+        "arm config: the deployment the run recorded, empty for none",
+        A.arm_config("runs/ds1/cfg_a")["deployment"] == "mac"
+        and A.arm_config("runs/ds1/cfg_b")["deployment"] == "",
     )
     check("arms page: an arm with no record gets no badge", "smoke" not in d_row and "models/" not in d_row)
     home = (out / "index.html").read_text()
@@ -355,7 +403,7 @@ with tempfile.TemporaryDirectory() as td:
     )
     one = view(A, ["models", "--model", "gem"])
     check(
-        "evh models --model: facts, builds with what differs, onboarding, history, arms with their smoke",
+        "evh models --model: facts, deployments with what differs, each one's onboarding, history, arms with their smoke",
         all(
             x in one
             for x in (
@@ -364,7 +412,10 @@ with tempfile.TemporaryDirectory() as td:
                 "setting max_tokens",
                 "a decision is 60-400 tokens",
                 "differs:",
+                "deployments:",
                 "onboarding:",
+                "mac: pass 2026-10-31",
+                "dgx: pass 2026-10-30",
                 "settings history:",
                 "it looped",
                 "runs/ds1/cfg_a",
@@ -381,7 +432,7 @@ with tempfile.TemporaryDirectory() as td:
     arms_cli = view(A, ["arms"])
     check(
         "evh arms: a model record column with the smoke, only when an arm has a record",
-        "model record" in arms_cli and "gem (smoked)" in arms_cli and "span (not smoked)" in arms_cli,
+        "model record" in arms_cli and "gem@mac (smoked)" in arms_cli and "span (not smoked)" in arms_cli,
         arms_cli,
     )
 

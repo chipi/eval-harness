@@ -10,13 +10,7 @@
   "dataset_id": "summeval_100",
   "fingerprint": {
     "arm": {
-      "config_id": "se_rougeL_n100_v1",
-      "params": {
-        "family": "rouge",
-        "metric": "rougeL",
-        "price_tier": "free",
-        "provider": "rouge"
-      }
+      "config_id": "se_rougeL_n100_v1"
     },
     "data": {
       "dataset_id": "summeval_100",
@@ -26,15 +20,37 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "6b6dfbac84d855eb8e4165e02ca2c79ad6241a60a6f66a1017b3aa1810012c4b",
-    "host": {
-      "cpu_count": 4,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": "x86_64",
-      "python": "3.11.15",
-      "release": "6.18.44-fc-v114"
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "code_sha256": "0540094750d5582566308b718723f7d9c639b7945ac6824475939b4a0e459358",
+        "kind": "deterministic metric, no model and no network",
+        "provider": "rouge"
+      },
+      "hosted": null,
+      "id": "rougeL",
+      "in_process": false,
+      "libraries": null,
+      "model": "rougeL",
+      "provider": "rouge",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "not-a-model"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "b11c72c1122baeae7a07d9b6cf9f27f816962507dd0ad0a7393ad55d49e2dd8b",
+    "hash": "de9a5a063d560328182337629d575cdbe4cb1117a4b44512a2826bbec3c03c75",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -45,7 +61,10 @@
         "dirty": false
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "e2582feb5d0d1357feaaf9f62094e64a07d3b44eecc390d003393e8090abd629",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
       "libraries": {
         "numpy": "1.26.4",
         "openai": "3.31.0",
@@ -53,17 +72,18 @@
         "torch": "2.14.1",
         "transformers": "4.55.4"
       },
-      "model": {
-        "code_sha256": "0540094750d5582566308b718723f7d9c639b7945ac6824475939b4a0e459358",
-        "id": "rougeL",
-        "identity_declared": false,
-        "kind": "deterministic metric, no model and no network",
-        "provider": "rouge",
-        "revision": null,
-        "revision_source": "not-a-model"
-      }
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v114"
     },
-    "version": 4
+    "settings": {
+      "family": "rouge",
+      "metric": "rougeL",
+      "price_tier": "free"
+    },
+    "settings_sha256": "32fabaa3544e5c821fc977f77de1ecba7c9d3bfeff240dcd5b7568017b73776e",
+    "version": 5
   },
   "goal": "summary_judge_summeval",
   "metric_kinds": {

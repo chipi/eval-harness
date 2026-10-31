@@ -19,20 +19,7 @@
   },
   "fingerprint": {
     "arm": {
-      "config_id": "sf_e5_base_n200_v1",
-      "params": {
-        "corpus_id": "scifact",
-        "device": "cpu",
-        "doc_prefix": "passage: ",
-        "encode_batch": 32,
-        "family": "e5",
-        "model": "intfloat/e5-base-v2",
-        "precision": "fp32",
-        "price_tier": "free",
-        "provider": "dense",
-        "query_prefix": "query: ",
-        "top_k": 100
-      }
+      "config_id": "sf_e5_base_n200_v1"
     },
     "data": {
       "dataset_id": "scifact_200",
@@ -42,16 +29,55 @@
       "reference_tier": "gold",
       "references_sha256": "b522e08017ebc7dd71c5627bccfdd688c5124096df8a5e6454684141bc361d99"
     },
+    "data_sha256": "058780bbc950f96a825d2dd346f0d32254049af0c805c8c758540c1829cf079f",
+    "deployment": {
+      "declared": {
+        "corpus_id": "scifact",
+        "corpus_n_docs": 5183,
+        "corpus_sha256": "297643e2d005109d9fc25d460c080faa45b0cc3ad881ea002941c67b6e41984e",
+        "doc_prefix": "passage: ",
+        "index_built_this_run": false,
+        "provider": "dense",
+        "query_prefix": "query: ",
+        "scorer_sha256": "51d9e8bd57bc2e75ceccce80b7d60157c42f9959cadf3d7e9cf738f73fd10d04",
+        "tokenizer_sha256": "67a185c8c30efefa133188f15ba429328086f837a642a17e347a5a2ee437b79d",
+        "top_k": 100,
+        "weight_files": [
+          "model.safetensors:437955512"
+        ]
+      },
+      "hosted": null,
+      "id": "intfloat/e5-base-v2",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "sentence-transformers": "3.4.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": "intfloat/e5-base-v2",
+      "provider": "dense",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "f52bf8ec8c7124536f0efb74aca902b2995e5bcd",
+        "revision_source": "hf-snapshot"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
+    },
+    "deployment_sha256": "53a17c629a739e9e66d9bda922001eb8db990c6fea2a4da29ad4b3a1b9717470",
     "hash": null,
     "hash_invalid_because": "rankings were rebuilt from stored LLM replies with a parser this fingerprint does not describe; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
     "instrument": {
       "adapter": {
         "id": "examples/retrieval-scifact/adapter.py",
@@ -62,38 +88,27 @@
         "dirty": false
       }
     },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "scikit-learn": "1.9.1",
-        "sentence-transformers": "3.4.1",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "corpus_id": "scifact",
-        "corpus_n_docs": 5183,
-        "corpus_sha256": "297643e2d005109d9fc25d460c080faa45b0cc3ad881ea002941c67b6e41984e",
-        "device": "cpu",
-        "doc_prefix": "passage: ",
-        "id": "intfloat/e5-base-v2",
-        "identity_declared": true,
-        "index_built_this_run": false,
-        "precision": "fp32",
-        "provider": "dense",
-        "query_prefix": "query: ",
-        "revision": "f52bf8ec8c7124536f0efb74aca902b2995e5bcd",
-        "revision_source": "hf-snapshot",
-        "scorer_sha256": "51d9e8bd57bc2e75ceccce80b7d60157c42f9959cadf3d7e9cf738f73fd10d04",
-        "tokenizer_sha256": "67a185c8c30efefa133188f15ba429328086f837a642a17e347a5a2ee437b79d",
-        "top_k": 100,
-        "weight_files": [
-          "model.safetensors:437955512"
-        ]
-      }
+    "instrument_sha256": "55bfd3e775ce09ed440b29c9e112196bb109602116754b89cb49f02e21416702",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
     },
-    "version": 4
+    "settings": {
+      "corpus_id": "scifact",
+      "doc_prefix": "passage: ",
+      "encode_batch": 32,
+      "family": "e5",
+      "price_tier": "free",
+      "query_prefix": "query: ",
+      "top_k": 100
+    },
+    "settings_sha256": "d5c05ca47978ef1a4de500121070f4ffefc6e28d8f34e3453cdbc9048e2bf571",
+    "version": 5
   },
   "goal": "scientific_retrieval_scifact",
   "metric_kinds": {

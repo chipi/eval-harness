@@ -10,6 +10,7 @@ environment's proxy or OpenRouter key pointed; the judge panel called only Anthr
 Sonnet in code, and ran its fake judge when the key was missing.
 """
 
+import json
 import os
 import sys
 import tempfile
@@ -292,8 +293,8 @@ with tempfile.TemporaryDirectory() as td:
     )
     check(
         "a run's fingerprint does not move when only the key it was paid with changes",
-        a_fp["arm"] == b_fp["arm"] and "api_key_env" not in b_fp["arm"]["params"],
-        str(b_fp["arm"]),
+        a_fp["hash"] == b_fp["hash"] and "api_key_env" not in json.dumps(b_fp),
+        str(b_fp["settings"]),
     )
 
 # ── the judge panel ──────────────────────────────────────────────────────────

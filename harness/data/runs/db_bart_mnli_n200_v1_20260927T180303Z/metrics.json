@@ -10,16 +10,7 @@
   "dataset_id": "dbpedia_280",
   "fingerprint": {
     "arm": {
-      "config_id": "db_bart_mnli_n200_v1",
-      "params": {
-        "device": "cpu",
-        "family": "bart",
-        "hypothesis_template": "This text is about {}.",
-        "model": "facebook/bart-large-mnli",
-        "precision": "fp32",
-        "price_tier": "free",
-        "provider": "hf_zeroshot"
-      }
+      "config_id": "db_bart_mnli_n200_v1"
     },
     "data": {
       "dataset_id": "dbpedia_280",
@@ -29,37 +20,10 @@
       "reference_tier": "gold",
       "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
     },
-    "hash": "16ae194a2514cfe8677192e0bd2f7d117bd7eb1d96fa11117ef976ed6ce48094",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/classification-dbpedia-14/adapter.py",
-        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
-      },
-      "harness": {
-        "commit": "73604a08b84a",
-        "dirty": false
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "device": "cpu",
+    "data_sha256": "ba266b3e1c4e465a922638baee9aea990c34420aa92c1b6ab2f97610c3e981e1",
+    "deployment": {
+      "declared": {
         "hypothesis_template": "This text is about {}.",
-        "id": "facebook/bart-large-mnli",
-        "identity_declared": true,
         "labels": [
           "Company",
           "EducationalInstitution",
@@ -78,16 +42,67 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "precision": "fp32",
         "provider": "hf_zeroshot",
-        "revision": "d7645e127eaf1aefc7862fd59a17a5aa8558b8ce",
-        "revision_source": "hf-snapshot",
         "weight_files": [
           "model.safetensors:1629437147"
         ]
+      },
+      "hosted": null,
+      "id": "facebook/bart-large-mnli",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": "facebook/bart-large-mnli",
+      "provider": "hf_zeroshot",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "d7645e127eaf1aefc7862fd59a17a5aa8558b8ce",
+        "revision_source": "hf-snapshot"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
       }
     },
-    "version": 4
+    "deployment_sha256": "6893fa8fb25520c4a803f8384220ffacd66c756cbe364785442ea4cefbdeb61b",
+    "hash": "abd12ad18a7e2f615d62ad8f5c49191d44138b54f63a25d37304fd907da6e832",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-dbpedia-14/adapter.py",
+        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
+      },
+      "harness": {
+        "commit": "73604a08b84a",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "fec8534672877f4568a4192238d3f523618f25f73fccefe00e7abb035341d09d",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "family": "bart",
+      "hypothesis_template": "This text is about {}.",
+      "price_tier": "free"
+    },
+    "settings_sha256": "327a913998a67a75cce2349f1373637c41205185ef6ed80ade8b989b36911b04",
+    "version": 5
   },
   "goal": "entity_topic_dbpedia",
   "metric_kinds": {
