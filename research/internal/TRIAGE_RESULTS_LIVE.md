@@ -1,6 +1,6 @@
 # Triage experiment: results so far (live)
 
-Updated 2026-10-31T08:14Z. Every finished run re-scored under the owner's rules of 2026-10-30: the combined cost (a missed real problem = 5 false alarms; @3 and @10 shown) decides, among the arms whose false alarms are at or under the ceiling (production's mean over its 4 passes: 85 of 124 = 21.25 of 31, 0.6855; set 2026-10-30, replacing its single pass of 21). 65 owner-labelled decisions (34 real problems, 31 noise). One pass per arm unless the passes column says more; the paired test and the repeats decide, not this table. Self-hosted arms run on Ollama 0.40.13; their cost in tokens is $0.
+Updated 2026-10-31T08:33Z. Every finished run re-scored under the owner's rules of 2026-10-30: the combined cost (a missed real problem = 5 false alarms; @3 and @10 shown) decides, among the arms whose false alarms are at or under the ceiling (production's mean over its 4 passes: 85 of 124 = 21.25 of 31, 0.6855; set 2026-10-30, replacing its single pass of 21). 65 owner-labelled decisions (34 real problems, 31 noise). One pass per arm unless the passes column says more; the paired test and the repeats decide, not this table. Self-hosted arms run on Ollama 0.40.13; their cost in tokens is $0.
 
 | # | model | where | passes | cost @5 | @3 | @10 | misses /34 | false alarms /31 | model's own cost @5 | no decision /65 | $ / decision | s / decision | ceiling |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -46,10 +46,11 @@ Updated 2026-10-31T08:14Z. Every finished run re-scored under the owner's rules 
 | 40 | kimi_k31_pro | OpenRouter | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 0.969 | 0 | 0.01913 | 46.1 | out |
 | 41 | nemotron_35_lightning_30b | DGX (NVIDIA) | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.138 | 0 | 0.00000 | 40.0 | out |
 | 42 | nemotron_35_lightning_30b | Mac (M4 Pro) | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.446 | 0 | 0.00000 | 66.0 | out |
-| 43 | phi4_14b | Mac (M4 Pro) | 1 | **0.754** | 0.600 | 1.138 | 5.0 | 24.0 | 0.785 | 0 | 0.00000 | 21.8 | out |
-| 44 | phi4_14b | X3 (AMD) | 1 | **0.769** | 0.615 | 1.154 | 5.0 | 25.0 | 0.862 | 0 | 0.00000 | 16.9 | out |
-| 45 | mistral_large_4 | OpenRouter | 1 | **0.800** | 0.615 | 1.262 | 6.0 | 22.0 | 1.923 | 0 | 0.00687 | 17.3 | out |
-| 46 | llama4_scout | DGX (NVIDIA) | 1 | **1.262** | 0.923 | 2.108 | 11.0 | 27.0 | 1.569 | 0 | 0.00000 | 13.4 | out |
+| 43 | phi4_14b | DGX (NVIDIA) | 1 | **0.662** | 0.538 | 0.969 | 4.0 | 23.0 | 0.785 | 0 | 0.00000 | 17.0 | out |
+| 44 | phi4_14b | Mac (M4 Pro) | 1 | **0.754** | 0.600 | 1.138 | 5.0 | 24.0 | 0.785 | 0 | 0.00000 | 21.8 | out |
+| 45 | phi4_14b | X3 (AMD) | 1 | **0.769** | 0.615 | 1.154 | 5.0 | 25.0 | 0.862 | 0 | 0.00000 | 16.9 | out |
+| 46 | mistral_large_4 | OpenRouter | 1 | **0.800** | 0.615 | 1.262 | 6.0 | 22.0 | 1.923 | 0 | 0.00687 | 17.3 | out |
+| 47 | llama4_scout | DGX (NVIDIA) | 1 | **1.262** | 0.923 | 2.108 | 11.0 | 27.0 | 1.569 | 0 | 0.00000 | 13.4 | out |
 
 ## Read with care
 
