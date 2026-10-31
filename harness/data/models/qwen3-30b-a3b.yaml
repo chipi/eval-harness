@@ -1,0 +1,187 @@
+model_id: qwen3-30b-a3b
+kind: llm
+name: Qwen3 30B A3B Instruct 2507
+aliases:
+- qwen3:30b-a3b-instruct-2507-q4_K_M
+- NVFP4/Qwen3-30B-A3B-Instruct-2507-FP4
+- eval-qwen3-30b-a3b
+weights: open
+licence: Apache-2.0
+deployments:
+- id: x3
+  where: x3
+  tag: qwen3:30b-a3b-instruct-2507-q4_K_M
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: qwen3:30b-a3b-instruct-2507-q4_K_M
+  server: ollama 0.40.13
+  digest: 19e422b0231392335cfc49cfd172de7034bb1aeabb08aa307cce745c60b272fe
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T13:56:19Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:56:19Z'
+    where: x3
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11434/v1
+        model: qwen3:30b-a3b-instruct-2507-q4_K_M
+      digest_found: 19e422b0231392335cfc49cfd172de7034bb1aeabb08aa307cce745c60b272fe
+      default:
+        s: 6.28
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 0.33
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 70.7
+      deterministic: true
+      json_valid: true
+- id: dgx
+  where: dgx
+  tag: qwen3:30b-a3b-instruct-2507-q4_K_M
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: qwen3:30b-a3b-instruct-2507-q4_K_M
+  digest: 19e422b0231392335cfc49cfd172de7034bb1aeabb08aa307cce745c60b272fe
+  checked_at: '2026-10-31T14:08:09Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:08:09Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: qwen3:30b-a3b-instruct-2507-q4_K_M
+      digest_found: 19e422b0231392335cfc49cfd172de7034bb1aeabb08aa307cce745c60b272fe
+      default:
+        s: 5.58
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 0.29
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 80.1
+      deterministic: true
+      json_valid: true
+- id: mac
+  where: mac
+  tag: qwen3:30b-a3b-instruct-2507-q4_K_M
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11435/v1
+    model: qwen3:30b-a3b-instruct-2507-q4_K_M
+  server: ollama 0.40.13
+  digest: 19e422b0231392335cfc49cfd172de7034bb1aeabb08aa307cce745c60b272fe
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T13:56:29Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:56:29Z'
+    where: mac
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11435/v1
+        model: qwen3:30b-a3b-instruct-2507-q4_K_M
+      digest_found: 19e422b0231392335cfc49cfd172de7034bb1aeabb08aa307cce745c60b272fe
+      default:
+        s: 16.47
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 0.41
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 56.5
+      deterministic: true
+      json_valid: true
+- id: dgx-vllm
+  where: dgx
+  server: vllm (production's, :8003)
+  tag: NVFP4/Qwen3-30B-A3B-Instruct-2507-FP4
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:8003/v1
+    model: NVFP4/Qwen3-30B-A3B-Instruct-2507-FP4
+    api_key_env: VLLM_API_KEY
+  checked_at: '2026-10-31T14:05:25Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:05:25Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:8003/v1
+        model: NVFP4/Qwen3-30B-A3B-Instruct-2507-FP4
+      digest_found: null
+      default:
+        s: 0.83
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 0.35
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 65.0
+      deterministic: true
+      json_valid: true
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-qwen3-30b-a3b
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-qwen3-30b-a3b
+  checked_at: '2026-10-31T13:56:31Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:56:31Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-qwen3-30b-a3b
+      digest_found: null
+      default:
+        s: 2.18
+        tokens_out: 22
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 0.47
+        tokens_out: 25
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 53.4
+      deterministic: false
+      json_valid: true
+capabilities:
+  reasons: false
+  json_mode: true

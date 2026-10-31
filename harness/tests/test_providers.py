@@ -361,5 +361,30 @@ check(
     str(shown),
 )
 
+os.environ["LITELLM_API_KEY"] = "sk-litellm-test"
+adapter.call_system(
+    "t", {"provider": "litellm", "model": "eval-x", "base_url": "http://gw:4000", "reasoning_effort": "none"}
+)
+check(
+    "litellm: a reasoning setting is named in allowed_openai_params, so the proxy passes it on",
+    (seen["kw"].get("extra_body") or {}).get("allowed_openai_params") == ["reasoning_effort"]
+    and (seen["kw"].get("extra_body") or {}).get("reasoning_effort") == "none",
+    str(seen.get("kw")),
+)
+adapter.call_system("t", {"provider": "litellm", "model": "eval-x", "base_url": "http://gw:4000"})
+check(
+    "litellm: without one nothing extra is sent",
+    "allowed_openai_params" not in (seen["kw"].get("extra_body") or {}),
+    str(seen.get("kw")),
+)
+os.environ.pop("LITELLM_API_KEY")
+check(
+    "litellm: an address given with /v1 already is not given a second one",
+    _providers.route({"provider": "litellm", "model": "m", "base_url": "http://gw:4000/v1"}, "arm").base_url
+    == "http://gw:4000/v1"
+    and _providers.route({"provider": "litellm", "model": "m", "base_url": "http://gw:4000/"}, "arm").base_url
+    == "http://gw:4000/v1",
+)
+
 clear()
 sys.exit(summary())

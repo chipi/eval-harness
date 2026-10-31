@@ -1,0 +1,58 @@
+model_id: fleet-triage-pro
+kind: llm
+name: The fleet's production triage model
+aliases:
+- eval-fleet-triage-pro
+deployments:
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-fleet-triage-pro
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-fleet-triage-pro
+  checked_at: '2026-10-31T14:04:43Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:04:43Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-fleet-triage-pro
+      digest_found: null
+      default:
+        s: 1.66
+        tokens_out: 80
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.22
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 18.9
+      deterministic: false
+      json_valid: true
+capabilities:
+  reasons: true
+  json_mode: true
+  reasoning_off: 'reasoning_effort: none'
+settings:
+  reasoning_effort: none
+settings_why:
+  reasoning_effort: 'it reasoned by default on the onboarding probe (2026-10-31);
+    off unless a task needs it (RUNBOOK §16): left at the server''s default, one model
+    reasons at length and the next not at all'
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
+    task needs it (RUNBOOK §16): left at the server''s default, one model reasons
+    at length and the next not at all'

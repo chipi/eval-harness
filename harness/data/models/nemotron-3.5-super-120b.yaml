@@ -1,0 +1,71 @@
+model_id: nemotron-3.5-super-120b
+kind: llm
+name: Nemotron 3.5 Super 120B
+aliases:
+- nemotron-3.5-super:120b
+weights: open
+licence: OpenMDW License Agreement, version 1.1 (OpenMDW-1.1)
+deployments:
+- id: x3
+  where: x3
+  tag: nemotron-3.5-super:120b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: nemotron-3.5-super:120b
+  server: ollama 0.40.13
+  digest: 8a58f3e6008244525e5d6e2df9fb0485e4dde9a88da61c25953818cf8c051f6d
+  quantization: Q4_K_M
+- id: dgx
+  where: dgx
+  tag: nemotron-3.5-super:120b
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: nemotron-3.5-super:120b
+  digest: 8a58f3e6008244525e5d6e2df9fb0485e4dde9a88da61c25953818cf8c051f6d
+  checked_at: '2026-10-31T14:13:10Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:13:10Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: nemotron-3.5-super:120b
+      digest_found: 8a58f3e6008244525e5d6e2df9fb0485e4dde9a88da61c25953818cf8c051f6d
+      default:
+        s: 17.54
+        tokens_out: 100
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 0.84
+        tokens_out: 25
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 29.8
+      deterministic: true
+      json_valid: true
+capabilities:
+  reasons: true
+  json_mode: true
+  reasoning_off: 'reasoning_effort: none'
+settings:
+  reasoning_effort: none
+settings_why:
+  reasoning_effort: 'it reasoned by default on the onboarding probe (2026-10-31);
+    off unless a task needs it (RUNBOOK §16): left at the server''s default, one model
+    reasons at length and the next not at all'
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
+    task needs it (RUNBOOK §16): left at the server''s default, one model reasons
+    at length and the next not at all'

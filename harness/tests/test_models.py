@@ -172,4 +172,27 @@ check(
     bool(list(validator.iter_errors({**rec, "onboarding": {"status": "pass", "at": "2026-10-31"}}))),
 )
 
+
+# Two commands writing one record each keep their own change (model-onboard on two machines, two arm-smokes):
+# each applies its change to the record as it is on disk when it writes, not to the copy it read at its start.
+with tempfile.TemporaryDirectory() as td:
+    data = Path(td) / "data"
+    (data / "models").mkdir(parents=True)
+    (data / "models" / "two.yaml").write_text(
+        yaml.safe_dump({"model_id": "two", "kind": "llm", "aliases": ["two:1b"]})
+    )
+    stale = _models.find(data, "two")  # what both commands read when they started
+    _models.update_record(
+        data, "two", lambda d: d.setdefault("smokes", {}).__setitem__("arm_a", {"status": "pass"})
+    )
+    _models.update_record(
+        data, "two", lambda d: d.setdefault("smokes", {}).__setitem__("arm_b", {"status": "check"})
+    )
+    got = _models.find(data, "two") or {}
+    check(
+        "update_record: the second change keeps the first, though both started from the same read",
+        set(got.get("smokes") or {}) == {"arm_a", "arm_b"} and "smokes" not in (stale or {}),
+        got,
+    )
+
 sys.exit(summary())

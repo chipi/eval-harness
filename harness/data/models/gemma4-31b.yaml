@@ -1,0 +1,171 @@
+model_id: gemma4-31b
+kind: llm
+name: Gemma 4 31B
+aliases:
+- gemma4:31b
+- gemma4:31b-it-q4_K_M
+- eval-gemma-31b
+weights: open
+licence: Apache-2.0
+deployments:
+- id: x3
+  where: x3
+  tag: gemma4:31b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: gemma4:31b
+  server: ollama 0.40.13
+  digest: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T14:04:53Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:04:53Z'
+    where: x3
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11434/v1
+        model: gemma4:31b
+      digest_found: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+      default:
+        s: 14.7
+        tokens_out: 193
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.15
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 20.1
+      deterministic: true
+      json_valid: true
+- id: dgx
+  where: dgx
+  tag: gemma4:31b
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: gemma4:31b
+  digest: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+  checked_at: '2026-10-31T14:07:12Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:07:12Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: gemma4:31b
+      digest_found: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+      default:
+        s: 14.42
+        tokens_out: 193
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 0.98
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 23.5
+      deterministic: true
+      json_valid: true
+- id: mac
+  where: mac
+  tag: gemma4:31b-it-q4_K_M
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11435/v1
+    model: gemma4:31b-it-q4_K_M
+  server: ollama 0.40.13
+  digest: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T14:05:04Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:05:04Z'
+    where: mac
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11435/v1
+        model: gemma4:31b-it-q4_K_M
+      digest_found: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+      default:
+        s: 24.35
+        tokens_out: 193
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 2.0
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 11.5
+      deterministic: true
+      json_valid: true
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-gemma-31b
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-gemma-31b
+  checked_at: '2026-10-31T14:09:48Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:09:48Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-gemma-31b
+      digest_found: null
+      default:
+        s: 1.41
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 1.28
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 17.9
+      deterministic: true
+      json_valid: true
+capabilities:
+  reasons: false
+  json_mode: true
+  reasoning_off: 'reasoning_effort: none'
+settings:
+  reasoning_effort: none
+settings_why:
+  reasoning_effort: 'it reasoned by default on the onboarding probe (2026-10-31);
+    off unless a task needs it (RUNBOOK §16): left at the server''s default, one model
+    reasons at length and the next not at all'
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
+    task needs it (RUNBOOK §16): left at the server''s default, one model reasons
+    at length and the next not at all'

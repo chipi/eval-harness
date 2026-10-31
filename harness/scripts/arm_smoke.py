@@ -258,20 +258,28 @@ def main() -> int:
         )
     if items and items[0].get("deterministic") is True:
         print("  determinism: item 1 twice gave the same output: repeats on this machine will be identical")
-    flags = flags_for(items, calls, params_for_flags)
+    flags, accepted = _models.split_accepted(rec, flags_for(items, calls, params_for_flags))
     status = "pass" if not flags else "check"
     print("SMOKE PASS" if not flags else "SMOKE CHECK")
     for f in flags:
         print(f"  - {f}")
+    for f in accepted:
+        print(f"  accepted: {f} ({((rec or {}).get('accepted') or {}).get(f.split(':', 1)[0], '')})")
     if rec is not None and not args.no_record:
-        rec.setdefault("smokes", {})[cfg["config_id"]] = {
+        smoke = {
             "status": status,
             "at": now(),
             "flags": flags,
             "report": {"items": items, "calls": calls, "projection": proj, "settings": shown},
         }
+        if accepted:
+            smoke["accepted"] = accepted
+        _models.update_record(
+            DATA,
+            cfg["model_record"],
+            lambda doc: doc.setdefault("smokes", {}).__setitem__(cfg["config_id"], smoke),
+        )
         path = _models.records_dir(DATA) / f"{cfg['model_record']}.yaml"
-        path.write_text(yaml.safe_dump(rec, sort_keys=False, allow_unicode=True), encoding="utf-8")
         print(f"  written into {path.relative_to(DATA.parent) if DATA.parent in path.parents else path}")
     return 0 if not flags else 1
 

@@ -1,0 +1,43 @@
+model_id: claude-sonnet-5.5
+kind: llm
+name: Claude Sonnet 5.5
+aliases:
+- eval-claude-sonnet-55
+weights: proprietary
+deployments:
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-claude-sonnet-55
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-claude-sonnet-55
+  checked_at: '2026-10-31T13:54:23Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:54:23Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-claude-sonnet-55
+      digest_found: null
+      default:
+        s: 2.09
+        tokens_out: 61
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 1.42
+        tokens_out: 64
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 44.9
+      deterministic: true
+      json_valid: true
+capabilities:
+  reasons: false
+  json_mode: true

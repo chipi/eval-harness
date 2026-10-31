@@ -1,0 +1,150 @@
+model_id: gpt-oss-120b
+kind: llm
+name: gpt-oss 120B
+aliases:
+- gpt-oss:120b
+- eval-gpt-oss-120b
+weights: open
+licence: Apache-2.0
+deployments:
+- id: x3
+  where: x3
+  tag: gpt-oss:120b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: gpt-oss:120b
+  server: ollama 0.40.13
+  digest: 714d86958b6e870a9320e78126ac1ce3477727a1cd9bf7194b8ace0d84c62fd8
+  quantization: MXFP4
+  checked_at: '2026-10-31T14:11:41Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:11:41Z'
+    where: x3
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11434/v1
+        model: gpt-oss:120b
+      digest_found: 714d86958b6e870a9320e78126ac1ce3477727a1cd9bf7194b8ace0d84c62fd8
+      default:
+        s: 18.43
+        tokens_out: 98
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.83
+        tokens_out: 49
+        reasoned: true
+        finish: stop
+        settings:
+          reasoning_effort: low
+      tokens_per_s: 26.8
+      deterministic: true
+      json_valid: true
+    accepted:
+    - 'reasoning: it still reasons with the record''s settings'
+- id: dgx
+  where: dgx
+  tag: gpt-oss:120b
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: gpt-oss:120b
+  digest: 714d86958b6e870a9320e78126ac1ce3477727a1cd9bf7194b8ace0d84c62fd8
+  checked_at: '2026-10-31T14:12:39Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:12:39Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: gpt-oss:120b
+      digest_found: 714d86958b6e870a9320e78126ac1ce3477727a1cd9bf7194b8ace0d84c62fd8
+      default:
+        s: 14.15
+        tokens_out: 98
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.47
+        tokens_out: 50
+        reasoned: true
+        finish: stop
+        settings:
+          reasoning_effort: low
+      tokens_per_s: 34.0
+      deterministic: true
+      json_valid: true
+    accepted:
+    - 'reasoning: it still reasons with the record''s settings'
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-gpt-oss-120b
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-gpt-oss-120b
+  checked_at: '2026-10-31T14:10:52Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:10:52Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-gpt-oss-120b
+      digest_found: null
+      default:
+        s: 2.28
+        tokens_out: 83
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.35
+        tokens_out: 38
+        reasoned: true
+        finish: stop
+        settings:
+          reasoning_effort: low
+      tokens_per_s: 28.1
+      deterministic: false
+      json_valid: true
+    accepted:
+    - 'reasoning: it still reasons with the record''s settings'
+capabilities:
+  reasons: true
+  json_mode: true
+  reasoning_off: null
+settings:
+  reasoning_effort: low
+settings_why:
+  reasoning_effort: 'reasoning cannot be turned off: with none it still reasoned on
+    every machine, and the hosted route answers "Reasoning is mandatory" (onboarding,
+    2026-10-31); low is the least it takes'
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
+    task needs it (RUNBOOK §16): left at the server''s default, one model reasons
+    at length and the next not at all'
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: none
+  to: low
+  why: 'reasoning cannot be turned off: with none it still reasoned on every machine,
+    and the hosted route answers "Reasoning is mandatory" (onboarding, 2026-10-31);
+    low is the least it takes'
+accepted:
+  reasoning: 'it reasons whatever it is asked: with none and with low on every machine
+    and the hosted route, which answers "Reasoning is mandatory" (onboarding, 2026-10-31);
+    low is the least'

@@ -136,6 +136,27 @@ with tempfile.TemporaryDirectory() as td:
         and "reasoning: it reasons by default and the record sets no reasoning_effort" in out,
         out[-600:],
     )
+    f.write_text(
+        yaml.safe_dump({**rec2, "accepted": {"reasoning": "it cannot stop reasoning; low is the least"}})
+    )
+    run = subprocess.run(
+        [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    acc = yaml.safe_load(f.read_text())["deployments"][0].get("onboarding") or {}
+    check(
+        "onboard: a flag kind the record accepts is reported as accepted, with why, and does not fail it",
+        run.returncode == 0
+        and "ONBOARD PASS" in run.stdout
+        and "accepted: reasoning" in run.stdout
+        and "low is the least" in run.stdout
+        and acc.get("status") == "pass"
+        and acc.get("accepted")
+        and not acc.get("flags"),
+        run.stdout[-600:],
+    )
     rec3 = {**rec, "deployments": [{**rec["deployments"][0], "digest": "ffffffffffff"}]}
     f.write_text(yaml.safe_dump(rec3))
     run = subprocess.run(

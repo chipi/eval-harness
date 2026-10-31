@@ -1059,6 +1059,13 @@ evh models                                       # what is onboarded, vetted (an
    limit), with a comment saying why; the schema refuses them in a record, where they would reach every
    other experiment's arms. The arm smokes are kept in the record, and an arm smoke that passed is what makes
    the model *vetted* on the Models page.
+   - *Onboarding finds the settings that work*: probe, read the flags, change the record's settings (with why),
+     probe again, until it passes or what remains is the model's own nature. Some models cannot stop reasoning
+     (gpt-oss: `none` and `low` both reason; a hosted route answers "Reasoning is mandatory"): set the least they
+     take and accept the flag in the record, `accepted: {reasoning: "<why>"}`. Onboarding and arm smokes then
+     report it as accepted, with the why, and do not count it against the status.
+   - Several machines may be onboarded at once: each command writes only its own deployment (or smoke) into the
+     record, re-read under a lock, so one never erases another's result.
 5. **Know what a repeat measures.** A self-hosted model at temperature 0 gives the same output on the same
    machine every time: a second pass there adds nothing. The spread comes from other machines and other
    builds; a hosted model's repeats do vary.

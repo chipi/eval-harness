@@ -173,7 +173,9 @@ def route(params: dict[str, Any], role: str) -> Route:
     else:
         base_var, base = None, None
     base = base or spec.base_default
-    if base and spec.base_suffix:
+    # An address given with the suffix already (a LiteLLM proxy written as http://host:4000/v1, as its own docs
+    # show it) keeps one: appending again sent every call to /v1/v1, which the proxy answers 404.
+    if base and spec.base_suffix and not base.rstrip("/").endswith(spec.base_suffix):
         base = base.rstrip("/") + spec.base_suffix
     return Route(provider, key_var, key, base_var, base)
 
@@ -276,6 +278,12 @@ def _openai_shaped(prompt: str, params: dict[str, Any], r: Route) -> Completion:
     body = {_BODY_PARAMS[k]: params[k] for k in _BODY_PARAMS if params.get(k) is not None}
     if r.provider == "openrouter":
         body["usage"] = {"include": True}  # OpenRouter returns what it billed only when asked
+    if r.provider == "litellm":
+        # A LiteLLM proxy refuses a parameter its model group does not list (UnsupportedParamsError, e.g.
+        # reasoning_effort on most hosted groups) unless the request names it: then it is passed to the upstream.
+        asked = [k for k in ("reasoning", "reasoning_effort") if k in body]
+        if asked:
+            body["allowed_openai_params"] = asked
     resp = OpenAI(api_key=r.key, base_url=r.base_url, **_client_kw(params)).chat.completions.create(
         model=params["model"],
         temperature=float(params.get("temperature", 0.0)),

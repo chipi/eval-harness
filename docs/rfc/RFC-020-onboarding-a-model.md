@@ -153,6 +153,11 @@ arms were smoked, and a model counts as vetted once one of them passed.
   check" or "not smoked".
 - **CLI parity**: `evh models [--kind] [--where] [--status]` lists the same; `evh models --model <id>` shows one.
 
+*Added while onboarding the triage models (2026-10-31):* a record's `accepted` names flag kinds a person accepted
+as the model's own nature, with why (gpt-oss cannot stop reasoning; `low` is the least it takes): onboarding and arm
+smokes report them as `accepted` and pass. Commands that write a record re-read it under a lock and change only their
+part (`_models.update_record`), since probing one model on three machines at once is ordinary.
+
 *Not built as first written:* the settings history has no "smoke / result before and after" columns (a history
 entry links to neither); an arm whose model has no record is not a row on the Models page.
 

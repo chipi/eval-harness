@@ -171,14 +171,13 @@ def main() -> int:
     )
     ap.add_argument("--config", type=Path, help="an arm that runs the model (an ML model or a baseline)")
     args = ap.parse_args()
-    import yaml  # noqa: PLC0415
 
     rec = _models.find(DATA, args.model_id)
     if rec is None:
         die(
             f"no model record {args.model_id!r}: write data/models/{args.model_id}.yaml first (model_id, kind, aliases)"
         )
-    path = _models.records_dir(DATA) / f"{args.model_id}.yaml"
+    before = json.loads(json.dumps(rec))  # what this run read, so it writes back only what it changed
     print(f"model-onboard: {args.model_id} ({rec.get('kind')})")
     if rec.get("kind") == "llm":
         deployments = rec.get("deployments") or []
@@ -264,10 +263,32 @@ def main() -> int:
         elif dep is None:
             dep = {"id": "local", "where": "local"}
             deployments.append(dep)
+    flags, accepted = _models.split_accepted(rec, flags)
     status = "pass" if not flags else "check"
     dep["onboarding"] = {"status": status, "at": now(), "where": where, "flags": flags, "report": report}
-    path.write_text(yaml.safe_dump(rec, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    if accepted:
+        dep["onboarding"]["accepted"] = accepted
+    added = [h for h in rec.get("history") or [] if h not in (before.get("history") or [])]
+
+    def merge(doc: dict) -> None:
+        # this deployment as probed, the record's capabilities as found, and the history entries this run added;
+        # everything else as it is on disk now (another deployment onboarded meanwhile keeps its result)
+        deps = doc.setdefault("deployments", [])
+        at = next((i for i, d in enumerate(deps) if d.get("id") == dep["id"]), None)
+        if at is None:
+            deps.append(dep)
+        else:
+            deps[at] = dep
+        if rec.get("capabilities") is not None:
+            doc["capabilities"] = rec["capabilities"]
+        if added:
+            doc.setdefault("history", []).extend(h for h in added if h not in (doc.get("history") or []))
+
+    _models.update_record(DATA, args.model_id, merge)
     print("ONBOARD PASS" if not flags else "ONBOARD CHECK")
+    for f in accepted:
+        why = (rec.get("accepted") or {}).get(f.split(":", 1)[0], "")
+        print(f"  accepted: {f} ({why})")
     for f in flags:
         print(f"  - {f}")
     print(f"  written into data/models/{args.model_id}.yaml (deployment {dep['id']})")

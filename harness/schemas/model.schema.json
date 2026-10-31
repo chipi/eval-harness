@@ -72,6 +72,7 @@
       "additionalProperties": false
     },
     "settings_why": {"type": "object", "additionalProperties": {"type": "string"}, "description": "One line per setting: why it was chosen."},
+    "accepted": {"type": "object", "additionalProperties": {"type": "string"}, "description": "Flag kinds (reasoning, format, ...) a person accepted as a known property of the model, each with why: onboarding and arm smokes report them as accepted, not as something to fix (gpt-oss cannot stop reasoning)."},
     "smokes": {"type": "object", "additionalProperties": {"$ref": "#/$defs/smoke"}, "description": "The latest arm smoke (evh arm-smoke) of each arm that names the record, by config id."},
     "history": {
       "type": "array",
@@ -100,6 +101,7 @@
         "at": {"type": "string"},
         "where": {"type": "string"},
         "flags": {"type": "array", "items": {"type": "string"}},
+        "accepted": {"type": "array", "items": {"type": "string"}, "description": "Flags the record's `accepted` names: reported, not counted against the status."},
         "report": {"type": "object"}
       }
     }

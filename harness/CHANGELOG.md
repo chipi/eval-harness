@@ -149,6 +149,14 @@ that can move a result is never a patch release without saying so under **Change
   URL. The 130 triage runs are backfilled with the fleet they replayed (`tools/backfill_triage_fleet.py`:
   the fleet's code hash and commit `f07efa9`, the prompt's hash, each checked against what the runs'
   own items recorded) and re-sealed.
+- **Onboarding a model on several machines at once keeps every result.** `model-onboard` and `arm-smoke` read the
+  record when they started and wrote all of it back when they finished, so the slower erased the other machine's
+  result. They re-read it under a lock and write only their own deployment or smoke.
+- **A LiteLLM address given with `/v1` is not given a second one** (`http://host:4000/v1` became `/v1/v1`, a 404),
+  and a reasoning setting sent through LiteLLM is named in `allowed_openai_params`: most hosted model groups refused
+  `reasoning_effort` without it (`UnsupportedParamsError`).
+- **A record can accept a flag as the model's nature** (`accepted: {reasoning: "<why>"}`): onboarding and arm smokes
+  report it as accepted and pass (gpt-oss reasons whatever it is asked).
 - **A round with more than 40 arms is compared.** Its evidence asked the inspector for one comparison of every
   arm, which refuses past 40, and the refusal left the rows empty without a word (the triage round, 52 arms). Past
   the inspector's limit the round runs the same paired test on the scores directly; a refusal becomes a note.

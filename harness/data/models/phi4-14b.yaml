@@ -1,0 +1,117 @@
+model_id: phi4-14b
+kind: llm
+name: Phi-4 14B
+aliases:
+- phi4:14b
+weights: open
+licence: MIT
+deployments:
+- id: x3
+  where: x3
+  tag: phi4:14b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: phi4:14b
+  server: ollama 0.40.13
+  digest: ac896e5b8b34a1f4efa7b14d7520725140d5512484457fab45d2a4ea14c69dba
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T13:56:12Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:56:12Z'
+    where: x3
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11434/v1
+        model: phi4:14b
+      digest_found: ac896e5b8b34a1f4efa7b14d7520725140d5512484457fab45d2a4ea14c69dba
+      default:
+        s: 5.53
+        tokens_out: 28
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 1.25
+        tokens_out: 28
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 22.4
+      deterministic: true
+      json_valid: true
+- id: dgx
+  where: dgx
+  tag: phi4:14b
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: phi4:14b
+  digest: ac896e5b8b34a1f4efa7b14d7520725140d5512484457fab45d2a4ea14c69dba
+  checked_at: '2026-10-31T14:08:03Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:08:03Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: phi4:14b
+      digest_found: ac896e5b8b34a1f4efa7b14d7520725140d5512484457fab45d2a4ea14c69dba
+      default:
+        s: 6.06
+        tokens_out: 28
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 1.22
+        tokens_out: 28
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 23.0
+      deterministic: true
+      json_valid: true
+- id: mac
+  where: mac
+  tag: phi4:14b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11435/v1
+    model: phi4:14b
+  server: ollama 0.40.13
+  digest: ac896e5b8b34a1f4efa7b14d7520725140d5512484457fab45d2a4ea14c69dba
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T13:56:11Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:56:11Z'
+    where: mac
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11435/v1
+        model: phi4:14b
+      digest_found: ac896e5b8b34a1f4efa7b14d7520725140d5512484457fab45d2a4ea14c69dba
+      default:
+        s: 8.97
+        tokens_out: 28
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 1.28
+        tokens_out: 28
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 21.9
+      deterministic: true
+      json_valid: true
+capabilities:
+  reasons: false
+  json_mode: true

@@ -1,0 +1,43 @@
+model_id: gpt-6.1-sol
+kind: llm
+name: GPT-6.1 Sol
+aliases:
+- eval-gpt-61-sol
+weights: proprietary
+deployments:
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-gpt-61-sol
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-gpt-61-sol
+  checked_at: '2026-10-31T13:55:11Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:55:11Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-gpt-61-sol
+      digest_found: null
+      default:
+        s: 2.79
+        tokens_out: 25
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 1.63
+        tokens_out: 25
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 15.4
+      deterministic: true
+      json_valid: true
+capabilities:
+  reasons: false
+  json_mode: true

@@ -45,6 +45,36 @@ def by_alias(data_dir: Path) -> dict[str, dict[str, Any]]:
     return {a: r for r in load(data_dir) for a in r.get("aliases") or []}
 
 
+def update_record(data_dir: Path, model_id: str, change: Any) -> dict[str, Any]:
+    """Apply `change(record)` to the record as it is on disk NOW, under a lock, and write it: two commands
+    writing one record (model-onboard on two machines, two arm-smokes) each keep their own change. Read at the
+    start and written at the end, the slower one wrote back the whole record it had read and the other's result
+    was lost. Returns the record written."""
+    import fcntl  # noqa: PLC0415
+    import tempfile  # noqa: PLC0415
+
+    f = records_dir(data_dir) / f"{model_id}.yaml"
+    lock = Path(tempfile.gettempdir()) / f"evh-model-{model_id}.lock"
+    with open(lock, "w") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        try:
+            doc = find(data_dir, model_id) or {}
+            change(doc)
+            f.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True), encoding="utf-8")
+        finally:
+            fcntl.flock(fh, fcntl.LOCK_UN)
+    return doc
+
+
+def split_accepted(rec: dict[str, Any] | None, flags: list[str]) -> tuple[list[str], list[str]]:
+    """(flags still to look at, flags the record accepts): a flag whose kind (the word before its colon,
+    "reasoning", "format") the record's `accepted` names is a known property of the model a person accepted, with
+    why (gpt-oss cannot stop reasoning), not a setting still to fix. Accepted flags are reported, never hidden."""
+    kinds = set((rec or {}).get("accepted") or {})
+    left = [f for f in flags if f.split(":", 1)[0] not in kinds]
+    return left, [f for f in flags if f.split(":", 1)[0] in kinds]
+
+
 def find(data_dir: Path, model_id: str) -> dict[str, Any] | None:
     """The record with this id, or None when there is none."""
     f = records_dir(data_dir) / f"{model_id}.yaml"

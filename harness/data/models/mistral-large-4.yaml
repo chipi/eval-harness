@@ -1,0 +1,68 @@
+model_id: mistral-large-4
+kind: llm
+name: Mistral Large 4
+aliases:
+- eval-mistral-large-4
+deployments:
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-mistral-large-4
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-mistral-large-4
+  checked_at: '2026-10-31T14:11:00Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:11:00Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-mistral-large-4
+      digest_found: null
+      default:
+        s: 2.33
+        tokens_out: 263
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 2.03
+        tokens_out: 263
+        reasoned: true
+        finish: stop
+        settings:
+          reasoning_effort: low
+      tokens_per_s: 129.7
+      deterministic: true
+      json_valid: true
+    accepted:
+    - 'reasoning: it still reasons with the record''s settings'
+capabilities:
+  reasons: true
+  json_mode: true
+  reasoning_off: null
+settings:
+  reasoning_effort: low
+settings_why:
+  reasoning_effort: its provider refused reasoning_effort none (onboarding, 2026-10-31);
+    low is the least it is asked
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
+    task needs it (RUNBOOK §16): left at the server''s default, one model reasons
+    at length and the next not at all'
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: none
+  to: low
+  why: its provider refused reasoning_effort none (onboarding, 2026-10-31); low is
+    the least it is asked
+accepted:
+  reasoning: its provider refuses reasoning_effort none and it still reasons with
+    low (onboarding, 2026-10-31); low is the least

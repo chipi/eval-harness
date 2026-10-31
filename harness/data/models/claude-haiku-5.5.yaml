@@ -1,0 +1,43 @@
+model_id: claude-haiku-5.5
+kind: llm
+name: Claude Haiku 5.5
+aliases:
+- eval-claude-haiku-55
+weights: proprietary
+deployments:
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-claude-haiku-55
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-claude-haiku-55
+  checked_at: '2026-10-31T13:54:17Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:54:17Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-claude-haiku-55
+      digest_found: null
+      default:
+        s: 1.82
+        tokens_out: 60
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 1.07
+        tokens_out: 35
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 32.7
+      deterministic: true
+      json_valid: true
+capabilities:
+  reasons: false
+  json_mode: true
