@@ -129,8 +129,12 @@ try:
     )
     back.write_text("1")
     r = evh("experiment-run", "--config", "data/configs/refused.yaml", "--resume", gone.name if gone else "")
-    rows = [json.loads(x) for x in (gone / "predictions.jsonl").read_text().splitlines()] if gone else []
-    answers = list((gone / "outputs").glob("*.txt")) if gone else []
+    # A resume is a run of its own (config id and the time it started), unless both start in the same second:
+    # read the newest run of the arm, never assume it is the stopped one's directory.
+    resumed = sorted((proj / "data" / "runs").glob("refused_v1_*"))[-1]
+    preds = resumed / "predictions.jsonl"
+    rows = [json.loads(x) for x in preds.read_text().splitlines()] if preds.is_file() else []
+    answers = list((resumed / "outputs").glob("*.txt"))
     check(
         "resumed with the server back, the refused item is called again and every item is an answer",
         r.returncode == 0
