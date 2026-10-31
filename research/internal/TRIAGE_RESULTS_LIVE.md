@@ -1,6 +1,6 @@
 # Triage experiment: results so far (live)
 
-Updated 2026-10-31T08:45Z. Every finished run re-scored under the owner's rules of 2026-10-30: the combined cost (a missed real problem = 5 false alarms; @3 and @10 shown) decides, among the arms whose false alarms are at or under the ceiling (production's mean over its 4 passes: 85 of 124 = 21.25 of 31, 0.6855; set 2026-10-30, replacing its single pass of 21). 65 owner-labelled decisions (34 real problems, 31 noise). One pass per arm unless the passes column says more; the paired test and the repeats decide, not this table. Self-hosted arms run on Ollama 0.40.13; their cost in tokens is $0.
+Updated 2026-10-31T08:46Z. Every finished run re-scored under the owner's rules of 2026-10-30: the combined cost (a missed real problem = 5 false alarms; @3 and @10 shown) decides, among the arms whose false alarms are at or under the ceiling (production's mean over its 4 passes: 85 of 124 = 21.25 of 31, 0.6855; set 2026-10-30, replacing its single pass of 21). 65 owner-labelled decisions (34 real problems, 31 noise). One pass per arm unless the passes column says more; the paired test and the repeats decide, not this table. Self-hosted arms run on Ollama 0.40.13; their cost in tokens is $0.
 
 | # | model | where | passes | cost @5 | @3 | @10 | misses /34 | false alarms /31 | model's own cost @5 | no decision /65 | $ / decision | s / decision | ceiling |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -30,29 +30,30 @@ Updated 2026-10-31T08:45Z. Every finished run re-scored under the owner's rules 
 | 24 | ministral_3_14b | X3 (AMD) | 1 | **0.815** | 0.600 | 1.354 | 7.0 | 18.0 | 2.508 | 0 | 0.00000 | 22.1 | ok |
 | 25 | ministral_3_14b | DGX (NVIDIA) | 1 | **0.831** | 0.585 | 1.446 | 8.0 | 14.0 | 2.262 | 0 | 0.00000 | 20.5 | ok |
 | 26 | qwen38_27b | DGX (NVIDIA) | 1 | **0.831** | 0.615 | 1.369 | 7.0 | 19.0 | 2.354 | 0 | 0.00000 | 37.8 | ok |
-| 27 | qwen3_30b_a3b | Mac (M4 Pro) | 1 | **0.831** | 0.585 | 1.446 | 8.0 | 14.0 | 1.862 | 0 | 0.00000 | 9.0 | ok |
-| 28 | stub_dismiss | control (no model) | 1 | **0.862** | 0.646 | 1.400 | 7.0 | 21.0 | 2.615 | 0 | 0.00000 | 0.0 | ok |
-| 29 | mistral_medium_35 | OpenRouter (open weights) | 1 | **0.877** | 0.631 | 1.492 | 8.0 | 17.0 | 1.662 | 0 | 0.01154 | 6.1 | ok |
-| 30 | qwen3_30b_a3b | DGX (NVIDIA) | 1 | **0.892** | 0.615 | 1.585 | 9.0 | 13.0 | 2.108 | 0 | 0.00000 | 5.9 | ok |
-| 31 | qwen38_27b | X3 (AMD) | 1 | **0.908** | 0.662 | 1.523 | 8.0 | 19.0 | 2.292 | 0 | 0.00000 | 46.2 | ok |
-| 32 | mistral_medium_35_128b | DGX (NVIDIA) | 1 | **1.000** | 0.723 | 1.692 | 9.0 | 20.0 | 1.662 | 0 | 0.00000 | 117.5 | ok |
-| 33 | qwen38_27b | Mac (M4 Pro) | 1 | **1.046** | 0.738 | 1.815 | 10.0 | 18.0 | 2.277 | 0 | 0.00000 | 69.7 | ok |
-| 34 | qwen35_122b | OpenRouter (open weights) | 1 | **1.077** | 0.769 | 1.846 | 10.0 | 20.0 | 1.692 | 0 | 0.00335 | 17.7 | ok |
-| 35 | qwen35_122b | DGX (NVIDIA) | 1 | **1.138** | 0.800 | 1.985 | 11.0 | 19.0 | 1.800 | 0 | 0.00000 | 38.0 | ok |
-| 36 | llama31_8b | DGX (NVIDIA) | 1 | **0.415** | 0.415 | 0.415 | 0.0 | 27.0 | 1.092 | 0 | 0.00000 | 5.8 | out |
-| 37 | llama31_8b | Mac (M4 Pro) | 1 | **0.415** | 0.415 | 0.415 | 0.0 | 27.0 | 1.062 | 0 | 0.00000 | 7.8 | out |
-| 38 | llama31_8b | X3 (AMD) | 1 | **0.415** | 0.415 | 0.415 | 0.0 | 27.0 | 1.062 | 0 | 0.00000 | 5.8 | out |
-| 39 | stub_escalate | control (no model) | 1 | **0.477** | 0.477 | 0.477 | 0.0 | 31.0 | 0.477 | 0 | 0.00000 | 0.0 | out |
-| 40 | gpt_61_sol | OpenRouter | 4 | **0.604** | 0.504 | 0.854 | 3.2 | 23.0 | 0.531 | 0 | 0.01090 | 12.1 | out |
-| 41 | gemini_4_argon | OpenRouter | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.185 | 0 | 0.01362 | 30.1 | out |
-| 42 | kimi_k31_pro | OpenRouter | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 0.969 | 0 | 0.01913 | 46.1 | out |
-| 43 | nemotron_35_lightning_30b | DGX (NVIDIA) | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.138 | 0 | 0.00000 | 40.0 | out |
-| 44 | nemotron_35_lightning_30b | Mac (M4 Pro) | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.446 | 0 | 0.00000 | 66.0 | out |
-| 45 | phi4_14b | DGX (NVIDIA) | 1 | **0.662** | 0.538 | 0.969 | 4.0 | 23.0 | 0.785 | 0 | 0.00000 | 17.0 | out |
-| 46 | phi4_14b | Mac (M4 Pro) | 1 | **0.754** | 0.600 | 1.138 | 5.0 | 24.0 | 0.785 | 0 | 0.00000 | 21.8 | out |
-| 47 | phi4_14b | X3 (AMD) | 1 | **0.769** | 0.615 | 1.154 | 5.0 | 25.0 | 0.862 | 0 | 0.00000 | 16.9 | out |
-| 48 | mistral_large_4 | OpenRouter | 1 | **0.800** | 0.615 | 1.262 | 6.0 | 22.0 | 1.923 | 0 | 0.00687 | 17.3 | out |
-| 49 | llama4_scout | DGX (NVIDIA) | 1 | **1.262** | 0.923 | 2.108 | 11.0 | 27.0 | 1.569 | 0 | 0.00000 | 13.4 | out |
+| 27 | ministral_3_14b | Mac (M4 Pro) | 1 | **0.831** | 0.615 | 1.369 | 7.0 | 19.0 | 2.415 | 1 | 0.00000 | 27.4 | ok |
+| 28 | qwen3_30b_a3b | Mac (M4 Pro) | 1 | **0.831** | 0.585 | 1.446 | 8.0 | 14.0 | 1.862 | 0 | 0.00000 | 9.0 | ok |
+| 29 | stub_dismiss | control (no model) | 1 | **0.862** | 0.646 | 1.400 | 7.0 | 21.0 | 2.615 | 0 | 0.00000 | 0.0 | ok |
+| 30 | mistral_medium_35 | OpenRouter (open weights) | 1 | **0.877** | 0.631 | 1.492 | 8.0 | 17.0 | 1.662 | 0 | 0.01154 | 6.1 | ok |
+| 31 | qwen3_30b_a3b | DGX (NVIDIA) | 1 | **0.892** | 0.615 | 1.585 | 9.0 | 13.0 | 2.108 | 0 | 0.00000 | 5.9 | ok |
+| 32 | qwen38_27b | X3 (AMD) | 1 | **0.908** | 0.662 | 1.523 | 8.0 | 19.0 | 2.292 | 0 | 0.00000 | 46.2 | ok |
+| 33 | mistral_medium_35_128b | DGX (NVIDIA) | 1 | **1.000** | 0.723 | 1.692 | 9.0 | 20.0 | 1.662 | 0 | 0.00000 | 117.5 | ok |
+| 34 | qwen38_27b | Mac (M4 Pro) | 1 | **1.046** | 0.738 | 1.815 | 10.0 | 18.0 | 2.277 | 0 | 0.00000 | 69.7 | ok |
+| 35 | qwen35_122b | OpenRouter (open weights) | 1 | **1.077** | 0.769 | 1.846 | 10.0 | 20.0 | 1.692 | 0 | 0.00335 | 17.7 | ok |
+| 36 | qwen35_122b | DGX (NVIDIA) | 1 | **1.138** | 0.800 | 1.985 | 11.0 | 19.0 | 1.800 | 0 | 0.00000 | 38.0 | ok |
+| 37 | llama31_8b | DGX (NVIDIA) | 1 | **0.415** | 0.415 | 0.415 | 0.0 | 27.0 | 1.092 | 0 | 0.00000 | 5.8 | out |
+| 38 | llama31_8b | Mac (M4 Pro) | 1 | **0.415** | 0.415 | 0.415 | 0.0 | 27.0 | 1.062 | 0 | 0.00000 | 7.8 | out |
+| 39 | llama31_8b | X3 (AMD) | 1 | **0.415** | 0.415 | 0.415 | 0.0 | 27.0 | 1.062 | 0 | 0.00000 | 5.8 | out |
+| 40 | stub_escalate | control (no model) | 1 | **0.477** | 0.477 | 0.477 | 0.0 | 31.0 | 0.477 | 0 | 0.00000 | 0.0 | out |
+| 41 | gpt_61_sol | OpenRouter | 4 | **0.604** | 0.504 | 0.854 | 3.2 | 23.0 | 0.531 | 0 | 0.01090 | 12.1 | out |
+| 42 | gemini_4_argon | OpenRouter | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.185 | 0 | 0.01362 | 30.1 | out |
+| 43 | kimi_k31_pro | OpenRouter | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 0.969 | 0 | 0.01913 | 46.1 | out |
+| 44 | nemotron_35_lightning_30b | DGX (NVIDIA) | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.138 | 0 | 0.00000 | 40.0 | out |
+| 45 | nemotron_35_lightning_30b | Mac (M4 Pro) | 1 | **0.646** | 0.523 | 0.954 | 4.0 | 22.0 | 1.446 | 0 | 0.00000 | 66.0 | out |
+| 46 | phi4_14b | DGX (NVIDIA) | 1 | **0.662** | 0.538 | 0.969 | 4.0 | 23.0 | 0.785 | 0 | 0.00000 | 17.0 | out |
+| 47 | phi4_14b | Mac (M4 Pro) | 1 | **0.754** | 0.600 | 1.138 | 5.0 | 24.0 | 0.785 | 0 | 0.00000 | 21.8 | out |
+| 48 | phi4_14b | X3 (AMD) | 1 | **0.769** | 0.615 | 1.154 | 5.0 | 25.0 | 0.862 | 0 | 0.00000 | 16.9 | out |
+| 49 | mistral_large_4 | OpenRouter | 1 | **0.800** | 0.615 | 1.262 | 6.0 | 22.0 | 1.923 | 0 | 0.00687 | 17.3 | out |
+| 50 | llama4_scout | DGX (NVIDIA) | 1 | **1.262** | 0.923 | 2.108 | 11.0 | 27.0 | 1.569 | 0 | 0.00000 | 13.4 | out |
 
 ## Read with care
 
