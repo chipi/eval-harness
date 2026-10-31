@@ -80,7 +80,12 @@ def run_files(data: Path) -> list[Path]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--data-dir", type=Path, default=DATA, help="the project's data root (default: this project's, EVAL_DATA_DIR)")
+    ap.add_argument(
+        "--data-dir",
+        type=Path,
+        default=DATA,
+        help="the project's data root (default: this project's, EVAL_DATA_DIR)",
+    )
     ap.add_argument("--dry-run", action="store_true", help="count what would change; write nothing")
     args = ap.parse_args()
     data = args.data_dir.resolve()
