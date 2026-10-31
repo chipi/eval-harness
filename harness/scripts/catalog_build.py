@@ -716,6 +716,7 @@ def collect(A: Adapter) -> dict:
         )
     for r in A.references():
         by_ds.setdefault(r["dataset"], {"arms": [], "refs": [], "items": 0})["refs"].append(r)
+    _mark_superseded(by_ds)
     bl = getattr(A, "baselines", None)
     for b in bl() if callable(bl) else []:
         v = by_ds.get(b["dataset"])
@@ -737,6 +738,27 @@ def collect(A: Adapter) -> dict:
         m = (meta(ds) if callable(meta) else None) or {}
         v["tags"], v["origin"] = m.get("tags") or {}, m.get("origin") or ""
     return by_ds
+
+
+def _mark_superseded(by_ds: dict) -> None:
+    """An arm every run of which was re-scored (`evh rescore`) against the same reference gets
+    "superseded_by": the arm holding the latest re-score. A scorer that changes after runs were measured
+    leaves their scores stale, and the re-score is the same outputs read by the current scorer; showing
+    both ranks one arm twice (and an old score may lack the goal's measure entirely). The goal pages read
+    the re-score; the measured arm keeps its page as the record of what was first scored."""
+    for v in by_ds.values():
+        latest: dict = {}
+        for a in v["arms"]:
+            for r in a["run_list"]:
+                if r.get("derived") == "rescore" and r.get("from"):
+                    key = (a["reference"], r["from"])
+                    if key not in latest or (r["created_at"], a["arm"]) > latest[key][0]:
+                        latest[key] = ((r["created_at"], a["arm"]), a["arm"])
+        for a in v["arms"]:
+            ids = [r["run_id"] for r in a["run_list"]]
+            by = {latest.get((a["reference"], i), (None, None))[1] for i in ids}
+            if ids and len(by) == 1 and None not in by and a["arm"] not in by:
+                a["superseded_by"] = by.pop()
 
 
 def _machine(A: Adapter, arm: str) -> str:
@@ -2022,7 +2044,17 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
     for d in goal.get("datasets") or []:
         ds = d.get("dataset_id", "")
         rows = []
-        for a in (by_ds.get(ds) or {}).get("arms", []):
+        arms = (by_ds.get(ds) or {}).get("arms", [])
+        moved = [a for a in arms if a.get("superseded_by")]
+        notes = d.get("notes", "")
+        if moved:
+            notes = (notes.rstrip(". ") + ". " if notes else "") + (
+                f"{len(moved)} arm(s) are read from their re-score with the current scorer, not their first "
+                "score (the measured run keeps its own page)."
+            )
+        for a in arms:
+            if a.get("superseded_by"):
+                continue
             # A judged arm records its judge's score, not the goal's measure: it is shown in its
             # judge's group, read on that score (never ranked with the reference-scored groups).
             use = measure if measure in a["means"] else (a["metric"] if a.get("judge") else None)
@@ -2037,7 +2069,7 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
             if a["wrote"]:
                 flags.append("wrote the reference it is scored against")
             rows.append(dict(a, mean=mean, n=n, measure=use, filed=a["goal"] == goal["goal_id"], flags=flags))
-        out.append((ds, d.get("role", ""), d.get("notes", ""), rows))
+        out.append((ds, d.get("role", ""), notes, rows))
     return out
 
 

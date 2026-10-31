@@ -107,6 +107,12 @@ that can move a result is never a patch release without saying so under **Change
   (throwaway `runs-smoke*` and `runs-tune*` stay silent), and `evh validate` notes one that holds
   finished runs. The RUNBOOK's scratch example is `data/runs-smoke`, the throwaway name git already
   ignores.
+- **One row per arm when a scorer changed.** A goal listed an arm twice when its runs had been
+  re-scored (`evh rescore`) into a derived set, once per directory, and dropped the measured runs
+  whose older score lacked the goal's measure: 37 triage arms were listed twice, 15 only from
+  the re-score. A re-score against the same reference now stands in for the run it re-read on the
+  goal pages, in `evh goals` and in the recommendation, which says how many arms it read that way.
+  `evh goals --goal` also prints a dataset's notes, as its page did.
 
 ## 0.5.0 — 2026-10-29
 

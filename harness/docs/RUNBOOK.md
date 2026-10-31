@@ -395,6 +395,13 @@ Two kinds of directory sit beside `data/runs` on purpose:
 `experiment-run` and `rescore` print a `WARNING` when they write to a directory git ignores
 that is neither, and `evh validate` notes any such directory that already holds finished runs.
 
+**When the scorer changes after runs were measured**, re-score them (`evh rescore --out
+data/runs-<name>`, re-allowed in `.gitignore`) rather than keep two sets of numbers apart. A
+re-score with the current scorer stands in for the run it re-read: the goal pages, `evh goals`
+and the recommendation show one row per arm, read from the latest re-score against the same
+reference, and say how many arms they read that way. The measured run keeps its own page as
+the record of what was first scored.
+
 `experiment-run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness
 times every call (`latency_ms`) unless the adapter reports its own.

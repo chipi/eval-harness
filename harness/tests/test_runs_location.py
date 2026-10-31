@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from evaluation_harness import _common, validate_tree
+from evaluation_harness import _common, catalog_build, validate_tree
 from evaluation_harness._check import check, summary
 
 with tempfile.TemporaryDirectory() as tmp:
@@ -73,5 +73,36 @@ with tempfile.TemporaryDirectory() as tmp:
         len(got) == 1 and "runs-local" in got[0] and "1 finished run" in got[0],
         got,
     )
+
+
+# One row per arm: a re-score with the current scorer stands in for the run it re-read.
+def arm(name: str, runs: list, ref: str = "gold/x") -> dict:
+    return {"arm": name, "reference": ref, "run_list": runs}
+
+
+def run(rid: str, at: str, kind: str = "", src: str = "") -> dict:
+    return {"run_id": rid, "created_at": at, "derived": kind, "from": src}
+
+
+measured = arm("runs/x/a_v1", [run("a_v1_T1", "2026-10-30")])
+rescored = arm("runs-current/x/a_v1", [run("a_v1_T1", "2026-10-31", "rescore", "a_v1_T1")])
+later = arm("runs-later/x/a_v1", [run("a_v1_T1", "2026-11-01", "rescore", "a_v1_T1")])
+silver = arm("runs-silver/x/a_v1", [run("a_v1_T1", "2026-10-31", "rescore", "a_v1_T1")], ref="silver/x")
+repeat = arm("runs-repeats/x/a_v1", [run("a_v1_T2", "2026-10-31")])
+half = arm("runs/x/b_v1", [run("b_v1_T1", "2026-10-30"), run("b_v1_T2", "2026-10-30")])
+half_re = arm("runs-current/x/b_v1", [run("b_v1_T1", "2026-10-31", "rescore", "b_v1_T1")])
+by_ds = {"x": {"arms": [measured, rescored, later, silver, repeat, half, half_re]}}
+catalog_build._mark_superseded(by_ds)
+check(
+    "supersede: the measured run gives way to its latest re-score",
+    measured.get("superseded_by") == later["arm"],
+)
+check(
+    "supersede: an earlier re-score gives way to the later one", rescored.get("superseded_by") == later["arm"]
+)
+check("supersede: the latest re-score stands", "superseded_by" not in later)
+check("supersede: a re-score against another reference is its own row", "superseded_by" not in silver)
+check("supersede: a second measurement is its own row", "superseded_by" not in repeat)
+check("supersede: an arm with a run nobody re-scored stays", "superseded_by" not in half)
 
 sys.exit(summary())

@@ -1051,6 +1051,8 @@ def goals(argv) -> int:
         ds = ans["dataset"]
         tiers = {r["id"]: r["tier"] for r in (by_ds.get(ds) or {}).get("refs", [])}
         print(f"\n{ds}" + (f" · {ans['role']}" if ans["role"] else ""))
+        if ans["notes"]:
+            print(textwrap.fill(ans["notes"], width=96, initial_indent="  ", subsequent_indent="  "))
         if not ans["groups"]:
             print(f"  no arm records {prim.get('measure', '')}")
         for grp in ans["groups"]:

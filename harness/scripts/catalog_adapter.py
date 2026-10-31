@@ -827,6 +827,7 @@ class HarnessAdapter:
                     "items": m.get("n_items"),
                     "cost_usd": (m.get("scores") or {}).get("total_cost_usd"),
                     "derived": (m.get("derived") or {}).get("kind", ""),
+                    "from": (m.get("derived") or {}).get("from", ""),
                 }
             )
         return sorted(out, key=lambda r: (r["created_at"], r["run_id"]))
