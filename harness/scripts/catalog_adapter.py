@@ -186,6 +186,9 @@ class Adapter(Protocol):
     # Optional: what each model's weights are, {model: {"weights": "open" | "proprietary",
     # "licence": ...}}, keyed by the model a run records; the arms page filters on it.
     # def model_facts(self) -> dict[str, dict]: ...
+    # Optional: the model records (data/models/) with the arms that use each, [{"record": {...},
+    # "arms": [arm id]}]; the Models page and the arms page's model badge read it.
+    # def models(self) -> list[dict]: ...
     # Optional: experiment rounds (ADR-0004), each round's record with "arms", the arm ids in play;
     # a goal page shows them as its history.
     # def rounds(self) -> list[dict]: ...
@@ -658,6 +661,26 @@ class HarnessAdapter:
         from evaluation_harness import _models  # noqa: PLC0415
 
         return _models.facts(self.data_dir)
+
+    @_memo
+    def models(self) -> list[dict]:
+        """Each model record (data/models/) with the arms that use it: an arm uses a record when its
+        config names it (`model_record`, as its run recorded) or its run's params.model is one of the
+        record's aliases."""
+        from evaluation_harness import _models  # noqa: PLC0415
+
+        recs = _models.load(self.data_dir)
+        ids = {r.get("model_id") for r in recs}
+        alias = {a: r.get("model_id") for r in recs for a in r.get("aliases") or []}
+        used: dict = {r.get("model_id"): [] for r in recs}
+        for arm in self.arms():
+            m = self._metrics(arm)
+            rid = m.get("model_record")
+            if rid not in ids:
+                rid = alias.get((m.get("params") or {}).get("model"))
+            if rid in used:
+                used[rid].append(arm)
+        return [{"record": r, "arms": sorted(used[r.get("model_id")])} for r in recs]
 
     @_memo
     def rounds(self) -> list[dict]:

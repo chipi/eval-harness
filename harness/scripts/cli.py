@@ -49,8 +49,14 @@ COMMANDS = {
         "the checksummed manifest of a reference a fetch script built",
     ),
     "experiment-run": ("experiment_run.py", "run one arm over a dataset (--dry-run to cost it)"),
-    "arm-smoke": ("arm_smoke.py", "smoke an arm on a few items before its full run: checks, projection, flags"),
-    "model-onboard": ("model_onboard.py", "onboard a model once: probe a build, write what was found into its record"),
+    "arm-smoke": (
+        "arm_smoke.py",
+        "smoke an arm on a few items before its full run: checks, projection, flags",
+    ),
+    "model-onboard": (
+        "model_onboard.py",
+        "onboard a model once: probe a build, write what was found into its record",
+    ),
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
     "runs-list": ("list_runs.py", "list runs (or baselines)"),
     "rescore": ("rescore.py", "re-score stored outputs against references, for $0"),
@@ -108,6 +114,10 @@ COMMANDS = {
     ),
     "datasets": ("view_datasets.py", "every dataset, or one: its versions, references and arms"),
     "arms": ("view_arms.py", "every arm, or one: its metrics, runs, config, conditions and rounds"),
+    "models": (
+        "view_models.py",
+        "every model record, or one: its builds, onboarding, settings history and arms",
+    ),
     "references": ("view_references.py", "every reference, or one: who wrote it, what is scored against it"),
     "metrics": ("view_metrics.py", "what each metric measures, or one in full with the arms recording it"),
     "goals": ("view_goals.py", "every goal, or one: its arms on each of its datasets"),

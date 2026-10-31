@@ -1224,6 +1224,23 @@ def v18_model_records() -> None:
         rid = cfg.get("model_record") if isinstance(cfg, dict) else None
         if rid and rid not in recs:
             bad.append(f"{c.name}: model_record {rid!r} has no data/models/{rid}.yaml")
+        elif rid:
+            rec = _models.find(DATA, rid) or {}
+            params = _models.resolve(cfg, DATA).get("params") or {}
+            if cfg.get("config_id") not in (rec.get("smokes") or {}):
+                notes.append(f"{c.name}: never smoked (evh arm-smoke --config {c.name})")
+            if (rec.get("capabilities") or {}).get("reasons") and "max_tokens" not in params:
+                notes.append(f"{c.name}: {rid} reasons, and no max_tokens bounds its replies")
+    for r in _models.load(DATA):
+        by_tag: dict[str, set[str]] = {}
+        for b in r.get("builds") or []:
+            if b.get("tag") and b.get("digest"):
+                by_tag.setdefault(b["tag"], set()).add(b["digest"][:12])
+        for tag, digests in by_tag.items():
+            if len(digests) > 1:
+                notes.append(
+                    f"model {r.get('model_id')}: {tag} is a different build on different machines ({', '.join(sorted(digests))})"
+                )
     for b in bad[:10]:
         print(f"       {b}")
     check(f"V18 model records — {len(recs)} record(s)", not bad, f"{len(bad)} problem(s)")

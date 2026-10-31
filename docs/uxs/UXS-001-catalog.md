@@ -11,6 +11,7 @@
 - **Implementation paths**: `harness/scripts/catalog_build.py` (pages),
   `harness/scripts/catalog_periods.py` (the periods, the tiles' trends, each row's period
   numbers), `harness/scripts/catalog_arms.py` (the arms page),
+  `harness/scripts/catalog_models.py` (the models page and a page per model),
   `harness/catalog_assets/style.css` and `catalog.css` (tokens and components),
   `harness/catalog_assets/catalog.js` (theme, search, filter, sort, paging),
   `period.js` (the period on every page), `overview.js` (the home tiles and the charts),
@@ -95,7 +96,7 @@ tables 15px.
 - **Header bar:** the brand (the icon and the product's name, `--brand`, "eval catalog" by
   default, linking to the overview); the global search ("Search ( / )"); the nav, by the
   subjects of the home tiles: **Overview**, **Goals**, **Data ▾** (Datasets, References),
-  **Experiments ▾** (Arms, Configs, Metrics), **Activity**, **Inspector**; the theme toggle. A
+  **Experiments ▾** (Arms, Configs, Models, Metrics), **Activity**, **Inspector**; the theme toggle. A
   group opens a short list under its name and closes on a click elsewhere; the group a page
   belongs to is underlined like a current page. On a phone the nav is a ☰ menu at the left of
   the bar listing every page, a group's under its name; the name gives way to the icon, and the
@@ -212,13 +213,14 @@ The whole project at a glance, for the period picked ([the period](#the-period-e
   (this repository's says which project the catalog shows, where its findings are, and that an
   agent can ask it over MCP at `https://evals.humancopilot.eu/mcp`); then the period bar and the **tiles**, in four subjects, one colour each (a band on
   top, its trend badge, its line), named in a legend under them: **goals** (goals); **data**
-  (datasets, references); **experiments** (configs, arms, metrics); **work and spend**
+  (datasets, references); **experiments** (configs, arms, models, metrics); **work and spend**
   (measured runs, billed in USD, tokens). The colour says what a tile is about and nothing
   more. Each tile opens its page at the period picked: goals, datasets, references and metrics
-  their pages; arms the arms page; configs the arms page grouped by config; measured runs,
+  their pages; arms the arms page; models the models page; configs the arms page grouped by config; measured runs,
   billed and tokens the activity page.
   - A **stock** tile (goals to metrics) shows the total so far, "+N new" in the period (or "none
-    new") and a line of the total growing over the period.
+    new") and a line of the total growing over the period. A model is new from its first onboarding, history
+    entry or build check, else from its first arm's first run.
   - A **flow** tile (measured runs, billed, tokens) shows the period's total, its change against
     the period before (**▲ 12%**, **▼ 31%**, **▲ from 0**) and a line of the amount per day. The
     badge is in the tile's colour whichever way it goes, never red or green: up is neither good
@@ -490,7 +492,7 @@ tile opens it grouped by config (`arms.html?group=config`).
     the configs declare (free, small, mid, large); ties the leader, below the leader (the arm's
     place in a goal's decision: tied with its quality leader, the leader included, or weighed and
     not tied; an arm no decision weighs is in neither); open weights, proprietary (the model's
-    weights, from the project's `data/models.yaml`; an unlisted model is in neither; the chips
+    weights, from the model records in `data/models/`; an unlisted model is in neither; the chips
     show only when the file lists a model an arm ran). Within one kind any chip picked keeps a
     row; across kinds all must.
   - the all / new / active chips; a compare bar once an arm is ticked: "N picked", **open in the
@@ -550,45 +552,60 @@ tile opens it grouped by config (`arms.html?group=config`).
 
 ## The models page
 
-The project's onboarded models (RFC-020): what each one is, how it is set up, whether it was vetted, and
-where it is used. A models tile on the home page opens it, beside arms.
+The project's model records (RFC-020): what each one is, how it is set up, whether it was vetted, and where it
+is used. A models tile on the home page opens it, beside arms.
 
-- Hero: kicker `models`, "Models", "N models onboarded: K vetted, L to check. A model is onboarded once (its
-  build on every machine, what it can do, the settings chosen for it, a smoke behind them) and used by any
-  experiment's arms.", then the period bar.
-- `01 every model`:
-  - **only** chips: llm, ml, baseline; self-hosted, hosted; open weights, proprietary; vetted (onboarding
-    passed), to check (onboarding flagged), not onboarded (an arm's model with no record); builds differ (a
-    machine's build is not the record's).
+- Hero: kicker `models`, "Models", "N models: K vetted, L to check, M not onboarded yet. A model is onboarded
+  once (its build on every machine, what it can do, the settings chosen for it, a smoke behind them) and used
+  by any experiment's arms.", then the period bar.
+- `01 every model` (without records: how to add one):
+  - **only** chips, each shown only when some record has the value: llm, ml, baseline; self-hosted, hosted;
+    open weights, proprietary; vetted (onboarding passed), to check (onboarding flagged), not onboarded (no
+    onboarding in the record); builds differ. Within one kind any chip picked keeps a row; across kinds all
+    must. Self-hosted is a record with a build on a machine (it names a server, a device or a place) and none
+    with a provider id; hosted is a record with a build that has a provider id; a record with no builds is
+    neither. Builds differ is the same tag with a different digest, revision or hash on two machines.
   - the table: **model** (linked; its kind under it), **build** (tag and digest, revision or hash, shortened;
     a "differs" badge when a machine's build is not the record's), **where** (each machine or host, muted when
     its build was last checked more than 30 days ago), **settings** (for an LLM "reasoning off · 1024 tokens
     · 30 s"; for an ML model "cpu · fp32 · batch 1"; "defaults" when none is chosen), **onboarding** (pass /
-    check / none, its date, the flags on hover), **arms** (count, linked to the arms page filtered to them),
-    **goals**, **best result** (its best arm's place in each goal, "#8 of 52 on triage_orrery"). Filterable.
-- `02 what changed in the period`: **when**, **model**, **what** (onboarded; build changed on `<machine>`;
-  settings changed, from what to what; onboarding re-run), only the period's.
+    check / "not onboarded", its date, the flags on hover), **arms** (count, linked to the arms page filtered
+    to them by the record's id: `arms.html?q=<id>`), **goals**, **best result** (its best arm's place in each
+    goal, "#8 of 52"). Filterable.
+- `02 what changed in the period`: **when**, **model**, **what** (onboarded, with the machine and the verdict;
+  each entry of the record's history, "reasoning_effort (server default) → none (why)"), only the period's.
+  A record's history is free text, so a build change shows only when its `history` says so.
 - Command: `evh models [--kind llm|ml|baseline] [--where self-hosted|hosted] [--status vetted|check|none]`.
 
 ## The model page
 
+`models/<id>.html`.
+
 - Hero: kicker `model`, the model's name and kind, then its facts: **weights** and **licence**, **aliases**
   (the ids runs record for it), **settings** (each with its one line of why), **onboarding** (pass or check,
-  date, machine).
+  date, machine). A button back to the models page.
 - `01 builds`: one row per place it runs: **where**, **server or device** (with its settings: version, context
-  length; or device and precision), **build** (in full), **matches the record** (yes, or what differs),
-  **checked** (date).
-- `02 onboarding`: the latest onboarding report in full: each probe, its measurement and its flag; the smoke's
-  items and calls for an LLM (time, tokens out, reasoning, answer, how it ended).
-- `03 settings history`: **when**, **what changed** (from, to), **why**, **smoke before / after**, **result
-  before / after** (the arm's deciding measure on the goal it ran in): gemma4:12b "reasoning default → none,
-  2026-10-31: never answered → 0.585".
-- `04 arms`: every arm that names it: **arm** (linked), **goal**, **settings it overrides**, **arm smoke** (pass /
-  check / none, date), **result**.
+  length; or device and precision), **build** (tag, provider id, digest, revision, hash, quantization, in
+  full), **matches the record** (yes, or what differs: the first build of a tag is the record's), **checked**
+  (date, muted when more than 30 days old).
+- `02 onboarding`: the latest onboarding report: its verdict, date and machine, each probe of the report with its
+  measurement and the flags that name it, the other flags, and what the model can do (its capabilities). For an
+  LLM the report's default and chosen calls carry the time, tokens out, whether it reasoned and how it ended.
+  A record never onboarded says so, with the command.
+- `03 settings history`: **when**, **what changed** (from, to), **why**, newest first.
+- `04 arms`: every arm that uses it, by `model_record` or by an alias: **arm** (linked), **goal**, **settings it
+  overrides** (the arm's params that differ from the record's), **arm smoke** (pass / check / none, date, flags
+  on hover), **result** (the deciding measure).
 - Command: `evh models --model <id>`.
 
-On the arms page each arm's row gets its model record under the model column, linked, and a smoke badge:
-"smoked", "smoke: check", or "not smoked".
+Not built as written: the settings history has no "smoke before / after" or "result before / after" columns (a
+history entry carries `at`, `what`, `from`, `to`, `why` and nothing links it to a smoke or a result), and the
+models page lists records only: an arm's model with no record is not a row of its own, and there is no "not
+onboarded" chip for it.
+
+On the arms page each arm that uses a record gets it under the model column, linked, and a badge: "smoked",
+"smoke: check", or "not smoked" (the record's latest arm smoke of the arm's config). `evh arms` shows the same
+in a "model record" column, when any arm has a record.
 
 ## The metric page
 

@@ -42,6 +42,7 @@ READ_TOOLS = (
     "datasets",
     "dataset-items",
     "arms",
+    "models",
     "goals",
     "references",
     "metrics",
@@ -62,6 +63,8 @@ NOT_TOOLS = {
     "reference-create": "writes, and may call a model",
     "reference-manifest": "writes",
     "experiment-run": "runs a system and may spend",
+    "arm-smoke": "runs a system on a few items, may spend, and writes the model record",
+    "model-onboard": "calls a model and writes the model record",
     "sweep": "runs systems and may spend",
     "rescore": "writes runs",
     "judge": "calls models and spends",
@@ -92,7 +95,18 @@ NOT_TOOLS = {
     "mcp": "this server",
 }
 #: The views that take --json (catalog_views via _jsonout; dataset-items its profile).
-JSON = {"overview", "datasets", "arms", "goals", "references", "metrics", "activity", "search", "inspect"}
+JSON = {
+    "overview",
+    "datasets",
+    "arms",
+    "models",
+    "goals",
+    "references",
+    "metrics",
+    "activity",
+    "search",
+    "inspect",
+}
 JSON |= {"dataset-items", "captures"}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.

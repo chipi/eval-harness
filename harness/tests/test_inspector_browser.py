@@ -147,7 +147,7 @@ def drive(base: str, overview: str = "") -> None:
         }
         cli = {
             ln[:17].strip(): ln[17:35].strip()
-            for ln in (overview or "").splitlines()[1:10]
+            for ln in (overview or "").splitlines()[1:11]
             if ln.startswith("  ")
         }
         check(
@@ -187,7 +187,7 @@ def drive(base: str, overview: str = "") -> None:
             page.locator("#period-span").inner_text().startswith("since ")
             and (page.get_attribute("#period-span", "title") or "").endswith(date.today().isoformat())
             and "compared" not in (page.get_attribute("#period-span", "title") or "")
-            and page.locator(".tile[data-tile='6'] .trend").inner_text() == "",
+            and page.locator(".tile[data-tile='7'] .trend").inner_text() == "",
         )
         page.locator('#spend button[data-unit-show="tokens"]').click()
         check(

@@ -112,6 +112,7 @@ NAV = [
         [
             ("arms", "arms.html", "Arms"),
             ("configs", "arms.html#configs", "Configs"),
+            ("models", "models.html", "Models"),
             ("metrics", "metrics.html", "Metrics"),
         ],
         "Experiments",
@@ -1347,6 +1348,7 @@ def _feed(ev: list[dict], since: str) -> str:
 
 def home_counts(A: Adapter, by_ds: dict, spend: list[dict]) -> list[tuple]:
     """The home page's tiles, in catalog_periods.TILES' order: (what, how many, page)."""
+    from evaluation_harness.catalog_models import entries  # noqa: PLC0415
     from evaluation_harness.catalog_periods import TILES  # noqa: PLC0415
 
     billed = sum(float(x["usd"]) for x in spend if isinstance(x.get("usd"), (int, float)))
@@ -1356,6 +1358,7 @@ def home_counts(A: Adapter, by_ds: dict, spend: list[dict]) -> list[tuple]:
         "datasets": len(by_ds),
         "configs": _n_configs(by_ds),
         "arms": sum(len(v["arms"]) for v in by_ds.values()),
+        "models": len(entries(A)),
         "references": sum(len(v["refs"]) for v in by_ds.values()),
         "metrics": len(metric_index(A, by_ds)),
         "measured runs": sum(
@@ -1436,7 +1439,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         "Every evaluation, at a glance",
         "Pages the harness builds from this project's committed runs: what each goal concludes so far, "
         "when the work happened and what it cost, what each dataset covers, and everything recorded. "
-        "Every name is a link: goals, datasets, arms, references and metrics each have a page, and the "
+        "Every name is a link: goals, datasets, arms, models, references and metrics each have a page, and the "
         "inspector tests any arms against a baseline, item by item.",
         (f'<div class="about">{ABOUT}</div>' if ABOUT else "") + switch + tile_html,
     )
@@ -3504,9 +3507,12 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     write_periods(A, by_ds, out)
     render_home(A, by_ds, out, nav)
     render_activity(A, by_ds, out, nav)
-    from evaluation_harness.catalog_arms import render_arms  # noqa: PLC0415
+    from evaluation_harness.catalog_arms import arm_rows, render_arms  # noqa: PLC0415
+    from evaluation_harness.catalog_models import render_models  # noqa: PLC0415
 
-    render_arms(A, by_ds, out, nav)
+    arms_rows = arm_rows(A, by_ds)
+    render_arms(A, by_ds, out, nav, arms_rows)
+    render_models(A, by_ds, out, nav, arms_rows)
     render_datasets(A, by_ds, out, nav)
     for ds, v in by_ds.items():
         v["versions"] = _version_links(by_ds, ds, "../")

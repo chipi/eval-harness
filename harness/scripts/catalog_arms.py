@@ -46,9 +46,11 @@ def _base(arm: str) -> str:
 def arm_rows(A, by_ds: dict) -> list[dict]:
     """One row per arm, by dataset, then config, the config's own measurement first:
     {"arm", "label", "dataset", "config", "model", "provider", "family", "tier", "local",
-    "weights", "quality", "scored", "how", "roles", "goal", "measure", "value", "lower", "repeats",
+    "weights", "record", "smoke", "quality", "scored", "how", "roles", "goal", "measure", "value", "lower", "repeats",
     "cost", "latency", "first", "last"}. `weights` is "open", "proprietary" or "" (unknown: the
-    adapter's model_facts does not list the model). `quality` is "ties the leader" when a goal's
+    adapter's model_facts does not list the model). `record` is the model record the arm uses ("" when
+    none) and `smoke` that record's latest smoke of the arm's config: pass, check or none ("" without a
+    record). `quality` is "ties the leader" when a goal's
     decision ties the arm with its quality leader (the leader too), "below the leader" when it
     weighs the arm and does not, "" when no decision weighs it. A role "over a limit" is an arm a
     goal leaves out for a limit it breaks; "not eligible" one it leaves out for another reason.
@@ -58,10 +60,12 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
     (rescored, re-parsed, run again), that arm and how far the deciding measure moved from it; None
     when there is none, or the two are not on the same measure (a judge scores its own)."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+    from evaluation_harness import catalog_models as cm  # noqa: PLC0415
 
     cfg = getattr(A, "arm_config", None)
     fn = getattr(A, "model_facts", None)
     facts = (fn() if callable(fn) else None) or {}
+    records = cm.arm_records(A)
     roles: dict = {}
     quality: dict = {}
     measure_of: dict = {}
@@ -125,6 +129,8 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                         (p.get("provider") or "") in HOSTED_PROVIDERS or p.get("usd_per_mtok_in") is not None
                     ),
                     "weights": (facts.get(p.get("model") or "") or {}).get("weights") or "",
+                    "record": (records.get(a["arm"]) or {}).get("model_id", ""),
+                    "smoke": cm.smoke_of(records[a["arm"]], cid) if a["arm"] in records else "",
                     "quality": quality.get(a["arm"], ""),
                     "scored": "judge" if a["judge"] else (tiers.get(a["reference"]) or "none"),
                     "how": how,
@@ -229,13 +235,14 @@ def period_arms(A, by_ds: dict, rows: list[dict]) -> dict:
     return out
 
 
-def render_arms(A, by_ds: dict, out, nav: list) -> None:
+def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) -> None:
     """Write arms.html."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+    from evaluation_harness import catalog_models as cm  # noqa: PLC0415
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
 
     w = cb.window(A, by_ds)
-    rows = arm_rows(A, by_ds)
+    rows = rows if rows is not None else arm_rows(A, by_ds)
     period_rows, trs = period_arms(A, by_ds, rows), []
     for r in rows:
         latency = f"{r['latency']:.0f} ms" if r["latency"] else "—"
@@ -268,7 +275,12 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
                     ),
                     cb.dataset_link(r["dataset"]),
                     (f"<code>{e(r['model'])}</code>" if r["model"] else "—")
-                    + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>',
+                    + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>'
+                    + (
+                        f"<br>{cm.model_link(r['record'])} {cm.SMOKE_BADGE[r['smoke']]}"
+                        if r["record"]
+                        else ""
+                    ),
                     (
                         cb.metric_link(r["measure"])
                         + f' <span data-v="{r["value"]}">{cb.fmt(r["value"])}</span>'

@@ -46,6 +46,7 @@ TILES = (
     ("references", "references.html", "stock", "data"),
     ("configs", "arms.html?group=config", "stock", "experiments"),
     ("arms", "arms.html", "stock", "experiments"),
+    ("models", "models.html", "stock", "experiments"),
     ("metrics", "metrics.html", "stock", "experiments"),
     ("measured runs", "activity.html", "flow", "work"),
     ("billed", "activity.html#spend", "flow", "work"),
@@ -159,6 +160,9 @@ def home_data(A, by_ds: dict, spend: list[dict], goals: list[dict], rounds: list
             ds_dates.get(d.get("dataset_id", ""), "") for d in g.get("datasets") or [] if isinstance(d, dict)
         ]
         goal_dates.append(earliest(opened + on))
+    from evaluation_harness import catalog_models as cm  # noqa: PLC0415
+
+    models = [cm.first_day(x["record"], [arm_first.get(a, "") for a in x["arms"]]) for x in cm.entries(A)]
     stamps = [*runs, *out_spend] + [x for x in ds_dates.values() if x]
     return {
         "first": min(stamps, default=""),
@@ -171,6 +175,7 @@ def home_data(A, by_ds: dict, spend: list[dict], goals: list[dict], rounds: list
             "datasets": list(ds_dates.values()),
             "configs": list(configs.values()),
             "arms": list(arm_first.values()),
+            "models": models,
             "references": [day_of(r.get("created_at")) for v in by_ds.values() for r in v["refs"]],
             "metrics": list(metrics.values()),
         },
