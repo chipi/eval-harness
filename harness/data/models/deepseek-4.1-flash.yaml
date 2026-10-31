@@ -3,6 +3,8 @@ kind: llm
 name: DeepSeek 4.1 Flash
 aliases:
 - eval-deepseek-41flash
+weights: open
+licence: MIT
 deployments:
 - id: hosted
   where: homelab LiteLLM (the fleet's gateway)
