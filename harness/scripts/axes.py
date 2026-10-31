@@ -170,9 +170,15 @@ def cell_of(axis: dict, scores: dict[str, dict]) -> dict:
     return cell
 
 
+#: An axis limit that is no number but the goal's baseline arm (RFC-022): an arm is within it unless the paired
+#: test finds it worse than the baseline on the axis's measure. decide() applies it; within() cannot alone.
+BASELINE_LIMIT = "baseline"
+
+
 def within(axis: dict, value: float | None) -> bool | None:
-    """True or False against the axis's limit; None when there is no limit or no value."""
-    if axis.get("limit") is None or value is None:
+    """True or False against the axis's limit; None when there is no limit or no value, or the limit is the
+    baseline (decide() tests that one, pairwise)."""
+    if axis.get("limit") is None or value is None or axis.get("limit") == BASELINE_LIMIT:
         return None
     return value <= float(axis["limit"]) if axis["direction"] == "lower" else value >= float(axis["limit"])
 
@@ -182,12 +188,14 @@ def decide(
     arms: dict[str, dict],
     direction_of: Callable[[str], str | None] | None = None,
     machines: dict[str, str] | None = None,
+    baseline: str | None = None,
 ) -> dict:
     """The goal's decision over one group of arms (one dataset, scored against one thing).
 
     arms: {arm: {"label", "flags": [str], "scores": {metric: {"values": {item: float}}}}}; a flagged
     arm (too few items, the wrong format, it wrote the reference) is shown but never recommended.
     machines: {arm: machine label}; with more than one, speed is never compared or tie-broken.
+    baseline: the group's baseline arm, for an axis whose limit is `baseline` (RFC-022).
 
     Returns {"axes", "rows": {arm: {axis: {"value", "mean", "p50", "p95", "n", "within",
     "tokens"?, "vs_leader"?}}}, "out": {arm: [reason]}, "leader", "tied", "recommended", "why"}."""
@@ -211,6 +219,30 @@ def decide(
                     f"limit {value_text(ax, float(ax['limit']))}"
                 )
         rows[arm] = row
+    why_first: list[str] = []
+    for ax in axes:
+        if ax.get("limit") != BASELINE_LIMIT:
+            continue
+        if not baseline or baseline not in arms:
+            why_first.append(
+                f"{ax['name']}: its limit is the baseline, and this group has none promoted: no limit applied."
+            )
+            continue
+        series = {x: (arms[x]["scores"].get(ax["measure"]) or {}).get("values") or {} for x in arms}
+        # A limit gates each arm on its own, as a number does (owner, 2026-10-31): p < ALPHA against the baseline,
+        # not corrected across the arms. Holm stays where the decision claims one arm beats the others (the tie).
+        cmp = stats.compare(
+            series, baseline, higher_is_better=ax["direction"] == "higher", threshold=stats.ALPHA
+        )
+        for r in cmp.get("rows") or []:
+            worse = r.get("verdict") == "separated: worse"
+            rows[r["arm"]][ax["name"]]["within"] = not worse
+            rows[r["arm"]][ax["name"]]["vs_baseline"] = {"delta": r.get("delta"), "p": r.get("p")}
+            if worse:
+                out.setdefault(r["arm"], []).append(
+                    f"{ax['name']} worse than the baseline {arms[baseline]['label']} (paired test, p {r['p']:.3g})"
+                )
+        rows[baseline][ax["name"]]["within"] = True
     # An arm measured on fewer items than the group's most-measured arm is out: its mean is over
     # other items, so it could lead on a part of the set (a 0.95 on 4 items over a 0.8 on 20).
     most = max((rows[x]["quality"]["n"] for x in arms), default=0)
@@ -223,7 +255,7 @@ def decide(
         for x in arms
         if x not in out and not arms[x].get("flags") and rows[x]["quality"]["value"] is not None
     ]
-    why: list[str] = []
+    why: list[str] = list(why_first)
     for arm, reasons in out.items():
         why.append(f"{arms[arm]['label']} is out: {'; '.join(reasons)}.")
     if not eligible:
@@ -424,7 +456,9 @@ def axis_title(axis: dict) -> str:
     )
     if axis["name"] in BUILTIN and axis["measure"] == base["measure"]:
         head += " per item"  # the cost of one item, not of the run
-    if axis.get("limit") is not None:
+    if axis.get("limit") == BASELINE_LIMIT:
+        head += " · no worse than the baseline (paired test)"
+    elif axis.get("limit") is not None:
         op = "≤" if axis["direction"] == "lower" else "≥"
         head += f" · limit {op} {_num(float(axis['limit']))}"
     return head

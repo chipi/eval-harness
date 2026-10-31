@@ -1,0 +1,115 @@
+model_id: mistral-medium-3.5
+kind: llm
+name: Mistral Medium 3.5
+aliases:
+- mistral-medium-3.5:128b
+- eval-mistral-medium-35
+weights: open
+deployments:
+- id: x3
+  where: x3
+  tag: mistral-medium-3.5:128b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: mistral-medium-3.5:128b
+  server: ollama 0.40.13
+  digest: 0341632adb051badc332bd814779ab931ab78619750bebe3b7c7b1401e9d70df
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T14:01:59Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:01:59Z'
+    where: x3
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11434/v1
+        model: mistral-medium-3.5:128b
+      digest_found: 0341632adb051badc332bd814779ab931ab78619750bebe3b7c7b1401e9d70df
+      default:
+        s: 70.11
+        tokens_out: 25
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 12.32
+        tokens_out: 25
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 2.0
+      deterministic: true
+      json_valid: true
+- id: dgx
+  where: dgx
+  tag: mistral-medium-3.5:128b
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: mistral-medium-3.5:128b
+  digest: 0341632adb051badc332bd814779ab931ab78619750bebe3b7c7b1401e9d70df
+  checked_at: '2026-10-31T14:10:38Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:10:38Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: mistral-medium-3.5:128b
+      digest_found: 0341632adb051badc332bd814779ab931ab78619750bebe3b7c7b1401e9d70df
+      default:
+        s: 29.51
+        tokens_out: 25
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 8.7
+        tokens_out: 25
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 2.9
+      deterministic: true
+      json_valid: true
+  server: ollama 0.40.13
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-mistral-medium-35
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-mistral-medium-35
+  checked_at: '2026-10-31T13:56:09Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:56:09Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-mistral-medium-35
+      digest_found: null
+      default:
+        s: 0.84
+        tokens_out: 25
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 0.73
+        tokens_out: 25
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 34.5
+      deterministic: true
+      json_valid: true
+capabilities:
+  reasons: false
+  json_mode: true

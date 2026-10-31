@@ -180,7 +180,8 @@ Without sampling (`do_sample=False`) a local model on one machine usually gives 
 every time; the three repeats check that instead of assuming it (a `rouge_l` spread of 0 means
 every delta is real). Its `latency_ms` has a spread, and depends on the machine:
 set `EVAL_HOST_LABEL` in `.env` to name the machine, so latency is compared only where it was
-measured alike (the inspector warns when it is not).
+measured alike (the inspector warns when it is not). A model that runs in the harness's own process
+runs on the runner, so the runner's name and libraries are its deployment's too.
 
 ## 5. Compare, and choose
 

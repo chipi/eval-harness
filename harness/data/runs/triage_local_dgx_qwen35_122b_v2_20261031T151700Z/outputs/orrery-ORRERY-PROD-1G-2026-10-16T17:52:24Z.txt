@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "(delete me)", "model_disposition": "cleanup", "reason": "The alert name explicitly contains the marker '(delete me)', indicating this is a known test or validation signal intended for removal rather than a production incident."}

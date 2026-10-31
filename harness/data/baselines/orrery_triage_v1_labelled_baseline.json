@@ -1,0 +1,36 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "baseline_id": "orrery_triage_v1_labelled_baseline",
+  "build": {
+    "dirty": false,
+    "ref": "44863aeef2ff57677b352b8b571230c560ff6fd2",
+    "source": "git"
+  },
+  "dataset_id": "orrery_triage_v1_labelled",
+  "fingerprint_hash": "653e1097cc39c5c2d860643b310f9e55c5af46e762c97833b21eea97457780a9",
+  "goal": "triage_orrery",
+  "promoted_at": "2026-10-31T13:19:25Z",
+  "promoted_from": "triage_baseline_pro_v1_20261030T132352Z",
+  "reason": "Nothing is decided at n = 65: on the combined cost the paired test ties every arm under the false-alarm ceiling with the leader, the arm that always dismisses among them; the ceiling (production's 4-pass mean, 21.25 of 31) was set after the results and sits within one or two false alarms of 18 rows; a no-decision scored as an escalation, a path production does not have. Production's own model is promoted as the baseline the next round measures against (owner, 2026-10-31). Next: a no-decision counts as wrong on both sides, the ceiling becomes no worse than this baseline by the paired test, and the gold grows to the 93 owner-labelled decisions before machines are booked.",
+  "reference_tier": "gold",
+  "scores": {
+    "correct": 0.569231,
+    "cost_usd": 0.004992,
+    "escalated": 0.4,
+    "false_alarm": 0.677419,
+    "false_dismiss": 0.176471,
+    "latency_ms": 22736.258416,
+    "model_correct": 0.523077,
+    "model_escalated": 0.061538,
+    "model_false_alarm": 0.354839,
+    "model_false_dismiss": 0.529412,
+    "n_probes": 1.538462,
+    "resumed": 0.938462,
+    "table_miss": 0.0,
+    "tokens_in": 3463.076923,
+    "tokens_out": 1327.030769,
+    "total_cost_usd": 0.32445302,
+    "total_tokens_in": 225100.0,
+    "total_tokens_out": 86257.0
+  }
+}

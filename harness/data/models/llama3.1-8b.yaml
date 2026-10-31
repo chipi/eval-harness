@@ -1,0 +1,118 @@
+model_id: llama3.1-8b
+kind: llm
+name: Llama 3.1 8B
+aliases:
+- llama3.1:8b
+weights: open
+licence: LLAMA 3.1 COMMUNITY LICENSE AGREEMENT
+deployments:
+- id: x3
+  where: x3
+  tag: llama3.1:8b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: llama3.1:8b
+  server: ollama 0.40.13
+  digest: 46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T13:55:33Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:55:33Z'
+    where: x3
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11434/v1
+        model: llama3.1:8b
+      digest_found: 46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e
+      default:
+        s: 4.67
+        tokens_out: 19
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 0.48
+        tokens_out: 19
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 39.8
+      deterministic: true
+      json_valid: true
+- id: dgx
+  where: dgx
+  tag: llama3.1:8b
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: llama3.1:8b
+  digest: 46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e
+  checked_at: '2026-10-31T14:07:30Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:07:30Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: llama3.1:8b
+      digest_found: 46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e
+      default:
+        s: 4.68
+        tokens_out: 22
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 0.53
+        tokens_out: 22
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 41.5
+      deterministic: true
+      json_valid: true
+  server: ollama 0.40.13
+- id: mac
+  where: mac
+  tag: llama3.1:8b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11435/v1
+    model: llama3.1:8b
+  server: ollama 0.40.13
+  digest: 46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T13:55:34Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:55:34Z'
+    where: mac
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11435/v1
+        model: llama3.1:8b
+      digest_found: 46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e
+      default:
+        s: 5.01
+        tokens_out: 19
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 0.55
+        tokens_out: 19
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 34.5
+      deterministic: true
+      json_valid: true
+capabilities:
+  reasons: false
+  json_mode: true

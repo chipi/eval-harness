@@ -1,0 +1,5 @@
+model_id: eval-qwen-flash
+kind: llm
+aliases:
+- eval-qwen-flash
+weights: proprietary

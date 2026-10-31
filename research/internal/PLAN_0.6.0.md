@@ -1,15 +1,16 @@
-# Plan: 0.6.0, datasets from production (RFC-019) — the engineering plan, v2
+# Plan: 0.6.0, datasets from production (RFC-019) — the engineering plan, v3
 
 ## Status
 
-- **v2**, 2026-10-29: after two independent reviews (advisor, Fable 5).
+- **v3**, 2026-10-30: after three independent reviews (advisor, Fable 5).
   - Review 1: B1–B3, M1–M11, m1–m12.
-  - Review 2: "ready to build after three changes": R2-A to R2-K, r2-m1 to r2-m8.
+  - Review 2: R2-A to R2-K, r2-m1 to r2-m8.
+  - Review 3: "ready to build after three changes": R3-E1 to R3-E5, r3-m1 to r3-m9.
   - Every finding is folded in, tagged with its id.
-- v1 is in git history: `777b6cac`.
+- v1 and v2 are in git history: `c944a1a9`, `ee5b8bbd` on main.
 - **What we build.** How it is applied to the triage fleet is the application plan,
   [PLAN_0.6.0_FLEET.md](PLAN_0.6.0_FLEET.md): the data, the references, the arms, the runs, the cost.
-- Branch: `060` (PR #30 open, green).
+- Branch: `060-capture`, from main `5e6209cc` (PR #30 merged and deployed).
 - Design: [RFC-019](../../docs/rfc/RFC-019-datasets-from-production.md), second draft. It is brought in line
   with this plan in P10, and every divergence is listed there.
 
@@ -72,6 +73,29 @@ Done (engineering) when:
 Each phase ends with its tests green, `make quality` clean, and a local commit. A phase starts only when the
 phases it depends on are committed.
 
+**The order: one thin path end to end first, then the breadth** (owner, 2026-10-30). The phases below are
+what gets built; they are built in two passes.
+
+1. **The walking skeleton**, the triage case with a stand-in model ($0):
+   - P1, `jsonl` only, plus `importer-check`;
+   - P2, `capture` only;
+   - P3, without `--one-per` or tags;
+   - P4, with its proof (exactly one recommendation on the goal page);
+   - P8, the triage importer, adapter and scorer;
+   - one run on the delivered 236 items, and its goal page.
+
+   This proves the risky parts first: the reference route (R2-A, R3-E3), the outcome mapping on real data
+   (R3-E2), and the adapter calling the fleet (M6). Each step lands as its own commit with its tests.
+2. **The breadth**, each widening a path that already works:
+   - P1's `tsv`, `github` and `langfuse`;
+   - P2's scrub and `captures`;
+   - P3's `--one-per` and tags;
+   - P5;
+   - P6;
+   - P7;
+   - P9;
+   - P10's docs, finished.
+
 ### P1. Importers (core) — depends on nothing
 
 **`_importers.py`:**
@@ -91,8 +115,12 @@ phases it depends on are committed.
 
 **`github`:**
 - stops paging at `until` (m7);
-- **records `actor { login }` on every close and reopen event** (R2-I), so a mapping can tell a person from a
-  bot. Each outcome lists `close_events: [{at, reason, actor}]` and `reopen_events: [{at, actor}]`;
+- **records, for every close and reopen event, its actor and the comment beside it** (R2-I, R3-E1): author,
+  time and the first 300 characters. A fleet that writes to GitHub with its owner's token (the triage fleet
+  does: every close and reopen is `chipi`'s) can only be told apart by its comment text (`Recurred …`,
+  `signal-fleet`), and a person's close comment carries the verdict ("Fixed in v0.8.0", "external browser
+  noise"). Each outcome lists `close_events: [{at, reason, actor, comment}]` and `reopen_events: [{at, actor,
+  comment}]`;
 - the array variables and `duplicateOf` were verified live in review 1.
 
 **`langfuse`:**
@@ -108,7 +136,7 @@ phases it depends on are committed.
 
 **Tests** (`tests/test_importers.py`), no network in CI:
 - `jsonl` and `tsv`: mapping, where (an empty cell too), window, dropped-row count;
-- `github` against a stand-in `gh` (`EVH_GH`): pagination, a duplicate, a reopen with its actor, the early stop;
+- `github` against a stand-in `gh` (`EVH_GH`): pagination, a duplicate, a reopen with its actor and comment, the early stop;
 - `langfuse` against a local HTTP stand-in: a non-http host refused, the path-only url;
 - `importer-check` goes red on:
   - a duplicate id;
@@ -197,35 +225,49 @@ with an optional `split`, m11) and `text` (`shown|hidden`).
 - No `--as-of` (M4): outcomes live in the capture.
 - **The default name is `gold/<D>`**, the reference `experiment-run` scores against directly
   (`experiment_run.py:189-198`). `--name` writes it under another name, read by `rescore --reference-id` (R2-A).
+- **It never overwrites a reference** (R3-E4): if the target exists, it refuses and names `--name`.
 
-**The mapping language** (M4, R2-I): an ordered list of rules. Each rule has:
+**The mapping language stays small** (M4, R3-E2): an ordered list of rules over a record's **flat outcome
+fields**. A project's importer computes those fields (`issue_verdict`, `days_to_filing`, `seen_again`, …;
+P8 lists the triage fleet's), because the time arithmetic and list logic a real mapping needs (signed
+differences, "a later element with both conditions", "an empty list") are the project's semantics, not a
+language's. Each rule has:
 
 | key | meaning |
 |---|---|
-| `when: {path: value or [values]}` | all must hold; a list in the record matches when any element does |
-| `unless: {path: value or [values]}` | none may hold. For example, `close_events[*].actor: <the fleet's login>` excludes the bot's own closes, and `labels: triage-fleet/escalated` excludes escalation issues |
+| `when: {field: value or [values]}` | all must hold |
+| `unless: {field: value or [values]}` | none may hold |
+| `exists: [field, ...]` / `absent: [field, ...]` | the field is present and not null / missing or null |
+| `range: {field: {min: N, max: N}}` | a number within bounds (either bound optional; signed) |
 | `min_age_days: N` | the record is at least N days older than the capture |
-| `within_days: {from: path, to: path, max: N}` | two times in the record at most N days apart. For example, the decision and the issue's filing |
 | `label: <text>` or `skip: true` | what the rule gives |
 
-The first matching rule wins. A record that matches no rule gets no label.
+The first matching rule wins. A record that matches no rule gets no label. Fields are top-level names in the
+record's `outcome`, so there is no path syntax to define.
 
-**The result** is a gold reference:
+**The result** is a reference, gold or silver by its name:
 - its manifest carries `from_outcomes: {capture, mapping, mapping_sha256, matched, skipped, unmatched}`;
 - **its own caveat** (M10): "OUTCOME: what production recorded afterwards, as of <capture date>; not a person's
   label";
 - `reference.schema.json` gains the optional `from_outcomes`, and `authored_by` is unchanged.
 
-**A goal decides on `gold/<D>`.** Another reference on the same dataset (a second outcome version, hand labels)
-is second-named and read through `rescore --reference-id <name> --out data/runs-<name>`.
+**A goal decides on `gold/<D>`.** Every other reference on the same dataset carries a tier and a second name
+(R3-E3): `reference_manifest` requires `<gold|silver>/<name>`, `rescore` derives the tier from the prefix, and the
+catalog lists only `gold/*` and `silver/*`. Two gold references on one dataset would each get a decision on
+the goal page (`catalog_build.py:1928-1930, 2375`), while silver groups are shown beside gold and never decide
+(`:2564-2569`). So a second reference is **`silver/<name>`**, with its own caveat saying what it is
+(ADR-0020; the owner's vocabulary call, proposed there). It is read through `rescore --reference-id
+silver/<name> --out data/runs-<name>`.
 
-**Proof first** (R2-A): before P4 lands, a fixture catalog with one run in `runs` and its rescore in
-`runs-<name>`. Read the goal page: it decides on `gold/<D>` only, and the rescore shows as its own base and does
-not join the decision group. If it does join, P4 adds the smallest fix in the goal's grouping, and §5 names it.
+**Proof first** (R2-A, R3-E3): before P4 lands, a fixture catalog with a run in `runs` scored on `gold/<D>`, and
+its rescore on `silver/<name>` in `runs-<name>`. The goal page shows **exactly one recommendation**, from
+`gold/<D>`, and the silver group beside it. If not, P4 adds the smallest fix in the goal's grouping, and §5
+names it.
 
 **Tests:**
-- the language: nested paths, `any`, `unless`, `min_age_days`, `within_days`, first match, skip, unmatched
-  counted;
+- the language: `when`, `unless`, `exists`, `absent`, `range` with a signed value, `min_age_days`, first
+  match, skip, unmatched counted;
+- the refusal to overwrite an existing reference;
 - the manifest and caveat, and V16;
 - a run scored against it, coverage recorded, and the second-name route through rescore.
 
@@ -288,7 +330,13 @@ script is committed in the fleet's repository, and its commit is recorded in the
 - `fields = {evidence_level, fleet_disposition, fleet_model, stage, fingerprint, decision_date}` (m12, r2-m3,
   M5);
 - `created_at = fleet_decision.ts`;
-- `outcome = row.outcome` plus `ground_truth`.
+- `outcome`: the **flat fields** P4's rules read (R3-E2), computed here from the fleet's record:
+  - `issue_number`, `issue_verdict` (`fixed`, `noise`, `duplicate`, `open`, `unknown`: from the close comment,
+    following a duplicate to its target), `is_escalation_issue`, `is_config_followup` (the dismiss decision's
+    own `[config]` proposal), `issue_predates_decision`, `days_to_filing` (signed), `reopened`;
+  - `seen_again`, `later_file_within_days`, `age_days`;
+  - `test_signal` (a blank-stage probe, R3 A5), `stage`;
+  - and `ground_truth` (the fixture labels).
 
 **`adapter.py`** calls `investigate(signal, probe_table=probes)` from the `TRIAGE_FLEET_SRC` checkout at a
 recorded commit. It:
@@ -309,11 +357,19 @@ recorded commit. It:
 **The call shape is the fleet's own** (`response_format: json_object`, `temperature: 0`). Whether every provider
 accepts it is the application plan's smoke step (R2-C).
 
-**The scorer** (m1), per item:
+**The scorer** (m1, R3-E5), per item:
 - `table_miss` on every item; nothing else is scored on a miss;
 - `escalated` on every scored item;
-- `correct`, `false_dismiss` and `silent_drop` only where the reference has a label;
+- only where the reference has a label, and **otherwise the key is left out, never `None` or 0** (the aggregate
+  averages only the rows that carry a key, `experiment_run.py:310-312`; `_runs.score_of` returns None for a
+  missing key):
+  - `correct`: the disposition equals the label;
+  - `false_dismiss`: the label is `file` or `escalate`, and the arm dismissed or cleaned up;
+  - `false_alarm`: the label is `dismiss` or `cleanup`, and the arm filed or escalated;
+  - `silent_drop`: `correct_autonomous` is `escalate`, and the arm dismissed;
 - `cost_usd`, `latency_ms`, `n_probes`.
+
+A `not-file` label (a filed issue closed as not planned) counts as `dismiss` for these rules.
 
 The reference text is a bare label or JSON `{disposition, correct_autonomous}` (M11).
 
@@ -372,7 +428,9 @@ what was built:
 - `labels` became `tags`;
 - the mapping language;
 - the caveat;
-- the `gold/<D>` route;
+- the `gold/<D>` route, and second references as `silver/<name>` with their own caveat (R3-E3);
+- outcomes read from the close comment's verdict, not GitHub's close reason (R3-E1);
+- the mapping language over flat fields a project computes (R3-E2);
 - reading production is the project's own script.
 
 **Other docs:**
@@ -408,7 +466,8 @@ what was built:
 
 ## 6. Engineering assumptions (stated, not asked)
 
-- Outcome references are gold, with their own caveat (M10).
+- The deciding reference is `gold/<D>`; every other one is `silver/<name>` with its own caveat (R3-E3), proposed
+  to the owner in ADR-0020 because silver means "a model wrote it" today.
 - A dataset-level `tags`, not a new word (R2-K).
 - A licence does not set `text: hidden` by itself.
 - The fleet's code comes from a `TRIAGE_FLEET_SRC` checkout at a recorded commit.

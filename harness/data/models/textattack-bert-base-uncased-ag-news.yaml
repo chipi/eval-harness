@@ -1,0 +1,5 @@
+model_id: textattack-bert-base-uncased-ag-news
+kind: ml
+aliases:
+- textattack/bert-base-uncased-ag-news
+weights: open

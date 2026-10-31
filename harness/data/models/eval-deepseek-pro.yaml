@@ -1,0 +1,6 @@
+model_id: eval-deepseek-pro
+kind: llm
+aliases:
+- eval-deepseek-pro
+weights: open
+licence: MIT

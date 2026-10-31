@@ -1,0 +1,5 @@
+model_id: eval-gpt-55
+kind: llm
+aliases:
+- eval-gpt-55
+weights: proprietary

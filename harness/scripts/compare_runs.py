@@ -36,55 +36,105 @@ from evaluation_harness._common import (
 )
 
 
+def _short(v: object, n: int = 40) -> str:
+    text = "—" if v is None else str(v)
+    return text if len(text) <= n else text[: n - 1] + "…"
+
+
+def _paths_in(part: str, fa: dict, fb: dict) -> list[str]:
+    from evaluation_harness._fingerprint import differing_paths  # noqa: PLC0415
+
+    return differing_paths({part: fa.get(part)}, {part: fb.get(part)})
+
+
+def _value(fp: dict, path: str) -> object:
+    cur: object = fp
+    for key in path.split("."):
+        cur = cur.get(key) if isinstance(cur, dict) else None
+    return cur
+
+
+def _name(path: str) -> str:
+    return path.partition(".")[2] or path
+
+
+def _what_moved(part: str, fa: dict, fb: dict) -> str:
+    """One line naming a moved part and how: the deployment by id, the settings by key and value."""
+    paths = _paths_in(part, fa, fb)
+    if part == "deployment":
+        da, db = fa.get("deployment") or {}, fb.get("deployment") or {}
+        return f"deployment differs: {_short(da.get('id'))} vs {_short(db.get('id'))}"
+    if part == "settings":
+        moved = [f"{_name(p)} ({_short(_value(fa, p))} vs {_short(_value(fb, p))})" for p in paths]
+        return "settings differ: " + ", ".join(moved)
+    if part == "data":
+        return "data differs: " + ", ".join(_name(p) for p in paths)
+    return "instrument differs: " + ", ".join(_name(p) for p in paths)
+
+
 def _report_fingerprint_delta(a: dict, b: dict) -> None:
-    """Say WHAT changed between the two runs, not just that something did.
+    """Say WHICH PART changed between the two runs, not just that something did.
 
     "The fingerprints differ" is true and useless. A comparison is only an experiment if
-    exactly one thing moved, and this names which fields did — so a 3x latency win reads
-    as "you moved to the DGX" rather than "the model got faster".
+    exactly one thing moved, and this names the part (instrument, data, deployment, settings)
+    and what in it - so a 3x latency win reads as "the deployment differs: dgx vs mac" rather
+    than "the model got faster". The runner (where evh ran) is outside the hash: it is shown as
+    a condition, never as a mismatch.
     """
     fa, fb = a.get("fingerprint"), b.get("fingerprint")
-    # DIFFERENT FINGERPRINT VERSIONS HASH DIFFERENT THINGS. v2 added
-    # `data.references_sha256`, so a v1 hash and a v2 hash are not comparable even when
-    # everything either one covers is identical -- and a bare "the hashes differ" would
-    # send a reader looking for a change that is not there. Said out loud, because a
-    # version field nothing reads is decoration.
-    if fa and fb and fa.get("version") != fb.get("version"):
-        print(
-            f"\n  NOTE: fingerprint versions differ (v{fa.get('version')} vs "
-            f"v{fb.get('version')}). v2 hashes the reference BYTES and v1 did not;\n"
-            f"  v3 widens that to every file in the reference directory, not just\n"
-            f"  *.txt, so\n"
-            "  the two hashes cannot be compared directly — the field-by-field list\n"
-            "  below is the comparison that still means something. Re-run the older\n"
-            "  arm to put both on the same version."
-        )
     if not (fa and fb):
         print(
             "\n  NOTE: at least one run predates fingerprinting, so what else changed"
             "\n  between them cannot be checked — only asserted."
         )
         return
-    if fa.get("hash") == fb.get("hash"):
+    if fa.get("version") != fb.get("version"):
         print(
-            "\n  Fingerprints MATCH: dataset, reference, adapter, model, host and harness"
-            "\n  are identical, so any delta above is the arm or its own noise."
+            f"\n  NOTE: fingerprint versions differ (v{fa.get('version')} vs v{fb.get('version')}):"
+            "\n  they hash different things, so no part can be compared. Re-run the older arm to put"
+            "\n  both on the same version."
         )
         return
 
-    from evaluation_harness._fingerprint import differing_paths  # noqa: PLC0415
+    from evaluation_harness._fingerprint import PARTS, moved_parts  # noqa: PLC0415
 
-    moved = differing_paths(fa, fb)
-    # arm.params differing is the POINT of a comparison; everything else is a confound.
-    confounds = [p for p in moved if not p.startswith("arm.")]
-    print("\n  Fingerprints DIFFER. Fields that moved:")
-    for path in moved:
-        marker = "   " if path.startswith("arm.") else " ! "
-        print(f"   {marker}{path}")
-    if confounds:
+    moved = moved_parts(fa, fb)
+    if not moved:
         print(
-            f"\n  {len(confounds)} of those are NOT the arm (marked !). More than one thing"
-            "\n  changed, so this is not a controlled comparison — it is two observations."
+            "\n  Fingerprints MATCH: instrument, data, deployment and settings are identical,"
+            "\n  so any delta above is the run-to-run noise."
+        )
+    else:
+        print("\n  Fingerprints DIFFER. Parts that moved:")
+        for part in PARTS:
+            if part in moved:
+                marker = "   " if part in ("deployment", "settings") else " ! "
+                print(f"   {marker}{_what_moved(part, fa, fb)}")
+        confounds = [p for p in moved if p in ("instrument", "data")]
+        if confounds:
+            print(
+                f"\n  {len(confounds)} of those are NOT the arm (marked !). More than one thing"
+                "\n  changed, so this is not a controlled comparison — it is two observations."
+            )
+        elif len(moved) > 1:
+            print(
+                "\n  The deployment and the settings both moved: two things were varied, so a delta"
+                "\n  cannot be put on either alone."
+            )
+    ra, rb = fa.get("runner") or {}, fb.get("runner") or {}
+    if ra != rb:
+        diff = [k for k in sorted(set(ra) | set(rb)) if k != "libraries" and ra.get(k) != rb.get(k)]
+        libs = sorted(
+            k
+            for k in set(ra.get("libraries") or {}) | set(rb.get("libraries") or {})
+            if (ra.get("libraries") or {}).get(k) != (rb.get("libraries") or {}).get(k)
+        )
+        print(
+            "\n  Runner (where evh ran; a condition, outside the hash) differs: "
+            + (", ".join(f"{k} {_short(ra.get(k))} vs {_short(rb.get(k))}" for k in diff) or "libraries")
+            + (f"; libraries {', '.join(libs)}" if libs else "")
+            + "\n  Latency is the deployment's, measured from the runner: speed across runners is not"
+            "\n  the same measurement."
         )
 
 

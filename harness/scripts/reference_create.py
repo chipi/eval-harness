@@ -198,7 +198,7 @@ def _from_run(run_id: str, dataset_id: str, items: list[dict], args: argparse.Na
         "authored_by": m.get("config_id"),
         "authored_with": m.get("adapter"),
         "model": params.get("model", params.get("provider", "unknown")),
-        "system_under_test": ((m.get("fingerprint") or {}).get("system_under_test") or {}).get("model"),
+        "system_under_test": (m.get("fingerprint") or {}).get("deployment"),
         "params": params,
         "from_run": source,
         "cost_usd": 0.0,

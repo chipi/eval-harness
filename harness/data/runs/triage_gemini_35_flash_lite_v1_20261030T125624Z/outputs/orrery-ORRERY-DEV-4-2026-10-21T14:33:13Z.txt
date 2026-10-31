@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "zz-probe-dev-reject-in-script", "model_disposition": "cleanup", "reason": "The error title contains 'zz-probe', which is a standard synthetic test marker indicating a deliberate probe or test payload injected into the development environment."}

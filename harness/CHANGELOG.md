@@ -13,15 +13,122 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Datasets from production: the capture lane** (RFC-019, PRD-014, ADR-0019). A project keeps what a
+  production system did as a **capture**, then makes datasets and references from it:
+  - **`evh capture`** reads records through an **importer** (`--importer jsonl|tsv|github|langfuse`, or a
+    project's own `path.py:Class`) into `data/captures/<id>/`: each record's id, body, fields, time, source
+    and outcome, hashed one by one (`capture.json`); `--since-capture` continues from an earlier capture.
+    **`evh importer-check`** tests an importer against the contract; **`evh captures`** lists them.
+  - **`evh capture-scrub`** runs a project's own scrubber over a capture's records and re-hashes the ones
+    it changed, keeping their earlier hashes.
+  - **`evh dataset-from-capture`** freezes a selection (`--where`, `--dedup`, `--one-per`, `--sample`),
+    typed fields from a field set, and `--tag K=V` labels; only the body becomes the item.
+  - **`evh reference-from-outcomes`** turns what happened afterwards into labels by a small rule set
+    (`when`, `unless`, `exists`, `absent`, `range`, `min_age_days`). Such a reference is `silver/…` with
+    its own caveat, and **never decides a goal**: with gold beside it, or with no gold at all (ADR-0020).
+  - **`evh dataset-split`** makes `<D>_dev` and `<D>_heldout` by hash (stable across versions, a group
+    kept whole with `--key`) or by time.
+  - **V17** checks every capture's records against their hashes; a capture whose records a project keeps
+    out of git (fetched from where it publishes them) is named as not fetched, not failed.
+- **`text: hidden` on a dataset**: none of its text, nor anything derived from it, on any public surface:
+  the catalog's pages, the inspector and `evh mcp` in public mode, and a deployment's copy of the data
+  (`_release.py copy-data`, which also refuses a release carrying reference texts or run outputs git does
+  not track). `dataset-from-capture --hide-text` sets it.
+- **Dataset tags on the views**: the catalog's datasets page groups by each tag key and shows where a
+  dataset came from (a capture and its selection); **`evh datasets --tag K=V`** filters the same way.
+- **Two examples from a production fleet**: `examples/triage-fleet/` (an agent's real triage decisions,
+  replayed through its own code; the operator's verdicts as gold; the model's own decision scored beside
+  the fleet's, before and after its gates) and `examples/signal-fleet-dedup/` (a regression guard for the
+  fleet's de-duplication functions; no model). Their data is published on Hugging Face and fetched by a
+  pinned revision.
 - **A share card on every catalog page**: its title and its opening line as `description`, `og:*` and
   `twitter:card`, and with **`evh catalog --card URL`** the image a shared link shows. The pages stay
   `noindex`.
+- **Onboarding models, once, for every experiment** (RFC-020). A project keeps a **model record** per model,
+  `data/models/<model_id>.yaml`: its aliases, weights and licence, what it can do, the settings that hold
+  whatever the task (`reasoning_effort`; device, precision, batch size for an ML model) with why, its history,
+  and its **deployments** (each place and build it runs: machine or host, server and version, digest, revision
+  or hash, the route for a hosted one), each onboarded on its own.
+  - **`evh model-onboard <id> --deployment <d>`** probes an LLM through the deployment's endpoint: the digest the
+    server reports, whether it reasons at the default and with the record's settings, JSON, determinism and
+    speed (the deployment's, not the record's); a different build than the record's is flagged and kept in its
+    history. An ML model or a baseline through an arm (`--config`). `ONBOARD PASS` or `ONBOARD CHECK`.
+  - **`evh arm-smoke --config <arm>`** runs any arm on a few items before its full run and writes no run: runs,
+    valid output for the scorer, a projection of the full run's time and cost, build pinned, determinism; for an
+    LLM every model call (reasoning, slow, long, cut off, no answer, from a provider's `_meta` or an adapter's
+    `meta["calls"]`; a reply is long past half the arm's reply cap, or with no cap against the arm's own median,
+    so neither a summarising arm nor an agent's short probe calls beside its answers make a long reply).
+    `SMOKE PASS` or `SMOKE CHECK`, written into the record.
+  - An arm names a record and a deployment (**`model_record:`**, **`deployment:`**): the record's settings go under
+    its params, which add the task's own (its reply cap, its call limit: a record refuses them, since they would
+    reach every other experiment's arms); the run records both. **V18** checks the records, and the arm configs in `data/configs` and those validate.json's `configs` globs name; `validate` notes an arm never smoked, a
+    reasoning model with no `max_tokens`, a tag that is a different build on two deployments.
+  - The catalog's **Models** page and a page per model, a smoke badge on the arms page, a models tile; **`evh
+    models`** for the same (and over `evh mcp`). A model is *vetted* when an arm that names it passed its smoke;
+    its onboarding alone makes it *onboarded*.
+- **Scoring that evolves** (RFC-022). A round records the scorer it is judged by, and a scoring change is a
+  step of its own:
+  - **`evh score-preview --goal G [--round rN]`** re-scores the goal's arms (or the round's) with the scorer in
+    the working tree, in a temporary directory, and prints each arm before and after and the decision before
+    and after; it writes nothing and spends nothing.
+  - **`evh rescore --goal G --round rN --why "…"`** re-scores a round's arms; the round records the change
+    (`scoring`: when, the scorer, why, where).
+  - **`evh round-open --from rN --keep all --scoring "…"`** opens the next round judged by the current scorer:
+    every carried arm another scorer judged is re-scored first ($0), each one's measure printed before and after.
+  - Re-scores land in **one place the tool designates**, `data/runs-rescored/<scorer>/<source>/`, read by the
+    catalog, the goals, the rounds and `validate`; `--out` still names any other. Rounds read an arm from its
+    re-score as the goals do, and `evh rounds` and the goal page show a round's scorer and scoring changes.
+  - **`evh round-open --adopt`** records a goal's first round from the arms already run for it.
+  - A goal axis's **`limit: baseline`**: an arm is out when the paired test finds it worse than the group's
+    baseline arm on that measure.
+  - `validate` notes a round whose arms one adapter scored in more than one version.
+  - `evh init`'s `.gitignore` ignores the throwaway `data/runs-smoke*/` and `data/runs-tune*/`.
+- **`call_timeout_s`, an arm's call limit, for the built-in providers**: the SDK client's timeout (its own
+  default is 10 minutes). The RUNBOOK told arms to set a call limit only the triage adapter honoured.
+- **The triage example's adapter takes `reasoning_effort` and `max_tokens` per arm**, reports every model call
+  for `arm-smoke`, and records a call that fails the same way twice at temperature 0 as the fleet's own "no
+  terminal decision" (`no_decision`, `deferred`). With `reply_in_tool_call: <name>` it reads an answer a server
+  returns as a tool call to that name, with no text: Ollama 0.40 does that to every gpt-oss answer, and the fleet,
+  which reads only the text, got nothing.
+- **No key for a local server**: the `openai` provider asks for no `OPENAI_API_KEY` when its address is on this
+  machine (localhost, 127.x, ::1) or on Ollama's port, 11434; Ollama takes any key. Any other address still
+  needs one, and a key that is set is used.
+- **Tutorial 7, set up a model before you test it**: a model record, onboarding it where it runs, an arm that
+  names it, a smoke before the full run; on your own machine with Ollama.
 
 ### Changed
+
+- **The goal page explains, then answers, then shows how it got there**: what it is for first; then the answer
+  so far, led by the latest round's conclusion when one closed after the baseline was promoted (the promotion's
+  reason folded under it); then its rounds, one folded section each, headed by its row (round and status, the
+  conclusion, what it set out to learn, arms and best), and inside it a heading per part (what changed, arms
+  with retirements grouped by reason and the carried ones folded, scoring, evidence, suggested next, notes). The
+  rounds table is gone.
+- **The Models page has one line per cell**: the first build and "+k", the deployments' ids, "N goals" with the
+  first named, the single best placing with "+k more"; vetted records first. **A model's page** has one folded
+  section per deployment, holding its build and its own onboarding with the flags it accepts and why; its arms
+  table names each arm's deployment and reads a re-scored arm as the goals do.
+- **The datasets table shows each tag as a chip.**
+
+- **Fingerprint v5** (RFC-021): what each part identifies. `instrument` (the harness and the adapter's code),
+  `data`, `deployment` (the system under test as it executed: from the arm's model record and deployment, the
+  adapter's hook, or the params; the weights, the server, where it ran; in process only when the arm calls
+  nothing elsewhere) and `settings` (how it was asked: the params that change behaviour, and what a hook declares
+  about its prompt), each hashed, and `hash` over the four. The machine `evh` ran on is `runner`, recorded outside
+  the hash: the same deployment run from two machines is the same measurement. `evh run-compare` names the part
+  that moved; the inspector's speed warning tells a deployment that differs from a runner that does. Every
+  committed run is migrated by **`evh fingerprint-migrate`** (idempotent, `--dry-run`); v4 fingerprints are not kept.
+- **`data/models.yaml` is replaced by the model records** (`data/models/`): its 41 entries are migrated one record
+  each, and the arms page's open / proprietary filter reads the records.
 
 - **CI runs once per merge, not twice**: a squash onto main whose tree is its pull request's head,
   tested green and up to date with main, skips the workflows that already passed on it; the deploy
   no longer waits ~13 minutes for a second run of the same files. Anything else runs them again.
+- **An item id may contain `:`, `@`, `+` and `=`** (a production record's id, e.g. a fingerprint and its
+  time), on the inspector's item view too; still never a path.
+- **A deployment copies its data through `_release.py copy-data`**, not a list in `render.sh`: the same
+  directories, plus each capture's `capture.json` (never its records), with the `text: hidden` rules
+  applied and the untracked-text refusal checked before anything is written.
 
 ### Fixed
 
@@ -36,6 +143,58 @@ that can move a result is never a patch release without saying so under **Change
 - **The site's links to its home page** point at `/`, never `index.html` (analytics counted the two
   apart, search engines saw two addresses for one page), and each of its pages names its own address
   as `<link rel="canonical">` and `og:url`, checked by `site/build.py --check`.
+- **`validate` checks every git-tracked runs directory**, those `committed` in validate.json with their floors
+  and every other one: a directory re-allowed in `.gitignore` but not added to the list was never checked
+  (a set of 65 re-scored triage runs, before RFC-022 gave re-scores one place).
+- **The local catalog reads what is committed.** It read every `data/runs*` directory on disk, so a smoke
+  pass in an ignored `runs-smoke*` showed as a result locally and was gone from a clone and the published
+  catalog. Directories git ignores are no longer read (outside a git checkout everything is). A measured arm
+  the goals read from its re-score says so on its page, on the arms page and in `evh arms`.
+- **Runs written where git does not keep them are named.** `EVAL_RUNS_DIR` pointed at any
+  `data/runs-*` directory that `.gitignore` does not re-allow wrote runs that were never committed
+  and that no catalog showed, without a word: 35 self-hosted triage runs sat in `data/runs-local`
+  that way. `experiment-run` and `rescore` now print a `WARNING` when they write to such a directory
+  (throwaway `runs-smoke*` and `runs-tune*` stay silent), or outside the project's data, where nothing
+  reads them, and `evh validate` notes one that holds
+  finished runs. The RUNBOOK's scratch example is `data/runs-smoke`, the throwaway name git already
+  ignores.
+- **One row per arm when a scorer changed.** A goal listed an arm twice when its runs had been
+  re-scored (`evh rescore`) into a derived set, once per directory, and dropped the measured runs
+  whose older score lacked the goal's measure: 37 triage arms were listed twice, 15 only from
+  the re-score. A re-score against the same reference now stands in for the run it re-read on the
+  goal pages, in `evh goals` and in the recommendation, which says how many arms it read that way.
+  `evh goals --goal` also prints a dataset's notes, as its page did.
+- **A deployment the adapter's hook declares keeps the server it was called on.** Its `server` was
+  always null, so a self-hosted run whose adapter has a `fingerprint()` hook lost its Ollama or vLLM
+  URL. The 130 triage runs are backfilled with the fleet they replayed (`tools/backfill_triage_fleet.py`:
+  the fleet's code hash and commit `f07efa9`, the prompt's hash, each checked against what the runs'
+  own items recorded) and re-sealed.
+- **Onboarding a model on several machines at once keeps every result.** `model-onboard` and `arm-smoke` read the
+  record when they started and wrote all of it back when they finished, so the slower erased the other machine's
+  result. They re-read it under a lock and write only their own deployment or smoke.
+- **A LiteLLM address given with `/v1` is not given a second one** (`http://host:4000/v1` became `/v1/v1`, a 404),
+  and a reasoning setting sent through LiteLLM is named in `allowed_openai_params`: most hosted model groups refused
+  `reasoning_effort` without it (`UnsupportedParamsError`).
+- **A record can accept a flag as the model's nature** (`accepted: {reasoning: "<why>"}`): onboarding and arm smokes
+  report it as accepted and pass (gpt-oss reasons whatever it is asked). A deployment accepts kinds of its own
+  beside the record's: a hosted gateway's build cannot be pinned, and its repeats at temperature 0 vary.
+- **A round with more than 40 arms is compared.** Its evidence asked the inspector for one comparison of every
+  arm, which refuses past 40, and the refusal left the rows empty without a word (the triage round, 52 arms). Past
+  the inspector's limit the round runs the same paired test on the scores directly; a refusal becomes a note.
+- **A project module edited within the second is what runs.** Adapters and hooks were imported through
+  Python's bytecode cache, which trusts a `.pyc` while the source's modification time (whole seconds) and size
+  match: a scorer edited to a value of the same length (`BONUS = 0.0` to `0.5`) and re-scored at once ran the
+  old code while the re-score recorded the new code's hash. They are compiled from the source every time.
+- **A system that ran in the harness's own process, with no hook, is in process.** A deployment taken
+  from the params was always `in_process: false`, so a local baseline (Lead-3, a keyword rule) kept its
+  libraries on the runner instead of the deployment. `evh fingerprint-migrate` brings existing v5
+  fingerprints to the rule when it has the run's params (11 runs here, one baseline's hash).
+- **A run stops when its server cannot be reached.** An adapter that turns a failed model call into an
+  answer (the triage replay records it as the fleet's "no terminal decision") wrote a complete-looking run
+  when a tunnel dropped: 54 and 65 refused items scored as the model's own failures. When every call an
+  item reports (`meta["calls"]`) failed reaching its server (connection refused, no route, a name that does
+  not resolve), `experiment-run` stops there with `STOPPED`, that item unwritten, and `--resume` calls it
+  again. A model's own failure is still a measurement.
 
 ## 0.5.0 — 2026-10-29
 

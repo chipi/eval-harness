@@ -147,7 +147,7 @@ def drive(base: str, overview: str = "") -> None:
         }
         cli = {
             ln[:17].strip(): ln[17:35].strip()
-            for ln in (overview or "").splitlines()[1:10]
+            for ln in (overview or "").splitlines()[1:11]
             if ln.startswith("  ")
         }
         check(
@@ -187,7 +187,7 @@ def drive(base: str, overview: str = "") -> None:
             page.locator("#period-span").inner_text().startswith("since ")
             and (page.get_attribute("#period-span", "title") or "").endswith(date.today().isoformat())
             and "compared" not in (page.get_attribute("#period-span", "title") or "")
-            and page.locator(".tile[data-tile='6'] .trend").inner_text() == "",
+            and page.locator(".tile[data-tile='7'] .trend").inner_text() == "",
         )
         page.locator('#spend button[data-unit-show="tokens"]').click()
         check(
@@ -223,9 +223,9 @@ def drive(base: str, overview: str = "") -> None:
         page.goto(base + "index.html")
         page.click('.nav details.navgroup[data-group="experiments"] > summary')
         check(
-            "menu: Experiments opens Arms, Configs and Metrics",
+            "menu: Experiments opens Arms, Configs, Models and Metrics",
             page.locator('.nav details.navgroup[data-group="experiments"] .navlist a').all_inner_texts()
-            == ["Arms", "Configs", "Metrics"],
+            == ["Arms", "Configs", "Models", "Metrics"],
         )
         page.goto(base + "arms.html#p30d")
         rows = page.locator("table#arms tbody tr:not(.grouphead)")
@@ -266,6 +266,8 @@ def drive(base: str, overview: str = "") -> None:
             "goal page: the open round opens in the inspector (evh inspect --round)",
             page.locator('a[title^="evh inspect --round r1"]').count() == 1,
         )
+        # Each round is a folded section: open the open one, as a reader does, to reach its suggestions.
+        page.click("details.roundcard.t-open > summary")
         btn = page.locator("button.copy").first
         cmd = btn.get_attribute("data-copy") if btn.count() else None
         if cmd:

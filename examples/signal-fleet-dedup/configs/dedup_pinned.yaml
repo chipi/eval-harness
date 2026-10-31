@@ -1,0 +1,7 @@
+# The fleet's filing stage at the pinned commit: its run is the reference (silver/fleet_dedup_v1,
+# evh reference-create --from-run) that dedup_guard is scored against.
+config_id: dedup_pinned_f07efa9_v1
+dataset_id: fleet_dedup_v1
+adapter: ../adapter.py
+params:
+  fleet_commit: f07efa9

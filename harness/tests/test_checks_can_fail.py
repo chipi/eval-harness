@@ -192,9 +192,10 @@ PLANTS = [
 
 def shadow_tree() -> Path:
     """A private copy of the repository. Code, reports and docs are copied; harness/data is
-    links to the real one, except the committed runs directories (validate.json), which are
-    hard-linked because V9 lists them through git and a test writes into them: replace() a
-    file there, never write it in place."""
+    links to the real one, except the runs directories (those validate.json names and every other
+    `runs*`, since V9 checks each tracked one), which are hard-linked because V9 lists them through
+    git, which refuses a path through a link out of the tree, and a test writes into them:
+    replace() a file there, never write it in place."""
     shadow = Path(tempfile.mkdtemp(prefix="checks-can-fail-"))
     atexit.register(shutil.rmtree, shadow, True)
     shutil.copytree(
@@ -216,7 +217,7 @@ def shadow_tree() -> Path:
             shutil.copy2(s, d)
 
     for child in (HARNESS / "data").iterdir():
-        if child.name in committed:
+        if child.name in committed or (child.is_dir() and child.name.startswith("runs")):
             shutil.copytree(child, data / child.name, symlinks=True, copy_function=link_or_copy)
         else:
             (data / child.name).symlink_to(child)

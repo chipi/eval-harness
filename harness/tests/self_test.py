@@ -33,7 +33,10 @@ sys.path.insert(1, str(HERE.parent / "tools"))  # the report checks some tests e
 
 def at(script: str) -> str:
     """A script's path from the harness root: the package's code is in scripts/, this
-    repository's tests in tests/ and its report and judge checks in tools/."""
+    repository's tests in tests/ and its report and judge checks in tools/; a path with a slash is
+    taken as it is (an example's own test, ../examples/<example>/test_x.py)."""
+    if "/" in script:
+        return script
     for d in ("scripts", "tests", "tools"):
         if (ROOT / d / script).is_file():
             return f"{d}/{script}"
@@ -399,6 +402,21 @@ def test_fingerprint_reports_library_versions_without_importing_them() -> None:
     check("fingerprint: reports something installed", isinstance(versions, dict))
 
 
+def _declared_identity(m: dict) -> dict:
+    """What a run's adapter declared about its system under test, from the v5 deployment: the hook's own
+    keys (`declared`), with the id (kept in `declared` only when it is not the model asked for) and the
+    revision that have a place of their own."""
+    dep = (m.get("fingerprint") or {}).get("deployment") or {}
+    declared = dep.get("declared") or {}
+    weights = dep.get("weights") or {}
+    return {
+        **declared,
+        "id": declared.get("id") or dep.get("model"),
+        "revision": weights.get("revision"),
+        "revision_source": weights.get("revision_source"),
+    }
+
+
 def test_fingerprint_does_not_invent_a_revision() -> None:
     """A model the adapter cannot version is recorded as unversioned.
 
@@ -594,7 +612,7 @@ def test_fingerprint_hash_changes_when_anything_does() -> None:
     check("fingerprint: changes when a param moves", base["hash"] != moved["hash"])
     check(
         "fingerprint: names the field that moved",
-        differing_paths(base, moved) == ["arm.params.sentences"],
+        differing_paths(base, moved) == ["settings.sentences"],
         f"got {differing_paths(base, moved)}",
     )
     # Different DATA must move it too — dataset_id is a name, the item hashes are identity.
@@ -636,6 +654,48 @@ def test_example_scorer_suites_pass() -> None:
         ("test_mcp_server.py", "evh mcp: the read commands as tools, through the SDK's own client"),
         ("test_p_cache.py", "the on-disk p cache: the same p, read back by a fresh process"),
         ("test_mcp_http.py", "evh mcp --http: health, Host check, --public, --rate, hooks"),
+        (
+            "test_capture.py",
+            "importers, importer-check and capture: mapping, the contract, hashes, continuing",
+        ),
+        (
+            "test_outcome_reference.py",
+            "references from outcomes: the rules, never overwritten, one recommendation per goal",
+        ),
+        ("test_importers.py", "tsv, github (events with their comments), langfuse: offline stand-ins"),
+        ("test_split.py", "dataset-split: the share, stable across versions, groups kept whole, by time"),
+        ("test_hidden_text.py", "text: hidden: none of a hidden dataset's text on any public surface"),
+        ("test_models.py", "model records: the weights facts, and what V18 catches"),
+        ("test_arm_smoke.py", "evh arm-smoke: the calls it reads, the projection, every flag"),
+        (
+            "test_scoring_evolves.py",
+            "scoring that evolves: --adopt, score-preview writes nothing, rescore --round, round-open --scoring",
+        ),
+        (
+            "test_triage_results_doc.py",
+            "the triage results table is the harness's, and evh goals prints a dataset's notes",
+        ),
+        (
+            "test_runs_location.py",
+            "where runs land: a warning for a git-ignored runs directory, and validate's note",
+        ),
+        (
+            "test_fingerprint_v5.py",
+            "fingerprint v5: the parts and their hashes, the runner outside the hash, the deployment sources, the migration, run-compare",
+        ),
+        ("test_catalog_models.py", "the Models page, a page per model, the arms badge, evh models"),
+        (
+            "test_model_onboard.py",
+            "evh model-onboard: reasoning, format, determinism and the build, against a fake server",
+        ),
+        (
+            "../examples/signal-fleet-dedup/test_dedup.py",
+            "the de-duplication example: its scorer; the fleet's functions where the fleet and the signals are here",
+        ),
+        (
+            "../examples/triage-fleet/test_triage.py",
+            "the triage example: its scorer, its importer on the fleet's export, the adapter if the fleet is here",
+        ),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (
             "test_references.py",
@@ -745,9 +805,9 @@ def test_fingerprint_version_is_read_somewhere() -> None:
         adapter_id="a",
         adapter_path=None,
     )
-    # v4 since 2026-10-24: code hashed by behaviour (_codeid), a manifest's caveat outside the
-    # reference digest; documentation never moves a fingerprint.
-    check("new fingerprints are version 4", fp.get("version") == 4, str(fp.get("version")))
+    # v5 since 2026-10-31 (RFC-021): the deployment and the settings are parts of their own, the host
+    # (now the runner) is outside the hash; v4 hashed code by behaviour (_codeid), and that stays.
+    check("new fingerprints are version 5", fp.get("version") == 5, str(fp.get("version")))
 
 
 def test_verdict_honours_declared_kinds() -> None:
@@ -2296,7 +2356,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     for d in ("runs", "runs-pair", "runs-repeats", "runs-linux"):
         for f in (ROOT / "data" / d).glob("*/metrics.json"):
             m = json.loads(f.read_text())
-            sut = ((m.get("fingerprint") or {}).get("system_under_test") or {}).get("model") or {}
+            sut = _declared_identity(m)
             if sut.get("id_source") == "proxy-model-info" and sut.get("id") != table.get(sut.get("alias")):
                 wrong.append(f.parent.name)
     check("models.json: agrees with every upstream id a committed run resolved", not wrong, f"{wrong[:3]}")
@@ -2337,9 +2397,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     clash = []
     for d in ("runs", "runs-pair", "runs-repeats", "runs-linux"):
         for f in (ROOT / "data" / d).glob("*/metrics.json"):
-            sut = ((json.loads(f.read_text()).get("fingerprint") or {}).get("system_under_test") or {}).get(
-                "model"
-            ) or {}
+            sut = _declared_identity(json.loads(f.read_text()))
             if sut.get("revision_source") in ("hf-snapshot", "loaded-model"):
                 got = sut.get("loaded_revision") or sut.get("revision")
                 if sut.get("id") in pins and pins[sut["id"]] != got:

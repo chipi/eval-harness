@@ -1,0 +1,172 @@
+model_id: fleet-triage-pro
+kind: llm
+name: The fleet's production triage model
+aliases:
+- eval-fleet-triage-pro
+deployments:
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-fleet-triage-pro
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-fleet-triage-pro
+  checked_at: '2026-10-31T14:04:43Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:04:43Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-fleet-triage-pro
+      digest_found: null
+      default:
+        s: 1.66
+        tokens_out: 80
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.22
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 18.9
+      deterministic: false
+      json_valid: true
+  accepted:
+    where it ran: a hosted gateway serves the provider's current build; there is no
+      digest, revision or hash to pin
+    determinism: a hosted provider batches requests, so temperature 0 does not repeat
+      exactly; repeats measure it
+capabilities:
+  reasons: true
+  json_mode: true
+  reasoning_off: 'reasoning_effort: none'
+settings:
+  reasoning_effort: none
+settings_why:
+  reasoning_effort: 'it reasoned by default on the onboarding probe (2026-10-31);
+    off unless a task needs it (RUNBOOK §16): left at the server''s default, one model
+    reasons at length and the next not at all'
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
+    task needs it (RUNBOOK §16): left at the server''s default, one model reasons
+    at length and the next not at all'
+smokes:
+  triage_baseline_pro_noreason_v1:
+    status: pass
+    at: '2026-10-31T14:49:58Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 13.99
+        output_chars: 1792
+        cost_usd: 0.004893552
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 8.57
+        output_chars: 2265
+        cost_usd: 0.005072256
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 6.82
+        output_chars: 1691
+        cost_usd: 0.004878863999999999
+        scored: true
+      calls:
+      - tokens_out: 69
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.73
+      - tokens_out: 63
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.16
+      - tokens_out: 92
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.91
+      - tokens_out: 186
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 5.19
+      - tokens_out: 51
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.22
+      - tokens_out: 73
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.19
+      - tokens_out: 69
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.64
+      - tokens_out: 256
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.51
+      - tokens_out: 61
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.25
+      - tokens_out: 62
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.2
+      - tokens_out: 67
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.86
+      - tokens_out: 173
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.51
+      projection:
+        items: 65
+        minutes: 10.6
+        worst_minutes: 15.2
+        usd: 0.3216
+      settings:
+        model: eval-fleet-triage-pro
+        reasoning_effort: none
+        max_tokens: 1024
+    accepted:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
+      record''s deployment)'

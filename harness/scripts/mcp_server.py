@@ -42,6 +42,7 @@ READ_TOOLS = (
     "datasets",
     "dataset-items",
     "arms",
+    "models",
     "goals",
     "references",
     "metrics",
@@ -51,6 +52,7 @@ READ_TOOLS = (
     "rounds",
     "runs-list",
     "validate",
+    "captures",
 )
 NOT_TOOLS = {
     "init": "writes a project",
@@ -61,8 +63,12 @@ NOT_TOOLS = {
     "reference-create": "writes, and may call a model",
     "reference-manifest": "writes",
     "experiment-run": "runs a system and may spend",
+    "arm-smoke": "runs a system on a few items, may spend, and writes the model record",
+    "model-onboard": "calls a model and writes the model record",
+    "fingerprint-migrate": "rewrites the committed runs' fingerprints",
     "sweep": "runs systems and may spend",
     "rescore": "writes runs",
+    "score-preview": "runs the project's own scoring code",
     "judge": "calls models and spends",
     "judge-score": "calls models and spends",
     "silver-calibrate": "writes",
@@ -74,6 +80,12 @@ NOT_TOOLS = {
     "holdout": "a statistics command; not yet a tool",
     "rank-stability": "a statistics command; not yet a tool",
     "import-run": "writes runs",
+    "importer-check": "reads a production system, not the project",
+    "capture": "reads a production system and writes",
+    "dataset-from-capture": "writes",
+    "dataset-split": "writes",
+    "capture-scrub": "runs a project's command and writes",
+    "reference-from-outcomes": "writes",
     "run-compare": "a statistics command; not yet a tool",
     "run-promote": "a decision: a person's",
     "round-open": "a decision: a person's",
@@ -85,8 +97,19 @@ NOT_TOOLS = {
     "mcp": "this server",
 }
 #: The views that take --json (catalog_views via _jsonout; dataset-items its profile).
-JSON = {"overview", "datasets", "arms", "goals", "references", "metrics", "activity", "search", "inspect"}
-JSON |= {"dataset-items"}
+JSON = {
+    "overview",
+    "datasets",
+    "arms",
+    "models",
+    "goals",
+    "references",
+    "metrics",
+    "activity",
+    "search",
+    "inspect",
+}
+JSON |= {"dataset-items", "captures"}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
 HIDDEN = {"--adapter", "--json", "--help"}

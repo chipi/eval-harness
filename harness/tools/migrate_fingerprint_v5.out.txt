@@ -1,0 +1,14 @@
+fingerprint v5 migration of harness/data (2026-10-31, after the in-process fix: a hosted, gateway or URL-called
+deployment keeps the runner's libraries in runner.libraries)
+  before: 344 v4, 37 v5   (the 37 are data/runs-local, untracked, migrated earlier; all deployment source params)
+  after:  381 v5
+  runs migrated: 344
+    deployment source record: 0
+    deployment source adapter: 304
+    deployment source params: 40
+  baselines whose fingerprint_hash was updated: 5
+  in_process across the 344 tracked runs: 85 true (local ML adapters), 259 false
+
+A second run, to prove it idempotent:
+  before: 381 v5
+  runs migrated: 0

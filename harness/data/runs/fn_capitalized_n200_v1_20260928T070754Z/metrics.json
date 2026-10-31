@@ -25,11 +25,10 @@
   "fingerprint": {
     "arm": {
       "config_id": "fn_capitalized_n200_v1",
-      "params": {
+      "labels": {
         "family": "baseline",
         "label": "location",
-        "price_tier": "free",
-        "provider": "capitalized"
+        "price_tier": "free"
       }
     },
     "data": {
@@ -40,38 +39,9 @@
       "reference_tier": "gold",
       "references_sha256": "7cdd09fe0084ba29c616ab65fbfa08bf149e9006819641e9e91fe502ebe15a2b"
     },
-    "hash": null,
-    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/ner-few-nerd/adapter.py",
-        "sha256": "d147da55107305786c21b75ac87d748b9ea4fb3e57ebdff622aafecd826559b1"
-      },
-      "harness": {
-        "commit": "b3cc5d861cf2",
-        "dirty": true
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "datasets": "5.0.1",
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "scikit-learn": "1.9.1",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "id": "capitalized",
-        "identity_declared": true,
+    "data_sha256": "cecb78ae587a106dae95259e45ea0cddd1c4619f465fc6a4dff35011c4706b47",
+    "deployment": {
+      "declared": {
         "label": "location",
         "labels": [
           "art",
@@ -86,12 +56,63 @@
         "normalizer_sha256": "a7c22b054099a72f91d772754dcd49b748fa739340ea4f38f2934eb18950a942",
         "parser_sha256": "101110f889f26b800af7eacbd887bab82aef1556713b869ab27d86f78a605181",
         "provider": "capitalized",
-        "revision": null,
-        "revision_source": "unavailable",
         "rules_sha256": "7b9c3e00404e524e966c1ff41580763d8a240abfefee0580e5081c46a08c3e86"
+      },
+      "hosted": null,
+      "id": "capitalized",
+      "in_process": true,
+      "libraries": {
+        "datasets": "5.0.1",
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": "capitalized",
+      "provider": "capitalized",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
       }
     },
-    "version": 4
+    "deployment_sha256": "95432a632d197c6c9b9083b50b1a14a27626b29068ed94a1f060c688ca3d3863",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/ner-few-nerd/adapter.py",
+        "sha256": "d147da55107305786c21b75ac87d748b9ea4fb3e57ebdff622aafecd826559b1"
+      },
+      "harness": {
+        "commit": "b3cc5d861cf2",
+        "dirty": true
+      }
+    },
+    "instrument_sha256": "e4ee62504d4173b243fbf8bffe949f8caf93698b3e3a175a76472b6348fe3522",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {},
+    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "version": 5
   },
   "goal": "entities_few_nerd",
   "metric_kinds": {

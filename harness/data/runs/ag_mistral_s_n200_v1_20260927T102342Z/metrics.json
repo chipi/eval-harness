@@ -11,17 +11,9 @@
   "fingerprint": {
     "arm": {
       "config_id": "ag_mistral_s_n200_v1",
-      "params": {
+      "labels": {
         "family": "mistral",
-        "max_tokens": 200,
-        "model": "eval-mistral-small",
         "price_tier": "small",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
         "usd_per_mtok_in": 0.05,
         "usd_per_mtok_out": 0.15
       }
@@ -34,15 +26,52 @@
       "reference_tier": "gold",
       "references_sha256": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
     },
-    "hash": "a14ec85eccac83c9865dee6e2e16b00712d08837da4a081e8097ec7aa68c18ed",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
+    "data_sha256": "42c37455220776fdf99bbc061bb396453b6fed3842e8ae4d76e316d3392cd318",
+    "deployment": {
+      "declared": {
+        "alias": "eval-mistral-small",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/mistralai/mistral-small-3.2-24b-instruct",
+        "id_source": "proxy-model-info",
+        "labels": [
+          "World",
+          "Sports",
+          "Business",
+          "Sci/Tech"
+        ],
+        "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
+        "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
+        "provider": "litellm",
+        "provider_routing": null
+      },
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/mistralai/mistral-small-3.2-24b-instruct",
+        "route": null
+      },
+      "id": "eval-mistral-small",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-mistral-small",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "78b661431fd8df4d156fcfc20c21e596d03eee8220c5b06fb4270742ebc71df3",
+    "hash": "afd0f74c820f7e42674c2fdaa58af508424d59149cb233ea0c4e4d8102a370fc",
     "instrument": {
       "adapter": {
         "id": "examples/classification-ag-news/adapter.py",
@@ -53,39 +82,38 @@
         "dirty": false
       }
     },
-    "system_under_test": {
+    "instrument_sha256": "4ce9ff50ed29a71be8d4a04f4f0ea3e3faa9a19979c7d104fe7b959ce65b864b",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
       "libraries": {
         "numpy": "1.26.4",
         "openai": "3.19.2",
         "torch": "2.2.2",
         "transformers": "4.55.4"
       },
-      "model": {
-        "alias": "eval-mistral-small",
-        "endpoint": "http://127.0.0.1:4001",
-        "id": "openrouter/mistralai/mistral-small-3.2-24b-instruct",
-        "id_source": "proxy-model-info",
-        "identity_declared": true,
-        "labels": [
-          "World",
-          "Sports",
-          "Business",
-          "Sci/Tech"
-        ],
-        "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
-        "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "declared": {
         "prompt_sha256": "ed3aeed55a5b5645151d03d7a518e932ed6da520c4b49bfdc85660dfbf562229",
-        "provider": "litellm",
-        "provider_routing": null,
         "reasoning": {
           "enabled": false
         },
-        "revision": null,
-        "revision_source": "api-model-string",
         "temperature": 0.0
-      }
+      },
+      "max_tokens": 200,
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0
     },
-    "version": 4
+    "settings_sha256": "8596728a1a33134fe522b6c7f9123a09395b873d893bcb4cc4b7eb74d2be66dc",
+    "version": 5
   },
   "goal": "news_topic_ag",
   "metric_kinds": {

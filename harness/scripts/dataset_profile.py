@@ -36,7 +36,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _visibility
 from evaluation_harness._common import die, read_json, write_json
 from evaluation_harness._fingerprint import items_digest
 from evaluation_harness._version import __version__
@@ -201,6 +201,8 @@ def profile(dataset_id: str, with_text: bool) -> dict:
                 "this repository `make data EXP=<experiment>`)."
             )
         texts[it["item_id"]] = p.read_text(encoding="utf-8", errors="replace")
+    if with_text and ds.get("text") == "hidden":
+        die(f"{dataset_id} is `text: hidden`: its profile carries no text (RFC-019)")
     if with_text:
         src_dir = _common.ROOT / ds.get("source_dir", "data/sources")
         files = [src_dir / (it.get("source_path") or it["item_id"]) for it in items]
@@ -342,6 +344,11 @@ def main_items(argv: list[str] | None = None) -> int:
     )
     args = ap.parse_args(argv)
     p = load_profile(args.dataset_id)
+    hide = _visibility.public_env() and _visibility.hidden(args.dataset_id)
+    if hide:  # a public server's command, on a `text: hidden` dataset: ids and lengths only
+        if args.item:
+            die(f"{args.dataset_id} is `text: hidden`: no item is shown here")
+        p = _visibility.public_profile(p)
     if args.json:
         if args.item:
             rows = [dict(r) for r in p["rows"] if r["item_id"].startswith(args.item)]

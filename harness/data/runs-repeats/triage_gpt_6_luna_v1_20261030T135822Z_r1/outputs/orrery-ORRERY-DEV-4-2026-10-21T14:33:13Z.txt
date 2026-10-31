@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "zz-probe-dev-reject-in-script", "model_disposition": "cleanup", "reason": "This is a synthetic probe signal, not a production issue."}

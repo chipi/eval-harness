@@ -24,6 +24,7 @@
     "params": {"type": "object", "description": "The author's request options (credentials never)."},
     "model": {"type": ["string", "null"]},
     "cost_usd": {"type": ["number", "null"]},
-    "from_run": {"type": ["object", "null"], "description": "The run it was made from (reference-create --from-run)."}
+    "from_run": {"type": ["object", "null"], "description": "The run it was made from (reference-create --from-run)."},
+    "from_outcomes": {"type": "object", "description": "Made from what production recorded afterwards (evh reference-from-outcomes, RFC-019): the capture, the mapping and its hash, and how many items each rule outcome took.", "required": ["capture", "mapping_sha256"], "properties": {"capture": {"type": "string"}, "capture_sha256": {"type": "string"}, "captured_at": {"type": ["string", "null"]}, "mapping": {"type": "string"}, "mapping_sha256": {"type": "string"}, "matched": {"type": "integer"}, "skipped": {"type": "integer"}, "unmatched": {"type": "integer"}, "no_record": {"type": "integer"}, "labels": {"type": "object"}}}
   }
 }

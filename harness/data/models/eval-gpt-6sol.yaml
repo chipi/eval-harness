@@ -1,0 +1,5 @@
+model_id: eval-gpt-6sol
+kind: llm
+aliases:
+- eval-gpt-6sol
+weights: proprietary

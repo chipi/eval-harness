@@ -151,6 +151,8 @@ def _paths() -> dict[str, Path]:
         "ROUNDS": data / "rounds",
         # Items fetched from a source_url, by their sha256. Derived and gitignored, like materialized/.
         "ITEM_CACHE": root / ".cache" / "items",
+        # Captures from production systems (RFC-019): data/captures/<capture_id>/.
+        "CAPTURES": data / "captures",
     }
 
 
@@ -169,6 +171,7 @@ GOALS: Path
 FIELDS: Path
 ROUNDS: Path
 ITEM_CACHE: Path
+CAPTURES: Path
 
 
 def __getattr__(name: str) -> Path:
@@ -203,6 +206,53 @@ class CostCapExceeded(RuntimeError):
     stops the bill the moment the cap is hit. Callers catch it and write
     whatever they have, so a capped run still yields a usable partial report.
     """
+
+
+def ignored_by_git(path: Path) -> bool:
+    """Whether git ignores `path` (a runs directory, say): runs written there are not committed, and a
+    published catalog, which copies only what git tracks, will not show them. False outside a checkout."""
+    import subprocess  # noqa: PLC0415
+
+    # A run's metrics file, not the directory: the re-allow blocks admit `<dir>/<run>/metrics.json`
+    # under a denied `data/runs-*/`, so only that path answers the question. Absolute, because `-C`
+    # moves git's working directory and a relative probe would then name some other file.
+    probe = Path(path).resolve() / "_probe_run" / "metrics.json"
+    anchor = next((p for p in probe.parents if p.exists()), Path.cwd())
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(anchor), "check-ignore", "-q", str(probe)], capture_output=True, timeout=10
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return r.returncode == 0
+
+
+#: Directory names that are throwaway by convention (.gitignore denies them by glob): writing there is the point.
+THROWAWAY_RUNS = ("runs-smoke", "runs-tune")
+
+
+def warn_if_ignored(runs_dir: Path, data_dir: Path | None = None) -> None:
+    """Say, loudly, when runs are about to land where they will not be kept or read: a directory git ignores, or
+    one outside the project's data (`data_dir`, default the project's). Silent for the throwaway directories
+    (runs-smoke*, runs-tune*), where not keeping them is the intent."""
+    runs_dir = Path(runs_dir)
+    if runs_dir.name.startswith(THROWAWAY_RUNS):
+        return
+    where = Path(data_dir) if data_dir else _paths()["DATA"]
+    outside = not runs_dir.resolve().is_relative_to(where.resolve())
+    if not outside and not ignored_by_git(runs_dir):
+        return
+    why = (
+        f"is outside the project's data ({where}): no catalog, goal or validate reads it"
+        if outside
+        else "is ignored by git: its runs are not committed, so no clone, CI run or catalog (this one included) has them"
+    )
+    print(
+        f"  WARNING: {runs_dir} {why}. Measured runs go in data/runs (the default: leave EVAL_RUNS_DIR unset). "
+        "A derived set (re-scored, re-judged) keeps the measured runs' config_ids, so it needs its own "
+        "data/runs-<name> directory, re-allowed in .gitignore beside the others under '--- re-allowed'. Throwaway "
+        "passes go in data/runs-smoke*."
+    )
 
 
 def now() -> str:
@@ -462,10 +512,20 @@ def load_module(path: Path, name: str) -> Any:
     runs, because a module-level @dataclass resolves its own module through sys.modules and an
     unregistered one makes that None. ModuleNotLoadable when there is no spec for the file;
     anything the module raises while running propagates."""
+    import importlib.machinery  # noqa: PLC0415
     import importlib.util  # noqa: PLC0415
     import sys  # noqa: PLC0415
 
-    spec = importlib.util.spec_from_file_location(name, path)
+    class _FromSource(importlib.machinery.SourceFileLoader):
+        # Compiled from the source every time, never from __pycache__: a .pyc is trusted while the source's
+        # mtime (whole seconds) and size match, so a scorer edited within the second to a same-length value
+        # (BONUS = 0.0 -> 0.5) ran its old code while the run recorded the new code's hash (RFC-022).
+        def get_code(self, fullname):
+            del fullname  # the loader passes it; the path is all this needs
+            return compile(self.get_data(self.path), self.path, "exec", dont_inherit=True)
+
+    loader = _FromSource(name, str(path)) if str(path).endswith(".py") else None
+    spec = importlib.util.spec_from_file_location(name, path, loader=loader)
     if spec is None or spec.loader is None:
         raise ModuleNotLoadable(f"cannot load {path}")
     mod = importlib.util.module_from_spec(spec)

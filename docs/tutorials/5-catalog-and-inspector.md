@@ -185,9 +185,10 @@ against 0.0327); `family-test` says which kind of p it printed. Every p is print
 decimals, and `<0.0001` for what would print as 0.0000. `wins–losses` is each row's arm against
 the baseline; `family-test`'s column is `A wins`, the items its A wins against each opponent. The
 last line compares
-the runs' fingerprints: the machine, library versions, the harness, the scorer, the items and
-the reference's bytes. When they differ it names the fields, arm by arm, and warns when the
-scorer or the reference differs (different measurements) or latency is compared across machines.
+the runs' fingerprints: the deployment (where the model ran), the runner (where `evh` ran) and its
+libraries, the harness, the scorer, the items and the reference's bytes. When they differ it names
+the fields, arm by arm, and warns when the scorer or the reference differs (different measurements),
+or when latency is compared across deployments or measured from different runners.
 
 **Fields in a comparison.** Filter it to the tickets whose field matches, or break it down by a
 choice or yes/no field: the paired test within each group, Holm-corrected over every group

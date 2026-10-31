@@ -37,7 +37,7 @@
               "additionalProperties": false,
               "description": "The primary measure as an axis: it takes a limit and a margin only (its measure and direction are success_criteria.primary's).",
               "properties": {
-                "limit": {"type": "number", "description": "An arm past it is out, with the reason."},
+                "limit": {"oneOf": [{"type": "number"}, {"const": "baseline"}], "description": "An arm past it is out, with the reason. `baseline` (RFC-022): out when the paired test finds it worse than the group's baseline arm."},
                 "margin": {"type": "number", "minimum": 0, "description": "How far from the leader an arm the paired test does not separate may be and still count as tied under balanced (default: 2% of the leader's mean; 2% of the group's range when the leader is 0)."},
                 "note": {"type": "string"}
               }
@@ -50,7 +50,7 @@
               "measure": {"type": "string", "minLength": 1, "description": "The per-item metric, as runs record it. Built-ins default to cost_usd and latency_ms; a project axis defaults to its own name."},
               "direction": {"enum": ["higher", "lower"], "description": "Which way is better; a project axis defaults to the adapter's METRIC_DIRECTIONS, else higher."},
               "stat": {"enum": ["mean", "p50", "p95"], "description": "What a limit and the tie-break read: speed defaults to p95, everything else to mean."},
-              "limit": {"type": "number", "description": "An arm past it is out, with the reason (lower: above it; higher: below it)."},
+              "limit": {"oneOf": [{"type": "number"}, {"const": "baseline"}], "description": "An arm past it is out, with the reason (lower: above it; higher: below it). `baseline` (RFC-022): out when the paired test finds it worse than the group's baseline arm, on this measure."},
               "role": {"enum": ["show", "ignore"], "description": "ignore: the goal does not weigh it (an overnight batch: speed)."},
               "unit": {"type": "string"},
               "note": {"type": "string", "description": "What a reader needs to know about the axis, in words."}

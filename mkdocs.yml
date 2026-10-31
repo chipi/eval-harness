@@ -39,6 +39,8 @@ nav:
       - 3 · A frontier reference, gold, and judging: tutorials/3-frontier-reference-and-judging.md
       - 4 · Experiment rounds and dataset versions: tutorials/4-rounds-and-versions.md
       - 5 · The catalog and the inspector: tutorials/5-catalog-and-inspector.md
+      - 6 · Datasets from production: tutorials/6-datasets-from-production.md
+      - 7 · Set up a model before you test it: tutorials/7-set-up-a-model.md
   - The harness:
       - Concepts: harness/CONCEPTS.md
       - Integration: harness/INTEGRATION.md
@@ -59,6 +61,8 @@ nav:
           - "PRD-005: Goals, and experiment rounds": prd/PRD-005-goals-and-rounds.md
           - "PRD-006: Datasets, versions and item fields": prd/PRD-006-datasets-versions-fields.md
           - "PRD-007: One install, your own keys": prd/PRD-007-packaging-and-providers.md
+          - "PRD-014: Datasets from production (built, 0.6.0)": prd/PRD-014-datasets-from-production.md
+          - "PRD-015: Models, onboarded once, for every experiment (built, 0.6.0)": prd/PRD-015-models-onboarded-once.md
       - Experience (UXS):
           - Index: uxs/index.md
           - "UXS-001: The catalog": uxs/UXS-001-catalog.md
@@ -73,7 +77,10 @@ nav:
           - "RFC-005: Judge scorers and the judging pass": rfc/RFC-005-judge-scorers.md
           - "RFC-006: Item fields and items at a URL": rfc/RFC-006-item-fields-and-url-items.md
           - "RFC-018: A read-only MCP server (0.5.0)": rfc/RFC-018-read-only-mcp-server.md
-          - "RFC-019: Datasets from production, a lane beside the method (draft, 0.6.0)": rfc/RFC-019-datasets-from-production.md
+          - "RFC-019: Datasets from production, a lane beside the method (built, 0.6.0)": rfc/RFC-019-datasets-from-production.md
+          - "RFC-020: Onboarding models, once, for every experiment (built, 0.6.0)": rfc/RFC-020-onboarding-a-model.md
+          - "RFC-021: Fingerprint v5, the deployment, the settings and the runner (built, 0.6.0)": rfc/RFC-021-fingerprint-v5.md
+          - "RFC-022: Scoring that evolves, previewed, re-scored or adopted by the next round (built, 0.6.0)": rfc/RFC-022-scoring-that-evolves.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md
@@ -83,6 +90,9 @@ nav:
           - "ADR-0005: One provider layer; credentials per role, never identity (0.4.0)": adr/ADR-0005-credentials-per-role.md
           - "ADR-0006: A goal weighs cost, quality and speed; a strategy picks (0.4.0)": adr/ADR-0006-goal-axes-and-strategies.md
           - "ADR-0018: The catalog's period is counted from today, in the browser (0.4.2)": adr/ADR-0018-period-from-today.md
+          - "ADR-0019: Datasets from production, a capture lane beside the method (0.6.0)": adr/ADR-0019-capture-lane.md
+          - "ADR-0020: A dataset's second reference is silver (0.6.0)": adr/ADR-0020-second-references-are-silver.md
+          - "ADR-0021: A deployment, not a model, is what is vetted and fingerprinted (0.6.0)": adr/ADR-0021-a-deployment-is-vetted.md
   - The experiments:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md

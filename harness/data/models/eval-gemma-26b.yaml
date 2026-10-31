@@ -1,0 +1,6 @@
+model_id: eval-gemma-26b
+kind: llm
+aliases:
+- eval-gemma-26b
+weights: open
+licence: Apache-2.0

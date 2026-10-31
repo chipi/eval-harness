@@ -92,6 +92,8 @@ def save(doc: dict[str, Any]) -> Path:
         "baseline",
         "budget_usd",
         "carried",
+        "scorer",
+        "scoring",
     ]
     order += ["status", "opened_at", "closed_at", "retired", "conclusion"]
     body = {k: doc[k] for k in order if k in doc and doc[k] not in (None, [], "")}

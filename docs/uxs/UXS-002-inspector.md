@@ -109,15 +109,18 @@ metric it can compare (output length, latency) instead.
 
 ## Conditions
 
-From each arm's recorded conditions (machine, library versions, harness, scorer, items,
+From each arm's recorded conditions (fingerprint v5, RFC-021: the deployment, where the model ran, as
+`deployment.*`; the runner, where `evh` ran, as `machine.*` and `library.*`; harness, scorer, items,
 reference bytes):
 
 - all equal: one line, "Same conditions: all n recorded fields match across these runs";
 - otherwise "Conditions · k of n fields differ", the warnings, and a table of the differing
   fields, one column per arm, the cells that differ from the baseline marked. Warnings: different
   scorers ("these numbers are different measurements. Re-score them with one adapter (evh
-  rescore) before reading the test."), different reference bytes, different item bytes, and
-  latency compared across machines.
+  rescore) before reading the test."), different reference bytes, different item bytes, and for a
+  speed measure either "compared across deployments (where the model ran)" when a `deployment.*` field
+  differs, or "measured from different runners" when only a `machine.*` field does. A runner that
+  differs is never a warning on a quality measure: the runner is outside the fingerprint's hash.
 
 ## The baseline that wrote the reference
 

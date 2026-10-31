@@ -244,18 +244,27 @@ try:
     )
     nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
     check(
-        "nav: Overview, Goals, Data (Datasets, References), Experiments (Arms, Configs, Metrics), Activity, Inspector",
-        nav.count("<a ") == 9
+        "nav: Overview, Goals, Data (Datasets, References), Experiments (Arms, Configs, Models, Metrics), Activity, Inspector",
+        nav.count("<a ") == 10
         and re.findall(r"<summary[^>]*>([^<]+)</summary>", nav) == ["Data", "Experiments"]
         and all(
-            x in nav for x in (">Datasets<", ">References<", ">Arms<", ">Configs<", ">Metrics<", ">Activity<")
+            x in nav
+            for x in (
+                ">Datasets<",
+                ">References<",
+                ">Arms<",
+                ">Configs<",
+                ">Models<",
+                ">Metrics<",
+                ">Activity<",
+            )
         ),
         nav[:300],
     )
     menu = re.findall(r'<nav class="menu-links">(.*?)</nav>', home)[0]
     check(
         "the phone's menu lists every page, a group's under its name",
-        menu.count("<a ") == 9 and menu.count('class="menu-group"') == 2,
+        menu.count("<a ") == 10 and menu.count('class="menu-group"') == 2,
     )
     check(
         "the home tiles open their pages: activity, arms, configs grouped by config",
@@ -325,10 +334,10 @@ try:
     tiles = cb.home_counts(
         HarnessAdapter(data3), cb.collect(HarnessAdapter(data3)), HarnessAdapter(data3).spend()
     )
-    lines = {ln.split()[0]: ln.split()[1] for ln in ov.splitlines()[1:10] if ln.startswith("  ")}
+    lines = {ln.split()[0]: ln.split()[1] for ln in ov.splitlines()[1:11] if ln.startswith("  ")}
     check(
         "evh overview --period all: every stock tile is the page's count, then the sections",
-        all(lines.get(k) == str(n) for k, n, _ in tiles[:6])
+        all(lines.get(k) == str(n) for k, n, _ in tiles[:7])
         and all(x in ov for x in ("goals at a glance", "activity", "coverage:")),
         ov[:600],
     )
@@ -505,9 +514,9 @@ try:
         mj = data4 / "runs" / rid / "metrics.json"
         m = json.loads(mj.read_text())
         m["fingerprint"] = {
-            "version": 4,
-            "host": {"platform": machine, "cpu_count": 8},
-            "system_under_test": {"libraries": {"numpy": "2.0"}},
+            "version": 5,
+            "runner": {"platform": machine, "cpu_count": 8, "libraries": {"numpy": "2.0"}},
+            "deployment": {"where": {"machine": "dgx", "backend": "cuda"}, "server": {"name": "ollama"}},
             "instrument": {
                 "harness": {"version": "0.4.0"},
                 "adapter": {"id": "adapter.py", "sha256": scorer * 32},
@@ -524,7 +533,7 @@ try:
     )
     differ = {d["name"] for d in c4.get("differ", [])}
     check(
-        "compare: the conditions that differ (machine, scorer), not those that match (library, items)",
+        "compare: the conditions that differ (runner, scorer), not those that match (library, deployment, items)",
         differ == {"machine.platform", "scorer.sha256"} and c4.get("fields", 0) >= 8,
         c4,
     )

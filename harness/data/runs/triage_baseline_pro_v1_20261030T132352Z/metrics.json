@@ -1,0 +1,149 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "44863aeef2ff57677b352b8b571230c560ff6fd2",
+    "source": "git"
+  },
+  "config_id": "triage_baseline_pro_v1",
+  "created_at": "2026-10-30T13:25:51Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_baseline_pro_v1",
+      "labels": {
+        "usd_per_mtok_in": 0.816,
+        "usd_per_mtok_out": 1.632
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled",
+      "items_sha256": "d428aca49adc8e762dcbbcad6c9a1dba1ac4e4e3315ff26025af975faba1176a",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled",
+      "reference_tier": "gold",
+      "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
+    },
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": {
+        "fleet_code_sha256": "248e25030011aab82f5798eeb7c74fd03f2d7cfd04866b8b017d3740663727d9",
+        "fleet_commit": "f07efa9"
+      },
+      "hosted": {
+        "provider": "gateway",
+        "provider_id": null,
+        "route": null
+      },
+      "id": "eval-fleet-triage-pro",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-fleet-triage-pro",
+      "provider": "gateway",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "892d95ee22c18c8a538f2faf81659f25514633e24440742be5f419a01be2f619",
+    "hash": "653e1097cc39c5c2d860643b310f9e55c5af46e762c97833b21eea97457780a9",
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "ed10c946cea7f30ffd339917d6aeaa7b896b3a7173ae6a06720f8f8c5494e5ae"
+      },
+      "harness": {
+        "code_sha256": "0ab386969208f46c7448153422d5a5ab07833d963869b69fc216a6cd28feb110",
+        "commit": "44863aeef2ff",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "instrument_sha256": "866af50ac4a3e7d90cab1e4ea6721d198d4d6698f934780228065ea31b10cd22",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "declared": {
+        "prompt_sha256": "77f26d87ad9f4d117cd1cbdbd5be9bbb5fcd9666294055c37376fe6938bd1131"
+      }
+    },
+    "settings_sha256": "cb112319a55187ab7f0a7b1b310f901d796aa0711f9eca2a777f7ac55f28d74c",
+    "version": 5
+  },
+  "goal": "triage_orrery",
+  "metric_directions": {
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 65,
+  "params": {
+    "model": "eval-fleet-triage-pro",
+    "provider": "gateway",
+    "usd_per_mtok_in": 0.816,
+    "usd_per_mtok_out": 1.632
+  },
+  "primary_metric": "false_dismiss",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "resume": {
+    "carried_extra_keys": [
+      "n_probes",
+      "table_miss"
+    ],
+    "replayed_items": 61
+  },
+  "run_id": "triage_baseline_pro_v1_20261030T132352Z",
+  "scores": {
+    "correct": 0.569231,
+    "cost_usd": 0.004992,
+    "escalated": 0.4,
+    "false_alarm": 0.677419,
+    "false_dismiss": 0.176471,
+    "latency_ms": 22736.258416,
+    "model_correct": 0.523077,
+    "model_escalated": 0.061538,
+    "model_false_alarm": 0.354839,
+    "model_false_dismiss": 0.529412,
+    "n_probes": 1.538462,
+    "resumed": 0.938462,
+    "table_miss": 0.0,
+    "tokens_in": 3463.076923,
+    "tokens_out": 1327.030769,
+    "total_cost_usd": 0.32445302,
+    "total_tokens_in": 225100.0,
+    "total_tokens_out": 86257.0
+  }
+}

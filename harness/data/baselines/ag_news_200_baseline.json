@@ -7,7 +7,7 @@
     "source": "git"
   },
   "dataset_id": "ag_news_200",
-  "fingerprint_hash": "40999a5baad0e078b1885415d85ce210ce62b9630bf2979b72da2b3750520b85",
+  "fingerprint_hash": "8fc1d11d314ea2ea2505d680848c9ba18e857628b571b3ae13523b1a0a0d874e",
   "goal": "news_topic_ag",
   "promoted_at": "2026-10-25T14:08:24Z",
   "promoted_from": "ag_bert_mini_n200_v1_20260927T090317Z",

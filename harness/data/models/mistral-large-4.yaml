@@ -1,0 +1,188 @@
+model_id: mistral-large-4
+kind: llm
+name: Mistral Large 4
+aliases:
+- eval-mistral-large-4
+deployments:
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-mistral-large-4
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-mistral-large-4
+  checked_at: '2026-10-31T14:11:00Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:11:00Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-mistral-large-4
+      digest_found: null
+      default:
+        s: 2.33
+        tokens_out: 263
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 2.03
+        tokens_out: 263
+        reasoned: true
+        finish: stop
+        settings:
+          reasoning_effort: low
+      tokens_per_s: 129.7
+      deterministic: true
+      json_valid: true
+    accepted:
+    - 'reasoning: it still reasons with the record''s settings'
+  accepted:
+    where it ran: a hosted gateway serves the provider's current build; there is no
+      digest, revision or hash to pin
+    determinism: a hosted provider batches requests, so temperature 0 does not repeat
+      exactly; repeats measure it
+capabilities:
+  reasons: true
+  json_mode: true
+  reasoning_off: null
+settings:
+  reasoning_effort: low
+settings_why:
+  reasoning_effort: its provider refused reasoning_effort none (onboarding, 2026-10-31);
+    low is the least it is asked
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
+    task needs it (RUNBOOK §16): left at the server''s default, one model reasons
+    at length and the next not at all'
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: none
+  to: low
+  why: its provider refused reasoning_effort none (onboarding, 2026-10-31); low is
+    the least it is asked
+accepted:
+  reasoning: its provider refuses reasoning_effort none and it still reasons with
+    low (onboarding, 2026-10-31); low is the least
+smokes:
+  triage_mistral_large_4_v2:
+    status: pass
+    at: '2026-10-31T14:49:15Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 16.7
+        output_chars: 2093
+        cost_usd: 0.0071798999999999995
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 22.29
+        output_chars: 1546
+        cost_usd: 0.007581
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 27.99
+        output_chars: 1988
+        cost_usd: 0.0059885
+        scored: true
+      calls:
+      - tokens_out: 286
+        reasoning_tokens: 221
+        reasoning_chars: 925
+        finish_reason: stop
+        answered: true
+        s: 2.3
+      - tokens_out: 124
+        reasoning_tokens: 53
+        reasoning_chars: 250
+        finish_reason: stop
+        answered: true
+        s: 2.18
+      - tokens_out: 123
+        reasoning_tokens: 45
+        reasoning_chars: 199
+        finish_reason: stop
+        answered: true
+        s: 1.93
+      - tokens_out: 1158
+        reasoning_tokens: 913
+        reasoning_chars: 4140
+        finish_reason: stop
+        answered: true
+        s: 10.29
+      - tokens_out: 331
+        reasoning_tokens: 273
+        reasoning_chars: 1216
+        finish_reason: stop
+        answered: true
+        s: 5.18
+      - tokens_out: 102
+        reasoning_tokens: 40
+        reasoning_chars: 188
+        finish_reason: stop
+        answered: true
+        s: 4.83
+      - tokens_out: 156
+        reasoning_tokens: 80
+        reasoning_chars: 389
+        finish_reason: stop
+        answered: true
+        s: 2.08
+      - tokens_out: 1243
+        reasoning_tokens: 1113
+        reasoning_chars: 4741
+        finish_reason: stop
+        answered: true
+        s: 10.2
+      - tokens_out: 449
+        reasoning_tokens: 392
+        reasoning_chars: 1713
+        finish_reason: stop
+        answered: true
+        s: 3.71
+      - tokens_out: 114
+        reasoning_tokens: 44
+        reasoning_chars: 220
+        finish_reason: stop
+        answered: true
+        s: 1.59
+      - tokens_out: 151
+        reasoning_tokens: 69
+        reasoning_chars: 304
+        finish_reason: stop
+        answered: true
+        s: 1.57
+      - tokens_out: 377
+        reasoning_tokens: 299
+        reasoning_chars: 1287
+        finish_reason: stop
+        answered: true
+        s: 2.32
+      - tokens_out: 795
+        reasoning_tokens: 571
+        reasoning_chars: 2847
+        finish_reason: stop
+        answered: true
+        s: 18.8
+      projection:
+        items: 65
+        minutes: 24.2
+        worst_minutes: 30.3
+        usd: 0.4496
+      settings:
+        model: eval-mistral-large-4
+        reasoning_effort: low
+        max_tokens: 4096
+    accepted:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
+      record''s deployment)'

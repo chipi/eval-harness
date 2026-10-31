@@ -66,7 +66,21 @@ def open_round(argv: list[str]) -> int:
     ap.add_argument("--from", dest="from_", help="the round it continues (closed first)")
     ap.add_argument("--hypothesis", default="", help="what this round sets out to learn")
     ap.add_argument("--change", action="append", default=[], help="what changed and why (repeatable)")
-    ap.add_argument("--keep", help="config ids from earlier rounds carried in unchanged, not run again")
+    ap.add_argument(
+        "--keep",
+        help="config ids from earlier rounds carried in unchanged, not run again; `all`: every arm of --from",
+    )
+    ap.add_argument(
+        "--adopt",
+        action="store_true",
+        help="the goal's first round, from arms already run on the dataset before any round was opened",
+    )
+    ap.add_argument(
+        "--scoring",
+        default="",
+        help="this round is judged by the scorer in this tree, and why (RFC-022): carried arms another scorer "
+        "judged are re-scored first ($0)",
+    )
     ap.add_argument("--retire", help="config ids from earlier rounds dropped here")
     ap.add_argument("--reason", default="", help="why the --retire arms are dropped")
     ap.add_argument("--budget-usd", type=float, help="what the round may spend")
@@ -74,13 +88,30 @@ def open_round(argv: list[str]) -> int:
     _goal(args.goal)
     if not (_common.DATASETS / f"{args.dataset}.json").is_file():
         die(f"no dataset {args.dataset!r} (evh dataset-create first)")
+    if args.from_:
+        _round(args.goal, args.from_)
+    from evaluation_harness import rescore as rs  # noqa: PLC0415
+
+    carried = _ids(args.keep)
+    if args.adopt:
+        if args.from_ or _rounds.load_rounds(args.goal):
+            die(f"--adopt records a goal's first round; {args.goal} has rounds already (use --from)")
+        carried = sorted(
+            {m["config_id"] for _d, m in rs.measured_runs(args.dataset) if m.get("goal") == args.goal}
+        )
+        if not carried:
+            die(f"--adopt: no run on {args.dataset} names goal {args.goal}")
+    elif carried == ["all"]:
+        if not args.from_:
+            die("--keep all needs --from: the round whose arms are carried")
+        carried = _rounds.arms_of(_round(args.goal, args.from_))
+    if args.scoring and len(args.scoring.split()) < 3:
+        die("--scoring needs a sentence: what changed in the scoring, and why?")
     open_ones = [r["round_id"] for r in _rounds.load_rounds(args.goal) if r.get("status") == "open"]
     if open_ones:
         die(
             f'round {open_ones[0]} of {args.goal} is still open: close it first (evh round-close --goal {args.goal} --round {open_ones[0]} --conclusion "...")'
         )
-    if args.from_:
-        _round(args.goal, args.from_)
     if args.retire and len(args.reason.split()) < 3:
         die("--retire needs --reason, a sentence: why are these arms dropped?")
     base = _common.BASELINES / f"{args.dataset}_baseline.json"
@@ -94,16 +125,17 @@ def open_round(argv: list[str]) -> int:
         "changes": args.change,
         "baseline": read_json(base).get("promoted_from") if base.is_file() else None,
         "budget_usd": args.budget_usd,
-        "carried": _ids(args.keep),
+        "carried": carried,
         "status": "open",
         "opened_at": now(),
         "retired": [{"config_id": c, "reason": args.reason, "at": now()} for c in _ids(args.retire)],
     }
+    if args.scoring:
+        _adopt_scoring(doc, args.scoring, rs)
     p = _rounds.save(doc)
     print(
         f"{p.relative_to(_common.ROOT) if p.is_relative_to(_common.ROOT) else p}: round {rid} of {args.goal}, open"
     )
-    carried = _ids(args.keep)
     if carried:
         print(
             f"  Carried in as they are, their runs already count: {', '.join(carried)} "
@@ -115,6 +147,40 @@ def open_round(argv: list[str]) -> int:
     )
     print("  Commit the round file before the runs: an uncommitted file makes them dirty.")
     return 0
+
+
+def _adopt_scoring(doc: dict, why: str, rs) -> None:
+    """The round is judged by the scorer in this tree (RFC-022): every carried arm whose runs another scorer judged
+    is re-scored first ($0), so the round compares like with like; each one's deciding measure before and after is
+    printed, and the round records the scorer and the change."""
+    goal = _goal(doc["goal"])
+    measure = ((goal.get("success_criteria") or {}).get("primary") or {}).get("measure", "")
+    runs = rs.measured_runs(doc["dataset_id"], set(doc["carried"]))
+    adapters: dict = {}
+    todo: list = []
+    now_by: dict[str, int] = {}
+    for d, m in runs:
+        cur = rs.current_scorer(m, adapters)
+        was, read_from = rs.latest_scoring(d, m)
+        now_by[cur] = now_by.get(cur, 0) + 1
+        if cur and cur != was:
+            todo.append((d, m, read_from))
+    todo.sort(key=lambda t: t[0].name)  # rescore_runs returns in name order; zip below pairs them
+    scorer = max(now_by, key=lambda k: now_by[k]) if now_by else ""
+    doc["scorer"] = scorer
+    doc["changes"] = [*doc.get("changes", []), f"scoring: {why}"]
+    print(
+        f"  scoring: judged by {scorer or '(no adapter found)'}; {len(todo)} of {len(runs)} carried run(s) re-scored"
+    )
+    done = rs.rescore_runs([(d, m) for d, m, _r in todo], quiet=True)
+    for (d, m, read_from), (_new_dir, new) in zip(todo, done):
+        old = rs.read_json((read_from or d) / "metrics.json") if read_from else m
+        before = (old.get("scores") or {}).get(measure)
+        after = (new.get("scores") or {}).get(measure)
+        fmt = lambda v: "—" if v is None else f"{v:.4g}"  # noqa: E731
+        print(f"    {m['config_id']:52} {measure} {fmt(before)} -> {fmt(after)}  ({d.name})")
+    written = sorted({str(x.parent.relative_to(_common.DATA)) for x, _ in done})
+    doc["scoring"] = [{"at": now(), "scorer": scorer, "why": why, "written": written, "runs": len(done)}]
 
 
 def retire(argv: list[str]) -> int:
@@ -218,6 +284,25 @@ def _arm(A, dataset: str, config_id: str) -> str:
     return fn(dataset, config_id) if callable(fn) else f"runs/{dataset}/{config_id}"
 
 
+def _reader(A):
+    """read(dataset, config_id) -> the arm a round reads for it: as the goal reads it (RFC-022), its latest
+    re-score when every run of the measured arm was re-scored against the same reference, else the arm."""
+    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+
+    instead = {
+        a["arm"]: a["superseded_by"]
+        for v in cb.collect(A).values()
+        for a in v.get("arms", [])
+        if a.get("superseded_by")
+    }
+
+    def read(dataset: str, config_id: str) -> str:
+        arm = _arm(A, dataset, config_id)
+        return instead.get(arm, arm)
+
+    return read
+
+
 def _dirs(A, arm: str) -> list:
     """The run directories behind an arm, where the adapter can say (HarnessAdapter)."""
     fn = getattr(A, "_dirs", None)
@@ -281,7 +366,9 @@ def evidence(goal: str, rnd: dict) -> dict:
     A = load_catalog_adapter(None)
     cs.set_adapter(A)
     ds = rnd["dataset_id"]
-    arm = {c: _arm(A, ds, c) for c in _rounds.arms_of(rnd)}
+    read = _reader(A)
+    arm = {c: read(ds, c) for c in _rounds.arms_of(rnd)}
+    moved = sorted({a.split("/")[1] for a in arm.values() if a.startswith("runs-rescored/")})
     known = set(A.arms())
     arms = [a for a in arm.values() if a in known]
     out: dict[str, Any] = {
@@ -290,7 +377,13 @@ def evidence(goal: str, rnd: dict) -> dict:
         "rows": [],
         "against": [],
         "suggest": [],
-        "notes": [],
+        "notes": (
+            [
+                f"{sum(a.startswith('runs-rescored/') for a in arm.values())} arm(s) read from their re-score by {', '.join(moved)}"
+            ]
+            if moved
+            else []
+        ),
     }
     # ONE REFERENCE PER ROUND: a silver mean beside a gold mean is not a comparison. The round is
     # read against the reference most of its arms are scored against (gold before silver on a
@@ -339,7 +432,17 @@ def evidence(goal: str, rnd: dict) -> dict:
         else None
     )
     if len(arms) > 1:
-        d = cs.compare({"runs": [",".join(arms)], "baseline": [leader], "metric": [metric]})
+        from evaluation_harness import stats  # noqa: PLC0415
+
+        if len(arms) <= cs.LIMITS["max_arms"]:
+            d = cs.compare({"runs": [",".join(arms)], "baseline": [leader], "metric": [metric]})
+        else:
+            # More arms than the inspector compares in one request: the same paired test, Holm across them,
+            # read from the scores directly. The request's refusal used to leave the rows empty, without a word.
+            series = {a: (A.scores(a).get(metric) or {}).get("values") or {} for a in arms}
+            d = stats.compare(series, leader, higher_is_better=not lower)
+        if d.get("error"):
+            out["notes"].append(f"no comparison: {d['error']}")
         out["rows"] = d.get("rows") or []
         out["notes"] += [
             w
@@ -371,7 +474,7 @@ def evidence(goal: str, rnd: dict) -> dict:
             )
     prev = _rounds.find(goal, rnd["from"]) if rnd.get("from") else None
     if prev:
-        pbest = _best(A, [_arm(A, prev["dataset_id"], c) for c in _rounds.arms_of(prev)], metric, lower)
+        pbest = _best(A, [read(prev["dataset_id"], c) for c in _rounds.arms_of(prev)], metric, lower)
         if pbest and pbest != leader and prev["dataset_id"] == ds:
             row = _against(A, f"{prev['round_id']}'s best", pbest, leader, metric)
             if row:
@@ -461,6 +564,13 @@ def status(argv: list[str]) -> int:
         print(f"  changed: {ch}")
     for x in rnd.get("retired") or []:
         print(f"  retired: {x['config_id']} ({x['reason']})")
+    if rnd.get("scorer"):
+        print(f"  judged by: {rnd['scorer']}")
+    for sc in rnd.get("scoring") or []:
+        print(
+            f"  scoring {str(sc.get('at', ''))[:10]}: {sc.get('why', '')} "
+            f"({sc.get('scorer', '')}, {sc.get('runs', 0)} run(s) re-scored into {', '.join(sc.get('written') or []) or '—'})"
+        )
     ev = evidence(args.goal, rnd)
     print(
         f"\n  on {ev['metric']}: {len(ev['arms'])} arm(s) in play"

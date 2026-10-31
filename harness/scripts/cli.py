@@ -49,9 +49,25 @@ COMMANDS = {
         "the checksummed manifest of a reference a fetch script built",
     ),
     "experiment-run": ("experiment_run.py", "run one arm over a dataset (--dry-run to cost it)"),
+    "arm-smoke": (
+        "arm_smoke.py",
+        "smoke an arm on a few items before its full run: checks, projection, flags",
+    ),
+    "model-onboard": (
+        "model_onboard.py",
+        "onboard a model once: probe a deployment, write what was found into its record",
+    ),
+    "fingerprint-migrate": (
+        "fingerprint_migrate.py",
+        "migrate the committed runs' fingerprints to version 5, once (idempotent)",
+    ),
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
     "runs-list": ("list_runs.py", "list runs (or baselines)"),
-    "rescore": ("rescore.py", "re-score stored outputs against references, for $0"),
+    "rescore": ("rescore.py", "re-score stored outputs, a round's or a dataset's, for $0"),
+    "score-preview": (
+        "score_preview.py",
+        "what the scorer in this tree would move in a goal's decision; writes nothing",
+    ),
     "judge": (
         "judge_panel.py",
         "the judge panel: promote finalists on a cheap metric, judge their stored outputs",
@@ -69,6 +85,28 @@ COMMANDS = {
     "holdout": ("holdout_significance.py", "tune on a dev slice, confirm on the rest"),
     "rank-stability": ("rank_stability.py", "how many items a ranking needs"),
     "import-run": ("import_run.py", "per-item scores from another tool, as a run the tests can read"),
+    "importer-check": (
+        "importer_check.py",
+        "check an importer: its records are well-formed, ids unique, two reads the same",
+    ),
+    "capture": ("capture.py", "keep a production system's records as a capture (data/captures/)"),
+    "reference-from-outcomes": (
+        "reference_from_outcomes.py",
+        "a reference from what production recorded afterwards, by recorded rules",
+    ),
+    "dataset-split": (
+        "dataset_split.py",
+        "split a dataset into <id>_dev and <id>_heldout, stable across versions",
+    ),
+    "capture-scrub": (
+        "capture_scrub.py",
+        "run the project's own scrubber over a capture's records, and record it",
+    ),
+    "captures": ("view_captures.py", "every capture, or one: what was read, when, the datasets made from it"),
+    "dataset-from-capture": (
+        "dataset_from_capture.py",
+        "make a dataset version from a capture: choose records, freeze their bodies as items",
+    ),
     "run-compare": ("compare_runs.py", "diff two runs, fingerprint first"),
     "run-promote": ("promote_baseline.py", "promote a run to a baseline, with a reason"),
     "round-open": (
@@ -84,6 +122,10 @@ COMMANDS = {
     ),
     "datasets": ("view_datasets.py", "every dataset, or one: its versions, references and arms"),
     "arms": ("view_arms.py", "every arm, or one: its metrics, runs, config, conditions and rounds"),
+    "models": (
+        "view_models.py",
+        "every model record, or one: its deployments, onboarding, settings history and arms",
+    ),
     "references": ("view_references.py", "every reference, or one: who wrote it, what is scored against it"),
     "metrics": ("view_metrics.py", "what each metric measures, or one in full with the arms recording it"),
     "goals": ("view_goals.py", "every goal, or one: its arms on each of its datasets"),

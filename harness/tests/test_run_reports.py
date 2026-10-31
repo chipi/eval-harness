@@ -35,6 +35,15 @@ from types import SimpleNamespace
 def call_system(text, params):
     if params.get("fail_on") and params["fail_on"] in text and not os.path.exists(params["flag"]):
         raise RuntimeError("the provider is down")
+    if params.get("refuse_on") and params["refuse_on"] in text and not os.path.exists(params["flag"]):
+        # an adapter that turns failed calls into an answer, as the triage fleet's replay does
+        refused = {"error": "URLError: <urlopen error [Errno 111] Connection refused>"}
+        return SimpleNamespace(output="no decision", tokens_in=0, tokens_out=0, cost_usd=None,
+                               latency_ms=None, extra={}, meta={"calls": [refused, refused]})
+    if params.get("model_error"):
+        failed = {"error": "RuntimeError: prediction aborted, token repeat limit reached"}
+        return SimpleNamespace(output="no decision", tokens_in=0, tokens_out=0, cost_usd=None,
+                               latency_ms=None, extra={}, meta={"calls": [failed, failed]})
     time.sleep(0.01)
     words = text.split()[: int(params.get("max_tokens", 1000))]
     return SimpleNamespace(output=" ".join(words), tokens_in=len(text.split()), tokens_out=len(words),
@@ -69,6 +78,7 @@ try:
     r = evh("experiment-run", "--config", config("plain"))
     run = next((proj / "data" / "runs").glob("plain_v1_*"), None)
     rows = [json.loads(x) for x in (run / "predictions.jsonl").read_text().splitlines()] if run else []
+    rows_plain = rows
     check(
         "the core times every call: latency_ms on each row, from an adapter that reports none",
         r.returncode == 0 and rows and all(row.get("latency_ms", 0) > 0 for row in rows),
@@ -100,6 +110,46 @@ try:
         "experiment-run", "--config", "data/configs/flaky.yaml", "--resume", stopped.name if stopped else ""
     )
     check("resuming it finishes the run", r.returncode == 0, (r.stdout + r.stderr)[-300:])
+
+    back = proj / "server-back"
+    r = evh("experiment-run", "--config", config("refused", refuse_on="export", flag=str(back)))
+    gone = next((proj / "data" / "runs").glob("refused_v1_*"), None)
+    out = r.stdout + r.stderr
+    check(
+        "an item whose every model call was refused stops the run, unwritten, not scored as an answer",
+        r.returncode != 0
+        and gone is not None
+        and "STOPPED" in out
+        and "every model call failed" in out
+        and "Connection refused" in out
+        and "Traceback" not in out
+        and not (gone / "metrics.json").exists()
+        and "no decision" not in "".join(p.read_text() for p in (gone / "outputs").glob("*.txt")),
+        out[-600:],
+    )
+    back.write_text("1")
+    r = evh("experiment-run", "--config", "data/configs/refused.yaml", "--resume", gone.name if gone else "")
+    # A resume is a run of its own (config id and the time it started), unless both start in the same second:
+    # read the newest run of the arm, never assume it is the stopped one's directory.
+    resumed = sorted((proj / "data" / "runs").glob("refused_v1_*"))[-1]
+    preds = resumed / "predictions.jsonl"
+    rows = [json.loads(x) for x in preds.read_text().splitlines()] if preds.is_file() else []
+    answers = list((resumed / "outputs").glob("*.txt"))
+    check(
+        "resumed with the server back, the refused item is called again and every item is an answer",
+        r.returncode == 0
+        and len(rows) == len(rows_plain)
+        and all(p.read_text() != "no decision" for p in answers)
+        and len(answers) == len(rows_plain),
+        ((r.stdout + r.stderr)[-300:], len(rows), len(rows_plain)),
+    )
+    r = evh("experiment-run", "--config", config("broken", model_error=True))
+    run = next((proj / "data" / "runs").glob("broken_v1_*"), None)
+    check(
+        "a model's own failed calls (not an unreachable server) are a measurement: the run completes",
+        r.returncode == 0 and run is not None and (run / "metrics.json").exists(),
+        (r.stdout + r.stderr)[-300:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

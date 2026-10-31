@@ -1,0 +1,167 @@
+model_id: gpt-6-luna
+kind: llm
+name: GPT-6 Luna
+aliases:
+- eval-gpt-6-luna
+weights: proprietary
+deployments:
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-gpt-6-luna
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-gpt-6-luna
+  checked_at: '2026-10-31T14:04:50Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:04:50Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-gpt-6-luna
+      digest_found: null
+      default:
+        s: 2.94
+        tokens_out: 51
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.66
+        tokens_out: 26
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 15.7
+      deterministic: true
+      json_valid: true
+  accepted:
+    where it ran: a hosted gateway serves the provider's current build; there is no
+      digest, revision or hash to pin
+    determinism: a hosted provider batches requests, so temperature 0 does not repeat
+      exactly; repeats measure it
+capabilities:
+  reasons: true
+  json_mode: true
+  reasoning_off: 'reasoning_effort: none'
+settings:
+  reasoning_effort: none
+settings_why:
+  reasoning_effort: 'it reasoned by default on the onboarding probe (2026-10-31);
+    off unless a task needs it (RUNBOOK §16): left at the server''s default, one model
+    reasons at length and the next not at all'
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
+    task needs it (RUNBOOK §16): left at the server''s default, one model reasons
+    at length and the next not at all'
+smokes:
+  triage_gpt_6_luna_v2:
+    status: pass
+    at: '2026-10-31T14:44:11Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 6.57
+        output_chars: 1044
+        cost_usd: 0.0006854000000000001
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 8.03
+        output_chars: 1210
+        cost_usd: 0.0007056
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 5.39
+        output_chars: 766
+        cost_usd: 0.0005279000000000001
+        scored: true
+      calls:
+      - tokens_out: 155
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.23
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.2
+      - tokens_out: 49
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.41
+      - tokens_out: 96
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.73
+      - tokens_out: 159
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.58
+      - tokens_out: 53
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.64
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.72
+      - tokens_out: 96
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.09
+      - tokens_out: 158
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.38
+      - tokens_out: 50
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.3
+      - tokens_out: 96
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.7
+      projection:
+        items: 65
+        minutes: 7.2
+        worst_minutes: 8.7
+        usd: 0.0416
+      settings:
+        model: eval-gpt-6-luna
+        reasoning_effort: none
+        max_tokens: 1024
+    accepted:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
+      record''s deployment)'

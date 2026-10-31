@@ -1,0 +1,6 @@
+model_id: eval-llama-maverick
+kind: llm
+aliases:
+- eval-llama-maverick
+weights: open
+licence: Llama, gated

@@ -12,6 +12,8 @@
     "adapter": {"type": "string", "minLength": 1, "description": "The adapter file, relative to the config, then the project. Absent: <project>/adapter.py, else the bundled one."},
     "goal": {"type": "string", "minLength": 1, "description": "The goal_id this arm is measured for (ADR-0002)."},
     "round": {"type": "string", "pattern": "^r[0-9]+$", "description": "The round of its goal this arm belongs to (ADR-0004, optional): data/rounds/<goal>/<round>.yaml. Needs `goal`."},
+    "model_record": {"type": "string", "description": "The model record this arm runs (RFC-020, optional): data/models/<id>.yaml. Its settings go under the config's params (the config wins); `model` comes from its first alias when params give none."},
+    "deployment": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$", "description": "Which of the model record's deployments this arm runs (RFC-021, optional; needs `model_record`): the id of an entry in the record's `deployments`. The run's fingerprint takes the deployment's weights, server and hardware from it."},
     "format": {"type": "string", "minLength": 1, "description": "The output shape, matched against the goal's output_contract."}
   }
 }

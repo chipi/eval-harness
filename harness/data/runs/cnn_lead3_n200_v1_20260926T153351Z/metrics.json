@@ -11,11 +11,9 @@
   "fingerprint": {
     "arm": {
       "config_id": "cnn_lead3_n200_v1",
-      "params": {
+      "labels": {
         "family": "lead",
-        "price_tier": "free",
-        "provider": "lead_k",
-        "sentences": 3
+        "price_tier": "free"
       }
     },
     "data": {
@@ -26,15 +24,44 @@
       "reference_tier": "gold",
       "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
-    "hash": "c9dda770f3ab230179d0b84ccf07f19331acb715a7c9a17a3713a65fae278e8f",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
+    "data_sha256": "a9b234845c4f4d69a498556c1f6324f5839721e805795a1f3d5946301307a0e8",
+    "deployment": {
+      "declared": {
+        "alias": null,
+        "endpoint": "http://127.0.0.1:4001",
+        "id_source": "alias-unresolved",
+        "provider_routing": null
+      },
+      "hosted": null,
+      "id": null,
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": null,
+      "provider": "lead_k",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "32a8768cb7c36bc745dba9ef625fa55a80267e749f263ab17c6bd02f68680c51",
+    "hash": "f10c6b3b48b04bd499cb9fc0af75f8ea9056994d88f0f28a5161eead0d435714",
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -45,29 +72,26 @@
         "dirty": false
       }
     },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "rouge-score": "0.1.2",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "alias": null,
-        "endpoint": "http://127.0.0.1:4001",
-        "id": null,
-        "id_source": "alias-unresolved",
-        "identity_declared": true,
-        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
-        "provider_routing": null,
-        "reasoning": null,
-        "revision": null,
-        "revision_source": "api-model-string",
-        "temperature": null
-      }
+    "instrument_sha256": "a1b7f00047d90546cfc527d6441095e77a3a970cee2532755338a75549f6ca0a",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
     },
-    "version": 4
+    "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": null,
+        "temperature": null
+      },
+      "sentences": 3
+    },
+    "settings_sha256": "861c1dc697a6c4bc86ecfc70bb19700fa9202035b1b26e9096fb0a76cdfc890b",
+    "version": 5
   },
   "goal": "news_summary_cnn",
   "metric_kinds": {

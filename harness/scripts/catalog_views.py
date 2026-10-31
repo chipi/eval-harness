@@ -5,6 +5,8 @@
     evh arms       [--dataset-id ID] [--arm ID]      every arm, or one: its metrics, runs, config, conditions, rounds
                    [--by G] [--where W] [--tier T] [--weights K] [--quality Q] [--configs]
                                                      the arms page: grouped, filtered; the configs
+    evh models     [--kind K] [--where W] [--status S] [--model ID]
+                                                     every model record, or one: deployments, onboarding, history, arms
     evh references [--reference-id ID]               every reference, or one: who wrote it, what is scored against it
     evh metrics    [--dataset-id ID] [--metric M]    what each metric measures, or one in full with the arms recording it
     evh goals      [--goal ID]                       every goal, or one: its answer on each of its datasets
@@ -39,6 +41,7 @@ from datetime import date
 
 from evaluation_harness import _jsonout
 from evaluation_harness import catalog_build as cb
+from evaluation_harness import catalog_models as cm
 from evaluation_harness import catalog_periods as cp
 from evaluation_harness import catalog_serve as cs
 from evaluation_harness._common import die
@@ -131,10 +134,23 @@ def datasets(argv) -> int:
     """evh datasets: every dataset, or one with its versions, references and arms."""
     ap = argparse.ArgumentParser(prog="evh datasets", description="Every dataset, or one in full.")
     ap.add_argument("--dataset-id", help="one dataset: its versions, references and arms")
+    ap.add_argument(
+        "--tag", action="append", default=[], metavar="K=V", help="only datasets with this tag (repeatable)"
+    )
     _period_option(ap)
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
+    want = []
+    for t in args.tag:
+        k, sep, val = t.partition("=")
+        if not sep or not k:
+            die(f"--tag {t!r}: KEY=VALUE")
+        want.append((k, val))
+    if want:
+        by_ds = {
+            d: v for d, v in by_ds.items() if all((v.get("tags") or {}).get(k) == val for k, val in want)
+        }
     if not args.dataset_id:
         per, line = _period(A, by_ds, cb.period_datasets(A, by_ds), args.period)
         flows = ("runs", "usd")
@@ -147,12 +163,13 @@ def datasets(argv) -> int:
                 len(v["arms"]),
                 cb._n_configs({ds: v}),
                 ", ".join(r["id"] for r in v["refs"]) or "—",
-                (v.get("parent") or {}).get("dataset_id", ""),
+                (v.get("parent") or {}).get("dataset_id", "") or v.get("origin", ""),
+                " ".join(f"{k}={t}" for k, t in sorted((v.get("tags") or {}).items())),
                 *(_pcells(per[ds], flows) if per else []),
             ]
             for ds, v in sorted(by_ds.items())
         ]
-        heads = ["dataset", f"{A.item_word}s", "arms", "configs", "references", "made from"]
+        heads = ["dataset", f"{A.item_word}s", "arms", "configs", "references", "made from", "tags"]
         _table(heads + (["", *(PERIOD_HEADS[f] for f in flows)] if per else []), rows)
         return 0
     v = by_ds.get(args.dataset_id)
@@ -162,6 +179,10 @@ def datasets(argv) -> int:
         f"{args.dataset_id}: {v['items']} {A.item_word}s, {len(v['arms'])} arms from "
         f"{cb._n_configs({args.dataset_id: v})} configs (a config rescored against silver or by a judge is an arm of its own)\n"
     )
+    if v.get("tags"):
+        print("tags: " + ", ".join(f"{k}={t}" for k, t in sorted(v["tags"].items())))
+    if v.get("origin") and not v.get("parent"):
+        print(f"made from {v['origin']}")
     lin = v.get("parent")
     if lin:
         print(
@@ -563,7 +584,7 @@ def arms(argv) -> int:
     ap.add_argument(
         "--weights",
         choices=("open", "proprietary"),
-        help="only arms whose model's weights are open, or proprietary (data/models.yaml)",
+        help="only arms whose model's weights are open, or proprietary (the model records, data/models/)",
     )
     ap.add_argument(
         "--quality",
@@ -592,7 +613,9 @@ def arms(argv) -> int:
         if not rows:
             why = []
             if args.weights:
-                why.append("an arm's weights come from data/models.yaml (the adapter's model_facts)")
+                why.append(
+                    "an arm's weights come from the model records (data/models/, the adapter's model_facts)"
+                )
             if args.quality:
                 why.append("only arms a goal's decision weighs have a place against its quality leader")
             print("no arm matches" + (f": {'; '.join(why)}" if why else ""))
@@ -624,6 +647,7 @@ def arms(argv) -> int:
         groups: dict = {}
         for r in rows:
             groups.setdefault(r[key] if key else "", []).append(r)
+        has_record = any(r["record"] for r in rows)
         for name in sorted(groups):
             if key:
                 print(f"\n{dict(ca.GROUPS)[key]} {name or '—'} ({len(groups[name])} arms)")
@@ -634,6 +658,7 @@ def arms(argv) -> int:
                     "dataset",
                     "model",
                     "provider",
+                    *(["model record"] if has_record else []),
                     "role",
                     "deciding measure",
                     *heads_p,
@@ -641,10 +666,21 @@ def arms(argv) -> int:
                 [
                     [
                         r["arm"],
-                        r["how"] + (f" ({r['moved']:+.3f} vs measured)" if r["moved"] is not None else ""),
+                        r["how"]
+                        + (f" ({r['moved']:+.3f} vs measured)" if r["moved"] is not None else "")
+                        + ("; the goals read its re-score" if r["superseded_by"] else ""),
                         r["dataset"],
                         r["model"] or "—",
                         (r["provider"] or "—") + (" (local)" if r["local"] else ""),
+                        *(
+                            [
+                                f"{r['record']}{'@' + r['deployment'] if r['deployment'] else ''} ({cm.SMOKE_WORDS[r['smoke']]})"
+                                if r["record"]
+                                else "—"
+                            ]
+                            if has_record
+                            else []
+                        ),
                         ", ".join(dict.fromkeys(r["roles"])) or "—",
                         f"{r['measure']} {_fmt(r['value'])}" if r["measure"] else "—",
                         *(_pcells(per[r["arm"]], flows) if per else []),
@@ -674,6 +710,8 @@ def arms(argv) -> int:
         print(
             "  note            wrote the reference it is scored against: its row measures agreement with itself"
         )
+    if a.get("superseded_by"):
+        print(f"  re-scored       the goals read its re-score, {a['superseded_by']}")
     sc = A.scores(a["arm"])
     cs = [(ax, cell_of(ax, sc)) for ax in builtin_axes()]
     if any(c["n"] or (c.get("tokens") or {}).get("n") for _, c in cs):
@@ -712,7 +750,9 @@ def arms(argv) -> int:
     cfg = cfg_fn(a["arm"]) if callable(cfg_fn) else {}
     if cfg.get("params"):
         print(
-            f"\nconfig {cfg.get('config_id', '')} (adapter {cfg.get('adapter') or '—'}; credentials are never shown):"
+            f"\nconfig {cfg.get('config_id', '')} (adapter {cfg.get('adapter') or '—'}"
+            + (f"; deployment {cfg['deployment']}" if cfg.get("deployment") else "")
+            + "; credentials are never shown):"
         )
         for k, x in sorted(cfg["params"].items()):
             print(f"  {k:20} {x}")
@@ -741,6 +781,182 @@ def arms(argv) -> int:
             )
     for note in A.notes(a["arm"]):
         print(f"note: {note}")
+    return 0
+
+
+def _onboarding(r: dict) -> str:
+    if r["status"] == "none":
+        return "none"
+    return f"{ {'vetted': 'pass', 'onboarded': 'probed'}.get(r['status'], 'check') } {r['onboarded']}"
+
+
+def _best(r: dict) -> str:
+    return "; ".join(f"{g['goal_id']} #{i} of {n}" for g, _ds, i, n in r["best"]) or "—"
+
+
+def models(argv) -> int:
+    """evh models: every model record, or one in full as its page shows it."""
+    ap = argparse.ArgumentParser(prog="evh models", description="Every model record, or one in full.")
+    ap.add_argument("--model", help="one model in full: its record id")
+    ap.add_argument("--kind", choices=("llm", "ml", "baseline"), help="only models of this kind")
+    ap.add_argument(
+        "--where",
+        choices=("self-hosted", "hosted"),
+        help="only models that run on our machines (a deployment with a server or device, no provider id), or only hosted ones",
+    )
+    ap.add_argument(
+        "--status",
+        choices=("vetted", "onboarded", "check", "none"),
+        help="only models whose onboarding passed and an arm passed its smoke (vetted), whose onboarding passed with no arm smoked (onboarded), any flagged something (check), or none ran (none)",
+    )
+    ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
+    args = ap.parse_args(argv)
+    A, by_ds = _adapter(args)
+    rows = cm.model_rows(A, by_ds)
+    if not args.model:
+        rows = [
+            r
+            for r in rows
+            if (not args.kind or r["kind"] == args.kind)
+            and (not args.where or r["hosting"] == args.where)
+            and (not args.status or r["status"] == args.status)
+        ]
+        if not rows:
+            print("no model matches" if cm.entries(A) else "no model records: data/models/<model_id>.yaml")
+            return 0
+        _table(
+            [
+                "model",
+                "kind",
+                "where",
+                "weights",
+                "build",
+                "deployments",
+                "settings",
+                "onboarding",
+                "arms",
+                "goals",
+                "best result",
+            ],
+            [
+                [
+                    r["id"],
+                    r["kind"],
+                    r["hosting"] or "—",
+                    r["weights"] or "—",
+                    ", ".join(r["build"]) + (" (differs)" if r["differs"] else "") if r["build"] else "—",
+                    ", ".join(b["id"] for b in r["deployments"]) or "—",
+                    r["settings"],
+                    _onboarding(r),
+                    len(r["arms"]),
+                    ", ".join(g["goal_id"] for g in r["goals"]) or "—",
+                    _best(r),
+                ]
+                for r in rows
+            ],
+        )
+        return 0
+    r = next((x for x in rows if x["id"] == args.model), None)
+    if r is None:
+        die(f"no model {args.model!r}: `evh models` lists them")
+    rec = r["record"]
+    print(r["name"] + f"  [{r['kind']}]")
+    for k, x in (
+        ("weights", r["weights"] or "—"),
+        ("licence", r["licence"] or "—"),
+        ("aliases", ", ".join(rec.get("aliases") or [])),
+        ("where", r["hosting"] or "—"),
+        ("onboarding", _onboarding(r)),
+    ):
+        print(f"  {k:15} {x}")
+    why = rec.get("settings_why") or {}
+    for k, x in (rec.get("settings") or {}).items():
+        print(f"  setting {k:12} {x}" + (f"  ({why[k]})" if why.get(k) else ""))
+    print("\ndeployments:")
+    if r["deployments"]:
+        _table(
+            [
+                "deployment",
+                "where",
+                "server or device",
+                "build",
+                "matches the record",
+                "checked",
+                "onboarding",
+            ],
+            [
+                [
+                    b["id"],
+                    b["where"] + (f" ({b['backend']})" if b.get("backend") else ""),
+                    b.get("server") or b.get("device") or b.get("backend") or "—",
+                    cm.build_text(b),
+                    f"differs: {diff}" if diff else "yes",
+                    cm.day(b.get("checked_at")) or "—",
+                    f"{o['status']} {cm.day(o.get('at'))}" if (o := b.get("onboarding") or {}) else "none",
+                ]
+                for b, diff in zip(r["deployments"], r["diffs"], strict=True)
+            ],
+        )
+    else:
+        print("  none recorded")
+    print("\nonboarding:")
+    if r["deployments"]:
+        for dep in r["deployments"]:
+            onb = dep.get("onboarding") or {}
+            if not onb:
+                print(f"  {dep['id']}: not onboarded: evh model-onboard {r['id']} --deployment {dep['id']}")
+                continue
+            print(
+                f"  {dep['id']}: {onb.get('status')} {cm.day(onb.get('at'))}"
+                + (f" on {onb['where']}" if onb.get("where") else "")
+            )
+            for k, v in (onb.get("report") or {}).items():
+                print(f"    {k.replace('_', ' '):16} {cm.kv(v) if isinstance(v, dict) else v}")
+            for f in onb.get("flags") or []:
+                print(f"    flag: {f}")
+    else:
+        print(f"  not onboarded: evh model-onboard {r['id']}")
+    print("\nsettings history:")
+    hist = sorted(rec.get("history") or [], key=lambda h: str(h.get("at")), reverse=True)
+    if hist:
+        _table(
+            ["when", "what changed", "why"],
+            [
+                [
+                    cm.day(h.get("at")),
+                    f"{h.get('what')}: {h.get('from', '—')} → {h.get('to', '—')}"
+                    if "from" in h or "to" in h
+                    else h.get("what"),
+                    h.get("why") or "—",
+                ]
+                for h in hist
+            ],
+        )
+    else:
+        print("  none recorded")
+    print("\narms:")
+    if r["arms"]:
+        cfg_fn = getattr(A, "arm_config", None)
+        _table(
+            ["arm id", "goal", "its settings", "arm smoke", "result"],
+            [
+                [
+                    a["arm"],
+                    a["goal"]["goal_id"] if a["goal"] else "—",
+                    ", ".join(
+                        cm.arm_settings(
+                            rec, ((cfg_fn(a["arm"]) if callable(cfg_fn) else {}) or {}).get("params") or {}
+                        )
+                    )
+                    or "—",
+                    cm.SMOKE_WORDS[a["smoke"]],
+                    f"{a['measure']} {_fmt(a['value'])}" if a["measure"] else "—",
+                ]
+                for a in r["arms"]
+            ],
+        )
+    else:
+        print("  none")
     return 0
 
 
@@ -846,13 +1062,22 @@ def goals(argv) -> int:
         ds = ans["dataset"]
         tiers = {r["id"]: r["tier"] for r in (by_ds.get(ds) or {}).get("refs", [])}
         print(f"\n{ds}" + (f" · {ans['role']}" if ans["role"] else ""))
+        if ans["notes"]:
+            print(textwrap.fill(ans["notes"], width=96, initial_indent="  ", subsequent_indent="  "))
         if not ans["groups"]:
             print(f"  no arm records {prim.get('measure', '')}")
         for grp in ans["groups"]:
             what = grp["key"]
             gm = (grp["rows"][0].get("measure") if grp["rows"] else None) or prim.get("measure", "")
             dec = cb.group_decision(
-                A, g, ds, grp["rows"], gm, retired_in, cb.gold_beside(tiers, ans["groups"], what)
+                A,
+                g,
+                ds,
+                grp["rows"],
+                gm,
+                retired_in,
+                cb.gold_beside(tiers, ans["groups"], what),
+                outcome=cb.outcome_ref((by_ds.get(ds) or {}).get("refs", []), what),
             )
             shown = cb.shown_axes(dec)
             leader = dec["leader"]  # the decision's: never a retired or flagged arm
@@ -1315,6 +1540,7 @@ def search(argv) -> int:
 VIEWS = {
     "overview": overview,
     "arms": arms,
+    "models": models,
     "datasets": datasets,
     "references": references,
     "metrics": metrics,

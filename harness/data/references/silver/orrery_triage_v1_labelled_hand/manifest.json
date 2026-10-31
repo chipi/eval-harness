@@ -1,0 +1,13 @@
+{
+  "caveat": "FIXTURE: the triage fleet's own earlier hand labels (2026-07), carried to these decisions by fingerprint; not the owner's verdicts. Shown beside gold, never deciding.",
+  "created_at": "2026-10-30T12:24:57Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "items_sha256": {
+    "orrery-ORRERY-5-2026-08-18T18:38:10Z": "dc3b1813dd4f72a77bda5d401811815b49da242c3fe9a0b72e7f136fbf7b6d7d",
+    "orrery-ORRERY-6-2026-08-18T18:48:08Z": "dc3b1813dd4f72a77bda5d401811815b49da242c3fe9a0b72e7f136fbf7b6d7d",
+    "orrery-ORRERY-DEV-1-2026-10-17T07:52:34Z": "dc3b1813dd4f72a77bda5d401811815b49da242c3fe9a0b72e7f136fbf7b6d7d"
+  },
+  "n_items": 3,
+  "source": "examples/triage-fleet/write_gold.py --source fixture: the rows of source fixture in chipi-nbgd/orrery-triage@v1 data/verdicts.jsonl (sha256 144c955dff750bcd58f70b9ddb2e483a7a520770b3e58191e3deed359c8e55c3)",
+  "tier": "silver"
+}

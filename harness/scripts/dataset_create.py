@@ -214,6 +214,7 @@ def _write(
     description: str,
     source_dir: str,
     lineage: dict | None = None,
+    extra: dict | None = None,
 ) -> None:
     # A re-create that selects the SAME items keeps its original created_at. Without this
     # the documented first command, `make demo`, rewrites a tracked file on every run and
@@ -238,6 +239,7 @@ def _write(
         doc["fields_sha256"] = _fields.digest(items)
     if lineage:
         doc["derived_from"] = lineage
+    doc.update(extra or {})  # optional keys another command records (made_from: dataset-from-capture)
     doc["items"] = items
     write_json(out, doc)
 

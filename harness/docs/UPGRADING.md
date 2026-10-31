@@ -5,6 +5,40 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.5.0 to 0.6.0
+
+Change the pin to `@v0.6.0`. Two formats change, and both are migrated by a script, never read in the old shape:
+
+- **Fingerprints are version 5** (RFC-021): `instrument`, `data`, `deployment`, `settings`, each hashed, and the
+  machine `evh` ran on as `runner`, outside the hash. A run made with 0.6.0 compares with a v4 run on no hash. Move
+  your committed runs once, from your project's root:
+  `evh fingerprint-migrate` (`--dry-run` counts first; it is idempotent and prints its counts; a
+  baseline's `fingerprint_hash` follows its run). Code that read `fingerprint.host` reads `fingerprint.runner`;
+  `fingerprint.system_under_test.model` is `fingerprint.deployment` (an adapter's `fingerprint(params)` hook keeps
+  its vocabulary; what it declares about the prompt is now `settings.declared`).
+- **`data/models.yaml` is replaced by `data/models/<model_id>.yaml`** (RFC-020): one record per model, its key in
+  the old file the record's alias. Write a record per entry (`model_id`, `kind`, `aliases`, `weights`,
+  `licence`) and delete the file; `validate` (V1, V18) checks them.
+
+Three behaviours change without a migration:
+
+- **The local catalog reads only what git keeps.** A `data/runs-*` directory your `.gitignore` ignores is no
+  longer shown, as it was never in a clone or the published catalog. Runs you meant to keep: re-allow the
+  directory in `.gitignore` and commit them, or move them into `data/runs`.
+- **`experiment-run` and `rescore` warn** when they write to a directory git ignores or outside the project's
+  data (throwaway `data/runs-smoke*` and `data/runs-tune*` stay silent), and `validate` notes one that holds
+  finished runs.
+- **`evh rescore` writes to one designated place**, `data/runs-rescored/<scorer>/<source>/`, unless `--out` names
+  another; the catalog, the goals and the rounds read an arm from its latest re-score there.
+
+Everything else is added and optional: the capture lane (`evh capture`, `importer-check`, `captures`,
+`capture-scrub`, `dataset-from-capture`, `reference-from-outcomes`, `dataset-split`, `text: hidden`; RFC-019);
+model onboarding (`evh model-onboard`, `evh arm-smoke`, `evh models`, `model_record:` and `deployment:` in a
+config; RFC-020); scoring that evolves (`evh score-preview`, `evh rescore --goal --round --why`,
+`round-open --keep all --scoring` and `--adopt`, a goal axis's `limit: baseline`; RFC-022); `call_timeout_s` for
+the built-in providers. `evh init`'s `.gitignore` now ignores `data/runs-smoke*/` and `data/runs-tune*/`; add the
+two lines to an existing project's to keep scratch runs out of git.
+
 ## From 0.4.4 to 0.5.0
 
 Change the pin to `@v0.5.0`. No record, hash or p-value moves. Three things to check first:

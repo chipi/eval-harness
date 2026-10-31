@@ -1,0 +1,596 @@
+model_id: gemma4-31b
+kind: llm
+name: Gemma 4 31B
+aliases:
+- gemma4:31b
+- gemma4:31b-it-q4_K_M
+- eval-gemma-31b
+weights: open
+licence: Apache-2.0
+deployments:
+- id: x3
+  where: x3
+  tag: gemma4:31b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: gemma4:31b
+  server: ollama 0.40.13
+  digest: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T14:04:53Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:04:53Z'
+    where: x3
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11434/v1
+        model: gemma4:31b
+      digest_found: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+      default:
+        s: 14.7
+        tokens_out: 193
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.15
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 20.1
+      deterministic: true
+      json_valid: true
+- id: dgx
+  where: dgx
+  tag: gemma4:31b
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: gemma4:31b
+  digest: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+  checked_at: '2026-10-31T14:07:12Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:07:12Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: gemma4:31b
+      digest_found: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+      default:
+        s: 14.42
+        tokens_out: 193
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 0.98
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 23.5
+      deterministic: true
+      json_valid: true
+  server: ollama 0.40.13
+- id: mac
+  where: mac
+  tag: gemma4:31b-it-q4_K_M
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11435/v1
+    model: gemma4:31b-it-q4_K_M
+  server: ollama 0.40.13
+  digest: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T14:05:04Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:05:04Z'
+    where: mac
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11435/v1
+        model: gemma4:31b-it-q4_K_M
+      digest_found: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+      default:
+        s: 24.35
+        tokens_out: 193
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 2.0
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 11.5
+      deterministic: true
+      json_valid: true
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-gemma-31b
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-gemma-31b
+  checked_at: '2026-10-31T14:09:48Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:09:48Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-gemma-31b
+      digest_found: null
+      default:
+        s: 1.41
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 1.28
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 17.9
+      deterministic: true
+      json_valid: true
+  accepted:
+    where it ran: a hosted gateway serves the provider's current build; there is no
+      digest, revision or hash to pin
+    determinism: a hosted provider batches requests, so temperature 0 does not repeat
+      exactly; repeats measure it
+capabilities:
+  reasons: false
+  json_mode: true
+  reasoning_off: 'reasoning_effort: none'
+settings:
+  reasoning_effort: none
+settings_why:
+  reasoning_effort: 'it reasoned by default on the onboarding probe (2026-10-31);
+    off unless a task needs it (RUNBOOK §16): left at the server''s default, one model
+    reasons at length and the next not at all'
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
+    task needs it (RUNBOOK §16): left at the server''s default, one model reasons
+    at length and the next not at all'
+smokes:
+  triage_local_x3_gemma4_31b_v2:
+    status: check
+    at: '2026-10-31T14:44:47Z'
+    flags:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 26.89
+        output_chars: 1524
+        cost_usd: 0.0
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 20.79
+        output_chars: 1895
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 14.3
+        output_chars: 1292
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - tokens_out: 48
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 13.27
+      - tokens_out: 56
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.19
+      - tokens_out: 72
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.1
+      - tokens_out: 115
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 6.33
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.69
+      - tokens_out: 52
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.42
+      - tokens_out: 82
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 5.31
+      - tokens_out: 148
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.36
+      - tokens_out: 56
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.74
+      - tokens_out: 59
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.62
+      - tokens_out: 123
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 6.94
+      projection:
+        items: 65
+        minutes: 22.4
+        worst_minutes: 29.1
+        usd: 0.0
+      settings:
+        model: gemma4:31b
+        reasoning_effort: none
+        max_tokens: 1024
+        call_timeout_s: 600
+  triage_hosted_gemma4_31b_v2:
+    status: pass
+    at: '2026-10-31T14:44:56Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 8.84
+        output_chars: 1518
+        cost_usd: 0.0011564000000000001
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 9.38
+        output_chars: 1978
+        cost_usd: 0.0012188000000000001
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 14.85
+        output_chars: 1816
+        cost_usd: 0.0012084
+        scored: true
+      calls:
+      - tokens_out: 45
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.53
+      - tokens_out: 55
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.73
+      - tokens_out: 82
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.15
+      - tokens_out: 113
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.42
+      - tokens_out: 30
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.52
+      - tokens_out: 58
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.7
+      - tokens_out: 78
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.0
+      - tokens_out: 170
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.15
+      - tokens_out: 47
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.2
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.1
+      - tokens_out: 74
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.03
+      - tokens_out: 172
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 9.53
+      projection:
+        items: 65
+        minutes: 11.9
+        worst_minutes: 16.1
+        usd: 0.0776
+      settings:
+        model: eval-gemma-31b
+        reasoning_effort: none
+        max_tokens: 1024
+    accepted:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
+      record''s deployment)'
+  triage_local_mac_gemma4_31b_v2:
+    status: pass
+    at: '2026-10-31T14:46:01Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 54.62
+        output_chars: 1589
+        cost_usd: 0.0
+        scored: true
+        deterministic: true
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 36.92
+        output_chars: 1941
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 34.91
+        output_chars: 1751
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - tokens_out: 48
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 31.47
+      - tokens_out: 56
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.53
+      - tokens_out: 82
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 7.72
+      - tokens_out: 125
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 10.89
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 10.2
+      - tokens_out: 57
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 6.12
+      - tokens_out: 83
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 7.61
+      - tokens_out: 159
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 12.99
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 9.41
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 5.15
+      - tokens_out: 78
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 7.3
+      - tokens_out: 157
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 13.05
+      projection:
+        items: 65
+        minutes: 45.7
+        worst_minutes: 59.2
+        usd: 0.0
+      settings:
+        model: gemma4:31b-it-q4_K_M
+        reasoning_effort: none
+        max_tokens: 1024
+        call_timeout_s: 600
+  triage_local_dgx_gemma4_31b_v2:
+    status: pass
+    at: '2026-10-31T14:29:55Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 21.88
+        output_chars: 1460
+        cost_usd: 0.0
+        scored: true
+        deterministic: true
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 20.76
+        output_chars: 1969
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 17.77
+        output_chars: 1690
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - tokens_out: 48
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.64
+      - tokens_out: 55
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.94
+      - tokens_out: 88
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.59
+      - tokens_out: 104
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 5.72
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.52
+      - tokens_out: 61
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.52
+      - tokens_out: 99
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 5.5
+      - tokens_out: 162
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.22
+      - tokens_out: 54
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.31
+      - tokens_out: 55
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.01
+      - tokens_out: 87
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.05
+      - tokens_out: 142
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 7.4
+      projection:
+        items: 65
+        minutes: 21.8
+        worst_minutes: 23.7
+        usd: 0.0
+      settings:
+        model: gemma4:31b
+        reasoning_effort: none
+        max_tokens: 1024
+        call_timeout_s: 600

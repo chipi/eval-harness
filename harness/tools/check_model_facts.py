@@ -259,8 +259,8 @@ check(
     is not None,
 )
 
-# data/models.yaml says the same as the hosted table, alias by alias: the arms page's open /
-# proprietary filter reads that file, so a model marked differently there would put an arm on the
+# The model records (data/models/) say the same as the hosted table, alias by alias: the arms page's
+# open / proprietary filter reads them, so a model marked differently there would put an arm on the
 # wrong side of the filter while REFERENCE.md says otherwise. The replacement arm (qwen37max) is
 # stated in REFERENCE.md's note under the table, not in it.
 
@@ -273,16 +273,18 @@ _by_alias = {
 }
 for alias, kind in re.findall(r"alias `([^`]+)` → \[[^\]]+\]\([^)]+\), weights: (open|proprietary)", _ref):
     _by_alias[alias] = kind
-_models = (yaml.safe_load((ROOT / "harness" / "data" / "models.yaml").read_text(encoding="utf-8")) or {}).get(
-    "models"
-) or {}
+_models = {}
+for _f in sorted((ROOT / "harness" / "data" / "models").glob("*.yaml")):
+    _rec = yaml.safe_load(_f.read_text(encoding="utf-8")) or {}
+    for _a in _rec.get("aliases") or []:
+        _models[_a] = _rec
 _differ = [
-    f"{a}: models.yaml {(_models.get(a) or {}).get('weights')}, REFERENCE.md {k}"
+    f"{a}: data/models {(_models.get(a) or {}).get('weights')}, REFERENCE.md {k}"
     for a, k in sorted(_by_alias.items())
     if (_models.get(a) or {}).get("weights") != k
 ]
 check(
-    f"data/models.yaml marks each of REFERENCE.md's {len(_by_alias)} hosted aliases open or proprietary as it does",
+    f"the model records mark each of REFERENCE.md's {len(_by_alias)} hosted aliases open or proprietary as it does",
     len(_by_alias) >= 25 and not _differ,
     "; ".join(_differ[:4]) or f"read {len(_by_alias)} aliases",
 )

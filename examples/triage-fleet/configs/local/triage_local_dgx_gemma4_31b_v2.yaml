@@ -1,0 +1,19 @@
+# Round 3: triage_local_dgx_gemma4_31b_v1 again, with gemma4-31b's onboarded settings
+# The record supplies reasoning_effort (its settings_why says why); the arm sets the task's own: a reply cap
+# (a triage decision is 64-414 tokens; 1024 bounds a runaway) and the call limit round 1 used.
+config_id: triage_local_dgx_gemma4_31b_v2
+dataset_id: orrery_triage_v1_labelled
+adapter: ../../adapter.py
+goal: triage_orrery
+round: r3
+model_record: gemma4-31b
+deployment: dgx
+params:
+  provider: gateway
+  model: gemma4:31b
+  url: http://100.69.49.126:11434/v1/chat/completions
+  call_timeout_s: 600
+  machine: dgx
+  usd_per_mtok_in: 0
+  usd_per_mtok_out: 0
+  max_tokens: 1024

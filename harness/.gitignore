@@ -207,6 +207,17 @@ data/runs-adjudicated/*/*
 !data/runs-adjudicated/*/outputs/**
 data/runs-adjudicated/*/outputs/_rows.jsonl
 
+# data/runs-rescored/<scorer>/<source>/ — re-scores (evh rescore, RFC-022): the stored outputs read again by
+# another scorer, $0, the scorer by its code, the source the runs directory read. The one place the tool
+# designates, so a new scorer never needs a block of its own here.
+!data/runs-rescored/
+data/runs-rescored/*/*/*/*
+!data/runs-rescored/*/*/*/metrics.json
+!data/runs-rescored/*/*/*/predictions.jsonl
+!data/runs-rescored/*/*/*/outputs
+!data/runs-rescored/*/*/*/outputs/**
+data/runs-rescored/*/*/*/outputs/_rows.jsonl
+
 # data/runs-silver/ — the CNN arms re-scored ($0) against silver/cnn_dailymail_200, the frontier
 # arm's summaries: a silver group beside gold on the goal page, where silver's family bias shows.
 # Their outputs are the same bytes as the measured runs' in data/runs.
@@ -301,3 +312,12 @@ data/external/
 # that run's outputs, rebuilt with `evh reference-create --from-run <run_id>` (the manifest
 # names the run).
 !data/references/silver/*/manifest.json
+
+# The triage fleet's decisions (examples/triage-fleet/fetch.py): published on Hugging Face
+# (chipi-nbgd/orrery-triage, CC-BY-4.0) and fetched by revision; git holds their ids and hashes.
+data/sources/orrery_triage_*/
+data/sources/orrery_triage_v1.hf/
+# A capture's records are the captured content; capture.json (ids and hashes) is what git holds.
+data/captures/*/records/
+data/sources/fleet_dedup_*/
+data/sources/fleet_dedup_v1.hf/

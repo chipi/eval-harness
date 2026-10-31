@@ -429,8 +429,7 @@ def compare(exp: dict) -> int:
         p = _paired_p(ca, ra)
         m_new = json.loads((reruns[a] / "metrics.json").read_text())
         m_old = json.loads((arms[a]["dir"] / "metrics.json").read_text())
-        up_new = ((m_new.get("fingerprint") or {}).get("system_under_test") or {}).get("model", {}).get("id")
-        up_old = ((m_old.get("fingerprint") or {}).get("system_under_test") or {}).get("model", {}).get("id")
+        up_new, up_old = (_upstream(x) for x in (m_new, m_old))
         upstream = (
             "—"
             if arms[a]["kind"] != "hosted"
@@ -520,6 +519,12 @@ def compare(exp: dict) -> int:
     print(card)
     print(f"written to {(REPRO / exp['slug'] / 'REPLICATION.md').relative_to(ROOT)}")
     return 1 if moved or any(s.startswith("DIFFERS") for s in statuses.values()) else 0
+
+
+def _upstream(m: dict) -> object:
+    """The model a run's adapter says answered: the id it declared, else the model asked for."""
+    dep = (m.get("fingerprint") or {}).get("deployment") or {}
+    return (dep.get("declared") or {}).get("id") or dep.get("model")
 
 
 def main() -> int:

@@ -54,6 +54,9 @@ t._repage();};
 document.querySelectorAll('table.data').forEach(t=>window.paginate(t));
 document.querySelectorAll('input[data-filter]').forEach(inp=>{const t=document.getElementById(inp.dataset.filter);
 inp.addEventListener('input',()=>{if(t&&t._repage)t._repage();});});
+/* ?q=<text> opens a page's first table filtered by it (a model's arms: arms.html?q=<model id>) */
+{const pre=new URLSearchParams(location.search).get('q'),f=document.querySelector('input[data-filter]');
+if(pre&&f){f.value=pre;f.dispatchEvent(new Event('input'));}}
 document.querySelectorAll('table.sortable th').forEach(th=>th.addEventListener('click',()=>{const t=th.closest('table');if(t._repage)t._repage();}));
 /* a suggested command's copy button: the clipboard where the browser allows it, else select it */
 document.addEventListener('click',ev=>{const b=ev.target.closest('button.copy');if(!b)return;

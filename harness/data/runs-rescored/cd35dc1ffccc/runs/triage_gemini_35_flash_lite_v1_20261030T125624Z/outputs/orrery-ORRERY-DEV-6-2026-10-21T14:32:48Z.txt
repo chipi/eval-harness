@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "zz-probe-dev-reject-in-timeout", "model_disposition": "cleanup", "reason": "The error alert contains the explicit test/probe marker 'zz-probe-dev-reject-in-timeout', indicating this is a synthetic check or smoke test execution rather than a real user-facing incident."}

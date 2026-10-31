@@ -1,0 +1,293 @@
+model_id: qwen3.5-122b
+kind: llm
+name: Qwen 3.5 122B
+aliases:
+- qwen3.5:122b
+- eval-qwen35-122b
+weights: open
+licence: Apache-2.0
+deployments:
+- id: x3
+  where: x3
+  tag: qwen3.5:122b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: qwen3.5:122b
+  server: ollama 0.40.13
+  digest: 8b9d11d807c57feb1e2ecb0d6cbf40334c37dcc3523bed5540af4f927f112a37
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T14:09:59Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:09:59Z'
+    where: x3
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11434/v1
+        model: qwen3.5:122b
+      digest_found: 8b9d11d807c57feb1e2ecb0d6cbf40334c37dcc3523bed5540af4f927f112a37
+      default:
+        s: 65.96
+        tokens_out: 537
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.84
+        tokens_out: 27
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 14.7
+      deterministic: true
+      json_valid: true
+- id: dgx
+  where: dgx
+  tag: qwen3.5:122b
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: qwen3.5:122b
+  digest: 8b9d11d807c57feb1e2ecb0d6cbf40334c37dcc3523bed5540af4f927f112a37
+  checked_at: '2026-10-31T14:09:51Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:09:51Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: qwen3.5:122b
+      digest_found: 8b9d11d807c57feb1e2ecb0d6cbf40334c37dcc3523bed5540af4f927f112a37
+      default:
+        s: 41.95
+        tokens_out: 537
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.43
+        tokens_out: 27
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 18.9
+      deterministic: true
+      json_valid: true
+  server: ollama 0.40.13
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-qwen35-122b
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-qwen35-122b
+  checked_at: '2026-10-31T14:09:43Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:09:43Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-qwen35-122b
+      digest_found: null
+      default:
+        s: 11.75
+        tokens_out: 553
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 0.93
+        tokens_out: 26
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 27.8
+      deterministic: true
+      json_valid: true
+  accepted:
+    where it ran: a hosted gateway serves the provider's current build; there is no
+      digest, revision or hash to pin
+    determinism: a hosted provider batches requests, so temperature 0 does not repeat
+      exactly; repeats measure it
+capabilities:
+  reasons: true
+  json_mode: true
+  reasoning_off: 'reasoning_effort: none'
+settings:
+  reasoning_effort: none
+settings_why:
+  reasoning_effort: 'it reasoned by default on the onboarding probe (2026-10-31);
+    off unless a task needs it (RUNBOOK §16): left at the server''s default, one model
+    reasons at length and the next not at all'
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
+    task needs it (RUNBOOK §16): left at the server''s default, one model reasons
+    at length and the next not at all'
+smokes:
+  triage_hosted_qwen35_122b_v2:
+    status: pass
+    at: '2026-10-31T14:45:38Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 4.63
+        output_chars: 991
+        cost_usd: 0.00098332
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 5.36
+        output_chars: 1700
+        cost_usd: 0.00161824
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 4.67
+        output_chars: 829
+        cost_usd: 0.00103194
+        scored: true
+      calls:
+      - tokens_out: 58
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.84
+      - tokens_out: 120
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.8
+      - tokens_out: 55
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.75
+      - tokens_out: 75
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.77
+      - tokens_out: 164
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 1.84
+      - tokens_out: 75
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.22
+      - tokens_out: 116
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.45
+      projection:
+        items: 65
+        minutes: 5.3
+        worst_minutes: 5.8
+        usd: 0.0787
+      settings:
+        model: eval-qwen35-122b
+        reasoning_effort: none
+        max_tokens: 1024
+    accepted:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    - 'where it ran: the build is not pinned (no digest, revision or hash in the model
+      record''s deployment)'
+  triage_local_dgx_qwen35_122b_v2:
+    status: pass
+    at: '2026-10-31T15:16:59Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 28.09
+        output_chars: 767
+        cost_usd: 0.0
+        scored: true
+        deterministic: true
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 14.42
+        output_chars: 1666
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 7.9
+        output_chars: 685
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - tokens_out: 59
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 23.31
+      - tokens_out: 103
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.79
+      - tokens_out: 63
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.66
+      - tokens_out: 79
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.82
+      - tokens_out: 152
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 6.94
+      - tokens_out: 71
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.92
+      - tokens_out: 83
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.98
+      projection:
+        items: 65
+        minutes: 18.2
+        worst_minutes: 30.4
+        usd: 0.0
+      settings:
+        model: qwen3.5:122b
+        reasoning_effort: none
+        max_tokens: 1024
+        call_timeout_s: 600

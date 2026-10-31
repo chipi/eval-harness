@@ -156,6 +156,23 @@ def _either(name: str, role: str) -> str:
     return f"{JUDGE_PREFIX}{name} or {name}" if role == "judge" else name
 
 
+#: Ollama's port: a server there takes any key, on this machine or another one on the network.
+OLLAMA_PORT = 11434
+#: The key sent to such a server: the OpenAI client wants one present, and it bills nothing.
+NO_KEY = "not-needed"
+
+
+def keyless(base: str | None) -> bool:
+    """Whether an OpenAI-shaped address needs no key: on this machine (localhost, 127.x, ::1) or Ollama's port."""
+    if not base:
+        return False
+    from urllib.parse import urlparse  # noqa: PLC0415
+
+    u = urlparse(base)
+    host = (u.hostname or "").lower()
+    return host in ("localhost", "::1") or host.startswith("127.") or u.port == OLLAMA_PORT
+
+
 def route(params: dict[str, Any], role: str) -> Route:
     """Where `params` would be sent, resolved without calling anything. Missing pieces are None
     (`problems` says which); an unknown provider is a ValueError."""
@@ -173,7 +190,13 @@ def route(params: dict[str, Any], role: str) -> Route:
     else:
         base_var, base = None, None
     base = base or spec.base_default
-    if base and spec.base_suffix:
+    if provider == "openai" and not key and keyless(base):
+        # A local server, or Ollama anywhere, takes any key and the client only wants one present: asking a
+        # newcomer for OPENAI_API_KEY to reach their own Ollama was a step with no purpose (owner, 2026-10-31).
+        key_var, key = "(none: a local server)", NO_KEY
+    # An address given with the suffix already (a LiteLLM proxy written as http://host:4000/v1, as its own docs
+    # show it) keeps one: appending again sent every call to /v1/v1, which the proxy answers 404.
+    if base and spec.base_suffix and not base.rstrip("/").endswith(spec.base_suffix):
         base = base.rstrip("/") + spec.base_suffix
     return Route(provider, key_var, key, base_var, base)
 
@@ -263,13 +286,26 @@ def _cost(params: dict[str, Any], usage: Any, tin: int | None, tout: int | None)
     return (bill, True) if bill is not None else (price(params, tin, tout), False)
 
 
+def _client_kw(params: dict[str, Any]) -> dict[str, Any]:
+    """The client's own options from the params: `call_timeout_s`, the arm's call limit (seconds), as the
+    SDK's `timeout`. Unset, the SDK's default stands (10 minutes for both)."""
+    limit = params.get("call_timeout_s")
+    return {"timeout": float(limit)} if limit else {}
+
+
 def _openai_shaped(prompt: str, params: dict[str, Any], r: Route) -> Completion:
     from openai import OpenAI  # noqa: PLC0415
 
     body = {_BODY_PARAMS[k]: params[k] for k in _BODY_PARAMS if params.get(k) is not None}
     if r.provider == "openrouter":
         body["usage"] = {"include": True}  # OpenRouter returns what it billed only when asked
-    resp = OpenAI(api_key=r.key, base_url=r.base_url).chat.completions.create(
+    if r.provider == "litellm":
+        # A LiteLLM proxy refuses a parameter its model group does not list (UnsupportedParamsError, e.g.
+        # reasoning_effort on most hosted groups) unless the request names it: then it is passed to the upstream.
+        asked = [k for k in ("reasoning", "reasoning_effort") if k in body]
+        if asked:
+            body["allowed_openai_params"] = asked
+    resp = OpenAI(api_key=r.key, base_url=r.base_url, **_client_kw(params)).chat.completions.create(
         model=params["model"],
         temperature=float(params.get("temperature", 0.0)),
         max_tokens=int(params["max_tokens"]),
@@ -280,7 +316,12 @@ def _openai_shaped(prompt: str, params: dict[str, Any], r: Route) -> Completion:
     tin, tout = getattr(usage, "prompt_tokens", None), getattr(usage, "completion_tokens", None)
     cost, was_billed = _cost(params, usage, tin, tout)
     choice = resp.choices[0]
+    # A server that returns the model's reasoning beside its answer (Ollama, vLLM: `reasoning` or
+    # `reasoning_content`) says whether it reasoned even when its usage does not count reasoning tokens.
+    extra = getattr(choice.message, "model_extra", None) or {}
+    said = extra.get("reasoning") or extra.get("reasoning_content") or ""
     return Completion(
+        meta={"reasoning_chars": len(said)} if said else {},
         text=choice.message.content or "",
         tokens_in=tin,
         tokens_out=tout,
@@ -298,7 +339,7 @@ def _openai_shaped(prompt: str, params: dict[str, Any], r: Route) -> Completion:
 def _anthropic(prompt: str, params: dict[str, Any], r: Route) -> Completion:
     import anthropic  # noqa: PLC0415
 
-    msg = anthropic.Anthropic(api_key=r.key, base_url=r.base_url).messages.create(
+    msg = anthropic.Anthropic(api_key=r.key, base_url=r.base_url, **_client_kw(params)).messages.create(
         model=params["model"],
         max_tokens=int(params["max_tokens"]),
         messages=[{"role": "user", "content": prompt}],

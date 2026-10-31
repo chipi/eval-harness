@@ -1,0 +1,82 @@
+round_id: r1
+goal: triage_orrery
+dataset_id: orrery_triage_v1_labelled
+hypothesis: 'Which model should the triage fleet run: every candidate, hosted and self-hosted on three
+  machines, on the 65 decisions the owner labelled, against production''s own model'
+carried:
+- triage_baseline_pro_v1
+- triage_deepseek_41flash_v1
+- triage_gemini_35_flash_lite_v1
+- triage_gemini_4_argon_v1
+- triage_gpt_61_sol_v1
+- triage_gpt_6_luna_v1
+- triage_haiku_55_v1
+- triage_hosted_gemma4_31b_v1
+- triage_hosted_gpt_oss_120b_v1
+- triage_hosted_mistral_medium_35_v1
+- triage_hosted_qwen35_122b_v1
+- triage_hosted_qwen3_30b_a3b_v1
+- triage_kimi_k31_pro_v1
+- triage_local_dgx_gemma4_12b_noreason_v1
+- triage_local_dgx_gemma4_31b_v1
+- triage_local_dgx_gpt_oss_120b_v1
+- triage_local_dgx_gpt_oss_20b_v1
+- triage_local_dgx_llama31_8b_v1
+- triage_local_dgx_llama4_scout_v1
+- triage_local_dgx_ministral_3_14b_v1
+- triage_local_dgx_mistral_medium_35_128b_v1
+- triage_local_dgx_nemotron_35_bolt_e4b_v1
+- triage_local_dgx_nemotron_35_lightning_30b_v1
+- triage_local_dgx_nemotron_35_super_120b_v1
+- triage_local_dgx_phi4_14b_v1
+- triage_local_dgx_qwen35_122b_v1
+- triage_local_dgx_qwen38_27b_v1
+- triage_local_dgx_qwen3_30b_a3b_v1
+- triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1
+- triage_local_mac_gemma4_12b_noreason_v1
+- triage_local_mac_gemma4_31b_v1
+- triage_local_mac_gpt_oss_20b_v1
+- triage_local_mac_llama31_8b_v1
+- triage_local_mac_ministral_3_14b_v1
+- triage_local_mac_nemotron_35_bolt_e4b_v1
+- triage_local_mac_nemotron_35_lightning_30b_v1
+- triage_local_mac_phi4_14b_v1
+- triage_local_mac_qwen38_27b_v1
+- triage_local_mac_qwen3_30b_a3b_v1
+- triage_local_x3_gemma4_31b_v1
+- triage_local_x3_gpt_oss_20b_v1
+- triage_local_x3_llama31_8b_v1
+- triage_local_x3_ministral_3_14b_v1
+- triage_local_x3_nemotron_35_bolt_e4b_v1
+- triage_local_x3_nemotron_35_lightning_30b_v1
+- triage_local_x3_phi4_14b_v1
+- triage_local_x3_qwen38_27b_v1
+- triage_local_x3_qwen3_30b_a3b_v1
+- triage_mistral_large_4_v1
+- triage_sonnet_55_v1
+- triage_stub_dismiss_v1
+- triage_stub_escalate_v1
+scorer: cd35dc1ffccc
+scoring:
+- at: '2026-10-31T11:08:49Z'
+  scorer: cd35dc1ffccc
+  why: 'the adapter''s score() changed seven times while the round ran, so its runs were re-scored onto
+    one version, the combined cost (owner 2026-10-30); recorded by hand: the re-score was made before
+    RFC-022, by evh rescore --out, and moved to its designated place'
+  written:
+  - runs-rescored/cd35dc1ffccc/runs
+  - runs-rescored/cd35dc1ffccc/runs-repeats
+  runs: 65
+status: closed
+opened_at: '2026-10-31T13:18:37Z'
+closed_at: '2026-10-31T13:19:25Z'
+conclusion:
+  text: 'Nothing is decided at n = 65: on the combined cost the paired test ties every arm under the false-alarm
+    ceiling with the leader, the arm that always dismisses among them; the ceiling (production''s 4-pass
+    mean, 21.25 of 31) was set after the results and sits within one or two false alarms of 18 rows; a
+    no-decision scored as an escalation, a path production does not have. Production''s own model is promoted
+    as the baseline the next round measures against (owner, 2026-10-31). Next: a no-decision counts as
+    wrong on both sides, the ceiling becomes no worse than this baseline by the paired test, and the gold
+    grows to the 93 owner-labelled decisions before machines are booked.'
+  promoted_run: triage_baseline_pro_v1_20261030T132352Z
+baseline: null

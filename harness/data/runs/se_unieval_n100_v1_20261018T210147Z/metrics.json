@@ -11,14 +11,9 @@
   "fingerprint": {
     "arm": {
       "config_id": "se_unieval_n100_v1",
-      "params": {
-        "batch_size": 8,
+      "labels": {
         "family": "unieval",
-        "inputs": "ours",
-        "model": "MingZhong/unieval-sum",
-        "price_tier": "free",
-        "provider": "unieval",
-        "revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0"
+        "price_tier": "free"
       }
     },
     "data": {
@@ -29,15 +24,50 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "a0501d5c0519ea91942cd26fa6512fc11f25c53dfc129d407df46c80804d2df6",
-    "host": {
-      "cpu_count": 32,
-      "label": "omarchy",
-      "platform": "Linux/x86_64",
-      "processor": null,
-      "python": "3.11.16",
-      "release": "7.2.5-3-omarchy"
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "code_sha256": "205321c4291e768e3f3d374af95a6f1e5db79a6573def4f542ca0adcedb839ed",
+        "inputs": "ours",
+        "loaded_dtype": "float32",
+        "loaded_revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0",
+        "nltk": "3.10.3",
+        "pin_satisfied": true,
+        "weight_files": [
+          "pytorch_model.bin:3132623525"
+        ],
+        "weights_licence": "not stated on the model card (MingZhong/unieval-sum)"
+      },
+      "hosted": null,
+      "id": "MingZhong/unieval-sum",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "model": "MingZhong/unieval-sum",
+      "provider": "unieval",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0",
+        "revision_source": "hf-snapshot"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
     },
+    "deployment_sha256": "a2d57c0e7667afd3850ef25c07c325bc11d94d055033548f2a285684be936c38",
+    "hash": "3e04d3d4f7368f716ab253d3793620acf3e29275ae2b585abfe433af64bda8f4",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -48,34 +78,22 @@
         "dirty": true
       }
     },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.31.0",
-        "rouge-score": "0.1.2",
-        "torch": "2.14.1",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "code_sha256": "205321c4291e768e3f3d374af95a6f1e5db79a6573def4f542ca0adcedb839ed",
-        "device": "cpu",
-        "id": "MingZhong/unieval-sum",
-        "identity_declared": true,
-        "inputs": "ours",
-        "loaded_dtype": "float32",
-        "loaded_revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0",
-        "nltk": "3.10.3",
-        "pin_satisfied": true,
-        "precision": "fp32",
-        "revision": "ed8da5a8aa01b19d49a5f8738d382ced54b73ad0",
-        "revision_source": "hf-snapshot",
-        "weight_files": [
-          "pytorch_model.bin:3132623525"
-        ],
-        "weights_licence": "not stated on the model card (MingZhong/unieval-sum)"
-      }
+    "instrument_sha256": "48aaf589fefcf826e8fe5f98fa9ba5b2cc7933e9233edd414a42f2f52784aa21",
+    "runner": {
+      "cpu_count": 32,
+      "label": "omarchy",
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.16",
+      "release": "7.2.5-3-omarchy"
     },
-    "version": 4
+    "settings": {
+      "batch_size": 8,
+      "inputs": "ours"
+    },
+    "settings_sha256": "b6033e3d55f942f9a58ade85a6b55678a24725931dbe2a5be337eeea28a84228",
+    "version": 5
   },
   "goal": "summary_judge_summeval",
   "metric_kinds": {

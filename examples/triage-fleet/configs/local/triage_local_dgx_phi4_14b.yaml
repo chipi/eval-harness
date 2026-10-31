@@ -1,0 +1,14 @@
+# phi4:14b (Phi, small tier), self-hosted with Ollama 0.40.13 on DGX: NVIDIA GB10, 128 GB unified (CUDA).
+# The same weights run on each machine that fits them; arms differ only in the model and where it runs.
+config_id: triage_local_dgx_phi4_14b_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: "phi4:14b"
+  url: http://100.69.49.126:11434/v1/chat/completions
+  call_timeout_s: 600
+  machine: dgx
+  usd_per_mtok_in: 0
+  usd_per_mtok_out: 0

@@ -10,6 +10,7 @@ environment's proxy or OpenRouter key pointed; the judge panel called only Anthr
 Sonnet in code, and ran its fake judge when the key was missing.
 """
 
+import json
 import os
 import sys
 import tempfile
@@ -47,9 +48,9 @@ class _Resp:
 
 
 class _OpenAI:
-    def __init__(self, api_key=None, base_url=None):
+    def __init__(self, api_key=None, base_url=None, **opts):
         seen.clear()
-        seen.update(sdk="openai", api_key=api_key, base_url=base_url)
+        seen.update(sdk="openai", api_key=api_key, base_url=base_url, opts=opts)
         self.chat = types.SimpleNamespace(completions=types.SimpleNamespace(create=self._create))
 
     def _create(self, **kw):
@@ -58,9 +59,9 @@ class _OpenAI:
 
 
 class _Anthropic:
-    def __init__(self, api_key=None, base_url=None):
+    def __init__(self, api_key=None, base_url=None, **opts):
         seen.clear()
-        seen.update(sdk="anthropic", api_key=api_key, base_url=base_url)
+        seen.update(sdk="anthropic", api_key=api_key, base_url=base_url, opts=opts)
         self.messages = types.SimpleNamespace(create=self._create)
 
     def _create(self, **kw):
@@ -143,6 +144,21 @@ check(
     seen.get("api_key") == "sk-openai-test-key"
     and seen.get("base_url") is None
     and not seen["kw"].get("extra_body"),
+    str(seen),
+)
+check("openai: no call limit set, the SDK's own default stands", seen.get("opts") == {}, str(seen))
+adapter.call_system("text", {"provider": "openai", "model": "gpt-x", "call_timeout_s": 30})
+check(
+    "openai: the arm's call_timeout_s is the client's timeout, never sent in the request",
+    seen.get("opts") == {"timeout": 30.0} and "call_timeout_s" not in str(seen["kw"]),
+    str(seen),
+)
+os.environ["ANTHROPIC_API_KEY"] = "sk-ant-test"
+adapter.call_system("t", {"provider": "anthropic", "model": "claude-x", "call_timeout_s": 45})
+os.environ.pop("ANTHROPIC_API_KEY")
+check(
+    "anthropic: the arm's call_timeout_s is the client's timeout",
+    seen.get("opts") == {"timeout": 45.0},
     str(seen),
 )
 os.environ["OPENAI_BASE_URL"] = "http://127.0.0.1:8000/v1"
@@ -292,8 +308,8 @@ with tempfile.TemporaryDirectory() as td:
     )
     check(
         "a run's fingerprint does not move when only the key it was paid with changes",
-        a_fp["arm"] == b_fp["arm"] and "api_key_env" not in b_fp["arm"]["params"],
-        str(b_fp["arm"]),
+        a_fp["hash"] == b_fp["hash"] and "api_key_env" not in json.dumps(b_fp),
+        str(b_fp["settings"]),
     )
 
 # ── the judge panel ──────────────────────────────────────────────────────────
@@ -345,5 +361,89 @@ check(
     str(shown),
 )
 
+os.environ["LITELLM_API_KEY"] = "sk-litellm-test"
+adapter.call_system(
+    "t", {"provider": "litellm", "model": "eval-x", "base_url": "http://gw:4000", "reasoning_effort": "none"}
+)
+check(
+    "litellm: a reasoning setting is named in allowed_openai_params, so the proxy passes it on",
+    (seen["kw"].get("extra_body") or {}).get("allowed_openai_params") == ["reasoning_effort"]
+    and (seen["kw"].get("extra_body") or {}).get("reasoning_effort") == "none",
+    str(seen.get("kw")),
+)
+adapter.call_system("t", {"provider": "litellm", "model": "eval-x", "base_url": "http://gw:4000"})
+check(
+    "litellm: without one nothing extra is sent",
+    "allowed_openai_params" not in (seen["kw"].get("extra_body") or {}),
+    str(seen.get("kw")),
+)
+os.environ.pop("LITELLM_API_KEY")
+check(
+    "litellm: an address given with /v1 already is not given a second one",
+    _providers.route({"provider": "litellm", "model": "m", "base_url": "http://gw:4000/v1"}, "arm").base_url
+    == "http://gw:4000/v1"
+    and _providers.route({"provider": "litellm", "model": "m", "base_url": "http://gw:4000/"}, "arm").base_url
+    == "http://gw:4000/v1",
+)
+
 clear()
+local = {"provider": "openai", "model": "llama3.1:8b"}
+check(
+    "openai: a local server or Ollama's port needs no OPENAI_API_KEY (Ollama takes any key)",
+    _providers.problems({**local, "base_url": "http://127.0.0.1:11434/v1"}, "arm") == []
+    and _providers.problems({**local, "base_url": "http://localhost:8000/v1"}, "arm") == []
+    and _providers.problems({**local, "base_url": "http://100.69.49.126:11434/v1"}, "arm") == []
+    and _providers.route({**local, "base_url": "http://127.0.0.1:11434/v1"}, "arm").key == _providers.NO_KEY,
+)
+check(
+    "openai: any other address still needs the key, and says so",
+    any(
+        "OPENAI_API_KEY is not set" in p
+        for p in _providers.problems({**local, "base_url": "https://api.example.com/v1"}, "arm")
+    )
+    and any("OPENAI_API_KEY is not set" in p for p in _providers.problems(local, "arm")),
+)
+os.environ["OPENAI_API_KEY"] = "sk-real"
+check(
+    "openai: a key that is set is used, local or not",
+    _providers.route({**local, "base_url": "http://127.0.0.1:11434/v1"}, "arm").key == "sk-real",
+)
+clear()
+
+# env-check: a local server bills nothing, so it is no reason to demand a spending cap.
+import subprocess  # noqa: E402
+
+with tempfile.TemporaryDirectory() as proj:
+    base_env = {
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith("EVAL_") and k not in VARS and not k.startswith("EVAL_JUDGE_")
+    }
+    script = str(Path(__file__).resolve().parents[1] / "scripts" / "env_check.py")
+    ran = subprocess.run(
+        [sys.executable, script],
+        env=dict(base_env, EVAL_HOME=proj, OPENAI_BASE_URL="http://127.0.0.1:11434/v1"),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    check(
+        "env-check: a local server is callable with no key, said so, and asks for no spending cap",
+        ran.returncode == 0
+        and "openai: a local server, called with no key" in ran.stdout
+        and "A provider key is set" not in ran.stdout,
+        ran.stdout[-600:] + ran.stderr[-300:],
+    )
+    keyed = subprocess.run(
+        [sys.executable, script],
+        env=dict(base_env, EVAL_HOME=proj, OPENAI_API_KEY="sk-real-key-1234567890"),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    check(
+        "env-check: a real key with no cap still fails, as before",
+        keyed.returncode == 1 and "A provider key is set" in keyed.stdout,
+        keyed.stdout[-400:],
+    )
 sys.exit(summary())

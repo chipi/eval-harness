@@ -45,6 +45,12 @@ further. This page is the reference for each step.
 | the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--configs`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh search …` · `evh inspect --runs …` (`--items`, `--analysis`, `--item …`); every list takes `--period P` |
 | consistency | `evh validate` |
 | does the installed harness work here | `evh self-test` |
+| keep a production system's records | `evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture c1` · `evh captures` ([§15](#15-datasets-from-production-the-capture-lane)) |
+| test an importer | `evh importer-check path/to/importer.py:Importer --query …` |
+| scrub a capture | `evh capture-scrub c1 --command "python scrub.py {records}"` |
+| a dataset from a capture | `evh dataset-from-capture c1 --dataset-id … [--where F:V] [--one-per F] [--tag K=V]` |
+| labels from what happened afterwards | `evh reference-from-outcomes --dataset-id … --capture c1 --map rules.yaml --name silver/…` |
+| dev and heldout | `evh dataset-split … --heldout 0.3 --seed 7 [--key F]` |
 
 ---
 
@@ -313,7 +319,7 @@ what reads it. A project may add fields of its own; the harness ignores them.
 | `success_criteria.primary.direction` | `higher`, `lower` or `non_inferior` | `higher`/`lower` rank the arms. `non_inferior` is a guard (no significant drop against a baseline) and ranks nothing. V14 fails a direction that contradicts what the runs record, or `higher` on a cost, latency or token count |
 | `success_criteria.primary.threshold` | any value | shown beside the measure on the goal page |
 | `success_criteria.min_items` | an integer, at least 1 | The fewest items a winner-picking comparison may rest on: an arm with fewer is flagged "n k < min_items m" on the goal page and is never a group's leader; `evh validate` notes a goal dataset smaller than it (a note, not a failure) |
-| `success_criteria.axes` | a map of name → `{measure, direction, stat, limit, margin, role, unit, note}`, all optional. `cost` (`cost_usd`, mean, tokens shown beside it) and `speed` (`latency_ms`, p95) are built in and need no entry; `quality` takes only a `limit`, a `margin` and a `note` (its measure and direction are the primary's), and `margin` belongs to quality alone; any other name is the project's own axis, a per-item metric its runs record (`measure` defaults to the name, `direction` to the adapter's `METRIC_DIRECTIONS`, else `higher`, `stat` to `mean`). `role: ignore` drops an axis | The goal's decision ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)): an arm past a `limit` is out, with the reason; `margin` (default 2% of the leader's mean) is how close an unseparated arm must be to tie under `balanced`. The goal page and `evh goals --goal` show a column per axis; V14 refuses an unknown key in an entry |
+| `success_criteria.axes` | a map of name → `{measure, direction, stat, limit, margin, role, unit, note}`, all optional. `cost` (`cost_usd`, mean, tokens shown beside it) and `speed` (`latency_ms`, p95) are built in and need no entry; `quality` takes only a `limit`, a `margin` and a `note` (its measure and direction are the primary's), and `margin` belongs to quality alone; any other name is the project's own axis, a per-item metric its runs record (`measure` defaults to the name, `direction` to the adapter's `METRIC_DIRECTIONS`, else `higher`, `stat` to `mean`). `role: ignore` drops an axis. `limit: baseline` in place of a number: an arm is out when the paired test finds it worse than the group's promoted baseline on that axis (p < 0.05, each arm on its own, not corrected across the arms; RFC-022); with no baseline promoted, no limit applies and the decision says so | The goal's decision ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)): an arm past a `limit` is out, with the reason; `margin` (default 2% of the leader's mean) is how close an unseparated arm must be to tie under `balanced`. The goal page and `evh goals --goal` show a column per axis; V14 refuses an unknown key in an entry |
 | `success_criteria.strategy` | `balanced` (the default), `quality_first` or `frugal` | Who is tied with the quality leader: `balanced` not separated by the paired test AND within the margin; `quality_first` the same quality only; `frugal` anything the test cannot separate |
 | `success_criteria.tie_break` | a list of axis names, default `[cost, speed]`; `quality` may be one | Among the tied, the axes that pick, in order (`[cost, quality]`: the cheapest, then the best of the equally cheap). V14 fails a name the goal does not weigh |
 | `success_criteria.guardrails[]` | `{name, rule}` (required), `source` | Rules in words that no number checks: a "guardrails" row on the goal page, a line each in `evh goals --goal`; never computed |
@@ -373,7 +379,41 @@ dirty tree with `*` — their `build.ref` does not describe what actually ran.
 **Commit before you measure** — dataset, configs, references — so the runs you keep are
 clean the first time. Re-running an arm into `data/runs` after the fact leaves two
 measurements of one config, which `evh validate` refuses (V8); explore in a scratch
-directory instead (`EVAL_RUNS_DIR=data/runs-scratch`).
+directory instead (`EVAL_RUNS_DIR=data/runs-smoke`).
+
+**Where runs go.** Measured runs go in `data/runs`: leave `EVAL_RUNS_DIR` unset, on every
+machine, so a run made on a laptop and one made on a GPU box land in the same place. Git
+ignores every other `data/runs-*` directory unless `.gitignore` re-allows it by name, and an
+ignored run is not committed, so a fresh clone, CI and the published catalog never see it.
+Two kinds of directory sit beside `data/runs` on purpose:
+
+- **throwaway** (`data/runs-smoke*`, `data/runs-tune*`): smoke passes and sweeps, never committed;
+- **derived sets** (`data/runs-repeats`, `data/runs-rescored/<scorer>/<source>`, `data/runs-judged/<scorer>` …):
+  re-scored or repeated runs that keep the measured runs' `config_id`s, so they cannot share
+  `data/runs` (V8). Each one has its own re-allow block in `.gitignore`.
+
+`experiment-run` and `rescore` print a `WARNING` when they write to a directory git ignores
+that is neither, or to one outside the project's data, and `evh validate` notes any ignored
+directory that already holds finished runs. The catalog, `evh goals` and `evh arms` read only
+the directories git keeps, so what you see locally is what a clone, CI and the published
+catalog see: a smoke pass in `data/runs-smoke*` never shows up as a result.
+
+**When the scoring changes** (RFC-022), develop it, then apply it one of two ways:
+
+```bash
+evh score-preview --goal my_goal                                    # what it would move; writes nothing
+evh rescore --goal my_goal --round r1 --why "what changed, and why"  # re-score a round with it, $0
+evh round-open --goal my_goal --dataset my_v1 --from r1 --keep all \
+  --scoring "what changed, and why"                                  # or adopt it from the next round
+```
+
+Re-scores land in `data/runs-rescored/<scorer>/<source>/`, the place the tool designates, so a new scorer never
+needs a directory of its own (or a `.gitignore` block). A re-score stands in for the run it re-read: the goal
+pages, `evh goals`, the rounds and the recommendation read one row per arm, from its latest re-score against the
+same reference, and say how many arms they read that way. The measured run keeps its own page, and says there, on
+the arms page and in `evh arms` that the goals read its re-score. A round records the scorer it is judged by, and
+`evh rounds` shows it with each scoring change. A goal whose first round was run as plain runs gets one with
+`evh round-open --goal G --dataset D --adopt`.
 
 `experiment-run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness
@@ -553,14 +593,18 @@ What it holds *your* project to is yours to declare, in `data/validate.json` (al
   "floors": {"runs-adjudicated": 12},
   "scorer_sources": [{"dir": "runs-adjudicated", "glob": "*", "path": ["derived", "with", "scorer"],
                       "module": "../my_scorer.py", "callable": "scorer_id"}],
-  "duplicate_ok": [["my_v1", "smoke_arm_v1"]]
+  "duplicate_ok": [["my_v1", "smoke_arm_v1"]],
+  "configs": ["arms/*.yaml"]
 }
 ```
 
-`committed` is the run directories your reports cite; without it, every git-tracked
-`data/runs*` directory is checked. `floors` makes deleting cited runs fail. `scorer_sources`
-lets V10 check that derived runs carry the current scorer's hash (`module` is a path from the
-project root). `duplicate_ok` names the (dataset, config) pairs allowed to repeat.
+`committed` is the run directories your reports cite, each with its `floors`; every other
+git-tracked `data/runs*` directory is checked too, so one re-allowed in `.gitignore` is never
+skipped. `floors` makes deleting cited runs fail. `scorer_sources` lets V10 check that derived
+runs carry the current scorer's hash (`module` is a path from the project root). `duplicate_ok`
+names the (dataset, config) pairs allowed to repeat. `configs` adds globs (from the project root)
+of arm configs kept outside `data/configs`, so V18's notes on the arms that name a model record
+see them.
 
 The duplicate-score check catches a specific and nasty failure: two
 independent arms do not agree to full float precision. When they do, one of them
@@ -938,6 +982,96 @@ opening line as the description); `--card URL` adds the image a shared link show
 
 ---
 
+## 15. Datasets from production: the capture lane
+
+A dataset can come from what a production system did: its decisions, requests or answers, and what
+happened afterwards. The lane is a layer beside the rest: nothing here runs in production, and a project
+that never captures sees none of it. Design: [RFC-019](../../docs/rfc/RFC-019-datasets-from-production.md),
+[ADR-0019](../../docs/adr/ADR-0019-capture-lane.md); a worked example on a real agent:
+`examples/triage-fleet/`.
+
+```bash
+evh capture --importer jsonl --query '{"path": "decisions.jsonl"}' --capture prod_2026_10   # or tsv, github, langfuse, path.py:Class
+evh captures --capture prod_2026_10                                    # what was read, when, the hashes
+evh capture-scrub prod_2026_10 --command "python scrub.py {records}"   # your scrubber; changed records re-hashed
+evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --one-per fingerprint --tag source=prod
+evh dataset-materialize --dataset-id prod_v1
+evh reference-from-outcomes --dataset-id prod_v1 --capture prod_2026_10 --map rules.yaml \
+    --name silver/prod_v1_outcomes                                     # shown beside gold, never deciding
+evh dataset-split prod_v1 --heldout 0.3 --seed 7 --key fingerprint     # prod_v1_dev, prod_v1_heldout
+```
+
+- **A capture** is `data/captures/<id>/capture.json` (each record's id and hashes) and `records/` (the
+  records). V17 checks them. A project may keep `records/` out of git and fetch them from where it
+  publishes them; a capture without its records is then named "not fetched", not failed.
+- **An importer** is a class with `records(query)` yielding `{id, body, fields, created_at, source,
+  outcome}`. The built-in ones read JSON lines, TSV, GitHub issues (with the comment beside each close)
+  and Langfuse traces. `evh importer-check` runs a new one against the contract.
+- **Only the body becomes the item.** Fields are typed by a field set (`--fieldset … --field …`); the
+  outcome stays in the capture, for references.
+- **An outcome reference is silver** (ADR-0020): what production recorded afterwards, mapped by a rule
+  set you commit. It can repeat what production decided, so a goal never decides on it, with or without
+  gold beside it. The deciding reference is a person's: `gold/<dataset>`.
+- **`text: hidden`** (`dataset-from-capture --hide-text`) keeps a dataset's text, and every text derived
+  from it, off every public surface, for data a project may measure but not publish.
+
+## 16. Set up a model before you test it
+
+An arm is a model *and how it is called*. Servers and providers choose defaults for what an arm leaves
+unset — whether the model reasons first, how long a reply may run, which build of the weights a tag
+names — and those defaults differ from model to model. An arm that leaves them unset compares the
+defaults as much as the models. Settle them before the full run, on purpose, and write them down
+(RFC-020, RFC-021).
+
+```bash
+evh model-onboard gemma4-12b --deployment mac   # once per deployment: build, reasoning, JSON, determinism
+evh arm-smoke --config configs/my_arm.yaml       # once per arm, on its own task, before its full run
+evh models                                       # what is onboarded, vetted (an arm smoke passed), where it runs
+```
+
+1. **Pin the build, per deployment.** Record the tag and its digest in the model record
+   (`data/models/<model>.yaml`) as one entry of `deployments`, one per place the model runs (`mac`, `dgx`,
+   `x3`, a hosted route with its `provider_routing`). One tag name can name different builds on different
+   machines (an MLX build on a Mac, an older pull on another host): compare digests across every deployment
+   that will run the arm, and against the registry, before the first run. `evh model-onboard <model>
+   --deployment dgx` probes one deployment and writes its onboarding. An arm names the record and the
+   deployment (`model_record: gem`, `deployment: dgx`); its run's fingerprint then takes the weights, server
+   and hardware from that entry (`source: record`), and `metrics.json` records `deployment_id`.
+2. **Smoke a few items.** `evh arm-smoke --config <arm>` runs three with the arm's own settings and writes
+   no run: each item's time and output, whether the scorer can read it, a projection of the full run, and
+   whether the same item twice gives the same output. For an LLM arm it measures every model call: tokens
+   out, whether it reasoned, whether an answer came back, why it ended. An adapter that makes several calls
+   per item reports them as `meta["calls"]` (the triage example does). SMOKE CHECK lists what to revisit.
+3. **Choose the settings on purpose.**
+   - *Reasoning*: off (`reasoning_effort: none`) unless the task needs it; some models only offer low,
+     medium or high. Left to the default, one model reasons at length and the next not at all, and a
+     reasoning model can loop without ever answering.
+   - *A reply cap* (`max_tokens`): a few times the longest normal answer. Without one, a reply is
+     unbounded and a loop runs until the call limit.
+   - *A call limit* (`call_timeout_s`, seconds; the built-in providers pass it to the SDK as its timeout,
+     whose own default is 10 minutes): a few times the slowest normal call, not the slowest model's. A
+     generous limit on a fast model only makes its failures slow.
+   - *The server's own settings*: context length, quantization, KV cache — the same everywhere the arm
+     runs. They are the deployment's: its `server_settings` in the record, not the record's `settings`.
+4. **Write them down**, each where it holds. In the model record: each deployment's build, the settings
+   that hold whatever the task (reasoning; an ML model's device and precision) with one line of why
+   (`settings_why`), and each change in `history`. In the arm: the task's own (its reply cap, its call
+   limit), with a comment saying why; the schema refuses them in a record, where they would reach every
+   other experiment's arms. The arm smokes are kept in the record, and an arm smoke that passed is what makes
+   the model *vetted* on the Models page.
+   - *Onboarding finds the settings that work*: probe, read the flags, change the record's settings (with why),
+     probe again, until it passes or what remains is the model's own nature. Some models cannot stop reasoning
+     (gpt-oss: `none` and `low` both reason; a hosted route answers "Reasoning is mandatory"): set the least they
+     take and accept the flag in the record, `accepted: {reasoning: "<why>"}`. Onboarding and arm smokes then
+     report it as accepted, with the why, and do not count it against the status. What one deployment always
+     raises goes on that deployment, `accepted` under it: a hosted gateway has no build to pin (`where it ran`)
+     and its repeats vary (`determinism`); another deployment of the same model is still checked.
+   - Several machines may be onboarded at once: each command writes only its own deployment (or smoke) into the
+     record, re-read under a lock, so one never erases another's result.
+5. **Know what a repeat measures.** A self-hosted model at temperature 0 gives the same output on the same
+   machine every time: a second pass there adds nothing. The spread comes from other machines and other
+   builds; a hosted model's repeats do vary.
+
 ## Exit codes
 
 Every command, `make` target and `evh` subcommand, for scripts and CI that branch on them:
@@ -973,7 +1107,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_MAX_COST_USD` | per-run ceiling on billed spend; the run stops, keeps its results, resumes |
 | `EVAL_MAX_RETRIES`, `EVAL_RETRY_MAX_DELAY` | retries around every provider call |
 | `EVAL_BUILD_REF` | the identity of the system under test (default: the git SHA) |
-| `EVAL_HOST_LABEL` | a name for this machine, so latency is comparable across runs |
+| `EVAL_HOST_LABEL` | a name for this machine, the runner (fingerprint v5's `runner.label`, outside its hash): latency of a model run in process, and the network part of a remote one, is comparable across runs only from the same runner |
 | `EVAL_FINGERPRINT_WEIGHTS` | `1`: hash a local model's weight files into the fingerprint |
 | `EVAL_MODELS_FILE` | the alias to upstream-model table judges are routed by |
 | `EVAL_FETCH_HEADERS` | JSON `{"host": {"Header": "value"}}` for URL items behind a login |
@@ -1019,7 +1153,10 @@ In order, because each is cheaper than the next:
    ranks arms, it does not establish correctness.
 6. Did a source change? `evh dataset-materialize --dataset-id ... --force`
    re-verifies every hash.
-7. Do the runs share their conditions? `evh inspect --runs a,b` names every fingerprint field
-   that differs (machine, libraries, harness, scorer, items, reference bytes).
+7. Do the runs share their conditions? `evh run-compare` names the fingerprint part that moved
+   (instrument, data, deployment, settings); `evh inspect --runs a,b` names every condition that differs
+   (the runner's machine and libraries, where the deployment ran, harness, scorer, items, reference bytes).
+   The runner (where `evh` ran) is outside the fingerprint's hash: the same deployment run from two machines
+   is the same measurement, and the runner is shown as a condition.
 
 Most "regressions" are one of the first three.

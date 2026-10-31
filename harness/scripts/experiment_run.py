@@ -65,6 +65,7 @@ from evaluation_harness._common import (
     load_goals,
     now,
     read_json,
+    warn_if_ignored,
     write_json,
     write_text_atomic,
 )
@@ -164,6 +165,34 @@ def _timed(call_system: Any) -> Any:
         return res
 
     return call
+
+
+UNREACHABLE = (
+    "Connection refused",
+    "No route to host",
+    "Network is unreachable",
+    "Name or service not known",
+    "nodename nor servname",
+    "Temporary failure in name resolution",
+)
+
+
+class ServerUnreachable(RuntimeError):
+    """An item's every model call failed because the server could not be reached."""
+
+
+def _unreachable(res: Any) -> str | None:
+    """The error, when every call an adapter reports (`meta["calls"]`) failed reaching its server.
+
+    An adapter that turns a failed call into an answer (the triage fleet defers it, and the replay
+    records "no terminal decision") wrote a complete-looking run when a tunnel dropped: 54 and 65
+    refused items scored as the model's no-decisions (2026-10-31). A model's own failure, the same
+    way twice at temperature 0, is still a measurement; only a server that is not there stops."""
+    calls = (getattr(res, "meta", None) or {}).get("calls") or []
+    errors = [str(c.get("error") or "") for c in calls if isinstance(c, dict)]
+    if errors and all(any(m in e for m in UNREACHABLE) for e in errors):
+        return errors[-1][:160]
+    return None
 
 
 def _say_stopped(run_dir: Path, n_items: int, config: Any, exc: BaseException) -> None:
@@ -285,6 +314,10 @@ def one_pass(
             )
             if res.cost_usd:
                 spent += res.cost_usd
+            unreachable = _unreachable(res)
+            if unreachable:
+                # Before the output is written, so `--resume` calls this item again.
+                raise ServerUnreachable(f"item {item['item_id']}: every model call failed: {unreachable}")
         outputs[item["item_id"]] = res.output
         if live_dir is not None and not resumed:
             # Atomic: `--resume` treats the presence of this file as proof the item is
@@ -553,6 +586,15 @@ def main() -> int:
     if not args.config.is_file():
         die(f"no config at {args.config}")
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
+    # A config may name a model record (RFC-020, optional): its settings come from the record, under the
+    # config's own params, so every arm of that model runs the way it was onboarded. With `deployment:` it
+    # also names where it runs (RFC-021): the fingerprint takes the deployment's facts from the record.
+    from evaluation_harness import _models  # noqa: PLC0415
+
+    try:
+        cfg = _models.resolve(cfg, DATA)
+    except ValueError as exc:
+        die(f"{args.config}: {exc}")
     call_system, score, adapter_id, adapter_path, warmup, model_fingerprint = load_adapter(
         cfg.get("adapter"), Path(args.config)
     )
@@ -676,6 +718,7 @@ def main() -> int:
         adapter_id=adapter_id,
         adapter_path=adapter_path,
         model_hook=model_fingerprint,
+        cfg=cfg,
     )
     print(f"  fingerprint {fingerprint['hash'][:12]}")
     # A DIRTY TREE IS NOT A VERSION. The fingerprint records it, but a field nobody reads
@@ -707,11 +750,24 @@ def main() -> int:
         )
 
     resume_dir, prior_rows = _resume_source(args.resume, cfg)
+    warn_if_ignored(RUNS)
 
     made: list[Path] = []
 
     capped = False
     per_repeat: list[dict[str, float]] = []
+    if args.repeat > 1 and cfg.get("model_record") and cfg.get("deployment"):
+        rec = _models.find(DATA, cfg["model_record"]) or {}
+        dep = _models.deployment_of(rec, cfg["deployment"]) or {}
+        # Determinism is a deployment's, not a model's: the same weights differ between machines.
+        same = (((dep.get("onboarding") or {}).get("report") or {}).get("deterministic")) is True
+        if same and float((cfg.get("params") or {}).get("temperature") or 0) == 0:
+            where = f" on {cfg['deployment']}"
+            print(
+                f"  NOTE: {cfg['model_record']} gave the same output twice{where} when it was onboarded, and this arm "
+                f"runs at temperature 0: expect its {args.repeat} passes to be identical. The spread comes from "
+                "other deployments (machines, builds) or a temperature above 0."
+            )
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
         run_dir = RUNS / run_id
@@ -748,6 +804,8 @@ def main() -> int:
             )
         except BaseException as exc:
             _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)
+            if isinstance(exc, ServerUnreachable):
+                sys.exit(1)  # said above in full; a traceback adds nothing
             raise
         run_dir.mkdir(parents=True, exist_ok=True)
         write_text_atomic(
@@ -798,6 +856,8 @@ def main() -> int:
             # fingerprint on purpose. Neither changes what was measured, only what it answers.
             goal=cfg.get("goal") or None,
             round=cfg.get("round") or None,
+            model_record=cfg.get("model_record") or None,
+            deployment_id=cfg.get("deployment") or None,
             format=cfg.get("format") or None,
             reference_tier=result["reference_tier"] or None,
             reference_coverage=coverage
@@ -882,6 +942,7 @@ def main() -> int:
         # usable partial results" from "produced nothing".
         print("\n  Stopped early by the cost cap — exit 2. Partial results above are kept.")
         return 2
+    warn_if_ignored(RUNS)
     return 0
 
 

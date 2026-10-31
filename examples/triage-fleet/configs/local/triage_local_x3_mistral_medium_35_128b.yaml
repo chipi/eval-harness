@@ -1,0 +1,14 @@
+# mistral-medium-3.5:128b (Mistral, large tier), self-hosted with Ollama 0.40.13 on X3: AMD Ryzen AI Max+ 395, Radeon 8060S, 128 GB unified (ROCm).
+# The same weights run on each machine that fits them; arms differ only in the model and where it runs.
+config_id: triage_local_x3_mistral_medium_35_128b_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: "mistral-medium-3.5:128b"
+  url: http://127.0.0.1:11434/v1/chat/completions
+  call_timeout_s: 600
+  machine: x3
+  usd_per_mtok_in: 0
+  usd_per_mtok_out: 0

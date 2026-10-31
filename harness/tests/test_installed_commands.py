@@ -224,6 +224,34 @@ def main() -> int:
                 ],
                 "ok",
             ),
+            # The capture lane (RFC-019), on the same scores file read as records.
+            (
+                "importer-check",
+                ["jsonl", "--query", '{"path": "imported.jsonl", "id": "item_id"}'],
+                "ok:PASS",
+            ),
+            (
+                "capture",
+                [
+                    "--importer",
+                    "jsonl",
+                    "--query",
+                    '{"path": "imported.jsonl", "id": "item_id"}',
+                    "--capture",
+                    "c1",
+                ],
+                "ok:record(s) from jsonl",
+            ),
+            ("capture-scrub", ["c1", "--command", "true {records}"], "ok:0 of"),
+            ("dataset-split", ["tickets_v1", "--heldout", "0.5", "--seed", "3"], "ok:tickets_v1_heldout"),
+            ("captures", ["--capture", "c1"], "ok:c1:"),
+            ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
+            # Installed and reading its arguments; the flow is tests/test_outcome_reference.py.
+            (
+                "reference-from-outcomes",
+                ["--dataset-id", "captured_v1", "--capture", "c1", "--map", "no_such_map.yaml"],
+                "--map: no file",
+            ),
             ("run-compare", ["--baseline", base_id, "--candidate", run_id], "ok"),
             (
                 "run-promote",
@@ -243,12 +271,24 @@ def main() -> int:
             ("arms", ["--by", "config", "--period", "30d"], "ok:config tickets_lead2_v1"),
             ("arms", ["--configs"], "ok:rank on each goal"),
             ("arms", ["--quality", "ties"], "ok:no arm matches: only arms a goal's decision weighs"),
-            ("arms", ["--weights", "open"], "ok:no arm matches: an arm's weights come from data/models.yaml"),
+            (
+                "arms",
+                ["--weights", "open"],
+                "ok:no arm matches: an arm's weights come from the model records (data/models/",
+            ),
             ("arms", [], "ok:runs/tickets_v1/tickets_lead2_v1"),
             ("arms", ["--arm", "runs/tickets_v1/tickets_lead2_v1"], "ok:metrics:"),
             ("arms", ["--arm", "tickets_lead2_v1"], "ok:scored against"),
             ("arms", ["--arm", "runs/tickets_v1/no_such_v1"], "no arm"),
             ("goals", [], "ok"),
+            # Model records (RFC-020, optional): installed, each answers in words; the flows are
+            # test_model_onboard.py, test_arm_smoke.py and test_catalog_models.py.
+            ("models", [], "ok:no model records"),
+            ("model-onboard", ["no_such_model"], "no model record 'no_such_model'"),
+            ("arm-smoke", ["--config", "no_such.yaml"], "no config at no_such.yaml"),
+            ("fingerprint-migrate", ["--dry-run"], "ok:after:"),
+            # Scoring that evolves (RFC-022): the flow is test_scoring_evolves.py.
+            ("score-preview", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
             ("search", ["lead2"], "ok:evh inspect --runs runs/tickets_v1/tickets_lead2_v1"),
             ("search", ["no_such_thing"], "No match."),
             # lead2 against lead1 on gold: the p of tutorial 3 step 4 (3/32 = 0.09375, printed 0.0938; exact over 2^6)

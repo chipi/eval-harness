@@ -11,8 +11,11 @@
     "  scorer_sources  V10: runs that claim the current scorer, and the code that says what",
     "                  the current scorer is. module is a .py path relative to this project's",
     "                  root; callable returns a hash or a dict of named hashes",
-    "  duplicate_ok    V8: (dataset_id, config_id) pairs allowed to repeat, each one justified"
+    "  duplicate_ok    V8: (dataset_id, config_id) pairs allowed to repeat, each one justified",
+    "  configs         V18: globs, relative to this project's root, of arm configs kept outside",
+    "                  data/configs (the examples' arms), so their model_record notes are seen"
   ],
+  "configs": ["../examples/*/configs/*.yaml", "../examples/*/configs/*/*.yaml"],
   "committed": ["runs", "runs-pair", "runs-repeats", "runs-linux",
                 "runs-judged/judge-summ-v1", "runs-judged/judge-summ-v2", "runs-judged/judge-summ-pointwise-v1",
                 "runs-adjudicated", "runs-silver"],

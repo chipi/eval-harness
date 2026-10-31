@@ -303,6 +303,18 @@ try:
         and "suggested next" in page
         and "retired in r1" in page,
     )
+    check(
+        "catalog: each round is one folded section headed by its row (no rounds table), retirements grouped by reason",
+        '<table id="rounds"' not in page
+        and page.count('<details class="roundcard') >= 2
+        and 'id="round-r1"' in page
+        and '<details class="roundcard' in page
+        and " open>" not in page[page.find('<details class="roundcard') :][:200]
+        and bool(__import__("re").search(r"retired \d+</b>: ", page))
+        and '<h4 class="rc-h">arms</h4>' in page
+        and '<h4 class="rc-h">suggested next</h4>' in page,
+        page[page.find('<details class="roundcard') :][:600],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

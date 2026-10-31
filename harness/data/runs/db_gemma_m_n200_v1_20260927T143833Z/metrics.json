@@ -11,17 +11,9 @@
   "fingerprint": {
     "arm": {
       "config_id": "db_gemma_m_n200_v1",
-      "params": {
+      "labels": {
         "family": "gemma",
-        "max_tokens": 200,
-        "model": "eval-gemma-26b",
         "price_tier": "mid",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
         "usd_per_mtok_in": 0.07,
         "usd_per_mtok_out": 0.15
       }
@@ -34,35 +26,13 @@
       "reference_tier": "gold",
       "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
     },
-    "hash": "d84766afd486b108ed86cac90164a6617f537773415320faa043faba07637d92",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/classification-dbpedia-14/adapter.py",
-        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
-      },
-      "harness": {
-        "commit": "73604a08b84a",
-        "dirty": false
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "openai": "3.19.2"
-      },
-      "model": {
+    "data_sha256": "ba266b3e1c4e465a922638baee9aea990c34420aa92c1b6ab2f97610c3e981e1",
+    "deployment": {
+      "declared": {
         "alias": "eval-gemma-26b",
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/google/gemma-4-26b-a4b-it",
         "id_source": "proxy-model-info",
-        "identity_declared": true,
         "labels": [
           "Company",
           "EducationalInstitution",
@@ -81,18 +51,76 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "provider": "litellm",
-        "provider_routing": null,
+        "provider_routing": null
+      },
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/google/gemma-4-26b-a4b-it",
+        "route": null
+      },
+      "id": "eval-gemma-26b",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gemma-26b",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "9dccd5f34809c5fa51bb0057166790b235bfa2f31c938ff6d992ae6188f7fcac",
+    "hash": "6277ca20b0679a50b36c38420933983df517171726c63d28ac442e9927a6b27c",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-dbpedia-14/adapter.py",
+        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
+      },
+      "harness": {
+        "commit": "73604a08b84a",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": {
+        "openai": "3.19.2"
+      },
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "declared": {
+        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "reasoning": {
           "enabled": false
         },
-        "revision": null,
-        "revision_source": "api-model-string",
         "temperature": 0.0
-      }
+      },
+      "max_tokens": 200,
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0
     },
-    "version": 4
+    "settings_sha256": "8c14a70088b07911142861674fddd4995b5eada33c659017f1a5f215c9879b04",
+    "version": 5
   },
   "goal": "entity_topic_dbpedia",
   "metric_kinds": {

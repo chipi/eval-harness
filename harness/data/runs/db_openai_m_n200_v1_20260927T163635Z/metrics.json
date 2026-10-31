@@ -11,17 +11,9 @@
   "fingerprint": {
     "arm": {
       "config_id": "db_openai_m_n200_v1",
-      "params": {
+      "labels": {
         "family": "openai",
-        "max_tokens": 200,
-        "model": "eval-gpt-55",
         "price_tier": "mid",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
         "usd_per_mtok_in": 1.25,
         "usd_per_mtok_out": 10.0
       }
@@ -34,35 +26,13 @@
       "reference_tier": "gold",
       "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
     },
-    "hash": "043fe48aaf7f96b2dc8026a684a466205ae7f4d4de5cfd4350edf5ba7a2da31c",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/classification-dbpedia-14/adapter.py",
-        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
-      },
-      "harness": {
-        "commit": "73604a08b84a",
-        "dirty": false
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "openai": "3.19.2"
-      },
-      "model": {
+    "data_sha256": "ba266b3e1c4e465a922638baee9aea990c34420aa92c1b6ab2f97610c3e981e1",
+    "deployment": {
+      "declared": {
         "alias": "eval-gpt-55",
         "endpoint": "http://127.0.0.1:4001",
         "id": "openrouter/openai/gpt-5.5",
         "id_source": "proxy-model-info",
-        "identity_declared": true,
         "labels": [
           "Company",
           "EducationalInstitution",
@@ -81,18 +51,76 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "provider": "litellm",
-        "provider_routing": null,
+        "provider_routing": null
+      },
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/openai/gpt-5.5",
+        "route": null
+      },
+      "id": "eval-gpt-55",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gpt-55",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "b1467913dd297fb65baf7727f19eafd967adea959353f4d6412de8b9d5d472c4",
+    "hash": "cb061964d1f75f39e71e1317d0250eaadd080a2a548b4161c53767ba3c267631",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-dbpedia-14/adapter.py",
+        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
+      },
+      "harness": {
+        "commit": "73604a08b84a",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": {
+        "openai": "3.19.2"
+      },
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "declared": {
+        "prompt_sha256": "758e514c7aab934f0ad0395805b4624b41946e99834b6a2ca0527e098e796db3",
         "reasoning": {
           "enabled": false
         },
-        "revision": null,
-        "revision_source": "api-model-string",
         "temperature": 0.0
-      }
+      },
+      "max_tokens": 200,
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0
     },
-    "version": 4
+    "settings_sha256": "8c14a70088b07911142861674fddd4995b5eada33c659017f1a5f215c9879b04",
+    "version": 5
   },
   "goal": "entity_topic_dbpedia",
   "metric_kinds": {

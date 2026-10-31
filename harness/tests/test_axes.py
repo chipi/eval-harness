@@ -440,4 +440,51 @@ check(
     label_y(50.0, 210.0, 300.0, placed, 10, 200) == 50.0,
 )
 
+# A limit that is the baseline (RFC-022): out only when the paired test finds the arm worse than the baseline.
+BL = {
+    "success_criteria": {
+        "primary": {"measure": "q", "direction": "higher"},
+        "axes": {"noise": {"measure": "noise", "direction": "lower", "limit": "baseline"}},
+    }
+}
+base = arm("base", 0.5, noise=[1] * 2 + [0] * 10)
+arms_bl = {
+    "base": base,
+    "worse": arm("worse", 0.6, noise=[1] * 12),
+    "same": arm("same", 0.6, noise=[1] * 3 + [0] * 9),
+}
+d = axes.decide(BL, arms_bl, baseline="base")
+check(
+    "limit baseline: an arm the paired test finds worse than the baseline is out, with the reason",
+    "worse" in d["out"] and "worse than the baseline base" in "; ".join(d["out"]["worse"]),
+    d["out"],
+)
+check(
+    "limit baseline: an arm the paired test does not separate from the baseline stays in",
+    "same" not in d["out"]
+    and d["rows"]["same"]["noise"]["within"] is True
+    and d["rows"]["base"]["noise"]["within"],
+    d["out"],
+)
+d0 = axes.decide(BL, arms_bl)
+check(
+    "limit baseline: without a baseline no limit applies, and the decision says so",
+    not d0["out"] and any("has none promoted" in w for w in d0["why"]),
+    d0["why"],
+)
+# Each arm on its own (owner, 2026-10-31): one arm worse at p = 2/64 among ten others is out, which Holm across the
+# eleven would not rule out (its first threshold is 0.05 / 11).
+many = {"base": arm("base", 0.5, noise=[0] * 12), "worse": arm("worse", 0.6, noise=[1] * 6 + [0] * 6)}
+many |= {f"f{k}": arm(f"f{k}", 0.6, noise=[1] + [0] * 11) for k in range(10)}
+dm = axes.decide(BL, many, baseline="base")
+check(
+    "limit baseline: each arm is gated on its own, not corrected across the group",
+    "worse" in dm["out"] and not any(k.startswith("f") for k in dm["out"]),
+    dm["out"],
+)
+check(
+    "limit baseline: the axis title says what the limit is",
+    "no worse than the baseline (paired test)" in axes.axis_title(axes.axes_of(BL)[-1]),
+)
+
 sys.exit(summary())

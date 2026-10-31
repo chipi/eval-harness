@@ -368,6 +368,20 @@ tr.t-open td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 tr.t-open td:first-child { box-shadow: inset 3px 0 0 var(--accent); padding-left: 10px; }
 details.rounddetail { margin: 12px 0; padding: 8px 14px; border: 1px solid var(--hair); border-radius: 10px; background: var(--surface); }
 details.rounddetail summary { cursor: pointer; font: 600 13px/1.4 var(--mono); }
+.roundcards { display: grid; gap: 8px; }
+.rc-head, details.roundcard > summary { display: grid; grid-template-columns: 9ch minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.rc-head { font: 500 11px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 0 14px; }
+details.roundcard { border: 1px solid var(--hair); border-radius: 10px; background: var(--surface); }
+details.roundcard.t-open { border-left: 3px solid var(--accent); }
+details.roundcard > summary { list-style: none; cursor: pointer; padding: 12px 14px; font-size: 14px; line-height: 1.5; }
+details.roundcard > summary::-webkit-details-marker { display: none; }
+details.roundcard > summary .rc-round::before { content: "▸ "; color: var(--muted); }
+details.roundcard[open] > summary .rc-round::before { content: "▾ "; }
+details.roundcard .rc-arms, details.roundcard .rc-arms a { overflow-wrap: anywhere; }
+details.roundcard .rc-h { font: 500 11px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 4px; }
+details.roundcard .rc-body ul { margin: 0; padding-left: 20px; }
+details.roundcard .rc-body { padding: 0 14px 12px; border-top: 1px solid var(--hair); font-size: 14px; line-height: 1.55; }
+@media (max-width: 760px) { .rc-head { display: none; } details.roundcard > summary { grid-template-columns: 1fr; gap: 6px; } }
 tr.t-retired td { opacity: 0.55; }
 button.copy { margin-left: 6px; cursor: pointer; }
 ul.suggest code.cmd { display: inline-block; margin-top: 4px; padding: 4px 8px; border-radius: 6px; background: var(--surface-2); font-size: 12px; user-select: all; overflow-wrap: anywhere; }
@@ -443,6 +457,9 @@ small.filed { font: 600 10px/1 var(--mono); letter-spacing: .04em; text-transfor
 .decision { padding: 12px 16px; margin: 6px 0 12px; border: 1px solid var(--hair); border-left: 3px solid var(--s1); border-radius: 10px; background: var(--surface); }
 .decision p { margin: 4px 0; }
 .decision ul { margin: 6px 0; padding-left: 18px; }
+#datasets td, #datasets td a { overflow-wrap: anywhere; white-space: normal; }
+span.tag { display: block; width: fit-content; max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11px/1.5 var(--mono); color: var(--ink); background: var(--surface-2); border: 1px solid var(--hair); border-radius: 10px; padding: 0 7px; margin: 2px 0; }
+span.tag b { font-weight: 400; color: var(--muted); }
 span.tag-rec { font: 600 10px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--accent-ink); background: var(--s1); padding: 2px 5px; border-radius: 4px; }
 span.over { color: var(--local); font-weight: 600; }
 figure.chart figcaption { margin-top: 4px; }

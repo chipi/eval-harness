@@ -1,0 +1,5 @@
+model_id: facebook-bart-large-xsum
+kind: ml
+aliases:
+- facebook/bart-large-xsum
+weights: open

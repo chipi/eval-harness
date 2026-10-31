@@ -1,0 +1,411 @@
+model_id: gpt-oss-20b
+kind: llm
+name: gpt-oss 20B
+aliases:
+- gpt-oss:20b
+weights: open
+licence: Apache-2.0
+deployments:
+- id: x3
+  where: x3
+  tag: gpt-oss:20b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: gpt-oss:20b
+  server: ollama 0.40.13
+  digest: f38aa0c53da5f8c49d08c43a99df24ff53167fe68e24664a7777288e7656fdfe
+  quantization: MXFP4
+  checked_at: '2026-10-31T14:11:19Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:11:19Z'
+    where: x3
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11434/v1
+        model: gpt-oss:20b
+      digest_found: f38aa0c53da5f8c49d08c43a99df24ff53167fe68e24664a7777288e7656fdfe
+      default:
+        s: 6.97
+        tokens_out: 107
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.15
+        tokens_out: 47
+        reasoned: true
+        finish: stop
+        settings:
+          reasoning_effort: low
+      tokens_per_s: 40.9
+      deterministic: true
+      json_valid: true
+    accepted:
+    - 'reasoning: it still reasons with the record''s settings'
+- id: dgx
+  where: dgx
+  tag: gpt-oss:20b
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: gpt-oss:20b
+  digest: f38aa0c53da5f8c49d08c43a99df24ff53167fe68e24664a7777288e7656fdfe
+  checked_at: '2026-10-31T14:12:22Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:12:22Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: gpt-oss:20b
+      digest_found: f38aa0c53da5f8c49d08c43a99df24ff53167fe68e24664a7777288e7656fdfe
+      default:
+        s: 8.36
+        tokens_out: 127
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 0.9
+        tokens_out: 47
+        reasoned: true
+        finish: stop
+        settings:
+          reasoning_effort: low
+      tokens_per_s: 52.3
+      deterministic: true
+      json_valid: true
+    accepted:
+    - 'reasoning: it still reasons with the record''s settings'
+  server: ollama 0.40.13
+- id: mac
+  where: mac
+  tag: gpt-oss:20b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11435/v1
+    model: gpt-oss:20b
+  server: ollama 0.40.13
+  digest: f38aa0c53da5f8c49d08c43a99df24ff53167fe68e24664a7777288e7656fdfe
+  quantization: MXFP4
+  checked_at: '2026-10-31T14:11:10Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:11:10Z'
+    where: mac
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11435/v1
+        model: gpt-oss:20b
+      digest_found: f38aa0c53da5f8c49d08c43a99df24ff53167fe68e24664a7777288e7656fdfe
+      default:
+        s: 7.17
+        tokens_out: 107
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.16
+        tokens_out: 47
+        reasoned: true
+        finish: stop
+        settings:
+          reasoning_effort: low
+      tokens_per_s: 40.7
+      deterministic: true
+      json_valid: true
+    accepted:
+    - 'reasoning: it still reasons with the record''s settings'
+capabilities:
+  reasons: true
+  json_mode: true
+  reasoning_off: null
+settings:
+  reasoning_effort: low
+settings_why:
+  reasoning_effort: 'reasoning cannot be turned off: with none it still reasoned on
+    every machine (onboarding, 2026-10-31); low is the least it takes'
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
+    task needs it (RUNBOOK §16): left at the server''s default, one model reasons
+    at length and the next not at all'
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: none
+  to: low
+  why: 'reasoning cannot be turned off: with none it still reasoned on every machine
+    (onboarding, 2026-10-31); low is the least it takes'
+accepted:
+  reasoning: 'it reasons whatever it is asked: with none and with low on every machine
+    (onboarding, 2026-10-31); low is the least'
+smokes:
+  triage_local_x3_gpt_oss_20b_v2:
+    status: check
+    at: '2026-10-31T14:45:19Z'
+    flags:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 11.22
+        output_chars: 1238
+        cost_usd: 0.0
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 8.62
+        output_chars: 1320
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 6.62
+        output_chars: 1156
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - reply_from_tool_call: true
+        tokens_out: 70
+        reasoning_tokens: 0
+        reasoning_chars: 24
+        finish_reason: tool_calls
+        answered: true
+        s: 6.54
+      - reply_from_tool_call: true
+        tokens_out: 85
+        reasoning_tokens: 0
+        reasoning_chars: 97
+        finish_reason: tool_calls
+        answered: true
+        s: 2.01
+      - tokens_out: 118
+        reasoning_tokens: 0
+        reasoning_chars: 168
+        finish_reason: stop
+        answered: true
+        s: 2.67
+      - reply_from_tool_call: true
+        tokens_out: 55
+        reasoning_tokens: 0
+        reasoning_chars: 33
+        finish_reason: tool_calls
+        answered: true
+        s: 1.3
+      - reply_from_tool_call: true
+        tokens_out: 129
+        reasoning_tokens: 0
+        reasoning_chars: 371
+        finish_reason: tool_calls
+        answered: true
+        s: 3.05
+      - tokens_out: 192
+        reasoning_tokens: 0
+        reasoning_chars: 502
+        finish_reason: stop
+        answered: true
+        s: 4.27
+      - reply_from_tool_call: true
+        tokens_out: 59
+        reasoning_tokens: 0
+        reasoning_chars: 33
+        finish_reason: tool_calls
+        answered: true
+        s: 1.43
+      - reply_from_tool_call: true
+        tokens_out: 79
+        reasoning_tokens: 0
+        reasoning_chars: 148
+        finish_reason: tool_calls
+        answered: true
+        s: 1.94
+      - tokens_out: 142
+        reasoning_tokens: 0
+        reasoning_chars: 216
+        finish_reason: stop
+        answered: true
+        s: 3.25
+      projection:
+        items: 65
+        minutes: 9.6
+        worst_minutes: 12.2
+        usd: 0.0
+      settings:
+        model: gpt-oss:20b
+        reasoning_effort: low
+        max_tokens: 1024
+        call_timeout_s: 600
+  triage_local_mac_gpt_oss_20b_v2:
+    status: check
+    at: '2026-10-31T14:46:41Z'
+    flags:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 17.75
+        output_chars: 1322
+        cost_usd: 0.0
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 9.44
+        output_chars: 1394
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 4.99
+        output_chars: 814
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - reply_from_tool_call: true
+        tokens_out: 78
+        reasoning_tokens: 0
+        reasoning_chars: 24
+        finish_reason: tool_calls
+        answered: true
+        s: 12.32
+      - reply_from_tool_call: true
+        tokens_out: 78
+        reasoning_tokens: 0
+        reasoning_chars: 58
+        finish_reason: tool_calls
+        answered: true
+        s: 1.89
+      - tokens_out: 146
+        reasoning_tokens: 0
+        reasoning_chars: 213
+        finish_reason: stop
+        answered: true
+        s: 3.55
+      - reply_from_tool_call: true
+        tokens_out: 55
+        reasoning_tokens: 0
+        reasoning_chars: 33
+        finish_reason: tool_calls
+        answered: true
+        s: 1.49
+      - reply_from_tool_call: true
+        tokens_out: 130
+        reasoning_tokens: 0
+        reasoning_chars: 377
+        finish_reason: tool_calls
+        answered: true
+        s: 3.01
+      - tokens_out: 205
+        reasoning_tokens: 0
+        reasoning_chars: 466
+        finish_reason: stop
+        answered: true
+        s: 4.94
+      - reply_from_tool_call: true
+        tokens_out: 57
+        reasoning_tokens: 0
+        reasoning_chars: 33
+        finish_reason: tool_calls
+        answered: true
+        s: 1.55
+      - tokens_out: 141
+        reasoning_tokens: 0
+        reasoning_chars: 299
+        finish_reason: stop
+        answered: true
+        s: 3.43
+      projection:
+        items: 65
+        minutes: 11.6
+        worst_minutes: 19.2
+        usd: 0.0
+      settings:
+        model: gpt-oss:20b
+        reasoning_effort: low
+        max_tokens: 1024
+        call_timeout_s: 600
+  triage_local_dgx_gpt_oss_20b_v2:
+    status: check
+    at: '2026-10-31T16:00:34Z'
+    flags:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 11.16
+        output_chars: 916
+        cost_usd: 0.0
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 3.9
+        output_chars: 863
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 4.24
+        output_chars: 868
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - tokens_out: 81
+        reasoning_tokens: 0
+        reasoning_chars: 64
+        finish_reason: stop
+        answered: true
+        s: 7.31
+      - reply_from_tool_call: true
+        tokens_out: 115
+        reasoning_tokens: 0
+        reasoning_chars: 221
+        finish_reason: tool_calls
+        answered: true
+        s: 2.15
+      - tokens_out: 91
+        reasoning_tokens: 0
+        reasoning_chars: 68
+        finish_reason: stop
+        answered: true
+        s: 1.7
+      - reply_from_tool_call: true
+        tokens_out: 55
+        reasoning_tokens: 0
+        reasoning_chars: 33
+        finish_reason: tool_calls
+        answered: true
+        s: 1.04
+      - tokens_out: 160
+        reasoning_tokens: 0
+        reasoning_chars: 407
+        finish_reason: stop
+        answered: true
+        s: 2.87
+      - reply_from_tool_call: true
+        tokens_out: 76
+        reasoning_tokens: 0
+        reasoning_chars: 99
+        finish_reason: tool_calls
+        answered: true
+        s: 1.4
+      - tokens_out: 159
+        reasoning_tokens: 0
+        reasoning_chars: 349
+        finish_reason: stop
+        answered: true
+        s: 2.84
+      projection:
+        items: 65
+        minutes: 7.0
+        worst_minutes: 12.1
+        usd: 0.0
+      settings:
+        model: gpt-oss:20b
+        reasoning_effort: low
+        max_tokens: 1024
+        call_timeout_s: 600

@@ -7,7 +7,7 @@
     "source": "git"
   },
   "dataset_id": "dbpedia_280",
-  "fingerprint_hash": "405af5dc63a9f05d67f9b51a46187af3b0a4d8df47c067f2c52b279f40a10b89",
+  "fingerprint_hash": "bdda287a52cb18707af2b0ecbc5948e49bd1b2b70f72dbcb8dc9f49f70af55e0",
   "goal": "entity_topic_dbpedia",
   "promoted_at": "2026-10-25T14:08:24Z",
   "promoted_from": "db_bert_base_fy_n200_v1_20260930T091006Z",
