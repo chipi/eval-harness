@@ -326,6 +326,12 @@ class HarnessAdapter:
     item_word = "item"
     can_rescore = False
 
+    def captures(self) -> list[dict]:
+        """Every capture in the data tree, as `evh captures` lists them (RFC-019): the Captures page reads these."""
+        from evaluation_harness.view_captures import listing  # noqa: PLC0415
+
+        return listing(self.data_dir)
+
     def __init__(self, data_dir: Path | None = None, runs_root: Path | None = None):
         self.data_dir = Path(data_dir or _common.DATA)
         # The project's goals (EVAL_GOALS_DIR when set) unless a data directory is named.
@@ -802,7 +808,8 @@ class HarnessAdapter:
 
     def dataset_meta(self, dataset: str) -> dict:
         """The dataset's `tags`, and its origin in a few words: a capture it was made from (with the
-        selection), or the version it was derived from; {} when its file says neither."""
+        selection; `capture` names it, for the link to it), or the version it was derived from; {} when its file
+        says neither."""
         got = _json(self.data_dir / "datasets" / f"{dataset}.json")
         if not isinstance(got, dict):
             return {}
@@ -820,7 +827,11 @@ class HarnessAdapter:
             origin = ", ".join(bits)
         elif isinstance(ds.get("derived_from"), dict) and ds["derived_from"].get("dataset_id"):
             origin = f"version of {ds['derived_from']['dataset_id']}"
-        return {"tags": {str(k): str(v) for k, v in tags.items()}, "origin": origin}
+        return {
+            "tags": {str(k): str(v) for k, v in tags.items()},
+            "origin": origin,
+            "capture": str(mf.get("capture") or ""),
+        }
 
     def dataset_profile(self, dataset: str) -> dict | None:
         """data/profiles/<dataset>.json (`evh dataset-profile`), with "stale": True when the dataset's

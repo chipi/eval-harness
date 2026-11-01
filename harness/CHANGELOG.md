@@ -18,7 +18,11 @@ that can move a result is never a patch release without saying so under **Change
   - **`evh capture`** reads records through an **importer** (`--importer jsonl|tsv|github|langfuse`, or a
     project's own `path.py:Class`) into `data/captures/<id>/`: each record's id, body, fields, time, source
     and outcome, hashed one by one (`capture.json`); `--since-capture` continues from an earlier capture.
-    **`evh importer-check`** tests an importer against the contract; **`evh captures`** lists them.
+    **`evh importer-check`** tests an importer against the contract, including that it keeps to `since` and
+    `until`; **`evh captures`** lists them, and the catalog's **Captures** page shows them with the datasets made
+    from each. A capture keeps the window it records: a record outside it is named and nothing is written
+    (`--late` keeps the ones older than `since` that the earlier capture never saw). Newer outcomes of the same
+    records are a fresh capture, labelled with `reference-from-outcomes --capture` (tutorial 6 §5).
   - **`evh capture-scrub`** runs a project's own scrubber over a capture's records and re-hashes the ones
     it changed, keeping their earlier hashes.
   - **`evh dataset-from-capture`** freezes a selection (`--where`, `--dedup`, `--one-per`, `--sample`),

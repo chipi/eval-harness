@@ -104,7 +104,11 @@ NAV = [
     ("goals", "goals.html", "Goals"),
     (
         "data",
-        [("datasets", "datasets.html", "Datasets"), ("references", "references.html", "References")],
+        [
+            ("datasets", "datasets.html", "Datasets"),
+            ("captures", "captures.html", "Captures"),
+            ("references", "references.html", "References"),
+        ],
         "Data",
     ),
     (
@@ -742,7 +746,11 @@ def collect(A: Adapter) -> dict:
         n = size(ds) if callable(size) else None
         v["items"] = n if n is not None else max((a["n"] for a in v["arms"]), default=0)
         m = (meta(ds) if callable(meta) else None) or {}
-        v["tags"], v["origin"] = m.get("tags") or {}, m.get("origin") or ""
+        v["tags"], v["origin"], v["capture"] = (
+            m.get("tags") or {},
+            m.get("origin") or "",
+            m.get("capture") or "",
+        )
     return by_ds
 
 
@@ -876,7 +884,7 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 "cells": [
                     dataset_link(ds)
                     + (f"<br><small>from {dataset_link(parent)}</small>" if parent else "")
-                    + (f"<br><small>{e(v['origin'])}</small>" if v.get("origin") and not parent else ""),
+                    + (f"<br><small>{origin_html(v)}</small>" if v.get("origin") and not parent else ""),
                     # A chip per tag: run together as text, five tags and a Hugging Face pin made one tall
                     # unreadable cell (owner, 2026-10-31).
                     "".join(
@@ -3520,6 +3528,77 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
     )
 
 
+def origin_html(v: dict, up: str = "") -> str:
+    """A dataset's origin in a few words, its capture linked to the Captures page."""
+    cap = v.get("capture") or ""
+    text = e(v.get("origin") or "")
+    if not cap:
+        return text
+    return text.replace(
+        e(f"capture {cap}"), f'capture <a href="{up}captures.html#capture-{e(cap)}">{e(cap)}</a>', 1
+    )
+
+
+def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
+    """captures.html: what a production system did, kept as records (RFC-019), and the datasets frozen from each
+    capture; an adapter without captures shows how to make one."""
+    fn = getattr(A, "captures", None)
+    caps = fn() if callable(fn) else []
+    rows = []
+    for c in caps:
+        imp = str(c.get("importer") or "").rsplit("/", 1)[-1]
+        when = (
+            f"{_when(str(c.get('first') or ''))} – {_when(str(c.get('last') or ''))}"
+            if c.get("first")
+            else "—"
+        )
+        rows.append(
+            [
+                f'<b id="capture-{e(c["capture"])}">{e(c["capture"])}</b>'
+                + (
+                    f'<br><small class="muted">continues {e(c["continues"])}</small>'
+                    if c.get("continues")
+                    else ""
+                ),
+                f'<span data-v="{int(c.get("records") or 0)}">{int(c.get("records") or 0)}</span>',
+                f"<code>{e(imp)}</code>"
+                + (' <small class="muted">scrubbed</small>' if c.get("scrubbed") else ""),
+                f'<span data-v="{e(str(c.get("captured_at") or ""))}">{e(_when(str(c.get("captured_at") or "")))}</span>',
+                e(when),
+                ", ".join(
+                    dataset_link(d) if d in by_ds else f'{e(d)} <small class="muted">no runs yet</small>'
+                    for d in c.get("datasets") or []
+                )
+                or "—",
+            ]
+        )
+    body = hero(
+        "captures",
+        "Captures",
+        "What a system did in production, kept as records, each hashed: the source of the datasets frozen from them. "
+        "A reference made from what happened next is silver, and never decides a goal.",
+    )
+    body += block(
+        "01",
+        "captures",
+        table(
+            "captures",
+            ["capture", "records", "importer", "captured", "records from – to", "datasets made from it"],
+            rows,
+            "filter captures",
+        )
+        if rows
+        else '<p class="muted">No captures yet: <code>evh capture --importer jsonl --query \'{"path": "…"}\' '
+        "--capture &lt;id&gt;</code> keeps what a system did, then <code>evh dataset-from-capture</code> freezes a "
+        "dataset from it.</p>",
+    )
+    write(
+        out,
+        "captures.html",
+        page("Captures", body, 0, "captures", nav=nav, item=A.item_word, elsewhere=(("captures", {}),)),
+    )
+
+
 def render_inspect(
     A: Adapter, out: Path, page_fn=page, serve: str = "evh catalog-serve", *, pages: bool = False, **page_kw
 ) -> None:
@@ -3695,6 +3774,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     for m, where in metric_index(A, by_ds).items():
         render_metric(A, m, where, by_ds, project, out, nav)
     render_references(A, by_ds, out, nav)
+    render_captures(A, by_ds, out, nav)
     render_reference_index(A, by_ds, out, nav)
     write_search(A, by_ds, out)
     render_inspect(A, out, nav=nav, pages=True)

@@ -21,9 +21,9 @@ import json
 from evaluation_harness._common import CAPTURES, DATASETS, dataset_id_ok, die, read_json
 
 
-def summary(capture_id: str, made: dict) -> dict:
+def summary(capture_id: str, made: dict, root: _Path | None = None) -> dict:
     """One capture, as the view shows it."""
-    doc = read_json(CAPTURES / capture_id / "capture.json")
+    doc = read_json((root or CAPTURES) / capture_id / "capture.json")
     times = sorted(r["created_at"] for r in doc.get("records") or [] if r.get("created_at"))
     return {
         "capture": capture_id,
@@ -40,23 +40,32 @@ def summary(capture_id: str, made: dict) -> dict:
     }
 
 
+def listing(data_dir: _Path | None = None) -> list[dict]:
+    """Every capture under a data tree (default: the project's), with the datasets made from each: what `evh
+    captures` prints and the catalog's Captures page shows."""
+    caps = data_dir / "captures" if data_dir else CAPTURES
+    dsets = data_dir / "datasets" if data_dir else DATASETS
+    made: dict = {}
+    for f in sorted(dsets.glob("*.json")) if dsets.is_dir() else []:
+        cap = (read_json(f).get("made_from") or {}).get("capture")
+        if cap:
+            made.setdefault(cap, []).append(f.stem)
+    ids = sorted(p.parent.name for p in caps.glob("*/capture.json")) if caps.is_dir() else []
+    return [summary(i, made, caps) for i in ids]
+
+
 def main() -> int:
     """List captures, or show one."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--capture", help="show one capture")
     ap.add_argument("--json", action="store_true", help="print JSON")
     args = ap.parse_args()
-    made: dict = {}
-    for f in sorted(DATASETS.glob("*.json")) if DATASETS.is_dir() else []:
-        cap = (read_json(f).get("made_from") or {}).get("capture")
-        if cap:
-            made.setdefault(cap, []).append(f.stem)
-    ids = sorted(p.parent.name for p in CAPTURES.glob("*/capture.json")) if CAPTURES.is_dir() else []
+    rows = listing()
     if args.capture:
+        ids = [c["capture"] for c in rows]
         if dataset_id_ok(args.capture) not in ids:
             die(f"no capture {args.capture!r}" + (f"; there are: {', '.join(ids)}" if ids else ""))
-        ids = [args.capture]
-    rows = [summary(i, made) for i in ids]
+        rows = [c for c in rows if c["capture"] == args.capture]
     if args.json:
         print(json.dumps({"captures": rows}, indent=2))
         return 0

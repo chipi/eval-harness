@@ -179,7 +179,26 @@ rows = [
 with tempfile.TemporaryDirectory() as td:
     p = Path(td) / "x.jsonl"
     p.write_text("".join(json.dumps(r) + "\n" for r in rows))
-    recs = {r["id"].split("-")[2]: r for r in importer.Importer({}).records({"path": str(p)})}
+    recs = {
+        r["id"].split("-")[2]: r
+        for r in importer.Importer({}).records({"path": str(p), "test_signals": True})
+    }
+    rows[4]["fleet_decision"]["ts"] = "2026-10-05T00:00:00Z"
+    p.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    plain = [r["id"].split("-")[2] for r in importer.Importer({}).records({"path": str(p)})]
+    rows[3]["fleet_decision"]["ts"] = "2026-10-04T00:00:00Z"
+    p.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    windowed = [
+        r["id"].split("-")[2]
+        for r in importer.Importer({}).records(
+            {
+                "path": str(p),
+                "since": "2026-10-02T00:00:00Z",
+                "until": "2026-10-05T00:00:00Z",
+                "test_signals": True,
+            }
+        )
+    ]
 r1 = recs["1"]
 check("importer: a well-formed record", not _importers.problems(r1), _importers.problems(r1))
 check("importer: the body is only what the agent sees", set(r1["body"]) == {"signal", "probes"})
@@ -204,6 +223,13 @@ check(
     recs["4"]["outcome"]["issue_predates_decision"] and recs["4"]["outcome"]["issue_verdict"] is None,
 )
 check("importer: is_test_signal carried", recs["5"]["outcome"]["test_signal"] is True)
+# The published export holds no test signal; the builder writes them (found by the first live capture, 2026-11-01).
+check("importer: the fleet's test signals are left out by default", plain == ["1", "2", "3", "4"], plain)
+check(
+    "importer: keeps to [since, until) on the decision's time (evh capture --since-capture sets since)",
+    windowed == ["4"],
+    windowed,
+)
 check(
     "importer: a noise close comment",
     importer.proposed_verdict(

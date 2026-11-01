@@ -410,7 +410,7 @@ with tempfile.TemporaryDirectory() as td:
         counts,
     )
     nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
-    check("nav: Models is under Experiments", ">Models<" in nav and nav.count("<a ") == 10)
+    check("nav: Models is under Experiments", ">Models<" in nav and nav.count("<a ") == 11)
 
     listing = view(A, ["models"])
     check(

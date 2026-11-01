@@ -249,7 +249,12 @@ evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --tag source=prod    
 evh reference-from-outcomes --dataset-id prod_v1 --capture prod_2026_10 \
     --map outcomes.yaml --name silver/prod_v1_outcomes                                 # labels from what happened
 evh dataset-split prod_v1 --heldout 0.3 --seed 7                                         # dev and heldout
+evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2026_11 \
+    --since-capture prod_2026_10                                                         # later: what came since
 ```
+
+What came since makes the next dataset version; for newer outcomes of the records you hold, take a fresh capture
+of the same query and make a new silver reference from it (tutorial 6 §5).
 
 A reference made from outcomes is silver and never decides a goal; a person's labels, gold, do. Importers for
 JSONL, TSV, GitHub issues and Langfuse traces come with the harness, and `text: hidden` keeps a dataset's text off

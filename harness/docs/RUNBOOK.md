@@ -1006,7 +1006,16 @@ evh dataset-split prod_v1 --heldout 0.3 --seed 7 --key fingerprint     # prod_v1
   publishes them; a capture without its records is then named "not fetched", not failed.
 - **An importer** is a class with `records(query)` yielding `{id, body, fields, created_at, source,
   outcome}`. The built-in ones read JSON lines, TSV, GitHub issues (with the comment beside each close)
-  and Langfuse traces. `evh importer-check` runs a new one against the contract.
+  and Langfuse traces. `evh importer-check` runs a new one against the contract, including that it keeps
+  to a query's `since` and `until`.
+- **Later: what came since, and how it ended.** `--since-capture <earlier>` captures what came after an
+  earlier capture: records it holds are skipped by id, and every record must fall inside the window
+  recorded (one outside it is named and nothing is written; `--late` keeps the ones older than `since`
+  the earlier capture never saw, listed as `late`). A continued capture never re-reads a record it holds,
+  so for newer outcomes take a fresh capture of the same query and run `reference-from-outcomes --capture`
+  on it under a new name: the dataset stays as frozen, only the labels move (tutorial 6 §5).
+- **The catalog's Captures page** lists every capture (records, importer, the time its records span,
+  what it continues) with the datasets made from each; a dataset's origin links to it.
 - **Only the body becomes the item.** Fields are typed by a field set (`--fieldset … --field …`); the
   outcome stays in the capture, for references.
 - **An outcome reference is silver** (ADR-0020): what production recorded afterwards, mapped by a rule

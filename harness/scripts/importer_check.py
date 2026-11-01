@@ -5,9 +5,12 @@
     evh importer-check fleet --query @query.json --limit 50
 
 It reads the records twice and checks that every record is well-formed (an id that can be a file
-name, a body or fields, a parsable created_at), that no id repeats, and that both reads give the
-same hashes (an importer whose records change between two reads cannot be captured). One PASS or
-FAIL line per check; exit 1 on any failure. Nothing is written.
+name, a body or fields, a parsable created_at), that no id repeats, that both reads give the
+same hashes (an importer whose records change between two reads cannot be captured), and that it
+keeps to a window: every record inside the query's [since, until), and, when the query names no
+since, a third read from the middle record's time on returns nothing older (`evh capture
+--since-capture` relies on it). One PASS or FAIL line per check; exit 1 on any failure. Nothing is
+written.
 """
 
 from __future__ import annotations
@@ -83,6 +86,30 @@ def main() -> int:
         h1 = [_importers.record_sha256(_importers.normalise(r)) for r in first]
         h2 = [_importers.record_sha256(_importers.normalise(r)) for r in second]
         line(h1 == h2, "two reads give the same records", f"{sum(a != b for a, b in zip(h1, h2))} differ")
+        window = _importers.window_of(query)
+        if window:
+            out = [
+                r["id"] for r in first if _importers.outside(window, _importers.normalise(r)["created_at"])
+            ]
+            line(
+                not out,
+                f"every record is inside the window {window}",
+                f"{len(out)} outside: {', '.join(out[:5])}",
+            )
+        times = sorted(t for t in (_importers.normalise(r)["created_at"] for r in first) if t)
+        if not query.get("since") and len(times) > 1:
+            mid = times[len(times) // 2]
+            probe = read_all(args.importer, {**query, "since": mid}, args.limit)
+            old = [
+                r["id"]
+                for r in probe
+                if _importers.outside({"since": mid}, _importers.normalise(r)["created_at"])
+            ]
+            line(
+                not old,
+                "it keeps to since (read again from the middle record's time)",
+                f"{len(old)} older than {mid}: {', '.join(old[:5])}",
+            )
     print("PASS" if not failed else f"FAIL: {failed} check(s)")
     return 1 if failed else 0
 

@@ -96,7 +96,7 @@ check(
 
 # ── importer-check ──────────────────────────────────────────────────────────────────────────
 r = evh("importer-check", "jsonl", "--query", json.dumps({"path": "rows.jsonl"}))
-check("importer-check: a good file passes", r.returncode == 0 and out(r).rstrip().endswith("PASS"), out(r))
+check("importer-check: a good file passes", r.returncode == 0 and r.stdout.rstrip().endswith("PASS"), out(r))
 
 
 def bad_file(name, lines):
@@ -188,6 +188,61 @@ check(
     r.returncode != 0 and not (proj / "data" / "captures" / "c3").exists(),
     out(r)[-200:],
 )
+
+# ── the window is kept (the first live triage capture took August records into one that said 29 October) ──
+# An importer that ignores since, and a record (a0) that c1's window held but c1 never saw: it arrived late.
+(proj / "deaf.py").write_text(
+    "class Importer:\n"
+    "    def __init__(self, options): pass\n"
+    "    def records(self, query):\n"
+    "        for i, t in (('a0', '2026-10-03T10:00:00Z'), ('a1', '2026-10-01T10:00:00Z'),"
+    " ('a2', '2026-10-05T10:00:00Z'), ('a3', '2026-10-09T10:00:00Z')):\n"
+    "            yield {'id': i, 'body': i, 'created_at': t}\n"
+)
+r = evh("importer-check", "deaf.py:Importer", "--query", "{}")
+check(
+    "importer-check: red on an importer that ignores since",
+    r.returncode == 1 and "FAIL it keeps to since" in out(r),
+    out(r)[-300:],
+)
+r = evh("importer-check", "deaf.py:Importer", "--query", json.dumps({"since": "2026-10-04"}))
+check(
+    "importer-check: red when a record falls outside the query's own window",
+    r.returncode == 1 and "FAIL every record is inside the window" in out(r) and "a0" in out(r),
+    out(r)[-300:],
+)
+r = evh(
+    "capture", "--importer", "deaf.py:Importer", "--query", "{}", "--capture", "c4", "--since-capture", "c1"
+)
+check(
+    "capture: a record outside the window is named and nothing is written",
+    r.returncode != 0
+    and "a0: before since" in out(r)
+    and "--late" in out(r)
+    and not (proj / "data" / "captures" / "c4").exists(),
+    out(r)[-300:],
+)
+r = evh(
+    "capture",
+    "--importer",
+    "deaf.py:Importer",
+    "--query",
+    "{}",
+    "--capture",
+    "c4",
+    "--since-capture",
+    "c1",
+    "--late",
+)
+doc4 = (
+    json.loads((proj / "data" / "captures" / "c4" / "capture.json").read_text()) if r.returncode == 0 else {}
+)
+check(
+    "capture --late: a record older than since that the earlier capture lacks is kept, listed as late",
+    doc4.get("late") == ["a0"] and sorted(x["id"] for x in doc4.get("records", [])) == ["a0", "a3"],
+    out(r)[-300:] + json.dumps(doc4)[:300],
+)
+shutil.rmtree(proj / "data" / "captures" / "c4")
 
 # ── dataset-from-capture ────────────────────────────────────────────────────────────────────
 more = [{"id": f"m{i}", "body": f"Same  text {i % 3}", "kind": "abc"[i % 3]} for i in range(12)]
@@ -430,5 +485,32 @@ r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_badtag", "--tag", "no
 check("--tag without KEY=VALUE is refused", r.returncode != 0 and "KEY=VALUE" in out(r))
 r = evh("validate")
 check("validate passes with tags and one_per (V1)", r.returncode == 0, out(r)[-300:])
+
+# ── the catalog's Captures page ────────────────────────────────────────────────────────────
+from evaluation_harness import catalog_build as cb  # noqa: E402
+from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
+
+site = proj / "catalog"
+cb.build(HarnessAdapter(proj / "data"), site)
+page = (site / "captures.html").read_text() if (site / "captures.html").exists() else ""
+check(
+    "catalog: a Captures page lists each capture, what continues what, and links the datasets made from it",
+    all(f'id="capture-{c}"' in page for c in ("c1", "c2", "m"))
+    and "continues c1" in page
+    and 'cap_v1 <small class="muted">no runs yet</small>' in page
+    and 'href="d/cap_v1.html"' not in page
+    and "evh captures" in page
+    and 'href="captures.html"' in (site / "index.html").read_text(),
+    page[-600:],
+)
+# Only datasets with runs have a catalog page, so the origin's link is checked on the helper the page uses.
+meta = HarnessAdapter(proj / "data").dataset_meta("cap_v1")
+check(
+    "catalog: a dataset frozen from a capture links its origin to the capture",
+    meta.get("capture") == "c1"
+    and 'capture <a href="captures.html#capture-c1">c1</a>' in cb.origin_html(meta)
+    and cb.origin_html({"origin": "version of x"}) == "version of x",
+    str(meta),
+)
 
 sys.exit(summary())

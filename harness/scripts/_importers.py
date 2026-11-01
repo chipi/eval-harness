@@ -155,3 +155,19 @@ def read(name: str, query: dict, options: dict | None = None) -> tuple[Iterator[
 def window_of(query: dict) -> dict:
     """The time window a query asks for (`since`, `until`), as a capture records it."""
     return {k: query[k] for k in ("since", "until") if query.get(k)}
+
+
+def outside(window: dict, created_at: Any) -> str:
+    """Why a record's time falls outside a window, [since, until): "before since", "at or after until", "no time"
+    (a window cannot place it); "" when it is inside, or there is no window."""
+    since, until = parse_time(window.get("since")), parse_time(window.get("until"))
+    if not (since or until):
+        return ""
+    t = parse_time(created_at)
+    if t is None:
+        return "no time"
+    if since and t < since:
+        return "before since"
+    if until and t >= until:
+        return "at or after until"
+    return ""

@@ -228,7 +228,9 @@ label. A **capture** keeps the records as they were, hashed; a dataset is frozen
 them; and what happened afterwards (an issue closed as fixed) can become a reference, as **silver**,
 with its caveat. Silver never decides a goal: a person's labels, gold, do
 ([RUNBOOK §15](RUNBOOK.md#15-datasets-from-production-the-capture-lane),
-[ADR-0020](../../docs/adr/ADR-0020-second-references-are-silver.md)).
+[ADR-0020](../../docs/adr/ADR-0020-second-references-are-silver.md)). Production goes on after a capture:
+the next capture continues from it, for the next dataset version, and a fresh capture of the same records
+gives their newer outcomes, for a newer silver reference; the frozen dataset never moves.
 
 ---
 

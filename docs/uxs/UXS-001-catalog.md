@@ -95,7 +95,7 @@ tables 15px.
 
 - **Header bar:** the brand (the icon and the product's name, `--brand`, "eval catalog" by
   default, linking to the overview); the global search ("Search ( / )"); the nav, by the
-  subjects of the home tiles: **Overview**, **Goals**, **Data ▾** (Datasets, References),
+  subjects of the home tiles: **Overview**, **Goals**, **Data ▾** (Datasets, Captures, References),
   **Experiments ▾** (Arms, Configs, Models, Metrics), **Activity**, **Inspector**; the theme toggle. A
   group opens a short list under its name and closes on a click elsewhere; the group a page
   belongs to is underlined like a current page. On a phone the nav is a ☰ menu at the left of
@@ -281,7 +281,7 @@ tiles open it.
   carries, a dataset without that key grouped as "no <key>"), the all / new / active chips, then one
   row per dataset, most arms first:
   **dataset** ("from `<parent>`" under a version; under a dataset made from a capture, its origin:
-  "capture `<id>`, where …, one per …"; the new badge), **tags** (one chip per tag, one per line, the key muted, the value cut at a width with the whole tag on hover; RFC-019),
+  "capture `<id>`, where …, one per …", the capture's id linked to its row on the Captures page; the new badge), **tags** (one chip per tag, one per line, the key muted, the value cut at a width with the whole tag on hover; RFC-019),
   **items**, **arms**, **runs in period** (with its trend), **runs per day** (a line), **spend in
   period**, **references**, **goals**, **baseline** (the promoted arm), **last run**. Filterable:
   the filter matches tags too.
@@ -659,6 +659,18 @@ test ran (`deployment.machine`, `deployment.backend`, `deployment.server`).
   they are scored against (better end marked), then the arms best first: **arm**, **mean**,
   **items**, **scored against**, tinted.
 - Command: `evh metrics --metric <metric> [--dataset-id <id>]`.
+
+## The captures page
+
+- Hero: kicker `captures`, "Captures", and what a capture is: what a system did in production, kept as
+  records, each hashed; the source of the datasets frozen from them; a reference made from what happened next
+  is silver and never decides a goal (RFC-019).
+- `01 captures`: one row per capture, by id: **capture** (its anchor `#capture-<id>`; "continues `<id>`"
+  under a continued one), **records**, **importer** (the file or built-in name; "scrubbed" beside it),
+  **captured**, **records from – to** (the first and last record's day), **datasets made from it** (each
+  linked to its page; one with no runs yet, and so no page, named with "no runs yet"). Filterable.
+- Empty: "No captures yet", with the `evh capture` and `evh dataset-from-capture` commands.
+- Command: `evh captures [--capture ID] [--json]` (the same listing, read the same way).
 
 ## The references page
 

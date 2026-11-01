@@ -12,6 +12,11 @@ when, how many records, and per record its id, created_at, link, the sha256 of t
 --since-capture continues from an earlier capture: the query's `since` becomes that capture's
 `until` (or its newest record's time), and records it already holds are skipped by id.
 
+Every record must fall inside the window the capture records, [since, until): one outside it (an importer
+that ignores `since`, or a record with no time) is named and nothing is written. --late keeps the records
+older than `since` that the earlier capture does not hold (a record that became visible after it): they are
+captured, and listed in capture.json as `late`.
+
 Commit a capture (and what is made from it) before any billed run: an untracked capture marks
 runs dirty, and a dirty run cannot be promoted or author a reference.
 """
@@ -50,6 +55,11 @@ def main() -> int:
     ap.add_argument("--capture", required=True, help="the capture's id: lowercase_with_underscores")
     ap.add_argument("--since-capture", metavar="CAPTURE", help="continue from an earlier capture")
     ap.add_argument("--force", action="store_true", help="replace an existing capture of the same id")
+    ap.add_argument(
+        "--late",
+        action="store_true",
+        help="keep records older than the window's since, listed as late arrivals",
+    )
     args = ap.parse_args()
 
     out = CAPTURES / dataset_id_ok(args.capture)
@@ -80,6 +90,22 @@ def main() -> int:
     ids = [r["id"] for r in norm]
     if len(ids) != len(set(ids)):
         die("the importer yielded the same id twice; nothing written")
+    window = _importers.window_of(query)
+    why = {r["id"]: _importers.outside(window, r["created_at"]) for r in norm}
+    late = [i for i, w in why.items() if w == "before since"] if args.late else []
+    out_of = {i: w for i, w in why.items() if w and i not in late}
+    if out_of:
+        die(
+            f"{len(out_of)} record(s) outside the window {window}, nothing written: the importer must keep to "
+            "since/until (evh importer-check tests it)"
+            + (
+                "; --late keeps the ones before since"
+                if any(w == "before since" for w in out_of.values())
+                else ""
+            )
+            + ":\n  "
+            + "\n  ".join(f"{i}: {w}" for i, w in list(out_of.items())[:10])
+        )
 
     if out.exists():
         shutil.rmtree(out)
@@ -91,11 +117,12 @@ def main() -> int:
         "importer": args.importer,
         "importer_sha256": _importers.code_sha256(path),
         "query": query,
-        "window": _importers.window_of(query),
+        "window": window,
         "captured_at": now(),
         "n_records": len(norm),
         "skipped_as_already_captured": len(raw) - len(norm),
         "continues": args.since_capture,
+        **({"late": late} if late else {}),
         "records": [
             {
                 "id": r["id"],
@@ -115,6 +142,7 @@ def main() -> int:
             if args.since_capture
             else ""
         )
+        + (f"; {len(late)} late (older than since)" if late else "")
     )
     print("  commit it (and what you make from it) before any billed run: untracked data marks runs dirty")
     return 0

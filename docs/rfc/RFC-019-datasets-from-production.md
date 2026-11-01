@@ -75,7 +75,8 @@ any public surface.
 - **Reading a project's production stores is the project's own code** (the fleet's build script). The lane reads
   what that code exports.
 - **`evh importer-check`** is the contract test: ids unique and well-formed, records well-formed, times parsed,
-  hashes stable.
+  hashes stable, and the window kept (every record inside the query's `[since, until)`; with no `since`, a read
+  from the middle record's time returns nothing older).
 
 ### 2. Captures
 
@@ -233,6 +234,17 @@ What the build changed or added beyond the third draft, each in the code and its
 - **Item ids** may contain `:`, `@`, `+` and `=` (a record's id is often a fingerprint and a time).
 - **Dataset tags on the views**: the datasets page groups by tag key and names a capture-made dataset's origin;
   `evh datasets --tag` filters.
+- **A capture keeps the window it records** (found by the first live continuation, 2026-11-01: the triage
+  importer ignored `since`, and a capture that said it began on 29 October held three test signals from August).
+  `evh capture` names every record outside `[since, until)` and writes nothing; `--late` keeps records older than
+  `since` that the earlier capture never saw, listed in `capture.json` as `late`. The triage importer now keeps to
+  `since`/`until` and leaves the fleet's test signals out unless the query says `"test_signals": true`.
+- **Newer outcomes are a fresh capture, not a new mechanism.** A continued capture skips the records it holds, so
+  their outcomes stay as captured. `reference-from-outcomes --capture` already reads any capture by item id: a
+  fresh capture of the same query gives the same items today's outcomes, under a new reference name. On the
+  fleet, three days after v1, it labelled 7 more of 233 decisions and changed none.
+- **The catalog's Captures page** (`captures.html`, under Data): each capture with its records, importer, record
+  times, what it continues, and the datasets made from it; a dataset made from a capture links its origin there.
 - **The triage example scores the model's own decision beside the fleet's** (`model_*` metrics, before the
   fleet's gates): its dismiss gate turned 39 of production's 49 escalations from dismissals, so the fleet's score
   alone would measure the gate more than the model.

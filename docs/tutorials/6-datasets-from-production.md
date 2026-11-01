@@ -30,7 +30,7 @@ method (`evh importer-check` tests it against the contract).
 evh captures
 ```
 ```text
-desk_2026_10: 6 record(s) from jsonl, captured 2026-10-30T14:37:38Z
+desk_2026_10: 6 record(s) from jsonl, captured ...
   records from 2026-10-01T08:12:00Z to 2026-10-05T10:00:00Z
   datasets made from it: none
 ```
@@ -97,6 +97,47 @@ every later version. `--key F` keeps every item sharing a field value on one sid
 customer); `--by time --key F` makes the newest share heldout.
 
 `evh validate` checks the capture too (V17): every record against the hash it was captured with.
+
+## 5 · Later: what came since, and how it ended
+
+Production goes on after the capture. Two things change: new records arrive, and the outcomes of the records
+you hold move on (a ticket still open then is closed now). Each is its own capture.
+
+**What came since.** `--since-capture` continues from where the earlier capture ended:
+
+```bash
+evh capture --importer jsonl --query '{"path": "tutorial/production/desk_export.jsonl"}' \
+    --capture desk_2026_11 --since-capture desk_2026_10
+```
+```text
+data/captures/desk_2026_11: 0 record(s) from jsonl (1 already in desk_2026_10)
+```
+
+The query's `since` becomes the time the earlier capture ended, and records it already holds are skipped by
+id. The kit's export has nothing newer, so nothing is captured; on a live system this is where the next
+dataset version comes from (`dataset-from-capture desk_2026_11 --dataset-id tickets_desk_v2`). Every record must
+fall inside the window the capture records: one that doesn't (an importer that ignores `since`) is named and
+nothing is written. `--late` keeps the ones older than `since` that the earlier capture never saw, listed in
+`capture.json` as `late`. `evh importer-check` tests that your importer keeps to `since`.
+
+**How it ended.** A continued capture never reads a record it holds again, so its outcomes stay as they were.
+For newer outcomes of the same records, take a fresh capture of the same query and label from it:
+
+```bash
+evh capture --importer jsonl --query '{"path": "tutorial/production/desk_export.jsonl"}' \
+    --capture desk_2026_11_outcomes
+evh reference-from-outcomes --dataset-id tickets_desk_v1 --capture desk_2026_11_outcomes \
+    --map tutorial/production/outcomes.yaml --name silver/tickets_desk_v1_outcomes_2026_11
+```
+```text
+data/captures/desk_2026_11_outcomes: 6 record(s) from jsonl
+data/references/silver/tickets_desk_v1_outcomes_2026_11: 5 of 6 item(s) labelled (1 skipped, 0 matched no rule, 0 not in the capture)
+```
+
+The items are matched by id, so the dataset stays as it was frozen and only its labels move. A rule's
+`min_age_days` counts from the new capture, so a record too young to judge then may be judged now. On the
+triage fleet, three days later, today's outcomes labelled 7 more of 233 decisions and changed none. Keep each
+reference under its own name: the round that used the older one still reads it.
 
 ## Data you may measure but not publish
 

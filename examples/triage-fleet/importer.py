@@ -20,6 +20,10 @@ The decision's issue is the linked issue whose verdict reaches it (`reaches`): t
 one filed later on its fingerprint. Title-only matches never carry a verdict: one title links up to
 37 fingerprints.
 
+Query keys: `path` (the export), `verdicts` (optional), `since`/`until` (ISO times on the decision,
+[since, until): `evh capture --since-capture` sets `since`), and `test_signals` (true keeps the fleet's own
+test signals, which the builder flags `is_test_signal` and the published export leaves out).
+
     evh capture --importer examples/triage-fleet/importer.py:Importer \\
         --query '{"path": "decisions.jsonl", "verdicts": "verdicts.jsonl"}' --capture orrery_2026_10
 """
@@ -174,10 +178,16 @@ class Importer:
                 v = json.loads(x) if x.strip() else {}
                 if str(v.get("source", "")).startswith("owner-"):
                     owner.add(v["id"])
+        since, until = _t(query.get("since")), _t(query.get("until"))
         for row in rows:
             fd = row.get("fleet_decision") or {}
             prov = row.get("provenance") or {}
             ts = fd.get("ts") or prov.get("decision_time")
+            t = _t(ts)
+            if (since and (t is None or t < since)) or (until and (t is None or t >= until)):
+                continue
+            if row.get("is_test_signal") and not query.get("test_signals"):
+                continue
             yield {
                 "id": row["id"],
                 "body": {"signal": row.get("signal"), "probes": row.get("probes")},
