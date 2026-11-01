@@ -49,6 +49,7 @@ def run_dir(name: str, dataset_id: str) -> Path:
 
 
 def output(d: Path, item_id: str) -> str | None:
+    """A run's output for one item (what it decided), or None when it has none."""
     f = d / "outputs" / f"{item_id}.txt"
     return f.read_text(encoding="utf-8").strip() if f.is_file() else None
 

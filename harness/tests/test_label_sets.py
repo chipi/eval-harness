@@ -180,7 +180,7 @@ try:
     # ── labels ───────────────────────────────────────────────────────────────────────────
     r = evh("labels", "--dataset-id", "tickets_v1", "--json")
     v = json.loads(r.stdout) if r.returncode == 0 else {}
-    pair = next(
+    pair: dict = next(
         (
             p
             for p in v.get("agreement", [])
