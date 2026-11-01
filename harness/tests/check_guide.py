@@ -199,8 +199,9 @@ def run_page(page: Path, proj: Path, env: dict, verbose: bool) -> tuple:
         cmd = fill(body, proj)
         nxt = bs[n + 1] if n + 1 < len(bs) else None
         want = nxt[1] if nxt and nxt[0] == "text" and nxt[3] - line <= len(body.splitlines()) + 3 else None
-        if mark == "background" and want and f"127.0.0.1:{PORT}" in want and not port_free(PORT):
-            # Another program on this machine holds the default port: not the page's to take.
+        if mark == "background" and want and f"127.0.0.1:{PORT}" in want:
+            # A server's port is the project's own (ADR-0024), so the page's quoted port is the one the
+            # check passes: a free one, never one another program holds.
             free = free_port()
             cmd, want = (
                 f"{cmd.strip()} --port {free}",

@@ -389,7 +389,15 @@ def page(
         else ""
     )
     logo_href = e(parts[0][1]) if parts else here_href
-    brand_text = f"<span>{e(brand)}</span>"
+    # A catalog under the default name and in no publication (no --link) is a project's own, read locally: it names
+    # its project, so two open side by side are never confused (ADR-0024). A deployment names itself and is not
+    # changed.
+    local = brand == "eval catalog" and not parts
+    brand_text = (
+        f'<span>{e(brand)}<small class="proj"> · {e(ROOT.name)}</small></span>'
+        if local
+        else f"<span>{e(brand)}</span>"
+    )
     built = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     foot = footer or (
         f"Built {built} by <code>evh catalog</code>. The pages carry counts and means only, "
@@ -404,7 +412,7 @@ def page(
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>{e(title)} · {e(brand)}</title>
+<title>{e(title)} · {e(brand)}{f" · {e(ROOT.name)}" if local else ""}</title>
 {share_card(title, brand, body)}
 <meta name="color-scheme" content="dark light">
 <script src="{up}assets/head.js"></script>

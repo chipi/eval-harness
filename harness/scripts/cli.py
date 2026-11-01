@@ -181,6 +181,10 @@ def main(argv: list[str] | None = None) -> int:
     if name not in COMMANDS:
         print(f"evh: unknown command {name!r}\n\n{_usage()}", file=sys.stderr)
         return 2
+    from evaluation_harness._common import stray_home  # noqa: PLC0415
+
+    if note := stray_home():
+        print(note, file=sys.stderr)
     script = HERE / COMMANDS[name][0]
     sys.argv = [str(script), *rest]
     # The scripts' "next, run this" hints read it: `evh …` here, `make …` in a checkout.

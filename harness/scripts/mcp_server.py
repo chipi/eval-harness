@@ -589,8 +589,9 @@ def main(argv: list[str] | None = None) -> int:
         "--http", action="store_true", help="serve Streamable HTTP instead of stdio (a shared server)"
     )
     ap.add_argument("--bind", default="127.0.0.1", help="--http: the address (default: 127.0.0.1)")
-    # Not 8765: catalog-serve takes it, and both may run on one machine.
-    ap.add_argument("--port", type=int, default=8766, help="--http: the port (default: 8766)")
+    ap.add_argument(
+        "--port", type=int, help="--http: the port (default: the project's own, the same every time)"
+    )
     ap.add_argument("--path", default="/mcp", help="--http: the endpoint's path (default: /mcp)")
     ap.add_argument(
         "--allowed-host",
@@ -651,6 +652,10 @@ def main(argv: list[str] | None = None) -> int:
         help="a deployment's observability: path/to/file.py[:NAME] or module[:NAME] (start, request, error, routes)",
     )
     args = ap.parse_args(argv)
+    if args.http and args.port is None:
+        from evaluation_harness._common import project_port  # noqa: PLC0415
+
+        args.port = project_port("mcp", args.project)
     import anyio  # noqa: PLC0415
 
     project = args.project.resolve()

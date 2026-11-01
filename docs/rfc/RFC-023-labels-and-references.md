@@ -176,8 +176,8 @@ are not, and are fixed here:
   use". Each project gets a stable port of its own, derived from its path (the same URL every time), the next free
   one if that is taken; the command prints the URL, and `--port` still overrides.
 - **The shell's environment.** `EVAL_HOME`, `EVAL_DATA_DIR`, `EVAL_RUNS_DIR` and `EVAL_GOALS_DIR` override the
-  project for every command in that shell. Commands name the project they act on, and warn when `EVAL_HOME` points
-  away from the folder you are in.
+  project for every command in that shell. Every command notes when `EVAL_HOME` points away from the folder you are
+  in; `catalog-serve` and a local catalog name their project (as built: ADR-0024).
 - **A lock shared across projects.** A model record is written under `/tmp/evh-model-<model_id>.lock`, keyed by the
   id only; it is keyed by the record's path instead.
 

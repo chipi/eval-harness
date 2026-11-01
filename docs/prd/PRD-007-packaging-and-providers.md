@@ -1,7 +1,7 @@
 # PRD-007: One install, your own keys
 
 - **Status**: Implemented (v0.4.0); installable since 0.2.0; Python 3.10 and the MCP SDK from v0.5.0; several
-  projects in parallel (FR2.5 to FR2.7) planned for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md))
+  projects in parallel (FR2.5 to FR2.7) in 0.6.0 ([ADR-0024](../adr/ADR-0024-several-projects-on-one-machine.md))
 - **Authors**: Marko Dragoljevic
 - **Related UX spec**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the command line and the first evaluation)
 - **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md)
@@ -82,13 +82,14 @@ a walkthrough in the user's own project, not inside a checkout of this repositor
   nothing.
 - **FR2.4**: `evh self-test` in a project checks the installed harness: the paired test's own
   suite, then the tutorial end to end in a scratch folder.
-- **FR2.5** (0.6.0, planned): Several projects run side by side on one machine, each a folder with its own
+- **FR2.5** (0.6.0): Several projects run side by side on one machine, each a folder with its own
   `data/`, each pinning its own harness version; nothing one writes is read by another.
-- **FR2.6** (0.6.0, planned): `catalog-serve` and `mcp --http` give each project a stable port of its own, derived
-  from its path, the next free one if that is taken; they print the URL; `--port` overrides.
-- **FR2.7** (0.6.0, planned): Commands name the project they act on, and warn when `EVAL_HOME` points away from
-  the folder they run in; locks are keyed by what they protect inside the project (a model record's path), never
-  by a name two projects share.
+- **FR2.6** (0.6.0): `catalog-serve` and `mcp --http` give each project a stable port of its own, derived from its
+  path (18000–18999 and 19000–19999, at one offset), the next free one if that is taken; they print the URL;
+  `--port` overrides; `--public` keeps 8765.
+- **FR2.7** (0.6.0): Every command notes on stderr when `EVAL_HOME` points away from the project of the folder it
+  runs in; `catalog-serve` and a local catalog name their project; locks are keyed by what they protect inside the
+  project (a model record's path), never by a name two projects share.
 
 ### FR3: The system under test
 

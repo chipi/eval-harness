@@ -45,16 +45,25 @@ def by_alias(data_dir: Path) -> dict[str, dict[str, Any]]:
     return {a: r for r in load(data_dir) for a in r.get("aliases") or []}
 
 
+def lock_path(record: Path) -> Path:
+    """The lock a record is written under: keyed by the record's own path, not the model's id, so two projects
+    with a model of one name never wait on each other (ADR-0024)."""
+    import hashlib  # noqa: PLC0415
+    import tempfile  # noqa: PLC0415
+
+    key = hashlib.sha256(str(record.resolve()).encode()).hexdigest()[:16]
+    return Path(tempfile.gettempdir()) / f"evh-model-{key}.lock"
+
+
 def update_record(data_dir: Path, model_id: str, change: Any) -> dict[str, Any]:
     """Apply `change(record)` to the record as it is on disk NOW, under a lock, and write it: two commands
     writing one record (model-onboard on two machines, two arm-smokes) each keep their own change. Read at the
     start and written at the end, the slower one wrote back the whole record it had read and the other's result
     was lost. Returns the record written."""
     import fcntl  # noqa: PLC0415
-    import tempfile  # noqa: PLC0415
 
     f = records_dir(data_dir) / f"{model_id}.yaml"
-    lock = Path(tempfile.gettempdir()) / f"evh-model-{model_id}.lock"
+    lock = lock_path(f)
     with open(lock, "w") as fh:
         fcntl.flock(fh, fcntl.LOCK_EX)
         try:

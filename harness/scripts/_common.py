@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import tempfile
@@ -49,6 +50,50 @@ def project_root() -> Path:
         return checkout
     here = Path.cwd().resolve()
     return next((d for d in (here, *here.parents) if (d / "data").is_dir()), here)
+
+
+#: Where a project's own ports start (ADR-0024): catalog-serve in 18000-18999, mcp --http in 19000-19999, the same
+#: offset in each, so a project's two servers read as a pair.
+PORT_BASE = {"catalog": 18000, "mcp": 19000}
+
+
+def port_offset(root: Path) -> int:
+    """Where in each port range a project's servers sit: from its root's resolved path, 0 to 999."""
+    return int(hashlib.sha256(str(root.resolve()).encode()).hexdigest(), 16) % 1000
+
+
+def project_port(kind: str, root: Path | None = None) -> int:
+    """A port of the project's own for a local server (ADR-0024): the offset of its root's path in the kind's
+    range, so the same project gets the same URL every time and two projects do not take one port; the next free
+    one when another program holds it."""
+    base = PORT_BASE[kind]
+    off = port_offset(root or project_root())
+    for k in range(1000):
+        port = base + (off + k) % 1000
+        with socket.socket() as s:
+            # As the servers bind (HTTPServer's allow_reuse_address): a port a stopped server left in TIME_WAIT
+            # is still the project's; one another program listens on is not.
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind(("127.0.0.1", port))
+            except OSError:
+                continue
+            return port
+    raise SystemExit(f"no free port in {base}-{base + 999}: pass --port N")
+
+
+def stray_home() -> str:
+    """A warning when EVAL_HOME names one project and the folder you are in belongs to another (ADR-0024): a
+    shell left pointing at a project would otherwise send every command there without a word; "" otherwise."""
+    home = os.environ.get("EVAL_HOME", "").strip()
+    if not home:
+        return ""
+    here = Path.cwd().resolve()
+    mine = next((d for d in (here, *here.parents) if (d / "data").is_dir()), None)
+    target = Path(home).expanduser().resolve()
+    if mine is None or mine == target:
+        return ""
+    return f"note: EVAL_HOME is {target}, so this command acts on that project, not on {mine} where you are"
 
 
 def how(evh: str, make: str) -> str:

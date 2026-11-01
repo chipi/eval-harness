@@ -103,9 +103,9 @@ tables 15px.
   search is a round button beside the theme toggle that opens the search box on a row below the
   bar. The bar has the site's and the docs' geometry: 56 px high, 36 px round buttons
   (34 px under 375 px), 8 px apart, the same icons.
-- **The project** (0.6.0, planned: RFC-023): the header names the project the catalog was built from (its folder's
-  name), so two catalogs open side by side are never confused; `catalog-serve` prints its own
-  port.
+- **The project** (0.6.0, ADR-0024): a local catalog (the default name, no `--link`) shows its project's folder
+  name after the brand, muted ("eval catalog · triage"), and in the tab title, so two catalogs open side by side
+  are never confused; `catalog-serve` prints its port and the project. A deployment's header is unchanged.
 - **Switcher (with `--link`):** the parts of the publication the catalog belongs to, in the
   order given, e.g. **Harness · Catalog · Docs**, the catalog marked, after the brand; the brand
   then opens the first part. The same control heads the deployment's site and docs, ☰ at the

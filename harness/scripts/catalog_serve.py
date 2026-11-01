@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Serve the catalog and the run inspector: on this machine (127.0.0.1) by default, or --public behind a proxy.
 
-    evh catalog-serve [--port 8765] [--adapter path/to/file.py:Class]
+    evh catalog-serve [--port N] [--adapter path/to/file.py:Class]
     make catalog-serve
 
 Builds nothing: run `evh catalog` first. Static files are the built catalog and the data tree
@@ -975,7 +975,11 @@ def _common_prog() -> str | None:
 def main() -> int:
     """Start the catalog server on localhost or in public mode."""
     ap = argparse.ArgumentParser(prog=_common_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--port", type=int, default=8765)
+    ap.add_argument(
+        "--port",
+        type=int,
+        help="the port (default: the project's own, the same every time; 8765 with --public)",
+    )
     ap.add_argument(
         "--adapter",
         help="path/to/file.py:Class (default: config.yaml catalog.adapter, else the harness's own layout)",
@@ -1018,6 +1022,10 @@ def main() -> int:
         help="answer every comparison this built catalog links to, in the background",
     )
     args = ap.parse_args()
+    if args.port is None:
+        from evaluation_harness._common import project_port  # noqa: PLC0415
+
+        args.port = 8765 if args.public else project_port("catalog")
     global HOOKS
     HOOKS = load_hooks(args.hooks) if args.hooks else None
     set_adapter(load_catalog_adapter(args.adapter))
@@ -1063,6 +1071,7 @@ def main() -> int:
         )
     else:
         print(f"catalog: http://127.0.0.1:{args.port}{Handler.prefixes[0]}   (Ctrl-C to stop)", flush=True)
+        print(f"  the project {ROOT}, on a port of its own", flush=True)
         print("  it reads the runs once: restart it to see runs made after it started", flush=True)
     try:
         server.serve_forever()

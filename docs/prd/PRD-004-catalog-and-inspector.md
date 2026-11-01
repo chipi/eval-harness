@@ -1,6 +1,6 @@
 # PRD-004: The catalog and the run inspector
 
-- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (v0.5.0); the Captures page (FR1.13) built for 0.6.0; FR1.14, FR2.6 and the port per project planned for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
+- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (v0.5.0); the Captures page (FR1.13) built for 0.6.0; the port per project (FR2.7) built for 0.6.0; FR1.14 and FR2.6 planned for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog's pages),
   [UXS-002](../uxs/UXS-002-inspector.md) (the inspector), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the same views as commands)
@@ -133,7 +133,6 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
     `dataset-extend` command), and for a version made from picks, where each added item came from;
   - a recorded arm (production's decisions) is badged, its capture linked, no cost; a promoted arm's page and the
     goal page beside its baseline show the deploy sheet (PRD-005 FR3);
-  - the header names the project the catalog was built from.
 
 ### FR2: The inspector (local server)
 
@@ -156,8 +155,9 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   (`evh inspect --dataset-id D --rows`) shows one row per item with its signals (wrong, disagree, split, new,
   unlabelled) as filters and sorts. A selection of rows gives the `evh pick` and `evh label-sheet` commands; the
   page writes nothing (PRD-014 FR8).
-- **FR2.7** (0.6.0, planned): `catalog-serve` serves each project on a stable port of its own (PRD-007 FR2.6), the
-  next free one if that is taken, and prints the URL; `--port` overrides.
+- **FR2.7** (0.6.0): `catalog-serve` serves each project on a stable port of its own (PRD-007 FR2.6), the next
+  free one if that is taken, and prints the URL and the project; `--port` overrides. A local catalog (the default
+  name, no `--link`) names its project in its header and tab title.
 
 ### FR3: Public mode
 

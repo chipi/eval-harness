@@ -494,6 +494,7 @@ svg text.name { paint-order: stroke; stroke: var(--surface); stroke-width: 6px; 
 .bar .sections { gap: 2px; padding: 3px; font: 500 12px/1 var(--mono); letter-spacing: .03em; }
 .bar .sections a { padding: 8px 10px; }
 .bar .brand { gap: 10px; }
+.bar .brand .proj { font-weight: 400; color: var(--muted); }
 @media (max-width: 1080px) { .bar:has(.sections) .brand span { display: none; } }
 @media (max-width: 760px) { .bar .sections a { padding: 8px 6px; } }
 @media (max-width: 374px) {
