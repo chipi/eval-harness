@@ -255,18 +255,83 @@ try:
     from evaluation_harness import _rows
 
     def fields_of(n_titles):
+        decl = {"title": {"type": "text"}, "on": {"type": "date"}, "kind": {"type": "choice"}}
+
         def f(ds):
             if ds == "v":
-                return {"title": {}}, {f"g{k}": {"title": f"title {k}"} for k in range(n_titles)}
-            return {"title": {}}, {"x1": {"title": "a title v never had"}}
+                return decl, {
+                    f"g{k}": {"title": f"title {k}", "on": "2026-10-01", "kind": "a"} for k in range(n_titles)
+                }
+            return decl, {"x1": {"title": "a title v never had", "on": "2026-11-02", "kind": "b"}}
 
         return f
 
     check(
-        f"--new-vs: a field with at most {_rows.NEW_MAX} values in V is compared, one with more is not",
-        _rows._new_values(fields_of(_rows.NEW_MAX), "d", "v") == {"x1": ["title=a title v never had"]}
-        and _rows._new_values(fields_of(_rows.NEW_MAX + 1), "d", "v") == {},
+        f"--new-vs: a text field with at most {_rows.NEW_MAX} values in V is compared, one with more is not",
+        _rows._new_values(fields_of(_rows.NEW_MAX), "d", "v")
+        == {"x1": ["title=a title v never had", "kind=b"]}
+        and _rows._new_values(fields_of(_rows.NEW_MAX + 1), "d", "v") == {"x1": ["kind=b"]},
+        str(_rows._new_values(fields_of(_rows.NEW_MAX), "d", "v")),
+    )
+    check(
+        "--new-vs: a choice field is always compared, a date never (each new day is not a gap)",
+        all("on=" not in x for xs in _rows._new_values(fields_of(3), "d", "v").values() for x in xs),
         "",
+    )
+
+    # ── --wrong-against: the adapter's verdict, where a label and an output are written differently ──
+    (proj / "jsonish.py").write_text(
+        "import json\n"
+        "from evaluation_harness.adapter import Result\n"
+        "def call_system(text, params):\n"
+        "    return Result(output=json.dumps({'disposition': 'file' if len(text) % 2 else 'dismiss'}), cost_usd=0.0)\n"
+        "def score(output, reference):\n"
+        "    d = json.loads(output)['disposition']\n"
+        "    return {} if reference is None else {'correct': float(d == reference.strip())}\n"
+        "def same(a, b):\n"
+        "    return json.loads(a)['disposition'] == json.loads(b)['disposition']\n"
+    )
+    (data / "configs" / "jsonish.yaml").write_text(
+        "config_id: jsonish_v1\ndataset_id: tickets_v1\nadapter: jsonish.py\nparams:\n  provider: echo\n"
+    )
+    r = evh(
+        "experiment-run",
+        "--config",
+        "data/configs/jsonish.yaml",
+        "--run-id",
+        "jsonish",
+        extra={"PYTHONPATH": str(HERE.parent)},
+    )
+    jout = {
+        p.stem: json.loads(p.read_text())["disposition"]
+        for p in (data / "runs" / "jsonish" / "outputs").glob("t*.txt")
+    }
+    # Right on two, wrong on one, by construction: the label is the output's disposition, or the other one.
+    flip = {"file": "dismiss", "dismiss": "file"}
+    bare = {
+        "t01_login": jout.get("t01_login", "file"),
+        "t02_invoice": flip.get(jout.get("t02_invoice", "file"), "file"),
+        "t03_export": jout.get("t03_export", "file"),
+    }
+    with (proj / "bare.csv").open("w", newline="") as fh:
+        wr = csv.writer(fh)
+        wr.writerow(["item_id", "label"])
+        wr.writerows(bare.items())
+    r2 = evh("label-import", "bare.csv", "--dataset-id", D, "--set", "bare", "--by", "owner")
+    r3 = evh(
+        "inspect", "--dataset-id", D, "--rows", "--runs", "jsonish_v1", "--wrong-against", "bare", "--json",
+        extra={"PYTHONPATH": str(HERE.parent)},
+    )  # fmt: skip
+    got = []
+    if r3.returncode == 0:
+        blocks = json.loads(r3.stdout)["result"]["blocks"]
+        table: dict = next((b for b in blocks if "columns" in b and b["columns"][0] == "item"), {"rows": []})
+        got = sorted(x["item"] for x in table["rows"])
+    want = sorted(i for i, lab in bare.items() if jout.get(i) != lab)
+    check(
+        "--wrong-against: a bare label against an output's JSON, read by the adapter's score (correct 0), not as text",
+        r.returncode == 0 and r2.returncode == 0 and got == want == ["t02_invoice"],
+        f"got {got}, want {want}; {out(r3)[-300:]}",
     )
 
     # ── refusals ─────────────────────────────────────────────────────────────────────────────

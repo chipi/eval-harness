@@ -218,6 +218,17 @@ data/runs-rescored/*/*/*/*
 !data/runs-rescored/*/*/*/outputs/**
 data/runs-rescored/*/*/*/outputs/_rows.jsonl
 
+# data/runs-labels-<dataset>-<set>/ — runs scored against a label set (RFC-023: `rescore --labels`,
+# `experiment-run --labels`, a recorded arm with `--labels`): arms of their own, never one more run of the config's
+# arm on a reference. Kept as the other run folders are: the catalog reads only what git keeps.
+!data/runs-labels-*/
+data/runs-labels-*/*/*
+!data/runs-labels-*/*/metrics.json
+!data/runs-labels-*/*/predictions.jsonl
+!data/runs-labels-*/*/outputs
+!data/runs-labels-*/*/outputs/**
+data/runs-labels-*/*/outputs/_rows.jsonl
+
 # data/runs-silver/ — the CNN arms re-scored ($0) against silver/cnn_dailymail_200, the frontier
 # arm's summaries: a silver group beside gold on the goal page, where silver's family bias shows.
 # Their outputs are the same bytes as the measured runs' in data/runs.
