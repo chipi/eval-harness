@@ -226,10 +226,12 @@ Opened from a dataset ("explore rows") or with `?dataset=<id>&rows=1`: one datas
 | the item view | `--item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm |
 | the per-item table | `--items`: every item's score per arm, and each arm's Δ against the baseline |
 | only where they disagree (0.6.0; the checkbox: step 8) | `--disagree` (an arm scored against a label set is chosen like any) |
-| the rows view (0.6.0, planned) | `evh inspect --dataset-id D --rows [--runs A,B] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value]` |
-| selecting rows: the pick and sheet commands (0.6.0, planned) | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
+| the rows view (0.6.0; the page: step 8) | `evh inspect --dataset-id D --rows [--runs A,B] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value]` |
+| selecting rows: the pick and sheet commands (0.6.0; the page: step 8) | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
 
 For an agent, `evh inspect` is the MCP tool `inspect`, with the same options (`runs`, `baseline`,
-`metric`, `where`, `by`, `items`, `analysis`, `x`, `round`, `goal`, `from`, `no-rescore`, `item`). A public server (`evh mcp --public`, and
-this repository's at `/mcp`) leaves out `item`, as the public inspector serves no item text.
+`metric`, `where`, `by`, `disagree`, `items`, `analysis`, `x`, `round`, `goal`, `from`, `no-rescore`, `item`, and the
+rows view's `rows`, `dataset-id`, `wrong-against`, `new-vs`, `split`, `unlabelled`). A public server (`evh mcp --public`,
+and this repository's at `/mcp`) leaves out `item` and the rows view, as the public inspector serves no item text,
+output or label.

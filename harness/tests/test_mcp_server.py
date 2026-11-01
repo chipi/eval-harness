@@ -156,6 +156,12 @@ try:
                 "datasets with an option: passed as the command line",
                 not res.is_error and "tickets_v1" in res.content[0].text,
             )
+            check(
+                "inspect: the rows view's options are in its schema",
+                {"rows", "dataset-id", "wrong-against", "new-vs", "split", "unlabelled"}
+                <= set(by["inspect"].input_schema["properties"]),
+                str(sorted(by["inspect"].input_schema["properties"])),
+            )
             res = await s.call_tool("labels", {"dataset-id": "tickets_v1"})
             want = evh("labels", "--dataset-id", "tickets_v1", "--json").stdout
             check(

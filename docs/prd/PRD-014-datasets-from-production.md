@@ -1,8 +1,8 @@
 # PRD-014: Datasets from production, and evaluating what production did
 
 - **Status**: Built for 0.6.0 for FR1 to FR3, FR5, FR6 and the Captures page (2026-10-31, the capture window and
-  sampling 2026-11-01), FR4 (labels from outcomes) FR7 (the recorded arm, agreement), FR9 (picks) and FR10 (versions from picks) built; FR8 (the rows view)
-  planned for 0.6.0
+  sampling 2026-11-01), FR4 (labels from outcomes) FR7 (the recorded arm, agreement), FR8.1 (the rows view, in the terminal), FR9 (picks) and FR10 (versions
+  from picks) built; FR8.2 (the rows view's page) planned for 0.6.0
   ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Captures, Labels and dataset pages),
@@ -148,13 +148,13 @@ comment that says what it was.
   where an arm decided differently from the baseline, the same filter the inspector page offers (step 8), and
   `evh label-sheet --items disagree` reads the same hook.
 
-### FR8: Exploring rows (0.6.0, planned)
+### FR8: Exploring rows (0.6.0)
 
 - **FR8.1**: `evh inspect --dataset-id D --rows` shows one row per item: its fields, production's decision, each
   chosen arm's decision, every label with its source, and the signals: **wrong** (`--wrong-against SET`),
   **disagree**, **split** (candidates disagree among themselves), **new** (`--new-vs V`: a field value the governed
   dataset has never had), **unlabelled**; each a filter and a sort, with `--where` and `--by`.
-- **FR8.2**: The inspector's rows view shows the same; a selection of rows gives the `evh pick` and
+- **FR8.2** (0.6.0, planned: step 8): The inspector's rows view shows the same; a selection of rows gives the `evh pick` and
   `evh label-sheet` commands for them. The page writes nothing.
 
 ### FR9: Picks (0.6.0)

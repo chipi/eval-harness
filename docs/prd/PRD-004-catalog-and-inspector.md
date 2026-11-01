@@ -150,7 +150,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR2.5**: It compares the arms' recorded conditions and warns when the scorer or the
   reference bytes differ, or latency is compared across deployments (where the model ran) or
   measured from different runners (RFC-021).
-- **FR2.6** (0.6.0, planned): A label set can be what arms are scored against; the item view shows every label
+- **FR2.6** (0.6.0; the page parts: step 8): A label set can be what arms are scored against; the item view shows every label
   with its source; `--disagree` keeps the items where the chosen arms decided differently; and the rows view
   (`evh inspect --dataset-id D --rows`) shows one row per item with its signals (wrong, disagree, split, new,
   unlabelled) as filters and sorts. A selection of rows gives the `evh pick` and `evh label-sheet` commands; the

@@ -145,6 +145,14 @@ In the inspector, for one dataset (`evh inspect --dataset-id D --rows`):
   for them, with a target, tags and a note to fill in, and `evh label-sheet --dataset-id D --item … ` to label
   them; you run it. A row already picked says so, and for which datasets.
 - The terminal prints the same rows; `evh label-sheet --items disagree` puts the same rows in a sheet.
+- As built (step 6, 2026-11-01, the terminal; the page is step 8): `--runs` takes run ids or config ids (a
+  config's latest run on the dataset), the first standing for production. **wrong** compares the first run's
+  decision with the set's label by the first run's adapter's `same(a, b)`, so an unlabelled item is never wrong;
+  **split** needs two candidates that answered; **new** compares only the fields the governed dataset has at most
+  30 values for (`_rows.NEW_MAX`), so a free text is not "new" on every item. The signals asked for are ANDed
+  with `--where`; rows are sorted by how many signals they carry; `--by FIELD` counts the rows shown per value
+  and signal. The view ends with the `evh pick` and `evh label-sheet` commands for the rows it shows, writes
+  nothing, and is refused on a public server (`evh mcp --public` leaves its options out).
 
 ### Picks
 

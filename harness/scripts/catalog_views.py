@@ -1163,7 +1163,7 @@ def inspect(argv) -> int:
     ap = argparse.ArgumentParser(
         prog="evh inspect", description="The inspector's comparison, in the terminal."
     )
-    pick = ap.add_mutually_exclusive_group(required=True)
+    pick = ap.add_mutually_exclusive_group()
     pick.add_argument("--runs", help="arms: config ids (looked up under --from) or arm ids, comma-separated")
     pick.add_argument("--round", help="the arms in play in this round of a goal (rN; ADR-0004)")
     ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
@@ -1188,7 +1188,7 @@ def inspect(argv) -> int:
     ap.add_argument(
         "--disagree",
         action="store_true",
-        help="only the items where the arms decided differently from the baseline (the adapter's same(a, b))",
+        help="only the items where the arms decided differently from the baseline (with --rows: from the first run; the adapter's same(a, b))",
     )
     ap.add_argument("--item", help="show one item: each arm's output beside the reference")
     ap.add_argument(
@@ -1207,6 +1207,30 @@ def inspect(argv) -> int:
     ap.add_argument(
         "--x", dest="xmetric", help="with --analysis: each arm's mean on this metric too (the scatter)"
     )
+    ap.add_argument(
+        "--rows",
+        action="store_true",
+        help="one row per item of --dataset-id: what each run in --runs decided (the first is production's), its labels, its signals",
+    )
+    ap.add_argument("--dataset-id", help="with --rows: the dataset whose items are shown")
+    ap.add_argument(
+        "--wrong-against",
+        metavar="SET",
+        help="with --rows: only the items where the first run's decision is not this label set's (SET or DATASET/SET)",
+    )
+    ap.add_argument(
+        "--new-vs",
+        metavar="DATASET",
+        help="with --rows: only the items with a field value this dataset has never had",
+    )
+    ap.add_argument(
+        "--split",
+        action="store_true",
+        help="with --rows: only the items the candidates (the runs after the first) decided differently among themselves",
+    )
+    ap.add_argument(
+        "--unlabelled", action="store_true", help="with --rows: only the items no label set labels yet"
+    )
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A = load_catalog_adapter(args.adapter)
@@ -1215,6 +1239,23 @@ def inspect(argv) -> int:
         # Run for a public MCP server: the inspector's public rules, so a --where or --by on a
         # field not marked public is refused instead of leaking its values through the counts.
         cs.LIMITS["hosts"] = ("public",)
+    only_rows = [
+        f
+        for f, on in (
+            ("--wrong-against", args.wrong_against),
+            ("--new-vs", args.new_vs),
+            ("--split", args.split),
+            ("--unlabelled", args.unlabelled),
+            ("--dataset-id", args.dataset_id),
+        )
+        if on
+    ]
+    if args.rows:
+        return _rows_view(A, args)
+    if only_rows:
+        die(f"{', '.join(only_rows)}: with --rows (evh inspect --dataset-id D --rows …)")
+    if not (args.runs or args.round):
+        die("one of --runs, --round or --rows (with --dataset-id) is required")
     round_leader = None
     if args.round:
         from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
@@ -1385,6 +1426,112 @@ def inspect(argv) -> int:
                 for g in br["groups"]
                 for r in g["rows"]
             ],
+        )
+    return 0
+
+
+def _short(text: str | None, n: int = 48) -> str:
+    one = " ".join((text or "").split())
+    return one if len(one) <= n else one[: n - 1] + "…"
+
+
+def _rows_view(A, args) -> int:
+    """evh inspect --dataset-id D --rows: one row per item, its decisions, labels and signals (RFC-023, _rows)."""
+    from evaluation_harness import _fields, _picks, _rows  # noqa: PLC0415
+    from evaluation_harness._label_sets import source_line  # noqa: PLC0415
+
+    if os.environ.get("EVH_PUBLIC"):
+        die("--rows shows the items' outputs and labels: not served publicly")
+    if not args.dataset_id:
+        die("--rows: name the dataset with --dataset-id")
+    if args.round:
+        die("--rows takes --runs (run ids, or config ids: their latest run on the dataset), not --round")
+    runs = [t.strip() for t in (args.runs or "").split(",") if t.strip()]
+    for flag, n, on in (
+        ("--disagree", 2, args.disagree),
+        ("--split", 3, args.split),
+        ("--wrong-against", 1, args.wrong_against),
+    ):
+        if on and len(runs) < n:
+            die(f"{flag} needs {n} run(s) or more in --runs (the first is production's)")
+    found = _rows.rows(args.dataset_id, runs, cs._fields_of, args.wrong_against, args.new_vs)
+    decl, _ = cs._fields_of(args.dataset_id)
+    for w in args.where:
+        name, _, want = w.partition(":")
+        if name not in decl:
+            die(f"--where {w}: no field {name!r} on {args.dataset_id}")
+        try:
+            found = [r for r in found if _fields.matches(decl[name], r["fields"].get(name), want)]
+        except ValueError as exc:
+            die(f"--where {w}: {exc}")
+    if args.by and args.by not in decl:
+        die(f"--by {args.by}: no field {args.by!r} on {args.dataset_id}")
+    wanted = [
+        s
+        for s, on in (
+            ("wrong", args.wrong_against),
+            ("disagree", args.disagree),
+            ("split", args.split),
+            ("new", args.new_vs),
+            ("unlabelled", args.unlabelled),
+        )
+        if on
+    ]
+    shown = sorted(
+        (r for r in found if all(s in r["signals"] for s in wanted)), key=lambda r: -len(r["signals"])
+    )
+    counts = {s: sum(s in r["signals"] for r in found) for s in _rows.SIGNALS}
+    print(
+        f"{args.dataset_id}: {len(shown)} of {len(found)} {A.item_word}(s)"
+        + (f" ({', '.join(wanted)})" if wanted else "")
+        + " · "
+        + " · ".join(f"{s} {n}" for s, n in counts.items() if n)
+        + "\n"
+    )
+    state = _picks.state()
+
+    def picked(item: str) -> str:
+        p = state.get((args.dataset_id, item)) or {}
+        if p.get("action") != "pick":
+            return ""
+        return f"for {', '.join(p['for'])}" if p.get("for") else "no target yet"
+
+    _table(
+        ["item", "signals", *runs, "labels", "picked", "fields"],
+        [
+            [
+                r["item"],
+                ", ".join(f"{s} ({d})" if d else s for s, d in r["signals"].items()),
+                *[_short(r["decisions"].get(n)) for n in runs],
+                "; ".join(
+                    f"{x['set']} [{source_line(x['source'])}]: {_short(x['text'], 32)}" for x in r["labels"]
+                ),
+                picked(r["item"]),
+                _short(", ".join(f"{k}={v}" for k, v in r["fields"].items()), 60),
+            ]
+            for r in shown
+        ],
+    )
+    if args.by:
+        groups: dict[str, list] = {}
+        for r in shown:
+            groups.setdefault(str(r["fields"].get(args.by, "—")), []).append(r)
+        print(f"\nby {args.by}:")
+        _table(
+            [args.by, "rows", *_rows.SIGNALS],
+            [
+                [g, len(rs), *[sum(s in r["signals"] for r in rs) for s in _rows.SIGNALS]]
+                for g, rs in groups.items()
+            ],
+        )
+    if shown:
+        items = " ".join(f"--item {r['item']}" for r in shown)
+        print(
+            f'\npick them:  evh pick --dataset-id {args.dataset_id} {items} [--for V] [--tag k=v] [--note "…"]'
+        )
+        print(
+            f"label them: evh label-sheet --dataset-id {args.dataset_id} {items} --out sheet.csv"
+            + (f" --runs {','.join(runs)}" if runs else "")
         )
     return 0
 

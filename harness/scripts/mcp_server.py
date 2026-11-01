@@ -305,9 +305,13 @@ def run_command(
     return p.returncode, out, err
 
 
-#: In --public mode, the options that would answer with an item's text or an arm's output: a
-#: public server answers with numbers and ids only, as catalog-serve --public does without --publish.
-PUBLIC_HIDDEN = {"inspect": {"--item"}, "dataset-items": {"--item"}}
+#: In --public mode, the options that would answer with an item's text, an arm's output or a label (the
+#: rows view): a public server answers with numbers and ids only, as catalog-serve --public does without
+#: --publish.
+PUBLIC_HIDDEN = {
+    "inspect": {"--item", "--rows", "--dataset-id", "--wrong-against", "--new-vs", "--split", "--unlabelled"},
+    "dataset-items": {"--item"},
+}
 #: In --public mode, the tools left out, and why: a public server serves a copy of the data, not a
 #: whole project (no corpora, no example code), so validate would only ever report what is not there.
 PUBLIC_DROPPED = {"validate": "a public copy is not a whole project: validate fails by design"}

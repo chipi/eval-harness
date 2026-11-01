@@ -697,6 +697,10 @@ def test_example_scorer_suites_pass() -> None:
             "picks: the append-only list, retarget, drop; dataset-extend from chosen picks, its lineage, labels following",
         ),
         (
+            "test_rows.py",
+            "the rows view: every item's decisions, labels and signals; each signal a filter; the pick and sheet commands",
+        ),
+        (
             "test_model_onboard.py",
             "evh model-onboard: reasoning, format, determinism and the build, against a fake server",
         ),
