@@ -54,8 +54,11 @@ try:
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, out(r)[-300:])
+    (data / "goals").mkdir()
+    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
     for arm in ("lead1", "author"):
-        shutil.copy(KIT / "configs" / f"tickets_{arm}.yaml", data / "configs")
+        cfg = data / "configs" / f"tickets_{arm}.yaml"
+        cfg.write_text((KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n")
         r = evh("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
     author = next(p.name for p in (data / "runs").glob("tickets_author_v1_*"))
@@ -465,6 +468,75 @@ try:
         r.returncode == 0
         and sorted(p.stem for p in (REF / "gold" / "tickets_v2").glob("*.txt")) == owner_ids,
         out(r)[-300:],
+    )
+
+    # ── scoring against labels (step 4) ───────────────────────────────────────────────────
+    r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "author_v1")
+    lab_dir = data / "runs-labels-tickets_v1-author_v1"
+    ms = (
+        [json.loads(p.read_text()) for p in sorted(lab_dir.glob("*/metrics.json"))]
+        if r.returncode == 0
+        else []
+    )
+    check(
+        "rescore --labels: every run scored against the set, beside the runs, never in the re-score goals read",
+        len(ms) == 2
+        and all(
+            m["fingerprint"]["data"]["reference_id"] == "labels/tickets_v1/author_v1"
+            and m["fingerprint"]["data"]["reference_tier"] == "labels"
+            and len(m["fingerprint"]["data"]["references_sha256"] or "") == 64
+            for m in ms
+        )
+        and not (data / "runs-rescored").exists(),
+        out(r)[-300:],
+    )
+    r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "tickets_v2/owner_v1")
+    check(
+        "rescore --labels: a set on another dataset is refused (promote it, or label this one)",
+        refused(r, "a set on tickets_v2"),
+        out(r)[-300:],
+    )
+    r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "no_such_set")
+    check("rescore --labels: an unknown set is refused", refused(r, "no label set at"), out(r)[-200:])
+    r = subprocess.run(
+        [
+            sys.executable,
+            str(HERE / "cli.py"),
+            "experiment-run",
+            "--config",
+            "data/configs/tickets_lead1.yaml",
+            "--labels",
+            "author_v1",
+        ],
+        cwd=proj,
+        env={**env, "EVAL_RUNS_DIR": "data/runs-labelrun"},
+        capture_output=True,
+        text=True,
+    )
+    m = next((json.loads(p.read_text()) for p in (data / "runs-labelrun").glob("*/metrics.json")), {})
+    check(
+        "experiment-run --labels: the arm run against the label set, which the run records",
+        r.returncode == 0
+        and "the label set labels/tickets_v1/author_v1" in out(r)
+        and m.get("reference_tier") == "labels"
+        and m["fingerprint"]["data"]["reference_id"] == "labels/tickets_v1/author_v1",
+        out(r)[-300:],
+    )
+    shutil.rmtree(data / "runs-labelrun", ignore_errors=True)
+    r = evh("goals", "--goal", "tickets_summary")
+    group = (
+        out(r).split("labels/tickets_v1/author_v1", 1)[1] if "labels/tickets_v1/author_v1" in out(r) else ""
+    )
+    check(
+        "the goal groups the arms scored against the set, flags the arm that made its labels, recommends another",
+        r.returncode == 0
+        and group
+        and "[recommended]" in group.split("\n\n", 1)[0]
+        and not any(
+            "tickets_author_v1" in line and "[recommended]" in line
+            for line in group.split("\n\n", 1)[0].splitlines()
+        ),
+        out(r)[-1500:],
     )
 
     # ── V19: a set's labels are the ones it recorded ──────────────────────────────────────────

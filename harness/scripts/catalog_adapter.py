@@ -422,7 +422,15 @@ class HarnessAdapter:
             keys = set(self.scores(arm))
             primary = next((k for k in ("judge_score", "judge_score_unvalidated") if k in keys), primary)
         ref = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id", "")
-        author = next((r.get("author") for r in self.references() if r["id"] == ref), None)
+        if (ref or "").startswith(_common.LABELS_PREFIX):
+            # A label set a model's run made (RFC-023): its arm scored against it is graded against its own outputs.
+            src = (
+                _json(self.data_dir / "labels" / ref.removeprefix(_common.LABELS_PREFIX) / "labels.json")
+                or {}
+            ).get("source") or {}
+            author = src.get("config_id") if src.get("kind") == "model" else None
+        else:
+            author = next((r.get("author") for r in self.references() if r["id"] == ref), None)
         return {
             "id": arm,
             "label": label,

@@ -1,6 +1,6 @@
 # PRD-005: Goals, and experiment rounds
 
-- **Status**: Implemented (v0.4.0); groups scored against a label set (FR1.7) and the deploy sheet (FR3) planned
+- **Status**: Implemented (v0.4.0); groups scored against a label set (FR1.7) built for 0.6.0; the deploy sheet (FR3) planned
   for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the goal page), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the round commands)
@@ -98,9 +98,10 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   per item; speed as p50 and p95. The goal page names the recommended arm per group with the
   reasons, and the home page's glance shows it with its cost and speed against the baseline;
   the CLI says the same. Guardrails (rules in words) are shown, never computed.
-- **FR1.7** (0.6.0, planned): Arms scored against a label set (PRD-002 FR6) form a group of their own, headed by
-  the set's source and name, never a tier; the group gets its recommended arm as a reference's group does. The
-  baseline is still the arm you promote.
+- **FR1.7** (0.6.0): Arms scored against a label set (PRD-002 FR6) form a group of their own, named by the set
+  (`labels/<dataset>/<set>`), never a tier; the group gets its recommended arm as a reference's group does, the arm
+  that made a `model` set's labels flagged. The baseline is still the arm you promote. (Its heading by the set's
+  source chip on the page is UXS-001's, step 8.)
 
 ### FR2: Rounds (optional)
 

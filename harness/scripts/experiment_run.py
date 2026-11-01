@@ -239,8 +239,10 @@ def one_pass(
     call_system: Any,
     score: Any,
     extra_transient: tuple = (),
+    scored_against: tuple[Path | None, str | None] | None = None,
 ) -> dict[str, Any]:
-    """One pass over the dataset. ``call_system``/``score`` are INJECTED rather than
+    """One pass over the dataset. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
+    --labels; by default the dataset's gold, else its silver. ``call_system``/``score`` are INJECTED rather than
     imported at module scope, because which adapter runs is a property of the arm now."""
     mat = MATERIALIZED / ds["dataset_id"]
     if not mat.is_dir():
@@ -254,7 +256,7 @@ def one_pass(
         )
     params = dict(cfg.get("params") or {})
     params.setdefault("seed", idx)
-    ref_dir, ref_tier = _reference_for(ds["dataset_id"])
+    ref_dir, ref_tier = scored_against or _reference_for(ds["dataset_id"])
 
     predictions: list[dict[str, Any]] = []
     outputs: dict[str, str] = {}
@@ -569,6 +571,11 @@ def main() -> int:
     """Run an experiment config against a dataset."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--config", required=True, type=Path)
+    ap.add_argument(
+        "--labels",
+        metavar="SET",
+        help="score against this label set of the dataset (SET or DATASET/SET) instead of its gold or silver (RFC-023)",
+    )
     ap.add_argument("--repeat", type=int, default=1, help="run N times to measure the arm's spread")
     ap.add_argument("--run-id", help="default: <config_id>_<timestamp>")
     ap.add_argument(
@@ -629,6 +636,12 @@ def main() -> int:
     base_id = args.run_id or f"{cfg['config_id']}_{stamp}"
     build = build_info()
     ref_dir, ref_tier = _reference_for(cfg["dataset_id"])
+    ref_id = str(ref_dir.relative_to(REFERENCES)) if ref_dir else None
+    if args.labels:
+        from evaluation_harness._common import LABELS_TIER, labels_reference, scored_against_dir  # noqa: PLC0415
+
+        ref_id = labels_reference(args.labels, cfg["dataset_id"])
+        ref_dir, ref_tier = scored_against_dir(ref_id), LABELS_TIER
     # HOW MANY ITEMS HAVE A REFERENCE, counted before any call. A metric scored against a
     # missing reference is not computed, so with gold for 20 of 200 items the run's mean is a
     # mean over 20, recorded as a 200-item gold run. None is a refusal (nothing would be
@@ -649,7 +662,9 @@ def main() -> int:
                 f"  WARNING: only {have} of {len(ids)} items have a {ref_tier} reference: quality is a "
                 f"mean over those {have}, and the run records that (reference_coverage)."
             )
-    if ref_tier:
+    if args.labels:
+        print(f"  scoring against the label set {ref_id} (labels, not a reference)")
+    elif ref_tier:
         print(f"  scoring against {ref_tier.upper()} references for {cfg['dataset_id']}")
     else:
         print(f"  no references for {cfg['dataset_id']} — quality cannot be scored.")
@@ -711,7 +726,7 @@ def main() -> int:
         root=ROOT,
         data_dir=DATA,
         dataset=ds,
-        reference_id=(str(ref_dir.relative_to(REFERENCES)) if ref_dir else None),
+        reference_id=ref_id,
         reference_tier=ref_tier,
         config_id=cfg["config_id"],
         params=dict(cfg.get("params") or {}),
@@ -801,6 +816,7 @@ def main() -> int:
                 call_system=call_system,
                 score=score,
                 extra_transient=transient_markers(adapter_path),
+                scored_against=(ref_dir, ref_tier),
             )
         except BaseException as exc:
             _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)

@@ -681,7 +681,13 @@ def references_digest(root: Path, reference_id: str | None, data_dir: Path | Non
     """
     if not reference_id:
         return None
-    ref_dir = (data_dir or root / "data") / "references" / reference_id
+    base = data_dir or root / "data"
+    # A label set (RFC-023) is hashed whole, labels.json included: a set is never edited, so it never moves.
+    ref_dir = (
+        base / "labels" / reference_id[len("labels/") :]
+        if reference_id.startswith("labels/")
+        else base / "references" / reference_id
+    )
     if not ref_dir.is_dir():
         return None
     # EVERY FILE, not just *.txt. A silver reference directory also carries

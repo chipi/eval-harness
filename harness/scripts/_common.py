@@ -497,6 +497,41 @@ def item_selection(exclude_dataset: str | None, items_file: Path | None) -> tupl
     return drop, (read_item_ids(items_file) if items_file else None)
 
 
+#: What a run scored against a label set records as its reference_id: "labels/<dataset>/<set>" (RFC-023), and as its
+#: tier, so it is never read as gold or silver.
+LABELS_PREFIX = "labels/"
+LABELS_TIER = "labels"
+
+
+def scored_against_dir(reference_id: str | None) -> Path | None:
+    """Where what a run is scored against lives: a label set ("labels/<dataset>/<set>", under data/labels) or a
+    reference ("<tier>/<name>", under data/references); None when it is scored against nothing."""
+    if not reference_id:
+        return None
+    if reference_id.startswith(LABELS_PREFIX):
+        return _paths()["LABELS"] / reference_id[len(LABELS_PREFIX) :]
+    return _paths()["REFERENCES"] / reference_id
+
+
+def labels_reference(spec: str, dataset_id: str) -> str:
+    """The reference_id a run scored against labels records, from `SET` or `DATASET/SET`; refused when the set is on
+    another dataset (its item ids are that dataset's) or does not exist."""
+    set_ds, _, name = spec.rpartition("/")
+    set_ds = set_ds or dataset_id
+    if set_ds != dataset_id:
+        die(
+            f"--labels {spec}: a set on {set_ds}, not {dataset_id}. Scoring reads labels by this dataset's item ids: "
+            f"promote them (evh reference-promote --dataset-id {dataset_id} --labels {spec} …) or label this dataset"
+        )
+    rid = f"{LABELS_PREFIX}{dataset_id}/{name}"
+    d = scored_against_dir(rid)
+    if d is None or not (d / "labels.json").is_file():
+        die(
+            f"--labels {spec}: no label set at data/labels/{dataset_id}/{name} (evh labels --dataset-id {dataset_id})"
+        )
+    return rid
+
+
 def item_path(dataset_id: str, item_id: str) -> Path | None:
     """Where an item's materialized copy is, or None when it is not materialized here."""
     try:

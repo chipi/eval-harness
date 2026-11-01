@@ -94,6 +94,13 @@ The harness cannot do steps 6 and after:
 - `evh rescore --labels D/S` (and `experiment-run --labels D/S`) scores against a label set without promoting it.
   The run records `scored_against: {labels: D/S, source}` in place of a reference, and every view names it by its
   source: "against your labels of 2026-11-15", "against model M's labels".
+- As built (step 4, 2026-11-01): the run records `reference_id: labels/<dataset>/<set>` and `reference_tier:
+  labels` in place of a separate field, so every reader resolves it through one function (`scored_against_dir`) and
+  none can take it for gold or silver; the fingerprint hashes the set's files. Only a set of the run's own dataset
+  is scored against (labels are read by item id); one on another dataset is promoted first. A re-score goes to
+  `data/runs-labels-<dataset>-<set>/`, a plain runs folder every reader already finds, never the re-score place goals
+  read in place of a run. An arm scored against a `model` set of its own outputs is flagged, as a reference's author
+  is.
 - A goal suggests a finalist for a group scored against a label set as it does for a reference's group, the group
   headed by its labels; you choose the baseline either way (owner, 2026-11-01).
 

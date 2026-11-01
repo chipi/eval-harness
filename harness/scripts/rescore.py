@@ -43,6 +43,8 @@ from evaluation_harness._adapter import load_recorded_adapter, score_wants_sourc
 from evaluation_harness._common import (
     DATA,
     DATASETS,
+    LABELS_PREFIX,
+    LABELS_TIER,
     MATERIALIZED,
     REFERENCES,
     ROOT,
@@ -51,8 +53,10 @@ from evaluation_harness._common import (
     die,
     how,
     ignored_by_git,
+    labels_reference,
     now,
     read_json,
+    scored_against_dir,
     warn_if_ignored,
     write_json,
 )
@@ -96,9 +100,10 @@ def _references_for(m: dict[str, Any], reference_id: str | None) -> tuple[Path |
     not a re-run. Without this the only way to a gold-scored leaderboard was to pay for
     every arm again."""
     if reference_id:
-        return REFERENCES / reference_id, reference_id.split("/", 1)[0]
+        tier = LABELS_TIER if reference_id.startswith(LABELS_PREFIX) else reference_id.split("/", 1)[0]
+        return scored_against_dir(reference_id), tier
     recorded = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id")
-    return (REFERENCES / recorded if recorded else None), m.get("reference_tier")
+    return scored_against_dir(recorded), m.get("reference_tier")
 
 
 def _rescore_row(
@@ -526,6 +531,12 @@ def main() -> int:
         "one each run recorded -- for when gold arrives after the runs",
     )
     ap.add_argument(
+        "--labels",
+        metavar="SET",
+        help="score against a label set of the dataset (SET or DATASET/SET), without promoting it; written beside "
+        "the runs (default data/runs-labels-<dataset>-<set>/), never where a goal reads a re-score (RFC-023)",
+    )
+    ap.add_argument(
         "--config-dir",
         type=Path,
         help="where to find the arm configs naming the adapter "
@@ -537,7 +548,15 @@ def main() -> int:
     )
     ap.add_argument("--why", default="", help="with --round: why the scoring changed, recorded on the round")
     args = ap.parse_args()
-    if args.reference_id and not (REFERENCES / args.reference_id).is_dir():
+    if args.labels:
+        if args.reference_id or args.round_id:
+            die("--labels is its own target: not with --reference-id or --round")
+        if not args.dataset_id:
+            die("--labels needs --dataset-id")
+        args.reference_id = labels_reference(args.labels, args.dataset_id)
+        if args.out is None:
+            args.out = DATA / f"runs-labels-{args.dataset_id}-{args.reference_id.rsplit('/', 1)[1]}"
+    elif args.reference_id and not (REFERENCES / args.reference_id).is_dir():
         die(f"no reference set at data/references/{args.reference_id}")
     rnd = None
     if args.round_id:

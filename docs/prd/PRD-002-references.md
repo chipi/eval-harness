@@ -1,7 +1,8 @@
 # PRD-002: Labels, and the references promoted from them
 
 - **Status**: Implemented (v0.4.0) for gold, silver and re-scoring; labels (FR2) and promotion (FR3.1, FR3.3) built for
-  0.6.0; scoring against labels (FR6) and removing the old commands (FR3.2) planned for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md)); they replace
+  0.6.0, and scoring against labels (FR6.1, FR6.3); the pages naming a set by its source (FR6.2) and removing the
+  old commands (FR3.2) planned for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md)); they replace
   `reference-create`
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Labels and References pages, the tier pills, row
@@ -73,7 +74,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
   as my set (`evh label-import … --by me`)._
 - _As an engineer, I promote the labels I trust into a reference (`evh reference-promote … --tier gold --reason …`),
   and the reference says where they came from._
-- (0.6.0, planned) _As an engineer, I score arms against a label set without promoting it (`evh rescore --labels D/S`)._
+- _As an engineer, I score arms against a label set without promoting it (`evh rescore --labels D/S`)._
 - _As a researcher, when gold arrives after the runs, I re-score every run against it for $0._
 - _As a reviewer, I see which arm's outputs a table's labels came from, so I do not read its row as a result._
 
@@ -134,14 +135,19 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 - **FR5.4**: The inspector, on a metric scored against a reference, does not test an arm scored against another
   reference than the baseline's; it names it and says why ([UXS-002](../uxs/UXS-002-inspector.md)).
 
-### FR6: Scoring against labels (0.6.0, planned)
+### FR6: Scoring against labels (0.6.0)
 
-- **FR6.1**: `evh rescore --labels D/S` and `evh experiment-run --labels D/S` score against a label set without
-  promoting it; the run records `scored_against: {labels, source}`.
-- **FR6.2**: Every view names it by its source ("against your labels of <date>"), never as a reference or with a
-  tier; arms against different sets are never compared, as for references (FR5.4).
+- **FR6.1**: `evh rescore --dataset-id D --labels SET` and `evh experiment-run --config C --labels SET` score against
+  a label set of the run's own dataset without promoting it (a set on another dataset is refused: promote it, or
+  label this one). The run records `reference_id: labels/<dataset>/<set>` and `reference_tier: labels`, and its
+  fingerprint hashes the set's files. A re-score is written beside the runs, `data/runs-labels-<dataset>-<set>/`,
+  never where a goal reads a re-score in place of a run.
+- **FR6.2** (0.6.0, planned: the pages, step 8): Every view names it by its source ("against your labels of
+  <date>"), never as a reference or with a tier; arms against different sets are never compared, as for references
+  (FR5.4).
 - **FR6.3**: A goal suggests a finalist for a group scored against a label set as it does for a reference's group
-  (PRD-005); the baseline stays your choice.
+  (PRD-005); the arm whose outputs a `model` set holds is flagged, as the author of a reference is, and never
+  recommended; the baseline stays your choice.
 
 ## Success Criteria
 
