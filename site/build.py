@@ -829,8 +829,9 @@ def home(f: dict) -> str:
             "02",
             "A fingerprint per run",
             (
-                "The model behind the alias, the prompt, the scoring code, library versions, the "
-                "commit. So \u201cwe changed one thing\u201d is checkable, not asserted."
+                "What ran, in four parts each hashed: the scoring code, the data, the deployment (the "
+                "weights, the server, the machine it ran on) and the settings. So \u201cwe changed one "
+                "thing\u201d is checkable, and the same deployment measured from two laptops is one measurement."
             ),
         ),
         (
@@ -845,8 +846,9 @@ def home(f: dict) -> str:
             "04",
             "Re-scoring for $0",
             (
-                "Scores are recomputed from stored outputs. Checking a metric should never cost "
-                "another sweep of paid calls."
+                "Scores are recomputed from stored outputs, so a scoring rule can change without another "
+                "sweep of paid calls: preview what it would move, then re-score a round, which records "
+                "the scorer it is judged by."
             ),
         ),
         (
@@ -869,6 +871,118 @@ def home(f: dict) -> str:
             (CATALOG, "Ours, on the six worked examples"),
         ),
     ]
+
+    # Evaluation that does not stop at release: one goal's rounds before it (narrowing a field) and after it (on
+    # what the deployed system decides), each step a command 0.6.0 has (owner, 2026-11-01).
+    before = [
+        (
+            "Round 1",
+            "Shortlist",
+            "Twenty candidates on a frozen dataset; the paired tests say which ten to drop.",
+            "evh round-open · round-retire",
+        ),
+        (
+            "Round 2",
+            "Change the scoring",
+            "A rule was wrong: preview what it moves, re-score the round at $0.",
+            "evh score-preview · rescore --round",
+        ),
+        (
+            "Round 3",
+            "Try a new prompt",
+            "One more arm with the new prompt; the round records it beside the rest.",
+            "evh experiment-run",
+        ),
+        (
+            "Round 4",
+            "Choose",
+            "Close with a conclusion, and promote the run you keep as the baseline.",
+            "evh round-close --promote",
+        ),
+    ]
+    after = [
+        (
+            "Capture",
+            "What it decided",
+            "What the deployed system decided, kept as records and hashed.",
+            "evh capture",
+        ),
+        (
+            "Dataset v2",
+            "A new version",
+            "Frozen from the capture, labelled from what happened next (silver).",
+            "evh dataset-from-capture",
+        ),
+        (
+            "Round 5",
+            "Deployed vs candidates",
+            "The baseline in production against new models, each set up first.",
+            "evh model-onboard · arm-smoke",
+        ),
+        (
+            "And on",
+            "The next round",
+            "When the data, the candidates or the scoring change; the goal goes on.",
+            "evh round-open --from r5",
+        ),
+    ]
+
+    def flow_row(label: str, steps: list) -> str:
+        return (
+            f'<div class="flow-row"><div class="flow-label">{e(label)}</div><ol class="flow-steps">'
+            + "".join(
+                f'<li class="flow-step"><span class="flow-when">{e(when)}</span><b>{e(what)}</b>'
+                f"<span>{e(how)}</span><code>{e(cmd)}</code></li>"
+                for when, what, how, cmd in steps
+            )
+            + "</ol></div>"
+        )
+
+    flow_html = (
+        '<div class="flow" role="figure" aria-label="One goal\u2019s rounds, before release and after it">'
+        + flow_row("Before release", before)
+        + '<div class="flow-release"><span>release</span></div>'
+        + flow_row("After release", after)
+        + "</div>"
+    )
+    lasting = [
+        (
+            "Rounds that record decisions",
+            (
+                "Each round says what it set out to learn, carries the arms that stay, retires the rest with why, and "
+                "closes with a conclusion. A closed round's evidence cannot grow."
+            ),
+            ("docs/tutorials/4-rounds-and-versions/", "Tutorial 4"),
+        ),
+        (
+            "Datasets from production",
+            (
+                "Keep what your system did as a capture, freeze datasets from it as new versions, label them from what "
+                "happened next, split dev from heldout. A label from outcomes is silver: it never decides."
+            ),
+            ("docs/tutorials/6-datasets-from-production/", "Tutorial 6"),
+        ),
+        (
+            "Models set up once",
+            (
+                "A record per model, a deployment per place it runs, each onboarded there: its build, whether it "
+                "reasons, JSON, determinism. An arm is smoked on a few items before its full run."
+            ),
+            ("docs/tutorials/7-set-up-a-model/", "Tutorial 7"),
+        ),
+        (
+            "Scoring that changes on the record",
+            (
+                "Preview a scoring change, re-score a round at $0, or adopt it from the next round. Each round says "
+                "which scorer judged it, and why the scoring changed."
+            ),
+            ("docs/tutorials/4-rounds-and-versions/", "Tutorial 4"),
+        ),
+    ]
+    lasting_html = "".join(
+        f'<div class="habit-card"><b>{e(t)}</b><span>{e(d)} <a href="{href}">{e(name)} →</a></span></div>'
+        for t, d, (href, name) in lasting
+    )
     idea_html = "".join(
         f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}'
         + (f' <a href="{rest[0][0]}">{e(rest[0][1])} →</a>' if rest else "")
@@ -982,7 +1096,7 @@ def home(f: dict) -> str:
   <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. <a href="docs/GUIDE/">The harness</a> imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
   <div class="habits">{idea_html}</div>
   <div class="cols" style="margin-top:48px">
-    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference from the best arm's run, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference and judges, and rounds. Last, look at it all: <code>evh catalog</code> builds the catalog of your own runs and <code>evh catalog-serve</code> opens it with the inspector (<a href="docs/tutorials/5-catalog-and-inspector/">tutorial 5</a>); <a href="{CATALOG}">ours</a> shows the six worked examples. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
+    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference from the best arm's run, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference and judges, rounds and dataset versions, datasets from production, and setting a model up. Last, look at it all: <code>evh catalog</code> builds the catalog of your own runs and <code>evh catalog-serve</code> opens it with the inspector (<a href="docs/tutorials/5-catalog-and-inspector/">tutorial 5</a>); <a href="{CATALOG}">ours</a> shows the six worked examples. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
       <div class="btns"><a class="btn primary" href="docs/GUIDE/">Getting started</a><a class="btn" href="docs/GUIDE/#where-to-go-next">The tutorials</a><a class="btn" href="{CATALOG}">The catalog</a></div></div>
 <pre class="term"><span class="p">$ </span>pip install "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
 <span class="p">$ </span>evh init --tutorial
@@ -1000,8 +1114,16 @@ def home(f: dict) -> str:
   </div>
 </div></section>
 
+<section class="block" id="lasting"><div class="wrap">
+  <div class="eyebrow"><span class="num">03</span>Rounds, before release and after</div>
+  <h2>Evaluation that doesn\u2019t stop at release.</h2>
+  <p class="lede">A goal is answered in rounds. Before release they narrow a field: run twenty models, keep ten, fix a scoring rule, try a new prompt, choose. After release the same goal goes on, on what the deployed system actually decides. Software is delivered continuously, and so is its evaluation. Every part is optional, layered on the same method.</p>
+  {flow_html}
+  <div class="habits two" style="margin-top:48px">{lasting_html}</div>
+</div></section>
+
 <section class="block" id="proof"><div class="wrap">
-  <div class="eyebrow"><span class="num">03</span>Worked examples · {hosted_n} LLMs</div>
+  <div class="eyebrow"><span class="num">04</span>Worked examples · {hosted_n} LLMs</div>
   <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
   <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)} Each is also a goal in <a href="{CATALOG}">the catalog</a>, with every run, dataset and reference behind it.</p>
   <div class="stats">
@@ -1031,7 +1153,7 @@ def home(f: dict) -> str:
   </div>
 </div></section>
 
-{method.landing_teaser(H, f, "04")}
+{method.landing_teaser(H, f, "05")}
 <section class="block"><div class="wrap">
   <p class="note"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
 </div></section>

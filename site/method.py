@@ -19,6 +19,9 @@ SYN = "research/REPORT_SYNTHESIS.md"
 JUDGE = "research/REPORT_SUMMEVAL.md"
 GUIDE = "docs/GUIDE.md"
 TUTORIAL3 = "docs/tutorials/3-frontier-reference-and-judging.md"
+TUTORIAL4 = "docs/tutorials/4-rounds-and-versions.md"
+TUTORIAL6 = "docs/tutorials/6-datasets-from-production.md"
+TUTORIAL7 = "docs/tutorials/7-set-up-a-model.md"
 
 
 #: Where each lifecycle step is in this repository's catalog: (page, what it shows there).
@@ -29,6 +32,7 @@ CATALOG_STEP = {
     "runs": ("arms.html", "Every arm, how it was measured, its cost and speed"),
     "baseline": ("goals.html", "Every goal, its promoted baseline and its reason"),
     "remeasure": ("arms.html", "Re-scored and judged arms beside the originals"),
+    "rounds": ("goals.html", "Every goal, its rounds and their conclusions"),
 }
 #: Where each habit can be seen in this repository's catalog: (page, link text). "tested" opens
 #: the inspector on the summarisation field (H.catalog_inspect).
@@ -58,10 +62,11 @@ NODES = [
         "your inputs",
         (
             "Any files: tickets, transcripts, documents, prompts. Keep them under version control "
-            "— an untracked input makes every run unattributable."
+            "— an untracked input makes every run unattributable. Or what your system did in production, "
+            "kept as a capture: each record hashed, and a dataset frozen from a selection of them."
         ),
-        "data/sources/ — or anywhere",
-        "",
+        "data/sources/ — or anywhere · data/captures/&lt;id&gt;/",
+        "evh capture --importer jsonl --query … --capture …",
         (GUIDE, "1-create-a-dataset"),
     ),
     (
@@ -108,10 +113,11 @@ NODES = [
         "one config each",
         (
             "One system under test: provider, model, prompt, settings, in a YAML file. Change one "
-            "thing, bump the config_id — the fingerprint will prove what moved."
+            "thing, bump the config_id — the fingerprint will prove what moved. An arm can name a model "
+            "record, set up once where it runs, and is smoked on a few items before its full run."
         ),
-        "data/configs/*.yaml",
-        "",
+        "data/configs/*.yaml · data/models/&lt;id&gt;.yaml",
+        "evh arm-smoke --config …",
         (GUIDE, "3-describe-your-arms"),
     ),
     (
@@ -159,11 +165,25 @@ NODES = [
             "The same frozen outputs, measured again without re-running an arm: new gold or a new "
             "code scorer for $0, or LLM judges, billed and capped, that the harness refuses until "
             "they are validated against people. Written beside the originals, never over them; the "
-            "primary metric changes only by a recorded decision."
+            "primary metric changes only by a recorded decision. A new scoring rule is previewed first, "
+            "then re-scores a round, which records the scorer it is judged by."
         ),
-        "data/runs-rescored/ · data/runs-judged/&lt;scorer&gt;/",
-        "evh judge-score --dataset-id … --scorer …",
-        (TUTORIAL3, "5-re-measure-with-an-llm-judge-optional"),
+        "data/runs-rescored/&lt;scorer&gt;/ · data/runs-judged/&lt;scorer&gt;/",
+        "evh score-preview --goal … · evh rescore --goal … --round …",
+        (TUTORIAL4, "7-when-the-scoring-changes"),
+    ),
+    (
+        "rounds",
+        "Next round",
+        "optional · and on",
+        (
+            "A goal is answered in rounds: each says what it set out to learn, carries the arms that stay, "
+            "retires the rest with why, and closes with a conclusion. Before release they narrow a field; "
+            "after it the same goal goes on, on new dataset versions of what the deployed system decides."
+        ),
+        "data/rounds/&lt;goal&gt;/r&lt;n&gt;.yaml",
+        "evh round-open --goal … --from r1",
+        (TUTORIAL4, "4-round-2-change-one-thing"),
     ),
 ]
 
@@ -196,7 +216,7 @@ def lifecycle(interactive: bool = False) -> str:
     return (
         f'<svg class="lc" viewBox="0 0 {w} {h}" role="img" aria-label="The evaluation '
         f"lifecycle: sources, dataset, materialized copy, references, arms, runs, tests, "
-        f'baseline, and an optional re-measurement">{"".join(parts)}</svg>'
+        f'baseline, an optional re-measurement, and the next round">{"".join(parts)}</svg>'
     )
 
 
@@ -438,8 +458,58 @@ def chapters(H, f: dict) -> list:
     ]
 
 
+#: Four habits for an evaluation that goes on (0.6.0): not taught by the six experiments, so not told as their
+#: stories; each with the step that keeps it (owner, 2026-11-01).
+LASTING = [
+    (
+        "Set it up before you measure it.",
+        (
+            "Settle once, per model and where it runs, what a server would otherwise choose: whether it reasons, how long "
+            "a reply may run, which build a tag names. Smoke an arm on a few items before its full run. Left at the "
+            "defaults, an arm measures the defaults. The measurement is the deployment (weights, server, machine), not "
+            "the laptop that ran it."
+        ),
+        "evh model-onboard · evh arm-smoke",
+        "docs/tutorials/7-set-up-a-model/",
+    ),
+    (
+        "Production is the test, not the answer key.",
+        (
+            "Keep what your system decided as a capture, every record hashed, and freeze datasets from it as new "
+            "versions. What happened next can label them, as silver: it ranks, and never decides a goal."
+        ),
+        "evh capture · evh dataset-from-capture · evh reference-from-outcomes",
+        "docs/tutorials/6-datasets-from-production/",
+    ),
+    (
+        "A changed rule is a decision too.",
+        (
+            "When a scoring rule turns out wrong, preview what the new one moves, then re-score the round or adopt it "
+            "from the next one, with why. A round's evidence is measured by one scorer, and says which."
+        ),
+        "evh score-preview · evh rescore --round",
+        "docs/tutorials/4-rounds-and-versions/#7-when-the-scoring-changes",
+    ),
+    (
+        "An evaluation doesn't stop at release.",
+        (
+            "Answer a goal in rounds. Before release they narrow a field; after it the same goal goes on, on what the "
+            "deployed system decides, against new candidates. Each round records what it set out to learn and what it "
+            "concluded."
+        ),
+        "evh round-open --from · evh rounds",
+        "docs/tutorials/4-rounds-and-versions/#after-release",
+    ),
+]
+
+
 def method_page(H, f: dict) -> str:
     chs = chapters(H, f)
+    lasting = "".join(
+        f'<div class="habit-card"><b>{H.e(t)}</b><span>{H.e(d)}</span>'
+        f'<code class="lasting-cmd">{H.e(cmd)}</code><span><a href="{href}">In the docs →</a></span></div>'
+        for t, d, cmd, href in LASTING
+    )
     toc = "".join(
         f'<a href="#{c["id"]}"><span>{i:02d}</span>{H.e(c["title"])}</a>' for i, c in enumerate(chs, 1)
     )
@@ -464,7 +534,7 @@ def method_page(H, f: dict) -> str:
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>The method</b> · six habits · learned the hard way</div>
   <h1>How to know what you <em>think you know.</em></h1>
-  <p class="dek">The findings on this site took no special model and no big budget. They took a method — six habits, each learned by getting something wrong first. Here they are as the experiments taught them, with the step in the harness that keeps each one, and what it means for your own work.</p>
+  <p class="dek">The findings on this site took no special model and no big budget. They took a method — six habits, each learned by getting something wrong first. Here they are as the experiments taught them, with the step in the harness that keeps each one, and what it means for your own work; then <a href="#lasting">four more</a>, for an evaluation that goes on.</p>
   <nav class="toc">{toc}</nav>
 </div></section>
 
@@ -473,8 +543,15 @@ def method_page(H, f: dict) -> str:
   <div class="chapters">{"".join(body_ch)}</div>
 </div></section>
 
+<section class="block" id="lasting"><div class="wrap">
+  <div class="eyebrow"><span class="num">07</span>And on</div>
+  <h2>Four more, for an evaluation that goes on.</h2>
+  <p class="lede">The six habits make one comparison trustworthy. These four keep an evaluation trustworthy as it goes on, round after round, before release and after it. Each is optional, and each is a step in the harness.</p>
+  <div class="habits two">{lasting}</div>
+</div></section>
+
 <section class="block" id="influences"><div class="wrap">
-  <div class="eyebrow"><span class="num">07</span>Standing on</div>
+  <div class="eyebrow"><span class="num">08</span>Standing on</div>
   <h2>Built on Chip Huyen's framing.</h2>
   <div class="cols">
     <div class="prose">
@@ -502,7 +579,8 @@ document.querySelectorAll('.chapter').forEach(c=>io.observe(c));}})();
     return H.page(
         "The method — eval-harness",
         "Six habits for measuring AI systems, as six experiments taught them: "
-        "experiments, frozen data, gold references, noise, significance, the record.",
+        "experiments, frozen data, gold references, noise, significance, the record; "
+        "and four for an evaluation that goes on.",
         body + H.author("method"),
         here="method",
     )
@@ -588,6 +666,36 @@ def patterns(H, f: dict) -> list:
             "coverage · ROUGE",
         ),
         (
+            "Is my system still deciding well in production?",
+            "arms = the deployed one + candidates",
+            (
+                "Capture what it decided, freeze it as a new dataset version labelled from what happened "
+                "next, and run the next round of the same goal on it."
+            ),
+            "triage-fleet",
+            "capture · rounds",
+        ),
+        (
+            "Is this model set up right before I compare it?",
+            "a model record",
+            (
+                "Onboard it where it runs (its build, whether it reasons, JSON, determinism), then smoke the "
+                "arm on a few items before its full run."
+            ),
+            "",
+            "model-onboard · arm-smoke",
+        ),
+        (
+            "My scoring rule was wrong: do I run everything again?",
+            "no: re-score",
+            (
+                "Preview what the new rule moves, then re-score the round at $0 from the stored outputs; "
+                "the round records the scorer and why."
+            ),
+            "",
+            "score-preview · rescore",
+        ),
+        (
             "Catch regressions before release",
             "a baseline + CI",
             (
@@ -636,6 +744,14 @@ STEPS = [
         "3-describe-your-arms",
     ),
     (
+        "Optional: set the model up first",
+        "A record per model, a deployment per machine; onboarding checks its build, reasoning, JSON and determinism there.",
+        "evh model-onboard llama3.1-8b --deployment laptop",
+        "ONBOARD PASS",
+        TUTORIAL7,
+        "2-onboard-it",
+    ),
+    (
         "Run the best arm; its run is the reference",
         "Your best system answers first; the others are measured by how close they come — and the answers are labelled silver.",
         "evh experiment-run --config data/configs/tickets_author.yaml\nevh reference-create --dataset-id tickets_v1 --from-run …",
@@ -666,6 +782,25 @@ STEPS = [
         "VALIDATION PASSED",
         GUIDE,
         "8-choose",
+    ),
+    (
+        "Then: the next round",
+        "Carry what stays, retire what lost with why, close with a conclusion. The goal goes on, before release and after.",
+        (
+            "evh round-retire --goal tickets_summary --round r1 --arm tickets_lead1_v1 --reason …\n"
+            "evh round-close --goal tickets_summary --round r1 --conclusion …"
+        ),
+        "round r1 of tickets_summary closed",
+        TUTORIAL4,
+        "3-drop-an-arm-and-close-the-round",
+    ),
+    (
+        "When the scoring changes",
+        "Preview what a new rule moves; then re-score the round at $0, or adopt the rule from the next round.",
+        "evh score-preview --goal tickets_summary",
+        "recommended  tickets_lead2_v1",
+        TUTORIAL4,
+        "7-when-the-scoring-changes",
     ),
     (
         "Then: make it golden",
@@ -722,8 +857,8 @@ def use_page(H, f: dict) -> str:
 
 <section class="block" id="lifecycle"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>The lifecycle</div>
-  <h2>Eight things, one direction, and one optional pass.</h2>
-  <p class="lede">Every evaluation here — ours and yours — moves through the same eight artifacts; re-measuring the stored outputs later is optional. Pick one to see what it is, where it lives and the command that makes it.</p>
+  <h2>Eight things, one direction, and two optional passes.</h2>
+  <p class="lede">Every evaluation here — ours and yours — moves through the same eight artifacts; re-measuring the stored outputs later, and the next round, are optional. Pick one to see what it is, where it lives and the command that makes it.</p>
   <div class="lc-explorer">
     <div class="lc-map">{lifecycle(interactive=True)}</div>
     <div class="lc-panels">{lifecycle_panels(H)}</div>
@@ -739,7 +874,7 @@ def use_page(H, f: dict) -> str:
 
 <section class="block" id="steps"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Step by step</div>
-  <h2>Eight steps and an optional ninth, on a real example.</h2>
+  <h2>Eight steps and four optional ones, on a real example.</h2>
   <p class="lede">The tutorial kit ships six support tickets and summaries a person wrote. Every output below is what the command printed.</p>
   <ol class="findings steps">{steps}</ol>
 </div></section>

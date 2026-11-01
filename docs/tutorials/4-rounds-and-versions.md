@@ -1,7 +1,9 @@
 # Tutorial 4 · Experiment rounds and dataset versions
 
 Experiments go round on round: try some arms, keep what wins, drop what lost, change something,
-compare again. **Rounds** record that, optionally: what each round set out to learn, what
+compare again. Before a release, that is how a field narrows (twenty candidates, then ten, a new scoring rule, a new
+prompt, then a choice); after it, the same goal goes on, on what the deployed system decides. **Rounds** record
+that, optionally: what each round set out to learn, what
 changed, which arms were carried in and which were dropped and why, and what it concluded. A
 project that never opens a round sees none of it. **Dataset versions** are the other thing
 that changes between rounds: a new item arrives, and the dataset that includes it is a new
@@ -270,3 +272,39 @@ Commit the sources and the new dataset:
 ```bash
 git add data/sources data/datasets && git commit -qm "tickets_v2 from tickets_v1: t07_reports"
 ```
+
+## 7. When the scoring changes
+
+A rule can turn out wrong after a round has run: a measure that rewards the wrong thing, a case it never
+counted. The outputs are stored, so changing the rule costs no run. Preview first; it re-scores in a scratch
+directory and writes nothing:
+
+```bash
+evh score-preview --goal tickets_summary
+```
+```text
+score-preview: tickets_summary, ... re-scored in a temporary directory by ...; nothing written
+  tickets_lead2_v1        0.900  0.900  +0.0000  in
+  leader       tickets_lead2_v1
+  recommended  tickets_lead2_v1
+Apply it: evh rescore --goal G --round rN --why "..." (re-score a round), or evh round-open --from rN --scoring "..." (adopt it from the next round).
+```
+
+With the scorer unchanged nothing moves: every arm reads `+0.0000`, and the leader and the recommendation are the
+same. After you change `score()` in your adapter, the preview shows each arm before and after, and whether the
+decision moves. Then apply the change one of two ways:
+
+- **Re-score a round**: `evh rescore --goal tickets_summary --round r2 --why "what was wrong"` re-scores the round's
+  arms at $0 into `data/runs-rescored/<scorer>/`, and the round records the scorer it is now judged by, and why.
+- **Adopt it from the next round**: `evh round-open --goal tickets_summary --dataset tickets_v1 --from r2 --scoring
+  "what was wrong"` opens round 3 judged by the new scorer, re-scoring every arm it carries in first.
+
+The goals, the rounds and the catalog read an arm from its latest re-score, so the evidence of a round is always
+measured by one scorer, and the page says which ([RFC-022](../rfc/RFC-022-scoring-that-evolves.md)).
+
+## After release
+
+A goal's rounds do not stop when the arm you chose is deployed. The next ones run on what it decides in production:
+[tutorial 6](6-datasets-from-production.md) keeps that as a capture and freezes it as new dataset versions labelled
+from what happened next, and a round of the same goal then measures the baseline you promoted against new
+candidates on it, each set up first ([tutorial 7](7-set-up-a-model.md)).
