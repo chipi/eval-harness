@@ -154,8 +154,9 @@ In the inspector, for one dataset (`evh inspect --dataset-id D --rows`):
   name several datasets, or none yet; tags group candidates (`case=oom`, `kind=missed-regression`).
 - **Where they wait**: the project's one list, `data/picks.jsonl`, in git like the rest of `data/` (owner,
   2026-11-01). Each line: the item, its sha256, where it came from (the production dataset, its capture), its
-  targets, tags, note, who and when. The list is append-only: retargeting or retagging a pick (`evh pick --item X
-  --for D2`) adds a line and the latest wins; `evh pick --drop X` drops it; the history stays.
+  targets, tags, note, who and when. The list is append-only: retargeting or retagging a pick (`evh pick --dataset-id D
+  --item X --for D2`) adds a line and the latest wins; `evh pick --dataset-id D --item X --drop` drops it; the history
+  stays.
 - **Seeing them**: `evh picks [--for D] [--tag k=v]` lists what waits, per target (and those with none yet), each
   with where it came from, its labels by source ("none yet" says what to label first), its tags and note. The
   target dataset's page shows its picks waiting.
@@ -217,8 +218,8 @@ The docs and the site say so and imply neither.
 | `evh rescore --labels D/S`, `evh experiment-run --labels D/S` | score against a label set, without promoting it | — |
 | `evh arm-from-capture --dataset-id D --capture C --as NAME` | production's recorded decisions as an arm | — |
 | `evh inspect --dataset-id D --rows …` | every row with its signals (wrong, disagree, split, new, unlabelled), to explore, label and pick from | — |
-| `evh pick`, `evh picks`, `evh pick --drop` | mark an item for datasets (targets, tags, note), list what waits, drop one | — |
-| `evh dataset-extend V1 --dataset-id V2 --picks\|--pick ITEM …` | the next version: v1's items and the chosen picks, with their lineage | — |
+| `evh pick`, `evh picks`, `evh pick … --drop` | mark an item for datasets (targets, tags, note), list what waits, drop one | — |
+| `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) | the next version: v1's items and the chosen picks, with their lineage | — |
 | `evh deploy-sheet --config ARM` | what production must match; checked against a capture | — |
 
 The catalog and the inspector do the same where they can; every view or action has its command.

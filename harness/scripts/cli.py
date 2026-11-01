@@ -124,6 +124,15 @@ COMMANDS = {
         "label_from_capture.py",
         "rules over a capture's recorded outcomes as a rule label set",
     ),
+    "pick": ("pick.py", "pick production items for the next version of governed datasets, or drop a pick"),
+    "picks": (
+        "view_picks.py",
+        "the picks waiting: per target, where each came from, its labels, tags and note",
+    ),
+    "dataset-extend": (
+        "dataset_extend.py",
+        "the next version of a dataset: its items and the picks you choose",
+    ),
     "arm-from-capture": (
         "arm_from_capture.py",
         "production's recorded decisions as an arm, scored like any (no call)",

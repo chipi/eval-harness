@@ -1,7 +1,8 @@
 # PRD-014: Datasets from production, and evaluating what production did
 
 - **Status**: Built for 0.6.0 for FR1 to FR3, FR5, FR6 and the Captures page (2026-10-31, the capture window and
-  sampling 2026-11-01), FR4 (labels from outcomes) and FR7 (the recorded arm, agreement) built; FR8 to FR10 planned for 0.6.0
+  sampling 2026-11-01), FR4 (labels from outcomes) FR7 (the recorded arm, agreement), FR9 (picks) and FR10 (versions from picks) built; FR8 (the rows view)
+  planned for 0.6.0
   ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Captures, Labels and dataset pages),
@@ -79,7 +80,7 @@ comment that says what it was.
 - _As an operator, my close comments become labels through a mapping I can read (`evh label-from-capture`)._
 - (0.6.0, planned) _As an engineer, I open the rows where production was wrong on something the governed dataset does not cover
   (`evh inspect --dataset-id D --rows --wrong-against S --new-vs V1`) and pick the ones worth keeping._
-- (0.6.0, planned) _As a dataset owner, a month later I make v2 of my dataset from v1 and seven of the picks waiting
+- _As a dataset owner, a month later I make v2 of my dataset from v1 and seven of the picks waiting
   (`evh dataset-extend V1 --dataset-id V2 --pick …`), and promote its labels._
 
 ## Functional Requirements
@@ -156,20 +157,27 @@ comment that says what it was.
 - **FR8.2**: The inspector's rows view shows the same; a selection of rows gives the `evh pick` and
   `evh label-sheet` commands for them. The page writes nothing.
 
-### FR9: Picks (0.6.0, planned)
+### FR9: Picks (0.6.0)
 
-- **FR9.1**: `evh pick --dataset-id D --item … [--for V …] [--tag k=v …] [--note "…"]` appends to the project's one
-  list, `data/picks.jsonl`: the item, its sha256, where it came from, its targets (several, or none yet), tags,
-  note, who and when. The list is append-only; the latest line for an item wins; `--drop` removes it.
-- **FR9.2**: `evh picks [--for V] [--tag k=v]` lists what waits, each with where it came from and its labels by
-  source ("none yet"); the target dataset's page shows its picks waiting.
+- **FR9.1**: `evh pick --dataset-id D --item … [--for V …] [--tag k=v …] [--note "…"] [--by WHO]` appends to the
+  project's one list, `data/picks.jsonl`: the item, its sha256, the dataset and capture it came from, its targets
+  (several, or none yet; each a dataset), tags, note, who and when. The list is append-only; the latest line for an
+  item wins (picking again retargets or retags); `--drop` takes it off the waiting list; a refused action writes
+  nothing.
+- **FR9.2**: `evh picks [--for V] [--tag k=v] [--json]` lists what waits, per target and "no target yet", each with
+  where it came from and its labels by source ("none yet"); an MCP read tool. (0.6.0, planned: the target dataset's
+  page shows its picks waiting, step 8.)
 
-### FR10: The next version of a governed dataset (0.6.0, planned)
+### FR10: The next version of a governed dataset (0.6.0)
 
 - **FR10.1**: `evh dataset-extend V1 --dataset-id V2 --picks|--pick ITEM …` makes V2 of V1's items and the chosen
-  picks, with the lineage per item; the picks used leave the waiting list and keep their history.
+  picks (`--picks`: those waiting for V1; `--pick ITEM` or `DATASET:ITEM`: any), each copied as it was picked (its
+  sha256 checked); V2 records `extended_from` (V1, and per added item its dataset, capture and note) and the lineage
+  `dataset-create --from` records; the picks used get a `used` line and leave the waiting list. An item already in
+  V1 with the same bytes is kept once; one with other bytes is refused. V2 keeps V1's field set and tags, and is
+  `text: hidden` when V1 or a picked item's dataset is.
 - **FR10.2**: The picked items arrive with their labels (labels follow the item); nothing is promoted by the
-  extension. The dataset page gives the command for the picks you select.
+  extension. (0.6.0, planned: the dataset page gives the command for the picks you select, step 8.)
 
 ## Success Metrics
 

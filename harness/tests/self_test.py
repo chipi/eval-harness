@@ -693,6 +693,10 @@ def test_example_scorer_suites_pass() -> None:
             "label sets: from a run, a sheet and its import, a capture's outcomes; never edited; they follow the item; V19",
         ),
         (
+            "test_picks.py",
+            "picks: the append-only list, retarget, drop; dataset-extend from chosen picks, its lineage, labels following",
+        ),
+        (
             "test_model_onboard.py",
             "evh model-onboard: reasoning, format, determinism and the build, against a fake server",
         ),

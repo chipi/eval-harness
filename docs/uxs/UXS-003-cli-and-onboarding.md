@@ -116,7 +116,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | scored against a label set (0.6.0) | `evh rescore --labels D/S`, `evh experiment-run --labels D/S` | |
 | a recorded arm's badge (0.6.0; the badge: step 8) | `evh arm-from-capture --dataset-id D --capture C --as NAME` | |
 | the inspector's rows view; its selection's commands (0.6.0, planned) | `evh inspect --dataset-id D --rows …`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
-| a dataset page's picks waiting; its selection's command (0.6.0, planned) | `evh picks [--for V] [--tag k=v]`, `evh pick --drop ITEM`; `evh dataset-extend V1 --dataset-id V2 --picks\|--pick ITEM …` | |
+| a dataset page's picks waiting; its selection's command (0.6.0; the page: step 8) | `evh picks [--for V] [--tag k=v]`, `evh pick --dataset-id D --item ITEM --drop`; `evh dataset-extend V1 --dataset-id V2 --picks`, `evh dataset-extend V1 --dataset-id V2 --pick ITEM` | |
 | a promoted arm's deploy sheet (0.6.0, planned) | `evh deploy-sheet --config ARM [--capture C]` | |
 | the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
 | a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metrics --metric <metric>` | `make metrics METRIC=<metric>` |
