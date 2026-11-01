@@ -50,7 +50,7 @@ on every change, comparing each quoted output. Its order is the order a newcomer
 | 2 | materialize | `evh dataset-materialize --dataset-id tickets_v1` |
 | 3 | describe the arms, name the goal, commit | copy configs, `goal: tickets_summary` |
 | 4 | run the best arm first (a dry run prices it) | `evh experiment-run --config data/configs/tickets_author.yaml [--dry-run]` |
-| 5 | optional: make its run the reference | `evh reference-create --dataset-id tickets_v1 --from-run <run_id>` |
+| 5 | optional: make its run the reference (0.6.0, planned: its outputs become labels, which you promote) | `evh reference-create --dataset-id tickets_v1 --from-run <run_id>`; planned: `evh label-from-run --run <run_id> --set author_v1`, then `evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "…"` |
 | 6 | run the other arms, three times each | `evh experiment-run --config … --repeat 3` |
 | 7 | compare | `evh leaderboard`, `evh pair-test`, `evh family-test` |
 | 8 | choose: promote a baseline, then validate | `evh run-promote --run … --reason "…"`, `evh runs-list --baselines`, `evh validate` |
@@ -108,6 +108,16 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | a model page: its deployments and their onboarding, settings history, arms | `evh models --model <id>` | |
 | (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard <id> --deployment <d>`, `evh arm-smoke --config <arm>` | |
 | reference pages | `evh references [--reference-id <id>]` | `make references` |
+| the Captures page | `evh captures [--capture ID] [--json]` | |
+| the Labels page; a dataset page's labels (0.6.0, planned) | `evh labels [--dataset-id D]` | |
+| (no page action) labelling: a sheet to fill, then its import (0.6.0, planned) | `evh label-sheet --dataset-id D --out sheet.csv [--items …] [--item ID …]`, `evh label-import sheet.csv --dataset-id D --set S --by NAME` | |
+| (no page action) a run's outputs, or outcome rules, as labels (0.6.0, planned) | `evh label-from-run --run R --set S`, `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | |
+| a reference's "promoted from" (0.6.0, planned) | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |
+| scored against a label set (0.6.0, planned) | `evh rescore --labels D/S`, `evh experiment-run --labels D/S` | |
+| a recorded arm's badge (0.6.0, planned) | `evh arm-from-capture --dataset-id D --capture C --as NAME` | |
+| the inspector's rows view; its selection's commands (0.6.0, planned) | `evh inspect --dataset-id D --rows …`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
+| a dataset page's picks waiting; its selection's command (0.6.0, planned) | `evh picks [--for V] [--tag k=v]`, `evh pick --drop ITEM`; `evh dataset-extend V1 --dataset-id V2 --picks\|--pick ITEM …` | |
+| a promoted arm's deploy sheet (0.6.0, planned) | `evh deploy-sheet --config ARM [--capture C]` | |
 | the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
 | a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metrics --metric <metric>` | `make metrics METRIC=<metric>` |
 | inspector: a comparison | `evh inspect --runs a,b [--baseline a] [--metric m]` | `make inspect RUNS=a,b` |

@@ -1,6 +1,7 @@
 # PRD-005: Goals, and experiment rounds
 
-- **Status**: Implemented (v0.4.0)
+- **Status**: Implemented (v0.4.0); groups scored against a label set (FR1.7) and the deploy sheet (FR3) planned
+  for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the goal page), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the round commands)
 - **Related RFC**: [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds: files, commands, the evidence)
@@ -97,6 +98,9 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   per item; speed as p50 and p95. The goal page names the recommended arm per group with the
   reasons, and the home page's glance shows it with its cost and speed against the baseline;
   the CLI says the same. Guardrails (rules in words) are shown, never computed.
+- **FR1.7** (0.6.0, planned): Arms scored against a label set (PRD-002 FR6) form a group of their own, headed by
+  the set's source and name, never a tier; the group gets its recommended arm as a reference's group does. The
+  baseline is still the arm you promote.
 
 ### FR2: Rounds (optional)
 
@@ -128,6 +132,16 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 - **FR2.7**: `evh validate` (V14) checks round records: schema, file name, goal and dataset
   resolve, `from` exists, a closed round has a conclusion, every run naming a round names one
   that exists.
+
+### FR3: The deploy sheet (0.6.0, planned)
+
+- **FR3.1**: `evh deploy-sheet --config ARM` prints what production must match to run what was measured: the model
+  and its build (the model record's deployment: tag, digest, server and its settings), every setting the arm
+  sends, the prompt and its hash, the adapter and its version, and the dataset and reference it was promoted on.
+  The promoted arm's page and the goal page beside its baseline show the same.
+- **FR3.2**: `evh deploy-sheet --config ARM --capture C` checks a capture whose records say what production ran (for
+  triage: the ledger's `model`, `prompt_ver`, `prompt_sha`, through the adapter): "every captured decision was made
+  by the promoted model and prompt", or what differs and on how many records.
 
 ## Success Criteria
 

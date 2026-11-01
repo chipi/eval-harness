@@ -11,7 +11,7 @@
 - **Related ADRs**: [ADR-0020](../adr/ADR-0020-second-references-are-silver.md) (superseded when this is accepted)
 - **Code**: `reference_create.py`, `reference_from_outcomes.py` (replaced); new label, pick, extend, recorded-arm and
   deploy-sheet commands; `rescore.py`, `experiment_run.py` (scoring against labels); `catalog_views.py` (the
-  inspector's rows); `catalog_build.py`, `catalog_serve.py` (the views, the label and pick boxes); `_common.py`,
+  inspector's rows); `catalog_build.py`, `catalog_serve.py` (the views; the pages never write); `_common.py`,
   `_models.py`, `catalog_serve.py`, `mcp_server.py` (several projects at once)
 
 ## Abstract
@@ -65,7 +65,7 @@ The harness cannot do steps 6 and after:
   `<item_id>.txt` per labelled item (the text a scorer reads, as a reference's item is today) and `labels.json`:
   the dataset, the set's name, its **source**, when, each item's sha256, and an optional note per item.
 - **The source** is one of:
-  - `person`: who (`--by`), from a sheet they filled or the inspector's label box;
+  - `person`: who (`--by`), from a sheet they filled;
   - `model`: the run whose outputs were taken, with its config and fingerprint;
   - `rule`: a mapping over a capture's recorded outcomes, with the rule file's hash, whoever wrote the outcome
     (owner, 2026-11-01).
@@ -123,15 +123,17 @@ In the inspector, for one dataset (`evh inspect --dataset-id D --rows`):
     in its coverage, `--new-vs D_governed`;
   - **unlabelled**: no label in any set yet, `--unlabelled`;
   - and the inspector's `--where field:value` and `--by field`.
-- **Labelling from it**: with `evh catalog-serve`, a label box per row writes your label into a `person` set.
-- **Picking from it**: a pick box per row, or a selection of rows picked at once with one target, tags and a
-  note, written through `catalog-serve`; a row already picked says so, and for which datasets.
+- **The pages never write** (owner, 2026-11-01, keeping PRD-004's non-goal and ADR-0004): the view selects, and
+  gives the command. Select one row or several, and the page shows `evh pick --dataset-id D --item … --item …`
+  for them, with a target, tags and a note to fill in, and `evh label-sheet --dataset-id D --item … ` to label
+  them; you run it. A row already picked says so, and for which datasets.
 - The terminal prints the same rows; `evh label-sheet --items disagree` puts the same rows in a sheet.
 
 ### Picks
 
 - **A pick** is a production item marked as a candidate for one or more governed datasets: `evh pick --dataset-id
-  <production dataset> --item <id> [--for D …] [--tag key=value …] [--note "…"]`, or the rows view. `--for` may
+  <production dataset> --item <id> … [--for D …] [--tag key=value …] [--note "…"]`, the command the rows view gives
+  for the rows you select. `--for` may
   name several datasets, or none yet; tags group candidates (`case=oom`, `kind=missed-regression`).
 - **Where they wait**: the project's one list, `data/picks.jsonl`, in git like the rest of `data/` (owner,
   2026-11-01). Each line: the item, its sha256, where it came from (the production dataset, its capture), its
@@ -189,7 +191,7 @@ The docs and the site say so and imply neither.
 
 | Command | What it does | Replaces |
 | --- | --- | --- |
-| `evh label-sheet --dataset-id D --out sheet.csv [--items unlabelled\|all\|disagree --runs A,B] [--propose SET\|RUN]` | a sheet: item, a short view of it, what production or an arm decided, a proposal, an empty `label` column | `label_sheet.py` |
+| `evh label-sheet --dataset-id D --out sheet.csv [--items unlabelled\|all\|disagree --runs A,B] [--item ID …] [--propose SET\|RUN]` | a sheet: item, a short view of it, what production or an arm decided, a proposal, an empty `label` column | `label_sheet.py` |
 | `evh label-import sheet.csv --dataset-id D --set S --by NAME [--guideline FILE]` | the filled rows become a `person` set | `write_verdicts.py`, `write_gold.py` |
 | `evh label-from-run --run R --set S [--guideline FILE]` | a run's outputs become a `model` set | `reference-create --from-run`, `--config` |
 | `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | rules over recorded outcomes become a `rule` set | `reference-from-outcomes` |
@@ -217,8 +219,8 @@ Page by page (UXS-001 and UXS-002 updated with the build):
 - **The Labels page**: every label set, its dataset, its source chip, coverage (N of M items), its guideline, when,
   and what was promoted from it into which reference.
 - **The dataset page**: a labels section (each set, its source, coverage, how often two sets agree); for a
-  governed dataset, its picks waiting, each with where it came from, its labels, tags and note, a box to include
-  it, and the `dataset-extend` command for the ones ticked; for a version made from picks, the items it added, each
+  governed dataset, its picks waiting, each with where it came from, its labels, tags and note; select the ones to
+  include and the page gives the `dataset-extend` command for them; for a version made from picks, the items it added, each
   with its capture, production dataset and the labels it carried.
 - **The references page and each reference's page**: "promoted from <label set> (<source>), <date>: <reason>".
 - **The Captures page**: beside the datasets made from each capture, the label sets on them and the recorded arm.
@@ -228,8 +230,8 @@ Page by page (UXS-001 and UXS-002 updated with the build):
   headed by the set's source chip and name, never a tier pill; the deploy sheet beside the baseline, with whether
   production matches it.
 - **The inspector** (UXS-002): label sets as "scored against", the disagreement filter, every label in the item
-  view; the rows view with its signals as filters and sorts; with `catalog-serve`, the label box and the pick box
-  (one row or a selection, with targets, tags and a note).
+  view; the rows view with its signals as filters and sorts, and a selection that gives the `evh pick` and
+  `evh label-sheet` commands for its rows. Nothing on a page writes.
 - **The header** names the project the catalog was built from, and `catalog-serve` prints its own port, so two
   catalogs open side by side are never confused.
 
@@ -240,8 +242,9 @@ Page by page (UXS-001 and UXS-002 updated with the build):
 3. Run the deployed config (`triage_baseline_pro`) and round 3's leader on it.
 4. `evh label-from-capture --map outcomes.yaml --set issue_verdicts`: your verdicts on the fleet's issues, where
    an issue reached the decision (a `rule` set).
-5. `evh label-sheet --items disagree --runs production_2026_11,<leader> --propose issue_verdicts`, or the rows
-   view: you label where they disagree, plus a small random slice → the set `owner_2026_11` (`person`).
+5. `evh label-sheet --items disagree --runs production_2026_11,<leader> --propose issue_verdicts` (or the sheet
+   the rows view's selection gives): you label where they disagree, plus a small random slice, then
+   `evh label-import` → the set `owner_2026_11` (`person`).
 6. `evh rescore --labels orrery_triage_2026_11/owner_2026_11`: production, the deployed config and the leader,
    against your labels; agreement everywhere; `evh deploy-sheet` says whether production ran what was promoted.
 7. `evh inspect --dataset-id orrery_triage_2026_11 --rows --runs production_2026_11,<leader> --wrong-against
@@ -271,6 +274,8 @@ outcomes are replaced.
 - **Picks per governed dataset.** Rejected by the owner: a good item is often seen before its target is known.
 - **Building a version from the catalog.** Rejected: making a version is a governed step; the catalog shows the
   command.
+- **Label and pick boxes that write through `catalog-serve`** (local only, never public). Rejected by the owner for
+  now: the pages never write (PRD-004, ADR-0004); another way to label in the browser is a later question.
 
 ## Testing
 
@@ -295,6 +300,8 @@ outcomes are replaced.
   and the commands in the table above.
 - **A5** Labels follow the item by its sha256.
 - **A6** One pick list per project; a pick names its targets (several, or none yet) and may carry tags.
+- **A7** The pages never write (PRD-004's non-goal, ADR-0004, kept): the rows view and the dataset page select and
+  give the command; labelling is the sheet.
 
 ## Open
 

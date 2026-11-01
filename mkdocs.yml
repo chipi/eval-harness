@@ -94,6 +94,9 @@ nav:
           - "ADR-0019: Datasets from production, a capture lane beside the method (0.6.0)": adr/ADR-0019-capture-lane.md
           - "ADR-0020: A dataset's second reference is silver (0.6.0)": adr/ADR-0020-second-references-are-silver.md
           - "ADR-0021: A deployment, not a model, is what is vetted and fingerprinted (0.6.0)": adr/ADR-0021-a-deployment-is-vetted.md
+          - "ADR-0022: A reference is labels you promote; the tier is chosen then (proposed, 0.6.0)": adr/ADR-0022-references-are-promoted-labels.md
+          - "ADR-0023: Picks in one list per project; governed versions made on purpose (proposed, 0.6.0)": adr/ADR-0023-picks-and-governed-versions.md
+          - "ADR-0024: Several projects on one machine share nothing (proposed, 0.6.0)": adr/ADR-0024-several-projects-on-one-machine.md
   - The experiments:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md

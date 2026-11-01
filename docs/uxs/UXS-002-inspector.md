@@ -73,6 +73,12 @@ link); an item the arms do not share says so instead.
   for a boolean, `min..max` or one value for numbers and durations, an exact value otherwise) and
   **Filter**; each filter becomes a chip with ×. Shown when the dataset declares fields.
 - **break down by** a `choice` or `boolean` field, or none.
+- **scored against** (0.6.0, planned: RFC-023): the reference (its tier pill) or a label set (its source chip and
+  name) the scores are read against, when the arms' dataset has label sets; arms scored against different ones
+  are named and not tested, as for two references.
+- **only where they disagree** (0.6.0, planned): a checkbox keeping the items where the chosen arms decided
+  differently (the adapter's `same(a, b)`), the baseline (production's recorded arm by default when it is chosen)
+  against each other arm.
 
 ## Notes above the results
 
@@ -179,6 +185,28 @@ every catalog table. A row opens on click, Enter or Space.
   judged arm, the same line gives each judge's score for that item.
 - In a catalog built by `evh catalog`, arm names (verdicts, the baseline line, average-only and
   breakdown rows) and the verdicts' metric link to their pages.
+- (0.6.0, planned) **Every label the item has**, each with its source chip, set name and note, beside the outputs;
+  a recorded arm's output is headed "production, recorded" with its capture.
+
+## 05 rows (0.6.0, planned: RFC-023)
+
+Opened from a dataset ("explore rows") or with `?dataset=<id>&rows=1`: one dataset's items, not a comparison.
+
+- **One row per item**: **item** (short id, the full id in its title), its **fields**, production's decision (the
+  recorded arm, when one is chosen), each chosen arm's decision, every label with its source chip, and the
+  markers: **wrong** (production's decision wrong against the chosen label set), **disagree** (two chosen arms
+  decided differently), **split** (the candidates disagree among themselves), **new** (a field value the governed
+  dataset chosen in "new against" has never had, the field named), **unlabelled** (no label in any set), and
+  **picked** (for which datasets).
+- **Controls**: the arms (chips, as above), "wrong against" (a label set), "new against" (a governed dataset), one
+  checkbox per marker to keep only those rows, the field filters and breakdown above, and a sort by any column.
+- **A row opens** the item view (04) for that item.
+- **Selecting**: a box per row and "select all shown"; with rows selected, a panel gives two commands to copy:
+  `evh pick --dataset-id <id> --item … --item … --for <dataset> --tag <key=value> --note "…"` (the target, tags
+  and note typed in the panel fill the command) and `evh label-sheet --dataset-id <id> --item … --out sheet.csv`.
+  The page writes nothing (PRD-004).
+- Paged 10 at a time like every catalog table; the counts of each marker above the table ("412 items · 9 wrong ·
+  31 disagree · 4 new").
 
 ## Checklist for a change to the inspector
 
@@ -197,6 +225,9 @@ every catalog table. A row opens on click, Enter or Space.
 | notes, verdicts, conditions, breakdown | printed in that order (notes as `NOTE:` lines) |
 | the item view | `--item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm |
 | the per-item table | `--items`: every item's score per arm, and each arm's Δ against the baseline |
+| scored against a label set; only where they disagree (0.6.0, planned) | `--labels D/S`; `--disagree` |
+| the rows view (0.6.0, planned) | `evh inspect --dataset-id D --rows [--runs A,B] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value]` |
+| selecting rows: the pick and sheet commands (0.6.0, planned) | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
 
 For an agent, `evh inspect` is the MCP tool `inspect`, with the same options (`runs`, `baseline`,

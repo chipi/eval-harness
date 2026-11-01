@@ -1,6 +1,7 @@
 # ADR-0019 — Datasets from production: a capture lane beside the method (0.6.0)
 
-**Status:** Accepted (2026-10-30), built in 0.6.0.
+**Status:** Accepted (2026-10-30), built in 0.6.0. Its references from outcomes are replaced, when accepted, by
+[ADR-0022](ADR-0022-references-are-promoted-labels.md): outcomes become a `rule` label set, promoted like any.
 **Date:** 2026-10-30
 **Detail:** [PRD-014](../prd/PRD-014-datasets-from-production.md) (requirements),
 [RFC-019](../rfc/RFC-019-datasets-from-production.md) (design),

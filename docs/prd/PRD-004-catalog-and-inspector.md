@@ -1,6 +1,6 @@
 # PRD-004: The catalog and the run inspector
 
-- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (v0.5.0)
+- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (v0.5.0); the Captures page (FR1.13) built for 0.6.0; FR1.14, FR2.6 and the port per project planned for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog's pages),
   [UXS-002](../uxs/UXS-002-inspector.md) (the inspector), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the same views as commands)
@@ -121,6 +121,19 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   charts.
 - **FR1.12** (0.4.2): The menu groups the pages by the same subjects as the tiles, so it fits a
   desktop bar; a phone's menu lists every page.
+- **FR1.13** (0.6.0): A Captures page, under Data, lists every capture (its records, importer, sample rule, the
+  time its records span, what it continues) with the datasets made from each; a dataset made from a capture links
+  its origin to it.
+- **FR1.14** (0.6.0, planned):
+  - a tier is a large pill in its own colour wherever a reference or a tier is named; a label set is named by its
+    source chip (person, model, rule), never in a tier's colours; "scored against" names one or the other, always;
+  - a Labels page under Data: every label set, its source, coverage, guideline, and what was promoted from it; a
+    reference's page says which set it was promoted from, by whom, when and why;
+  - the dataset page: its label sets, how often two agree, its picks waiting (a selection gives the
+    `dataset-extend` command), and for a version made from picks, where each added item came from;
+  - a recorded arm (production's decisions) is badged, its capture linked, no cost; a promoted arm's page and the
+    goal page beside its baseline show the deploy sheet (PRD-005 FR3);
+  - the header names the project the catalog was built from.
 
 ### FR2: The inspector (local server)
 
@@ -138,6 +151,13 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR2.5**: It compares the arms' recorded conditions and warns when the scorer or the
   reference bytes differ, or latency is compared across deployments (where the model ran) or
   measured from different runners (RFC-021).
+- **FR2.6** (0.6.0, planned): A label set can be what arms are scored against; the item view shows every label
+  with its source; `--disagree` keeps the items where the chosen arms decided differently; and the rows view
+  (`evh inspect --dataset-id D --rows`) shows one row per item with its signals (wrong, disagree, split, new,
+  unlabelled) as filters and sorts. A selection of rows gives the `evh pick` and `evh label-sheet` commands; the
+  page writes nothing (PRD-014 FR8).
+- **FR2.7** (0.6.0, planned): `catalog-serve` serves each project on a stable port of its own (PRD-007 FR2.6), the
+  next free one if that is taken, and prints the URL; `--port` overrides.
 
 ### FR3: Public mode
 

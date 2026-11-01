@@ -95,7 +95,7 @@ tables 15px.
 
 - **Header bar:** the brand (the icon and the product's name, `--brand`, "eval catalog" by
   default, linking to the overview); the global search ("Search ( / )"); the nav, by the
-  subjects of the home tiles: **Overview**, **Goals**, **Data ▾** (Datasets, Captures, References),
+  subjects of the home tiles: **Overview**, **Goals**, **Data ▾** (Datasets, Captures, Labels, References),
   **Experiments ▾** (Arms, Configs, Models, Metrics), **Activity**, **Inspector**; the theme toggle. A
   group opens a short list under its name and closes on a click elsewhere; the group a page
   belongs to is underlined like a current page. On a phone the nav is a ☰ menu at the left of
@@ -103,6 +103,9 @@ tables 15px.
   search is a round button beside the theme toggle that opens the search box on a row below the
   bar. The bar has the site's and the docs' geometry: 56 px high, 36 px round buttons
   (34 px under 375 px), 8 px apart, the same icons.
+- **The project** (0.6.0, planned: RFC-023): the header names the project the catalog was built from (its folder's
+  name), so two catalogs open side by side are never confused; `catalog-serve` prints its own
+  port.
 - **Switcher (with `--link`):** the parts of the publication the catalog belongs to, in the
   order given, e.g. **Harness · Catalog · Docs**, the catalog marked, after the brand; the brand
   then opens the first part. The same control heads the deployment's site and docs, ☰ at the
@@ -170,6 +173,18 @@ out: "scored against silver", "scored by a judge", "wrote the reference it is sc
 
 The author tint wins over the others. The same classes tint the inspector's verdict rows, and
 `evh datasets --dataset-id` prints the same kind in a `row` column.
+
+### Tier pills and source chips (0.6.0, planned: RFC-023)
+
+- **A tier is a pill**, large enough to read at a glance, in its own colour: **gold** on a gold ground, **silver**
+  on a silver ground, wherever a reference or its tier is named (the references list, every "scored against", the
+  goal's group headings, the arm rows, the reference page's hero). It replaces the small tier word.
+- **A label set is a source chip**: `person`, `model` or `rule`, each in a neutral colour of its own, never a tier's
+  colours, followed by the set's name ("person · owner_2026_11"). An arm scored against a label set is tinted
+  `t-labels` (`--muted` at 10%, 3px bar), keyed "scored against a label set, not a reference".
+- **"Scored against"** always names one of the two: a reference with its pill, or a label set with its chip.
+- **A recorded arm** (production's decisions, from a capture) has a `recorded` badge beside its name, its capture
+  linked; its cost and speed read "recorded, no call".
 
 ## The period (every listing page)
 
@@ -333,7 +348,19 @@ tiles open it.
   version, then "Runs on different versions measure different items, so they are never tested
   against each other; compare each version's arms on its own page." A version no arm has run on
   still gets a page when it is linked to one that has.
-- `references`: each reference (linked), its tier, and "written by `<config>`" for silver.
+- `references`: each reference (linked), its tier pill, and where it was promoted from (the label set and its
+  source chip).
+- `labels` (0.6.0, planned): each label set covering the dataset's items (labels follow the item by its hash, so a
+  set made on another dataset with the same items counts): its source chip and name, **coverage** ("k of n
+  items"), **guideline** (the file, or "none"), **made**, **promoted** (the reference, or "not promoted"), and a
+  table of how often two sets agree on the items both label. Empty: "No labels yet", with the `evh label-sheet`
+  and `evh label-from-run` commands.
+- `picks waiting` (0.6.0, planned), for a dataset some picks name as their target: one row per pick: **item**
+  (opens the inspector's item view), **from** (the production dataset, its capture), **labels** (source chips, or
+  "none yet"), **tags**, **note**, **picked** (who, when), and a select box per row; the rows selected give the
+  command `evh dataset-extend <this> --dataset-id <next> --pick … --pick …`, shown to copy. The page writes nothing.
+- `added from production` (0.6.0, planned), for a version made by `dataset-extend`: each item it added, with the
+  capture and production dataset it came from, the pick's note, and the labels it carried.
 - `item fields`, when the dataset declares a field set: "Declared in the field set `<id>`", then
   one row per field: **field** (label and name), **type** (with its unit), **filled** ("k of n"),
   **description**, **values**: for a `public` field a summary (counts per value for a choice or
@@ -454,14 +481,22 @@ The page explains the goal, then answers, then shows how it got there and the ev
 The suggestions appear on the page only when the catalog is built with the harness's own adapter
 over the project's data; with a project adapter the rounds table and details still show.
 
+**Label sets and the deploy sheet** (0.6.0, planned: RFC-023):
+
+- Arms scored against a label set form a group of their own on each dataset, headed by the set's source chip and
+  name, never a tier pill; the group gets its recommended arm as a reference's group does, with the same reasons.
+- Beside the baseline, its deploy sheet (folded), and where a capture says what production ran, "production runs
+  the baseline" or what differs.
+
 ## The reference page
 
-- Hero: kicker `reference`, the reference id, and what its tier means. Gold: "written or checked
-  by a person. Every arm scored against it is measured against what a person signed." Silver:
-  "written by a model. Consistent, not correct: good for ranking arms against each other, never
-  a claim that any of them is right. The arm that wrote it is graded against its own outputs."
-- `01 what it is`: tier, dataset (linked), items, written by, from the run, model, created
-  (whichever the adapter knows).
+- Hero: kicker `reference`, the reference id, its tier pill, and what the tier means. Gold: "promoted as gold: the
+  yardstick a decision rests on." Silver: "promoted as silver: consistent, not a claim that any arm is right; good
+  for ranking arms against each other." Then where it came from (0.6.0, planned): "promoted from `<label set>`
+  (`<source chip>`), <date>, by <who>: <reason>"; for a `model` set, "the arm whose outputs these are is graded
+  against its own outputs".
+- `01 what it is`: tier, dataset (linked), items, the label set and its source, the guideline, the run and model a
+  `model` set came from, promoted when and why (whichever the adapter knows).
 - `02 scored against it · N`: the row key and a table of arms scored against it (**arm**,
   **metric**, **mean**, **items**, **inspect**), tinted; or "No arm is scored against it yet."
 - Command: `evh references --reference-id <id>`.
@@ -560,6 +595,14 @@ tile opens it grouped by config (`arms.html?group=config`).
   another reference or by a judge, tinted as everywhere.
 - `07 rounds`: each round it was in, in play or retired, and the round's status.
 - Notes, when the adapter has any (runs left out, and why).
+- **A recorded arm** (0.6.0, planned): the `recorded` badge in the hero, "production's decisions, from the capture
+  `<id>`; no model was called", its capture linked; `04 config` shows the capture, the recorded arm's name and the
+  adapter hook that read the outputs, in place of params.
+- **The deploy sheet** (0.6.0, planned), on a promoted arm's page: a section `deploy sheet` with what production
+  must match (the model and its build, server and its settings, every setting the arm sends, the prompt and its
+  hash, the adapter and its version, the dataset and reference it was promoted on), and, for each capture whose
+  records say what production ran, "matches" or what differs on how many records. Command:
+  `evh deploy-sheet --config <id> [--capture C]`.
 - Command: `evh arms --arm <arm id or config id>`; `evh arms [--dataset-id <id>]` lists them.
 
 ## The models page
@@ -663,21 +706,35 @@ test ran (`deployment.machine`, `deployment.backend`, `deployment.server`).
 ## The captures page
 
 - Hero: kicker `captures`, "Captures", and what a capture is: what a system did in production, kept as
-  records, each hashed; the source of the datasets frozen from them; a reference made from what happened next
-  is silver and never decides a goal (RFC-019).
+  records, each hashed; the source of the datasets frozen from them (RFC-019). (0.6.0, planned: RFC-023 replaces
+  the sentence on references from outcomes: labels from outcomes are a `rule` label set, promoted like any.)
 - `01 captures`: one row per capture, by id: **capture** (its anchor `#capture-<id>`; "continues `<id>`"
   under a continued one), **records**, **importer** (the file or built-in name; "scrubbed" beside it),
   **captured**, **records from – to** (the first and last record's day), **datasets made from it** (each
-  linked to its page; one with no runs yet, and so no page, named with "no runs yet"). Filterable.
+  linked to its page; one with no runs yet, and so no page, named with "no runs yet"). Filterable. Under
+  **records**, a sampled capture says "a sample: rate R, of N read".
+- (0.6.0, planned) Beside the datasets, the label sets on them (source chips) and the recorded arm made from the
+  capture.
 - Empty: "No captures yet", with the `evh capture` and `evh dataset-from-capture` commands.
 - Command: `evh captures [--capture ID] [--json]` (the same listing, read the same way).
+
+## The labels page (0.6.0, planned: RFC-023)
+
+- Hero: kicker `labels`, "Labels", and what a label is: what is right for one item, and who said it; a label set
+  is never edited; a reference is labels promoted on purpose, at the tier chosen then.
+- `01 label sets`: one row per set: **set** (its source chip and name), **dataset** (linked), **coverage** ("k of n
+  items"), **guideline**, **made** (who or which run, when), **promoted** (the reference with its pill, or "not
+  promoted"). Filterable by source.
+- Empty: "No labels yet", with `evh label-sheet`, `evh label-import` and `evh label-from-run`.
+- Command: `evh labels [--dataset-id D]` (the same listing, and how often two sets agree).
 
 ## The references page
 
 - Hero: kicker `references`, and what gold and silver mean, then the period bar.
 - `01 references`: the all / new / active chips, then **reference** (the new badge),
-  **tier**, **dataset**, **items**, **written by** (linked to the author's arm), **created**,
-  **arms scored**, **arms scored in period**, **runs in period** (with its line). Filterable.
+  **tier** (its pill), **dataset**, **items**, **promoted from** (the label set with its source chip, and the
+  author's arm for a `model` set), **created**, **arms scored**, **arms scored in period**, **runs in period**
+  (with its line). Filterable.
 - Command: `evh references [--period P]`.
 
 ### Links everywhere
