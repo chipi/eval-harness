@@ -25,6 +25,16 @@
     "f001ec5c4704938247d27a44948eebb37ae98d01": "8726c48d01b663bb47b0497fde05532fffe62b34002fd15c7a255f11c496c137"
   },
   "n_items": 20,
+  "promoted_from": {
+    "dataset_id": "cnn_dailymail_20",
+    "labels": null,
+    "source": {
+      "by": "the dataset's authors",
+      "kind": "person",
+      "via": "examples/summarization-cnn-dailymail/fetch.py"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "redistributed": false,
   "source": "examples/summarization-cnn-dailymail/fetch.py",
   "tier": "gold"

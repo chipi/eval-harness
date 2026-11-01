@@ -285,6 +285,16 @@
     "fff8b7aeeb8b61c1c0cf3f5e32ff63e8b5d7283b": "f05e840e0069d662c52ff5f007a1dd9a664b3fa0417b1e2cce7627a69fff5acc"
   },
   "n_items": 280,
+  "promoted_from": {
+    "dataset_id": "dbpedia_280",
+    "labels": null,
+    "source": {
+      "by": "the dataset's authors",
+      "kind": "person",
+      "via": "examples/classification-dbpedia-14/fetch.py"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "redistributed": false,
   "source": "examples/classification-dbpedia-14/fetch.py",
   "tier": "gold"

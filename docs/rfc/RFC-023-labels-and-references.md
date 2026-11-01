@@ -257,7 +257,13 @@ Page by page (UXS-001 and UXS-002 updated with the build):
 
 ## Migration (no shims)
 
-Each existing reference becomes a label set (its source from its manifest: a dataset's own labels or the owner's
+As built (step 3, 2026-11-01): every reference's manifest gains `promoted_from` and the reason; the 6 whose texts
+are kept here became label sets, byte for byte (209 labels); the 14 whose texts are fetched elsewhere (a dataset's own
+labels, not redistributed) record their source and no set, since a label set is never made of text that is not here.
+Every reference's fingerprint digest was compared before and after: identical. `reference-create` and
+`reference-from-outcomes` are removed in step 9, with the docs that teach them (owner, 2026-11-01).
+
+As designed: each existing reference becomes a label set (its source from its manifest: a dataset's own labels or the owner's
 verdicts → `person`; `from_run` → `model`; `from_outcomes` → `rule`) and a promotion record with the reason
 "promoted before labels existed (0.6.0)". `reference-create` and `reference-from-outcomes` are removed; docs,
 tutorials, the site and the CLI help move to the new commands. ADR-0020 is superseded; RFC-019's references from

@@ -13,5 +13,15 @@
   },
   "model": "eval-claude-opus",
   "n_items": 5,
+  "promoted_from": {
+    "dataset_id": "smoke_v1",
+    "labels": "silver_smoke_v1",
+    "source": {
+      "config_id": "reference_opus_v1",
+      "kind": "model",
+      "model": "eval-claude-opus"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "tier": "silver"
 }

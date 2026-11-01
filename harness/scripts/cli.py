@@ -44,6 +44,7 @@ COMMANDS = {
         "a dataset's profile: its shape, then one row per item (--item for one)",
     ),
     "reference-create": ("reference_create.py", "make references from a run (--from-run) or with a config"),
+    "reference-promote": ("reference_promote.py", "promote a label set's labels to a reference, at a tier, with a reason"),
     "reference-manifest": (
         "reference_manifest.py",
         "the checksummed manifest of a reference a fetch script built",

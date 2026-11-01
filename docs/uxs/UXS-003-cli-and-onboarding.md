@@ -112,7 +112,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | the Labels page; a dataset page's labels (0.6.0; the pages: step 8) | `evh labels [--dataset-id D]` | |
 | (no page action) labelling: a sheet to fill, then its import (0.6.0) | `evh label-sheet --dataset-id D --out sheet.csv [--items …] [--item ID …]`, `evh label-import sheet.csv --dataset-id D --set S --by NAME` | |
 | (no page action) a run's outputs, or outcome rules, as labels (0.6.0) | `evh label-from-run --run R --set S`, `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | |
-| a reference's "promoted from" (0.6.0, planned) | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |
+| a reference's "promoted from" (0.6.0; the page: step 8) | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |
 | scored against a label set (0.6.0, planned) | `evh rescore --labels D/S`, `evh experiment-run --labels D/S` | |
 | a recorded arm's badge (0.6.0, planned) | `evh arm-from-capture --dataset-id D --capture C --as NAME` | |
 | the inspector's rows view; its selection's commands (0.6.0, planned) | `evh inspect --dataset-id D --rows …`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |

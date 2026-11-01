@@ -260,6 +260,24 @@ def main() -> int:
             ),
             ("label-from-run", ["--run", "no_such_run", "--set", "installed_v1"], "no finished run"),
             (
+                "reference-promote",
+                [
+                    "--dataset-id",
+                    "tickets_v1",
+                    "--labels",
+                    "no_such_set",
+                    "--tier",
+                    "silver",
+                    "--name",
+                    "installed_x",
+                    "--by",
+                    "t",
+                    "--reason",
+                    "only to read the arguments",
+                ],
+                "no labels of tickets_v1/no_such_set",
+            ),
+            (
                 "label-from-capture",
                 [
                     "--dataset-id",

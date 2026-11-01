@@ -8,6 +8,16 @@
     "orrery-ORRERY-DEV-1-2026-10-17T07:52:34Z": "dc3b1813dd4f72a77bda5d401811815b49da242c3fe9a0b72e7f136fbf7b6d7d"
   },
   "n_items": 3,
+  "promoted_from": {
+    "dataset_id": "orrery_triage_v1_labelled",
+    "labels": "silver_orrery_triage_v1_labelled_hand",
+    "source": {
+      "by": "fixture labels",
+      "kind": "person",
+      "via": "examples/triage-fleet/write_gold.py --source fixture"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "source": "examples/triage-fleet/write_gold.py --source fixture: the rows of source fixture in chipi-nbgd/orrery-triage@v1 data/verdicts.jsonl (sha256 144c955dff750bcd58f70b9ddb2e483a7a520770b3e58191e3deed359c8e55c3)",
   "tier": "silver"
 }

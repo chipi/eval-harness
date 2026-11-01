@@ -124,6 +124,23 @@
   "params": {
     "fleet_commit": "f07efa9"
   },
+  "promoted_from": {
+    "dataset_id": "fleet_dedup_v1",
+    "labels": "silver_fleet_dedup_v1",
+    "source": {
+      "build": {
+        "dirty": false,
+        "ref": "d67d421fb69a75a0fb94fdf315ac45b37dd309c0",
+        "source": "git"
+      },
+      "config_id": "dedup_pinned_f07efa9_v1",
+      "fingerprint_hash": "50ea2a8fd81d0a942ab057f471a1cfa7024a0aa611df42a47b212c6ce493c163",
+      "kind": "model",
+      "model": "unknown",
+      "run_id": "dedup_pinned_f07efa9_v1_20261030T143130Z"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "redistributed": true,
   "source": "evh reference-create --dataset-id fleet_dedup_v1 --from-run dedup_pinned_f07efa9_v1_20261030T143130Z --tier silver",
   "system_under_test": {

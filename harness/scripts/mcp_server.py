@@ -88,6 +88,7 @@ NOT_TOOLS = {
     "label-import": "writes a label set",
     "label-from-run": "writes a label set",
     "label-from-capture": "writes a label set",
+    "reference-promote": "writes a reference",
     "dataset-split": "writes",
     "capture-scrub": "runs a project's command and writes",
     "reference-from-outcomes": "writes",

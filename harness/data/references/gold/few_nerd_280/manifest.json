@@ -285,6 +285,16 @@
     "fff972f0193f84b3e24d51ee410f3b18d2905885": "e3cb299802e27bd830b59b64f910d99ef839dba52bd3ffbe599b4c5f05d59cd6"
   },
   "n_items": 280,
+  "promoted_from": {
+    "dataset_id": "few_nerd_280",
+    "labels": null,
+    "source": {
+      "by": "the dataset's authors",
+      "kind": "person",
+      "via": "examples/ner-few-nerd/fetch.py"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "redistributed": false,
   "source": "examples/ner-few-nerd/fetch.py",
   "tier": "gold"

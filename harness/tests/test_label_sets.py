@@ -290,6 +290,183 @@ try:
         out(r)[-300:],
     )
 
+    # ── reference-promote (step 3): a reference is labels you promote ─────────────────────────
+    REF = proj / "data" / "references"
+    reason = "the owner's labels of three tickets, for this test"
+    r = evh(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v1",
+        "--labels",
+        "owner_v1",
+        "--tier",
+        "gold",
+        "--by",
+        "owner",
+        "--reason",
+        reason,
+    )
+    m = json.loads((REF / "gold" / "tickets_v1" / "manifest.json").read_text()) if r.returncode == 0 else {}
+    owner_ids = sorted(json.loads((LABELS / "tickets_v1" / "owner_v1" / "labels.json").read_text())["items"])
+    check(
+        "reference-promote: the set's labels as the dataset's gold, recording the set, its source, the reason and who",
+        sorted(p.stem for p in (REF / "gold" / "tickets_v1").glob("*.txt")) == owner_ids
+        and m.get("tier") == "gold"
+        and m["promoted_from"]
+        == {"labels": "owner_v1", "dataset_id": "tickets_v1", "source": m["promoted_from"]["source"]}
+        and m["promoted_from"]["source"]["kind"] == "person"
+        and m["reason"] == reason
+        and m["promoted_by"] == "owner"
+        and "promoted as gold from tickets_v1/owner_v1 (person · owner)" in m["caveat"]
+        and "authored_by" not in m,
+        out(r)[-300:],
+    )
+    r = evh(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v1",
+        "--labels",
+        "owner_v1",
+        "--tier",
+        "gold",
+        "--by",
+        "owner",
+        "--reason",
+        reason,
+    )
+    check("reference-promote: never overwrites a reference", refused(r, "never overwritten"), out(r)[-200:])
+    r = evh(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v1",
+        "--labels",
+        "owner_v1",
+        "--tier",
+        "silver",
+        "--name",
+        "x1",
+        "--by",
+        "owner",
+        "--reason",
+        "fine",
+    )
+    check("reference-promote: a reason is a sentence", refused(r, "a sentence"), out(r)[-200:])
+    r = evh(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v1",
+        "--labels",
+        "no_such_set",
+        "--tier",
+        "silver",
+        "--name",
+        "x2",
+        "--by",
+        "owner",
+        "--reason",
+        reason,
+    )
+    check(
+        "reference-promote: an unknown set is refused",
+        refused(r, "no labels of tickets_v1/no_such_set"),
+        out(r)[-200:],
+    )
+    unlabelled = next(i for i in au if i not in owner_ids)
+    r = evh(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v1",
+        "--labels",
+        "owner_v1",
+        "--items",
+        unlabelled,
+        "--tier",
+        "silver",
+        "--name",
+        "x3",
+        "--by",
+        "owner",
+        "--reason",
+        reason,
+    )
+    check(
+        "reference-promote --items: an item the set does not label is refused",
+        refused(r, "has no label for"),
+        out(r)[-200:],
+    )
+    r = evh(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v1",
+        "--labels",
+        "author_v1",
+        "--tier",
+        "silver",
+        "--name",
+        "tickets_v1_author",
+        "--by",
+        "owner",
+        "--reason",
+        "the author model's answers, to rank the arms",
+    )
+    m = (
+        json.loads((REF / "silver" / "tickets_v1_author" / "manifest.json").read_text())
+        if r.returncode == 0
+        else {}
+    )
+    check(
+        "a model set promoted keeps who authored it (the fingerprint hashes it): its config, model and run",
+        m.get("authored_by") == "tickets_author_v1" and (m.get("from_run") or {}).get("run_id") == author,
+        out(r)[-300:] + json.dumps(m)[:300],
+    )
+    r = evh(
+        "rescore",
+        "--dataset-id",
+        "tickets_v1",
+        "--reference-id",
+        "silver/tickets_v1_author",
+        "--out",
+        "data/runs-author",
+    )
+    r = (
+        r
+        if r.returncode
+        else subprocess.run(
+            [sys.executable, str(HERE / "cli.py"), "leaderboard", "--dataset-id", "tickets_v1"],
+            cwd=proj,
+            env={**env, "EVAL_RUNS_DIR": "data/runs-author"},
+            capture_output=True,
+            text=True,
+        )
+    )
+    check(
+        "scored against it, the author arm is marked as graded against its own answers",
+        r.returncode == 0
+        and any(
+            line.strip().startswith("tickets_author_v1") and "*" in line for line in r.stdout.splitlines()
+        ),
+        out(r)[-500:],
+    )
+    r = evh(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v2",
+        "--labels",
+        "tickets_v1/owner_v1",
+        "--tier",
+        "gold",
+        "--by",
+        "owner",
+        "--reason",
+        reason,
+    )
+    check(
+        "reference-promote from a set on another dataset: labels follow the item",
+        r.returncode == 0
+        and sorted(p.stem for p in (REF / "gold" / "tickets_v2").glob("*.txt")) == owner_ids,
+        out(r)[-300:],
+    )
+
     # ── V19: a set's labels are the ones it recorded ──────────────────────────────────────────
     r = evh("validate")
     check(

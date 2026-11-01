@@ -61,6 +61,16 @@
     "ffe3879bdb6c2d9d268103726254b945951b1611": "113af97940c30181e3251e51d6d091d315c350bdfc3a3f2e0fb09d59ee6ed4e8"
   },
   "n_items": 56,
+  "promoted_from": {
+    "dataset_id": "dbpedia_56",
+    "labels": null,
+    "source": {
+      "by": "the dataset's authors",
+      "kind": "person",
+      "via": "examples/classification-dbpedia-14/fetch.py"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "redistributed": false,
   "source": "examples/classification-dbpedia-14/fetch.py",
   "tier": "gold"

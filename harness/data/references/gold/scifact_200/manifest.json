@@ -205,6 +205,16 @@
     "993": "797be9bfa2f6db4fd9cdf459644ec35314878e894b962e4e638dd69910e8f5cf"
   },
   "n_items": 200,
+  "promoted_from": {
+    "dataset_id": "scifact_200",
+    "labels": null,
+    "source": {
+      "by": "the dataset's authors",
+      "kind": "person",
+      "via": "examples/retrieval-scifact/fetch.py"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "redistributed": false,
   "source": "examples/retrieval-scifact/fetch.py",
   "tier": "gold"

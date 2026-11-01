@@ -1,7 +1,7 @@
 # PRD-002: Labels, and the references promoted from them
 
-- **Status**: Implemented (v0.4.0) for gold, silver and re-scoring; labels (FR2) built for 0.6.0; promotion
-  and scoring against labels (FR3, FR6) planned for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md)); they replace
+- **Status**: Implemented (v0.4.0) for gold, silver and re-scoring; labels (FR2) and promotion (FR3.1, FR3.3) built for
+  0.6.0; scoring against labels (FR6) and removing the old commands (FR3.2) planned for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md)); they replace
   `reference-create`
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Labels and References pages, the tier pills, row
@@ -71,7 +71,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
   (`evh label-from-run --run … --set …`), so the labels are exactly what I read._
 - _As an annotator, I get a sheet of the items to label (`evh label-sheet`), fill the `label` column, and import it
   as my set (`evh label-import … --by me`)._
-- (0.6.0, planned) _As an engineer, I promote the labels I trust into a reference (`evh reference-promote … --tier gold --reason …`),
+- _As an engineer, I promote the labels I trust into a reference (`evh reference-promote … --tier gold --reason …`),
   and the reference says where they came from._
 - (0.6.0, planned) _As an engineer, I score arms against a label set without promoting it (`evh rescore --labels D/S`)._
 - _As a researcher, when gold arrives after the runs, I re-score every run against it for $0._
@@ -102,16 +102,21 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 - **FR2.5**: `evh label-from-capture` makes a `rule` set from a capture's recorded outcomes (PRD-014).
 - **FR2.6**: A set is never edited; a correction is a new set. Labels follow the item by its sha256.
 - **FR2.7**: `evh labels [--dataset-id D]` lists every set: source, coverage, guideline, and how often two sets
-  agree; what was promoted from it comes with promotion (FR3).
+  agree; the pages show what was promoted from it (UXS-001).
 - **FR2.8**: `evh validate` V19 checks every set's labels against the sha256 it recorded.
 
-### FR3: Promotion (0.6.0, planned)
+### FR3: Promotion (0.6.0)
 
-- **FR3.1**: `evh reference-promote --dataset-id D --labels S [--items …] --tier gold|silver --reason "…"` copies the
-  chosen labels into `references/<tier>/<name>/`; the manifest records `promoted_from` (the set, its source), the
-  reason, who and when. A reason must be a sentence; a reference is never overwritten.
-- **FR3.2**: `reference-create` and `reference-from-outcomes` are removed. Every existing reference is migrated to a
-  label set and a promotion record ("promoted before labels existed"), every run's score unchanged.
+- **FR3.1**: `evh reference-promote --dataset-id D --labels S [--items …] --tier gold|silver --by WHO --reason "…"`
+  copies the chosen labels (the set on this dataset, or `DATASET/SET` on another with the same items) into
+  `references/<tier>/<name>/`; the manifest records `promoted_from` (the set, its dataset, its source), the reason,
+  who and when, and for a `model` set who authored the texts (its config, model and run). A reason must be a
+  sentence; a reference is never overwritten.
+- **FR3.2** (0.6.0, planned: with the docs, step 9): `reference-create` and `reference-from-outcomes` are removed.
+- **FR3.3**: Every existing reference records how it was promoted ("promoted before labels existed"), with every
+  run's fingerprint unchanged (its texts and authorship are what runs hash). Its texts kept here are copied byte for
+  byte into a label set; a reference whose texts are fetched elsewhere (a dataset's own labels, not redistributed)
+  records its source and no set (`harness/tools/migrate_references_to_labels.py`).
 
 ### FR4: The arm whose outputs became the labels
 

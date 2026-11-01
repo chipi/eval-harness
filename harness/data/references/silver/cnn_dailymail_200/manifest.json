@@ -235,6 +235,23 @@
     "usd_per_mtok_in": 5.0,
     "usd_per_mtok_out": 25.0
   },
+  "promoted_from": {
+    "dataset_id": "cnn_dailymail_200",
+    "labels": null,
+    "source": {
+      "build": {
+        "dirty": null,
+        "ref": "eval-harness-scenario",
+        "source": "EVAL_BUILD_REF"
+      },
+      "config_id": "cnn_anthropic_l_n200_v1",
+      "fingerprint_hash": "4d51bc32eb91710aa0babb831a63b442310ae241f4193b5c30032e8793c3ad9e",
+      "kind": "model",
+      "model": "eval-opus-5",
+      "run_id": "cnn_anthropic_l_n200_v1_20260926T063645Z"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "redistributed": false,
   "source": "evh reference-create --dataset-id cnn_dailymail_200 --from-run cnn_anthropic_l_n200_v1_20260926T063645Z --tier silver --not-redistributed",
   "system_under_test": {
