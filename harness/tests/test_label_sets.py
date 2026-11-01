@@ -513,13 +513,15 @@ try:
         capture_output=True,
         text=True,
     )
-    m = next((json.loads(p.read_text()) for p in (data / "runs-labelrun").glob("*/metrics.json")), {})
+    run_m: dict = next(
+        (json.loads(p.read_text()) for p in (data / "runs-labelrun").glob("*/metrics.json")), {}
+    )
     check(
         "experiment-run --labels: the arm run against the label set, which the run records",
         r.returncode == 0
         and "the label set labels/tickets_v1/author_v1" in out(r)
-        and m.get("reference_tier") == "labels"
-        and m["fingerprint"]["data"]["reference_id"] == "labels/tickets_v1/author_v1",
+        and run_m.get("reference_tier") == "labels"
+        and run_m["fingerprint"]["data"]["reference_id"] == "labels/tickets_v1/author_v1",
         out(r)[-300:],
     )
     shutil.rmtree(data / "runs-labelrun", ignore_errors=True)
