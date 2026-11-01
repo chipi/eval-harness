@@ -299,6 +299,14 @@ def _label(reference: str) -> tuple[str | None, str | None]:
     return text, None
 
 
+def recorded_output(record: dict) -> str:
+    """Production's decision for one item, from the capture's record (a recorded arm, RFC-023): the fleet's
+    disposition as the decision JSON `score` reads. The capture keeps no gate reason, so for this arm the model's
+    own decision (model_*) is read as the fleet's."""
+    fields = record.get("fields") or {}
+    return json.dumps({"disposition": fields.get("fleet_disposition"), "reason": "recorded by production"})
+
+
 def model_disposition(out: dict) -> str | None:
     """The model's own decision, before the fleet's gates: recorded by call_system, or read back from
     the reason a gate wrote first (outputs from before it was recorded, and production's ledger)."""

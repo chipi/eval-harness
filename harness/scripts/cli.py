@@ -124,6 +124,7 @@ COMMANDS = {
         "label_from_capture.py",
         "rules over a capture's recorded outcomes as a rule label set",
     ),
+    "arm-from-capture": ("arm_from_capture.py", "production's recorded decisions as an arm, scored like any (no call)"),
     "dataset-from-capture": (
         "dataset_from_capture.py",
         "make a dataset version from a capture: choose records, freeze their bodies as items",

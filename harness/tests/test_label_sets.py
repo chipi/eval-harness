@@ -470,6 +470,64 @@ try:
         out(r)[-300:],
     )
 
+    # ── production's recorded decisions as an arm (step 5) ─────────────────────────────────────
+    evh("dataset-materialize", "--dataset-id", "desk_v1")
+    r = evh(
+        "arm-from-capture",
+        "--dataset-id",
+        "desk_v1",
+        "--capture",
+        "desk_c1",
+        "--as",
+        "desk_production_v1",
+        "--field",
+        "channel",
+    )
+    cfg_text = (data / "configs" / "desk_production_v1.yaml").read_text() if r.returncode == 0 else ""
+    rec_run = next((p for p in (data / "runs").glob("desk_production_v1_*")), None)
+    rec_m = json.loads((rec_run / "metrics.json").read_text()) if rec_run else {}
+    cap_recs = {
+        json.loads(p.read_text())["id"]: json.loads(p.read_text())
+        for p in (data / "captures" / "desk_c1" / "records").glob("*.json")
+    }
+    check(
+        "arm-from-capture: a config with provider recorded, run: each output the record's field, no call, no cost",
+        "provider: recorded" in cfg_text
+        and rec_run is not None
+        and all(
+            (rec_run / "outputs" / f"{i}.txt").read_text() == str(cap_recs[i]["fields"]["channel"])
+            for i in cap_recs
+        )
+        and not (rec_m.get("scores") or {}).get("total_cost_usd")
+        and len(rec_m["fingerprint"]["settings"].get("capture_sha256", "")) == 64
+        and "no system called" in out(r),
+        out(r)[-400:],
+    )
+    r = evh(
+        "arm-from-capture",
+        "--dataset-id",
+        "desk_v1",
+        "--capture",
+        "desk_c1",
+        "--as",
+        "desk_production_v1",
+        "--field",
+        "channel",
+    )
+    check(
+        "arm-from-capture: an existing config is never overwritten",
+        refused(r, "not overwritten"),
+        out(r)[-200:],
+    )
+    r = evh("arm-from-capture", "--dataset-id", "desk_v1", "--capture", "desk_c1", "--as", "desk_nofield_v1")
+    check(
+        "a recorded arm needs the adapter's recorded_output or a --field; refused before anything is written",
+        r.returncode != 0
+        and "recorded_output" in out(r)
+        and not (data / "configs" / "desk_nofield_v1.yaml").exists(),
+        out(r)[-300:],
+    )
+
     # ── scoring against labels (step 4) ───────────────────────────────────────────────────
     r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "author_v1")
     lab_dir = data / "runs-labels-tickets_v1-author_v1"

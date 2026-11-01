@@ -110,6 +110,12 @@ The harness cannot do steps 6 and after:
   per item, from what production recorded, through an adapter hook `recorded_output(record) -> str` (triage: the
   record's `fleet_disposition`, as the decision JSON the scorer reads). No model is called; it is a derived run
   (RFC-002, `derived.kind: recorded`) naming the capture, scored and compared like any arm.
+- As built (step 5, 2026-11-01): the recorded arm is an ordinary config, `provider: recorded` with its `capture`
+  (and `field` when the adapter has no `recorded_output`), run by `experiment-run`: the pass reads each output from
+  the capture instead of calling the system, with no warm-up and no cost, and the capture's sha256 goes into the
+  run's settings, so its fingerprint names exactly what was read. `arm-from-capture` writes that config (the adapter
+  and goal from `--like`, the deployed arm's) and runs it. The triage capture keeps no gate reason, so for
+  production's arm the model's own decision (`model_*`) reads as the fleet's.
 - **Agreement** is how often two arms decided the same, per item, through an adapter hook `same(a, b)` (default:
   the same text). The deployed config re-run against production's recorded arm says whether the replay is
   faithful; a candidate against it says where to look.

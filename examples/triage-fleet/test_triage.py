@@ -203,6 +203,14 @@ r1 = recs["1"]
 check("importer: a well-formed record", not _importers.problems(r1), _importers.problems(r1))
 check("importer: the body is only what the agent sees", set(r1["body"]) == {"signal", "probes"})
 check("importer: decision_kind is a field", r1["fields"]["decision_kind"] == "model")
+recorded = adapter.recorded_output(r1)
+check(
+    "recorded_output: production's decision from the record, scored as a model's (RFC-023)",
+    json.loads(recorded)["disposition"] == r1["fields"]["fleet_disposition"] == "dismiss"
+    and adapter.score(recorded, "dismiss")["correct"] == 1.0
+    and adapter.score(recorded, "file")["false_dismiss"] == 1.0,
+    recorded,
+)
 o = r1["outcome"]
 check(
     "importer: a missed problem: the later issue's verdict, filing two days later",

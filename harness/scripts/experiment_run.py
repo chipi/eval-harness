@@ -228,6 +228,51 @@ def _reference_for(dataset_id: str) -> tuple[Path | None, str | None]:
     return None, None
 
 
+def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[str, str]:
+    """A recorded arm's outputs (RFC-023): for each item of its dataset, the capture's record of the same id, read
+    by the adapter's `recorded_output(record)` when it has one, else the record's field named by `field`. Refused
+    when the capture lacks an item, or neither reader is there. The capture's sha256 is set on the params, so the
+    run's fingerprint names exactly what was read."""
+    import hashlib  # noqa: PLC0415
+
+    from evaluation_harness._adapter import _module_or_none  # noqa: PLC0415
+    from evaluation_harness.dataset_from_capture import load_capture  # noqa: PLC0415
+
+    params = cfg.setdefault("params", {})
+    cap = params.get("capture")
+    if not cap:
+        die(
+            f"{cfg.get('config_id')}: provider recorded needs params.capture, the capture its outputs come from"
+        )
+    _doc, recs = load_capture(cap)
+    by_id = {r["id"]: r for r in recs}
+    mod = _module_or_none(adapter_path)
+    hook = getattr(mod, "recorded_output", None)
+    field = params.get("field")
+    if not callable(hook) and not field:
+        die(
+            f"{cfg.get('config_id')}: a recorded arm reads each output with the adapter's recorded_output(record), "
+            "or from the record's field named by params.field; it has neither"
+        )
+    out: dict[str, str] = {}
+    missing = []
+    for it in load_dataset(cfg["dataset_id"]).get("items") or []:
+        rec = by_id.get(it["item_id"])
+        if rec is None:
+            missing.append(it["item_id"])
+            continue
+        out[it["item_id"]] = str(hook(rec) if callable(hook) else (rec.get("fields") or {}).get(field, ""))
+    if missing:
+        die(
+            f"capture {cap} has no record for {len(missing)} item(s) of {cfg['dataset_id']}: {', '.join(missing[:8])}"
+        )
+    from evaluation_harness._common import CAPTURES  # noqa: PLC0415
+
+    params["capture_sha256"] = hashlib.sha256((CAPTURES / cap / "capture.json").read_bytes()).hexdigest()
+    print(f"  a recorded arm: {len(out)} output(s) read from the capture {cap}, no system called")
+    return out
+
+
 def one_pass(
     ds: dict[str, Any],
     cfg: dict[str, Any],
@@ -240,9 +285,11 @@ def one_pass(
     score: Any,
     extra_transient: tuple = (),
     scored_against: tuple[Path | None, str | None] | None = None,
+    recorded: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """One pass over the dataset. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
-    --labels; by default the dataset's gold, else its silver. ``call_system``/``score`` are INJECTED rather than
+    --labels; by default the dataset's gold, else its silver. ``recorded`` ({item_id: output}) is a recorded arm's
+    outputs, read from a capture: no system is called for them (RFC-023). ``call_system``/``score`` are INJECTED rather than
     imported at module scope, because which adapter runs is a property of the arm now."""
     mat = MATERIALIZED / ds["dataset_id"]
     if not mat.is_dir():
@@ -302,7 +349,11 @@ def one_pass(
 
         if resumed:
             assert done is not None  # resumed means it is on disk
-            res = _Resumed(done.read_text(encoding="utf-8"), (prior_rows or {}).get(item["item_id"]))
+            res: Any = _Resumed(done.read_text(encoding="utf-8"), (prior_rows or {}).get(item["item_id"]))
+        elif recorded is not None:
+            from evaluation_harness.adapter import Result  # noqa: PLC0415
+
+            res = Result(output=recorded[item["item_id"]], cost_usd=0.0)
         else:
             # EVERY adapter gets retries, whether or not its author wrote any. This used
             # to be the adapter's business, and one adapter simply had none -- so a
@@ -605,6 +656,10 @@ def main() -> int:
     call_system, score, adapter_id, adapter_path, warmup, model_fingerprint = load_adapter(
         cfg.get("adapter"), Path(args.config)
     )
+    recorded = None
+    if (cfg.get("params") or {}).get("provider") == "recorded":
+        recorded = _recorded_outputs(cfg, adapter_path)
+        warmup = None  # nothing is called, so nothing is warmed up
     declared_kinds = metric_kinds(adapter_path)
     for required in ("config_id", "dataset_id"):
         if required not in cfg:
@@ -817,6 +872,7 @@ def main() -> int:
                 score=score,
                 extra_transient=transient_markers(adapter_path),
                 scored_against=(ref_dir, ref_tier),
+                recorded=recorded,
             )
         except BaseException as exc:
             _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)

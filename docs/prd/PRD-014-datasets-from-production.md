@@ -1,7 +1,7 @@
 # PRD-014: Datasets from production, and evaluating what production did
 
 - **Status**: Built for 0.6.0 for FR1 to FR3, FR5, FR6 and the Captures page (2026-10-31, the capture window and
-  sampling 2026-11-01), FR4 (labels from outcomes) built; FR7 to FR10 planned for 0.6.0
+  sampling 2026-11-01), FR4 (labels from outcomes) and FR7.1 (the recorded arm) built; FR7.2 to FR10 planned for 0.6.0
   ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Captures, Labels and dataset pages),
@@ -73,7 +73,7 @@ comment that says what it was.
 
 - _As an engineer, I capture the last month of my system's decisions, or one in a thousand of them
   (`evh capture … --sample-rate 0.001 --seed 7`), and see what was read and when._
-- (0.6.0, planned) _As an engineer, I freeze a dataset from a capture and score production's own decisions on it
+- _As an engineer, I freeze a dataset from a capture and score production's own decisions on it
   (`evh arm-from-capture`), beside the deployed config and a candidate._
 - (0.6.0, planned) _As an engineer, I check that production ran what I promoted (`evh deploy-sheet`)._
 - _As an operator, my close comments become labels through a mapping I can read (`evh label-from-capture`)._
@@ -134,12 +134,15 @@ comment that says what it was.
   texts, judge reasons, text and URL field values, source links) off every public surface: the catalog, the
   inspector, MCP, and a deployment's copy. Counts and scores stay.
 
-### FR7: Production as an arm, and agreement (0.6.0, planned)
+### FR7: Production as an arm, and agreement (0.6.0)
 
-- **FR7.1**: `evh arm-from-capture --dataset-id D --capture C --as NAME` makes a recorded arm: one output per item
-  from what production recorded, through the adapter's `recorded_output(record)`; no model call, no cost; a derived
-  run naming the capture, scored and compared like any arm.
-- **FR7.2**: Agreement between two arms is how often they decided the same, per item, through the adapter's
+- **FR7.1**: `evh arm-from-capture --dataset-id D --capture C --as NAME [--like CONFIG] [--field F] [--labels SET]`
+  writes the arm's config (`provider: recorded`, the capture) and runs it with `experiment-run`: each item's output
+  is the capture's record of the same id, read by the adapter's `recorded_output(record)` (the deployed arm's
+  adapter, from --like) or from the record's field `--field`; no system is called, the cost is 0, the capture's
+  sha256 is in the run's settings; scored, tested and compared like any arm. Refused before anything is written
+  when there is no reader, or when the capture lacks an item.
+- **FR7.2** (0.6.0, planned): Agreement between two arms is how often they decided the same, per item, through the adapter's
   `same(a, b)` (default: the same text), shown in `evh labels`-style tables and as the inspector's `--disagree`.
 
 ### FR8: Exploring rows (0.6.0, planned)
