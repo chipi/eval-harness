@@ -116,6 +116,10 @@ The harness cannot do steps 6 and after:
   run's settings, so its fingerprint names exactly what was read. `arm-from-capture` writes that config (the adapter
   and goal from `--like`, the deployed arm's) and runs it. The triage capture keeps no gate reason, so for
   production's arm the model's own decision (`model_*`) reads as the fleet's.
+- As built (agreement): `same(a, b)` is read from the baseline arm's adapter (`_adapter.same_of`, else the same
+  text); `inspect --disagree` is a filter in the comparison itself (`catalog_serve.compare`), so the page and the
+  terminal share it. The triage adapter's `same` compares dispositions. Its two new functions moved its scorer
+  version 3d3a6afdb978 -> 9558eee9cac9; score-preview over the triage goal's 91 runs moves no arm (+0.0000).
 - **Agreement** is how often two arms decided the same, per item, through an adapter hook `same(a, b)` (default:
   the same text). The deployed config re-run against production's recorded arm says whether the replay is
   faithful; a candidate against it says where to look.

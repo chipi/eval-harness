@@ -77,6 +77,17 @@ def adapter_module(adapter_spec: str | None) -> Any:
     return _module_or_none(cand) if cand is not None else None
 
 
+def _same_text(a: str, b: str) -> bool:
+    return a.strip() == b.strip()
+
+
+def same_of(adapter_spec: str | None) -> Any:
+    """`same(a, b)` from the adapter a run recorded (RFC-023): whether two outputs are one decision, for agreement and
+    `--disagree`; the same text when the adapter has none or cannot be imported here."""
+    fn = getattr(adapter_module(adapter_spec), "same", None)
+    return fn if callable(fn) else _same_text
+
+
 def metric_kinds(adapter_path: Path | None) -> dict[str, str]:
     """`METRIC_KINDS` from the adapter at `adapter_path` (None: the bundled one), or {}."""
     return _kinds_of(_module_or_none(adapter_path))

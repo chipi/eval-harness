@@ -299,6 +299,15 @@ def _label(reference: str) -> tuple[str | None, str | None]:
     return text, None
 
 
+def same(a: str, b: str) -> bool:
+    """Two outputs are one decision when they reach the same disposition (RFC-023's agreement): the reasons a model
+    gives differ from run to run, the decision is what is compared."""
+    try:
+        return (json.loads(a) or {}).get("disposition") == (json.loads(b) or {}).get("disposition")
+    except (ValueError, AttributeError):
+        return a.strip() == b.strip()
+
+
 def recorded_output(record: dict) -> str:
     """Production's decision for one item, from the capture's record (a recorded arm, RFC-023): the fleet's
     disposition as the decision JSON `score` reads. The capture keeps no gate reason, so for this arm the model's

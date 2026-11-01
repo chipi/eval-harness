@@ -1,7 +1,7 @@
 # PRD-014: Datasets from production, and evaluating what production did
 
 - **Status**: Built for 0.6.0 for FR1 to FR3, FR5, FR6 and the Captures page (2026-10-31, the capture window and
-  sampling 2026-11-01), FR4 (labels from outcomes) and FR7.1 (the recorded arm) built; FR7.2 to FR10 planned for 0.6.0
+  sampling 2026-11-01), FR4 (labels from outcomes) and FR7 (the recorded arm, agreement) built; FR8 to FR10 planned for 0.6.0
   ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Captures, Labels and dataset pages),
@@ -142,8 +142,10 @@ comment that says what it was.
   adapter, from --like) or from the record's field `--field`; no system is called, the cost is 0, the capture's
   sha256 is in the run's settings; scored, tested and compared like any arm. Refused before anything is written
   when there is no reader, or when the capture lacks an item.
-- **FR7.2** (0.6.0, planned): Agreement between two arms is how often they decided the same, per item, through the adapter's
-  `same(a, b)` (default: the same text), shown in `evh labels`-style tables and as the inspector's `--disagree`.
+- **FR7.2**: Two outputs are one decision when the adapter's `same(a, b)` says so (default: the same text; the
+  triage adapter's compares the dispositions, not the reasons). `evh inspect --runs A,B --disagree` keeps the items
+  where an arm decided differently from the baseline, the same filter the inspector page offers (step 8), and
+  `evh label-sheet --items disagree` reads the same hook.
 
 ### FR8: Exploring rows (0.6.0, planned)
 

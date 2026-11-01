@@ -1185,6 +1185,11 @@ def inspect(argv) -> int:
         help="FIELD:VALUE or FIELD:LO..HI, keep only matching items (repeatable)",
     )
     ap.add_argument("--by", help="break the comparison down by a choice or yes/no field")
+    ap.add_argument(
+        "--disagree",
+        action="store_true",
+        help="only the items where the arms decided differently from the baseline (the adapter's same(a, b))",
+    )
     ap.add_argument("--item", help="show one item: each arm's output beside the reference")
     ap.add_argument(
         "--no-rescore",
@@ -1281,6 +1286,7 @@ def inspect(argv) -> int:
         "baseline": [base],
         "metric": [args.metric or ""],
         "where": args.where,
+        "disagree": ["1" if args.disagree else ""],
         "by": [args.by or ""],
         "rescore": ["0" if args.no_rescore else "1"],
     }

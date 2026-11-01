@@ -111,7 +111,15 @@ def main() -> int:
         have = labels_for(args.dataset_id)
         chosen = [i for i in ids if i not in have]
     elif args.items == "disagree":
-        chosen = [i for i in ids if len({output(d, i) for d in dirs.values()}) > 1]
+        from evaluation_harness._adapter import same_of  # noqa: PLC0415
+
+        first = next(iter(dirs.values()))
+        same = same_of(read_json(first / "metrics.json").get("adapter"))
+        chosen = []
+        for i in ids:
+            outs = [o for d in dirs.values() if (o := output(d, i)) is not None]
+            if len(outs) > 1 and any(not same(outs[0], o) for o in outs[1:]):
+                chosen.append(i)
     else:
         chosen = ids
     args.out.parent.mkdir(parents=True, exist_ok=True)

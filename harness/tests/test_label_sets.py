@@ -528,6 +528,50 @@ try:
         out(r)[-300:],
     )
 
+    # ── agreement: --disagree keeps the items the arms decided differently (step 5) ──────────────
+    alt = data / "runs-alt" / lead
+    shutil.copytree(data / "runs" / lead, alt)
+    changed = sorted(p.stem for p in (alt / "outputs").glob("*.txt"))[:2]
+    for i in changed:
+        (alt / "outputs" / f"{i}.txt").write_text("a different decision")
+
+    def inspected(*extra):
+        r = evh(
+            "inspect",
+            "--runs",
+            "tickets_lead1_v1,runs-alt/tickets_v1/tickets_lead1_v1",
+            "--metric",
+            "output_words",
+            "--json",
+            *extra,
+        )
+        rows = [
+            x
+            for b in (json.loads(r.stdout)["result"]["blocks"] if r.returncode == 0 else [])
+            for x in b.get("rows", [])
+        ]
+        return r, rows
+
+    r, dis_rows = inspected("--disagree")
+    check(
+        "inspect --disagree: only the items where the arms' outputs are not the same decision",
+        r.returncode == 0 and [x["n"] for x in dis_rows] == [len(changed)],
+        out(r)[-400:],
+    )
+    r, dis_rows = inspected()
+    check(
+        "inspect without --disagree: every item",
+        r.returncode == 0 and [x["n"] for x in dis_rows] == [6],
+        out(r)[-300:],
+    )
+    from evaluation_harness import _adapter
+
+    check(
+        "same(a, b): the adapter's when it has one, else the same text",
+        _adapter.same_of(None)("a decision ", "a decision") and not _adapter.same_of(None)("a", "b"),
+    )
+    shutil.rmtree(data / "runs-alt")
+
     # ── scoring against labels (step 4) ───────────────────────────────────────────────────
     r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "author_v1")
     lab_dir = data / "runs-labels-tickets_v1-author_v1"

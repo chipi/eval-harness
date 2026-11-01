@@ -408,6 +408,12 @@ class HarnessAdapter:
         ds = self._dirs(arm)
         return (_json(ds[-1] / "metrics.json") or {}) if ds else {}
 
+    def same_output(self, arm: str):
+        """`same(a, b)` for this arm's outputs (RFC-023): its adapter's, else the same text."""
+        from evaluation_harness._adapter import same_of  # noqa: PLC0415
+
+        return same_of(self._metrics(arm).get("adapter"))
+
     def describe(self, arm: str) -> dict:
         """Return arm metadata: id, label, dataset, task, etc."""
         base, _, rest = arm.rpartition("/")

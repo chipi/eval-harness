@@ -388,6 +388,30 @@ def _number(params: dict, key: str, kind):
         return None
 
 
+def _disagreeing(series: dict, baseline: str) -> dict:
+    """Only the items where the arms decided differently (RFC-023): an item stays when any arm's output is not the
+    same decision as the baseline's, by the baseline arm's adapter's `same(a, b)` (else the same text)."""
+    fn = getattr(A, "same_output", None)
+    same = fn(baseline) if callable(fn) else (lambda a, b: a.strip() == b.strip())
+
+    def out(arm: str, item: str) -> str | None:
+        v = A.item_view(arm, item)  # the adapter keeps an item name from leaving its run
+        return v.get("text") if v.get("kind") == "text" else None
+
+    keep = set()
+    for item in series.get(baseline, {}):
+        b = out(baseline, item)
+        if b is None:
+            continue
+        if any(
+            item in vals and (o := out(a, item)) is not None and not same(b, o)
+            for a, vals in series.items()
+            if a != baseline
+        ):
+            keep.add(item)
+    return {a: {i: v for i, v in vals.items() if i in keep} for a, vals in series.items()}
+
+
 def compare(params: dict) -> dict:
     """Compare arms: parse query params, get scores, run paired tests, return result."""
     runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
@@ -437,6 +461,9 @@ def compare(params: dict) -> dict:
     series, error = _filter(series, decl, fvalues, wheres)
     if error:
         return {"error": error}
+    disagree = params.get("disagree", [""])[0] == "1"
+    if disagree:
+        series = _disagreeing(series, baseline)
     higher, neutral = not A.lower_is_better(metric, dataset), A.is_neutral(metric, dataset or None)
     # A family and a threshold come from the URL, so they are checked, not trusted: a family
     # smaller than the arms tested here, or a threshold above alpha (or below what the family
@@ -507,6 +534,7 @@ def compare(params: dict) -> dict:
         "warnings": _warnings(ctx),
         "fields": _field_list(decl),
         "where": wheres,
+        "disagree": disagree,
         "by": by,
         "breakdown": breakdown,
         "conditions": _conditions(list(series), metric),

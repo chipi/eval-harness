@@ -211,6 +211,12 @@ check(
     and adapter.score(recorded, "file")["false_dismiss"] == 1.0,
     recorded,
 )
+check(
+    "same: one decision when the disposition is, whatever the reasons; two when it is not",
+    adapter.same('{"disposition": "file", "reason": "a"}', '{"disposition": "file", "reason": "b"}')
+    and not adapter.same('{"disposition": "file"}', '{"disposition": "dismiss"}')
+    and adapter.same("not json", " not json "),
+)
 o = r1["outcome"]
 check(
     "importer: a missed problem: the later issue's verdict, filing two days later",

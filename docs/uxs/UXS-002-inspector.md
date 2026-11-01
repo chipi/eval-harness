@@ -225,7 +225,7 @@ Opened from a dataset ("explore rows") or with `?dataset=<id>&rows=1`: one datas
 | notes, verdicts, conditions, breakdown | printed in that order (notes as `NOTE:` lines) |
 | the item view | `--item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm |
 | the per-item table | `--items`: every item's score per arm, and each arm's Δ against the baseline |
-| scored against a label set; only where they disagree (0.6.0, planned) | `--labels D/S`; `--disagree` |
+| only where they disagree (0.6.0; the checkbox: step 8) | `--disagree` (an arm scored against a label set is chosen like any) |
 | the rows view (0.6.0, planned) | `evh inspect --dataset-id D --rows [--runs A,B] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value]` |
 | selecting rows: the pick and sheet commands (0.6.0, planned) | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
