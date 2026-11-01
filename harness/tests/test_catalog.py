@@ -167,6 +167,13 @@ try:
         and "<span>eval catalog</span></a>" in ds_page,
     )
     check(
+        "a retired arm is retired when the goal reads it through its re-score (runs-rescored/<scorer>/<arm>)",
+        cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs-rescored/3d3a6afdb978/runs/ds_v1/arm_v1") == "r3"
+        and cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs/ds_v1/arm_v1") == "r3"
+        and cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs-rescored/3d3a6afdb978/runs/ds_v1/other_v1")
+        is None,
+    )
+    check(
         "overview tiles: a long count also in short form for a phone, a short one as it is",
         cb.tile_value("19,534,609") == '<span class="full">19,534,609</span><span class="short">19.5M</span>'
         and cb.tile_value(140) == "140"

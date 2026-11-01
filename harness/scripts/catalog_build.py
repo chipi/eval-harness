@@ -2701,7 +2701,12 @@ def retired_in_of(A: Adapter, g: dict) -> dict:
 
 
 def retired_round(retired_in: dict, arm: str) -> str | None:
-    """The round that retired this arm: by its arm id, else by its config id."""
+    """The round that retired this arm: by its arm id, else by its config id. An arm read through its re-score
+    (`runs-rescored/<scorer>/<arm>`, RFC-022, the goal's reading of it) is the arm it re-scored: without this, an
+    arm a round retired stayed in the goal's tie whenever it had been re-scored (found 2026-11-01: 25 of the
+    triage goal's 76 tied arms were round 3's retirements)."""
+    if arm.startswith("runs-rescored/") and arm.count("/") >= 3:
+        arm = arm.split("/", 2)[2]
     return retired_in.get(arm) or retired_in.get(arm.rsplit("/", 1)[-1])
 
 
