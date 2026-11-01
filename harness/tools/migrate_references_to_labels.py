@@ -38,11 +38,11 @@ def source_of(m: dict) -> dict:
     """The label source a reference's manifest says made it."""
     src = str(m.get("source") or "")
     if m.get("from_outcomes"):
-        fo = m["from_outcomes"]
+        outcomes = m["from_outcomes"]
         return {
             "kind": "rule",
             **{
-                k: fo.get(k)
+                k: outcomes.get(k)
                 for k in ("capture", "capture_sha256", "captured_at", "mapping", "mapping_sha256")
             },
         }
