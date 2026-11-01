@@ -3,6 +3,9 @@
 - **Status**: Built for 0.6.0 (2026-10-31). Drafted third 2026-10-30: brought in line with the engineering plan after
   three independent reviews; accepted when the build lands. ADR-0020 (second references are silver) is the
   owner's call.
+- **Replaced in part**: references from outcomes (`reference-from-outcomes`, and second references as silver) by
+  [RFC-023](RFC-023-labels-and-references.md) (draft): labels from a capture's outcomes are a `rule` label set, and
+  a reference is labels you promote.
 - **Authors**: Marko Dragoljevic
 - **Related PRD**: [PRD-014](../prd/PRD-014-datasets-from-production.md); also
   [PRD-006](../prd/PRD-006-datasets-versions-fields.md) (versions, item fields),

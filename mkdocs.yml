@@ -81,6 +81,7 @@ nav:
           - "RFC-020: Onboarding models, once, for every experiment (built, 0.6.0)": rfc/RFC-020-onboarding-a-model.md
           - "RFC-021: Fingerprint v5, the deployment, the settings and the runner (built, 0.6.0)": rfc/RFC-021-fingerprint-v5.md
           - "RFC-022: Scoring that evolves, previewed, re-scored or adopted by the next round (built, 0.6.0)": rfc/RFC-022-scoring-that-evolves.md
+          - "RFC-023: Labels, and the references promoted from them (draft)": rfc/RFC-023-labels-and-references.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md

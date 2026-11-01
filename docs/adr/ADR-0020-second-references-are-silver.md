@@ -1,6 +1,8 @@
 # ADR-0020 — A dataset's second reference is silver, with a caveat that says what it is (0.6.0)
 
 **Status:** Accepted (owner, 2026-10-31), built in 0.6.0. Proposed 2026-10-30 as the owner's vocabulary call.
+To be superseded by [RFC-023](../rfc/RFC-023-labels-and-references.md) (draft) when it is accepted: a
+label's source is recorded on it, and the tier is chosen when labels are promoted to a reference.
 **Date:** 2026-10-30
 **Detail:** [RFC-019](../rfc/RFC-019-datasets-from-production.md) (references from outcomes),
 [PRD-002](../prd/PRD-002-references.md) (references: gold, silver)
