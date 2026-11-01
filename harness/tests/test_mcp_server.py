@@ -156,6 +156,16 @@ try:
                 "datasets with an option: passed as the command line",
                 not res.is_error and "tickets_v1" in res.content[0].text,
             )
+            res = await s.call_tool("labels", {"dataset-id": "tickets_v1"})
+            want = evh("labels", "--dataset-id", "tickets_v1", "--json").stdout
+            check(
+                "labels: a read tool, its schema the command's options, its answer the command's JSON",
+                {"dataset-id"} <= set(by["labels"].input_schema["properties"])
+                and not res.is_error
+                and json.loads(res.content[0].text) == json.loads(want)
+                and res.structured_content == json.loads(want),
+                res.content[0].text[:300],
+            )
             res = await s.call_tool("datasets", {"bogus": 1})
             check(
                 "an unknown argument is refused before anything runs",

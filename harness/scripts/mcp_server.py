@@ -53,6 +53,7 @@ READ_TOOLS = (
     "runs-list",
     "validate",
     "captures",
+    "labels",
 )
 NOT_TOOLS = {
     "init": "writes a project",
@@ -83,6 +84,10 @@ NOT_TOOLS = {
     "importer-check": "reads a production system, not the project",
     "capture": "reads a production system and writes",
     "dataset-from-capture": "writes",
+    "label-sheet": "writes a sheet",
+    "label-import": "writes a label set",
+    "label-from-run": "writes a label set",
+    "label-from-capture": "writes a label set",
     "dataset-split": "writes",
     "capture-scrub": "runs a project's command and writes",
     "reference-from-outcomes": "writes",
@@ -109,7 +114,7 @@ JSON = {
     "search",
     "inspect",
 }
-JSON |= {"dataset-items", "captures"}
+JSON |= {"dataset-items", "captures", "labels"}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
 HIDDEN = {"--adapter", "--json", "--help"}
