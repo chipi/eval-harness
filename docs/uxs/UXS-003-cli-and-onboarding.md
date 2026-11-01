@@ -109,15 +109,15 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard <id> --deployment <d>`, `evh arm-smoke --config <arm>` | |
 | reference pages | `evh references [--reference-id <id>]` | `make references` |
 | the Captures page | `evh captures [--capture ID] [--json]` | |
-| the Labels page; a dataset page's labels (0.6.0; the pages: step 8) | `evh labels [--dataset-id D]` | |
+| the Labels page; a dataset page's labels (0.6.0) | `evh labels [--dataset-id D]` | |
 | (no page action) labelling: a sheet to fill, then its import (0.6.0) | `evh label-sheet --dataset-id D --out sheet.csv [--items …] [--item ID …]`, `evh label-import sheet.csv --dataset-id D --set S --by NAME` | |
 | (no page action) a run's outputs, or outcome rules, as labels (0.6.0) | `evh label-from-run --run R --set S`, `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | |
-| a reference's "promoted from" (0.6.0; the page: step 8) | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |
+| a reference's "promoted from" (0.6.0) | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |
 | scored against a label set (0.6.0) | `evh rescore --labels D/S`, `evh experiment-run --labels D/S` | |
-| a recorded arm's badge (0.6.0; the badge: step 8) | `evh arm-from-capture --dataset-id D --capture C --as NAME` | |
+| a recorded arm's badge (0.6.0) | `evh arm-from-capture --dataset-id D --capture C --as NAME` | |
 | the inspector's rows view; its selection's commands (0.6.0; the page: step 8) | `evh inspect --dataset-id D --rows …`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
-| a dataset page's picks waiting; its selection's command (0.6.0; the page: step 8) | `evh picks [--for V] [--tag k=v]`, `evh pick --dataset-id D --item ITEM --drop`; `evh dataset-extend V1 --dataset-id V2 --picks`, `evh dataset-extend V1 --dataset-id V2 --pick ITEM` | |
-| a promoted arm's deploy sheet (0.6.0; the page: step 8) | `evh deploy-sheet --config ARM [--capture C]` | |
+| a dataset page's picks waiting; its selection's command (0.6.0) | `evh picks [--for V] [--tag k=v]`, `evh pick --dataset-id D --item ITEM --drop`; `evh dataset-extend V1 --dataset-id V2 --picks`, `evh dataset-extend V1 --dataset-id V2 --pick ITEM` | |
+| a promoted arm's deploy sheet (0.6.0) | `evh deploy-sheet --config ARM [--capture C]` | |
 | the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
 | a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metrics --metric <metric>` | `make metrics METRIC=<metric>` |
 | inspector: a comparison | `evh inspect --runs a,b [--baseline a] [--metric m]` | `make inspect RUNS=a,b` |

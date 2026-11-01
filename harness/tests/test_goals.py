@@ -203,8 +203,11 @@ try:
         0 <= html.find("what it is for") < answer and "lead2 answers the triage goal on six tickets" in html,
     )
     check(
-        "catalog: the goal page groups its arms by what they are scored against, with the baseline tagged",
-        "scored against gold/tickets_v1" in html and 'class="tag-base"' in html,
+        "catalog: the goal page groups its arms by what they are scored against (linked, its pill), the baseline tagged",
+        'scored against <a class="cell-link" href="../r/gold-tickets_v1.html">gold/tickets_v1</a> '
+        '<span class="pill tier-gold">gold</span>'
+        in html
+        and 'class="tag-base"' in html,
     )
     ds_page = (proj / ".build/catalog/d/tickets_v1.html").read_text()
     check(

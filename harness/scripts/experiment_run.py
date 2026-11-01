@@ -535,12 +535,14 @@ def _dry_run(ds: dict[str, Any], cfg: dict[str, Any], repeat: int) -> int:
     return 0
 
 
-def _resume_source(resume: str | None, cfg: dict[str, Any]) -> tuple[Path | None, dict[str, dict[str, Any]]]:
-    """For `--resume <run_id>`: (its outputs directory, {item_id: its row}); (None, {}) without.
-    Dies when the run cannot be resumed as this arm."""
+def _resume_source(
+    resume: str | None, cfg: dict[str, Any], runs: Path = RUNS
+) -> tuple[Path | None, dict[str, dict[str, Any]]]:
+    """For `--resume <run_id>`: (its outputs directory, {item_id: its row}); (None, {}) without. The run is looked
+    for in `runs` (the runs directory, or a label set's). Dies when the run cannot be resumed as this arm."""
     if not resume:
         return None, {}
-    resume_dir = RUNS / resume / "outputs"
+    resume_dir = runs / resume / "outputs"
     if not resume_dir.is_dir():
         die(f"cannot resume: no outputs under {resume_dir}")
 
@@ -564,8 +566,8 @@ def _resume_source(resume: str | None, cfg: dict[str, Any]) -> tuple[Path | None
     # tidy case and not the crash, which is the only case resume exists for.
     #
     # `run.json` is now written BEFORE the first item, so identity survives a kill.
-    src_id = RUNS / resume / "run.json"
-    src_metrics = RUNS / resume / "metrics.json"
+    src_id = runs / resume / "run.json"
+    src_metrics = runs / resume / "metrics.json"
     ident = (
         read_json(src_id) if src_id.is_file() else read_json(src_metrics) if src_metrics.is_file() else None
     )
@@ -593,7 +595,7 @@ def _resume_source(resume: str | None, cfg: dict[str, Any]) -> tuple[Path | None
     # THE PRIOR ROWS, so a replayed item keeps the cost, tokens, latency and _meta
     # measured for it. `outputs/_rows.jsonl` is appended DURING the pass and so
     # survives a crash; predictions.jsonl is the tidy-exit copy of the same thing.
-    for src in (RUNS / resume / "outputs" / "_rows.jsonl", RUNS / resume / "predictions.jsonl"):
+    for src in (runs / resume / "outputs" / "_rows.jsonl", runs / resume / "predictions.jsonl"):
         if not src.is_file():
             continue
         for line in src.read_text(encoding="utf-8").splitlines():
@@ -697,6 +699,12 @@ def main() -> int:
 
         ref_id = labels_reference(args.labels, cfg["dataset_id"])
         ref_dir, ref_tier = scored_against_dir(ref_id), LABELS_TIER
+    # A run scored against a label set lands beside the runs, as a re-score against one does: an arm of its own.
+    runs = (
+        DATA / f"runs-labels-{cfg['dataset_id']}-{ref_id.rsplit('/', 1)[1]}"
+        if args.labels and ref_id
+        else RUNS
+    )
     # HOW MANY ITEMS HAVE A REFERENCE, counted before any call. A metric scored against a
     # missing reference is not computed, so with gold for 20 of 200 items the run's mean is a
     # mean over 20, recorded as a 200-item gold run. None is a refusal (nothing would be
@@ -819,8 +827,8 @@ def main() -> int:
             "  Resume the interrupted pass with --repeat 1, then run the rest."
         )
 
-    resume_dir, prior_rows = _resume_source(args.resume, cfg)
-    warn_if_ignored(RUNS)
+    resume_dir, prior_rows = _resume_source(args.resume, cfg, runs)
+    warn_if_ignored(runs)
 
     made: list[Path] = []
 
@@ -840,7 +848,7 @@ def main() -> int:
             )
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
-        run_dir = RUNS / run_id
+        run_dir = runs / run_id
         # The output directory exists BEFORE the pass starts, so each item lands on disk
         # as it is produced and a crash leaves something to resume from.
         #
@@ -982,7 +990,7 @@ def main() -> int:
                 verdict = "deterministic" if spread == 0 else f"treat deltas below {spread:.6f} as noise"
             print(f"    {k:{w}} spread={spread:.6f}   {verdict}")
 
-    print(f"\nwrote {len(made)} run(s) to {RUNS}")
+    print(f"\nwrote {len(made)} run(s) to {runs}")
     # What this command spent, so nobody adds up total_cost_usd by hand across repeats.
     spent = sum(
         float((read_json(d / "metrics.json").get("scores") or {}).get("total_cost_usd") or 0) for d in made
@@ -1014,7 +1022,7 @@ def main() -> int:
         # usable partial results" from "produced nothing".
         print("\n  Stopped early by the cost cap — exit 2. Partial results above are kept.")
         return 2
-    warn_if_ignored(RUNS)
+    warn_if_ignored(runs)
     return 0
 
 

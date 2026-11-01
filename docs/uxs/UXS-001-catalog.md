@@ -184,7 +184,7 @@ The author tint wins over the others. The same classes tint the inspector's verd
   `t-labels` (`--muted` at 10%, 3px bar), keyed "scored against a label set, not a reference".
 - **"Scored against"** always names one of the two: a reference with its pill, or a label set with its chip.
 - **A recorded arm** (production's decisions, from a capture) has a `recorded` badge beside its name, its capture
-  named; (0.6.0, planned: step 8) its cost and speed read "recorded, no call".
+  named; its cost and speed read "recorded, no call".
 
 ## The period (every listing page)
 
@@ -481,7 +481,7 @@ The page explains the goal, then answers, then shows how it got there and the ev
 The suggestions appear on the page only when the catalog is built with the harness's own adapter
 over the project's data; with a project adapter the rounds table and details still show.
 
-**Label sets and the deploy sheet** (0.6.0, planned: RFC-023):
+**Label sets and the deploy sheet** (0.6.0: RFC-023):
 
 - Arms scored against a label set form a group of their own on each dataset, headed by the set's source chip and
   name, never a tier pill; the group gets its recommended arm as a reference's group does, with the same reasons.
@@ -595,10 +595,10 @@ tile opens it grouped by config (`arms.html?group=config`).
   another reference or by a judge, tinted as everywhere.
 - `07 rounds`: each round it was in, in play or retired, and the round's status.
 - Notes, when the adapter has any (runs left out, and why).
-- **A recorded arm** (0.6.0, planned): the `recorded` badge in the hero, "production's decisions, from the capture
+- **A recorded arm** (0.6.0): the `recorded` badge in the hero, "production's decisions, from the capture
   `<id>`; no model was called", its capture linked; `04 config` shows the capture, the recorded arm's name and the
   adapter hook that read the outputs, in place of params.
-- **The deploy sheet** (0.6.0, planned), on a promoted arm's page: a section `deploy sheet` with what production
+- **The deploy sheet** (0.6.0), on a promoted arm's page: a section `deploy sheet` with what production
   must match (the model and its build, server and its settings, every setting the arm sends, the prompt and its
   hash, the adapter and its version, the dataset and reference it was promoted on), and, for each capture whose
   records say what production ran, "matches" or what differs on how many records. Command:

@@ -600,6 +600,8 @@ try:
     )
     r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "no_such_set")
     check("rescore --labels: an unknown set is refused", refused(r, "no label set at"), out(r)[-200:])
+    before_lab = set((data / "runs-labels-tickets_v1-author_v1").glob("tickets_lead1_v1_*"))
+    before_runs = sorted((data / "runs").glob("tickets_lead1_v1_*"))
     r = subprocess.run(
         [
             sys.executable,
@@ -611,22 +613,24 @@ try:
             "author_v1",
         ],
         cwd=proj,
-        env={**env, "EVAL_RUNS_DIR": "data/runs-labelrun"},
+        env=env,
         capture_output=True,
         text=True,
     )
-    run_m: dict = next(
-        (json.loads(p.read_text()) for p in (data / "runs-labelrun").glob("*/metrics.json")), {}
-    )
+    made = sorted(set((data / "runs-labels-tickets_v1-author_v1").glob("tickets_lead1_v1_*")) - before_lab)
+    run_m: dict = json.loads((made[-1] / "metrics.json").read_text()) if made else {}
     check(
-        "experiment-run --labels: the arm run against the label set, which the run records",
+        "experiment-run --labels: an arm of its own, beside the runs (data/runs-labels-<dataset>-<set>/), never one more"
+        " run of the config's arm in data/runs; the run records the set",
         r.returncode == 0
         and "the label set labels/tickets_v1/author_v1" in out(r)
         and run_m.get("reference_tier") == "labels"
-        and run_m["fingerprint"]["data"]["reference_id"] == "labels/tickets_v1/author_v1",
+        and run_m["fingerprint"]["data"]["reference_id"] == "labels/tickets_v1/author_v1"
+        and sorted((data / "runs").glob("tickets_lead1_v1_*")) == before_runs,
         out(r)[-300:],
     )
-    shutil.rmtree(data / "runs-labelrun", ignore_errors=True)
+    for d in made:
+        shutil.rmtree(d, ignore_errors=True)
     r = evh("goals", "--goal", "tickets_summary")
     group = (
         out(r).split("labels/tickets_v1/author_v1", 1)[1] if "labels/tickets_v1/author_v1" in out(r) else ""

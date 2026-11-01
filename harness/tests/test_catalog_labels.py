@@ -147,6 +147,9 @@ try:
         "owner",
     )
     check("setup: a pick waiting", r.returncode == 0, out(r)[-300:])
+    lead = sorted(p.name for p in (data / "runs").glob("tickets_lead1_v1_*"))[0]
+    r = evh("run-promote", "--run", lead, "--reason", "The lead sentence is enough, for the catalog's test.")
+    check("setup: a baseline promoted", r.returncode == 0, out(r)[-300:])
     r = evh("catalog", "--out", "cat")
     check("the catalog builds", r.returncode == 0, out(r)[-600:])
 
@@ -263,6 +266,88 @@ try:
         and "prod_v1" in crow
         and "production_v1" in crow,
         crow[:600],
+    )
+    ap = page("a/runs-prod_v1-production_v1.html")
+    check(
+        "recorded arm page: the badge, production's decisions from the capture (linked), no model called",
+        'class="badge recorded"' in ap
+        and "no model was called" in ap
+        and 'href="../captures.html#capture-prod_c1"' in ap,
+        re.sub(r"\s+", " ", ap)[:600],
+    )
+    check(
+        "recorded arm page: cost and speed read recorded, no call; its config the capture and how it was read",
+        "recorded, no call" in ap and "the record&#x27;s field channel" in ap and "production_v1" in ap,
+        "",
+    )
+    check(
+        "a recorded arm's row: its cost and speed read recorded, no call",
+        "recorded, no call" in row_of(pp, "production_v1"),
+        row_of(pp, "production_v1")[:500],
+    )
+    bp = page("a/runs-tickets_v1-tickets_lead1_v1.html")
+    check(
+        "a promoted arm's page: its deploy sheet (what was sent, the bookkeeping not sent, the command)",
+        'id="deploy-sheet"' in bp
+        and "settings sent" in bp
+        and "evh deploy-sheet --config tickets_lead1_v1" in bp
+        and "No capture here says what production ran" in bp,
+        "",
+    )
+    probe = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import json; from evaluation_harness.catalog_adapter import load_catalog_adapter as L; A = L(None); "
+                "print(json.dumps([A.deploy_sheet(a) is None for a in "
+                "('runs/tickets_v1/tickets_author_v1', 'runs/tickets_v1/tickets_lead1_v1')]))"
+            ),
+        ],
+        cwd=proj,
+        env={**env, "PYTHONPATH": str(HERE.parent)},
+        capture_output=True,
+        text=True,
+    )
+    check(
+        "the adapter's deploy_sheet: none for an arm never promoted, one for the promoted arm",
+        probe.stdout.strip() == "[true, false]",
+        out(probe)[-300:],
+    )
+    check(
+        "an arm never promoted has no deploy sheet",
+        'id="deploy-sheet"' not in page("a/runs-tickets_v1-tickets_author_v1.html"),
+        "",
+    )
+    gp = page("g/tickets_summary.html")
+    check(
+        "goal page: a group scored against a label set is headed by its source chip and name; the baseline's sheet",
+        re.search(r'<h3 class="sub">scored against <span class="src src-model">model</span>', gp) is not None
+        and "deploy sheet: what production must match" in gp,
+        "",
+    )
+    from evaluation_harness.catalog_build import deploy_verdicts
+
+    ok = {"captures": [{"capture": "c1", "records": 4, "ok": True, "keys": {}}]}
+    bad = {
+        "captures": [
+            {
+                "capture": "c2",
+                "records": 4,
+                "ok": False,
+                "keys": {
+                    "model": {"match": 3, "differ": {"m-two": 1}, "missing": 0},
+                    "prompt_sha": {"match": 2, "differ": {}, "missing": 2},
+                },
+            }
+        ]
+    }
+    check(
+        "the capture verdicts: every decision matched, or what differs and what is not recorded",
+        "every one of its 4 decisions was made by the promoted model and prompt" in deploy_verdicts(ok)
+        and "differ: m-two (1)" in deploy_verdicts(bad)
+        and "not recorded: 2" in deploy_verdicts(bad),
+        deploy_verdicts(bad),
     )
     check(
         "the selection's script is in the catalog's assets (the page itself writes nothing)",

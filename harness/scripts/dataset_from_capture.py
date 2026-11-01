@@ -55,9 +55,10 @@ def dig(fields: dict, path: str):
     return cur
 
 
-def load_capture(capture_id: str) -> tuple[dict, list]:
-    """(capture.json, its records), every record checked against the hash the capture recorded."""
-    base = CAPTURES / dataset_id_ok(capture_id)
+def load_capture(capture_id: str, captures_dir: _Path | None = None) -> tuple[dict, list]:
+    """(capture.json, its records), every record checked against the hash the capture recorded; from the project's
+    captures, or `captures_dir`."""
+    base = (captures_dir or CAPTURES) / dataset_id_ok(capture_id)
     if not (base / "capture.json").is_file():
         die(f"no capture {capture_id!r} at {base}")
     doc = read_json(base / "capture.json")

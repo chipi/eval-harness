@@ -1758,7 +1758,7 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
                     f"{' ↓' if a['lower'] else ''}</span>"
                 ),
                 f'<span data-v="{a["n"]}">{a["n"]}</span>',
-                *(axis_cell(ax, c) for ax, c in zip(bax, cells[a["arm"]])),
+                *(NO_CALL if a.get("recorded") else axis_cell(ax, c) for ax, c in zip(bax, cells[a["arm"]])),
                 str(a["runs"]),
                 scored_against(a, "../"),
                 f'<a class="btn small" href="{inspect_url([a["arm"]], "../")}">inspect</a>',
@@ -2484,6 +2484,21 @@ def _when(stamp: str) -> str:
     return (stamp or "")[:10]
 
 
+def _sheet_fold(A: Adapter, b: dict) -> str:
+    """The baseline's deploy sheet, folded, with what the captures say production ran (UXS-001)."""
+    fn = getattr(A, "deploy_sheet", None)
+    sh = fn(b["arm"]) if b.get("arm") and callable(fn) else None
+    if not sh:
+        return ""
+    v = deploy_verdicts(sh).replace("{up}", "../")
+    return (
+        (f'<ul class="small">{v}</ul>' if v else "")
+        + '<details class="inline small"><summary>deploy sheet: what production must match</summary>'
+        + deploy_sheet_html(sh, "../")
+        + "</details>"
+    )
+
+
 def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
     """The goal's answer so far: on each of its datasets, the promoted baseline and why, or that
     nothing has been decided, with the command that decides it."""
@@ -2517,8 +2532,9 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
                 f"{e(_when(str(latest.get('closed_at') or '')))}</p>"
                 f"<p>{e(latest['conclusion']['text'])}</p>"
                 f'<p class="small">baseline: <b>{who}</b>, promoted {e(_when(b["promoted_at"]))}'
-                + (f" · scored against {e(b['tier'])}" if b.get("tier") else "")
+                + (f" · scored against {tier_pill(b['tier'])}" if b.get("tier") else "")
                 + f'</p><details class="inline small"><summary>why it was promoted</summary>{e(b["reason"])}</details>'
+                + _sheet_fold(A, b)
                 + (
                     f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
                     if b.get("arm")
@@ -2532,8 +2548,9 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
             who = arm_link(b["arm"], arm, "../") if b.get("arm") else e(arm)
             parts.append(
                 f'<div class="answer"><p class="small muted">{head} · baseline promoted {e(_when(b["promoted_at"]))}'
-                + (f" · scored against {e(b['tier'])}" if b.get("tier") else "")
+                + (f" · scored against {tier_pill(b['tier'])}" if b.get("tier") else "")
                 + f'</p><p class="lead"><b>{who}</b></p><p>{e(b["reason"])}</p>'
+                + _sheet_fold(A, b)
                 + (
                     f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
                     if b.get("arm")
@@ -2897,7 +2914,12 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                                 arm_link(r["arm"], r["label"], "../") + tag,
                                 f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>',
                                 f'<span data-v="{r["n"]}">{r["n"]}</span>',
-                                *(axis_cell(ax, dec["rows"][r["arm"]][ax["name"]]) for ax in shown),
+                                *(
+                                    NO_CALL
+                                    if r.get("recorded") and ax["name"] in ("cost", "speed")
+                                    else axis_cell(ax, dec["rows"][r["arm"]][ax["name"]])
+                                    for ax in shown
+                                ),
                                 e("; ".join(r["flags"] + dec["out"].get(r["arm"], [])) or "—"),
                                 link,
                             ],
@@ -2905,7 +2927,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                     )
                 arms = [r["arm"] for r in rows][:INSPECT_MAX]
                 what = grp["key"]
-                inner += f'<h3 class="sub">{"scored by " + e(what) if what.startswith("judge ") else "scored against " + e(what)}</h3>'
+                inner += f'<h3 class="sub">{group_heading(what, rows)}</h3>'
                 if leader and len(arms) > 1:
                     inner += (
                         f'<p><a class="btn" href="{inspect_url(arms, "../", baseline=leader["arm"], metric=gm)}">'
@@ -3447,6 +3469,109 @@ def _siblings(by_ds: dict, a: dict, ds: str) -> list:
     return [x for x in by_ds[ds]["arms"] if x["arm"] != a["arm"] and x["arm"].rsplit("/", 1)[-1] == cid]
 
 
+NO_CALL = '<span class="muted">recorded, no call</span>'
+
+
+def group_heading(key: str, rows: list) -> str:
+    """A goal's group of arms, headed by what they are scored against: a judge, a label set by its source chip, a
+    reference with its tier pill (UXS-001)."""
+    if key.startswith("judge "):
+        return "scored by " + e(key)
+    if key.startswith("labels/"):
+        kind = next((r.get("labels_source") for r in rows if r.get("labels_source")), "")
+        return "scored against " + label_set_html(key.removeprefix("labels/"), kind, "../")
+    return f"scored against {reference_link(key, '../')} {tier_pill(key.split('/', 1)[0])}".rstrip()
+
+
+def deploy_verdicts(sh: dict) -> str:
+    """Per capture whose records say what production ran: "matches", or what differs on how many records."""
+    out = []
+    for c in sh.get("captures") or []:
+        cap = f'capture <a class="cell-link" href="{{up}}captures.html#capture-{e(c["capture"])}">{e(c["capture"])}</a>'
+        if c.get("ok"):
+            out.append(
+                f"{cap}: every one of its {c['records']} decisions was made by the promoted model and prompt"
+            )
+            continue
+        bits = []
+        for k, row in c["keys"].items():
+            b = f"<code>{e(k)}</code> {row['match']} match"
+            if row["differ"]:
+                b += "; differ: " + ", ".join(f"{e(v)} ({n})" for v, n in list(row["differ"].items())[:5])
+            if row["missing"]:
+                b += f"; not recorded: {row['missing']}"
+            bits.append(b)
+        out.append(f"{cap}, {c['records']} decisions: " + " · ".join(bits))
+    return "".join(f"<li>{x}</li>" for x in out)
+
+
+def deploy_sheet_html(sh: dict, up: str) -> str:
+    """The deploy sheet (PRD-005 FR3): what production must match to run what was measured, then what each capture
+    says production ran."""
+    m = sh.get("model") or {}
+    dep = m.get("deployment") or {}
+    facts = [
+        ("measured by", f"<code>{e(sh['run_id'])}</code> on {dataset_link(sh.get('dataset_id') or '', up)}"),
+        ("against", e((sh.get("reference") or {}).get("id") or "")),
+        ("model sent", f"<code>{e(m.get('sent') or '')}</code>"),
+        (
+            "model record",
+            f"<code>{e(m.get('record'))}</code>" if m.get("record") else "no model record names it",
+        ),
+        ("deployment", e(" · ".join(str(dep[k]) for k in ("id", "where", "tag") if dep.get(k)))),
+        ("server", e(str(m.get("server") or "not recorded"))),
+        ("build", e(str(m.get("build") or "none recorded (a hosted model has no digest)"))),
+        (
+            "settings sent",
+            "<br>".join(
+                f"<code>{e(k)}: {e(json.dumps(v) if not isinstance(v, str) else v)}</code>"
+                for k, v in (sh.get("sent") or {}).items()
+            ),
+        ),
+        (
+            "not sent",
+            "<br>".join(
+                [f"bookkeeping: <code>{e(', '.join(sh.get('not_sent') or []))}</code>"]
+                * bool(sh.get("not_sent"))
+                + [
+                    f"<b>the record sets <code>{e(k)}: {e(json.dumps(v) if not isinstance(v, str) else v)}</code>; this arm did not send it</b>"
+                    for k, v in (sh.get("record_settings_not_sent") or {}).items()
+                ]
+            ),
+        ),
+        (
+            "declared",
+            "<br>".join(
+                f"<code>{e(part)}.{e(k)}: {e(v)}</code>"
+                for part, kv in (sh.get("declared") or {}).items()
+                for k, v in kv.items()
+            ),
+        ),
+        (
+            "reported per item",
+            "<br>".join(
+                f"<code>{e(k)}: {e(', '.join(vs))}</code>" for k, vs in (sh.get("reported") or {}).items()
+            ),
+        ),
+        (
+            "adapter",
+            f"<code>{e((sh.get('adapter') or {}).get('id') or '')}</code> <small>{e((sh.get('adapter') or {}).get('sha256') or '')[:12]}</small>",
+        ),
+        ("harness", e(" ".join(str(x) for x in (sh.get("harness") or {}).values() if x))),
+    ]
+    dl = "".join(f"<dt>{e(k)}</dt><dd>{v}</dd>" for k, v in facts if v)
+    v = deploy_verdicts(sh).replace("{up}", up)
+    caps = (
+        f'<p class="small">What production ran, as its captures say:</p><ul class="small">{v}</ul>'
+        if v
+        else '<p class="small muted">No capture here says what production ran (the adapter\'s production_ran).</p>'
+    )
+    return (
+        f'<dl class="kv">{dl}</dl>{caps}<p class="small">Command: <code>evh deploy-sheet --config '
+        f"{e(sh['config_id'])} [--capture C]</code></p>"
+    )
+
+
 def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) -> None:
     """One arm: what it is scored against and for which goal, every metric it records, its runs,
     its config, the conditions it ran under, and the same config scored other ways."""
@@ -3495,8 +3620,16 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         )
     body = hero(
         "arm",
-        e(a["label"]) + (' <span class="tag-base">baseline</span>' if a.get("baseline") else ""),
-        f"One config on {dataset_link(ds, '../')}, scored one way; its repeats averaged per {e(A.item_word)}.",
+        e(a["label"])
+        + (' <span class="tag-base">baseline</span>' if a.get("baseline") else "")
+        + (' <span class="badge recorded">recorded</span>' if a.get("recorded") else ""),
+        (
+            f"Production's decisions, from the capture "
+            f'<a class="cell-link" href="../captures.html#capture-{e(a["recorded"])}">{e(a["recorded"])}</a>; '
+            f"no model was called. Scored like any arm on {dataset_link(ds, '../')}."
+        )
+        if a.get("recorded")
+        else f"One config on {dataset_link(ds, '../')}, scored one way; its repeats averaged per {e(A.item_word)}.",
         f'<dl class="kv">{dl}</dl><p class="btns">{"".join(btns)}</p>',
     )
     n = 1
@@ -3515,7 +3648,14 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
     n += 1
     sc = A.scores(a["arm"])
     cs = [(ax, cell_of(ax, sc)) for ax in builtin_axes()]
-    if any(c["n"] or (c.get("tokens") or {}).get("n") for _, c in cs):
+    if a.get("recorded"):
+        body += block(
+            f"{n:02d}",
+            "cost and speed",
+            f'<p class="small">{NO_CALL}: its outputs are what production decided, read from the capture.</p>',
+        )
+        n += 1
+    elif any(c["n"] or (c.get("tokens") or {}).get("n") for _, c in cs):
         kv = "".join(f"<dt>{e(axis_title(ax))}</dt><dd>{e(cell_text(ax, c))}</dd>" for ax, c in cs)
         body += block(
             f"{n:02d}",
@@ -3545,7 +3685,23 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         n += 1
     cfg_fn = getattr(A, "arm_config", None)
     cfg = cfg_fn(a["arm"]) if callable(cfg_fn) else {}
-    if cfg.get("params"):
+    if a.get("recorded"):
+        kv = "".join(
+            f"<dt>{e(k)}</dt><dd>{v_}</dd>"
+            for k, v_ in (
+                (
+                    "capture",
+                    f'<a class="cell-link" href="../captures.html#capture-{e(a["recorded"])}">{e(a["recorded"])}</a>',
+                ),
+                ("recorded arm", f"<code>{e(cfg.get('config_id', ''))}</code>"),
+                ("outputs read by", e(cfg.get("recorded_by") or "")),
+                ("adapter", f"<code>{e(cfg.get('adapter') or '')}</code>"),
+            )
+            if v_
+        )
+        body += block(f"{n:02d}", "config", f'<dl class="kv">{kv}</dl>')
+        n += 1
+    elif cfg.get("params"):
         kv = "".join(
             f"<dt>{e(k)}</dt><dd><code>{e(json.dumps(x) if not isinstance(x, str) else x)}</code></dd>"
             for k, x in sorted(cfg["params"].items())
@@ -3557,6 +3713,11 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             + " · credentials are never shown</p>"
         )
         body += block(f"{n:02d}", "config", extra + f'<dl class="kv">{kv}</dl>')
+        n += 1
+    sheet_fn = getattr(A, "deploy_sheet", None)
+    sheet = sheet_fn(a["arm"]) if a.get("baseline") and callable(sheet_fn) else None
+    if sheet:
+        body += block(f"{n:02d}", "deploy sheet", deploy_sheet_html(sheet, "../"), "deploy-sheet")
         n += 1
     cond_fn = getattr(A, "conditions", None)
     cond = cond_fn(a["arm"]) if callable(cond_fn) else {}

@@ -615,6 +615,39 @@ class HarnessAdapter:
                     )
         return out
 
+    def deploy_sheet(self, arm: str) -> dict | None:
+        """What production must match to run this arm (RFC-023, `evh deploy-sheet`), with a check against each capture
+        whose records say what production ran (the arm's adapter's `production_ran`); None when the arm's config was
+        never promoted, or its sheet cannot be read here."""
+        from collections import Counter  # noqa: PLC0415
+
+        from evaluation_harness import deploy_sheet as dsh  # noqa: PLC0415
+        from evaluation_harness._adapter import adapter_module  # noqa: PLC0415
+
+        cid = self._metrics(arm).get("config_id")
+        if not cid:
+            return None
+        try:
+            sh = dsh.sheet(cid, self.data_dir, self.runs_root / "runs")
+        except SystemExit:
+            return None
+        if not sh.get("promoted"):
+            return None
+        checks = []
+        caps = self.data_dir / "captures"
+        if callable(getattr(adapter_module(sh["_adapter_spec"]), "production_ran", None)):
+            for c in sorted(caps.glob("*/capture.json")) if caps.is_dir() else []:
+                try:
+                    got = dsh.check(sh, c.parent.name, caps)
+                except SystemExit:  # a record changed since it was captured: that capture says nothing here
+                    continue
+                if any(k["match"] or k["differ"] for k in got["keys"].values()):
+                    for k in got["keys"].values():
+                        k["differ"] = dict(Counter(k["differ"]).most_common())
+                    got["ok"] = all(not k["differ"] and not k["missing"] for k in got["keys"].values())
+                    checks.append(got)
+        return {**{k: v for k, v in sh.items() if not k.startswith("_")}, "captures": checks}
+
     def label_sets(self) -> list[dict]:
         """Every label set (RFC-023): {dataset, set, id ("<dataset>/<set>"), source, n_items, guideline, created_at,
         items {item: {"item_sha256"}}}, from data/labels/<dataset>/<set>/labels.json; [] when there are none."""
@@ -972,11 +1005,24 @@ class HarnessAdapter:
         from evaluation_harness._providers import shown_params  # noqa: PLC0415
 
         m = self._metrics(arm)
+        params = m.get("params") or {}
+        read_by = ""
+        if params.get("provider") == "recorded":
+            from evaluation_harness._adapter import adapter_module  # noqa: PLC0415
+
+            hook = callable(getattr(adapter_module(m.get("adapter")), "recorded_output", None))
+            read_by = (
+                "the adapter's recorded_output(record)"
+                if hook
+                else f"the record's field {params.get('field')}"
+            )
         return {
             "config_id": m.get("config_id") or arm.rsplit("/", 1)[-1],
-            "params": shown_params(m.get("params") or {}),
+            "params": shown_params(params),
             "adapter": m.get("adapter") or "",
             "deployment": m.get("deployment_id") or "",
+            # A recorded arm (RFC-023): its outputs are the capture's records, read this way; no model was called.
+            "recorded_by": read_by,
         }
 
     @_memo

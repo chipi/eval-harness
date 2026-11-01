@@ -140,8 +140,9 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 - **FR6.1**: `evh rescore --dataset-id D --labels SET` and `evh experiment-run --config C --labels SET` score against
   a label set of the run's own dataset without promoting it (a set on another dataset is refused: promote it, or
   label this one). The run records `reference_id: labels/<dataset>/<set>` and `reference_tier: labels`, and its
-  fingerprint hashes the set's files. A re-score is written beside the runs, `data/runs-labels-<dataset>-<set>/`,
-  never where a goal reads a re-score in place of a run.
+  fingerprint hashes the set's files. A run scored against a set, measured or re-scored, is written beside the
+  runs, `data/runs-labels-<dataset>-<set>/`: an arm of its own, never one more run of the config's arm on gold or
+  silver, and never where a goal reads a re-score in place of a run.
 - **FR6.2** (0.6.0, planned: the pages, step 8): Every view names it by its source ("against your labels of
   <date>"), never as a reference or with a tier; arms against different sets are never compared, as for references
   (FR5.4).

@@ -124,14 +124,14 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR1.13** (0.6.0): A Captures page, under Data, lists every capture (its records, importer, sample rule, the
   time its records span, what it continues) with the datasets made from each; a dataset made from a capture links
   its origin to it.
-- **FR1.14** (0.6.0, planned):
+- **FR1.14** (0.6.0):
   - a tier is a large pill in its own colour wherever a reference or a tier is named; a label set is named by its
     source chip (person, model, rule), never in a tier's colours; "scored against" names one or the other, always;
   - a Labels page under Data: every label set, its source, coverage, guideline, and what was promoted from it; a
     reference's page says which set it was promoted from, by whom, when and why;
   - the dataset page: its label sets, how often two agree, its picks waiting (a selection gives the
     `dataset-extend` command), and for a version made from picks, where each added item came from;
-  - a recorded arm (production's decisions) is badged, its capture linked, no cost; a promoted arm's page and the
+  - a recorded arm (production's decisions) is badged, its capture named (linked from its page), no cost; a promoted arm's page and the
     goal page beside its baseline show the deploy sheet (PRD-005 FR3);
 
 ### FR2: The inspector (local server)

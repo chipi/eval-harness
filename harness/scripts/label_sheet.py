@@ -36,16 +36,20 @@ VIEW = 160
 
 
 def run_dir(name: str, dataset_id: str) -> Path:
-    """A run by its id, or a config's latest run on the dataset."""
-    d = _common.RUNS / name
-    if (d / "metrics.json").is_file():
-        if read_json(d / "metrics.json").get("dataset_id") != dataset_id:
-            die(f"--runs {name}: that run is not on {dataset_id}")
-        return d
-    found = runs_on(dataset_id, config_id=name)
-    if not found:
-        die(f"--runs {name}: no run with that id, and no run of that config on {dataset_id}")
-    return found[-1][0]
+    """A run by its id, or a config's latest run on the dataset: in data/runs, else in a label set's runs
+    (data/runs-labels-<dataset>-<set>/, where a run scored against labels lands)."""
+    bases = [_common.RUNS, *sorted(_common.DATA.glob(f"runs-labels-{dataset_id}-*"))]
+    for base in bases:
+        d = base / name
+        if (d / "metrics.json").is_file():
+            if read_json(d / "metrics.json").get("dataset_id") != dataset_id:
+                die(f"--runs {name}: that run is not on {dataset_id}")
+            return d
+    for base in bases:
+        found = runs_on(dataset_id, runs_dir=base, config_id=name)
+        if found:
+            return found[-1][0]
+    die(f"--runs {name}: no run with that id, and no run of that config on {dataset_id}")
 
 
 def output(d: Path, item_id: str) -> str | None:

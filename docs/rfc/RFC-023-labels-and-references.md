@@ -97,9 +97,11 @@ The harness cannot do steps 6 and after:
 - As built (step 4, 2026-11-01): the run records `reference_id: labels/<dataset>/<set>` and `reference_tier:
   labels` in place of a separate field, so every reader resolves it through one function (`scored_against_dir`) and
   none can take it for gold or silver; the fingerprint hashes the set's files. Only a set of the run's own dataset
-  is scored against (labels are read by item id); one on another dataset is promoted first. A re-score goes to
-  `data/runs-labels-<dataset>-<set>/`, a plain runs folder every reader already finds, never the re-score place goals
-  read in place of a run. An arm scored against a `model` set of its own outputs is flagged, as a reference's author
+  is scored against (labels are read by item id); one on another dataset is promoted first. A run scored against a
+  set, a re-score or (fixed in step 8) a measured run, goes to `data/runs-labels-<dataset>-<set>/`, a plain runs
+  folder every reader already finds, never the re-score place goals read in place of a run: in `data/runs` a measured
+  run joined the config's arm, and the catalog, reading one reference per arm, set the gold runs aside, a promoted
+  baseline's run with them. `--runs` (the sheet, the rows view) finds a run there too. An arm scored against a `model` set of its own outputs is flagged, as a reference's author
   is.
 - A goal suggests a finalist for a group scored against a label set as it does for a reference's group, the group
   headed by its labels; you choose the baseline either way (owner, 2026-11-01).

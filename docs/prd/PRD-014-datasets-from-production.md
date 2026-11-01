@@ -165,8 +165,7 @@ comment that says what it was.
   item wins (picking again retargets or retags); `--drop` takes it off the waiting list; a refused action writes
   nothing.
 - **FR9.2**: `evh picks [--for V] [--tag k=v] [--json]` lists what waits, per target and "no target yet", each with
-  where it came from and its labels by source ("none yet"); an MCP read tool. (0.6.0, planned: the target dataset's
-  page shows its picks waiting, step 8.)
+  where it came from and its labels by source ("none yet"); an MCP read tool. The target dataset's page shows its picks waiting.
 
 ### FR10: The next version of a governed dataset (0.6.0)
 
@@ -177,7 +176,7 @@ comment that says what it was.
   V1 with the same bytes is kept once; one with other bytes is refused. V2 keeps V1's field set and tags, and is
   `text: hidden` when V1 or a picked item's dataset is.
 - **FR10.2**: The picked items arrive with their labels (labels follow the item); nothing is promoted by the
-  extension. (0.6.0, planned: the dataset page gives the command for the picks you select, step 8.)
+  extension. The dataset page gives the command for the picks you tick.
 
 ## Success Metrics
 

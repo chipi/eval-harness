@@ -41,13 +41,17 @@ from evaluation_harness.dataset_from_capture import load_capture
 FEW = 3
 
 
-def promoted_run(config_id: str) -> tuple[Path, dict[str, Any] | None]:
+def promoted_run(
+    config_id: str, data_dir: Path | None = None, runs_dir: Path | None = None
+) -> tuple[Path, dict[str, Any] | None]:
     """(the run, the baseline it was promoted as, or None): the latest baseline whose run is this arm's, else the
-    arm's latest run."""
+    arm's latest run. The project's directories, or `data_dir` and `runs_dir` (the catalog's)."""
+    baselines = (data_dir / "baselines") if data_dir else BASELINES
+    runs = runs_dir or RUNS
     best: tuple[str, Path, dict[str, Any]] | None = None
-    for f in sorted(BASELINES.glob("*.json")) if BASELINES.is_dir() else []:
+    for f in sorted(baselines.glob("*.json")) if baselines.is_dir() else []:
         b = read_json(f)
-        run = RUNS / str(b.get("promoted_from") or "")
+        run = runs / str(b.get("promoted_from") or "")
         if (
             b.get("promoted_from")
             and (run / "metrics.json").is_file()
@@ -57,7 +61,7 @@ def promoted_run(config_id: str) -> tuple[Path, dict[str, Any] | None]:
             best = (str(b.get("promoted_at")), run, b)
     if best:
         return best[1], best[2]
-    found = runs_on(config_id=config_id)
+    found = runs_on(config_id=config_id, runs_dir=runs)
     if not found:
         die(f"--config {config_id}: no run of that config (evh runs-list)")
     return found[-1][0], None
@@ -75,9 +79,10 @@ def reported(run: Path) -> dict[str, list[str]]:
     return {k: sorted(v) for k, v in sorted(seen.items()) if len(v) <= FEW}
 
 
-def sheet(config_id: str) -> dict[str, Any]:
+def sheet(config_id: str, data_dir: Path | None = None, runs_dir: Path | None = None) -> dict[str, Any]:
     """Everything production must match, as a dict."""
-    run, base = promoted_run(config_id)
+    run, base = promoted_run(config_id, data_dir, runs_dir)
+    data_root = data_dir or DATA
     m = read_json(run / "metrics.json")
     fp = m.get("fingerprint") or {}
     params = m.get("params") or {}
@@ -86,9 +91,9 @@ def sheet(config_id: str) -> dict[str, Any]:
     data = fp.get("data") or {}
     inst = fp.get("instrument") or {}
     rec = (
-        _models.find(DATA, params["model_record"])
+        _models.find(data_root, params["model_record"])
         if params.get("model_record")
-        else _models.by_alias(DATA).get(str(params.get("model")))
+        else _models.by_alias(data_root).get(str(params.get("model")))
     )
     deployment = None
     if rec:
@@ -141,7 +146,7 @@ def sheet(config_id: str) -> dict[str, Any]:
     }
 
 
-def check(s: dict[str, Any], capture_id: str) -> dict[str, Any]:
+def check(s: dict[str, Any], capture_id: str, captures_dir: Path | None = None) -> dict[str, Any]:
     """Each record's account of what production ran, against the sheet: per key, matched, differing, missing."""
     mod = adapter_module(s["_adapter_spec"])
     fn = getattr(mod, "production_ran", None)
@@ -150,7 +155,7 @@ def check(s: dict[str, Any], capture_id: str) -> dict[str, Any]:
             f"--capture: the adapter {s['_adapter_spec']} has no production_ran(record): it cannot say what production"
             " ran"
         )
-    _, recs = load_capture(capture_id)
+    _, recs = load_capture(capture_id, captures_dir)
     per: dict[str, dict[str, Any]] = {}
     for r in recs:
         for k, v in (fn(r) or {}).items():
