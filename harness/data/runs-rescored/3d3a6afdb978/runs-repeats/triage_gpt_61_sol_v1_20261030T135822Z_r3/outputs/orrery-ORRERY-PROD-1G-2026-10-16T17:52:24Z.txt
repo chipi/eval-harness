@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "Error: sourcemap probe (delete me)", "model_disposition": "cleanup", "reason": "The alert explicitly identifies a sourcemap test probe marked for deletion; remove this synthetic noise at its source."}

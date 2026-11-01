@@ -72,11 +72,26 @@ def table() -> str:
         cb.retired_in_of(A, goal),
         cb.gold_beside(tiers, ans["groups"], grp["key"]),
     )
-    ok = [r for r in rows if r["arm"] not in dec["out"]]
-    out_ = [r for r in rows if r["arm"] in dec["out"]]
+    # An arm a round retired (re-run as _v2 with its model set up) is listed last and says so: as one more row it
+    # read as a result beside the re-run that replaced it (round 3, 2026-11-01).
+    # By config id: the rows are the arms the goal reads (a re-score in place of a run), the round names configs.
+    gone = {
+        x["config_id"]: rd["round_id"]
+        for rd in A.rounds()
+        if rd.get("goal") == GOAL
+        for x in rd.get("retired") or []
+    }
+
+    def retired(r: dict) -> str:
+        return gone.get(r["arm"].rsplit("/", 1)[-1], "")
+
+    live = [r for r in rows if not retired(r)]
+    ok = [r for r in live if r["arm"] not in dec["out"]]
+    out_ = [r for r in live if r["arm"] in dec["out"]]
+    old = [r for r in rows if retired(r)]
     limits = "; ".join(axis_title(ax) for ax in dec["axes"] if ax.get("limit") is not None)
     lines = ["| " + " | ".join(HEADS) + " |", "|" + "---|" * len(HEADS)]
-    for i, r in enumerate(ok + out_, 1):
+    for i, r in enumerate(ok + out_ + old, 1):
         m = r["means"]
         model, where = _model_where(r["label"], r.get("machine") or "")
         model = model.replace("_noreason", " (reasoning off)")
@@ -99,14 +114,14 @@ def table() -> str:
                     _count(m, "no_decision"),
                     _num(m, "cost_usd", ".5f"),
                     _num(m, "latency_ms", ".1f", 1 / 1000),
-                    "ok" if r in ok else "out",
+                    f"retired in {retired(r)}" if r in old else "ok" if r in ok else "out",
                 ]
             )
             + " |"
         )
     note = (
         f"Generated from the harness: the goal `{GOAL}` on `{DATASET}`, scored against its gold, in the order the "
-        f"catalog ranks them; the arms the goal rules out ({limits}) last, `out` under limits. {ans['notes']} "
+        f"catalog ranks them; the arms the goal rules out ({limits}) after them, `out` under limits; the arms a round retired last. {ans['notes']} "
         "`passes`: the runs "
         "averaged in the row. Counts are of the items each measure is a rate over. `—`: not recorded, because the run "
         "predates the measure (no decision) or bills nothing ($)."

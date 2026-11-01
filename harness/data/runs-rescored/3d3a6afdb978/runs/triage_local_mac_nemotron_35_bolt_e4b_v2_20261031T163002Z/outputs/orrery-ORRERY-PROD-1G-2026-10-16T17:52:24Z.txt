@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "(delete me)", "model_disposition": "cleanup", "reason": "The alertname explicitly contains the marker \"(delete me)\", indicating this is intentional noise/test artifact."}
