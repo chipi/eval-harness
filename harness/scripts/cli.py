@@ -133,6 +133,10 @@ COMMANDS = {
         "dataset_extend.py",
         "the next version of a dataset: its items and the picks you choose",
     ),
+    "deploy-sheet": (
+        "deploy_sheet.py",
+        "what production must match to run a promoted arm, and whether a capture says it did",
+    ),
     "arm-from-capture": (
         "arm_from_capture.py",
         "production's recorded decisions as an arm, scored like any (no call)",

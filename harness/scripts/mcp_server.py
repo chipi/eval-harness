@@ -55,6 +55,7 @@ READ_TOOLS = (
     "captures",
     "labels",
     "picks",
+    "deploy-sheet",
 )
 NOT_TOOLS = {
     "init": "writes a project",
@@ -119,7 +120,7 @@ JSON = {
     "search",
     "inspect",
 }
-JSON |= {"dataset-items", "captures", "labels", "picks"}
+JSON |= {"dataset-items", "captures", "labels", "picks", "deploy-sheet"}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
 HIDDEN = {"--adapter", "--json", "--help"}

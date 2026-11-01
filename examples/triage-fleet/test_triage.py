@@ -149,6 +149,8 @@ def decision(i, disposition, linked, ts="2026-10-01T00:00:00Z", later=(), **kw):
             "disposition": disposition,
             "stage": "propose",
             "model": "m",
+            "prompt_ver": "mvp-1",
+            "prompt_sha": "c2ece738",
             "fingerprint": f"glitchtip:X-{i}",
         },
         "provenance": {"evidence_level": "exact"},
@@ -203,6 +205,13 @@ r1 = recs["1"]
 check("importer: a well-formed record", not _importers.problems(r1), _importers.problems(r1))
 check("importer: the body is only what the agent sees", set(r1["body"]) == {"signal", "probes"})
 check("importer: decision_kind is a field", r1["fields"]["decision_kind"] == "model")
+check(
+    "importer and production_ran: what the ledger says production ran, for evh deploy-sheet --capture (RFC-023)",
+    r1["fields"]["fleet_prompt_ver"] == "mvp-1"
+    and adapter.production_ran(r1) == {"model": "m", "prompt_sha": "c2ece738"}
+    and adapter.production_ran({"fields": {}}) == {"model": None, "prompt_sha": None},
+    str(r1["fields"]),
+)
 recorded = adapter.recorded_output(r1)
 check(
     "recorded_output: production's decision from the record, scored as a model's (RFC-023)",

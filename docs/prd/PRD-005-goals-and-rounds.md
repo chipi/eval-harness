@@ -1,7 +1,7 @@
 # PRD-005: Goals, and experiment rounds
 
-- **Status**: Implemented (v0.4.0); groups scored against a label set (FR1.7) built for 0.6.0; the deploy sheet (FR3) planned
-  for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
+- **Status**: Implemented (v0.4.0); groups scored against a label set (FR1.7) and the deploy sheet in the terminal (FR3) built
+  for 0.6.0; the deploy sheet on the pages planned for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the goal page), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the round commands)
 - **Related RFC**: [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds: files, commands, the evidence)
@@ -134,15 +134,20 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   resolve, `from` exists, a closed round has a conclusion, every run naming a round names one
   that exists.
 
-### FR3: The deploy sheet (0.6.0, planned)
+### FR3: The deploy sheet (0.6.0)
 
 - **FR3.1**: `evh deploy-sheet --config ARM` prints what production must match to run what was measured: the model
   and its build (the model record's deployment: tag, digest, server and its settings), every setting the arm
   sends, the prompt and its hash, the adapter and its version, and the dataset and reference it was promoted on.
-  The promoted arm's page and the goal page beside its baseline show the same.
+  It reads the run the arm was promoted with (the latest baseline whose run is the arm's), else the arm's latest
+  run, and says which; it notes a model record's setting the arm did not send. (0.6.0, planned: the promoted
+  arm's page and the goal page beside its baseline show the same, step 8.)
 - **FR3.2**: `evh deploy-sheet --config ARM --capture C` checks a capture whose records say what production ran (for
   triage: the ledger's `model`, `prompt_ver`, `prompt_sha`, through the adapter): "every captured decision was made
-  by the promoted model and prompt", or what differs and on how many records.
+  by the promoted model and prompt", or what differs and on how many records. Each record's account comes from
+  the adapter's `production_ran(record)`; a key is matched against what the run's own items reported (`_meta`), the
+  model also against the model record's id, aliases and deployment tags; a record that does not say is not a
+  match. It exits 1 unless every record matches.
 
 ## Success Criteria
 

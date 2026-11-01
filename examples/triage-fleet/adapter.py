@@ -308,6 +308,14 @@ def same(a: str, b: str) -> bool:
         return a.strip() == b.strip()
 
 
+def production_ran(record: dict) -> dict:
+    """What the ledger says production ran for one decision, for `evh deploy-sheet --capture` (RFC-023): the
+    model and the prompt's hash, under the keys a run's items report them (`_meta`). A capture made before the
+    importer kept the prompt has no hash: not recorded."""
+    fields = record.get("fields") or {}
+    return {"model": fields.get("fleet_model"), "prompt_sha": fields.get("fleet_prompt_sha")}
+
+
 def recorded_output(record: dict) -> str:
     """Production's decision for one item, from the capture's record (a recorded arm, RFC-023): the fleet's
     disposition as the decision JSON `score` reads. The capture keeps no gate reason, so for this arm the model's

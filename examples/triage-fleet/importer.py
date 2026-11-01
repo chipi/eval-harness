@@ -7,7 +7,8 @@ is chipi-nbgd/orrery-triage on Hugging Face. This importer turns a line into a r
 
   id          the occurrence id
   body        {signal, probes}: exactly what the agent can see, nothing about what happened next
-  fields      evidence_level, decision_kind, fleet_disposition, fleet_model, stage, fingerprint,
+  fields      evidence_level, decision_kind, fleet_disposition, fleet_model, fleet_prompt_ver,
+              fleet_prompt_sha (what the ledger says production ran), stage, fingerprint,
               decision_date, and `labelled` (yes/no: the owner labelled it, in the query's `verdicts` file)
   created_at  when the fleet decided
   outcome     FLAT fields the reference rules read (RFC-019 §5: the project computes them):
@@ -196,6 +197,8 @@ class Importer:
                     "decision_kind": row.get("decision_kind"),
                     "fleet_disposition": fd.get("disposition"),
                     "fleet_model": fd.get("model"),
+                    "fleet_prompt_ver": fd.get("prompt_ver"),
+                    "fleet_prompt_sha": fd.get("prompt_sha"),
                     "stage": fd.get("stage") or "",
                     "fingerprint": fd.get("fingerprint"),
                     "decision_date": str(ts)[:10] if ts else None,

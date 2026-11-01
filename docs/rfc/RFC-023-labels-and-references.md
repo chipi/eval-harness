@@ -192,6 +192,16 @@ and reference it was promoted on. A capture whose records carry what production 
 model and prompt", or what differs. Without that check, step 6 can evaluate a model that is not the one in
 production.
 
+As built (step 7, 2026-11-01, the terminal; the pages are step 8): `deploy_sheet.py`. The sheet reads the promoted
+run (else the arm's latest run, said so) and notes a record setting the arm did not send. The capture check reads
+each record through the adapter's `production_ran(record)`; the triage importer now keeps the ledger's
+`prompt_ver` and `prompt_sha` as `fleet_prompt_ver` and `fleet_prompt_sha`. On the triage project it found, on
+first use: the promoted baseline `triage_baseline_pro_v1` never sent its record's `reasoning_effort: none` (its
+config names no `model_record`); in `orrery_2026_10`, 8 of 233 decisions (all on 2026-07-25, the first day) were
+made by `deepseek/deepseek-v4-flash`, not the promoted model, and the capture predates the prompt fields (not
+recorded: 233). The two hooks moved the triage adapter's scorer version 9558eee9cac9 -> ce7d05b82fcd; score-preview
+over the goal's 91 runs moves no arm (+0.0000, tie 51).
+
 ### Several projects in parallel
 
 A project is a folder with its own `data/`; several run side by side, as several checkouts, each pinning its own

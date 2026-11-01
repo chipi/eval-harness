@@ -701,6 +701,10 @@ def test_example_scorer_suites_pass() -> None:
             "the rows view: every item's decisions, labels and signals; each signal a filter; the pick and sheet commands",
         ),
         (
+            "test_deploy_sheet.py",
+            "the deploy sheet: what production must match; a capture checked against it, what differs, exit 1",
+        ),
+        (
             "test_model_onboard.py",
             "evh model-onboard: reasoning, format, determinism and the build, against a fake server",
         ),

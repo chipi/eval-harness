@@ -117,7 +117,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | a recorded arm's badge (0.6.0; the badge: step 8) | `evh arm-from-capture --dataset-id D --capture C --as NAME` | |
 | the inspector's rows view; its selection's commands (0.6.0; the page: step 8) | `evh inspect --dataset-id D --rows …`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
 | a dataset page's picks waiting; its selection's command (0.6.0; the page: step 8) | `evh picks [--for V] [--tag k=v]`, `evh pick --dataset-id D --item ITEM --drop`; `evh dataset-extend V1 --dataset-id V2 --picks`, `evh dataset-extend V1 --dataset-id V2 --pick ITEM` | |
-| a promoted arm's deploy sheet (0.6.0, planned) | `evh deploy-sheet --config ARM [--capture C]` | |
+| a promoted arm's deploy sheet (0.6.0; the page: step 8) | `evh deploy-sheet --config ARM [--capture C]` | |
 | the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
 | a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metrics --metric <metric>` | `make metrics METRIC=<metric>` |
 | inspector: a comparison | `evh inspect --runs a,b [--baseline a] [--metric m]` | `make inspect RUNS=a,b` |

@@ -260,6 +260,7 @@ def main() -> int:
             ),
             ("label-from-run", ["--run", "no_such_run", "--set", "installed_v1"], "no finished run"),
             ("picks", [], "ok:No picks waiting"),
+            ("deploy-sheet", ["--config", "no_such_v1"], "no run of that config"),
             ("pick", ["--dataset-id", "tickets_v1", "--item", "no_such_item"], "not in tickets_v1"),
             ("dataset-extend", ["tickets_v1", "--dataset-id", "tickets_v9", "--picks"], "no pick is waiting"),
             (

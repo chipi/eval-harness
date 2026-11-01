@@ -76,7 +76,7 @@ comment that says what it was.
   (`evh capture … --sample-rate 0.001 --seed 7`), and see what was read and when._
 - _As an engineer, I freeze a dataset from a capture and score production's own decisions on it
   (`evh arm-from-capture`), beside the deployed config and a candidate._
-- (0.6.0, planned) _As an engineer, I check that production ran what I promoted (`evh deploy-sheet`)._
+- _As an engineer, I check that production ran what I promoted (`evh deploy-sheet`)._
 - _As an operator, my close comments become labels through a mapping I can read (`evh label-from-capture`)._
 - (0.6.0, planned) _As an engineer, I open the rows where production was wrong on something the governed dataset does not cover
   (`evh inspect --dataset-id D --rows --wrong-against S --new-vs V1`) and pick the ones worth keeping._
