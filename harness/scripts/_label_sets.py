@@ -73,9 +73,11 @@ def write_set(
     source: dict[str, Any],
     guideline: Path | None = None,
     notes: dict[str, str] | None = None,
+    rebuild: str | None = None,
 ) -> dict[str, Any]:
     """Write a new label set and return its record. Refused when the set exists (a set is never edited: a
-    correction is a new set), when an item is not in the dataset, when a label is empty or the source is unknown."""
+    correction is a new set), when an item is not in the dataset, when a label is empty or the source is unknown.
+    `rebuild`: the texts are kept out of git (a .gitignore beside them), and this command writes them again."""
     if source.get("kind") not in SOURCES:
         die(f"a label's source is one of {', '.join(SOURCES)}, not {source.get('kind')!r}")
     out = set_dir(dataset_id, name)
@@ -114,6 +116,12 @@ def write_set(
     kept = {k: v for k, v in sorted((notes or {}).items()) if k in rows and v}
     if kept:
         doc["notes"] = kept
+    if rebuild:
+        doc["redistributed"] = False
+        doc["rebuild"] = rebuild
+        (out / ".gitignore").write_text(
+            "# the label texts are not redistributed (labels.json says how to rebuild them)\n*.txt\n"
+        )
     write_json(out / "labels.json", doc)
     return doc
 

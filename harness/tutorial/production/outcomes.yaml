@@ -1,5 +1,5 @@
-# From what happened to a ticket afterwards to a label (evh reference-from-outcomes): first match wins.
-# A label from outcomes is silver: shown beside a person's gold, never deciding (ADR-0020).
+# From what happened to a ticket afterwards to a label (evh label-from-capture): first match wins.
+# The labels form a rule set: not a reference until promoted, then one like any (ADR-0022).
 - {when: {resolution: duplicate}, skip: true}
 - {when: {resolution: fixed}, label: needs-engineering}
 - {when: {resolution: answered}, label: support-only}

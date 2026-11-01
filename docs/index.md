@@ -12,11 +12,11 @@ Every run behind them is in [the catalog](https://evals.humancopilot.eu/catalog/
 
 <div class="eh-cards" markdown>
 
-[<span class="n">01</span><b>Getting started</b><span class="d">The loop once, offline, in fifteen minutes: create a dataset, run arms, make a reference from the best one's run, compare honestly, choose a baseline.</span>](GUIDE.md)
+[<span class="n">01</span><b>Getting started</b><span class="d">The loop once, offline, in fifteen minutes: create a dataset, run arms, make a reference from the best one's labels, compare honestly, choose a baseline.</span>](GUIDE.md)
 
-[<span class="n">02</span><b>Tutorials</b><span class="d">A local model against a baseline; a hosted LLM with your own key; a frontier reference, gold and judging; experiment rounds and dataset versions; the catalog and the inspector, and the command behind each view.</span>](GUIDE.md#where-to-go-next)
+[<span class="n">02</span><b>Tutorials</b><span class="d">A local model against a baseline; a hosted LLM with your own key; a frontier reference, gold and judging; experiment rounds and dataset versions; the catalog and the inspector, and the command behind each view; datasets from production, and evaluating what production did; setting a model up.</span>](GUIDE.md#where-to-go-next)
 
-[<span class="n">03</span><b>Concepts</b><span class="d">The ideas it is built on: frozen datasets, fingerprints, gold and silver references, paired tests.</span>](../harness/docs/CONCEPTS.md)
+[<span class="n">03</span><b>Concepts</b><span class="d">The ideas it is built on: frozen datasets, fingerprints, labels and the gold and silver references promoted from them, paired tests.</span>](../harness/docs/CONCEPTS.md)
 
 [<span class="n">04</span><b>Integration</b><span class="d">Drop the harness into another project: one adapter, two functions. And ask it from your agent: <code>evh mcp</code>.</span>](../harness/docs/INTEGRATION.md)
 

@@ -731,20 +731,16 @@ def main() -> int:
         print(f"  scoring against {ref_tier.upper()} references for {cfg['dataset_id']}")
     else:
         print(f"  no references for {cfg['dataset_id']} — quality cannot be scored.")
-        print("  make them from a run of the arm you trust most (this one, if it is):")
         print(
-            "    "
-            + how(
-                f"evh reference-create --dataset-id {cfg['dataset_id']} --from-run <run_id>",
-                f"make reference-create DATASET_ID={cfg['dataset_id']} RUN=<run_id>",
-            )
+            "  a reference is labels you promote (RFC-023): a run of the arm you trust most as a model's labels,"
+        )
+        print("    evh label-from-run --run <run_id> --set <name>")
+        print(
+            f"  (or a person's: evh label-sheet --dataset-id {cfg['dataset_id']} --out sheet.csv, then evh label-import),"
         )
         print(
-            "  or author them with a config:  "
-            + how(
-                f"evh reference-create --dataset-id {cfg['dataset_id']} --config <a model you trust>",
-                f"make reference-create DATASET_ID={cfg['dataset_id']} CONFIG=<a model you trust>",
-            )
+            f"  then: evh reference-promote --dataset-id {cfg['dataset_id']} --labels <name> --tier gold|silver "
+            '--reason "…" --by <you>'
         )
     if build["ref"] == "unknown":
         print("  WARNING: could not identify the build — this run is not attributable")

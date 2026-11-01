@@ -25,7 +25,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[1] / "harness"))
-from evaluation_harness.reference_from_outcomes import load_rules, matches  # noqa: E402
+from evaluation_harness._outcome_rules import load_rules, matches  # noqa: E402
 from importer import _t, close_comments, issue_verdicts, outcome_fields, own_issue, resolved  # noqa: E402
 
 LABEL_OF = {"fixed": "file-or-escalate", "noise": "dismiss"}
@@ -103,7 +103,7 @@ def other_rows(rows: list[dict], rules_path: Path) -> list[dict]:
     out = []
     for r in rows:
         o = outcome_fields(r, verdicts)
-        # the decision's age when the item was built (frozen_at), as reference-from-outcomes reads it
+        # the decision's age when the item was built (frozen_at), as label-from-capture reads it
         decided, frozen = _t((r.get("fleet_decision") or {}).get("ts")), _t(r.get("frozen_at"))
         age = (frozen - decided).total_seconds() / 86400 if decided and frozen else None
         for rule in rules:

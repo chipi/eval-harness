@@ -55,7 +55,6 @@ def decisions(A, goal: dict) -> dict[str, dict[str, Any]]:
             gm,
             retired_in,
             cb.gold_beside(tiers, ans["groups"], grp["key"]),
-            outcome=cb.outcome_ref((by_ds.get(ds) or {}).get("refs", []), grp["key"]),
         )
         rows = {}
         for r in grp["rows"]:

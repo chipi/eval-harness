@@ -872,8 +872,9 @@ def home(f: dict) -> str:
         ),
     ]
 
-    # Evaluation that does not stop at release: one goal's rounds before it (narrowing a field) and after it (on
-    # what the deployed system decides), each step a command 0.6.0 has (owner, 2026-11-01).
+    # Evaluation that does not stop at deploy: one goal's rounds before it (narrowing a field) and after it (what
+    # the deployed system decides, evaluated against labels), each step a command 0.6.0 has (owner, 2026-11-01:
+    # the pivot word is deploy; a release is a version made available, a deploy runs where real input reaches it).
     before = [
         (
             "Round 1",
@@ -904,26 +905,26 @@ def home(f: dict) -> str:
         (
             "Capture",
             "What it decided",
-            "What the deployed system decided, kept as records and hashed.",
+            "What the deployed system decided (one version, or A and B), kept as records and hashed.",
             "evh capture",
         ),
         (
-            "Dataset v2",
-            "A new version",
-            "Frozen from the capture, labelled from what happened next (silver).",
-            "evh dataset-from-capture",
+            "Evaluate",
+            "Against labels",
+            "Production's decisions as an arm, scored against labels a person, a model or a rule gave.",
+            "evh arm-from-capture · label-sheet",
+        ),
+        (
+            "Pick",
+            "What to keep",
+            "The rows where it was wrong, or saw something new, picked for the dataset you govern.",
+            "evh inspect --rows · pick",
         ),
         (
             "Round 5",
-            "Deployed vs candidates",
-            "The baseline in production against new models, each set up first.",
-            "evh model-onboard · arm-smoke",
-        ),
-        (
-            "And on",
-            "The next round",
-            "When the data, the candidates or the scoring change; the goal goes on.",
-            "evh round-open --from r5",
+            "The next version",
+            "v2 from v1 and the picks you choose; the deployed baseline against new candidates on it.",
+            "evh dataset-extend · round-open --from",
         ),
     ]
 
@@ -939,10 +940,10 @@ def home(f: dict) -> str:
         )
 
     flow_html = (
-        '<div class="flow" role="figure" aria-label="One goal\u2019s rounds, before release and after it">'
-        + flow_row("Before release", before)
-        + '<div class="flow-release"><span>release</span></div>'
-        + flow_row("After release", after)
+        '<div class="flow" role="figure" aria-label="One goal\u2019s rounds, before deploy and after it">'
+        + flow_row("Before deploy", before)
+        + '<div class="flow-release"><span>deploy (one version, or A and B)</span></div>'
+        + flow_row("After deploy", after)
         + "</div>"
     )
     lasting = [
@@ -957,8 +958,9 @@ def home(f: dict) -> str:
         (
             "Datasets from production",
             (
-                "Keep what your system did as a capture, freeze datasets from it as new versions, label them from what "
-                "happened next, split dev from heldout. A label from outcomes is silver: it never decides."
+                "Keep what your system did as a capture, score its decisions against labels (a person's, a model's, "
+                "a rule's over what happened next), pick the rows worth keeping for the next version of a dataset you "
+                "govern. Nothing becomes a reference until you promote it."
             ),
             ("docs/tutorials/6-datasets-from-production/", "Tutorial 6"),
         ),
@@ -1096,7 +1098,7 @@ def home(f: dict) -> str:
   <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. <a href="docs/GUIDE/">The harness</a> imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
   <div class="habits">{idea_html}</div>
   <div class="cols" style="margin-top:48px">
-    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference from the best arm's run, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference and judges, rounds and dataset versions, datasets from production, and setting a model up. Last, look at it all: <code>evh catalog</code> builds the catalog of your own runs and <code>evh catalog-serve</code> opens it with the inspector (<a href="docs/tutorials/5-catalog-and-inspector/">tutorial 5</a>); <a href="{CATALOG}">ours</a> shows the six worked examples. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
+    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference from the best arm's labels, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference and judges, rounds and dataset versions, datasets from production, and setting a model up. Last, look at it all: <code>evh catalog</code> builds the catalog of your own runs and <code>evh catalog-serve</code> opens it with the inspector (<a href="docs/tutorials/5-catalog-and-inspector/">tutorial 5</a>); <a href="{CATALOG}">ours</a> shows the six worked examples. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
       <div class="btns"><a class="btn primary" href="docs/GUIDE/">Getting started</a><a class="btn" href="docs/GUIDE/#where-to-go-next">The tutorials</a><a class="btn" href="{CATALOG}">The catalog</a></div></div>
 <pre class="term"><span class="p">$ </span>pip install "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
 <span class="p">$ </span>evh init --tutorial
@@ -1115,9 +1117,9 @@ def home(f: dict) -> str:
 </div></section>
 
 <section class="block" id="lasting"><div class="wrap">
-  <div class="eyebrow"><span class="num">03</span>Rounds, before release and after</div>
-  <h2>Evaluation that doesn\u2019t stop at release.</h2>
-  <p class="lede">A goal is answered in rounds. Before release they narrow a field: run twenty models, keep ten, fix a scoring rule, try a new prompt, choose. After release the same goal goes on, on what the deployed system actually decides. Software is delivered continuously, and so is its evaluation. Every part is optional, layered on the same method.</p>
+  <div class="eyebrow"><span class="num">03</span>Rounds, before deploy and after</div>
+  <h2>Evaluation that doesn\u2019t stop at deploy.</h2>
+  <p class="lede">A goal is answered in rounds. Before deploy they narrow a field: run twenty models, keep ten, fix a scoring rule, try a new prompt, choose. After deploy the same goal goes on, on what the deployed system actually decides, one version or A and B side by side: captured, scored against labels, and the rows worth keeping picked for the next version of the datasets you govern. The harness does no online A/B test and no drift detection: it measures what was captured, offline. Every part is optional, layered on the same method.</p>
   {flow_html}
   <div class="habits two" style="margin-top:48px">{lasting_html}</div>
 </div></section>

@@ -1,6 +1,6 @@
 # ADR-0023 — Picks wait in one list per project; a governed dataset grows only by a version you make (0.6.0)
 
-**Status:** Accepted (owner, 2026-11-01), with RFC-023; built in steps (0.6.0, planned).
+**Status:** Accepted (owner, 2026-11-01), with RFC-023; built for 0.6.0.
 **Date:** 2026-11-01
 **Detail:** [RFC-023](../rfc/RFC-023-labels-and-references.md), [PRD-014](../prd/PRD-014-datasets-from-production.md)
 (FR8 to FR10), [UXS-002](../uxs/UXS-002-inspector.md) (the rows view)

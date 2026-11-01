@@ -3,7 +3,7 @@
 - **Status**: Built for 0.6.0 for FR1 to FR3, FR5, FR6 and the Captures page (2026-10-31, the capture window and
   sampling 2026-11-01), FR4 (labels from outcomes) FR7 (the recorded arm, agreement), FR8 (the rows view, in the terminal and the inspector), FR9 (picks) and
   FR10 (versions from picks) built
-  ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
+  ([RFC-023](../rfc/RFC-023-labels-and-references.md))
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Captures, Labels and dataset pages),
   [UXS-002](../uxs/UXS-002-inspector.md) (the rows view), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the

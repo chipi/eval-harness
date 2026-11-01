@@ -22,7 +22,7 @@ like a model without needing one. A real model, local or hosted, is the
  configs/<arm>.yaml ──experiment-run──▶ runs/<run_id>/   outputs, per-item scores, cost, speed,
  (one system = one arm)                                   fingerprint: data + code + model + build
                                               │
-                    reference-create --from-run ──▶ references/silver/<id>/   (optional)
+    label-from-run ──▶ labels/<id>/<set>/ ──reference-promote──▶ references/silver/<id>/   (optional)
                                               │
                          leaderboard · pair-test · family-test
                                               │
@@ -36,7 +36,8 @@ like a model without needing one. A real model, local or hosted, is the
 | **materialized** | a hash-checked working copy of the dataset | `data/materialized/<id>/` | derived; delete freely |
 | **arm** | one system under test: a config naming provider, model, prompt, settings | `data/configs/*.yaml` | a change is a new `config_id` |
 | **run** | one pass of an arm over a dataset: outputs, scores, fingerprint | `data/runs/<run_id>/` | never |
-| **reference** | what each item is scored against: **gold** (a person wrote it) or **silver** (a model did) | `data/references/<tier>/<id>/` | never; a change is a new set |
+| **label** | what is right for one item, and who said it: a person, a model or a rule; in sets | `data/labels/<dataset>/<set>/` | never; a correction is a new set |
+| **reference** | what each item is scored against: labels promoted at **gold** (the yardstick) or **silver** (good for ranking) | `data/references/<tier>/<id>/` | never; a change is a new one |
 | **goal** | what the evaluation is for: who uses the output, the decision, the measure | `data/goals/<goal_id>.yaml` | yes |
 | **baseline** | the run you chose to measure future changes against, with why | `data/baselines/` | replaced by the next choice, never edited |
 
@@ -166,34 +167,40 @@ evh experiment-run --config data/configs/tickets_author.yaml
 ```
 ```text
   no references for tickets_v1 — quality cannot be scored.
-  make them from a run of the arm you trust most (this one, if it is):
-    evh reference-create --dataset-id tickets_v1 --from-run <run_id>
-  or author them with a config:  evh reference-create --dataset-id tickets_v1 --config <a model you trust>
+  a reference is labels you promote (RFC-023): a run of the arm you trust most as a model's labels,
+    evh label-from-run --run <run_id> --set <name>
   ...
 wrote 1 run(s) to .../my-evals/data/runs
 ```
 
 With no reference it records only what needs none (the output's length, its cost, how long
-each call took), and it names the two ways to make one. The next step takes the first.
+each call took), and it says how to make one. The next step does.
 
-## 5 · Make its run the reference (optional)
+## 5 · Make its outputs the reference (optional)
+
+A **label** says what is right for one item, and who said it: a person, a model or a rule. A
+**reference** is labels you promote on purpose, with a reason, at the tier you choose. Here the
+author arm's outputs become a model's labels, and you promote them:
 
 ```bash
-evh reference-create --dataset-id tickets_v1 --from-run <the tickets_author_v1 run_id>
-git add data/references && git commit -qm "silver/tickets_v1 from the author arm's run"
+evh label-from-run --run <the tickets_author_v1 run_id> --set author_v1
+evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver \
+    --reason "The author arm's summaries rank the others until a person writes gold." --by me
+git add data/labels data/references && git commit -qm "silver/tickets_v1: the author arm's labels, promoted"
 ```
 ```text
-silver reference(s) for 6 item(s) from run tickets_author_v1_...: no calls
-data/references/silver/tickets_v1  (6 item(s), tier=silver, $0.0000)
-Runs against this dataset will now be scored against it automatically.
+data/labels/tickets_v1/author_v1: 6 label(s), source model · tickets_author_v1_...
+  every set on it: evh labels --dataset-id tickets_v1
+.../my-evals/data/references/silver/tickets_v1: 6 of 6 item(s), silver, promoted from tickets_v1/author_v1 (model · tickets_author_v1_...)
+  commit it before the next run: an untracked reference marks every run scored against it dirty
 ```
 
-`evh runs-list` prints the run ids. `--from-run` copies the run's outputs and calls nothing,
-and the reference records the run, its config and its fingerprint. These are **silver**
-references: consistent, cheap, and *not correct*. They encode the author's opinion, mistakes
-included: good enough to rank the other arms by how close they come to it, and every run
-scored against them says so. The step is optional: if you already have answers a person wrote
-(**gold**), put them in `data/references/gold/tickets_v1/` instead and skip it
+`evh runs-list` prints the run ids. `label-from-run` copies the run's outputs and calls nothing,
+and the labels record the run, its config and its fingerprint. Promoted as **silver**, they are
+consistent, cheap, and *not correct*: they encode the author's opinion, mistakes included, good
+enough to rank the other arms by how close they come to it, and every run scored against them
+says so. The step is optional: if you already have answers a person wrote (**gold**), import
+them as a person's labels (`evh label-import`) and promote them at gold instead
 ([tutorial 3](tutorials/3-frontier-reference-and-judging.md) adds gold to this project and shows
 what silver got wrong).
 

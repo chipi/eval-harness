@@ -1241,9 +1241,14 @@ def v19_label_sets() -> None:
         items = doc.get("items") or {}
         if doc.get("n_items") != len(items):
             bad.append(f"{rel}: n_items {doc.get('n_items')} but {len(items)} listed")
+        kept_out = doc.get("redistributed") is False and not any(lj.parent.glob("*.txt"))
         for iid, row in items.items():
             n += 1
             tf = lj.parent / f"{iid}.txt"
+            if (
+                kept_out
+            ):  # its texts are kept out of git (labels.json says how to rebuild them): nothing to check
+                continue
             if not tf.is_file():
                 bad.append(f"{rel}/{iid}: label file missing")
             elif hashlib.sha256(tf.read_bytes()).hexdigest() != row.get("sha256"):

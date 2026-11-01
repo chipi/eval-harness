@@ -43,7 +43,6 @@ COMMANDS = {
         "dataset_items.py",
         "a dataset's profile: its shape, then one row per item (--item for one)",
     ),
-    "reference-create": ("reference_create.py", "make references from a run (--from-run) or with a config"),
     "reference-promote": (
         "reference_promote.py",
         "promote a label set's labels to a reference, at a tier, with a reason",
@@ -94,10 +93,6 @@ COMMANDS = {
         "check an importer: its records are well-formed, ids unique, two reads the same",
     ),
     "capture": ("capture.py", "keep a production system's records as a capture (data/captures/)"),
-    "reference-from-outcomes": (
-        "reference_from_outcomes.py",
-        "a reference from what production recorded afterwards, by recorded rules",
-    ),
     "dataset-split": (
         "dataset_split.py",
         "split a dataset into <id>_dev and <id>_heldout, stable across versions",

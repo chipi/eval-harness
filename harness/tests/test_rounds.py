@@ -170,7 +170,24 @@ try:
     )
     # The author arm's outputs become a silver reference: the round's leader is then read against
     # the arm that wrote it, and that arm is never suggested for retirement (it is the yardstick).
-    r = evh("reference-create", "--dataset-id", "tickets_v1", "--from-run", run.name if run else "")
+    r = evh("label-from-run", "--run", run.name if run else "", "--set", "author_labels")
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "author_labels",
+            "--tier",
+            "silver",
+            "--reason",
+            "The author's outputs rank the others.",
+            "--by",
+            "test",
+        )
+    )
     rs = evh("rounds", "--goal", "tickets_summary")
     check(
         "rounds: the leader against the arm that wrote a silver reference",

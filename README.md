@@ -61,7 +61,7 @@ It was built to answer four questions anyone building with AI ends up asking:
 | you want to | go to |
 |---|---|
 | **see what it is** | **[evals.humancopilot.eu](https://evals.humancopilot.eu/)**: the harness, what it does, and what it found |
-| **measure your own system** | [**Getting started**](docs/GUIDE.md): the loop once, offline, in fifteen minutes: a dataset, arms, a reference from a run, a comparison, a choice. Then the [**tutorials**](docs/GUIDE.md#where-to-go-next): a local model, a hosted LLM with your own key, a frontier reference and judges, rounds, the catalog. Or [**Use it on your problem**](https://evals.humancopilot.eu/use.html), the patterns |
+| **measure your own system** | [**Getting started**](docs/GUIDE.md): the loop once, offline, in fifteen minutes: a dataset, arms, a reference from the best arm's labels, a comparison, a choice. Then the [**tutorials**](docs/GUIDE.md#where-to-go-next): a local model, a hosted LLM with your own key, a frontier reference and judges, rounds, the catalog, datasets from production and evaluating what production did, setting a model up. Or [**Use it on your problem**](https://evals.humancopilot.eu/use.html), the patterns |
 | **learn the method** | [**The method**](https://evals.humancopilot.eu/method.html): six habits for measuring AI systems, as these experiments taught them |
 | **read what it found** | [**The experiments**](https://evals.humancopilot.eu/experiments.html): 24 LLMs, fine-tunes and baselines on six benchmarks, generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md): five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
@@ -83,7 +83,9 @@ evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
 # write adapter.py at the project root -> call_system() talks to YOUR system
 evh experiment-run --config data/configs/best_model.yaml           # the best system you have
-evh reference-create --dataset-id my_v1 --from-run <its run_id>     # optional: its outputs as the reference
+evh label-from-run --run <its run_id> --set best_v1                  # optional: its outputs as a model's labels
+evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
+    --reason "the best system we have ranks the rest" --by me           # ...promoted: the reference
 evh experiment-run --config data/configs/arm_a.yaml --repeat 3      # each arm, with its own noise
 evh leaderboard --dataset-id my_v1                                  # the ranking, and whether it is real
 evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_      # is the winner separated?
@@ -144,8 +146,9 @@ system lives in one file, `adapter.py`, with two functions, `call_system` and `s
   concluded.
 
 And it **refuses** to mislead: it won't compare runs measured on different data, it won't
-promote a baseline from a dirty or unknown build, and it records whether a reference is
-gold (checked by a person) or silver (written by a model). The refusals are the product.
+promote a baseline from a dirty or unknown build, and a reference is only ever labels promoted on
+purpose, its tier (gold or silver) and its source (a person, a model, a rule) recorded beside it.
+The refusals are the product.
 
 ## Try it in a checkout
 

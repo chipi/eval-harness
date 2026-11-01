@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""References from outcomes (RFC-019 P4): the rule language, the command, and the route a goal decides on.
+"""Outcomes as labels (RFC-019, RFC-023): the rule language, a rule label set, promoted like any, and a dataset's tags.
 
-In a throwaway project built from the tutorial ($0, offline): two arms run against gold/tickets_v1;
-an outcome reference is written as silver/tickets_v1_outcomes and the runs rescored against it. The
-goal then shows EXACTLY ONE recommendation, from gold, and the outcome group beside it, shown and not
-recommended (ADR-0020), on the command and on the catalog's goal page alike.
+    python tests/test_outcome_rules.py
 
-    python tests/test_outcome_reference.py
+The rule language first (_outcome_rules). Then, in a throwaway project built from the tutorial ($0, offline): two
+arms run against gold/tickets_v1; a capture's outcomes become a `rule` label set (`evh label-from-capture`); it is
+promoted to silver and the runs rescored against it. With gold beside it the goal recommends from gold and shows
+the silver group; with no gold the silver group is governed like any silver (ADR-0022: outcomes are no special case
+once promoted). A dataset's tags group and filter it.
 """
 
 import json
@@ -20,7 +21,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
-from evaluation_harness.reference_from_outcomes import matches  # noqa: E402
+from evaluation_harness._outcome_rules import matches  # noqa: E402
 
 KIT = HERE.parent / "tutorial"
 
@@ -46,9 +47,9 @@ for rule, age, want, label in (
 ):
     check(f"rule {label}", matches(rule, out, age) == want)
 
-# ── the command and the route ──────────────────────────────────────────────────────────────
-proj = Path(tempfile.mkdtemp(prefix="evh-outref-"))
-env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-outref")
+# ── a rule label set, promoted like any ────────────────────────────────────────────────────
+proj = Path(tempfile.mkdtemp(prefix="evh-outrules-"))
+env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-outrules")
 env.pop("EVAL_DATA_DIR", None)
 env.pop("EVAL_RUNS_DIR", None)
 
@@ -88,88 +89,83 @@ try:
     (proj / "map.yaml").write_text(
         "- {when: {verdict: open}, skip: true}\n- {when: {verdict: fixed}, label: file}\n- {when: {verdict: noise}, label: dismiss}\n"
     )
-
-    r = evh("reference-from-outcomes", "--dataset-id", "tickets_v1", "--capture", "oc", "--map", "map.yaml")
+    r = evh(
+        "label-from-capture",
+        "--dataset-id",
+        "tickets_v1",
+        "--capture",
+        "oc",
+        "--map",
+        "map.yaml",
+        "--set",
+        "outcomes",
+    )
+    lab = data / "labels" / "tickets_v1" / "outcomes"
+    doc = json.loads((lab / "labels.json").read_text()) if (lab / "labels.json").is_file() else {}
+    src = doc.get("source") or {}
     check(
-        "the default name, gold/<dataset>, is refused when gold exists: never overwritten",
-        r.returncode != 0 and "never overwritten" in said(r),
+        "label-from-capture: skipped items have no label, the rest their rule's",
+        r.returncode == 0
+        and sorted(p.stem for p in lab.glob("*.txt")) == sorted(i for n, i in enumerate(items) if n % 3 != 2)
+        and src.get("matched") == 4
+        and src.get("skipped") == 2
+        and sorted({(lab / f"{i}.txt").read_text().strip() for i in doc.get("items", {})})
+        == ["dismiss", "file"],
+        said(r)[-300:] + json.dumps(src),
+    )
+    check(
+        "the set's source is rule: the capture and the mapping's hash",
+        src.get("kind") == "rule" and src.get("capture") == "oc" and len(src.get("mapping_sha256", "")) == 64,
+        json.dumps(src),
+    )
+    name = "tickets_v1_outcomes"
+    r = evh(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v1",
+        "--labels",
+        "outcomes",
+        "--tier",
+        "silver",
+        "--name",
+        name,
+        "--reason",
+        "What happened next ranks the arms, beside the gold.",
+        "--by",
+        "owner",
+    )
+    man = data / "references" / "silver" / name / "manifest.json"
+    m = json.loads(man.read_text()) if man.is_file() else {}
+    check(
+        "promoted to silver like any set: from the rule set, with its reason",
+        r.returncode == 0
+        and m.get("tier") == "silver"
+        and (m.get("promoted_from") or {}).get("labels") == "outcomes"
+        and m.get("caveat", "").startswith("SILVER:"),
         said(r)[-300:],
     )
-    name = "silver/tickets_v1_outcomes"
-    r = evh(
-        "reference-from-outcomes",
-        "--dataset-id",
-        "tickets_v1",
-        "--capture",
-        "oc",
-        "--map",
-        "map.yaml",
-        "--name",
-        name,
-    )
-    ref = data / "references" / "silver" / "tickets_v1_outcomes"
-    man = json.loads((ref / "manifest.json").read_text()) if (ref / "manifest.json").is_file() else {}
-    from_out = man.get("from_outcomes") or {}
-    check(
-        "the outcome reference: skipped items have no text, the rest their label",
-        r.returncode == 0
-        and sorted(p.stem for p in ref.glob("*.txt")) == sorted(i for n, i in enumerate(items) if n % 3 != 2)
-        and from_out.get("matched") == 4
-        and from_out.get("skipped") == 2
-        and from_out.get("labels") == {"dismiss": 2, "file": 2},
-        said(r)[-300:] + json.dumps(from_out),
-    )
-    check(
-        "its manifest records the capture, the mapping's hash, and its own caveat",
-        from_out.get("capture") == "oc"
-        and len(from_out.get("mapping_sha256", "")) == 64
-        and man.get("caveat", "").startswith("OUTCOME:")
-        and man.get("tier") == "silver",
-        man,
-    )
-    r = evh(
-        "reference-from-outcomes",
-        "--dataset-id",
-        "tickets_v1",
-        "--capture",
-        "oc",
-        "--map",
-        "map.yaml",
-        "--name",
-        name,
-    )
-    check("a second write to the same name is refused", r.returncode != 0 and "never overwritten" in said(r))
     r = evh("validate")
-    check(
-        "validate passes with it (V16 checks its texts against the manifest)",
-        r.returncode == 0,
-        said(r)[-400:],
+    check("validate passes with it (V16, V19)", r.returncode == 0, said(r)[-400:])
+    r = evh(
+        "rescore",
+        "--dataset-id",
+        "tickets_v1",
+        "--reference-id",
+        f"silver/{name}",
+        "--out",
+        "data/runs-outcomes",
     )
-
-    r = evh("rescore", "--dataset-id", "tickets_v1", "--reference-id", name, "--out", "data/runs-outcomes")
     check("the runs rescore against it", r.returncode == 0, said(r)[-300:])
     r = evh("goals", "--goal", "tickets_summary")
     lines = r.stdout.splitlines()
     check(
-        "THE ROUTE: the goal shows exactly one recommendation, from gold",
+        "with gold beside it: one recommendation, from gold; the silver group shown, not recommended",
         r.returncode == 0
         and sum(ln.strip().startswith("recommended:") for ln in lines) == 1
-        and "recommended: tickets_lead2_v1" in r.stdout,
+        and "recommended: tickets_lead2_v1" in r.stdout
+        and f"scored against silver/{name}" in r.stdout
+        and "shown, not recommended" in r.stdout,
         r.stdout[-1500:],
-    )
-    check(
-        "THE ROUTE: the outcome group is beside it, shown and not recommended",
-        "scored against silver/tickets_v1_outcomes" in r.stdout and "shown, not recommended" in r.stdout,
-        r.stdout[-1500:],
-    )
-    r = evh("catalog")
-    page = (
-        (proj / ".build" / "catalog" / "g" / "tickets_summary.html").read_text() if r.returncode == 0 else ""
-    )
-    check(
-        "THE ROUTE: the catalog's goal page says the same: one Recommended, the outcome group shown",
-        page.count("Recommended: tickets_") == 1 and "Shown, not recommended" in page,
-        said(r)[-300:],
     )
 
     # The views: a dataset's tags group and filter, and its origin is named (RFC-019 P7).
@@ -197,26 +193,14 @@ try:
         said(r)[-300:],
     )
 
-    # With no gold at all, an outcome reference still never decides: the goal recommends nothing.
+    # With no gold, the promoted rule set is a silver like any (ADR-0022): its group recommends.
     shutil.move(str(data / "references" / "gold"), str(proj / "gold-aside"))
     shutil.move(str(data / "runs"), str(proj / "runs-aside"))
     r = evh("goals", "--goal", "tickets_summary")
     check(
-        "NO GOLD: the outcome group is shown, and nothing is recommended",
-        r.returncode == 0
-        and "scored against silver/tickets_v1_outcomes" in r.stdout
-        and "shown, not recommended" in r.stdout
-        and "recommended:" not in r.stdout,
+        "NO GOLD: the promoted rule set is governed like any silver: its group recommends",
+        r.returncode == 0 and f"scored against silver/{name}" in r.stdout and "recommended:" in r.stdout,
         r.stdout[-1500:],
-    )
-    r = evh("catalog")
-    page = (
-        (proj / ".build" / "catalog" / "g" / "tickets_summary.html").read_text() if r.returncode == 0 else ""
-    )
-    check(
-        "NO GOLD: the catalog's goal page recommends nothing either",
-        "Shown, not recommended" in page and "Recommended: " not in page,
-        said(r)[-300:],
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

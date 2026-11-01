@@ -580,7 +580,7 @@ class HarnessAdapter:
     @_memo
     def references(self) -> list[dict]:
         """Return all reference sets: {id, tier, dataset, task, archived, format}, plus what
-        the set's manifest.json says (reference-create and reference-manifest write one): author,
+        the set's manifest.json says (reference-promote and reference-manifest write one): author,
         from_run, model, created_at, items, caveat, and "fetched" (its texts are not here: a
         reference the project does not redistribute, listed from its manifest)."""
         out = []

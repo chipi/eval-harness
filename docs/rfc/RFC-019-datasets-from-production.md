@@ -4,7 +4,7 @@
   three independent reviews; accepted when the build lands. ADR-0020 (second references are silver) is the
   owner's call.
 - **Replaced in part**: references from outcomes (`reference-from-outcomes`, and second references as silver) by
-  [RFC-023](RFC-023-labels-and-references.md) (draft): labels from a capture's outcomes are a `rule` label set, and
+  [RFC-023](RFC-023-labels-and-references.md): labels from a capture's outcomes are a `rule` label set, and
   a reference is labels you promote.
 - **Authors**: Marko Dragoljevic
 - **Related PRD**: [PRD-014](../prd/PRD-014-datasets-from-production.md); also
@@ -124,7 +124,8 @@ any public surface.
 
 ### 5. References from outcomes
 
-- **The command:** `evh reference-from-outcomes --dataset-id D --capture C --map outcomes.yaml [--name NAME]`.
+- **The command** (removed in 0.6.0 by RFC-023: `evh label-from-capture` reads the same rules into a `rule` label
+  set): `reference-from-outcomes --dataset-id D --capture C --map outcomes.yaml [--name NAME]`.
 - **The mapping** is an ordered list of rules over the **flat outcome fields** the project's importer computes.
   Each rule has `when`, `unless`, `exists`, `absent`, `range` (signed), `min_age_days`, and a `label` or `skip`.
   The first match wins; no match leaves the item unlabelled. A real mapping's time arithmetic and list logic are

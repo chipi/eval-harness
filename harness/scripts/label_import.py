@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""A filled label sheet as a person's label set (RFC-023).
+"""A filled label sheet, or a folder of answers, as a person's label set (RFC-023).
 
     evh label-import sheet.csv --dataset-id tickets_v1 --set owner_2026_11 --by owner
     evh label-import sheet.csv --dataset-id tickets_v1 --set owner_2026_11 --by owner --guideline labelling.md
+    evh label-import answers/ --dataset-id tickets_v1 --set owner_gold --by owner
 
-Every row with a `label` becomes one label; `yes` takes the row's `proposal`; a row with no label is left out.
-A row's `note` is kept beside its label. The set's source is `person`: who (`--by`), and the sheet's sha256. A set is
-never edited: a second pass is a new set.
+A sheet: every row with a `label` becomes one label; `yes` takes the row's `proposal`; a row with no label is left
+out; a row's `note` is kept beside its label. A folder: each `<item_id>.txt` in it is that item's label. The set's
+source is `person`: who (`--by`), and the sheet's (or the folder's files') sha256. A set is never edited: a second
+pass is a new set.
 """
 
 from __future__ import annotations
@@ -29,13 +31,19 @@ from evaluation_harness._label_sets import write_set
 def main() -> int:
     """Import a filled sheet as a person's label set."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("sheet", type=Path, help="the filled sheet (.csv, as label-sheet writes it)")
+    ap.add_argument(
+        "sheet",
+        type=Path,
+        help="the filled sheet (.csv, as label-sheet writes it), or a folder of <item_id>.txt",
+    )
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--set", required=True, dest="name", help="the label set's name (lowercase, _ . -)")
     ap.add_argument("--by", required=True, help="who labelled")
     ap.add_argument("--guideline", type=Path, help="the instructions the labeller followed")
     args = ap.parse_args()
 
+    if args.sheet.is_dir():
+        return _folder(args)
     if not args.sheet.is_file():
         die(f"no sheet {args.sheet}")
     with args.sheet.open(newline="", encoding="utf-8") as f:
@@ -66,6 +74,23 @@ def main() -> int:
     doc = write_set(args.dataset_id, args.name, labels, source, args.guideline, notes)
     print(
         f"data/labels/{args.dataset_id}/{args.name}: {doc['n_items']} label(s) of {len(rows)} row(s), source person · {args.by}"
+    )
+    return 0
+
+
+def _folder(args: argparse.Namespace) -> int:
+    """A folder of answers a person wrote, one <item_id>.txt per item, as a person's label set."""
+    files = sorted(args.sheet.glob("*.txt"))
+    if not files:
+        die(f"{args.sheet}: no <item_id>.txt in it")
+    labels = {p.stem: p.read_text(encoding="utf-8") for p in files}
+    digest = hashlib.sha256()
+    for p in files:
+        digest.update(p.name.encode() + b"\0" + p.read_bytes())
+    source = {"kind": "person", "by": args.by, "folder": args.sheet.name, "folder_sha256": digest.hexdigest()}
+    doc = write_set(args.dataset_id, args.name, labels, source, args.guideline)
+    print(
+        f"data/labels/{args.dataset_id}/{args.name}: {doc['n_items']} label(s) from {len(files)} file(s), source person · {args.by}"
     )
     return 0
 

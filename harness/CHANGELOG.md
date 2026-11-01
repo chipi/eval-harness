@@ -13,8 +13,55 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Labels, and the references promoted from them** (RFC-023, PRD-002, ADR-0022). A **label** says what is right
+  for one item and who said it: a `person`, a `model` or a `rule`. Labels come in **sets**, never edited, under
+  `data/labels/<dataset>/<set>/`, and follow an item by its sha256 into any dataset holding the same bytes.
+  - **`evh label-from-run`**: a finished run's outputs as a model's labels, no calls, the refusals a reference's
+    provenance needs (a dirty or unknown build, an unfinished or derived run, an empty output, one cut off at
+    `max_tokens` unless `--allow-cut-off`). **`--not-redistributed`** keeps the texts out of git (a `.gitignore` beside
+    them) and records the command that rebuilds them, checked against the set's checksums.
+  - **`evh label-sheet`** writes a sheet of the items to label (unlabelled, all, where runs disagree, or chosen),
+    each run's decision and a proposal beside an empty label; **`evh label-import`** reads it back, or a folder of
+    `<item_id>.txt`, as a person's set (`yes` takes the proposal; notes kept). **`evh label-from-capture`** turns a
+    capture's recorded outcomes into a `rule` set by the rules `reference-from-outcomes` read. **`evh labels`** lists
+    the sets, what each covers and how often two give the same label (an MCP tool). **V19** checks every set.
+  - **`evh reference-promote`** makes a reference of a set, at the tier you choose, with a reason and who promoted
+    it; the manifest records where it came from (for a model's set, the run and model that wrote it). No rule ties
+    the tier to the source. Every existing reference records how it was promoted (20 here; 6 copied byte for byte
+    into label sets, 209 labels), every run's fingerprint unchanged.
+  - **Scoring against a label set without promoting it**: `evh rescore --labels SET`, `evh experiment-run --labels
+    SET`. The run records `reference_id: labels/<dataset>/<set>` and lands in `data/runs-labels-<dataset>-<set>/`, an
+    arm of its own; a goal groups such arms under the set, the arm that made a model's labels flagged.
+  - The catalog: a tier is a **pill** in its own colour, a label set a **source chip**, wherever either is named; a
+    **Labels** page; a dataset's label sets and how often two agree; where each reference was promoted from.
+- **Evaluating what production did** (RFC-023, PRD-014, ADR-0023). A capture's decisions are evaluated against
+  labels; the governed datasets grow only by a version you make:
+  - **`evh arm-from-capture`** makes production's recorded decisions an arm (`provider: recorded`): each output the
+    capture's record of the same id, read by the adapter's **`recorded_output(record)`** (else `--field`), scored,
+    tested and compared like any arm, cost 0. The catalog badges it `recorded`, its cost and speed "recorded, no
+    call".
+  - **Agreement**: the adapter's **`same(a, b)`** says when two outputs are one decision (default: the same text;
+    the triage adapter compares dispositions). **`evh inspect --disagree`** and the inspector's "only where they
+    disagree" keep the items where the arms decided differently; `label-sheet --items disagree` reads the same hook.
+  - **The rows view**, `evh inspect --dataset-id D --rows` and the inspector's **05 rows**: one row per item, what each
+    chosen arm decided, every label with its source, and the signals **wrong** (against a label set), **disagree**,
+    **split**, **new** (a field value a governed dataset never had), **unlabelled**, each a filter; the rows you tick
+    give the `evh pick` and `evh label-sheet` commands. Local only: a public server refuses it.
+  - **Picks**: `evh pick` marks a production item for the next version of one or more governed datasets (targets,
+    tags, a note) in `data/picks.jsonl`, append-only; **`evh picks`** lists what waits (an MCP tool), and the target
+    dataset's page shows them with a box per row. **`evh dataset-extend V1 --dataset-id V2 --picks`** (or `--pick`)
+    makes V2 of V1's items and the picks chosen, each checked against the bytes picked, `extended_from` recorded;
+    labels follow the items; nothing is promoted.
+  - **`evh deploy-sheet --config ARM [--capture C]`**: what production must match to run what you promoted (the
+    model, its record and deployment, every setting sent and a record's setting that was not, what each item
+    reported, the adapter), and with a capture, whether each record says production ran it (the adapter's
+    **`production_ran(record)`**); exit 1 unless every record matches. On the promoted arm's page, and folded beside a
+    goal's baseline. The triage importer keeps the ledger's `prompt_ver` and `prompt_sha`.
+- **Several projects on one machine** (ADR-0024): `catalog-serve` and `mcp --http` take a port of the project's own
+  (18000–18999, 19000–19999), the same every time, the next free one if taken; a local catalog names its project;
+  every command notes a stray `EVAL_HOME`; a model record's lock is keyed by the record.
 - **Datasets from production: the capture lane** (RFC-019, PRD-014, ADR-0019). A project keeps what a
-  production system did as a **capture**, then makes datasets and references from it:
+  production system did as a **capture**, then makes datasets and labels from it:
   - **`evh capture`** reads records through an **importer** (`--importer jsonl|tsv|github|langfuse`, or a
     project's own `path.py:Class`) into `data/captures/<id>/`: each record's id, body, fields, time, source
     and outcome, hashed one by one (`capture.json`); `--since-capture` continues from an earlier capture.
@@ -22,7 +69,7 @@ that can move a result is never a patch release without saying so under **Change
     `until`; **`evh captures`** lists them, and the catalog's **Captures** page shows them with the datasets made
     from each. A capture keeps the window it records: a record outside it is named and nothing is written
     (`--late` keeps the ones older than `since` that the earlier capture never saw). Newer outcomes of the same
-    records are a fresh capture, labelled with `reference-from-outcomes --capture` (tutorial 6 §5).
+    records are a fresh capture, labelled with `label-from-capture --capture` (tutorial 6 §5).
   - **`evh capture-scrub`** runs a project's own scrubber over a capture's records and re-hashes the ones
     it changed, keeping their earlier hashes.
   - **`evh capture --sample-rate R --seed S`** keeps a share of the records, by a hash of each id, as they are
@@ -30,9 +77,8 @@ that can move a result is never a patch release without saying so under **Change
     capture keeps the rule.
   - **`evh dataset-from-capture`** freezes a selection (`--where`, `--dedup`, `--one-per`),
     typed fields from a field set, and `--tag K=V` labels; only the body becomes the item.
-  - **`evh reference-from-outcomes`** turns what happened afterwards into labels by a small rule set
-    (`when`, `unless`, `exists`, `absent`, `range`, `min_age_days`). Such a reference is `silver/…` with
-    its own caveat, and **never decides a goal**: with gold beside it, or with no gold at all (ADR-0020).
+  - What happened afterwards becomes labels by a small rule set (`when`, `unless`, `exists`, `absent`, `range`,
+    `min_age_days`): `evh label-from-capture`, above.
   - **`evh dataset-split`** makes `<D>_dev` and `<D>_heldout` by hash (stable across versions, a group
     kept whole with `--key`) or by time.
   - **V17** checks every capture's records against their hashes; a capture whose records a project keeps
@@ -105,6 +151,17 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **`reference-create` and `reference-from-outcomes` are removed** (ADR-0022): a reference is made only by
+  promoting labels. A run's outputs are `label-from-run`'s (with the same refusals and `--not-redistributed`),
+  outcomes `label-from-capture`'s (the same rules). A reference made from outcomes has no rule of its own any more:
+  promoted, it is a silver like any (with gold beside it, gold still decides; ADR-0020 is superseded). The one
+  reference here that named `reference-create` as its rebuild says where its texts come from instead.
+- **`catalog-serve` serves on the project's own port**, not 8765 (`--port` overrides; `--public` keeps 8765), and
+  `mcp --http` on another; a bookmark of `127.0.0.1:8765` moves.
+- **The release leaves the pick list out**: picks are working notes that name production items, so a published
+  catalog shows none waiting.
+- **The tutorial kit's desk export records where the desk's router sent each ticket** (`routed`): tutorial 6 scores
+  that decision against what happened, and picks the misrouted tickets for a dataset it governs.
 - **The goal page explains, then answers, then shows how it got there**: what it is for first; then the answer
   so far, led by the latest round's conclusion when one closed after the baseline was promoted (the promotion's
   reason folded under it); then its rounds, one folded section each, headed by its row (round and status, the
@@ -139,6 +196,11 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A retired arm read through its re-score is out of the goal's tie.** A round's retirements name the arm's
+  config, and an arm read from `runs-rescored/<scorer>/` kept the prefix, so it was never matched as retired and
+  stayed among the tied (the triage goal's tie: 76 arms, 51 once read right).
+- **Sorting a page's later table sorts it by the column clicked.** Its header's index was counted over every sortable
+  header on the page, so a second table sorted by a column it does not have and threw.
 - **`evh mcp --public` sees only public fields in `inspect`.** The tool runs the command in its own
   process, where the inspector's public rules were never set, so a `--where` or `--by` on a field not
   marked public was accepted and its values could be read through the counts (0.5.0). A public

@@ -173,7 +173,7 @@ def test_cli_help_works() -> None:
         "promote_baseline",
         "validate_tree",
         "list_runs",
-        "reference_create",
+        "reference_promote",
         "reference_manifest",
         "leaderboard",
         "sweep",
@@ -659,8 +659,8 @@ def test_example_scorer_suites_pass() -> None:
             "importers, importer-check and capture: mapping, the contract, hashes, continuing",
         ),
         (
-            "test_outcome_reference.py",
-            "references from outcomes: the rules, never overwritten, one recommendation per goal",
+            "test_outcome_rules.py",
+            "outcomes as labels: the rules, a rule set promoted like any, a dataset's tags",
         ),
         ("test_importers.py", "tsv, github (events with their comments), langfuse: offline stand-ins"),
         ("test_split.py", "dataset-split: the share, stable across versions, groups kept whole, by time"),
@@ -736,8 +736,8 @@ def test_example_scorer_suites_pass() -> None:
             "a run with a project adapter: latency, cut-off outputs, a crash and its resume",
         ),
         (
-            "test_reference_from_run.py",
-            "a run's outputs as the reference: provenance, refusals, the author's row",
+            "test_label_from_run.py",
+            "a run's outputs as a model's labels: provenance, refusals, the author's row, kept out of git",
         ),
         ("test_installed_commands.py", "every evh command in a project that pins the package"),
         ("test_judge_score.py", "judging pass"),
@@ -1352,7 +1352,7 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
 
     No prediction row has ever carried one -- 0 of 20,001 across every committed run.
     `dataset_create.py` writes it into the DATASET, and experiment_run, materialize,
-    reference_create and validate_tree all read it from there. rescore was the single
+    reference_promote and validate_tree all read it from there. rescore was the single
     place looking in the wrong object, so its fallback to `<item_id>.txt` fired every
     time and, on a dataset whose files are named anything else, the source text arrived
     as None -- silently, because a scorer that wanted the source then measured nothing
@@ -2956,13 +2956,24 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         steps = [
             evh("dataset-create", "--dataset-id", "rs_v1", "--source-dir", str(data / "sources" / "rs_v1")),
             evh("dataset-materialize", "--dataset-id", "rs_v1"),
-            # silver first, so the runs are scored against it and rescore moves them to gold
+            evh("experiment-run", "--config", str(data / "configs" / "arm_echo4.yaml"), "--run-id", "author"),
+        ]
+        # silver first, so the runs are scored against it and rescore moves them to gold: arm_echo4's outputs as
+        # a model's labels, promoted (RFC-023)
+        steps += [
+            evh("label-from-run", "--run", "author", "--set", "echo4_v1", "--allow-unknown-build"),
             evh(
-                "reference-create",
+                "reference-promote",
                 "--dataset-id",
                 "rs_v1",
-                "--config",
-                str(data / "configs" / "arm_echo4.yaml"),
+                "--labels",
+                "echo4_v1",
+                "--tier",
+                "silver",
+                "--reason",
+                "The four-sentence arm's answers rank the others.",
+                "--by",
+                "self-test",
             ),
             *(evh("experiment-run", "--config", str(c)) for c in sorted((data / "configs").glob("*.yaml"))),
         ]

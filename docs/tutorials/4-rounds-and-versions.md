@@ -302,9 +302,11 @@ decision moves. Then apply the change one of two ways:
 The goals, the rounds and the catalog read an arm from its latest re-score, so the evidence of a round is always
 measured by one scorer, and the page says which ([RFC-022](../rfc/RFC-022-scoring-that-evolves.md)).
 
-## After release
+## After deploy
 
-A goal's rounds do not stop when the arm you chose is deployed. The next ones run on what it decides in production:
-[tutorial 6](6-datasets-from-production.md) keeps that as a capture and freezes it as new dataset versions labelled
-from what happened next, and a round of the same goal then measures the baseline you promoted against new
-candidates on it, each set up first ([tutorial 7](7-set-up-a-model.md)).
+A goal's rounds do not stop when the arm you chose is deployed (one version, or A and B side by side). The next ones
+run on what it decides in production: [tutorial 6](6-datasets-from-production.md) keeps that as a capture, scores
+its decisions against labels and picks the tickets worth keeping for the next version of the dataset you govern,
+and a round of the same goal then measures the baseline you promoted against new candidates on it, each set up
+first ([tutorial 7](7-set-up-a-model.md)). The harness does no online A/B test and no drift detection: it measures
+what was captured.

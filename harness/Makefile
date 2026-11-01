@@ -17,7 +17,7 @@ TIER ?= silver
 
 .PHONY: help demo init env-check install venv-init catalog catalog-serve \
         overview activity datasets arms references metrics goals inspect round-open round-retire round-close rounds \
-        dataset-create dataset-materialize dataset-profile dataset-items reference-create reference-manifest \
+        dataset-create dataset-materialize dataset-profile dataset-items reference-manifest \
         mcp search self-test \
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
@@ -40,7 +40,8 @@ help:
 	@echo "  3. make dataset-create  DATASET_ID=my_v1"
 	@echo "  4. make dataset-materialize DATASET_ID=my_v1"
 	@echo "  5. write adapter.py           call_system() -> YOUR system (copy scripts/adapter.py)"
-	@echo "  6. make reference-create DATASET_ID=my_v1 RUN=<run_id of your best arm>   (or CONFIG=<arm>)"
+	@echo "  6. evh label-from-run --run <run_id of your best arm> --set best_v1"
+	@echo "     evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver --reason \"…\" --by <you>"
 	@echo ""
 	@echo "MEASURE  (dry-run first — it costs nothing and tells you what the sweep will)"
 	@echo "  make experiment-dry-run CONFIG=data/configs/arm_a.yaml"
@@ -184,10 +185,6 @@ reference-manifest:
 # Does the installed harness work here? (in a checkout: the full test suite)
 self-test:
 	$(PYTHON) scripts/self_check.py $(ARGS)
-
-reference-create:
-	@test -n "$(RUN)$(CONFIG)" || { echo "RUN=<run_id whose outputs become the reference> or CONFIG=<config that authors it> is required"; exit 1; }
-	$(PYTHON) scripts/reference_create.py --dataset-id $(DATASET_ID) $(if $(RUN),--from-run $(RUN),--config $(CONFIG)) --tier $(TIER) $(ARGS)
 
 # ── experiments ─────────────────────────────────────────────────────────────
 experiment-dry-run:

@@ -5,7 +5,7 @@
 
 For each item of the dataset, the capture's record of the same id is read, and the mapping's rules are tried in
 order against its outcome's fields; the first that matches gives the item's label, or skips it; an item no rule
-matches has no label. The rules are those `reference-from-outcomes` reads (when, unless, exists, absent, range,
+matches has no label. The rules are the outcome rule language (`_outcome_rules`: when, unless, exists, absent, range,
 min_age_days; label or skip). The set's source is `rule`, whoever wrote the outcome: the capture, its sha256, the
 mapping and its hash, and the counts. Newer outcomes are a fresh capture of the same query and a new set.
 """
@@ -26,8 +26,8 @@ from pathlib import Path
 from evaluation_harness._common import CAPTURES, die, load_dataset
 from evaluation_harness._importers import parse_time
 from evaluation_harness._label_sets import write_set
+from evaluation_harness._outcome_rules import load_rules, matches
 from evaluation_harness.dataset_from_capture import load_capture
-from evaluation_harness.reference_from_outcomes import load_rules, matches
 
 
 def main() -> int:

@@ -31,7 +31,9 @@ the best arm's run), compare, choose:
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
 evh experiment-run --config data/configs/best_model.yaml          # the arm that writes the reference
-evh reference-create --dataset-id my_v1 --from-run <its run_id>    # optional: silver from that run
+evh label-from-run --run <its run_id> --set best_v1                 # optional: its outputs as a model's labels
+evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
+    --reason "the best system we have ranks the rest" --by me          # ...promoted to silver
 evh experiment-run --config data/configs/arm_a.yaml --repeat 3     # + the arm's own noise
 evh leaderboard --dataset-id my_v1                                 # the ranking, and whether it is real
 evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_     # is the winner separated?
@@ -85,7 +87,9 @@ data/datasets/       the dataset_id — the thing that makes two numbers compara
 data/materialized/   derived, regenerable, disposable
       ↓  evh experiment-run          → scores + cost + speed + build provenance
 data/runs/
-      ↓  evh reference-create        ground truth to score against (gold | silver; --from-run a run's outputs)
+      ↓  evh label-from-run / label-import / label-from-capture   labels: a model's, a person's, a rule's
+data/labels/
+      ↓  evh reference-promote       ground truth to score against: labels promoted (gold | silver), with a reason
 data/references/
       ↓  evh leaderboard / pair-test / family-test / run-compare
 data/baselines/      evh run-promote — the number future work is judged against
@@ -246,17 +250,22 @@ What a system did in production is the most realistic test there is, and what ha
 ```bash
 evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2026_10   # the records, hashed
 evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --tag source=prod             # a frozen selection
-evh reference-from-outcomes --dataset-id prod_v1 --capture prod_2026_10 \
-    --map outcomes.yaml --name silver/prod_v1_outcomes                                 # labels from what happened
+evh label-from-capture --dataset-id prod_v1 --capture prod_2026_10 \
+    --map outcomes.yaml --set prod_outcomes                                              # labels from what happened
 evh dataset-split prod_v1 --heldout 0.3 --seed 7                                         # dev and heldout
 evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2026_11 \
     --since-capture prod_2026_10                                                         # later: what came since
 ```
 
 What came since makes the next dataset version; for newer outcomes of the records you hold, take a fresh capture
-of the same query and make a new silver reference from it (tutorial 6 §5).
+of the same query and make a new label set from it (tutorial 6 §5).
 
-A reference made from outcomes is silver and never decides a goal; a person's labels, gold, do. Importers for
+Labels are not references: arms are scored against a label set as it is, and a reference is labels promoted on
+purpose, at the tier chosen then. Production's own decisions become an arm (`evh arm-from-capture`), scored like any;
+`evh inspect --dataset-id prod_v1 --rows` shows each item's decisions, labels and signals (wrong, disagree, new) to
+pick the ones worth keeping (`evh pick`); `evh dataset-extend` makes the next version of a governed dataset from
+them; `evh deploy-sheet` says what production must match to run what you promoted, and whether a capture shows it
+did. Importers for
 JSONL, TSV, GitHub issues and Langfuse traces come with the harness, and `text: hidden` keeps a dataset's text off
 every public surface. Walkthrough: [tutorial 6](../docs/tutorials/6-datasets-from-production.md); reference:
 [RUNBOOK §15](docs/RUNBOOK.md#15-datasets-from-production-the-capture-lane); design:

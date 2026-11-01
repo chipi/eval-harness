@@ -25,8 +25,8 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 
-from evaluation_harness._common import REFERENCES, die, load_dataset, now
-from evaluation_harness._label_sets import labels_for, source_line
+from evaluation_harness._common import REFERENCES, die, load_dataset, now, read_json
+from evaluation_harness._label_sets import labels_for, sets, source_line
 from evaluation_harness._references import write_manifest
 
 CAVEAT = {
@@ -62,7 +62,8 @@ def main() -> int:
     if "/" in name or name.startswith(".") or not name:
         die(f"--name {name!r}: one name, no path")
     ref_dir = REFERENCES / args.tier / name
-    if ref_dir.exists() and any(ref_dir.iterdir()):
+    kept_out = (ref_dir / "manifest.json").is_file() and not any(ref_dir.glob("*.txt"))
+    if ref_dir.exists() and any(ref_dir.iterdir()) and not kept_out:
         die(f"{ref_dir} exists: a reference is never overwritten. Name another with --name.")
     ds = load_dataset(args.dataset_id)
     ids = [it["item_id"] for it in ds.get("items") or []]
@@ -87,6 +88,10 @@ def main() -> int:
     else:
         chosen = [i for i in ids if i in mine]
     source = next(iter(mine.values()))["source"]
+    if kept_out:
+        return _rebuild(ref_dir, mine, set_ds, set_name)
+    doc = next((d for d in sets() if d["dataset_id"] == set_ds and d["set"] == set_name), {})
+    not_here = doc.get("redistributed") is False
     ref_dir.mkdir(parents=True, exist_ok=True)
     for iid in chosen:
         (ref_dir / f"{iid}.txt").write_text(mine[iid]["text"] + "\n", encoding="utf-8")
@@ -109,12 +114,55 @@ def main() -> int:
         reason=args.reason,
         promoted_by=args.by,
         **authorship,
+        **(
+            {
+                "redistributed": False,
+                "source": f"{doc.get('rebuild')}, then evh reference-promote --dataset-id {args.dataset_id} --labels "
+                f"{set_ds}/{set_name} --tier {args.tier} --reason … --by …"
+                + (f" --name {name}" if args.name else ""),
+            }
+            if not_here
+            else {}
+        ),
     )
+    if not_here:
+        (ref_dir / ".gitignore").write_text(
+            "# the reference's texts are not redistributed (see manifest.json)\n*.txt\n"
+        )
     print(
         f"{ref_dir}: {len(chosen)} of {len(ids)} item(s), {args.tier}, promoted from {set_ds}/{set_name} "
         f"({source_line(source)})"
     )
     print("  commit it before the next run: an untracked reference marks every run scored against it dirty")
+    if not_here:
+        print(
+            "  its texts are kept out of git, as its label set's are: commit the manifest and the .gitignore"
+        )
+    return 0
+
+
+def _rebuild(ref_dir, mine: dict, set_ds: str, set_name: str) -> int:
+    """A promoted reference whose texts are kept out of git and not here: write them from its label set and check
+    them against the manifest's checksums."""
+    import hashlib  # noqa: PLC0415
+
+    m = read_json(ref_dir / "manifest.json")
+    pf = m.get("promoted_from") or {}
+    if (pf.get("labels"), pf.get("dataset_id")) != (set_name, set_ds):
+        die(
+            f"{ref_dir} exists, promoted from {pf.get('dataset_id')}/{pf.get('labels')}: a reference is never overwritten"
+        )
+    want = m.get("items_sha256") or {}
+    texts = {iid: mine[iid]["text"] + "\n" for iid in want if iid in mine}
+    bad = [iid for iid in want if hashlib.sha256(texts.get(iid, "").encode()).hexdigest() != want[iid]]
+    if bad:
+        die(
+            f"REFUSED: the texts from {set_ds}/{set_name} do not match {ref_dir / 'manifest.json'}'s checksums "
+            f"({len(bad)} of {len(want)} differ). Nothing was written."
+        )
+    for iid, text in texts.items():
+        (ref_dir / f"{iid}.txt").write_text(text, encoding="utf-8")
+    print(f"{ref_dir}: {len(texts)} text(s) rebuilt from {set_ds}/{set_name}, matching the manifest")
     return 0
 
 

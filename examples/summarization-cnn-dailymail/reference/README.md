@@ -25,7 +25,8 @@ Two concrete reasons, and the second is a correctness one:
    the reference here is gold. It bites in every example that has no human reference, and
    the rule is cheaper to keep than to remember.
 
-To use one as a reference author:
+To use one as a reference author: run it as an arm, take its outputs as a model's labels, and promote them:
 
-    make reference-create DATASET_ID=<id> TIER=silver \
-      CONFIG=examples/summarization-cnn-dailymail/reference/arm_anthropic_opus.yaml
+    evh experiment-run --config examples/summarization-cnn-dailymail/reference/arm_anthropic_opus.yaml
+    evh label-from-run --run <that run> --set opus_silver --not-redistributed
+    evh reference-promote --dataset-id <id> --labels opus_silver --tier silver --reason "…" --by <you>

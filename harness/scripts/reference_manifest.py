@@ -5,7 +5,7 @@
 
 The manifest (schemas/reference.schema.json) holds the checksum of every item's text. It is
 committed even when the text is not: anyone who rebuilds the reference proves they rebuilt the
-same one (validate's V16). A reference made by `evh reference-create` already has one.
+same one (validate's V16). A reference made by `evh reference-promote` already has one.
 """
 
 import sys as _sys

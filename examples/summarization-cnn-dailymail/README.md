@@ -259,10 +259,15 @@ The frontier arm's silver is kept as `silver/cnn_dailymail_200`, by `anthropic_l
 lift +12.5). Ranked against it (the 29 arms re-scored for $0 into `data/runs-silver`, a group on
 the goal page that never recommends), the author's siblings `anthropic_m` and `anthropic_s` come
 1st and 3rd of 28, and `bart_l`, the gold leader, 24th. Its texts quote the articles, so only its
-manifest is committed; it names the command that rebuilds them from the run:
+manifest is committed: they are that run's outputs byte for byte, and the manifest says to copy them from
+`data/runs/cnn_anthropic_l_n200_v1_20260926T063645Z/outputs/` (V16 checks them against its checksums).
+
+A new silver made the same way is a model's labels, promoted, its texts kept out of git:
 
 ```bash
-evh reference-create --dataset-id cnn_dailymail_200 --from-run cnn_anthropic_l_n200_v1_20260926T063645Z --tier silver --not-redistributed
+evh label-from-run --run <the author's run> --set author_silver --not-redistributed
+evh reference-promote --dataset-id cnn_dailymail_200 --labels author_silver --tier silver --name cnn_dailymail_200_v2 \
+    --reason "The frontier arm ranks the others where no gold exists." --by <you>
 ```
 
 ## Files

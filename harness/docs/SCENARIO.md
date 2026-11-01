@@ -114,13 +114,14 @@ evh family-test --dataset-id briefs_v1 --a briefs_mistral_small_v1 --against bri
 
 The same for `intents_v1` (`--metric accuracy`).
 
-## 5 · The frontier arm's run becomes the silver reference
+## 5 · The frontier arm's outputs become the silver reference
 
 ```bash
-evh reference-create --dataset-id briefs_v1 --from-run <the briefs_opus_v1 run_id>
-git add data/references && git commit -qm "silver/briefs_v1 from the frontier arm"
-evh reference-create --dataset-id intents_v1 --from-run <the intents_opus_v1 run_id>
-git add data/references && git commit -qm "silver/intents_v1 from the frontier arm"
+evh label-from-run --run <the briefs_opus_v1 run_id> --set opus_v1
+evh reference-promote --dataset-id briefs_v1 --labels opus_v1 --tier silver --reason "The frontier arm ranks the rest." --by me
+evh label-from-run --run <the intents_opus_v1 run_id> --set opus_v1
+evh reference-promote --dataset-id intents_v1 --labels opus_v1 --tier silver --reason "The frontier arm ranks the rest." --by me
+git add data/labels data/references && git commit -qm "silver from the frontier arm's labels"
 evh rescore --dataset-id briefs_v1 --reference-id silver/briefs_v1 --out data/runs-silver
 evh rescore --dataset-id intents_v1 --reference-id silver/intents_v1 --out data/runs-silver
 EVAL_RUNS_DIR=data/runs-silver evh leaderboard --dataset-id briefs_v1    # the author's row is marked

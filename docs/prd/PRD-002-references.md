@@ -1,8 +1,7 @@
 # PRD-002: Labels, and the references promoted from them
 
-- **Status**: Implemented (v0.4.0) for gold, silver and re-scoring; labels (FR2) and promotion (FR3.1, FR3.3) built for
-  0.6.0, and scoring against labels (FR6.1, FR6.3); the pages naming a set by its source (FR6.2) and removing the
-  old commands (FR3.2) planned for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md)); they replace
+- **Status**: Implemented (v0.4.0) for gold, silver and re-scoring; labels (FR2), promotion (FR3) and scoring against
+  labels (FR6) built for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md)); they replace
   `reference-create`
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Labels and References pages, the tier pills, row
@@ -34,7 +33,7 @@ taken on the user's word (`--tier gold` is accepted as "human-reviewed"), and a 
 stretched "silver" to mean a third thing (ADR-0020). Evaluating production data (PRD-014) needs someone to say
 what was right on new items without making a reference each time.
 
-The reasoning is in [Concepts: Gold is not silver](../../harness/docs/CONCEPTS.md#gold-is-not-silver); the analysis
+The reasoning is in [Concepts: Gold is not silver, and a label is not a reference](../../harness/docs/CONCEPTS.md#gold-is-not-silver-and-a-label-is-not-a-reference); the analysis
 against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harness/blob/main/research/internal/LABELS_ANALYSIS_0.6.0.md).
 
 ## Goals
@@ -113,7 +112,8 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
   `references/<tier>/<name>/`; the manifest records `promoted_from` (the set, its dataset, its source), the reason,
   who and when, and for a `model` set who authored the texts (its config, model and run). A reason must be a
   sentence; a reference is never overwritten.
-- **FR3.2** (0.6.0, planned: with the docs, step 9): `reference-create` and `reference-from-outcomes` are removed.
+- **FR3.2** (0.6.0): `reference-create` and `reference-from-outcomes` are removed; `label-from-run` keeps their
+  refusals and `--not-redistributed`, `label-from-capture` their rule language.
 - **FR3.3**: Every existing reference records how it was promoted ("promoted before labels existed"), with every
   run's fingerprint unchanged (its texts and authorship are what runs hash). Its texts kept here are copied byte for
   byte into a label set; a reference whose texts are fetched elsewhere (a dataset's own labels, not redistributed)

@@ -138,16 +138,7 @@ def main() -> int:
             ("dataset-materialize", ["--dataset-id", "tickets_v1"], "ok"),
             ("dataset-profile", ["--dataset-id", "tickets_v1"], "ok:tickets_v1: 6 items"),
             ("dataset-items", ["--dataset-id", "tickets_v1"], "ok:6 items"),
-            (
-                "reference-create",
-                ["--dataset-id", "tickets_v1", "--config", "data/configs/tickets_author.yaml"],
-                "ok",
-            ),
-            (
-                "reference-create",
-                ["--dataset-id", "tickets_v1", "--from-run", run_id, "--force"],
-                "ok:no calls",
-            ),
+            ("label-from-run", ["--run", run_id, "--set", "installed_from_run"], "ok:label(s), source model"),
             (
                 "reference-manifest",
                 ["--reference-id", "gold/tickets_v1", "--source", "tutorial/gold"],
@@ -247,7 +238,7 @@ def main() -> int:
             ("captures", ["--capture", "c1"], "ok:c1:"),
             ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
             # Labels (RFC-023): installed and reading their arguments; the flow is tests/test_label_sets.py.
-            ("labels", [], "ok:No label sets yet"),
+            ("labels", [], "ok:tickets_v1/installed_from_run: model"),
             (
                 "label-sheet",
                 ["--dataset-id", "tickets_v1", "--items", "all", "--out", "installed_sheet.csv"],
@@ -298,12 +289,6 @@ def main() -> int:
                     "--set",
                     "o1",
                 ],
-                "--map: no file",
-            ),
-            # Installed and reading its arguments; the flow is tests/test_outcome_reference.py.
-            (
-                "reference-from-outcomes",
-                ["--dataset-id", "captured_v1", "--capture", "c1", "--map", "no_such_map.yaml"],
                 "--map: no file",
             ),
             ("run-compare", ["--baseline", base_id, "--candidate", run_id], "ok"),

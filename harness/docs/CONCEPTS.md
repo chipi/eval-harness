@@ -92,20 +92,30 @@ differently from omitting the flag.
 
 ---
 
-## Gold is not silver
+## Gold is not silver, and a label is not a reference
+
+A **label** says what is right for one item, and who said it: a **person**, a **model** (a run's
+outputs) or a **rule** (what happened afterwards, mapped by rules you commit). Labels come in sets,
+never edited, and follow an item by its bytes into any dataset that holds it. A **reference** is
+labels you **promote**, on purpose, with a reason, at the tier you choose then:
 
 | tier | means |
 | --- | --- |
-| **gold** | human-authored or human-reviewed. The only thing you can honestly call correct. |
-| **silver** | model-generated. Consistent, cheap, plentiful — and it encodes that model's opinion, including its mistakes. |
+| **gold** | the yardstick a decision rests on: usually a person's labels you would sign. |
+| **silver** | consistent, not a claim that any arm is right: good for **ranking arms against each other**, often a strong model's labels. |
+
+No rule ties the tier to the source: a person's labelling can be poor, and is then simply never
+promoted. The reference records its source beside its tier, and every view names both: a tier
+pill for a reference, a source chip for a label set. Arms can be scored against a label set without
+promoting it, so evaluating new data never makes a reference.
 
 Silver is a legitimate starting point: it lets you **rank arms against each
 other** today. It is not a claim about correctness, and a number scored against
 it must say so.
 
 Every run records `reference_tier`. The manifest beside the references carries
-the caveat in full, and a reference made from a run (`reference-create --from-run`) names the run
-it came from. The failure this prevents is quiet: silver numbers get quoted in a decision six
+the caveat in full, and a reference promoted from a model's labels names the run
+they came from. The failure this prevents is quiet: silver numbers get quoted in a decision six
 months later as though they were ground truth, and the model that authored them is the one
 being evaluated. That is why the leaderboard marks the arm that wrote the reference it is scored
 against, and why a goal page never makes it the leader: its row measures agreement with itself.
@@ -221,16 +231,22 @@ recorded beside the hash and outside it. `evh run-compare` names the part that m
 
 ---
 
-## Production feeds datasets; it does not decide them
+## Production is evaluated; the governed datasets decide
 
-What a system did in production is the most realistic test data there is, and the least trustworthy
-label. A **capture** keeps the records as they were, hashed; a dataset is frozen from a selection of
-them; and what happened afterwards (an issue closed as fixed) can become a reference, as **silver**,
-with its caveat. Silver never decides a goal: a person's labels, gold, do
-([RUNBOOK §15](RUNBOOK.md#15-datasets-from-production-the-capture-lane),
-[ADR-0020](../../docs/adr/ADR-0020-second-references-are-silver.md)). Production goes on after a capture:
-the next capture continues from it, for the next dataset version, and a fresh capture of the same records
-gives their newer outcomes, for a newer silver reference; the frozen dataset never moves.
+Gold and silver are what you govern: the datasets and references a decision rests on. What a system did
+in production, once deployed, is what you **evaluate** against them: the most realistic test data there
+is, and the least trustworthy label. A **capture** keeps the records as they were, hashed; a dataset is
+frozen from a selection of them; production's own decisions become an arm, scored like any; what happened
+afterwards (an issue closed as fixed) becomes a `rule` label set, and you or a model label the rest. None
+of that is a reference until you promote it
+([RUNBOOK §15](RUNBOOK.md#15-datasets-from-production-the-capture-lane), [§15b](RUNBOOK.md#15b-evaluating-what-production-did)).
+
+From production back to the governed datasets is a choice, item by item: the rows where production was
+wrong, or saw something the governed dataset never had, are **picked**, and the next version of the
+governed dataset is made from its items and the picks you choose, with where each came from. The deploy
+sheet says what production must match to run what you promoted, and a capture says whether it did.
+Production goes on after a capture: the next capture continues from it, and a fresh capture of the same
+records gives their newer outcomes, for a new label set; a frozen dataset never moves.
 
 ---
 

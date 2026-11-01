@@ -1,7 +1,7 @@
 # RFC-023: Labels, and the references promoted from them
 
-- **Status**: Accepted (owner, 2026-11-01), built in steps (0.6.0, planned): the commands named here do not exist
-  until their step lands, and the marker comes off when the last one does.
+- **Status**: Accepted (owner, 2026-11-01); built for 0.6.0 in steps 1 to 9 (2026-11-01), each step's as-built
+  notes below; the e2e on the triage fleet is step 10.
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-002](../prd/PRD-002-references.md) (references: gold, silver),
   [PRD-014](../prd/PRD-014-datasets-from-production.md) (datasets from production)

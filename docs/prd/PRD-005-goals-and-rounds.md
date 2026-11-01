@@ -1,6 +1,6 @@
 # PRD-005: Goals, and experiment rounds
 
-- **Status**: Implemented (v0.4.0); groups scored against a label set (FR1.7) and the deploy sheet (FR3) built for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
+- **Status**: Implemented (v0.4.0); groups scored against a label set (FR1.7) and the deploy sheet (FR3) built for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md))
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the goal page), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the round commands)
 - **Related RFC**: [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds: files, commands, the evidence)

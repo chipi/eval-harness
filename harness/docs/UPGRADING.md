@@ -20,7 +20,20 @@ Change the pin to `@v0.6.0`. Two formats change, and both are migrated by a scri
   the old file the record's alias. Write a record per entry (`model_id`, `kind`, `aliases`, `weights`,
   `licence`) and delete the file; `validate` (V1, V18) checks them.
 
-Three behaviours change without a migration:
+**References are labels you promote** (RFC-023, ADR-0022). `reference-create` and `reference-from-outcomes` are
+removed. A run's outputs become a model's labels (`evh label-from-run`: the same refusals, and `--not-redistributed`),
+a sheet or a folder of answers a person's (`evh label-sheet`, `evh label-import`), a capture's outcomes a `rule` set
+(`evh label-from-capture`, the same rule language); `evh reference-promote` makes a reference of a set, at the tier
+you choose, with a reason and who promoted it. A reference made before keeps working as it is (`promoted_from` is
+optional); `harness/tools/migrate_references_to_labels.py`, run from a checkout, records how each was made and copies
+its texts into a label set, no run's score or hash moving. A reference made from outcomes has no rule of its own any
+more: promoted, it is a silver like any (with gold beside it, gold still decides).
+
+Four behaviours change without a migration:
+
+- **Each project serves on a port of its own**: `catalog-serve` on one in 18000–18999 and `mcp --http` on one in
+  19000–19999, the same every time for a project's folder, the next free one if taken (`--port` overrides;
+  `catalog-serve --public` keeps 8765). Bookmarks of 127.0.0.1:8765 move; the command prints the address.
 
 - **The local catalog reads only what git keeps.** A `data/runs-*` directory your `.gitignore` ignores is no
   longer shown, as it was never in a clone or the published catalog. Runs you meant to keep: re-allow the
@@ -32,7 +45,9 @@ Three behaviours change without a migration:
   another; the catalog, the goals and the rounds read an arm from its latest re-score there.
 
 Everything else is added and optional: the capture lane (`evh capture`, `importer-check`, `captures`,
-`capture-scrub`, `dataset-from-capture`, `reference-from-outcomes`, `dataset-split`, `text: hidden`; RFC-019);
+`capture-scrub`, `dataset-from-capture`, `dataset-split`, `text: hidden`; RFC-019); evaluating what production did
+(`evh labels`, scoring against a label set with `--labels`, `evh arm-from-capture`, `inspect --disagree` and
+`--rows`, `evh pick`, `evh picks`, `evh dataset-extend`, `evh deploy-sheet`; the catalog's Labels page; RFC-023);
 model onboarding (`evh model-onboard`, `evh arm-smoke`, `evh models`, `model_record:` and `deployment:` in a
 config; RFC-020); scoring that evolves (`evh score-preview`, `evh rescore --goal --round --why`,
 `round-open --keep all --scoring` and `--adopt`, a goal axis's `limit: baseline`; RFC-022); `call_timeout_s` for
@@ -217,9 +232,10 @@ so check these before you trust a `validate`:
   measure and the round's leader (`pair-test`'s B: the baseline the round started from). A
   project that never opens a round sees none of it
   ([tutorial 4](https://evals.humancopilot.eu/docs/tutorials/4-rounds-and-versions/)).
-- **A run becomes a reference:** `evh reference-create --from-run <run_id>` copies a finished
-  run's outputs and calls nothing; the reference records the run. `reference-create` now refuses
-  an empty output and outputs that stopped at `max_tokens`, by either path (`--allow-cut-off`).
+- **A run becomes a reference:** `reference-create --from-run <run_id>` copied a finished
+  run's outputs and called nothing; the reference recorded the run, and it refused an empty output and
+  outputs that stopped at `max_tokens` (`--allow-cut-off`). (Removed in 0.6.0: `evh label-from-run`, then
+  `evh reference-promote`.)
 - **Dataset versions keep their lineage:** `evh dataset-create --dataset-id x_v2 --from x_v1`
   (`derived_from` in the dataset file; validate V2).
 - **Item fields and URL items** (`data/fields/<fieldset_id>.yaml`, `dataset-create --fieldset

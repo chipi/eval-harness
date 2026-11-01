@@ -1077,7 +1077,6 @@ def goals(argv) -> int:
                 gm,
                 retired_in,
                 cb.gold_beside(tiers, ans["groups"], what),
-                outcome=cb.outcome_ref((by_ds.get(ds) or {}).get("refs", []), what),
             )
             shown = cb.shown_axes(dec)
             leader = dec["leader"]  # the decision's: never a retired or flagged arm

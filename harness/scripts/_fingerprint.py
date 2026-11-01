@@ -160,15 +160,18 @@ def tree_dirt(root: Path, data_dir: Path | None = None) -> list | None:
     return filter_dirt(status, data_rel)
 
 
-#: The commands that write a run, or a reference a run is scored against, and the bundled
-#: adapter: _adapter loads it by path, so no import names it.
+#: The commands that write a run, or what a run is scored against (a reference, a label set), and the
+#: bundled adapter: _adapter loads it by path, so no import names it.
 _PACKAGE = "evaluation_harness"
 _PRODUCERS = (
     "experiment_run.py",
     "rescore.py",
     "judge_score.py",
     "import_run.py",
-    "reference_create.py",
+    "reference_promote.py",
+    "label_from_run.py",
+    "label_import.py",
+    "label_from_capture.py",
     "adapter.py",
 )
 

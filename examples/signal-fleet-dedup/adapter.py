@@ -9,7 +9,7 @@ functions the fleet's filing stage applies before any model sees it:
   norm_key      filing.normalized_key: the key two occurrences of one logical bug share
 
 The output is those four as JSON. The reference is the same output from the fleet's code at a pinned
-commit (evh reference-create --from-run), so `key_match` and `class_match` below 1 mean the fleet's
+commit (a model's labels, from that run, promoted), so `key_match` and `class_match` below 1 mean the fleet's
 current code de-duplicates differently from the pinned one: a regression guard, not a quality score.
 
 The fleet's code comes from TRIAGE_FLEET_SRC (the signal-fleet folder at a recorded commit).

@@ -1,6 +1,6 @@
 # ADR-0022 — A reference is labels you promote; the tier is chosen then (0.6.0)
 
-**Status:** Accepted (owner, 2026-11-01), with RFC-023; built in steps (0.6.0, planned). Supersedes
+**Status:** Accepted (owner, 2026-11-01), with RFC-023; built for 0.6.0. Supersedes
 [ADR-0020](ADR-0020-second-references-are-silver.md) and ADR-0019's references from outcomes.
 **Date:** 2026-11-01
 **Detail:** [RFC-023](../rfc/RFC-023-labels-and-references.md), [PRD-002](../prd/PRD-002-references.md),

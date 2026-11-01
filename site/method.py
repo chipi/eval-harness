@@ -98,14 +98,14 @@ NODES = [
         "References",
         "silver · gold",
         (
-            "What each item is scored against. Silver: a model wrote it — consistent, not correct; "
-            "usually an expensive arm's run, promoted, so the cheaper arms are measured by how close "
-            "they come to it. Gold: a person wrote or checked it. Gold always wins, and every run "
-            "says which it used."
+            "What each item is scored against: labels (a person's, a model's, a rule's) promoted on purpose, "
+            "at the tier chosen then. Silver: consistent, not correct, often an expensive arm's labels, so the "
+            "cheaper arms are measured by how close they come to it. Gold: the yardstick a decision rests on. "
+            "Gold always wins, and every run says which it used."
         ),
         "data/references/&lt;tier&gt;/&lt;id&gt;/",
-        "evh reference-create --dataset-id … --from-run …",
-        (GUIDE, "5-make-its-run-the-reference-optional"),
+        "evh label-from-run · evh reference-promote",
+        (GUIDE, "5-make-its-outputs-the-reference-optional"),
     ),
     (
         "arms",
@@ -178,7 +178,7 @@ NODES = [
         "optional · and on",
         (
             "A goal is answered in rounds: each says what it set out to learn, carries the arms that stay, "
-            "retires the rest with why, and closes with a conclusion. Before release they narrow a field; "
+            "retires the rest with why, and closes with a conclusion. Before deploy they narrow a field; "
             "after it the same goal goes on, on new dataset versions of what the deployed system decides."
         ),
         "data/rounds/&lt;goal&gt;/r&lt;n&gt;.yaml",
@@ -475,10 +475,11 @@ LASTING = [
     (
         "Production is the test, not the answer key.",
         (
-            "Keep what your system decided as a capture, every record hashed, and freeze datasets from it as new "
-            "versions. What happened next can label them, as silver: it ranks, and never decides a goal."
+            "Keep what your system decided as a capture, every record hashed. Its decisions become an arm, scored "
+            "against labels; what happened next is a rule's labels, never a reference until you promote it. The rows "
+            "worth keeping are picked for the next version of a dataset you govern."
         ),
-        "evh capture · evh dataset-from-capture · evh reference-from-outcomes",
+        "evh capture · evh arm-from-capture · evh label-from-capture · evh pick",
         "docs/tutorials/6-datasets-from-production/",
     ),
     (
@@ -491,14 +492,14 @@ LASTING = [
         "docs/tutorials/4-rounds-and-versions/#7-when-the-scoring-changes",
     ),
     (
-        "An evaluation doesn't stop at release.",
+        "An evaluation doesn't stop at deploy.",
         (
-            "Answer a goal in rounds. Before release they narrow a field; after it the same goal goes on, on what the "
+            "Answer a goal in rounds. Before deploy they narrow a field; after it the same goal goes on, on what the "
             "deployed system decides, against new candidates. Each round records what it set out to learn and what it "
             "concluded."
         ),
         "evh round-open --from · evh rounds",
-        "docs/tutorials/4-rounds-and-versions/#after-release",
+        "docs/tutorials/4-rounds-and-versions/#after-deploy",
     ),
 ]
 
@@ -546,7 +547,7 @@ def method_page(H, f: dict) -> str:
 <section class="block" id="lasting"><div class="wrap">
   <div class="eyebrow"><span class="num">07</span>And on</div>
   <h2>Four more, for an evaluation that goes on.</h2>
-  <p class="lede">The six habits make one comparison trustworthy. These four keep an evaluation trustworthy as it goes on, round after round, before release and after it. Each is optional, and each is a step in the harness.</p>
+  <p class="lede">The six habits make one comparison trustworthy. These four keep an evaluation trustworthy as it goes on, round after round, before deploy and after it. Each is optional, and each is a step in the harness.</p>
   <div class="habits two">{lasting}</div>
 </div></section>
 
@@ -752,12 +753,12 @@ STEPS = [
         "2-onboard-it",
     ),
     (
-        "Run the best arm; its run is the reference",
-        "Your best system answers first; the others are measured by how close they come — and the answers are labelled silver.",
-        "evh experiment-run --config data/configs/tickets_author.yaml\nevh reference-create --dataset-id tickets_v1 --from-run …",
-        "data/references/silver/tickets_v1  (6 item(s), tier=silver, $0.0000)",
+        "Run the best arm; its outputs become the reference",
+        "Your best system answers first; its answers become a model's labels, promoted to silver, and the others are measured by how close they come.",
+        "evh experiment-run --config data/configs/tickets_author.yaml\nevh label-from-run --run … --set author_v1\nevh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason … --by me",
+        "data/references/silver/tickets_v1: 6 of 6 item(s), silver, promoted from tickets_v1/author_v1",
         GUIDE,
-        "5-make-its-run-the-reference-optional",
+        "5-make-its-outputs-the-reference-optional",
     ),
     (
         "Run the others — three times",
@@ -785,7 +786,7 @@ STEPS = [
     ),
     (
         "Then: the next round",
-        "Carry what stays, retire what lost with why, close with a conclusion. The goal goes on, before release and after.",
+        "Carry what stays, retire what lost with why, close with a conclusion. The goal goes on, before deploy and after.",
         (
             "evh round-retire --goal tickets_summary --round r1 --arm tickets_lead1_v1 --reason …\n"
             "evh round-close --goal tickets_summary --round r1 --conclusion …"

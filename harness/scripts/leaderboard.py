@@ -678,7 +678,7 @@ def _table(args: argparse.Namespace, found: list) -> None:
         print(
             f"\n  RANKED ON A DESCRIPTIVE METRIC ({sort_key}) — it measures what the output\n"
             "  WAS, not whether it was good, so this ordering rewards verbosity. Author\n"
-            f"  references ({how('evh reference-create', 'make reference-create')}) so runs carry a quality score, or pass\n"
+            f"  references (labels you promote: evh reference-promote) so runs carry a quality score, or pass\n"
             "  --sort <metric> explicitly."
         )
 

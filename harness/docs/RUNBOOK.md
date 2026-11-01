@@ -19,8 +19,12 @@ further. This page is the reference for each step.
 | a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
 | fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
 | materialize | `evh dataset-materialize --dataset-id …` |
-| silver references | `evh reference-create --dataset-id … --from-run <run_id>` (or `--config …`) |
-| gold references | files in `data/references/gold/<dataset_id>/<item_id>.txt`; built by a script: `evh reference-manifest --reference-id gold/… --source …` |
+| a model's labels (a run's outputs) | `evh label-from-run --run <run_id> --set … [--not-redistributed]` |
+| a person's labels | `evh label-sheet --dataset-id … --out sheet.csv` · `evh label-import sheet.csv --dataset-id … --set … --by …` (or a folder of `<item_id>.txt`) |
+| the label sets | `evh labels [--dataset-id …]` |
+| a reference (labels you promote) | `evh reference-promote --dataset-id … --labels … --tier gold\|silver --reason "…" --by …` |
+| gold a script builds | `evh reference-manifest --reference-id gold/… --source …` |
+| score against labels | `evh rescore --dataset-id … --labels …` · `evh experiment-run --config … --labels …` |
 | cost before spending | `evh experiment-run --config … --dry-run` |
 | measure (+ own noise) | `evh experiment-run --config … --repeat 3` |
 | many arms | `evh sweep --configs "data/configs/arm_*.yaml"` |
@@ -49,8 +53,14 @@ further. This page is the reference for each step.
 | test an importer | `evh importer-check path/to/importer.py:Importer --query …` |
 | scrub a capture | `evh capture-scrub c1 --command "python scrub.py {records}"` |
 | a dataset from a capture | `evh dataset-from-capture c1 --dataset-id … [--where F:V] [--one-per F] [--tag K=V]` |
-| labels from what happened afterwards | `evh reference-from-outcomes --dataset-id … --capture c1 --map rules.yaml --name silver/…` |
+| labels from what happened afterwards | `evh label-from-capture --dataset-id … --capture c1 --map rules.yaml --set …` |
 | dev and heldout | `evh dataset-split … --heldout 0.3 --seed 7 [--key F]` |
+| production's own decisions as an arm | `evh arm-from-capture --dataset-id … --capture c1 --as production_v1 [--like CONFIG]` ([§15b](#15b-evaluating-what-production-did)) |
+| where arms decided differently | `evh inspect --runs A,B --disagree` |
+| every row, its signals | `evh inspect --dataset-id … --rows --runs A,B [--wrong-against SET] [--new-vs V]` |
+| pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
+| the next version of a dataset | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) |
+| what production must match | `evh deploy-sheet --config ARM [--capture C]` |
 
 ---
 
@@ -217,32 +227,41 @@ follow the same rule (§12); their verdicts keep `usage`.
 
 ## 4b. Author ground truth — you cannot score quality without it
 
+A **label** says what is right for one item, and who said it: a `person`, a `model` or a `rule`. Labels
+come in **sets**, never edited (a correction is a new set), under `data/labels/<dataset>/<set>/`, and
+follow an item by its bytes into any dataset holding it. A **reference** is labels promoted on purpose,
+with a reason, at the tier you choose: no rule ties the tier to the source, and the reference records
+both ([ADR-0022](../../docs/adr/ADR-0022-references-are-promoted-labels.md)).
+
 Most projects have none. Run the best model you have as an arm (an expensive one you would
-not run in production is the usual choice), read its results, then make its outputs the
-reference:
+not run in production is the usual choice), read its results, take its outputs as a model's labels,
+and promote them:
 
 ```bash
 evh experiment-run --config data/configs/best_model.yaml
-evh reference-create --dataset-id my_v1 --from-run <that run_id>
+evh label-from-run --run <that run_id> --set best_v1
+evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
+    --reason "The best system we have ranks the rest until a person writes gold." --by <you>
 ```
 
-That writes **silver** references — model-generated, therefore consistent
-rather than correct. Enough to rank arms against each other; not a claim about
-truth. It calls nothing, and its `manifest.json` names the run, config, fingerprint and build
-it came from. It refuses a run from a dirty tree or of an unknown build (as `run-promote`
-does), an unfinished, derived or other-dataset run, and an empty output or one that stopped at
-`max_tokens` (raise `max_tokens` in a new config_id; `--allow-cut-off` for outputs that end at
-the cap by design). Commit the reference before the next run: an uncommitted one makes every
-later run dirty.
+Promoted as **silver**: model-generated, therefore consistent rather than correct. Enough to rank
+arms against each other; not a claim about truth. `label-from-run` calls nothing, and the set names
+the run, config, fingerprint and build it came from. It refuses a run from a dirty tree or of an
+unknown build (as `run-promote` does), an unfinished or derived run, and an empty output or one that
+stopped at `max_tokens` (raise `max_tokens` in a new config_id; `--allow-cut-off` for outputs that end
+at the cap by design). The reference records which set it was promoted from, by whom, when and why.
+Commit both before the next run: an uncommitted reference makes every later run dirty.
 
 When the texts may not be redistributed (the run's outputs quote a corpus you may not publish),
-add `--not-redistributed`: commit only the manifest and ignore the texts. The manifest records the
-command that rebuilds them; run on a checkout with the manifest alone, that command writes the
-texts from the run again, checks them against the manifest's checksums and leaves the manifest as
-it is (it refuses, keeping nothing, if the run's outputs changed since).
+add `--not-redistributed`: the set's directory gets a `.gitignore` for its texts, and `labels.json`
+records that and the command that rebuilds them; run on a checkout with `labels.json` alone, that
+command writes the texts from the run again, checks them against the set's checksums (it refuses,
+writing nothing, if the run's outputs changed since). A reference promoted from it is kept out of git
+too, and the same promotion rebuilds its texts from the set.
 
-`--config data/configs/best_model.yaml` instead of `--from-run` authors the references in a pass
-of their own, one call per item, without a run to read first.
+Arms can be scored against a label set without promoting it, `evh rescore --dataset-id my_v1 --labels
+best_v1` (or `experiment-run --labels`): the runs land beside the others, in
+`data/runs-labels-<dataset>-<set>/`, and every view names the set by its source, never with a tier.
 
 Scored against silver, the arm that wrote it is graded against its own outputs: the leaderboard
 marks its row (`arm *`) and leaves it out of the ordering test and the frontier ("The ordering
@@ -250,11 +269,10 @@ test and the frontier leave out <config> (it wrote the reference)"): it is the y
 contender. The others are measured by how close they come to it, the usual way to choose a
 cheaper system: pay for the expensive one once, then chase it.
 
-**Gold** is what a person wrote or checked: one `<item_id>.txt` per item under
-`data/references/gold/<dataset_id>/` — write them, or review silver ones and keep the
-ones you would sign (`reference-create --config … --tier gold` authors straight into gold, for a
-system whose output you have reviewed; `--from-run` refuses `--tier gold`). Gold always wins over
-silver for new runs. Runs made before the gold set existed are re-scored against it for $0:
+**Gold** is a person's labels promoted at gold: label the items in a sheet (`evh label-sheet
+--dataset-id my_v1 --out sheet.csv`, `--propose best_v1 --items all` to start from the model's
+answers, `yes` taking one), or write one `<item_id>.txt` per item in a folder, then `evh label-import`
+it as a person's set and promote it with `--tier gold`. Gold always wins over silver for new runs. Runs made before the gold set existed are re-scored against it for $0:
 `evh rescore --dataset-id my_v1 --reference-id gold/my_v1 --out data/runs-gold`.
 
 Gold that a script builds (fetched from a public source, for example) gets a manifest: the
@@ -262,7 +280,7 @@ checksum of every item's text and how to rebuild it, written by
 `evh reference-manifest --reference-id gold/my_v1 --source scripts/fetch.py`. Commit the
 manifest even when the texts may not be redistributed (`--not-redistributed`): `evh validate`
 (V16) then checks any rebuilt copy against it, and the catalog lists the reference as fetched.
-`reference-create` writes the manifest of the references it makes.
+`reference-promote` writes the manifest of the references it makes.
 
 Every later run is scored against these automatically and records which tier it
 used. Ten items is enough to rank four arms; keep the first pass cheap.
@@ -874,7 +892,7 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
 
 ```bash
 evh catalog                                             # build static pages into .build/catalog/
-evh catalog-serve [--port 8765]                        # serve the catalog and inspector on 127.0.0.1
+evh catalog-serve [--port N]                           # the catalog and inspector on 127.0.0.1, a port of the project's own
 evh catalog-serve --public catalog.example.com --publish outputs --client-header X-Real-IP  # public deployment
 evh dataset-profile --dataset-id my_v1 [--with-text]   # what is inside a dataset, for its page (text: committed items only)
 evh dataset-items --dataset-id my_v1 [--item ID]       # the same in the terminal
@@ -893,8 +911,9 @@ its source when one is recorded; commit `data/profiles/` and a catalog built any
 **For an agent**, `evh mcp` serves the same read commands as MCP tools; how to connect each
 client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
 
-- **The tools** are `overview`, `datasets`, `dataset-items`, `arms`, `goals`, `references`,
-  `metrics`, `activity`, `search`, `inspect`, `rounds`, `runs-list` and `validate`. Each takes the
+- **The tools** are `overview`, `datasets`, `dataset-items`, `arms`, `models`, `goals`, `references`,
+  `metrics`, `activity`, `search`, `inspect`, `rounds`, `runs-list`, `validate`, `captures`, `labels`,
+  `picks` and `deploy-sheet`. Each takes the
   command's own options, named as on the command line (`dataset-id`, `period`). Each call runs
   the command as a child process, with `--json` where it has one, so the answer is what you would
   see. No tool writes project data, spends or runs a model. The one file a call writes is the p
@@ -996,8 +1015,8 @@ evh captures --capture prod_2026_10                                    # what wa
 evh capture-scrub prod_2026_10 --command "python scrub.py {records}"   # your scrubber; changed records re-hashed
 evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --one-per fingerprint --tag source=prod
 evh dataset-materialize --dataset-id prod_v1
-evh reference-from-outcomes --dataset-id prod_v1 --capture prod_2026_10 --map rules.yaml \
-    --name silver/prod_v1_outcomes                                     # shown beside gold, never deciding
+evh label-from-capture --dataset-id prod_v1 --capture prod_2026_10 --map rules.yaml \
+    --set prod_outcomes                                                # a rule set: what happened afterwards
 evh dataset-split prod_v1 --heldout 0.3 --seed 7 --key fingerprint     # prod_v1_dev, prod_v1_heldout
 ```
 
@@ -1017,17 +1036,57 @@ evh dataset-split prod_v1 --heldout 0.3 --seed 7 --key fingerprint     # prod_v1
   earlier capture: records it holds are skipped by id, and every record must fall inside the window
   recorded (one outside it is named and nothing is written; `--late` keeps the ones older than `since`
   the earlier capture never saw, listed as `late`). A continued capture never re-reads a record it holds,
-  so for newer outcomes take a fresh capture of the same query and run `reference-from-outcomes --capture`
-  on it under a new name: the dataset stays as frozen, only the labels move (tutorial 6 §5).
+  so for newer outcomes take a fresh capture of the same query and run `label-from-capture --capture`
+  on it into a new set: the dataset stays as frozen, only the labels move (tutorial 6 §5).
 - **The catalog's Captures page** lists every capture (records, importer, the time its records span,
   what it continues) with the datasets made from each; a dataset's origin links to it.
 - **Only the body becomes the item.** Fields are typed by a field set (`--fieldset … --field …`); the
-  outcome stays in the capture, for references.
-- **An outcome reference is silver** (ADR-0020): what production recorded afterwards, mapped by a rule
-  set you commit. It can repeat what production decided, so a goal never decides on it, with or without
-  gold beside it. The deciding reference is a person's: `gold/<dataset>`.
+  outcome stays in the capture, for labels.
+- **Labels from outcomes are a `rule` set**: what production recorded afterwards, mapped by a rule set
+  you commit. It can repeat what production decided (an item nothing happened to reads as right), so
+  read it beside a person's labels; promoted, it is a reference like any (ADR-0022).
 - **`text: hidden`** (`dataset-from-capture --hide-text`) keeps a dataset's text, and every text derived
   from it, off every public surface, for data a project may measure but not publish.
+
+## 15b. Evaluating what production did
+
+A capture keeps what production did; the governed datasets, labels and references stay yours. The
+loop, on any project ([RFC-023](../../docs/rfc/RFC-023-labels-and-references.md); worked on the triage
+fleet in `examples/triage-fleet/`):
+
+```bash
+evh arm-from-capture --dataset-id prod_v1 --capture prod_2026_11 --as production_v1 \
+    --like data/configs/deployed.yaml                                  # production's decisions, as an arm
+evh experiment-run --config data/configs/deployed.yaml                 # the deployed config, replayed
+evh label-sheet --dataset-id prod_v1 --items disagree --runs production_v1,deployed_v1 --out sheet.csv
+evh label-import sheet.csv --dataset-id prod_v1 --set owner_2026_11 --by <you>
+evh rescore --dataset-id prod_v1 --labels owner_2026_11                # every arm, against your labels
+evh inspect --dataset-id prod_v1 --rows --runs production_v1,deployed_v1 \
+    --wrong-against owner_2026_11 --new-vs governed_v1                  # where production was wrong on something new
+evh pick --dataset-id prod_v1 --item … --for governed_v1 --tag case=…  # worth keeping
+evh dataset-extend governed_v1 --dataset-id governed_v2 --picks        # the next version, from the picks
+evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did production run what you promoted?
+```
+
+- **Production's recorded arm** (`provider: recorded`): each output is the capture's record of the same
+  id, read by the adapter's `recorded_output(record)` (else `--field`). It is scored, tested and compared
+  like any arm; it costs nothing and its speed is not measured.
+- **Agreement**: two outputs are one decision when the adapter's `same(a, b)` says so (default: the same
+  text). `inspect --disagree` and `label-sheet --items disagree` keep the items where the arms differ.
+- **The rows view** shows each item's decisions, every label and the signals: **wrong** (the first run
+  against a label set), **disagree**, **split** (the candidates among themselves), **new** (a field value
+  the governed dataset never had), **unlabelled**. Each is a filter; the view ends with the `evh pick` and
+  `evh label-sheet` commands for its rows. The inspector shows the same (its "Explore its rows").
+- **Picks** wait in `data/picks.jsonl`, append-only: the latest line for an item wins; `pick --drop` takes
+  one off. `dataset-extend` makes V2 of V1's items and the picks chosen, records `extended_from`, and the
+  picks used leave the list; labels follow the items into V2. Nothing is promoted by it.
+- **The deploy sheet** is what production must match to run what was measured: the model and its record,
+  every setting sent (and a record's setting that was not), what each item reported, the adapter. With a
+  capture, each record's account (the adapter's `production_ran(record)`) is checked against it; it exits 1
+  unless every record matches.
+- **Several projects at once**: each serves its catalog on a port of its own (18000–18999) and its MCP
+  server on another (19000–19999), the same every time, the next free one if taken; a local catalog names
+  its project in its header.
 
 ## 16. Set up a model before you test it
 

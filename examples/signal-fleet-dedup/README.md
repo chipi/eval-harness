@@ -17,7 +17,7 @@ TRIAGE_FLEET_SRC=/path/to/signal-fleet evh experiment-run --config examples/sign
 evh leaderboard --dataset-id fleet_dedup_v1
 ```
 
-The reference, `silver/fleet_dedup_v1`, is the fleet's own output at `f07efa9` (`evh reference-create --from-run`).
+The reference, `silver/fleet_dedup_v1`, is the fleet's own output at `f07efa9`: that run's outputs as a model's labels (`evh label-from-run`), promoted to silver (`evh reference-promote`).
 `key_match` below 1 on a later commit means its normalized keys merge or split signals differently: read the
 changed items before deciding whether the change is a fix or a regression. When the fleet's de-duplication
 changes on purpose, make a new reference from the new commit's run.

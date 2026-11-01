@@ -4,7 +4,7 @@
     python tests/test_label_sets.py
 
 In a throwaway project built from the tutorial ($0, offline): a run's outputs become a `model` set, with the
-refusals reference-create has; a sheet of the items to label (unlabelled, all, where two runs disagree, chosen
+refusals of a reference's provenance (a clean, finished run); a sheet of the items to label (unlabelled, all, where two runs disagree, chosen
 ones, with a proposal) and its import as a `person` set (`yes` takes the proposal, notes kept); a set is never
 edited; a capture's outcomes become a `rule` set by the mapping; `evh labels` lists the sets, their coverage and
 how often two agree; and labels follow an item by its sha256 into another dataset holding it.
@@ -167,6 +167,30 @@ try:
         and doc.get("notes") == {rows[0]["item_id"]: "a real bug"},
         out(r)[-300:],
     )
+    answers = proj / "answers"
+    answers.mkdir()
+    (answers / "t01_login.txt").write_text("Login fails after SSO change.\n")
+    (answers / "t04_api.txt").write_text("Rate limit lower than documented.\n")
+    r = evh("label-import", "answers", "--dataset-id", "tickets_v1", "--set", "owner_files", "--by", "owner")
+    fdoc = (
+        json.loads((LABELS / "tickets_v1" / "owner_files" / "labels.json").read_text())
+        if r.returncode == 0
+        else {}
+    )
+    check(
+        "label-import: a folder of <item_id>.txt as a person set, its files hashed",
+        fdoc.get("n_items") == 2
+        and fdoc["source"].get("kind") == "person"
+        and fdoc["source"].get("folder") == "answers"
+        and len(fdoc["source"].get("folder_sha256", "")) == 64
+        and (LABELS / "tickets_v1" / "owner_files" / "t04_api.txt").read_text()
+        == "Rate limit lower than documented.\n",
+        out(r)[-300:],
+    )
+    (proj / "empty").mkdir()
+    r = evh("label-import", "empty", "--dataset-id", "tickets_v1", "--set", "none_v1", "--by", "owner")
+    check("label-import: an empty folder is refused", refused(r, "no <item_id>.txt"), out(r)[-200:])
+    shutil.rmtree(LABELS / "tickets_v1" / "owner_files")  # the later checks count the sets on tickets_v1
     (proj / "bad.csv").write_text("id,answer\nt01_login,x\n")
     r = evh("label-import", "bad.csv", "--dataset-id", "tickets_v1", "--set", "bad_v1", "--by", "owner")
     check(

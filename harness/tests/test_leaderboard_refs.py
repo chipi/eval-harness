@@ -55,7 +55,24 @@ try:
         )
         check(f"setup: {cfg} runs with no reference", r.returncode == 0, (r.stdout + r.stderr)[-400:])
     author = next((data / "runs").glob("tickets_author_v1_*"))
-    r = evh("reference-create", "--dataset-id", "tickets_v1", "--from-run", author.name)
+    r = evh("label-from-run", "--run", author.name, "--set", "author_labels")
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "author_labels",
+            "--tier",
+            "silver",
+            "--reason",
+            "The author's outputs rank the others.",
+            "--by",
+            "test",
+        )
+    )
     check("setup: a silver reference from the author's run", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     time.sleep(1.1)  # created_at has whole seconds: each run is measured after the last
     r = evh(

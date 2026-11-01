@@ -1,6 +1,6 @@
 # PRD-004: The catalog and the run inspector
 
-- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (v0.5.0); the Captures page (FR1.13) built for 0.6.0; the port per project (FR2.7) built for 0.6.0; FR1.14 and FR2.6 built for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
+- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (v0.5.0); the Captures page (FR1.13) built for 0.6.0; the port per project (FR2.7) built for 0.6.0; FR1.14 and FR2.6 built for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md))
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog's pages),
   [UXS-002](../uxs/UXS-002-inspector.md) (the inspector), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the same views as commands)
