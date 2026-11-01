@@ -104,7 +104,8 @@ def commands_in(text: str) -> list:
 def planned_lines(text: str) -> set:
     """The line numbers (1-based) inside a part marked planned: a heading's section (to the next heading of its
     level or higher), a list item with the lines indented under it, a table row, or a paragraph."""
-    lines, out = text.splitlines(), set()
+    lines = text.splitlines()
+    out: set[int] = set()
     n = 0
     while n < len(lines):
         line = lines[n]
