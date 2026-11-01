@@ -35,6 +35,10 @@ desk_2026_10: 6 record(s) from jsonl, captured ...
   datasets made from it: none
 ```
 
+A production source is often far larger than a test needs: `--sample-rate 0.001 --seed 7` keeps one record in
+a thousand, chosen by a hash of each id, as the records are read, so the same rule draws the same records again and
+the whole source is never held at once. A project importer receives the rule and may sample at the source itself.
+
 A production export can hold what must not leave the project: `evh capture-scrub desk_2026_10 --command
 "python your_scrubber.py {records}"` runs your scrubber over the records and re-hashes the ones it changed.
 
@@ -51,7 +55,7 @@ data/materialized/tickets_desk_v1  (6 item(s), all hashes verified)
 
 Only the body becomes the item: what the system received, nothing about what happened next. A selection is
 part of the dataset's record: `--where channel:email`, `--one-per F` (one record per value, the newest, for
-independent items), `--dedup text`, `--sample N --seed S`. Tags label the dataset outside its identity; the
+independent items), `--dedup text`. Tags label the dataset outside its identity; the
 catalog's datasets page groups by them, and `evh datasets --tag source=support-desk` filters by them.
 
 The six-ticket arms of Getting started run on it unchanged: copy a config and set `dataset_id:

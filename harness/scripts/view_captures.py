@@ -35,6 +35,7 @@ def summary(capture_id: str, made: dict, root: _Path | None = None) -> dict:
         "last": times[-1] if times else None,
         "continues": doc.get("continues"),
         "scrubbed": bool(doc.get("scrubbed")),
+        "sample": doc.get("sample"),
         "datasets": made.get(capture_id, []),
         "query": doc.get("query") or {},
     }
@@ -81,6 +82,9 @@ def main() -> int:
             print(f"  records from {c['first']} to {c['last']}")
         if c["continues"]:
             print(f"  continues {c['continues']}")
+        if c["sample"]:
+            s = c["sample"]
+            print(f"  a sample: rate {s['rate']}, seed {s['seed']} ({s.get('kept')} of {s.get('read')} read)")
         print(f"  datasets made from it: {', '.join(c['datasets']) or 'none'}")
         if args.capture:
             print(f"  query: {json.dumps(c['query'])}")

@@ -1008,6 +1008,11 @@ evh dataset-split prod_v1 --heldout 0.3 --seed 7 --key fingerprint     # prod_v1
   outcome}`. The built-in ones read JSON lines, TSV, GitHub issues (with the comment beside each close)
   and Langfuse traces. `evh importer-check` runs a new one against the contract, including that it keeps
   to a query's `since` and `until`.
+- **A sample is the capture's.** `evh capture … --sample-rate 0.001 --seed 7` keeps one record in a
+  thousand, by a hash of each id, as the records are read: the same rule draws the same records again,
+  and a source far larger than the sample is never held at once. The importer receives the rule as its
+  `sample` option (`{"rate", "seed"}`) and may sample at the source; `evaluation_harness._importers.sampled`
+  is the rule. `dataset-from-capture` selects (`--where`, `--one-per`, `--dedup`); it does not sample.
 - **Later: what came since, and how it ended.** `--since-capture <earlier>` captures what came after an
   earlier capture: records it holds are skipped by id, and every record must fall inside the window
   recorded (one outside it is named and nothing is written; `--late` keeps the ones older than `since`

@@ -25,7 +25,10 @@ that can move a result is never a patch release without saying so under **Change
     records are a fresh capture, labelled with `reference-from-outcomes --capture` (tutorial 6 §5).
   - **`evh capture-scrub`** runs a project's own scrubber over a capture's records and re-hashes the ones
     it changed, keeping their earlier hashes.
-  - **`evh dataset-from-capture`** freezes a selection (`--where`, `--dedup`, `--one-per`, `--sample`),
+  - **`evh capture --sample-rate R --seed S`** keeps a share of the records, by a hash of each id, as they are
+    read: the same rule draws the same records again, an importer may sample at the source, and a continued
+    capture keeps the rule.
+  - **`evh dataset-from-capture`** freezes a selection (`--where`, `--dedup`, `--one-per`),
     typed fields from a field set, and `--tag K=V` labels; only the body becomes the item.
   - **`evh reference-from-outcomes`** turns what happened afterwards into labels by a small rule set
     (`when`, `unless`, `exists`, `absent`, `range`, `min_age_days`). Such a reference is `silver/…` with

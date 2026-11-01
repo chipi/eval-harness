@@ -822,8 +822,6 @@ class HarnessAdapter:
             bits += [f"where {w}" for w in mf.get("where") or []]
             if mf.get("one_per"):
                 bits.append(f"one per {mf['one_per']}")
-            if mf.get("sample"):
-                bits.append(f"a sample of {mf['sample']}")
             origin = ", ".join(bits)
         elif isinstance(ds.get("derived_from"), dict) and ds["derived_from"].get("dataset_id"):
             origin = f"version of {ds['derived_from']['dataset_id']}"

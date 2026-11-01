@@ -157,6 +157,14 @@ def window_of(query: dict) -> dict:
     return {k: query[k] for k in ("since", "until") if query.get(k)}
 
 
+def sampled(record_id: Any, rate: float, seed: int) -> bool:
+    """Whether a capture's sample keeps this record: the seeded hash of its id falls below the rate. The same id,
+    rate and seed always give the same answer, so a sample is drawn again exactly, at the source or here, and a
+    record keeps its side in every later capture with the same rule."""
+    h = hashlib.sha256(f"{seed}:{record_id}".encode()).digest()
+    return int.from_bytes(h[:8], "big") / 2**64 < rate
+
+
 def outside(window: dict, created_at: Any) -> str:
     """Why a record's time falls outside a window, [since, until): "before since", "at or after until", "no time"
     (a window cannot place it); "" when it is inside, or there is no window."""

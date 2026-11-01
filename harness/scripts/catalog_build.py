@@ -3560,7 +3560,13 @@ def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                     if c.get("continues")
                     else ""
                 ),
-                f'<span data-v="{int(c.get("records") or 0)}">{int(c.get("records") or 0)}</span>',
+                f'<span data-v="{int(c.get("records") or 0)}">{int(c.get("records") or 0)}</span>'
+                + (
+                    f'<br><small class="muted">a sample: rate {e(str(c["sample"]["rate"]))}, '
+                    f"of {int(c['sample'].get('read') or 0)} read</small>"
+                    if isinstance(c.get("sample"), dict)
+                    else ""
+                ),
                 f"<code>{e(imp)}</code>"
                 + (' <small class="muted">scrubbed</small>' if c.get("scrubbed") else ""),
                 f'<span data-v="{e(str(c.get("captured_at") or ""))}">{e(_when(str(c.get("captured_at") or "")))}</span>',

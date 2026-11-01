@@ -85,6 +85,10 @@ any public surface.
     per record its id, link, `sha256` (the whole normalised record) and `body_sha256`;
   - `records/<id>.json`.
 - It never overwrites without `--force`.
+- **A sample is the capture's:** `--sample-rate R --seed S` keeps a record when the seeded hash of its id falls
+  below R, as the records arrive, so a source far larger than the sample (a billion log lines a day) is never held
+  at once. The importer receives the rule as its `sample` option and may sample at the source; the capture checks
+  every record against the rule, records it (`sample`: rate, seed, read, kept), and a continued capture keeps it.
 - **`evh capture-scrub C --command "... {records}"`** runs the project's own scrubber, re-hashes, and records the
   command and its files' hashes.
 - **`evh captures`** lists the captures. **V17** checks every record against its hash.
@@ -94,7 +98,7 @@ any public surface.
 ### 3. A dataset version from a capture
 
 - **The command:** `evh dataset-from-capture C --dataset-id D [--from D_prev] [--where F:V] [--dedup exact|text]
-  [--one-per F] [--sample N --by F --seed S] [--fieldset FS --field F] [--tag k=v]`.
+  [--one-per F] [--fieldset FS --field F] [--tag k=v]`. It selects; it does not sample (the capture does).
 - **Only the body becomes the item**, written to `data/sources/<D>/`, so an outcome never enters an item's bytes.
 - **The dataset is written through `dataset-create`'s own functions** and records `made_from`.
 - **`--one-per F`** keeps one record per value of a field, which gives independent items when many records share
@@ -243,6 +247,10 @@ What the build changed or added beyond the third draft, each in the code and its
   their outcomes stay as captured. `reference-from-outcomes --capture` already reads any capture by item id: a
   fresh capture of the same query gives the same items today's outcomes, under a new reference name. On the
   fleet, three days after v1, it labelled 7 more of 233 decisions and changed none.
+- **Sampling moved from the dataset to the capture** (owner, 2026-11-01): `dataset-from-capture --sample N
+  --by F --seed S` drew from a capture that already held everything, which cannot work at a billion records a day.
+  `evh capture --sample-rate R --seed S` samples as the records are read, by a hash of each id, so the same rule
+  draws the same records again; the importer may apply it at the source.
 - **The catalog's Captures page** (`captures.html`, under Data): each capture with its records, importer, record
   times, what it continues, and the datasets made from it; a dataset made from a capture links its origin there.
 - **The triage example scores the model's own decision beside the fleet's** (`model_*` metrics, before the

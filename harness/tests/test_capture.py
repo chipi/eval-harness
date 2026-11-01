@@ -307,19 +307,117 @@ check(
     "from-capture --dedup exact: only identical bodies",
     r.returncode == 0 and len(ds("m_exact")["items"]) == 4,
 )
-r1 = evh("dataset-from-capture", "m", "--dataset-id", "m_s1", "--sample", "6", "--by", "kind", "--seed", "7")
-r2 = evh("dataset-from-capture", "m", "--dataset-id", "m_s2", "--sample", "6", "--by", "kind", "--seed", "7")
-s1 = [it["item_id"] for it in ds("m_s1")["items"]] if r1.returncode == 0 else []
-kinds = [next(x["kind"] for x in more if x["id"] == i) for i in s1]
-check(
-    "from-capture --sample --by --seed: 6 items, 2 per kind, the same draw again",
-    len(s1) == 6
-    and sorted(kinds) == ["a", "a", "b", "b", "c", "c"]
-    and s1 == [it["item_id"] for it in ds("m_s2")["items"]],
-    out(r1)[-200:] + str(kinds),
-)
 r = evh("dataset-from-capture", "m", "--dataset-id", "m_nos", "--sample", "3")
-check("from-capture --sample without --seed is refused", r.returncode != 0 and "--seed" in out(r))
+check(
+    "from-capture no longer samples: the capture does",
+    r.returncode != 0 and "--sample" in out(r),
+    out(r)[-200:],
+)
+
+# ── a sample is the capture's (owner, 2026-11-01: 1 billion records a day are sampled as they are read) ──
+logs = [
+    {"id": f"l{i}", "body": f"line {i}", "created_at": f"2026-10-{1 + i % 20:02d}T00:00:00Z"}
+    for i in range(2000)
+]
+(proj / "logs.jsonl").write_text("".join(json.dumps(x) + "\n" for x in logs))
+lq = json.dumps({"path": "logs.jsonl", "until": "2026-10-11"})
+want = sorted(x["id"] for x in logs if x["created_at"] < "2026-10-11" and _importers.sampled(x["id"], 0.1, 7))
+
+
+def capture_ids(cid):
+    d = json.loads((proj / "data" / "captures" / cid / "capture.json").read_text())
+    return d, sorted(x["id"] for x in d["records"])
+
+
+r = evh(
+    "capture", "--importer", "jsonl", "--query", lq, "--capture", "s1", "--sample-rate", "0.1", "--seed", "7"
+)
+d1, got1 = capture_ids("s1") if r.returncode == 0 else ({}, [])
+evh("capture", "--importer", "jsonl", "--query", lq, "--capture", "s2", "--sample-rate", "0.1", "--seed", "7")
+check(
+    "capture --sample-rate --seed: the records whose seeded id hash falls below the rate, the same draw again",
+    got1 == want
+    and 60 < len(got1) < 140
+    and capture_ids("s2")[1] == got1
+    and d1.get("sample") == {"rate": 0.1, "seed": 7, "read": 1000, "kept": len(got1)}
+    and "a sample of" in out(r),
+    out(r)[-300:],
+)
+(proj / "pushdown.py").write_text(
+    "import json\n"
+    "from evaluation_harness import _importers\n"
+    "class Importer:\n"
+    "    def __init__(self, options): self.sample = options.get('sample')\n"
+    "    def records(self, query):\n"
+    "        for line in open('logs.jsonl'):\n"
+    "            x = json.loads(line)\n"
+    "            if x['created_at'] >= '2026-10-11': continue\n"
+    "            if self.sample and not _importers.sampled(x['id'], **self.sample): continue\n"
+    "            yield x\n"
+)
+r = evh(
+    "capture",
+    "--importer",
+    "pushdown.py:Importer",
+    "--query",
+    "{}",
+    "--capture",
+    "s3",
+    "--sample-rate",
+    "0.1",
+    "--seed",
+    "7",
+)
+d3, got3 = capture_ids("s3") if r.returncode == 0 else ({}, [])
+check(
+    "capture: the importer receives the rule and may sample at the source; the same records result",
+    got3 == want and d3["sample"]["read"] == len(want),
+    out(r)[-300:],
+)
+for bad_args, says in (
+    (["--sample-rate", "0.1"], "--seed"),
+    (["--sample-rate", "0", "--seed", "7"], "share"),
+    (["--sample-rate", "1.5", "--seed", "7"], "share"),
+    (["--seed", "7"], "--sample-rate"),
+):
+    r = evh("capture", "--importer", "jsonl", "--query", lq, "--capture", "s_bad", *bad_args)
+    check(f"capture {' '.join(bad_args)}: refused", r.returncode != 0 and says in out(r), out(r)[-200:])
+allq = json.dumps({"path": "logs.jsonl"})
+r = evh("capture", "--importer", "jsonl", "--query", allq, "--capture", "s4", "--since-capture", "s1")
+d4, got4 = capture_ids("s4") if r.returncode == 0 else ({}, [])
+check(
+    "capture --since-capture keeps the earlier capture's sample rule",
+    d4.get("sample", {}).get("rate") == 0.1
+    and d4["sample"]["seed"] == 7
+    and bool(got4)
+    and all(_importers.sampled(i, 0.1, 7) for i in got4)
+    and not set(got4) & set(got1),
+    out(r)[-300:],
+)
+r = evh(
+    "capture",
+    "--importer",
+    "jsonl",
+    "--query",
+    allq,
+    "--capture",
+    "s5",
+    "--since-capture",
+    "s1",
+    "--sample-rate",
+    "0.2",
+    "--seed",
+    "7",
+)
+check(
+    "capture --since-capture with another sample rule is refused",
+    r.returncode != 0 and "keeps it" in out(r),
+    out(r)[-200:],
+)
+r = evh("captures", "--capture", "s1")
+check("captures: names the sample", "a sample: rate 0.1, seed 7" in out(r), out(r)[-300:])
+for c in ("s1", "s2", "s3", "s4"):
+    shutil.rmtree(proj / "data" / "captures" / c)
 r = evh(
     "dataset-from-capture",
     "m",

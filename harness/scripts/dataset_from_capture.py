@@ -11,8 +11,8 @@ declared field set (--fieldset, --field). The dataset is written by dataset-crea
 records how its items were chosen (`made_from`).
 
 Selection, in this order: --where FIELD:VALUE (a record field; a dotted path reaches inside one),
---dedup exact|text (the same body, or the same text with case and whitespace folded: the first is
-kept), then --sample N [--by FIELD] --seed S (a seeded sample, stratified by a field when given).
+--one-per FIELD (the newest record per value), --dedup exact|text (the same body, or the same text with case and
+whitespace folded: the first is kept). Sampling is the capture's: `evh capture --sample-rate R --seed S`.
 --from D_prev makes a new version: the earlier version's items stay, the new records are added, and
 the lineage (added, removed, changed) is recorded as dataset-create --from records it.
 """
@@ -27,9 +27,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import hashlib
-import random
 import shutil
-from collections import defaultdict
 
 from evaluation_harness import _fields, _importers
 from evaluation_harness._common import (
@@ -88,7 +86,7 @@ def _text(value) -> str:
 
 
 def select(recs: list, args) -> list:
-    """The records --where, --dedup and --sample keep, in capture order."""
+    """The records --where, --one-per and --dedup keep, in capture order."""
     for w in args.where:
         if "!=" in w:
             name, want = w.split("!=", 1)
@@ -120,26 +118,6 @@ def select(recs: list, args) -> list:
                 seen.add(key)
                 kept.append(r)
         recs = kept
-    if args.sample is not None:
-        if args.seed is None:
-            die("--sample needs --seed, so the same sample can be drawn again")
-        rng = random.Random(args.seed)
-        if args.by:
-            groups = defaultdict(list)
-            for r in recs:
-                groups[str(dig(r.get("fields") or {}, args.by))].append(r)
-            # Proportional allocation, largest remainders first; at least one per group while N allows.
-            total = len(recs)
-            quota = {k: args.sample * len(v) / total for k, v in groups.items()}
-            take = {k: int(q) for k, q in quota.items()}
-            for k in sorted(quota, key=lambda k: (-(quota[k] - take[k]), k))[
-                : args.sample - sum(take.values())
-            ]:
-                take[k] += 1
-            chosen = {id(r) for k, v in sorted(groups.items()) for r in rng.sample(v, min(take[k], len(v)))}
-        else:
-            chosen = {id(r) for r in rng.sample(recs, min(args.sample, len(recs)))}
-        recs = [r for r in recs if id(r) in chosen]
     return recs
 
 
@@ -164,9 +142,6 @@ def main() -> int:
         help="describe the dataset (source, environment, ...)",
     )
     ap.add_argument("--dedup", choices=("exact", "text"), help="drop records whose body repeats")
-    ap.add_argument("--sample", type=int, help="keep N records, seeded")
-    ap.add_argument("--by", help="with --sample: stratify by this field")
-    ap.add_argument("--seed", type=int, help="with --sample: the seed")
     ap.add_argument("--fieldset", help="the field set (data/fields/<id>.yaml) declaring the item fields")
     ap.add_argument(
         "--field", action="append", default=[], help="a record field to keep as an item field (repeatable)"
@@ -241,9 +216,6 @@ def main() -> int:
         "where": list(args.where),
         "one_per": args.one_per,
         "dedup": args.dedup,
-        "sample": args.sample,
-        "by": args.by,
-        "seed": args.seed,
         "records": len(recs),
         "kept": len(kept),
     }
