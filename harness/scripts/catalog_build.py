@@ -1162,6 +1162,15 @@ def ref_tier(tiers: dict, key: str) -> str:
     return tiers.get(key) or (key.split("/", 1)[0] if key.startswith(("gold/", "silver/")) else "")
 
 
+def baseline_read(v: dict, goal_id: str) -> tuple[list, str | None]:
+    """A dataset's baselines for a goal, and the arm the goal reads for the latest one: its latest re-score when
+    it was re-scored (RFC-022), as the goal page reads it, else the promoted arm itself."""
+    bl = [x for x in v.get("baselines", []) if not x.get("goal") or x.get("goal") == goal_id]
+    base = bl[-1]["arm"] if bl and bl[-1].get("arm") else None
+    moved = next((a.get("superseded_by") for a in v.get("arms", []) if base and a["arm"] == base), None)
+    return bl, moved or base
+
+
 def glance(A: Adapter, by_ds: dict) -> list[dict]:
     """Per goal and dataset: the deciding measure, the promoted baseline, the leader of the gold
     group, the paired test of the leader against the baseline (one test, threshold 0.05), and what
@@ -1179,8 +1188,7 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
             if not decides_on(g, ds):
                 continue  # a dev slice or a generalization check: on the goal page, not the glance
             v = by_ds.get(ds) or {}
-            bl = [x for x in v.get("baselines", []) if not x.get("goal") or x.get("goal") == g["goal_id"]]
-            base = bl[-1]["arm"] if bl and bl[-1].get("arm") else None
+            bl, base = baseline_read(v, g["goal_id"])
             # The gold group decides; without one, the first group scored against a reference,
             # named in the row so it is never read as gold.
             tiers = {r["id"]: r["tier"] for r in v.get("refs", [])}
@@ -1273,7 +1281,7 @@ def coverage(A: Adapter, by_ds: dict) -> list[dict]:
     for ds in sorted(by_ds, key=lambda d: (-len(by_ds[d]["arms"]), d)):
         v = by_ds[ds]
         tiers = {r["id"]: r["tier"] for r in v["refs"]}
-        kinds = {"gold": 0, "silver": 0, "judged": 0, "none": 0}
+        kinds = {"gold": 0, "silver": 0, "labels": 0, "judged": 0, "none": 0}
         for a in v["arms"]:
             k = (
                 "judged"
@@ -1569,7 +1577,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         "activity and spend",
         f'<div class="duo"><div id="activity"><h3 class="sub">activity</h3><div data-chart="activity">{activity}</div></div>'
         f'<div id="spend"><h3 class="sub">spend</h3><div data-chart="spend">{spending}</div></div></div>'
-        '<p><a class="btn small" href="activity.html" data-period-link>every dataset, arm and kind of spend in the period →</a></p>',
+        '<p><a class="btn small" href="activity.html" data-period-link>every dataset, arm and kind of spend in the period</a></p>',
     )
     body += block("03", "coverage", _coverage(A, by_ds), "coverage")
     body += block(

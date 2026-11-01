@@ -256,7 +256,7 @@ evh leaderboard --dataset-id tickets_v1
     ...
     pairs distinguishable: 1 of 3
   ...
-  Scored against SILVER references (model-generated). Good for ranking
+  Scored against SILVER references (consistent, not correct). Good for ranking
   these arms against each other; not a claim that any of them is correct.
 
 === scored against no reference ===
@@ -371,7 +371,7 @@ Each tutorial starts from where this page ends, or from a project of your own:
 | [**3 · A frontier model's run as the reference, gold, and judging**](tutorials/3-frontier-reference-and-judging.md) | how good the silver was, measured against answers a person wrote, and re-measuring the stored outputs with LLM judges |
 | [**4 · Experiment rounds and dataset versions**](tutorials/4-rounds-and-versions.md) | round on round: keep what wins, drop what lost, record why; a new version of a dataset that remembers where it came from |
 | [**5 · The catalog and the inspector**](tutorials/5-catalog-and-inspector.md) | pages over your runs, an inspector that tests arms item by item, and the `evh` command behind every view |
-| [**6 · Datasets from production**](tutorials/6-datasets-from-production.md) | what your system did in production, kept as a capture: a dataset from it, labels from what happened afterwards, dev and heldout |
+| [**6 · Datasets from production**](tutorials/6-datasets-from-production.md) | what your system did in production, kept as a capture: a dataset from it, labels from what happened afterwards, dev and heldout; then production's own decisions scored against those labels, the rows where it was wrong picked, and the next version of a dataset you govern made from them |
 | [**7 · Set up a model before you test it**](tutorials/7-set-up-a-model.md) | a model record, onboarding it where it runs (its build, whether it reasons, JSON, determinism), an arm that names it, a smoke before the full run; on your own machine with Ollama |
 
 And the references, for when you know what you are looking for:

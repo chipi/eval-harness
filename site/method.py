@@ -670,11 +670,12 @@ def patterns(H, f: dict) -> list:
             "Is my system still deciding well in production?",
             "arms = the deployed one + candidates",
             (
-                "Capture what it decided, freeze it as a new dataset version labelled from what happened "
-                "next, and run the next round of the same goal on it."
+                "Capture what it decided, score its decisions as an arm against labels (a rule's over what "
+                "happened next, or a person's), and pick the rows where it was wrong for the next version of "
+                "the dataset you govern."
             ),
             "triage-fleet",
-            "capture · rounds",
+            "capture · arm-from-capture · pick",
         ),
         (
             "Is this model set up right before I compare it?",
@@ -805,8 +806,12 @@ STEPS = [
     ),
     (
         "Then: make it golden",
-        "Add answers a person wrote; re-score every run against them for $0.",
-        "evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --out data/runs-gold",
+        "A person's answers, imported as labels and promoted at gold; re-score every run against them for $0.",
+        (
+            "evh label-import tutorial/gold --dataset-id tickets_v1 --set owner_gold --by owner\n"
+            "evh reference-promote --dataset-id tickets_v1 --labels owner_gold --tier gold --reason … --by owner\n"
+            "evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --out data/runs-gold"
+        ),
         "NO detectable arm effect · pairs distinguishable: 0 of 6",
         TUTORIAL3,
         "2-make-it-golden",

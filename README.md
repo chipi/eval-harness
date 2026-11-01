@@ -97,8 +97,10 @@ offline, with the real output of every command. The tutorials take it further:
 [a local model against a baseline](docs/tutorials/1-local-model.md),
 [a hosted LLM with your own key](docs/tutorials/2-hosted-llm.md),
 [a frontier model's run as the reference, gold and judging](docs/tutorials/3-frontier-reference-and-judging.md),
-[experiment rounds and dataset versions](docs/tutorials/4-rounds-and-versions.md), and
-[the catalog and the inspector](docs/tutorials/5-catalog-and-inspector.md). Then
+[experiment rounds and dataset versions](docs/tutorials/4-rounds-and-versions.md),
+[the catalog and the inspector](docs/tutorials/5-catalog-and-inspector.md),
+[datasets from production and evaluating what production did](docs/tutorials/6-datasets-from-production.md), and
+[setting a model up](docs/tutorials/7-set-up-a-model.md). Then
 [`harness/docs/INTEGRATION.md`](harness/docs/INTEGRATION.md) to drop it into your project and
 [`harness/docs/RUNBOOK.md`](harness/docs/RUNBOOK.md) for every command and flag.
 
@@ -110,7 +112,7 @@ offline, with the real output of every command. The tutorials take it further:
 | `evh pair-test --dataset-id my_v1 --a … --b …` | one comparison you named in advance, without paying the multiplicity price for 275 you didn't |
 | `evh holdout --dataset-id my_v1 --exclude-dataset …` | the same test minus items a smaller dataset already contained |
 | `evh rank-stability --dataset-id my_v1` | how many items before the ordering stops moving: measured, not assumed |
-| `evh silver-calibrate --dataset-id my_v1` | is a model-authored reference usable? Read it against the ceiling it prints |
+| `evh silver-calibrate --dataset-id my_v1` | is a silver reference usable? How far it drifts from gold, read against the ceiling it prints |
 | `evh rescore --dataset-id my_v1 --out data/runs-rescored` | recompute scores from stored outputs, no API calls |
 | `evh judge-score --dataset-id my_v1 --scorer …` | optional: re-measure stored outputs with LLM judges, refused until they are validated against people ([tutorial 3](docs/tutorials/3-frontier-reference-and-judging.md)) |
 | `evh catalog-serve` | browse every run and test any arms against a baseline, item by item; every view is also a command ([tutorial 5](docs/tutorials/5-catalog-and-inspector.md)) |

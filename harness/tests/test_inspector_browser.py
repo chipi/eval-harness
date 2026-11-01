@@ -212,6 +212,11 @@ def drive(base: str, overview: str = "") -> None:
             and "compared" not in (page.get_attribute("#period-span", "title") or "")
             and page.locator(".tile[data-tile='7'] .trend").inner_text() == "",
         )
+        check(
+            "home: the feed lists what the tutorial recorded today, and its 'nothing recorded' note stays hidden",
+            page.locator("#feeda tbody tr:not([hidden])").count() > 0
+            and not page.locator("[data-feed-empty]").is_visible(),
+        )
         page.locator('#spend button[data-unit-show="tokens"]').click()
         check(
             "home: spend in tokens (what a free local model still uses)",

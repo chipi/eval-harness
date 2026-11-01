@@ -711,7 +711,7 @@ def _table(args: argparse.Namespace, found: list) -> None:
         _judging_summary(found)
     if any("silver" in r["tiers"] for r in rows):
         print(
-            "\n  Scored against SILVER references (model-generated). Good for ranking\n"
+            "\n  Scored against SILVER references (consistent, not correct). Good for ranking\n"
             "  these arms against each other; not a claim that any of them is correct."
         )
     if not any(kinds.get(k) == "cost" for k in show):

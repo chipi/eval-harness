@@ -550,6 +550,14 @@ footer .elsewhere code { overflow-wrap: anywhere; }
 tr.t-labels td { background: color-mix(in srgb, var(--muted) 10%, transparent); }
 tr.t-labels td:first-child { box-shadow: inset 3px 0 0 var(--muted); padding-left: 10px; }
 .rowkey .key.t-labels { box-shadow: inset 3px 0 0 var(--muted); }
+/* On a desktop, a label set's long ids may break, so the columns after them (promoted, the agreement counts) are on
+   screen; there is room for a line or two, never a letter per line. Narrow screens keep the sideways scroll above. */
+@media (min-width: 761px) {
+  .block .scroll-x > table#labelsets td :is(a, code), .block .scroll-x > table#labelsets td:nth-child(5),
+  .block .scroll-x > table[id^="agree-"] td code, .block .scroll-x > table[id^="labels-"] td :is(a, code) {
+    overflow-wrap: anywhere;
+  }
+}
 .badge.recorded { display: inline-block; font: 600 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
   padding: 3px 6px; border-radius: 4px; color: var(--ink); background: color-mix(in srgb, var(--accent) 18%, transparent);
   vertical-align: 1px; }

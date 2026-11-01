@@ -109,6 +109,23 @@ def drive(cat: Path, base: str) -> None:
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
         page.on("pageerror", lambda e: errors.append(str(e)))
 
+        # The label tables at desktop width: long set ids wrap, so the columns that say something (promoted, the
+        # agreement counts) are on screen, not behind a sideways scroll.
+        labelled = [p.relative_to(cat).as_posix() for p in sorted((cat / "d").glob("*.html"))]
+        labelled = [p for p in labelled if 'id="agree-' in (cat / p).read_text(encoding="utf-8")][:3]
+        for path in ("labels.html", *labelled):
+            page.goto(base + path)
+            page.wait_for_selector("main", timeout=30000)
+            over = page.evaluate(
+                """[...document.querySelectorAll('table#labelsets, table[id^="agree-"], table[id^="labels-"]')]
+                .map(t => [t.id, t.scrollWidth - t.closest('.scroll-x').clientWidth]).filter(x => x[1] > 1)"""
+            )
+            check(
+                f"desktop width: the label tables on {path} fit, nothing behind a sideways scroll",
+                not over,
+                str(over),
+            )
+
         # The arms page at full size: all time, every row shown.
         page.goto(base + "arms.html#pall")
         page.wait_for_selector("table#arms")

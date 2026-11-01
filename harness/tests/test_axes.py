@@ -4,7 +4,9 @@
 python tests/test_axes.py
 """
 
+import re
 import sys
+from html import unescape
 from pathlib import Path
 from typing import Any
 
@@ -428,6 +430,40 @@ check(
     and ref_tier({}, "gold/x") == "gold"
     and ref_tier({}, "silver/x") == "silver"
     and ref_tier({}, "no reference") == "",
+)
+
+# The glance's baseline is the one the goal reads (RFC-022): its latest re-score when it has one.
+from evaluation_harness.catalog_build import baseline_read  # noqa: E402
+
+v_bl = {
+    "baselines": [{"arm": "runs/ds/old_v1"}, {"arm": "runs/ds/b_v1", "goal": "g1"}],
+    "arms": [
+        {"arm": "runs/ds/b_v1", "superseded_by": "runs-rescored/s1/runs/ds/b_v1"},
+        {"arm": "runs-rescored/s1/runs/ds/b_v1"},
+        {"arm": "runs/ds/old_v1"},
+    ],
+}
+check(
+    "glance baseline: a re-scored baseline is read from its re-score; one never re-scored is itself; none is None",
+    baseline_read(v_bl, "g1")[1] == "runs-rescored/s1/runs/ds/b_v1"
+    and baseline_read({**v_bl, "baselines": v_bl["baselines"][:1]}, "g1")[1] == "runs/ds/old_v1"
+    and baseline_read({"arms": []}, "g1") == ([], None),
+)
+
+# A frontier name stays inside the chart: a long one on a dot in the middle goes to the side it fits on.
+from evaluation_harness.catalog_build import HALF  # noqa: E402
+from evaluation_harness.catalog_charts import LABEL_W, RIGHT, scatter  # noqa: E402
+
+long_name = "triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1 · rescored 3d3a6afd"
+svg = scatter([(0.0, 0.0, "a", ""), (0.55, 1.0, long_name, ""), (1.0, 0.5, "z", "")], "x", "y", width=HALF)
+spans = []
+for m in re.finditer(r'<text x="([0-9.]+)"[^>]*class="tick name"( text-anchor=end)?>([^<]*)<', svg):
+    x, end, name = float(m.group(1)), bool(m.group(2)), unescape(m.group(3))
+    spans.append((x - LABEL_W * len(name), x) if end else (x, x + LABEL_W * len(name)))
+check(
+    "chart names: every frontier name, a long one in the middle of a half-width chart too, lies inside the plot (clear of the y axis)",
+    len(spans) == 2 and all(x0 >= 70 and x1 <= HALF - RIGHT + 1 for x0, x1 in spans),
+    str(spans),
 )
 
 # Chart labels: a name that would cover one already placed moves a line; a clear one stays.

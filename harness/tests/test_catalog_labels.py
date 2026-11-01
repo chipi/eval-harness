@@ -153,6 +153,14 @@ try:
     r = evh("catalog", "--out", "cat")
     check("the catalog builds", r.returncode == 0, out(r)[-600:])
 
+    cov = re.search(r'<table[^>]*id="coverage".*?</table>', page("index.html"), flags=re.S)
+    cov_row = row_of(cov.group(0) if cov else "", ">tickets_v1<")
+    check(
+        "overview coverage: an arm scored against a label set counts as labels; the two run before any reference as none",
+        "labels <b>1</b>" in cov_row and "none <b>2</b>" in cov_row,
+        re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", cov_row))[:400],
+    )
+
     # ── the labels page ──────────────────────────────────────────────────────────────────────
     lp = page("labels.html")
     au, ow = row_of(lp, "author_v1"), row_of(lp, "owner_v1")

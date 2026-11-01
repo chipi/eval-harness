@@ -26,10 +26,10 @@ label set without promoting it.
 ## Background & Context
 
 Gold is expensive and often missing at the start; the common practice is to run the strongest model, read its
-outputs and score cheaper arms against what it wrote. Today that is `reference-create`: it asks a model
-what *it would do* and makes the answer the reference, so a model doing the task and someone saying what is right
-are the same command. Labelling itself lives outside the harness (the triage example's own scripts), the tier was
-taken on the user's word (`--tier gold` is accepted as "human-reviewed"), and a second reference from outcomes
+outputs and score cheaper arms against what it wrote. Before 0.6.0 that was `reference-create`: it asked a model
+what *it would do* and made the answer the reference, so a model doing the task and someone saying what is right
+were the same command. Labelling itself lived outside the harness (the triage example's own scripts), the tier was
+taken on the user's word (`--tier gold` was accepted as "human-reviewed"), and a second reference from outcomes
 stretched "silver" to mean a third thing (ADR-0020). Evaluating production data (PRD-014) needs someone to say
 what was right on new items without making a reference each time.
 
