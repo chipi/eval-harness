@@ -57,7 +57,7 @@
       }
     },
     "primary_metric": {"type": "string", "description": "The metric that answers 'which arm is better'."},
-    "reference_tier": {"enum": ["gold", "silver"]},
+    "reference_tier": {"enum": ["gold", "silver", "labels"], "description": "What the run was scored against: a reference's tier, or labels (a label set, RFC-023)."},
     "reference_coverage": {
       "type": "object",
       "description": "Recorded when only some items have a reference: quality metrics are means over items_with_reference, not items.",

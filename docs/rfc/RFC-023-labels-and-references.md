@@ -1,7 +1,8 @@
 # RFC-023: Labels, and the references promoted from them
 
 - **Status**: Accepted (owner, 2026-11-01); built for 0.6.0 in steps 1 to 9 (2026-11-01), each step's as-built
-  notes below; the e2e on the triage fleet is step 10.
+  notes below; step 10, the e2e on the triage fleet (a time split of the 233 decisions), ran 2026-11-01 and its
+  four fixes are in (research/internal/E2E_RFC023_0.6.0.md).
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-002](../prd/PRD-002-references.md) (references: gold, silver),
   [PRD-014](../prd/PRD-014-datasets-from-production.md) (datasets from production)

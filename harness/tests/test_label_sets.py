@@ -672,11 +672,23 @@ try:
     )
 
     # ── V19: a set's labels are the ones it recorded ──────────────────────────────────────────
+    # validate checks the run folders git tracks: commit the project, as a real one would be.
+    for cmd in (
+        ["git", "init", "-q"],
+        ["git", "add", "-A"],
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "t"],
+    ):
+        subprocess.run(cmd, cwd=proj, env=env, capture_output=True)
     r = evh("validate")
     check(
         "validate V19: every label set matches its hashes",
         "V19 label sets" in out(r) and "FAIL V19" not in out(r),
         out(r)[-400:],
+    )
+    check(
+        "validate V1: a run scored against a label set (reference_tier labels) is a valid run",
+        "FAIL V1 " not in out(r) and any(data.glob("runs-labels-*/*/metrics.json")),
+        out(r)[-600:],
     )
     (LABELS / "tickets_v1" / "owner_v1" / f"{rows[0]['item_id']}.txt").write_text("edited by hand\n")
     r = evh("validate")
