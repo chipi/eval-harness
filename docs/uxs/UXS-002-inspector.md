@@ -73,10 +73,10 @@ link); an item the arms do not share says so instead.
   for a boolean, `min..max` or one value for numbers and durations, an exact value otherwise) and
   **Filter**; each filter becomes a chip with ×. Shown when the dataset declares fields.
 - **break down by** a `choice` or `boolean` field, or none.
-- **scored against** (0.6.0, planned: RFC-023): the reference (its tier pill) or a label set (its source chip and
-  name) the scores are read against, when the arms' dataset has label sets; arms scored against different ones
+- **scored against** (0.6.0: RFC-023): the reference (its tier pill) or a label set (its source chip and
+  name) the scores are read against; arms scored against different ones
   are named and not tested, as for two references.
-- **only where they disagree** (0.6.0, planned): a checkbox keeping the items where the chosen arms decided
+- **only where they disagree** (0.6.0): a checkbox keeping the items where the chosen arms decided
   differently (the adapter's `same(a, b)`), the baseline (production's recorded arm by default when it is chosen)
   against each other arm.
 
@@ -185,12 +185,15 @@ every catalog table. A row opens on click, Enter or Space.
   judged arm, the same line gives each judge's score for that item.
 - In a catalog built by `evh catalog`, arm names (verdicts, the baseline line, average-only and
   breakdown rows) and the verdicts' metric link to their pages.
-- (0.6.0, planned) **Every label the item has**, each with its source chip, set name and note, beside the outputs;
-  a recorded arm's output is headed "production, recorded" with its capture.
+- (0.6.0) **Every label the item has**, each with its source chip, set name, who made it and note, above the
+  outputs (the local inspector only); a recorded arm's output is headed "production, recorded" with its capture.
 
-## 05 rows (0.6.0, planned: RFC-023)
+## 05 rows (0.6.0: RFC-023)
 
-Opened from a dataset ("explore rows") or with `?dataset=<id>&rows=1`: one dataset's items, not a comparison.
+Opened from a dataset ("Explore its rows", production's recorded arm chosen first) or with
+`?dataset=<id>&rows=1[&runs=…][&item=<id>]`: one dataset's items, not a comparison. The local inspector only
+(`/api/rows`): its rows carry outputs and labels, so a public server refuses it. With no arm chosen, a row (or
+`&item=`, a pick's link) still opens the item, its fields and its labels.
 
 - **One row per item**: **item** (short id, the full id in its title), its **fields**, production's decision (the
   recorded arm, when one is chosen), each chosen arm's decision, every label with its source chip, and the
@@ -225,9 +228,9 @@ Opened from a dataset ("explore rows") or with `?dataset=<id>&rows=1`: one datas
 | notes, verdicts, conditions, breakdown | printed in that order (notes as `NOTE:` lines) |
 | the item view | `--item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm |
 | the per-item table | `--items`: every item's score per arm, and each arm's Δ against the baseline |
-| only where they disagree (0.6.0; the checkbox: step 8) | `--disagree` (an arm scored against a label set is chosen like any) |
-| the rows view (0.6.0; the page: step 8) | `evh inspect --dataset-id D --rows [--runs A,B] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value]` |
-| selecting rows: the pick and sheet commands (0.6.0; the page: step 8) | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
+| only where they disagree (0.6.0) | `--disagree` (an arm scored against a label set is chosen like any) |
+| the rows view (0.6.0) | `evh inspect --dataset-id D --rows [--runs A,B] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value]` |
+| selecting rows: the pick and sheet commands (0.6.0) | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
 
 For an agent, `evh inspect` is the MCP tool `inspect`, with the same options (`runs`, `baseline`,

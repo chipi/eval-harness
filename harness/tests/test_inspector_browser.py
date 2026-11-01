@@ -113,6 +113,9 @@ def project(tmp: Path) -> tuple:
     )
     evh("dataset-from-capture", "prod_c1", "--dataset-id", "prod_v1")
     evh("pick", "--dataset-id", "prod_v1", "--item", "p1", "--item", "p2", "--for", "tickets_v1")
+    # A person's labels on two tickets: the rows view's unlabelled signal then marks the other four.
+    (proj / "sheet.csv").write_text("item_id,label\nt01_login,Login fails.\nt02_invoice,Invoice wrong.\n")
+    evh("label-import", "sheet.csv", "--dataset-id", "tickets_v1", "--set", "owner_v1", "--by", "owner")
     evh("catalog")
     return proj, env
 
@@ -468,6 +471,60 @@ def drive(base: str, overview: str = "") -> None:
         it = page.locator("table.fields").inner_text().lower()
         check("inspector: an item shows its fields", "area" in it and "names a deadline" in it, it)
 
+        # The comparison's "only where they disagree" box (RFC-023): ticking it asks for disagree=1.
+        page.locator("#disagree").check()
+        page.wait_for_url("**disagree=1**", timeout=15000)
+        check(
+            "inspector: the disagree box narrows the comparison (disagree=1)",
+            "disagree=1" in page.url,
+            page.url,
+        )
+
+        # The rows view (RFC-023, UXS-002 05): one dataset's tickets, a box per row giving the commands to copy.
+        two = "runs/tickets_v1/tickets_lead1_v1,runs/tickets_v1/tickets_author_v1"
+        page.goto(f"{base}inspect.html?dataset=tickets_v1&rows=1&runs={two}")
+        page.wait_for_selector("#rowstable", timeout=15000)
+        n_rows = page.locator("#rowstable tbody tr").count()
+        check(
+            "rows view: one row per ticket, the counts above it",
+            n_rows == 6 and page.locator("#rcounts").inner_text().startswith("6 "),
+            f"{n_rows} {page.locator('#rcounts').inner_text()}",
+        )
+        check("rows view: nothing ticked, no commands", page.locator("#rpanel").is_hidden())
+        first = page.locator("#rowstable tbody input.rsel").first
+        it_id = first.get_attribute("value") or ""
+        first.check()
+        page.locator("#rfor").fill("tickets_v2")
+        page.locator("#rnote").fill("worth keeping")
+        pk, sh = page.locator("#rpick").inner_text(), page.locator("#rsheet").inner_text()
+        check(
+            "rows view: a ticked row gives evh pick (with the target and note typed) and evh label-sheet",
+            pk == f'evh pick --dataset-id tickets_v1 --item {it_id} --for tickets_v2 --note "worth keeping"'
+            and sh == f"evh label-sheet --dataset-id tickets_v1 --item {it_id} --out sheet.csv --runs {two}",
+            f"{pk} | {sh}",
+        )
+        page.locator("#rowstable tbody tr td:nth-child(2)").first.click()
+        page.wait_for_selector("#drill .eyebrow", timeout=15000)
+        drill_text = page.locator("#drill").inner_text()
+        check("rows view: a row opens the ticket", it_id.lower() in drill_text.lower(), drill_text[:300])
+        page.locator('input.ronly[value="unlabelled"]').check()
+        page.wait_for_url("**only=unlabelled**", timeout=15000)
+        page.wait_for_selector("#rowstable", timeout=15000)
+        kept = page.locator("#rowstable tbody tr").count()
+        marked = page.locator("#rowstable tbody tr .sig-unlabelled").count()
+        check(
+            "rows view: only a signal keeps the rows that carry it (4 of 6 unlabelled)",
+            kept == marked == 4,
+            f"{kept} rows, {marked} marked unlabelled",
+        )
+        page.goto(f"{base}inspect.html?dataset=prod_v1&rows=1&item=p1")
+        page.wait_for_selector("#drill .eyebrow", timeout=15000)
+        check(
+            "rows view with no arm (a pick's link): the item opens, its labels said",
+            "No label for this" in page.locator("#drill").inner_text(),
+            page.locator("#drill").inner_text()[:300],
+        )
+
         # A phone: the pages must not scroll sideways (tables scroll inside their own box).
         phone = browser.new_page(viewport={"width": 390, "height": 844})
         phone.on("pageerror", lambda e: errors.append(str(e)))
@@ -486,6 +543,7 @@ def drive(base: str, overview: str = "") -> None:
             *((p, "main") for p in ("metrics.html", "arms.html", "activity.html", "g/tickets_summary.html")),
             ("d/tickets_v1.html", "table#fields"),
             (f"inspect.html?runs={arms}&by=deadline", "h3.sub"),
+            (f"inspect.html?dataset=tickets_v1&rows=1&runs={arms}", "#rowstable"),
         ):
             phone.goto(base + path)
             phone.wait_for_selector(ready, timeout=15000)

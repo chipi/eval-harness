@@ -81,6 +81,7 @@
   }
 
   async function load() {
+    if (P.get('rows') && P.get('dataset')) return rowsView();
     picker();
     if (!runs().length) { app.innerHTML = '<p class="muted">Pick runs from an experiment or dataset page in the catalog ("Inspect runs"), or add them above.</p>'; return; }
     let d;
@@ -108,8 +109,9 @@
     const controls = `<div class="controls">
       <label>metric <select id="metric">${mopts}</select></label>
       <label>baseline <select id="baseline">${bopts}</select></label>
-      ${d.can_rescore ? `<label class="tick"><input type="checkbox" id="rescore" ${resc ? 'checked' : ''}> re-score what is not on record</label>` : ''}</div>`
-      + fieldControls(d);
+      ${d.can_rescore ? `<label class="tick"><input type="checkbox" id="rescore" ${resc ? 'checked' : ''}> re-score what is not on record</label>` : ''}
+      <label class="tick"><input type="checkbox" id="disagree" ${P.get('disagree') ? 'checked' : ''}> only where they disagree</label></div>`
+      + scoredAgainst(d) + fieldControls(d);
 
     const rows = [...d.rows].sort((a, b) => (a.p ?? 9) - (b.p ?? 9));
     // A row's tint says what its scores are measured against, as on the catalog's pages.
@@ -158,6 +160,7 @@
     if (window.paginate) app.querySelectorAll('table.data').forEach(t => window.paginate(t));
     document.getElementById('metric').onchange = ev => { P.set('metric', ev.target.value); go(); };
     document.getElementById('baseline').onchange = ev => { P.set('baseline', ev.target.value); go(); };
+    document.getElementById('disagree').onchange = ev => { ev.target.checked ? P.set('disagree', '1') : P.delete('disagree'); go(); };
     const rs = document.getElementById('rescore');
     if (rs) rs.onchange = ev => { ev.target.checked ? P.delete('rescore') : P.set('rescore', '0'); go(); };
     // The reference the metric names ("<metric> vs <reference>"), else the one the baseline was scored against.
@@ -173,6 +176,21 @@
     else if (want) document.getElementById('drill').innerHTML = `<p class="note">${esc(ITEM)} ${esc(want)} is not among the ${ITEMS} these arms share.</p>`;
   }
 
+
+  // What the chosen arms' scores are read against (RFC-023): a reference with its tier pill, a label set with its
+  // source chip. Arms against different ones are set aside by the server, as for two references.
+  const pill = t => (t === 'gold' || t === 'silver') ? `<span class="pill tier-${t}">${t}</span>` : esc(t || '');
+  const chip = k => `<span class="src src-${['person', 'model', 'rule'].includes(k) ? k : 'unknown'}">${esc(k || 'unknown')}</span>`;
+  function against(a) {
+    const r = a.reference || '';
+    if (a.judge) return `judge <code>${esc(a.judge)}</code>`;
+    if (r.startsWith('labels/')) return `${chip(a.labels_source)} <code>${esc(r.slice(7).split('/').pop())}</code>`;
+    return r ? `<code>${esc(r)}</code> ${pill(r.split('/')[0])}` : 'nothing';
+  }
+  function scoredAgainst(d) {
+    const seen = [...new Map((d.arms || []).map(a => [a.judge || a.reference || '', a])).values()];
+    return seen.length ? `<p class="small">scored against: ${seen.map(against).join(' · ')}</p>` : '';
+  }
 
   // ── item fields (ADR-0003): filter the comparison, break it down by a choice or yes/no field ─
   function fieldControls(d) {
@@ -441,21 +459,125 @@
     const box = document.getElementById('drill');
     box.innerHTML = '<p class="muted">Loading outputs…</p>';
     const q = new URLSearchParams({arms: arms.join(','), item: ep});
+    if (!arms.length) { q.delete('arms'); q.set('dataset', P.get('dataset') || ''); }
     if (ref) q.set('ref', ref);
     const d = await (await fetch(API + 'item?' + q)).json();
     if (d.error) { box.innerHTML = `<p class="note">${esc(d.error)}</p>`; return; }
     const base = d.views[baseline];
-    const cols = Object.entries(d.views).map(([a, v]) => `<div class="outcol"><h3>${esc(label[a] || a)}${a === baseline ? ' <small class="muted">baseline</small>' : ''}</h3>${view(v, a === baseline ? null : base)}</div>`).join('');
+    const rec = d.recorded || {};
+    const cols = Object.entries(d.views).map(([a, v]) => `<div class="outcol"><h3>${rec[a] ? 'production, recorded <small class="muted">capture ' + esc(rec[a]) + '</small> · ' : ''}${esc(label[a] || a)}${a === baseline ? ' <small class="muted">baseline</small>' : ''}</h3>${view(v, a === baseline ? null : base)}</div>`).join('');
+    const labs = (d.labels || []).length ? `<h3 class="sub">labels · ${d.labels.length}</h3><ul class="labels">${d.labels.map(l =>
+      `<li>${chip(l.kind)} <code>${esc(l.set.split('/').pop())}</code>${l.by ? ' <small class="muted">' + esc(l.by) + '</small>' : ''}${l.note ? ' <small>' + esc(l.note) + '</small>' : ''}<div class="outtext">${l.text == null ? '<span class="muted">(its text is not here)</span>' : esc(l.text)}</div></li>`).join('')}</ul>`
+      : (d.labels ? `<p class="small muted">No label for this ${ITEM} yet.</p>` : '');
     const refcol = d.reference && d.reference.view && d.reference.view.kind !== 'none' ? `<div class="outcol refcol"><h3>${esc(d.reference.id)} <small class="muted">reference</small></h3>${view(d.reference.view, null)}</div>` : '';
     const hasText = Object.values(d.views).some(v => v && v.kind === 'text');
     const toggle = hasText ? `<label class="tick small"><input type="checkbox" id="difft" ${DIFF ? 'checked' : ''}> mark what each run <ins>adds</ins> and <del>drops</del> against the baseline (useful between near-identical outputs, noisy between independent ones)</label>` : '';
     // The item itself, what every arm read (the local inspector only); folded when it is long.
     const src = d.source && d.source.kind !== 'none' && d.source.text
       ? `<details class="srcbox"${d.source.text.length <= 1500 ? ' open' : ''}><summary>the ${ITEM} itself <small class="muted">${d.source.text.length.toLocaleString()} characters, what every arm read</small></summary><div class="outtext">${esc(d.source.text)}</div></details>` : '';
-    box.innerHTML = `<p class="eyebrow gap"><span class="num">04</span>${ITEM} · ${esc(ep)}</p>${fieldsTable(d.fields)}${src}${toggle}<div class="outgrid">${refcol}${cols}</div>`;
+    box.innerHTML = `<p class="eyebrow gap"><span class="num">04</span>${ITEM} · ${esc(ep)}</p>${fieldsTable(d.fields)}${src}${labs}${toggle}<div class="outgrid">${refcol}${cols}</div>`;
     const t = document.getElementById('difft');
     if (t) t.onchange = () => { DIFF = t.checked; drill(ep, arms, baseline, label, ref, tr); };
     box.scrollIntoView({behavior: 'smooth', block: 'start'});
+  }
+
+  // ── 05 rows (RFC-023): one dataset's items, what each chosen arm decided, every label, the signals ────────────
+  // The page writes nothing: the rows ticked give the evh pick and evh label-sheet commands to copy.
+  const SIGNALS = ['wrong', 'disagree', 'split', 'new', 'unlabelled'];
+  async function rowsView() {
+    const ds = P.get('dataset');
+    picker();
+    let d;
+    try {
+      const q = new URLSearchParams({dataset: ds, runs: runs().join(',')});
+      for (const k of ['wrong', 'new']) if (P.get(k)) q.set(k, P.get(k));
+      for (const w of P.getAll('where')) q.append('where', w);
+      d = await (await fetch(API + 'rows?' + q)).json();
+    } catch (e) {
+      app.innerHTML = `<p class="note"><b>No inspector server.</b> Start it with <code>${esc(SERVE)}</code> and open this page from the address it prints.</p>`;
+      return;
+    }
+    if (d.error) { app.innerHTML = `<p class="note"><b>${esc(d.error)}</b></p>`; return; }
+    const only = P.getAll('only');
+    const shown = d.rows.filter(r => only.every(s => s in r.signals));
+    const counts = `${d.rows.length} ${ITEMS}` + SIGNALS.filter(s => d.counts[s]).map(s => ` · ${d.counts[s]} ${s}`).join('');
+    const opt = (xs, cur, none) => `<option value="">${none}</option>` + xs.map(x => `<option value="${esc(x)}" ${x === cur ? 'selected' : ''}>${esc(x)}</option>`).join('');
+    const controls = `<div class="controls">
+      <label>wrong against <select id="rwrong">${opt(d.sets, d.wrong, 'no label set')}</select></label>
+      <label>new against <select id="rnew">${opt(d.datasets, d.new, 'no dataset')}</select></label>
+      ${SIGNALS.map(s => `<label class="tick"><input type="checkbox" class="ronly" value="${s}" ${only.includes(s) ? 'checked' : ''}> only ${s}</label>`).join('')}</div>`
+      + fieldControls(d);
+    const first = d.runs[0];
+    const head = ['<input type="checkbox" id="rall" aria-label="select all shown">', ITEM, 'fields',
+      ...d.runs.map((r, i) => esc(short(r)) + (i === 0 ? '<br><small>first: production</small>' : '')), 'labels', 'picked', 'signals'];
+    const fieldsOf = r => Object.entries(r.fields).map(([k, v]) => `${k}=${v}`).join(', ');
+    const body = rs => rs.map(r => `<tr class="eprow" data-ep="${esc(r.item)}" tabindex="0">
+      <td><input type="checkbox" class="rsel" value="${esc(r.item)}" aria-label="select ${esc(r.item)}"></td>
+      <td class="mono" title="${esc(r.item)}">${esc(r.item.length > 28 ? r.item.slice(0, 27) + '…' : r.item)}</td>
+      <td class="small">${esc(fieldsOf(r))}</td>
+      ${d.runs.map(n => `<td class="small">${r.decisions[n] == null ? '<span class="muted">—</span>' : esc(r.decisions[n])}</td>`).join('')}
+      <td class="small">${r.labels.map(l => `${chip(l.kind)} <code>${esc(l.set.split('/').pop())}</code> ${esc(l.text)}`).join('<br>') || '<span class="muted">none</span>'}</td>
+      <td class="small">${esc(r.picked.join(', '))}</td>
+      <td>${Object.entries(r.signals).map(([s, x]) => `<span class="chip sig sig-${s}" title="${esc(x)}">${s}</span>`).join(' ')}</td></tr>`).join('');
+    const table = `<div class="scroll-x"><table class="data" id="rowstable"><thead><tr>${head.map((h, i) => `<th data-col="${i}">${h}</th>`).join('')}</tr></thead><tbody>${body(shown)}</tbody></table></div>`;
+    const panel = `<div class="cmdpanel" id="rpanel" hidden><p class="small"><b><span id="rn">0</span> selected.</b> The page writes nothing; run these.</p>
+      <div class="controls"><label>for <input id="rfor" placeholder="a governed dataset" list="rdsl"></label><datalist id="rdsl">${d.datasets.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+      <label>tags <input id="rtags" placeholder="case=oom kind=missed"></label><label>note <input id="rnote" placeholder="why it is worth keeping"></label></div>
+      <p><code class="cmd" id="rpick"></code> <button type="button" class="btn small copy" data-copy="">copy</button></p>
+      <p><code class="cmd" id="rsheet"></code> <button type="button" class="btn small copy" data-copy="">copy</button></p></div>`;
+    let by = '';
+    const bf = P.get('by');
+    if (bf) {
+      const g = {};
+      for (const r of shown) { const k = String(r.fields[bf] ?? '—'); (g[k] = g[k] || []).push(r); }
+      by = `<h3 class="sub">by ${esc(bf)}</h3><div class="scroll-x"><table class="data" data-nopage><thead><tr><th>${esc(bf)}</th><th>rows</th>${SIGNALS.map(s => `<th>${s}</th>`).join('')}</tr></thead><tbody>${Object.entries(g).map(([k, rs]) =>
+        `<tr><td>${esc(k)}</td><td class="num">${rs.length}</td>${SIGNALS.map(s => `<td class="num">${rs.filter(r => s in r.signals).length}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    }
+    app.innerHTML = `<p class="eyebrow"><span class="num">05</span>rows · ${esc(ds)}</p><p class="small" id="rcounts">${esc(counts)}${only.length ? ' · ' + shown.length + ' shown' : ''}</p>`
+      + controls + panel + by + table + `<p class="small muted">Tick rows to pick or label them; click a row to open the ${ITEM}.</p><div id="drill"></div>`;
+    wireFields(d);
+    const t = document.getElementById('rowstable');
+    if (window.paginate) window.paginate(t);
+    document.getElementById('rwrong').onchange = ev => { ev.target.value ? P.set('wrong', ev.target.value) : P.delete('wrong'); go(); };
+    document.getElementById('rnew').onchange = ev => { ev.target.value ? P.set('new', ev.target.value) : P.delete('new'); go(); };
+    app.querySelectorAll('input.ronly').forEach(c => c.onchange = () => {
+      P.delete('only'); app.querySelectorAll('input.ronly:checked').forEach(x => P.append('only', x.value)); go(); });
+    const q = s => s.includes(' ') || s.includes('"') ? '"' + s.replace(/"/g, '\\"') + '"' : s;
+    const upd = () => {
+      const sel = [...app.querySelectorAll('input.rsel:checked')].map(i => i.value);
+      document.getElementById('rpanel').hidden = !sel.length;
+      document.getElementById('rn').textContent = sel.length;
+      const items = sel.map(i => '--item ' + i).join(' ');
+      const f = document.getElementById('rfor').value.trim(), tg = document.getElementById('rtags').value.trim().split(/\s+/).filter(Boolean);
+      const note = document.getElementById('rnote').value.trim();
+      const pk = `evh pick --dataset-id ${ds} ${items}` + (f ? ` --for ${f}` : '') + tg.map(x => ` --tag ${x}`).join('') + (note ? ` --note ${q(note)}` : '');
+      const sh = `evh label-sheet --dataset-id ${ds} ${items} --out sheet.csv` + (d.runs.length ? ` --runs ${d.runs.join(',')}` : '');
+      const [a, b] = app.querySelectorAll('#rpanel button.copy');
+      document.getElementById('rpick').textContent = pk; a.dataset.copy = pk;
+      document.getElementById('rsheet').textContent = sh; b.dataset.copy = sh;
+    };
+    app.querySelectorAll('input.rsel').forEach(c => c.onchange = upd);
+    for (const id of ['rfor', 'rtags', 'rnote']) document.getElementById(id).oninput = upd;
+    document.getElementById('rall').onchange = ev => {
+      [...t.tBodies[0].rows].filter(r => !r.hidden && r.style.display !== 'none').forEach(r => { r.querySelector('input.rsel').checked = ev.target.checked; });
+      upd(); };
+    // A sort by any column (a header that is not the select-all box): text, as shown.
+    t.querySelectorAll('th').forEach(th => th.onclick = ev => {
+      if (ev.target.closest('input')) return;
+      const i = th.cellIndex, dir = th.dataset.dir === 'asc' ? 'desc' : 'asc';
+      t.querySelectorAll('th').forEach(x => delete x.dataset.dir); th.dataset.dir = dir;
+      const tb = t.tBodies[0];
+      [...tb.rows].sort((a, b) => { const x = a.cells[i].textContent.trim(), y = b.cells[i].textContent.trim();
+        return x.localeCompare(y, undefined, {numeric: true}) * (dir === 'asc' ? 1 : -1); }).forEach(r => tb.appendChild(r));
+      if (t._repage) t._repage(); });
+    const label = Object.fromEntries(d.runs.map(r => [r, short(r)]));
+    app.querySelectorAll('tr.eprow').forEach(tr => {
+      tr.onclick = ev => { if (ev.target.closest('input')) return; drill(tr.dataset.ep, d.runs, first, label, '', tr); };
+      tr.onkeydown = ev => { if (ev.key === 'Enter') tr.onclick(ev); };
+    });
+    const want = P.get('item');
+    const hit = want && [...app.querySelectorAll('tr.eprow')].find(tr => tr.dataset.ep === want);
+    if (hit) drill(want, d.runs, first, label, '', hit);
   }
 
   load();

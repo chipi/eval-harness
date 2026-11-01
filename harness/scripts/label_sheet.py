@@ -39,6 +39,15 @@ def run_dir(name: str, dataset_id: str) -> Path:
     """A run by its id, or a config's latest run on the dataset: in data/runs, else in a label set's runs
     (data/runs-labels-<dataset>-<set>/, where a run scored against labels lands)."""
     bases = [_common.RUNS, *sorted(_common.DATA.glob(f"runs-labels-{dataset_id}-*"))]
+    if name.count("/") == 2:  # an arm id, as the inspector names it: <runs dir>/<dataset>/<config_id>
+        where, ds, config_id = name.split("/")
+        base = _common.RUNS if where == "runs" else _common.DATA / where
+        if ds != dataset_id or not where.startswith("runs") or not base.is_dir():
+            die(f"--runs {name}: not an arm on {dataset_id}")
+        found = runs_on(dataset_id, runs_dir=base, config_id=config_id)
+        if not found:
+            die(f"--runs {name}: no run of that arm")
+        return found[-1][0]
     for base in bases:
         d = base / name
         if (d / "metrics.json").is_file():

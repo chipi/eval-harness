@@ -1793,6 +1793,10 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
             f"Inspect the {len(members)} arms {what}</a>"
             + (f'<span class="muted small">{more}</span>' if more else "")
         )
+    # The rows view (RFC-023): its items one per row, production's recorded arm first when there is one.
+    rec = [a["arm"] for a in arms if a.get("recorded")]
+    q = f"dataset={quote(ds, safe='')}&rows=1" + (f"&runs={quote(','.join(rec), safe=',/')}" if rec else "")
+    btns.append(f'<a class="btn" href="../inspect.html?{q}">Explore its rows</a>')
     btn = f'<p class="btns">{"".join(btns)}</p>' if btns else ""
     for b in v.get("baselines", [])[-1:]:
         label = next((a["label"] for a in arms if a["arm"] == b.get("arm")), b["run"])

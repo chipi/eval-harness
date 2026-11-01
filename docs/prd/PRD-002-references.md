@@ -143,8 +143,8 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
   fingerprint hashes the set's files. A run scored against a set, measured or re-scored, is written beside the
   runs, `data/runs-labels-<dataset>-<set>/`: an arm of its own, never one more run of the config's arm on gold or
   silver, and never where a goal reads a re-score in place of a run.
-- **FR6.2** (0.6.0, planned: the pages, step 8): Every view names it by its source ("against your labels of
-  <date>"), never as a reference or with a tier; arms against different sets are never compared, as for references
+- **FR6.2** (0.6.0): Every view names it by its source (the set's source chip and name, made by whom and when on
+  the labels page), never as a reference or with a tier; arms against different sets are never compared, as for references
   (FR5.4).
 - **FR6.3**: A goal suggests a finalist for a group scored against a label set as it does for a reference's group
   (PRD-005); the arm whose outputs a `model` set holds is flagged, as the author of a reference is, and never

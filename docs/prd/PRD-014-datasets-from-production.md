@@ -1,8 +1,8 @@
 # PRD-014: Datasets from production, and evaluating what production did
 
 - **Status**: Built for 0.6.0 for FR1 to FR3, FR5, FR6 and the Captures page (2026-10-31, the capture window and
-  sampling 2026-11-01), FR4 (labels from outcomes) FR7 (the recorded arm, agreement), FR8.1 (the rows view, in the terminal), FR9 (picks) and FR10 (versions
-  from picks) built; FR8.2 (the rows view's page) planned for 0.6.0
+  sampling 2026-11-01), FR4 (labels from outcomes) FR7 (the recorded arm, agreement), FR8 (the rows view, in the terminal and the inspector), FR9 (picks) and
+  FR10 (versions from picks) built
   ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Captures, Labels and dataset pages),
@@ -78,7 +78,7 @@ comment that says what it was.
   (`evh arm-from-capture`), beside the deployed config and a candidate._
 - _As an engineer, I check that production ran what I promoted (`evh deploy-sheet`)._
 - _As an operator, my close comments become labels through a mapping I can read (`evh label-from-capture`)._
-- (0.6.0, planned) _As an engineer, I open the rows where production was wrong on something the governed dataset does not cover
+- _As an engineer, I open the rows where production was wrong on something the governed dataset does not cover
   (`evh inspect --dataset-id D --rows --wrong-against S --new-vs V1`) and pick the ones worth keeping._
 - _As a dataset owner, a month later I make v2 of my dataset from v1 and seven of the picks waiting
   (`evh dataset-extend V1 --dataset-id V2 --pick …`), and promote its labels._
@@ -145,7 +145,7 @@ comment that says what it was.
   when there is no reader, or when the capture lacks an item.
 - **FR7.2**: Two outputs are one decision when the adapter's `same(a, b)` says so (default: the same text; the
   triage adapter's compares the dispositions, not the reasons). `evh inspect --runs A,B --disagree` keeps the items
-  where an arm decided differently from the baseline, the same filter the inspector page offers (step 8), and
+  where an arm decided differently from the baseline, the same filter the inspector page offers ("only where they disagree"), and
   `evh label-sheet --items disagree` reads the same hook.
 
 ### FR8: Exploring rows (0.6.0)
@@ -154,7 +154,7 @@ comment that says what it was.
   chosen arm's decision, every label with its source, and the signals: **wrong** (`--wrong-against SET`),
   **disagree**, **split** (candidates disagree among themselves), **new** (`--new-vs V`: a field value the governed
   dataset has never had), **unlabelled**; each a filter and a sort, with `--where` and `--by`.
-- **FR8.2** (0.6.0, planned: step 8): The inspector's rows view shows the same; a selection of rows gives the `evh pick` and
+- **FR8.2** (0.6.0): The inspector's rows view shows the same; a selection of rows gives the `evh pick` and
   `evh label-sheet` commands for them. The page writes nothing.
 
 ### FR9: Picks (0.6.0)

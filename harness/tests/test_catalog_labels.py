@@ -349,6 +349,85 @@ try:
         and "not recorded: 2" in deploy_verdicts(bad),
         deploy_verdicts(bad),
     )
+
+    # ── the inspector's rows view and item view (the server's functions, as /api/rows and /api/item answer) ──
+    def serve_call(code):
+        r = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import json; from evaluation_harness import catalog_serve as cs; "
+                    "from evaluation_harness.catalog_adapter import load_catalog_adapter as L; cs.set_adapter(L(None)); "
+                    + code
+                ),
+            ],
+            cwd=proj,
+            env={**env, "PYTHONPATH": str(HERE.parent)},
+            capture_output=True,
+            text=True,
+        )
+        try:
+            return json.loads(r.stdout.strip().splitlines()[-1])
+        except (ValueError, IndexError):
+            return {"error": out(r)[-400:]}
+
+    arms = "runs/tickets_v1/tickets_lead1_v1,runs/tickets_v1/tickets_author_v1"
+    rw = serve_call(
+        f"print(json.dumps(cs.rows({{'dataset': ['tickets_v1'], 'runs': ['{arms}'], 'wrong': ['owner_v1']}})))"
+    )
+    by = {r["item"]: r for r in rw.get("rows", [])}
+    check(
+        "/api/rows: every item, each arm's decision, its labels, the signals and their counts, the sets to choose",
+        len(by) == 6
+        and set(by["t01_login"]["decisions"]) == set(arms.split(","))
+        and any(
+            x["set"] == "tickets_v1/owner_v1" and x["kind"] == "person" for x in by["t01_login"]["labels"]
+        )
+        and "unlabelled" not in by["t01_login"]["signals"]
+        and rw["counts"]["unlabelled"] == 0
+        and "tickets_v1/owner_v1" in rw["sets"]
+        and "prod_v1" in rw["datasets"],
+        json.dumps(rw)[:600],
+    )
+    pr = serve_call(
+        "print(json.dumps(cs.rows({'dataset': ['prod_v1'], 'runs': ['runs/prod_v1/production_v1']})))"
+    )
+    pby = {r["item"]: r for r in pr.get("rows", [])}
+    check(
+        "/api/rows: a pick waiting says for which dataset; a refused arm is said in its own words",
+        pby.get("p2", {}).get("picked") == ["tickets_v1"]
+        and "not an arm on prod_v1"
+        in serve_call(
+            "print(json.dumps(cs.rows({'dataset': ['prod_v1'], 'runs': ['runs/tickets_v1/x_v1']})))"
+        ).get("error", ""),
+        json.dumps(pr)[:400],
+    )
+    pub = serve_call(
+        "cs.LIMITS['hosts'] = ('public',); print(json.dumps(cs.rows({'dataset': ['tickets_v1']})))"
+    )
+    check("/api/rows is not served publicly", "not served publicly" in pub.get("error", ""), json.dumps(pub))
+    it = serve_call("print(json.dumps(cs.item({'dataset': ['tickets_v1'], 'item': ['t01_login']})))")
+    check(
+        "/api/item for a dataset alone (the rows view): the item's fields and every label, with its source",
+        it.get("views") == {}
+        and any(
+            x["set"] == "tickets_v1/owner_v1" and x["kind"] == "person" and x["text"]
+            for x in it.get("labels", [])
+        ),
+        json.dumps(it)[:500],
+    )
+    ri = serve_call("print(json.dumps(cs.item({'arms': ['runs/prod_v1/production_v1'], 'item': ['p1']})))")
+    check(
+        "/api/item: production's recorded output is marked with its capture",
+        ri.get("recorded") == {"runs/prod_v1/production_v1": "prod_c1"},
+        json.dumps(ri)[:400],
+    )
+    check(
+        "the dataset page's explore-rows button opens the rows view, production's recorded arm chosen first",
+        'inspect.html?dataset=prod_v1&rows=1&runs=runs/prod_v1/production_v1"' in pp,
+        "",
+    )
     check(
         "the selection's script is in the catalog's assets (the page itself writes nothing)",
         ".cmdpick" in page("assets/catalog.js") and "<form" not in dp,

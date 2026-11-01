@@ -556,3 +556,12 @@ tr.t-labels td:first-child { box-shadow: inset 3px 0 0 var(--muted); padding-lef
 .cmdbox { margin-top: 12px; }
 .cmdbox button[hidden] { display: none; }
 .cmdbox pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* the rows view (RFC-023): the selection's commands, the signals, the item's labels */
+.cmdpanel { margin: 0 0 18px; padding: 12px 14px; border: 1px solid var(--hair); border-radius: 10px; background: var(--surface); }
+.cmdpanel code.cmd { white-space: pre-wrap; overflow-wrap: anywhere; }
+.chip.sig { cursor: default; padding: 3px 7px; font-size: 11px; }
+.chip.sig-wrong { border-color: var(--local); color: var(--ink); }
+.chip.sig-disagree, .chip.sig-split { border-color: var(--accent); color: var(--ink); }
+.chip.sig-new { border-color: var(--open); color: var(--ink); }
+ul.labels { list-style: none; padding: 0; display: grid; gap: 10px; }
+ul.labels .outtext { margin-top: 4px; }

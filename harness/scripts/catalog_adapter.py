@@ -711,6 +711,34 @@ class HarnessAdapter:
                     )
         return {"sets": sets, "agreement": agreement}
 
+    def item_labels(self, dataset: str, item: str) -> list[dict]:
+        """Every label one item has (RFC-023): {set ("<dataset>/<set>"), kind, by, text} from each set holding an item
+        with its bytes (labels follow the item); the text only where it is here (a release keeps labels.json only)."""
+        ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
+        sha = (
+            next(
+                (it.get("source_sha256") for it in (ds.get("items") or []) if it.get("item_id") == item), None
+            )
+            if isinstance(ds, dict)
+            else None
+        )
+        out = []
+        for ls in self.label_sets() if sha else []:
+            for iid, row in ls["items"].items():
+                if (row or {}).get("item_sha256") == sha:
+                    t = ls["dir"] / f"{iid}.txt"
+                    src = ls.get("source") or {}
+                    out.append(
+                        {
+                            "set": ls["id"],
+                            "kind": src.get("kind", ""),
+                            "by": src.get("by") or src.get("config_id") or src.get("capture") or "",
+                            "text": t.read_text(encoding="utf-8").strip() if t.is_file() else None,
+                            "note": (row or {}).get("note") or "",
+                        }
+                    )
+        return out
+
     def picks_waiting(self, dataset: str) -> list[dict]:
         """The picks waiting for this dataset (data/picks.jsonl, ADR-0023): the items whose latest line is a pick
         naming it as a target. A release does not carry the pick list, so a published catalog shows none."""

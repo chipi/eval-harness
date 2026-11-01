@@ -12,6 +12,8 @@ Builds nothing: run `evh catalog` first. Static files are the built catalog and 
       every arm's per-item scores for one metric, each arm tested against the baseline with
       the paired test (stats.py: exact p up to 30 items, Holm across the family)
   GET /api/item?arms=<arm>,...&item=<item_id>[&ref=<reference_id>]
+  GET /api/rows?dataset=<id>[&runs=<arm>,...][&wrong=<label set>][&new=<dataset>][&where=<field>:<value>]
+      (the rows view, RFC-023: the local inspector only)
       each arm's output for one item, and the reference's
 
 Runs on different dataset_ids are never compared: the request is refused, as `run-compare`
@@ -614,7 +616,14 @@ def item(params: dict) -> dict:
     arms = [a for a in params.get("arms", [""])[0].split(",") if a.strip()]
     it = params.get("item", [""])[0]
     refs = _known()[1]
-    if not it or not arms or any(not _arms_known(a) for a in arms):
+    # No arm chosen, a dataset named (the rows view, RFC-023; the local inspector only): the item, its fields, labels.
+    alone = params.get("dataset", [""])[0] if not arms and not LIMITS["hosts"] else ""
+    if alone:
+        from evaluation_harness._common import DATASETS  # noqa: PLC0415
+
+        if not plain_item(alone) or not (DATASETS / f"{alone}.json").is_file():
+            return {"error": "need dataset=<a dataset id>"}
+    if not it or (not arms and not alone) or any(not _arms_known(a) for a in arms):
         return {"error": "need arms=<arm>,... known to the catalog and item=<item_id>"}
     if not plain_item(it):  # an item is a file's name in a run, never a path: ../ would leave it
         return {"error": "not an item id: letters, digits and . _ : @ + = -"}
@@ -624,7 +633,7 @@ def item(params: dict) -> dict:
     # has decided to publish them. The local inspector shows everything, on this machine.
     public = bool(LIMITS["hosts"])
     published = LIMITS.get("publish") or ()
-    dataset = A.describe(A.arms_of(arms[0])[0]).get("dataset", "")
+    dataset = alone or A.describe(A.arms_of(arms[0])[0]).get("dataset", "")
     if not _visibility.text_shown(dataset, public=public):
         # `text: hidden` (RFC-019): nothing that comes from this dataset's text, whatever is published.
         published = ()
@@ -636,7 +645,7 @@ def item(params: dict) -> dict:
         out = {"item": it, "views": {a: dict(withheld) for a in arms}}
     else:
         out = {"item": it, "views": {a: A.item_view(a, it) for a in arms}}
-    decl, values = _fields_of(A.describe(A.arms_of(arms[0])[0]).get("dataset", ""))
+    decl, values = _fields_of(dataset)
     out["fields"] = [
         dict(f, value=values.get(it, {})[f["name"]])
         for f in _field_list(decl)
@@ -663,8 +672,83 @@ def item(params: dict) -> dict:
     # project may not be free to redistribute.
     src = getattr(A, "item_text", None)
     if callable(src) and not LIMITS["hosts"]:
-        out["source"] = src(A.describe(A.arms_of(arms[0])[0]).get("dataset", ""), it)
+        out["source"] = src(dataset, it)
+    # Every label the item has (RFC-023), and which output is production's recorded one: the local inspector only.
+    lab = getattr(A, "item_labels", None)
+    if callable(lab) and not LIMITS["hosts"]:
+        out["labels"] = lab(dataset, it)
+    out["recorded"] = {a: rec for a in arms if (rec := A.describe(A.arms_of(a)[0]).get("recorded"))}
     return out
+
+
+def rows(params: dict) -> dict:
+    """The rows view (RFC-023, UXS-002 05): one dataset's items, what each chosen arm decided (the first stands for
+    production), every label, the signals; `evh inspect --dataset-id D --rows` in the browser. The local inspector
+    only: its rows carry outputs and labels."""
+    if LIMITS["hosts"]:
+        return {"error": "the rows view shows outputs and labels: not served publicly"}
+    from evaluation_harness import _picks, _rows  # noqa: PLC0415
+    from evaluation_harness._common import DATASETS  # noqa: PLC0415
+    from evaluation_harness._label_sets import coverage  # noqa: PLC0415
+
+    ds = params.get("dataset", [""])[0]
+    if not ds or not plain_item(ds) or not (DATASETS / f"{ds}.json").is_file():
+        return {"error": "need dataset=<a dataset id>"}
+    runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
+    if len(runs) > LIMITS["max_arms"]:
+        return {"error": f"{len(runs)} arms asked for; at most {LIMITS['max_arms']}"}
+    wrong = params.get("wrong", [""])[0] or None
+    new = params.get("new", [""])[0] or None
+    try:
+        found = _rows.rows(ds, runs, _fields_of, wrong, new)
+    except SystemExit as exc:  # a refusal (an arm not on this dataset, no such set): its own words
+        return {"error": str(exc).removeprefix("ERROR: ").splitlines()[0]}
+    decl, _ = _fields_of(ds)
+    for w in params.get("where", []):
+        name, _, want = w.partition(":")
+        if name not in decl:
+            return {"error": f"no field {name!r} to filter by"}
+        try:
+            found = [r for r in found if _fields.matches(decl[name], r["fields"].get(name), want)]
+        except ValueError as exc:
+            return {"error": f"filter {w}: {exc}"}
+    state = _picks.state()
+
+    def short(t):
+        one = " ".join((t or "").split())
+        return one if len(one) <= 160 else one[:159] + "…"
+
+    out_rows = []
+    for r in found:
+        p = state.get((ds, r["item"])) or {}
+        out_rows.append(
+            {
+                "item": r["item"],
+                "fields": r["fields"],
+                "decisions": {n: (None if o is None else short(o)) for n, o in r["decisions"].items()},
+                "labels": [
+                    {
+                        "set": f"{x['dataset_id']}/{x['set']}",
+                        "kind": (x.get("source") or {}).get("kind", ""),
+                        "text": short(x["text"]),
+                    }
+                    for x in r["labels"]
+                ],
+                "picked": (p.get("for") or ["no target yet"]) if p.get("action") == "pick" else [],
+                "signals": r["signals"],
+            }
+        )
+    return {
+        "dataset": ds,
+        "runs": runs,
+        "rows": out_rows,
+        "counts": {s: sum(s in r["signals"] for r in found) for s in _rows.SIGNALS},
+        "sets": [f"{c['dataset_id']}/{c['set']}" for c in coverage(ds)],
+        "datasets": sorted(p.stem for p in DATASETS.glob("*.json") if p.stem != ds),
+        "fields": _field_list(decl),
+        "wrong": wrong or "",
+        "new": new or "",
+    }
 
 
 #: Set by main(): the public mode's limits. max_arms applies locally too (a URL is not a query).
@@ -703,7 +787,13 @@ def answer(path: str, query: str) -> tuple:
     params = parse_qs(query)
     with _COMPUTE:
         try:
-            body = compare(params) if path == "/api/compare" else item(params)
+            body = (
+                compare(params)
+                if path == "/api/compare"
+                else rows(params)
+                if path == "/api/rows"
+                else item(params)
+            )
             code = 400 if "error" in body else 200
         except Exception as exc:  # noqa: BLE001 — report, don't kill the server
             body = {"error": "internal error" if LIMITS["hosts"] else f"{type(exc).__name__}: {exc}"}
@@ -789,7 +879,7 @@ def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
 
 
 #: The API's endpoints. Anything else under /api/ is 404: it is not a way into the files.
-API_ROUTES = ("/api/health", "/api/compare", "/api/item")
+API_ROUTES = ("/api/health", "/api/compare", "/api/item", "/api/rows")
 
 
 def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
@@ -961,7 +1051,7 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if url.path == "/api/health":
             return self._json(200, {"ok": True})
-        if url.path in ("/api/compare", "/api/item"):
+        if url.path in ("/api/compare", "/api/item", "/api/rows"):
             # A client-supplied header is trusted only when named (--client-header): behind a
             # proxy that sets it, with the origin reachable only through that proxy. Otherwise
             # anyone can send a new value per request and never hit the limit.
