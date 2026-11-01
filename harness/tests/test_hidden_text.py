@@ -217,8 +217,21 @@ try:
     # ── the deployment's copy of the data ──────────────────────────────────────────────────
     from evaluation_harness._release import copy_data
 
+    # A label set on the hidden dataset (RFC-023): its record is copied, its label text never.
+    lab = data / "labels" / "tickets_h" / "l1"
+    lab.mkdir(parents=True)
+    (lab / f"{item}.txt").write_text(f"a label quoting {MARK['h']}\n")
+    (lab / "labels.json").write_text(json.dumps({"dataset_id": "tickets_h", "set": "l1", "n_items": 1}))
     rel = proj / ".release"
     counts = copy_data(data, rel)
+    check(
+        "release: a label set's record is copied, its label text never",
+        (rel / "labels" / "tickets_h" / "l1" / "labels.json").is_file()
+        and not list((rel / "labels").rglob("*.txt")),
+        str(sorted(str(p.relative_to(rel)) for p in (rel / "labels").rglob("*")))
+        if (rel / "labels").exists()
+        else "no labels/",
+    )
     check("release: the shown dataset's outputs and gold texts are copied", bool(found(rel, MARK["s"])))
     check("release: nothing of the hidden dataset's text", not found(rel, MARK["h"]), found(rel, MARK["h"]))
     check(

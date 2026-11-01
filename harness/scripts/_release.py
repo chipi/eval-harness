@@ -47,6 +47,7 @@ COPIED_DIRS = (
     "fields",
     "captures",
     "models",
+    "labels",
 )
 COPIED_FILES: tuple[str, ...] = ()
 #: What a hidden dataset's prediction rows keep of `_meta`: what describes the call (its cost, model,
@@ -193,6 +194,12 @@ def copy_data(src: Path, dst: Path) -> dict:
                     counts["hidden_verdicts"] += 1
                     continue
                 shutil.copytree(vdir, dst / name / vdir.relative_to(d))
+        elif name == "labels":
+            # As captures: the record (source, counts, hashes: what the catalog reads), never a label's text.
+            for rec in sorted(d.glob("*/*/labels.json")):
+                out = dst / name / rec.parent.relative_to(d)
+                out.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(rec, out / "labels.json")
         elif name == "captures":
             for cap in sorted(d.glob("*/capture.json")):
                 (dst / name / cap.parent.name).mkdir(parents=True, exist_ok=True)
