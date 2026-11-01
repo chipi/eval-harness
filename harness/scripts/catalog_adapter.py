@@ -435,8 +435,11 @@ class HarnessAdapter:
                 or {}
             ).get("source") or {}
             author = src.get("config_id") if src.get("kind") == "model" else None
+            labels_source = str(src.get("kind") or "")
         else:
             author = next((r.get("author") for r in self.references() if r["id"] == ref), None)
+            labels_source = ""
+        params = m.get("params") or {}
         return {
             "id": arm,
             "label": label,
@@ -451,6 +454,10 @@ class HarnessAdapter:
             "judge": judged or "",
             # Graded against its own outputs: the arm whose run (or config) wrote the reference.
             "wrote_reference": bool(author) and not judged and author == m.get("config_id"),
+            # Scored against a label set (RFC-023): its source (person, model, rule), for the chip.
+            "labels_source": labels_source,
+            # Production's recorded decisions (RFC-023): the capture they came from; no model was called.
+            "recorded": str(params.get("capture") or "") if params.get("provider") == "recorded" else "",
         }
 
     # -- scores -------------------------------------------------------------------------
@@ -601,9 +608,92 @@ class HarnessAdapter:
                             "model": mf.get("model"),
                             "created_at": mf.get("created_at"),
                             "caveat": mf.get("caveat"),
+                            "promoted_from": mf.get("promoted_from"),
+                            "reason": mf.get("reason"),
+                            "promoted_by": mf.get("promoted_by"),
                         }
                     )
         return out
+
+    def label_sets(self) -> list[dict]:
+        """Every label set (RFC-023): {dataset, set, id ("<dataset>/<set>"), source, n_items, guideline, created_at,
+        items {item: {"item_sha256"}}}, from data/labels/<dataset>/<set>/labels.json; [] when there are none."""
+        out = []
+        for lf in sorted((self.data_dir / "labels").glob("*/*/labels.json")):
+            doc = _json(lf)
+            if isinstance(doc, dict):
+                out.append(
+                    {
+                        "dataset": str(doc.get("dataset_id") or lf.parent.parent.name),
+                        "set": str(doc.get("set") or lf.parent.name),
+                        "id": f"{lf.parent.parent.name}/{lf.parent.name}",
+                        "source": doc.get("source") or {},
+                        "n_items": doc.get("n_items") or len(doc.get("items") or {}),
+                        "guideline": doc.get("guideline"),
+                        "created_at": doc.get("created_at"),
+                        "items": doc.get("items") or {},
+                        "dir": lf.parent,
+                    }
+                )
+        return out
+
+    def label_coverage(self, dataset: str) -> dict:
+        """{"sets": [{set..., "covers": [item ids]}], "agreement": [{"a", "b", "both", "agree"}]}: the label sets
+        covering this dataset's items, matched by the item's sha256 (labels follow the item), and how often two
+        agree on the items both label (where the label texts are here; a release keeps only labels.json)."""
+        ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
+        by_sha: dict = {}
+        for it in ds.get("items") or [] if isinstance(ds, dict) else []:
+            if it.get("source_sha256"):
+                by_sha.setdefault(it["source_sha256"], []).append(it["item_id"])
+        sets, texts = [], {}
+        for ls in self.label_sets():
+            covers: dict = {}
+            for iid, row in ls["items"].items():
+                for mine in by_sha.get((row or {}).get("item_sha256") or "", []):
+                    t = ls["dir"] / f"{iid}.txt"
+                    covers[mine] = t.read_text(encoding="utf-8").strip() if t.is_file() else None
+            if covers:
+                sets.append(
+                    {**{k: v for k, v in ls.items() if k not in ("items", "dir")}, "covers": sorted(covers)}
+                )
+                texts[ls["id"]] = covers
+        agreement = []
+        ids = sorted(texts)
+        for i, a in enumerate(ids):
+            for b in ids[i + 1 :]:
+                both = [
+                    x
+                    for x in texts[a]
+                    if x in texts[b] and texts[a][x] is not None and texts[b][x] is not None
+                ]
+                if both:
+                    agreement.append(
+                        {
+                            "a": a,
+                            "b": b,
+                            "both": len(both),
+                            "agree": sum(texts[a][x] == texts[b][x] for x in both),
+                        }
+                    )
+        return {"sets": sets, "agreement": agreement}
+
+    def picks_waiting(self, dataset: str) -> list[dict]:
+        """The picks waiting for this dataset (data/picks.jsonl, ADR-0023): the items whose latest line is a pick
+        naming it as a target. A release does not carry the pick list, so a published catalog shows none."""
+        f = self.data_dir / "picks.jsonl"
+        latest: dict = {}
+        for line in f.read_text(encoding="utf-8").splitlines() if f.is_file() else []:
+            try:
+                r = json.loads(line) if line.strip() else None
+            except ValueError:
+                continue
+            if isinstance(r, dict):
+                latest[(r.get("from"), r.get("item"))] = r
+        return sorted(
+            (r for r in latest.values() if r.get("action") == "pick" and dataset in (r.get("for") or [])),
+            key=lambda r: (str(r.get("from")), str(r.get("item"))),
+        )
 
     @_memo
     def metric_descriptions(self) -> dict[str, str]:
@@ -843,6 +933,8 @@ class HarnessAdapter:
             "tags": {str(k): str(v) for k, v in tags.items()},
             "origin": origin,
             "capture": str(mf.get("capture") or ""),
+            # A version made from picks (dataset-extend): V1 and, per added item, where it came from.
+            "extended_from": ds["extended_from"] if isinstance(ds.get("extended_from"), dict) else None,
         }
 
     def dataset_profile(self, dataset: str) -> dict | None:

@@ -23,6 +23,7 @@ Missing Playwright is a failure that says how to install it, not a skip.
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import signal
@@ -93,6 +94,25 @@ def project(tmp: Path) -> tuple:
         "--hypothesis", "how many leading sentences summarise a ticket best",
         "--keep", "tickets_lead1_v1,tickets_lead2_v1,tickets_author_v1",
     )  # fmt: skip
+    # Production tickets and a pick waiting for tickets_v1 (RFC-023): the dataset page's selection gives a command.
+    (proj / "prod.jsonl").write_text(
+        "".join(
+            json.dumps({"id": f"p{n}", "body": f"A new ticket {n}.", "created_at": f"2026-11-0{n}T09:00:00Z"})
+            + "\n"
+            for n in (1, 2)
+        )
+    )
+    evh(
+        "capture",
+        "--importer",
+        "jsonl",
+        "--query",
+        json.dumps({"path": "prod.jsonl"}),
+        "--capture",
+        "prod_c1",
+    )
+    evh("dataset-from-capture", "prod_c1", "--dataset-id", "prod_v1")
+    evh("pick", "--dataset-id", "prod_v1", "--item", "p1", "--item", "p2", "--for", "tickets_v1")
     evh("catalog")
     return proj, env
 
@@ -342,6 +362,34 @@ def drive(base: str, overview: str = "") -> None:
         check("dataset page: coverage, 6 of 6 and 2 of 6", "6 of 6" in ftable and "2 of 6" in ftable)
         check("dataset page: a public field summarised (account 2)", "account 2" in " ".join(ftable.split()))
         check("dataset page: the hidden field shows 'not public'", "not public" in ftable)
+        pickcmd = page.locator("#picks .cmdpick code.cmd")
+        check(
+            "picks waiting: nothing ticked, no command to copy",
+            "tick the picks" in pickcmd.inner_text() and page.locator("#picks button.copy").is_hidden(),
+            pickcmd.inner_text(),
+        )
+        page.locator('#picks input.cmdsel[value="prod_v1:p2"]').check()
+        check(
+            "picks waiting: a ticked row gives the dataset-extend command, to copy",
+            pickcmd.inner_text() == "evh dataset-extend tickets_v1 --dataset-id <next> --pick prod_v1:p2"
+            and page.locator("#picks button.copy").is_visible(),
+            pickcmd.inner_text(),
+        )
+        before = len(errors)
+        page.locator("#picks th", has_text="item").click()
+        page.locator("#picks th", has_text="item").click()
+        order = page.locator("#picks tbody tr td:nth-child(2)").all_inner_texts()
+        check(
+            "sort: a later table on a page sorts by the clicked column (desc: p2 first), no error",
+            order == ["p2", "p1"] and len(errors) == before,
+            f"{order} {errors[before:]}",
+        )
+        page.locator("#picks input.cmdall").check()
+        check(
+            "picks waiting: select all shown takes every row",
+            "--pick prod_v1:p1" in pickcmd.inner_text() and "--pick prod_v1:p2" in pickcmd.inner_text(),
+            pickcmd.inner_text(),
+        )
 
         # Paging (catalog.js): a 23-row table shows 10, then 20, then all 23; a filter pages its matches.
         paged = page.evaluate(
@@ -426,7 +474,14 @@ def drive(base: str, overview: str = "") -> None:
         for path, ready in (
             *(
                 (p, "main")
-                for p in ("index.html", "goals.html", "datasets.html", "captures.html", "references.html")
+                for p in (
+                    "index.html",
+                    "goals.html",
+                    "datasets.html",
+                    "captures.html",
+                    "labels.html",
+                    "references.html",
+                )
             ),
             *((p, "main") for p in ("metrics.html", "arms.html", "activity.html", "g/tickets_summary.html")),
             ("d/tickets_v1.html", "table#fields"),

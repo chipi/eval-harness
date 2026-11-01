@@ -107,6 +107,7 @@ NAV = [
         [
             ("datasets", "datasets.html", "Datasets"),
             ("captures", "captures.html", "Captures"),
+            ("labels", "labels.html", "Labels"),
             ("references", "references.html", "References"),
         ],
         "Data",
@@ -260,9 +261,59 @@ def _label_of(by_ds: dict, ds: str, arm: str) -> str:
     return next((a["label"] for a in (by_ds.get(ds) or {}).get("arms", []) if a["arm"] == arm), arm)
 
 
+#: {arm: capture}: production's recorded arms (RFC-023), filled by collect(); arm_link badges them.
+RECORDED: dict[str, str] = {}
+
+
 def arm_link(arm: str, label: str, up: str = "") -> str:
-    """An arm's label, linked to its page."""
-    return f'<a class="cell-link" href="{up}{arm_page(arm)}">{e(label)}</a>'
+    """An arm's label, linked to its page; a recorded arm (production's decisions) carries its badge."""
+    badge = (
+        f' <span class="badge recorded" title="production\'s decisions, from the capture {e(RECORDED[arm])}">recorded</span>'
+        if arm in RECORDED
+        else ""
+    )
+    return f'<a class="cell-link" href="{up}{arm_page(arm)}">{e(label)}</a>{badge}'
+
+
+def tier_pill(tier: str) -> str:
+    """A reference's tier as a pill in its own colour (UXS-001): gold on gold, silver on silver."""
+    if tier not in ("gold", "silver"):
+        return e(tier) if tier else ""
+    return f'<span class="pill tier-{tier}">{tier}</span>'
+
+
+def source_chip(kind: str) -> str:
+    """A label set's source as a chip (person, model, rule), never a tier's colours (UXS-001)."""
+    k = kind if kind in ("person", "model", "rule") else "unknown"
+    return f'<span class="src src-{k}">{e(kind or "unknown")}</span>'
+
+
+def labels_page_anchor(set_id: str) -> str:
+    """A label set's row on the labels page, relative to the catalog root."""
+    return f"labels.html#set-{slug(set_id)}"
+
+
+def label_set_html(set_id: str, kind: str, up: str = "") -> str:
+    """A label set: its source chip, then its name linked to its row on the labels page."""
+    name = set_id.rsplit("/", 1)[-1]
+    return f'{source_chip(kind)} <a class="cell-link" href="{up}{labels_page_anchor(set_id)}"><code>{e(name)}</code></a>'
+
+
+def promoted_from_html(r: dict, up: str = "") -> str:
+    """Where a reference was promoted from: the label set with its source chip (and the arm a model set came from),
+    else the source a reference made before labels existed names."""
+    pf = r.get("promoted_from") or {}
+    src = pf.get("source") or {}
+    kind = str(src.get("kind") or "")
+    if pf.get("labels"):
+        out = label_set_html(f"{pf.get('dataset_id')}/{pf['labels']}", kind, up)
+    elif kind:
+        out = source_chip(kind) + (f" <small>{e(src.get('by') or src.get('config_id') or '')}</small>")
+    else:
+        return "—"
+    if kind == "model" and src.get("config_id"):
+        out += f" <small>the arm: <code>{e(src['config_id'])}</code></small>"
+    return out
 
 
 def dataset_page(ds: str) -> str:
@@ -293,24 +344,31 @@ def row_kind(a: dict, tiers: dict) -> str:
         return "t-author"
     if a.get("judge"):
         return "t-judged"
+    if (a.get("reference") or "").startswith("labels/"):
+        return "t-labels"
     tier = tiers.get(a.get("reference", "")) or (a.get("reference") or "").split("/", 1)[0]
     return "t-silver" if tier == "silver" else ""
 
 
 def scored_against(a: dict, up: str) -> str:
-    """The table cell that says what an arm was scored against: a judge, or a reference, linked."""
+    """The table cell that says what an arm was scored against: a judge, a reference with its tier pill, or a label
+    set with its source chip (RFC-023), linked."""
     if a.get("judge"):
         return f'judge <code class="small">{e(a["judge"])}</code>'
     ref = a.get("reference")
     if not ref:
         return "—"
-    return f'<a class="cell-link" href="{up}{reference_page(ref)}">{e(ref)}</a>'
+    if ref.startswith("labels/"):
+        return label_set_html(ref.removeprefix("labels/"), a.get("labels_source") or "", up)
+    tier = ref.split("/", 1)[0]
+    return f'<a class="cell-link" href="{up}{reference_page(ref)}">{e(ref)}</a> {tier_pill(tier)}'.rstrip()
 
 
 ROW_KEY = (
     '<p class="rowkey small muted"><span class="key t-silver">scored against silver</span>'
     '<span class="key t-judged">scored by a judge</span>'
     '<span class="key t-author">wrote the reference it is scored against</span>'
+    '<span class="key t-labels">scored against a label set, not a reference</span>'
     "<span>unmarked rows are scored against gold</span></p>"
 )
 
@@ -695,8 +753,11 @@ def collect(A: Adapter) -> dict:
     """{dataset: {"arms": [row], "refs": [ref], "items": n}}: what every page needs, read once."""
     by_ds: dict = {}
     runs_of = getattr(A, "arm_runs", None)
+    RECORDED.clear()
     for arm in A.arms():
         d = A.describe(arm)
+        if d.get("recorded"):
+            RECORDED[arm] = d["recorded"]
         sc = A.scores(arm)
         runs = runs_of(arm) if callable(runs_of) else []
         head = d.get("primary") or d.get("task") or ""
@@ -713,6 +774,8 @@ def collect(A: Adapter) -> dict:
                 "reference": d.get("reference", ""),
                 "judge": d.get("judge", ""),
                 "wrote": bool(d.get("wrote_reference")),
+                "labels_source": d.get("labels_source", ""),
+                "recorded": d.get("recorded", ""),
                 "machine": _machine(A, arm),
                 "goal": d.get("goal", ""),
                 "format": d.get("format", ""),
@@ -1742,8 +1805,8 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     if goals:
         btn += '<p class="small">goals: ' + ", ".join(goal_link(g, "../") for g in goals) + "</p>"
     refs = "".join(
-        f"<li>{reference_link(r['id'], '../')} · {e(r['tier'])}"
-        + (f" · written by {_author_link(r, v, '../')}" if r.get("author") else "")
+        f"<li>{reference_link(r['id'], '../')} {tier_pill(r['tier'])}"
+        + (f" · promoted from {promoted_from_html(r, '../')}" if r.get("promoted_from") else "")
         + "</li>"
         for r in v["refs"]
     )
@@ -1788,6 +1851,18 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     if refs:
         n += 1
         body += block(f"{n:02d}", "references", f"<ul>{refs}</ul>")
+    labels_html = render_labels_of(A, ds, v)
+    if labels_html:
+        n += 1
+        body += block(f"{n:02d}", "labels", labels_html, "labels")
+    picks_html = render_picks_waiting(A, ds)
+    if picks_html:
+        n += 1
+        body += block(f"{n:02d}", "picks waiting", picks_html, "picks")
+    added_html = render_added(A, ds)
+    if added_html:
+        n += 1
+        body += block(f"{n:02d}", "added from production", added_html, "added")
     fields_html = render_fields(A, ds)
     if fields_html:
         n += 1
@@ -1811,6 +1886,189 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
                 else ()
             ),
         ),
+    )
+
+
+def _made_line(source: dict, created_at) -> str:
+    """Who or which run made a label set, and when."""
+    from evaluation_harness._label_sets import source_line  # noqa: PLC0415
+
+    when = (created_at or "")[:10]
+    return e(source_line(source)) + (f" <small>{e(when)}</small>" if when else "")
+
+
+def _promoted_as(A: Adapter, set_id: str) -> str:
+    """The reference promoted from a label set, with its pill, or "not promoted"."""
+    ds, _, name = set_id.partition("/")
+    hit = [
+        r
+        for r in A.references()
+        if (r.get("promoted_from") or {}).get("labels") == name
+        and (r.get("promoted_from") or {}).get("dataset_id") == ds
+    ]
+    return (
+        ", ".join(f"{reference_link(r['id'], '../')} {tier_pill(r['tier'])}" for r in hit)
+        if hit
+        else '<span class="muted">not promoted</span>'
+    )
+
+
+def render_labels_of(A: Adapter, ds: str, v: dict) -> str:
+    """A dataset's label sets (RFC-023): those covering its items, matched by hash, and how often two agree."""
+    fn = getattr(A, "label_coverage", None)
+    if not callable(fn):
+        return ""
+    cov = fn(ds)
+    n = v.get("items") or 0
+    if not cov["sets"]:
+        return (
+            '<p class="muted">No labels yet. A sheet to fill: <code>evh label-sheet --dataset-id '
+            f"{e(ds)} --out sheet.csv</code>; a run's outputs as a model set: <code>evh label-from-run --run R "
+            "--set S</code>.</p>"
+        )
+    rows = [
+        {
+            "cells": [
+                label_set_html(x["id"], (x.get("source") or {}).get("kind", ""), "../"),
+                dataset_link(x["dataset"], "../")
+                if x["dataset"] != ds
+                else '<span class="muted">this one</span>',
+                f'<span data-v="{len(x["covers"])}">{len(x["covers"])} of {n}</span>',
+                e((x.get("guideline") or {}).get("path") or "none"),
+                _made_line(x.get("source") or {}, x.get("created_at")),
+                _promoted_as(A, x["id"]),
+            ]
+        }
+        for x in cov["sets"]
+    ]
+    html_ = table(f"labels-{slug(ds)}", ["set", "made on", "coverage", "guideline", "made", "promoted"], rows)
+    if cov["agreement"]:
+        html_ += (
+            '<h3 class="sub">how often two sets agree <small>the same label, on the items both label</small></h3>'
+            + table(
+                f"agree-{slug(ds)}",
+                ["set", "set", "both label", "agree"],
+                [
+                    {
+                        "cells": [
+                            f"<code>{e(a['a'])}</code>",
+                            f"<code>{e(a['b'])}</code>",
+                            str(a["both"]),
+                            f"{a['agree']} ({a['agree'] / a['both']:.0%})",
+                        ]
+                    }
+                    for a in cov["agreement"]
+                ],
+            )
+        )
+    return html_
+
+
+def _label_sets_of(A: Adapter) -> list:
+    """The adapter's label sets (optional: an adapter without them has none)."""
+    fn = getattr(A, "label_sets", None)
+    return fn() if callable(fn) else []
+
+
+def _labels_of_sha(A: Adapter, sha: str) -> str:
+    """The source chips of every label set holding an item with these bytes (labels follow the item)."""
+    sets = [
+        ls
+        for ls in _label_sets_of(A)
+        if any((row or {}).get("item_sha256") == sha for row in ls["items"].values())
+    ]
+    return (
+        " ".join(label_set_html(ls["id"], (ls.get("source") or {}).get("kind", ""), "../") for ls in sets)
+        if sets
+        else '<span class="muted">none yet</span>'
+    )
+
+
+def cmdpick(prefix: str, flag: str, empty: str, inner: str) -> str:
+    """A selection that gives a command (RFC-023): the boxes ticked in `inner` (input.cmdsel, their value the
+    argument) become `prefix flag v flag v …`, shown to copy; catalog.js keeps it current. The page writes nothing."""
+    return (
+        f'<div class="cmdpick" data-prefix="{e(prefix)}" data-flag="{e(flag)}" data-empty="{e(empty)}">{inner}'
+        f'<p class="cmdbox"><code class="cmd">{e(empty)}</code> '
+        '<button type="button" class="btn small copy" data-copy="" hidden>copy</button></p></div>'
+    )
+
+
+def render_picks_waiting(A: Adapter, ds: str) -> str:
+    """The picks waiting for this dataset (ADR-0023), a box per row; the rows ticked give dataset-extend."""
+    fn = getattr(A, "picks_waiting", None)
+    picks = fn(ds) if callable(fn) else []
+    if not picks:
+        return ""
+    rows = [
+        {
+            "cells": [
+                (
+                    f'<input type="checkbox" class="cmdsel" value="{e(p.get("from"))}:{e(p.get("item"))}" '
+                    f'aria-label="pick {e(p.get("item"))}">'
+                ),
+                (
+                    f'<a class="cell-link" href="../inspect.html?dataset={quote(str(p.get("from")), safe="")}'
+                    f'&rows=1&item={quote(str(p.get("item")), safe="")}"><code>{e(p.get("item"))}</code></a>'
+                ),
+                dataset_link(str(p.get("from")), "../")
+                + (f" <small>capture {e(p['capture'])}</small>" if p.get("capture") else ""),
+                _labels_of_sha(A, str(p.get("sha256") or "")),
+                e(", ".join(f"{k}={v_}" for k, v_ in (p.get("tags") or {}).items())) or "—",
+                e(p.get("note") or "") or "—",
+                e(" ".join(x for x in (str(p.get("by") or ""), str(p.get("at") or "")[:10]) if x)) or "—",
+            ]
+        }
+        for p in picks
+    ]
+    tbl = table(
+        f"picks-{slug(ds)}",
+        [
+            '<input type="checkbox" class="cmdall" aria-label="select all shown">',
+            "item",
+            "from",
+            "labels",
+            "tags",
+            "note",
+            "picked",
+        ],
+        rows,
+    )
+    return cmdpick(
+        f"evh dataset-extend {ds} --dataset-id <next>",
+        "--pick",
+        "tick the picks to add: the command to make the next version shows here",
+        f'<p class="small muted">{len(picks)} pick(s) name this dataset as a target. The page writes nothing: '
+        "it gives the command for the rows you tick.</p>" + tbl,
+    )
+
+
+def render_added(A: Adapter, ds: str) -> str:
+    """A version made by dataset-extend: each item it added, where it came from, the note, the labels it carried."""
+    meta = getattr(A, "dataset_meta", None)
+    ext = ((meta(ds) if callable(meta) else None) or {}).get("extended_from")
+    if not ext:
+        return ""
+    sha = {}
+    got = getattr(A, "data_dir", None)
+    if got is not None:
+        doc = json.loads((Path(got) / "datasets" / f"{ds}.json").read_text(encoding="utf-8"))
+        sha = {it["item_id"]: it.get("source_sha256") for it in doc.get("items") or []}
+    rows = [
+        {
+            "cells": [
+                f"<code>{e(p.get('item_id'))}</code>",
+                dataset_link(str(p.get("from")), "../")
+                + (f" <small>capture {e(p['capture'])}</small>" if p.get("capture") else ""),
+                e(p.get("note") or "") or "—",
+                _labels_of_sha(A, str(sha.get(p.get("item_id")) or "")),
+            ]
+        }
+        for p in ext.get("picks") or []
+    ]
+    return (
+        f'<p class="small">Made from {dataset_link(str(ext.get("dataset")), "../")} and {len(rows)} pick(s).</p>'
+        + table(f"added-{slug(ds)}", ["item", "from", "note", "labels it carried"], rows)
     )
 
 
@@ -3088,11 +3346,9 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
 
 
 TIER_WORDS = {
-    "gold": "Gold: written or checked by a person. Every arm scored against it is measured against "
-    "what a person signed.",
-    "silver": "Silver: written by a model. Consistent, not correct: good for ranking arms against "
-    "each other, never a claim that any of them is right. The arm that wrote it is graded against "
-    "its own outputs.",
+    "gold": "Promoted as gold: the yardstick a decision rests on.",
+    "silver": "Promoted as silver: consistent, not a claim that any arm is right; good for ranking arms against "
+    "each other.",
 }
 
 
@@ -3102,9 +3358,13 @@ def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         tiers = {r["id"]: r["tier"] for r in v["refs"]}
         for r in v["refs"]:
             scored = [a for a in v["arms"] if a["reference"] == r["id"] and not a["judge"]]
+            pf = r.get("promoted_from") or {}
             facts = [
-                ("tier", r["tier"]),
+                ("tier", tier_pill(r["tier"])),
                 ("dataset", f'<a class="cell-link" href="../d/{slug(ds or "none")}.html">{e(ds)}</a>'),
+                ("promoted from", promoted_from_html(r, "../") if pf else ""),
+                ("promoted by", e(r.get("promoted_by") or "")),
+                ("why", e(r.get("reason") or "")),
                 (f"{A.item_word}s", e(r.get("items", "")) if r.get("items") is not None else ""),
                 ("written by", _author_link(r, v, "../") if r.get("author") else ""),
                 ("from the run", f"<code>{e(r['from_run'])}</code>" if r.get("from_run") else ""),
@@ -3125,7 +3385,19 @@ def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 }
                 for a in sorted(scored, key=lambda a: (a["metric"], -(a["mean"] or 0)))
             ]
-            body = hero("reference", f"<code>{e(r['id'])}</code>", e(TIER_WORDS.get(r["tier"], "")))
+            dek = e(TIER_WORDS.get(r["tier"], ""))
+            if pf:
+                when = (r.get("created_at") or "")[:10]
+                by = f", by {e(r['promoted_by'])}" if r.get("promoted_by") else ""
+                dek += (
+                    f"<br>Promoted from {promoted_from_html(r, '../')}"
+                    + (f", {e(when)}" if when else "")
+                    + by
+                    + (f": {e(r['reason'])}" if r.get("reason") else "")
+                )
+                if ((pf.get("source") or {}).get("kind")) == "model":
+                    dek += "<br>The arm whose outputs these are is graded against its own outputs."
+            body = hero("reference", f"<code>{e(r['id'])}</code> {tier_pill(r['tier'])}", dek)
             body += block("01", "what it is", f'<dl class="kv">{dl}</dl>')
             body += block(
                 "02",
@@ -3481,10 +3753,11 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
                     "made": (r.get("created_at") or "")[:10],
                     "cells": [
                         reference_link(r["id"]),
-                        e(r["tier"]),
+                        tier_pill(r["tier"]),
                         dataset_link(ds),
                         f'<span data-v="{r.get("items") or ""}">{r.get("items") if r.get("items") is not None else "—"}</span>',
-                        _author_link(r, v, "") if r.get("author") else "—",
+                        promoted_from_html(r)
+                        + (f" <small>{_author_link(r, v, '')}</small>" if r.get("author") else ""),
                         e((r.get("created_at") or "")[:10]) or "—",
                         f'<span data-v="{len(scored)}">{len(scored)}</span>',
                         f'<span data-flow="arms">{len({x[1] for x in period_rows[r["id"]]["runs"]})}</span>',
@@ -3496,8 +3769,9 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
     body = hero(
         "references",
         "References",
-        "What arms are scored against. Gold is written or checked by a person; silver is written by "
-        "a model, consistent rather than correct, and its author is graded against its own outputs.",
+        "What arms are scored against: labels promoted on purpose, at the tier chosen then. Gold is the "
+        "yardstick a decision rests on; silver is consistent, good for ranking arms against each other, not a "
+        "claim that any arm is right.",
         cp.bar(w["first"], w["until"]),
     )
     body += block(
@@ -3511,7 +3785,7 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
                 "tier",
                 "dataset",
                 f"{e(A.item_word)}s",
-                "written by",
+                "promoted from",
                 "created",
                 "arms scored",
                 "arms scored in period",
@@ -3522,8 +3796,9 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
             period=True,
         )
         if rows
-        else '<p class="muted">No references yet: gold goes in <code>data/references/gold/&lt;dataset&gt;/</code>, '
-        "or make one from a run with <code>evh reference-create --from-run</code>.</p>",
+        else '<p class="muted">No references yet: a reference is a label set promoted on purpose, '
+        '<code>evh reference-promote --dataset-id D --labels SET --tier gold|silver --reason "…" --by WHO</code>; '
+        'the label sets are on the <a class="cell-link" href="labels.html">labels page</a>.</p>',
     )
     write(
         out,
@@ -3585,8 +3860,15 @@ def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 f'<span data-v="{e(str(c.get("captured_at") or ""))}">{e(_when(str(c.get("captured_at") or "")))}</span>',
                 e(when),
                 ", ".join(
-                    dataset_link(d) if d in by_ds else f'{e(d)} <small class="muted">no runs yet</small>'
+                    (dataset_link(d) if d in by_ds else f'{e(d)} <small class="muted">no runs yet</small>')
+                    + _sets_on(A, d)
                     for d in c.get("datasets") or []
+                )
+                or "—",
+                ", ".join(
+                    arm_link(a, a.rsplit("/", 1)[-1])
+                    for a, cap in sorted(RECORDED.items())
+                    if cap == c["capture"]
                 )
                 or "—",
             ]
@@ -3595,14 +3877,23 @@ def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         "captures",
         "Captures",
         "What a system did in production, kept as records, each hashed: the source of the datasets frozen from them. "
-        "A reference made from what happened next is silver, and never decides a goal.",
+        "What happened next becomes labels through rules you can read (<code>evh label-from-capture</code>): a "
+        "<code>rule</code> label set, promoted like any.",
     )
     body += block(
         "01",
         "captures",
         table(
             "captures",
-            ["capture", "records", "importer", "captured", "records from – to", "datasets made from it"],
+            [
+                "capture",
+                "records",
+                "importer",
+                "captured",
+                "records from – to",
+                "datasets made from it",
+                "recorded arm",
+            ],
             rows,
             "filter captures",
         )
@@ -3615,6 +3906,74 @@ def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         out,
         "captures.html",
         page("Captures", body, 0, "captures", nav=nav, item=A.item_word, elsewhere=(("captures", {}),)),
+    )
+
+
+def _sets_on(A: Adapter, ds: str) -> str:
+    """The label sets made on a dataset, as source chips with their names, under it."""
+    sets = [x for x in _label_sets_of(A) if x["dataset"] == ds]
+    if not sets:
+        return ""
+    return (
+        "<br><small>"
+        + " ".join(label_set_html(x["id"], (x.get("source") or {}).get("kind", "")) for x in sets)
+        + "</small>"
+    )
+
+
+def render_labels(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
+    """labels.html (RFC-023): every label set, its source, what it covers, who made it, whether it was promoted."""
+    fn = getattr(A, "label_sets", None)
+    sets = fn() if callable(fn) else []
+    size = getattr(A, "dataset_items", None)
+    rows = []
+    for x in sets:
+        n = (
+            (size(x["dataset"]) if callable(size) else None)
+            or (by_ds.get(x["dataset"]) or {}).get("items")
+            or 0
+        )
+        kind = (x.get("source") or {}).get("kind", "")
+        rows.append(
+            {
+                "key": x["id"],
+                "cells": [
+                    f'<span id="set-{slug(x["id"])}">{label_set_html(x["id"], kind)}</span>',
+                    dataset_link(x["dataset"])
+                    if x["dataset"] in by_ds
+                    else f"<code>{e(x['dataset'])}</code>",
+                    f'<span data-v="{x["n_items"]}">{x["n_items"]} of {n or "?"}</span>',
+                    e((x.get("guideline") or {}).get("path") or "none"),
+                    _made_line(x.get("source") or {}, x.get("created_at")),
+                    _promoted_as(A, x["id"]).replace('href="../', 'href="'),
+                ],
+            }
+        )
+    body = hero(
+        "labels",
+        "Labels",
+        "A label is what is right for one item, and who said it: a person, a model or a rule. A label set is never "
+        "edited, and its labels follow an item by its bytes into any dataset holding it. A reference is labels "
+        "promoted on purpose, at the tier chosen then.",
+    )
+    body += block(
+        "01",
+        "label sets",
+        table(
+            "labelsets",
+            ["set", "dataset", "coverage", "guideline", "made", "promoted"],
+            rows,
+            "filter label sets",
+        )
+        if rows
+        else '<p class="muted">No labels yet: <code>evh label-sheet --dataset-id D --out sheet.csv</code>, filled '
+        "and read back with <code>evh label-import sheet.csv --dataset-id D --set S --by WHO</code>; a run's outputs "
+        "with <code>evh label-from-run --run R --set S</code>.</p>",
+    )
+    write(
+        out,
+        "labels.html",
+        page("Labels", body, 0, "labels", nav=nav, item=A.item_word, elsewhere=(("labels", {}),)),
     )
 
 
@@ -3794,6 +4153,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
         render_metric(A, m, where, by_ds, project, out, nav)
     render_references(A, by_ds, out, nav)
     render_captures(A, by_ds, out, nav)
+    render_labels(A, by_ds, out, nav)
     render_reference_index(A, by_ds, out, nav)
     write_search(A, by_ds, out)
     render_inspect(A, out, nav=nav, pages=True)

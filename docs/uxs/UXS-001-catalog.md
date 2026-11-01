@@ -174,7 +174,7 @@ out: "scored against silver", "scored by a judge", "wrote the reference it is sc
 The author tint wins over the others. The same classes tint the inspector's verdict rows, and
 `evh datasets --dataset-id` prints the same kind in a `row` column.
 
-### Tier pills and source chips (0.6.0, planned: RFC-023)
+### Tier pills and source chips (0.6.0: RFC-023)
 
 - **A tier is a pill**, large enough to read at a glance, in its own colour: **gold** on a gold ground, **silver**
   on a silver ground, wherever a reference or its tier is named (the references list, every "scored against", the
@@ -184,7 +184,7 @@ The author tint wins over the others. The same classes tint the inspector's verd
   `t-labels` (`--muted` at 10%, 3px bar), keyed "scored against a label set, not a reference".
 - **"Scored against"** always names one of the two: a reference with its pill, or a label set with its chip.
 - **A recorded arm** (production's decisions, from a capture) has a `recorded` badge beside its name, its capture
-  linked; its cost and speed read "recorded, no call".
+  named; (0.6.0, planned: step 8) its cost and speed read "recorded, no call".
 
 ## The period (every listing page)
 
@@ -350,16 +350,16 @@ tiles open it.
   still gets a page when it is linked to one that has.
 - `references`: each reference (linked), its tier pill, and where it was promoted from (the label set and its
   source chip).
-- `labels` (0.6.0, planned): each label set covering the dataset's items (labels follow the item by its hash, so a
+- `labels` (0.6.0): each label set covering the dataset's items (labels follow the item by its hash, so a
   set made on another dataset with the same items counts): its source chip and name, **coverage** ("k of n
   items"), **guideline** (the file, or "none"), **made**, **promoted** (the reference, or "not promoted"), and a
   table of how often two sets agree on the items both label. Empty: "No labels yet", with the `evh label-sheet`
   and `evh label-from-run` commands.
-- `picks waiting` (0.6.0, planned), for a dataset some picks name as their target: one row per pick: **item**
-  (opens the inspector's item view), **from** (the production dataset, its capture), **labels** (source chips, or
+- `picks waiting` (0.6.0), for a dataset some picks name as their target: one row per pick: **item**
+  (opens the inspector's rows view on it), **from** (the production dataset, its capture), **labels** (source chips, or
   "none yet"), **tags**, **note**, **picked** (who, when), and a select box per row; the rows selected give the
   command `evh dataset-extend <this> --dataset-id <next> --pick … --pick …`, shown to copy. The page writes nothing.
-- `added from production` (0.6.0, planned), for a version made by `dataset-extend`: each item it added, with the
+- `added from production` (0.6.0), for a version made by `dataset-extend`: each item it added, with the
   capture and production dataset it came from, the pick's note, and the labels it carried.
 - `item fields`, when the dataset declares a field set: "Declared in the field set `<id>`", then
   one row per field: **field** (label and name), **type** (with its unit), **filled** ("k of n"),
@@ -492,7 +492,7 @@ over the project's data; with a project adapter the rounds table and details sti
 
 - Hero: kicker `reference`, the reference id, its tier pill, and what the tier means. Gold: "promoted as gold: the
   yardstick a decision rests on." Silver: "promoted as silver: consistent, not a claim that any arm is right; good
-  for ranking arms against each other." Then where it came from (0.6.0, planned): "promoted from `<label set>`
+  for ranking arms against each other." Then where it came from (0.6.0): "promoted from `<label set>`
   (`<source chip>`), <date>, by <who>: <reason>"; for a `model` set, "the arm whose outputs these are is graded
   against its own outputs".
 - `01 what it is`: tier, dataset (linked), items, the label set and its source, the guideline, the run and model a
@@ -706,19 +706,19 @@ test ran (`deployment.machine`, `deployment.backend`, `deployment.server`).
 ## The captures page
 
 - Hero: kicker `captures`, "Captures", and what a capture is: what a system did in production, kept as
-  records, each hashed; the source of the datasets frozen from them (RFC-019). (0.6.0, planned: RFC-023 replaces
-  the sentence on references from outcomes: labels from outcomes are a `rule` label set, promoted like any.)
+  records, each hashed; the source of the datasets frozen from them (RFC-019); what happened next becomes labels
+  through rules you can read, a `rule` label set promoted like any (RFC-023).
 - `01 captures`: one row per capture, by id: **capture** (its anchor `#capture-<id>`; "continues `<id>`"
   under a continued one), **records**, **importer** (the file or built-in name; "scrubbed" beside it),
   **captured**, **records from – to** (the first and last record's day), **datasets made from it** (each
   linked to its page; one with no runs yet, and so no page, named with "no runs yet"). Filterable. Under
   **records**, a sampled capture says "a sample: rate R, of N read".
-- (0.6.0, planned) Beside the datasets, the label sets on them (source chips) and the recorded arm made from the
-  capture.
+- (0.6.0) Beside the datasets, the label sets made on them (source chips); **recorded arm**: the recorded arm made
+  from the capture.
 - Empty: "No captures yet", with the `evh capture` and `evh dataset-from-capture` commands.
 - Command: `evh captures [--capture ID] [--json]` (the same listing, read the same way).
 
-## The labels page (0.6.0, planned: RFC-023)
+## The labels page (0.6.0: RFC-023)
 
 - Hero: kicker `labels`, "Labels", and what a label is: what is right for one item, and who said it; a label set
   is never edited; a reference is labels promoted on purpose, at the tier chosen then.

@@ -527,3 +527,32 @@ input.pick { width: 16px; height: 16px; accent-color: var(--accent); }
 footer .elsewhere code { overflow-wrap: anywhere; }
 /* MCP, the switcher's fourth entry, leaves the bar on phones, as on the site. */
 @media (max-width: 560px) { .bar .sections a[href$="#mcp"] { display: none; } }
+
+/* RFC-023: a reference's tier is a pill in its own colour; a label set's source is a chip in a neutral colour of its
+   own, never a tier's; an arm scored against a label set is tinted t-labels; production's recorded arm is badged. */
+:root { --gold-bg: #4a3a0c; --gold-ink: #f3d77a; --silver-bg: #3a3d42; --silver-ink: #dde2e8;
+  --src-person: #7fb3d5; --src-model: #b39ddb; --src-rule: #a5c9a0; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --gold-bg: #f6e3a1; --gold-ink: #5c4300; --silver-bg: #e3e6ea; --silver-ink: #3b4148;
+  --src-person: #2d6a94; --src-model: #6a4fb0; --src-rule: #3f7a37; } }
+:root[data-theme="light"] { --gold-bg: #f6e3a1; --gold-ink: #5c4300; --silver-bg: #e3e6ea; --silver-ink: #3b4148;
+  --src-person: #2d6a94; --src-model: #6a4fb0; --src-rule: #3f7a37; }
+.pill { display: inline-block; font: 700 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  padding: 4px 9px; border-radius: 999px; vertical-align: 1px; white-space: nowrap; }
+.pill.tier-gold { background: var(--gold-bg); color: var(--gold-ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold-ink) 35%, transparent); }
+.pill.tier-silver { background: var(--silver-bg); color: var(--silver-ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--silver-ink) 30%, transparent); }
+.src { display: inline-block; font: 600 11px/1 var(--mono); letter-spacing: .04em; padding: 3px 7px; border-radius: 4px;
+  border: 1px solid currentColor; white-space: nowrap; vertical-align: 1px; }
+.src.src-person { color: var(--src-person); }
+.src.src-model { color: var(--src-model); }
+.src.src-rule { color: var(--src-rule); }
+.src.src-unknown { color: var(--muted); }
+tr.t-labels td { background: color-mix(in srgb, var(--muted) 10%, transparent); }
+tr.t-labels td:first-child { box-shadow: inset 3px 0 0 var(--muted); padding-left: 10px; }
+.rowkey .key.t-labels { box-shadow: inset 3px 0 0 var(--muted); }
+.badge.recorded { display: inline-block; font: 600 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  padding: 3px 6px; border-radius: 4px; color: var(--ink); background: color-mix(in srgb, var(--accent) 18%, transparent);
+  vertical-align: 1px; }
+.cmdbox { margin-top: 12px; }
+.cmdbox button[hidden] { display: none; }
+.cmdbox pre { white-space: pre-wrap; overflow-wrap: anywhere; }

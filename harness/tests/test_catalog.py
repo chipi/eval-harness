@@ -251,14 +251,15 @@ try:
     )
     nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
     check(
-        "nav: Overview, Goals, Data (Datasets, Captures, References), Experiments (Arms, Configs, Models, Metrics), Activity, Inspector",
-        nav.count("<a ") == 11
+        "nav: Overview, Goals, Data (Datasets, Captures, Labels, References), Experiments (Arms, Configs, Models, Metrics), Activity, Inspector",
+        nav.count("<a ") == 12
         and re.findall(r"<summary[^>]*>([^<]+)</summary>", nav) == ["Data", "Experiments"]
         and all(
             x in nav
             for x in (
                 ">Datasets<",
                 ">Captures<",
+                ">Labels<",
                 ">References<",
                 ">Arms<",
                 ">Configs<",
@@ -272,7 +273,10 @@ try:
     menu = re.findall(r'<nav class="menu-links">(.*?)</nav>', home)[0]
     check(
         "the phone's menu lists every page, a group's under its name",
-        menu.count("<a ") == 11 and menu.count('class="menu-group"') == 2 and 'href="captures.html"' in menu,
+        menu.count("<a ") == 12
+        and menu.count('class="menu-group"') == 2
+        and 'href="captures.html"' in menu
+        and 'href="labels.html"' in menu,
     )
     check(
         "the home tiles open their pages: activity, arms, configs grouped by config",

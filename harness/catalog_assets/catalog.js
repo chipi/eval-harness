@@ -28,9 +28,9 @@ inp.addEventListener('input',()=>{const w=inp.value.toLowerCase().split(/\s+/).f
 t.querySelectorAll('tbody tr').forEach(r=>{if(r.classList.contains('grouphead'))return;const ok=w.every(x=>r.textContent.toLowerCase().includes(x));const show=ok&&!r.classList.contains('pout')&&!r.classList.contains('fout');r.hidden=!show;n+=show;});
 const c=document.querySelector(`[data-count="${inp.dataset.filter}"]`);if(c)c.textContent=n;});});
 /* sort: a header is a button (click, or Enter/Space from the keyboard), and says how its column is sorted (aria-sort) */
-document.querySelectorAll('table.sortable th').forEach((th,i)=>{th.tabIndex=0;th.setAttribute('role','button');th.setAttribute('aria-sort','none');
+document.querySelectorAll('table.sortable th').forEach(th=>{th.tabIndex=0;th.setAttribute('role','button');th.setAttribute('aria-sort','none');
 th.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();th.click();}});
-th.addEventListener('click',()=>{const tb=th.closest('table').tBodies[0];
+th.addEventListener('click',ev=>{if(ev.target.closest('input'))return;const tb=th.closest('table').tBodies[0],i=th.cellIndex;
 const dir=th.dataset.dir==='asc'?'desc':'asc';th.closest('tr').querySelectorAll('th').forEach(x=>{delete x.dataset.dir;x.setAttribute('aria-sort','none');});th.dataset.dir=dir;th.setAttribute('aria-sort',dir==='asc'?'ascending':'descending');
 const key=r=>{const c=r.cells[i];const v=c.dataset.v??c.textContent.trim();const n=parseFloat(v);return isNaN(n)?v.toLowerCase():n;};
 [...tb.rows].sort((a,b)=>{const x=key(a),y=key(b);return (x>y?1:x<y?-1:0)*(dir==='asc'?1:-1);}).forEach(r=>tb.appendChild(r));});});
@@ -66,3 +66,12 @@ const sel=getSelection();sel.removeAllRanges();sel.addRange(r);b.textContent='se
 try{navigator.clipboard.writeText(b.dataset.copy).then(done,pick);}catch(e){pick();}});
 /* the menu's groups: one open at a time, and a click elsewhere closes it */
 document.addEventListener('click',ev=>{document.querySelectorAll('details.navgroup[open]').forEach(d=>{if(!d.contains(ev.target))d.open=false;});});
+/* a selection's command (RFC-023): the boxes ticked in a .cmdpick give the command to copy; the page writes nothing */
+document.querySelectorAll('.cmdpick').forEach(box=>{const out=box.querySelector('code.cmd'),btn=box.querySelector('button.copy');
+const upd=()=>{const v=[...box.querySelectorAll('input.cmdsel:checked')].map(i=>box.dataset.flag+' '+i.value);
+const c=v.length?box.dataset.prefix+' '+v.join(' '):box.dataset.empty;out.textContent=c;
+if(btn){btn.dataset.copy=v.length?c:'';btn.hidden=!v.length;}};
+const all=box.querySelector('input.cmdall');
+if(all)all.addEventListener('change',()=>{box.querySelectorAll('input.cmdsel').forEach(i=>{const tr=i.closest('tr');
+if(!tr||!tr.hidden&&tr.style.display!=='none')i.checked=all.checked;});upd();});
+box.addEventListener('change',ev=>{if(ev.target.classList.contains('cmdsel'))upd();});upd();});

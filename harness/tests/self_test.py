@@ -705,6 +705,10 @@ def test_example_scorer_suites_pass() -> None:
             "the deploy sheet: what production must match; a capture checked against it, what differs, exit 1",
         ),
         (
+            "test_catalog_labels.py",
+            "the catalog's RFC-023 pages: pills, chips, the labels page, a dataset's labels, picks and added items",
+        ),
+        (
             "test_model_onboard.py",
             "evh model-onboard: reasoning, format, determinism and the build, against a fake server",
         ),
