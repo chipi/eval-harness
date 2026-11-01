@@ -262,8 +262,12 @@ def main() -> int:
             continue
         text = doc.read_text(encoding="utf-8")
         # A proposal names commands still to be built: an ADR's `**Status:** Proposed`, an RFC's
-        # `- **Status**: Draft`.
-        if re.search(r"^(?:- )?\*\*Status(?::\*\*|\*\*:) (?:Proposed|Draft)", text, re.M):
+        # `- **Status**: Draft`, or one accepted and still to build (`Accepted …, (0.6.0, planned)`).
+        if re.search(
+            r"^(?:- )?\*\*Status(?::\*\*|\*\*:) (?:Proposed|Draft|Accepted.*\(\d+\.\d+(?:\.\d+)?, planned)",
+            text,
+            re.M,
+        ):
             continue
         skipped = planned_lines(text)
         for n, cmd in commands_in(text):

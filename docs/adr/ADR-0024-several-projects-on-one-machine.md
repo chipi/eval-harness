@@ -1,6 +1,6 @@
 # ADR-0024 — Several projects run on one machine, and share nothing (0.6.0)
 
-**Status:** Proposed (2026-11-01), agreed with the owner in RFC-023's review; accepted when RFC-023 is.
+**Status:** Accepted (owner, 2026-11-01), with RFC-023; built in steps (0.6.0, planned).
 **Date:** 2026-11-01
 **Detail:** [RFC-023](../rfc/RFC-023-labels-and-references.md) (several projects in parallel),
 [PRD-007](../prd/PRD-007-packaging-and-providers.md) (FR2.5 to FR2.7), [PRD-004](../prd/PRD-004-catalog-and-inspector.md) (FR2.7)

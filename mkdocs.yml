@@ -81,7 +81,7 @@ nav:
           - "RFC-020: Onboarding models, once, for every experiment (built, 0.6.0)": rfc/RFC-020-onboarding-a-model.md
           - "RFC-021: Fingerprint v5, the deployment, the settings and the runner (built, 0.6.0)": rfc/RFC-021-fingerprint-v5.md
           - "RFC-022: Scoring that evolves, previewed, re-scored or adopted by the next round (built, 0.6.0)": rfc/RFC-022-scoring-that-evolves.md
-          - "RFC-023: Labels, and the references promoted from them (draft)": rfc/RFC-023-labels-and-references.md
+          - "RFC-023: Labels, and the references promoted from them (accepted, 0.6.0)": rfc/RFC-023-labels-and-references.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md
@@ -92,11 +92,11 @@ nav:
           - "ADR-0006: A goal weighs cost, quality and speed; a strategy picks (0.4.0)": adr/ADR-0006-goal-axes-and-strategies.md
           - "ADR-0018: The catalog's period is counted from today, in the browser (0.4.2)": adr/ADR-0018-period-from-today.md
           - "ADR-0019: Datasets from production, a capture lane beside the method (0.6.0)": adr/ADR-0019-capture-lane.md
-          - "ADR-0020: A dataset's second reference is silver (0.6.0)": adr/ADR-0020-second-references-are-silver.md
+          - "ADR-0020: A dataset's second reference is silver (0.6.0, superseded by ADR-0022)": adr/ADR-0020-second-references-are-silver.md
           - "ADR-0021: A deployment, not a model, is what is vetted and fingerprinted (0.6.0)": adr/ADR-0021-a-deployment-is-vetted.md
-          - "ADR-0022: A reference is labels you promote; the tier is chosen then (proposed, 0.6.0)": adr/ADR-0022-references-are-promoted-labels.md
-          - "ADR-0023: Picks in one list per project; governed versions made on purpose (proposed, 0.6.0)": adr/ADR-0023-picks-and-governed-versions.md
-          - "ADR-0024: Several projects on one machine share nothing (proposed, 0.6.0)": adr/ADR-0024-several-projects-on-one-machine.md
+          - "ADR-0022: A reference is labels you promote; the tier is chosen then (accepted, 0.6.0)": adr/ADR-0022-references-are-promoted-labels.md
+          - "ADR-0023: Picks in one list per project; governed versions made on purpose (accepted, 0.6.0)": adr/ADR-0023-picks-and-governed-versions.md
+          - "ADR-0024: Several projects on one machine share nothing (accepted, 0.6.0)": adr/ADR-0024-several-projects-on-one-machine.md
   - The experiments:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md

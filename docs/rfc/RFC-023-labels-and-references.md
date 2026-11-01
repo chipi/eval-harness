@@ -1,7 +1,7 @@
 # RFC-023: Labels, and the references promoted from them
 
-- **Status**: Draft (2026-11-01), agreed with the owner section by section; one point open (below). Nothing is
-  built.
+- **Status**: Accepted (owner, 2026-11-01), built in steps (0.6.0, planned): the commands named here do not exist
+  until their step lands, and the marker comes off when the last one does.
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-002](../prd/PRD-002-references.md) (references: gold, silver),
   [PRD-014](../prd/PRD-014-datasets-from-production.md) (datasets from production)
@@ -71,8 +71,8 @@ The harness cannot do steps 6 and after:
     (owner, 2026-11-01).
 - **A set records the guideline it was labelled by** when there is one: the sheet's instructions, a labelling
   prompt, the rule file, hashed into `labels.json`, so two sets labelled by different guidelines are never read as
-  one ("it's hard to annotate data, but it's even harder to create annotation guidelines", AIE ch. 8). *Open: the
-  owner to confirm.*
+  one ("it's hard to annotate data, but it's even harder to create annotation guidelines", AIE ch. 8). Optional
+  (owner, 2026-11-01).
 - **A set is never edited.** A correction is a new set; the old one stays, so a score always says which labels it
   used. An item without a label in a set is not scored against that set.
 - **Labels follow the item, not the dataset** (owner, 2026-11-01): a set records each item's sha256, and an item
@@ -287,8 +287,10 @@ outcomes are replaced.
 - The rows view's signals on a small fixture, each against a hand-counted answer.
 - Two projects at once: both serve their catalogs on their own ports, write their model records and run their
   arms, and neither sees the other's.
-- The triage walk-through above, live on the fleet, as the acceptance case; `check_guide` runs the tutorial that
-  teaches it.
+- The triage walk-through above as the acceptance case, on the fleet's 233 Orrery decisions split by time (owner,
+  2026-11-01): the older half captured and made the governed dataset; the newer half captured as a continuation
+  (`--since-capture`), standing in for production after deployment; step 6, the rows view and picks on it; then v2
+  from the governed v1 and the picks chosen. `check_guide` runs the tutorial that teaches it.
 
 ## Decisions (owner, 2026-11-01)
 
@@ -300,9 +302,8 @@ outcomes are replaced.
   and the commands in the table above.
 - **A5** Labels follow the item by its sha256.
 - **A6** One pick list per project; a pick names its targets (several, or none yet) and may carry tags.
+- **A8** A label set records the guideline it was labelled by when one is given: optional (`--guideline FILE`),
+  hashed into the set (owner, 2026-11-01: "1A").
 - **A7** The pages never write (PRD-004's non-goal, ADR-0004, kept): the rows view and the dataset page select and
   give the command; labelling is the sheet.
 
-## Open
-
-- A label set records the guideline it was labelled by (from the analysis against the books): to confirm.
