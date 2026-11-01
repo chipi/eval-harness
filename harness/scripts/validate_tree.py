@@ -31,6 +31,8 @@ Each check exists because its absence let a real defect through somewhere:
   V16 references     a reference whose manifest breaks its schema, whose texts differ from the
                      checksums it records, or whose committed texts are missing (a manifest
                      with no texts and `redistributed: false` is a reference fetched elsewhere)
+  V19 label sets     a label set whose labels differ from the sha256 it recorded, whose label files are
+                     missing, whose dataset does not exist, or whose count is not its labels' (RFC-023)
 
 Exit 1 on any failure, so it can gate.
 
@@ -1217,6 +1219,44 @@ def v17_captures() -> None:
     )
 
 
+def v19_label_sets() -> None:
+    """V19: every label set's labels are the ones it recorded (RFC-023): each label file present, its sha256 the
+    set's, the set's dataset a dataset of the project, and its n_items the count. A set is never edited, so any
+    difference is an edit or a loss."""
+    import hashlib  # noqa: PLC0415
+
+    from evaluation_harness import _common  # noqa: PLC0415
+
+    found = sorted(_common.LABELS.glob("*/*/labels.json")) if _common.LABELS.is_dir() else []
+    if not found:
+        print("  --   V19 label sets (none)")
+        return
+    bad: list[str] = []
+    n = 0
+    for lj in found:
+        doc = read_json(lj)
+        rel = f"{lj.parent.parent.name}/{lj.parent.name}"
+        if not (_common.DATASETS / f"{doc.get('dataset_id')}.json").is_file():
+            bad.append(f"{rel}: its dataset {doc.get('dataset_id')!r} does not exist")
+        items = doc.get("items") or {}
+        if doc.get("n_items") != len(items):
+            bad.append(f"{rel}: n_items {doc.get('n_items')} but {len(items)} listed")
+        for iid, row in items.items():
+            n += 1
+            tf = lj.parent / f"{iid}.txt"
+            if not tf.is_file():
+                bad.append(f"{rel}/{iid}: label file missing")
+            elif hashlib.sha256(tf.read_bytes()).hexdigest() != row.get("sha256"):
+                bad.append(f"{rel}/{iid}: differs from the sha256 the set recorded (a set is never edited)")
+    for b in bad[:10]:
+        print(f"       {b}")
+    check(
+        f"V19 label sets — {len(found)} set(s), {n} label(s) match their hashes",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
 def config_files() -> list[Path]:
     """The arm configs V18 reads: data/configs, and the globs `configs` in validate.json names (relative to
     the project root), for a project that keeps its arms elsewhere (this repository's are in examples/)."""
@@ -1344,6 +1384,7 @@ def main() -> int:
         v16_references,
         v17_captures,
         v18_model_records,
+        v19_label_sets,
         note_uncommitted_runs,
         note_round_scorers,
     ):

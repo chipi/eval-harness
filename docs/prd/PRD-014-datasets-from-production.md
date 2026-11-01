@@ -1,7 +1,7 @@
 # PRD-014: Datasets from production, and evaluating what production did
 
 - **Status**: Built for 0.6.0 for FR1 to FR3, FR5, FR6 and the Captures page (2026-10-31, the capture window and
-  sampling 2026-11-01); FR4 and FR7 to FR10 planned for 0.6.0
+  sampling 2026-11-01), FR4 (labels from outcomes) built; FR7 to FR10 planned for 0.6.0
   ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft)
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Captures, Labels and dataset pages),
@@ -76,7 +76,7 @@ comment that says what it was.
 - (0.6.0, planned) _As an engineer, I freeze a dataset from a capture and score production's own decisions on it
   (`evh arm-from-capture`), beside the deployed config and a candidate._
 - (0.6.0, planned) _As an engineer, I check that production ran what I promoted (`evh deploy-sheet`)._
-- (0.6.0, planned) _As an operator, my close comments become labels through a mapping I can read (`evh label-from-capture`)._
+- _As an operator, my close comments become labels through a mapping I can read (`evh label-from-capture`)._
 - (0.6.0, planned) _As an engineer, I open the rows where production was wrong on something the governed dataset does not cover
   (`evh inspect --dataset-id D --rows --wrong-against S --new-vs V1`) and pick the ones worth keeping._
 - (0.6.0, planned) _As a dataset owner, a month later I make v2 of my dataset from v1 and seven of the picks waiting
@@ -115,7 +115,7 @@ comment that says what it was.
   its capture in the catalog.
 - **FR3.3**: `--from` makes a new version with the existing lineage.
 
-### FR4: Labels from outcomes (0.6.0, planned; replaces references from outcomes)
+### FR4: Labels from outcomes (0.6.0; replaces references from outcomes)
 
 - **FR4.1**: `evh label-from-capture` applies an ordered mapping of rules to the capture's outcome fields; the first
   match labels the item, no match leaves it unlabelled; the result is a `rule` label set (PRD-002), whoever wrote

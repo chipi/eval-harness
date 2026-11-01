@@ -103,6 +103,23 @@ COMMANDS = {
         "run the project's own scrubber over a capture's records, and record it",
     ),
     "captures": ("view_captures.py", "every capture, or one: what was read, when, the datasets made from it"),
+    "labels": (
+        "view_labels.py",
+        "every label set, or a dataset's: source, coverage, guideline, how often two agree",
+    ),
+    "label-sheet": (
+        "label_sheet.py",
+        "a sheet of a dataset's items to label, with what production or an arm decided",
+    ),
+    "label-import": ("label_import.py", "a filled label sheet as a person's label set"),
+    "label-from-run": (
+        "label_from_run.py",
+        "a finished run's outputs as a model's label set (calls nothing)",
+    ),
+    "label-from-capture": (
+        "label_from_capture.py",
+        "rules over a capture's recorded outcomes as a rule label set",
+    ),
     "dataset-from-capture": (
         "dataset_from_capture.py",
         "make a dataset version from a capture: choose records, freeze their bodies as items",

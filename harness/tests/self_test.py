@@ -689,6 +689,10 @@ def test_example_scorer_suites_pass() -> None:
             "two projects at once: a port each, the same every time; each catalog names its project; EVAL_HOME noted",
         ),
         (
+            "test_label_sets.py",
+            "label sets: from a run, a sheet and its import, a capture's outcomes; never edited; they follow the item; V19",
+        ),
+        (
             "test_model_onboard.py",
             "evh model-onboard: reasoning, format, determinism and the build, against a fake server",
         ),

@@ -198,6 +198,8 @@ def _paths() -> dict[str, Path]:
         "ITEM_CACHE": root / ".cache" / "items",
         # Captures from production systems (RFC-019): data/captures/<capture_id>/.
         "CAPTURES": data / "captures",
+        # Label sets (RFC-023): data/labels/<dataset>/<set>/, what is right for an item and who said it.
+        "LABELS": data / "labels",
     }
 
 
@@ -217,6 +219,7 @@ FIELDS: Path
 ROUNDS: Path
 ITEM_CACHE: Path
 CAPTURES: Path
+LABELS: Path
 
 
 def __getattr__(name: str) -> Path:

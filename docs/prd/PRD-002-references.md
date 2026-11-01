@@ -1,7 +1,8 @@
 # PRD-002: Labels, and the references promoted from them
 
-- **Status**: Implemented (v0.4.0) for gold, silver and re-scoring; labels and promotion (FR2, FR3, FR6) are
-  planned for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md), draft) and replace `reference-create`
+- **Status**: Implemented (v0.4.0) for gold, silver and re-scoring; labels (FR2) built for 0.6.0; promotion
+  and scoring against labels (FR3, FR6) planned for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md)); they replace
+  `reference-create`
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Labels and References pages, the tier pills, row
   tints), [UXS-002](../uxs/UXS-002-inspector.md) (what the inspector refuses to compare; labels in the item view),
@@ -66,9 +67,9 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 
 ## User Stories
 
-- (0.6.0, planned) _As an engineer, I run a frontier model as an arm, read its results, and take that run's outputs as a label set
+- _As an engineer, I run a frontier model as an arm, read its results, and take that run's outputs as a label set
   (`evh label-from-run --run … --set …`), so the labels are exactly what I read._
-- (0.6.0, planned) _As an annotator, I get a sheet of the items to label (`evh label-sheet`), fill the `label` column, and import it
+- _As an annotator, I get a sheet of the items to label (`evh label-sheet`), fill the `label` column, and import it
   as my set (`evh label-import … --by me`)._
 - (0.6.0, planned) _As an engineer, I promote the labels I trust into a reference (`evh reference-promote … --tier gold --reason …`),
   and the reference says where they came from._
@@ -85,7 +86,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 - **FR1.2**: A run records the reference it was scored against (`reference_id`, tier) and a hash of the reference's
   bytes inside its fingerprint (RFC-001), so an edited reference file shows as a different measurement.
 
-### FR2: Labels (0.6.0, planned)
+### FR2: Labels (0.6.0)
 
 - **FR2.1**: A label set is `data/labels/<dataset>/<set>/`: one `<item_id>.txt` per labelled item and
   `labels.json` (the dataset, the set, its source, when, each item's sha256, an optional note per item, and the
@@ -100,8 +101,9 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
   run, an empty output and outputs that stopped at `max_tokens` (`--allow-cut-off`).
 - **FR2.5**: `evh label-from-capture` makes a `rule` set from a capture's recorded outcomes (PRD-014).
 - **FR2.6**: A set is never edited; a correction is a new set. Labels follow the item by its sha256.
-- **FR2.7**: `evh labels [--dataset-id D]` lists every set: source, coverage, guideline, how often two sets agree,
-  and what was promoted from it.
+- **FR2.7**: `evh labels [--dataset-id D]` lists every set: source, coverage, guideline, and how often two sets
+  agree; what was promoted from it comes with promotion (FR3).
+- **FR2.8**: `evh validate` V19 checks every set's labels against the sha256 it recorded.
 
 ### FR3: Promotion (0.6.0, planned)
 

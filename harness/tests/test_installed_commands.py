@@ -246,6 +246,33 @@ def main() -> int:
             ("dataset-split", ["tickets_v1", "--heldout", "0.5", "--seed", "3"], "ok:tickets_v1_heldout"),
             ("captures", ["--capture", "c1"], "ok:c1:"),
             ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
+            # Labels (RFC-023): installed and reading their arguments; the flow is tests/test_label_sets.py.
+            ("labels", [], "ok:No label sets yet"),
+            (
+                "label-sheet",
+                ["--dataset-id", "tickets_v1", "--items", "all", "--out", "installed_sheet.csv"],
+                "ok:to label",
+            ),
+            (
+                "label-import",
+                ["installed_sheet.csv", "--dataset-id", "tickets_v1", "--set", "installed_v1", "--by", "t"],
+                "no labels",
+            ),
+            ("label-from-run", ["--run", "no_such_run", "--set", "installed_v1"], "no finished run"),
+            (
+                "label-from-capture",
+                [
+                    "--dataset-id",
+                    "captured_v1",
+                    "--capture",
+                    "c1",
+                    "--map",
+                    "no_such_map.yaml",
+                    "--set",
+                    "o1",
+                ],
+                "--map: no file",
+            ),
             # Installed and reading its arguments; the flow is tests/test_outcome_reference.py.
             (
                 "reference-from-outcomes",
