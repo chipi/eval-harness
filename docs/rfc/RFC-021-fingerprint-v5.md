@@ -131,6 +131,24 @@ reference digest, and rewriting them would move every run scored against them.
   onboarding.
 - RFC-001 is marked superseded in its host and system-under-test parts.
 
+## As built (0.6.0)
+
+Everything under "What changes" is built. Found during the build, and changed:
+
+- **An adapter's deployment keeps the server it was called on.** A deployment the adapter's hook declared had its
+  `server` always null, so a self-hosted run lost its Ollama or vLLM address; the 130 triage runs were backfilled
+  with the fleet they replayed (`tools/backfill_triage_fleet.py`) and re-sealed.
+- **A system with no hook that ran in the harness's own process is in process.** A deployment taken from the
+  params was always `in_process: false`; `evh fingerprint-migrate` brings v5 fingerprints to the rule when it has
+  the run's params (11 runs here).
+- **A record's deployment names no address, by design.** It is identified by the record's deployment id, digest
+  and server version; the address the arm called (an ssh tunnel to the Mac, or the machine directly) reaches the
+  same deployment, so it stays out of the hash. Tested in `test_fingerprint_v5.py` ("the tunnel's url is not part
+  of the deployment").
+- **A record's deployment is only as complete as the record.** The DGX's Ollama deployments named no server until
+  2026-10-31 (`ollama 0.40.13` since), so round 3's DGX triage runs record no server name or version; the X3 and
+  Mac ones do.
+
 ## Not in scope
 
 - Measuring a remote machine's hardware from the runner beyond what its server reports (Ollama reports the digest;

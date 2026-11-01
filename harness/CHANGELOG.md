@@ -195,6 +195,10 @@ that can move a result is never a patch release without saying so under **Change
   item reports (`meta["calls"]`) failed reaching its server (connection refused, no route, a name that does
   not resolve), `experiment-run` stops there with `STOPPED`, that item unwritten, and `--resume` calls it
   again. A model's own failure is still a measurement.
+- **`evh pair-test --round` reads each arm as the round does**: from its latest re-score when one stands in for
+  its runs. It read `data/runs` alone, so a measure an arm's re-score added (production's triage run on
+  `triage_cost`) found "only 0 shared item(s)" while the round's own evidence tested it. "(its leader)" is said
+  only when the test chose the leader.
 
 ## 0.5.0 — 2026-10-29
 

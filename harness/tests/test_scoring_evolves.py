@@ -37,6 +37,8 @@ def score(output, reference):
     row = _score(output, reference)
     if "overlap_f1" in row:
         row["overlap_f1"] = row["overlap_f1"] + BONUS
+    if BONUS:
+        row["bonus_seen"] = BONUS  # a measure only the re-score has, as triage_cost was on production's run
     return row
 '''
 
@@ -155,6 +157,26 @@ try:
         "the round reads the re-score as the goal does",
         "read from their re-score by" in rs.stdout,
         rs.stdout[-900:],
+    )
+    pt = evh(
+        "pair-test",
+        "--dataset-id",
+        "tickets_v1",
+        "--round",
+        "r1",
+        "--goal",
+        "tickets_summary",
+        "--a",
+        "tickets_lead1_v1",
+        "--b",
+        "tickets_lead2_v1",
+        "--metric",
+        "bonus_seen",
+    )
+    check(
+        "pair-test --round reads each arm as the round does: a measure only its re-score has is tested",
+        pt.returncode == 0 and "N=" in pt.stdout and "shared item" not in out(pt),
+        out(pt)[-600:],
     )
 
     # a round with more arms than the inspector compares in one request still has its rows (they were empty, unsaid)

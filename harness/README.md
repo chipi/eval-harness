@@ -40,7 +40,8 @@ evh run-promote --run <run_id> --reason "what the tests showed"    # the choice,
 
 **[Getting started](../docs/GUIDE.md)** walks it once, offline, in about fifteen minutes; the
 [tutorials](../docs/GUIDE.md#where-to-go-next) add a local model, a hosted LLM with your own
-key, a frontier reference and judges, experiment rounds and dataset versions, and the catalog.
+key, a frontier reference and judges, experiment rounds and dataset versions, the catalog, datasets
+from what your system did in production, and setting a model up before you test it.
 In a checkout of this repository every `evh` command is also a `make` target (`make demo` runs
 the whole loop on bundled data, no API key, no network).
 
@@ -184,11 +185,16 @@ Scores are arithmetic over outputs, and outputs are the expensive part. So a met
 should not cost a sweep:
 
 ```
-evh rescore --dataset-id my_v1 --match _v2 --out data/runs-rescored
-EVAL_RUNS_DIR=data/runs-rescored evh leaderboard --dataset-id my_v1
+evh score-preview --goal my_goal                                 # what a scoring change would move; writes nothing
+evh rescore --goal my_goal --round r2 --why "the rule I fixed"   # a round's arms, at $0, the why recorded
+evh rescore --dataset-id my_v1 --match _v2                       # or any runs of a dataset
 ```
 
-Rescored runs go to a separate directory and record `derived: {kind: rescore, from, at, with}`:
+Re-scores land in one place the harness designates, `data/runs-rescored/<scorer>/<source>/` (`--out` names
+another); the goals, the rounds and the catalog read an arm from its latest re-score, and a round records the
+scorer it is judged by, so a scoring change is a step of its own, applied to a round or adopted by the next
+(`round-open --scoring`; [RFC-022](../docs/rfc/RFC-022-scoring-that-evolves.md)). Each re-scored run records
+`derived: {kind: rescore, from, at, with}`:
 the source run, when, and the sha256 of the adapter (and its scorer) that rescored it, so a
 recomputation can never be mistaken for a measurement. Latency, cost
 and token counts are carried across untouched — they describe the call that happened, not
@@ -214,6 +220,42 @@ read unchanged. An experiment's primary metric changes only by a recorded decisi
 Walkthrough: [tutorial 3](../docs/tutorials/3-frontier-reference-and-judging.md#5-re-measure-with-an-llm-judge-optional);
 reference: [RUNBOOK §12](docs/RUNBOOK.md#12-re-measure-with-a-validated-judge); why:
 [ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
+
+## Set a model up before you test it
+
+A server chooses for whatever an arm leaves unset (whether the model reasons first, how long a reply may run,
+which build a tag names), so two arms that leave them unset compare defaults as much as models. A model is set up
+once, in a record (`data/models/<id>.yaml`) with a deployment per place it runs, and checked there before any
+experiment uses it:
+
+```bash
+evh model-onboard my-model --deployment laptop   # its build, whether it reasons, JSON, determinism, speed
+evh arm-smoke --config data/configs/my_arm.yaml  # a few items with the arm's own settings, before the full run
+evh models                                       # which models are onboarded, vetted, and where they run
+```
+
+An arm names the record and deployment (`model_record:`, `deployment:`), and its run's fingerprint takes the
+weights, server and machine from it. Walkthrough: [tutorial 7](../docs/tutorials/7-set-up-a-model.md); reference:
+[RUNBOOK §16](docs/RUNBOOK.md#16-set-up-a-model-before-you-test-it); design:
+[RFC-020](../docs/rfc/RFC-020-onboarding-a-model.md), [RFC-021](../docs/rfc/RFC-021-fingerprint-v5.md).
+
+## Datasets from what your system did
+
+What a system did in production is the most realistic test there is, and what happened afterwards can label it:
+
+```bash
+evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2026_10   # the records, hashed
+evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --tag source=prod             # a frozen selection
+evh reference-from-outcomes --dataset-id prod_v1 --capture prod_2026_10 \
+    --map outcomes.yaml --name silver/prod_v1_outcomes                                 # labels from what happened
+evh dataset-split prod_v1 --heldout 0.3 --seed 7                                         # dev and heldout
+```
+
+A reference made from outcomes is silver and never decides a goal; a person's labels, gold, do. Importers for
+JSONL, TSV, GitHub issues and Langfuse traces come with the harness, and `text: hidden` keeps a dataset's text off
+every public surface. Walkthrough: [tutorial 6](../docs/tutorials/6-datasets-from-production.md); reference:
+[RUNBOOK §15](docs/RUNBOOK.md#15-datasets-from-production-the-capture-lane); design:
+[RFC-019](../docs/rfc/RFC-019-datasets-from-production.md).
 
 ## Do you trust your reference?
 
