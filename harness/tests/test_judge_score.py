@@ -3022,7 +3022,10 @@ check(
 )
 check(
     "the committed grading sets carry no mode; a pick or pairwise set declares its own",
-    all(json.loads(f.read_text()).get("mode", "grade") in ("grade", "pick", "pairwise") for f in committed_sets)
+    all(
+        json.loads(f.read_text()).get("mode", "grade") in ("grade", "pick", "pairwise")
+        for f in committed_sets
+    )
     and all(json.loads(f.read_text()).get("mode") != "grade" for f in committed_sets)
     and sum("mode" not in json.loads(f.read_text()) for f in committed_sets) >= 2,
 )
