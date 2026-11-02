@@ -9,7 +9,15 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
-## 0.6.0 — unreleased
+## 0.6.0 — 2026-11-02
+
+What you get: datasets made from what production did (capture, scrub, split, `dataset-from-capture`); labels that say
+who decided what is right, and reference sets promoted from them; production's own decisions scored as an arm;
+models onboarded before they are run; scoring that evolves without re-running an arm; judges that grade, pick the
+best or compare two; and one sheet of every item and arm, filled in Excel or another tool and read back. Upgrading
+moves no committed score. Two formats (fingerprint v5, model records) and the old references are migrated by a
+command, and a few names change to the field's words with no alias (`evh run`, `significant`, `contenders`):
+[UPGRADING](https://github.com/chipi/eval-harness/blob/main/harness/docs/UPGRADING.md) has the steps.
 
 ### Added
 
