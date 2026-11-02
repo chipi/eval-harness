@@ -66,7 +66,8 @@ Pin a release tag:
    ```
    The `harness-release` workflow then:
    - refuses the tag unless it matches `_version.py` and the changelog section is dated;
-   - refuses it unless CI on the tagged commit is green on `main` (`reproduce` and `quality`,
+   - refuses it unless CI on the tagged commit is green on `main` (`reproduce` and `quality`, not `rerun`, which
+     fetches from Hugging Face and only reports,
      and `guards` when it ran), waiting up to 40 minutes for runs still going. It does not
      re-run them, so tag the merge commit on `main`, not a branch commit;
    - builds the wheel and sdist, and checks the installed CLI reports the tag;

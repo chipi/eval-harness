@@ -16,7 +16,7 @@ reproduces it.
 
 CI runs each tier on every pull request: `make verify` (unit and integration, the reports
 recomputed, the site rebuilt), `browser`, `budget` (then `make browser-real-check` on the catalog it
-built) and `rerun` (`.github/workflows/reproduce.yml`), and `make quality` (lint, types, security,
+built) (`.github/workflows/reproduce.yml`), `rerun` (`.github/workflows/rerun.yml`: it fetches from Hugging Face, so it reports but never holds back a deploy or a release; its data is cached), and `make quality` (lint, types, security,
 dead code, spelling), and `commands` runs `make commands-check` beside them, a few minutes, so not
 in `verify`. `guards` (`.github/workflows/guards.yml`, a required check) runs on every pull request too, but
 runs `make guard-check` only when a checker or the harness code it reads changed since the base: it
