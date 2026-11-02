@@ -82,8 +82,9 @@ The harness cannot do steps 6 and after:
 - **A label can accept more than one answer** (owner, 2026-11-02): when several are right for an item (a real
   problem that filing and escalating both handle), its text is `{"accept": ["escalate", "file"]}`, sorted and without
   repeats, so one meaning has one text. The sheet takes the others in `also right` (separated by `|`), a rule as
-  `label: [file, escalate]`, a folder as the text itself. **Two labels agree when they share an answer**; a decision
-  is wrong against a label when it is none of its answers. A scorer reads a reference through `answers(reference)`
+  `label: [file, escalate]`, a folder as the text itself. **Two labels agree when they accept the same answers**
+  (sharing one is counted apart, never as agreement: a label accepting more agrees more easily); a decision is
+  wrong against a label when it is none of its answers. A scorer reads a reference through `answers(reference)`
   (`evaluation_harness.adapter`); the bundled one scores an output against the answer it is closest to. The views
   show such a label as "escalate or file". It replaces the triage example's composite word `file-or-escalate`, which
   no code reads any more.
@@ -243,7 +244,7 @@ The docs and the site say so and imply neither.
 | `evh label-import sheet.csv --dataset-id D --set S --by NAME [--guideline FILE]` | the filled rows become a `person` set | `write_verdicts.py`, `write_gold.py` |
 | `evh label-from-run --run R --set S [--guideline FILE]` | a run's outputs become a `model` set | `reference-create --from-run`, `--config` |
 | `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | rules over recorded outcomes become a `rule` set | `reference-from-outcomes` |
-| `evh labels [--dataset-id D]` | every set: source, coverage, guideline, how often two sets agree (share an answer), what was promoted | — |
+| `evh labels [--dataset-id D]` | every set: source, coverage, guideline, how two sets agree (the same answers, sharing one, Cohen's kappa, Krippendorff's alpha; `--confusion`), what was promoted | — |
 | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | the chosen labels become a reference, recording the set, its source and the reason | `reference-create` |
 | `evh rescore --labels D/S`, `evh experiment-run --labels D/S` | score against a label set, without promoting it | — |
 | `evh arm-from-capture --dataset-id D --capture C --as NAME` | production's recorded decisions as an arm | — |
@@ -266,7 +267,8 @@ Page by page (UXS-001 and UXS-002 updated with the build):
 - **The Data menu**: Datasets, Captures, Labels, References.
 - **The Labels page**: every label set, its dataset, its source chip, coverage (N of M items), its guideline, when,
   and what was promoted from it into which reference.
-- **The dataset page**: a labels section (each set, its source, coverage, how often two sets agree); for a
+- **The dataset page**: a labels section (each set, its source, coverage, how two sets agree, with each pair's
+  confusion matrix folded); for a
   governed dataset, its picks waiting, each with where it came from, its labels, tags and note; select the ones to
   include and the page gives the `dataset-extend` command for them; for a version made from picks, the items it added, each
   with its capture, production dataset and the labels it carried.

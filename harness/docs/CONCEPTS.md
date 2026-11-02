@@ -97,7 +97,7 @@ differently from omitting the flag.
 A **label** says what is right for one item, and who said it: a **person**, a **model** (a run's
 outputs) or a **rule** (what happened afterwards, mapped by rules you commit). Labels come in sets,
 never edited, and follow an item by its bytes into any dataset that holds it. When more than one
-answer is right, a label accepts each, and two labels agree when they share one. A **reference** is
+answer is right, a label accepts each, and two labels agree when they accept the same answers. A **reference** is
 labels you **promote**, on purpose, with a reason, at the tier you choose then:
 
 | tier | means |

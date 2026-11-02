@@ -235,12 +235,46 @@ try:
     }
     p = pairs.get(frozenset(("tickets_v1/one_v1", "tickets_v1/several_v1")), {})
     check(
-        "labels: two labels agree when they share an answer (escalate is one of file and escalate; file is not dismiss)",
-        p.get("both") == 2 and p.get("agree") == 1,
+        "labels: agreeing is accepting the same answers; sharing one (escalate, of escalate or file) is counted apart",
+        p.get("both") == 2 and p.get("same") == 0 and p.get("share") == 1 and "agree" not in p,
         str(p) + r.stdout[-300:],
     )
+    r = evh("labels", "--dataset-id", "tickets_v1", "--confusion")
+    check(
+        "labels --confusion: each pair's matrix, the first set's labels down",
+        r.returncode == 0 and "escalate or file" in r.stdout and "Cohen's kappa" in r.stdout,
+        r.stdout[-600:],
+    )
+    from evaluation_harness._label_sets import _masi, compare, label_line, label_text
     from evaluation_harness._label_sets import answers as accepted
-    from evaluation_harness._label_sets import label_line, label_text
+
+    # Cohen's kappa on a textbook table: 20 yes/yes, 5 yes/no, 10 no/yes, 15 no/no gives 0.4.
+    table = [("yes", "yes")] * 20 + [("yes", "no")] * 5 + [("no", "yes")] * 10 + [("no", "no")] * 15
+    c = compare(table)
+    check(
+        "compare: Cohen's kappa 0.40 on the textbook table; the confusion matrix counts it",
+        c["kind"] == "categories"
+        and c["kappa"] == 0.4
+        and c["same"] == 35
+        and c["confusion"] == {"yes": {"yes": 20, "no": 5}, "no": {"yes": 10, "no": 15}}
+        and c["alpha_distance"] == "nominal",
+        str(c),
+    )
+    check(
+        "compare: MASI distance (Passonneau 2006): the same 0, a subset in between, nothing shared 1",
+        _masi(frozenset("ab"), frozenset("ab")) == 0.0
+        and abs(_masi(frozenset("ab"), frozenset("abcd")) - (1 - 0.5 * 2 / 3)) < 1e-9
+        and _masi(frozenset("ab"), frozenset("cd")) == 1.0,
+    )
+    every_same = compare([("file", "file")] * 4)
+    free = compare([("The login fails after the SSO change.", "Login is broken since SSO moved.")])
+    check(
+        "compare: a coefficient is undefined when every label is the same; free text is not compared as text",
+        every_same["kappa"] is None
+        and every_same["alpha"] is None
+        and free == {"both": 1, "kind": "free text"},
+        str(every_same) + str(free),
+    )
 
     check(
         "answers / label_text / label_line: a bare label is its one answer; a set reads, writes and shows",
@@ -260,6 +294,27 @@ try:
         and default_score("login fails after sso", both)["overlap_f1"] == 1.0
         and default_score("nothing alike", both)["overlap_f1"] == 0.0,
     )
+    r = evh(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v1",
+        "--labels",
+        "several_v1",
+        "--tier",
+        "silver",
+        "--name",
+        "several_check",
+        "--reason",
+        "a check of what promotion says",
+        "--by",
+        "owner",
+    )
+    check(
+        "reference-promote names the labels that accept several answers, each to be fully right",
+        r.returncode == 0 and "1 label(s) accept more than one answer (escalate or file: 1)" in out(r),
+        out(r)[-400:],
+    )
+    shutil.rmtree(proj / "data" / "references" / "silver" / "several_check", ignore_errors=True)
     for s in ("several_v1", "several_files", "one_v1"):
         shutil.rmtree(LABELS / "tickets_v1" / s)
     shutil.rmtree(LABELS / "tickets_v1" / "owner_files")  # the later checks count the sets on tickets_v1
@@ -287,16 +342,10 @@ try:
         ),
         {},
     )
-    agree = sum(
-        (LABELS / "tickets_v1" / "owner_v1" / f"{i}.txt").read_text()
-        == (LABELS / "tickets_v1" / "author_v1" / f"{i}.txt").read_text()
-        for i in json.loads((LABELS / "tickets_v1" / "owner_v1" / "labels.json").read_text())["items"]
-    )
     check(
-        "labels --dataset-id: each set's coverage, and how often two agree on the items both label",
+        "labels --dataset-id: each set's coverage; two sets of written summaries are free text, not compared as text",
         sorted((s["set"], len(s["items"])) for s in v.get("sets", [])) == [("author_v1", 6), ("owner_v1", 3)]
-        and pair.get("both") == 3
-        and pair.get("agree") == agree,
+        and pair == {"a": pair.get("a"), "b": pair.get("b"), "both": 3, "kind": "free text"},
         r.stdout[-400:],
     )
     r = evh("labels")

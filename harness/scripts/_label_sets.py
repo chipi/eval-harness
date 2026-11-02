@@ -7,7 +7,7 @@ A label set is one labelling pass over one dataset by one source, never edited:
                                                 and per item the label's sha256 and the item's (`source_sha256`)
 
 A label is one right answer, or several when more than one is right for the item, written
-{"accept": ["escalate", "file"]} (`answers` reads either; two labels agree when they share an answer).
+{"accept": ["escalate", "file"]} (`answers` reads either; two labels agree when they accept the same answers: `compare`).
 
 The source is `person` (who), `model` (the run its outputs came from) or `rule` (a mapping over a capture's
 recorded outcomes). Labels follow the item, not the dataset: a set records each item's sha256, so an item with the
@@ -26,6 +26,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import hashlib
 import json
 import re
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -81,9 +82,68 @@ def label_line(label: str) -> str:
     return " or ".join(answers(label))
 
 
-def overlap(a: str, b: str) -> bool:
-    """Two labels agree when one answer is right for both (the same text, or a shared answer of several)."""
-    return bool(set(answers(a)) & set(answers(b)))
+#: Labels are compared as categories when the two sets use at most CATEGORY_MAX distinct answers, each of at most
+#: CATEGORY_WORDS words and CATEGORY_CHARS characters on one line; otherwise they are free text, and exact text says
+#: nothing about agreement.
+CATEGORY_MAX, CATEGORY_WORDS, CATEGORY_CHARS = 50, 3, 40
+
+
+def _masi(a: frozenset[str], b: frozenset[str]) -> float:
+    """MASI distance between two answer sets (Passonneau 2006): 0 the same, 1 nothing shared; a subset or a
+    partial overlap in between."""
+    if a == b:
+        return 0.0
+    shared = len(a & b)
+    if not shared:
+        return 1.0
+    monotonicity = 2 / 3 if a <= b or b <= a else 1 / 3
+    return 1 - shared / len(a | b) * monotonicity
+
+
+def compare(pairs: list[tuple[str, str]]) -> dict[str, Any]:
+    """How two label sets compare on the items both label, `pairs` their two labels per item.
+
+    `both` the items; `kind` "categories" or "free text" (CATEGORY_MAX); for categories, `same` the items whose labels
+    accept the same answers, `share` those whose labels share at least one (a label accepting several agrees more
+    easily: shown apart, never as agreement), `kappa` Cohen's kappa on the labels, `alpha` Krippendorff's alpha
+    (nominal, or with MASI distance when a label accepts several answers: `alpha_distance`) and `confusion` {a's
+    label: {b's label: n}}. A coefficient is None when it is undefined (every label the same)."""
+    sets_ = [(frozenset(answers(a)), frozenset(answers(b))) for a, b in pairs]
+    every = {x for a, b in sets_ for x in (*a, *b)}
+    out: dict[str, Any] = {"both": len(pairs)}
+    if len(every) > CATEGORY_MAX or any(
+        len(x) > CATEGORY_CHARS or "\n" in x or len(x.split()) > CATEGORY_WORDS for x in every
+    ):
+        return {**out, "kind": "free text"}
+    shown = [(label_line(label_text(list(a))), label_line(label_text(list(b)))) for a, b in sets_]
+    confusion: dict[str, dict[str, int]] = {}
+    for a, b in shown:
+        confusion.setdefault(a, {}).setdefault(b, 0)
+        confusion[a][b] += 1
+    n = len(pairs)
+    po = sum(a == b for a, b in sets_) / n if n else 0.0
+    pa, pb = Counter(a for a, _ in shown), Counter(b for _, b in shown)
+    pe = sum(pa[k] * pb[k] for k in pa) / (n * n) if n else 0.0
+    several = any(len(a) > 1 or len(b) > 1 for a, b in sets_)
+    dist = _masi if several else lambda a, b: 0.0 if a == b else 1.0
+    values = [v for pair in sets_ for v in pair]
+    m = len(values)
+    observed = sum(dist(a, b) for a, b in sets_) / n if n else 0.0
+    expected = (
+        sum(dist(values[i], values[j]) for i in range(m) for j in range(m) if i != j) / (m * (m - 1))
+        if m > 1
+        else 0.0
+    )
+    return {
+        **out,
+        "kind": "categories",
+        "same": sum(a == b for a, b in sets_),
+        "share": sum(bool(a & b) for a, b in sets_),
+        "kappa": None if not n or pe >= 1 else round((po - pe) / (1 - pe), 4),
+        "alpha": None if not expected else round(1 - observed / expected, 4),
+        "alpha_distance": "MASI" if several else "nominal",
+        "confusion": confusion,
+    }
 
 
 def guideline_of(path: Path | None) -> dict[str, str] | None:
@@ -241,22 +301,20 @@ def coverage(dataset_id: str) -> list[dict[str, Any]]:
 
 
 def agreement(dataset_id: str) -> list[dict[str, Any]]:
-    """For each pair of sets covering this dataset: on how many of its items both label, and on how many they agree
-    (one answer is right for both: `overlap`)."""
+    """For each pair of sets covering this dataset that both label an item: {a, b, **compare(...)}."""
     per_item = labels_for(dataset_id)
     names = sorted({(r["dataset_id"], r["set"]) for rows in per_item.values() for r in rows})
     out = []
     for i, a in enumerate(names):
         for b in names[i + 1 :]:
-            both = agree = 0
+            pairs = []
             for rows in per_item.values():
                 ta = next((r["text"] for r in rows if (r["dataset_id"], r["set"]) == a), None)
                 tb = next((r["text"] for r in rows if (r["dataset_id"], r["set"]) == b), None)
                 if ta is not None and tb is not None:
-                    both += 1
-                    agree += overlap(ta, tb)
-            if both:
-                out.append({"a": "/".join(a), "b": "/".join(b), "both": both, "agree": agree})
+                    pairs.append((ta, tb))
+            if pairs:
+                out.append({"a": "/".join(a), "b": "/".join(b), **compare(pairs)})
     return out
 
 

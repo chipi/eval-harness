@@ -54,7 +54,7 @@ from evaluation_harness._common import (  # noqa: E402
 )
 from evaluation_harness._fields import fieldset_problems, load_fieldset  # noqa: E402 -- part of the adapter contract
 from evaluation_harness._fingerprint import items_digest  # noqa: E402
-from evaluation_harness._label_sets import label_line, overlap  # noqa: E402
+from evaluation_harness._label_sets import compare, label_line  # noqa: E402
 from evaluation_harness._record import derived_with  # noqa: E402
 from evaluation_harness._runs import item_rows, lower_is_better_on, runs_on, score_of  # noqa: E402
 
@@ -672,9 +672,9 @@ class HarnessAdapter:
         return out
 
     def label_coverage(self, dataset: str) -> dict:
-        """{"sets": [{set..., "covers": [item ids]}], "agreement": [{"a", "b", "both", "agree"}]}: the label sets
-        covering this dataset's items, matched by the item's sha256 (labels follow the item), and how often two
-        agree on the items both label (where the label texts are here; a release keeps only labels.json)."""
+        """{"sets": [{set..., "covers": [item ids]}], "agreement": [{"a", "b", **_label_sets.compare(...)}]}: the label
+        sets covering this dataset's items, matched by the item's sha256 (labels follow the item), and how two compare
+        on the items both label (where the label texts are here; a release keeps only labels.json)."""
         ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
         by_sha: dict = {}
         for it in ds.get("items") or [] if isinstance(ds, dict) else []:
@@ -702,14 +702,7 @@ class HarnessAdapter:
                     if x in texts[b] and texts[a][x] is not None and texts[b][x] is not None
                 ]
                 if both:
-                    agreement.append(
-                        {
-                            "a": a,
-                            "b": b,
-                            "both": len(both),
-                            "agree": sum(overlap(texts[a][x], texts[b][x]) for x in both),
-                        }
-                    )
+                    agreement.append({"a": a, "b": b, **compare([(texts[a][x], texts[b][x]) for x in both])})
         return {"sets": sets, "agreement": agreement}
 
     def item_labels(self, dataset: str, item: str) -> list[dict]:

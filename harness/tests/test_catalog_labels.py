@@ -203,11 +203,12 @@ try:
     # ── the dataset page ─────────────────────────────────────────────────────────────────────
     dp = page("d/tickets_v1.html")
     check(
-        "dataset page: its label sets (chips, coverage, promoted) and how often two agree",
+        "dataset page: its label sets (chips, coverage, promoted) and how two agree (summaries: free text, not compared)",
         'id="labels"' in dp
         and row_of(dp, "author_v1") != ""
         and "how often two sets agree" in dp
-        and "the same label, on the items both label" in dp,
+        and "the same answers, sharing one, and chance-corrected" in dp
+        and "free text: not compared as text" in dp,
         "",
     )
     pick_row = row_of(dp, 'value="prod_v1:p2"')

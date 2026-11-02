@@ -24,9 +24,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+from collections import Counter
 
 from evaluation_harness._common import REFERENCES, die, load_dataset, now, read_json
-from evaluation_harness._label_sets import answers, label_text, labels_for, sets, source_line
+from evaluation_harness._label_sets import answers, label_line, label_text, labels_for, sets, source_line
 from evaluation_harness._references import write_manifest
 
 CAVEAT = {
@@ -148,6 +149,13 @@ def main() -> int:
         f"({source_line(source)})"
     )
     print("  commit it before the next run: an untracked reference marks every run scored against it dirty")
+    several = Counter(label_line(mine[i]["text"]) for i in chosen if len(answers(mine[i]["text"])) > 1)
+    if several:
+        print(
+            f"  {sum(several.values())} label(s) accept more than one answer ("
+            + ", ".join(f"{k}: {v}" for k, v in sorted(several.items()))
+            + "): an output matching any of them scores as right, so each must be fully right, not a guess"
+        )
     if not_here:
         print(
             "  its texts are kept out of git, as its label set's are: commit the manifest and the .gitignore"

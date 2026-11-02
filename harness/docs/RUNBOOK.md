@@ -1087,9 +1087,12 @@ evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did pro
   decision, by the adapter's `decision(output)`, else the same text). `inspect --disagree` and
   `label-sheet --items disagree` keep the items where the arms differ.
 - **More than one right answer**: a label can accept several (`also right` in the sheet, `label: [file, escalate]`
-  in a rule), written `{"accept": ["escalate", "file"]}` and shown "escalate or file". Two label sets agree on an
-  item when they share an answer (`evh labels`), and a decision is **wrong** against a label when it is none of
-  them. An adapter's `score` reads such a reference with `answers(reference)` from `evaluation_harness.adapter`.
+  in a rule), written `{"accept": ["escalate", "file"]}` and shown "escalate or file", for answers each fully
+  right, never for "unsure which". A decision is **wrong** against a label when it is none of them.
+- **Agreement between label sets** (`evh labels --dataset-id D [--confusion]`, the dataset page): on the items
+  both label, how many accept the same answers, how many share one (apart: a label accepting more agrees more
+  easily), Cohen's kappa and Krippendorff's alpha (MASI distance for several answers), which correct for the
+  agreement chance alone gives when one class dominates. Free-text labels are not compared as text. An adapter's `score` reads such a reference with `answers(reference)` from `evaluation_harness.adapter`.
 - **The rows view** shows each item's signals first, then each arm's decision (the adapter's
   `decision(output)`, else its output, shortened), every label and the fields. The signals: **wrong** (the
   first run against a label set), **disagree**, **split** (the candidates among themselves), **new** (a field

@@ -353,7 +353,8 @@ tiles open it.
 - `labels` (0.6.0): each label set covering the dataset's items (labels follow the item by its hash, so a
   set made on another dataset with the same items counts): its source chip and name, **coverage** ("k of n
   items"), **guideline** (the file, or "none"), **made**, **promoted** (the reference, or "not promoted"), and a
-  table of how often two sets agree on the items both label. Empty: "No labels yet", with the `evh label-sheet`
+  table of how two sets agree on the items both label (the same answers, sharing one, kappa, alpha), each
+  pair's confusion matrix folded below it. Empty: "No labels yet", with the `evh label-sheet`
   and `evh label-from-run` commands.
 - `picks waiting` (0.6.0), for a dataset some picks name as their target: one row per pick: **item**
   (opens the inspector's rows view on it), **from** (the production dataset, its capture), **labels** (source chips, or
@@ -726,7 +727,7 @@ test ran (`deployment.machine`, `deployment.backend`, `deployment.server`).
   items"), **guideline**, **made** (who or which run, when), **promoted** (the reference with its pill, or "not
   promoted"). Filterable by source.
 - Empty: "No labels yet", with `evh label-sheet`, `evh label-import` and `evh label-from-run`.
-- Command: `evh labels [--dataset-id D]` (the same listing, and how often two sets agree).
+- Command: `evh labels [--dataset-id D]` (the same listing, and how two sets agree; `--confusion` prints the matrices).
 
 ## The references page
 

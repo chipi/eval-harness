@@ -113,7 +113,8 @@ PRIMARY_METRIC = "overlap_f1"
 def score(output: str, reference: str | None) -> dict[str, float]:
     """Score one output. Replace with whatever "good" means for you.
 
-    Called with the golden reference when one exists for the item, and with
+    Called with the item's reference when there is one (the answer a reference set or a
+    label set gives it: `--labels` scores against labels never promoted), and with
     None when it does not — so the same adapter works before and after you have
     ground truth. A reference may accept several answers (`answers`): the default
     scores the output against the one it is closest to.

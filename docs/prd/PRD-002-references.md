@@ -102,12 +102,16 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 - **FR2.5**: `evh label-from-capture` makes a `rule` set from a capture's recorded outcomes (PRD-014).
 - **FR2.6**: A set is never edited; a correction is a new set. Labels follow the item by its sha256.
 - **FR2.7**: `evh labels [--dataset-id D]` lists every set: source, coverage, guideline, and how often two sets
-  agree (share an answer, FR2.9); the pages show what was promoted from it (UXS-001).
+  agree (FR2.10); the pages show what was promoted from it (UXS-001).
 - **FR2.8**: `evh validate` V19 checks every set's labels against the sha256 it recorded.
 - **FR2.9**: A label is one right answer, or several when more than one is right for the item (owner, 2026-11-02),
   written `{"accept": ["escalate", "file"]}`, sorted and without repeats; the sheet's `also right` column, a rule's
-  `label: [a, b]` and a folder's text make one. Two labels agree when they share an answer; a decision is wrong
-  against a label when it is none of them; a scorer reads a reference through `answers()`.
+  `label: [a, b]` and a folder's text make one. A decision is wrong against a label when it is none of them; a
+  scorer reads a reference through `answers()`.
+- **FR2.10**: Two label sets are compared on the items both label: on how many they accept the same answers, on
+  how many they share one (counted apart, never as agreement), Cohen's kappa and Krippendorff's alpha (nominal,
+  or with MASI distance when a label accepts several answers; Artstein & Poesio 2008), and the confusion matrix.
+  Free-text labels are not compared as text.
 
 ### FR3: Promotion (0.6.0)
 

@@ -1955,24 +1955,61 @@ def render_labels_of(A: Adapter, ds: str, v: dict) -> str:
     html_ = table(f"labels-{slug(ds)}", ["set", "made on", "coverage", "guideline", "made", "promoted"], rows)
     if cov["agreement"]:
         html_ += (
-            '<h3 class="sub">how often two sets agree <small>the same label, on the items both label</small></h3>'
+            '<h3 class="sub">how often two sets agree <small>on the items both label: the same answers, sharing '
+            "one, and chance-corrected (Cohen's κ, Krippendorff's α)</small></h3>"
             + table(
                 f"agree-{slug(ds)}",
-                ["set", "set", "both label", "agree"],
+                ["set", "set", "both label", "same answers", "share an answer", "κ", "α"],
                 [
-                    {
-                        "cells": [
-                            f"<code>{e(a['a'])}</code>",
-                            f"<code>{e(a['b'])}</code>",
-                            str(a["both"]),
-                            f"{a['agree']} ({a['agree'] / a['both']:.0%})",
-                        ]
-                    }
+                    {"cells": [f"<code>{e(a['a'])}</code>", f"<code>{e(a['b'])}</code>", *agreement_cells(a)]}
                     for a in cov["agreement"]
                 ],
             )
+            + "".join(confusion_html(a) for a in cov["agreement"])
         )
     return html_
+
+
+def agreement_cells(a: dict) -> list[str]:
+    """One pair of label sets compared (`_label_sets.compare`): the items, the same answers, a shared one, κ, α."""
+    both = a["both"]
+    if a.get("kind") != "categories":
+        free = '<span class="muted">free text: not compared as text</span>'
+        return [str(both), free, "", "", ""]
+
+    def share(k: str) -> str:
+        return f"{a[k]} ({a[k] / both:.0%})" if both else "0"
+
+    def coef(k: str) -> str:
+        return "—" if a.get(k) is None else f"{a[k]:.2f}"
+
+    alpha = coef("alpha") + (
+        " <small>MASI</small>" if a.get("alpha_distance") == "MASI" and a.get("alpha") is not None else ""
+    )
+    return [str(both), share("same"), share("share"), coef("kappa"), alpha]
+
+
+def confusion_html(a: dict) -> str:
+    """One pair's confusion matrix, folded: a's labels down, b's across."""
+    conf = a.get("confusion") or {}
+    if not conf:
+        return ""
+    cols = sorted({c for row in conf.values() for c in row})
+    rows = [
+        {
+            "cells": [
+                e(r),
+                *[str(conf[r].get(c, 0)) if conf[r].get(c) else '<span class="muted">0</span>' for c in cols],
+            ]
+        }
+        for r in sorted(conf)
+    ]
+    head = [f"{e(a['a'])} ↓ · {e(a['b'])} →", *[e(c) for c in cols]]
+    return (
+        f"<details><summary>where <code>{e(a['a'])}</code> and <code>{e(a['b'])}</code> differ</summary>"
+        + table(f"confusion-{slug(a['a'])}-{slug(a['b'])}", head, rows)
+        + "</details>"
+    )
 
 
 def _label_sets_of(A: Adapter) -> list:
