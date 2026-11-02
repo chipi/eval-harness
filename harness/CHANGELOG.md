@@ -40,7 +40,7 @@ that can move a result is never a patch release without saying so under **Change
     it; the manifest records where it came from (for a model's set, the run and model that wrote it). No rule ties
     the tier to the source. Every existing reference records how it was promoted (20 here; 6 copied byte for byte
     into label sets, 209 labels), every run's fingerprint unchanged.
-  - **Scoring against a label set without promoting it**: `evh rescore --labels SET`, `evh experiment-run --labels
+  - **Scoring against a label set without promoting it**: `evh rescore --labels SET`, `evh run --labels
     SET`. The run records `reference_id: labels/<dataset>/<set>` and lands in `data/runs-labels-<dataset>-<set>/`, an
     arm of its own; a goal groups such arms under the set, the arm that made a model's labels flagged.
   - The catalog: a tier is a **pill** in its own colour, a label set a **source chip**, wherever either is named; a
@@ -108,7 +108,7 @@ that can move a result is never a patch release without saying so under **Change
 - **A share card on every catalog page**: its title and its opening line as `description`, `og:*` and
   `twitter:card`, and with **`evh catalog --card URL`** the image a shared link shows. The pages stay
   `noindex`.
-- **Onboarding models, once, for every experiment** (RFC-020). A project keeps a **model record** per model,
+- **Onboarding models, once, for every eval** (RFC-020). A project keeps a **model record** per model,
   `data/models/<model_id>.yaml`: its aliases, weights and licence, what it can do, the settings that hold
   whatever the task (`reasoning_effort`; device, precision, batch size for an ML model) with why, its history,
   and its **deployments** (each place and build it runs: machine or host, server and version, digest, revision
@@ -125,7 +125,7 @@ that can move a result is never a patch release without saying so under **Change
     `SMOKE PASS` or `SMOKE CHECK`, written into the record.
   - An arm names a record and a deployment (**`model_record:`**, **`deployment:`**): the record's settings go under
     its params, which add the task's own (its reply cap, its call limit: a record refuses them, since they would
-    reach every other experiment's arms); the run records both. **V18** checks the records, and the arm configs in `data/configs` and those validate.json's `configs` globs name; `validate` notes an arm never smoked, a
+    reach every other eval's arms); the run records both. **V18** checks the records, and the arm configs in `data/configs` and those validate.json's `configs` globs name; `validate` notes an arm never smoked, a
     reasoning model with no `max_tokens`, a tag that is a different build on two deployments.
   - The catalog's **Models** page and a page per model, a smoke badge on the arms page, a models tile; **`evh
     models`** for the same (and over `evh mcp`). A model is *vetted* when an arm that names it passed its smoke;
@@ -162,6 +162,9 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **`evh experiment-run` is `evh run`, and an *experiment* is an *eval***: industry words (OpenAI evals,
+  inspect_ai, Weave, Langfuse); what Braintrust and LangSmith call an experiment is a run here. The site's
+  Experiments page is Evals (`evals.html`); the old address redirects.
 - **`reference-create` and `reference-from-outcomes` are removed** (ADR-0022): a reference is made only by
   promoting labels. A run's outputs are `label-from-run`'s (with the same refusals and `--not-redistributed`),
   outcomes `label-from-capture`'s (the same rules). A reference made from outcomes has no rule of its own any more:
@@ -266,7 +269,7 @@ that can move a result is never a patch release without saying so under **Change
 - **Runs written where git does not keep them are named.** `EVAL_RUNS_DIR` pointed at any
   `data/runs-*` directory that `.gitignore` does not re-allow wrote runs that were never committed
   and that no catalog showed, without a word: 35 self-hosted triage runs sat in `data/runs-local`
-  that way. `experiment-run` and `rescore` now print a `WARNING` when they write to such a directory
+  that way. `run` and `rescore` now print a `WARNING` when they write to such a directory
   (throwaway `runs-smoke*` and `runs-tune*` stay silent), or outside the project's data, where nothing
   reads them, and `evh validate` notes one that holds
   finished runs. The RUNBOOK's scratch example is `data/runs-smoke`, the throwaway name git already
@@ -306,7 +309,7 @@ that can move a result is never a patch release without saying so under **Change
   answer (the triage replay records it as the fleet's "no terminal decision") wrote a complete-looking run
   when a tunnel dropped: 54 and 65 refused items scored as the model's own failures. When every call an
   item reports (`meta["calls"]`) failed reaching its server (connection refused, no route, a name that does
-  not resolve), `experiment-run` stops there with `STOPPED`, that item unwritten, and `--resume` calls it
+  not resolve), `run` stops there with `STOPPED`, that item unwritten, and `--resume` calls it
   again. A model's own failure is still a measurement.
 - **`evh pair-test --round` reads each arm as the round does**: from its latest re-score when one stands in for
   its runs. It read `data/runs` alone, so a measure an arm's re-score added (production's triage run on
@@ -635,7 +638,7 @@ p 0.36, from the pre-fix run), and DBpedia's 56-item dev slice, over today's 28 
     --round`);
   - every suggested command has a copy button;
   - a retired arm is greyed out.
-- **Experiment rounds, optional** ([ADR-0004](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0004-experiment-rounds.md)).
+- **Experiment rounds, optional** ([ADR-0004](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0004-eval-rounds.md)).
   Experiments go round on round: try some arms, keep what wins, drop what lost, change something,
   compare again. `evh round-open --goal G --dataset D [--from rN]` records what a round sets out to
   learn, what changed, the arms carried in unchanged (`--keep`) and those dropped with the reason

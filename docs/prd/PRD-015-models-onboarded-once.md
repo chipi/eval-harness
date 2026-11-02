@@ -1,4 +1,4 @@
-# PRD-015: Models, onboarded once, for every experiment
+# PRD-015: Models, onboarded once, for every eval
 
 - **Status**: Built for 0.6.0 (2026-10-31); written after the build as its retrospective (the owner's request); 0.6.0
 - **Authors**: Marko Dragoljevic
@@ -8,12 +8,12 @@
   vetted and fingerprinted)
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Models page, the model page, the arms badge),
   [UXS-002](../uxs/UXS-002-inspector.md) (conditions)
-- **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md) (experiments and the fingerprint),
+- **Related PRDs**: [PRD-001](PRD-001-evals-and-comparison.md) (evals and the fingerprint),
   [PRD-004](PRD-004-catalog-and-inspector.md) (the catalog and the inspector)
 
 ## Summary
 
-A model a project tests is set up once, written down, checked, and reused by every experiment: its builds on
+A model a project tests is set up once, written down, checked, and reused by every eval: its builds on
 every machine and host it runs on, what it can do, the settings chosen for it and why. Before an arm's full run,
 a short smoke on its own task says whether it runs, how long the run will take and what it will cost, and
 whether its settings leave it reasoning, unbounded or slow. Every run's fingerprint then records the deployment
@@ -21,7 +21,7 @@ it ran on, so a result can always be traced to the weights, server and machine b
 
 ## Background & Context
 
-The triage experiment of 2026-10-30/31 ran some forty arms with each server's defaults, because nothing in the
+The triage eval of 2026-10-30/31 ran some forty arms with each server's defaults, because nothing in the
 harness asked anyone to choose them:
 
 - reasoning models reasoned at their server's default, 300-900 tokens a turn against 55-145 for the models that
@@ -38,7 +38,7 @@ fingerprint that names where a model really ran.
 
 ## Goals
 
-- A model is set up once per project and used by any experiment, with its settings and the reason for each kept.
+- A model is set up once per project and used by any eval, with its settings and the reason for each kept.
 - Each place a model runs (a machine, a server, a hosted route) is checked on its own, because the same weights
   behave differently there.
 - An arm is checked on its own task before its full run, in minutes and for cents, with a projection of what the
@@ -55,15 +55,15 @@ fingerprint that names where a model really ran.
 
 ## Personas
 
-- **The experimenter** adds a model to a goal and wants its arms to run as intended, the first time.
+- **The person running the evals** adds a model to a goal and wants its arms to run as intended, the first time.
 - **The reviewer** reads a result and needs to know which build, on which machine, with which settings.
 - **The next person** reruns an arm months later and needs to set the model up the same way.
 
 ## User Stories
 
-- _As an experimenter, I onboard a model once (`evh model-onboard <id> --deployment <d>`), so that every arm of
+- _As the person running the evals, I onboard a model once (`evh model-onboard <id> --deployment <d>`), so that every arm of
   it inherits settings that were checked._
-- _As an experimenter, I smoke an arm before its full run (`evh arm-smoke --config <arm>`), so that I know it
+- _As the person running the evals, I smoke an arm before its full run (`evh arm-smoke --config <arm>`), so that I know it
   runs, how long it will take and what it will cost before it spends any of it._
 - _As a reviewer, I see on the Models page which models are vetted, where each runs and with what, and on an
   arm's page which deployment its runs used._

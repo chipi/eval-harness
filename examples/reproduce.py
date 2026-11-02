@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rerun any experiment in this repository and see whether its findings hold.
+"""Rerun any eval in this repository and see whether its findings hold.
 
     python examples/reproduce.py plan     scifact [--level local|hosted|baselines|all]
     python examples/reproduce.py data     scifact
@@ -13,12 +13,12 @@ plan     what a rerun involves before anything is spent: every arm, what it cost
          which route a hosted arm would take. Free, offline.
 data     the example's environment (`uv sync`), its public data (`fetch.py`), and the
          hash check against the committed dataset files (`make dataset-materialize`).
-run      reruns the chosen arms into harness/data/runs-repro/<experiment>/ -- gitignored,
+run      reruns the chosen arms into harness/data/runs-repro/<eval>/ -- gitignored,
          never beside the committed runs, which stay the record. A hosted arm's spend is
          capped at twice what it was billed when measured (EVAL_MAX_COST_USD per run).
 compare  a replication card: each rerun arm against its committed run on the same items,
          and every committed separation and tie re-tested with your reruns substituted
-         in. Written to harness/data/runs-repro/<experiment>/REPLICATION.md.
+         in. Written to harness/data/runs-repro/<eval>/REPLICATION.md.
 
 What counts as reproduced is different for the two kinds of arm, and the card says which
 applies. A local model with pinned weights should give the same answers, so its card
@@ -56,7 +56,7 @@ HOSTED_PROVIDERS = {"litellm", "rerank"}
 
 
 def registry() -> dict:
-    return {e["slug"]: e for e in json.loads((HERE / "experiments.json").read_text())["experiments"]}
+    return {e["slug"]: e for e in json.loads((HERE / "evals.json").read_text())["evals"]}
 
 
 def _load_dotenv() -> None:
@@ -134,8 +134,7 @@ def select(arms: dict, level: str, only: str | None) -> list:
         unknown = [a for a in names if a not in arms]
         if unknown:
             raise SystemExit(
-                f"not a measured arm of this experiment: {', '.join(unknown)}\n"
-                f"arms: {', '.join(sorted(arms))}"
+                f"not a measured arm of this eval: {', '.join(unknown)}\narms: {', '.join(sorted(arms))}"
             )
         return names
     kinds = {
@@ -531,7 +530,7 @@ def main() -> int:
     reg = registry()
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("command", choices=("plan", "data", "run", "compare", "list"))
-    ap.add_argument("experiment", nargs="?", help=" | ".join(reg))
+    ap.add_argument("eval", nargs="?", help=" | ".join(reg))
     ap.add_argument("--level", default="local", choices=("local", "hosted", "baselines", "all"))
     ap.add_argument("--arms", help="comma-separated arm names; overrides --level")
     ap.add_argument("--config", help="run: also measure YOUR arm from this config")
@@ -541,7 +540,7 @@ def main() -> int:
         help="data: skip the local-model extras (no PyTorch); enough for hosted arms, BM25 and the baselines",
     )
     a = ap.parse_args()
-    if a.command == "list" or not a.experiment:
+    if a.command == "list" or not a.eval:
         for e in reg.values():
             arms = committed(e)
             kinds = {k: sum(v["kind"] == k for v in arms.values()) for k in ("local", "baseline", "hosted")}
@@ -551,9 +550,9 @@ def main() -> int:
                 f"{kinds['baseline']} baselines, {kinds['hosted']:2d} hosted   billed ${cost:.2f}"
             )
         return 0
-    if a.experiment not in reg:
-        raise SystemExit(f"unknown experiment {a.experiment!r}; one of: {', '.join(reg)}")
-    exp = reg[a.experiment]
+    if a.eval not in reg:
+        raise SystemExit(f"unknown eval {a.eval!r}; one of: {', '.join(reg)}")
+    exp = reg[a.eval]
     return {
         "plan": lambda: plan(exp, a.level, a.arms),
         "data": lambda: data(exp, a.light),

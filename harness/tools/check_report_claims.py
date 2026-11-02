@@ -243,17 +243,15 @@ for label, claimed, (b1, c1, m1), (b2, c2, m2) in DELTAS:
 # arm with no bill and must never be what a report quotes.
 import glob as _glob  # noqa: E402
 
-#: The experiments, from the one registry reproduce.py and the site read
-#: (examples/experiments.json). These tables restated it by hand, so a renamed dataset or
+#: The evals, from the one registry reproduce.py and the site read
+#: (examples/evals.json). These tables restated it by hand, so a renamed dataset or
 #: a moved base directory had to be changed in two places and nothing checked they agreed.
-_EXPERIMENTS = [
+_EVALS = [
     e
-    for e in json.loads((HERE.parents[1] / "examples" / "experiments.json").read_text(encoding="utf-8"))[
-        "experiments"
-    ]
+    for e in json.loads((HERE.parents[1] / "examples" / "evals.json").read_text(encoding="utf-8"))["evals"]
     if e.get("site")
 ]
-COST_REPORTS = {e["report"]: (e["prefix"], e["dataset"]) for e in _EXPERIMENTS if e.get("costs")}
+COST_REPORTS = {e["report"]: (e["prefix"], e["dataset"]) for e in _EVALS if e.get("costs")}
 
 #: The size suffix every config_id ends with. It was a literal "_n200_v1" at each call
 #: site, which is right for the five 200-item datasets and silently wrong for SummEval's
@@ -364,12 +362,12 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
 # week, while the aggregate floor of 40 was cleared by the other three reports. Found by
 # external review. The floor per report below still catches a metric that matches nothing.
 PRIMARY_BY_DATASET = {
-    e["dataset"]: (e["prefix"], e["metric"], HERE.parent / "data" / e["base"]) for e in _EXPERIMENTS
+    e["dataset"]: (e["prefix"], e["metric"], HERE.parent / "data" / e["base"]) for e in _EVALS
 }
 REPORT_DATASETS: dict[str, list[str]] = {}
-for _e in _EXPERIMENTS:
+for _e in _EVALS:
     REPORT_DATASETS.setdefault(_e["report"], []).append(_e["dataset"])
-# SYNTHESIS tables are keyed by EXPERIMENT, not by arm, so this check cannot reach them and
+# SYNTHESIS tables are keyed by EVAL, not by arm, so this check cannot reach them and
 # the per-report floor below deliberately excludes it.
 REPORT_DATASETS["REPORT_SYNTHESIS.md"] = list(PRIMARY_BY_DATASET)
 
@@ -610,7 +608,7 @@ _PROSE = re.compile(
 _prose_bad, _prose_checked = [], 0
 for _rep, _dss in REPORT_DATASETS.items():
     if _rep == "REPORT_SYNTHESIS.md":
-        continue  # keyed by experiment, and spans five datasets
+        continue  # keyed by eval, and spans five datasets
     _lines = (ROOT / "research" / _rep).read_text().splitlines()
     for _ds in _dss:
         _pref, _metric, _base = PRIMARY_BY_DATASET[_ds]
@@ -2503,12 +2501,12 @@ if _hc:
     _bs_p = round(100 * _hc["arms"]["bartscore"]["tau_vs_two_experts"] / _ceil)
     check(
         f"SummEval decision table: the best judge {_bv:.4f}, {_bp}% of one expert's {_ceil:.4f}, "
-        f"UniEval {_ue_pub_p}% ({_ue_p}% on this experiment's inputs), BARTScore {_bs_p}%",
+        f"UniEval {_ue_pub_p}% ({_ue_p}% on this eval's inputs), BARTScore {_bs_p}%",
         f"**{_bv:.4f}**, **{_bp}%** (95% interval "
         f"{round(100 * _hc['arms'][_best]['share_ci95'][0])}–{round(100 * _hc['arms'][_best]['share_ci95'][1])}%) "
         f"of one expert's agreement with the other two (**{_ceil:.4f}**)"
         in _SEV
-        and f"UniEval reaches {_ue_pub_p}% ({_ue_p}% on this experiment's inputs), BARTScore {_bs_p}%" in _SEV
+        and f"UniEval reaches {_ue_pub_p}% ({_ue_p}% on this eval's inputs), BARTScore {_bs_p}%" in _SEV
         and f"| **{_ceil:.4f}** |" in _SEV,
         "the decision table or §3.7 does not state the evidence's figures",
     )
@@ -2650,8 +2648,7 @@ check(
     and f"scores {_gp:.4f} against its {_go:.4f} here: +{_gp - _go:.4f}" in _SEVn
     and f"to SambaNova, scored {_gs:.4f}; on the same text the two providers differ by {_gs - _gp:.4f}"
     in _SEVn
-    and f"{_go - _tau['unieval']:.4f} on this experiment's text and {_gp - _tau['unievalpub']:.4f} on"
-    in _SEVn,
+    and f"{_go - _tau['unieval']:.4f} on this eval's text and {_gp - _tau['unievalpub']:.4f} on" in _SEVn,
     f"pair run taus {_gp} {_gs}",
 )
 _pl = _cal_se.get("position_lookup") or {}
@@ -2773,7 +2770,7 @@ check(
     str(_oth),
 )
 
-# ---- THE PRICE-QUALITY SLOPE OF EVERY EXPERIMENT, AND THE ONE-MODEL PERCENTILE --------
+# ---- THE PRICE-QUALITY SLOPE OF EVERY EVAL, AND THE ONE-MODEL PERCENTILE --------------
 #
 # Review 2026-10-19: only summarisation's fit was checked; the synthesis slope table, the
 # exec-summary range built from it and the sentences in the other reports that repeat a
@@ -2781,7 +2778,7 @@ check(
 # the 67th / 72nd percentile of `glm_m`. Both are recomputed from the committed runs and
 # the stated figures are looked for, by shape, in the text.
 #
-# THE FIT (synthesis section 8): over the experiment's PAID arms (a nonzero billed cost),
+# THE FIT (synthesis section 8): over the eval's PAID arms (a nonzero billed cost),
 # ordinary least squares of the primary metric on log10(billed cost). The slope is the
 # change per 10x, the percentage divides it by the best paid arm's score, r is Pearson.
 _SLOPE_EXPS = [
@@ -2915,9 +2912,9 @@ if len(_fits) == len(_SLOPE_EXPS):
     )
 
 # THE ONE-MODEL PERCENTILE (synthesis section 8, "the strongest argument on the other side").
-# Method, as the text states it: the hosted arms of each experiment (provider litellm, or
+# Method, as the text states it: the hosted arms of each eval (provider litellm, or
 # rerank for SciFact's rerankers); the arms that ran all six; an arm's percentile in an
-# experiment is the share of that experiment's hosted arms it scores above, ITSELF
+# eval is the share of that eval's hosted arms it scores above, ITSELF
 # INCLUDED as a tie, ties counted half (or fully in its favour for the second figure);
 # averaged over the six; the best arm by the first figure.
 _hosted_by_exp: dict = {}
@@ -2949,14 +2946,14 @@ if _common:
     _best = max(_common, key=lambda a: _pct_rank(a, True))
     _mid, _weak = _pct_rank(_best, True), _pct_rank(_best, False)
     _exec = (
-        f"`{_best}`, the best of the twelve hosted arms that ran all six experiments, "
+        f"`{_best}`, the best of the twelve hosted arms that ran all six evals, "
         f"sits at the {_ordinal(round(_mid))} percentile among hosted arms (the share it "
         f"scores above, itself included as a tie, ties counted half, averaged over the "
         f"six; {_ordinal(round(_weak))} if ties are counted fully in its favour)"
     )
     _sec8 = (
         f"**{_ordinal(round(_mid))} percentile across all six** (the share of each "
-        f"experiment's hosted arms, itself included as a tie, that it scores above, ties "
+        f"eval's hosted arms, itself included as a tie, that it scores above, ties "
         f"counted half, averaged; {_ordinal(round(_weak))} if ties are counted fully in "
         f"its favour"
     )
@@ -2970,12 +2967,12 @@ if _common:
     check(
         f"one-model percentile: section 8 states the {_ordinal(round(_mid))} / "
         f"{_ordinal(round(_weak))} and the method",
-        _sec8 in _SYN and "Twelve of the 24 hosted arms ran every experiment" in _SYN,
+        _sec8 in _SYN and "Twelve of the 24 hosted arms ran every eval" in _SYN,
         f"derived {_mid:.2f} / {_weak:.2f}",
     )
 else:
     missing += 1
-    print("  --   one-model percentile: no hosted arm ran all six experiments — skipped")
+    print("  --   one-model percentile: no hosted arm ran all six evals — skipped")
 
 for label, base, cid, metric, lo, hi in PREDICTIONS:
     got = score(base, cid, metric)

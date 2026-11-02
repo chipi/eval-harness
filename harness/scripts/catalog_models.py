@@ -401,7 +401,7 @@ def render_models(A, by_ds: dict, out, nav: list, arms_rows: list[dict] | None =
         f"{len(rows)} models: {n_vetted} vetted, {n_onb} onboarded with no arm smoked, {n_check} to check, "
         f"{len(rows) - n_vetted - n_onb - n_check} not onboarded yet. A model is onboarded once (its deployment on "
         "every machine, what it can do, the settings chosen for it) and vetted when an arm passes its smoke on the "
-        "task's own items; then any experiment's arms use it.",
+        "task's own items; then any eval's arms use it.",
         cp.bar(w["first"], w["until"]),
     )
     if rows:
@@ -513,7 +513,7 @@ def render_model(A, r: dict, out, nav: list) -> None:
     body = cb.hero(
         "model",
         e(r["name"]) + f' <span class="tag-base">{e(r["kind"])}</span>',
-        "A model record: onboarded once for the project and used by any experiment's arms.",
+        "A model record: onboarded once for the project and used by any eval's arms.",
         f'<dl class="kv">{dl}</dl><p class="btns"><a class="btn" href="../models.html">Every model</a></p>',
     )
     # One section, one block per deployment: where it runs and its build in the summary line, and inside, the

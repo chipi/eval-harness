@@ -53,7 +53,7 @@ link); an item the arms do not share says so instead.
 - **Chips:** each chosen arm as a chip with × to remove it.
 - **Add:** a text box with a list of every arm, narrowed to arms on the chosen arms' dataset
   ("add a run on <dataset>"), and an **Add** button.
-- **Nothing chosen:** "Pick runs from an experiment or dataset page in the catalog ("Inspect
+- **Nothing chosen:** "Pick runs from an eval or dataset page in the catalog ("Inspect
   runs"), or add them above."
 - **No server** (the file opened from disk, or the server stopped): "No inspector server. Start
   it with `evh catalog-serve` and open this page from the address it prints."

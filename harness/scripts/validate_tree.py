@@ -94,7 +94,7 @@ problems: list[str] = []
 notes: list[str] = []
 
 #: The bundled demo: `demo_v1` on `smoke_v1` is run many times by `make demo` and by the
-#: self-test, smoke_v1 is not an experiment, and no report cites it. A project adds its own
+#: self-test, smoke_v1 is not an eval, and no report cites it. A project adds its own
 #: exceptions in `duplicate_ok`, each one a deliberate, justified edit.
 _DEMO_DUPLICATE = ("smoke_v1", "demo_v1")
 
@@ -901,7 +901,7 @@ def validation_record_problems(validation_dir: Path) -> list[str]:
 def scorer_problems(scorers_dir: Path) -> list[str]:
     """Every scorer yaml loads and is structurally sound. Not the paid gate: whether a
     scorer is VALIDATED is judge_score's `validation_problems`, and an unvalidated
-    experiment scorer is allowed to exist."""
+    eval scorer is allowed to exist."""
     from evaluation_harness import judge_score as js  # noqa: PLC0415
 
     bad = []

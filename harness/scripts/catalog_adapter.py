@@ -193,7 +193,7 @@ class Adapter(Protocol):
     # Optional: the model records (data/models/) with the arms that use each, [{"record": {...},
     # "arms": [arm id]}]; the Models page and the arms page's model badge read it.
     # def models(self) -> list[dict]: ...
-    # Optional: experiment rounds (ADR-0004), each round's record with "arms", the arm ids in play;
+    # Optional: eval rounds (ADR-0004), each round's record with "arms", the arm ids in play;
     # a goal page shows them as its history.
     # def rounds(self) -> list[dict]: ...
     # Optional: every dataset id, including those no arm has run on yet.
@@ -891,7 +891,7 @@ class HarnessAdapter:
 
     @_memo
     def rounds(self) -> list[dict]:
-        """Experiment rounds (ADR-0004, optional): each round's record, plus "arms" (the arm ids in
+        """Eval rounds (ADR-0004, optional): each round's record, plus "arms" (the arm ids in
         play: runs in any runs directory that name it, and the configs carried in, less the retired)
         and "retired_arms" (the arm ids it retired: a retirement names a runs directory, else the
         project's)."""

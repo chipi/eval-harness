@@ -262,10 +262,10 @@ def drive(base: str, overview: str = "") -> None:
             page.locator("p.pempty").first.is_visible() and not page.locator("table#datasets").is_visible(),
         )
         page.goto(base + "index.html")
-        page.click('.nav details.navgroup[data-group="experiments"] > summary')
+        page.click('.nav details.navgroup[data-group="arms"] > summary')
         check(
-            "menu: Experiments opens Arms, Configs, Models and Metrics",
-            page.locator('.nav details.navgroup[data-group="experiments"] .navlist a').all_inner_texts()
+            "menu: Arms opens Arms, Configs, Models and Metrics",
+            page.locator('.nav details.navgroup[data-group="arms"] .navlist a').all_inner_texts()
             == ["Arms", "Configs", "Models", "Metrics"],
         )
         page.goto(base + "arms.html#p30d")

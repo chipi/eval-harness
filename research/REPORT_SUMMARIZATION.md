@@ -12,7 +12,7 @@
 
 Three limits could change this. `coverage` agrees with expert judgement poorly: τ 0.1011 on SummEval, below plain ROUGE-1's 0.1487 ([REPORT_SUMMEVAL](REPORT_SUMMEVAL.md) §3.3), and on ROUGE-1 the LLMs lead (`bart_l` 12th of 29). Re-scored by SummEval-validated LLM judges, every hosted LLM ranks above every BART model and `anthropic_l` is first on the point estimate (§3.8); one reader's blind check of 20 pairs went the other way, not significantly, so nobody has yet shown which to believe and `coverage` stays the primary metric. And `bart_l`'s result is specific to CNN-style text: an XSum-trained BART scores last of 29 on `coverage`, and no hosted arm was run outside CNN. As run here: the first 200 CNN test articles, hosted LLMs zero-shot on one prompt, one run per arm (§5).
 
-Cross-cutting context for all six experiments: [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
+Cross-cutting context for all six evals: [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
 ### Supporting facts
 
@@ -80,7 +80,7 @@ LLM, DeepSeek-V4.1-Flash, on `coverage` — 0.3461 against 0.3460, p = 0.99 — 
 in the published checkpoint (whether it fits one node is not established)**. Capping an
 open-weight LLM at what fits 128 GB gives up **0.0078** on the point estimate (Llama-3.3-70B,
 `llama_m`, **0.3382** as served, against `deepseek_m`; not separated, p = 0.27), and `bart_l`
-fits any budget. In this experiment the free model is also *slower* than renting (11.0 s vs
+fits any budget. In this eval the free model is also *slower* than renting (11.0 s vs
 1.6 s per item), because generation on a CPU is genuinely expensive. Distillation narrows
 that, at a price that differs by arm. Timed on one machine (`data/runs-linux/`), `bart_l`
 takes **6.3 s**, `bart_m` (1.2 GB, 0.3367) **4.1 s** and `bart_s` (460 MB, 0.3276) **3.4 s**.
@@ -121,7 +121,7 @@ against the other 180 correlate at ρ = 0.597 over the 24 hosted arms, against a
 0.698.
 
 **And ten times the data does not stabilise a ladder.** Two *independent* 100-article
-evals of these arms agree at only ρ = 0.79 and crown the same winner 1% of the time; at
+measurements of these arms agree at only ρ = 0.79 and crown the same winner 1% of the time; at
 20 articles it is ρ = 0.44 and 11% (29 arms). What is stable is membership, not order —
 `deepseek_m` has P(top 5) = 1.00, `llama_l` 0.95, `llama_m` 0.90, and everything from 13th
 down has P(top 5) = 0.00.
@@ -148,7 +148,7 @@ design (with articles available, repeats are the wrong place to spend the same b
 
 **Nine findings in this report's own history were retracted**, two caused by bugs in this
 harness's own scorer, and two more by the n=20 sample itself. §6 records them, because
-the retraction rate measures how much of a first-pass eval is instrument rather than
+the retraction rate measures how much of a first-pass evaluation is instrument rather than
 signal.
 
 ---
@@ -205,7 +205,7 @@ run records `reasoning_tokens` from the provider's own accounting: **0 on all 4,
 
 **Arms.** 8 families × 3 **price tiers**. Price, not size: every family mixes model
 generations within its tier ladder (qwen's "large" is the *oldest* of its three), so this
-experiment cannot attribute any difference between tiers to model size, and does not.
+eval cannot attribute any difference between tiers to model size, and does not.
 
 ---
 
@@ -593,9 +593,9 @@ between the two halves' orderings of the 29 arms (1 = they agree exactly). "Medi
 move" is how many positions an arm typically sits from its
 full-200 rank in a half of that size. "Arms sharing 1st place" is the average number of
 arms tied for the best score in a half; 1.0 means no ties. Bold marks the 20-article size
-of the original experiment and the 100-article size quoted in the summary.*
+of the original eval and the 100-article size quoted in the summary.*
 
-At 20 articles — the size of the original experiment — two independent evals of these arms
+At 20 articles — the size of the original eval — two independent measurements of these arms
 agree at ρ = 0.44. At 100 they still disagree at ρ = 0.79.
 
 ### P(same winner) is 0.01 at 100 articles, and that is a result rather than a regression
@@ -757,7 +757,7 @@ $0.11 against $4.35. The limits: one crowd rating is a noisy baseline, and these
 crowd raters on another set, so they do not compare with SummEval's (one expert against the
 other two there: 0.559); the 19 systems span a wide range of quality, which makes a high
 Spearman easier; the articles and ratings have been public since 2023, so a judge may have seen
-them. The systems are 2022's, not this experiment's arms: this is evidence about the judges, not
+them. The systems are 2022's, not this eval's arms: this is evidence about the judges, not
 a check of the ranking above. The
 ratings are downloaded at run time, not committed; the records, which hold article ids, the
 judges' replies (kept only as a hash when one is not bare JSON scores or repeats 8 consecutive
@@ -766,7 +766,7 @@ scores and hashes, are in `harness/data/judge-validation/<scorer>/zhang2023-cnnd
 
 ## 4. Discussion
 
-**The experiment's resolution is set by the corpus, not the models.** With 67.8% of
+**The eval's resolution is set by the corpus, not the models.** With 67.8% of
 variance between articles and 1.0% between arms, the paired design is doing nearly all the
 work. This is not a small-sample complaint that more data fixes at the margin — it is the
 shape of the task. Ten times the articles moved `coverage` from 1 separated pair to 34, and
@@ -815,7 +815,7 @@ p < 0.05; for three (`llama_l`, `mistral_s`, `gemma_l`) it is not, and the case 
 has — not "which is best" but "which are not worth considering".
 
 **A ladder needs more data than a decision, and possibly more than exists.** §3.6 measures
-it: two independent 100-article evals of these arms still disagree at ρ = 0.79. The gap
+it: two independent 100-article measurements of these arms still disagree at ρ = 0.79. The gap
 between 1st and 3rd here is 0.0078 coverage; between 2nd and 3rd, 0.0005. Closing the
 latter needs a sample in the six figures. The correct output is therefore a *set* — the
 six arms with P(top 5) ≥ 0.47 — not a podium.
@@ -832,7 +832,7 @@ large > mid > small; `openai` mid = large (0.3268 each) > small; `anthropic` the
 small (0.3238) > mid (0.3236) > large; `deepseek` mid > large > small, `glm` mid > small >
 large, `mistral` small > large > mid, `qwen` large > small > mid. Two families run large >
 mid > small, `openai` ties mid and large, one runs the opposite way, four are mixed. Since each ladder mixes model
-generations with price steps, this experiment cannot say whether that is size, generation,
+generations with price steps, this eval cannot say whether that is size, generation,
 or noise.
 
 **Silver's problem is direction, not magnitude.** (From n=20; not re-measured.) A noisy
@@ -847,7 +847,7 @@ every other arm at or below 0.01. Three of the five are their vendor's large tie
 higher price tier does not buy cleaner output — worth checking before paying for one.
 
 
-## 5. What this experiment cannot say
+## 5. What this eval cannot say
 
 - **No measure here has been confirmed by people on these summaries.** `coverage` tracks
   experts less well than ROUGE-1 (on SummEval), and the SummEval-validated LLM judges disagreed
@@ -859,7 +859,7 @@ higher price tier does not buy cleaner output — worth checking before paying f
 - **Which model is best.** 34 of 276 pairs separate on the primary facet, and none of them
   are inside the top six. The output is a set, not a winner.
 - **Whether the ordering would hold on another 200 articles.** Measured, and it largely
-  would not: two independent 100-article evals agree at rho = 0.79 (section 3.6).
+  would not: two independent 100-article measurements agree at rho = 0.79 (section 3.6).
 - **Anything about model size.** The tier axis is price, and confounds generation.
 - **Whether abstractive outputs are accurate.** No metric here detects fabrication;
   `grounding` measures extractiveness and cannot distinguish paraphrase from invention.
@@ -898,7 +898,7 @@ higher price tier does not buy cleaner output — worth checking before paying f
 ## 6. Retracted findings, and what is enforced in code
 
 Nine findings were retracted during this work. They are listed because the retraction rate
-*is* a result: it measures how much of a first-pass eval is instrument rather than signal.
+*is* a result: it measures how much of a first-pass evaluation is instrument rather than signal.
 The first six came from bugs, untested assumptions and reading samples. The seventh and
 eighth came from the 20-article sample itself, and only the re-measurement at n=200
 exposed them; the ninth was a claim about CI that a log line falsified.
@@ -922,7 +922,7 @@ commit whose claim it falsified. Two further rounds of review
 found stale numbers in the first published version of this example's README, and a bug that
 would have crashed a fresh clone *after paying for its first API call*.
 
-> **This is one of six experiments.** What all six agree on — and where they disagree
+> **This is one of six evals.** What all six agree on — and where they disagree
 > with the conventional reading of a leaderboard — is in
 > [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
@@ -993,8 +993,8 @@ precisely so a future divergence can be attributed rather than guessed at.
 
 ## Costs are what the provider billed
 
-The `$` figures are what the provider reported charging, per call, in `usage.cost`, not a price computed from `usd_per_mtok_in/out` in each arm's config. A config holds one price per model **alias**, and an alias is not a price. OpenRouter routes each request to one of several upstream providers — a single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 — and they charge differently, so the effective price is a routing-dependent mixture no config can state in advance. Measured over the hosted runs of the five experiments other than SummEval, the price table is wrong **per arm by 0.67× to 3.76×, in both directions**.
+The `$` figures are what the provider reported charging, per call, in `usage.cost`, not a price computed from `usd_per_mtok_in/out` in each arm's config. A config holds one price per model **alias**, and an alias is not a price. OpenRouter routes each request to one of several upstream providers — a single run in this repo recorded Novita 262 times, Parasail 9, DeepInfra 6, Nebius 3 — and they charge differently, so the effective price is a routing-dependent mixture no config can state in advance. Measured over the hosted runs of the five evals other than SummEval, the price table is wrong **per arm by 0.67× to 3.76×, in both directions**.
 
 **The error is not uniform, and that is what makes it matter.** Arms served by a single provider — the Anthropic models, notably — match the table exactly. The cheap, multi-routed models are undercounted. So the table systematically **understates the cheap end of the field, and therefore inflates every price-ratio claim.** It also reorders arms by cost: on `few_nerd_280`, `glm_s` is the 2nd-cheapest arm by the table and the 9th by what was billed. Rankings by *quality* never depended on cost.
 
-Every experiment's adapter records `usage.cost` when the provider supplies it and falls back to the table only when it is silent. Runs made before the adapters recorded it keep the estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run.
+Every eval's adapter records `usage.cost` when the provider supplies it and falls back to the table only when it is silent. Runs made before the adapters recorded it keep the estimate in `cost_usd`; the billed figure is in `_meta.usage.cost` in each stored run.

@@ -13,7 +13,7 @@
 > methodology as about which model won.
 
 
-> **This is one of six experiments.** What all six agree on — and where they disagree
+> **This is one of six evals.** What all six agree on — and where they disagree
 > with the conventional reading of a leaderboard — is in
 > [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
@@ -25,7 +25,7 @@
 zero-shot hosted LLM for this job.** `span_marker` (a published checkpoint trained on
 Few-NERD's own training split; 499 MB, CPU, $0 to run) scores **0.7674** against **0.6864**
 for the best of 24 zero-shot hosted LLMs (`openai_m`, $2,324/month per 1M items), and is
-separated from all 27 other arms: the one separated win in the six experiments. If you do
+separated from all 27 other arms: the one separated win in the six evals. If you do
 rent, the data cannot choose among `openai_m` and the seven hosted arms it is not separated
 from: take the cheapest, `gemma_m` (≈$32/month per 1M items, +0.0131 F1 behind, p = 0.43),
 not the dearest, `anthropic_l` ($2,463/month, 0.0066 behind `openai_m`, not separated).
@@ -42,13 +42,13 @@ hosted models (§5).
 
 | the choice | what the data says |
 |---|---|
-| **Self-host · small ML** | **`span_marker`**: CC-BY-SA-4.0, 499 MB, CPU, 0.76 s/item on this run's machine. **0.7674, separated from all 27 other arms** (the 24 hosted, `gliner`, `capitalized`, `nothing`). The one separated win in the six experiments. |
+| **Self-host · small ML** | **`span_marker`**: CC-BY-SA-4.0, 499 MB, CPU, 0.76 s/item on this run's machine. **0.7674, separated from all 27 other arms** (the 24 hosted, `gliner`, `capitalized`, `nothing`). The one separated win in the six evals. |
 | **Self-host · open-weight LLM (≤64 or ≤128 GB)** | **`gemma_m`**, Apache-2.0, ~52 GB of weights: fits 128 GB, and leaves ~12 GB of a 64 GB box for KV cache and runtime. Nothing was run locally. 0.6733 as served by 13 providers, **0.0941 behind** the tagger, 103× its download size (25.8B total / ~4B active parameters against 124.75M). |
 | **Deploy · rented API** | **`openai_m`** is best by point estimate: $2,324/month per 1M items, 0.6864, 10.6% below `span_marker`, 2× slower. Not separated from seven other hosted arms, up to 0.0383 behind (`gemma_l`: p = 0.0084 against a Holm threshold of 0.0071). Cheapest of the eight: `gemma_m`, ≈$32/month, +0.0131 behind (p = 0.43). |
 | **What not to deploy** | `anthropic_l`: the most expensive arm, $2,463/month per 1M items, 11.4% below `span_marker`. 0.0066 behind `openai_m` (p = 0.67, not separated, §3.3); 78× the price of `gemma_m` at the routed mix billed in this run for a +0.0065 point-estimate gap (not tested pairwise). |
-| **Does paying more help?** | A little, not enough. Across the 24 hosted arms, +0.0407 F1 per 10× in cost (r = 0.50, 95% Fisher interval 0.13 to 0.75): 5.9% of the best hosted F1, 5.3% of `span_marker`'s. A cross-vendor association confounded with vendor. The steepest absolute slope of the six experiments (SummEval's is larger as a share of its best score; [synthesis](REPORT_SYNTHESIS.md)). |
+| **Does paying more help?** | A little, not enough. Across the 24 hosted arms, +0.0407 F1 per 10× in cost (r = 0.50, 95% Fisher interval 0.13 to 0.75): 5.9% of the best hosted F1, 5.3% of `span_marker`'s. A cross-vendor association confounded with vendor. The steepest absolute slope of the six evals (SummEval's is larger as a share of its best score; [synthesis](REPORT_SYNTHESIS.md)). |
 | **What part of the lead is learned convention?** | Against `openai_m`: 57% on `other` (30–57% across the 24 hosted arms, for a prompt that defines no type) and up to 38% on 34 disputed labels (19–34% against the next three hosted arms; 7–53% across thresholds 90% to 70%; voters share zero-shot priors). They overlap. Lead after the bound: 0.0503. On `person`, three hosted arms edge it by 0.004–0.007 (untested). |
-| **Is a pilot enough?** | Here yes: ρ = 0.963 over the 28 arms, from the dev items inside the committed 280-item runs (§3.8), right winner. In 3 of the 4 other experiments that ran a pilot it was wrong (a count from the [synthesis](REPORT_SYNTHESIS.md), not a result of this run). |
+| **Is a pilot enough?** | Here yes: ρ = 0.963 over the 28 arms, from the dev items inside the committed 280-item runs (§3.8), right winner. In 3 of the 4 other evals that ran a pilot it was wrong (a count from the [synthesis](REPORT_SYNTHESIS.md), not a result of this run). |
 | **Fine-tune or pay?** | Fine-tune, if you have labelled data, as run here: 0.7674 against 0.6864 at $0 to run. The zero-shot control `gliner` (0.4540, +0.3134 behind) differs in training exposure and architecture, so that gap is both, split unmeasured (§3.5); the case rests on `span_marker` beating the LLMs, not on it. |
 
 *How to read this table.* Scores are **mean per-sentence F1** over 280 sentences (0–1,
@@ -56,9 +56,9 @@ higher is better; §2). **% below** is relative to `span_marker`: (0.7674 − th
 0.7674. **$/month per 1M items** = what the provider billed for the 280 sentences, scaled to
 one million items a month. **Separated** = a paired sign-flip permutation test on per-sentence
 F1, Holm-corrected over the declared family of 27 opponents at α = 0.05 (§3.2).
-Cross-cutting context for all six experiments: [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
+Cross-cutting context for all six evals: [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
-### What this experiment specifically found
+### What this eval specifically found
 
 1. **A winner, not a group.** `span_marker` scored **0.7674** against a hosted field of
    0.524–0.686, separated from all 27 other arms (Holm step-down over a family declared in

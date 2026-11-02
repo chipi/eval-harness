@@ -8,11 +8,11 @@ Every row links to the primary source: the HuggingFace repo for a model or datas
 paper or specification for a metric.
 
 - [Metrics](#metrics) — what each number means, how it is computed here, and what it cannot see
-- [Success criteria per experiment](#success-criteria-per-experiment) — what "good" meant, and why
+- [Success criteria per eval](#success-criteria-per-eval) — what "good" meant, and why
 - [Models](#models) — every arm, with the exact weights or upstream model id
 - [Datasets](#datasets) — every corpus, its licence, and its download recipe
 - [Statistical tests](#statistical-tests) — how separation is decided
-- [Terminology](#terminology) — the canonical name for every experiment, arm and term
+- [Terminology](#terminology) — the canonical name for every eval, arm and term
 - [`papers/`](papers/README.md) — every cited work with the redistribution licence **read from the publisher's page**, and a fetcher for the thirteen mirrored here
 
 ---
@@ -121,13 +121,13 @@ Calibration: ROUGE-1 against these experts, ρ 0.192 / τ 0.150 in [G-Eval](http
 
 ---
 
-## Success criteria per experiment
+## Success criteria per eval
 
 "Which arm is best" is decided by exactly one metric per example, fixed before any arm
 ran. Everything else is read **after** the ranking, to understand it rather than to change
 it.
 
-| Experiment | Ranked by | Floors (non-model arms, checked first) | Read after ranking |
+| Eval | Ranked by | Floors (non-model arms, checked first) | Read after ranking |
 |---|---|---|---|
 | Summarisation · CNN/DM | `coverage` | `lead3` — the first three sentences. A model below it has not earned its inference cost. | `grounding` (did it leave the source?), `length_vs_reference` (did it win by padding?), `concision` |
 | Classification · AG News | `correct` | `constant` (always one class, ≈0.25) and `keyword` (~20 regex rules) | `parsed` and `correct_after_repair` — the parser is part of the system; macro-F1 for concentrated blind spots; `confidence` calibration |
@@ -198,7 +198,7 @@ price tier.
 > count is not a test of openness: `mistral_l` is served only by Mistral and its
 > weights are on HuggingFace under Apache-2.0. What that is worth is measured in
 > [`REPORT_SYNTHESIS.md` §0](../research/REPORT_SYNTHESIS.md) — **the best proprietary
-> arm was never separated from the best open-weight arm in any of the six experiments.**
+> arm was never separated from the best open-weight arm in any of the six evals.**
 
 > **A hosted model has no verifiable identity.** The fingerprint's deployment records the
 > provider and the upstream id the gateway resolved behind the alias (`deployment.hosted`),
@@ -339,7 +339,7 @@ values — and permutation assumes only exchangeability under the null.
 ## Terminology
 
 Fixed names, used the same way in every document here. Where a table's first column is
-"experiment", every cell in it reads **`Task · Dataset`** — mixing a task name in one row
+"eval", every cell in it reads **`Task · Dataset`** — mixing a task name in one row
 with a dataset name in the next is what this convention exists to stop.
 
 | canonical label | task | dataset | report |
@@ -351,7 +351,7 @@ with a dataset name in the next is what this convention exists to stop.
 | **Retrieval · SciFact** | retrieval | [BEIR SciFact](https://huggingface.co/datasets/BeIR/scifact) | [REPORT_RETRIEVAL](../research/REPORT_RETRIEVAL.md) |
 | **Judging · SummEval** | judging (an LLM as the grader) | [SummEval](https://huggingface.co/datasets/mteb/summeval) | [REPORT_SUMMEVAL](../research/REPORT_SUMMEVAL.md) |
 
-Two experiments share the *classification* task and differ only in dataset, which is why
+Two evals share the *classification* task and differ only in dataset, which is why
 the dataset is never optional in these labels.
 
 ### Other fixed terms
@@ -359,7 +359,9 @@ the dataset is never optional in these labels.
 | term | means | instead of |
 |---|---|---|
 | **arm** | one configuration under test — a model *plus* its prompt, parameters and parsing | "model", which is only part of an arm |
-| **experiment** | one task on one dataset, with its own report section | "dataset" or "task" alone |
+| **eval** | one task on one dataset, with its own report section — OpenAI's "eval", inspect_ai's "task" | "experiment", which Braintrust and LangSmith use for one run; "dataset" or "task" alone |
+| **run** | one arm over one dataset: `evh run`; Braintrust and LangSmith call it an experiment | "experiment" |
+| **comparison** | several runs of one eval side by side, in the inspector or `evh inspect` | "experiment" |
 | **dev slice / measurement slice** | the small tuning set / the frozen set results are reported on | "train/test", which implies we trained something |
 | **floor** | a non-model arm (rule, constant or random: `lead3`, `keyword`, `constant`, `nothing`, `capitalized`, `random`, `first_k`); those with a score predictable in advance double as scorer calibration checks | "baseline" — the predictable ones are scorer checks first |
 | **separated** | the difference survives Holm step-down at α = 0.05 | "better", which only needs a point estimate |

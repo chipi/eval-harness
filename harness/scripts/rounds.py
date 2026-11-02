@@ -1,4 +1,4 @@
-"""Experiment rounds (ADR-0004), optional: open, retire, close, and the status with suggestions.
+"""Eval rounds (ADR-0004), optional: open, retire, close, and the status with suggestions.
 
     evh round-open   --goal G --dataset D [--from rN] [--hypothesis "..."] [--change "..."]...
                      [--keep cfg,...] [--retire cfg,... --reason "..."] [--budget-usd N]

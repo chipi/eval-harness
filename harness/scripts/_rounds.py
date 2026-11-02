@@ -1,4 +1,4 @@
-"""Experiment rounds (ADR-0004), optional: the records, and which runs belong to which round.
+"""Eval rounds (ADR-0004), optional: the records, and which runs belong to which round.
 
 A round is data/rounds/<goal_id>/<round_id>.yaml (schemas/round.schema.json). Its arms are not
 listed in it: they are the configs whose runs name the round (`round:` in the config, recorded on

@@ -10,7 +10,7 @@
 - **Related RFCs**: [RFC-023](../rfc/RFC-023-labels-and-references.md) (labels and promotion),
   [RFC-002](../rfc/RFC-002-run-records-and-derived-runs.md) (derived runs: re-scoring onto another reference)
 - **Related ADRs**: [ADR-0022](../adr/ADR-0022-references-are-promoted-labels.md) (a reference is labels you promote)
-- **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md), [PRD-003](PRD-003-judging.md),
+- **Related PRDs**: [PRD-001](PRD-001-evals-and-comparison.md), [PRD-003](PRD-003-judging.md),
   [PRD-014](PRD-014-datasets-from-production.md) (labels on production data)
 
 ## Summary

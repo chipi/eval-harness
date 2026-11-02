@@ -5,7 +5,7 @@
 - **Related PRDs**: [PRD-004](../prd/PRD-004-catalog-and-inspector.md) (catalog and inspector),
   [PRD-005](../prd/PRD-005-goals-and-rounds.md) (goals and rounds), [PRD-006](../prd/PRD-006-datasets-versions-fields.md) (versions, fields),
   [PRD-002](../prd/PRD-002-references.md) (references)
-- **Related RFCs**: [RFC-003](../rfc/RFC-003-catalog-adapter.md) (the adapter and the build), [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds)
+- **Related RFCs**: [RFC-003](../rfc/RFC-003-catalog-adapter.md) (the adapter and the build), [RFC-004](../rfc/RFC-004-eval-rounds.md) (rounds)
 - **Related UX specs**: [UXS-002](UXS-002-inspector.md) (the inspector, linked from every page),
   [UXS-003](UXS-003-cli-and-onboarding.md) (the same views as commands)
 - **Implementation paths**: `harness/scripts/catalog_build.py` (pages),
@@ -41,7 +41,7 @@ project with gold, silver and an open round.
   an MCP tool for an agent (`evh mcp`, [RFC-018](../rfc/RFC-018-read-only-mcp-server.md)), read-only
   the same way.
 - **Dense, quiet, both themes.** Tables carry the data; colour marks meaning, never decoration:
-  a subject (goals, data, experiments, work and spend), a row's tint, a series. Never red or
+  a subject (goals, data, arms, work and spend), a row's tint, a series. Never red or
   green for a direction: a count that went up is neither good nor bad.
 - **A tile is a door.** Whatever a home tile counts, the page it opens shows in more detail, for
   the same period.
@@ -96,7 +96,7 @@ tables 15px.
 - **Header bar:** the brand (the icon and the product's name, `--brand`, "eval catalog" by
   default, linking to the overview); the global search ("Search ( / )"); the nav, by the
   subjects of the home tiles: **Overview**, **Goals**, **Data ▾** (Datasets, Captures, Labels, References),
-  **Experiments ▾** (Arms, Configs, Models, Metrics), **Activity**, **Inspector**; the theme toggle. A
+  **Arms ▾** (Arms, Configs, Models, Metrics), **Activity**, **Inspector**; the theme toggle. A
   group opens a short list under its name and closes on a click elsewhere; the group a page
   belongs to is underlined like a current page. On a phone the nav is a ☰ menu at the left of
   the bar listing every page, a group's under its name; the name gives way to the icon, and the
@@ -228,7 +228,7 @@ The whole project at a glance, for the period picked ([the period](#the-period-e
   (this repository's says which project the catalog shows, where its findings are, and that an
   agent can ask it over MCP at `https://evals.humancopilot.eu/mcp`); then the period bar and the **tiles**, in four subjects, one colour each (a band on
   top, its trend badge, its line), named in a legend under them: **goals** (goals); **data**
-  (datasets, references); **experiments** (configs, arms, models, metrics); **work and spend**
+  (datasets, references); **arms** (configs, arms, models, metrics); **work and spend**
   (measured runs, billed in USD, tokens). The colour says what a tile is about and nothing
   more. Each tile opens its page at the period picked: goals, datasets, references and metrics
   their pages; arms the arms page; models the models page; configs the arms page grouped by config; measured runs,
@@ -613,7 +613,7 @@ is used. A models tile on the home page opens it, beside arms.
 
 - Hero: kicker `models`, "Models", "N models: K vetted, O onboarded with no arm smoked, L to check, M not
   onboarded yet. A model is onboarded once (its deployment on every machine, what it can do, the settings chosen
-  for it) and vetted when an arm passes its smoke on the task's own items; then any experiment's arms use it.",
+  for it) and vetted when an arm passes its smoke on the task's own items; then any eval's arms use it.",
   then the period bar.
 - `01 every model` (without records: how to add one):
   - **only** chips, each shown only when some record has the value: llm, ml, baseline; self-hosted, hosted;

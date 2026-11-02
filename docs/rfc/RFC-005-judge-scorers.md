@@ -21,10 +21,10 @@ its first uses found.
 ## Problem Statement
 
 The harness separates what a run produced from how it was measured, and `rescore` recomputes
-code scorers for $0. In this repository, the summarisation experiment ranks 29 arms by
-`coverage`, its own overlap metric, while the SummEval experiment measured that `coverage` agrees
+code scorers for $0. In this repository, the summarisation eval ranks 29 arms by
+`coverage`, its own overlap metric, while the SummEval eval measured that `coverage` agrees
 with human experts at τ 0.1011, below plain ROUGE-1 (0.1487), and the best LLM judges at 0.5195,
-93% of one expert's agreement with the other two. One experiment had validated a better
+93% of one expert's agreement with the other two. One eval had validated a better
 instrument for another. A judge is not a code scorer, and four properties make `rescore` the wrong
 home for it:
 
@@ -104,13 +104,13 @@ nothing. `evh judge` stays the older pointwise judge panel.
 
 ## What the first uses found
 
-The first use was the summarisation experiment, re-measured with judges validated on SummEval.
+The first use was the summarisation eval, re-measured with judges validated on SummEval.
 Validated on 2019-era summaries, the judges ranked every LLM above every BART model. The one human
 check on these outputs went the other way (one non-expert reader, 20 pairs on truncated articles,
 14 to 6 for BART, p = 0.115), which confirms neither. On three 2022 systems (GPT-3, BRIO and T0)
 the judges matched the annotators' agreement with each other, and preferred the LLM summary to
 BRIO's more often than the annotators did, within noise. Neither shows whether the validation
-transfers to this experiment's outputs; calibrate on comparable human data before a judged score
+transfers to this eval's outputs; calibrate on comparable human data before a judged score
 replaces a primary. Larger, dearer judges did not settle it either: the two highest-scoring
 SummEval judges from vendors not in the first pair (`judge-summ-v2`, the same prompt, reasoning
 off, at 41× the cost) reached the same verdict and the same 20-to-0 preference on the human-check
@@ -118,7 +118,7 @@ pairs. Checked against crowd ratings of LLM-era summaries (Zhang et al. 2024), a
 track the raters better than one rater does on coherence and relevance (they trail one on
 faithfulness) and, by mean coherence and relevance, rank a BART-based fine-tune first or second of
 19, so they show no blanket preference for LLM-written summaries; they still deviate from the
-raters system by system in both directions. This experiment's own outputs are still unchecked by
+raters system by system in both directions. This eval's own outputs are still unchecked by
 people beyond the one reader.
 
 The second is SciFact: 227 relevance judgments cover 200 queries, so a relevant but unlabelled
@@ -134,7 +134,7 @@ human-labelled sample validates it, the case the gate exists for.
 - **A judge inside `score()`, run by `rescore`.** Pointwise, which was not validated (SummEval's
   one pointwise scorer, UniEval, reached 64%), and it would hide paid, non-deterministic calls in a
   command documented as free. Rejected.
-- **A new experiment ("summarisation, judged").** Duplicates arms and outputs and loses the link
+- **A new eval ("summarisation, judged").** Duplicates arms and outputs and loses the link
   to the runs that produced them. Rejected.
 - **One judge.** Leaves self-preference unmeasured. Rejected.
 - **Human scoring of every output.** The gold standard, with no budget for 200 × 29 summaries; a

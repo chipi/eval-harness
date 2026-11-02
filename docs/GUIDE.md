@@ -369,7 +369,7 @@ Each tutorial starts from where this page ends, or from a project of your own:
 | [**1 · A local model against a baseline**](tutorials/1-local-model.md) | your own items, your own `adapter.py`, a small model on CPU against a no-model baseline |
 | [**2 · A hosted LLM, with your own key**](tutorials/2-hosted-llm.md) | the providers you can choose (OpenAI-compatible endpoints such as OpenRouter, Anthropic, a LiteLLM proxy), the variable each one reads, prices and a spend cap |
 | [**3 · A frontier model's run as the reference, gold, and judging**](tutorials/3-frontier-reference-and-judging.md) | how good the silver was, measured against answers a person wrote, and re-measuring the stored outputs with LLM judges |
-| [**4 · Experiment rounds and dataset versions**](tutorials/4-rounds-and-versions.md) | round on round: keep what wins, drop what lost, record why; a new version of a dataset that remembers where it came from |
+| [**4 · Eval rounds and dataset versions**](tutorials/4-rounds-and-versions.md) | round on round: keep what wins, drop what lost, record why; a new version of a dataset that remembers where it came from |
 | [**5 · The catalog and the inspector**](tutorials/5-catalog-and-inspector.md) | pages over your runs, an inspector that tests arms item by item, and the `evh` command behind every view |
 | [**6 · Datasets from production**](tutorials/6-datasets-from-production.md) | what your system did in production, kept as a capture: a dataset from it, labels from what happened afterwards, dev and heldout; then production's own decisions scored against those labels, the rows where it was wrong picked, and the next version of a dataset you govern made from them |
 | [**7 · Set up a model before you test it**](tutorials/7-set-up-a-model.md) | a model record, onboarding it where it runs (its build, whether it reasons, JSON, determinism), an arm that names it, a smoke before the full run; on your own machine with Ollama |
@@ -383,5 +383,5 @@ command, flag, environment variable and exit code), [CONCEPTS](../harness/docs/C
 And for an agent: the catalog's views you ran here (`evh runs-list`, `validate`, `goals`,
 `inspect`) are also tools; the ranking and the tests (`leaderboard`, `pair-test`, `family-test`)
 are not tools yet. `evh mcp` serves them to Claude, ChatGPT, the OpenAI API, Gemini or any MCP client, on your project or for a team; this repository's own
-experiments answer at `https://evals.humancopilot.eu/mcp`, without sign-in
+evals answer at `https://evals.humancopilot.eu/mcp`, without sign-in
 ([INTEGRATION](../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp)).

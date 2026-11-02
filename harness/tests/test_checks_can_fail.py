@@ -155,7 +155,7 @@ PLANTS = [
     ),
     (
         "tools/check_terminology.py",
-        "a non-canonical experiment label",
+        "a non-canonical eval label",
         "docs/REFERENCE.md",
         "| Retrieval · SciFact |",
         "| Retrieval on SciFact |",

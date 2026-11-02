@@ -158,7 +158,7 @@ ADR-0002's note (2026-10-21) proposed names and fields that changed while it was
 - **A database behind the inspector.** Rejected: the data tree is the record; the adapter reads
   it as it is.
 - **A server that writes decisions.** Set aside: the public deployment depends on "the server
-  never writes" ([ADR-0004](../adr/ADR-0004-experiment-rounds.md)).
+  never writes" ([ADR-0004](../adr/ADR-0004-eval-rounds.md)).
 
 ## Open
 

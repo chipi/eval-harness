@@ -73,10 +73,10 @@
     "validation": {
       "type": "object",
       "description": "The measurement that validates these judges for this use. Absent: the scorer is unvalidated and runs only with --unvalidated.",
-      "required": ["experiment", "runs"],
+      "required": ["dataset_id", "runs"],
       "additionalProperties": false,
       "properties": {
-        "experiment": {"type": "string"},
+        "dataset_id": {"type": "string"},
         "what": {"type": "string"},
         "metric": {"type": "string"},
         "min_metric": {"type": "number"},

@@ -1,4 +1,4 @@
-# configs/ — experiment definitions
+# configs/ — arm configs: one arm (model, prompt, parameters) on one dataset
 
 One YAML per arm. Required: `config_id`, `dataset_id` and `params`; optional `adapter`,
 `goal` and `format`, and nothing else (`validate` V1). Everything under `params` is handed

@@ -10,7 +10,7 @@ one text to one text. Classification compares one label to one label. Extraction
 a set to a set, where order is irrelevant. Here order carries meaning, and the thing being
 searched is a 5,183-document corpus that no item mentions and no arm is scored on.
 
-> **Rerun this experiment** from the repository root — `EXP=scifact`:
+> **Rerun this eval** from the repository root — `EXP=scifact`:
 >
 > ```bash
 > make plan EXP=scifact  &&  make data EXP=scifact  &&  make reproduce EXP=scifact  &&  make compare EXP=scifact

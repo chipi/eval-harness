@@ -6,7 +6,7 @@
 - **Authors**: Marko Dragoljevic
 - **Related**: [PRD-015](../prd/PRD-015-models-onboarded-once.md), [ADR-0021](../adr/ADR-0021-a-deployment-is-vetted.md); [RFC-020](RFC-020-onboarding-a-model.md) (model records; their builds become deployments here);
   [RFC-002](RFC-002-run-records-and-derived-runs.md) (the run record that carries the fingerprint);
-  0.7.0's plan to run experiments on other machines (the runner)
+  0.7.0's plan to run evals on other machines (the runner)
 
 ## Abstract
 
@@ -21,7 +21,7 @@ outside the comparison hash.
 
 ## Motivation
 
-Measured on the triage experiment, 2026-10-30/31:
+Measured on the triage eval, 2026-10-30/31:
 
 - The same weights, at temperature 0, gave byte-identical outputs on one machine and different decisions on
   another (Bolt e4b: 10-14 of 65 decisions differ between X3, the DGX and the Mac). The hardware that served the
@@ -96,7 +96,7 @@ reported, and a call served by another host is flagged by `evh arm-smoke`.
 ### The runner
 
 v4's `host` becomes `runner`, outside the hash. Latency is the deployment's, measured from the runner: a run
-records both, and a comparison of speed across runners says so. 0.7.0 runs experiments on other machines; the
+records both, and a comparison of speed across runners says so. 0.7.0 runs evals on other machines; the
 runner is then simply the machine that ran them, with nothing else to change.
 
 ### Migration: every committed run to v5

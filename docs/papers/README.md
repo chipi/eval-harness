@@ -1,6 +1,6 @@
 # Papers — what may be mirrored here, what may not, and which thirteen are
 
-Every work cited in [`../REFERENCE.md`](../REFERENCE.md) and the per-experiment
+Every work cited in [`../REFERENCE.md`](../REFERENCE.md) and the per-eval
 `METHOD.md` files, with the redistribution licence **read from the publisher's own page**
 on 2026-09-29 rather than assumed.
 

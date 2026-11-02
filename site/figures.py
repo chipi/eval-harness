@@ -22,14 +22,10 @@ HARNESS = ROOT / "harness"
 DATA = HARNESS / "data"
 
 #: The measurement slices on the site, from the registry `make reproduce` uses too -- so the site
-#: and a stranger's rerun cannot mean different experiments. `base` is the directory the
+#: and a stranger's rerun cannot mean different evals. `base` is the directory the
 #: REPORT is computed from; billed cost always comes from data/runs, where the provider's
 #: response was recorded.
-EXPERIMENTS = [
-    e
-    for e in json.loads((ROOT / "examples" / "experiments.json").read_text())["experiments"]
-    if e.get("site")
-]
+EVALS = [e for e in json.loads((ROOT / "examples" / "evals.json").read_text())["evals"] if e.get("site")]
 
 #: Arms that are not models at all — calibration floors for the scorer. On SummEval that
 #: is every free scorer but BARTScore and UniEval: ROUGE, `coverage` and length are rules, not models.
@@ -121,7 +117,7 @@ def _not_separated(exp: dict) -> list:
     ]
 
 
-def experiment(exp: dict, weights: dict) -> dict:
+def eval_figures(exp: dict, weights: dict) -> dict:
     scored = _runs(exp["base"], exp["dataset"], exp["prefix"], exp["suffix"])
     billed = _runs("runs", exp["dataset"], exp["prefix"], exp["suffix"])
     arms = []
@@ -216,12 +212,12 @@ def calibration() -> list:
 
 
 def hardware() -> list:
-    """The machines behind the experiments (docs/evidence/hardware.json), each with the
+    """The machines behind the evals (docs/evidence/hardware.json), each with the
     committed runs whose fingerprint names it. Every run must match exactly one machine,
     or the build stops: a run measured somewhere undocumented is a gap, not a footnote."""
     hw = json.loads((ROOT / "docs" / "evidence" / "hardware.json").read_text())["machines"]
     machines = [{**m, "hosted": 0, "local": 0} for m in hw]
-    for exp in EXPERIMENTS:
+    for exp in EVALS:
         for _arm, d in _runs("runs", exp["dataset"], exp["prefix"], exp["suffix"]).items():
             fp = json.loads((d / "metrics.json").read_text()).get("fingerprint") or {}
             host = fp.get("runner") or {}
@@ -389,7 +385,7 @@ def zhang_figures() -> dict:
 
 def instrument_check(exps: list) -> dict:
     """How well each instrument agrees with SummEval's experts (mean Kendall tau): the
-    summarisation experiment's own metric, ROUGE-1, the best free scorer, the best judge."""
+    summarisation eval's own metric, ROUGE-1, the best free scorer, the best judge."""
     x = next(e for e in exps if e["slug"] == "summeval")
     s = {a["arm"]: a["score"] for a in x["arms"]}
     local = [a for a in x["arms"] if a["kind"] == "local"]
@@ -406,9 +402,9 @@ def instrument_check(exps: list) -> dict:
 
 
 def goal_decisions(exps: list) -> None:
-    """Each experiment's goal decision, as the catalog computes it (tools/goal_decisions.py): the
+    """Each eval's goal decision, as the catalog computes it (tools/goal_decisions.py): the
     gold leader, the promoted baseline and its reason, the recommendation and its reasons, with
-    arm ids shortened to the site's arm names. Added to each experiment as `goal`."""
+    arm ids shortened to the site's arm names. Added to each eval as `goal`."""
     rows = json.loads(
         subprocess.run(
             [sys.executable, str(HARNESS / "tools" / "goal_decisions.py")],
@@ -440,7 +436,7 @@ def goal_decisions(exps: list) -> None:
 
 def compute() -> dict:
     weights = _weights()
-    exps = [experiment(e, weights) for e in EXPERIMENTS]
+    exps = [eval_figures(e, weights) for e in EVALS]
     goal_decisions(exps)
     all_arms = sum(e["n_arms"] for e in exps)
     billed = sum(e["billed_total"] for e in exps)
@@ -456,12 +452,12 @@ def compute() -> dict:
         raise SystemExit("check_report_claims is not green; the site will not claim it is")
     return {
         "claims_checked": int(m.group(2)),
-        "experiments": exps,
+        "evals": exps,
         "total_arms": all_arms,
         "total_billed": billed,
         "dearest_never_best": sum(e["dearest"]["arm"] != e["top"]["arm"] for e in exps),
         # SciFact ran only the twelve cheapest hosted models, so its dearest arm is not a
-        # frontier model; the headline stat counts only experiments where one ran.
+        # frontier model; the headline stat counts only evals where one ran.
         "frontier_exps": sum(_has_frontier(e) for e in exps),
         "dearest_not_best_frontier": sum(
             _has_frontier(e) and e["dearest"]["arm"] != e["top"]["arm"] for e in exps
@@ -494,7 +490,7 @@ def _has_frontier(e) -> bool:
 
 if __name__ == "__main__":
     f = compute()
-    for e in f["experiments"]:
+    for e in f["evals"]:
         print(
             f"{e['bench']:14s} n={e['n_items']} arms={e['n_arms']} top={e['top']['arm']} "
             f"{e['top']['score']:.4f} dearest={e['dearest']['arm']} rank {e['dearest']['rank']}"

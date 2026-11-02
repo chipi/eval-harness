@@ -595,7 +595,7 @@ check(
     and js.parse_block(json.dumps({d: [4] for d in js.DIMS}), 1) == [4.0],
 )
 check(
-    "a scorer with no validation.experiment gets a label, not a KeyError",
+    "a scorer with no validation.dataset_id gets a label, not a KeyError",
     js.validated_label({"validation": {}}).startswith("validated by"),
 )
 
@@ -720,7 +720,7 @@ check(
     all(r.get("min_metric") is not None for r in real["validation"]["runs"]),
 )
 check(
-    "the label names the validation experiment and says it is provenance",
+    "the label names validation.dataset_id's dataset and says it is provenance",
     js.validated_label(real) == "validated on summeval_100 (provenance)",
 )
 with tempfile.TemporaryDirectory() as tmp:
@@ -910,7 +910,7 @@ with tempfile.TemporaryDirectory() as tmp:
         print((lb_run.stdout + lb_run.stderr)[-600:])
 
 
-# ── one summary per call (the pointwise experiment) ──────────────────────────
+# ── one summary per call (the pointwise eval) ────────────────────────────────
 p1 = js.render_prompt(BASE, 1)
 check(
     "N=1: singular grammar in both count phrases",

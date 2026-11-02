@@ -6,7 +6,7 @@
   [UXS-002](../uxs/UXS-002-inspector.md) (filter and break down by a field)
 - **Related RFC**: [RFC-006](../rfc/RFC-006-item-fields-and-url-items.md)
 - **Related ADR**: [ADR-0003](../adr/ADR-0003-item-fields-and-url-items.md)
-- **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md)
+- **Related PRDs**: [PRD-001](PRD-001-evals-and-comparison.md)
 
 ## Summary
 
@@ -40,7 +40,7 @@ defines no field, a project declares its own
 
 - The harness defines no field; `tags` stays as it is.
 - Runs on different versions are never tested against each other.
-- This repository's own experiments carry no fields: the truthful candidates are each item's
+- This repository's own evals carry no fields: the truthful candidates are each item's
   gold class, and gold is not redistributed here ([ADR-0003](../adr/ADR-0003-item-fields-and-url-items.md)).
 
 ## Personas

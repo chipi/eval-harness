@@ -235,7 +235,7 @@ so check these before you trust a `validate`:
   exist (`pages=True` parameter).
 - **Goals** (`data/goals/<goal_id>.yaml`, `goal:` on configs, validate V14). Nothing is
   required of an upgrading project until it sets `required_from` in `data/goals/policy.yaml`.
-- **Experiment rounds** (`evh round-open`, `evh round-retire`, `evh round-close`, `evh rounds`;
+- **Eval rounds** (`evh round-open`, `evh round-retire`, `evh round-close`, `evh rounds`;
   `round: rN` on configs; validate V14). `--round rN` on `leaderboard`, `family-test`,
   `pair-test` and `inspect`: `inspect --round` and `pair-test --round` default to the goal's
   measure and the round's leader (`pair-test`'s B: the baseline the round started from). A
@@ -365,7 +365,7 @@ runs after upgrading. Re-scoring from stored outputs costs nothing.
 
 ### 4. What not to copy
 
-These exist for this repository's public showcase and assume its six experiments, its
+These exist for this repository's public showcase and assume its six evals, its
 reports and its site: `check_report_claims.py`, `check_model_facts.py`,
 `check_terminology.py`, `check_links.py`, `summeval_analysis.py`, the per-task
 `*_report.py` scripts, and the `site`/`docs` Makefile targets. Copy a report script only if

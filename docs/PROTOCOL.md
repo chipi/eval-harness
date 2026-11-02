@@ -1,15 +1,15 @@
 # Evaluation protocol
 
-What each experiment measured, on which data, with which metric — and how that relates to
+What each eval measured, on which data, with which metric — and how that relates to
 the protocol the field uses for the same benchmark. Everything a reader needs to decide
 what a number in this repo speaks for, in one place.
 
-**The short version.** Five of the six experiments score a **declared sample** of a public
+**The short version.** Five of the six evals score a **declared sample** of a public
 benchmark's test split (200–280 items), not the full test set; the sixth, SummEval, scores
 the whole of its benchmark, which is 100 annotated articles. That is enough for the
 question this repo asks — *which models can be told apart, at what cost* — and the reports
 test separations rather than read rank order. It is not enough to produce a leaderboard
-number comparable to a paper's. So each experiment also carries a **calibration row**: one
+number comparable to a paper's. So each eval also carries a **calibration row**: one
 known model or baseline, run by this repo's own code on the benchmark's full test set (or a
 large seeded sample of it), against the value its authors published. The calibration rows
 are the evidence that the instrument measures what the field measures. They are how the
@@ -19,7 +19,7 @@ one sampling defect found so far was found.
 
 **What was sampled.**
 
-| Experiment | benchmark · test split (official size) | our sample |
+| Eval | benchmark · test split (official size) | our sample |
 |---|---|---|
 | Summarisation · CNN/DM | `abisee/cnn_dailymail` · test (11,490) | 200 = **first 200 rows, all CNN**; plus a seeded DailyMail slice of 200 |
 | Classification · AG News | `fancyzhx/ag_news` · test (7,600) | 200 = first 50 per class from the first 1,600 rows |
@@ -30,7 +30,7 @@ one sampling defect found so far was found.
 
 **How it was scored, and whether the scorer agrees with the field.**
 
-| Experiment | our primary metric | field-standard metric | calibration in the field-standard metric: our run vs published |
+| Eval | our primary metric | field-standard metric | calibration in the field-standard metric: our run vs published |
 |---|---|---|---|
 | Summarisation · CNN/DM | `coverage` — ours | ROUGE-1/2/L F1 | LEAD-3, full test: R1 **39.94** / R2 **17.37** vs 40.34 / 17.70 |
 | Classification · AG News | accuracy | accuracy | full test, three fine-tunes vs their model cards: `bert_mini` **0.9338** vs 0.9339 · `bert_base_ta` **0.9514** vs 0.9514 · `bert_base_fy` **0.9375** vs 0.9375 |
@@ -54,7 +54,7 @@ on every one of the four dimensions; ROUGE-L agrees on average but is 0.054 abov
 coherence, outside that dimension's interval (±0.042) and inside it only with the 0.02
 allowance the rule adds for protocol differences; the paper does not say which ROUGE-L it
 ran. UniEval's row is the arm scored on UniEval's own published inputs, the protocol behind
-the paper's figure; it agrees on every dimension. On this experiment's own text the same
+the paper's figure; it agrees on every dimension. On this eval's own text the same
 weights score 0.3476, outside the interval, and the report treats that gap as a finding
 about the inputs ([REPORT_SUMMEVAL §3.3](../research/REPORT_SUMMEVAL.md)).
 
@@ -66,7 +66,7 @@ described from the machine itself:
 
 | machine | what it is | what it measured |
 |---|---|---|
-| Mac mini (2018) | Intel Core i7-8700B, 6 cores / 12 threads, 32 GB | the first five experiments: their local arms on its CPU, their hosted arms as API calls |
+| Mac mini (2018) | Intel Core i7-8700B, 6 cores / 12 threads, 32 GB | the first five evals: their local arms on its CPU, their hosted arms as API calls |
 | cloud runner | 4-core Linux (x86_64) containers; the operator's cloud coding sessions | the six local models that need torch 2.6 or later, SummEval's seven free scorers, and the one-machine BART re-timing |
 | GMKtec EVO-X3 | AMD Ryzen AI Max+ 395 (Strix Halo), 128 GB unified memory | SummEval's 24 hosted judges, as API calls, and its two UniEval arms on CPU. No open-weight LLM was run on any of these machines for the committed results |
 | NVIDIA DGX Spark | NVIDIA GB10, 128 GB unified memory | none of the committed runs; the workhorse for the runs of the operator's other projects, where it serves the local models |
@@ -83,7 +83,7 @@ gateway on itself, the EVO-X3 through one on the Mac mini), and a ratio between 
 on two different machines is good to about a factor of two, which the reports say wherever
 they compare them.
 
-## What is the same in every experiment
+## What is the same in every eval
 
 - **Pinned data.** Each dataset is a JSON file under `harness/data/datasets/` listing every
   item with the sha256 of its text. Every run records the hash of the whole item set
@@ -103,7 +103,7 @@ they compare them.
   test with Holm correction over each family; rank order alone is never a finding.
 - **Costs are what the provider billed**, read from each response, not a price table.
 
-## Per experiment
+## Per eval
 
 ### Summarisation · CNN/DailyMail
 

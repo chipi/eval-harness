@@ -1,10 +1,10 @@
-# Method — why this experiment is built the way it is
+# Method — why this eval is built the way it is
 
 Companion to [`README.md`](README.md) and
 [`REPORT_CLASSIFICATION.md`](../../research/REPORT_CLASSIFICATION.md). Terms in
 [`docs/REFERENCE.md`](../../docs/REFERENCE.md).
 
-**This experiment exists to disagree with [`classification-ag-news`](../classification-ag-news/METHOD.md).**
+**This eval exists to disagree with [`classification-ag-news`](../classification-ag-news/METHOD.md).**
 Same harness, same 24 arms, same statistics, same metric — a different corpus, chosen
 before any result was seen, to sit in the opposite regime. Read together or not at all.
 

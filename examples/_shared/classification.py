@@ -19,7 +19,7 @@ WHAT IS SHARED AND WHAT IS NOT
 
   The second list is the task. An example declares it, gets the first list, and adds
   nothing else. `LABELS` is not a default here on purpose -- a classification adapter with
-  a plausible-looking default label set is a way to run the wrong experiment quietly.
+  a plausible-looking default label set is a way to run the wrong eval quietly.
 """
 
 from __future__ import annotations

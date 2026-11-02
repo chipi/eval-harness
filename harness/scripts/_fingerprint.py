@@ -7,7 +7,7 @@ of them moved. Without a fingerprint that is an assertion; with one it is checka
 
 STDLIB ONLY, deliberately. This module must never import torch, transformers,
 scikit-learn or any provider SDK. Someone evaluating a pure-LLM system, or a regex
-baseline, should never install an ML framework to use this harness — the experiment
+baseline, should never install an ML framework to use this harness — the eval
 brings its own weight, and the core only knows how to ASK.
 
 Which is why the model half is inverted: the core defines a VOCABULARY, not a mechanism.

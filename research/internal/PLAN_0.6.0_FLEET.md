@@ -246,7 +246,7 @@ an item and see each model's disposition and its reason beside the verdict, and 
 through MCP (`goals`, `datasets`, `inspect`, `captures`). The items' text is not committed here: the profile
 links each item to its row on Hugging Face.
 
-**The site's experiments page is a choice (§6.5).** Every entry in `examples/experiments.json` with `site: true`
+**The site's experiments page is a choice (§6.5).** Every entry in `examples/evals.json` with `site: true`
 needs a report (`research/REPORT_*.md`) whose numbers `check_report_claims` verifies, and a calibration row: a
 known baseline against its published number. A production dataset has no published number to calibrate
 against.

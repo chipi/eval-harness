@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Onboard a model once, for every experiment (RFC-020): probe it and write what was found into its record.
+"""Onboard a model once, for every eval (RFC-020): probe it and write what was found into its record.
 
     evh model-onboard <model_id> --deployment <id>        an LLM: probes through the deployment's endpoint
     evh model-onboard <model_id> --config <arm.yaml>      an ML model or a baseline: through an arm that runs it

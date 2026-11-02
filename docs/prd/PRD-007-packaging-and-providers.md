@@ -4,7 +4,7 @@
   projects in parallel (FR2.5 to FR2.7) in 0.6.0 ([ADR-0024](../adr/ADR-0024-several-projects-on-one-machine.md))
 - **Authors**: Marko Dragoljevic
 - **Related UX spec**: [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the command line and the first evaluation)
-- **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md)
+- **Related PRDs**: [PRD-001](PRD-001-evals-and-comparison.md)
 
 ## Summary
 
@@ -13,7 +13,7 @@ a release from GitHub, runs `evh init`, and keeps all of its data in its own fol
 changes code and never touches results. One install enables every feature, including calling
 hosted models: the user brings their own keys (OpenAI, Anthropic, OpenRouter, or a LiteLLM
 proxy), and an offline `echo` provider runs the whole tutorial with no key at all. The same
-providers are used by experiment arms and by LLM judges, with optional separate keys for judging.
+providers are used by eval arms and by LLM judges, with optional separate keys for judging.
 The system under test plugs in through one file, `adapter.py`, at the project root.
 
 ## Background & Context

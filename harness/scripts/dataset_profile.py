@@ -198,7 +198,7 @@ def profile(dataset_id: str, with_text: bool) -> dict:
             die(
                 f"{dataset_id} is not materialized here ({p} is missing): a profile is computed from the items. "
                 f"Fetch and materialize it first (`evh dataset-materialize --dataset-id {dataset_id}`, or in "
-                "this repository `make data EXP=<experiment>`)."
+                "this repository `make data EXP=<eval>`)."
             )
         texts[it["item_id"]] = p.read_text(encoding="utf-8", errors="replace")
     if with_text and ds.get("text") == "hidden":

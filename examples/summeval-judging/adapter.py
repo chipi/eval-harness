@@ -5,14 +5,14 @@ and 11 human reference summaries. The system under test scores each of the 16 su
 four dimensions -- coherence, consistency, fluency, relevance -- and is graded on how well its
 scores ORDER the 16 the way the mean of three expert annotators does (Fabbri et al. 2021).
 
-WHAT THIS EXPERIMENT BREAKS THAT THE OTHER FIVE DID NOT
+WHAT THIS EVAL BREAKS THAT THE OTHER FIVE DID NOT
   1. The answer is a vector of judgements, and the metric is a RANK CORRELATION -- not
      overlap with a reference, not 0/1, not set F1, not nDCG. Kendall tau-b per article,
      averaged over the four dimensions, is the primary metric; it is per item, so the
      harness's paired permutation tests and Holm apply unchanged.
   2. It measures the instrument. Two of the arms are METRICS the rest of this repository
-     ranks by: ROUGE, and `coverage`, the summarisation experiment's own primary metric. How
-     well they agree with experts bounds what a lead on that experiment's leaderboard means
+     ranks by: ROUGE, and `coverage`, the summarisation eval's own primary metric. How
+     well they agree with experts bounds what a lead on that eval's leaderboard means
      to a person (measured on 2019-era summaries, not the LLM-written ones it ranks).
   3. It is the LLM-as-judge question in measurable form: when a model grades text, does it
      grade like a person? That is the question behind every silver reference.
@@ -304,7 +304,7 @@ def _bartscore(text: str, params: Dict[str, Any]) -> Result:
 # P("Yes") / (P("Yes") + P("No")) at the first decoder step, inputs truncated to 1,024
 # tokens, and consistency and fluency are scored per sentence (nltk's sent_tokenize) and
 # averaged. `inputs` picks the text it scores:
-#   ours       this experiment's items -- the text every other arm saw -- with the first of
+#   ours       this eval's items -- the text every other arm saw -- with the first of
 #              the 11 references for relevance (UniEval asks for one);
 #   published  UniEval's own SummEval inputs (its reproduce/ file, cased text and its one
 #              reference), each summary matched to its row through the original release.
@@ -441,7 +441,7 @@ def _unieval_published() -> Any:
 def _published_item(item: Dict[str, Any]) -> Dict[str, Any]:
     """The item rewritten in UniEval's published copy of SummEval: the same article and
     summaries, cased and tokenised as that file has them. For the paired judge run that asks
-    whether the judges were held back by this experiment's lower-cased text."""
+    whether the judges were held back by this eval's lower-cased text."""
     norm, by_text, rows = _unieval_published()
     keys = [by_text.get(norm(s), set()) for s in item["summaries"]]
     docs = set.intersection(*[{d for d, _ in k} for k in keys]) if all(keys) else set()

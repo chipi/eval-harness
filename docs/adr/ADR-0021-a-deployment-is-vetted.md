@@ -8,7 +8,7 @@
 ## Context
 
 A model a project tests runs in several places: an Ollama tag on three machines, a vLLM build, a hosted alias on
-two providers. In the triage experiment the same weights at temperature 0 gave identical outputs on one machine
+two providers. In the triage eval the same weights at temperature 0 gave identical outputs on one machine
 and different decisions on another; one tag named an MLX build on one machine; a hosted alias can be served by
 different upstream hosts. The fingerprint (v4) recorded the machine that ran `evh`, which for a served model is
 not the machine that answered.

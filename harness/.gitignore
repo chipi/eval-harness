@@ -5,7 +5,7 @@
 data/materialized/*
 !data/materialized/README.md
 
-# Experiment output. THE SCORES ARE COMMITTED; the generations are not.
+# Run output. THE SCORES ARE COMMITTED; the generations are not.
 #
 # An external review found the decisive gap: with every run ignored, not one number in
 # the five reports could be recomputed by anyone but the author on one laptop. A repo

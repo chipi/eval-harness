@@ -8,7 +8,7 @@ Every example config names a model by alias (`eval-claude-sonnet`). Two routes r
           routes to, not what a table says it should.
   direct  OPENROUTER_API_KEY alone. The alias is mapped through `../models.json` and the
           request goes straight to OpenRouter -- one key, no proxy, which is the whole
-          barrier for someone rerunning these experiments.
+          barrier for someone rerunning these evals.
 
 The proxy wins when both are configured, so an existing setup behaves exactly as before.
 Neither configured is an error that names both, rather than the old "LITELLM_BASE_URL is

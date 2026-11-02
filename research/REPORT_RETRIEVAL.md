@@ -14,7 +14,7 @@
 > not correct, and no set-valued metric can say so.
 
 
-> **This is one of six experiments.** What all six agree on — and where they disagree
+> **This is one of six evals.** What all six agree on — and where they disagree
 > with the conventional reading of a leaderboard — is in
 > [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
@@ -399,7 +399,7 @@ All twelve beat BM25 by 0.0566–0.0986, and the worst-to-best spread is +0.0420
 (p 0.004), so the choice among rerankers is not nothing; `e5_base`'s candidates have a
 cap of 0.8747.
 
-**The tie recurs in five of the six experiments** (see the synthesis). Summarisation:
+**The tie recurs in five of the six evals** (see the synthesis). Summarisation:
 the dearest arm ranked 18th of 29 (15th of the 24 hosted). AG News: a leader tied with three others. DBpedia: a leader
 tied with nineteen, across a 115× price range (both per
 [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md)). NER:
@@ -453,9 +453,9 @@ reads true before any of it is believed.
   [`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](internal/HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).
 - **The cost column is what the provider BILLED, not this repo's price table.** Those
   differ, because an alias is not a price: OpenRouter routes across upstream providers
-  that charge differently. Measured over the hosted runs of the five experiments other than SummEval,
+  that charge differently. Measured over the hosted runs of the five evals other than SummEval,
   the table is wrong **per arm by 0.67× to 3.76×**, in both directions, and it reorders arms by cost.
-  Every report uses the billed figure, and every experiment's adapter records `usage.cost`.
+  Every report uses the billed figure, and every eval's adapter records `usage.cost`.
 - **One first-stage swap, two rerankers, one corpus.** §3.4 is a pair, not a study. It does
   not show that e5_base is the best possible first stage, or that the headroom share
   transfers for any other reranker or corpus. The prediction was registered once and

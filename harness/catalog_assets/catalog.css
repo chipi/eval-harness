@@ -118,7 +118,7 @@ footer code { font: .9em var(--mono); }
 .menu-links .menu-sub { display: flex; flex-direction: column; }
 .menu-links .menu-sub a { padding-left: 24px; }
 
-/* The menu's groups by subject (Data, Experiments): a name that opens its pages below it; the
+/* The menu's groups by subject (Data, Arms): a name that opens its pages below it; the
    group a page belongs to is marked like a current page (catalog.js closes it on a click outside). */
 .navgroup { position: relative; }
 .navgroup > summary { list-style: none; cursor: pointer; color: var(--ink-2); white-space: nowrap; }
@@ -401,13 +401,13 @@ small.retired { color: var(--local); font: 600 10px/1 var(--mono); letter-spacin
 /* the number's own type, not the tile's label's (.tile span) */
 .tile b span { font: inherit; letter-spacing: inherit; text-transform: none; color: inherit; }
 .tile span { font: 500 11px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-/* A tile's colour (--c) is its subject's (catalog_periods.TILES): goals, data, experiments, work
+/* A tile's colour (--c) is its subject's (catalog_periods.TILES): goals, data, arms, work
    and spend. It says what a tile is about, never a judgement: a trend is tinted in it whichever
    way it goes. The legend under the tiles names the four. */
 .tile { --c: var(--muted); border-top: 3px solid var(--c); }
 [data-group="goals"] { --c: var(--s7); }
 [data-group="data"] { --c: var(--s1); }
-[data-group="experiments"] { --c: var(--s3); }
+[data-group="arms"] { --c: var(--s3); }
 [data-group="work"] { --c: var(--s4); }
 .legend.groups i { background: var(--c); }
 .tile:hover, .tile:focus-visible { border-color: var(--c); }

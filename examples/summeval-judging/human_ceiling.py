@@ -6,7 +6,7 @@
 WHY
   A judge's τ against the expert means says how it ranks, not how close that is to
   expert-level: without knowing how well the experts agree with each other, τ 0.54 has
-  nothing to be compared with. The gold this experiment scores against keeps only the mean
+  nothing to be compared with. The gold this eval scores against keeps only the mean
   of the three experts, so that question cannot be answered from it.
 
 WHAT IT MEASURES
@@ -17,7 +17,7 @@ WHAT IT MEASURES
   article, then over articles. The τ-b is the adapter's own function.
 
   Before using the file it checks that the mean of its three experts reproduces this
-  experiment's gold, article by article and dimension by dimension, so the ceiling is
+  eval's gold, article by article and dimension by dimension, so the ceiling is
   about the same data the judges were scored on.
 
   One bias, stated rather than corrected: a judge is compared with the mean of three

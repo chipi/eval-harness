@@ -157,13 +157,13 @@ try:
         and all('<meta name="deploy-tag" content="ours">\n</head>' in p.read_text() for p in head_pages),
     )
     # --about: a deployment's paragraph on the overview only.
-    cb.ABOUT = '<p id="deploy-about">Our six experiments.</p>'
+    cb.ABOUT = '<p id="deploy-about">Our six evals.</p>'
     about_out = tmp / ".build" / "catalog-about"
     cb.build(A, about_out)
     cb.ABOUT = ""
     check(
         "--about: its HTML is on the overview, under the description, and on no other page",
-        '<div class="about"><p id="deploy-about">Our six experiments.</p></div>'
+        '<div class="about"><p id="deploy-about">Our six evals.</p></div>'
         in (about_out / "index.html").read_text()
         and not [
             p.name
@@ -282,9 +282,9 @@ try:
     )
     nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
     check(
-        "nav: Overview, Goals, Data (Datasets, Captures, Labels, References), Experiments (Arms, Configs, Models, Metrics), Activity, Inspector",
+        "nav: Overview, Goals, Data (Datasets, Captures, Labels, References), Arms (Arms, Configs, Models, Metrics), Activity, Inspector",
         nav.count("<a ") == 12
-        and re.findall(r"<summary[^>]*>([^<]+)</summary>", nav) == ["Data", "Experiments"]
+        and re.findall(r"<summary[^>]*>([^<]+)</summary>", nav) == ["Data", "Arms"]
         and all(
             x in nav
             for x in (

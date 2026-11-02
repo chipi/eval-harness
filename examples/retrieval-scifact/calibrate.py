@@ -5,7 +5,7 @@ against BEIR's published BM25 nDCG@10 of 0.665.
     python examples/retrieval-scifact/fetch.py --n 300 --dataset-id scifact_test300
     python examples/retrieval-scifact/calibrate.py
 
-The experiment scores 200 of the 300 test queries (seeded); the reports compared its
+The eval scores 200 of the 300 test queries (seeded); the reports compared its
 BM25 0.6451 with BEIR's 0.665 without saying that one is over 200 queries and the other
 over 300. This scores all 300 with this repo's BM25 arm and scorer.
 

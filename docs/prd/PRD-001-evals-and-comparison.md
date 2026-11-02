@@ -1,4 +1,4 @@
-# PRD-001: Running experiments and comparing arms
+# PRD-001: Running evals and comparing arms
 
 - **Status**: Implemented (v0.4.0); the core since 0.1.0
 - **Authors**: Marko Dragoljevic

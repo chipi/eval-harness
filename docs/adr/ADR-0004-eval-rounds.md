@@ -1,18 +1,18 @@
-# ADR-0004 — Experiment rounds, and a catalog that guides them (0.4.0)
+# ADR-0004 — Eval rounds, and a catalog that guides them (0.4.0)
 
 **Status:** Accepted (2026-10-24), as built. Two parts of the proposal were not built in 0.4.0: a
 round picker inside the web inspector (the goal page's per-round **inspect** button opens a round's
 arms in it instead) and a progress line per round in the rounds overview;
-[RFC-004](../rfc/RFC-004-experiment-rounds.md) lists what was and was not built.
+[RFC-004](../rfc/RFC-004-eval-rounds.md) lists what was and was not built.
 **Date:** 2026-10-24
 **Detail:** [PRD-005](../prd/PRD-005-goals-and-rounds.md) (what and why),
-[RFC-004](../rfc/RFC-004-experiment-rounds.md) (records, commands, the evidence),
+[RFC-004](../rfc/RFC-004-eval-rounds.md) (records, commands, the evidence),
 [UXS-001](../uxs/UXS-001-catalog.md#the-goal-page) (the goal page),
 [UXS-003](../uxs/UXS-003-cli-and-onboarding.md#the-round-flow) (the commands)
 
 ## Context
 
-Experiments go round on round: try arms, drop what lost, change something, compare again. The
+Evals go round on round: try arms, drop what lost, change something, compare again. The
 harness recorded none of it, and the catalog compared each arm with a reference or a baseline,
 never one round with another. The owner decided the shape: rounds optional, the catalog
 read-only, decisions as commands run locally.

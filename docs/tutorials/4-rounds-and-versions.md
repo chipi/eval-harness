@@ -1,6 +1,6 @@
-# Tutorial 4 · Experiment rounds and dataset versions
+# Tutorial 4 · Eval rounds and dataset versions
 
-Experiments go round on round: try some arms, keep what wins, drop what lost, change something,
+Evals go round on round: try some arms, keep what wins, drop what lost, change something,
 compare again. Before a release, that is how a field narrows (twenty candidates, then ten, a new scoring rule, a new
 prompt, then a choice); after it, the same goal goes on, on what the deployed system decides. **Rounds** record
 that, optionally: what each round set out to learn, what
@@ -14,7 +14,7 @@ This tutorial starts from the project [getting started](../GUIDE.md) leaves, off
 ([tutorial 3](3-frontier-reference-and-judging.md)), or in a fresh copy of the project: once
 gold exists, a new arm is scored against gold while the arms you carry in were scored against
 silver, and a round compares arms only on one reference. Design:
-[ADR-0004](../adr/ADR-0004-experiment-rounds.md).
+[ADR-0004](../adr/ADR-0004-eval-rounds.md).
 
 ## 1. Round 1: the arms you already have
 

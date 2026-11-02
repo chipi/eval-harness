@@ -123,10 +123,10 @@ against, and why a goal page never makes it the leader: its row measures agreeme
 
 ---
 
-## Re-measuring a frozen experiment
+## Re-measuring a frozen eval
 
 A run's outputs are the expensive, frozen record; its scores are arithmetic over them. So
-an experiment can be measured again, without regenerating anything, when a better
+an eval can be measured again, without regenerating anything, when a better
 instrument arrives. There are three kinds:
 
 | kind | what changes | cost | how |
@@ -140,7 +140,7 @@ written to its own runs directory (a code re-score to one place the harness desi
 `data/runs-rescored/<scorer>/<source>/`, which the goals and rounds then read the arm from), and the
 leaderboard is pointed at it. `evh score-preview` shows what a scoring change would move before anything is
 written. And an
-experiment's primary measurement changes only by a recorded decision, with the old one
+eval's primary measurement changes only by a recorded decision, with the old one
 kept beside it. In this repository AG News and DBpedia keep the dataset's own gold as
 primary, because anyone can repeat it, and report the adjudicated gold beside it.
 
@@ -156,7 +156,7 @@ them is a decision.
 
 A call's cost is the provider's bill when its response carries one (OpenRouter, and a LiteLLM
 proxy that passes `usage.cost` through), and otherwise the config's prices × tokens. Prices live
-in the experiment config, not in code, so a run records the prices it was costed at. A figure
+in the arm's config, not in code, so a run records the prices it was costed at. A figure
 computed from today's price list is not comparable to one from last quarter without saying so.
 Which provider records which: [RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system).
 
@@ -194,8 +194,8 @@ goal file and its allowed values:
 
 ## A round records a decision, not just a result
 
-Experiments go round on round, and the reasons an arm was dropped are the first thing lost. An
-optional round ([ADR-0004](../../docs/adr/ADR-0004-experiment-rounds.md)) records what it set out
+Evals go round on round, and the reasons an arm was dropped are the first thing lost. An
+optional round ([ADR-0004](../../docs/adr/ADR-0004-eval-rounds.md)) records what it set out
 to learn, what changed, which arms it carried in and which it dropped and why, and what it
 concluded. `evh rounds` suggests the next decision from the evidence, as a command; it never
 makes one. A closed round refuses new runs, so its evidence cannot grow after its conclusion.
@@ -211,7 +211,7 @@ at $0 or adopted by the next round, recorded with why
 
 A model that reasons by default, cuts its answers at a reply cap, or answers in a format the system
 does not read is measured as broken when it is only unset. So a model is set up once, before any
-experiment uses it, in a record of its own (`data/models/<id>.yaml`): what it is, the settings that hold
+eval uses it, in a record of its own (`data/models/<id>.yaml`): what it is, the settings that hold
 whatever the task, each with why, and its **deployments**, each place and build it runs. `evh
 model-onboard` probes each deployment and writes what it found; `evh arm-smoke` runs an arm on a few
 items before its full run. A model is *vetted* when an arm that names it passed its smoke on the task's

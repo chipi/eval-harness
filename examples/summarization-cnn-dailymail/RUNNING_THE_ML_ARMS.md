@@ -62,7 +62,7 @@ on Linux.
 
 No GPU needed. The configs say `device: cpu` deliberately, so the wall-clock numbers stay
 comparable with the arms already measured. If you want GPU numbers that is a separate,
-legitimate experiment — but it is a different arm, because `latency_ms` is one of the three
+legitimate run — but it is a different arm, because `latency_ms` is one of the three
 axes the frontier is computed on, and changing the device silently would make the local
 arms' speed column incomparable with each other.
 

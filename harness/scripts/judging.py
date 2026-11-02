@@ -15,7 +15,7 @@ examples/_shared/gateway.py, which an installed package does not have. They live
   the call     `call_judge`: the provider the judge names (`provider:` in its params: openai,
                anthropic, openrouter or litellm), through the same `_providers` an arm's call
                uses. A judge reads its keys as EVAL_JUDGE_<NAME> first, then <NAME>, so judging
-               can run on its own keys or share the experiments'.
+               can run on its own keys or share the arms'.
 
 `provider: fake` calls nothing and costs nothing: a deterministic stand-in for tests and for
 trying a scorer end to end. It can never be validated (judge_score's gate refuses it), so

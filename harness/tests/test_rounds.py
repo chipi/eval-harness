@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Experiment rounds (ADR-0004): open, run, the evidence and its suggestions, retire, close, the next.
+"""Eval rounds (ADR-0004): open, run, the evidence and its suggestions, retire, close, the next.
 
     python tests/test_rounds.py
 

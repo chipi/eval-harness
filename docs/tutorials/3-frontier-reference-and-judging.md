@@ -156,7 +156,7 @@ evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_ 
 
 Ahead of every arm on the point estimate, separated from none; against `lead2_noisy` the delta is
 smaller than that arm's own spread, and its sign can change from one run to the next. That is the
-honest state of this experiment: a bigger gold set is the next step, not a conclusion.
+honest state of this eval: a bigger gold set is the next step, not a conclusion.
 
 **Golden datasets, the rules:**
 
@@ -167,7 +167,7 @@ honest state of this experiment: a bigger gold set is the next step, not a concl
 - **Keep a dev slice apart.** Tune prompts on a small nested dataset (`tickets_dev_v1`) and
   report on the rest: `evh holdout` re-tests excluding it.
 - **Disputed gold is a finding, not noise.** When most strong systems disagree with a gold
-  answer, read it: in this repository's AG News and DBpedia experiments, one reader adjudicated
+  answer, read it: in this repository's AG News and DBpedia evals, one reader adjudicated
   those items by topic, shown the hosted answer, and found the gold wrong on all 20 (AG News 17,
   DBpedia 3). The dataset's own gold stays primary; the adjudicated one sits beside it
   ([RUNBOOK §11](../../harness/docs/RUNBOOK.md#11-adjudicate-disputed-gold)).
@@ -293,7 +293,7 @@ detectable arm effect.
 **When a real judge's scores disagree with your primary metric**, nothing changes until you
 decide it should. The primary metric stays what it was; making a judge's score primary is a
 recorded decision, with the old score kept beside it. Why the gate exists:
-[CONCEPTS](../../harness/docs/CONCEPTS.md#re-measuring-a-frozen-experiment) and
+[CONCEPTS](../../harness/docs/CONCEPTS.md#re-measuring-a-frozen-eval) and
 [ADR-0001](../adr/ADR-0001-judge-scorers.md).
 
 ## 6. Real judges

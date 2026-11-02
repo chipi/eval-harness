@@ -54,7 +54,7 @@ algorithms. When a rule could live in either, it goes in the RFC and the UXS lin
 | --- | ----- | ------ | ------------------- | -------------- |
 | [UXS-001](UXS-001-catalog.md) | The catalog | Active | [PRD-004](../prd/PRD-004-catalog-and-inspector.md), [PRD-005](../prd/PRD-005-goals-and-rounds.md), [PRD-006](../prd/PRD-006-datasets-versions-fields.md); [RFC-003](../rfc/RFC-003-catalog-adapter.md) | The shared shell and tokens; home, dataset, goal (answer first, rounds), reference and metrics pages; tints, paging, search |
 | [UXS-002](UXS-002-inspector.md) | The run inspector | Active | [PRD-004](../prd/PRD-004-catalog-and-inspector.md), [PRD-006](../prd/PRD-006-datasets-versions-fields.md); [RFC-003](../rfc/RFC-003-catalog-adapter.md) | Choosing arms, testing against a baseline, conditions, fields, the analysis charts, the per-item table, one item side by side |
-| [UXS-003](UXS-003-cli-and-onboarding.md) | The command line and the first evaluation | Active | [PRD-001](../prd/PRD-001-experiments-and-comparison.md), [PRD-007](../prd/PRD-007-packaging-and-providers.md) | The onboarding path, how commands speak (refusals, hints, exit codes), the parity table, the round flow |
+| [UXS-003](UXS-003-cli-and-onboarding.md) | The command line and the first evaluation | Active | [PRD-001](../prd/PRD-001-evals-and-comparison.md), [PRD-007](../prd/PRD-007-packaging-and-providers.md) | The onboarding path, how commands speak (refusals, hints, exit codes), the parity table, the round flow |
 
 ## Adding one
 

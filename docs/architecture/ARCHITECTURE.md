@@ -14,7 +14,7 @@ the same scripts run through `make`). It holds **code and schemas only**. A proj
 datasets, configs, runs, references and goals, lives in the project and is found through
 `EVAL_HOME` and `EVAL_DATA_DIR`, so an upgrade changes code and never touches results.
 
-This repository is the package plus six worked experiments run with it, the public site that
+This repository is the package plus six worked evals run with it, the public site that
 explains the harness and its findings, and these docs.
 
 ## The layers
@@ -66,7 +66,7 @@ family. The harness therefore:
 - stores every verdict, so a rerun costs $0, and writes judged runs beside the originals, never
   over them.
 
-A judged score never replaces an experiment's primary metric by itself: that is a recorded
+A judged score never replaces an eval's primary metric by itself: that is a recorded
 decision.
 
 ## Catalog, inspector and goals
@@ -113,8 +113,8 @@ cache, and refused when the bytes there are not the pinned ones.
 | address | what | where |
 |---|---|---|
 | `evals.humancopilot.eu` | the public site: the harness and its findings | prod VPS, nginx |
-| `evals.humancopilot.eu/catalog` | the harness deployed on these experiments: catalog, goal pages, run inspector | prod VPS, nginx and the inspector |
-| `evals.humancopilot.eu/mcp` | the same experiments for an agent: the read commands as MCP tools (Streamable HTTP, read-only, no sign-in) | prod VPS, the MCP server |
+| `evals.humancopilot.eu/catalog` | the harness deployed on these evals: catalog, goal pages, run inspector | prod VPS, nginx and the inspector |
+| `evals.humancopilot.eu/mcp` | the same evals for an agent: the read commands as MCP tools (Streamable HTTP, read-only, no sign-in) | prod VPS, the MCP server |
 | `evals.humancopilot.eu/docs` | these docs | prod VPS, nginx (and GitHub Pages) |
 
 Both sites on the VPS sit behind the box's shared Caddy edge, each container read-only with

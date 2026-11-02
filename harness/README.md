@@ -42,7 +42,7 @@ evh run-promote --run <run_id> --reason "what the tests showed"    # the choice,
 
 **[Getting started](../docs/GUIDE.md)** walks it once, offline, in about fifteen minutes; the
 [tutorials](../docs/GUIDE.md#where-to-go-next) add a local model, a hosted LLM with your own
-key, a frontier reference and judges, experiment rounds and dataset versions, the catalog, datasets
+key, a frontier reference and judges, eval rounds and dataset versions, the catalog, datasets
 from what your system did in production, and setting a model up before you test it.
 In a checkout of this repository every `evh` command is also a `make` target (`make demo` runs
 the whole loop on bundled data, no API key, no network).
@@ -100,7 +100,7 @@ data/runs-judged/    evh judge-score    a validated LLM judge, billed and capped
 
 beside them, also optional:
 data/goals/          what each evaluation is for; configs name one with `goal:`
-data/rounds/         experiment rounds of a goal: evh round-open / rounds / round-close
+data/rounds/         eval rounds of a goal: evh round-open / rounds / round-close
 data/fields/         field sets: the typed facts a project's items carry (`--fieldset`)
 data/profiles/       evh dataset-profile   what is inside a dataset, for its page (no text by default)
 .build/catalog/      evh catalog / evh catalog-serve   pages over the runs, and the inspector
@@ -152,7 +152,7 @@ files sharing a `dataset_id`.
 ## Is the ranking real?
 
 A table sorted by a mean always produces an ordering. Whether that ordering survives
-re-running the experiment is a different question, and `evh leaderboard` answers it
+re-running the eval is a different question, and `evh leaderboard` answers it
 before it shows you anything else:
 
 ```
@@ -220,7 +220,7 @@ families, the task they score, the prompt, and the runs that validated each judg
 human ratings. The command refuses a judge nobody validated (`--unvalidated` runs it with
 every number labelled), freezes a blinded, shuffled judging set, stores every verdict so a
 rerun costs $0, and writes scored runs that `leaderboard`, `pair-test` and `family-test`
-read unchanged. An experiment's primary metric changes only by a recorded decision.
+read unchanged. An eval's primary metric changes only by a recorded decision.
 Walkthrough: [tutorial 3](../docs/tutorials/3-frontier-reference-and-judging.md#5-re-measure-with-an-llm-judge-optional);
 reference: [RUNBOOK §12](docs/RUNBOOK.md#12-re-measure-with-a-validated-judge); why:
 [ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
@@ -230,7 +230,7 @@ reference: [RUNBOOK §12](docs/RUNBOOK.md#12-re-measure-with-a-validated-judge);
 A server chooses for whatever an arm leaves unset (whether the model reasons first, how long a reply may run,
 which build a tag names), so two arms that leave them unset compare defaults as much as models. A model is set up
 once, in a record (`data/models/<id>.yaml`) with a deployment per place it runs, and checked there before any
-experiment uses it:
+eval uses it:
 
 ```bash
 evh model-onboard my-model --deployment laptop   # its build, whether it reasons, JSON, determinism, speed
@@ -287,7 +287,7 @@ and all of them are tried.
 
 Read the result against the **ceiling** it prints. Two runs of the same arms against the
 same gold do not rank identically either, so that retest correlation is the best any proxy
-could score. In the summarisation experiment's 24 hosted arms
+could score. In the summarisation eval's 24 hosted arms
 ([REPORT_SUMMARIZATION §3.5](../research/REPORT_SUMMARIZATION.md)): ceiling 0.92, silver
 authors −0.01–0.70 (mean 0.33).
 
@@ -326,7 +326,7 @@ how 18 arms of paid results were lost during this harness's own development.
 | **[CHANGELOG.md](CHANGELOG.md)** | what each release shipped, what can move a result |
 | **[RUNBOOK.md](docs/RUNBOOK.md)** | every command and flag, step by step, with the reasoning; environment variables and exit codes |
 | **[RELEASING.md](docs/RELEASING.md)** | pinning a release in your project, and cutting one: version, changelog, tag, GitHub Release |
-| **[SCENARIO.md](docs/SCENARIO.md)** | the newcomer scenario, a smoke test run when the newcomer's path changes: two experiments, real models, one CPU model, under $1 |
+| **[SCENARIO.md](docs/SCENARIO.md)** | the newcomer scenario, a smoke test run when the newcomer's path changes: two evals, real models, one CPU model, under $1 |
 | **[UPGRADING.md](docs/UPGRADING.md)** | from one release to the next (what can move a number), and for a copy of the harness taken before October 2026 |
 | **[CONCEPTS.md](docs/CONCEPTS.md)** | why each refusal exists, and the failure it prevents |
 

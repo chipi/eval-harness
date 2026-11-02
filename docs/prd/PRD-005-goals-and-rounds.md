@@ -1,11 +1,11 @@
-# PRD-005: Goals, and experiment rounds
+# PRD-005: Goals, and eval rounds
 
 - **Status**: Implemented (v0.4.0); groups scored against a label set (FR1.7) and the deploy sheet (FR3) built for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md))
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the goal page), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the round commands)
-- **Related RFC**: [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds: files, commands, the evidence)
-- **Related ADRs**: [ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md) (goals first-class), [ADR-0004](../adr/ADR-0004-experiment-rounds.md) (rounds), [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) (axes and strategies)
-- **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md), [PRD-004](PRD-004-catalog-and-inspector.md)
+- **Related RFC**: [RFC-004](../rfc/RFC-004-eval-rounds.md) (rounds: files, commands, the evidence)
+- **Related ADRs**: [ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md) (goals first-class), [ADR-0004](../adr/ADR-0004-eval-rounds.md) (rounds), [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) (axes and strategies)
+- **Related PRDs**: [PRD-001](PRD-001-evals-and-comparison.md), [PRD-004](PRD-004-catalog-and-inspector.md)
 
 ## Summary
 
@@ -21,7 +21,7 @@ opens a round sees none of it.
 ## Background & Context
 
 Without goals, a run is a number with no question attached: nothing says which measure decides,
-so the same table can be read to support any choice. Without rounds, experiments still go round
+so the same table can be read to support any choice. Without rounds, evals still go round
 on round (try some arms, keep what won, drop what lost, change something, compare again), but
 the harness recorded none of it: runs were a flat set per dataset, and nothing said which arms
 belonged together, why one was dropped, or what a round concluded. The newcomer scenario
@@ -34,7 +34,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 - A goal's page answers first: the promoted baseline and why, or that nothing is decided yet and
   the command that decides it.
 - Arms are ranked only against arms scored against the same thing.
-- A sequence of experiments has a record: hypothesis, changes, retirements with reasons,
+- A sequence of comparisons has a record: hypothesis, changes, retirements with reasons,
   conclusion.
 - The next decision is suggested from the evidence, but made by a person, by command.
 
@@ -157,5 +157,5 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 
 ## Related Documents
 
-- [RFC-004](../rfc/RFC-004-experiment-rounds.md), [ADR-0004](../adr/ADR-0004-experiment-rounds.md).
+- [RFC-004](../rfc/RFC-004-eval-rounds.md), [ADR-0004](../adr/ADR-0004-eval-rounds.md).
 - [UXS-001: the goal page](../uxs/UXS-001-catalog.md#the-goal-page).

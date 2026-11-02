@@ -18,4 +18,4 @@ datasets:
 measures:
   - {id: f1, kind: metric, validity: partial}
 links:
-  - {url: https://evals.humancopilot.eu/experiments/few-nerd.html, note: the findings on the site}
+  - {url: https://evals.humancopilot.eu/evals/few-nerd.html, note: the findings on the site}

@@ -2,7 +2,7 @@
 
 - **Status**: Completed (v0.4.0); its `host` and `system_under_test` parts are superseded by [RFC-021](RFC-021-fingerprint-v5.md) (fingerprint v5, 0.6.0)
 - **Authors**: Marko Dragoljevic
-- **Related PRDs**: [PRD-001](../prd/PRD-001-experiments-and-comparison.md), [PRD-002](../prd/PRD-002-references.md)
+- **Related PRDs**: [PRD-001](../prd/PRD-001-evals-and-comparison.md), [PRD-002](../prd/PRD-002-references.md)
 - **Related RFCs**: [RFC-002](RFC-002-run-records-and-derived-runs.md) (the record that carries it),
   [RFC-003](RFC-003-catalog-adapter.md) (the inspector's conditions check reads it)
 - **Code**: `harness/scripts/_fingerprint.py`, `harness/scripts/_codeid.py`; tests

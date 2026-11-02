@@ -1,7 +1,7 @@
-# RFC-020: Onboarding models, once, for every experiment
+# RFC-020: Onboarding models, once, for every eval
 
 - **Status**: Built for 0.6.0 (2026-10-31), from its third draft. The owner's decisions of 2026-10-31: a model is
-  onboarded once for the project and reused by every experiment; records live in `data/models/`; one general
+  onboarded once for the project and reused by every eval; records live in `data/models/`; one general
   command checks an arm on its own task, `evh arm-smoke`, with an LLM layer on top; the catalog gets a Models
   page; it ships in 0.6.0.
 - **Authors**: Marko Dragoljevic
@@ -11,13 +11,13 @@
 ## Abstract
 
 An arm is a model *and how it is run*: its build, where it runs, its settings. Leave a setting unset and a
-server, a provider or a library chooses it, differently for each model, and the experiment then compares those
+server, a provider or a library chooses it, differently for each model, and the eval then compares those
 choices as much as the models. This RFC makes setting a model up a project's own, reusable step, in two levels:
 
 1. **Onboard a model, once.** `evh model-onboard` writes its **model record** (`data/models/<id>.yaml`): the
    build on every machine that runs it, what it can do, the settings chosen for it, and a task-independent smoke
-   behind them. The model is then ready for any experiment, and listed on the catalog's **Models** page.
-2. **Use it in an experiment.** An arm names the record and inherits its build and settings, overriding only what
+   behind them. The model is then ready for any eval, and listed on the catalog's **Models** page.
+2. **Use it in an eval.** An arm names the record and inherits its build and settings, overriding only what
    its task needs; **`evh arm-smoke`** checks the arm on its own task's items (valid output for its scorer, time,
    a projection of the full run) before the run spends anything.
 
@@ -25,7 +25,7 @@ Both are optional: a project that onboards nothing and smokes nothing sees no ch
 
 ## Motivation
 
-### An LLM experiment: triage, 2026-10-30/31
+### An LLM eval: triage, 2026-10-30/31
 
 Forty-odd arms replayed the triage fleet's production request unchanged: no reply cap, no reasoning setting, a
 90 s call limit (600 s for the self-hosted ones). Measured afterwards:
@@ -42,7 +42,7 @@ Forty-odd arms replayed the triage fleet's production request unchanged: no repl
 - A second pass of a self-hosted arm at temperature 0 was byte-identical to the first: the planned repeats would
   have measured nothing.
 
-### An ML experiment: Few-NERD
+### An ML eval: Few-NERD
 
 `fn_span_marker` (a fine-tuned span tagger on CPU) had a build problem of the same kind: the pinned revision was
 not passed on, so a pinned config downloaded `main` (`examples/ner-few-nerd/adapter.py`, the snapshot comment).
@@ -68,7 +68,7 @@ One file per model the project uses, with the fields that apply to its kind (`ll
 - **settings**, chosen: what holds whatever the task. For an LLM `reasoning_effort` (or `reasoning`); for an ML
   model device, precision, batch size. With one line on why each was chosen. A reply cap, a call limit and a
   temperature are a task's, so its arms set them; the schema refuses them in a record (review, 2026-10-31: a
-  record's triage-sized cap would otherwise reach every other experiment's arms).
+  record's triage-sized cap would otherwise reach every other eval's arms).
 - **history**: each change of build or settings, with its date and why.
 
 `validate` checks the schema, and that every arm naming a record exists in `data/models/`.
@@ -182,6 +182,6 @@ will be identical there, and points at other machines or builds for spread.
 
 ## The first records
 
-The triage experiment's models, about 25, are onboarded from what is already measured and a probe each where it
+The triage eval's models, about 25, are onboarded from what is already measured and a probe each where it
 is not: their builds on X3, the DGX and the Mac, their reasoning, and the settings round 2 of `triage_orrery`
 runs them with.

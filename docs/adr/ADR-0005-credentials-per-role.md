@@ -18,7 +18,7 @@ every call at Sonnet's prices written in the code, and ran its fake judge when
 `ANTHROPIC_API_KEY` was missing.
 
 The harness promises that the provider is the user's choice and the keys are their own
-(PRD-007). An operator also keeps separate keys for running experiments and for judging, so
+(PRD-007). An operator also keeps separate keys for running evals and for judging, so
 each has its own budget and spend log; the harness offered no way to do that short of an
 `api_key_env` in every config, which entered every run's fingerprint.
 
@@ -29,7 +29,7 @@ each has its own budget and spend log; the harness offered no way to do that sho
   else unknown) and refusals. A call goes where its `provider:` says and nowhere else; every
   judge declares one (the scorer schema requires it).
 - **Keys by role.** A judge reads every variable as `EVAL_JUDGE_<NAME>` first, then `<NAME>`;
-  an arm reads `<NAME>`. With no `EVAL_JUDGE_` variable set, judging shares the experiments'
+  an arm reads `<NAME>`. With no `EVAL_JUDGE_` variable set, judging shares the arms'
   keys, as before.
 - **A credential is not identity.** `api_key_env` is left out of a run's fingerprint and a
   judge's: the same model asked the same way is the same measurement whichever key paid.

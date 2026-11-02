@@ -4,7 +4,7 @@
 - **Authors**: Marko Dragoljevic
 - **Related RFC**: [RFC-005](../rfc/RFC-005-judge-scorers.md) (the judging pass, technically)
 - **Related ADR**: [ADR-0001](../adr/ADR-0001-judge-scorers.md)
-- **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md), [PRD-002](PRD-002-references.md)
+- **Related PRDs**: [PRD-001](PRD-001-evals-and-comparison.md), [PRD-002](PRD-002-references.md)
 
 ## Summary
 
@@ -19,9 +19,9 @@ rerun costs $0.
 
 ## Background & Context
 
-In this repository, the summarisation experiment ranked 29 arms by its own overlap metric, and
-the SummEval experiment then showed that metric agrees with human experts far less than the
-best LLM judges do. One experiment had validated a better instrument for another. The full
+In this repository, the summarisation eval ranked 29 arms by its own overlap metric, and
+the SummEval eval then showed that metric agrees with human experts far less than the
+best LLM judges do. One eval had validated a better instrument for another. The full
 reasoning, and what the first uses found, are in [RFC-005](../rfc/RFC-005-judge-scorers.md);
 how to run it is in [Runbook §12](../../harness/docs/RUNBOOK.md#12-re-measure-with-a-validated-judge)
 and step 10 of the [GUIDE](../GUIDE.md).
@@ -37,8 +37,8 @@ and step 10 of the [GUIDE](../GUIDE.md).
 
 ## Non-Goals
 
-- A judged score never replaces an experiment's primary metric by itself: that is a recorded
-  decision ([Concepts](../../harness/docs/CONCEPTS.md#re-measuring-a-frozen-experiment)).
+- A judged score never replaces an eval's primary metric by itself: that is a recorded
+  decision ([Concepts](../../harness/docs/CONCEPTS.md#re-measuring-a-frozen-eval)).
 - The gate checks that a validation exists and is current, not that it transfers to the
   user's outputs.
 - Not the older judge **panel** (`evh judge`), which narrows finalists on a cheap metric and
@@ -105,5 +105,5 @@ and step 10 of the [GUIDE](../GUIDE.md).
 ## Related Documents
 
 - [RFC-005](../rfc/RFC-005-judge-scorers.md), [ADR-0001](../adr/ADR-0001-judge-scorers.md).
-- The [judging page](https://evals.humancopilot.eu/experiments/judging.html): what judging found
+- The [judging page](https://evals.humancopilot.eu/evals/judging.html): what judging found
   in this repository.

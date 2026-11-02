@@ -48,10 +48,10 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 
 - **The engineer** exploring which arm to keep, who wants to click from a mean to the items
   behind it.
-- **The reviewer or reader** of a published experiment, who wants to check a claim without
+- **The reviewer or reader** of a published eval, who wants to check a claim without
   installing anything (the public catalog).
 - **The terminal user** who wants the same answers without a browser.
-- **The agent** (Claude, ChatGPT, Gemini, any MCP client) that a person asks about the experiments,
+- **The agent** (Claude, ChatGPT, Gemini, any MCP client) that a person asks about the evals,
   and that needs the same numbers, refusals included, as data it can call for.
 
 ## User Stories
@@ -106,7 +106,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   dataset; and everything recorded, newest first; each for a period counted from today (the last
   14, 7, 30 or 90 days, this or last week or month, this year, all time), the counts with their
   trends against the period before. The tiles are grouped and coloured by subject (goals; data;
-  experiments; work and spend), never red or green for a direction.
+  evals; work and spend), never red or green for a direction.
 - **FR1.9** (0.4.2): A tile is a door: the page it opens shows what it counts, for the same
   period, carried in the link. The goals, datasets, arms, references and metrics pages mark the
   rows new in the period, keep only the new or the active ones on request, and show the period's

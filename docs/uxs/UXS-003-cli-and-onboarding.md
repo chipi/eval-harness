@@ -2,10 +2,10 @@
 
 - **Status**: Active
 - **Authors**: Marko Dragoljevic
-- **Related PRDs**: [PRD-001](../prd/PRD-001-experiments-and-comparison.md) (experiments),
+- **Related PRDs**: [PRD-001](../prd/PRD-001-evals-and-comparison.md) (evals),
   [PRD-007](../prd/PRD-007-packaging-and-providers.md) (one install), [PRD-004](../prd/PRD-004-catalog-and-inspector.md) (parity),
   [PRD-005](../prd/PRD-005-goals-and-rounds.md) (rounds)
-- **Related RFC**: [RFC-004](../rfc/RFC-004-experiment-rounds.md) (the round commands)
+- **Related RFC**: [RFC-004](../rfc/RFC-004-eval-rounds.md) (the round commands)
 - **Related UX specs**: [UXS-001](UXS-001-catalog.md), [UXS-002](UXS-002-inspector.md)
 - **Implementation paths**: `harness/scripts/cli.py` (`COMMANDS`: every command, one line of
   help each), `harness/Makefile` (the same scripts as `make` targets), `docs/GUIDE.md` (the
@@ -18,7 +18,7 @@ The harness's main surface is the terminal. One command, `evh`, with one subcomm
 repository each is also a `make` target running the same script. This spec covers the order in
 which a newcomer meets the commands, how every command speaks (refusals, hints, exit codes), the
 **parity table** that maps every catalog view and action to its command, and the flow of an
-experiment round.
+eval round.
 
 ## Principles
 

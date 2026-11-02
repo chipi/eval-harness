@@ -17,7 +17,7 @@ from), `temperature` (default 0) and `max_tokens`; the OpenAI-shaped ones also p
 
 KEYS BY ROLE. A judge reads every variable as `EVAL_JUDGE_<NAME>` first and falls back to
 `<NAME>`, so judging can run on its own keys (its own budget and spend log) or share the
-experiments' with no setting at all. A credential is where a call is billed, not what was
+arms' with no setting at all. A credential is where a call is billed, not what was
 measured: `api_key_env` is left out of every identity hash (`identity_params`).
 
 COST. What the provider billed when the response carries it (`usage.cost`), else the

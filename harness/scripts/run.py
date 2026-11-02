@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run one experiment config against one dataset; emit a run directory.
+"""Run one arm config against one dataset; emit a run directory.
 
 A run records THREE things, and is worthless without all of them:
 
@@ -621,7 +621,7 @@ def _resume_source(
 
 
 def main() -> int:
-    """Run an experiment config against a dataset."""
+    """Run an arm config against a dataset."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--config", required=True, type=Path)
     ap.add_argument(

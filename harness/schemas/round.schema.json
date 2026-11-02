@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "round",
-  "description": "One round of an experiment (ADR-0004), optional: what it set out to learn, what changed against the round before, the arms it dropped and why, the baseline it started from, and what it concluded. data/rounds/<goal_id>/<round_id>.yaml, written by evh round-open / round-retire / round-close. Its arms are the configs whose runs name it (`round:` in the config, recorded on the run).",
+  "description": "One round of an eval (ADR-0004), optional: what it set out to learn, what changed against the round before, the arms it dropped and why, the baseline it started from, and what it concluded. data/rounds/<goal_id>/<round_id>.yaml, written by evh round-open / round-retire / round-close. Its arms are the configs whose runs name it (`round:` in the config, recorded on the run).",
   "type": "object",
   "required": ["round_id", "goal", "dataset_id", "status", "opened_at"],
   "additionalProperties": false,

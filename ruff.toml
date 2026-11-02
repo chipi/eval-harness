@@ -8,7 +8,7 @@
 target-version = "py39"   # stricter than requires-python ">=3.10" (RFC-018): py310 would flag frozen scorers
 line-length = 110         # the code was written to ~110; the formatter governs, not E501
 
-# FROZEN INSTRUMENT CODE. These files define how the experiments' committed runs were scored:
+# FROZEN INSTRUMENT CODE. These files define how the evals' committed runs were scored:
 # a scoring hash (codehash.code_digest, inspect.getsource) covers their source text, and
 # validate V10 fails every derived run when it moves. Reformatting them would mean re-deriving
 # committed runs for a whitespace change, so the formatter skips them. The linter still reads

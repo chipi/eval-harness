@@ -30,14 +30,14 @@ hooks:
 nav:
   - Home: index.md
   - The harness ↗: https://evals.humancopilot.eu/
-  - The experiments ↗: https://evals.humancopilot.eu/experiments.html
+  - The evals ↗: https://evals.humancopilot.eu/evals.html
   - Ask it from your agent (MCP) ↗: https://evals.humancopilot.eu/#mcp
   - Getting started: GUIDE.md
   - Tutorials:
       - 1 · A local model against a baseline: tutorials/1-local-model.md
       - 2 · A hosted LLM, with your own key: tutorials/2-hosted-llm.md
       - 3 · A frontier reference, gold, and judging: tutorials/3-frontier-reference-and-judging.md
-      - 4 · Experiment rounds and dataset versions: tutorials/4-rounds-and-versions.md
+      - 4 · Eval rounds and dataset versions: tutorials/4-rounds-and-versions.md
       - 5 · The catalog and the inspector: tutorials/5-catalog-and-inspector.md
       - 6 · Datasets from production: tutorials/6-datasets-from-production.md
       - 7 · Set up a model before you test it: tutorials/7-set-up-a-model.md
@@ -54,15 +54,15 @@ nav:
       - Overview: architecture/ARCHITECTURE.md
       - Requirements (PRDs):
           - Index: prd/index.md
-          - "PRD-001: Running experiments and comparing arms": prd/PRD-001-experiments-and-comparison.md
+          - "PRD-001: Running evals and comparing arms": prd/PRD-001-evals-and-comparison.md
           - "PRD-002: References: gold, silver, and a run as the reference": prd/PRD-002-references.md
           - "PRD-003: Re-measuring with a validated LLM judge": prd/PRD-003-judging.md
           - "PRD-004: The catalog and the run inspector": prd/PRD-004-catalog-and-inspector.md
-          - "PRD-005: Goals, and experiment rounds": prd/PRD-005-goals-and-rounds.md
+          - "PRD-005: Goals, and eval rounds": prd/PRD-005-goals-and-rounds.md
           - "PRD-006: Datasets, versions and item fields": prd/PRD-006-datasets-versions-fields.md
           - "PRD-007: One install, your own keys": prd/PRD-007-packaging-and-providers.md
           - "PRD-014: Datasets from production (built, 0.6.0)": prd/PRD-014-datasets-from-production.md
-          - "PRD-015: Models, onboarded once, for every experiment (built, 0.6.0)": prd/PRD-015-models-onboarded-once.md
+          - "PRD-015: Models, onboarded once, for every eval (built, 0.6.0)": prd/PRD-015-models-onboarded-once.md
       - Experience (UXS):
           - Index: uxs/index.md
           - "UXS-001: The catalog": uxs/UXS-001-catalog.md
@@ -73,12 +73,12 @@ nav:
           - "RFC-001: The run fingerprint and code identity (version 4)": rfc/RFC-001-fingerprint-and-code-identity.md
           - "RFC-002: Run records and derived runs": rfc/RFC-002-run-records-and-derived-runs.md
           - "RFC-003: The catalog, the inspector server and the adapter protocol": rfc/RFC-003-catalog-adapter.md
-          - "RFC-004: Experiment rounds": rfc/RFC-004-experiment-rounds.md
+          - "RFC-004: Eval rounds": rfc/RFC-004-eval-rounds.md
           - "RFC-005: Judge scorers and the judging pass": rfc/RFC-005-judge-scorers.md
           - "RFC-006: Item fields and items at a URL": rfc/RFC-006-item-fields-and-url-items.md
           - "RFC-018: A read-only MCP server (0.5.0)": rfc/RFC-018-read-only-mcp-server.md
           - "RFC-019: Datasets from production, a lane beside the method (built, 0.6.0)": rfc/RFC-019-datasets-from-production.md
-          - "RFC-020: Onboarding models, once, for every experiment (built, 0.6.0)": rfc/RFC-020-onboarding-a-model.md
+          - "RFC-020: Onboarding models, once, for every eval (built, 0.6.0)": rfc/RFC-020-onboarding-a-model.md
           - "RFC-021: Fingerprint v5, the deployment, the settings and the runner (built, 0.6.0)": rfc/RFC-021-fingerprint-v5.md
           - "RFC-022: Scoring that evolves, previewed, re-scored or adopted by the next round (built, 0.6.0)": rfc/RFC-022-scoring-that-evolves.md
           - "RFC-023: Labels, and the references promoted from them (accepted, 0.6.0)": rfc/RFC-023-labels-and-references.md
@@ -87,7 +87,7 @@ nav:
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md
           - "ADR-0002: Catalog, run inspector and goals in the harness (0.4.0)": adr/ADR-0002-catalog-inspector-goals.md
           - "ADR-0003: Item fields and items fetched from a URL (0.4.0)": adr/ADR-0003-item-fields-and-url-items.md
-          - "ADR-0004: Experiment rounds, and a catalog that guides them (0.4.0)": adr/ADR-0004-experiment-rounds.md
+          - "ADR-0004: Eval rounds, and a catalog that guides them (0.4.0)": adr/ADR-0004-eval-rounds.md
           - "ADR-0005: One provider layer; credentials per role, never identity (0.4.0)": adr/ADR-0005-credentials-per-role.md
           - "ADR-0006: A goal weighs cost, quality and speed; a strategy picks (0.4.0)": adr/ADR-0006-goal-axes-and-strategies.md
           - "ADR-0018: The catalog's period is counted from today, in the browser (0.4.2)": adr/ADR-0018-period-from-today.md
@@ -97,7 +97,7 @@ nav:
           - "ADR-0022: A reference is labels you promote; the tier is chosen then (accepted, 0.6.0)": adr/ADR-0022-references-are-promoted-labels.md
           - "ADR-0023: Picks in one list per project; governed versions made on purpose (accepted, 0.6.0)": adr/ADR-0023-picks-and-governed-versions.md
           - "ADR-0024: Several projects on one machine share nothing (accepted, 0.6.0)": adr/ADR-0024-several-projects-on-one-machine.md
-  - The experiments:
+  - The evals:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md
       - Reference: REFERENCE.md

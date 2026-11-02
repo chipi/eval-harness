@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "model",
-  "description": "A model record (RFC-020), optional: data/models/<model_id>.yaml. A model is onboarded once for the project and used by any experiment's arms: its deployment on every machine that runs it, what it can do, the settings chosen for it and the smoke behind them. `aliases` are the ids runs record for it (params.model); the arms page's weights filter and the catalog's Models page read the records.",
+  "description": "A model record (RFC-020), optional: data/models/<model_id>.yaml. A model is onboarded once for the project and used by any eval's arms: its deployment on every machine that runs it, what it can do, the settings chosen for it and the smoke behind them. `aliases` are the ids runs record for it (params.model); the arms page's weights filter and the catalog's Models page read the records.",
   "type": "object",
   "required": ["model_id", "kind", "aliases"],
   "additionalProperties": false,

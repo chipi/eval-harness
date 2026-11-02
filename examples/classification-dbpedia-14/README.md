@@ -16,7 +16,7 @@ conclusion the pair does.
 | licence | `unknown`, non-commercial | **CC-BY-SA 3.0 + GFDL** |
 | outcome | a leader separated from 26 of 29, not from two other fine-tunes and `anthropic_m` | no winner: the leader is not separated from 19 of the 27 others |
 
-> **Rerun this experiment** from the repository root — `EXP=dbpedia`:
+> **Rerun this eval** from the repository root — `EXP=dbpedia`:
 >
 > ```bash
 > make plan EXP=dbpedia  &&  make data EXP=dbpedia  &&  make reproduce EXP=dbpedia  &&  make compare EXP=dbpedia

@@ -1,6 +1,6 @@
 # SummEval judging: can a model grade summaries the way experts do?
 
-Experiment 6. Every other experiment in this repository asks a system to *do* a task; this
+Eval 6. Every other eval in this repository asks a system to *do* a task; this
 one asks it to *grade* one. Each item is a CNN/DailyMail article with 16 machine summaries.
 The system scores every summary on four dimensions (coherence, consistency, fluency,
 relevance), and it is measured by how well its scores **order** the 16 the way three expert
@@ -11,7 +11,7 @@ Two questions this repository already asks, made measurable:
 - **Can an LLM judge be trusted?** Every silver reference, every "LLM-as-judge" pipeline,
   rests on it.
 - **How good are the metrics we rank by?** ROUGE and this repository's own `coverage` (the
-  summarisation experiment's primary metric) are arms here. How well they agree with experts
+  summarisation eval's primary metric) are arms here. How well they agree with experts
   bounds how much that leaderboard's lead means to a person — measured on 2019-era
   summaries, not the LLM-written ones it ranks.
 
@@ -44,11 +44,11 @@ python examples/summeval-judging/fetch.py      # or, from the root: make data EX
 
 | arm | what it is |
 |---|---|
-| 24 hosted LLM judges | the same 24 models as the other experiments, with `qwen37max` in place of `qwen_l`, whose model OpenRouter does not serve; one call per article; shown the article and the 16 summaries, **never the human references** ([prompt.txt](prompt.txt)) |
+| 24 hosted LLM judges | the same 24 models as the other evals, with `qwen37max` in place of `qwen_l`, whose model OpenRouter does not serve; one call per article; shown the article and the 16 summaries, **never the human references** ([prompt.txt](prompt.txt)) |
 | `unieval`, `unievalpub` | [UniEval](https://arxiv.org/abs/2210.07197) (Zhong et al. 2022), a T5-large evaluator trained to answer one yes/no question per dimension, for exactly these four; `MingZhong/unieval-sum`, pinned, licence not stated on its model card; local, CPU. `unieval` scores the text every other arm saw, plus one human reference for relevance; `unievalpub` scores UniEval's own published SummEval inputs (the same articles, summaries and reference, cased and tokenised differently), the protocol behind its published figures |
 | `rouge1`, `rouge2`, `rougeL` | ROUGE F1 of each summary against each of the 11 human references, averaged |
 | `coverage` | this repository's summarisation metric, imported from that example's own scorer, averaged over the references |
-| `bartscore` | log-likelihood of the summary given the article under `facebook/bart-large-cnn` ([Yuan et al. 2021](https://arxiv.org/abs/2106.11520)), pinned to the revision the summarisation experiment measured; local, CPU |
+| `bartscore` | log-likelihood of the summary given the article under `facebook/bart-large-cnn` ([Yuan et al. 2021](https://arxiv.org/abs/2106.11520)), pinned to the revision the summarisation eval measured; local, CPU |
 | `length` | the summary's word count: a confound to rule out, not a judge |
 | `random` | seeded random scores: the floor, near τ = 0 |
 
@@ -62,7 +62,7 @@ articles, with ROUGE-1 F1 averaged over the references: **ρ 0.190, τ 0.149**, 
 dimension within 0.01 of every published value. (Max over references gives ρ 0.198 and the
 first reference alone 0.159; neither reproduces the published row, so averaging is the
 setup.) UniEval reproduces as well, on its own inputs: τ 0.372 against G-Eval's 0.377, inside the
-interval on every dimension (on this experiment's text it scores 0.348; see the report,
+interval on every dimension (on this eval's text it scores 0.348; see the report,
 §3.3). The instrument reproduces the literature before anything new is read off it.
 [`calibrate.py`](calibrate.py) recomputes all of this from the committed runs and writes
 [`docs/evidence/calibration/summeval.json`](../../docs/evidence/calibration/summeval.json),
@@ -168,4 +168,4 @@ make leaderboard DATASET_ID=summeval_100
   token probabilities (G-Eval's probability-weighted score), are different judges; they are
   not measured here.
 - **The articles are mostly DailyMail** (87 of 100; 13 CNN), unlike the summarisation
-  experiment's sample, which is all CNN.
+  eval's sample, which is all CNN.

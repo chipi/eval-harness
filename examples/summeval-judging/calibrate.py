@@ -5,7 +5,7 @@
 
 WHY NO NEW RUN
   Every other calibration scores a known system on a benchmark's full test set, because
-  the experiment itself scores a 200-item slice. Here there is no slice: the 100
+  the eval itself scores a 200-item slice. Here there is no slice: the 100
   annotated articles ARE the benchmark, the set G-Eval reports on. So the calibration
   rows are the committed ROUGE arms themselves, read from harness/data/runs, and this
   script only puts an interval on them and sets them beside the published figures.
@@ -15,7 +15,7 @@ WHAT IT COMPARES
   for ROUGE-1, ROUGE-2 and ROUGE-L F1 (each averaged over the 11 references) and for
   UniEval on UniEval's own published inputs (the `unievalpub` arm), against G-Eval (Liu
   et al. 2023), Table 1. The interval is the normal-approximation 95% half-width over the
-  100 per-article values. The `unieval` arm, on this experiment's inputs, is not a
+  100 per-article values. The `unieval` arm, on this eval's inputs, is not a
   calibration row: its inputs differ from the published protocol on purpose.
 
 WHY AVERAGED OVER THE REFERENCES
@@ -80,7 +80,7 @@ def _adapter():
 
 
 def unieval_inputs() -> dict:
-    """How UniEval's published SummEval inputs differ from this experiment's items.
+    """How UniEval's published SummEval inputs differ from this eval's items.
 
     The two UniEval arms score the same summaries from two files; the report says they hold
     the same text written differently. This counts it, through the adapter's own matching

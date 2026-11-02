@@ -113,14 +113,14 @@ NAV = [
         "Data",
     ),
     (
-        "experiments",
+        "arms",
         [
             ("arms", "arms.html", "Arms"),
             ("configs", "arms.html#configs", "Configs"),
             ("models", "models.html", "Models"),
             ("metrics", "metrics.html", "Metrics"),
         ],
-        "Experiments",
+        "Arms",
     ),
     ("activity", "activity.html", "Activity"),
     ("inspect", "inspect.html", "Inspector"),
@@ -1549,7 +1549,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             for g, name in (
                 ("goals", "goals"),
                 ("data", "data"),
-                ("experiments", "experiments"),
+                ("arms", "arms"),
                 ("work", "work and spend"),
             )
         )

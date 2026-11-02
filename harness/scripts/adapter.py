@@ -60,7 +60,7 @@ class Result:
 def call_system(text: str, params: dict[str, Any]) -> Result:
     """Run YOUR system over one item. Replace the body.
 
-    `params` is whatever the experiment config put under `params:` — model name,
+    `params` is whatever the arm's config put under `params:` — model name,
     temperature, prompt version, thresholds. Keep the knobs in the config, not
     in here, so an arm is a YAML file rather than a code edit.
 

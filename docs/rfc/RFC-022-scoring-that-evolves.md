@@ -5,7 +5,7 @@
   the triage fleet as the use case that validates it".
 - **Authors**: Marko Dragoljevic
 - **Related**: [RFC-002](RFC-002-run-records-and-derived-runs.md) (derived runs: a re-score is its own record);
-  [ADR-0004](../adr/ADR-0004-experiment-rounds.md) (rounds); [RFC-021](RFC-021-fingerprint-v5.md) (the instrument
+  [ADR-0004](../adr/ADR-0004-eval-rounds.md) (rounds); [RFC-021](RFC-021-fingerprint-v5.md) (the instrument
   part, hashed by code); [RFC-019](RFC-019-datasets-from-production.md) §8 (the triage fleet, the acceptance case)
 
 ## Abstract

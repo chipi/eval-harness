@@ -277,7 +277,7 @@ models:
 self-test:
 	$(PYTHON) scripts/self_check.py $(ARGS)
 
-# ── experiments ─────────────────────────────────────────────────────────────
+# ── evals ───────────────────────────────────────────────────────────────────
 run-dry-run:
 	$(PYTHON) scripts/run.py --config $(CONFIG) --repeat $(REPEAT) --dry-run
 
@@ -439,7 +439,7 @@ inspect:
 	@test -n "$(RUNS)" || { echo "RUNS=<arm>,<arm>,... is required (config ids, or arm ids from make datasets)"; exit 1; }
 	$(PYTHON) scripts/view_inspect.py --runs $(RUNS) $(if $(BASELINE),--baseline $(BASELINE),) $(ARGS)
 
-# EXPERIMENT ROUNDS (ADR-0004), optional: a round of a goal, its decisions as commands.
+# EVAL ROUNDS (ADR-0004), optional: a round of a goal, its decisions as commands.
 # make round-open GOAL=g DATASET_ID=d ARGS='--from r1 --hypothesis "..." --keep a,b --retire c --reason "..."'
 round-open:
 	@test -n "$(GOAL)" -a -n "$(DATASET_ID)" || { echo "GOAL=<goal_id> DATASET_ID=<dataset> are required"; exit 1; }

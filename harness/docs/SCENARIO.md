@@ -1,10 +1,10 @@
 # The newcomer scenario
 
 A person who has never used the harness pins a release candidate into an empty folder and,
-using only the published docs, runs two small experiments end to end: a summariser and a
+using only the published docs, runs two small evals end to end: a summariser and a
 classifier, with no-model baselines, cheap hosted LLMs, an expensive frontier model whose run
 becomes the reference, and LLM judges, and one small CPU model, the fastest, for the summaries. They
-take the summariser through two experiment rounds and a new dataset version, then browse everything
+take the summariser through two eval rounds and a new dataset version, then browse everything
 in the catalog and the inspector. It costs under $1 and keeps a friction log.
 
 **It is a smoke test of the newcomer's path, not a release ritual.** Run it when something a
@@ -78,7 +78,7 @@ evh reference-promote --dataset-id intents_v1 --labels my_gold --tier gold --rea
 
 ## 2 · Goals
 
-One per experiment in `data/goals/`, `brief_summary` and `intent_routing`
+One per eval in `data/goals/`, `brief_summary` and `intent_routing`
 ([RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field) has every field and its allowed
 values): who uses the output, the decision ("which system runs it, given that a frontier model is
 too expensive to run on every item"), the measure that decides (`rouge_l`; `accuracy`), the

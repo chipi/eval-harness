@@ -10,7 +10,7 @@ WHY THIS EXISTS
   REFUSED to print a critical difference above k = 25 rather than reuse a smaller k's
   value -- which would understate the CD and overstate how many pairs differ.
 
-  The refusal was right and the scope was wrong. Four of this repo's five experiments
+  The refusal was right and the scope was wrong. Four of this repo's five evals
   have 26-28 arms, so four of five had no pairwise verdict at all, and two reports
   published CDs from the pre-refusal code that were biased toward significance. An
   external reviewer pointed out that the values are about thirty lines of stdlib.

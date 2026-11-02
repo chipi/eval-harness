@@ -49,7 +49,7 @@ from evaluation_harness._runs import matrix as matrix_of
 
 # ── is the ordering above real? ──────────────────────────────────────────────
 # A leaderboard sorted by a mean always produces an ordering. Whether that ordering
-# survives re-running the experiment is a different question, and it is the only one
+# survives re-running the eval is a different question, and it is the only one
 # that matters -- so the answer is printed, not left to the reader.
 #
 # THREE readings, all order-independent, all computed over the whole table at once.
@@ -106,7 +106,7 @@ NEMENYI_Q05 = {
     #
     # It used to stop at 25 and this file REFUSED to print a critical difference above
     # that, rather than reuse a smaller k's value and understate the CD. The refusal
-    # was right; the scope was not. Four of five experiments here have 26-28 arms, so
+    # was right; the scope was not. Four of five evals here have 26-28 arms, so
     # four of five had no pairwise verdict at all -- over roughly thirty lines of
     # arithmetic. Found by external review.
     2: 1.9600,
@@ -234,7 +234,7 @@ def significance(
     # ABOVE THE TABLE, SAY SO. This used to default to the k=25 value for any larger
     # k, which is too SMALL -- so the critical difference was too small and more pairs
     # were called distinguishable than the test supports. Four of this repo's five
-    # experiments have 26-28 arms, so four of five published "pairs distinguishable"
+    # evals have 26-28 arms, so four of five published "pairs distinguishable"
     # counts were mildly anti-conservative. Guessing a critical value is worse than
     # declining to print one.
     q = NEMENYI_Q05.get(k)

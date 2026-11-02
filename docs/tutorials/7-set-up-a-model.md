@@ -95,7 +95,7 @@ params:
 ```
 
 The record supplies the model's own settings; the arm adds the task's (its reply cap, its call limit), with a
-comment saying why. A record refuses those: they would reach every other experiment's arms. Commit the record
+comment saying why. A record refuses those: they would reach every other eval's arms. Commit the record
 and the arm before running, so the run records a clean tree:
 
 ```bash

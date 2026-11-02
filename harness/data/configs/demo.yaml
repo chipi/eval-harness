@@ -1,4 +1,4 @@
-# An experiment config: WHAT is being run, against WHICH dataset.
+# An arm's config: WHAT is being run, against WHICH dataset.
 #
 # config_id and dataset_id are both required. A run records them alongside the build and
 # the params that produced it — those four are what make a number attributable.

@@ -1,4 +1,4 @@
-# Method — why this experiment is built the way it is
+# Method — why this eval is built the way it is
 
 Companion to [`README.md`](README.md) and
 [`REPORT_RETRIEVAL.md`](../../research/REPORT_RETRIEVAL.md). Terms in

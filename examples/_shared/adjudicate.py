@@ -43,7 +43,7 @@ def main() -> int:
         )
         return 1
     if not base.is_dir():
-        print(f"no gold reference set at {base}: run the experiment's fetch.py first")
+        print(f"no gold reference set at {base}: run the eval's fetch.py first")
         return 1
     if dest.exists():
         shutil.rmtree(dest)

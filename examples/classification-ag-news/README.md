@@ -23,7 +23,7 @@ It is the second worked example for [`../../harness`](../../harness), and it exi
 because classification breaks things the summarisation example never touched. The
 interesting parts of this one are mostly about the instrument rather than the models.
 
-> **Rerun this experiment** from the repository root — `EXP=ag-news`:
+> **Rerun this eval** from the repository root — `EXP=ag-news`:
 >
 > ```bash
 > make plan EXP=ag-news  &&  make data EXP=ag-news  &&  make reproduce EXP=ag-news  &&  make compare EXP=ag-news
@@ -69,7 +69,7 @@ first  20: {'Business': 1, 'Sci/Tech': 19}
 first 200: {'Business': 29, 'Sci/Tech': 57, 'Sports': 53, 'World': 61}
 ```
 
-A 20-item slice that is 95% one class is not a hard eval, it is a broken one — a constant
+A 20-item slice that is 95% one class is not a hard test, it is a broken one — a constant
 answer scores 0.95 and the table ranks constants above models. So `fetch.py` takes n/4 per
 class in split order: deterministic without a seed, and nested, so the 20-item slice stays
 a strict subset of the 200 and `holdout_significance --exclude-dataset` still means what

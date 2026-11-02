@@ -192,7 +192,7 @@ def _paths() -> dict[str, Path]:
         "GOALS": root / Path(goals_override).expanduser() if goals_override else data / "goals",
         # Field sets (ADR-0003): one <fieldset_id>.yaml each, declaring the fields items may carry.
         "FIELDS": data / "fields",
-        # Experiment rounds (ADR-0004), optional: data/rounds/<goal_id>/<round_id>.yaml.
+        # Eval rounds (ADR-0004), optional: data/rounds/<goal_id>/<round_id>.yaml.
         "ROUNDS": data / "rounds",
         # Items fetched from a source_url, by their sha256. Derived and gitignored, like materialized/.
         "ITEM_CACHE": root / ".cache" / "items",
@@ -634,8 +634,8 @@ def reference_texts(root: Path, dataset_id: str, tier: str = "gold") -> list[Pat
     if not files and (root / "manifest.json").is_file():
         die(
             f"the {tier} references for {dataset_id} are not on this machine: {root} holds their "
-            "checksums only (manifest.json). Fetch the dataset first, as the experiment's README and "
-            "docs/REPRODUCE.md say (`make data EXP=<experiment>`, or the example's fetch.py)."
+            "checksums only (manifest.json). Fetch the dataset first, as the eval's README and "
+            "docs/REPRODUCE.md say (`make data EXP=<eval>`, or the example's fetch.py)."
         )
     return files
 

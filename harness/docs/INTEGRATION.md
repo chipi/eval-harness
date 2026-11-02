@@ -157,7 +157,7 @@ its bill (`usage.cost`), the run records the bill. Which provider does:
 
 A config holds `config_id`, `dataset_id`, `params`, and optionally `adapter` (a project with
 several tasks names one per arm, `adapter: adapters/ner.py`), `goal` (what the evaluation is
-for, `data/goals/<goal_id>.yaml`), `round` (an experiment round of that goal, `rN`) and
+for, `data/goals/<goal_id>.yaml`), `round` (an eval round of that goal, `rN`) and
 `format` (the output's shape, one of its goal's `output_contract` formats:
 [RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)). Any other key is refused by
 `evh validate` (V1).
@@ -231,7 +231,7 @@ can extend later without re-authoring what you have.
 | re-measurement | stored outputs scored again for a new reference or scorer at $0, or by validated LLM judges, without re-running an arm |
 | a judge panel | when the cheap metric is biased and you need an LLM to adjudicate |
 | goals | what each evaluation is for, named on every config and checked by `evh validate` |
-| experiment rounds (optional) | round on round: what each round tried, what it kept and dropped and why, what it concluded ([tutorial 4](../../docs/tutorials/4-rounds-and-versions.md)) |
+| eval rounds (optional) | round on round: what each round tried, what it kept and dropped and why, what it concluded ([tutorial 4](../../docs/tutorials/4-rounds-and-versions.md)) |
 | item fields | the facts you know about each item (typed, declared once in a field set), checked by `evh validate`; items fetched from a pinned URL |
 | a catalog and an inspector | pages over your runs, and a local server that tests any arms against a baseline and shows outputs beside references; every view is also an `evh` command |
 | labels and references | what is right for an item and who said it (a person, a model, a rule), in sets that follow an item by its bytes; a reference is only ever labels promoted on purpose, with a reason |
@@ -359,7 +359,7 @@ Any other MCP client takes the command `evh mcp --project /absolute/path/to/proj
 client starts it from its own directory, not your project's, so give `--project`; and it starts it
 with its own `PATH`, so if `evh` is in a virtualenv, give the full path to that `evh`.
 
-**This repository's experiments, from anywhere**: `https://evals.humancopilot.eu/mcp` serves the
+**This repository's evals, from anywhere**: `https://evals.humancopilot.eu/mcp` serves the
 six worked examples (Streamable HTTP, read-only, no sign-in; it answers what the site and the
 catalog publish, never an item's text):
 

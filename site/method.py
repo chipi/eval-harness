@@ -1,8 +1,8 @@
 """The method page, the "use it on your problem" page, and the pieces of them that the
-landing and experiment pages borrow.
+landing and eval pages borrow.
 
 The findings are the hook; the method is the point. These pages tell the six habits as
-the experiments taught them, then show how to apply them to a problem of your own.
+the evals taught them, then show how to apply them to a problem of your own.
 
 Same rules as build.py: every number typed into quoted prose goes through `q()` and must
 appear in the report (or guide) it cites; everything else is computed from the runs.
@@ -241,7 +241,7 @@ def lifecycle_panels(H) -> str:
 
 # ── the six habits ──────────────────────────────────────────────────────────
 def chapters(H, f: dict) -> list:
-    exps = f["experiments"]
+    exps = f["evals"]
     by = {x["slug"]: x for x in exps}
     ties = sum(x["n_tied"] > 0 for x in exps)
     s = by["summarization"]
@@ -292,7 +292,7 @@ def chapters(H, f: dict) -> list:
                 + "</p>"
                 "<p>No check in the harness could see it: every one compared the repository "
                 "with itself. One <strong>calibration row</strong> — a known baseline against its "
-                "published value — caught it. Now every experiment has one, and "
+                "published value — caught it. Now every eval has one, and "
                 f"{f['calibration_consistent']} of {len(f['calibration'])} agree with the literature, "
                 f"{f['calibration_inside']} of them inside their own interval.</p>"
             ),
@@ -343,7 +343,7 @@ def chapters(H, f: dict) -> list:
                 + " Close to a person is not the same as a person.</p>"
                 "<p>"
                 + H.q(
-                    "Two of those judges re-measured the summarisation experiment and "
+                    "Two of those judges re-measured the summarisation eval and "
                     "ranked every hosted LLM above every BART model. The one blind human check on "
                     "those outputs, one non-expert reader on 20 pairs, preferred bart_l 14 to 6.",
                     SUMM,
@@ -353,7 +353,7 @@ def chapters(H, f: dict) -> list:
                 "people better than one rater does on coherence and relevance, not on faithfulness, "
                 "and not system by system. "
                 "So the harness refuses a judge until it is validated, and the "
-                "summarisation experiment still ranks by coverage.</p>"
+                "summarisation eval still ranks by coverage.</p>"
             ),
             "habit": "Silver gets you started; gold tells you the truth. Write a small gold set "
             "early, promote it on purpose with why, check silver — and any AI judge — against it, and "
@@ -382,12 +382,15 @@ def chapters(H, f: dict) -> list:
                 "<p>"
                 + H.q("BART's apparent lead at n=20 was 0.0737; across 200 articles it was 0.00008.", SUMM)
                 + " "
-                + H.q("Two independent 100-article evals of the same models agree at only ρ = 0.79.", SUMM)
+                + H.q(
+                    "Two independent 100-article measurements of the same models agree at only ρ = 0.79.",
+                    SUMM,
+                )
                 + "</p>"
                 "<p>"
                 + H.q(
                     "A pilot correlates beautifully and picks the wrong winner — in "
-                    "three of the five experiments here that ran one.",
+                    "three of the five evals here that ran one.",
                     SYN,
                 )
                 + "</p>"
@@ -409,7 +412,7 @@ def chapters(H, f: dict) -> list:
             "short": "Say separated, not higher.",
             "story": (
                 f"<p>A leaderboard sorts, so something is always first. In {ties} of "
-                f"{len(exps)} experiments here the leader cannot be separated from a group of "
+                f"{len(exps)} evals here the leader cannot be separated from a group of "
                 f"others — on summarisation, from {s['n_tied']} of them, the cheapest paid one "
                 f"{H.times(s['tied_ratio'])} cheaper than the dearest model in the field.</p>"
                 "<p>Every separation claim on this site rests on a paired permutation test "
@@ -435,9 +438,9 @@ def chapters(H, f: dict) -> list:
             "nodes": "baseline",
             "kicker": "The record",
             "title": "Decide on the record.",
-            "short": "The scorer is part of the experiment. So is the reason.",
+            "short": "The scorer is part of the eval. So is the reason.",
             "story": (
-                "<p>Running the experiments found eight defects in the harness's own "
+                "<p>Running the evals found eight defects in the harness's own "
                 "instrument, each of which changed published numbers or would have. "
                 + H.q(
                     "Three of these — the parser, the unparsed-as-empty rule, the "
@@ -461,7 +464,7 @@ def chapters(H, f: dict) -> list:
     ]
 
 
-#: Four habits for an evaluation that goes on (0.6.0): not taught by the six experiments, so not told as their
+#: Four habits for an evaluation that goes on (0.6.0): not taught by the six evals, so not told as their
 #: stories; each with the step that keeps it (owner, 2026-11-01).
 LASTING = [
     (
@@ -517,7 +520,7 @@ def method_page(H, f: dict) -> str:
     toc = "".join(
         f'<a href="#{c["id"]}"><span>{i:02d}</span>{H.e(c["title"])}</a>' for i, c in enumerate(chs, 1)
     )
-    by = {x["slug"]: x for x in f["experiments"]}
+    by = {x["slug"]: x for x in f["evals"]}
     body_ch = []
     for i, c in enumerate(chs, 1):
         cmd, out = c["tool"]
@@ -538,12 +541,12 @@ def method_page(H, f: dict) -> str:
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>The method</b> · six habits · learned the hard way</div>
   <h1>How to know what you <em>think you know.</em></h1>
-  <p class="dek">The findings on this site took no special model and no big budget. They took a method — six habits, each learned by getting something wrong first. Here they are as the experiments taught them, with the step in the harness that keeps each one, and what it means for your own work; then <a href="#lasting">four more</a>, for an evaluation that goes on.</p>
+  <p class="dek">The findings on this site took no special model and no big budget. They took a method — six habits, each learned by getting something wrong first. Here they are as the evals taught them, with the step in the harness that keeps each one, and what it means for your own work; then <a href="#lasting">four more</a>, for an evaluation that goes on.</p>
   <nav class="toc">{toc}</nav>
 </div></section>
 
 <section class="block method"><div class="wrap method-grid">
-  <aside class="method-aside"><div class="sticky">{lifecycle()}<p class="aside-note">The lifecycle every experiment here followed. Each habit lights the step it protects.</p></div></aside>
+  <aside class="method-aside"><div class="sticky">{lifecycle()}<p class="aside-note">The lifecycle every eval here followed. Each habit lights the step it protects.</p></div></aside>
   <div class="chapters">{"".join(body_ch)}</div>
 </div></section>
 
@@ -559,7 +562,7 @@ def method_page(H, f: dict) -> str:
   <h2>Built on Chip Huyen's framing.</h2>
   <div class="cols">
     <div class="prose">
-      <p>The approach in this repository builds on Chip Huyen's books. Their framing — evaluation is engineering work on <strong>your</strong> data, a model is chosen on a private leaderboard rather than a public one, the dataset is a design decision, every experiment is tracked and versioned — is the foundation this harness was built on. What this project adds is a tool that enforces it, and six experiments that show what skipping it costs.</p>
+      <p>The approach in this repository builds on Chip Huyen's books. Their framing — evaluation is engineering work on <strong>your</strong> data, a model is chosen on a private leaderboard rather than a public one, the dataset is a design decision, every experiment is tracked and versioned — is the foundation this harness was built on. What this project adds is a tool that enforces it, and six evals that show what skipping it costs.</p>
       <p>The idea-by-idea mapping, with chapters, is in <a href="docs/INFLUENCES/">Influences</a>.</p>
     </div>
     <ul class="reading">
@@ -572,7 +575,7 @@ def method_page(H, f: dict) -> str:
     </ul>
   </div>
   <p>The habits hold when an agent does the work, too: it can read every number they rest on, the goals and their tests, from the catalog over MCP, and the decisions stay a person's (<a href="./#mcp">ask it from your agent</a>).</p>
-  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem →</a><a class="btn" href="docs/GUIDE/">The step-by-step guide</a><a class="btn" href="experiments.html">The experiments</a></div>
+  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem →</a><a class="btn" href="docs/GUIDE/">The step-by-step guide</a><a class="btn" href="evals.html">The evals</a></div>
 </div></section>
 <script>
 (function(){{const nodes=document.querySelectorAll('.method-aside .lc-node');
@@ -582,7 +585,7 @@ document.querySelectorAll('.chapter').forEach(c=>io.observe(c));}})();
 </script>"""
     return H.page(
         "The method — eval-harness",
-        "Six habits for measuring AI systems, as six experiments taught them: "
+        "Six habits for measuring AI systems, as six evals taught them: "
         "experiments, frozen data, gold references, noise, significance, the record; "
         "and four for an evaluation that goes on.",
         body + H.author("method"),
@@ -592,7 +595,7 @@ document.querySelectorAll('.chapter').forEach(c=>io.observe(c));}})();
 
 # ── use it on your problem ──────────────────────────────────────────────────
 def patterns(H, f: dict) -> list:
-    by = {x["slug"]: x for x in f["experiments"]}
+    by = {x["slug"]: x for x in f["evals"]}
     db = by["dbpedia"]
     return [
         (
@@ -877,7 +880,7 @@ def use_page(H, f: dict) -> str:
 <section class="block" id="patterns"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>Patterns</div>
   <h2>Your question is probably one of these.</h2>
-  <p class="lede">Each maps to an experiment in this repository you can copy — its adapter, its configs, its scorer — and change the data. The idea underneath all of them — build a private leaderboard for your own application instead of trusting a public one — is Chip Huyen's, from <i>AI Engineering</i> (<a href="docs/INFLUENCES/">influences</a>).</p>
+  <p class="lede">Each maps to an eval in this repository you can copy — its adapter, its configs, its scorer — and change the data. The idea underneath all of them — build a private leaderboard for your own application instead of trusting a public one — is Chip Huyen's, from <i>AI Engineering</i> (<a href="docs/INFLUENCES/">influences</a>).</p>
   <div class="patterns">{cards}</div>
 </div></section>
 
@@ -927,7 +930,7 @@ def use_page(H, f: dict) -> str:
   <div class="eyebrow"><span class="num">05</span>Three doors</div>
   <h2>Look at ours, rerun ours, or build yours.</h2>
   <div class="cards doors">
-    <a class="card" href="{H.CATALOG}"><div class="task">Look at ours</div><h3>Every run, in the catalog.</h3><p>The six experiments as the harness shows them: every goal, dataset, arm and reference, and an inspector that tests any arms against a baseline, item by item. Nothing to install; your agent can ask it too, at <code>evals.humancopilot.eu/mcp</code>.</p><div class="meta"><span>evals.humancopilot.eu/catalog</span><b>The catalog →</b></div></a>
+    <a class="card" href="{H.CATALOG}"><div class="task">Look at ours</div><h3>Every run, in the catalog.</h3><p>The six evals as the harness shows them: every goal, dataset, arm and reference, and an inspector that tests any arms against a baseline, item by item. Nothing to install; your agent can ask it too, at <code>evals.humancopilot.eu/mcp</code>.</p><div class="meta"><span>evals.humancopilot.eu/catalog</span><b>The catalog →</b></div></a>
     <a class="card" href="docs/REPRODUCE/"><div class="task">Rerun ours</div><h3>Check every finding yourself.</h3><p>Five levels, from recomputing every number for $0 to rerunning every model with one key — with a replication card that re-tests every separation.</p><div class="meta"><span>make verify</span><b>Reproduce it →</b></div></a>
     <a class="card" href="docs/GUIDE/"><div class="task">Build yours</div><h3>Your first evaluation, end to end.</h3><p>Freeze a dataset, build a golden reference set, measure, compare honestly, promote a baseline — offline, with the real output of every step.</p><div class="meta"><span>harness/tutorial</span><b>The guide →</b></div></a>
   </div>
@@ -950,7 +953,7 @@ show('dataset');}})();
     )
 
 
-# ── borrowed by the landing and experiment pages ────────────────────────────
+# ── borrowed by the landing and eval pages ──────────────────────────────────
 def landing_teaser(H, f: dict, num: str = "03") -> str:
     chs = chapters(H, f)
     habits = "".join(
@@ -969,8 +972,8 @@ def landing_teaser(H, f: dict, num: str = "03") -> str:
 """
 
 
-def experiment_lesson(H, x: dict) -> tuple:
-    """(chapter id, chapter title, what this experiment taught) for an experiment page."""
+def eval_lesson(H, x: dict) -> tuple:
+    """(chapter id, chapter title, what this eval taught) for an eval page."""
     slug = x["slug"]
     if slug == "summarization":
         return (
@@ -1024,7 +1027,7 @@ def experiment_lesson(H, x: dict) -> tuple:
                 "agreement with the other two.",
                 JUDGE,
             )
-            + " An LLM judge is a silver reference. This experiment is what checking one "
+            + " An LLM judge is a silver reference. This eval is what checking one "
             "against a gold set looks like.",
         )
     return (

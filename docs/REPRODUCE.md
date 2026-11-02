@@ -9,7 +9,7 @@ commands from the repository root.
 | **0 · verify** | every number in every report, recomputed from the committed predictions | a clone | $0, ~20 min |
 | **1 · data** | the public data still matches what was measured, byte for byte | network | $0, minutes |
 | **2 · local** | rerun every local model and baseline on your own CPU | disk for models | $0, CPU hours |
-| **3 · hosted** | rerun the hosted LLMs (24 per experiment, 12 on SciFact) | one OpenRouter key | what `make plan` says, ≈ $0.58–$7.03 per experiment as billed when measured; prices move |
+| **3 · hosted** | rerun the hosted LLMs (24 per eval, 12 on SciFact) | one OpenRouter key | what `make plan` says, ≈ $0.58–$7.03 per eval as billed when measured; prices move |
 | **4 · extend** | measure a model of your own against the whole committed field | a config file | your model |
 
 You need `git`, `make`, Python ≥ 3.11 and [uv](https://docs.astral.sh/uv/) (`curl -LsSf
@@ -40,13 +40,13 @@ that is what the next levels are for.
 ## 1 · Data — is it still the same data? ($0)
 
 ```bash
-make data EXP=scifact             # or any experiment from `make list`
+make data EXP=scifact             # or any eval from `make list`
 ```
 
 Creates the example's environment, downloads its slice of the public benchmark from the
 Hugging Face datasets API (no corpus is committed — licences), and hashes every item
 against the committed dataset file. A mismatch stops here: a rerun on different bytes
-would be a different experiment wearing the same name.
+would be a different eval wearing the same name.
 
 ## 2 · Local — rerun the free arms ($0)
 
@@ -57,7 +57,7 @@ make compare   EXP=scifact
 ```
 
 `LEVEL=baselines` runs only the floors (seconds); `ARMS=bm25,e5_base` picks arms by name.
-Reruns go to `harness/data/runs-repro/<experiment>/`, which is gitignored and never
+Reruns go to `harness/data/runs-repro/<eval>/`, which is gitignored and never
 mixed with the committed runs — those stay the record.
 
 Model weights download from Hugging Face on first use, at the revision the committed run
@@ -113,7 +113,7 @@ provider served it.
 
 ## 4 · Extend — your model against the field
 
-Copy any hosted config in the experiment's `configs/` directory, give it a new
+Copy any hosted config in the eval's `configs/` directory, give it a new
 `config_id` (keep the prefix and suffix, e.g. `sf_mymodel_n200_v1`), and set `model:` to
 any OpenRouter id (`vendor/model`). Then:
 
@@ -129,7 +129,7 @@ system that is not an OpenAI-compatible endpoint, write an adapter instead:
 
 ## The replication card
 
-`make compare` writes `harness/data/runs-repro/<experiment>/REPLICATION.md`:
+`make compare` writes `harness/data/runs-repro/<eval>/REPLICATION.md`:
 
 | column | meaning |
 |---|---|

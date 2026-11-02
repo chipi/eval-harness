@@ -1,4 +1,4 @@
-# What six experiments agree on
+# What six evals agree on
 
 **Six tasks · five metric shapes · 167 measured arms · $19.07 billed · one harness**
 
@@ -24,7 +24,7 @@ For DBpedia take the cheapest arm at 0.9857: `gemma_m` (about $12 per 1M items),
 retrieval build `e5_base` first, and add a reranker only if about +0.07 nDCG@10 is worth
 about $732 per 1M queries. For judging summaries use `gemma_l` ($278 per 1M articles, within
 0.0013 of the leader that costs $6,350). Never `anthropic_l`: the dearest arm in five of the
-six experiments, it was never first on a primary metric and was separated below the leader in
+six evals, it was never first on a primary metric and was separated below the leader in
 three (re-measured on AG News and summarisation it is first on the point estimate, neither
 re-measurement confirmed).
 
@@ -36,15 +36,15 @@ a fine-tune does with fewer labels, were not measured.
 ### Supporting facts
 
 Every figure is as run here and computed from the stored runs, except where the text says it
-is not; reproduction commands are at the end. The seven findings, each tested in every experiment that could test it, unpacked in
+is not; reproduction commands are at the end. The seven findings, each tested in every eval that could test it, unpacked in
 §1–§7:
 
 | # | finding | evidence |
 |---|---|---|
-| **1** | **The dearest arm is never first** | `anthropic_l`, the dearest in five of six experiments, ranked 18th of 29 (summarisation), 5th of 30 (AG News), 2nd of 28 (DBpedia), 3rd of 28 (Few-NERD) and 3rd of 33 (SummEval), and was separated below the leader in three (summarisation, AG News, Few-NERD). SciFact had no frontier tier: its dearest, `glm_m`, is the dearest of twelve cheap models (2nd of 19). The dearest beat the cheapest in 5 of 6. All on each experiment's primary metric: re-measured against labels one reader corrected (AG News, [REPORT_CLASSIFICATION](REPORT_CLASSIFICATION.md)) and by SummEval-validated LLM judges (summarisation, [REPORT_SUMMARIZATION](REPORT_SUMMARIZATION.md) §3.8), `anthropic_l` is first on the point estimate in both; neither re-measurement is confirmed, and both primaries stand by decision. |
+| **1** | **The dearest arm is never first** | `anthropic_l`, the dearest in five of six evals, ranked 18th of 29 (summarisation), 5th of 30 (AG News), 2nd of 28 (DBpedia), 3rd of 28 (Few-NERD) and 3rd of 33 (SummEval), and was separated below the leader in three (summarisation, AG News, Few-NERD). SciFact had no frontier tier: its dearest, `glm_m`, is the dearest of twelve cheap models (2nd of 19). The dearest beat the cheapest in 5 of 6. All on each eval's primary metric: re-measured against labels one reader corrected (AG News, [REPORT_CLASSIFICATION](REPORT_CLASSIFICATION.md)) and by SummEval-validated LLM judges (summarisation, [REPORT_SUMMARIZATION](REPORT_SUMMARIZATION.md) §3.8), `anthropic_l` is first on the point estimate in both; neither re-measurement is confirmed, and both primaries stand by decision. |
 | **2** | **The top is a group, not a podium** | The leader is separated from 100% (Few-NERD, 27 of 27), 90% (AG News), 84% (SummEval), 46% (summarisation), 33% (SciFact) and 30% (DBpedia) of its opponents. |
-| **3** | **Training exposure predicts who wins, not price — with one exception** | The best fine-tune ranked first in three of four experiments that had one and third-equal on DBpedia, two items behind; zero-shot models ranked last among learned arms; a BART trained on XSum finished 29th of 29 on CNN. Exception: on SummEval, UniEval, trained to judge, is separated below 23 of the 24 LLM judges (cause untested). |
-| **4** | **A pilot picks the wrong winner** | Pilot ρ was 0.70–0.96 where it can be recomputed, and the pilot's leader was not the full-run leader in 3 of the 5 experiments that ran one. |
+| **3** | **Training exposure predicts who wins, not price — with one exception** | The best fine-tune ranked first in three of four evals that had one and third-equal on DBpedia, two items behind; zero-shot models ranked last among learned arms; a BART trained on XSum finished 29th of 29 on CNN. Exception: on SummEval, UniEval, trained to judge, is separated below 23 of the 24 LLM judges (cause untested). |
+| **4** | **A pilot picks the wrong winner** | Pilot ρ was 0.70–0.96 where it can be recomputed, and the pilot's leader was not the full-run leader in 3 of the 5 evals that ran one. |
 | **5** | **Some gold labels are disputed or noisy** | Where anyone checked: Few-NERD 34 of 768 gold types rejected by ≥80% of 26 learned arms; AG News 17 items most hosted arms miss: adjudicated by topic by one reader shown the hosted answer, the gold was wrong on all 17 and right on all 12 the fine-tunes missed, and on that gold every hosted LLM scores above every fine-tune; DBpedia's top eleven are separated by four items, three of them disputed, all three gold wrong on adjudication; SummEval's experts scored 41 of 44 groups of identical summaries differently. Candidates, not proven errors; two corpora were not checked. |
 | **6** | **The scorer is a model-sized lever** | Three of eight defects moved one arm further than the gap separating most of the field: DBpedia's label parser (8.6 accuracy points), Few-NERD's unparsed-as-empty rule (+0.0214 f1), SciFact's reasoning flag (0.6124 → 0.6991); these impacts are not recomputed from the committed runs (§6). |
 | **7** | **Metric shape decides which diagnostics can be read** | On DBpedia at n = 10, 19.9 of 28 arms tied, so rank correlation measured arm names; the same tool is readable on Few-NERD. |
@@ -55,18 +55,18 @@ The cross-cutting numbers behind the picks:
 |---|---|
 | **What does 10× the money buy?** | −0.4% to +7.4% of the best paid arm's score: a log-linear fit of quality on log10(cost) over the paid arms, slope ÷ best paid score, across vendors rather than an experiment (§8). Steepest on SummEval (+7.4%, r = 0.49); negative on summarisation (−0.4%, r = −0.07). |
 | **How much cheaper is the cheapest arm the leader cannot be separated from?** | 143× (summarisation), 115× (DBpedia), 72× (SummEval: `gemma_l`, $278 per 1M articles), 7.6× (SciFact) and 2.5× against the AG News fine-tune's group; no paid arm ties Few-NERD's leader. Renting on AG News, start with `gemma_m` ($8 per 1M items): the paid leader `anthropic_m` ($351) is separated from only 3 of the 23 other hosted arms (§8). |
-| **Rent or own?** | 14 of the 24 hosted arms have downloadable weights. The best proprietary arm was never separated from the best open-weight arm in any of the six experiments (`anthropic_l` and `anthropic_m` are separated below `deepseek_m` on summarisation). Every arm's bill at 1M items, summed: $24,187 for the open-weight tier rented, $0 self-hosted; $100,894 for the 10 proprietary arms and `qwen37max` on SummEval, which cannot be self-hosted. |
-| **Is there a $0 answer?** | In every experiment: the self-hostable option is the winner in four of six and trails by 0.0071 (DBpedia) and 0.0013 (SummEval), neither resolvable. |
+| **Rent or own?** | 14 of the 24 hosted arms have downloadable weights. The best proprietary arm was never separated from the best open-weight arm in any of the six evals (`anthropic_l` and `anthropic_m` are separated below `deepseek_m` on summarisation). Every arm's bill at 1M items, summed: $24,187 for the open-weight tier rented, $0 self-hosted; $100,894 for the 10 proprietary arms and `qwen37max` on SummEval, which cannot be self-hosted. |
+| **Is there a $0 answer?** | In every eval: the self-hostable option is the winner in four of six and trails by 0.0071 (DBpedia) and 0.0013 (SummEval), neither resolvable. |
 | **What does a 64 GB machine hold?** | At native precision the best model that fits still equals the unlimited-hardware answer on two of six tasks (DBpedia, Few-NERD) and trails by 0.0074 (SciFact) and 0.0200 (AG News), both not separated, and by 0.0205 (summarisation) and 0.0614 (SummEval), both separated. The unlimited-hardware model would fit AG News and SummEval only at int4 or int8, which was not run. At 128 GB five of six answers equal the unlimited one (two only as an unrun int8 or int4 build). Nothing was run on a 64 or 128 GB machine; scores are as the providers served them (§0). |
-| **Can one model do everything?** | `glm_m`, the best of the twelve hosted arms that ran all six experiments, sits at the 67th percentile among hosted arms (the share it scores above, itself included as a tie, ties counted half, averaged over the six; 72nd if ties are counted fully in its favour), where each local model does one task (§0). |
+| **Can one model do everything?** | `glm_m`, the best of the twelve hosted arms that ran all six evals, sits at the 67th percentile among hosted arms (the share it scores above, itself included as a tie, ties counted half, averaged over the six; 72nd if ties are counted fully in its favour), where each local model does one task (§0). |
 | **How good is an LLM judge?** | The best LLM judges reached 93% of a human expert's agreement (95% interval 89–97%) and the best free scorer, UniEval, 64%. The 93% is the best of 24 chosen on the same articles (92% when chosen on half and scored on the other half). A no-model lookup of which system wrote each summary reaches 63%, so how much of a judge's score is reading rather than recognising the system is not measured. The summaries are 2019-era, reasoning was off, and the judges ranked all 16 summaries in one call where UniEval scores one at a time (REPORT_SUMMEVAL §3.7). |
 
-What the dearest arm in each experiment buys, at **1,000,000 items/month** as billed,
+What the dearest arm in each eval buys, at **1,000,000 items/month** as billed,
 sorted by its bill (highest first). An item is one call: on SummEval that is a whole
 article with its 16 summaries, which is why its bills lead the table. The last column is its
 score relative to the cheaper option named, so −8.9% means 8.9% below it:
 
-| experiment | dearest arm, $/month at 1M items | its quality vs the cheaper option (relative; − = worse) |
+| eval | dearest arm, $/month at 1M items | its quality vs the cheaper option (relative; − = worse) |
 |---|---|---|
 | Judging · SummEval | `anthropic_l`, $20,077 | −2.1% vs `openai_l` at $6,350/mo (and `gemma_l`, tied with the leader at $278/mo, is −0.3% vs it) |
 | Summarisation · CNN/DM | `anthropic_l`, $9,826 | −8.9% vs free `bart_l` (and the best paid arm, `deepseek_m` at $191/mo, is −0.0% vs free) |
@@ -78,7 +78,7 @@ score relative to the cheaper option named, so −8.9% means 8.9% below it:
 Two more facts about cost:
 
 - **Cost rarely buys speed.** log(cost) vs latency correlates at **r = −0.19 to +0.20** in
-  five experiments; on SummEval it is **−0.47** (the dearer judges answered faster, unexplained).
+  five evals; on SummEval it is **−0.47** (the dearer judges answered faster, unexplained).
   `bert_mini` (7 ms) runs 61× to 1,078× faster than the hosted field, timed on the same Mac;
   the bert-base fine-tunes (76–90 ms) roughly 5×–140× faster, timed on a different machine, so
   good to about a factor of two. Generators run *slower*.
@@ -96,12 +96,12 @@ Two more facts about cost:
    settings differ too). How few labels still work was not measured: the public fine-tunes
    here were trained on their corpora's own training splits.
 3. **If you cannot, self-host an open-weight LLM before renting one.** The best proprietary
-   arm never separated from the best open-weight arm in any experiment. A 128 GB machine
+   arm never separated from the best open-weight arm in any eval. A 128 GB machine
    matched the unlimited-hardware answer on five of six tasks; a 64 GB one, at native precision,
    on two (see above).
 4. **Do not default to the most expensive arm.** `anthropic_l` was never first on a primary
    metric (re-measured, it is first on the point estimate on AG News and summarisation, neither
-   re-measurement confirmed), and in three experiments it was *worse* than free. SciFact had no frontier tier, so its dearest arm says
+   re-measurement confirmed), and in three evals it was *worse* than free. SciFact had no frontier tier, so its dearest arm says
    nothing about frontier models. Price still separates bad from mediocre: the dearest beat the
    cheapest in 5 of 6.
 5. **Pick the cheapest arm your test cannot separate from the leader** — which requires a
@@ -136,7 +136,7 @@ where the text says it is not.
 | SciFact | retrieve from 5,183 docs | `ndcg_10` (ranked list) | [REPORT_RETRIEVAL](REPORT_RETRIEVAL.md) |
 | SummEval | grade 16 summaries of an article as three experts did (**all 100 annotated articles**) | `tau` (rank correlation per article) | [REPORT_SUMMEVAL](REPORT_SUMMEVAL.md) |
 
-*Each experiment is ranked by one primary metric, and every bare score below is in that
+*Each eval is ranked by one primary metric, and every bare score below is in that
 metric's units: summarisation by `coverage` (ROUGE-Lsum recall against the human
 summary, output clipped to a word budget), AG News and DBpedia by `correct` (share of
 items labelled right, i.e. accuracy), Few-NERD by `f1` (typed-entity F1 per sentence,
@@ -144,11 +144,11 @@ averaged), SciFact by `ndcg_10` (nDCG@10 of the ranked documents), SummEval by `
 (Kendall τ-b per article between a judge's scores and the expert means, averaged over four
 dimensions). The first five run 0 to 1 and τ runs −1 to 1; all six are higher-is-better, so
 a gap such as "0.0071" is in the units of the row's own metric.
-"Arm" means one model-plus-configuration measured on one experiment.*
+"Arm" means one model-plus-configuration measured on one eval.*
 
 *The rest of this report unpacks each finding with its full evidence, and
 [§8](#8-the-economics-what-money-actually-buys) has the complete economics. Each finding links
-to the experiment report it comes from; those reports carry the per-task detail and
+to the eval report it comes from; those reports carry the per-task detail and
 what each one could not measure. What this report cannot say is
 [listed at the end](#what-this-cannot-say).*
 
@@ -170,13 +170,13 @@ retrieval-trained encoders tie the paid arms without SciFact's labels, and SummE
 trained for its task, loses. One row per arm, grouped from most to least exposure. "Learned arms", here and below, means every arm that is a trained model:
 all arms except the rule-based baselines (`constant`, `keyword`, `nothing`, `capitalized`,
 `lead3`, `bm25`, `random`, `first_k`, and on SummEval ROUGE, `coverage` and `length`). The
-last column is the arm's score minus the best **paid** arm's score in that experiment, in that experiment's metric, and the verdict of the
+last column is the arm's score minus the best **paid** arm's score in that eval, in that eval's metric, and the verdict of the
 arm's own Holm family test against that paid arm: its p-value against the Holm threshold it
 had to beat. "Not separated" means the test cannot tell the two apart. Every row was
 re-run from the committed runs on 2026-10-15, the SummEval rows on 2026-10-19
 (`scripts/family_test.py`, the arm against the whole field).
 
-| training exposure | experiment | arm | rank (of N arms) | quality minus best paid arm (that task's metric) |
+| training exposure | eval | arm | rank (of N arms) | quality minus best paid arm (that task's metric) |
 |---|---|---|---|---|
 | **Fine-tuned on this dataset** | Extraction · Few-NERD | `span_marker` | **1st of 28** | **+0.0810**, separated (p = 0.0001 vs 0.05) |
 | | Classification · AG News | `bert_base_ta` | **1st of 30** by point estimate | +0.0500, not separated (p = 0.022 vs 0.0167) |
@@ -188,7 +188,7 @@ re-run from the committed runs on 2026-10-15, the SummEval rows on 2026-10-19
 | | Classification · DBpedia | `bert_base_fy` | 3rd= of 28 (five-way tie) | −0.0071, not separated (p = 0.62 vs 0.0050) |
 | Fine-tuned on the task, **another corpus** | Summarisation · CNN/DM | `bart_l_xsum` (XSum → CNN/DM) | **29th of 29 — last** | **−0.1390**, separated (p < 0.0001 vs 0.0024), and from all 28 opponents |
 | Trained for the task, **no human judgements of it** | Judging · SummEval | `unievalpub` (UniEval, on its own inputs) | 24th of 33 | **−0.1680**, separated (p < 0.0001 vs 0.0036), and below 23 of 24 judges |
-| | Judging · SummEval | `unieval` (UniEval, on this experiment's inputs) | 26th of 33 | **−0.1922**, separated (p < 0.0001 vs 0.0042), and below 23 of 24 judges |
+| | Judging · SummEval | `unieval` (UniEval, on this eval's inputs) | 26th of 33 | **−0.1922**, separated (p < 0.0001 vs 0.0042), and below 23 of 24 judges |
 | Fine-tuned on this corpus, **another task** | Judging · SummEval | `bartscore` (a CNN/DM summariser, used as a judge) | 27th of 33 — **last learned arm** | **−0.2836**, separated (p < 0.0001 vs 0.0042), and below all 24 judges |
 | Trained for the task *type* | Retrieval · SciFact | `e5_base` | 8th of 19 | −0.0246, not separated (p = 0.27 vs 0.0038) |
 | | Retrieval · SciFact | `bge_small` | 11th of 19 | −0.0340, not separated (p = 0.13 vs 0.0042) |
@@ -198,11 +198,11 @@ re-run from the committed runs on 2026-10-15, the SummEval rows on 2026-10-19
 | | Extraction · Few-NERD | `gliner` | 26th of 28 — **last learned arm** | **−0.2324**, separated (p < 0.0001 vs 0.0071) |
 | | Classification · DBpedia | `bart_mnli` | 27th of 28 — **last learned arm** | **−0.3643**, separated (p < 0.0001 vs 0.0167) |
 
-**The best model fine-tuned on each dataset ranked first in three experiments and
+**The best model fine-tuned on each dataset ranked first in three evals and
 third-equal in the saturated fourth. Every zero-shot model ranked last among the learned
 arms, and so did the one model trained on the corpus for a different task** — BARTScore,
 fine-tuned to summarise CNN/DailyMail and asked here to judge summaries of it. That is
-true of the best fine-tune per experiment in three of four and not of every one:
+true of the best fine-tune per eval in three of four and not of every one:
 distillation costs `bart_m` and `bart_s` a few places without a separable loss, and on
 DBpedia the fine-tune lands in a five-way tie for third, two items behind the leader —
 inside the 19-arm group the leader cannot separate from, which is a weak kind of tie.
@@ -220,12 +220,12 @@ UniEval was trained for the task, partly on CNN/DailyMail text, and still loses 
 
 ### What that is worth in production
 
-The best fine-tuned local arm against the best paid arm, in the four experiments that have
+The best fine-tuned local arm against the best paid arm, in the four evals that have
 a fine-tuned arm (no arm was fine-tuned on SciFact). Every local arm costs $0 per item.
 Bold marks the better quality in each row; latency is mean time per item. A second local
 arm in parentheses is a smaller alternative, with its own figures in parentheses.
 
-| experiment | fine-tuned local arm | local quality | local latency per item | best paid arm | paid quality | paid $/month at 1M items | paid latency per item |
+| eval | fine-tuned local arm | local quality | local latency per item | best paid arm | paid quality | paid $/month at 1M items | paid latency per item |
 |---|---|---|---|---|---|---|---|
 | Extraction · Few-NERD | `span_marker` | **0.7674** | 0.76 s | `openai_m` | 0.6864 | $2,324 | 1.60 s |
 | Classification · AG News | `bert_base_ta` (`bert_mini`) | **0.9600** (0.9450) | 76 ms‡ (7 ms) | `anthropic_m` | 0.9100 | $351 | 1.92 s |
@@ -267,7 +267,7 @@ self-hostable; it does not mean unconditionally reusable.
 
 ### Best open-weight vs best proprietary, head to head
 
-| experiment | best open-weight | best proprietary | delta (open − proprietary) | separated (Holm)? |
+| eval | best open-weight | best proprietary | delta (open − proprietary) | separated (Holm)? |
 |---|---|---|---|---|
 | Summarisation · CNN/DM | `deepseek_m` 0.3460 | `openai_m` 0.3268 | **+0.0192** | no |
 | Retrieval · SciFact | `glm_s` 0.7437 | `qwen_s` 0.7183 | **+0.0254** | no |
@@ -297,7 +297,7 @@ large one.
 Both run on your hardware at $0 marginal cost, so the choice is quality against the
 machine it demands. They are not close in size.
 
-| experiment | small ML model | small ML size | small ML score | best open-weight LLM | LLM size | LLM score | verdict |
+| eval | small ML model | small ML size | small ML score | best open-weight LLM | LLM size | LLM score | verdict |
 |---|---|---|---|---|---|---|---|
 | Classification · AG News | `bert_base_ta` (or `bert_mini`) | **438 MB** (44 MB) | **0.9600** (0.9450) | Llama-3.3-70B | ~141 GB | 0.8800 | **ML wins by 0.0800 at 1/322 the size, separated** (as run here); the 44 MB one leads by 0.0650 at 1/3,205 but is not separated (p = 0.0149 vs 0.0063) |
 | Extraction · Few-NERD | `span_marker` | **499 MB** | **0.7674** | Gemma-4-26B-A4B | ~52 GB | 0.6733 | **ML wins by 0.0941, at 1/103** |
@@ -369,10 +369,10 @@ measured (see the caveat below). The ≤128 GB column names an int8 or int4 buil
 unlimited-hardware model fits only that way, marked "not run", as the reports do. The ≤64 GB
 column names the best model that fits at native precision: a score as served is no evidence
 about the model's int4 or int8 build, and where the unlimited-hardware model would fit only
-quantised, the cell says so. These are open-weight LLMs only; the experiment's overall
+quantised, the cell says so. These are open-weight LLMs only; the eval's overall
 winner may be a small ML model or a proprietary one.
 
-| experiment | best open-weight LLM, unlimited hardware | its size | its score | best that fits ≤128 GB (precision, size) | ≤128 GB score | best that fits ≤64 GB (precision, size) | ≤64 GB score |
+| eval | best open-weight LLM, unlimited hardware | its size | its score | best that fits ≤128 GB (precision, size) | ≤128 GB score | best that fits ≤64 GB (precision, size) | ≤64 GB score |
 |---|---|---|---|---|---|---|---|
 | Classification · AG News | Llama-3.3-70B | 141 GB | 0.8800 | **same**, ~70 GB at int8 (not run) | **0.8800** as served | Mistral-Small-3.2-24B (`mistral_s`), native 48 GB; Llama at int4 (~35 GB) not run | 0.8600 (0.0200 below, not separated) |
 | Classification · DBpedia | GLM-4.6 | 714 GB | 0.9857 | **Gemma-4-26B**, native 52 GB | **0.9857** | **same**, native 52 GB | **0.9857** |
@@ -423,14 +423,14 @@ are the ones whose numbers here you can trust without re-measuring.
 The first choice in every row but the last is under 2 GB and needs no GPU at all; the LLM
 fallbacks (52–70 GB), and the judge, do.
 
-### Every experiment has a $0 answer, if you own hardware
+### Every eval has a $0 answer, if you own hardware
 
-Combining the tiers with the separation tests: in **all six** experiments there is a
+Combining the tiers with the separation tests: in **all six** evals there is a
 configuration requiring no proprietary model and no per-item bill.
 
 "Tied with N" counts the opponents the leader's Holm test cannot separate from it (§2).
 
-| experiment | the $0 answer | tier | quality | quality given up vs the leader |
+| eval | the $0 answer | tier | quality | quality given up vs the leader |
 |---|---|---|---|---|
 | Summarisation · CNN/DM | `bart_l` | local ML | **0.3461** | none — first on the point estimate, not separated from 15 others (13 paid) at gaps of 0.0001–0.0257 |
 | Classification · AG News | `bert_base_ta` (or `bert_mini`) | local ML | **0.9600** (0.9450) | none — first on the point estimate, not separated from 3 others (two fine-tunes and `anthropic_m`) at gaps of 0.0100–0.0500 |
@@ -443,7 +443,7 @@ Four of six cost nothing at all. DBpedia costs 0.0071 accuracy — two items in 
 difference the data cannot resolve — to avoid a winner with **no self-host option at any
 price** (`qwen_m`, one vendor, no published weights; SummEval's `openai_l` is the other). That $0
 answer is a 438 MB classifier on a CPU (or a 52 GB open-weight LLM) at the same score. SummEval costs 0.0013 τ against `openai_l`, also unresolvable, and
-it is the one experiment whose $0 answer has no CPU-sized alternative: SciFact's is an
+it is the one eval whose $0 answer has no CPU-sized alternative: SciFact's is an
 LLM too, but `e5_base` on a CPU is tied with it, while on SummEval the best small model,
 UniEval, is separated below 23 of the 24 judges.
 
@@ -458,7 +458,7 @@ irrelevant rather than merely expensive.
 
 ### What that means if you own the hardware
 
-Each arm's billed cost per item, scaled to 1M items/month in every experiment the arm ran,
+Each arm's billed cost per item, scaled to 1M items/month in every eval the arm ran,
 then summed over every arm in the tier — a combined bill for running the whole tier, not
 the price of any one model:
 
@@ -487,8 +487,8 @@ crossover depends entirely on volume.
 ### The strongest argument on the other side, also measured
 
 **One hosted model does all six tasks with nothing but a prompt change.** Twelve of the
-24 hosted arms ran every experiment unmodified; the best of them, `glm_m`, sits at the
-**67th percentile across all six** (the share of each experiment's hosted arms, itself included as a tie, that it
+24 hosted arms ran every eval unmodified; the best of them, `glm_m`, sits at the
+**67th percentile across all six** (the share of each eval's hosted arms, itself included as a tie, that it
 scores above, ties counted half, averaged; 72nd if ties are counted fully in its favour.
 Recomputed from the committed runs by `check_report_claims.py`). The best fine-tuned local
 model sits at or tied with
@@ -505,13 +505,13 @@ labelled data, the generalist is not a compromise — it is the only thing that 
 
 > **If the task is stable, you own labels in a fixed taxonomy, and the volume is high enough
 > that a rental bill matters — fine-tune a small model.** Where one existed it ranked first
-> or was not separated from the leader at $0 per item in all four experiments, separated
+> or was not separated from the leader at $0 per item in all four evals, separated
 > from the paid field on Few-NERD only. It was 10×–270× faster on classification, slower on
 > summarisation (11.0 s against 1.6 s for `deepseek_m`, quality not separated) and two items
 > behind on DBpedia. How few labels still work was not measured.
 >
 > **If the task is fluid, unlabelled, or one of many — pay for the LLM.** Then use §8 to
-> avoid overpaying for it: `anthropic_l`, the dearest arm in five experiments, was never the
+> avoid overpaying for it: `anthropic_l`, the dearest arm in five evals, was never the
 > best one.
 
 ### What this conclusion does NOT rest on, and the four ways it could be wrong
@@ -556,9 +556,9 @@ cheapest models ran there. So this is mostly a finding about one dear model, and
 nothing about the next few down: the best hosted arm was the 3rd-dearest of 24 on AG News,
 the 2nd on Few-NERD and the 4th on SummEval. SciFact had no frontier tier, so there the
 claim is about the dearest of twelve cheap models; for the frontier tier it rests on the
-five experiments where it ran.
+five evals where it ran.
 
-| experiment | dearest paid arm | billed cost, whole run (N items) | its rank among all arms |
+| eval | dearest paid arm | billed cost, whole run (N items) | its rank among all arms |
 |---|---|---|---|
 | Summarisation · CNN/DM | `anthropic_l` | $1.9652 (200) | **18 of 29** |
 | Classification · AG News | `anthropic_l` | $0.1750 (200) | 5 of 30 |
@@ -571,14 +571,14 @@ five experiments where it ran.
 were run there: no Anthropic or OpenAI arm, and none of the other expensive ones.*
 
 **But the naive version of this claim is false, and worth killing.** "Price buys nothing"
-is not supported: the dearest arm beats the *cheapest* arm in 5 of 6 experiments. Price is
+is not supported: the dearest arm beats the *cheapest* arm in 5 of 6 evals. Price is
 weakly informative across the whole field, and near the top the price ranges sit inside
 differences the data cannot resolve — though SummEval has the steepest price slope as a
 share of the best score.
 
 The practical form: **paying the most was never the optimum here (SciFact's "most" being
 a cheap model), and paying the least is usually not either.** Among paid arms the best was a *mid*-tier model in four of six
-experiments, a *small*-tier one in SciFact, and a *large*-tier one once: `openai_l` on
+evals, a *small*-tier one in SciFact, and a *large*-tier one once: `openai_l` on
 SummEval, where it cannot be separated from five other judges, one of them costing 1/23 as much.
 
 ### 2. The top of a leaderboard is a group, not a podium
@@ -587,11 +587,11 @@ Every winner leads on the point estimate against **100%** of its declared family
 it actually *separates* from, under Holm step-down at α = 0.05:
 
 Sorted by the share separated, highest first. "Ahead of" and "separated from" count the
-winner's opponents, every other arm in the experiment. In the last column, "a group of N"
+winner's opponents, every other arm in the eval. In the last column, "a group of N"
 is the N opponents the winner cannot separate from; the winner is not counted, so the tied
 group including it is N + 1 arms.
 
-| experiment | winner | ahead of | separated from | reading |
+| eval | winner | ahead of | separated from | reading |
 |---|---|---|---|---|
 | Extraction · Few-NERD | `span_marker` | 27 of 27 | **27 of 27** (100%) | a real podium |
 | Classification · AG News | `bert_base_ta` | 29 of 29 | 26 of 29 (90%) | a group of 3 |
@@ -617,9 +617,9 @@ and "distinguishable from a third of it" is the single most repeated result here
 *Sources:* [NER](REPORT_NER.md) · [classification](REPORT_CLASSIFICATION.md) · [summarisation](REPORT_SUMMARIZATION.md) · [retrieval](REPORT_RETRIEVAL.md) · [SummEval](REPORT_SUMMEVAL.md)
 
 "3=" means tied on score for third place (on DBpedia, five arms score 0.9857). The last
-column is the free arm's score minus the best paid arm's, in that experiment's metric.
+column is the free arm's score minus the best paid arm's, in that eval's metric.
 
-| experiment | best free arm (size) | rank (= tied) | free − best paid arm (task metric) |
+| eval | best free arm (size) | rank (= tied) | free − best paid arm (task metric) |
 |---|---|---|---|
 | Extraction · Few-NERD | `span_marker`, 499 MB | **1 of 28** | +0.0810 over `openai_m`, separated |
 | Classification · AG News | `bert_base_ta`, 438 MB | **1 of 30** | +0.0500 over `anthropic_m`, not separated from it (p = 0.022 vs 0.0167) |
@@ -653,7 +653,7 @@ to a matched pair: the same BART-large fine-tuned for summarisation
 on CNN/DailyMail and on XSum, **1st and 29th of 29** on `coverage`, though the two also
 decode at different lengths.
 
-**And the optimum was a mid-tier arm in four of six experiments** (`_m_` in
+**And the optimum was a mid-tier arm in four of six evals** (`_m_` in
 summarisation, AG News, DBpedia and Few-NERD; `_s_` in SciFact; `_l_` in SummEval). The
 large tier was the optimum once, and there it cannot be separated from five others.
 
@@ -671,12 +671,12 @@ right.
 
 *Sources:* [retrieval §3.5](REPORT_RETRIEVAL.md) · [summarisation §3.6](REPORT_SUMMARIZATION.md) · [NER §3.8](REPORT_NER.md)
 
-Five of the six experiments ran a small dev slice before the full one; SummEval, whose
+Five of the six evals ran a small dev slice before the full one; SummEval, whose
 items are the whole benchmark, ran none. Comparing the two, sorted by ρ
 — the Spearman rank correlation between the arms' order on the dev slice and their order on
 the full run (1 = identical order). ✓ marks a pilot that picked the true leader:
 
-| experiment | ρ, dev-slice vs full ranking (Spearman) | dev slice (items) | dev leader | true leader | dev leader's rank on the full run |
+| eval | ρ, dev-slice vs full ranking (Spearman) | dev slice (items) | dev leader | true leader | dev leader's rank on the full run |
 |---|---|---|---|---|---|
 | Extraction · Few-NERD | 0.963 committed | 56 | `span_marker` | `span_marker` | 1 of 28 ✓ |
 | Classification · DBpedia | 0.768 committed | 56 | `bert_base_fy` | `qwen_m` | **3rd= of 28**, 0.0071 behind, not separated |
@@ -690,7 +690,7 @@ AG News dev slice is a 12-way tie; DBpedia's is led by `bert_base_fy` alone, by 
 [`KNOWN_ISSUES.md`](internal/KNOWN_ISSUES.md). The last two columns are from committed runs.*
 
 **ρ between 0.70 and 0.96 where it can be recomputed — and the pilot picked a different
-leader from the full run in three of the five experiments that ran one.** On SciFact it
+leader from the full run in three of the five evals that ran one.** On SciFact it
 picked the tenth by point estimate, 0.0265 behind the leader and not separated from it: a
 wrong winner inside a tie, which is the point.
 
@@ -746,10 +746,10 @@ under-counts label errors — and a leaderboard that includes them over-counts t
 
 *Sources: each report's instrument notes, and [`NOTES.md`](internal/NOTES.md), 70 entries*
 
-Defects found **by** running the experiments, each of which changed published numbers or
+Defects found **by** running the evals, each of which changed published numbers or
 would have:
 
-| experiment | defect | impact if not found |
+| eval | defect | impact if not found |
 |---|---|---|
 | Summarisation · CNN/DM | scorer bug surviving two sweeps | drove `rescore.py` into existence |
 | Classification · AG News | duplicate-run check flagged honest ties as copies | 4 false alarms in one sweep |
@@ -811,11 +811,11 @@ is per item, excluding one-time setup.
 
 ### What a 10× cost increase buys
 
-A log-linear fit over the paid arms in each experiment — quality against `log10(cost)`,
-sorted by the slope as a percentage, highest first. The slope is in each experiment's own
+A log-linear fit over the paid arms in each eval — quality against `log10(cost)`,
+sorted by the slope as a percentage, highest first. The slope is in each eval's own
 metric; the percentage divides it by the best paid arm's score:
 
-| experiment | paid arms in fit | slope: quality change per 10× cost (task metric) | slope as % of best paid arm's score | Pearson r |
+| eval | paid arms in fit | slope: quality change per 10× cost (task metric) | slope as % of best paid arm's score | Pearson r |
 |---|---|---|---|---|
 | Judging · SummEval | 24 | +0.0399 | **+7.4%** | r = 0.49 |
 | Extraction · Few-NERD | 24 | +0.0407 | **+5.9%** | r = 0.50 |
@@ -844,11 +844,11 @@ model beats the top of that range by 11.4%.
 
 ### The same picture at production scale
 
-"Role" is the arm's place in that experiment: the best arm overall, the dearest, and the
+"Role" is the arm's place in that eval: the best arm overall, the dearest, and the
 best paid or best free arm. The last column is the arm's score relative to that
-experiment's best arm (the "best" row), so −8.9% means 8.9% below it.
+eval's best arm (the "best" row), so −8.9% means 8.9% below it.
 
-| experiment | role | arm | quality | $/month at 1M items | quality vs best arm (relative) |
+| eval | role | arm | quality | $/month at 1M items | quality vs best arm (relative) |
 |---|---|---|---|---|---|
 | **Summarisation · CNN/DM** | best | `bart_l` (local) | 0.3461 | **free** | — |
 | | dearest | `anthropic_l` | 0.3155 | **$9,826** | **−8.9%** |
@@ -867,7 +867,7 @@ experiment's best arm (the "best" row), so −8.9% means 8.9% below it.
 | | dearest | `anthropic_l` | 0.5283 | **$20,077** | −2.1% |
 | | best free | `unievalpub` (local) | 0.3717 | **free** | **−31.1%**, separated |
 
-One row per experiment, since each says something different:
+One row per eval, since each says something different:
 
 - **Summarisation: $9,826/month buys −8.9%** against free, while the best paid arm, at
   **$191/month, gets within −0.0% of free.** The dearest arm is beaten by a model costing
@@ -884,11 +884,11 @@ One row per experiment, since each says something different:
   over free** — a case where paying is defensible, and even there the free arm is not
   statistically separated from it.
 - **SummEval: $20,077/month buys −2.1%** against $6,350/month, and the best free scorer,
-  UniEval, is **−31.1%** — the one experiment where no free arm comes close. Even
+  UniEval, is **−31.1%** — the one eval where no free arm comes close. Even
   there the answer need not be rented: `gemma_l`, tied with the leader, has open weights and
   bills $278/month rented.
 
-In no experiment did the most expensive option win on the primary metric (SciFact's was the
+In no eval did the most expensive option win on the primary metric (SciFact's was the
 dearest of twelve cheap models; re-measured, it is first on the point estimate in two, neither
 confirmed). In three of six the free option
 ranked first, and on Few-NERD it is separated from everything.
@@ -903,7 +903,7 @@ The verdict's percentage is the winner's lead **relative to the lower of the two
 best arm — which is why Few-NERD reads −11.4% there and +11.8% here. "Separated" is the
 Holm test between the two arms.
 
-| experiment | best free arm (size) | free quality | free rank | best paid arm | paid quality | paid $/month at 1M items | verdict (lead relative to the lower score) |
+| eval | best free arm (size) | free quality | free rank | best paid arm | paid quality | paid $/month at 1M items | verdict (lead relative to the lower score) |
 |---|---|---|---|---|---|---|---|
 | Extraction · Few-NERD | `span_marker` 499 MB | 0.7674 | **1** | `openai_m` | 0.6864 | $2,324 | **free wins +11.8%**, separated |
 | Classification · AG News | `bert_base_ta` 438 MB | 0.9600 | **1** | `anthropic_m` | 0.9100 | $351 | free leads +5.5%, **not separated** (p = 0.022 vs 0.0167) |
@@ -922,7 +922,7 @@ the difference between the best and the fifteenth paid arm is under 0.02.
 So the axis is not free-versus-paid. It is:
 
 > **trained on your task's data** → beats or ties everything, at $0 — in four of four
-> experiments that had one
+> evals that had one
 > **trained for another task, another corpus, or nothing** → loses, also at $0 — except
 > SciFact's retrieval-trained encoders, which tie
 
@@ -962,9 +962,9 @@ Eyeballing "within 2%" is not a test. Using Holm separation — the cheapest **p
 that the winner does **not** statistically separate from. The second column counts the
 winner's opponents only (the winner itself is not included), the same count as §2's
 "group of N"; the last compares that arm's bill with the dearest paid arm's in the same
-experiment:
+eval:
 
-| experiment | arms the winner cannot separate from | cheapest paid arm among them | its billed $ per 1,000 items | how much cheaper than the dearest paid arm |
+| eval | arms the winner cannot separate from | cheapest paid arm among them | its billed $ per 1,000 items | how much cheaper than the dearest paid arm |
 |---|---|---|---|---|
 | Summarisation · CNN/DM | 15 arms (13 paid) | `deepseek_s` | $0.069 | **143× cheaper** |
 | Classification · DBpedia | 19 arms (18 paid) | `gemma_m` | $0.012 | **115× cheaper** |
@@ -973,7 +973,7 @@ experiment:
 | Judging · SummEval | 5 arms (5 paid) | `gemma_l` | $0.278 | **72× cheaper** |
 | Extraction · Few-NERD | 0 arms | — | — | *no paid arm ties the winner* |
 
-**In four of six experiments you can drop 7.6× to 143× of your inference bill and the data
+**In four of six evals you can drop 7.6× to 143× of your inference bill and the data
 cannot detect the difference.** On AG News the row reads the fine-tuned leader's group,
 whose only paid member is `anthropic_m`, the second-dearest, so the saving there is 2.5× —
 and the real answer on AG News is the free arm, as on Few-NERD, where no paid arm is
@@ -988,7 +988,7 @@ with `gemma_m`.
 Sorted by r. Latencies are mean seconds per item from the stored runs, except the
 re-timed Linux figures for the BARTs, which are medians from `harness/data/runs-linux/`.
 
-| experiment | Pearson r, log(cost) vs latency (hosted) | hosted latency per item, min–max | fastest local arm, latency per item |
+| eval | Pearson r, log(cost) vs latency (hosted) | hosted latency per item, min–max | fastest local arm, latency per item |
 |---|---|---|---|
 | Judging · SummEval | **r = −0.47** | 1.12 – 12.35 s | `length` and `random`, ~0 s (the rule-based ROUGE and `coverage` 0.18–0.89 s; the learned local arms, BARTScore 15.66 s on the cloud runner and UniEval 41.68–44.69 s on the EVO-X3, different machines) |
 | Extraction · Few-NERD | **r = −0.19** | 0.79 – 10.25 s | `gliner` 0.17 s |
@@ -997,11 +997,11 @@ re-timed Linux figures for the BARTs, which are medians from `harness/data/runs-
 | Retrieval · SciFact | r = +0.03 | 1.14 – 17.48 s | `minilm` 0.017 s (`bm25` 0.022 s, `bge_small` 0.029 s) |
 | Classification · AG News | r = +0.20 | 0.44 – 7.66 s | `bert_mini` **0.007 s** |
 
-Essentially uncorrelated in five experiments, and negative in three (−0.18, −0.19 and SummEval's −0.47). **Price is not a proxy
+Essentially uncorrelated in five evals, and negative in three (−0.18, −0.19 and SummEval's −0.47). **Price is not a proxy
 for latency**, and the spread *within* the hosted field (up to 28×, on DBpedia) dwarfs
 anything cost predicts. The exception is SummEval, where the dearer judges were faster
 (r = −0.47); this report does not measure why, and its judges were called from a different
-machine and gateway than the other five experiments' hosted arms, so its latencies are not on
+machine and gateway than the other five evals' hosted arms, so its latencies are not on
 the same footing as theirs.
 
 Local models are a different regime entirely: `bert_mini` answers in **7 ms** against
@@ -1033,7 +1033,7 @@ slice (dev-slice runs not committed), halving the rerank depth from 20 to 10 cut
 same (pre-reasoning-fix) instrument, so the delta is internally valid but is not
 comparable to the measurement table above.
 
-No model substitution in any of these six experiments moved cost that far for that
+No model substitution in any of these six evals moved cost that far for that
 little.
 
 ## What this means if you are choosing a model
@@ -1053,7 +1053,7 @@ Ordered by what they are worth, not by how obvious they are.
    the bert-base fine-tunes timed elsewhere. On someone else's data of the same task it
    finished last. This is the single biggest lever in the table.
 3. **Do not default to the most expensive arm.** `anthropic_l`, the dearest in five
-   experiments, was never first, and in three it was *worse* than free while costing
+   evals, was never first, and in three it was *worse* than free while costing
    $875–$9,826/month. SciFact had no frontier tier, so its dearest arm says nothing about
    frontier models; the dearest still beat the cheapest in 5 of 6.
 4. **Pick the cheapest arm your test cannot separate from the leader.** That is 7.6×–143×
@@ -1063,7 +1063,7 @@ Ordered by what they are worth, not by how obvious they are.
    leaderboard — "ahead on the average" was true of the leader in 100% of cases and meant
    almost nothing.
 5. **Do not select on a pilot.** ρ ≈ 0.8 feels like enough and picked the wrong winner
-   three times in the five experiments that ran one. Use the pilot to catch instrument
+   three times in the five evals that ran one. Use the pilot to catch instrument
    bugs, which is what it is genuinely good for.
 6. **Read the items your whole field gets wrong before you read the ranking.** On a
    saturated benchmark that is where the ceiling is, and on one rater's reading of DBpedia
@@ -1135,7 +1135,7 @@ something other than the leaderboard.
 - **Each fine-tuned arm is one checkpoint.** DBpedia's tie and AG News's win are each a
   statement about one or three public fine-tunes, not about fine-tuning in general, and
   every one of them was tested on the distribution it was trained on.
-- **The summarisation experiment's own metric agrees with experts less than ROUGE-1.**
+- **The summarisation eval's own metric agrees with experts less than ROUGE-1.**
   Measured on SummEval, `coverage` reaches τ 0.1011 against the experts, below ROUGE-1's
   0.1487 (REPORT_SUMMEVAL §3.3). The summarisation findings are separations under that
   metric; how far a `coverage` lead tracks what a person would prefer is that much weaker.
@@ -1153,15 +1153,15 @@ something other than the leaderboard.
   real deployment at that scale would negotiate or hit. Treat them as *ratios* that are
   sound, and absolute figures that are indicative.
 - **Prices are two sets of bills**, what the provider billed per call when each run was made:
-  2026-09-25 to 2026-10-01 for the first five experiments and 2026-10-18 for SummEval, through one reseller, and several had moved in between. Model
+  2026-09-25 to 2026-10-01 for the first five evals and 2026-10-18 for SummEval, through one reseller, and several had moved in between. Model
   pricing moves fast and the ordering of vendors is the least durable finding here. The
   *structure* — that the dearest model tested is not the best, and that near the top the price
   range sits inside differences this much data cannot resolve — is what is expected to
   survive.
 
-## Scope of the summarisation experiment
+## Scope of the summarisation eval
 
-The summarisation experiment's 200 articles are the first 200 rows of the CNN/DailyMail test
+The summarisation eval's 200 articles are the first 200 rows of the CNN/DailyMail test
 split, and the split puts CNN's articles first: they are **all CNN articles**, while the
 split is 91% DailyMail. Every summarisation figure here is therefore about CNN-style news.
 Found by the first calibration against the literature (LEAD-3 on the full test set: ROUGE-1
@@ -1170,8 +1170,8 @@ conclusions travel
 ([REPORT_SUMMARIZATION §3.7](REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice)):
 among the five local arms **every comparison transfers**, including the house-style control
 (BART on XSum still last). The hosted arms were not re-run, so **the summarisation price
-verdicts are CNN-only**. Every other experiment was calibrated the same way and needed no
-correction: all eleven calibration figures (seven for the first five experiments, four for SummEval) agree
+verdicts are CNN-only**. Every other eval was calibrated the same way and needed no
+correction: all eleven calibration figures (seven for the first five evals, four for SummEval) agree
 with the published values on their averages within the protocol's allowance, and ten of the
 eleven inside their own interval; LEAD-3 is the exception, outside its interval and inside
 the allowance ([`docs/PROTOCOL.md`](../docs/PROTOCOL.md)), and SummEval's ROUGE-L agrees only
@@ -1183,7 +1183,7 @@ within the allowance on one dimension (REPORT_SUMMEVAL §5).
 
 ```bash
 cd harness
-# §1, §3 — cost and rank by experiment, from what the provider billed
+# §1, §3 — cost and rank by eval, from what the provider billed
 python scripts/leaderboard.py --dataset-id few_nerd_280        # and the other five
 # §2 — separation
 python scripts/family_test.py --dataset-id few_nerd_280 \

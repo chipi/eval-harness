@@ -83,7 +83,7 @@
   async function load() {
     if (P.get('rows') && P.get('dataset')) return rowsView();
     picker();
-    if (!runs().length) { app.innerHTML = '<p class="muted">Pick runs from an experiment or dataset page in the catalog ("Inspect runs"), or add them above.</p>'; return; }
+    if (!runs().length) { app.innerHTML = '<p class="muted">Pick runs from an eval or dataset page in the catalog ("Inspect runs"), or add them above.</p>'; return; }
     let d;
     try {
       const r = await fetch(API + 'compare?' + P.toString());

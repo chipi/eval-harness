@@ -729,7 +729,7 @@ def test_example_scorer_suites_pass() -> None:
         ("test_lineage.py", "dataset versions: --from, V2, the catalog's links"),
         (
             "test_rounds.py",
-            "experiment rounds: open, run, suggest, retire, close, the next, validate, the page",
+            "eval rounds: open, run, suggest, retire, close, the next, validate, the page",
         ),
         (
             "test_run_reports.py",
@@ -762,7 +762,7 @@ def test_example_scorer_suites_pass() -> None:
         ("test_runs_adapter.py", "run reading, direction, adapter loading, the judge panel"),
         ("check_report_claims.py", "report claims vs committed runs"),
         ("check_links.py", "markdown links and anchors"),
-        ("check_terminology.py", "experiment tables use the canonical Task · Dataset labels"),
+        ("check_terminology.py", "eval tables use the canonical Task · Dataset labels"),
         ("test_summeval_analysis.py", "SummEval split-half: a tied top is undecided"),
         ("check_commands.py", "documented commands: every make target, evh command and flag exists"),
         ("check_model_facts.py", "model facts vs the evidence capture"),
@@ -1799,7 +1799,7 @@ def test_nemenyi_table_is_computed_not_copied() -> None:
     `leaderboard.py` carried 24 numbers transcribed from Demsar (2006) and refused to
     print a critical difference above k = 25 rather than reuse a smaller k's value.
     The refusal was right -- reusing one understates the CD and overstates how many
-    pairs differ -- but four of five experiments here have 26-28 arms, so four of five
+    pairs differ -- but four of five evals here have 26-28 arms, so four of five
     had no pairwise verdict, over about thirty lines of arithmetic. Found by external
     review.
 
@@ -1834,7 +1834,7 @@ def test_nemenyi_table_is_computed_not_copied() -> None:
         "; ".join(drift) or "no k>25 entries shipped",
     )
 
-    # And the covering assertion: every experiment here must now get a verdict.
+    # And the covering assertion: every eval here must now get a verdict.
     check(
         "nemenyi: the table covers every arm count this repo measures (<= 28)",
         all(k in NEMENYI_Q05 for k in range(2, 29)),
@@ -2389,7 +2389,7 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
 
 
 def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
-    """examples/models.json, litellm.config.yaml and experiments.json are what a stranger's
+    """examples/models.json, litellm.config.yaml and evals.json are what a stranger's
     rerun is built from. Each is a copy of something else -- configs, the proxy, committed
     runs -- and a copy that drifts sends a rerun to the wrong model or the wrong record."""
     import json  # noqa: PLC0415
@@ -2427,7 +2427,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
                 wrong.append(f.parent.name)
     check("models.json: agrees with every upstream id a committed run resolved", not wrong, f"{wrong[:3]}")
 
-    reg = json.loads((ex / "experiments.json").read_text())["experiments"]
+    reg = json.loads((ex / "evals.json").read_text())["evals"]
     sys.path.insert(0, str(ex))
     import reproduce  # noqa: PLC0415
 
@@ -2435,22 +2435,22 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
         arms = reproduce.committed(e)
         cfg_ids = set(reproduce.configs(e))
         check(
-            f"experiments.json {e['slug']}: has committed runs and its leader among them",
+            f"evals.json {e['slug']}: has committed runs and its leader among them",
             bool(arms) and e["leader"] in arms,
             f"{len(arms)} arms",
         )
         missing = sorted(a for a, v in arms.items() if v["cid"] not in cfg_ids)
         check(
-            f"experiments.json {e['slug']}: every measured arm has a config to rerun it",
+            f"evals.json {e['slug']}: every measured arm has a config to rerun it",
             not missing,
             f"no config for {missing}",
         )
         unknown = [d for d in e["datasets"] if not (ROOT / "data" / "datasets" / f"{d}.json").is_file()]
-        check(f"experiments.json {e['slug']}: every dataset it fetches is frozen", not unknown, f"{unknown}")
+        check(f"evals.json {e['slug']}: every dataset it fetches is frozen", not unknown, f"{unknown}")
         local = [a for a, v in arms.items() if v["kind"] == "local" and "/" in str(v["model"])]
         unpinned = [a for a in local if not arms[a]["revision"]]
         check(
-            f"experiments.json {e['slug']}: every local model is pinned in local_models.json",
+            f"evals.json {e['slug']}: every local model is pinned in local_models.json",
             not unpinned,
             f"{unpinned}",
         )

@@ -1,11 +1,11 @@
-# RFC-004: Experiment rounds
+# RFC-004: Eval rounds
 
 - **Status**: Completed (v0.4.0)
 - **Authors**: Marko Dragoljevic
 - **Related PRD**: [PRD-005](../prd/PRD-005-goals-and-rounds.md)
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md#the-goal-page) (the rounds block),
   [UXS-003](../uxs/UXS-003-cli-and-onboarding.md#the-round-flow) (the commands)
-- **Related ADR**: [ADR-0004](../adr/ADR-0004-experiment-rounds.md)
+- **Related ADR**: [ADR-0004](../adr/ADR-0004-eval-rounds.md)
 - **Code**: `harness/scripts/_rounds.py` (records, membership, checks), `rounds.py` (the
   commands and the evidence), `round_open.py`, `round_retire.py`, `round_close.py`,
   `round_status.py` (entry points), `harness/schemas/round.schema.json`; test
@@ -22,7 +22,7 @@ Nothing in the catalog writes.
 
 ## Problem Statement
 
-The newcomer trial ([SCENARIO](../../harness/docs/SCENARIO.md)) ran two experiments in one round
+The newcomer trial ([SCENARIO](../../harness/docs/SCENARIO.md)) ran two evals in one round
 each; the natural next step, a second round dropping the CPU arms and tuning the cheap hosted
 model against the frontier's silver, had nowhere to be recorded. Runs were a flat set per
 dataset; config versions and `--match` only scoped a table; a baseline was one run per dataset.
@@ -139,7 +139,7 @@ way into the inspector for a round. Not in 0.4.0:
 
 - **The local inspector writes decisions** (a retire button). Set aside: it ends "the server
   never writes", which the public deployment depends on.
-- **Rounds required.** Simpler, but it taxes a quick experiment; the owner chose optional.
+- **Rounds required.** Simpler, but it taxes a quick eval; the owner chose optional.
 - **Rounds as a naming convention** (`_r2` in config ids) or git tags: no place for a hypothesis,
   a reason or a conclusion, and nothing to validate.
 - **Rounds per dataset rather than per goal.** A round's conclusion answers a goal's decision;

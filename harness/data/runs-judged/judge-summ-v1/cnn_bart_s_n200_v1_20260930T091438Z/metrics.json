@@ -41,7 +41,7 @@
         "outputs_per_call": 16
       },
       "scorer_id": "judge-summ-v1",
-      "scorer_sha256": "d604095cace5f53746b513a43f3a5623d56bcffe67f228c96e390414a268bacc",
+      "scorer_sha256": "f8717d34fcea9468ac3cf25a4cffd5c4d1d859eb90b69f8e6c01c8622f207008",
       "self_family": {
         "gemma_l": false,
         "qwen_s": false

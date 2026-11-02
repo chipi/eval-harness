@@ -33,7 +33,7 @@ Both are as run here: hosted LLMs zero-shot with one prompt and no label definit
 slice per corpus. Fine-tuning led where the labels follow a corpus convention and drew level
 where there was no room left (§4).
 
-This is one of six experiments; what all six agree on is in [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
+This is one of six evals; what all six agree on is in [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
 ### Supporting facts
 
@@ -70,7 +70,7 @@ machines are not directly comparable. p-values are sign-flip permutation p from 
 Holm family tests in §3; where a threshold is quoted, it is the Holm threshold that p had
 to beat.*
 
-#### What these experiments specifically found
+#### What these evals specifically found
 
 1. **AG News: three fine-tunes lead on the point estimate, and only one is separated from most of the field.**
    `bert_base_ta` **0.9600** (438 MB, 76 ms), `bert_base_fy` 0.9500, `bert_mini` 0.9450
@@ -623,7 +623,7 @@ run.
 
 ---
 
-## 5. What this experiment cannot say
+## 5. What this eval cannot say
 
 - **Whether a *different* DBpedia fine-tune would clear the top group.** One was measured
   (`fabriceyhc/bert-base-uncased-dbpedia_14`, on Linux — its `main` revision ships only a

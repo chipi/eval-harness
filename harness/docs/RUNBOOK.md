@@ -74,7 +74,7 @@ evh self-test
 
 That runs the paired test's own suite and the tutorial end to end in a scratch folder,
 offline and at $0. (In a checkout of the harness, `make demo` freezes a dataset from the
-bundled samples, runs an experiment three times and validates the tree.) No API key. If it
+bundled samples, runs one arm three times and validates the tree.) No API key. If it
 works, the harness is wired correctly and anything that breaks later is your change.
 
 ---
@@ -546,7 +546,7 @@ Two that are easy to reach for and wrong:
 - **`pair-test` on a pair you chose after seeing the leaderboard** is the winner's
   curse with extra steps. If you did not name the pair in advance, use `family-test`.
 - **`leaderboard` as a ranking.** It sorts; it does not separate. Five of the six
-  experiments here have a top group its own tests cannot tell apart, and the table
+  evals here have a top group its own tests cannot tell apart, and the table
   still prints them 1, 2, 3.
 
 ---
@@ -668,13 +668,13 @@ $0:
 
 1. **Pick the items from both sides.** Take the items most arms miss, and also the items
    your best arms miss. Reviewing only one side flatters the other.
-2. **Record each verdict** in an `adjudication.json` beside the experiment: the item, the
+2. **Record each verdict** in an `adjudication.json` beside the eval: the item, the
    gold, what the adjudicator was shown, the verdict and the reason. Who adjudicated goes
    in the file too.
 3. **Build the reference set and re-score:**
 
    ```bash
-   python examples/_shared/adjudicate.py examples/<experiment>/adjudication.json
+   python examples/_shared/adjudicate.py examples/<eval>/adjudication.json
    evh rescore --dataset-id <id> --reference-id gold/<id>_adj1 --out data/runs-adjudicated
    EVAL_RUNS_DIR=data/runs-adjudicated evh leaderboard --dataset-id <id>
    ```
@@ -683,7 +683,7 @@ $0:
    committed predictions and the adjudication file, so the re-scored runs need not be
    committed.
 5. **Decide what is primary, and record why** (CONCEPTS: Re-measuring a frozen
-   experiment).
+   eval).
 
 Worked example: `examples/classification-ag-news/adjudication.json`.
 
@@ -691,7 +691,7 @@ Worked example: `examples/classification-ag-news/adjudication.json`.
 
 ## 12. Re-measure with a validated judge
 
-When a better instrument exists than the metric the experiment ranks by (SummEval showed
+When a better instrument exists than the metric the eval ranks by (SummEval showed
 `coverage` agrees with experts at τ 0.10, a validated LLM judge at 0.52), measure the frozen
 outputs again, billed and capped. Design: [ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md).
 This is not `evh judge`, the older judge panel. **It is optional:** nothing else in the
@@ -798,13 +798,13 @@ and to the news-summary judge, so neither is an `evh` command.
    A difference between arms smaller than the noise check's is not a difference.
    `summary.json` also has the per-judge columns and which arms share a judge's family. A judged
    run keeps its source run's cost and speed, so the judged leaderboard has its frontier.
-7. **Record the decision.** Changing an experiment's primary metric is a recorded decision
+7. **Record the decision.** Changing an eval's primary metric is a recorded decision
    with a reason; the old metric stays beside the new one (CONCEPTS: Re-measuring a frozen
-   experiment).
+   eval).
 
 ### Validating a judge: what the gate needs
 
-A validation is an ordinary experiment whose **arms are the judges** and whose items carry
+A validation is an ordinary eval whose **arms are the judges** and whose items carry
 human ratings. Each judge runs as an arm (same `model`, `temperature`, `reasoning`,
 `max_tokens`, `provider` and prompt file as in the scorer) over items people have already
 rated, and its score is how well it agrees with them: rank correlation for ratings, accuracy
@@ -812,7 +812,7 @@ for preferences. The scorer's `validation` block then names those runs:
 
 ```yaml
 validation:
-  experiment: <the human-rated dataset_id>
+  dataset_id: <the human-rated dataset_id>
   metric: tau                      # the validation run's primary metric
   what: mean Kendall tau-b against the mean of three expert annotators
   differs_from_this_use: <how the rated outputs differ from the ones you will judge>
@@ -843,12 +843,12 @@ own outputs.
 
 ---
 
-## 13. Rounds of an experiment (optional)
+## 13. Rounds of an eval (optional)
 
-Experiments go round on round: try some arms, keep what wins, drop what lost, change something,
+Evals go round on round: try some arms, keep what wins, drop what lost, change something,
 compare again. A round records it, beside its goal, in `data/rounds/<goal>/<round>.yaml`; the
 commands are its only writers, and a project that never opens one sees none of it. Design:
-[ADR-0004](../../docs/adr/ADR-0004-experiment-rounds.md). Walkthrough, offline:
+[ADR-0004](../../docs/adr/ADR-0004-eval-rounds.md). Walkthrough, offline:
 [tutorial 4](../../docs/tutorials/4-rounds-and-versions.md).
 
 ```bash
@@ -1151,7 +1151,7 @@ evh models                                       # what is onboarded, vetted (an
    that hold whatever the task (reasoning; an ML model's device and precision) with one line of why
    (`settings_why`), and each change in `history`. In the arm: the task's own (its reply cap, its call
    limit), with a comment saying why; the schema refuses them in a record, where they would reach every
-   other experiment's arms. The arm smokes are kept in the record, and an arm smoke that passed is what makes
+   other eval's arms. The arm smokes are kept in the record, and an arm smoke that passed is what makes
    the model *vetted* on the Models page.
    - *Onboarding finds the settings that work*: probe, read the flags, change the record's settings (with why),
      probe again, until it passes or what remains is the model's own nature. Some models cannot stop reasoning

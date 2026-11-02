@@ -1,7 +1,7 @@
-# Reproduce this repository's experiments. Run from the repository root.
+# Reproduce this repository's evals. Run from the repository root.
 #
 #   make verify                          every number in every report, from the committed runs
-#   make list                            the experiments, their arms and what they cost
+#   make list                            the evals, their arms and what they cost
 #   make plan      EXP=scifact           what a rerun involves, before anything is spent
 #   make data      EXP=scifact           environment + public data + hash check
 #   make reproduce EXP=scifact LEVEL=local      (local | baselines | hosted | all)

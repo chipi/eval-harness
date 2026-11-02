@@ -55,7 +55,7 @@ Pin a release tag:
 5. **Run the [newcomer scenario](SCENARIO.md)** on the release candidate **when the newcomer's path
    changed** since its last recorded run: the install, getting started, the tutorials, or the
    commands and files they use. It is a smoke test: a fresh project, the published docs only, two
-   experiments with real models and one CPU model (the fastest), under $1. Fix what blocks a
+   evals with real models and one CPU model (the fastest), under $1. Fix what blocks a
    newcomer; record the rest in its "Open" list. When nothing on that path changed, skip it and
    say so in the release PR.
 6. **Merge to `main`.** The `harness-package` workflow builds the package, installs it in

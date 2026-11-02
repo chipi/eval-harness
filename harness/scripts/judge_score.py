@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Re-measure a frozen experiment with a validated LLM judge (docs/adr/ADR-0001).
+"""Re-measure a frozen eval with a validated LLM judge (docs/adr/ADR-0001).
 
     make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1 ARGS=--dry-run
     make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1
@@ -282,9 +282,9 @@ def validation_problems(
             out.append(f"judge {j['id']!r}: validation run {r.get('run')!r} is not in {runs_dir}")
             continue
         m = read_json(d / "metrics.json")
-        if v.get("experiment") and m.get("dataset_id") != v["experiment"]:
+        if v.get("dataset_id") and m.get("dataset_id") != v["dataset_id"]:
             out.append(
-                f"judge {j['id']!r}: run {r['run']} is on {m.get('dataset_id')!r}, not {v['experiment']!r}"
+                f"judge {j['id']!r}: run {r['run']} is on {m.get('dataset_id')!r}, not {v['dataset_id']!r}"
             )
         got = (m.get("scores") or {}).get(metric)
         if got is None or r.get("value") is None or abs(float(got) - float(r["value"])) > 1e-6:
@@ -322,7 +322,7 @@ def validation_problems(
 
 def validated_label(sc: dict[str, Any]) -> str:
     """Says where the validation was done, not that the judge is valid for this use."""
-    exp = (sc.get("validation") or {}).get("experiment")
+    exp = (sc.get("validation") or {}).get("dataset_id")
     return (
         f"validated on {exp} (provenance)" if exp else "validated by the runs its scorer names (provenance)"
     )
@@ -1088,7 +1088,7 @@ def real_call(message: str, params: dict[str, Any]) -> Any:
 
 
 def main() -> int:
-    """Re-measure a frozen experiment with a validated LLM judge."""
+    """Re-measure a frozen eval with a validated LLM judge."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--scorer", required=True, help="scorer id (data/scorers/<id>.yaml)")

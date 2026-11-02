@@ -13,7 +13,7 @@ members and you have to decide which member matches which.
 
 Every interesting decision in this example is in that matching.
 
-> **Rerun this experiment** from the repository root — `EXP=few-nerd`:
+> **Rerun this eval** from the repository root — `EXP=few-nerd`:
 >
 > ```bash
 > make plan EXP=few-nerd  &&  make data EXP=few-nerd  &&  make reproduce EXP=few-nerd  &&  make compare EXP=few-nerd

@@ -9,7 +9,7 @@ by *disbelieving the first answer*: several headline findings in
 [`research/internal/NOTES.md`](../../research/internal/NOTES.md) were retracted after the numbers were checked
 properly, including one caused by a one-line bug in this example's own scorer.
 
-> **Rerun this experiment** from the repository root — `EXP=summarization` / `EXP=summarization-dailymail`:
+> **Rerun this eval** from the repository root — `EXP=summarization` / `EXP=summarization-dailymail`:
 >
 > ```bash
 > make plan EXP=summarization  &&  make data EXP=summarization  &&  make reproduce EXP=summarization  &&  make compare EXP=summarization
@@ -60,7 +60,7 @@ uv run fetch.py --n 200 --draw random --seed 20261014 --source dailymail \
 **Why the references are gold.** `highlights` are written by the journalists who filed
 the article: people's answers, the reason they were promoted at gold (the promotion, not the source,
 sets the tier). Most evals never get this, which is
-what makes the silver experiment below possible.
+what makes the silver eval below possible.
 
 ## Run it
 
@@ -123,7 +123,7 @@ records `reasoning_tokens` from the provider's own accounting, and they are all 
 
 8 families × 3 **price tiers**. `price_tier`, not "size" — it is the vendor's own
 small/mid/large product step, and every family mixes generations within it (qwen's
-"large" is the *oldest* of its three). This experiment cannot attribute a difference
+"large" is the *oldest* of its three). This eval cannot attribute a difference
 between tiers to model size, and no conclusion here does.
 
 | | small | mid | large | weights |
@@ -300,7 +300,7 @@ evh reference-promote --dataset-id cnn_dailymail_200 --labels author_silver --ti
   published number.
 - **Speed is machine-bound.** The latency column mixes this machine, the proxy and the
   upstream provider. It is a property of your setup, not of the model — which is
-  deliberate: the same experiment measures how fast *your* machine is at *this* task.
+  deliberate: the same eval measures how fast *your* machine is at *this* task.
   The local arms were recorded on two machines (a 12-core Mac and a 4-core Linux box that
   ran `bart_l` 1.7× faster); `harness/data/runs-linux/` re-times all five on one.
 - **Local arms.** `bart_l` (BART fine-tuned on this corpus, 1.6 GB) is not separated from
