@@ -4,3 +4,5 @@
 # reads as a key. .gitleaks.toml's sha256 allowlist covers keys ending in _sha256 only.
 ad94f6e90c9f686be2853359777db76e58602742:harness/data/references/silver/fleet_dedup_v1/manifest.json:generic-api-key:31
 cc140fdf9e43efd679f3bc51b0f374b2ede6d0d4:harness/data/references/silver/fleet_dedup_v1/manifest.json:generic-api-key:31
+# A silver reference's items_sha256: an item id containing API beside its 64-hex sha256 (2026-11-02, checked)
+d42e0437c78f55ff038d0389bf6a8be9ec2df17a:harness/data/references/silver/fleet_dedup_v1/manifest.json:generic-api-key:30
