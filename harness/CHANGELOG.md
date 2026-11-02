@@ -63,7 +63,8 @@ that can move a result is never a patch release without saying so under **Change
     that metric, and per pick or pairwise judge), the signals **wrong** (`--wrong-against SET`), **disagree**,
     **split**, **new** (`--new-vs D`: a field value it never had), **unlabelled**, each a filter beside `--where` and
     `--by`, and a footer per arm: its mean, its win rate and its verdict (the goal's decision, else the paired test
-    against the leader). The item column stays in place as the arms scroll; the rows you tick give the `evh pick`
+    against the leader). On a pick or pairwise verdict only an arm the judge preferred wins a row; a row it gave to
+    an arm not shown is nobody's win. The item column stays in place as the arms scroll; the rows you tick give the `evh pick`
     and `evh label-sheet` commands. `--csv FILE` writes it (UTF-8 with the mark Excel needs), and the inspector
     downloads the same (`/api/sheet`, `&format=csv`). Local only: a public server refuses it.
   - **A sheet to fill, and `evh sheet-import`** (`make sheet-import`): `--csv FILE --fill label` adds `label`, `also
