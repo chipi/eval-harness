@@ -67,6 +67,15 @@ scoring:
   - runs-rescored/cd35dc1ffccc/runs
   - runs-rescored/cd35dc1ffccc/runs-repeats
   runs: 65
+- at: '2026-11-02T08:17:49Z'
+  scorer: 5f2c057cdaa5
+  why: 'Labels can accept more than one answer (owner, 2026-11-02): the gold''s file-or-escalate is {"accept":
+    ["escalate", "file"]}, and the adapter reads it with answers(); one adapter version and one gold for
+    the round''s evidence'
+  written:
+  - runs-rescored/5f2c057cdaa5/runs
+  - runs-rescored/5f2c057cdaa5/runs-repeats
+  runs: 65
 status: closed
 opened_at: '2026-10-31T13:18:37Z'
 closed_at: '2026-10-31T13:19:25Z'

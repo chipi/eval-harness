@@ -1,0 +1,179 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "36cb22f3e8c7d10187463fa93561bd11fc5661ac",
+    "source": "git"
+  },
+  "config_id": "triage_local_mac_qwen38_27b_v2",
+  "created_at": "2026-11-02T08:17:40Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "deployment_id": "mac",
+  "derived": {
+    "at": "2026-11-02T08:17:40Z",
+    "from": "triage_local_mac_qwen38_27b_v2_20261031T165450Z",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/triage-fleet/adapter.py",
+      "sha256": "5f2c057cdaa53f0804b52dbd6a2231622602a1cf3c2415426b7a8090a306c2f8"
+    }
+  },
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_local_mac_qwen38_27b_v2",
+      "labels": {
+        "usd_per_mtok_in": 0,
+        "usd_per_mtok_out": 0
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled",
+      "items_sha256": "d428aca49adc8e762dcbbcad6c9a1dba1ac4e4e3315ff26025af975faba1176a",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled",
+      "reference_tier": "gold",
+      "references_changed_since_measurement": true,
+      "references_sha256": "f828e63bb2ddf0fe43d0223112530e4ab02d2871eed992c5ef66a75f47931582",
+      "references_sha256_at_measurement": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
+    },
+    "data_sha256": "31d3cb2b834adfef72c4c028c5e20d81e8ae62b6480efe68725303dd9c8c9e45",
+    "deployment": {
+      "declared": {
+        "fleet_code_sha256": "248e25030011aab82f5798eeb7c74fd03f2d7cfd04866b8b017d3740663727d9",
+        "fleet_commit": "f07efa9"
+      },
+      "hosted": null,
+      "id": "qwen3.8-27b@mac",
+      "in_process": false,
+      "libraries": null,
+      "model": "qwen3.8:27b",
+      "provider": "openai",
+      "server": {
+        "name": "ollama",
+        "settings": null,
+        "url": null,
+        "version": "0.40.13"
+      },
+      "source": "record",
+      "weights": {
+        "digest": "aaee06c39dcf2437cde036998d960e1fc1494b8191be7cc9657d01e509097813",
+        "file_hash": null,
+        "precision": null,
+        "quantization": "Q4_K_M",
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": "mac"
+      }
+    },
+    "deployment_sha256": "63ba25b5848747356557ac6fcf8a8ffd66d3c3a1509ea33797f4bccd5339703d",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "5f2c057cdaa53f0804b52dbd6a2231622602a1cf3c2415426b7a8090a306c2f8"
+      },
+      "harness": {
+        "code_sha256": "216b9a5df01c9986c4f863acb6f4d79c9796becf8a6944ba1e82f747844cd244",
+        "commit": "36cb22f3e8c7",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "instrument_sha256": "0dfe5d3897cf388eee4321c749ab5f452a4f94a5d9dab5575cbcc4661655a07f",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "call_timeout_s": 600,
+      "declared": {
+        "prompt_sha256": "77f26d87ad9f4d117cd1cbdbd5be9bbb5fcd9666294055c37376fe6938bd1131"
+      },
+      "max_tokens": 1024,
+      "reasoning_effort": "none"
+    },
+    "settings_sha256": "3a8619498e589f00e0e359fe6d04a71089edaeb41bc475d0b30f678bb674ecef",
+    "version": 5
+  },
+  "goal": "triage_orrery",
+  "metric_directions": {
+    "deferred": "lower",
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "model_triage_cost": "lower",
+    "no_decision": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower",
+    "triage_cost": "lower",
+    "triage_cost_p10": "lower",
+    "triage_cost_p3": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "model_record": "qwen3.8-27b",
+  "n_items": 65,
+  "params": {
+    "call_timeout_s": 600,
+    "machine": "mac",
+    "max_tokens": 1024,
+    "model": "qwen3.8:27b",
+    "provider": "gateway",
+    "reasoning_effort": "none",
+    "url": "http://127.0.0.1:11435/v1/chat/completions",
+    "usd_per_mtok_in": 0,
+    "usd_per_mtok_out": 0
+  },
+  "primary_metric": "triage_cost",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "round": "r3",
+  "run_id": "triage_local_mac_qwen38_27b_v2_20261031T165450Z",
+  "scores": {
+    "correct": 0.4461538462,
+    "cost_usd": 0.0,
+    "deferred": 0.0,
+    "escalated": 0.4,
+    "false_alarm": 0.6129032258,
+    "false_dismiss": 0.3235294118,
+    "latency_ms": 33394.6125619758,
+    "model_correct": 0.4153846154,
+    "model_escalated": 0.0,
+    "model_false_alarm": 0.3225806452,
+    "model_false_dismiss": 0.8235294118,
+    "model_triage_cost": 2.3076923077,
+    "n_probes": 1.9692307692,
+    "no_decision": 0.0,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 4171.9384615385,
+    "tokens_out": 397.5076923077,
+    "total_cost_usd": 0.0,
+    "total_tokens_in": 271176.0,
+    "total_tokens_out": 25838.0,
+    "triage_cost": 1.1384615385,
+    "triage_cost_p10": 1.9846153846,
+    "triage_cost_p3": 0.8
+  },
+  "source_created_at": "2026-10-31T17:31:04Z"
+}

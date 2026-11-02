@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "zz-probe-dev-microtask", "model_disposition": "cleanup", "reason": "The signal contains the explicit test/synthetic marker prefix 'zz-probe-', indicating it is a validation or probe event that should be cleaned up at the source."}
