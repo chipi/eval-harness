@@ -1501,7 +1501,7 @@ def _rows_view(A, args) -> int:
             [
                 r["item"],
                 ", ".join(f"{s} ({d})" if d else s for s, d in r["signals"].items()),
-                *[_short(r["decisions"].get(n)) for n in runs],
+                *[_short(r["shown"].get(n)) for n in runs],
                 "; ".join(
                     f"{x['set']} [{source_line(x['source'])}]: {_short(x['text'], 32)}" for x in r["labels"]
                 ),

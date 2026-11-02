@@ -106,7 +106,34 @@ def main() -> int:
         setup("dataset-materialize", "--dataset-id", "tickets_v1")
         for f in (proj / "tutorial/configs").glob("tickets_*.yaml"):
             shutil.copy(f, proj / "data/configs/")
-        shutil.copytree(proj / "tutorial/gold", proj / "data/references/gold/tickets_v1")
+        setup(
+            "label-import",
+            "tutorial/gold",
+            "--dataset-id",
+            "tickets_v1",
+            "--set",
+            "owner_gold",
+            "--by",
+            "owner",
+        )
+        setup(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "owner_gold",
+            "--tier",
+            "gold",
+            "--reason",
+            "The kit's hand-written summaries decide.",
+            "--by",
+            "owner",
+        )
+        # gold a script builds, for reference-manifest below: the texts where a fetch script would put them
+        fetched = proj / "data/references/gold/tickets_dev_v1"
+        fetched.mkdir(parents=True)
+        for f in sorted((proj / "tutorial/gold").glob("*.txt"))[:2]:
+            shutil.copy(f, fetched / f.name)
         for arm in ("lead1", "lead2", "lead2_noisy", "author"):
             setup("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml", "--repeat", "2")
         shutil.copytree(proj / "tutorial/scorers", proj / "data/scorers")
@@ -141,8 +168,19 @@ def main() -> int:
             ("label-from-run", ["--run", run_id, "--set", "installed_from_run"], "ok:label(s), source model"),
             (
                 "reference-manifest",
-                ["--reference-id", "gold/tickets_v1", "--source", "tutorial/gold"],
-                "ok:6 item(s), tier=gold",
+                [
+                    "--reference-id",
+                    "gold/tickets_dev_v1",
+                    "--source",
+                    "tutorial/gold",
+                    "--labelled-by",
+                    "the kit's author",
+                    "--reason",
+                    "the kit's own answers decide",
+                    "--by",
+                    "owner",
+                ],
+                "ok:2 item(s), gold, promoted from person",
             ),
             ("experiment-run", ["--config", "data/configs/tickets_lead1.yaml", "--dry-run"], "ok"),
             (

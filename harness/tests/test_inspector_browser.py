@@ -84,7 +84,20 @@ def project(tmp: Path) -> tuple:
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
     for f in (proj / "tutorial/configs").glob("tickets_*.yaml"):
         shutil.copy(f, proj / "data/configs/")
-    shutil.copytree(proj / "tutorial/gold", proj / "data/references/gold/tickets_v1")
+    evh("label-import", "tutorial/gold", "--dataset-id", "tickets_v1", "--set", "owner_gold", "--by", "owner")
+    evh(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v1",
+        "--labels",
+        "owner_gold",
+        "--tier",
+        "gold",
+        "--reason",
+        "The kit's hand-written summaries decide.",
+        "--by",
+        "owner",
+    )
     for arm in ("lead1", "lead2", "author"):
         evh("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml")
     # A goal with an open round: the goal page then carries its suggestions, each with a copy button.
@@ -113,7 +126,7 @@ def project(tmp: Path) -> tuple:
     )
     evh("dataset-from-capture", "prod_c1", "--dataset-id", "prod_v1")
     evh("pick", "--dataset-id", "prod_v1", "--item", "p1", "--item", "p2", "--for", "tickets_v1")
-    # A person's labels on two tickets: the rows view's unlabelled signal then marks the other four.
+    # A person's labels on two tickets: the rows view's wrong signal against them marks those two.
     (proj / "sheet.csv").write_text("item_id,label\nt01_login,Login fails.\nt02_invoice,Invoice wrong.\n")
     evh("label-import", "sheet.csv", "--dataset-id", "tickets_v1", "--set", "owner_v1", "--by", "owner")
     evh("catalog")
@@ -495,6 +508,12 @@ def drive(base: str, overview: str = "") -> None:
             n_rows == 6 and page.locator("#rcounts").inner_text().startswith("6 "),
             f"{n_rows} {page.locator('#rcounts').inner_text()}",
         )
+        heads = [h.strip().lower() for h in page.locator("#rowstable thead th").all_inner_texts()]
+        check(
+            "rows view: the signals right after the item, as in the terminal; the fields last",
+            heads[2:3] == ["signals"] and heads[-1] == "fields",
+            str(heads),
+        )
         check("rows view: nothing ticked, no commands", page.locator("#rpanel").is_hidden())
         first = page.locator("#rowstable tbody input.rsel").first
         it_id = first.get_attribute("value") or ""
@@ -512,15 +531,19 @@ def drive(base: str, overview: str = "") -> None:
         page.wait_for_selector("#drill .eyebrow", timeout=15000)
         drill_text = page.locator("#drill").inner_text()
         check("rows view: a row opens the ticket", it_id.lower() in drill_text.lower(), drill_text[:300])
-        page.locator('input.ronly[value="unlabelled"]').check()
-        page.wait_for_url("**only=unlabelled**", timeout=15000)
+        # wrong against the person's two labels: the first arm's one sentence is neither, so exactly those two rows
+        page.goto(f"{base}inspect.html?dataset=tickets_v1&rows=1&runs={two}&wrong=tickets_v1/owner_v1")
+        page.wait_for_selector("#rowstable", timeout=15000)
+        carry = page.locator("#rowstable tbody tr .sig-wrong").count()
+        page.locator('input.ronly[value="wrong"]').check()
+        page.wait_for_url("**only=wrong**", timeout=15000)
         page.wait_for_selector("#rowstable", timeout=15000)
         kept = page.locator("#rowstable tbody tr").count()
-        marked = page.locator("#rowstable tbody tr .sig-unlabelled").count()
+        marked = page.locator("#rowstable tbody tr .sig-wrong").count()
         check(
-            "rows view: only a signal keeps the rows that carry it (4 of 6 unlabelled)",
-            kept == marked == 4,
-            f"{kept} rows, {marked} marked unlabelled",
+            "rows view: only a signal keeps the rows that carry it (wrong against the person's two labels)",
+            carry == 2 and kept == marked == carry,
+            f"{carry} carry it, {kept} rows kept, {marked} marked",
         )
         page.goto(f"{base}inspect.html?dataset=prod_v1&rows=1&item=p1")
         page.wait_for_selector("#drill .eyebrow", timeout=15000)

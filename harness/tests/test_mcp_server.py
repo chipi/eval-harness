@@ -75,7 +75,34 @@ try:
     )
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
-    shutil.copytree(KIT / "gold", data / "references" / "gold" / "tickets_v1")
+    r = evh(
+        "label-import",
+        str(KIT / "gold"),
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_gold",
+        "--by",
+        "owner",
+    )
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "owner_gold",
+            "--tier",
+            "gold",
+            "--reason",
+            "The kit's hand-written summaries decide.",
+            "--by",
+            "owner",
+        )
+    )
+    check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
     cfg = (KIT / "configs" / "tickets_lead2.yaml").read_text()
     (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\n")

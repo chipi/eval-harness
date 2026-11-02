@@ -69,7 +69,34 @@ try:
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset is created and materialized", r.returncode == 0, out(r)[-300:])
-    shutil.copytree(KIT / "gold", data / "references" / "gold" / "tickets_v1")
+    r = evh(
+        "label-import",
+        str(KIT / "gold"),
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_gold",
+        "--by",
+        "owner",
+    )
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "owner_gold",
+            "--tier",
+            "gold",
+            "--reason",
+            "The kit's hand-written summaries decide.",
+            "--by",
+            "owner",
+        )
+    )
+    check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     for arm in ("lead1", "author"):
         shutil.copy(KIT / "configs" / f"tickets_{arm}.yaml", data / "configs")
         r = evh("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml")

@@ -63,7 +63,8 @@ def main() -> int:
         die(f"--name {name!r}: one name, no path")
     ref_dir = REFERENCES / args.tier / name
     kept_out = (ref_dir / "manifest.json").is_file() and not any(ref_dir.glob("*.txt"))
-    if ref_dir.exists() and any(ref_dir.iterdir()) and not kept_out:
+    hand_made = ref_dir.is_dir() and not (ref_dir / "manifest.json").exists() and any(ref_dir.glob("*.txt"))
+    if ref_dir.exists() and any(ref_dir.iterdir()) and not kept_out and not hand_made:
         die(f"{ref_dir} exists: a reference is never overwritten. Name another with --name.")
     ds = load_dataset(args.dataset_id)
     ids = [it["item_id"] for it in ds.get("items") or []]
@@ -90,6 +91,17 @@ def main() -> int:
     source = next(iter(mine.values()))["source"]
     if kept_out:
         return _rebuild(ref_dir, mine, set_ds, set_name)
+    if hand_made:
+        # A folder made by hand, with no manifest (ADR-0022): adopted only when it holds exactly these labels, so a
+        # reference is still never overwritten; it then gets the promotion record it never had.
+        here = {f.stem: f.read_text(encoding="utf-8").strip() for f in ref_dir.glob("*.txt")}
+        if set(here) != set(chosen) or any(here[i] != mine[i]["text"].strip() for i in chosen):
+            die(
+                f"{ref_dir} exists, made by hand with no manifest, and its texts are not {set_ds}/{set_name}'s: a "
+                f"reference is never overwritten. To keep it, import it as the labels first (evh label-import "
+                f"{ref_dir} --dataset-id {args.dataset_id} --set S --by WHO) and promote those; or name another with "
+                "--name."
+            )
     doc = next((d for d in sets() if d["dataset_id"] == set_ds and d["set"] == set_name), {})
     not_here = doc.get("redistributed") is False
     ref_dir.mkdir(parents=True, exist_ok=True)

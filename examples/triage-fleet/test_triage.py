@@ -226,6 +226,12 @@ check(
     and not adapter.same('{"disposition": "file"}', '{"disposition": "dismiss"}')
     and adapter.same("not json", " not json "),
 )
+check(
+    "decision(): an output's disposition, what the rows view shows; a bare label as it is",
+    adapter.decision('{"disposition": "escalate", "reason": "x", "_probe_trace": []}') == "escalate"
+    and adapter.decision("file-or-escalate\n") == "file-or-escalate"
+    and adapter.decision('{"reason": "no decision"}') == '{"reason": "no decision"}',
+)
 o = r1["outcome"]
 check(
     "importer: a missed problem: the later issue's verdict, filing two days later",

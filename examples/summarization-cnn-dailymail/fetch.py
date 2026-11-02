@@ -16,7 +16,8 @@ WHY THIS DATASET
 
 WHY THE REFERENCE IS GOLD
   `highlights` are the bullet summaries written by the journalists who filed the article.
-  Human-authored, so `references/gold/`. Every run scored against them says tier=gold,
+  Written by people: the reason they were promoted at gold (the manifest records it; the promotion,
+  not the source, sets the tier: ADR-0022). Every run scored against them says tier=gold,
   which is a stronger claim than this harness's bundled demo can make — that one authors
   a silver reference with a model, because its placeholder items have no human summary to
   use. Here there is one.

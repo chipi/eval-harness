@@ -13,9 +13,10 @@ against it, $0:
 
     evh reference-manifest --reference-id gold/ag_news_200_adj1 --dataset-id ag_news_200 \\
         --source "examples/_shared/adjudicate.py examples/classification-ag-news/adjudication.json" \\
-        --not-redistributed
+        --labelled-by "one reader's adjudication of the dataset's labels" --not-redistributed \\
+        --reason "the adjudicated labels sit beside the dataset's own, never deciding alone" --by <you>
 
-    cd harness && python scripts/rescore.py --dataset-id ag_news_200 \\
+    evh rescore --dataset-id ag_news_200 \\
         --reference-id gold/ag_news_200_adj1 --out data/runs-adjudicated
 """
 
@@ -68,7 +69,8 @@ def main() -> int:
     print(
         f"its manifest:  evh reference-manifest --reference-id {adj['reference_id']} "
         f"--dataset-id {adj['base_reference'].split('/', 1)[1]} "
-        f'--source "examples/_shared/adjudicate.py {sys.argv[1]}" --not-redistributed'
+        f'--source "examples/_shared/adjudicate.py {sys.argv[1]}" --not-redistributed '
+        '--labelled-by "one reader\'s adjudication of the dataset\'s labels" --reason "…" --by <you>'
     )
     return 0
 

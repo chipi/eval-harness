@@ -60,13 +60,37 @@ def write_run(
     (d / "predictions.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
 
 
-def write_gold(data: Path, dataset: str, items: dict) -> None:
+FETCHED: dict = {
+    "promoted_from": {
+        "labels": None,
+        "dataset_id": "",
+        "source": {"kind": "person", "by": "the dataset's authors"},
+    },
+    "reason": "the dataset's own labels decide",
+    "promoted_by": "test",
+}
+
+
+def fetched_gold(data: Path, dataset: str, items: dict, redistributed: bool = True) -> None:
+    """Gold a script builds, as `evh reference-manifest` promotes it: the texts, and the manifest recording them."""
+    from evaluation_harness._references import write_manifest  # noqa: PLC0415
+
     g = data / "references" / "gold" / dataset
     g.mkdir(parents=True)
     for item, value in items.items():
         (g / f"{item}.txt").write_text(
             value if isinstance(value, str) else json.dumps(value), encoding="utf-8"
         )
+    write_manifest(
+        g,
+        "gold",
+        dataset,
+        source="fetch.py",
+        redistributed=redistributed,
+        promoted_from={**FETCHED["promoted_from"], "dataset_id": dataset},
+        reason=FETCHED["reason"],
+        promoted_by=FETCHED["promoted_by"],
+    )
 
 
 def row_of(out: str, arm: str) -> list:
@@ -81,7 +105,7 @@ def close(a: float, b: float) -> bool:
 
 def test_extraction(tmp: Path) -> None:
     data = tmp / "ner"
-    write_gold(
+    fetched_gold(
         data,
         "fx_ner",
         {
@@ -146,7 +170,7 @@ def test_extraction_arm(tmp: Path) -> None:
 
 def test_retrieval(tmp: Path) -> None:
     data = tmp / "ret"
-    write_gold(data, "fx_ret", {"q1": [{"doc_id": "d1", "score": 1}, {"doc_id": "d2", "score": 1}]})
+    fetched_gold(data, "fx_ret", {"q1": [{"doc_id": "d1", "score": 1}, {"doc_id": "d2", "score": 1}]})
     write_run(
         data,
         "all",
@@ -195,7 +219,7 @@ def test_retrieval(tmp: Path) -> None:
 
 def test_classification(tmp: Path) -> None:
     data = tmp / "cls"
-    write_gold(data, "fx_cls", {"i1": "A", "i2": "A", "i3": "B", "i4": "B"})
+    fetched_gold(data, "fx_cls", {"i1": "A", "i2": "A", "i3": "B", "i4": "B"})
     preds = {"i1": "A", "i2": "B", "i3": "B", "i4": "B"}
     write_run(
         data,
@@ -235,7 +259,7 @@ def test_classification(tmp: Path) -> None:
         matrix or r.stdout[-400:],
     )
     write_run(data, "c2", "fx_cls_other", "fx_other_v1", [{"item_id": "z9", "_meta": {"predicted": "A"}}])
-    write_gold(data, "fx_cls_other", {"i1": "A"})
+    fetched_gold(data, "fx_cls_other", {"i1": "A"})
     r = tool("classification_report.py", data, "--dataset-id", "fx_cls_other")
     check(
         "classification_report: no run scored a gold item: refused in words, not a traceback",
@@ -254,9 +278,10 @@ def test_manifest_only(tmp: Path) -> None:
         ("retrieval_report.py", "fx_ret"),
         ("classification_report.py", "fx_cls"),
     ):
-        g = data / "references" / "gold" / ds
-        g.mkdir(parents=True)
-        (g / "manifest.json").write_text("{}", encoding="utf-8")
+        # the committed manifest of gold a script fetches, without its texts
+        fetched_gold(data, ds, {"a": "A"}, redistributed=False)
+        for f in (data / "references" / "gold" / ds).glob("*.txt"):
+            f.unlink()
         write_run(
             data, f"r_{ds}", ds, f"{ds}_v1", [{"item_id": "a", "_meta": {"predicted": "A"}}], {"ndcg_10": 0.1}
         )

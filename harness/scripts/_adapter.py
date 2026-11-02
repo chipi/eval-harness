@@ -81,11 +81,36 @@ def _same_text(a: str, b: str) -> bool:
     return a.strip() == b.strip()
 
 
+def decision_of(adapter_spec: str | None) -> Any:
+    """`decision(output)` from the adapter a run recorded (UXS-002): the decision in one output, what the rows view
+    shows for it; None when the adapter has none or cannot be imported here (the output is shown)."""
+    fn = getattr(adapter_module(adapter_spec), "decision", None)
+    return fn if callable(fn) else None
+
+
+def shown(decide: Any, output: str | None) -> str | None:
+    """What a view shows for one output: its decision when the adapter says what that is, else the output itself."""
+    if output is None or decide is None:
+        return output
+    try:
+        got = decide(output)
+    except Exception:  # noqa: BLE001 - an output the adapter cannot read is shown as it is
+        return output
+    return output if got is None else str(got)
+
+
 def same_of(adapter_spec: str | None) -> Any:
     """`same(a, b)` from the adapter a run recorded (RFC-023): whether two outputs are one decision, for agreement and
-    `--disagree`; the same text when the adapter has none or cannot be imported here."""
-    fn = getattr(adapter_module(adapter_spec), "same", None)
-    return fn if callable(fn) else _same_text
+    `--disagree`; else, when the adapter says what an output's decision is (`decision`), the same decision; else the
+    same text (also when the adapter cannot be imported here)."""
+    module = adapter_module(adapter_spec)
+    fn = getattr(module, "same", None)
+    if callable(fn):
+        return fn
+    decide = getattr(module, "decision", None)
+    if callable(decide):
+        return lambda a, b: _same_text(shown(decide, a) or "", shown(decide, b) or "")
+    return _same_text
 
 
 def metric_kinds(adapter_path: Path | None) -> dict[str, str]:

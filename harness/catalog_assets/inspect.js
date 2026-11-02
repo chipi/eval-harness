@@ -508,17 +508,18 @@
       ${SIGNALS.map(s => `<label class="tick"><input type="checkbox" class="ronly" value="${s}" ${only.includes(s) ? 'checked' : ''}> only ${s}</label>`).join('')}</div>`
       + fieldControls(d);
     const first = d.runs[0];
-    const head = ['<input type="checkbox" id="rall" aria-label="select all shown">', ITEM, 'fields',
-      ...d.runs.map((r, i) => esc(short(r)) + (i === 0 ? '<br><small>first: production</small>' : '')), 'labels', 'picked', 'signals'];
+    // As in the terminal: the signals (why a row matters) next to the item, each run's decision, and the fields last.
+    const head = ['<input type="checkbox" id="rall" aria-label="select all shown">', ITEM, 'signals',
+      ...d.runs.map((r, i) => esc(short(r)) + (i === 0 ? '<br><small>first: production</small>' : '')), 'labels', 'picked', 'fields'];
     const fieldsOf = r => Object.entries(r.fields).map(([k, v]) => `${k}=${v}`).join(', ');
     const body = rs => rs.map(r => `<tr class="eprow" data-ep="${esc(r.item)}" tabindex="0">
       <td><input type="checkbox" class="rsel" value="${esc(r.item)}" aria-label="select ${esc(r.item)}"></td>
       <td class="mono" title="${esc(r.item)}">${esc(r.item.length > 28 ? r.item.slice(0, 27) + '…' : r.item)}</td>
-      <td class="small">${esc(fieldsOf(r))}</td>
+      <td>${Object.entries(r.signals).map(([s, x]) => `<span class="chip sig sig-${s}" title="${esc(x)}">${s}</span>`).join(' ')}</td>
       ${d.runs.map(n => `<td class="small">${r.decisions[n] == null ? '<span class="muted">—</span>' : esc(r.decisions[n])}</td>`).join('')}
       <td class="small">${r.labels.map(l => `${chip(l.kind)} <code>${esc(l.set.split('/').pop())}</code> ${esc(l.text)}`).join('<br>') || '<span class="muted">none</span>'}</td>
       <td class="small">${esc(r.picked.join(', '))}</td>
-      <td>${Object.entries(r.signals).map(([s, x]) => `<span class="chip sig sig-${s}" title="${esc(x)}">${s}</span>`).join(' ')}</td></tr>`).join('');
+      <td class="small">${esc(fieldsOf(r))}</td></tr>`).join('');
     const table = `<div class="scroll-x"><table class="data" id="rowstable"><thead><tr>${head.map((h, i) => `<th data-col="${i}">${h}</th>`).join('')}</tr></thead><tbody>${body(shown)}</tbody></table></div>`;
     const panel = `<div class="cmdpanel" id="rpanel" hidden><p class="small"><b><span id="rn">0</span> selected.</b> The page writes nothing; run these.</p>
       <div class="controls"><label>for <input id="rfor" placeholder="a governed dataset" list="rdsl"></label><datalist id="rdsl">${d.datasets.map(x => `<option value="${esc(x)}">`).join('')}</datalist>

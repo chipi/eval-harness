@@ -70,13 +70,15 @@ def rows(
     wrong_against: str | None = None,
     new_vs: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Every item of the dataset in order: {item, fields, decisions {run: output}, labels, signals {name: detail}}.
+    """Every item of the dataset in order: {item, fields, decisions {run: output}, shown {run: what a view shows: the
+    run's adapter's decision(output), else the output}, labels, signals {name: detail}}.
     `fields_of(dataset)` gives ({name: field}, {item: {name: value}}) (the inspector's `_fields_of`)."""
-    from evaluation_harness._adapter import adapter_module, same_of  # noqa: PLC0415
+    from evaluation_harness._adapter import adapter_module, decision_of, same_of, shown  # noqa: PLC0415
 
     ds = load_dataset(dataset_id)
     dirs = {n: run_dir(n, dataset_id) for n in runs}
     spec = read_json(next(iter(dirs.values())) / "metrics.json").get("adapter") if dirs else None
+    deciders = {n: decision_of(read_json(d / "metrics.json").get("adapter")) for n, d in dirs.items()}
     same = same_of(spec) if dirs else None
     score = getattr(adapter_module(spec), "score", None) if dirs else None
 
@@ -124,5 +126,14 @@ def rows(
             sig["new"] = ", ".join(new[i])
         if not mine:
             sig["unlabelled"] = ""
-        out.append({"item": i, "fields": values.get(i, {}), "decisions": dec, "labels": mine, "signals": sig})
+        out.append(
+            {
+                "item": i,
+                "fields": values.get(i, {}),
+                "decisions": dec,
+                "shown": {n: shown(deciders.get(n), o) for n, o in dec.items()},
+                "labels": mine,
+                "signals": sig,
+            }
+        )
     return out

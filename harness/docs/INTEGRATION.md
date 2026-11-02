@@ -112,6 +112,16 @@ so describing a metric later needs no new run and moves no fingerprint (`evh res
 the record too, for $0). One metric name is described once across a project, so adapters that
 share a name share its sentence.
 
+**Optional, for evaluating what production did** (RFC-023, [RUNBOOK §15b](RUNBOOK.md#15b-evaluating-what-production-did)),
+in the same file:
+
+| function | what it answers | read by |
+|---|---|---|
+| `decision(output)` | the decision in one output (a disposition, a label), without the reasons and traces around it | the rows view shows it per arm; with no `same`, two outputs agree when their decisions do |
+| `same(a, b)` | whether two outputs are one decision | agreement: `inspect --disagree`, the rows view's disagree and split, `label-sheet --items disagree` (default: the same decision, else the same text) |
+| `recorded_output(record)` | production's own decision, from a capture's record | `arm-from-capture` (else `--field`) |
+| `production_ran(record)` | what production ran for a record, under the keys a run's items report (`_meta`) | `deploy-sheet --capture` |
+
 ---
 
 ## What an "arm" is
@@ -176,7 +186,7 @@ Most projects do not have it. The sequence that works:
    evh label-from-run --run <that run_id> --set frontier_v1
    evh reference-promote --dataset-id my_v1 --labels frontier_v1 --tier silver --reason "…" --by <you>
    ```
-   Promoted as **silver**: model-generated, not correct but *consistent*, which is enough to
+   Promoted as **silver**: a model's answers, not correct but *consistent*, which is enough to
    rank other arms against it: the cheaper arms are measured by how close they come to the
    expensive one. It calls nothing, and the labels name the run they came from.
 

@@ -45,7 +45,8 @@ LICENCE -- READ THIS, IT IS WEAKER THAN THE SUMMARISATION EXAMPLE'S
 
 WHY THE REFERENCE IS GOLD
   The labels are human-assigned editorial categories from the source news feeds, not model
-  output -- so `references/gold/`. A reference file here holds one word.
+  output -- the reason they were promoted at gold (the manifest records it; the promotion, not the
+  source, sets the tier: ADR-0022). A reference file here holds one word.
 
 A CAVEAT WORTH KNOWING BEFORE READING ANY RESULT
   Many AG News texts carry their syndication tag inline: "(AP)", "(Reuters)",

@@ -725,7 +725,7 @@ def rows(params: dict) -> dict:
             {
                 "item": r["item"],
                 "fields": r["fields"],
-                "decisions": {n: (None if o is None else short(o)) for n, o in r["decisions"].items()},
+                "decisions": {n: (None if o is None else short(o)) for n, o in r["shown"].items()},
                 "labels": [
                     {
                         "set": f"{x['dataset_id']}/{x['set']}",

@@ -157,8 +157,23 @@ that can move a result is never a patch release without saying so under **Change
   promoted, it is a silver like any (with gold beside it, gold still decides; ADR-0020 is superseded). The one
   reference here that named `reference-create` as its rebuild says where its texts come from instead.
 - **`validate` fails a reference with no manifest (V16)**, where it noted one: texts copied into
-  `data/references/` by hand are a reference nobody promoted. Import them as labels and promote them, or, for gold a
-  script builds, `evh reference-manifest`. Tutorial 1, the newcomer scenario and `evh self-test` make gold that way.
+  `data/references/` by hand are a reference nobody promoted. Import them as labels where they are and promote
+  them: `reference-promote` adopts the folder when its texts are the labels' (writing its manifest; a folder whose
+  texts differ is still never overwritten). Tutorial 1, the newcomer scenario, `evh self-test` and the tests make
+  gold that way.
+- **`evh reference-manifest` is a promotion**: it takes `--labelled-by`, `--reason` and `--by` (and `--kind`), and
+  records them as `promoted_from` and the reason, so every reference says where it came from; the reference schema
+  requires both. This repository's references are aligned: the caveats name where their labels came from (no
+  "human-authored" or "model-generated" tier wording), the two that named a removed command as their rebuild name
+  the 0.6.0 ones, and `from_outcomes` and `cost_usd`, which only the removed commands wrote, are gone. No run's
+  fingerprint moves (none of these is hashed).
+- **The rows view shows each arm's decision, the signals first**: an adapter's optional `decision(output)` (the
+  triage example's: its disposition) is what a row shows, the output itself otherwise; with no `same(a, b)`, two
+  outputs agree when their decisions do. The browser's columns follow the terminal's: item, signals, the decisions,
+  labels, picked, fields (UXS-002).
+- **The triage example's `write_gold.py` is `labels_from_verdicts.py`**: a source's labels from `verdicts.jsonl`,
+  one file per item, for `evh label-import`; the tier is the promotion's. Its owner labels rebuild the committed
+  gold set byte for byte.
 - **`catalog-serve` serves on the project's own port**, not 8765 (`--port` overrides; `--public` keeps 8765), and
   `mcp --http` on another; a bookmark of `127.0.0.1:8765` moves.
 - **The release leaves the pick list out**: picks are working notes that name production items, so a published
@@ -199,6 +214,8 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **Every `evh` command is a `make` target again**, as the READMEs and the RUNBOOK say: the 22 added in 0.5.0 and
+  0.6.0 had none (`make labels`, `make reference-promote ARGS="…"`, …).
 - **The home page's "recorded" feed shows the period's events.** Its period filter read the date from the table
   cell, not the span inside it, so it hid every event and said "Nothing recorded in this period" (since 0.4.2).
 - **Coverage counts an arm scored against a label set as `labels`**, on the home page and in `evh overview`; it

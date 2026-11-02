@@ -195,12 +195,13 @@ Opened from a dataset ("Explore its rows", production's recorded arm chosen firs
 (`/api/rows`): its rows carry outputs and labels, so a public server refuses it. With no arm chosen, a row (or
 `&item=`, a pick's link) still opens the item, its fields and its labels.
 
-- **One row per item**: **item** (short id, the full id in its title), its **fields**, production's decision (the
-  recorded arm, when one is chosen), each chosen arm's decision, every label with its source chip, and the
-  markers: **wrong** (production's decision wrong against the chosen label set), **disagree** (two chosen arms
-  decided differently), **split** (the candidates disagree among themselves), **new** (a field value the governed
-  dataset chosen in "new against" has never had, the field named), **unlabelled** (no label in any set), and
-  **picked** (for which datasets).
+- **One row per item**, in this order, as the terminal prints it: **item** (short id, the full id in its title); the
+  markers, next to it because they are why a row matters: **wrong** (production's decision wrong against the chosen
+  label set), **disagree** (two chosen arms decided differently), **split** (the candidates disagree among
+  themselves), **new** (a field value the governed dataset chosen in "new against" has never had, the field named),
+  **unlabelled** (no label in any set); production's decision (the recorded arm, when one is chosen) and each chosen
+  arm's decision, as the adapter's `decision(output)` reads it (else the output, shortened; the item view has it
+  whole); every label with its source chip; **picked** (for which datasets); and its **fields**, last.
 - **Controls**: the arms (chips, as above), "wrong against" (a label set), "new against" (a governed dataset), one
   checkbox per marker to keep only those rows, the field filters and breakdown above, and a sort by any column.
 - **A row opens** the item view (04) for that item.

@@ -44,10 +44,29 @@ def dataset(ds: str, texts: dict[str, str], gold: dict[str, str]) -> None:
     r = evh("dataset-create", "--dataset-id", ds, "--source-dir", f"src/{ds}")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", ds)
     check(f"setup: {ds} is created and materialized", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    g = proj / "data" / "references" / "gold" / ds
+    g = proj / "src" / f"{ds}_gold"
     g.mkdir(parents=True)
     for k, t in gold.items():
         (g / f"{k}.txt").write_text(t, encoding="utf-8")
+    r = evh("label-import", f"src/{ds}_gold", "--dataset-id", ds, "--set", "gold_answers", "--by", "owner")
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            ds,
+            "--labels",
+            "gold_answers",
+            "--tier",
+            "gold",
+            "--reason",
+            "The answers written for the test decide.",
+            "--by",
+            "owner",
+        )
+    )
+    check(f"setup: {ds}'s gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 
 
 def items_of(ds: str) -> list[dict]:

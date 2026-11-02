@@ -58,7 +58,8 @@ uv run fetch.py --n 200 --draw random --seed 20261014 --source dailymail \
 ```
 
 **Why the references are gold.** `highlights` are written by the journalists who filed
-the article. Human-authored, so `references/gold/`. Most evals never get this, which is
+the article: people's answers, the reason they were promoted at gold (the promotion, not the source,
+sets the tier). Most evals never get this, which is
 what makes the silver experiment below possible.
 
 ## Run it

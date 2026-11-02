@@ -1,7 +1,7 @@
-# The arm whose output becomes the SILVER reference for smoke_v1.
+# The arm whose outputs, as a model's labels promoted at silver, are smoke_v1's reference.
 #
-# Silver, not gold: gold is human-authored ground truth, silver is
-# model-generated. A run scored against this can rank arms against each other;
+# Promoted at silver, not gold: a model's answers are consistent, not correct.
+# A run scored against this can rank arms against each other;
 # it cannot claim any of them is correct. Every run records which tier it used,
 # so that distinction survives into the numbers.
 #

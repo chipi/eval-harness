@@ -1150,10 +1150,12 @@ def v16_references() -> None:
             if texts:
                 # ADR-0022: a reference is made only by promoting labels, with a record of where it came from.
                 unchecked += 1
+                tier, name = rel.split("/", 1)
                 bad.append(
-                    f"{rel}: no manifest, so nothing says where it came from: import the texts as labels and promote "
-                    f"them (evh label-import <folder> --dataset-id D --set S --by WHO, then evh reference-promote "
-                    f"--dataset-id D --labels S --tier T --reason …), or, for gold a script builds, "
+                    f"{rel}: no manifest, so nothing says where it came from. Make it a promoted reference where it "
+                    f"is: evh label-import data/references/{rel} --dataset-id {name} --set {name}_hand --by WHO, then "
+                    f"evh reference-promote --dataset-id {name} --labels {name}_hand --tier {tier} --reason … --by WHO "
+                    f"(the promotion adopts the folder: its texts are the labels'). For gold a script builds: "
                     f"evh reference-manifest --reference-id {rel} --source <how it is built>"
                 )
             continue

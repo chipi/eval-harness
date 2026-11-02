@@ -310,7 +310,7 @@ def chapters(H, f: dict) -> list:
             "nodes": "references remeasure",
             "kicker": "Ground truth",
             "title": "Silver is not gold.",
-            "short": "A model's answers rank; a person's answers judge.",
+            "short": "Silver ranks; gold judges. You choose which, when you promote.",
             "story": (
                 "<p>"
                 + H.q(
@@ -356,13 +356,16 @@ def chapters(H, f: dict) -> list:
                 "summarisation experiment still ranks by coverage.</p>"
             ),
             "habit": "Silver gets you started; gold tells you the truth. Write a small gold set "
-            "early, check silver — and any AI judge — against it, and read every item "
-            "where strong systems agree against the gold.",
+            "early, promote it on purpose with why, check silver — and any AI judge — against it, and "
+            "read every item where strong systems agree against the gold.",
             "tool": (
-                "evh rescore --reference-id gold/… · evh silver-calibrate · evh judge-score",
                 (
-                    "re-score old runs against new gold for $0, measure how far silver drifts, "
-                    "re-measure with judges you have validated"
+                    "evh label-sheet · evh label-import · evh reference-promote --tier gold · "
+                    "evh rescore --reference-id gold/… · evh silver-calibrate · evh judge-score"
+                ),
+                (
+                    "label the items, promote the labels you would sign, re-score old runs against the new "
+                    "gold for $0, measure how far silver drifts, re-measure with judges you have validated"
                 ),
             ),
             "yours": "A small set of answers written by someone who knows the domain is worth more "

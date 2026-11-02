@@ -299,6 +299,15 @@ def _label(reference: str) -> tuple[str | None, str | None]:
     return text, None
 
 
+def decision(output: str) -> str:
+    """The decision in one output, what the rows view shows for it (UXS-002): its disposition, not the probe trace
+    and reasons around it; a bare label (a recorded or labelled answer) as it is."""
+    try:
+        return str((json.loads(output) or {}).get("disposition") or output.strip())
+    except (ValueError, AttributeError):
+        return output.strip()
+
+
 def same(a: str, b: str) -> bool:
     """Two outputs are one decision when they reach the same disposition (RFC-023's agreement): the reasons a model
     gives differ from run to run, the decision is what is compared."""

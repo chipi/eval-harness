@@ -46,18 +46,40 @@ try:
     (gold / "a.txt").write_text("billing", encoding="utf-8")
     (gold / "b.txt").write_text("shipping", encoding="utf-8")
 
+    r0 = evh("reference-manifest", "--reference-id", "gold/toy_v1", "--source", "fetch.py")
+    check(
+        "reference-manifest without a reason, who promotes and whose labels: refused (ADR-0022: a promotion)",
+        r0.returncode != 0 and not (gold / "manifest.json").exists(),
+        r0.stdout + r0.stderr,
+    )
     r = evh(
-        "reference-manifest", "--reference-id", "gold/toy_v1", "--source", "fetch.py", "--not-redistributed"
+        "reference-manifest",
+        "--reference-id",
+        "gold/toy_v1",
+        "--source",
+        "fetch.py",
+        "--not-redistributed",
+        "--labelled-by",
+        "the dataset's authors",
+        "--reason",
+        "the dataset's own labels decide",
+        "--by",
+        "owner",
     )
     mf = json.loads((gold / "manifest.json").read_text()) if (gold / "manifest.json").is_file() else {}
+    pf = mf.get("promoted_from") or {}
     check(
-        "reference-manifest: the checksum of every item, how to rebuild it, not redistributed",
+        "reference-manifest: the checksum of every item, how to rebuild it, not redistributed, and its promotion",
         r.returncode == 0
         and mf.get("n_items") == 2
         and set(mf.get("items_sha256") or {}) == {"a", "b"}
         and mf.get("source") == "fetch.py"
-        and mf.get("redistributed") is False,
-        r.stdout + r.stderr,
+        and mf.get("redistributed") is False
+        and pf.get("labels") is None
+        and pf.get("source") == {"kind": "person", "by": "the dataset's authors", "via": "fetch.py"}
+        and mf.get("reason") == "the dataset's own labels decide"
+        and mf.get("promoted_by") == "owner",
+        r.stdout + r.stderr + str(mf),
     )
     line = v16()
     check("V16: texts that match their manifest pass", line.startswith("  ok") and "1 checked" in line, line)
@@ -103,6 +125,12 @@ try:
         "toy_v1",
         "--source",
         "adj.py",
+        "--labelled-by",
+        "one reader's adjudication",
+        "--reason",
+        "the adjudicated labels sit beside the dataset's own",
+        "--by",
+        "owner",
     )
     refs = HarnessAdapter(proj / "data").references()
     check(
@@ -126,6 +154,81 @@ try:
         and "silver/toy_v1: no manifest" in r.stdout
         and "reference-promote" in r.stdout,
         r.stdout[-600:],
+    )
+
+    # The hand-made folder made right where it is: its texts imported as a person's labels, then promoted; the
+    # promotion adopts the folder (its texts are the labels') and writes its manifest. A folder whose texts differ
+    # from the labels is never overwritten.
+    src = proj / "data" / "sources" / "toy"
+    src.mkdir(parents=True)
+    (src / "a.txt").write_text("I was charged twice.", encoding="utf-8")
+    (src / "b.txt").write_text("Where is my parcel?", encoding="utf-8")
+    r = evh("dataset-create", "--dataset-id", "toy_v1", "--source-dir", "data/sources/toy")
+    r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "toy_v1")
+    (silver / "b.txt").write_text("shipping\n", encoding="utf-8")
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "label-import",
+            "data/references/silver/toy_v1",
+            "--dataset-id",
+            "toy_v1",
+            "--set",
+            "hand",
+            "--by",
+            "me",
+        )
+    )
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            "toy_v1",
+            "--labels",
+            "hand",
+            "--tier",
+            "silver",
+            "--reason",
+            "the answers I wrote by hand",
+            "--by",
+            "me",
+        )
+    )
+    mf = json.loads((silver / "manifest.json").read_text()) if (silver / "manifest.json").is_file() else {}
+    check(
+        "a hand-made folder, imported and promoted where it is: adopted, its manifest written, validate passes",
+        r.returncode == 0
+        and (mf.get("promoted_from") or {}).get("labels") == "hand"
+        and mf.get("n_items") == 2
+        and "ok   V16" in evh("validate").stdout,
+        (r.stdout + r.stderr)[-500:] + str(mf)[:200],
+    )
+    other = proj / "data" / "references" / "gold" / "toy_v1"
+    other.mkdir(parents=True)
+    (other / "a.txt").write_text("refund", encoding="utf-8")
+    r = evh(
+        "reference-promote",
+        "--dataset-id",
+        "toy_v1",
+        "--labels",
+        "hand",
+        "--tier",
+        "gold",
+        "--reason",
+        "the answers I wrote by hand",
+        "--by",
+        "me",
+    )
+    check(
+        "a folder whose texts are not the labels' is never overwritten",
+        r.returncode != 0
+        and "never overwritten" in (r.stdout + r.stderr)
+        and (other / "a.txt").read_text() == "refund"
+        and not (other / "manifest.json").exists(),
+        (r.stdout + r.stderr)[-400:],
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

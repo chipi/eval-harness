@@ -261,7 +261,33 @@ def test_judge_panel(tmp: Path) -> None:
     )
     evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
     shutil.copy(proj / "tutorial/configs/tickets_lead1.yaml", proj / "data/configs/")
-    shutil.copytree(proj / "tutorial/gold", proj / "data/references/gold/tickets_v1")
+    evh_run(
+        "label-import",
+        "tutorial/gold",
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_gold",
+        "--by",
+        "owner",
+        cwd=proj,
+        env=env,
+    )
+    evh_run(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v1",
+        "--labels",
+        "owner_gold",
+        "--tier",
+        "gold",
+        "--reason",
+        "The kit's hand-written summaries decide.",
+        "--by",
+        "owner",
+        cwd=proj,
+        env=env,
+    )
 
     # Run an arm to judge
     evh_run("experiment-run", "--config", "data/configs/tickets_lead1.yaml", cwd=proj, env=env)

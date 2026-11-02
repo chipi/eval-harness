@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "reference manifest",
-  "description": "data/references/<tier>/<dataset_id>/manifest.json: what a reference is and the checksum of each item's text. Written by evh reference-create (a reference made by the harness) or evh reference-manifest (one built by a fetch script). Committed even when the text is not redistributed: validate's V16 checks the text present against it.",
+  "description": "data/references/<tier>/<dataset_id>/manifest.json: what a reference is, where it was promoted from and the checksum of each item's text. A reference is made only by promoting labels (ADR-0022): evh reference-promote writes it for a label set, evh reference-manifest for labels a script builds. Committed even when the text is not redistributed: validate's V16 checks the text present against it, and fails a reference with none.",
   "type": "object",
-  "required": ["dataset_id", "tier", "n_items", "items_sha256", "caveat"],
+  "required": ["dataset_id", "tier", "n_items", "items_sha256", "caveat", "promoted_from", "reason"],
   "additionalProperties": false,
   "properties": {
     "dataset_id": {"type": "string", "description": "The dataset it is a reference for: the directory's name, unless the dataset has a second reference of the tier under a name of its own (gold/ag_news_200_adj1 for ag_news_200)."},
@@ -14,20 +14,18 @@
       "description": "{item_id: sha256 of the item's reference text, as stored}.",
       "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
     },
-    "caveat": {"type": "string", "description": "What the tier is, to show beside any number scored against it."},
+    "caveat": {"type": "string", "description": "What the tier is and where the labels came from, to show beside any number scored against it."},
     "created_at": {"type": "string"},
-    "source": {"type": "string", "description": "How to rebuild the text, for a reference built outside the harness: the script that fetches it (examples/<example>/fetch.py)."},
+    "source": {"type": "string", "description": "How to rebuild the text when it is built outside the harness or not redistributed: the script that fetches it (examples/<example>/fetch.py), or the commands that rebuild a label set and promote it again."},
     "redistributed": {"type": "boolean", "description": "false: the text is not in the repository (its licence, or the project's choice); the manifest proves a rebuilt copy is the same."},
-    "authored_by": {"type": ["string", "null"], "description": "The config whose run or model wrote it (silver)."},
-    "authored_with": {"type": ["string", "null"], "description": "The adapter that wrote it: a reference written by other code than the arms use is a different measurement."},
-    "system_under_test": {"type": ["object", "string", "null"], "description": "The author's identity record, as a run writes it."},
-    "params": {"type": "object", "description": "The author's request options (credentials never)."},
-    "model": {"type": ["string", "null"]},
-    "cost_usd": {"type": ["number", "null"]},
-    "from_run": {"type": ["object", "null"], "description": "The run it was made from (reference-create --from-run)."},
-    "promoted_from": {"type": "object", "description": "The labels it was promoted from (evh reference-promote, RFC-023): the label set (null for a reference made before labels existed whose texts are fetched elsewhere), the set's dataset and its source (person, model or rule).", "required": ["dataset_id", "source"], "properties": {"labels": {"type": ["string", "null"]}, "dataset_id": {"type": "string"}, "source": {"type": "object", "required": ["kind"], "properties": {"kind": {"enum": ["person", "model", "rule"]}}}}},
+    "promoted_from": {"type": "object", "description": "The labels it was promoted from: the label set (null for labels a script fetches, not held as a set here), the set's dataset and its source (person, model or rule; who, and how).", "required": ["dataset_id", "source"], "properties": {"labels": {"type": ["string", "null"]}, "dataset_id": {"type": "string"}, "source": {"type": "object", "required": ["kind"], "properties": {"kind": {"enum": ["person", "model", "rule"]}}}}},
     "reason": {"type": "string", "description": "Why these labels are the yardstick, given when they were promoted."},
-    "promoted_by": {"type": "string", "description": "Who promoted them."},
-    "from_outcomes": {"type": "object", "description": "Made from what production recorded afterwards (evh reference-from-outcomes, RFC-019): the capture, the mapping and its hash, and how many items each rule outcome took.", "required": ["capture", "mapping_sha256"], "properties": {"capture": {"type": "string"}, "capture_sha256": {"type": "string"}, "captured_at": {"type": ["string", "null"]}, "mapping": {"type": "string"}, "mapping_sha256": {"type": "string"}, "matched": {"type": "integer"}, "skipped": {"type": "integer"}, "unmatched": {"type": "integer"}, "no_record": {"type": "integer"}, "labels": {"type": "object"}}}
+    "promoted_by": {"type": ["string", "null"], "description": "Who promoted them (null for a reference promoted when 0.6.0 migrated the references made before labels existed)."},
+    "authored_by": {"type": ["string", "null"], "description": "For a model's labels: the config whose run wrote them. Hashed into every run's fingerprint: a run scored against a model's answers is graded against that model."},
+    "model": {"type": ["string", "null"], "description": "For a model's labels: the model that wrote them (hashed, as authored_by)."},
+    "from_run": {"type": ["object", "null"], "description": "For a model's labels: the run they came from (its id, config, fingerprint hash and build; hashed, as authored_by)."},
+    "authored_with": {"type": ["string", "null"], "description": "For a model's labels written before label sets existed: the adapter that wrote them (hashed, as authored_by)."},
+    "system_under_test": {"type": ["object", "string", "null"], "description": "For a model's labels written before label sets existed: the author's identity record, as its run wrote it (hashed, as authored_by)."},
+    "params": {"type": "object", "description": "For a model's labels written before label sets existed: the author's request options, credentials never (hashed, as authored_by)."}
   }
 }

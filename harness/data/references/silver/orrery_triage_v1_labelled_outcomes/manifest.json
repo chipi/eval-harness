@@ -2,21 +2,6 @@
   "caveat": "OUTCOME: what production recorded afterwards, as of 2026-10-30T12:23:39Z, mapped to a label by a recorded rule set; not a person's label. It can repeat what production decided (an item nothing happened to reads as right).",
   "created_at": "2026-10-30T12:24:06Z",
   "dataset_id": "orrery_triage_v1_labelled",
-  "from_outcomes": {
-    "capture": "orrery_2026_10",
-    "capture_sha256": "976182b7ce3fc931d84b084cc0915f63b13a5de6ff28f1c295445e923d1e0c17",
-    "captured_at": "2026-10-30T12:23:39Z",
-    "labels": {
-      "dismiss": 11,
-      "file": 23
-    },
-    "mapping": "../examples/triage-fleet/outcomes.yaml",
-    "mapping_sha256": "fbe4a0620d7aacd153f800de17e7d727d5a04907398a0bdbfc0cb0b791dbdfb8",
-    "matched": 34,
-    "no_record": 0,
-    "skipped": 20,
-    "unmatched": 11
-  },
   "items_sha256": {
     "orrery-ORRERY-4-2026-08-18T18:38:11Z": "8b911a8716b94442f9ca3dff20584048536e4c2f47b8b5bb9096cbd43c3432d5",
     "orrery-ORRERY-5-2026-08-18T18:38:10Z": "8b911a8716b94442f9ca3dff20584048536e4c2f47b8b5bb9096cbd43c3432d5",
@@ -67,6 +52,6 @@
     }
   },
   "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
-  "source": "evh reference-from-outcomes --capture orrery_2026_10 --map ../examples/triage-fleet/outcomes.yaml",
+  "source": "evh label-from-capture --dataset-id orrery_triage_v1_labelled --capture orrery_2026_10 --map ../examples/triage-fleet/outcomes.yaml --set silver_orrery_triage_v1_labelled_outcomes, then evh reference-promote --dataset-id orrery_triage_v1_labelled --labels silver_orrery_triage_v1_labelled_outcomes --tier silver --name orrery_triage_v1_labelled_outcomes",
   "tier": "silver"
 }

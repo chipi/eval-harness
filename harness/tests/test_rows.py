@@ -362,6 +362,40 @@ try:
     )
     r = evh("inspect", "--baseline", "x")
     check("inspect still needs --runs, --round or --rows", refused(r, "--runs"), out(r)[-200:])
+
+    # ── the decision, not the whole output (UXS-002): an adapter's decision(output) is what a row shows ───
+    (proj / "decide.py").write_text(
+        "from evaluation_harness.adapter import Result, score  # noqa: F401\n"
+        "def call_system(text, params):\n"
+        "    return Result(output='A because ' + text[:40], cost_usd=0.0)\n"
+        "def decision(output):\n"
+        "    return output.split()[0]\n"
+    )
+    (data / "configs" / "tickets_decider.yaml").write_text(
+        "config_id: tickets_decider_v1\ndataset_id: tickets_v1\nadapter: decide.py\nparams:\n  provider: echo\n"
+    )
+    r = evh(
+        "experiment-run",
+        "--config",
+        "data/configs/tickets_decider.yaml",
+        extra={"PYTHONPATH": str(HERE.parent)},
+    )
+    check("setup: an arm whose adapter has decision()", r.returncode == 0, out(r)[-300:])
+    r = evh("inspect", "--dataset-id", D, "--rows", "--runs", "tickets_decider_v1,tickets_lead1_v1", "--json")
+    blocks = json.loads(r.stdout)["result"]["blocks"] if r.returncode == 0 else []
+    table = next(
+        (b for b in blocks if "columns" in b and b["columns"][0] == "item"), {"rows": [], "columns": []}
+    )
+    first = {x["item"]: x for x in table["rows"]}.get("t01_login", {})
+    check(
+        "rows: an arm's column is its adapter's decision(output), the signals second; an arm without one shows "
+        "its output",
+        first.get("tickets_decider_v1") == "A"
+        and first.get("tickets_lead1_v1") == "A"
+        and table["columns"][:2] == ["item", "signals"]
+        and "disagree" not in str(first.get("signals")),
+        out(r)[-400:] + json.dumps(table.get("columns")),
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

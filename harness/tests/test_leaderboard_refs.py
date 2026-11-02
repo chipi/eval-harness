@@ -79,7 +79,34 @@ try:
         "experiment-run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "tickets_lead1_v1_silver"
     )
     check("setup: lead1 runs against silver", r.returncode == 0, (r.stdout + r.stderr)[-400:])
-    shutil.copytree(KIT / "gold", data / "references" / "gold" / "tickets_v1")
+    r = evh(
+        "label-import",
+        str(KIT / "gold"),
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_gold",
+        "--by",
+        "owner",
+    )
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "owner_gold",
+            "--tier",
+            "gold",
+            "--reason",
+            "The kit's hand-written summaries decide.",
+            "--by",
+            "owner",
+        )
+    )
+    check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     time.sleep(1.1)
     r = evh(
         "experiment-run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "tickets_lead1_v1_gold"

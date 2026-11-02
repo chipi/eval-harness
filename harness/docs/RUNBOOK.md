@@ -23,7 +23,7 @@ further. This page is the reference for each step.
 | a person's labels | `evh label-sheet --dataset-id … --out sheet.csv` · `evh label-import sheet.csv --dataset-id … --set … --by …` (or a folder of `<item_id>.txt`) |
 | the label sets | `evh labels [--dataset-id …]` |
 | a reference (labels you promote) | `evh reference-promote --dataset-id … --labels … --tier gold\|silver --reason "…" --by …` |
-| gold a script builds | `evh reference-manifest --reference-id gold/… --source …` |
+| gold a script builds, promoted | `evh reference-manifest --reference-id gold/… --source … --labelled-by … --reason "…" --by …` |
 | score against labels | `evh rescore --dataset-id … --labels …` · `evh experiment-run --config … --labels …` |
 | cost before spending | `evh experiment-run --config … --dry-run` |
 | measure (+ own noise) | `evh experiment-run --config … --repeat 3` |
@@ -244,7 +244,7 @@ evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "The best system we have ranks the rest until a person writes gold." --by <you>
 ```
 
-Promoted as **silver**: model-generated, therefore consistent rather than correct. Enough to rank
+Promoted as **silver**: a model's answers, consistent rather than correct, enough to rank
 arms against each other; not a claim about truth. `label-from-run` calls nothing, and the set names
 the run, config, fingerprint and build it came from. It refuses a run from a dirty tree or of an
 unknown build (as `run-promote` does), an unfinished or derived run, and an empty output or one that
@@ -275,13 +275,17 @@ answers, `yes` taking one), or write one `<item_id>.txt` per item in a folder, t
 it as a person's set and promote it with `--tier gold`. Gold always wins over silver for new runs. Runs made before the gold set existed are re-scored against it for $0:
 `evh rescore --dataset-id my_v1 --reference-id gold/my_v1 --out data/runs-gold`.
 
-Gold that a script builds (fetched from a public source, for example) gets a manifest: the
-checksum of every item's text and how to rebuild it, written by
-`evh reference-manifest --reference-id gold/my_v1 --source scripts/fetch.py`. Commit the
+Gold that a script builds (a dataset's own labels, fetched from where it is published) is promoted where the
+script puts it, its manifest recording the promotion as `reference-promote` does: whose labels they are, how they
+are built, why and who said so, and the checksum of every item's text:
+`evh reference-manifest --reference-id gold/my_v1 --source scripts/fetch.py --labelled-by "the dataset's authors"
+--reason "…" --by <you>` (`--kind model` or `rule` when they are not a person's). Commit the
 manifest even when the texts may not be redistributed (`--not-redistributed`): `evh validate`
 (V16) then checks any rebuilt copy against it, and the catalog lists the reference as fetched.
 `reference-promote` writes the manifest of the references it makes. Texts copied into
-`data/references/<tier>/<id>/` with no manifest fail `validate` (V16): nothing says where they came from.
+`data/references/<tier>/<id>/` with no manifest fail `validate` (V16): nothing says where they came from. Import
+them as labels where they are and promote them (`evh label-import data/references/<tier>/<id> …`, then
+`evh reference-promote`): the promotion adopts the folder, its texts being the labels'.
 
 Every later run is scored against these automatically and records which tier it
 used. Ten items is enough to rank four arms; keep the first pass cheap.
@@ -1079,11 +1083,13 @@ evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did pro
   id, read by the adapter's `recorded_output(record)` (else `--field`). It is scored, tested and compared
   like any arm; it costs nothing and its speed is not measured.
 - **Agreement**: two outputs are one decision when the adapter's `same(a, b)` says so (default: the same
-  text). `inspect --disagree` and `label-sheet --items disagree` keep the items where the arms differ.
-- **The rows view** shows each item's decisions, every label and the signals: **wrong** (the first run
-  against a label set), **disagree**, **split** (the candidates among themselves), **new** (a field value
-  the governed dataset never had), **unlabelled**. Each is a filter; the view ends with the `evh pick` and
-  `evh label-sheet` commands for its rows. The inspector shows the same (its "Explore its rows").
+  decision, by the adapter's `decision(output)`, else the same text). `inspect --disagree` and
+  `label-sheet --items disagree` keep the items where the arms differ.
+- **The rows view** shows each item's signals first, then each arm's decision (the adapter's
+  `decision(output)`, else its output, shortened), every label and the fields. The signals: **wrong** (the
+  first run against a label set), **disagree**, **split** (the candidates among themselves), **new** (a field
+  value the governed dataset never had), **unlabelled**. Each is a filter; the view ends with the `evh pick`
+  and `evh label-sheet` commands for its rows. The inspector shows the same (its "Explore its rows").
 - **Picks** wait in `data/picks.jsonl`, append-only: the latest line for an item wins; `pick --drop` takes
   one off. `dataset-extend` makes V2 of V1's items and the picks chosen, records `extended_from`, and the
   picks used leave the list; labels follow the items into V2. Nothing is promoted by it.

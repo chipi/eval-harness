@@ -2292,11 +2292,46 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
     if not src.is_dir():
         return
     runs, gold = base / "runs-selftest-refid", base / "references" / "gold" / "selftest_refid"
-    for d in (runs, gold):
+    labels = base / "labels" / "smoke_v1" / "selftest_refid"
+    for d in (runs, gold, labels):
         shutil.rmtree(d, ignore_errors=True)
     try:
         shutil.copytree(src, runs / src.name)
-        shutil.copytree(src / "outputs", gold)
+        # the run's outputs, as a person's labels promoted to gold (RFC-023: a reference is only promoted labels)
+        made = run(
+            "scripts/label_import.py",
+            str((src / "outputs").relative_to(HERE.parent)),
+            "--dataset-id",
+            "smoke_v1",
+            "--set",
+            "selftest_refid",
+            "--by",
+            "self-test",
+        )
+        made = (
+            made
+            if made.returncode
+            else run(
+                "scripts/reference_promote.py",
+                "--dataset-id",
+                "smoke_v1",
+                "--labels",
+                "selftest_refid",
+                "--tier",
+                "gold",
+                "--name",
+                "selftest_refid",
+                "--reason",
+                "the run's own outputs, so the score must become 1.0",
+                "--by",
+                "self-test",
+            )
+        )
+        check(
+            "rescore/reference-id: the new set, imported and promoted",
+            made.returncode == 0,
+            ((made.stderr or "") + (made.stdout or ""))[-200:],
+        )
         out = runs / "out"
         r = run(
             "scripts/rescore.py",
@@ -2342,7 +2377,7 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
         )
         check("rescore/reference-id: a missing set is refused", bad.returncode != 0)
     finally:
-        for d in (runs, gold):
+        for d in (runs, gold, labels):
             shutil.rmtree(d, ignore_errors=True)
 
 
@@ -2989,10 +3024,34 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
             made and all(m.get("primary_metric") == "overlap_f1" for m in made),
             [m.get("primary_metric") for m in made],
         )
-        gold = data / "references" / "gold" / "rs_v1"
-        gold.mkdir(parents=True)
+        answers = data.parent / "rs_gold"
+        answers.mkdir(parents=True)
         for i in ("t1", "t2", "t3"):
-            (gold / f"{i}.txt").write_text(f"Ticket {i}: cannot log in.\n")
+            (answers / f"{i}.txt").write_text(f"Ticket {i}: cannot log in.\n")
+        r = evh(
+            "label-import", str(answers), "--dataset-id", "rs_v1", "--set", "owner_gold", "--by", "self-test"
+        )
+        r = (
+            r
+            if r.returncode
+            else evh(
+                "reference-promote",
+                "--dataset-id",
+                "rs_v1",
+                "--labels",
+                "owner_gold",
+                "--tier",
+                "gold",
+                "--reason",
+                "The answers written for the test decide.",
+                "--by",
+                "self-test",
+            )
+        )
+        check(
+            "installed rescore: gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:]
+        )
+        gold = data / "references" / "gold" / "rs_v1"
         r = evh(
             "rescore",
             "--dataset-id",

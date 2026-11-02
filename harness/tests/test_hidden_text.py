@@ -99,10 +99,29 @@ try:
         )
         check(f"setup: {ds} created", r.returncode == 0, said(r)[-300:])
         evh("dataset-materialize", "--dataset-id", ds)
-        gold = data / "references" / "gold" / ds
-        shutil.copytree(KIT / "gold", gold)
-        for f in gold.glob("*.txt"):
+        answers = proj / f"{ds}_gold"
+        shutil.copytree(KIT / "gold", answers)
+        for f in answers.glob("*.txt"):
             f.write_text(f"{word} gold. " + f.read_text())
+        r = evh("label-import", f"{ds}_gold", "--dataset-id", ds, "--set", "owner_gold", "--by", "owner")
+        r = (
+            r
+            if r.returncode
+            else evh(
+                "reference-promote",
+                "--dataset-id",
+                ds,
+                "--labels",
+                "owner_gold",
+                "--tier",
+                "gold",
+                "--reason",
+                "The kit's hand-written summaries decide.",
+                "--by",
+                "owner",
+            )
+        )
+        check(f"setup: {ds}'s gold, imported and promoted", r.returncode == 0, said(r)[-300:])
         for c in ("tickets_lead1", "tickets_lead2"):
             cfg = data / "configs" / f"{c}_{k}.yaml"
             text = (KIT / "configs" / f"{c}.yaml").read_text()

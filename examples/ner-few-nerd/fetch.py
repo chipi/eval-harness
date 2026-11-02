@@ -65,7 +65,8 @@ WHY THIS DATASET
   gitignored.
 
 WHY THE REFERENCE IS GOLD
-  Few-NERD is expert-annotated, not model-generated. A reference file here holds a JSON
+  Few-NERD is expert-annotated, not model output: the reason it was promoted at gold. A reference file
+  here holds a JSON
   array of {text, type} objects rather than one word, because the answer to this task is
   a SET.
 """

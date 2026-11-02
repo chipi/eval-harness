@@ -212,8 +212,24 @@ try:
     silver = data3 / "references" / "silver" / "ds3"
     silver.mkdir(parents=True)
     (silver / "i00.txt").write_text("x")
+    # as reference-promote writes it for a model's labels (RFC-023)
     (silver / "manifest.json").write_text(
-        json.dumps({"authored_by": "arm_s", "from_run": {"run_id": "s_1"}, "model": "m-1", "tier": "silver"})
+        json.dumps(
+            {
+                "dataset_id": "ds3",
+                "tier": "silver",
+                "authored_by": "arm_s",
+                "from_run": {"run_id": "s_1", "config_id": "arm_s"},
+                "model": "m-1",
+                "promoted_from": {
+                    "labels": "arm_s_v1",
+                    "dataset_id": "ds3",
+                    "source": {"kind": "model", "run_id": "s_1", "config_id": "arm_s", "model": "m-1"},
+                },
+                "reason": "arm_s's answers rank the others.",
+                "promoted_by": "test",
+            }
+        )
     )
     out3 = tmp / ".build" / "catalog3"
     cb.build(HarnessAdapter(data3), out3)

@@ -19,6 +19,9 @@ TIER ?= silver
         overview activity datasets arms references metrics goals inspect round-open round-retire round-close rounds \
         dataset-create dataset-materialize dataset-profile dataset-items reference-manifest \
         mcp search self-test \
+        reference-promote arm-smoke model-onboard fingerprint-migrate score-preview importer-check capture \
+        dataset-split capture-scrub captures labels label-sheet label-import label-from-run label-from-capture pick \
+        picks dataset-extend deploy-sheet arm-from-capture dataset-from-capture models \
         holdout pair-test rank-stability \
         experiment-dry-run experiment-run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
@@ -176,11 +179,99 @@ dataset-profile:
 dataset-items:
 	$(PYTHON) scripts/dataset_items.py --dataset-id $(DATASET_ID) $(ARGS)
 
-# Author ground truth with a model you trust. SILVER by default (model-generated);
-# TIER=gold once a human has reviewed it.
-# The checksummed manifest of a reference a fetch script built.
+# Gold a fetch script builds, promoted where it is: its manifest, with whose labels they are and why.
 reference-manifest:
 	$(PYTHON) scripts/reference_manifest.py $(ARGS)
+
+# ── the commands added in 0.5.0 and 0.6.0, each with its own flags in ARGS ─────────────────────────────
+# promote a label set's labels to a reference, at a tier, with a reason
+reference-promote:
+	$(PYTHON) scripts/reference_promote.py $(ARGS)
+
+# smoke an arm on a few items before its full run: checks, projection, flags
+arm-smoke:
+	$(PYTHON) scripts/arm_smoke.py $(ARGS)
+
+# onboard a model once: probe a deployment, write what was found into its record
+model-onboard:
+	$(PYTHON) scripts/model_onboard.py $(ARGS)
+
+# migrate the committed runs' fingerprints to version 5, once (idempotent)
+fingerprint-migrate:
+	$(PYTHON) scripts/fingerprint_migrate.py $(ARGS)
+
+# what the scorer in this tree would move in a goal's decision; writes nothing
+score-preview:
+	$(PYTHON) scripts/score_preview.py $(ARGS)
+
+# check an importer: its records are well-formed, ids unique, two reads the same
+importer-check:
+	$(PYTHON) scripts/importer_check.py $(ARGS)
+
+# keep a production system's records as a capture (data/captures/)
+capture:
+	$(PYTHON) scripts/capture.py $(ARGS)
+
+# split a dataset into <id>_dev and <id>_heldout, stable across versions
+dataset-split:
+	$(PYTHON) scripts/dataset_split.py $(ARGS)
+
+# run the project's own scrubber over a capture's records, and record it
+capture-scrub:
+	$(PYTHON) scripts/capture_scrub.py $(ARGS)
+
+# every capture, or one: what was read, when, the datasets made from it
+captures:
+	$(PYTHON) scripts/view_captures.py $(ARGS)
+
+# every label set, or a dataset's: source, coverage, guideline, how often two agree
+labels:
+	$(PYTHON) scripts/view_labels.py $(ARGS)
+
+# a sheet of a dataset's items to label, with what production or an arm decided
+label-sheet:
+	$(PYTHON) scripts/label_sheet.py $(ARGS)
+
+# a filled label sheet as a person's label set
+label-import:
+	$(PYTHON) scripts/label_import.py $(ARGS)
+
+# a finished run's outputs as a model's label set (calls nothing)
+label-from-run:
+	$(PYTHON) scripts/label_from_run.py $(ARGS)
+
+# rules over a capture's recorded outcomes as a rule label set
+label-from-capture:
+	$(PYTHON) scripts/label_from_capture.py $(ARGS)
+
+# pick production items for the next version of governed datasets, or drop a pick
+pick:
+	$(PYTHON) scripts/pick.py $(ARGS)
+
+# the picks waiting: per target, where each came from, its labels, tags and note
+picks:
+	$(PYTHON) scripts/view_picks.py $(ARGS)
+
+# the next version of a dataset: its items and the picks you choose
+dataset-extend:
+	$(PYTHON) scripts/dataset_extend.py $(ARGS)
+
+# what production must match to run a promoted arm, and whether a capture says it did
+deploy-sheet:
+	$(PYTHON) scripts/deploy_sheet.py $(ARGS)
+
+# production's recorded decisions as an arm, scored like any (no call)
+arm-from-capture:
+	$(PYTHON) scripts/arm_from_capture.py $(ARGS)
+
+# make a dataset version from a capture: choose records, freeze their bodies as items
+dataset-from-capture:
+	$(PYTHON) scripts/dataset_from_capture.py $(ARGS)
+
+# every model record, or one: its deployments, onboarding, settings history and arms
+models:
+	$(PYTHON) scripts/view_models.py $(ARGS)
+
 
 # Does the installed harness work here? (in a checkout: the full test suite)
 self-test:

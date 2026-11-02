@@ -1,5 +1,5 @@
 # From what happened afterwards to a label (RFC-019 §5), over the fields importer.py computes.
-# First match wins; no match, no label. Shown beside the owner's verdicts, never deciding (ADR-0020).
+# First match wins; no match, no label. Shown beside the owner's verdicts, never deciding (a rule set, promoted at silver: ADR-0022).
 - {when: {test_signal: true}, skip: true}
 - {when: {is_config_followup: true}, skip: true}
 - {when: {issue_predates_decision: true}, skip: true}
