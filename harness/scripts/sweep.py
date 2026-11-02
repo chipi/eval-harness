@@ -67,7 +67,7 @@ def main() -> int:
     failed: list[str] = []
     for i, c in enumerate(configs, 1):
         print(f"── [{i}/{len(configs)}] {c.name} " + "─" * max(0, 50 - len(c.name)))
-        cmd = [py, str(CODE / "experiment_run.py"), "--config", str(c), "--repeat", str(args.repeat)]
+        cmd = [py, str(CODE / "run.py"), "--config", str(c), "--repeat", str(args.repeat)]
         if args.dry_run:
             cmd.append("--dry-run")
         r = subprocess.run(cmd, cwd=ROOT)

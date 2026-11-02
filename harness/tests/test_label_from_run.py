@@ -99,7 +99,7 @@ try:
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     for arm in ("lead1", "author"):
         shutil.copy(KIT / "configs" / f"tickets_{arm}.yaml", data / "configs")
-        r = evh("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml")
+        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
     author = next(p.name for p in (data / "runs").glob("tickets_author_v1_*"))
 

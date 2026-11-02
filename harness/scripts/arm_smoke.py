@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Smoke an arm before its full run (RFC-020): a few items, the way experiment-run would run them.
+"""Smoke an arm before its full run (RFC-020): a few items, the way evh run would run them.
 
     evh arm-smoke --config configs/<arm>.yaml [--items 3]
 
@@ -189,7 +189,7 @@ def main() -> int:
         "_route": route_of(named),
     }
 
-    from evaluation_harness.experiment_run import _reference_for  # noqa: PLC0415
+    from evaluation_harness.run import _reference_for  # noqa: PLC0415
 
     ref_dir, _tier = _reference_for(ds["dataset_id"])
     print(f"arm-smoke: {cfg['config_id']} on {ds['dataset_id']}, {args.items} item(s)")

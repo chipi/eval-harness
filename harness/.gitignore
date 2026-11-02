@@ -71,7 +71,7 @@ data/runs/*/outputs/.*.tmp
 # bytes, describing content that no longer exists -- a worse failure than withholding
 # the file. No MEASUREMENT run is affected; every number in the reports comes from the
 # n=200/280 runs, which are committed. Regenerate these with
-#   make experiment-run CONFIG=../examples/summarization-cnn-dailymail/configs/arm_<x>.yaml ARGS="--repeat 3"
+#   make run CONFIG=../examples/summarization-cnn-dailymail/configs/arm_<x>.yaml ARGS="--repeat 3"
 #
 # THE OUTPUTS LINE BELOW WAS MISSING AND IT MATTERED. These four patterns excluded the
 # dev runs' metrics and predictions, and then `!data/runs/*/outputs/**` above re-admitted
@@ -219,7 +219,7 @@ data/runs-rescored/*/*/*/*
 data/runs-rescored/*/*/*/outputs/_rows.jsonl
 
 # data/runs-labels-<dataset>-<set>/ — runs scored against a label set (RFC-023: `rescore --labels`,
-# `experiment-run --labels`, a recorded arm with `--labels`): arms of their own, never one more run of the config's
+# `evh run --labels`, a recorded arm with `--labels`): arms of their own, never one more run of the config's
 # arm on a reference. Kept as the other run folders are: the catalog reads only what git keeps.
 !data/runs-labels-*/
 data/runs-labels-*/*/*

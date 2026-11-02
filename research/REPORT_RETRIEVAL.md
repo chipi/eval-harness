@@ -507,7 +507,7 @@ cd harness
 make dataset-materialize DATASET_ID=scifact_200
 
 for f in ../examples/retrieval-scifact/configs/arm_*_n200.yaml; do
-  python scripts/experiment_run.py --config "$f"
+  python scripts/run.py --config "$f"
 done
 
 # The committed runs are scored with the current parser (recorded in each run's `derived`

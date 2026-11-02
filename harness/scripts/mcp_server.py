@@ -64,7 +64,7 @@ NOT_TOOLS = {
     "dataset-materialize": "writes",
     "dataset-profile": "writes",
     "reference-manifest": "writes",
-    "experiment-run": "runs a system and may spend",
+    "run": "runs a system and may spend",
     "arm-smoke": "runs a system on a few items, may spend, and writes the model record",
     "model-onboard": "calls a model and writes the model record",
     "fingerprint-migrate": "rewrites the committed runs' fingerprints",

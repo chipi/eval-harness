@@ -347,7 +347,7 @@ check(
     f"{seen} {sc}",
 )
 
-# A key written into a config is never shown, and is named so experiment-run can refuse it.
+# A key written into a config is never shown, and is named so evh run can refuse it.
 params = {"api_key": "sk-1", "api_key_env": "X", "max_tokens": 300, "authorization": "Bearer x", "model": "m"}
 check(
     "secret params: a literal key is named; max_tokens and the variable's name are not",

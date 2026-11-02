@@ -113,13 +113,13 @@ whatever you just downloaded, which destroys the check you just ran.
 ```bash
 PY=../examples/summarization-cnn-dailymail/.venv/bin/python
 for c in bart_m bart_s bart_l_xsum; do
-  $PY -u scripts/experiment_run.py \
+  $PY -u scripts/run.py \
      --config ../examples/summarization-cnn-dailymail/configs/arm_${c}_n200.yaml
 done
 ```
 
 Dry-run one first if you want the shape without the wait:
-`$PY scripts/experiment_run.py --config .../arm_bart_m_n200.yaml --dry-run`
+`$PY scripts/run.py --config .../arm_bart_m_n200.yaml --dry-run`
 
 **Commit before you run**, or every run records `harness.dirty: true` and cannot be
 reproduced from its own fingerprint. The runner warns when the tree is dirty; the warning
@@ -184,7 +184,7 @@ Three things are worth looking at before any ranking:
 Re-run `bart_l` there too:
 
 ```bash
-$PY scripts/experiment_run.py --config ../examples/summarization-cnn-dailymail/configs/arm_bart_l_n200.yaml
+$PY scripts/run.py --config ../examples/summarization-cnn-dailymail/configs/arm_bart_l_n200.yaml
 ```
 
 Its numbers are already known from the Intel Mac (`coverage` 0.346121, `grounding`

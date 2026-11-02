@@ -138,7 +138,7 @@ comment that says what it was.
 ### FR7: Production as an arm, and agreement (0.6.0)
 
 - **FR7.1**: `evh arm-from-capture --dataset-id D --capture C --as NAME [--like CONFIG] [--field F] [--labels SET]`
-  writes the arm's config (`provider: recorded`, the capture) and runs it with `experiment-run`: each item's output
+  writes the arm's config (`provider: recorded`, the capture) and runs it with `evh run`: each item's output
   is the capture's record of the same id, read by the adapter's `recorded_output(record)` (the deployed arm's
   adapter, from --like) or from the record's field `--field`; no system is called, the cost is 0, the capture's
   sha256 is in the run's settings; scored, tested and compared like any arm. Refused before anything is written

@@ -106,7 +106,7 @@ try:
     shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
     cfg = (KIT / "configs" / "tickets_lead2.yaml").read_text()
     (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\n")
-    r = evh("experiment-run", "--config", str(data / "configs" / "lead2.yaml"))
+    r = evh("run", "--config", str(data / "configs" / "lead2.yaml"))
     check("setup: one run", r.returncode == 0, r.stderr[-300:])
 
     # A PUBLIC SERVER'S inspect SEES ONLY PUBLIC FIELDS. It runs in its own process, where the

@@ -226,7 +226,7 @@ def main() -> int:
         print(
             "\n  --noise was not given, so nothing was judged against the arm's own\n"
             "  spread. Measure it first:  "
-            + how("evh experiment-run --config … --repeat 3", "make experiment-run CONFIG=... REPEAT=3")
+            + how("evh run --config … --repeat 3", "make run CONFIG=... REPEAT=3")
         )
     print(f"\n  {worth} metric(s) moved beyond the stated noise floor")
     return 0

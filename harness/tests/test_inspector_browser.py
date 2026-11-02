@@ -99,7 +99,7 @@ def project(tmp: Path) -> tuple:
         "owner",
     )
     for arm in ("lead1", "lead2", "author"):
-        evh("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml")
+        evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
     # A goal with an open round: the goal page then carries its suggestions, each with a copy button.
     shutil.copy(proj / "tutorial/goals/tickets_summary.yaml", proj / "data/goals/")
     evh(

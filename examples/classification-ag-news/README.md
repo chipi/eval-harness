@@ -114,8 +114,8 @@ cd ../../harness
 PY=../examples/classification-ag-news/.venv/bin/python
 CFG=../examples/classification-ag-news/configs
 
-$PY scripts/experiment_run.py --config $CFG/arm_deepseek_m_n200.yaml --dry-run
-$PY scripts/experiment_run.py --config $CFG/arm_deepseek_m_n200.yaml
+$PY scripts/run.py --config $CFG/arm_deepseek_m_n200.yaml --dry-run
+$PY scripts/run.py --config $CFG/arm_deepseek_m_n200.yaml
 
 $PY scripts/leaderboard.py --dataset-id ag_news_200
 $PY tools/classification_report.py --dataset-id ag_news_200

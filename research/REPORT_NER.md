@@ -671,7 +671,7 @@ cd harness
 make dataset-materialize DATASET_ID=few_nerd_280
 
 for f in ../examples/ner-few-nerd/configs/arm_*_n200.yaml; do
-  python scripts/experiment_run.py --config "$f"
+  python scripts/run.py --config "$f"
 done
 
 python tools/extraction_report.py --dataset-id few_nerd_280 --match fn_

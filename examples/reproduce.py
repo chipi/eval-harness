@@ -266,7 +266,7 @@ def run(exp: dict, level: str, only: str | None, extra: str | None = None) -> in
             env["EVAL_MAX_COST_USD"] = f"{max(0.05, 2 * arms[a]['cost']):.2f}"
         print(f"\n── {a} ({arms[a]['kind']})", flush=True)
         _run(
-            [str(venv), "scripts/experiment_run.py", "--config", str(_pinned(cfgs[cid], arms[a], out))],
+            [str(venv), "scripts/run.py", "--config", str(_pinned(cfgs[cid], arms[a], out))],
             cwd=HARNESS,
             env=env,
         )
@@ -330,7 +330,7 @@ def _run_new_arm(exp: dict, arms: dict, path: Path, venv: Path, out: Path) -> No
         env["EVAL_MAX_COST_USD"] = "1.00"
         print("  EVAL_MAX_COST_USD not set -- capping this arm at $1.00")
     print(f"\n── {cid[len(exp['prefix']) : -len(exp['suffix'])]} (yours)", flush=True)
-    _run([str(venv), "scripts/experiment_run.py", "--config", str(path)], cwd=HARNESS, env=env)
+    _run([str(venv), "scripts/run.py", "--config", str(path)], cwd=HARNESS, env=env)
 
 
 # ── compare ─────────────────────────────────────────────────────────────────────────────

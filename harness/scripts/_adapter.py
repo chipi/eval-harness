@@ -1,7 +1,7 @@
 """Adapters: finding one, loading it once, and what it declares.
 
 Every example's adapter file is `adapter.py`. Two registries used to name loaded adapters:
-`experiment_run` by file stem (`eval_adapter_adapter` for all of them) and `_common` by
+`run` by file stem (`eval_adapter_adapter` for all of them) and `_common` by
 stem plus path digest, and the metric-kind and primary-metric lookups read the first and
 fell back to `import adapter`, the BUNDLED adapter. A process that loaded a project's
 adapter through the second registry and then asked for its metric kinds got the bundled

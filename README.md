@@ -82,11 +82,11 @@ evh init
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
 # write adapter.py at the project root -> call_system() talks to YOUR system
-evh experiment-run --config data/configs/best_model.yaml           # the best system you have
+evh run --config data/configs/best_model.yaml           # the best system you have
 evh label-from-run --run <its run_id> --set best_v1                  # optional: its outputs as a model's labels
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "the best system we have ranks the rest" --by me           # ...promoted: the reference
-evh experiment-run --config data/configs/arm_a.yaml --repeat 3      # each arm, with its own noise
+evh run --config data/configs/arm_a.yaml --repeat 3      # each arm, with its own noise
 evh leaderboard --dataset-id my_v1                                  # the ranking, and whether it is real
 evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_      # is the winner separated?
 evh run-promote --run <run_id> --reason "what the tests showed"     # the choice, recorded with why

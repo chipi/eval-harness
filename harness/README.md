@@ -30,11 +30,11 @@ the best arm's run), compare, choose:
 ```bash
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
-evh experiment-run --config data/configs/best_model.yaml          # the arm that writes the reference
+evh run --config data/configs/best_model.yaml          # the arm that writes the reference
 evh label-from-run --run <its run_id> --set best_v1                 # optional: its outputs as a model's labels
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "the best system we have ranks the rest" --by me          # ...promoted to silver
-evh experiment-run --config data/configs/arm_a.yaml --repeat 3     # + the arm's own noise
+evh run --config data/configs/arm_a.yaml --repeat 3     # + the arm's own noise
 evh leaderboard --dataset-id my_v1                                 # the ranking, and whether it is real
 evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_     # is the winner separated?
 evh run-promote --run <run_id> --reason "what the tests showed"    # the choice, with why
@@ -85,7 +85,7 @@ data/sources/        your raw inputs — IMMUTABLE, never edited in place
 data/datasets/       the dataset_id — the thing that makes two numbers comparable
       ↓  evh dataset-materialize     rebuild run inputs, re-verify every hash
 data/materialized/   derived, regenerable, disposable
-      ↓  evh experiment-run          → scores + cost + speed + build provenance
+      ↓  evh run          → scores + cost + speed + build provenance
 data/runs/
       ↓  evh label-from-run / label-import / label-from-capture   labels: a model's, a person's, a rule's
 data/labels/
@@ -368,7 +368,7 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/dataset_create.py` | freeze a selection into a `dataset_id` |
 | `scripts/materialize.py` | build run inputs, verifying every hash |
 | `scripts/reference_create.py` | ground truth: a run's outputs as silver (`--from-run`), or authored with a config |
-| `scripts/experiment_run.py` | run an arm → scores, cost, speed, provenance |
+| `scripts/run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
 | `scripts/validate_tree.py` | nineteen integrity checks (V1–V19) |

@@ -94,7 +94,7 @@ def main() -> int:
     print(f"{out}: the recorded arm {args.config_id}, from the capture {args.capture}")
     from evaluation_harness.cli import main as evh  # noqa: PLC0415
 
-    return evh(["experiment-run", "--config", str(out), *(["--labels", args.labels] if args.labels else [])])
+    return evh(["run", "--config", str(out), *(["--labels", args.labels] if args.labels else [])])
 
 
 if __name__ == "__main__":

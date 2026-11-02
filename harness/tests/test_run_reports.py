@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""What experiment-run reports about a pass, with a project's own adapter.
+"""What evh run reports about a pass, with a project's own adapter.
 
     python tests/test_run_reports.py
 
@@ -75,7 +75,7 @@ try:
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset is frozen and materialized", r.returncode == 0, r.stderr[-300:])
 
-    r = evh("experiment-run", "--config", config("plain"))
+    r = evh("run", "--config", config("plain"))
     run = next((proj / "data" / "runs").glob("plain_v1_*"), None)
     rows = [json.loads(x) for x in (run / "predictions.jsonl").read_text().splitlines()] if run else []
     rows_plain = rows
@@ -85,7 +85,7 @@ try:
         (r.stderr[-300:], rows[:1]),
     )
 
-    r = evh("experiment-run", "--config", config("capped", max_tokens=12))
+    r = evh("run", "--config", config("capped", max_tokens=12))
     check(
         "outputs that stop at max_tokens are named in a warning",
         r.returncode == 0 and "stopped at max_tokens=12" in r.stdout,
@@ -93,7 +93,7 @@ try:
     )
 
     flag = proj / "provider-back"
-    r = evh("experiment-run", "--config", config("flaky", fail_on="export", flag=str(flag)))
+    r = evh("run", "--config", config("flaky", fail_on="export", flag=str(flag)))
     stopped = next((proj / "data" / "runs").glob("flaky_v1_*"), None)
     out = r.stdout + r.stderr
     check(
@@ -106,13 +106,11 @@ try:
         out[-600:],
     )
     flag.write_text("1")
-    r = evh(
-        "experiment-run", "--config", "data/configs/flaky.yaml", "--resume", stopped.name if stopped else ""
-    )
+    r = evh("run", "--config", "data/configs/flaky.yaml", "--resume", stopped.name if stopped else "")
     check("resuming it finishes the run", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 
     back = proj / "server-back"
-    r = evh("experiment-run", "--config", config("refused", refuse_on="export", flag=str(back)))
+    r = evh("run", "--config", config("refused", refuse_on="export", flag=str(back)))
     gone = next((proj / "data" / "runs").glob("refused_v1_*"), None)
     out = r.stdout + r.stderr
     check(
@@ -128,7 +126,7 @@ try:
         out[-600:],
     )
     back.write_text("1")
-    r = evh("experiment-run", "--config", "data/configs/refused.yaml", "--resume", gone.name if gone else "")
+    r = evh("run", "--config", "data/configs/refused.yaml", "--resume", gone.name if gone else "")
     # A resume is a run of its own (config id and the time it started), unless both start in the same second:
     # read the newest run of the arm, never assume it is the stopped one's directory.
     resumed = sorted((proj / "data" / "runs").glob("refused_v1_*"))[-1]
@@ -143,7 +141,7 @@ try:
         and len(answers) == len(rows_plain),
         ((r.stdout + r.stderr)[-300:], len(rows), len(rows_plain)),
     )
-    r = evh("experiment-run", "--config", config("broken", model_error=True))
+    r = evh("run", "--config", config("broken", model_error=True))
     run = next((proj / "data" / "runs").glob("broken_v1_*"), None)
     check(
         "a model's own failed calls (not an unreachable server) are a measurement: the run completes",

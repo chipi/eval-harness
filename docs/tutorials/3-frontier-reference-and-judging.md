@@ -35,8 +35,8 @@ goal: brief_summary
 
 <!-- guide-check: skip -->
 ```bash
-evh experiment-run --config data/configs/briefs_opus.yaml --dry-run     # price it first
-evh experiment-run --config data/configs/briefs_opus.yaml
+evh run --config data/configs/briefs_opus.yaml --dry-run     # price it first
+evh run --config data/configs/briefs_opus.yaml
 evh label-from-run --run <the briefs_opus_v1 run_id> --set opus_v1
 evh reference-promote --dataset-id briefs_v1 --labels opus_v1 --tier silver \
     --reason "The frontier arm's summaries rank the cheaper arms." --by me
@@ -50,7 +50,7 @@ What `label-from-run` refuses, and why:
   reference, every arm would have been graded against fragments. That is why the config above
   has room to finish. If yours stops at the cap, raise `max_tokens` in a new `config_id`
   (`briefs_opus_v2`) and run again (`--allow-cut-off` is for outputs that end at the cap by
-  design). `experiment-run`
+  design). `evh run`
   already warns, naming the items, when outputs stop at the cap.
 - **A run from a dirty tree, or of an unknown build** (as `run-promote` does), an unfinished run,
   or a derived one (rescored or judged).

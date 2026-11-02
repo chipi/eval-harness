@@ -125,7 +125,7 @@ makes some. `PRIMARY_METRIC` is the metric that decides; `METRIC_DESCRIPTIONS` s
 catalog's metrics page. The harness times every call (`latency_ms`); `warmup(params)`, optional,
 runs once before the first item so a model's loading time is not counted as the first call's.
 The two `transformers.logging` lines keep the library's progress bar and warnings (flan-t5's
-"The tied weights mapping ... will NOT tie them") out of what `experiment-run` prints; they are
+"The tied weights mapping ... will NOT tie them") out of what `evh run` prints; they are
 your system's output, not the harness's. The first download from the Hugging Face Hub draws
 bars of its own: `HF_HUB_DISABLE_PROGRESS_BARS=1` in `.env` turns those off. (Checked with
 transformers 5.20.2 and huggingface_hub 2.3.0.)
@@ -174,9 +174,9 @@ with its answer. Every field and its allowed values (`output_contract`, `dataset
 <!-- guide-check: skip -->
 ```bash
 git add -A && git commit -qm "briefs_v1: dataset, gold, adapter, arms"
-evh experiment-run --config data/configs/briefs_lead1.yaml
-evh experiment-run --config data/configs/briefs_t5_small.yaml --repeat 3
-evh experiment-run --config data/configs/briefs_flan_t5_small.yaml --repeat 3
+evh run --config data/configs/briefs_lead1.yaml
+evh run --config data/configs/briefs_t5_small.yaml --repeat 3
+evh run --config data/configs/briefs_flan_t5_small.yaml --repeat 3
 evh leaderboard --dataset-id briefs_v1
 ```
 

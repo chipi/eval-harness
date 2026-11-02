@@ -82,7 +82,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
 
 ### FR2: Runs
 
-- **FR2.1**: `evh experiment-run --config …` runs one arm over the dataset and writes a run
+- **FR2.1**: `evh run --config …` runs one arm over the dataset and writes a run
   directory: per-item outputs, per-item scores, the run record (`metrics.json`) and a
   fingerprint (RFC-001).
 - **FR2.2**: `--dry-run` prints the calls, tokens and estimated cost and calls nothing.

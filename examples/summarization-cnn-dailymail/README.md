@@ -68,7 +68,7 @@ what makes the silver experiment below possible.
 cp ../../harness/.env.example ../../harness/.env      # OPENROUTER_API_KEY, or your proxy
 cd ../../harness
 
-make experiment-dry-run CONFIG=../summarization-cnn-dailymail/configs/arm_qwen_s_n200.yaml
+make run-dry-run CONFIG=../summarization-cnn-dailymail/configs/arm_qwen_s_n200.yaml
 make sweep CONFIGS="../summarization-cnn-dailymail/configs/arm_*_n200.yaml" REPEAT=1
 make leaderboard DATASET_ID=cnn_dailymail_200
 ```

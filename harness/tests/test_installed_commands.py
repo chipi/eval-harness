@@ -135,7 +135,7 @@ def main() -> int:
         for f in sorted((proj / "tutorial/gold").glob("*.txt"))[:2]:
             shutil.copy(f, fetched / f.name)
         for arm in ("lead1", "lead2", "lead2_noisy", "author"):
-            setup("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml", "--repeat", "2")
+            setup("run", "--config", f"data/configs/tickets_{arm}.yaml", "--repeat", "2")
         shutil.copytree(proj / "tutorial/scorers", proj / "data/scorers")
         run_id = sorted(p.name for p in (proj / "data/runs").glob("tickets_lead2_v1_*"))[0]
         base_id = sorted(p.name for p in (proj / "data/runs").glob("tickets_lead1_v1_*"))[0]
@@ -182,7 +182,7 @@ def main() -> int:
                 ],
                 "ok:2 item(s), gold, promoted from person",
             ),
-            ("experiment-run", ["--config", "data/configs/tickets_lead1.yaml", "--dry-run"], "ok"),
+            ("run", ["--config", "data/configs/tickets_lead1.yaml", "--dry-run"], "ok"),
             (
                 "sweep",
                 [

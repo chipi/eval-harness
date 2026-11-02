@@ -589,7 +589,7 @@ tile opens it grouped by config (`arms.html?group=config`).
   rescore, judge, reparse).
 - `04 config`: the config id, the adapter, and the params; credentials are never shown
   (`api_key_env` is left out; a param named like a key, token, secret or password reads
-  "(hidden)", and `experiment-run` refuses such a config in the first place).
+  "(hidden)", and `evh run` refuses such a config in the first place).
 - `05 conditions`: what its runs were measured under (machine, libraries, harness, scorer, item
   and reference checksums).
 - `06 the same config, scored other ways`: the same config on the same dataset scored against

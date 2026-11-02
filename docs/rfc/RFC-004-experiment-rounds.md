@@ -53,7 +53,7 @@ diff shows what a command changed:
 
 `arms_of(round)` = the configs whose runs on the round's dataset record `round: rN` and the
 round's goal, plus `carried`, minus `retired`. A config's `round:` needs `goal:` beside it.
-`experiment-run` checks it before spending anything (`config_round`): the round must exist, be
+`evh run` checks it before spending anything (`config_round`): the round must exist, be
 open and be on the config's dataset.
 
 ### Commands

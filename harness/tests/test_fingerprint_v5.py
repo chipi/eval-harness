@@ -767,7 +767,7 @@ check(
 )
 check("conditions: the fingerprint version is a condition", c_in["fingerprint.version"] == "5")
 
-# ── end to end: experiment-run with a record and a deployment, and V18 ───────
+# ── end to end: evh run with a record and a deployment, and V18 ───────
 import shutil  # noqa: E402
 
 KIT = HERE / "tutorial"
@@ -833,12 +833,12 @@ try:
             }
         )
     )
-    r = evh("experiment-run", "--config", config("named", "model_record: gem\ndeployment: dgx\n"))
+    r = evh("run", "--config", config("named", "model_record: gem\ndeployment: dgx\n"))
     run_dir = next((proj / "data" / "runs").glob("named_v1_*"), None)
     m = json.loads((run_dir / "metrics.json").read_text()) if run_dir else {}
     d = (m.get("fingerprint") or {}).get("deployment") or {}
     check(
-        "experiment-run: a config naming a record and a deployment fingerprints the deployment from the record",
+        "evh run: a config naming a record and a deployment fingerprints the deployment from the record",
         r.returncode == 0
         and d.get("source") == "record"
         and d.get("id") == "gem@dgx"
@@ -847,16 +847,14 @@ try:
         (r.stdout + r.stderr)[-500:],
     )
     check(
-        "experiment-run: metrics.json records model_record and deployment_id",
+        "evh run: metrics.json records model_record and deployment_id",
         m.get("model_record") == "gem" and m.get("deployment_id") == "dgx",
         {k: m.get(k) for k in ("model_record", "deployment_id")},
     )
     rec = yaml.safe_load((proj / "data" / "models" / "gem.yaml").read_text())
-    r = evh(
-        "experiment-run", "--config", config("rep0", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2"
-    )
+    r = evh("run", "--config", config("rep0", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2")
     check(
-        "experiment-run --repeat: no note while the deployment's own onboarding has not found it deterministic",
+        "evh run --repeat: no note while the deployment's own onboarding has not found it deterministic",
         r.returncode == 0 and "expect its" not in r.stdout,
         r.stdout[-300:],
     )
@@ -866,19 +864,17 @@ try:
         "report": {"deterministic": True},
     }
     (proj / "data" / "models" / "gem.yaml").write_text(yaml.safe_dump(rec))
-    r = evh(
-        "experiment-run", "--config", config("rep", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2"
-    )
+    r = evh("run", "--config", config("rep", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2")
     check(
-        "experiment-run --repeat: a model onboarded as deterministic, at temperature 0, is said to give identical passes",
+        "evh run --repeat: a model onboarded as deterministic, at temperature 0, is said to give identical passes",
         r.returncode == 0 and "expect its 2 passes to be identical" in r.stdout and "on dgx" in r.stdout,
         r.stdout[-400:],
     )
-    r = evh("experiment-run", "--config", config("plain", ""))
+    r = evh("run", "--config", config("plain", ""))
     run_dir = next((proj / "data" / "runs").glob("plain_v1_*"), None)
     m2 = json.loads((run_dir / "metrics.json").read_text()) if run_dir else {}
     check(
-        "experiment-run: a config naming neither is the params source and records no deployment_id",
+        "evh run: a config naming neither is the params source and records no deployment_id",
         r.returncode == 0
         and (m2["fingerprint"]["deployment"]["source"] == "params")
         and "deployment_id" not in m2,
@@ -899,9 +895,9 @@ try:
         and "SMOKE PASS" in ((dep.get("onboarding") or {}).get("report") or {}).get("smoke", ""),
         (r.stdout + r.stderr)[-600:],
     )
-    r = evh("experiment-run", "--config", config("typo", "model_record: gem\ndeployment: x3\n"))
+    r = evh("run", "--config", config("typo", "model_record: gem\ndeployment: x3\n"))
     check(
-        "experiment-run: a deployment the record lacks is refused before anything runs",
+        "evh run: a deployment the record lacks is refused before anything runs",
         r.returncode != 0 and "no such deployment" in r.stdout + r.stderr,
         (r.stdout + r.stderr)[-300:],
     )

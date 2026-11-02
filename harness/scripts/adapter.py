@@ -94,7 +94,7 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
 
 # RETRIES LIVE IN THE CORE, NOT HERE.
 #
-# `experiment_run` wraps every `call_system` in its own retry loop (EVAL_MAX_RETRIES), for
+# `run` wraps every `call_system` in its own retry loop (EVAL_MAX_RETRIES), for
 # every adapter. Do not add a second loop in an adapter: the two multiply, and a failing item
 # on a paid provider is then attempted many times over. To make more errors retryable, declare
 # `TRANSIENT_MARKERS` (substrings of the error message); the core honours them.
@@ -186,7 +186,7 @@ def _hosted(text: str, params: dict[str, Any]) -> Result:
         tokens_out=c.tokens_out,
         cost_usd=c.cost_usd,
         extra={**({"reasoning_tokens": float(c.reasoning_tokens)} if c.reasoning_tokens is not None else {})},
-        # "length" means the output stopped at max_tokens; experiment-run warns about it. The bill,
+        # "length" means the output stopped at max_tokens; evh run warns about it. The bill,
         # when the provider sent one, is kept where cost-report and rescore read it.
         meta={
             **({"finish_reason": c.finish_reason} if c.finish_reason else {}),

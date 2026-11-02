@@ -124,7 +124,7 @@ reference digest, and rewriting them would move every run scored against them.
 
 - `_fingerprint.build_fingerprint` returns v5; `compare_runs`, `run-compare` and the inspector's conditions check
   read the four sub-hashes and name the part that moved ("deployment differs: dgx vs mac").
-- `experiment-run` resolves the arm's record and deployment (RFC-020's `resolve`), passes the deployment to the
+- `evh run` resolves the arm's record and deployment (RFC-020's `resolve`), passes the deployment to the
   fingerprint, and records `deployment_id`.
 - `evh arm-smoke` flags a hosted call served by another upstream than the route pins.
 - The catalog's arm page shows the deployment beside the conditions; the Models page shows each deployment's own

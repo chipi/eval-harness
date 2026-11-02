@@ -82,7 +82,7 @@ try:
 
     cfg = (KIT / "configs" / "tickets_lead2.yaml").read_text()
     (data / "configs" / "bad.yaml").write_text(cfg + "goal: no_such_goal\n")
-    r = evh("experiment-run", "--config", str(data / "configs" / "bad.yaml"))
+    r = evh("run", "--config", str(data / "configs" / "bad.yaml"))
     check(
         "run: a config naming an unknown goal is refused before it runs",
         r.returncode != 0 and "no_such_goal" in (r.stdout + r.stderr) and not (data / "runs").exists(),
@@ -92,7 +92,7 @@ try:
     (data / "configs" / "keyed.yaml").write_text(
         cfg.replace("params:\n", "params:\n  api_key: sk-LITERAL-0001\n", 1)
     )
-    r = evh("experiment-run", "--config", str(data / "configs" / "keyed.yaml"))
+    r = evh("run", "--config", str(data / "configs" / "keyed.yaml"))
     check(
         "run: a config with a key written into its params is refused before it runs, and says how instead",
         r.returncode != 0 and "api_key_env" in (r.stdout + r.stderr) and not (data / "runs").exists(),
@@ -101,7 +101,7 @@ try:
     (data / "configs" / "keyed.yaml").unlink()
 
     (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\nformat: paragraph\n")
-    r = evh("experiment-run", "--config", str(data / "configs" / "lead2.yaml"))
+    r = evh("run", "--config", str(data / "configs" / "lead2.yaml"))
     runs = sorted((data / "runs").glob("*/metrics.json"))
     m = json.loads(runs[0].read_text()) if runs else {}
     check(

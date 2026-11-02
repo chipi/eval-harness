@@ -80,7 +80,7 @@ try:
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     for arm in ("lead1", "lead2"):
         shutil.copy(KIT / "configs" / f"tickets_{arm}.yaml", data / "configs")
-        evh("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml")
+        evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
 
     r = evh("rounds", "--goal", "tickets_summary")
     check(
@@ -103,7 +103,7 @@ try:
 
     cfg = (KIT / "configs" / "tickets_author.yaml").read_text()
     (data / "configs" / "author.yaml").write_text(cfg + "goal: tickets_summary\nround: r1\n")
-    r = evh("experiment-run", "--config", "data/configs/author.yaml")
+    r = evh("run", "--config", "data/configs/author.yaml")
     run = next((data / "runs").glob("tickets_author_v1_*"), None)
     check(
         "a config naming the round runs in it, and the run records the round",
@@ -267,7 +267,7 @@ try:
         and json.loads(base.read_text())["reason"].startswith("three sentences lead"),
         out(r)[-300:],
     )
-    r = evh("experiment-run", "--config", "data/configs/author.yaml", "--dry-run")
+    r = evh("run", "--config", "data/configs/author.yaml", "--dry-run")
     check("a closed round refuses new runs", r.returncode != 0 and "is closed" in out(r), out(r)[-300:])
 
     r = evh(

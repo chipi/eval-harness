@@ -112,19 +112,19 @@ the two differed by 0.67× to 3.76× per arm.
 <!-- guide-check: skip -->
 ```bash
 git add -A && git commit -qm "briefs: the hosted arm"
-evh experiment-run --config data/configs/briefs_mistral_small.yaml --dry-run    # calls nothing
-evh experiment-run --config data/configs/briefs_mistral_small.yaml --repeat 3
+evh run --config data/configs/briefs_mistral_small.yaml --dry-run    # calls nothing
+evh run --config data/configs/briefs_mistral_small.yaml --repeat 3
 evh leaderboard --dataset-id briefs_v1
 evh cost-report
 ```
 
 The dry run prints the calls, the estimated cost and the cap. `--repeat 3` measures the arm's own
 noise: a hosted model at temperature 0 is often not deterministic, and a difference smaller than
-its spread is not a difference. If outputs stop at `max_tokens`, `experiment-run` warns and names
+its spread is not a difference. If outputs stop at `max_tokens`, `evh run` warns and names
 the items: they are scored as if complete, so raise `max_tokens` in a new `config_id`.
 
 The leaderboard now shows each arm's quality, `total_cost_usd` and `latency_ms`, and its
-**frontier**: the arms no other arm beats on quality, cost and speed together. `experiment-run`
+**frontier**: the arms no other arm beats on quality, cost and speed together. `evh run`
 prints what the command spent over every repeat (`spent $0.001063 (price table x tokens, or the
 provider's bill where it sends one)`), and the repeat spread names cost and speed as what they
 are (`cost, not a quality metric`), not as determinism. Each item that was billed keeps the
@@ -143,7 +143,7 @@ exact command to continue it:
 
 <!-- guide-check: skip -->
 ```bash
-evh experiment-run --config data/configs/briefs_mistral_small.yaml --resume <run_id>
+evh run --config data/configs/briefs_mistral_small.yaml --resume <run_id>
 ```
 
 A resumed pass calls the model only for the items that are missing. Or delete the run directory;

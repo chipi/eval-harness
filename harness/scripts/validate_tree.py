@@ -487,7 +487,7 @@ def v7_committed_runs_are_readable() -> None:
     check(
         "V7 every committed run has metrics.json",
         not bad,
-        f"{len(bad)} run(s) stopped before they finished (outputs, no metrics.json): resume each with experiment-run --resume <run_id>, or delete it",
+        f"{len(bad)} run(s) stopped before they finished (outputs, no metrics.json): resume each with evh run --resume <run_id>, or delete it",
     )
 
 

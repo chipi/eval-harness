@@ -128,7 +128,7 @@ try:
             cfg.write_text(
                 text.replace("tickets_v1", ds).replace(f"config_id: {c}_v1", f"config_id: {c}_{k}_v1")
             )
-            r = evh("experiment-run", "--config", str(cfg))
+            r = evh("run", "--config", str(cfg))
             check(f"setup: {c} runs on {ds}", r.returncode == 0, said(r)[-300:])
     git("init", "-q")
     git("add", "-A")

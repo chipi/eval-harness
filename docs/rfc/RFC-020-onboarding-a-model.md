@@ -105,7 +105,7 @@ records `model_record` and `deployment_id`, and its fingerprint's deployment par
 
 ### 4. `evh arm-smoke --config <arm> [--items 3]`
 
-Task-specific, once per arm before its first full run: runs the arm's first items the way `experiment-run`
+Task-specific, once per arm before its first full run: runs the arm's first items the way `evh run`
 would and writes no run. Every arm gets the general checks, from what every run already produces (the `Result`):
 
 | check | flags when |
@@ -171,7 +171,7 @@ whose settings differ from its record's: an arm overriding a record is allowed, 
 
 ### 7. Repeats
 
-`experiment-run --repeat` on an arm whose record found its model deterministic on that machine says the passes
+`evh run --repeat` on an arm whose record found its model deterministic on that machine says the passes
 will be identical there, and points at other machines or builds for spread.
 
 ## Not in scope

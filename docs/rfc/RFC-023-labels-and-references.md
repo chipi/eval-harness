@@ -11,7 +11,7 @@
   [RFC-022](RFC-022-scoring-that-evolves.md) (re-scoring)
 - **Related ADRs**: [ADR-0020](../adr/ADR-0020-second-references-are-silver.md) (superseded when this is accepted)
 - **Code**: `reference_create.py`, `reference_from_outcomes.py` (replaced); new label, pick, extend, recorded-arm and
-  deploy-sheet commands; `rescore.py`, `experiment_run.py` (scoring against labels); `catalog_views.py` (the
+  deploy-sheet commands; `rescore.py`, `run.py` (scoring against labels); `catalog_views.py` (the
   inspector's rows); `catalog_build.py`, `catalog_serve.py` (the views; the pages never write); `_common.py`,
   `_models.py`, `catalog_serve.py`, `mcp_server.py` (several projects at once)
 
@@ -101,7 +101,7 @@ The harness cannot do steps 6 and after:
 
 ### Scoring against labels
 
-- `evh rescore --labels D/S` (and `experiment-run --labels D/S`) scores against a label set without promoting it.
+- `evh rescore --labels D/S` (and `evh run --labels D/S`) scores against a label set without promoting it.
   The run records `scored_against: {labels: D/S, source}` in place of a reference, and every view names it by its
   source: "against your labels of 2026-11-15", "against model M's labels".
 - As built (step 4, 2026-11-01): the run records `reference_id: labels/<dataset>/<set>` and `reference_tier:
@@ -123,7 +123,7 @@ The harness cannot do steps 6 and after:
   record's `fleet_disposition`, as the decision JSON the scorer reads). No model is called; it is a derived run
   (RFC-002, `derived.kind: recorded`) naming the capture, scored and compared like any arm.
 - As built (step 5, 2026-11-01): the recorded arm is an ordinary config, `provider: recorded` with its `capture`
-  (and `field` when the adapter has no `recorded_output`), run by `experiment-run`: the pass reads each output from
+  (and `field` when the adapter has no `recorded_output`), run by `evh run`: the pass reads each output from
   the capture instead of calling the system, with no warm-up and no cost, and the capture's sha256 goes into the
   run's settings, so its fingerprint names exactly what was read. `arm-from-capture` writes that config (the adapter
   and goal from `--like`, the deployed arm's) and runs it. The triage capture keeps no gate reason, so for
@@ -246,7 +246,7 @@ The docs and the site say so and imply neither.
 | `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | rules over recorded outcomes become a `rule` set | `reference-from-outcomes` |
 | `evh labels [--dataset-id D]` | every set: source, coverage, guideline, how two sets agree (the same answers, sharing one, Cohen's kappa, Krippendorff's alpha; `--confusion`), what was promoted | — |
 | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | the chosen labels become a reference, recording the set, its source and the reason | `reference-create` |
-| `evh rescore --labels D/S`, `evh experiment-run --labels D/S` | score against a label set, without promoting it | — |
+| `evh rescore --labels D/S`, `evh run --labels D/S` | score against a label set, without promoting it | — |
 | `evh arm-from-capture --dataset-id D --capture C --as NAME` | production's recorded decisions as an arm | — |
 | `evh inspect --dataset-id D --rows …` | every row with its signals (wrong, disagree, split, new, unlabelled), to explore, label and pick from | — |
 | `evh pick`, `evh picks`, `evh pick … --drop` | mark an item for datasets (targets, tags, note), list what waits, drop one | — |

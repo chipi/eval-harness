@@ -19,7 +19,7 @@ like a model without needing one. A real model, local or hosted, is the
  sources/ ──dataset-create──▶ datasets/<id>.json ──dataset-materialize──▶ materialized/<id>/
  (your items)                 (item list + sha256)                         (hash-checked copy)
 
- configs/<arm>.yaml ──experiment-run──▶ runs/<run_id>/   outputs, per-item scores, cost, speed,
+ configs/<arm>.yaml ──evh run──▶ runs/<run_id>/   outputs, per-item scores, cost, speed,
  (one system = one arm)                                   fingerprint: data + code + model + build
                                               │
     label-from-run ──▶ labels/<id>/<set>/ ──reference-promote──▶ references/silver/<id>/   (optional)
@@ -146,7 +146,7 @@ git add -A && git commit -qm "tickets_v1: dataset, arms, goal"
 A dry run calls nothing and shows what a pass will cost:
 
 ```bash
-evh experiment-run --config data/configs/tickets_author.yaml --dry-run
+evh run --config data/configs/tickets_author.yaml --dry-run
 ```
 ```text
   config      tickets_author_v1  (echo)
@@ -163,7 +163,7 @@ would not run in production, and let its outputs be the answers the others are m
 against:
 
 ```bash
-evh experiment-run --config data/configs/tickets_author.yaml
+evh run --config data/configs/tickets_author.yaml
 ```
 ```text
   no references for tickets_v1 — quality cannot be scored.
@@ -208,7 +208,7 @@ what silver got wrong).
 
 ```bash
 for a in lead1 lead2 lead2_noisy; do
-  evh experiment-run --config data/configs/tickets_$a.yaml --repeat 3
+  evh run --config data/configs/tickets_$a.yaml --repeat 3
 done
 ```
 <!-- guide-check: varies treat -->

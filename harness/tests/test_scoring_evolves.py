@@ -116,7 +116,7 @@ try:
         (data / "configs" / f"{arm}.yaml").write_text(
             cfg + "adapter: ../../bonus_adapter.py\ngoal: tickets_summary\n"
         )
-        r = evh("experiment-run", "--config", f"data/configs/{arm}.yaml")
+        r = evh("run", "--config", f"data/configs/{arm}.yaml")
     check("setup: two arms run through the project adapter", r.returncode == 0, out(r)[-400:])
 
     # r1 from the runs made before any round was opened
@@ -277,7 +277,7 @@ try:
         (data / "configs" / f"{arm}.yaml").write_text(
             cfg + "adapter: ../../bonus_adapter.py\ngoal: tickets_summary\nround: r2\n"
         )
-        evh("experiment-run", "--config", f"data/configs/{arm}.yaml")
+        evh("run", "--config", f"data/configs/{arm}.yaml")
     v = evh("validate")
     check(
         "validate: a round whose arms one adapter scored in two versions is noted, with what to run",

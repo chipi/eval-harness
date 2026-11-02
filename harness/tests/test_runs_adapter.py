@@ -192,7 +192,7 @@ from evaluation_harness import _fingerprint  # noqa: E402
 hashed = {p.name for p in _fingerprint.measuring_modules()}
 check(
     "code hash: the run-writing commands and the adapter are in it",
-    {"experiment_run.py", "rescore.py", "judge_score.py", "adapter.py", "_common.py"} <= hashed,
+    {"run.py", "rescore.py", "judge_score.py", "adapter.py", "_common.py"} <= hashed,
     sorted(hashed),
 )
 check(

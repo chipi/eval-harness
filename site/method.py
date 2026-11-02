@@ -129,7 +129,7 @@ NODES = [
             "latency, and a fingerprint of data, code, model and build. Repeat it to measure noise."
         ),
         "data/runs/&lt;run_id&gt;/",
-        "evh experiment-run --config … --repeat 3",
+        "evh run --config … --repeat 3",
         (GUIDE, "6-run-the-other-arms-three-times-each"),
     ),
     (
@@ -396,7 +396,7 @@ def chapters(H, f: dict) -> list:
             "Tune on a small dev slice, report on the rest, and measure how many items a "
             "ranking needs instead of assuming it.",
             "tool": (
-                "evh experiment-run --repeat 3 · evh holdout · evh rank-stability",
+                "evh run --repeat 3 · evh holdout · evh rank-stability",
                 H.q("treat deltas below 0.029372 as noise", GUIDE),
             ),
             "yours": "Before you believe the new prompt is a few points better, run the old one twice.",
@@ -759,7 +759,7 @@ STEPS = [
     (
         "Run the best arm; its outputs become the reference",
         "Your best system answers first; its answers become a model's labels, promoted to silver, and the others are measured by how close they come.",
-        "evh experiment-run --config data/configs/tickets_author.yaml\nevh label-from-run --run … --set author_v1\nevh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason … --by me",
+        "evh run --config data/configs/tickets_author.yaml\nevh label-from-run --run … --set author_v1\nevh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason … --by me",
         "data/references/silver/tickets_v1: 6 of 6 item(s), silver, promoted from tickets_v1/author_v1",
         GUIDE,
         "5-make-its-outputs-the-reference-optional",
@@ -767,7 +767,7 @@ STEPS = [
     (
         "Run the others — three times",
         "The spread is how far an arm disagrees with itself.",
-        "evh experiment-run --config data/configs/tickets_lead2_noisy.yaml --repeat 3",
+        "evh run --config data/configs/tickets_lead2_noisy.yaml --repeat 3",
         "overlap_f1     spread=0.029372   treat deltas below 0.029372 as noise",
         GUIDE,
         "6-run-the-other-arms-three-times-each",

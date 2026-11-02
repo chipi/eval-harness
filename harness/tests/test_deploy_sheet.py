@@ -80,7 +80,7 @@ try:
             f"config_id: {cid}\ndataset_id: tickets_v1\nadapter: {adapter}\n"
             "params:\n  provider: echo\n  model: m-one-alias\n  usd_per_mtok_in: 1.0\n"
         )
-        r = evh("experiment-run", "--config", f"data/configs/{cid}.yaml", "--run-id", cid.replace("_v1", ""))
+        r = evh("run", "--config", f"data/configs/{cid}.yaml", "--run-id", cid.replace("_v1", ""))
         check(f"setup: {cid} runs", r.returncode == 0, out(r)[-300:])
     r = evh("run-promote", "--run", "own", "--reason", "The arm we deploy, for the deploy sheet's test.")
     check("setup: own_v1 is promoted", r.returncode == 0, out(r)[-300:])

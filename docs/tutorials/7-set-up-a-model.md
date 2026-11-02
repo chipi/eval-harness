@@ -137,7 +137,7 @@ A passed smoke makes the model **vetted**: onboarded, and shown to work on a tas
 ## 5 · Run it, and see it
 
 ```bash
-evh experiment-run --config data/configs/tickets_llama.yaml
+evh run --config data/configs/tickets_llama.yaml
 evh models
 ```
 ```text

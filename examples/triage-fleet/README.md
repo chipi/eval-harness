@@ -27,7 +27,7 @@ The goal and the item fields are the project's own, one copy each: `harness/data
 ```bash
 python examples/triage-fleet/fetch.py                       # needs the revision public, or a token
 evh dataset-materialize --dataset-id orrery_triage_v1_labelled
-TRIAGE_FLEET_SRC=/path/to/signal-fleet evh experiment-run --config examples/triage-fleet/configs/<arm>.yaml
+TRIAGE_FLEET_SRC=/path/to/signal-fleet evh run --config examples/triage-fleet/configs/<arm>.yaml
 evh goals --goal triage_orrery
 ```
 

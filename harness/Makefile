@@ -23,7 +23,7 @@ TIER ?= silver
         dataset-split capture-scrub captures labels label-sheet label-import label-from-run label-from-capture pick \
         picks dataset-extend deploy-sheet arm-from-capture dataset-from-capture models \
         holdout pair-test rank-stability \
-        experiment-dry-run experiment-run sweep \
+        run-dry-run run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
         validate judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check coverage ci test smoke-fixture cost-report clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
@@ -47,8 +47,8 @@ help:
 	@echo "     evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver --reason \"…\" --by <you>"
 	@echo ""
 	@echo "MEASURE  (dry-run first — it costs nothing and tells you what the sweep will)"
-	@echo "  make experiment-dry-run CONFIG=data/configs/arm_a.yaml"
-	@echo "  make experiment-run     CONFIG=data/configs/arm_a.yaml REPEAT=3"
+	@echo "  make run-dry-run CONFIG=data/configs/arm_a.yaml"
+	@echo "  make run     CONFIG=data/configs/arm_a.yaml REPEAT=3"
 	@echo "  make sweep CONFIGS=\"data/configs/arm_*.yaml\" REPEAT=2"
 	@echo ""
 	@echo "TRUST THE REFERENCE?  (free — no API calls)"
@@ -159,7 +159,7 @@ demo:
 	  echo "  make dataset-create DATASET_ID=my_v1"; exit 1; }
 	@$(MAKE) --no-print-directory dataset-create DATASET_ID=$(DATASET_ID) ARGS="--force"
 	@$(MAKE) --no-print-directory dataset-materialize DATASET_ID=$(DATASET_ID)
-	@$(MAKE) --no-print-directory experiment-run CONFIG=$(CONFIG) REPEAT=3
+	@$(MAKE) --no-print-directory run CONFIG=$(CONFIG) REPEAT=3
 	@$(MAKE) --no-print-directory validate
 	@echo ""
 	@echo "Now: make runs-list, then make leaderboard DATASET_ID=$(DATASET_ID)"
@@ -278,11 +278,11 @@ self-test:
 	$(PYTHON) scripts/self_check.py $(ARGS)
 
 # ── experiments ─────────────────────────────────────────────────────────────
-experiment-dry-run:
-	$(PYTHON) scripts/experiment_run.py --config $(CONFIG) --repeat $(REPEAT) --dry-run
+run-dry-run:
+	$(PYTHON) scripts/run.py --config $(CONFIG) --repeat $(REPEAT) --dry-run
 
-experiment-run:
-	$(PYTHON) scripts/experiment_run.py --config $(CONFIG) --repeat $(REPEAT) $(ARGS)
+run:
+	$(PYTHON) scripts/run.py --config $(CONFIG) --repeat $(REPEAT) $(ARGS)
 
 # CONFIGS is a glob: make sweep CONFIGS="data/configs/arm_*.yaml"
 sweep:

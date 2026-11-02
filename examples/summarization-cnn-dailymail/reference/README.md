@@ -27,6 +27,6 @@ Two concrete reasons, and the second is a correctness one:
 
 To use one as a reference author: run it as an arm, take its outputs as a model's labels, and promote them:
 
-    evh experiment-run --config examples/summarization-cnn-dailymail/reference/arm_anthropic_opus.yaml
+    evh run --config examples/summarization-cnn-dailymail/reference/arm_anthropic_opus.yaml
     evh label-from-run --run <that run> --set opus_silver --not-redistributed
     evh reference-promote --dataset-id <id> --labels opus_silver --tier silver --reason "…" --by <you>

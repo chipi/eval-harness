@@ -144,7 +144,7 @@ try:
     for arm, by_item in decided.items():
         cfg = data / "configs" / f"tickets_{arm}.yaml"
         cfg.write_text((KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n")
-        r = evh("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml")
+        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
         run = next(p for p in (data / "runs").glob(f"tickets_{arm}_v1_*"))
         for item, text in by_item.items():
@@ -308,7 +308,7 @@ try:
         "config_id: jsonish_v1\ndataset_id: tickets_v1\nadapter: jsonish.py\nparams:\n  provider: echo\n"
     )
     r = evh(
-        "experiment-run",
+        "run",
         "--config",
         "data/configs/jsonish.yaml",
         "--run-id",
@@ -388,7 +388,7 @@ try:
         "config_id: tickets_decider_v1\ndataset_id: tickets_v1\nadapter: decide.py\nparams:\n  provider: echo\n"
     )
     r = evh(
-        "experiment-run",
+        "run",
         "--config",
         "data/configs/tickets_decider.yaml",
         extra={"PYTHONPATH": str(HERE.parent)},

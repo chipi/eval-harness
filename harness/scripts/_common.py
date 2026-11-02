@@ -108,7 +108,7 @@ def load_dotenv(path: Path | None = None) -> int:
 
     Loaded when a harness command starts (below), so keys are never exported by hand and
     never pasted into a command that lands in shell history. An already-exported variable
-    WINS — so `ANTHROPIC_API_KEY=... make experiment-run` overrides the file for one call
+    WINS — so `ANTHROPIC_API_KEY=... make run` overrides the file for one call
     without editing it.
 
     Create `.env` in the project with the keys your providers read (`evh env-check` lists
@@ -702,7 +702,7 @@ DESCRIPTIVE_KEYS = ("output_words", "output_chars", "lines", "chars", "n_items",
 
 #: Per-item columns a run records that are bookkeeping, not a measurement: judge_score marks
 #: whether each judge shares the judged arm's model family (`self_family_<judge>`), and
-#: experiment-run whether an item was replayed by --resume (`resumed`, whose mean is the share
+#: evh run whether an item was replayed by --resume (`resumed`, whose mean is the share
 #: replayed). They stay in the record; no table, menu or spread lists them as metrics.
 BOOKKEEPING_PREFIXES = ("self_family_", "resumed")
 

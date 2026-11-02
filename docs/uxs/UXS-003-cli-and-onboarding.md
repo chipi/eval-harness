@@ -49,9 +49,9 @@ on every change, comparing each quoted output. Its order is the order a newcomer
 | 1 | freeze a dataset | `evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets` |
 | 2 | materialize | `evh dataset-materialize --dataset-id tickets_v1` |
 | 3 | describe the arms, name the goal, commit | copy configs, `goal: tickets_summary` |
-| 4 | run the best arm first (a dry run prices it) | `evh experiment-run --config data/configs/tickets_author.yaml [--dry-run]` |
+| 4 | run the best arm first (a dry run prices it) | `evh run --config data/configs/tickets_author.yaml [--dry-run]` |
 | 5 | optional: make its outputs the reference (its outputs become a model's labels, which you promote) | `evh label-from-run --run <run_id> --set author_v1`, then `evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "…" --by <you>` |
-| 6 | run the other arms, three times each | `evh experiment-run --config … --repeat 3` |
+| 6 | run the other arms, three times each | `evh run --config … --repeat 3` |
 | 7 | compare | `evh leaderboard`, `evh pair-test`, `evh family-test` |
 | 8 | choose: promote a baseline, then validate | `evh run-promote --run … --reason "…"`, `evh runs-list --baselines`, `evh validate` |
 
@@ -113,7 +113,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | (no page action) labelling: a sheet to fill, then its import (0.6.0) | `evh label-sheet --dataset-id D --out sheet.csv [--items …] [--item ID …]`, `evh label-import sheet.csv --dataset-id D --set S --by NAME` | |
 | (no page action) a run's outputs, or outcome rules, as labels (0.6.0) | `evh label-from-run --run R --set S`, `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | |
 | a reference's "promoted from" (0.6.0) | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |
-| scored against a label set (0.6.0) | `evh rescore --labels D/S`, `evh experiment-run --labels D/S` | |
+| scored against a label set (0.6.0) | `evh rescore --labels D/S`, `evh run --labels D/S` | |
 | a recorded arm's badge (0.6.0) | `evh arm-from-capture --dataset-id D --capture C --as NAME` | |
 | the inspector's rows view; its selection's commands (0.6.0) | `evh inspect --dataset-id D --rows …`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
 | a dataset page's picks waiting; its selection's command (0.6.0) | `evh picks [--for V] [--tag k=v]`, `evh pick --dataset-id D --item ITEM --drop`; `evh dataset-extend V1 --dataset-id V2 --picks`, `evh dataset-extend V1 --dataset-id V2 --pick ITEM` | |

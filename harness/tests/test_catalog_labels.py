@@ -63,7 +63,7 @@ try:
     for arm in ("lead1", "author"):
         cfg = data / "configs" / f"tickets_{arm}.yaml"
         cfg.write_text((KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n")
-        r = evh("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml")
+        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
     author = next(p.name for p in (data / "runs").glob("tickets_author_v1_*"))
     r = evh("label-from-run", "--run", author, "--set", "author_v1")
@@ -90,9 +90,7 @@ try:
         "owner",
     )
     check("setup: the person's set promoted to gold", r.returncode == 0, out(r)[-300:])
-    r = evh(
-        "experiment-run", "--config", "data/configs/tickets_lead1.yaml", "--labels", "tickets_v1/author_v1"
-    )
+    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--labels", "tickets_v1/author_v1")
     check("setup: an arm scored against the model's label set", r.returncode == 0, out(r)[-300:])
     rows = [
         {

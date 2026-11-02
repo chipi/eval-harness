@@ -1,12 +1,12 @@
 """The run record (metrics.json): one constructor for a measured run, one for a derived one.
 
-Four writers built the record by hand: experiment-run and import-run field by field, rescore
+Four writers built the record by hand: evh run and import-run field by field, rescore
 and judge-score by copying the source run and patching it, each with its own provenance
 fields (`rescored_*`, `judged_*`, and the scifact example's `reparsed_*`). A derived run kept
 its source's `created_at`, so "made after the goal policy's cut-over" was read off the wrong
 date. Now:
 
-    run_record(...)          a measured run: experiment-run, import-run
+    run_record(...)          a measured run: evh run, import-run
     derived_record(...)      a run computed from another run's stored outputs: rescore,
                              judge-score, the scifact reparse. It records
                              derived = {kind, from, at, with} and its own created_at, and
@@ -36,7 +36,7 @@ DERIVED_KINDS = ("rescore", "judge", "reparse")
 def aggregate_scores(rows: list[dict[str, Any]], digits: int = 10) -> dict[str, float]:
     """A run's `scores` from its per-item rows: each metric's mean over the rows that carry
     it, and totals, not means, for what is billed (`total_cost_usd`, `total_tokens_in`,
-    `total_tokens_out`). Keys starting with `_` are not metrics. experiment-run rounds means
+    `total_tokens_out`). Keys starting with `_` are not metrics. evh run rounds means
     to 6 digits, as its runs always have; the derived records to 10."""
     keys = sorted({k for r in rows for k in r if k != "item_id" and not k.startswith("_")})
     scores = {k: round(statistics.fmean(float(r[k]) for r in rows if k in r), digits) for k in keys}

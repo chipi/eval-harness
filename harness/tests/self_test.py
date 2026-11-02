@@ -168,7 +168,7 @@ def test_cli_help_works() -> None:
     for script in (
         "dataset_create",
         "materialize",
-        "experiment_run",
+        "run",
         "compare_runs",
         "promote_baseline",
         "validate_tree",
@@ -263,7 +263,7 @@ def test_no_absolute_home_path_in_committed_data() -> None:
     # directory whose contents can never be committed by definition. A test that fails on
     # files outside its own subject teaches people to ignore it.
     #
-    # This is not a narrowing to make a failure go away: the cause -- experiment_run.py
+    # This is not a narrowing to make a failure go away: the cause -- run.py
     # writing an absolute adapter path into every metrics.json -- is fixed at source in
     # `_portable_id`. This check still catches the real case, including someone choosing
     # to track `data/runs/` (the private eval repo does exactly that).
@@ -938,7 +938,7 @@ def test_resume_scores_and_persists() -> None:
     runs = HERE.parent / "data" / "runs-selftest-resume"
     shutil.rmtree(runs, ignore_errors=True)
     env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
-    r = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", env=env)
+    r = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", env=env)
     if r.returncode != 0:
         print("  --   resume: skipped (demo arm did not run)")
         shutil.rmtree(runs, ignore_errors=True)
@@ -968,7 +968,7 @@ def test_resume_scores_and_persists() -> None:
     # Simulate a crash: drop all but one output, as if the pass died at item 2.
     for f in outs[1:]:
         f.unlink()
-    r2 = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", "--resume", src, env=env)
+    r2 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", "--resume", src, env=env)
     check("resume: the resumed pass exits 0", r2.returncode == 0, (r2.stderr or "")[-160:])
     newest = max((p for p in runs.iterdir() if p.is_dir()), key=lambda p: p.stat().st_mtime)
     rows = [ln for ln in (newest / "predictions.jsonl").read_text().splitlines() if ln.strip()]
@@ -1041,9 +1041,7 @@ def test_resume_scores_and_persists() -> None:
         "rows must be appended during the pass, not written at the end",
     )
 
-    r3 = run(
-        "scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", "--resume", "crashed", env=env
-    )
+    r3 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", "--resume", "crashed", env=env)
     check(
         "resume: an outputs-only crashed run resumes",
         r3.returncode == 0,
@@ -1105,9 +1103,7 @@ def test_resume_scores_and_persists() -> None:
         "config_id: fx_extra_v1\ndataset_id: smoke_v1\nadapter: fx_adapter.py\nparams:\n  provider: fixture\n"
     )
     cfg_fx = str((fx / "arm_fx.yaml").relative_to(HERE.parent))
-    rf = run(
-        "scripts/experiment_run.py", "--config", cfg_fx, "--run-id", "fx_src", env={**env, "FX_PASS": "1"}
-    )
+    rf = run("scripts/run.py", "--config", cfg_fx, "--run-id", "fx_src", env={**env, "FX_PASS": "1"})
     if rf.returncode != 0:
         check(
             "resume: the extra-carrying fixture arm runs",
@@ -1121,7 +1117,7 @@ def test_resume_scores_and_persists() -> None:
         (runs / "fx_src" / "metrics.json").unlink(missing_ok=True)
         (runs / "fx_src" / "predictions.jsonl").unlink(missing_ok=True)
         rr = run(
-            "scripts/experiment_run.py",
+            "scripts/run.py",
             "--config",
             cfg_fx,
             "--run-id",
@@ -1172,7 +1168,7 @@ def test_resume_scores_and_persists() -> None:
     # RESUMING FROM ANOTHER ARM MUST BE REFUSED. `--resume` took a run id and read its
     # outputs; nothing compared the arms, so one mistyped id replayed a different
     # model's answers and recorded them under this one, with a valid fingerprint.
-    other = run("scripts/experiment_run.py", "--config", "data/configs/arm_a.yaml", "--resume", src, env=env)
+    other = run("scripts/run.py", "--config", "data/configs/arm_a.yaml", "--resume", src, env=env)
     msg = (other.stderr or "") + (other.stdout or "")
     check(
         "resume: another arm's outputs are refused",
@@ -1187,9 +1183,7 @@ def test_resume_scores_and_persists() -> None:
     shutil.rmtree(anon, ignore_errors=True)
     (anon / "outputs").mkdir(parents=True)
     (anon / "outputs" / "item_01.txt").write_text("from who knows where")
-    r4 = run(
-        "scripts/experiment_run.py", "--config", "data/configs/arm_a.yaml", "--resume", "anonymous", env=env
-    )
+    r4 = run("scripts/run.py", "--config", "data/configs/arm_a.yaml", "--resume", "anonymous", env=env)
     m4 = (r4.stderr or "") + (r4.stdout or "")
     check(
         "resume: an unidentifiable source is refused, not warned about",
@@ -1364,7 +1358,7 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
     """`source_path` lives in the dataset. rescore was reading it off the prediction row.
 
     No prediction row has ever carried one -- 0 of 20,001 across every committed run.
-    `dataset_create.py` writes it into the DATASET, and experiment_run, materialize,
+    `dataset_create.py` writes it into the DATASET, and run, materialize,
     reference_promote and validate_tree all read it from there. rescore was the single
     place looking in the wrong object, so its fallback to `<item_id>.txt` fired every
     time and, on a dataset whose files are named anything else, the source text arrived
@@ -1504,7 +1498,7 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
     # assertions with nothing measured and FAILED on the control. A test that is green
     # on the author's laptop and red in a fresh clone is the exact shape of bug this
     # review found elsewhere, so it must skip honestly instead.
-    r2 = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", env=env)
+    r2 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", env=env)
     out2 = (r2.stdout or "") + (r2.stderr or "")
     if r2.returncode != 0 and "is not materialized" in out2:
         print("  --   cost cap: skipped (smoke_v1 is not materialized in this checkout)")
@@ -1523,7 +1517,7 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
     r = run(
-        "scripts/experiment_run.py",
+        "scripts/run.py",
         "--config",
         "data/configs/arm_b.yaml",
         env={**env, "EVAL_MAX_COST_USD": "0"},
@@ -3031,7 +3025,7 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         steps = [
             evh("dataset-create", "--dataset-id", "rs_v1", "--source-dir", str(data / "sources" / "rs_v1")),
             evh("dataset-materialize", "--dataset-id", "rs_v1"),
-            evh("experiment-run", "--config", str(data / "configs" / "arm_echo4.yaml"), "--run-id", "author"),
+            evh("run", "--config", str(data / "configs" / "arm_echo4.yaml"), "--run-id", "author"),
         ]
         # silver first, so the runs are scored against it and rescore moves them to gold: arm_echo4's outputs as
         # a model's labels, promoted (RFC-023)
@@ -3050,7 +3044,7 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
                 "--by",
                 "self-test",
             ),
-            *(evh("experiment-run", "--config", str(c)) for c in sorted((data / "configs").glob("*.yaml"))),
+            *(evh("run", "--config", str(c)) for c in sorted((data / "configs").glob("*.yaml"))),
         ]
         check(
             "installed rescore: a run made with the bundled adapter",

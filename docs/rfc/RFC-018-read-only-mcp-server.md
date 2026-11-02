@@ -46,7 +46,7 @@ consequence stay commands a person runs, until 0.7.0 brings the declarations, th
   stdio server on the SDK's low-level `Server` (`on_list_tools`, `on_call_tool`; `mcp.server.stdio.stdio_server`).
   Server name `evaluation-harness`, its version the harness's.
 - **The tools** are a fixed list in `mcp_server.READ_TOOLS`: the thirteen commands above. Not tools: anything that
-  writes, spends or never returns (`experiment-run`, `sweep`, `judge`, `rescore`, `run-promote`, the round commands,
+  writes, spends or never returns (`evh run`, `sweep`, `judge`, `rescore`, `run-promote`, the round commands,
   `dataset-create`, `dataset-materialize`, `dataset-profile`, `reference-create`, `catalog`, `catalog-serve`, `init`,
   `mcp`), and, not yet, the report and statistics commands (`leaderboard`, `pair-test`, `family-test`,
   `bootstrap-test`, `holdout`, `rank-stability`, `run-compare`, `cost-report`), which read but are left for 0.7.0's

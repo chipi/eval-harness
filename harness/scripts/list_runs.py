@@ -66,7 +66,7 @@ def main() -> int:
     if not dirs:
         print(
             "no runs yet — "
-            + how("start with `evh experiment-run --config <arm>.yaml` (docs/GUIDE.md)", "try:  make demo")
+            + how("start with `evh run --config <arm>.yaml` (docs/GUIDE.md)", "try:  make demo")
         )
         return 0
     print(f"{'run_id':44} {'dataset_id':18} {'build':14} scores")

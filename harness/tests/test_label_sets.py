@@ -59,7 +59,7 @@ try:
     for arm in ("lead1", "author"):
         cfg = data / "configs" / f"tickets_{arm}.yaml"
         cfg.write_text((KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n")
-        r = evh("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml")
+        r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
     author = next(p.name for p in (data / "runs").glob("tickets_author_v1_*"))
     lead = next(p.name for p in (data / "runs").glob("tickets_lead1_v1_*"))
@@ -751,7 +751,7 @@ try:
         [
             sys.executable,
             str(HERE / "cli.py"),
-            "experiment-run",
+            "run",
             "--config",
             "data/configs/tickets_lead1.yaml",
             "--labels",
@@ -765,7 +765,7 @@ try:
     made = sorted(set((data / "runs-labels-tickets_v1-author_v1").glob("tickets_lead1_v1_*")) - before_lab)
     run_m: dict = json.loads((made[-1] / "metrics.json").read_text()) if made else {}
     check(
-        "experiment-run --labels: an arm of its own, beside the runs (data/runs-labels-<dataset>-<set>/), never one more"
+        "evh run --labels: an arm of its own, beside the runs (data/runs-labels-<dataset>-<set>/), never one more"
         " run of the config's arm in data/runs; the run records the set",
         r.returncode == 0
         and "the label set labels/tickets_v1/author_v1" in out(r)

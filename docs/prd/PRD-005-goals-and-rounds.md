@@ -75,7 +75,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   rather than measured on a dataset). Optional: `context` (its audience), `output_contract`,
   `references`, `measures`, `min_items` (in `success_criteria`), `links` (shown on the goal
   page and by `evh goals --goal`: a web address as a link, a project path as text), `status`.
-- **FR1.2**: A config names its goal (`goal:`) and may declare its `format`; `experiment-run`
+- **FR1.2**: A config names its goal (`goal:`) and may declare its `format`; `evh run`
   refuses an unknown goal before it spends anything. The run records both outside the
   fingerprint; `run-promote` carries both onto the baseline.
 - **FR1.3**: `evh validate` V14 fails a goal that breaks its schema or whose `goal_id` is not its
@@ -112,7 +112,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   another round of the goal is open. `--from rN`, `--hypothesis`, `--change` (repeatable),
   `--keep` (carried in, not run again), `--retire … --reason "…"`, `--budget-usd`.
 - **FR2.3**: An arm joins a round by naming it in its config (`round: rN`, beside `goal:`);
-  `experiment-run` refuses a config naming a round that does not exist, is closed, or is on
+  `evh run` refuses a config naming a round that does not exist, is closed, or is on
   another dataset.
 - **FR2.4**: `evh rounds --goal G [--round rN]` shows each round and, for the open one, the
   arms against its leader, its leader against the previous round's best, the baseline it started

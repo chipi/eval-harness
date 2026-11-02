@@ -82,7 +82,7 @@ def _item_sources(dataset_id: str) -> dict[str, str]:
     THE DATASET KNOWS EACH ITEM'S FILENAME. PREDICTION ROWS DO NOT. `source_path` was read
     off the stored prediction row, and no prediction row has ever carried one (0 of 20,001
     rows across every committed run). `dataset_create.py` writes it into the DATASET, where
-    `experiment_run`, `materialize`, `reference_promote` and `validate_tree` all read it, so
+    `run`, `materialize`, `reference_promote` and `validate_tree` all read it, so
     the fallback `<item_id>.txt` fired every time, and on any dataset whose files are named
     otherwise the source text arrived as None: silently, because a scorer that wanted the
     source then measured nothing rather than failing."""

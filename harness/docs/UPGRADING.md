@@ -45,7 +45,7 @@ Six behaviours change without a migration:
 - **The local catalog reads only what git keeps.** A `data/runs-*` directory your `.gitignore` ignores is no
   longer shown, as it was never in a clone or the published catalog. Runs you meant to keep: re-allow the
   directory in `.gitignore` and commit them, or move them into `data/runs`.
-- **`experiment-run` and `rescore` warn** when they write to a directory git ignores or outside the project's
+- **`evh run` and `rescore` warn** when they write to a directory git ignores or outside the project's
   data (throwaway `data/runs-smoke*` and `data/runs-tune*` stay silent), and `validate` notes one that holds
   finished runs.
 - **`evh rescore` writes to one designated place**, `data/runs-rescored/<scorer>/<source>/`, unless `--out` names

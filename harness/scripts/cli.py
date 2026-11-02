@@ -51,7 +51,7 @@ COMMANDS = {
         "reference_manifest.py",
         "the checksummed manifest of a reference a fetch script built",
     ),
-    "experiment-run": ("experiment_run.py", "run one arm over a dataset (--dry-run to cost it)"),
+    "run": ("run.py", "run one arm over a dataset (--dry-run to cost it)"),
     "arm-smoke": (
         "arm_smoke.py",
         "smoke an arm on a few items before its full run: checks, projection, flags",

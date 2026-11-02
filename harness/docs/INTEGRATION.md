@@ -187,7 +187,7 @@ Most projects do not have it. The sequence that works:
 1. **Run your best model as an arm**, usually an expensive one you would not run in
    production, read its results, take its outputs as a model's labels, and promote them:
    ```bash
-   evh experiment-run --config data/configs/frontier.yaml
+   evh run --config data/configs/frontier.yaml
    evh label-from-run --run <that run_id> --set frontier_v1
    evh reference-promote --dataset-id my_v1 --labels frontier_v1 --tier silver --reason "…" --by <you>
    ```
@@ -411,13 +411,13 @@ evh dataset-profile --dataset-id pilot_v1              # what is inside, for its
 
 $EDITOR adapter.py                            # call_system() -> your code
 git add -A && git commit -m "pilot_v1, adapter, arms"   # a run from a dirty tree cannot become a reference
-evh experiment-run --config data/configs/best_model.yaml
+evh run --config data/configs/best_model.yaml
 evh label-from-run --run <that run_id> --set best_v1
 evh reference-promote --dataset-id pilot_v1 --labels best_v1 --tier silver --reason "…" --by <you>
 git add data/labels data/references && git commit -m "pilot_v1: silver, best_model's labels"
 
-evh experiment-run --config data/configs/arm_a.yaml --repeat 3   # + the noise floor
-evh experiment-run --config data/configs/arm_b.yaml
+evh run --config data/configs/arm_a.yaml --repeat 3   # + the noise floor
+evh run --config data/configs/arm_b.yaml
 evh run-compare --baseline <a> --candidate <b> --noise <the spread you just measured>
 ```
 

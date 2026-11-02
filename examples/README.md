@@ -193,7 +193,7 @@ cd ../../harness
 make dataset-create DATASET_ID=<id> ARGS='--source-dir data/sources/<id>'
 make dataset-materialize DATASET_ID=<id>
 for f in ../examples/<name>/configs/arm_*_n200.yaml; do
-  ../examples/<name>/.venv/bin/python scripts/experiment_run.py --config "$f"
+  ../examples/<name>/.venv/bin/python scripts/run.py --config "$f"
 done
 ```
 

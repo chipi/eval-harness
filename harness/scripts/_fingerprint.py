@@ -164,7 +164,7 @@ def tree_dirt(root: Path, data_dir: Path | None = None) -> list | None:
 #: bundled adapter: _adapter loads it by path, so no import names it.
 _PACKAGE = "evaluation_harness"
 _PRODUCERS = (
-    "experiment_run.py",
+    "run.py",
     "rescore.py",
     "judge_score.py",
     "import_run.py",

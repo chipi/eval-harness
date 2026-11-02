@@ -24,9 +24,9 @@ further. This page is the reference for each step.
 | the label sets | `evh labels [--dataset-id …]` |
 | a reference (labels you promote) | `evh reference-promote --dataset-id … --labels … --tier gold\|silver --reason "…" --by …` |
 | gold a script builds, promoted | `evh reference-manifest --reference-id gold/… --source … --labelled-by … --reason "…" --by …` |
-| score against labels | `evh rescore --dataset-id … --labels …` · `evh experiment-run --config … --labels …` |
-| cost before spending | `evh experiment-run --config … --dry-run` |
-| measure (+ own noise) | `evh experiment-run --config … --repeat 3` |
+| score against labels | `evh rescore --dataset-id … --labels …` · `evh run --config … --labels …` |
+| cost before spending | `evh run --config … --dry-run` |
+| measure (+ own noise) | `evh run --config … --repeat 3` |
 | many arms | `evh sweep --configs "data/configs/arm_*.yaml"` |
 | list runs | `evh runs-list` |
 | rank, with the test | `evh leaderboard --dataset-id …` |
@@ -238,7 +238,7 @@ not run in production is the usual choice), read its results, take its outputs a
 and promote them:
 
 ```bash
-evh experiment-run --config data/configs/best_model.yaml
+evh run --config data/configs/best_model.yaml
 evh label-from-run --run <that run_id> --set best_v1
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "The best system we have ranks the rest until a person writes gold." --by <you>
@@ -260,7 +260,7 @@ writing nothing, if the run's outputs changed since). A reference promoted from 
 too, and the same promotion rebuilds its texts from the set.
 
 Arms can be scored against a label set without promoting it, `evh rescore --dataset-id my_v1 --labels
-best_v1` (or `experiment-run --labels`): the runs land beside the others, in
+best_v1` (or `evh run --labels`): the runs land beside the others, in
 `data/runs-labels-<dataset>-<set>/`, and every view names the set by its source, never with a tier.
 
 Scored against silver, the arm that wrote it is graded against its own outputs: the leaderboard
@@ -361,7 +361,7 @@ after that date name a goal (V14). Without it, goals are optional.
 ## 5. Measure the arm's own noise — **before** you compare anything
 
 ```bash
-evh experiment-run --config data/configs/my_config.yaml --repeat 3
+evh run --config data/configs/my_config.yaml --repeat 3
 ```
 
 Output ends with:
@@ -393,8 +393,8 @@ spent $0.001063 (price table x tokens, or the provider's bill where it sends one
 ## 6. Run the arms you want to compare
 
 ```bash
-evh experiment-run --config data/configs/arm_a.yaml
-evh experiment-run --config data/configs/arm_b.yaml
+evh run --config data/configs/arm_a.yaml
+evh run --config data/configs/arm_b.yaml
 evh runs-list
 ```
 
@@ -416,7 +416,7 @@ Two kinds of directory sit beside `data/runs` on purpose:
   re-scored or repeated runs that keep the measured runs' `config_id`s, so they cannot share
   `data/runs` (V8). Each one has its own re-allow block in `.gitignore`.
 
-`experiment-run` and `rescore` print a `WARNING` when they write to a directory git ignores
+`evh run` and `rescore` print a `WARNING` when they write to a directory git ignores
 that is neither, or to one outside the project's data, and `evh validate` notes any ignored
 directory that already holds finished runs. The catalog, `evh goals` and `evh arms` read only
 the directories git keeps, so what you see locally is what a clone, CI and the published
@@ -439,7 +439,7 @@ the arms page and in `evh arms` that the goals read its re-score. A round record
 `evh rounds` shows it with each scoring change. A goal whose first round was run as plain runs gets one with
 `evh round-open --goal G --dataset D --adopt`.
 
-`experiment-run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
+`evh run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness
 times every call (`latency_ms`) unless the adapter reports its own.
 
@@ -450,7 +450,7 @@ A sweep that is interrupted — a crash, a 429 that outlasts the retries, or the
 **as each item is produced**, so what you already paid for survives.
 
 ```bash
-evh experiment-run --config data/configs/arm_a.yaml --resume arm_a_v1_20260929T101500Z
+evh run --config data/configs/arm_a.yaml --resume arm_a_v1_20260929T101500Z
 ```
 
 The run id is the directory under `data/runs/`. A run that stops, whatever the cause, prints
@@ -973,7 +973,7 @@ never served publicly. `--client-header NAME` names the header that identifies e
 `CF-Connecting-IP` behind Cloudflare), trusted only when a reverse proxy you control sets it on
 requests from an origin no one else can reach.
 
-**Partial reference coverage:** `experiment-run` refuses, before a call, a reference with no
+**Partial reference coverage:** `evh run` refuses, before a call, a reference with no
 file for any of the dataset's items, and warns when only some items have one. The run records
 `reference_coverage` (`{items_with_reference, items}`) and the leaderboard prints a NOTE for
 it: its quality columns are means over the items that have a reference.
@@ -1069,7 +1069,7 @@ fleet in `examples/triage-fleet/`):
 ```bash
 evh arm-from-capture --dataset-id prod_v1 --capture prod_2026_11 --as production_v1 \
     --like data/configs/deployed.yaml                                  # production's decisions, as an arm
-evh experiment-run --config data/configs/deployed.yaml                 # the deployed config, replayed
+evh run --config data/configs/deployed.yaml                 # the deployed config, replayed
 evh label-sheet --dataset-id prod_v1 --items disagree --runs production_v1,deployed_v1 --out sheet.csv
 evh label-import sheet.csv --dataset-id prod_v1 --set owner_2026_11 --by <you>
 evh rescore --dataset-id prod_v1 --labels owner_2026_11                # every arm, against your labels
@@ -1175,7 +1175,7 @@ Every command, `make` target and `evh` subcommand, for scripts and CI that branc
 | `0` | done | every command |
 | `1` | refused, or nothing was measured: `ERROR: <why>` on stderr | every command |
 | `2` | a usage error: an unknown command or argument (the usage is printed) | `evh`, every command's argument parser |
-| `2` | stopped early by the cost cap; the partial results are kept and resumable | `experiment-run`, `judge-score` |
+| `2` | stopped early by the cost cap; the partial results are kept and resumable | `evh run`, `judge-score` |
 | `3` | the judge scorer is not validated; `--unvalidated` runs it labelled as such | `judge-score` |
 
 The two meanings of `2` are told apart by stderr: a usage error prints the usage, a stopped
@@ -1222,9 +1222,9 @@ git SHA, which is right only if the project *is* the system under test.
 Declare it instead. No code edit:
 
 ```bash
-EVAL_BUILD_REF=v2.3.1                evh experiment-run --config ...
-EVAL_BUILD_REF=sha256:ab12…          evh experiment-run --config ...   # image digest
-EVAL_BUILD_REF=$(git -C ../my-system rev-parse HEAD)   evh experiment-run --config ...  # the system's repo
+EVAL_BUILD_REF=v2.3.1                evh run --config ...
+EVAL_BUILD_REF=sha256:ab12…          evh run --config ...   # image digest
+EVAL_BUILD_REF=$(git -C ../my-system rev-parse HEAD)   evh run --config ...  # the system's repo
 ```
 
 **Pin it.** An eval against a moving target measures the target's movement, and

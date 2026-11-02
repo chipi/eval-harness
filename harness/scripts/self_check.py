@@ -132,12 +132,12 @@ def main() -> int:
                     ],
                 ),
                 (
-                    "experiment-run lead1 x2",
-                    ["experiment-run", "--config", "data/configs/tickets_lead1.yaml", "--repeat", "2"],
+                    "evh run lead1 x2",
+                    ["run", "--config", "data/configs/tickets_lead1.yaml", "--repeat", "2"],
                 ),
                 (
-                    "experiment-run lead2 x2",
-                    ["experiment-run", "--config", "data/configs/tickets_lead2.yaml", "--repeat", "2"],
+                    "evh run lead2 x2",
+                    ["run", "--config", "data/configs/tickets_lead2.yaml", "--repeat", "2"],
                 ),
                 (
                     "pair-test on the recorded primary metric",

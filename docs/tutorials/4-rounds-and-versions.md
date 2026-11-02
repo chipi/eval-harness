@@ -126,7 +126,7 @@ goal: tickets_summary
 round: r2
 EOF
 git add -A && git commit -qm "tickets_summary r2: open; lead2_noisy v2"
-evh experiment-run --config data/configs/tickets_lead2_noisy_v2.yaml --repeat 3
+evh run --config data/configs/tickets_lead2_noisy_v2.yaml --repeat 3
 ```
 <!-- guide-check: varies spread -->
 ```text
@@ -218,7 +218,7 @@ A run naming a closed round is refused before it calls anything, so a round's ev
 grow after its conclusion:
 
 ```bash
-evh experiment-run --config data/configs/tickets_lead2_noisy_v2.yaml
+evh run --config data/configs/tickets_lead2_noisy_v2.yaml
 ```
 ```text
 ERROR: data/configs/tickets_lead2_noisy_v2.yaml: round r2 of tickets_summary is closed; open the next one (evh round-open --from r2)

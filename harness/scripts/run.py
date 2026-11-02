@@ -14,8 +14,8 @@ know the arm's own run-to-run spread — otherwise you are promoting noise. A re
 example: one ASR model showed 0.058 WER spread on BYTE-IDENTICAL input, wider
 than most deltas anyone was arguing about.
 
-    python scripts/experiment_run.py --config data/configs/demo.yaml
-    python scripts/experiment_run.py --config data/configs/demo.yaml --repeat 3
+    python scripts/run.py --config data/configs/demo.yaml
+    python scripts/run.py --config data/configs/demo.yaml --repeat 3
 
 WIRING YOUR SYSTEM IN: edit `scripts/adapter.py`. Nothing in this file needs to
 change — it times the call, records what it cost, scores the output against the
@@ -207,8 +207,8 @@ def _say_stopped(run_dir: Path, n_items: int, config: Any, exc: BaseException) -
         "  Fix the cause, then either resume it (items already done are not called again):\n"
         "    "
         + how(
-            f"evh experiment-run --config {config} --resume {run_dir.name}",
-            f'make experiment-run CONFIG={config} ARGS="--resume {run_dir.name}"',
+            f"evh run --config {config} --resume {run_dir.name}",
+            f'make run CONFIG={config} ARGS="--resume {run_dir.name}"',
         )
         + f"\n  or delete {run_dir} (until one or the other, `validate` fails V7 on it).",
         file=sys.stderr,
@@ -550,7 +550,7 @@ def _resume_source(
     #
     # `--resume` took a run id and read its outputs/ directory. Nothing compared that
     # run's arm to the one being launched, so
-    #   make experiment-run CONFIG=arm_glm_s.yaml ARGS="--resume <a qwen_s run>"
+    #   make run CONFIG=arm_glm_s.yaml ARGS="--resume <a qwen_s run>"
     # replayed qwen_s's answers, scored them, and recorded the whole thing as glm_s --
     # a fabricated result with a valid fingerprint. One mistyped run id in a recovery
     # command, which is exactly when the operator is rushed. Found by external review.
@@ -561,7 +561,7 @@ def _resume_source(
     # WHAT ARM DID THESE OUTPUTS COME FROM? A crashed run has no metrics.json --
     # it is written after the pass returns -- so the previous version of this check
     # could only WARN, and
-    #     make experiment-run CONFIG=arm_a.yaml ARGS="--resume <crashed arm_b run>"
+    #     make run CONFIG=arm_a.yaml ARGS="--resume <crashed arm_b run>"
     # exited 0 having recorded arm_a with arm_b's answers. The guard covered the
     # tidy case and not the crash, which is the only case resume exists for.
     #
@@ -962,8 +962,8 @@ def main() -> int:
                 f"  Partial results kept. Raise the cap and resume without paying twice:\n"
                 f"    "
                 + how(
-                    f"evh experiment-run --config {args.config} --resume {run_id}",
-                    f'make experiment-run CONFIG={args.config} ARGS="--resume {run_id}"',
+                    f"evh run --config {args.config} --resume {run_id}",
+                    f'make run CONFIG={args.config} ARGS="--resume {run_id}"',
                 )
             )
             break

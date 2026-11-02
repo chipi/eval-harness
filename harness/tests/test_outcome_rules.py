@@ -103,7 +103,7 @@ try:
     for c in ("tickets_lead1", "tickets_lead2"):
         cfg = data / "configs" / f"{c}.yaml"
         cfg.write_text((KIT / "configs" / f"{c}.yaml").read_text() + "goal: tickets_summary\n")
-        r = evh("experiment-run", "--config", str(cfg))
+        r = evh("run", "--config", str(cfg))
         check(f"setup: {c} runs", r.returncode == 0, said(r)[-300:])
 
     items = [it["item_id"] for it in json.loads((data / "datasets" / "tickets_v1.json").read_text())["items"]]

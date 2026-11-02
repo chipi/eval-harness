@@ -71,7 +71,7 @@ corrected together: a group is held to a stricter threshold than it would be alo
 ## Measure the arm's own noise before believing any delta
 
 ```bash
-evh experiment-run --config ... --repeat 3
+evh run --config ... --repeat 3
 ```
 
 ```text

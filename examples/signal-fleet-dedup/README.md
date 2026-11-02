@@ -13,7 +13,7 @@ that they still answer as they did at a pinned commit. There is no model and no 
 
 ```bash
 python examples/signal-fleet-dedup/fetch.py
-TRIAGE_FLEET_SRC=/path/to/signal-fleet evh experiment-run --config examples/signal-fleet-dedup/configs/dedup_guard.yaml
+TRIAGE_FLEET_SRC=/path/to/signal-fleet evh run --config examples/signal-fleet-dedup/configs/dedup_guard.yaml
 evh leaderboard --dataset-id fleet_dedup_v1
 ```
 

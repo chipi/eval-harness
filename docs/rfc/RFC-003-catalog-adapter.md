@@ -146,7 +146,7 @@ ADR-0002's note (2026-10-21) proposed names and fields that changed while it was
 | the adapter as `module:Class` in `config.yaml` | `catalog: {adapter: path/to/file.py:Class}` or `--adapter`, a file path or a module |
 | `evaluation_harness.catalog.Adapter` | `evaluation_harness.catalog_adapter.Adapter`, with `HarnessAdapter` in the same module |
 | goal fields `id`, `purpose`, `reader`, `output_contract`, `primary_measure`, `references`, `evidence`, `min_items` | `goal_id`, `title`, `statement`, `decision`, `success_criteria`, `datasets` required (see [PRD-005](../prd/PRD-005-goals-and-rounds.md)) |
-| `experiment-run` copies `goal:` into the fingerprint | `goal` and `format` beside the fingerprint, not in it |
+| `evh run` copies `goal:` into the fingerprint | `goal` and `format` beside the fingerprint, not in it |
 | `run-promote` records `format` and `format_observed` | it carries `goal` and `format` (asked); no observed format |
 | a cut-over date in `config.yaml` | `required_from` in `data/goals/policy.yaml` |
 | a `markdown` dependency to render reports | the catalog renders no reports; no dependency was added |

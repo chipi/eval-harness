@@ -35,7 +35,7 @@ release candidate `80e8f3f5`, through the proxy, for $0.17; nothing blocked, 10 
 - **Your own key, your choice of provider.** Any provider the bundled adapter supports: OpenAI or
   any OpenAI-compatible endpoint, OpenRouter, Anthropic, or a LiteLLM proxy (tutorial 2 lists the
   variable each reads). Put the key in the project's `.env` with `EVAL_MAX_COST_USD=1`, and check
-  with `evh env-check`. Add up what each command prints it spent (`experiment-run`:
+  with `evh env-check`. Add up what each command prints it spent (`evh run`:
   `spent $…`; `judge-score`: `spent this run $…`). What that figure is, the provider's bill
   or the config's price table, depends on the provider
   ([RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system)).
@@ -112,9 +112,9 @@ warnings in the adapter as tutorial 1's does, so the run's output is the harness
 
 ```bash
 git add -A && git commit -qm "datasets, gold, goals, adapters, arms"
-evh experiment-run --config data/configs/briefs_mistral_small.yaml --dry-run    # price it first
-evh experiment-run --config data/configs/<arm>.yaml                              # every arm
-evh experiment-run --config data/configs/<hosted arm>.yaml --repeat 3            # the noise floor; prints "spent $…"
+evh run --config data/configs/briefs_mistral_small.yaml --dry-run    # price it first
+evh run --config data/configs/<arm>.yaml                              # every arm
+evh run --config data/configs/<hosted arm>.yaml --repeat 3            # the noise floor; prints "spent $…"
 evh leaderboard --dataset-id briefs_v1
 evh family-test --dataset-id briefs_v1 --a briefs_mistral_small_v1 --against briefs_ --metric rouge_l
 ```
@@ -201,7 +201,7 @@ evh round-open --goal brief_summary --dataset briefs_v1 --from r1 \
     --retire briefs_lead1_v1 --reason "<why it is dropped>" --budget-usd 0.05
 # data/configs/briefs_mistral_small_v2.yaml: the new prompt, a new config_id, and `round: r2` beside `goal:`
 git add -A && git commit -qm "brief_summary r2: open; mistral-small v2"
-evh experiment-run --config data/configs/briefs_mistral_small_v2.yaml --repeat 3
+evh run --config data/configs/briefs_mistral_small_v2.yaml --repeat 3
 git add data/runs && git commit -qm "brief_summary r2: runs"
 evh rounds --goal brief_summary                    # r2 against r1's best, the baseline, the budget
 evh inspect --round r2 --goal brief_summary --baseline briefs_mistral_small_v1
@@ -209,7 +209,7 @@ evh leaderboard --dataset-id briefs_v1 --round r2
 evh catalog && evh catalog-serve                   # screenshot the goal page's rounds now: r2's suggestions show only while it is open
 evh round-close --goal brief_summary --round r2 --conclusion "<what r2 showed>" [--promote <run_id>]
 git add data/rounds data/baselines && git commit -qm "brief_summary r2: closed"
-evh experiment-run --config data/configs/briefs_mistral_small_v2.yaml --dry-run   # refused: r2 is closed
+evh run --config data/configs/briefs_mistral_small_v2.yaml --dry-run   # refused: r2 is closed
 ```
 
 `--promote` only if r2 chose a new baseline; it then records the conclusion as the reason.
@@ -277,7 +277,7 @@ Fixed on the 0.4.0 branch: `reference-create --from-run`; references refuse empt
 outputs; the leaderboard marks the reference's author; reference-create's gold and commit notes;
 one install calls hosted models (`openai` and `anthropic` are core, `[llm]` is gone); providers
 are documented as a choice, with the variable each reads (tutorial 2); the core times every call;
-a run that stops mid-pass names itself and its `--resume` command; `experiment-run` warns when
+a run that stops mid-pass names itself and its `--resume` command; `evh run` warns when
 outputs stop at `max_tokens`, and the OpenAI-compatible provider records `finish_reason`; V5 no
 longer fails two different perfect arms; the goal page groups arms by what they are scored
 against and never makes the reference's author the leader; the catalog shows the promoted
@@ -287,7 +287,7 @@ Since then: `dataset-create --help` (`--recursive`) and the bundled adapter's re
 no development history;
 `evh env-check` and the `litellm` provider no longer mention `.env.example`; `provider:
 openrouter` reads `OPENROUTER_API_KEY` and calls OpenRouter's address by default; with no
-reference, `experiment-run` names `reference-create --from-run` first, and `evh --help` describes
+reference, `evh run` names `reference-create --from-run` first, and `evh --help` describes
 `reference-create` as making references from a run or with a config; `leaderboard` prints one
 table per reference and never averages across them; the bundled adapter stores `overlap_f1`
 unrounded, so the rounding note no longer fires for it; `run-promote` prints no `resumed`;
@@ -308,7 +308,7 @@ out of the ordering test and the frontier; the dataset page and `evh datasets` s
 they are scored against; the goal page and `evh goals --goal` show a judge's group, and `evh goals
 --goal` lists the rounds and marks retired arms; every command prints p the same way (four
 decimals, `<0.0001`), and `family-test` says whether its p is exact or a seeded estimate and
-labels its column `A wins`; `experiment-run` prints what it spent and calls the cost and speed
+labels its column `A wins`; `evh run` prints what it spent and calls the cost and speed
 spread what it is; `judge-score` says its spend is the provider's bill where one is reported,
 else the price table; `silver-calibrate` explains rho and sibling lift; the catalog counts the
 configs behind its arms; "filed" reads "filed under this goal"; the item view says it shows the

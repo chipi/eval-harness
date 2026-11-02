@@ -47,7 +47,7 @@ try:
         shutil.copy(KIT / "configs" / f"tickets_{arm}.yaml", data / "configs")
     for cfg in ("lead1", "author"):  # no reference yet
         r = evh(
-            "experiment-run",
+            "run",
             "--config",
             f"data/configs/tickets_{cfg}.yaml",
             "--run-id",
@@ -75,9 +75,7 @@ try:
     )
     check("setup: a silver reference from the author's run", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     time.sleep(1.1)  # created_at has whole seconds: each run is measured after the last
-    r = evh(
-        "experiment-run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "tickets_lead1_v1_silver"
-    )
+    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "tickets_lead1_v1_silver")
     check("setup: lead1 runs against silver", r.returncode == 0, (r.stdout + r.stderr)[-400:])
     r = evh(
         "label-import",
@@ -108,9 +106,7 @@ try:
     )
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     time.sleep(1.1)
-    r = evh(
-        "experiment-run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "tickets_lead1_v1_gold"
-    )
+    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "tickets_lead1_v1_gold")
     check("setup: lead1 runs against gold", r.returncode == 0, (r.stdout + r.stderr)[-400:])
 
     r = evh("leaderboard", "--dataset-id", "tickets_v1")

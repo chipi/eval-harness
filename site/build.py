@@ -892,7 +892,7 @@ def home(f: dict) -> str:
             "Round 3",
             "Try a new prompt",
             "One more arm with the new prompt; the round records it beside the rest.",
-            "evh experiment-run",
+            "evh run",
         ),
         (
             "Round 4",
@@ -1104,7 +1104,7 @@ def home(f: dict) -> str:
 <span class="p">$ </span>evh init --tutorial
 <span class="c"># the guide walks the tutorial from here; then, on your own system</span>
 <span class="p">$ </span>evh dataset-create --dataset-id my_v1 --source-dir data/sources
-<span class="p">$ </span>evh experiment-run --config data/configs/arm_a.yaml --repeat 3
+<span class="p">$ </span>evh run --config data/configs/arm_a.yaml --repeat 3
 <span class="p">$ </span>evh leaderboard --dataset-id my_v1
 <span class="p">$ </span>evh catalog && evh catalog-serve
 <span class="c"># or, from a checkout: the bundled demo</span>
