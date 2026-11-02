@@ -59,6 +59,27 @@ def run(runs_dir, run_id, dataset, config, scores, text=SECRET, kinds=None, ref=
     (d / "predictions.jsonl").write_text("\n".join(rows) + "\n")
 
 
+def promoted(ref_dir, tier, dataset, source, labels, **authorship):
+    """The manifest `evh reference-promote` writes for a label set promoted to `ref_dir` (RFC-023); the catalog
+    reads no dataset here, which promoting through the command needs."""
+    from evaluation_harness._common import now  # noqa: PLC0415
+    from evaluation_harness._label_sets import source_line  # noqa: PLC0415
+    from evaluation_harness._references import write_manifest  # noqa: PLC0415
+    from evaluation_harness.reference_promote import CAVEAT  # noqa: PLC0415
+
+    write_manifest(
+        ref_dir,
+        tier,
+        dataset,
+        caveat=CAVEAT[tier].format(set=f"{dataset}/{labels}", source=source_line(source)),
+        created_at=now(),
+        promoted_from={"labels": labels, "dataset_id": dataset, "source": source},
+        reason=f"{labels} decides what is right here.",
+        promoted_by="test",
+        **authorship,
+    )
+
+
 try:
     base = [0.5] * 12
     run("runs", "a_1", "ds1", "arm_a", base)
@@ -67,6 +88,9 @@ try:
     run("runs", "c_1", "ds2", "arm_c", base)
     (data / "references" / "gold" / "ds1").mkdir(parents=True)
     (data / "references" / "gold" / "ds1" / "i00.txt").write_text(SECRET + " reference")
+    promoted(
+        data / "references" / "gold" / "ds1", "gold", "ds1", {"kind": "person", "by": "owner"}, "owner_v1"
+    )
     (data / "runs" / ".hidden").mkdir()
     (data / "runs" / ".hidden" / "x.txt").write_text("hidden")
 
@@ -212,24 +236,15 @@ try:
     silver = data3 / "references" / "silver" / "ds3"
     silver.mkdir(parents=True)
     (silver / "i00.txt").write_text("x")
-    # as reference-promote writes it for a model's labels (RFC-023)
-    (silver / "manifest.json").write_text(
-        json.dumps(
-            {
-                "dataset_id": "ds3",
-                "tier": "silver",
-                "authored_by": "arm_s",
-                "from_run": {"run_id": "s_1", "config_id": "arm_s"},
-                "model": "m-1",
-                "promoted_from": {
-                    "labels": "arm_s_v1",
-                    "dataset_id": "ds3",
-                    "source": {"kind": "model", "run_id": "s_1", "config_id": "arm_s", "model": "m-1"},
-                },
-                "reason": "arm_s's answers rank the others.",
-                "promoted_by": "test",
-            }
-        )
+    promoted(
+        silver,
+        "silver",
+        "ds3",
+        {"kind": "model", "run_id": "s_1", "config_id": "arm_s", "model": "m-1"},
+        "arm_s_v1",
+        authored_by="arm_s",
+        from_run={"run_id": "s_1", "config_id": "arm_s"},
+        model="m-1",
     )
     out3 = tmp / ".build" / "catalog3"
     cb.build(HarnessAdapter(data3), out3)

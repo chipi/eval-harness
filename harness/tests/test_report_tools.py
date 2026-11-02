@@ -60,37 +60,38 @@ def write_run(
     (d / "predictions.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
 
 
-FETCHED: dict = {
-    "promoted_from": {
-        "labels": None,
-        "dataset_id": "",
-        "source": {"kind": "person", "by": "the dataset's authors"},
-    },
-    "reason": "the dataset's own labels decide",
-    "promoted_by": "test",
-}
-
-
 def fetched_gold(data: Path, dataset: str, items: dict, redistributed: bool = True) -> None:
-    """Gold a script builds, as `evh reference-manifest` promotes it: the texts, and the manifest recording them."""
-    from evaluation_harness._references import write_manifest  # noqa: PLC0415
-
+    """Gold a script fetches: its texts, promoted by `evh reference-manifest` as a fetch script's are."""
     g = data / "references" / "gold" / dataset
     g.mkdir(parents=True)
     for item, value in items.items():
         (g / f"{item}.txt").write_text(
             value if isinstance(value, str) else json.dumps(value), encoding="utf-8"
         )
-    write_manifest(
-        g,
-        "gold",
-        dataset,
-        source="fetch.py",
-        redistributed=redistributed,
-        promoted_from={**FETCHED["promoted_from"], "dataset_id": dataset},
-        reason=FETCHED["reason"],
-        promoted_by=FETCHED["promoted_by"],
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    r = subprocess.run(
+        [
+            sys.executable,
+            str(HARNESS / "scripts" / "reference_manifest.py"),
+            "--reference-id",
+            f"gold/{dataset}",
+            "--source",
+            "fetch.py",
+            "--labelled-by",
+            "the dataset's authors",
+            "--reason",
+            "the dataset's own labels decide",
+            "--by",
+            "test",
+            *([] if redistributed else ["--not-redistributed"]),
+        ],
+        cwd=HARNESS,
+        capture_output=True,
+        text=True,
+        env={**env, "EVAL_DATA_DIR": str(data)},
     )
+    if r.returncode or not (g / "manifest.json").is_file():
+        raise SystemExit(f"setup: reference-manifest gold/{dataset} failed\n{r.stdout}{r.stderr}")
 
 
 def row_of(out: str, arm: str) -> list:

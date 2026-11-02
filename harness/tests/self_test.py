@@ -873,12 +873,25 @@ def test_fingerprint_covers_reference_bytes() -> None:
     import tempfile  # noqa: PLC0415
 
     from evaluation_harness._fingerprint import build_fingerprint  # noqa: PLC0415
+    from evaluation_harness._references import write_manifest  # noqa: PLC0415
+
+    def promote(text: str) -> None:
+        """The label `text` promoted to gold/t1, with the manifest reference-promote writes (RFC-023)."""
+        (refs / "i1.txt").write_text(text, encoding="utf-8")
+        write_manifest(
+            refs,
+            "gold",
+            "t1",
+            promoted_from={"labels": "owner_v1", "dataset_id": "t1", "source": {"kind": "person", "by": "o"}},
+            reason="the owner's labels decide",
+            promoted_by="self-test",
+        )
 
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
         refs = root / "data" / "references" / "gold" / "t1"
         refs.mkdir(parents=True)
-        (refs / "i1.txt").write_text("alpha", encoding="utf-8")
+        promote("alpha")
         ds = {"dataset_id": "t1", "items": [{"item_id": "i1", "source_sha256": "aa"}]}
         kw: dict = {
             "root": root,
@@ -891,7 +904,7 @@ def test_fingerprint_covers_reference_bytes() -> None:
             "adapter_path": None,
         }
         before = build_fingerprint(**kw)
-        (refs / "i1.txt").write_text("beta", encoding="utf-8")
+        promote("beta")  # other labels promoted under the same name
         after = build_fingerprint(**kw)
         check("fingerprint: editing a reference changes the hash", before["hash"] != after["hash"])
         check(
@@ -2701,10 +2714,37 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     # A git project with gold references under the moved data root: the fingerprint read
     # `<root>/data`, so it recorded references_sha256 None and every run after the first
     # made the tree dirty (its own untracked run output under data/eval/stats/runs).
-    gold = data / "references" / "gold" / "proj_v1"
-    gold.mkdir(parents=True)
+    answers = proj / "answers"
+    answers.mkdir()
     for i in ids:
-        (gold / f"{i}.txt").write_text(f"reference {i}\n", encoding="utf-8")
+        (answers / f"{i}.txt").write_text(f"reference {i}\n", encoding="utf-8")
+    made = run(
+        "scripts/label_import.py",
+        str(answers),
+        "--dataset-id",
+        "proj_v1",
+        "--set",
+        "owner",
+        "--by",
+        "t",
+        env=env,
+    )
+    made = (
+        made
+        if made.returncode
+        else run(
+            "scripts/reference_promote.py",
+            *("--dataset-id", "proj_v1", "--labels", "owner", "--tier", "gold"),
+            *("--reason", "the owner's answers decide", "--by", "t"),
+            env=env,
+        )
+    )
+    gold = data / "references" / "gold" / "proj_v1"
+    check(
+        "project elsewhere: gold imported as labels and promoted under EVAL_DATA_DIR",
+        made.returncode == 0 and (gold / "manifest.json").is_file(),
+        (made.stderr or made.stdout)[-300:],
+    )
     git = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false"]
     for argv in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "project"]):
         subprocess.run([*git, *argv], cwd=proj, capture_output=True, text=True)
