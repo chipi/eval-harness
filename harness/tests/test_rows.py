@@ -650,6 +650,17 @@ try:
         and f"{T['lead1']}: overlap_f1" not in rs[0],
         out(r)[-300:],
     )
+    r2, rs2, foot2 = sheet_of(runs=f"runs-judged/judge_a/{D}/{T['lead1']}")
+    check(
+        "an arm id as the catalog names it, under a nested folder (runs-judged/<scorer>/<dataset>/<config>): the same sheet as --from",
+        r2.returncode == 0
+        and rs2
+        and "mean judge_score" in foot2
+        and [x["item_id"] for x in rs2] == [x["item_id"] for x in rs],
+        out(r2)[-300:],
+    )
+    r2 = evh("inspect", "--sheet", "--dataset-id", D, "--runs", f"runs-judged/judge_a/other_v1/{T['lead1']}")
+    check("refused: a nested arm id on another dataset", refused(r2, f"not an arm on {D}"), out(r2)[-200:])
     r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", T["lead1"], "--from", "runs-judged/no_such")
     check("refused: a --from that holds no such run", refused(r, "no run of that config"), out(r)[-200:])
     shutil.rmtree(data / "runs-judged")

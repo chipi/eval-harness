@@ -219,6 +219,24 @@ def drive(cat: Path, base: str) -> None:
             rows > 0 and not unnamed,
             f"not named: {unnamed[:5]}",
         )
+        # The sheet of a judging pass's arms, as a dataset page names them (runs-judged/<scorer>/<dataset>/<config>).
+        judged = sorted(q for q in links if "runs=runs-judged/" in q)
+        if judged:
+            q = max(judged, key=lambda x: x.count(","))
+            ds = q.split("runs=runs-judged/", 1)[1].split("/")[1]
+            arms = q.split("runs=", 1)[1].split("&", 1)[0].split(",")[:3]
+            page.goto(f"{base}inspect.html?dataset={ds}&sheet=1&runs={','.join(arms)}")
+            page.wait_for_selector("#sheettable, .callout, p.err", timeout=60000)
+            over = page.evaluate(
+                """[...document.querySelectorAll('#sheettable thead th')]
+                .filter(h => h.scrollWidth > h.clientWidth + 1).map(h => h.innerText.slice(0, 60))"""
+            )
+            check(
+                f"sheet: a judging pass's arms as the dataset page names them ({len(arms)} on {ds}) open, and no "
+                "column header runs over the next",
+                page.locator("#sheettable").count() == 1 and not over,
+                f"headers over their cells: {over[:3]}" if over else page.locator("main").inner_text()[-300:],
+            )
         check("no console errors", not errors, " | ".join(errors[:5]))
         browser.close()
 

@@ -530,9 +530,11 @@
     // the labels, the winners, and the fields last.
     const arms = d.arms;
     const heads = [['sel', '<input type="checkbox" id="sall" aria-label="select all shown">'], ['item', ITEM], ['start', 'the start'], ['', 'signals']];
+    // An arm's id has no spaces (runs-judged/<scorer>/<dataset>/<config>): a break is offered after each '/'.
+    const armHead = t => esc(short(t)).replace(/\//g, '/<wbr>');
     arms.forEach((a, i) => {
-      heads.push(['outc', esc(short(a.token)) + '<br><small>' + (i === 0 ? 'first: production' : 'output') + '</small>']);
-      a.scores.forEach(ref => heads.push(['scc', esc(short(a.token)) + '<br><small>' + esc(ref) + '</small>']));
+      heads.push(['outc', armHead(a.token) + '<br><small>' + (i === 0 ? 'first: production' : 'output') + '</small>']);
+      a.scores.forEach(ref => heads.push(['scc', armHead(a.token) + '<br><small>' + esc(ref) + '</small>']));
     });
     d.label_cols.forEach(c => heads.push(['', `label ${chip(c.kind)} ${esc(c.name)}`]));
     d.ref_cols.forEach(c => heads.push(['', 'reference<br><small>' + esc(c.key) + '</small>']));
