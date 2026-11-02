@@ -152,9 +152,9 @@ def pointwise() -> dict[str, int]:
     return {"deepseek_m_above_bart_l": hi, "deepseek_m_below_bart_l": lo, "articles": len(per)}
 
 
-def compute(scorer: str = SCORER) -> dict[str, Any]:
-    """Every figure from the judge re-measurement, including Goyal and Zhang validations."""
-    # The grading set: a pick or pairwise pass over the same arms is a set of its own (RFC-005, "Judging modes").
+def grading_set() -> Path:
+    """The 29-arm grading set. A pick or pairwise pass over the same arms is a set of its own
+    (RFC-005, "Judging modes") and matches SET_GLOB too."""
     sets = [
         p
         for p in sorted((DATA / "judging-sets").glob(SET_GLOB))
@@ -164,9 +164,15 @@ def compute(scorer: str = SCORER) -> dict[str, Any]:
         raise SystemExit(
             f"expected exactly one grading {SET_GLOB} in data/judging-sets, found {[p.name for p in sets]}"
         )
-    m = json.loads(sets[0].read_text())
+    return sets[0]
+
+
+def compute(scorer: str = SCORER) -> dict[str, Any]:
+    """Every figure from the judge re-measurement, including Goyal and Zhang validations."""
+    gs = grading_set()
+    m = json.loads(gs.read_text())
     if len(m["arms"]) != 29:
-        raise SystemExit(f"{sets[0].name} has {len(m['arms'])} arms, not 29")
+        raise SystemExit(f"{gs.name} has {len(m['arms'])} arms, not 29")
     sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
     vdir = DATA / "judge-verdicts" / scorer / m["judging_set_id"]
     item_ids = [i["item_id"] for i in m["items"]]

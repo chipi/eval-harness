@@ -298,7 +298,7 @@ def judged_summarisation(exps: list, scorer: str = "") -> dict:
 
     scorer = scorer or jf.SCORER
     jfig = jf.compute(scorer)
-    m = json.loads(next((DATA / "judging-sets").glob(jf.SET_GLOB)).read_text())
+    m = json.loads(jf.grading_set().read_text())
     sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
     vdir = DATA / "judge-verdicts" / scorer / m["judging_set_id"]
     ids = [i["item_id"] for i in m["items"]]

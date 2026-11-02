@@ -1469,7 +1469,7 @@ def _judged_family(scorer, a):
 
     from evaluation_harness import judge_score as _js  # noqa: PLC0415
 
-    _m = json.loads(next((HERE.parent / "data" / "judging-sets").glob(_jfm.SET_GLOB)).read_text())
+    _m = json.loads(_jfm.grading_set().read_text())
     _sc = _js.load_scorer(HERE.parent / "data" / "scorers" / f"{scorer}.yaml")
     _vd = HERE.parent / "data" / "judge-verdicts" / scorer / _m["judging_set_id"]
     _ids = [i["item_id"] for i in _m["items"]]
@@ -1573,7 +1573,7 @@ check(
 def _arm_means(scorer):
     from evaluation_harness import judge_score as _js  # noqa: PLC0415
 
-    _m = json.loads(next((HERE.parent / "data" / "judging-sets").glob(_jfm.SET_GLOB)).read_text())
+    _m = json.loads(_jfm.grading_set().read_text())
     _sc = _js.load_scorer(HERE.parent / "data" / "scorers" / f"{scorer}.yaml")
     _vd = HERE.parent / "data" / "judge-verdicts" / scorer / _m["judging_set_id"]
     _pj = _js.project(_sc, _js.load_scores(_m, _sc, _vd), [i["item_id"] for i in _m["items"]])
@@ -1619,7 +1619,7 @@ check(
 def _self_gap(scorer):
     from evaluation_harness import judge_score as _js  # noqa: PLC0415
 
-    _m = json.loads(next((HERE.parent / "data" / "judging-sets").glob(_jfm.SET_GLOB)).read_text())
+    _m = json.loads(_jfm.grading_set().read_text())
     _sc = _js.load_scorer(HERE.parent / "data" / "scorers" / f"{scorer}.yaml")
     _vd = HERE.parent / "data" / "judge-verdicts" / scorer / _m["judging_set_id"]
     _s = _js.load_scores(_m, _sc, _vd)
