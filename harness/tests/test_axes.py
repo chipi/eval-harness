@@ -465,6 +465,12 @@ check(
     len(spans) == 2 and all(x0 >= 70 and x1 <= HALF - RIGHT + 1 for x0, x1 in spans),
     str(spans),
 )
+NAME_CLASS = 'class="tick name"'
+check(
+    "chart names are drawn after every dot, so no dot covers a name",
+    svg.rfind("<circle") < svg.find(NAME_CLASS),
+    f"last dot at {svg.rfind('<circle')}, first name at {svg.find(NAME_CLASS)}",
+)
 
 # Chart labels: a name that would cover one already placed moves a line; a clear one stays.
 placed = [(100.0, 200.0, 50.0)]

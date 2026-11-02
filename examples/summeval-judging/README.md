@@ -150,8 +150,9 @@ for a in gemma_l qwen_s random; do for m in pick pairwise; do
 
 Each arm's primary is its mode's metric (`tau`, `top1` or `pair_agreement`: the adapter's `primary_metric(params)`).
 The scorers that cite these runs, `judge-summ-pick-v1` and `judge-summ-pairwise-v1`
-([RUNBOOK §12](../../harness/docs/RUNBOOK.md#judging-modes-grade-pick-pairwise)), judge the summarisation eval in
-those modes; their `min_metric` is the `random` arm's value.
+([RUNBOOK §12](../../harness/docs/RUNBOOK.md#judging-modes-grade-pick-pairwise)), are the summarisation eval's
+judges in those modes; their `min_metric` is the `random` arm's value. The pick pass has been run on it (below);
+the pairwise scorer is validated and not yet run there.
 
 What they measured (2026-11-02, 100 articles; each value recomputed from the experts' scores):
 

@@ -1137,8 +1137,8 @@ evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did pro
   `data/runs-judged/<scorer>/` covered the run (`--metric M`, or `SCORER/M` for a judge's, picks the one the sheet
   is read on); a column per label set or reference set; the
   winner per item (the best arm on that metric, and a pick or pairwise judge's choice where one covers the run);
-  the signals; the fields; and a footer per arm: its mean, its win rate (the share of the rows shown it wins, a
-  shared win split; on a pick or pairwise verdict only an arm the judge preferred wins, so a row it gave to an arm
+  the signals; the fields; and a footer per arm: its mean, its win rate (the share of the shown rows with a winner
+  that it wins, a shared win split; on a pick or pairwise verdict only an arm the judge preferred wins, so a row it gave to an arm
   not shown is nobody's win) and its verdict (the goal's decision when a goal names the dataset, else the paired test
   against the leader). The signals: **wrong** (the first run against a label set, `--wrong-against`),
   **disagree**, **split** (the candidates among themselves), **new** (a field value the dataset in `--new-vs` never

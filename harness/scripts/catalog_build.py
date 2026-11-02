@@ -324,7 +324,9 @@ def promoted_from_html(r: dict, up: str = "") -> str:
     if pf.get("labels"):
         out = label_set_html(f"{pf.get('dataset_id')}/{pf['labels']}", kind, up)
     elif kind:
-        out = source_chip(kind) + (f" <small>{e(src.get('by') or src.get('config_id') or '')}</small>")
+        # A model's run is named once, below, as the arm.
+        who = src.get("by") or ("" if kind == "model" else src.get("config_id")) or ""
+        out = source_chip(kind) + (f" <small>{e(who)}</small>" if who else "")
     else:
         return "—"
     if kind == "model" and src.get("config_id"):
@@ -2683,6 +2685,7 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | 
     rows, details = [], []
     for r in sorted(rounds, key=lambda r: -int(r["round_id"][1:] or 0)):
         arm, mean = best(r)
+        n_cfg = len({a.rsplit("/", 1)[-1] for a in r.get("arms") or []})
         prev = by_id.get(r.get("from") or "")
         prev_best, _ = best(prev) if prev else (None, None)
         vs = (
@@ -2706,7 +2709,8 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | 
                     '<div class="hyp">' + e(r.get("hypothesis", "") or "—") + "</div>",
                     # Arms, best and the comparison in one narrow cell: three columns of mostly "—" took the width
                     # the conclusion needs (owner, 2026-10-31).
-                    f'<div class="armsbest"><span data-v="{len(r.get("arms") or [])}">{len(r.get("arms") or [])} arms</span>'
+                    # Counted by config, as `evh rounds` counts: a re-score of a run (runs-rescored/...) is that arm.
+                    f'<div class="armsbest"><span data-v="{n_cfg}">{n_cfg} arms</span>'
                     + (f" <small>({len(r.get('retired') or [])} retired)</small>" if r.get("retired") else "")
                     # The round's arms in the inspector, against its leader: `evh inspect --round`.
                     + (

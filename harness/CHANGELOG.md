@@ -185,8 +185,8 @@ that can move a result is never a patch release without saying so under **Change
   `qwen_s` in both (`mode: pick`, scored `top1` beside `top1_chance`; `mode: pairwise`, scored `pair_agreement`
   with `n_pairs`; a `random` floor each): picks 0.364 and 0.263 against a random 0.070, pairwise 0.825 and 0.813
   against 0.473; the prompts ask for the JSON first and nothing after it. `judge-summ-pick-v1` and
-  `judge-summ-pairwise-v1` judge the summarisation eval with them (29 arms in one pick: the order moved about half
-  the picks, see the SummEval README).
+  `judge-summ-pairwise-v1` are the summarisation eval's judges in those modes; the pick pass is run (29 arms in
+  one pick: the order moved about half the picks, see the SummEval README), the pairwise one not yet.
 - **An adapter's optional `primary_metric(params)`**: it names an arm's primary metric from the arm's params,
   beside `PRIMARY_METRIC` (its fallback); `run` and `rescore` record it. The SummEval adapter's is `tau`, `top1` or
   `pair_agreement` by mode.

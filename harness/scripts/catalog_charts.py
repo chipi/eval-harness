@@ -287,6 +287,8 @@ def scatter(
             + '"/>'
         )
     placed: list[tuple[float, float, float]] = []
+    # Names are drawn after every dot: a dot drawn later would cover a name placed before it.
+    names: list[str] = []
     for i, (x, y, lab, tip) in enumerate(points):
         on = i in front
         marks.append(
@@ -307,10 +309,11 @@ def scatter(
             x0, x1 = (tx - LABEL_W * len(lab), tx) if right else (tx, tx + LABEL_W * len(lab))
             ty = label_y(y_of(y) - 6, x0, x1, placed, TOP + 10, h - bottom - 4)
             placed.append((x0, x1, ty))
-            marks.append(
+            names.append(
                 f'<text x="{tx:.1f}" y="{ty:.1f}" class="tick name"'
                 f"{' text-anchor=end' if right else ''}>{_e(lab)}</text>"
             )
+    marks.extend(names)
     corner = ("left" if lower_x else "right") + (" top" if higher_y else " bottom")
     frame = (
         f'<line x1="{left}" x2="{width - RIGHT}" y1="{h - bottom}" y2="{h - bottom}" stroke="var(--axis)"/>'

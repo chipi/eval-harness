@@ -209,7 +209,9 @@ browser, the same model.
   item's **fields**, last. The best score per row on the chosen metric is marked.
 - **The select box and the item column stay in place** as the arms scroll across.
 - **The footer**, under each arm's columns: its mean on the chosen metric (and which way is better), its win
-  rate per winner column (the share of the rows shown it wins, a shared win split), and its verdict (the goal's
+  rate per winner column (the share of the shown rows with a winner that it wins, a shared win split; on a pick
+  or pairwise verdict, of the rows the judge judged, a row it gave to an arm not shown being nobody's), and its
+  verdict (the goal's
   decision when a goal names the dataset, else the paired test against the leader).
 - **Controls**: the arms (chips, as above), "read on" (the metric), "wrong against" (a label set), "new
   against" (a dataset), one checkbox per signal to keep only those rows, "scores only" (hides the outputs; kept

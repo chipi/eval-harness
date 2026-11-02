@@ -685,6 +685,10 @@ def test_example_scorer_suites_pass() -> None:
         ),
         ("test_catalog_models.py", "the Models page, a page per model, the arms badge, evh models"),
         (
+            "test_site_releases.py",
+            "the site's release notes: nested bullets, bold holding code and italics, code never emphasis",
+        ),
+        (
             "test_parallel_projects.py",
             "two projects at once: a port each, the same every time; each catalog names its project; EVAL_HOME noted",
         ),

@@ -219,6 +219,44 @@ def drive(cat: Path, base: str) -> None:
             rows > 0 and not unnamed,
             f"not named: {unnamed[:5]}",
         )
+        # Every config on the arms page has the day it was first run, as the home page's configs tile counts them:
+        # an undated row (a config whose runs were all re-parsed) never counts as new there.
+        ct = (cat / "arms.html").read_text(encoding="utf-8")
+        ct = ct[ct.index('<table id="configs"') :]
+        ct = ct[: ct.index("</table>")]
+        undated = re.findall(r'<tr data-key="(c:[^"]+)"(?![^>]*data-made)', ct)
+        check(
+            "arms page: every config row is dated (its first run, any kind)",
+            not undated,
+            ", ".join(undated[:5]),
+        )
+
+        # A goal page's rounds count their arms as `evh rounds` does: a re-scored run is the same arm.
+        differ = []
+        for gp in sorted((cat / "g").glob("*.html")):
+            shown = dict(
+                re.findall(r"<b>(r\d+)</b>.*?<span data-v=\"(\d+)\">\d+ arms</span>", gp.read_text(), re.S)
+            )
+            if not shown:
+                continue
+            cli = subprocess.run(
+                [sys.executable, str(HARNESS / "scripts" / "cli.py"), "rounds", "--goal", gp.stem],
+                cwd=HARNESS,
+                capture_output=True,
+                text=True,
+            ).stdout
+            said = dict(re.findall(r"^\s+(r\d+)\s+\S+\s+\S+\s+(\d+) arm\(s\)", cli, re.M))
+            differ += [
+                f"{gp.stem} {rid}: page {n}, evh rounds {said.get(rid)}"
+                for rid, n in shown.items()
+                if said.get(rid) != n
+            ]
+        check(
+            "goal pages: each round's arms counted as evh rounds counts them",
+            not differ,
+            "; ".join(differ[:4]),
+        )
+
         # The sheet of a judging pass's arms, as a dataset page names them (runs-judged/<scorer>/<dataset>/<config>).
         judged = sorted(q for q in links if "runs=runs-judged/" in q)
         if judged:

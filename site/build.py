@@ -284,7 +284,8 @@ def forest(rows: list, width: int = 1000, compact: bool = False) -> str:
             f'<text x="0" y="{y - 3}" class="t-ink" font-size="13">{e(r["bench"])}</text>'
             f'<text x="0" y="{y + 13}" class="t-muted" font-size="11">{e(r["what"])}</text>'
             f'<line x1="{x(lo):.1f}" x2="{x(hi):.1f}" y1="{y}" y2="{y}" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/>'
-            f'<circle cx="{x(r["delta"]):.1f}" cy="{y}" r="6.5" class="dot accent" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>'
+            + _clipped(r, span, x, y)
+            + f'<circle cx="{x(r["delta"]):.1f}" cy="{y}" r="6.5" class="dot accent" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>'
             f'<text x="{right + 18}" y="{y + 4}" class="t-ink" font-size="12">{fmt(r["ours"])}</text>'
             f'<text x="{right + 82}" y="{y + 4}" class="t-muted" font-size="12">{fmt(r["published"])}</text>'
         )
@@ -293,6 +294,19 @@ def forest(rows: list, width: int = 1000, compact: bool = False) -> str:
         f'<text x="{right + 82}" y="{top - 16}" class="t-muted" font-size="10">published</text></svg>'
     )
     return "".join(out)
+
+
+def _clipped(r: dict, span: float, x, y: float) -> str:
+    """An arrowhead at each end of an interval the axis cuts off (it runs past ±span), so it does not read as ending
+    there."""
+    out = ""
+    if r["delta"] - r["ci"] < -span:
+        a = x(-span)
+        out += f'<polygon points="{a:.1f},{y} {a + 7:.1f},{y - 5} {a + 7:.1f},{y + 5}" fill="var(--ink-2)"/>'
+    if r["delta"] + r["ci"] > span:
+        a = x(span)
+        out += f'<polygon points="{a:.1f},{y} {a - 7:.1f},{y - 5} {a - 7:.1f},{y + 5}" fill="var(--ink-2)"/>'
+    return out
 
 
 def _forest_compact(rows: list, span: float, width: int = 400) -> str:
@@ -324,7 +338,8 @@ def _forest_compact(rows: list, span: float, width: int = 400) -> str:
             f'<text x="0" y="{y0 + 16}" class="t-ink" font-size="16">{e(r["bench"])} <tspan class="t-muted" font-size="14">{e(r["what"])}</tspan></text>'
             f'<text x="0" y="{y0 + 66}" class="t-muted" font-size="14">ours <tspan class="t-ink">{fmt(r["ours"])}</tspan> · published {fmt(r["published"])}</text>'
             f'<line x1="{x(lo):.1f}" x2="{x(hi):.1f}" y1="{yb}" y2="{yb}" stroke="var(--ink-2)" stroke-width="2" stroke-linecap="round"/>'
-            f'<circle cx="{x(r["delta"]):.1f}" cy="{yb}" r="7" class="dot accent" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>'
+            + _clipped(r, span, x, yb)
+            + f'<circle cx="{x(r["delta"]):.1f}" cy="{yb}" r="7" class="dot accent" data-tip="{e(tip)}"><title>{e(tip)}</title></circle>'
         )
     out.append("</svg>")
     return "".join(out)
@@ -1132,7 +1147,7 @@ def home(f: dict) -> str:
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">evals with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader is not significantly different from others (at 100–280 items)</div></div>
     <div class="stat"><div class="n">$0</div>{marks(f["local_first_or_contender"], len(exps))}<div class="l">for a model that is first, or not significantly different from first, in {f["local_first_or_contender"]} of the {len(exps)}; {f["local_first_or_contender"] - remeasured_counts(f)["local_lost"]} of {len(exps)} if the <a href="evals/judging.html">re-measured scores</a> are taken at face value</div></div>
-    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_in, cal_n)}<div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
+    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_ok, cal_n)}<div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
   <div class="chart benches" style="margin-top:48px">{legend(reading="higher score: further right →", baseline=False)}{benches}</div>
   <p class="dek-note">In the catalog: {goal_links}.</p>

@@ -64,6 +64,35 @@ METRIC_DIRECTIONS = {
     "model_false_alarm": "lower",
     "model_escalated": "lower",
 }
+#: What each metric measures (the catalog's metric pages and `evh metrics`), from score() and run() below.
+METRIC_DESCRIPTIONS = {
+    "triage_cost": {
+        "summary": "One decision's cost: 5 for a missed real problem, 1 for a false alarm, 0 when right; lower is better."
+    },
+    "triage_cost_p3": {"summary": "triage_cost with a missed real problem priced at 3 false alarms instead of 5."},
+    "triage_cost_p10": {"summary": "triage_cost with a missed real problem priced at 10 false alarms instead of 5."},
+    "correct": {"summary": "1 when the decision is one the label accepts (file, dismiss, escalate or cleanup), else 0."},
+    "false_dismiss": {
+        "summary": "1 when a real problem (the label: file or escalate) was dismissed or cleaned up: a miss."
+    },
+    "false_alarm": {"summary": "1 when noise (the label: dismiss or cleanup) was filed or escalated."},
+    "silent_drop": {
+        "summary": "1 when a signal the label says needs a person (correct_autonomous: escalate) was dismissed."
+    },
+    "escalated": {"summary": "1 when the decision hands the signal to a person (escalate), labelled or not."},
+    "table_miss": {"summary": "1 when the model asked for a probe the item's frozen probe table does not hold."},
+    "no_decision": {
+        "summary": "1 when the fleet reached no decision (an empty last reply, or the same deferral twice); "
+        "scored as wrong both ways."
+    },
+    "deferred": {"summary": "1 when the fleet deferred the decision twice for the same reason, so none was reached."},
+    "n_probes": {"summary": "How many probes the model asked for before it decided."},
+    "model_triage_cost": {"summary": "triage_cost of the model's own decision, before the fleet's gates changed it."},
+    "model_false_dismiss": {"summary": "false_dismiss of the model's own decision, before the fleet's gates."},
+    "model_false_alarm": {"summary": "false_alarm of the model's own decision, before the fleet's gates."},
+    "model_escalated": {"summary": "escalated, for the model's own decision before the fleet's gates."},
+    "model_correct": {"summary": "correct, for the model's own decision before the fleet's gates."},
+}
 #: The fleet's gates write their reason first; the decision the model made before a gate changed it.
 GATE_PREFIX = {
     "dismiss gate:": "dismiss",

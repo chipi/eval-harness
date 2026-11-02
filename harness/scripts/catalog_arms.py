@@ -232,7 +232,11 @@ def period_arms(A, by_ds: dict, rows: list[dict]) -> dict:
         out[f"c:{cid}"] = {
             "runs": runs,
             "usd": cp.spend_of(w["spend"], lambda x, ids=ids: x.get("kind") == "arm" and x.get("arm") in ids),
-            "made": min((x[0] for x in runs), default=""),
+            # The day its first run was made, any run (a re-parsed one too), as the home page's configs tile dates it.
+            "made": min(
+                (r["created_at"][:10] for a in ids for r in by_arm[a]["run_list"] if r.get("created_at")),
+                default="",
+            ),
         }
     return out
 

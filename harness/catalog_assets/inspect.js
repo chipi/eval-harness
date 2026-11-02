@@ -94,7 +94,7 @@
   async function load() {
     if (P.get('sheet') && P.get('dataset')) return sheetView();
     picker();
-    if (!runs().length) { app.innerHTML = '<p class="muted">Pick runs from an eval or dataset page in the catalog ("Inspect runs"), or add them above.</p>'; return; }
+    if (!runs().length) { app.innerHTML = '<p class="muted">Pick runs from a goal, dataset or arm page in the catalog ("Inspect it", "test vs leader"), or add them above.</p>'; return; }
     let d;
     try {
       const r = await fetch(API + 'compare?' + P.toString());

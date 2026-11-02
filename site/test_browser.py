@@ -147,6 +147,22 @@ def drive(base: str) -> None:
             and page.locator(".lc-panel.on").count() == 1,
         )
 
+        # A table that turns into cards on a phone (table.data.cards) is a table on a desktop: its head above its
+        # first row, not beside it (the eval cards' grid once applied to it).
+        page.goto(base + "evals.html", wait_until="load")
+        tables = page.evaluate(
+            """[...document.querySelectorAll('table.data.cards')].map(t => {
+                const h = t.querySelector('thead'), r = t.querySelector('tbody tr');
+                return {display: getComputedStyle(t).display,
+                        below: !!(h && r) && r.getBoundingClientRect().top >= h.getBoundingClientRect().bottom - 1};
+            })"""
+        )
+        check(
+            f"desktop: the {len(tables)} card tables on the evals page are tables, each head above its rows",
+            len(tables) >= 2 and all(t["display"] == "table" and t["below"] for t in tables),
+            str(tables),
+        )
+
         phone = browser.new_context(viewport={"width": 390, "height": 844})
         phone.route(
             lambda url: urlparse(url).hostname not in ("127.0.0.1", None),

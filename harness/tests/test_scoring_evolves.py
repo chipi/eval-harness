@@ -11,6 +11,7 @@ bundled one and adds BONUS to overlap_f1: editing BONUS is a scoring change, wit
 """
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -184,6 +185,18 @@ try:
         "the round reads the re-score as the goal does",
         "read from their re-score by" in rs.stdout,
         rs.stdout[-900:],
+    )
+    cat = evh("catalog", "--out", str(proj / "cat"))
+    page = (
+        (proj / "cat" / "g" / "tickets_summary.html").read_text(encoding="utf-8")
+        if cat.returncode == 0
+        else ""
+    )
+    m = re.search(r'<span data-v="(\d+)">\d+ arms</span>', page)
+    check(
+        "the catalog counts a re-scored round's arms once each, as evh rounds does (a re-score is the same arm)",
+        m is not None and m.group(1) == "2",
+        (m.group(0) if m else out(cat)[-300:]),
     )
     pt = evh(
         "pair-test",

@@ -32,6 +32,15 @@ from evaluation_harness import stats  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 
+_pf = cb.promoted_from_html(
+    {"promoted_from": {"labels": None, "source": {"kind": "model", "config_id": "arm_x_v1"}}}
+)
+check(
+    "promoted from a run (no label set): the arm named once, as the arm",
+    _pf.count("arm_x_v1") == 1 and "the arm:" in _pf,
+    _pf,
+)
+
 SECRET = "zebra-quokka-unique-output-text"
 tmp = Path(tempfile.mkdtemp(prefix="evh-catalog-"))
 data = tmp / "data"

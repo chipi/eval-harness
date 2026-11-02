@@ -184,7 +184,8 @@ table.data td.num small { font-family: var(--text); color: var(--muted); font-si
 .findings p { margin: 0; color: var(--ink-2); }
 
 /* ── eval cards ──────────────────────────────────── */
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 16px; }
+/* div only: table.data.cards is a table that becomes cards on a phone (below) */
+div.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 16px; }
 .card { display: flex; flex-direction: column; gap: 14px; padding: 26px; border: 1px solid var(--hair); border-radius: 14px; background: var(--surface); text-decoration: none; transition: border-color .15s, transform .15s; min-height: 280px; }
 .card:hover { border-color: var(--accent); transform: translateY(-2px); color: inherit; }
 .card .task { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }

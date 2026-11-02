@@ -29,6 +29,20 @@ you choose, with a reason and who promoted it. A reference made before has no `p
 was made and copies its texts into a label set, no run's score or hash moving. A reference made from outcomes has no rule of its own any
 more: promoted, it is a silver like any (with gold beside it, gold still decides).
 
+Renamed to the field's words, with no alias (the old names stop working):
+
+- **The command `experiment-run` is `evh run`**, and its make target `make run` (was `experiment-run`). What 0.5.0 called an experiment
+  is an eval; the site's `experiments.html` redirects to `evals.html`.
+- **The paired test's verdict is `significant: better`, `significant: worse` or `not significant`** (was
+  `separated: …` and `not separated`), in `evh` output, the catalog, the inspector and the site; `pair-test`
+  prints `SIGNIFICANT` or `NOT-SIGNIFICANT`, `family_test` and `bootstrap_test` `SIGNIFICANT`. A script that
+  matched the old strings matches the new ones.
+- **A goal's arms that may win the tie-break are its contenders**: the decision's key is `contenders` (was
+  `tied`), and `evh arms --quality contender|below` (was `ties|below`).
+
+A goal's dataset `role:` is free text and keeps whatever you wrote; the docs now say validation, test and pilot
+(were dev and heldout).
+
 Seven behaviours change without a migration:
 
 - **The `--items` flag of `evh inspect` is gone**, replaced by the sheet: `evh inspect --sheet --dataset-id D --runs A,B`

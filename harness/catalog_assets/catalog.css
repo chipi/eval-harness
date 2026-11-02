@@ -573,7 +573,7 @@ tr.t-labels td:first-child { box-shadow: inset 3px 0 0 var(--muted); padding-lef
 .chip.sig-new { border-color: var(--open); color: var(--ink); }
 ul.labels { list-style: none; padding: 0; display: grid; gap: 10px; }
 ul.labels .outtext { margin-top: 4px; }
-table.sheet th { white-space: normal; min-width: 8ch; vertical-align: bottom; overflow-wrap: anywhere; }
+table.sheet th { white-space: normal; min-width: 8ch; vertical-align: bottom; overflow-wrap: break-word; }
 table.sheet th.sel, table.sheet td.sel { position: sticky; left: 0; z-index: 2; width: 2.2rem; min-width: 2.2rem; background: var(--page); }
 table.sheet th.item, table.sheet td.item { position: sticky; left: 2.2rem; z-index: 2; background: var(--page); }
 table.sheet tr.eprow:hover td.sel, table.sheet tr.eprow:hover td.item { background: var(--surface); }
@@ -585,3 +585,5 @@ table.sheet.scores-only .outc { display: none; }
 table.sheet tfoot th { text-align: left; font-weight: 600; border-top: 1px solid var(--hair); }
 table.sheet tfoot td { border-top: 1px solid var(--hair); vertical-align: top; }
 table.sheet .start { min-width: 18em; max-width: 24em; }
+/* The goals tables' last column, an arm id with no spaces, wraps rather than running past the page edge. */
+table#goals td:last-child, table#glance td:last-child { overflow-wrap: anywhere; min-width: 14ch; }

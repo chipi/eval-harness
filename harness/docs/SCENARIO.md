@@ -287,8 +287,9 @@ Since then: `dataset-create --help` (`--recursive`) and the bundled adapter's re
 no development history;
 `evh env-check` and the `litellm` provider no longer mention `.env.example`; `provider:
 openrouter` reads `OPENROUTER_API_KEY` and calls OpenRouter's address by default; with no
-reference, `evh run` names `reference-create --from-run` first, and `evh --help` describes
-`reference-create` as making references from a run or with a config; `leaderboard` prints one
+reference, `experiment-run` (now `evh run`) named `reference-create --from-run` first, and `evh --help`
+described `reference-create` as making references from a run or with a config (both since replaced: a
+reference set is labels you promote, 0.6.0); `leaderboard` prints one
 table per reference and never averages across them; the bundled adapter stores `overlap_f1`
 unrounded, so the rounding note no longer fires for it; `run-promote` prints no `resumed`;
 `evh inspect --round` reads the goal's measure against the round's leader and names the arms it
