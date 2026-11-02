@@ -209,6 +209,11 @@ try:
         and "free text: not compared as text" in dp,
         "",
     )
+    check(
+        "dataset page: κ and α headed in lowercase (an uppercased header turns them into Κ and Α, read as K and A)",
+        "<th><small>κ</small></th>" in dp and "<th><small>α</small></th>" in dp,
+        re.findall(r"<th>[^<]*(?:<small>)?[κα]", dp)[:4],
+    )
     pick_row = row_of(dp, 'value="prod_v1:p2"')
     check(
         "dataset page: a pick waiting, its source, tags, who; a box per row and the command the boxes give",

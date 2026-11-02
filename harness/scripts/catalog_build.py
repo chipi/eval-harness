@@ -1975,7 +1975,16 @@ def render_labels_of(A: Adapter, ds: str, v: dict) -> str:
             "one, and chance-corrected (Cohen's κ, Krippendorff's α)</small></h3>"
             + table(
                 f"agree-{slug(ds)}",
-                ["set", "set", "both label", "same answers", "share an answer", "κ", "α"],
+                # In <small>: a header is uppercased, and Κ and Α read as K and A.
+                [
+                    "set",
+                    "set",
+                    "both label",
+                    "same answers",
+                    "share an answer",
+                    "<small>κ</small>",
+                    "<small>α</small>",
+                ],
                 [
                     {"cells": [f"<code>{e(a['a'])}</code>", f"<code>{e(a['b'])}</code>", *agreement_cells(a)]}
                     for a in cov["agreement"]
