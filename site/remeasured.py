@@ -11,6 +11,7 @@ from __future__ import annotations
 SUMM = "research/REPORT_SUMMARIZATION.md"
 CLASS = "research/REPORT_CLASSIFICATION.md"
 JUDGE = "research/REPORT_SUMMEVAL.md"
+SE = "examples/summeval-judging/README.md"
 
 
 # ── charts ──────────────────────────────────────────────────────────────────
@@ -344,6 +345,7 @@ def judging_page(H, f: dict) -> str:
   <div class="prose">
     <p>The two judges read every article with all {sm["n_arms"]} arms' summaries, names hidden and order shuffled: {fig["calls"]} calls, {H.money(fig["billed_usd"])}, {sm["items_scored"]} of {fig["items_total"]} articles scored. On their score <strong>every hosted LLM ranks above every BART model</strong>. <code>bart_l</code>, first on coverage, scores {bart["v2"]:.2f} of 5 and ranks {H.ordinal(bart["r2"])} of {sm["n_arms"]}, {qv("significantly below all 24 hosted LLMs", SUMM)}. The hosted LLMs score {lo:.2f}–{hi:.2f}, bunched near the top of a 5-point scale, so the order among them, <code>{ldr["arm"]}</code> first ({H.ordinal(ldr["r1"])} on coverage), is not a finding.</p>
     <p>The judges agree closely with each other: Spearman {fig["agreement_arm_mean_spearman"]:.2f} over arm means. Re-ordering the summaries moved per-article scores by {pos_lo:.2f}–{pos_hi:.2f}, a repeat call by {noi_lo:.2f}–{noi_hi:.2f}. {sm["unparsed"]} of {sm["calls"]} replies did not parse; an article counts only when every block of every judge parsed, and {sm["items_scored"]} of {sm["items_total"]} did.</p>
+    <p>{H.q("Asked instead to pick the best of all 29 summaries in one call (judge-summ-pick-v1, 198 of 200 articles, $0.17), the two judges named the same winner on 0.36 of the articles; a re-shuffle of the order kept the pick on 0.55 and 0.45 of 20, a repeat on 0.75 and 0.95. A pick among 29 depends on their order about half the time: it ranks what the judges prefer, beside the grades, not instead of them.", SE)}</p>
   </div>
   <figure class="chart" style="margin-top:32px">{legend_html(H)}{sm_chart}<figcaption>Each line is one arm: its rank on coverage (left) and on the judges' mean score (right). Tap a dot for both scores.</figcaption></figure>
 </div></section>

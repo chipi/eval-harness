@@ -553,6 +553,30 @@ try:
         and abs(jr[T["lead2"]] - 1.5 / 6) < 1e-9,
         json.dumps(jr),
     )
+    # Two of the three shown: t06_mobile's pick went to lead2, so neither shown arm won it.
+    two_shown = f"{T['lead1']},{T['author']}"
+    r, rs, foot = sheet_of(runs=two_shown)
+    by = {x["item_id"]: x for x in rs}
+    jr = foot.get("win rate · winner: judge_b", {})
+    check(
+        "a pick that went to an arm not shown is nobody's win: no winner on the row, and it still counts in the rate",
+        r.returncode == 0
+        and by["t06_mobile"]["winner: judge_b"] in ("", None)
+        and abs(jr.get(T["lead1"], 0) - 3 / 6) < 1e-9
+        and abs(jr.get(T["author"], 0) - 2 / 6) < 1e-9,
+        json.dumps(jr) + str(by.get("t06_mobile", {}).get("winner: judge_b")),
+    )
+    r, rs, foot = sheet_of("--from", "runs-judged/judge_b", runs=two_shown)
+    by = {x["item_id"]: x for x in rs}
+    jr = foot.get("win rate · winner: judge_won", {})
+    check(
+        "the same when the judged runs are the arms (read on judge_won): a row where every shown arm has 0 has no winner",
+        r.returncode == 0
+        and by["t06_mobile"].get("winner: judge_won") in ("", None)
+        and abs(jr.get(T["lead1"], 0) - 3 / 6) < 1e-9
+        and abs(jr.get(T["author"], 0) - 2 / 6) < 1e-9,
+        json.dumps(jr) + json.dumps(by.get("t06_mobile", {}))[:300],
+    )
     r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--metric", "judge_score")
     check("refused: a metric two scorers judged, naming them", refused(r, "judge_a, judge_c"), out(r)[-300:])
     r, rs, foot = sheet_of("--metric", "judge_a/judge_score")

@@ -163,7 +163,8 @@ NODES = [
         "optional · later",
         (
             "The same frozen outputs, measured again without re-running an arm: new gold or a new "
-            "code scorer for $0, or LLM judges, billed and capped, that the harness refuses until "
+            "code scorer for $0, or LLM judges (grading each output, picking the best, or comparing two), "
+            "billed and capped, that the harness refuses until "
             "they are validated against people. Written beside the originals, never over them; the "
             "primary metric changes only by a recorded decision. A new scoring rule is previewed first, "
             "then re-scores a round, which records the scorer it is judged by."

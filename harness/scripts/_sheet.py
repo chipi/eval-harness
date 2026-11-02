@@ -10,9 +10,11 @@ terminal and the CSV are this model, flattened three ways.
 
 Winner: per judging scorer with a `judge_won` metric (pick, pairwise) the arm(s) with the most; and on the chosen
 metric (`--metric`, else the goal's primary, else the runs' primary) the best arm in the metric's direction. Every
-arm tied for the best is named. Footer, per arm: its mean on the chosen metric, its win rate (the share of the rows
-shown that it wins, a shared win split), and the verdict: the goal's decision (axes.decide) when a goal names the
-dataset, else the paired test against the leader.
+arm tied for the best is named. On a pick or pairwise verdict only an arm the judge preferred (`judge_won` above 0)
+wins: a row the judge gave to an arm not shown has no winner. Footer, per arm: its mean on the chosen metric, its
+win rate (the share of the rows shown that it wins, a shared win split; on a pick or pairwise verdict, of the rows
+judged, so a row nobody shown won counts against every arm), and the verdict: the goal's decision (axes.decide) when
+a goal names the dataset, else the paired test against the leader.
 
 The signals, each a filter (given together, an item needs all of them) and the sort (most signals first):
 
@@ -413,9 +415,10 @@ def build(
         if not mine:
             sig["unlabelled"] = ""
         winners: dict[str, list[str]] = {}
+        judged_on: list[str] = []
         for w in winner_cols:
             if "judge" in w:
-                won = {
+                vals = {
                     a["token"]: v
                     for a in arms
                     for j in a["judged"]
@@ -423,9 +426,15 @@ def build(
                     for n in WON
                     if (v := j["per_item"].get(i, {}).get(n)) is not None
                 }
-                winners[w["key"]] = _best(won, False)
             else:
                 vals = {t: s[w["metric"]][i] for t, s in series.items() if i in s.get(w["metric"], {})}
+            if "judge" in w or w["metric"] in WON:
+                # A pick or pairwise verdict: only an arm the judge preferred wins the row. When the judge picked an
+                # arm not shown, every shown arm has 0, and the row is nobody's win (it still counts in the rate).
+                if vals:
+                    judged_on.append(w["key"])
+                winners[w["key"]] = _best({t: v for t, v in vals.items() if v > 0}, False)
+            else:
                 winners[w["key"]] = _best(vals, lower)
         out.append(
             {
@@ -445,6 +454,7 @@ def build(
                     if (f := d / f"{i}.txt").is_file() and (txt := f.read_text(encoding="utf-8").strip())
                 },
                 "winners": winners,
+                "judged_on": judged_on,
                 "signals": sig,
             }
         )
@@ -570,14 +580,15 @@ def _verdicts(model: dict[str, Any], sub: dict[str, dict[str, float]]) -> tuple[
 
 def footer(model: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Per arm, over the rows given: {metric, mean {arm}, n {arm}, win_rate {winner column: {arm}}, verdict {arm},
-    decided}. A win rate is the share of the rows with a winner that the arm wins, a shared win split."""
+    decided}. A win rate is the share of the rows with a winner that the arm wins, a shared win split; on a pick or
+    pairwise verdict, of the rows the judge judged, a row it gave to an arm not shown being nobody's."""
     toks = [a["token"] for a in model["arms"]]
     ref = model["metric"]
     items = {r["item"] for r in rows}
     sub = {t: {i: v for i, v in (model["_series"][t].get(ref) or {}).items() if i in items} for t in toks}
     rates: dict[str, dict[str, float | None]] = {}
     for w in model["winner_cols"]:
-        won = [r["winners"][w["key"]] for r in rows if r["winners"].get(w["key"])]
+        won = [r["winners"][w["key"]] for r in rows if r["winners"].get(w["key"]) or w["key"] in r["judged_on"]]
         rates[w["key"]] = {
             t: (sum(1 / len(x) for x in won if t in x) / len(won) if won else None) for t in toks
         }

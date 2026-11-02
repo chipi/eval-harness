@@ -755,7 +755,7 @@ def hero_sketch(exps: list) -> str:
     ties = sum(x["n_contenders"] > 0 for x in exps)
     dear_first = sum(x["dearest"]["arm"] == x["top"]["arm"] for x in exps)
     finding = (
-        f"In {ties} of {len(exps)} benchmarks the leader is not significantly different from a "
+        f"In {ties} of {len(exps)} evals the leader is not significantly different from a "
         f"group of others; the most expensive model came first in "
         f"{word(dear_first) if dear_first else 'none'}."
     )
@@ -1261,7 +1261,7 @@ def landing(f: dict) -> str:
 </div></section>
 
 <section class="block" id="ties"><div class="wrap">
-  <div class="eyebrow"><span class="num">02</span>Ties</div>
+  <div class="eyebrow"><span class="num">02</span>Contenders</div>
   <h2>The top is a crowd, not a podium.</h2>
   <div>
     <div class="prose" style="margin-bottom:40px">
@@ -1542,7 +1542,7 @@ def findings_for(x: dict, f: dict) -> list:
             ),
             *common,
             (
-                "The pilot slice's winner finished 10th — inside a tie.",
+                "The pilot slice's winner finished 10th — among the leader's contenders.",
                 q(
                     "Tuned on a 40-query pilot slice, the leaderboard's winner there, llama_s, finished 10th of 19 on the 200-query test slice, 0.0265 behind the leader and not significantly different from it under Holm: a rank inside a tie, not a wrong pick shown at this n.",
                     rep,
