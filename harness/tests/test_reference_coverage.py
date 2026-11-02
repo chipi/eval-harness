@@ -45,10 +45,30 @@ try:
     check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
     shutil.copy(KIT / "configs" / "tickets_lead1.yaml", data / "configs")
     gold = data / "references" / "gold" / "tickets_v1"
-    gold.mkdir(parents=True)
     files = sorted((KIT / "gold").glob("*.txt"))
+    two = proj / "gold_two"
+    two.mkdir()
     for f in files[:2]:
-        shutil.copy(f, gold / f.name)
+        shutil.copy(f, two / f.name)
+    r = evh("label-import", "gold_two", "--dataset-id", "tickets_v1", "--set", "two", "--by", "owner")
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "two",
+            "--tier",
+            "gold",
+            "--reason",
+            "Two hand-written summaries, for a reference that covers some items.",
+            "--by",
+            "owner",
+        )
+    )
+    check("setup: gold for two of the items, promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 
     r = evh("experiment-run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "partial")
     out = r.stdout + r.stderr

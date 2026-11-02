@@ -68,7 +68,12 @@ runs when it starts, so after a new run, stop it and start it again.
 | a dataset page: its versions, references and every arm with its headline number | `evh datasets --dataset-id tickets_v1` |
 | a dataset page's "what's inside": its items, their lengths and gold, each item's link | `evh dataset-items --dataset-id tickets_v1` (after `evh dataset-profile --dataset-id tickets_v1`) |
 | an arm page: its metrics, runs, config, conditions, rounds | `evh arms --arm tickets_lead1_v1` |
-| a reference page: who wrote it, from which run, every arm scored against it | `evh references --reference-id silver/tickets_v1` |
+| a reference page: its tier, the label set it was promoted from, by whom and why, every arm scored against it | `evh references --reference-id silver/tickets_v1` |
+| the labels page, and a dataset page's labels: every label set with its source (person, model, rule), its coverage, what it was promoted to, how often two agree | `evh labels`, `evh labels --dataset-id tickets_v1` |
+| the captures page: what was read from production, when, and the datasets and recorded arm made from it ([tutorial 6](6-datasets-from-production.md)) | `evh captures` |
+| a dataset page's "Explore its rows": one row per item, what each arm decided, its labels, and the signals (wrong, disagree, split, new, unlabelled) | `evh inspect --dataset-id tickets_v1 --rows` |
+| a dataset page's picks waiting, and the command the ticked boxes give | `evh picks` |
+| a goal page's deploy sheet: what production must match to run the promoted arm, and whether a capture shows it did | `evh deploy-sheet --config tickets_lead2_v1` |
 | the metrics page: what each metric measures, which way is better, where it is recorded | `evh metrics` |
 | a metric page: what it measures, its kind, the goals it decides, per-dataset strip chart | `evh metrics --metric overlap_f1` |
 | the search box on every catalog page | `evh search lead2` |
@@ -269,8 +274,8 @@ Customer reports they cannot log in since this morning.
   page counts the arms and the configs behind them: an arm is one config on one dataset scored
   one way, so a config rescored against silver or judged is an arm of its own ("N arms on M
   datasets, from K configs"; `evh datasets` has a `configs` column). Each arm's row says what it is scored
-  against; rows scored against silver, by a judge, or against the reference the arm wrote itself
-  are tinted. The dataset page (and `evh datasets --dataset-id`) sorts its arms by what they are
+  against; rows scored against silver, by a judge, against a label set (not a reference), or against
+  the reference the arm wrote itself are tinted. The dataset page (and `evh datasets --dataset-id`) sorts its arms by what they are
   scored against first, gold, then silver, then each judge, then none, and only then by metric
   and mean, so a silver mean and a gold one never interleave. Counts and means only, never an
   item's text, so the pages can be published. The dataset page lists its fields and how many

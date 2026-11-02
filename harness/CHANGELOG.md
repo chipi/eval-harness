@@ -156,6 +156,9 @@ that can move a result is never a patch release without saying so under **Change
   outcomes `label-from-capture`'s (the same rules). A reference made from outcomes has no rule of its own any more:
   promoted, it is a silver like any (with gold beside it, gold still decides; ADR-0020 is superseded). The one
   reference here that named `reference-create` as its rebuild says where its texts come from instead.
+- **`validate` fails a reference with no manifest (V16)**, where it noted one: texts copied into
+  `data/references/` by hand are a reference nobody promoted. Import them as labels and promote them, or, for gold a
+  script builds, `evh reference-manifest`. Tutorial 1, the newcomer scenario and `evh self-test` make gold that way.
 - **`catalog-serve` serves on the project's own port**, not 8765 (`--port` overrides; `--public` keeps 8765), and
   `mcp --http` on another; a bookmark of `127.0.0.1:8765` moves.
 - **The release leaves the pick list out**: picks are working notes that name production items, so a published
@@ -196,6 +199,19 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **The home page's "recorded" feed shows the period's events.** Its period filter read the date from the table
+  cell, not the span inside it, so it hid every event and said "Nothing recorded in this period" (since 0.4.2).
+- **Coverage counts an arm scored against a label set as `labels`**, on the home page and in `evh overview`; it
+  counted as `none`.
+- **The home page's glance reads a goal's baseline from its re-score** (RFC-022), as the goal page does: a baseline
+  promoted before a re-score showed no value and no test.
+- **A frontier chart's names stay inside the chart**: a long name on a dot in the middle ran past the right edge;
+  it goes to the side it fits, shortened when neither does, never over the y axis.
+- **The label-set and agreement tables keep their promoted and agreement columns on screen** on a desktop: long set
+  ids may break there (a phone still scrolls the table sideways).
+- **`evh deploy-sheet` says "against no reference"** for a run scored against none, not `None (None)`.
+- **The leaderboard's silver note no longer says "model-generated"**: a silver reference can be a person's or a
+  rule's labels.
 - **A retired arm read through its re-score is out of the goal's tie.** A round's retirements name the arm's
   config, and an arm read from `runs-rescored/<scorer>/` kept the prefix, so it was never matched as retired and
   stayed among the tied (the triage goal's tie: 76 arms, 51 once read right).

@@ -280,7 +280,8 @@ checksum of every item's text and how to rebuild it, written by
 `evh reference-manifest --reference-id gold/my_v1 --source scripts/fetch.py`. Commit the
 manifest even when the texts may not be redistributed (`--not-redistributed`): `evh validate`
 (V16) then checks any rebuilt copy against it, and the catalog lists the reference as fetched.
-`reference-promote` writes the manifest of the references it makes.
+`reference-promote` writes the manifest of the references it makes. Texts copied into
+`data/references/<tier>/<id>/` with no manifest fail `validate` (V16): nothing says where they came from.
 
 Every later run is scored against these automatically and records which tier it
 used. Ten items is enough to rank four arms; keep the first pass cheap.
@@ -589,7 +590,7 @@ evh runs-list --baselines
 evh validate
 ```
 
-Sixteen checks (V1–V16): schema conformance (datasets, runs, baselines, configs, judge
+Nineteen checks (V1–V19): schema conformance (datasets, runs, baselines, configs, judge
 scorers, judging sets, verdicts, dataset profiles), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results (two arms with different outputs
@@ -599,7 +600,9 @@ deleted run or disagreeing with it, every committed run readable and present on 
 set matching its stored hash, every judge verdict naming a real set, item, pass and block,
 every judge scorer yaml loading and well-formed, every goal and round well-formed and named by
 every run that must name one, every item field declared, typed and matching its hash, and every
-reference's texts matching the checksums in its manifest. V4
+reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
+records matching the hashes it recorded, every model record and the configs naming it consistent, and every label set
+matching its hashes and its dataset. V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters).
 
@@ -900,8 +903,9 @@ evh mcp                                                 # the read commands as M
 evh mcp --http --bind 0.0.0.0 --allowed-host evals.team.example --public  # a shared MCP server
 ```
 
-**The catalog** is static pages over runs: one per dataset and goal, one per reference, a
-metrics page, and a search. Every page carries counts and means only, and item text only where
+**The catalog** is static pages over runs: one per dataset and goal, one per reference, the
+label sets and the captures (§15, §15b), a metrics page, and a search; the inspector adds each
+dataset's rows view. Every page carries counts and means only, and item text only where
 the repository already publishes it (a profile written `--with-text`, refused unless git has
 committed every item's file); otherwise item text is the local inspector's only. Build it offline with `evh catalog`, or together with the inspector. A dataset's
 page shows what is inside it once `evh dataset-profile` has written its profile where the
@@ -929,8 +933,8 @@ client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
   "tools", "public"}`. Beyond the loopback, `--allowed-host` is required: a request for another Host
   is answered 421 (DNS rebinding). `--allowed-origin` names the browser origins it accepts; an
   agent sends no Origin.
-- **`--public`**, for a server anyone can reach: no option that answers with an item's text
-  (`inspect --item`, `dataset-items --item`), and no `validate`.
+- **`--public`**, for a server anyone can reach: no option that answers with an item's text or a label
+  (`inspect --item` and the rows view's options, `dataset-items --item`), and no `validate`.
 - **Load:** `--concurrent N` commands at once (default 4; a call that waits 30 s for a slot is
   refused, "busy"), `--timeout S` per call (default 300; the command is stopped, exit 124),
   `--rate N` calls a minute per caller and `--rate-total N` for everyone together (default: no
@@ -980,7 +984,8 @@ dataset-items --dataset-id D [--item ID] [--json]` prints the profile.
 **`--json` on the views** (`overview`, `datasets`, `arms`, `goals`, `references`, `metrics`,
 `activity`, `search`, `inspect`): one object, `{"command", "version", "result": {"blocks": [...]}}`,
 each table as columns and rows. 0.7.0 gives each command its own result and retires `blocks`: do not
-build on it.
+build on it. `captures`, `labels`, `picks` and `deploy-sheet` already answer `--json` with an object of their
+own (`{"captures": …}`, `{"sets": …}`, `{"picks": …}`, the sheet).
 
 **The catalog's footer** names each page's command (`evh goals --goal G`); `evh catalog --mcp URL`
 adds the same as an MCP tool call, with the server and a "how to connect" link (`--mcp-howto URL`,
@@ -997,7 +1002,9 @@ opening line as the description); `--card URL` adds the image a shared link show
 `evh activity` for the activity page, `evh arms` (`--by config`, `--configs`) for the arms page,
 `evh datasets`, `evh arms --arm …`, `evh references`, `evh metrics --metric …` and
 `evh goals --goal …` for the others, `evh inspect --runs …` (`--items` for the per-item table,
-`--analysis` for the charts, `--item <id>` for one item) for the inspector.
+`--analysis` for the charts, `--item <id>` for one item) for the inspector, `evh labels` and
+`evh captures` for the Labels and Captures pages, `evh inspect --dataset-id … --rows` for a dataset's
+rows, `evh picks` for the picks waiting and `evh deploy-sheet --config …` for a goal's deploy sheet.
 
 ---
 

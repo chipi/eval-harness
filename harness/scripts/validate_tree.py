@@ -28,9 +28,14 @@ Each check exists because its absence let a real defect through somewhere:
                      not exist, or carrying fields without one; a value of an undeclared field,
                      of the wrong type or outside its choices; a required field with no value;
                      a fields_sha256 that is not the hash of the fields
-  V16 references     a reference whose manifest breaks its schema, whose texts differ from the
-                     checksums it records, or whose committed texts are missing (a manifest
-                     with no texts and `redistributed: false` is a reference fetched elsewhere)
+  V16 references     a reference with no manifest (ADR-0022: made only by promoting labels), whose
+                     manifest breaks its schema, whose texts differ from the checksums it
+                     records, or whose committed texts are missing (a manifest with no texts and
+                     `redistributed: false` is a reference fetched elsewhere)
+  V17 captures       a capture whose record files are partly missing, or whose records differ from the
+                     ids and sha256 it recorded (RFC-019)
+  V18 model records  a model record not named by its id, an alias claimed twice, a deployment id used
+                     twice, or a config naming a record or deployment that does not exist (RFC-020)
   V19 label sets     a label set whose labels differ from the sha256 it recorded, whose label files are
                      missing, whose dataset does not exist, or whose count is not its labels' (RFC-023)
 
@@ -1143,10 +1148,13 @@ def v16_references() -> None:
         texts = any(d.glob("*.txt"))
         if not mf_path.is_file():
             if texts:
+                # ADR-0022: a reference is made only by promoting labels, with a record of where it came from.
                 unchecked += 1
-                notes.append(
-                    f"V16: {rel} has no manifest, so a rebuilt copy cannot be checked "
-                    f"(evh reference-manifest --reference-id {rel} --source <how it is built>)"
+                bad.append(
+                    f"{rel}: no manifest, so nothing says where it came from: import the texts as labels and promote "
+                    f"them (evh label-import <folder> --dataset-id D --set S --by WHO, then evh reference-promote "
+                    f"--dataset-id D --labels S --tier T --reason …), or, for gold a script builds, "
+                    f"evh reference-manifest --reference-id {rel} --source <how it is built>"
                 )
             continue
         mf = read_json(mf_path)

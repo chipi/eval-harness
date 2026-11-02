@@ -26,15 +26,19 @@ pip install transformers sentencepiece rouge-score
 ## 1. Items, and gold if you have it
 
 Put one item per file under `data/sources/briefs/`, and, if a person has written the answer for
-each, one `<item_id>.txt` per item under `data/references/gold/briefs_v1/` (the item id is the
-file name without `.txt`). Twenty items is enough to learn something; write them yourself if
-nothing can be fetched or licensed. No gold yet?
+each, one `<item_id>.txt` per item in a folder of its own, say `data/sources/briefs_gold/` (the
+item id is the file name without `.txt`). Twenty items is enough to learn something; write them
+yourself if nothing can be fetched or licensed. The answers become a person's labels, and you
+promote them to gold, with why: a reference is only ever labels promoted on purpose. No gold yet?
 [Tutorial 3](3-frontier-reference-and-judging.md) makes silver from a frontier model's run.
 
 <!-- guide-check: skip -->
 ```bash
 evh dataset-create --dataset-id briefs_v1 --source-dir data/sources/briefs --glob "*.txt"
 evh dataset-materialize --dataset-id briefs_v1
+evh label-import data/sources/briefs_gold --dataset-id briefs_v1 --set my_gold --by me
+evh reference-promote --dataset-id briefs_v1 --labels my_gold --tier gold \
+    --reason "My own summaries are what the arms are judged by." --by me
 ```
 
 ## 2. Your adapter

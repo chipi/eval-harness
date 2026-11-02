@@ -107,7 +107,7 @@ data/profiles/       evh dataset-profile   what is inside a dataset, for its pag
 (an agent)           evh mcp            the read commands as MCP tools
 ```
 
-`evh validate` checks the whole tree — sixteen integrity rules (V1–V16), exits non-zero,
+`evh validate` checks the whole tree — nineteen integrity rules (V1–V19), exits non-zero,
 so it can gate CI.
 
 ### The three inputs
@@ -371,7 +371,7 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/experiment_run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
-| `scripts/validate_tree.py` | sixteen integrity checks (V1–V16) |
+| `scripts/validate_tree.py` | nineteen integrity checks (V1–V19) |
 | `scripts/list_runs.py` | what runs and baselines exist |
 | `schemas/` | the contracts: dataset, metrics (a run), baseline, config (an arm), goal, field set, judge scorer, judging set, verdict |
 | `scripts/_fields.py`, `scripts/_fetch.py` | item fields (types, checks, the catalog's summary) and items fetched from a pinned URL (ADR-0003) |

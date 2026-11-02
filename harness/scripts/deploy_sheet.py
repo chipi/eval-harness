@@ -195,9 +195,9 @@ def main() -> int:
         return 0 if ok else 1
     p = s["promoted"]
     print(f"deploy sheet: {s['config_id']}")
-    print(
-        f"  measured by   {s['run_id']} on {s['dataset_id']}, against {s['reference']['id']} ({s['reference']['tier']})"
-    )
+    ref = s.get("reference") or {}
+    against = f"{ref['id']} ({ref.get('tier') or 'no tier'})" if ref.get("id") else "no reference"
+    print(f"  measured by   {s['run_id']} on {s['dataset_id']}, against {against}")
     print(
         f"  promoted      as {p['baseline_id']} on {p['dataset_id']}, {p['promoted_at']}"
         if p

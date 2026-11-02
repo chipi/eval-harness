@@ -71,7 +71,34 @@ try:
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
-    shutil.copytree(KIT / "gold", data / "references" / "gold" / "tickets_v1")
+    r = evh(
+        "label-import",
+        str(KIT / "gold"),
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_gold",
+        "--by",
+        "owner",
+    )
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "owner_gold",
+            "--tier",
+            "gold",
+            "--reason",
+            "The owner's hand-written summaries are what the arms are judged by.",
+            "--by",
+            "owner",
+        )
+    )
+    check("setup: the owner's gold, promoted", r.returncode == 0, said(r)[-300:])
     shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
     for c in ("tickets_lead1", "tickets_lead2"):
         cfg = data / "configs" / f"{c}.yaml"

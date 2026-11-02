@@ -120,8 +120,11 @@ try:
     (silver / "a.txt").write_text("billing", encoding="utf-8")
     r = evh("validate")
     check(
-        "V16: a reference with no manifest is a note (how to add one), not a failure",
-        "V16: silver/toy_v1 has no manifest" in r.stdout and "FAIL V16" not in r.stdout,
+        "V16: a reference with no manifest fails (ADR-0022: made only by promoting labels), saying how to make one",
+        r.returncode != 0
+        and "FAIL V16" in r.stdout
+        and "silver/toy_v1: no manifest" in r.stdout
+        and "reference-promote" in r.stdout,
         r.stdout[-600:],
     )
 finally:

@@ -128,7 +128,8 @@ try:
     check(
         "the sheet: the promoted run, the model record and its deployment, the dataset and reference",
         r.returncode == 0
-        and "measured by   own on tickets_v1" in r.stdout
+        and "measured by   own on tickets_v1, against no reference" in r.stdout
+        and "None" not in r.stdout
         and "promoted      as tickets_v1_baseline on tickets_v1" in r.stdout
         and "record        m-one" in r.stdout
         and "tag           m-one-alias" in r.stdout,

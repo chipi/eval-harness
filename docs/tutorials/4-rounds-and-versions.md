@@ -263,7 +263,10 @@ no arm has run on it yet
 
 Nothing measured on `tickets_v1` moves: its runs, references and baseline stay its own. An arm
 measured on `tickets_v2` is a config with `dataset_id: tickets_v2`, and needs a reference for
-`tickets_v2` (silver from a run, as in getting started, or gold). `evh validate` (V2) fails a
+`tickets_v2`. Labels follow an item by its bytes, so v1's six tickets already carry the author's labels in
+`tickets_v2`: `evh reference-promote --dataset-id tickets_v2 --labels tickets_v1/author_v1 --tier silver
+--reason "…" --by me` promotes them for it, and the new ticket waits for a label of its own (`evh label-sheet
+--dataset-id tickets_v2 --items unlabelled`). `evh validate` (V2) fails a
 version whose parent dataset is gone, and the catalog links the versions both ways with what
 changed.
 

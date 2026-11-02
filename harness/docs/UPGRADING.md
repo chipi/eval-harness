@@ -29,8 +29,13 @@ optional); `harness/tools/migrate_references_to_labels.py`, run from a checkout,
 its texts into a label set, no run's score or hash moving. A reference made from outcomes has no rule of its own any
 more: promoted, it is a silver like any (with gold beside it, gold still decides).
 
-Four behaviours change without a migration:
+Five behaviours change without a migration:
 
+- **A reference folder with no manifest fails `validate` (V16).** Texts copied into `data/references/<tier>/<id>/`
+  by hand said nothing of where they came from, and runs scored against them as if promoted. Import them as a
+  person's labels and promote them (`evh label-import <folder> --dataset-id D --set S --by WHO`, then
+  `evh reference-promote … --tier … --reason …`), or, for gold a script builds, write its manifest with
+  `evh reference-manifest`.
 - **Each project serves on a port of its own**: `catalog-serve` on one in 18000–18999 and `mcp --http` on one in
   19000–19999, the same every time for a project's folder, the next free one if taken (`--port` overrides;
   `catalog-serve --public` keeps 8765). Bookmarks of 127.0.0.1:8765 move; the command prints the address.

@@ -58,15 +58,22 @@ Write the items yourself, so nothing has to be fetched or licensed:
 
 - **briefs_v1**: 20 short invented local-news briefs (5 sentences each) in
   `data/sources/briefs/`, and a one-sentence summary of each, written by you, in
-  `data/references/gold/briefs_v1/<item_id>.txt`.
+  `data/sources/briefs_gold/<item_id>.txt`.
 - **intents_v1**: 32 one- or two-sentence customer messages in `data/sources/messages/`, each
-  labelled billing, technical, account or shipping, in `data/references/gold/intents_v1/`.
+  labelled billing, technical, account or shipping, in `data/sources/messages_gold/<item_id>.txt`.
   Include a couple that sit between two intents (a shipping refund is billing).
+
+Your answers become a person's labels, promoted to gold with why (a reference is only ever labels promoted on
+purpose):
 
 ```bash
 evh dataset-create --dataset-id briefs_v1 --source-dir data/sources/briefs --glob "*.txt"
 evh dataset-create --dataset-id intents_v1 --source-dir data/sources/messages --glob "*.txt"
 evh dataset-materialize --dataset-id briefs_v1 && evh dataset-materialize --dataset-id intents_v1
+evh label-import data/sources/briefs_gold --dataset-id briefs_v1 --set my_gold --by me
+evh label-import data/sources/messages_gold --dataset-id intents_v1 --set my_gold --by me
+evh reference-promote --dataset-id briefs_v1 --labels my_gold --tier gold --reason "my own summaries" --by me
+evh reference-promote --dataset-id intents_v1 --labels my_gold --tier gold --reason "my own intents" --by me
 ```
 
 ## 2 · Goals

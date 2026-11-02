@@ -219,16 +219,19 @@ can extend later without re-authoring what you have.
 | experiment rounds (optional) | round on round: what each round tried, what it kept and dropped and why, what it concluded ([tutorial 4](../../docs/tutorials/4-rounds-and-versions.md)) |
 | item fields | the facts you know about each item (typed, declared once in a field set), checked by `evh validate`; items fetched from a pinned URL |
 | a catalog and an inspector | pages over your runs, and a local server that tests any arms against a baseline and shows outputs beside references; every view is also an `evh` command |
+| labels and references | what is right for an item and who said it (a person, a model, a rule), in sets that follow an item by its bytes; a reference is only ever labels promoted on purpose, with a reason |
+| production, evaluated | what your system did, kept as a capture; its decisions scored as an arm against labels; the rows where it was wrong picked for the next version of a dataset you govern ([tutorial 6](../../docs/tutorials/6-datasets-from-production.md)); the deploy sheet says what production must match to run what you promoted |
 
 ---
 
 ## The catalog and the inspector
 
 `evh catalog` builds static pages over your runs: one per dataset and per goal,
-one per reference (who wrote it, from which run, every arm scored against it), and a metrics page
-(what each metric measures, which way is better, where it is recorded). Every arm's row says what
-it is scored against, and rows scored against silver, scored by a judge, or scored against the
-reference the arm wrote itself are tinted apart from those scored against gold.
+one per reference (the label set it was promoted from, by whom and why, every arm scored against it),
+the label sets and the captures, and a metrics page (what each metric measures, which way is better,
+where it is recorded). Every arm's row says what it is scored against, and rows scored against silver,
+by a judge, against a label set, or against the reference the arm wrote itself are tinted apart from
+those scored against gold.
 `evh catalog-serve` serves them with the run inspector on 127.0.0.1. Both only ask an
 **adapter** questions: which arms exist, what each scored per item, which way is better,
 which references exist, what one arm wrote for one item.
@@ -271,6 +274,9 @@ which references exist, what one arm wrote for one item.
   | spend in USD and tokens (optional) | `spend()`: `[{"at", "usd", "tokens", "kind": "arm"\|"judge", "dataset", "what", "arm"}]` (usd or tokens None when unknown; measured runs and judging per set and day; `arm`, optional, names a measured run's arm); the home page's spend, the activity page and the arms page's spend columns, and `evh overview` and `evh activity` use it |
   | what each model's weights are (optional) | `model_facts()`: `{model: {"weights": "open" \| "proprietary", "licence": …}}`, keyed by the model a run records (`params.model`); the arms page's open-weights and proprietary filters and `evh arms --weights` read it. The harness's own adapter reads the model records, `data/models/<model_id>.yaml` (`schemas/model.schema.json`, validate V1: `aliases` are the ids runs record, `weights`, `licence`, and `deployments`, each place the model runs with its own onboarding); a model not listed is in neither |
   | metrics that need no reference (optional) | `reference_free(metric)`: True when the metric is measured off the bill or the clock, so arms scored against different references can still be compared on it; when absent, a metric whose name contains cost, latency or tokens |
+  | labels (optional, RFC-023) | `label_sets()`: every set, `{dataset, set, id, source, n_items, guideline, created_at, items}`; `label_coverage(dataset)`: the sets covering a dataset's items (by their sha256) and how often two agree; `item_labels(dataset, item)`: every label one item has, with its source; the Labels page, a dataset page's labels and the inspector's item view read them. `describe(arm)` may add `"labels_source"` (an arm scored against a label set) and `references()` `"promoted_from"`, `"reason"`, `"promoted_by"` |
+  | production (optional, RFC-019, RFC-023) | `captures()`: every capture, as `evh captures` lists them (the Captures page); `dataset_meta(dataset)`: its tags and where it came from (a capture, or the version it was derived from); `describe(arm)["recorded"]`: the capture a recorded arm read production's decisions from; `same_output(arm)`: whether two outputs are one decision (the adapter's `same(a, b)`), for agreement and the rows view |
+  | picks and the deploy sheet (optional, ADR-0023) | `picks_waiting(dataset)`: the picks naming a dataset as their target; `deploy_sheet(arm)`: what production must match to run a promoted arm, and what each capture says it ran |
   | the inspector's view kinds | `item_view` returns `{"kind": "text", "text"}`, `{"kind": "none", "note"}`, or a structured `insights` (`items` of `{text, grounded}`, `quotes`), `nodes` (`groups`) or `entities` (`items`); any may carry `info` |
 
   Every page and comparison is also a command that asks the same adapter the same questions:
@@ -319,8 +325,9 @@ which references exist, what one arm wrote for one item.
 ## For an agent: `evh mcp`
 
 `evh mcp` serves the project's read commands to an agent over MCP (the official SDK): the
-catalog's views (`overview`, `datasets`, `dataset-items`, `arms`, `goals`, `references`, `metrics`,
-`activity`, `search`), the inspector in the terminal (`inspect`), `rounds`, `runs-list` and
+catalog's views (`overview`, `datasets`, `dataset-items`, `arms`, `models`, `goals`, `references`, `metrics`,
+`activity`, `search`, `captures`, `labels`, `picks`, `deploy-sheet`), the inspector in the terminal (`inspect`, its
+rows view included), `rounds`, `runs-list` and
 `validate`. Each call runs the command as a person would, with `--json` where the command has it,
 so the agent sees the same numbers you do. No tool writes project data, spends or runs a model:
 running arms, promoting a baseline and closing a round stay your commands. (The one file a call
@@ -365,12 +372,12 @@ evh mcp --http --bind 0.0.0.0 --port 8766 --allowed-host evals.team.example [--p
 ```
 
 `--allowed-host` is required beyond the loopback (the server checks the Host against DNS
-rebinding); `--public` leaves out the options that answer with an item's text, and the
-`validate` tool (12 tools); `--rate` (per
+rebinding); `--public` leaves out the options that answer with an item's text (an item, the rows view), and the
+`validate` tool (17 tools); `--rate` (per
 caller), `--rate-total` (everyone together), `--concurrent` and `--timeout` bound the load, and a
 caller has one call running at a time; `--client-header` names the header your proxy sets for the
 caller's address (trust it only if nothing else can reach the port); `--hooks FILE` adds your error reporting, tracing
-and metrics. 0.5.0 has no accounts: put it behind what the team already uses (a VPN, an
+and metrics. It has no accounts: put it behind what the team already uses (a VPN, an
 authenticating proxy). The goals' tests are kept in the project's `.cache/` so a call that shows
 them answers in seconds after the first.
 
