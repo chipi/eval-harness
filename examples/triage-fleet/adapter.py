@@ -305,6 +305,14 @@ def _label(reference: str) -> tuple[tuple[str, ...], str | None]:
     return tuple("dismiss" if a == "not-file" else a for a in answers(text)), None
 
 
+def title(item: str) -> str | None:
+    """What names a decision in the sheet (UXS-002): the signal's alert name, not the probes that open the item."""
+    try:
+        return ((json.loads(item) or {}).get("signal") or {}).get("alertname") or None
+    except (ValueError, AttributeError):
+        return None
+
+
 def decision(output: str) -> str:
     """The decision in one output, what the sheet shows for it (UXS-002): its disposition, not the probe trace
     and reasons around it; a bare label (a recorded or labelled answer) as it is."""

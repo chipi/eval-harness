@@ -1131,8 +1131,8 @@ evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did pro
   both label, how many accept the same answers, how many share one (apart: a label accepting more agrees more
   easily), Cohen's kappa and Krippendorff's alpha (MASI distance for several answers), which correct for the
   agreement chance alone gives when one class dominates. Free-text labels are not compared as text. An adapter's `score` reads such a reference with `answers(reference)` from `evaluation_harness.adapter`.
-- **The sheet** (`evh inspect --sheet --dataset-id D --runs A,B,…`) shows the dataset's items down and a column per
-  arm across: what it wrote (the adapter's `decision(output)`, else its output, shortened; `--scores-only` leaves
+- **The sheet** (`evh inspect --sheet --dataset-id D --runs A,B,…`) shows the dataset's items down (each by the
+  first arm's adapter's `title(item)` when it has one, else its start) and a column per arm across: what it wrote (the adapter's `decision(output)`, else its output, shortened; `--scores-only` leaves
   it out) and every score it has on the item: its run's metrics, and a judging pass's where one under
   `data/runs-judged/<scorer>/` covered the run (`--metric M`, or `SCORER/M` for a judge's, picks the one the sheet
   is read on); a column per label set or reference set; the

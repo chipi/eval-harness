@@ -126,6 +126,7 @@ in the same file:
 | function | what it answers | read by |
 |---|---|---|
 | `decision(output)` | the decision in one output (a disposition, a label), without the reasons and traces around it | the sheet shows it per arm; with no `same`, two outputs agree when their decisions do |
+| `title(item)` | a line that names an item (an alert's name, a ticket's subject) | the sheet shows it as the item's start, else the item's own first characters |
 | `same(a, b)` | whether two outputs are one decision | agreement: `inspect --disagree`, the sheet's disagree and split, `label-sheet --items disagree` (default: the same decision, else the same text) |
 | `recorded_output(record)` | production's own decision, from a capture's record | `arm-from-capture` (else `--field`) |
 | `production_ran(record)` | what production ran for a record, under the keys a run's items report (`_meta`) | `deploy-sheet --capture` |

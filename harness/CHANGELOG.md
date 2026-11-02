@@ -232,6 +232,8 @@ that can move a result is never a patch release without saying so under **Change
 - **The sheet shows each arm's decision, the signals first**: an adapter's optional `decision(output)` (the
   triage example's: its disposition) is what an arm's column shows, the output itself otherwise; with no
   `same(a, b)`, two outputs agree when their decisions do. The browser's columns follow the terminal's (UXS-002).
+  An adapter's optional `title(item)` names each item (the triage example's: the signal's alert name, not the
+  probes that open it).
 - **`evh inspect --items` is gone, and so is `--rows`; the sheet replaces both** (no aliases): `evh inspect --sheet
   --dataset-id D --runs …` shows every item's scores per arm and the rows view's signals in one table. The
   inspector's endpoints `/api/rows` and `/api/label-sheet` are gone; `/api/sheet` serves the sheet, and its

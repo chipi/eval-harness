@@ -66,6 +66,8 @@ SIGNALS = ("wrong", "disagree", "split", "new", "unlabelled")
 #: --new-vs compares a field only when the governed dataset has at most this many values for it (a choice, an
 #: alert name, a source), not a free text where every value is new.
 NEW_MAX = 30
+#: The longest title(item) the sheet shows as an item's start (the item's own start is label_sheet.VIEW).
+VIEW_TITLE = 160
 #: A judged run's per-item metric that says who won the row (pick, pairwise), and the one that grades it. An
 #: unvalidated judging pass names them with a `_unvalidated` ending (judge_score.write_scored_runs).
 WON = ("judge_won", "judge_won_unvalidated")
@@ -296,7 +298,7 @@ def build(
     labels [{set, dataset_id, source, text}], label_text {key: line}, references {id: text}, winners {key: [token]},
     signals {name: detail}}. `fields_of(dataset)` gives ({name: field}, {item: {name: value}}) (the inspector's
     `_fields_of`). Filtering, the footer and the flat forms are the functions below."""
-    from evaluation_harness._adapter import adapter_module, decision_of, same_of, shown  # noqa: PLC0415
+    from evaluation_harness._adapter import adapter_module, decision_of, same_of, shown, title_of  # noqa: PLC0415
 
     ds = load_dataset(dataset_id)
     if len(set(tokens)) != len(tokens):
@@ -310,6 +312,19 @@ def build(
     deciders = {a["token"]: decision_of(a["metrics"].get("adapter")) for a in arms}
     same = same_of(spec) if arms else None
     score = getattr(adapter_module(spec), "score", None) if arms else None
+    titled = title_of(spec) if arms else None
+
+    def start(i: str) -> str:
+        """The item's start: the first arm's adapter's title(item) when it gives one, else the item's own start."""
+        if titled is not None:
+            whole = view(dataset_id, i, None)
+            try:
+                got = titled(whole) if whole else None
+            except Exception:  # noqa: BLE001 - an item the adapter cannot read shows its own start
+                got = None
+            if got:
+                return _short(got, VIEW_TITLE)
+        return view(dataset_id, i)
 
     def is_wrong(label: str, out: str) -> bool:
         """The adapter's verdict on an output against a label (`correct` 0), else none of the label's answers."""
@@ -439,7 +454,7 @@ def build(
         out.append(
             {
                 "item": i,
-                "text": view(dataset_id, i),
+                "text": start(i),
                 "fields": values.get(i, {}),
                 "decisions": dec,
                 "shown": {n: shown(deciders.get(n), o) for n, o in dec.items()},
@@ -588,7 +603,9 @@ def footer(model: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     sub = {t: {i: v for i, v in (model["_series"][t].get(ref) or {}).items() if i in items} for t in toks}
     rates: dict[str, dict[str, float | None]] = {}
     for w in model["winner_cols"]:
-        won = [r["winners"][w["key"]] for r in rows if r["winners"].get(w["key"]) or w["key"] in r["judged_on"]]
+        won = [
+            r["winners"][w["key"]] for r in rows if r["winners"].get(w["key"]) or w["key"] in r["judged_on"]
+        ]
         rates[w["key"]] = {
             t: (sum(1 / len(x) for x in won if t in x) / len(won) if won else None) for t in toks
         }

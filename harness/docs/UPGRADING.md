@@ -61,7 +61,7 @@ Everything else is added and optional: the capture lane (`evh capture`, `importe
 `evaluation_harness.adapter`, scoring against a label set with `--labels`, `evh arm-from-capture`, `inspect --disagree` and
 the sheet (`inspect --sheet`, `--csv`, `--fill`, read back by `evh sheet-import`), `evh pick`, `evh picks`,
 `evh dataset-extend`, `evh deploy-sheet`; the catalog's Labels page; an adapter's optional `same(a, b)`,
-`decision(output)`, `recorded_output(record)` and `production_ran(record)`; RFC-023); judging modes (a scorer's
+`decision(output)`, `title(item)`, `recorded_output(record)` and `production_ran(record)`; RFC-023); judging modes (a scorer's
 `mode: pick` or `pairwise`, validated in that mode; RFC-005) and an adapter's optional `primary_metric(params)`;
 model onboarding (`evh model-onboard`, `evh arm-smoke`, `evh models`, `model_record:` and `deployment:` in a
 config; RFC-020); scoring that evolves (`evh score-preview`, `evh rescore --goal --round --why`,

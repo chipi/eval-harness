@@ -88,6 +88,13 @@ def decision_of(adapter_spec: str | None) -> Any:
     return fn if callable(fn) else None
 
 
+def title_of(adapter_spec: str | None) -> Any:
+    """`title(item)` from the adapter a run recorded (UXS-002): a line that names an item (an alert's name, a
+    ticket's subject), what the sheet shows as its start; None when the adapter has none (the item's own start)."""
+    fn = getattr(adapter_module(adapter_spec), "title", None)
+    return fn if callable(fn) else None
+
+
 def shown(decide: Any, output: str | None) -> str | None:
     """What a view shows for one output: its decision when the adapter says what that is, else the output itself."""
     if output is None or decide is None:

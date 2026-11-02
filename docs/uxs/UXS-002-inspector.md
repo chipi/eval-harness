@@ -197,7 +197,8 @@ Opened from a dataset ("Open its sheet", production's recorded arm chosen first)
 browser, the same model.
 
 - **The items down, a column per arm across**, in the terminal's order: **item** (short id, the full id in its
-  title) and the start of the item; the **signals**, next to it because they are why a row matters: **wrong**
+  title) and the start of the item (the adapter's `title(item)` when it has one: an alert's name, a ticket's
+  subject); the **signals**, next to it because they are why a row matters: **wrong**
   (the first run's decision wrong against the chosen label set), **disagree** (another chosen arm decided
   differently), **split** (the candidates disagree among themselves), **new** (a field value the dataset chosen
   in "new against" has never had), **unlabelled** (no label in any set); then per arm its output (the adapter's

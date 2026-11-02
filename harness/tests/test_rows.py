@@ -740,6 +740,8 @@ try:
         "    return Result(output='A because ' + text[:40], cost_usd=0.0)\n"
         "def decision(output):\n"
         "    return output.split()[0]\n"
+        "def title(item):\n"
+        "    return 'TITLE ' + item.split()[0]\n"
     )
     (data / "configs" / "tickets_decider.yaml").write_text(
         "config_id: tickets_decider_v1\ndataset_id: tickets_v1\nadapter: decide.py\nparams:\n  provider: echo\n"
@@ -767,6 +769,19 @@ try:
         and table["columns"][:3] == ["item_id", "item", "signals"]
         and "disagree" not in str(first.get("signals")),
         out(r)[-400:] + json.dumps(table.get("columns")),
+    )
+    rest = evh(
+        "inspect", "--sheet", "--dataset-id", D, "--runs", "tickets_lead1_v1,tickets_decider_v1", "--json"
+    )
+    rest_rows: list = next(
+        (b for b in blocks_of(rest) if "columns" in b and b["columns"][0] == "item_id"), {"rows": []}
+    )["rows"]
+    check(
+        "the item's start is the first arm's adapter's title(item) when it has one, else the item's own start",
+        str(first.get("item", "")).startswith("TITLE ")
+        and rest_rows
+        and not str(rest_rows[0].get("item", "")).startswith("TITLE "),
+        str(first.get("item")) + " | " + str(rest_rows[0].get("item") if rest_rows else None),
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
