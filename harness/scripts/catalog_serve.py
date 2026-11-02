@@ -316,7 +316,7 @@ def _warnings(ctx: dict) -> list:
         w.append(
             f"Filtered to the {n} {item}(s) where "
             + " and ".join(x.replace(":", " = ", 1) for x in ctx["wheres"])
-            + ": a subset is a smaller sample, so less can be separated."
+            + ": a subset is a smaller sample, so fewer differences can be significant."
         )
     if ctx.get("breakdown"):
         w.append(
@@ -469,7 +469,7 @@ def compare(params: dict) -> dict:
     higher, neutral = not A.lower_is_better(metric, dataset), A.is_neutral(metric, dataset or None)
     # A family and a threshold come from the URL, so they are checked, not trusted: a family
     # smaller than the arms tested here, or a threshold above alpha (or below what the family
-    # allows), would turn "not separated" into "separated" by editing a link.
+    # allows), would turn "not significant" into "significant" by editing a link.
     family = _number(params, "family", int) or None
     threshold = _number(params, "threshold", float)
     tested = max(len(series) - 1, 1)

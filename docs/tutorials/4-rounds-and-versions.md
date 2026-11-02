@@ -53,12 +53,12 @@ r1 · open · tickets_v1
   hypothesis: how many leading sentences make the best one-line summary
 
   on overlap_f1: 3 arm(s) in play, leader tickets_lead2_v1
-    tickets_lead1_v1                 not separated      Δ -0.2592  p 0.0312
-    tickets_lead2_noisy_v1           not separated      Δ -0.1011  p 0.0312
+    tickets_lead1_v1                 not significant    Δ -0.2592  p 0.0312
+    tickets_lead2_noisy_v1           not significant    Δ -0.1011  p 0.0312
   NOTE: cost per item: tickets_lead2_v1 $0.000000
 
   suggested next:
-    - 2 arm(s) tie with the leader (tickets_lead1_v1, tickets_lead2_noisy_v1): more items would separate them
+    - 2 arm(s) not significantly different from the leader (tickets_lead1_v1, tickets_lead2_noisy_v1): more items may tell them apart
         evh rank-stability --dataset-id tickets_v1
     - close the round with what it showed (tickets_lead2_v1 is already the baseline)
         evh round-close --goal tickets_summary --round r1 --conclusion "..."
@@ -67,7 +67,7 @@ r1 · open · tickets_v1
 `evh rounds` reads the evidence the way the inspector does (every arm in play against the
 round's leader, Holm-corrected) and suggests the next decision, each as the command that makes
 it. It decides nothing: you do, with the commands. Here every arm is behind `lead2` on every
-ticket and none is separated at six items, so the honest decisions are about wording, not
+ticket and none is significantly different at six items, so the honest decisions are about wording, not
 winners.
 
 ## 3. Drop an arm, and close the round
@@ -79,7 +79,7 @@ the round with what it showed:
 evh round-retire --goal tickets_summary --round r1 --arm tickets_lead1_v1 \
     --reason "one sentence is behind two on every ticket"
 evh round-close --goal tickets_summary --round r1 \
-    --conclusion "lead2 is ahead of lead1 and lead2_noisy on all six tickets, separated from neither at n=6; lead2 stays the baseline"
+    --conclusion "lead2 is ahead of lead1 and lead2_noisy on all six tickets, not significantly at n=6; lead2 stays the baseline"
 git add data/rounds && git commit -qm "tickets_summary r1: closed"
 ```
 ```text
@@ -142,9 +142,9 @@ Every run records the round it ran in.
 ```bash
 evh rounds --goal tickets_summary
 ```
-<!-- guide-check: varies tickets_lead2_noisy_v2 retire separated -->
+<!-- guide-check: varies tickets_lead2_noisy_v2 retire signifi -->
 ```text
-  r1   closed  tickets_v1  2 arm(s), 1 retired  lead2 is ahead of lead1 and lead2_noisy on all six tickets, separated
+  r1   closed  tickets_v1  2 arm(s), 1 retired  lead2 is ahead of lead1 and lead2_noisy on all six tickets, not signifi
   r2   open    tickets_v1  2 arm(s), 1 retired
 
 r2 · open · tickets_v1 · from r1
@@ -153,19 +153,19 @@ r2 · open · tickets_v1 · from r1
   retired: tickets_lead2_noisy_v1 (replaced by v2, which drops fewer words)
   ...
   on overlap_f1: 2 arm(s) in play, leader tickets_lead2_v1
-    tickets_lead2_noisy_v2           separated: worse   Δ -0.0207  p 0.0312
+    tickets_lead2_noisy_v2           significant: worse Δ -0.0207  p 0.0312
   NOTE: spent $0.0000 of $0.01
   NOTE: cost per item: tickets_lead2_v1 $0.000000
 
   suggested next:
     - retire tickets_lead2_noisy_v2
-        evh round-retire --goal tickets_summary --round r2 --arm tickets_lead2_noisy_v2 --reason "separated worse than tickets_lead2_v1 on overlap_f1 after Holm (p 0.0312)"
+        evh round-retire --goal tickets_summary --round r2 --arm tickets_lead2_noisy_v2 --reason "significantly worse than tickets_lead2_v1 on overlap_f1 after Holm (p 0.0312)"
     - close the round with what it showed (tickets_lead2_v1 is already the baseline)
   ...
 ```
 
 Your Δ will differ (the arm is unseeded), and on a draw where it drops no word from one ticket it
-is not separated, and the first suggestion goes. The same comparison, as the inspector would draw
+is not significant, and the first suggestion goes. The same comparison, as the inspector would draw
 it, and the round's leaderboard:
 
 ```bash
@@ -196,7 +196,7 @@ evh pair-test --dataset-id tickets_v1 --round r2 --b tickets_lead2_noisy_v2
     delta (A - B)      +0.0216
     items A wins       6/6
     sign-flip p        0.0312  (exact, all 2^6 sign patterns)
-    verdict            SEPARATED at 0.05
+    verdict            SIGNIFICANT at 0.05
     (uncorrected: valid only if this pair was named before the table was read)
 ```
 
@@ -250,7 +250,7 @@ evh datasets
 evh datasets --dataset-id tickets_v2
 ```
 ```text
-  dataset     items  arms  configs  references         made from
+  dataset     items  arms  configs  reference sets     made from
   tickets_v1  6      5     5        silver/tickets_v1
   tickets_v2  7      0     0        —                  tickets_v1
 tickets_v2: 7 items, 0 arms from 0 configs (a config rescored against silver or by a judge is an arm of its own)

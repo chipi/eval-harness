@@ -30,7 +30,7 @@ searched is a 5,183-document corpus that no item mentions and no arm is scored o
 cd examples/retrieval-scifact
 uv sync --extra local          # --extra local pulls sentence-transformers; plain `uv sync` does not
 uv run fetch.py --n 200        # queries + qrels + the WHOLE corpus (~2 min)
-uv run fetch.py --n 40 --skip-corpus   # dev slice, a strict PREFIX of the 200
+uv run fetch.py --n 40 --skip-corpus   # pilot slice, a strict PREFIX of the 200
 
 cd ../../harness
 # The dataset file is committed and frozen; materialize checks the fetched bytes against it.
@@ -152,16 +152,16 @@ part of the index cache key so a prefixed arm cannot silently reuse an unprefixe
 [`scientific_retrieval_scifact`](https://evals.humancopilot.eu/catalog/g/scientific_retrieval_scifact.html), with an inspector that tests any arms against the baseline item by
 item. An agent can ask the same over MCP, read-only and without sign-in: connect
 `https://evals.humancopilot.eu/mcp` ([how](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp))
-and ask, say, "what does the `scientific_retrieval_scifact` goal recommend, and is it separated from the baseline?".
+and ask, say, "what does the `scientific_retrieval_scifact` goal recommend, and is it significantly different from the baseline?".
 
 ## Results
 
 Full write-up: [`../../research/REPORT_RETRIEVAL.md`](../../research/REPORT_RETRIEVAL.md).
 
 ```
-glm_s   ⟳ BM25      0.7437   $0.142    best of the 12 cheapest hosted LLMs, separates from only 6–7 of 18
-e5_base             0.7191   $0        FREE, 0.0246 behind glm_s, not separated
-bge_small           0.7097   $0        FREE, 0.0340 behind glm_s, not separated
+glm_s   ⟳ BM25      0.7437   $0.142    best of the 12 cheapest hosted LLMs, significant against only 6–7 of 18
+e5_base             0.7191   $0        FREE, 0.0246 behind glm_s, not significant
+bge_small           0.7097   $0        FREE, 0.0340 behind glm_s, not significant
 bm25                0.6451   $0        every reranker scores above it
 random              0.0005   $0
 
@@ -175,12 +175,12 @@ provider pinned, on a public benchmark (contamination unmeasured).
 
 Three things worth reading the report for:
 
-1. **A top group of twelve or thirteen arms the data cannot separate, and two of them are free.** `e5_base` and `bge_small` — local,
-   CPU, $0 — are not separated from any of the twelve rerankers (p 0.27–0.97 and
+1. **A top group of twelve or thirteen arms with no significant difference among them, and two of them are free.** `e5_base` and `bge_small` — local,
+   CPU, $0 — are not significantly different from any of the twelve rerankers (p 0.27–0.97 and
    0.12–0.97, uncorrected); n = 200 cannot resolve their 0.0246 and 0.0340 deficits.
 2. **A prediction registered before the arm existed, and one of two hit.** The ceiling
    analysis said a reranker on `e5_base`'s candidates would reach 0.786–0.797. `glm_s`
    reached **0.7891**, inside; `qwen_s` reached 0.7713, outside. Headroom-used moved 90.9% → 90.2% for `glm_s` and 87.4% → 88.2%
    for `qwen_s`.
-3. **The dev slice's leader finished 10th of 19** by point estimate, 0.0265 behind `glm_s`
-   — not separated. The dev runs are not committed.
+3. **The pilot slice's leader finished 10th of 19** by point estimate, 0.0265 behind `glm_s`
+   — not a significant difference. The pilot runs are not committed.

@@ -57,7 +57,7 @@ this repository does: without it a new project would commit its smoke passes and
 
 Re-scores, in a temporary directory, every arm the goal (or the round) reads, with the scorer in the working tree,
 and prints per arm the deciding measure before and after and whether it is still within the goal's limits; then the
-decision before and after (the quality leader, the arms tied with it, the recommendation). It writes nothing to the
+decision before and after (the quality leader, the contenders beside it, the recommendation). It writes nothing to the
 project and spends nothing: the tool for developing a scoring. `--json` as the other views.
 
 ### 4. Re-score a round: `evh rescore --goal G --round rN --why "…"`
@@ -101,10 +101,10 @@ promoted baseline the axis says so and applies no limit. `evh goals` and the goa
 
 1. **r1, recorded.** `round-open --goal triage_orrery --dataset orrery_triage_v1_labelled --adopt`, then the
    existing hand sets move into `runs-rescored/cd35dc1ffccc/{runs,runs-repeats}/` (they are that scorer's
-   re-scores), then `round-close` with what it showed (nothing separated at n = 65) and production's arm promoted as
+   re-scores), then `round-close` with what it showed (nothing significant at n = 65) and production's arm promoted as
    the baseline.
 2. **The new rules, previewed.** `score-preview --goal triage_orrery` with the no-decision rule in the adapter and
-   `false_alarm: {limit: baseline}` in the goal: what moves, and whether anything separates.
+   `false_alarm: {limit: baseline}` in the goal: what moves, and whether any difference becomes significant.
 3. **r2, adopted.** `round-open --from r1 --scoring "a no-decision is wrong on both sides; the ceiling is the
    baseline"`: r1's arms are carried and re-scored automatically; the round shows them before and after. Its new
    arms (onboarded models, a larger gold) run under the new scorer.
@@ -135,7 +135,7 @@ promoted baseline the axis says so and applies no limit. `evh goals` and the goa
 - **§9's paired test gates each arm on its own** (owner, 2026-10-31): p < 0.05 against the baseline, not corrected
   across the arms, as a numeric limit gates each arm. Built first with Holm across the group, it ruled out nothing in
   the triage round (56 arms, 31 noise items), not even the arm that escalates everything; per arm it rules out two.
-  Holm stays where the decision claims one arm beats the others (the tie).
+  Holm stays where the decision claims one arm beats the others (the contenders).
 - **A round's evidence notes how many arms it reads from a re-score**, and `evh rounds` prints the round's scorer
   and each scoring change, as the goal page's round section lists them.
 - **Found while building:** adapters and hooks were imported through Python's bytecode cache, which trusts a `.pyc`

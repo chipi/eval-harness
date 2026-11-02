@@ -31,7 +31,7 @@ def main() -> int:
     """Write the manifest of the named reference from the texts in its directory."""
     ap = argparse.ArgumentParser(
         prog="evh reference-manifest",
-        description="Write the manifest of a reference built outside the harness.",
+        description="Write the manifest of a reference set built outside the harness.",
     )
     ap.add_argument("--reference-id", required=True, help="<tier>/<dataset_id>, e.g. gold/ag_news_200")
     ap.add_argument(
@@ -46,7 +46,7 @@ def main() -> int:
     )
     ap.add_argument(
         "--dataset-id",
-        help="the dataset it is a reference for, when its name is not the dataset's (a second gold "
+        help="the dataset it is a reference set for, when its name is not the dataset's (a second gold "
         "for one dataset, e.g. gold/ag_news_200_adj1 for ag_news_200); default: the name",
     )
     ap.add_argument(

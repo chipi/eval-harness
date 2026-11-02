@@ -1,4 +1,4 @@
-# RFC-023: Labels, and the references promoted from them
+# RFC-023: Labels, and the reference sets promoted from them
 
 - **Status**: Accepted (owner, 2026-11-01); built for 0.6.0 in steps 1 to 9 (2026-11-01), each step's as-built
   notes below; step 10, the e2e on the triage fleet (a time split of the 233 decisions), ran 2026-11-01 and its
@@ -89,7 +89,7 @@ The harness cannot do steps 6 and after:
   show such a label as "escalate or file". It replaces the triage example's composite word `file-or-escalate`, which
   no code reads any more.
 
-### References
+### Reference sets
 
 - **Promotion is the only way to make one.** `reference-promote` copies the chosen labels into
   `references/<tier>/<name>/`, the layout runs, rescore and goals read today, unchanged; its manifest records
@@ -264,7 +264,7 @@ Page by page (UXS-001 and UXS-002 updated with the build):
 - **"Scored against"** everywhere names either a reference (with its tier pill) or a label set (with its source
   chip: person, model, rule; never gold or silver colours), so a number against labels is never read as one
   against a reference.
-- **The Data menu**: Datasets, Captures, Labels, References.
+- **The Data menu**: Datasets, Captures, Labels, Reference sets.
 - **The Labels page**: every label set, its dataset, its source chip, coverage (N of M items), its guideline, when,
   and what was promoted from it into which reference.
 - **The dataset page**: a labels section (each set, its source, coverage, how two sets agree, with each pair's
@@ -272,7 +272,7 @@ Page by page (UXS-001 and UXS-002 updated with the build):
   governed dataset, its picks waiting, each with where it came from, its labels, tags and note; select the ones to
   include and the page gives the `dataset-extend` command for them; for a version made from picks, the items it added, each
   with its capture, production dataset and the labels it carried.
-- **The references page and each reference's page**: "promoted from <label set> (<source>), <date>: <reason>".
+- **The reference sets page and each reference set's page**: "promoted from <label set> (<source>), <date>: <reason>".
 - **The Captures page**: beside the datasets made from each capture, the label sets on them and the recorded arm.
 - **The arms page and an arm's page**: a recorded arm carries a "recorded" badge, its capture linked, no model,
   no cost, and a filter for it; a promoted arm's page shows its deploy sheet.

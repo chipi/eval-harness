@@ -13,7 +13,7 @@ The harness answers one question honestly: of the systems I tried on my task, is
 better, or did a small sample hand me a lucky order? A user freezes a dataset, describes each
 system under test as an **arm** (one config), runs every arm over the same items, and gets
 per-item scores, cost and latency, recorded with a fingerprint of everything the numbers depend
-on. Paired tests then say, arm by arm, **separated** or **not separated**, and a baseline is
+on. Paired tests then say, arm by arm, **significant** or **not significant**, and a baseline is
 promoted only with a written reason.
 
 ## Background & Context
@@ -113,7 +113,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
   runs name, else the adapter's `METRIC_DIRECTIONS`, else the name (cost, latency and tokens go
   down).
 - **FR3.5**: `evh rank-stability`, `evh holdout` and `evh bootstrap-test` answer how many items a
-  ranking needs, what holds outside a dev slice, and intervals for corpus-level metrics.
+  ranking needs, what holds outside a pilot slice, and intervals for corpus-level metrics.
 - **FR3.6**: Every refusal (two datasets, another reference, a missing run) is an `ERROR: …`
   line on stderr with exit 1.
 

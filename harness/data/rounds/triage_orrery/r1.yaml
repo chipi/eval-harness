@@ -80,8 +80,8 @@ status: closed
 opened_at: '2026-10-31T13:18:37Z'
 closed_at: '2026-10-31T13:19:25Z'
 conclusion:
-  text: 'Nothing is decided at n = 65: on the combined cost the paired test ties every arm under the false-alarm
-    ceiling with the leader, the arm that always dismisses among them; the ceiling (production''s 4-pass
+  text: 'Nothing is decided at n = 65: on the combined cost the paired test finds no arm under the false-alarm
+    ceiling significantly different from the leader, the arm that always dismisses among them; the ceiling (production''s 4-pass
     mean, 21.25 of 31) was set after the results and sits within one or two false alarms of 18 rows; a
     no-decision scored as an escalation, a path production does not have. Production''s own model is promoted
     as the baseline the next round measures against (owner, 2026-10-31). Next: a no-decision counts as

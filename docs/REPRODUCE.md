@@ -105,7 +105,7 @@ it has, and prints a `--resume` line so nothing is paid for twice.
 **What to expect.** Not the same digits. A hosted model is not deterministic even at
 temperature 0; OpenRouter may route the request to a different provider than it did; and
 a model can be updated or retired under the same id. So the card asks the question the
-reports actually make claims about: **does every separation and every non-separation still hold?** It
+reports actually make claims about: **does every significant difference, and every difference that is not significant, still hold?** It
 substitutes your reruns for the committed runs and re-tests the leader against the same
 family, with the same Holm correction. Per arm it also reports whether your rerun is
 distinguishable from the committed one, whether the upstream model id changed, and which
@@ -123,7 +123,7 @@ make compare   EXP=scifact
 ```
 
 The card ranks your arm in the committed field and tests it against every committed arm,
-Holm-corrected — so "better than X" means *separated from* X, not *scored above* it. For a
+Holm-corrected — so "better than X" means *significantly better than* X, not *scored above* it. For a
 system that is not an OpenAI-compatible endpoint, write an adapter instead:
 [INTEGRATION](../harness/docs/INTEGRATION.md) is the four-function contract.
 
@@ -139,7 +139,7 @@ system that is not an OpenAI-compatible endpoint, write an adapter instead:
 | upstream | for a hosted arm, whether the model id behind the alias changed |
 | status | `exact` · `consistent` (hosted, not distinguishable) · `within noise, not exact` (local) · `DIFFERS` |
 
-Then the verdicts: how many arms are separated from the leader and how many are not, in the
+Then the verdicts: how many arms differ significantly from the leader and how many do not, in the
 committed record and with your reruns substituted in, and any arm that moved. `make
 compare` exits non-zero when a verdict moved or an arm differs.
 

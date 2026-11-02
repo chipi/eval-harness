@@ -196,7 +196,7 @@ class ClassificationTask:
 
         The shape of a rule-based classifier that is already in production somewhere and
         has never been measured. Its failure mode is worth knowing: on AG News the rules
-        under-triggered so badly that the default fired on 15 of 20 dev items, which
+        under-triggered so badly that the default fired on 15 of 20 pilot items, which
         accuracy alone did not reveal and the confusion matrix did immediately.
         """
         low = text.lower()

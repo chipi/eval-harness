@@ -72,7 +72,7 @@ which `make ci` checks this page against.
 [`summary_judge_summeval`](https://evals.humancopilot.eu/catalog/g/summary_judge_summeval.html), with an inspector that tests any arms against the baseline item by
 item. An agent can ask the same over MCP, read-only and without sign-in: connect
 `https://evals.humancopilot.eu/mcp` ([how](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp))
-and ask, say, "what does the `summary_judge_summeval` goal recommend, and is it separated from the baseline?".
+and ask, say, "what does the `summary_judge_summeval` goal recommend, and is it significantly different from the baseline?".
 
 ## Results: the free arms
 
@@ -94,7 +94,7 @@ Four things already worth saying:
 
 - **UniEval, the one free arm trained to judge, is the best free arm** — and how the text is
   written moves it: the same articles and summaries, cased and tokenised as UniEval's own
-  file has them, score 0.024 higher, a separated difference.
+  file has them, score 0.024 higher, a significant difference.
 
 - **BARTScore, a model that never sees a reference, scores above every reference-based metric**
   (τ 0.256 against ROUGE-2's 0.158). G-Eval publishes BARTScore at τ 0.305 / ρ 0.385; ours is
@@ -117,9 +117,9 @@ Four things already worth saying:
 
 ## Results: the hosted judges
 
-All 24 hosted judges are measured ($7.03 billed). 23 of them are separated from, and ahead
-of, UniEval on either set of inputs; the weakest, `llama_s`, cannot be told apart from it.
-Every one is ahead of BARTScore. The leader cannot be separated from five others, led by `openai_l` (τ 0.540), with `gemma_l` (τ 0.538) the
+All 24 hosted judges are measured ($7.03 billed). 23 of them are significantly
+ahead of UniEval on either set of inputs; the weakest, `llama_s`, cannot be told apart from it.
+Every one is ahead of BARTScore. The leader is not significantly different from five others, led by `openai_l` (τ 0.540), with `gemma_l` (τ 0.538) the
 cheapest member at $0.03 for all 100 articles. Scored against the mean of two experts, as one
 expert is against the other two, the best judges reach 93% of a human's agreement (95% interval 89–97%; the best of 24, chosen on these
 articles, and 92% when chosen on half the articles and scored on the other half), UniEval 64%, and a no-model lookup of which system wrote each summary 63% ([`human_ceiling.py`](human_ceiling.py)). The full results, the significance tests and
@@ -157,7 +157,7 @@ make leaderboard DATASET_ID=summeval_100
 - **One trained evaluator.** UniEval is the only free arm trained to judge. Part of its
   training data is built from CNN/DailyMail, and its paper does not say from which split, so
   it may have seen these articles' text; its paper does not train on their expert scores.
-- **How the prompt was developed is not recorded.** There is no dev slice, so nothing here
+- **How the prompt was developed is not recorded.** There is no pilot slice, so nothing here
   is reported on articles the prompt and parser were not written against.
 
 - **n = 100 articles**, and every summary is from a 2019-era system; modern summaries are

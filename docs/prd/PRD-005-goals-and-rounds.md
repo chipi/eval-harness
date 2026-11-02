@@ -71,7 +71,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 - **FR1.1**: A goal is `data/goals/<goal_id>.yaml`, validated by `schemas/goal.schema.json`.
   Required: `goal_id`, `title`, `statement`, `decision`, `success_criteria` (the primary measure
   and its direction: `higher`, `lower`, or `non_inferior`, a guard that ranks nothing) and
-  `datasets` (each with an optional role: dev, heldout, ...; empty for a goal checked by a gate
+  `datasets` (each with an optional role: validation, test, ...; empty for a goal checked by a gate
   rather than measured on a dataset). Optional: `context` (its audience), `output_contract`,
   `references`, `measures`, `min_items` (in `success_criteria`), `links` (shown on the goal
   page and by `evh goals --goal`: a web address as a link, a project path as text), `status`.
@@ -92,7 +92,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 - **FR1.6**: A goal weighs cost, quality and speed (cost and speed built in, with no
   configuration) and may add its own per-item metrics as axes, each with an optional limit. Arms
   over a limit, flagged arms and retired arms are never recommended. The goal's strategy
-  (`balanced` by default, `quality_first`, `frugal`) decides who is tied with the quality leader;
+  (`balanced` by default, `quality_first`, `frugal`) decides who the contenders beside the quality leader are;
   its tie-break (default cost, then speed) picks among them. Cost is shown in dollars and tokens
   per item; speed as p50 and p95. The goal page names the recommended arm per group with the
   reasons, and the home page's glance shows it with its cost and speed against the baseline;
@@ -119,9 +119,9 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   from and the arm that wrote a silver reference of the dataset, its spend against the budget and
   the cost per item, all read against the reference most of its arms use (gold before silver on
   a tie; arms scored against another are named, not compared), and suggestions (never to retire
-  the arm that wrote the silver reference): retire an arm separated as worse
-  (`evh round-retire …`), more items where arms tie with the leader (`evh rank-stability …`), change course when the round's best
-  is not separated from the previous round's, and close (`evh round-close …`).
+  the arm that wrote the silver reference): retire an arm significantly worse than the leader
+  (`evh round-retire …`), more items where arms are not significantly different from the leader (`evh rank-stability …`), change course when the round's best
+  is not significantly better than the previous round's, and close (`evh round-close …`).
 - **FR2.5**: `evh round-retire --goal G --round rN --arm C --reason "…"` and
   `evh round-close --goal G --round rN --conclusion "…" [--promote RUN_ID]` record decisions;
   a reason or conclusion must be a sentence. If the promotion is refused, the round stays open.

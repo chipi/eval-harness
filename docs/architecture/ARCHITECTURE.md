@@ -103,7 +103,7 @@ records that it changed. `validate` (V15) refuses an undeclared field and a valu
 wrong type. The catalog summarises a field's values only when it is marked public; the
 inspector filters a comparison by a field, and breaks it down by a choice or yes/no field
 with one Holm correction over every group, since each group is another chance of a false
-"separated".
+"significant".
 
 An item can also live at a URL: it is frozen by its sha256 like any other, fetched once into a
 cache, and refused when the bytes there are not the pinned ones.

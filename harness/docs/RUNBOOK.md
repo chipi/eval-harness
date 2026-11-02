@@ -38,7 +38,7 @@ further. This page is the reference for each step.
 | read the judged runs | `EVAL_RUNS_DIR=data/runs-judged/<scorer> evh leaderboard --dataset-id …` |
 | is silver good enough | `evh silver-calibrate --dataset-id …` |
 | how many items | `evh rank-stability --dataset-id …` |
-| dev-slice-free result | `evh holdout --dataset-id … --exclude-dataset …` |
+| pilot-slice-free result | `evh holdout --dataset-id … --exclude-dataset …` |
 | scores made elsewhere | `evh import-run --dataset-id … --config-id … --scores … --scorer-file …` |
 | billed cost | `evh cost-report` |
 | baseline | `evh run-promote --run … --reason "…"` · `evh runs-list --baselines` |
@@ -54,7 +54,7 @@ further. This page is the reference for each step.
 | scrub a capture | `evh capture-scrub c1 --command "python scrub.py {records}"` |
 | a dataset from a capture | `evh dataset-from-capture c1 --dataset-id … [--where F:V] [--one-per F] [--tag K=V]` |
 | labels from what happened afterwards | `evh label-from-capture --dataset-id … --capture c1 --map rules.yaml --set …` |
-| dev and heldout | `evh dataset-split … --heldout 0.3 --seed 7 [--key F]` |
+| validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
 | production's own decisions as an arm | `evh arm-from-capture --dataset-id … --capture c1 --as production_v1 [--like CONFIG]` ([§15b](#15b-evaluating-what-production-did)) |
 | where arms decided differently | `evh inspect --runs A,B --disagree` |
 | every row, its signals | `evh inspect --dataset-id … --rows --runs A,B [--wrong-against SET] [--new-vs V]` |
@@ -317,7 +317,7 @@ success_criteria:
   primary: {measure: accuracy, direction: higher}
   min_items: 30
 datasets:
-  - {dataset_id: intents_v1, role: dev, notes: "32 hand-written messages, a few between two intents"}
+  - {dataset_id: intents_v1, role: validation, notes: "32 hand-written messages, a few between two intents"}
 references:
   - {reference_id: gold/intents_v1, tier: gold, format: label}
 measures:
@@ -343,12 +343,12 @@ what reads it. A project may add fields of its own; the harness ignores them.
 | `success_criteria.primary.direction` | `higher`, `lower` or `non_inferior` | `higher`/`lower` rank the arms. `non_inferior` is a guard (no significant drop against a baseline) and ranks nothing. V14 fails a direction that contradicts what the runs record, or `higher` on a cost, latency or token count |
 | `success_criteria.primary.threshold` | any value | shown beside the measure on the goal page |
 | `success_criteria.min_items` | an integer, at least 1 | The fewest items a winner-picking comparison may rest on: an arm with fewer is flagged "n k < min_items m" on the goal page and is never a group's leader; `evh validate` notes a goal dataset smaller than it (a note, not a failure) |
-| `success_criteria.axes` | a map of name → `{measure, direction, stat, limit, margin, role, unit, note}`, all optional. `cost` (`cost_usd`, mean, tokens shown beside it) and `speed` (`latency_ms`, p95) are built in and need no entry; `quality` takes only a `limit`, a `margin` and a `note` (its measure and direction are the primary's), and `margin` belongs to quality alone; any other name is the project's own axis, a per-item metric its runs record (`measure` defaults to the name, `direction` to the adapter's `METRIC_DIRECTIONS`, else `higher`, `stat` to `mean`). `role: ignore` drops an axis. `limit: baseline` in place of a number: an arm is out when the paired test finds it worse than the group's promoted baseline on that axis (p < 0.05, each arm on its own, not corrected across the arms; RFC-022); with no baseline promoted, no limit applies and the decision says so | The goal's decision ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)): an arm past a `limit` is out, with the reason; `margin` (default 2% of the leader's mean) is how close an unseparated arm must be to tie under `balanced`. The goal page and `evh goals --goal` show a column per axis; V14 refuses an unknown key in an entry |
-| `success_criteria.strategy` | `balanced` (the default), `quality_first` or `frugal` | Who is tied with the quality leader: `balanced` not separated by the paired test AND within the margin; `quality_first` the same quality only; `frugal` anything the test cannot separate |
-| `success_criteria.tie_break` | a list of axis names, default `[cost, speed]`; `quality` may be one | Among the tied, the axes that pick, in order (`[cost, quality]`: the cheapest, then the best of the equally cheap). V14 fails a name the goal does not weigh |
+| `success_criteria.axes` | a map of name → `{measure, direction, stat, limit, margin, role, unit, note}`, all optional. `cost` (`cost_usd`, mean, tokens shown beside it) and `speed` (`latency_ms`, p95) are built in and need no entry; `quality` takes only a `limit`, a `margin` and a `note` (its measure and direction are the primary's), and `margin` belongs to quality alone; any other name is the project's own axis, a per-item metric its runs record (`measure` defaults to the name, `direction` to the adapter's `METRIC_DIRECTIONS`, else `higher`, `stat` to `mean`). `role: ignore` drops an axis. `limit: baseline` in place of a number: an arm is out when the paired test finds it worse than the group's promoted baseline on that axis (p < 0.05, each arm on its own, not corrected across the arms; RFC-022); with no baseline promoted, no limit applies and the decision says so | The goal's decision ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)): an arm past a `limit` is out, with the reason; `margin` (default 2% of the leader's mean) is how close an arm not significantly different from the leader must be to count as a contender under `balanced`. The goal page and `evh goals --goal` show a column per axis; V14 refuses an unknown key in an entry |
+| `success_criteria.strategy` | `balanced` (the default), `quality_first` or `frugal` | Who the contenders are beside the quality leader: `balanced` not significantly different by the paired test AND within the margin; `quality_first` the same quality only; `frugal` anything not significantly different |
+| `success_criteria.tie_break` | a list of axis names, default `[cost, speed]`; `quality` may be one | Among the contenders, the axes that pick, in order (`[cost, quality]`: the cheapest, then the best of the equally cheap). V14 fails a name the goal does not weigh |
 | `success_criteria.guardrails[]` | `{name, rule}` (required), `source` | Rules in words that no number checks: a "guardrails" row on the goal page, a line each in `evh goals --goal`; never computed |
 | `success_criteria.secondary` | removed in 0.4.0 | V14 fails a goal that still has it: move its entries to `axes` (UPGRADING) |
-| `datasets[]` | `{dataset_id}` (required), `role`, `decides` (false: the goal never decides on it), `notes`. An empty list is a goal checked by a gate rather than measured on a dataset | Each dataset gets a section on the goal page and in `evh goals --goal`. `role` is free text (`dev`, `heldout`, `smoke`, `generalization`), shown beside the dataset. `decides: false` makes a dataset one the goal never decides on: its groups keep their leader but recommend nothing, and the home page's glance leaves it out. `notes` is shown under it |
+| `datasets[]` | `{dataset_id}` (required), `role`, `decides` (false: the goal never decides on it), `notes`. An empty list is a goal checked by a gate rather than measured on a dataset | Each dataset gets a section on the goal page and in `evh goals --goal`. `role` is free text (`validation`, `test`, `pilot`, `smoke`, `generalization`), shown beside the dataset. `decides: false` makes a dataset one the goal never decides on: its groups keep their leader but recommend nothing, and the home page's glance leaves it out. `notes` is shown under it |
 | `references[]` | `{reference_id, tier, format}`, all strings; `tier` is `gold` or `silver` by convention, `format` your word for the reference text's shape (`label` for a bare-label gold) | nothing: which reference an arm is scored against comes from its run, not from the goal |
 | `measures[]` | `{id, kind, validity}`, all strings; `validity` says how far the measure is trusted (`unvalidated`, or what it was validated against) | nothing (for the reader) |
 | `links[]` | `{url, note}` | nothing (for the reader) |
@@ -509,9 +509,9 @@ into a *finding* is a separate verb: these are the tools behind the numbers in `
 | verb | answers |
 |---|---|
 | `evh leaderboard --dataset-id …` | how do all the arms rank, on every metric at once |
-| `evh family-test --dataset-id … --a … --against …` | is arm A separated from a **pre-declared family**, Holm step-down. This is what every separation claim in the reports rests on |
+| `evh family-test --dataset-id … --a … --against …` | does arm A differ significantly from a **pre-declared family**, Holm step-down. This is what every significance claim in the reports rests on |
 | `evh pair-test --dataset-id … --a … --b …` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance |
-| `evh holdout --dataset-id … --exclude-dataset …` | does the result survive on the items the dev slice never contained |
+| `evh holdout --dataset-id … --exclude-dataset …` | does the result survive on the items the pilot slice never contained |
 | `evh rank-stability --dataset-id …` | how many items before the ordering stops moving — measured, not assumed from a power table |
 | `evh bootstrap-test --dataset-id … --a … --against …` | a percentile interval for a corpus-level metric that has no per-item value |
 | `evh rescore --dataset-id … --out …` | recompute every score from stored outputs under the current scorer — or, with `--reference-id gold/…`, against a reference set that arrived later. **$0, no API calls** |
@@ -526,7 +526,7 @@ p. Above that the estimate is seeded, so it repeats, but `family-test` draws one
 for the whole family while `pair-test` and the inspector draw one per pair: the same pair's p can
 differ in the third decimal between them (32 items in the 2026-10-24 scenario: 0.0297 from
 `family-test`, 0.0327 from `pair-test` and the inspector). The verdicts are read against the same
-thresholds; a p that close to one is not a result either way. `pair-test` separates an arm from
+thresholds; a p that close to one is not a result either way. `pair-test` calls an arm significantly different from
 the baseline at `p ≤ threshold`, and `family-test` marks an estimated p with `~` when the family
 mixes exact and estimated rows. Every command prints p to four decimals, and `<0.0001` for what
 would print as 0.0000. `family-test`'s `A wins` column counts the items A wins; the inspector's
@@ -879,8 +879,8 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
   and suggests the next decision as the command that makes it: retire an
   arm, measure more items, close the round. It never suggests retiring the baseline the round
   started from, nor, when the round is read against that arm's own silver, the arm that wrote
-  it: there it is the yardstick, not a contender (against gold it is an arm like any other). The
-  close suggestion carries `--promote` only for a leader separated better than the baseline it
+  it: there it is the yardstick, not an arm under test (against gold it is an arm like any other). The
+  close suggestion carries `--promote` only for a leader significantly better than the baseline it
   started from and not behind the previous round's best; otherwise it says why it promotes
   nothing. It decides nothing.
 - **`round-close --promote <run_id>`** promotes that run to the dataset's baseline, with the
@@ -1029,7 +1029,7 @@ evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --one-per fingerprint
 evh dataset-materialize --dataset-id prod_v1
 evh label-from-capture --dataset-id prod_v1 --capture prod_2026_10 --map rules.yaml \
     --set prod_outcomes                                                # a rule set: what happened afterwards
-evh dataset-split prod_v1 --heldout 0.3 --seed 7 --key fingerprint     # prod_v1_dev, prod_v1_heldout
+evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_validation, prod_v1_test
 ```
 
 - **A capture** is `data/captures/<id>/capture.json` (each record's id and hashes) and `records/` (the

@@ -29,8 +29,8 @@ download recipe, never the text.
 ```bash
 cd examples/summarization-cnn-dailymail
 uv sync                       # provisions its own Python 3.11 and deps
-uv run fetch.py --n 200       # the measurement slice, cnn_dailymail_200 (~5 seconds)
-uv run fetch.py --n 20        # the dev slice, a strict prefix of the 200
+uv run fetch.py --n 200       # the test slice, cnn_dailymail_200 (~5 seconds)
+uv run fetch.py --n 20        # the pilot slice, a strict prefix of the 200
 ```
 
 That writes the articles into `../../harness/data/sources/cnn_dailymail_<n>/` and their
@@ -75,7 +75,7 @@ make leaderboard DATASET_ID=cnn_dailymail_200
 
 `arm_*_n200.yaml` matches all 29 arms on the 200-article slice, the five local ones included
 (those need `uv sync --extra local`). A sweep refuses configs that do not share one
-`dataset_id`, so the unsuffixed `arm_*.yaml` files (the 20-article dev slice) cannot be mixed in.
+`dataset_id`, so the unsuffixed `arm_*.yaml` files (the 20-article pilot slice) cannot be mixed in.
 
 Dry-run first; it costs nothing and tells you what the sweep will. The committed result is
 one pass per arm: 24 hosted arms × 200 articles = 4,800 calls, **$5.74 billed**. The
@@ -181,7 +181,7 @@ model wrote its reasoning out in the open.
 [`news_summary_cnn`](https://evals.humancopilot.eu/catalog/g/news_summary_cnn.html), with an inspector that tests any arms against the baseline item by
 item. An agent can ask the same over MCP, read-only and without sign-in: connect
 `https://evals.humancopilot.eu/mcp` ([how](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp))
-and ask, say, "what does the `news_summary_cnn` goal recommend, and is it separated from the baseline?".
+and ask, say, "what does the `news_summary_cnn` goal recommend, and is it significantly different from the baseline?".
 
 ## What 200 articles showed
 
@@ -200,18 +200,18 @@ among them held, the XSum control is still last, and the hosted arms were not re
   were uncorrelated (r = −0.07, 95% CI −0.46 to +0.34): at n = 24 that does not exclude a
   moderate effect. The dearest arm (`anthropic_l`, **$1.9652** billed) costs **143×** the
   cheapest paid arm (`deepseek_s`, $0.0137), ranks **18th of 29** on coverage (15th of the 24
-  hosted) and is separated below the best paid arm. The Pareto frontier keeps **8 of 24**
+  hosted) and is significantly below the best paid arm. The Pareto frontier keeps **8 of 24**
   hosted arms; the other 16 are dominated on the point estimates — behind another arm on
   quality *and* cost *and* speed — and for three of them (`llama_l`, `mistral_s`, `gemma_l`)
-  the dominator's quality lead is not separated, so the case is a 2%–30% cost difference.
+  the dominator's quality lead is not significant, so the case is a 2%–30% cost difference.
 - **A model-authored reference is biased, not just noisy.** See below.
 
-**Few specific comparisons survive.** At n=200, **34 of 276** hosted pairs separate on
-`coverage` after correcting for 276 comparisons (1 of 276 at n=20). The top six cannot be
-separated, and a leaderboard that printed a confident 1-to-24 ordering from this data
+**Few specific comparisons survive.** At n=200, **34 of 276** hosted pairs differ significantly on
+`coverage` after correcting for 276 comparisons (1 of 276 at n=20). No two of the top six
+differ significantly, and a leaderboard that printed a confident 1-to-24 ordering from this data
 would be overstating it.
 
-**Beware the metric that separates most.** Ranked by pairs distinguished —
+**Beware the metric that finds the most significant differences.** Ranked by pairs distinguished —
 `summary_words` 208, `grounding` 172, `concision` 146, `rouge1` 97, `rougeLsum` 95,
 `coverage` 34 — the order is almost exactly how much each measure depends on output
 length. A facet that resolves many pairs is not thereby the more informative one.
@@ -279,10 +279,10 @@ evh reference-promote --dataset-id cnn_dailymail_200 --labels author_silver --ti
 | `prompt.txt` | the one prompt, shared by every arm, hashed into every fingerprint |
 | `adapter.py` | the integration seam: `call_system`, `score`, `warmup`, `fingerprint` |
 | `configs/arm_*_n200.yaml` | the 29 arms on the 200-article slice (24 hosted, 5 local); among the hosted, only `model` and the price fields differ |
-| `configs/arm_*.yaml` | the 20-article dev slice: 24 hosted arms plus `bart_l` and `lead3` |
+| `configs/arm_*.yaml` | the 20-article pilot slice: 24 hosted arms plus `bart_l` and `lead3` |
 | `configs/arm_*_dm200.yaml` | the DailyMail slice: five local arms, which were run, and four hosted (`deepseek_m`, `llama_l`, `llama_m`, `llama_s`), which were not |
 | `model_provenance.json` | what each proxy alias resolved to upstream |
-| `reference/` | configs for authoring a reference tier, and when not to |
+| `reference/` | configs for authoring a silver reference set, and when not to |
 | `pyproject.toml`, `uv.lock` | isolated environment; `uv sync` provisions its own Python |
 
 ## Not covered
@@ -291,7 +291,7 @@ evh reference-promote --dataset-id cnn_dailymail_200 --labels author_silver --ti
   tried few-shot, with a different prompt or with reasoning on, were served by whichever
   providers OpenRouter chose, and ran once each. CNN/DailyMail is public and
   contamination was not measured.
-- **200 articles, not a large sample.** The dev slice is 20; every number above is n=200
+- **200 articles, not a large sample.** The pilot slice is 20; every number above is n=200
   unless it says n=20. At 200 articles 34 of 276 hosted pairs separate and the top six do
   not.
 - **One reference per article.** ROUGE against a single human summary is a weak proxy; two
@@ -303,10 +303,10 @@ evh reference-promote --dataset-id cnn_dailymail_200 --labels author_silver --ti
   deliberate: the same eval measures how fast *your* machine is at *this* task.
   The local arms were recorded on two machines (a 12-core Mac and a 4-core Linux box that
   ran `bart_l` 1.7× faster); `harness/data/runs-linux/` re-times all five on one.
-- **Local arms.** `bart_l` (BART fine-tuned on this corpus, 1.6 GB) is not separated from
+- **Local arms.** `bart_l` (BART fine-tuned on this corpus, 1.6 GB) is not significantly different from
   the best hosted arm (gap 0.0001, p = 0.99). `lead3` ran too. Three more local arms need
-  torch ≥ 2.6: two distillations, `bart_m` 0.3367 (not separated from `bart_l`) and
-  `bart_s` 0.3276 (not separated in the 28-arm family; separated in the five-arm family of
+  torch ≥ 2.6: two distillations, `bart_m` 0.3367 (not significantly different from `bart_l`) and
+  `bart_s` 0.3276 (not significant in the 28-arm family; significant in the five-arm family of
   the report's §3.7 and on DailyMail); and `bart_l_xsum` — the same architecture trained
   on XSum, with different decode settings — last of 29 on `coverage` at 0.2071, below
   `lead3`. No hosted arm was run on DailyMail.

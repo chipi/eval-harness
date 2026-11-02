@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""evh dataset-split (RFC-019 P5): dev and heldout as two ordinary datasets, stable across versions.
+"""evh dataset-split (RFC-019 P5): validation and test as two ordinary datasets, stable across versions.
 
 python tests/test_split.py
 """
@@ -86,48 +86,48 @@ check(
     out(r)[-300:],
 )
 
-r = evh("dataset-split", "base_v2", "--heldout", "0.3", "--seed", "7")
-dev, held = ids("base_v2_dev"), ids("base_v2_heldout")
+r = evh("dataset-split", "base_v2", "--test", "0.3", "--seed", "7")
+dev, held = ids("base_v2_validation"), ids("base_v2_test")
 check(
-    "split: every item on exactly one side, about 30% heldout",
+    "split: every item on exactly one side, about 30% test",
     r.returncode == 0 and dev | held == ids("base_v2") and not dev & held and 60 <= len(held) <= 120,
-    f"{len(dev)} dev, {len(held)} heldout; " + out(r)[-200:],
+    f"{len(dev)} validation, {len(held)} test; " + out(r)[-200:],
 )
-sp = ds("base_v2_heldout").get("split", {})
+sp = ds("base_v2_test").get("split", {})
 check(
     "split: each side records the rule and its lineage to the parent",
-    sp == {"from": "base_v2", "heldout": 0.3, "by": "hash", "key": None, "seed": 7, "part": "heldout"}
-    and ds("base_v2_dev")["derived_from"]["dataset_id"] == "base_v2"
-    and sorted(ds("base_v2_dev")["derived_from"]["removed"]) == sorted(held),
+    sp == {"from": "base_v2", "test": 0.3, "by": "hash", "key": None, "seed": 7, "part": "test"}
+    and ds("base_v2_validation")["derived_from"]["dataset_id"] == "base_v2"
+    and sorted(ds("base_v2_validation")["derived_from"]["removed"]) == sorted(held),
     sp,
 )
-r = evh("dataset-split", "base_v1", "--heldout", "0.3", "--seed", "7")
+r = evh("dataset-split", "base_v1", "--test", "0.3", "--seed", "7")
 check(
     "split: a later version keeps every earlier item on its side",
-    r.returncode == 0 and ids("base_v1_heldout") <= held and ids("base_v1_dev") <= dev,
+    r.returncode == 0 and ids("base_v1_test") <= held and ids("base_v1_validation") <= dev,
     out(r)[-200:],
 )
-r = evh("dataset-split", "base_v2", "--heldout", "0.3", "--seed", "7", "--key", "group", "--force")
+r = evh("dataset-split", "base_v2", "--test", "0.3", "--seed", "7", "--key", "group", "--force")
 groups = {it["item_id"]: it["fields"]["group"] for it in ds("base_v2")["items"]}
-gd = {groups[i] for i in ids("base_v2_dev")}
-gh = {groups[i] for i in ids("base_v2_heldout")}
+gd = {groups[i] for i in ids("base_v2_validation")}
+gh = {groups[i] for i in ids("base_v2_test")}
 check("split --key: no group on both sides", r.returncode == 0 and not gd & gh and gd and gh, out(r)[-200:])
-r = evh("dataset-split", "base_v1", "--heldout", "0.25", "--by", "time", "--key", "day", "--force")
+r = evh("dataset-split", "base_v1", "--test", "0.25", "--by", "time", "--key", "day", "--force")
 days = {it["item_id"]: it["fields"]["day"] for it in ds("base_v1")["items"]}
 check(
-    "split --by time: the newest quarter is heldout",
+    "split --by time: the newest quarter is test",
     r.returncode == 0
-    and len(ids("base_v1_heldout")) == 25
-    and min(days[i] for i in ids("base_v1_heldout")) >= max(days[i] for i in ids("base_v1_dev")),
+    and len(ids("base_v1_test")) == 25
+    and min(days[i] for i in ids("base_v1_test")) >= max(days[i] for i in ids("base_v1_validation")),
     out(r)[-200:],
 )
-r = evh("dataset-split", "base_v1", "--heldout", "0.25", "--seed", "1")
+r = evh("dataset-split", "base_v1", "--test", "0.25", "--seed", "1")
 check("split: never overwrites without --force", r.returncode != 0 and "frozen" in out(r))
-r = evh("dataset-split", "base_v1", "--heldout", "1.5")
+r = evh("dataset-split", "base_v1", "--test", "1.5")
 check("split: a share outside (0, 1) is refused", r.returncode != 0)
-r = evh("dataset-split", "base_v1", "--heldout", "0.5", "--by", "time")
+r = evh("dataset-split", "base_v1", "--test", "0.5", "--by", "time")
 check("split --by time without --key is refused", r.returncode != 0 and "--key" in out(r))
-for name in ("base_v2_dev", "base_v2_heldout"):
+for name in ("base_v2_validation", "base_v2_test"):
     r = evh("dataset-materialize", "--dataset-id", name)
     check(f"split: {name} materializes from the parent's source files", r.returncode == 0, out(r)[-200:])
 r = evh("validate")

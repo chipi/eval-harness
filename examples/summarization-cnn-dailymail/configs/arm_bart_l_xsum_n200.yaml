@@ -1,7 +1,7 @@
 # bart-large-xsum: the same architecture as bart_l, fine-tuned on the WRONG dataset.
 #
 # WHY THIS IS THE MOST IMPORTANT OF THE THREE. bart_l finished first on coverage at n=200,
-# tied with the best of 24 hosted models. The obvious objection to that result is that
+# not significantly different from the best of 24 hosted models. The obvious objection to that result is that
 # bart_l was fine-tuned on cnn_dailymail and the LLMs were not, so it is being scored on
 # how well it reproduces a distribution it was trained on. This arm is the control for
 # exactly that objection: identical architecture, identical parameter count, identical

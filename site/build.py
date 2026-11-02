@@ -147,7 +147,7 @@ def legend(band: bool = True, reading: str = "", baseline: bool = True) -> str:
     kinds = ("proprietary", "open", "local") + (("baseline",) if baseline else ())
     items = "".join(f'<span><i style="background:var(--{k})"></i>{KIND_LABEL[k]}</span>' for k in kinds)
     if band:
-        items += '<span><i class="sw-band"></i>not separated from the leader</span>'
+        items += '<span><i class="sw-band"></i>not significantly different from the leader</span>'
     if reading:
         items += f'<span class="read">{reading}</span>'
     return f'<div class="legend">{items}</div>'
@@ -198,7 +198,7 @@ def strip(exp: dict, width: int = 1000, height: int = 92, title: bool = True, co
     def x(v):
         return edge if v < lo else left + (v - lo) / (hi - lo) * (right - left)
 
-    tied = [a for a in arms if a["arm"] in exp["tied"]] + [exp["leader_row"]]
+    group = [a for a in arms if a["arm"] in exp["contenders"]] + [exp["leader_row"]]
     out = [
         f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{e(exp["bench"])}: every learned arm by {e(exp["metric_label"])}">'
     ]
@@ -212,8 +212,8 @@ def strip(exp: dict, width: int = 1000, height: int = 92, title: bool = True, co
             f'<text x="0" y="{y - 6}" class="t-head" font-size="17">{e(exp["bench"])}</text>'
             f'<text x="0" y="{y + 14}" class="t-muted" font-size="11">{e(exp["task"].lower())} · {e(exp["metric_label"])}</text>'
         )
-    if len(tied) > 1:
-        x0, x1 = x(min(a["score"] for a in tied)), x(max(a["score"] for a in tied))
+    if len(group) > 1:
+        x0, x1 = x(min(a["score"] for a in group)), x(max(a["score"] for a in group))
         out.append(
             f'<rect x="{x0 - 8:.1f}" y="{y - 22}" width="{x1 - x0 + 16:.1f}" height="44" rx="10" class="band"/>'
         )
@@ -699,7 +699,7 @@ def sketch(exps: list, compact: bool = False) -> str:
     """Six benchmarks as one picture: each row on its own scale, from its weakest learned
     system to its best, so rows compare by shape, not score. Every other system is a faint
     tick; what carries the story is the shaded band (the systems the leader cannot be
-    separated from), the leader, and the ringed most expensive model."""
+    significantly different from), the leader, and the ringed most expensive model."""
     width = 400 if compact else 1000
     row = 50 if compact else 40
     top = 8
@@ -718,8 +718,8 @@ def sketch(exps: list, compact: bool = False) -> str:
         def px(v, lo=lo, hi=hi):
             return left if v <= lo else left + (v - lo) / (hi - lo) * (right - left)
 
-        tied = [a for a in learned if a["arm"] in x["tied"]] + [x["leader_row"]]
-        tag = f"leader + {x['n_tied']}" if x["n_tied"] else "clear winner"
+        group = [a for a in learned if a["arm"] in x["contenders"]] + [x["leader_row"]]
+        tag = f"leader + {x['n_contenders']}" if x["n_contenders"] else "clear winner"
         out.append(
             f'<a href="evals/{x["slug"]}.html" class="sketch-row"><title>{e(x["bench"])}: '
             f'the eval</title><rect x="0" y="{top + row * i}" width="{width}" height="{row}" class="hit-row"/>'
@@ -735,8 +735,8 @@ def sketch(exps: list, compact: bool = False) -> str:
                 f'<text x="{width}" y="{y + 5}" text-anchor="end" class="t-muted" font-size="13">{tag}</text>'
             )
         out.append(f'<line x1="{left}" x2="{right}" y1="{y}" y2="{y}" class="axis"/>')
-        if len(tied) > 1:
-            x0, x1 = px(min(a["score"] for a in tied)), px(max(a["score"] for a in tied))
+        if len(group) > 1:
+            x0, x1 = px(min(a["score"] for a in group)), px(max(a["score"] for a in group))
             out.append(
                 f'<rect x="{x0 - 6:.1f}" y="{y - 9}" width="{x1 - x0 + 12:.1f}" height="18" rx="9" class="band"/>'
             )
@@ -752,16 +752,16 @@ def sketch(exps: list, compact: bool = False) -> str:
 
 
 def hero_sketch(exps: list) -> str:
-    ties = sum(x["n_tied"] > 0 for x in exps)
+    ties = sum(x["n_contenders"] > 0 for x in exps)
     dear_first = sum(x["dearest"]["arm"] == x["top"]["arm"] for x in exps)
     finding = (
-        f"In {ties} of {len(exps)} benchmarks the leader cannot be separated from a "
+        f"In {ties} of {len(exps)} benchmarks the leader is not significantly different from a "
         f"group of others; the most expensive model came first in "
         f"{word(dear_first) if dear_first else 'none'}."
     )
     key = (
         '<div class="legend sketch-key"><span><i class="lead-i"></i>the leader</span>'
-        '<span><i class="sw-band"></i>not separated from it</span>'
+        '<span><i class="sw-band"></i>not significantly different from it</span>'
         '<span><i class="ring-i"></i>the most expensive model</span>'
         '<span class="read">each row: worst to best, on its own scale →</span></div>'
     )
@@ -812,7 +812,7 @@ def home(f: dict) -> str:
     """The front door: the harness -- what it is, what it asks, how to start -- and then
     what it found when pointed at 24 LLMs, which is the reason to believe it."""
     exps = f["evals"]
-    ties = sum(x["n_tied"] > 0 for x in exps)
+    ties = sum(x["n_contenders"] > 0 for x in exps)
     cal_n, cal_ok = len(f["calibration"]), f["calibration_consistent"]
     cal_in = f["calibration_inside"]
     hosted_n = max(x["n_hosted"] for x in exps)
@@ -865,7 +865,7 @@ def home(f: dict) -> str:
             "A catalog to look around in",
             (
                 "The harness builds pages over your committed runs: every goal with what it recommends, "
-                "every dataset, arm, reference and metric, and an inspector that compares any arms item "
+                "every dataset, arm, reference set and metric, and an inspector that compares any arms item "
                 "by item. Every view is also an evh command."
             ),
             (CATALOG, "Ours, on the six worked examples"),
@@ -960,7 +960,7 @@ def home(f: dict) -> str:
             (
                 "Keep what your system did as a capture, score its decisions against labels (a person's, a model's, "
                 "a rule's over what happened next), pick the rows worth keeping for the next version of a dataset you "
-                "govern. Nothing becomes a reference until you promote it."
+                "govern. Nothing becomes a reference set until you promote it."
             ),
             ("docs/tutorials/6-datasets-from-production/", "Tutorial 6"),
         ),
@@ -1015,7 +1015,7 @@ def home(f: dict) -> str:
                 f"SciFact ran only the twelve cheapest hosted models); re-measured, against corrected labels "
                 f"and by LLM judges, it is first on the point estimate in {word(rc['dearest_first'])}, "
                 f"neither re-measurement confirmed. In {ties} of {len(exps)} "
-                "the leader could not be separated from other arms (an arm is one system under test: "
+                "the leader was not significantly different from other arms (an arm is one system under test: "
                 "a model with its prompt and settings) — at 100–280 items, which is not the same as equal."
             ),
             "evals.html",
@@ -1023,9 +1023,9 @@ def home(f: dict) -> str:
         ),
         (
             "Do I need an LLM — or a GPU — at all?",
-            f"A free model that needs no GPU was first, or not separable from first, in "
-            f"{f['local_first_or_tied']} of {len(exps)} on the primary metrics "
-            f"({f['local_first_or_tied'] - rc['local_lost']} of {len(exps)} on the re-measured scores, "
+            f"A free model that needs no GPU was first, or not significantly different from first, in "
+            f"{f['local_first_or_contender']} of {len(exps)} on the primary metrics "
+            f"({f['local_first_or_contender'] - rc['local_lost']} of {len(exps)} on the re-measured scores, "
             "unconfirmed), against LLMs run with one prompt and no "
             "examples; the clearest wins were on text like the text it was trained on. On judging "
             "summaries even a free model trained for the task lost, and an LLM judge scored above every "
@@ -1049,13 +1049,13 @@ def home(f: dict) -> str:
         (
             "Own it or rent it?",
             q(
-                "The best proprietary arm never separated from the best open-weight arm in any of the "
+                "The best proprietary arm never significantly different from the best open-weight arm in any of the "
                 "six evals",
                 SYN,
             )
             + ". At native precision the best model that fits a 64 GB machine matched the "
-            "unlimited-hardware answer on two of the six tasks, was not separated from it on two "
-            "more, and was separated below it on summarisation and SummEval — as the providers "
+            "unlimited-hardware answer on two of the six tasks, was not significantly different from it on two "
+            "more, and was significantly below it on summarisation and SummEval — as the providers "
             "served them: nothing was run on a 64 GB machine.",
             f"{BLOB}/research/REPORT_SYNTHESIS.md",
             "The synthesis",
@@ -1098,7 +1098,7 @@ def home(f: dict) -> str:
   <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. <a href="docs/GUIDE/">The harness</a> imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
   <div class="habits">{idea_html}</div>
   <div class="cols" style="margin-top:48px">
-    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference from the best arm's labels, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference and judges, rounds and dataset versions, datasets from production, and setting a model up. Last, look at it all: <code>evh catalog</code> builds the catalog of your own runs and <code>evh catalog-serve</code> opens it with the inspector (<a href="docs/tutorials/5-catalog-and-inspector/">tutorial 5</a>); <a href="{CATALOG}">ours</a> shows the six worked examples. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
+    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference set from the best arm's labels, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference set and judges, rounds and dataset versions, datasets from production, and setting a model up. Last, look at it all: <code>evh catalog</code> builds the catalog of your own runs and <code>evh catalog-serve</code> opens it with the inspector (<a href="docs/tutorials/5-catalog-and-inspector/">tutorial 5</a>); <a href="{CATALOG}">ours</a> shows the six worked examples. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
       <div class="btns"><a class="btn primary" href="docs/GUIDE/">Getting started</a><a class="btn" href="docs/GUIDE/#where-to-go-next">The tutorials</a><a class="btn" href="{CATALOG}">The catalog</a></div></div>
 <pre class="term"><span class="p">$ </span>pip install "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
 <span class="p">$ </span>evh init --tutorial
@@ -1127,11 +1127,11 @@ def home(f: dict) -> str:
 <section class="block" id="proof"><div class="wrap">
   <div class="eyebrow"><span class="num">04</span>Worked examples · {hosted_n} LLMs</div>
   <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
-  <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)} Each is also a goal in <a href="{CATALOG}">the catalog</a>, with every run, dataset and reference behind it.</p>
+  <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)} Each is also a goal in <a href="{CATALOG}">the catalog</a>, with every run, dataset and reference set behind it.</p>
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">evals with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
-    <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
-    <div class="stat"><div class="n">$0</div>{marks(f["local_first_or_tied"], len(exps))}<div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}; {f["local_first_or_tied"] - remeasured_counts(f)["local_lost"]} of {len(exps)} if the <a href="evals/judging.html">re-measured scores</a> are taken at face value</div></div>
+    <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader is not significantly different from others (at 100–280 items)</div></div>
+    <div class="stat"><div class="n">$0</div>{marks(f["local_first_or_contender"], len(exps))}<div class="l">for a model that is first, or not significantly different from first, in {f["local_first_or_contender"]} of the {len(exps)}; {f["local_first_or_contender"] - remeasured_counts(f)["local_lost"]} of {len(exps)} if the <a href="evals/judging.html">re-measured scores</a> are taken at face value</div></div>
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_in, cal_n)}<div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
   <div class="chart benches" style="margin-top:48px">{legend(reading="higher score: further right →", baseline=False)}{benches}</div>
@@ -1143,7 +1143,7 @@ def home(f: dict) -> str:
   <div class="eyebrow">For agents</div>
   <h2>Ask it from your agent.</h2>
   <div class="cols">
-    <div class="prose"><p>The harness is also an MCP server. <code>evh mcp</code> gives an agent the same read commands you use: datasets and what is inside them, goals and what they recommend, arms, references, metrics, activity, and the inspector's paired comparisons, each answering exactly what the command prints. Nothing it does writes your project, spends or runs a model (the one file it keeps is a cache of the goals' tests).</p>
+    <div class="prose"><p>The harness is also an MCP server. <code>evh mcp</code> gives an agent the same read commands you use: datasets and what is inside them, goals and what they recommend, arms, reference sets, metrics, activity, and the inspector's paired comparisons, each answering exactly what the command prints. Nothing it does writes your project, spends or runs a model (the one file it keeps is a cache of the goals' tests).</p>
     <p>On your machine it serves your own project; for a team, <code>evh mcp --http</code> serves one checkout to everyone. The worked examples above are served at <code>https://evals.humancopilot.eu/mcp</code>, read-only and without sign-in, for Claude, ChatGPT and the OpenAI API, Gemini, or any MCP client.</p>
       <div class="btns"><a class="btn primary" href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">Connect an agent</a><a class="btn" href="{BLOB}/docs/rfc/RFC-018-read-only-mcp-server.md">How it works</a></div></div>
 <pre class="term"><span class="c"># the worked examples, from Claude Code</span>
@@ -1174,7 +1174,7 @@ def home(f: dict) -> str:
 def landing(f: dict) -> str:
     exps = f["evals"]
     by = {x["slug"]: x for x in exps}
-    ties = sum(x["n_tied"] > 0 for x in exps)
+    ties = sum(x["n_contenders"] > 0 for x in exps)
     cal_n, cal_ok = len(f["calibration"]), f["calibration_consistent"]
     cal_in = f["calibration_inside"]
     hosted_n = max(x["n_hosted"] for x in exps)
@@ -1189,10 +1189,10 @@ def landing(f: dict) -> str:
     tie_rows = "".join(
         f'<tr><td class="exp"><a href="evals/{x["slug"]}.html">{e(x["task"])} · {e(x["bench"])}</a></td>'
         f'<td class="num" data-label="first place">{e(x["top"]["arm"])}</td>'
-        f'<td class="num big" data-label="tied with 1st">{x["n_tied"]}</td>'
-        f'<td class="num" data-label="…of which paid">{x["n_tied_paid"]}</td>'
-        f'<td class="num" data-label="cheapest paid tie">{e(x["cheapest_tied"]["arm"]) if x["cheapest_tied"] else "—"}</td>'
-        f'<td class="num" data-label="cheaper than dearest">{times(x["tied_ratio"]) if x["tied_ratio"] else "no paid model ties"}</td>'
+        f'<td class="num big" data-label="not significantly different from 1st">{x["n_contenders"]}</td>'
+        f'<td class="num" data-label="…of which paid">{x["n_contenders_paid"]}</td>'
+        f'<td class="num" data-label="cheapest paid one">{e(x["cheapest_contender"]["arm"]) if x["cheapest_contender"] else "—"}</td>'
+        f'<td class="num" data-label="cheaper than dearest">{times(x["contender_ratio"]) if x["contender_ratio"] else "no paid model among them"}</td>'
         f'<td class="num" data-label="dearest model">{e(x["dearest"]["arm"])} · {ordinal(x["dearest"]["rank"])} of {x["n_arms"]}</td></tr>'
         for x in exps
     )
@@ -1246,8 +1246,8 @@ def landing(f: dict) -> str:
   <p class="dek">{hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and the baselines they have to beat, run through {n_exp} public benchmarks as worked examples of the harness and its method. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.{dearest_note(f)}</p>
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div><div class="l">evals with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
-    <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where the leader cannot be separated from others (at 100–280 items)</div></div>
-    <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not separable from first, in {f["local_first_or_tied"]} of the {len(exps)}; {f["local_first_or_tied"] - remeasured_counts(f)["local_lost"]} of {len(exps)} if the <a href="evals/judging.html">re-measured scores</a> are taken at face value</div></div>
+    <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where the leader is not significantly different from others (at 100–280 items)</div></div>
+    <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not significantly different from first, in {f["local_first_or_contender"]} of the {len(exps)}; {f["local_first_or_contender"] - remeasured_counts(f)["local_lost"]} of {len(exps)} if the <a href="evals/judging.html">re-measured scores</a> are taken at face value</div></div>
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
 </div></section>
@@ -1266,13 +1266,13 @@ def landing(f: dict) -> str:
   <div>
     <div class="prose" style="margin-bottom:40px">
       <p>A leaderboard sorts, so something is always first. The question is whether first is <strong>distinguishable</strong> from second. Here every leader was tested against every other arm on the same items, with a paired permutation test and a correction for running many comparisons at once.</p>
-      <p>In {ties} of {len(exps)} evals the leader <strong>cannot be told apart</strong> from a group of others — on summarisation, from {s["n_tied"]} of them. The cheapest paid model inside that group cost a fraction of the dearest: {times(s["tied_ratio"])} less on summarisation.</p>
-      <p>The one clean winner is a 499 MB tagger fine-tuned on Few-NERD's own training data, separated from all {by["few-nerd"]["n_arms"] - 1} rivals.</p>
+      <p>In {ties} of {len(exps)} evals the leader <strong>cannot be told apart</strong> from a group of others — on summarisation, from {s["n_contenders"]} of them. The cheapest paid model inside that group cost a fraction of the dearest: {times(s["contender_ratio"])} less on summarisation.</p>
+      <p>The one clean winner is a 499 MB tagger fine-tuned on Few-NERD's own training data, significantly different from all {by["few-nerd"]["n_arms"] - 1} rivals.</p>
     </div>
     <div class="chart scroll-x reveal"><table class="data ties cards">
-      <thead><tr><th>eval</th><th>first place</th><th>tied with 1st</th><th>…of which paid</th><th>cheapest paid tie</th><th>cheaper than dearest</th><th>dearest model</th></tr></thead>
+      <thead><tr><th>eval</th><th>first place</th><th>not significantly different from 1st</th><th>…of which paid</th><th>cheapest paid one</th><th>cheaper than dearest</th><th>dearest model</th></tr></thead>
       <tbody>{tie_rows}</tbody></table>
-      <figcaption><b>Tied with 1st</b>: other systems the leader cannot be statistically separated from (paired permutation test, Holm-corrected). <b>…of which paid</b>: how many of those are hosted models that bill per call; the rest are free. <b>Cheapest paid tie</b>: the cheapest of them, and how many times less it cost than the most expensive model in the field. <b>0 tied</b> means a clean winner: separated from every rival.</figcaption></div>
+      <figcaption><b>Not significantly different from 1st</b>: other systems the leader is not significantly different from (paired permutation test, Holm-corrected). <b>…of which paid</b>: how many of those are hosted models that bill per call; the rest are free. <b>Cheapest paid one</b>: the cheapest of them, and how many times less it cost than the most expensive model in the field. <b>0</b> means a clean winner: significantly different from every rival.</figcaption></div>
   </div>
 </div></section>
 
@@ -1280,9 +1280,9 @@ def landing(f: dict) -> str:
   <div class="eyebrow"><span class="num">03</span>Fine-tuning</div>
   <h2>Train a small model on your data. <em style="font-style:normal;color:var(--accent)">Yours.</em></h2>
   <ol class="findings reveal">
-    <li><div><h3>A free local model was first, or not separable from first, in {f["local_first_or_tied"]} of {len(exps)}.</h3><p>Against hosted LLMs run with one prompt, no examples and no reasoning. {q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
+    <li><div><h3>A free local model was first, or not significantly different from first, in {f["local_first_or_contender"]} of {len(exps)}.</h3><p>Against hosted LLMs run with one prompt, no examples and no reasoning. {q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
     <li><div><h3>The clearest wins were on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")}</p></div></li>
-    <li><div><h3>On one task, even a free model trained for it lost to LLM judges — and the dearest judge was not needed.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out); UniEval, the best free scorer and an evaluator trained for the task, reaches 64%.", JUDGE)} {q("The judges rank all 16 summaries in one call while UniEval scores one at a time, and a pointwise LLM judge was not run; a no-model lookup of which system wrote each summary reaches 63%.", JUDGE)} {q("The cheapest judge the leader cannot be separated from, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task and one trained evaluator, and why it lost is not tested: the direction, not the size.</p></div></li>
+    <li><div><h3>On one task, even a free model trained for it lost to LLM judges — and the dearest judge was not needed.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out); UniEval, the best free scorer and an evaluator trained for the task, reaches 64%.", JUDGE)} {q("The judges rank all 16 summaries in one call while UniEval scores one at a time, and a pointwise LLM judge was not run; a no-model lookup of which system wrote each summary reaches 63%.", JUDGE)} {q("The cheapest judge the leader is not significantly different from, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task and one trained evaluator, and why it lost is not tested: the direction, not the size.</p></div></li>
     <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, the lead of the three fine-tunes is concentrated in 17 items the hosted field mostly gets wrong.", "research/REPORT_CLASSIFICATION.md")} Adjudicated by topic by one reader shown the hosted answer, the gold was wrong on all 17, and on that gold every hosted LLM scores above every fine-tune. {q("On Few-NERD, 57% of the winner's margin over openai_m is one entity type the prompt never defined (30–57% across the hosted arms).", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
@@ -1322,7 +1322,7 @@ def landing(f: dict) -> str:
       <li><span class="lvl">00</span><div><h3>Verify</h3><p>Every number in every report, recomputed from the committed predictions.</p></div><span class="cost">$0 · one command</span></li>
       <li><span class="lvl">01</span><div><h3>Data</h3><p>Fetch the public benchmarks and hash-check every item against what was measured.</p></div><span class="cost">$0</span></li>
       <li><span class="lvl">02</span><div><h3>Local</h3><p>Rerun the {local_n} free arms — local models and baselines — on your CPU, pinned to the same weights.</p></div><span class="cost">$0 · CPU hours</span></li>
-      <li><span class="lvl">03</span><div><h3>Hosted</h3><p>Rerun the {hosted_n} LLMs with one OpenRouter key. The test: does every separation still hold?</p></div><span class="cost">${billed_all} billed, all {n_exp}</span></li>
+      <li><span class="lvl">03</span><div><h3>Hosted</h3><p>Rerun the {hosted_n} LLMs with one OpenRouter key. The test: does every significant difference still hold?</p></div><span class="cost">${billed_all} billed, all {n_exp}</span></li>
       <li><span class="lvl">04</span><div><h3>Extend</h3><p>Add a model of your own and test it against the whole committed field.</p></div><span class="cost">one config</span></li>
     </ol>
     <div>
@@ -1363,12 +1363,12 @@ def landing(f: dict) -> str:
 
 
 CARD = {
-    "summarization": "Summarise a news article in two or three sentences. A 1.6 GB fine-tune is not separated from the best paid model (0.0001 apart) — on CNN's articles.",
+    "summarization": "Summarise a news article in two or three sentences. A 1.6 GB fine-tune is not significantly different from the best paid model (0.0001 apart) — on CNN's articles.",
     "ag-news": "Four-way topic labels. Three small fine-tunes lead on the point estimate, LLMs as run here; the lead is concentrated in 17 items the hosted field mostly gets wrong.",
-    "dbpedia": "Fourteen-way ontology labels on a saturated benchmark: the leader cannot be separated from nineteen others (1 to 8 items behind), and the gold label is sometimes in dispute.",
-    "few-nerd": "Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, separated from every rival.",
-    "scifact": "Retrieve the abstracts that support a scientific claim. The free e5_base retriever is not separated from the twelve LLM rerankers; reranking its top 20 adds about +0.07. The pick: build e5_base first.",
-    "summeval": "Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert's agreement (best of 24, same articles), far ahead of the free evaluator trained for the task (64%), which scores one summary at a time while the judges rank all 16 at once; and an open-weight judge is not separated from the leader.",
+    "dbpedia": "Fourteen-way ontology labels on a saturated benchmark: the leader is not significantly different from nineteen others (1 to 8 items behind), and the gold label is sometimes in dispute.",
+    "few-nerd": "Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, significantly different from every rival.",
+    "scifact": "Retrieve the abstracts that support a scientific claim. The free e5_base retriever is not significantly different from the twelve LLM rerankers; reranking its top 20 adds about +0.07. The pick: build e5_base first.",
+    "summeval": "Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert's agreement (best of 24, same articles), far ahead of the free evaluator trained for the task (64%), which scores one summary at a time while the judges rank all 16 at once; and an open-weight judge is not significantly different from the leader.",
 }
 
 
@@ -1397,21 +1397,23 @@ def findings_for(x: dict, f: dict) -> list:
     d, t, b = x["dearest"], x["top"], x["best_hosted"]
     s = x["slug"]
     require(
-        s != "summarization" or (t["arm"] == "bart_l" and b["arm"] in x["tied"]),
-        "summarisation: bart_l first and tied with the best hosted arm",
+        s != "summarization" or (t["arm"] == "bart_l" and b["arm"] in x["contenders"]),
+        "summarisation: bart_l first and not significantly different from the best hosted arm",
     )
     require(
         s != "ag-news" or all(a["kind"] == "local" for a in x["arms"][:3]),
         "AG News: the top three are local fine-tunes",
     )
     require(
-        s != "dbpedia" or ("bert_base_fy" in x["tied"] and x["n_tied"] == 19),
+        s != "dbpedia" or ("bert_base_fy" in x["contenders"] and x["n_contenders"] == 19),
         "DBpedia: the leader plus nineteen others, including the fine-tune",
     )
-    require(s != "few-nerd" or x["n_tied"] == 0, "Few-NERD: span_marker separated from all")
     require(
-        s != "scifact" or ("e5_base" in x["tied"] and x["n_tied"] == 12),
-        "SciFact: twelve tied, including e5_base",
+        s != "few-nerd" or x["n_contenders"] == 0, "Few-NERD: span_marker significantly different from all"
+    )
+    require(
+        s != "scifact" or ("e5_base" in x["contenders"] and x["n_contenders"] == 12),
+        "SciFact: twelve not significantly different, including e5_base",
     )
     require(
         s != "summeval"
@@ -1424,8 +1426,8 @@ def findings_for(x: dict, f: dict) -> list:
         "SummEval: 23 of the 24 hosted judges rank above every free arm",
     )
     require(
-        s != "summeval" or (x["cheapest_tied"] and x["cheapest_tied"]["weights"] == "open"),
-        "SummEval: the cheapest judge tied with the leader has open weights",
+        s != "summeval" or (x["cheapest_contender"] and x["cheapest_contender"]["weights"] == "open"),
+        "SummEval: the cheapest judge not significantly different from the leader has open weights",
     )
     common = [
         (
@@ -1437,9 +1439,9 @@ def findings_for(x: dict, f: dict) -> list:
                 else ""
             )
             + (
-                f"The cheapest model not separated from the leader, {x['cheapest_tied']['arm']}, cost {times(x['tied_ratio'])} less."
-                if x["cheapest_tied"]
-                else "The leader is separated from every paid model."
+                f"The cheapest model not significantly different from the leader, {x['cheapest_contender']['arm']}, cost {times(x['contender_ratio'])} less."
+                if x["cheapest_contender"]
+                else "The leader differs significantly from every paid model."
             ),
         )
     ]
@@ -1447,10 +1449,10 @@ def findings_for(x: dict, f: dict) -> list:
         dm = {r["arm"]: r for r in f["dailymail"]}
         return [
             (
-                "A 1.6 GB model fine-tuned on this corpus is not separated from the best paid model.",
+                "A 1.6 GB model fine-tuned on this corpus is not significantly different from the best paid model.",
                 f"bart_l scores {t['score']:.4f} on coverage, {b['arm']} {b['score']:.4f} — "
                 + q("a gap of 0.0001.", rep)
-                + f" It cannot be separated from {x['n_tied']} of the other {x['n_arms'] - 1} arms.",
+                + f" It is not significantly different from {x['n_contenders']} of the other {x['n_arms'] - 1} arms.",
             ),
             *common,
             (
@@ -1479,7 +1481,7 @@ def findings_for(x: dict, f: dict) -> list:
     if x["slug"] == "ag-news":
         return [
             (
-                "Three small fine-tuned classifiers lead on the point estimate; only the first is separated from all but one paid arm.",
+                "Three small fine-tuned classifiers lead on the point estimate; only the first differs significantly from all but one paid arm.",
                 f"bert_base_ta leads at {t['score']:.4f}; the best hosted model, {b['arm']}, scores {b['score']:.4f}.",
             ),
             *common,
@@ -1496,7 +1498,7 @@ def findings_for(x: dict, f: dict) -> list:
                 )
                 + " "
                 + q(
-                    "Against gold adjudicated by topic by one reader, who was shown the hosted field's answer (29 items reviewed from both sides, 17 changed), every hosted LLM scores above every fine-tune: anthropic_l leads at 0.9850 and is separated from all three (tied at 0.9050).",
+                    "Against gold adjudicated by topic by one reader, who was shown the hosted field's answer (29 items reviewed from both sides, 17 changed), every hosted LLM scores above every fine-tune: anthropic_l leads at 0.9850 and differs significantly from all three (tied at 0.9050).",
                     rep,
                 )
                 + " The primary numbers stay on the dataset's own gold.",
@@ -1506,7 +1508,7 @@ def findings_for(x: dict, f: dict) -> list:
         return [
             (
                 "No winner: the leader and nineteen others.",
-                f"{t['arm']} leads at {t['score']:.4f}, not separated from {x['n_tied']} others, including the free fine-tune.",
+                f"{t['arm']} leads at {t['score']:.4f}, not significantly different from {x['n_contenders']} others, including the free fine-tune.",
             ),
             *common,
             (
@@ -1520,8 +1522,8 @@ def findings_for(x: dict, f: dict) -> list:
     if x["slug"] == "few-nerd":
         return [
             (
-                "The one separated win in the repo.",
-                f"span_marker, fine-tuned on Few-NERD's training split, scores {t['score']:.4f} and is separated from all {x['n_arms'] - 1} other arms.",
+                "The one significant win in the repo.",
+                f"span_marker, fine-tuned on Few-NERD's training split, scores {t['score']:.4f} and differs significantly from all {x['n_arms'] - 1} other arms.",
             ),
             *common,
             (
@@ -1535,14 +1537,14 @@ def findings_for(x: dict, f: dict) -> list:
     if x["slug"] == "scifact":
         return [
             (
-                "LLM rerankers lead — and cannot be separated from eleven or twelve others.",
-                f"{t['arm']} reranking BM25's top 20 scores {t['score']:.4f} nDCG@10; {x['n_tied']} arms cannot be separated from it, including the free retrievers e5_base and bge_small.",
+                "LLM rerankers lead — and is not significantly different from eleven or twelve others.",
+                f"{t['arm']} reranking BM25's top 20 scores {t['score']:.4f} nDCG@10; {x['n_contenders']} arms are not significantly different from it, including the free retrievers e5_base and bge_small.",
             ),
             *common,
             (
-                "The dev slice's winner finished 10th — inside a tie.",
+                "The pilot slice's winner finished 10th — inside a tie.",
                 q(
-                    "Tuned on a 40-query dev slice, the leaderboard's winner there, llama_s, finished 10th of 19 on the 200-query measurement slice, 0.0265 behind the leader and not separated from it under Holm: a rank inside a tie, not a wrong pick shown at this n.",
+                    "Tuned on a 40-query pilot slice, the leaderboard's winner there, llama_s, finished 10th of 19 on the 200-query test slice, 0.0265 behind the leader and not significantly different from it under Holm: a rank inside a tie, not a wrong pick shown at this n.",
                     rep,
                 ),
             ),
@@ -1551,15 +1553,15 @@ def findings_for(x: dict, f: dict) -> list:
         free = [a for a in x["arms"] if a["kind"] != "hosted"]
         best_free = min(free, key=lambda a: a["rank"])
         weakest = max((a for a in x["arms"] if a["kind"] == "hosted"), key=lambda a: a["rank"])
-        ct = x["cheapest_tied"]
+        ct = x["cheapest_contender"]
         return [
             (
                 "On mean τ, 23 of 24 LLM judges score above a free evaluator trained for the task.",
                 f"The best free scorer, {best_free['arm']} (UniEval, on its own inputs), scores "
                 f"{best_free['score']:.4f}; the weakest judge, {weakest['arm']}, {weakest['score']:.4f}. "
                 + q(
-                    "In the paired test UniEval is separated below 23 of the 24 judges and cannot "
-                    "be separated from the weakest, on either set of inputs.",
+                    "In the paired test UniEval is significantly below 23 of the 24 judges and not "
+                    "significantly different from the weakest, on either set of inputs.",
                     rep,
                 )
                 + " "
@@ -1570,9 +1572,9 @@ def findings_for(x: dict, f: dict) -> list:
                 ),
             ),
             (
-                "An open-weight judge is not separated from the leader.",
+                "An open-weight judge is not significantly different from the leader.",
                 f"{ct['arm']} scores {ct['score']:.4f} against {t['arm']}'s {t['score']:.4f}, and "
-                f"the leader cannot be separated from it or from {x['n_tied'] - 1} others. "
+                f"the leader is not significantly different from it or from {x['n_contenders'] - 1} others. "
                 + q(
                     "No provider was pinned: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart.",
                     rep,
@@ -1720,7 +1722,7 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
                 f"a higher accuracy than every fine-tune: the fine-tunes fall from "
                 f"{min(z['r1'] for z in fts)}–{max(z['r1'] for z in fts)} to "
                 f"{min(z['r2'] for z in fts)}–{max(z['r2'] for z in fts)} of {d['n_arms']}, and "
-                f"{lead['arm']} rises to first (separated from the fine-tunes, not from most hosted "
+                f"{lead['arm']} rises to first (significantly different from the fine-tunes, not from most hosted "
                 "arms). The dataset's own gold stays primary."
             )
         else:
@@ -1770,7 +1772,7 @@ def catalog_dataset(x: dict) -> str:
 def catalog_inspect(x: dict) -> str:
     """The inspector, opened on every arm of the eval against its leader: the same Holm
     family as the site's own test (a single pair would get only Holm's strictest step, and could
-    call "not separated" what the site, testing the whole field, separates)."""
+    call "not significant" what the site, testing the whole field, finds significant)."""
     keys = []
     for a in x["arms"]:
         cid = f"{x['prefix']}{a['arm']}{x['suffix']}"
@@ -1878,7 +1880,7 @@ def eval_page(x: dict, f: dict) -> str:
 </div></section>
 <section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
-  <div class="chart">{legend(reading="higher score: further right →", baseline=False)}{both(strip(x, title=False, height=80), strip(x, title=False, compact=True))}<figcaption>Each dot is one system, by {e(x["metric_label"])}. The ringed dot is the most expensive hosted model{" (of the twelve cheapest hosted models, the only ones run here)" if x["slug"] == "scifact" else ""}; the shaded band is the group the leader cannot be statistically separated from.{OFF_NOTE if off_scale([a for a in x["arms"] if a["kind"] != "baseline"])[1] else ""} Every system has its own page in <a href="{CATALOG}{catalog_dataset(x)}">the catalog</a>: its run, cost, speed and fingerprint.</figcaption></div>
+  <div class="chart">{legend(reading="higher score: further right →", baseline=False)}{both(strip(x, title=False, height=80), strip(x, title=False, compact=True))}<figcaption>Each dot is one system, by {e(x["metric_label"])}. The ringed dot is the most expensive hosted model{" (of the twelve cheapest hosted models, the only ones run here)" if x["slug"] == "scifact" else ""}; the shaded band is the group the leader is not significantly different from.{OFF_NOTE if off_scale([a for a in x["arms"] if a["kind"] != "baseline"])[1] else ""} Every system has its own page in <a href="{CATALOG}{catalog_dataset(x)}">the catalog</a>: its run, cost, speed and fingerprint.</figcaption></div>
 </div></section>
 <section class="block" id="cost"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
@@ -1898,7 +1900,7 @@ def eval_page(x: dict, f: dict) -> str:
     <div class="prose">
       <p><strong>First, with nothing installed:</strong> <a href="{CATALOG}{catalog_inspect(x)}">test every arm against {e(x["leader"])}</a>, item by item, in the catalog's inspector, with the same paired test and Holm correction as this page; {e(x["dearest"]["arm"])}, the most expensive model, among them. <a href="{CATALOG}{x["goal"]["goal_page"]}">The goal page</a> has the rest: what the goal recommends, and why.</p>
       <p>The {free} free arms rerun on a laptop CPU for $0, pinned to the weights that were measured. The {x["n_hosted"]} hosted arms billed <strong>${x["billed_total"]:.2f}</strong> when measured and rerun with one OpenRouter key.</p>
-      <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every separation and tie on this page re-tested with your reruns in place.</p>
+      <p><code>make compare</code> writes a replication card: each rerun against its committed run, item by item, and every significant difference and tie on this page re-tested with your reruns in place.</p>
       <div class="btns"><a class="btn primary" href="../docs/REPRODUCE/">The guide</a><a class="btn" href="{REPO}/tree/main/examples/{x["example"]}">This example's code</a></div>
     </div>
 <pre class="term"><span class="p">$ </span>make plan      EXP={x["slug"]}
@@ -1956,9 +1958,9 @@ PICK = {
     ),
 }
 HEADLINE = {
-    "summarization": "A free model not separated from the best paid one — on CNN's news.",
+    "summarization": "A free model not significantly different from the best paid one — on CNN's news.",
     "ag-news": "Small models lead, largely on disputed labels.",
-    "dbpedia": "The leader cannot be separated from 19 others.",
+    "dbpedia": "The leader is not significantly different from 19 others.",
     "few-nerd": "The one clean win.",
     "scifact": "Free retrieval first; a reranker adds about +0.07.",
     "summeval": "On mean τ, 23 of 24 LLM judges score above a trained free evaluator.",

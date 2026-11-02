@@ -28,7 +28,7 @@ WHAT THE CORPUS LOOKS LIKE (measured, first 300 test rows)
   Rebalancing would make the slice unrepresentative of the task.
 
 DEGENERATE ITEMS ARE FILTERED, AND WHY THAT IS NOT CHERRY-PICKING
-  `--min-tokens` (default 3) drops sentences too short to pose the task. The dev slice
+  `--min-tokens` (default 3) drops sentences too short to pose the task. The pilot slice
   contained one whose entire text was the single character "p".
 
   It is a real row in Few-NERD's test split, and keeping it would have been defensible on

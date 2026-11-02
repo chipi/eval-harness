@@ -189,7 +189,7 @@ with tempfile.TemporaryDirectory() as td:
                 "decision": "Which model.",
                 "output_contract": [{"id": "label", "format": "label"}],
                 "success_criteria": {"primary": {"measure": "acc", "direction": "higher"}},
-                "datasets": [{"dataset_id": "ds1", "role": "heldout"}],
+                "datasets": [{"dataset_id": "ds1", "role": "test"}],
                 "measures": [{"id": "acc", "kind": "metric", "validity": "partial"}],
             }
         )

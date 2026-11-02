@@ -460,7 +460,7 @@ def v7_committed_runs_are_readable() -> None:
     `compare_runs` and every report script key off `metrics.json` and skip a directory
     without one.
 
-    The cause was two rules interacting. Those dev runs are excluded BY NAME because
+    The cause was two rules interacting. Those pilot runs are excluded BY NAME because
     they record an absolute username path; the exclusion named `metrics.json` and
     `predictions.jsonl`, and a later force-include of `outputs/**` reached underneath
     it. All of the copyright exposure and none of the reproducibility benefit.
@@ -1148,7 +1148,7 @@ def v16_references() -> None:
         texts = any(d.glob("*.txt"))
         if not mf_path.is_file():
             if texts:
-                # ADR-0022: a reference is made only by promoting labels, with a record of where it came from.
+                # ADR-0022: a reference set is made only by promoting labels, with a record of where it came from.
                 unchecked += 1
                 tier, name = rel.split("/", 1)
                 bad.append(

@@ -75,7 +75,7 @@
     ? `<a class="cell-link" href="${UP}a/${slug(id)}.html" title="${esc(id)}">${esc(text)}</a>` : esc(text);
 
   function verdictChip(v) {
-    const cls = v.startsWith('separated: better') ? 'v-better' : v.startsWith('separated: worse') ? 'v-worse' : 'v-none';
+    const cls = v.startsWith('significant: better') ? 'v-better' : v.startsWith('significant: worse') ? 'v-worse' : 'v-none';
     const sym = cls === 'v-better' ? '▲ ' : cls === 'v-worse' ? '▼ ' : '';
     return `<span class="chip ${cls}">${sym}${esc(v)}</span>`;
   }
@@ -122,7 +122,7 @@
       <td>${verdictChip(r.verdict)}${r.n && r.min_p > 0.05 ? ' <small class="muted">' + r.n + ' ' + ITEMS + ' cannot reach 0.05</small>' : ''}</td>
       <td class="num">${r.n}</td><td class="num">${fmt(r.mean)}</td><td class="num">${fmt(r.delta)}</td>
       <td class="num">${r.ci ? (r.ci[0] >= 0 ? '+' : '') + r.ci[0].toFixed(3) + ' to ' + (r.ci[1] >= 0 ? '+' : '') + r.ci[1].toFixed(3) : '—'}</td>
-      <td class="num">${r.wins}–${r.losses}${r.ties ? ' (' + r.ties + ' tied)' : ''}</td>
+      <td class="num">${r.wins}–${r.losses}${r.ties ? ' (' + r.ties + ' ties)' : ''}</td>
       <td class="num">${fmtp(r.p)}</td><td class="num">${r.threshold ? r.threshold.toFixed(4) : '—'}</td></tr>`).join('');
     const baseMean = d.items.length ? (() => { const v = Object.values(d.series[d.baseline]); return v.reduce((a, b) => a + b, 0) / v.length; })() : null;
     const verdicts = `<div class="scroll-x"><table class="data" data-nopage><thead><tr><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>mean</th><th>Δ vs baseline</th><th>95% CI of Δ</th><th>wins–losses</th><th>p (exact ≤30)</th><th>Holm threshold</th></tr></thead>
@@ -263,7 +263,7 @@
     return `<h3 class="sub">By ${esc(f.label)} · ${b.groups.length} group(s)</h3>
       <div class="scroll-x"><table class="data" data-nopage><thead><tr><th>${esc(f.label)}</th><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>Δ vs baseline</th><th>wins–losses</th><th>p</th><th>Holm threshold</th></tr></thead>
       <tbody>${rows || '<tr><td colspan="8" class="muted">No group has two arms to test.</td></tr>'}</tbody></table></div>
-      <p class="small muted">The same paired test within each group, Holm-corrected over all ${b.family_size} tests together: each extra group is another chance of a false "separated", so the thresholds are stricter than for one group alone.</p>`;
+      <p class="small muted">The same paired test within each group, Holm-corrected over all ${b.family_size} tests together: each extra group is another chance of a false "significant", so the thresholds are stricter than for one group alone.</p>`;
   }
 
   function fieldsTable(fs) {
@@ -361,11 +361,11 @@
       g += `<line class="meanmark" x1="${x(mu)}" x2="${x(mu)}" y1="${y - 11}" y2="${y + 11}"/>`;
       // Words, not arrows: for a lower-is-better metric an up-arrow beside a negative number reads wrong.
       const v = r.verdict || '';
-      const word = !v.startsWith('separated') ? '·' : d.neutral ? (mu > 0 ? 'higher' : 'lower') : v.includes('better') ? '✓ better' : '✗ worse';
+      const word = !v.startsWith('significant') ? '·' : d.neutral ? (mu > 0 ? 'higher' : 'lower') : v.includes('better') ? '✓ better' : '✗ worse';
       g += rowValue(y, W - RIGHT - 150, `${mu >= 0 ? '+' : ''}${tfmt(mu)} ${r.wins != null ? r.wins + '–' + r.losses : ''} ${word}`);
     });
     const side = d.neutral ? '← lower · higher →' : d.higher_is_better ? '← worse · better →' : '← better · worse →';
-    return `<figure class="chart"><figcaption><b>Difference from the baseline</b> · each ${ITEM}'s ${esc(d.metric)} minus the baseline's (${esc(label[d.baseline] || d.baseline)}); bar = mean difference; right column: mean difference, wins–losses, and ✓ better / ✗ worse when separated after Holm. <span class="muted">${side}</span></figcaption>
+    return `<figure class="chart"><figcaption><b>Difference from the baseline</b> · each ${ITEM}'s ${esc(d.metric)} minus the baseline's (${esc(label[d.baseline] || d.baseline)}); bar = mean difference; right column: mean difference, wins–losses, and ✓ better / ✗ worse when significant after Holm. <span class="muted">${side}</span></figcaption>
       <div class="scroll-x"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Per-${ITEM} difference from the baseline">${g}</svg></div></figure>`;
   }
 

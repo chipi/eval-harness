@@ -11,8 +11,8 @@ paper or specification for a metric.
 - [Success criteria per eval](#success-criteria-per-eval) — what "good" meant, and why
 - [Models](#models) — every arm, with the exact weights or upstream model id
 - [Datasets](#datasets) — every corpus, its licence, and its download recipe
-- [Statistical tests](#statistical-tests) — how separation is decided
-- [Terminology](#terminology) — the canonical name for every eval, arm and term
+- [Statistical tests](#statistical-tests) — how significance is decided
+- [Terminology](#terminology) — the canonical name for every eval, arm and term, and [the same words elsewhere](#the-same-words-elsewhere)
 - [`papers/`](papers/README.md) — every cited work with the redistribution licence **read from the publisher's page**, and a fetcher for the thirteen mirrored here
 
 ---
@@ -134,7 +134,7 @@ it.
 | Classification · DBpedia | `correct` | same two | same, plus the **label-noise pass** — on a saturated task the field's consensus errors are the ceiling |
 | Extraction · Few-NERD | `f1` | `nothing` (predicts the empty set; must score exactly the empty-gold rate) and `capitalized` (every capitalised run) | `untyped_f1` and `type_penalty` — detection vs labelling; per-type breakdown; consensus type disagreements |
 | Retrieval · SciFact | `ndcg_10` | `random` (must score ≈ k/N) and `first_k` (corpus order) | `recall_100` — the pipeline ceiling; the oracle reordering; `unknown_ids` for invention |
-| Judging · SummEval | `tau` | `random` (must score ≈ 0) and `length` (a confound: if it agreed with the experts, so would anything that rewards length); ROUGE and `coverage` as the reference metrics the field ranks by; UniEval as the free evaluator trained for the task — a judge worth its bill should be separated above it | `rho`; per-dimension τ; `tie_rate` and `parsed`; the human ceiling — every arm against two experts, as one expert is against the other two |
+| Judging · SummEval | `tau` | `random` (must score ≈ 0) and `length` (a confound: if it agreed with the experts, so would anything that rewards length); ROUGE and `coverage` as the reference metrics the field ranks by; UniEval as the free evaluator trained for the task — a judge worth its bill should be significantly above it | `rho`; per-dimension τ; `tie_rate` and `parsed`; the human ceiling — every arm against two experts, as one expert is against the other two |
 
 **Why each example has floors that are not models.** A *floor* is any non-model arm — a
 rule, a constant or a random draw. Most also have scores predictable in advance (`nothing`,
@@ -198,7 +198,7 @@ price tier.
 > count is not a test of openness: `mistral_l` is served only by Mistral and its
 > weights are on HuggingFace under Apache-2.0. What that is worth is measured in
 > [`REPORT_SYNTHESIS.md` §0](../research/REPORT_SYNTHESIS.md) — **the best proprietary
-> arm was never separated from the best open-weight arm in any of the six evals.**
+> arm was never significantly different from the best open-weight arm in any of the six evals.**
 
 > **A hosted model has no verifiable identity.** The fingerprint's deployment records the
 > provider and the upstream id the gateway resolved behind the alias (`deployment.hosted`),
@@ -220,7 +220,7 @@ the cache by hand and are a record, not a fingerprint.
 |---|---|---|---|---|
 | `bart_l` | [`facebook/bart-large-cnn`](https://huggingface.co/facebook/bart-large-cnn) | 1.6 GB | `37f520fa929c` | BART fine-tuned on CNN/DailyMail — the in-distribution summariser |
 | `bart_mnli` | [`facebook/bart-large-mnli`](https://huggingface.co/facebook/bart-large-mnli) | 1.6 GB | `d7645e127eaf` | Zero-shot classification by [NLI entailment](https://arxiv.org/abs/1909.00161) — no training on the task |
-| `bert_mini` | [`mrm8488/bert-mini-finetuned-age_news-classification`](https://huggingface.co/mrm8488/bert-mini-finetuned-age_news-classification) | 44 MB | `e94b474cce6f` | Fine-tuned on AG News. The 44 MB model that led the 24 hosted LLMs on the point estimate, not separated from 11 of them |
+| `bert_mini` | [`mrm8488/bert-mini-finetuned-age_news-classification`](https://huggingface.co/mrm8488/bert-mini-finetuned-age_news-classification) | 44 MB | `e94b474cce6f` | Fine-tuned on AG News. The 44 MB model that led the 24 hosted LLMs on the point estimate, not significantly different from 11 of them |
 | `span_marker` | [`guishe/span-marker-generic-ner-v1-fewnerd-fine-super`](https://huggingface.co/guishe/span-marker-generic-ner-v1-fewnerd-fine-super) | 499 MB | `f836dfa9b6b0` | [SpanMarker](https://github.com/tomaarsen/SpanMarkerNER) fine-tuned **on Few-NERD**, predicting the 66 fine types mapped down to 8 |
 | `gliner` | [`urchade/gliner_medium-v2.1`](https://huggingface.co/urchade/gliner_medium-v2.1) | 781 MB | `40ec419335d0` | [GLiNER](https://arxiv.org/abs/2311.08526) — zero-shot NER where the **caller supplies the label set**. The zero-shot control for `span_marker`: never trained on Few-NERD, and a different architecture and encoder |
 | `minilm` | [`sentence-transformers/all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) | 91 MB | `1110a243fdf4` | General [sentence-similarity](https://www.sbert.net/) encoder, symmetric, no prefix |
@@ -317,7 +317,7 @@ Ranking arms by a mean is not a result until you know which gaps survive noise.
 | `family_test.py` | Is arm A better than each of a **pre-declared** family? | [Sign-flip permutation](https://en.wikipedia.org/wiki/Resampling_(statistics)#Permutation_tests) on paired per-item scores, then [Holm step-down](https://en.wikipedia.org/wiki/Holm%E2%80%93Bonferroni_method) over the whole family. The family is declared *before* p-values are read — otherwise you are choosing the comparison after seeing the answer. |
 | `holdout_significance.py` | Does the ordering hold on items a smaller slice never contained? | [Friedman-style](https://en.wikipedia.org/wiki/Friedman_test) permutation on within-item ranks, plus a [Nemenyi](https://en.wikipedia.org/wiki/Nemenyi_test) critical difference. |
 | `rank_stability.py` | How many items before the leaderboard stops moving? | Two **disjoint** halves, ranked independently, correlated by [Spearman's ρ](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient) with **midranks for ties**. Neither half is treated as truth. |
-| `bootstrap_test.py` | Confidence interval for macro-F1, which has no per-item value | Paired percentile [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)). **Documented as anti-conservative** — 11 separations against the exact test's 8. |
+| `bootstrap_test.py` | Confidence interval for macro-F1, which has no per-item value | Paired percentile [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)). **Documented as anti-conservative** — 11 significant differences against the exact test's 8. |
 | `rescore.py` | What would this look like under a different scorer? | Recomputes from stored outputs. **No API calls, no money.** This is why a scorer bug costs nothing to fix. |
 
 **Why Holm and not Bonferroni:** Holm is uniformly more powerful and controls the same
@@ -362,11 +362,57 @@ the dataset is never optional in these labels.
 | **eval** | one task on one dataset, with its own report section — OpenAI's "eval", inspect_ai's "task" | "experiment", which Braintrust and LangSmith use for one run; "dataset" or "task" alone |
 | **run** | one arm over one dataset: `evh run`; Braintrust and LangSmith call it an experiment | "experiment" |
 | **comparison** | several runs of one eval side by side, in the inspector or `evh inspect` | "experiment" |
-| **dev slice / measurement slice** | the small tuning set / the frozen set results are reported on | "train/test", which implies we trained something |
+| **pilot slice / test slice** | a small slice INSIDE the test slice, where prompts and parsers were tuned and a pilot ranking was read (not a validation split: its items are also measured) / the frozen set results are reported on | "dev slice / measurement slice"; "train/test", which implies we trained something |
+| **validation / test** | a goal's dataset roles: the set an arm is tuned on, and the set it is reported on (`evh dataset-split` writes `<D>_validation` and `<D>_test`) | "dev / heldout" |
 | **floor** | a non-model arm (rule, constant or random: `lead3`, `keyword`, `constant`, `nothing`, `capitalized`, `random`, `first_k`); those with a score predictable in advance double as scorer calibration checks | "baseline" — the predictable ones are scorer checks first |
-| **separated** | the difference survives Holm step-down at α = 0.05 | "better", which only needs a point estimate |
+| **significant** | the difference survives Holm step-down at α = 0.05 (the verdicts: significant: better / worse, not significant) | "separated"; "better", which only needs a point estimate |
+| **contenders** | the arms a goal's strategy lets the tie-break choose among: the leader, and those not significantly different from it (`frugal`), also within the quality margin (`balanced`, the default), or of the same quality (`quality_first`) | "tied" — a tie is per item, in a paired test (wins, losses, ties) |
+| **reference / reference set** | the expected answer a scorer reads for one item / the governed collection of them under `data/references/<tier>/<name>/`, promoted from a label set | "reference" for the set |
 | **billed** | what the provider charged (`usage.cost`) | "cost", which used to mean a price-table estimate |
 | **local ML** / **open-weight** / **proprietary** | the three tiers in [REPORT_SYNTHESIS §0](../research/REPORT_SYNTHESIS.md) | "free vs paid", which conflates tiers 1 and 2 |
+
+### The same words elsewhere
+
+What other tools call the same things. A cell is a name read in that tool's own documentation
+(November 2026); "—" means it has no such concept, or we could not confirm one there.
+
+| here | inspect_ai | lm-evaluation-harness | HELM | OpenAI evals | Braintrust | LangSmith | Langfuse | Hugging Face |
+|---|---|---|---|---|---|---|---|---|
+| **arm** | — | — | — | — | — | — | — | — |
+| **run** | eval log (`inspect eval`) | — | run (`RunSpec`) | eval run | experiment | experiment | dataset run | — |
+| **eval** | task (`Task`) | task | — | eval | evaluation | — | — | task (lighteval) |
+| **comparison** | — | — | — | — | comparing experiments | — | comparison | — |
+| **dataset** | `Dataset` | dataset | — | data source | dataset | dataset | dataset | `Dataset` |
+| **item** | `Sample` | doc | `Instance` | item | record | example | dataset item | row |
+| **label / label set** | — | — | — | — | — | — | — | — |
+| **reference / reference set** | `target` / — | target / — | `Reference` / — | — | `expected` / — | reference output / — | expected output / — | `references` (evaluate) / — |
+| **gold / silver** | — | — | — | — | — | — | — | — |
+| **adapter** | — | — | — | — | — | — | — | — |
+| **scorer / judge** | `Scorer` / model-graded scorer | metric / — | `Metric` / — | grader / model grader | scorer / LLM-as-a-judge | evaluator / LLM-as-judge | evaluator / LLM-as-a-Judge | metric / — |
+| **baseline** | — | — | — | — | baseline (`base_experiment`) | — | — | — |
+| **floor** | — | — | — | — | — | — | — | — |
+| **goal** | — | — | — | — | — | — | — | — |
+| **round** | — | — | — | — | — | — | — | — |
+| **contenders** | — | — | — | — | — | — | — | — |
+| **significant** | — | — | — | — | — | — | — | — |
+| **capture** | — | — | — | — | production traces added to a dataset | traces turned into examples | traces added to a dataset | — |
+| **validation / test** | — | `validation_split` / `test_split` | `VALID_SPLIT` / `TEST_SPLIT` | — | — | — | — | `validation` / `test` splits |
+
+Where the same word means something else:
+
+- **adapter** is not HELM's *Adapter*, which turns a scenario's instances into requests (prompts) for
+  the model. Ours is a project's code that calls the system under test and scores what it returns.
+- **floor** is a trivial baseline: a constant, a random answer or a rule, no model.
+- **config** is an arm's YAML file, not a Hugging Face dataset *config* (a named subset of a dataset,
+  as in `load_dataset("PolyAI/minds14", "fr-FR")`).
+- **governed vs production** data is offline vs online evaluation in LangSmith, Langfuse and
+  Braintrust: offline scores a fixed dataset before shipping, online scores live production traces.
+
+Read in: [inspect_ai](https://inspect.aisi.org.uk/), [lm-evaluation-harness task guide](https://github.com/EleutherAI/lm-evaluation-harness/blob/main/docs/task_guide.md),
+[HELM](https://crfm-helm.readthedocs.io/en/latest/code/), [OpenAI evals](https://developers.openai.com/api/docs/guides/evals),
+[Braintrust](https://docs.braintrust.dev/core/experiments), [LangSmith](https://docs.langchain.com/langsmith/evaluation-concepts),
+[Langfuse](https://langfuse.com/docs/evaluation/overview), [Hugging Face datasets](https://huggingface.co/docs/datasets/load_hub),
+[evaluate](https://huggingface.co/docs/evaluate/a_quick_tour) and [lighteval](https://huggingface.co/docs/lighteval/index).
 
 ### Spelling
 

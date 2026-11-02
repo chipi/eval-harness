@@ -5,7 +5,7 @@
 
 Re-scores, in a temporary directory, every measured run the goal reads (or the round's arms), with the scorer in
 this tree, and prints per arm its deciding measure as the goal reads it now and as it would read it, whether it is
-still within the goal's limits, and then the decision before and after: the quality leader, how many arms are tied
+still within the goal's limits, and then the decision before and after: the quality leader, how many contenders
 with it, the recommendation. Nothing is written to the project and nothing is spent: the tool for developing a
 scoring. Then `evh rescore --goal G --round rN --why "..."` applies it to a round, or `evh round-open --from rN
 --scoring "..."` adopts it from the next one.
@@ -35,7 +35,7 @@ from evaluation_harness.catalog_adapter import HarnessAdapter, load_catalog_adap
 
 
 def decisions(A, goal: dict) -> dict[str, dict[str, Any]]:
-    """{dataset: {"rows": {config_id: {"arm", "label", "mean", "out"}}, "leader", "tied", "recommended"}}: the
+    """{dataset: {"rows": {config_id: {"arm", "label", "mean", "out"}}, "leader", "contenders", "recommended"}}: the
     goal's decision on each dataset's gold group (else its first group), as `evh goals` reads it."""
     by_ds = cb.collect(A)
     retired_in = cb.retired_in_of(A, goal)
@@ -70,8 +70,10 @@ def decisions(A, goal: dict) -> dict[str, dict[str, Any]]:
             "measure": gm,
             "rows": rows,
             "leader": label.get(dec.get("leader") or "", ""),
-            # the arms tied WITH the leader, as `evh goals` counts them: the leader is not one of them
-            "tied": sorted(label.get(a, a) for a in dec.get("tied") or [] if a != dec.get("leader")),
+            # the contenders beside the leader, as `evh goals` counts them: the leader is not one of them
+            "contenders": sorted(
+                label.get(a, a) for a in dec.get("contenders") or [] if a != dec.get("leader")
+            ),
             "recommended": label.get(dec.get("recommended") or "", ""),
         }
     return out
@@ -148,8 +150,11 @@ def _print(goal: str, scorer: str, n: int, before: dict, after: dict) -> None:
         for what in ("leader", "recommended"):
             x, y = b.get(what) or "—", a.get(what) or "—"
             print(f"  {what:12} {x}" + ("" if x == y else f" -> {y}"))
-        tb, ta = len(b.get("tied") or []), len(a.get("tied") or [])
-        print(f"  {'tied':12} {tb} arm(s) not separated from the leader" + ("" if tb == ta else f" -> {ta}"))
+        tb, ta = len(b.get("contenders") or []), len(a.get("contenders") or [])
+        print(
+            f"  {'contenders':12} {tb} arm(s) not significantly different from the leader"
+            + ("" if tb == ta else f" -> {ta}")
+        )
         print()
     print(
         'Apply it: evh rescore --goal G --round rN --why "..." (re-score a round), or evh round-open --from rN '

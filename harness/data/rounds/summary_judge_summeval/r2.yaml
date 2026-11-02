@@ -17,6 +17,6 @@ retired:
   at: '2026-10-19T07:22:24Z'
 conclusion:
   text: 'Pinned to CoreWeave on UniEval''s text, gemma_l scores 0.5397 against its 0.5384 (+0.0013, not
-    separated); routed to SambaNova it scored 0.5510 and billed 3.7× as much: consistent with a provider
+    significant); routed to SambaNova it scored 0.5510 and billed 3.7× as much: consistent with a provider
     effect, one run per provider. (REPORT_SUMMEVAL §3.3.)'
   promoted_run: null

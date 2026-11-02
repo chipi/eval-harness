@@ -25,15 +25,15 @@
 zero-shot hosted LLM for this job.** `span_marker` (a published checkpoint trained on
 Few-NERD's own training split; 499 MB, CPU, $0 to run) scores **0.7674** against **0.6864**
 for the best of 24 zero-shot hosted LLMs (`openai_m`, $2,324/month per 1M items), and is
-separated from all 27 other arms: the one separated win in the six evals. If you do
-rent, the data cannot choose among `openai_m` and the seven hosted arms it is not separated
+significantly different from all 27 other arms: the one significant win in the six evals. If you do
+rent, the data cannot choose among `openai_m` and the seven hosted arms it is not significant
 from: take the cheapest, `gemma_m` (≈$32/month per 1M items, +0.0131 F1 behind, p = 0.43),
-not the dearest, `anthropic_l` ($2,463/month, 0.0066 behind `openai_m`, not separated).
+not the dearest, `anthropic_l` ($2,463/month, 0.0066 behind `openai_m`, not significant).
 
 Part of the lead is the corpus's own convention, which is what fine-tuning buys: against
 `openai_m`, 57% of it is on `other`, a type the prompt never defined, and up to 38% is
 agreement with gold labels most other arms reject (the two overlap). Under that bound the
-lead falls from 0.0810 to 0.0503 and stays ahead (separation not retested). Not measured:
+lead falls from 0.0810 to 0.0503 and stays ahead (significance not retested). Not measured:
 labelling and training cost, an LLM given definitions or examples, and contamination of the
 hosted models (§5).
 
@@ -42,32 +42,32 @@ hosted models (§5).
 
 | the choice | what the data says |
 |---|---|
-| **Self-host · small ML** | **`span_marker`**: CC-BY-SA-4.0, 499 MB, CPU, 0.76 s/item on this run's machine. **0.7674, separated from all 27 other arms** (the 24 hosted, `gliner`, `capitalized`, `nothing`). The one separated win in the six evals. |
+| **Self-host · small ML** | **`span_marker`**: CC-BY-SA-4.0, 499 MB, CPU, 0.76 s/item on this run's machine. **0.7674, significantly different from all 27 other arms** (the 24 hosted, `gliner`, `capitalized`, `nothing`). The one significant win in the six evals. |
 | **Self-host · open-weight LLM (≤64 or ≤128 GB)** | **`gemma_m`**, Apache-2.0, ~52 GB of weights: fits 128 GB, and leaves ~12 GB of a 64 GB box for KV cache and runtime. Nothing was run locally. 0.6733 as served by 13 providers, **0.0941 behind** the tagger, 103× its download size (25.8B total / ~4B active parameters against 124.75M). |
-| **Deploy · rented API** | **`openai_m`** is best by point estimate: $2,324/month per 1M items, 0.6864, 10.6% below `span_marker`, 2× slower. Not separated from seven other hosted arms, up to 0.0383 behind (`gemma_l`: p = 0.0084 against a Holm threshold of 0.0071). Cheapest of the eight: `gemma_m`, ≈$32/month, +0.0131 behind (p = 0.43). |
-| **What not to deploy** | `anthropic_l`: the most expensive arm, $2,463/month per 1M items, 11.4% below `span_marker`. 0.0066 behind `openai_m` (p = 0.67, not separated, §3.3); 78× the price of `gemma_m` at the routed mix billed in this run for a +0.0065 point-estimate gap (not tested pairwise). |
+| **Deploy · rented API** | **`openai_m`** is best by point estimate: $2,324/month per 1M items, 0.6864, 10.6% below `span_marker`, 2× slower. Not significantly different from seven other hosted arms, up to 0.0383 behind (`gemma_l`: p = 0.0084 against a Holm threshold of 0.0071). Cheapest of the eight: `gemma_m`, ≈$32/month, +0.0131 behind (p = 0.43). |
+| **What not to deploy** | `anthropic_l`: the most expensive arm, $2,463/month per 1M items, 11.4% below `span_marker`. 0.0066 behind `openai_m` (p = 0.67, not significant, §3.3); 78× the price of `gemma_m` at the routed mix billed in this run for a +0.0065 point-estimate gap (not tested pairwise). |
 | **Does paying more help?** | A little, not enough. Across the 24 hosted arms, +0.0407 F1 per 10× in cost (r = 0.50, 95% Fisher interval 0.13 to 0.75): 5.9% of the best hosted F1, 5.3% of `span_marker`'s. A cross-vendor association confounded with vendor. The steepest absolute slope of the six evals (SummEval's is larger as a share of its best score; [synthesis](REPORT_SYNTHESIS.md)). |
 | **What part of the lead is learned convention?** | Against `openai_m`: 57% on `other` (30–57% across the 24 hosted arms, for a prompt that defines no type) and up to 38% on 34 disputed labels (19–34% against the next three hosted arms; 7–53% across thresholds 90% to 70%; voters share zero-shot priors). They overlap. Lead after the bound: 0.0503. On `person`, three hosted arms edge it by 0.004–0.007 (untested). |
-| **Is a pilot enough?** | Here yes: ρ = 0.963 over the 28 arms, from the dev items inside the committed 280-item runs (§3.8), right winner. In 3 of the 4 other evals that ran a pilot it was wrong (a count from the [synthesis](REPORT_SYNTHESIS.md), not a result of this run). |
+| **Is a pilot enough?** | Here yes: ρ = 0.963 over the 28 arms, from the pilot items inside the committed 280-item runs (§3.8), right winner. In 3 of the 4 other evals that ran a pilot it was wrong (a count from the [synthesis](REPORT_SYNTHESIS.md), not a result of this run). |
 | **Fine-tune or pay?** | Fine-tune, if you have labelled data, as run here: 0.7674 against 0.6864 at $0 to run. The zero-shot control `gliner` (0.4540, +0.3134 behind) differs in training exposure and architecture, so that gap is both, split unmeasured (§3.5); the case rests on `span_marker` beating the LLMs, not on it. |
 
 *How to read this table.* Scores are **mean per-sentence F1** over 280 sentences (0–1,
 higher is better; §2). **% below** is relative to `span_marker`: (0.7674 − the arm's score) /
 0.7674. **$/month per 1M items** = what the provider billed for the 280 sentences, scaled to
-one million items a month. **Separated** = a paired sign-flip permutation test on per-sentence
+one million items a month. **Significant** = a paired sign-flip permutation test on per-sentence
 F1, Holm-corrected over the declared family of 27 opponents at α = 0.05 (§3.2).
 Cross-cutting context for all six evals: [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md).
 
 ### What this eval specifically found
 
 1. **A winner, not a group.** `span_marker` scored **0.7674** against a hosted field of
-   0.524–0.686, separated from all 27 other arms (Holm step-down over a family declared in
-   advance). Neither classification corpus produced this: AG News's leader is tied with three
-   other arms, DBpedia's with nineteen (counts per [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md)).
+   0.524–0.686, significantly different from all 27 other arms (Holm step-down over a family declared in
+   advance). Neither classification corpus produced this: AG News's leader is not significantly different from three
+   other arms, DBpedia's from nineteen (counts per [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESIS.md)).
 
-2. **Behind it, the familiar tie.** `openai_m` (0.6864) separates from 16 of the 23 other
+2. **Behind it, the familiar tie.** `openai_m` (0.6864) differs significantly from 16 of the 23 other
    hosted arms (20 of the 27 opponents once `span_marker`, `gliner`, `capitalized` and
-   `nothing` are counted). The seven it cannot separate from span `gemma_m` at **$0.0088** to
+   `nothing` are counted). The seven not significantly different from it span `gemma_m` at **$0.0088** to
    `anthropic_l` at **$0.6897**, a 78× price range, with gaps of 0.0066 to 0.0383 F1 that
    these 280 sentences cannot resolve: not shown different, not shown equal. DBpedia's figure
    was 115×.
@@ -112,7 +112,7 @@ Cross-cutting context for all six evals: [`REPORT_SYNTHESIS.md`](REPORT_SYNTHESI
 |---|---|
 | Corpus | Few-NERD `supervised` test split, CC BY-SA 4.0 |
 | Slice | 280 sentences, seeded random (`--seed 20260928`), `items_sha256` `95a1b9627073` |
-| Dev slice | 56 sentences, a strict **prefix** of the same permutation — nested, so holdout analysis is honest |
+| Pilot slice | 56 sentences, a strict **prefix** of the same permutation — nested, so holdout analysis is honest |
 | Gold | expert annotation, a JSON array of `{text, type}` per item — **768 entities as annotated, 766 scorable**: the two bare "£" tags in §5 normalise to nothing and drop out |
 | Density | 2.74 entities/sentence; **34 of 280 sentences have none** (35 once the "£" item is normalised, §5) |
 | Types (of the 766 scorable) | location 199, organization 172, person 166, other 86, product 58, art 30, building 29, event 26 |
@@ -194,7 +194,7 @@ the ranking metric; micro-F1 is reported alongside it
 | `gliner` | 0.4540 | 0.5189 | 0.4795 | 0.5653 |
 
 The winner and the gap behind it hold under both; `anthropic_l` and `openai_m` swap
-places, inside a difference no test separates. **Neither figure is comparable to published
+places, inside a difference no test finds significant. **Neither figure is comparable to published
 Few-NERD results**, which are entity-level micro-F1 over the 66 *fine* types on exact token
 spans; ours are 8 coarse types matched on normalised strings. The comparable number is the
 calibration row: `span_marker` scored the standard way on 2,000 seeded test sentences,
@@ -214,8 +214,8 @@ replies the parser could read; an unreadable reply scores 0 (§6). **latency per
 mean wall-clock seconds per sentence — hosted arms include the network, local arms ran on
 CPU fp32; `~0` = under a millisecond (rule-based baselines). **cost** = what the provider
 billed for all 280 sentences. **Bold** marks the winner, the fastest arm and the free
-learned arms. `span_marker` is separated from all 27 other arms (§3.2); `openai_m` is
-separated from 16 of the 23 other hosted arms (20 of 27 opponents counting `span_marker`,
+learned arms. `span_marker` differs significantly from all 27 other arms (§3.2); `openai_m` is
+significantly different from 16 of the 23 other hosted arms (20 of 27 opponents counting `span_marker`,
 `gliner`, `capitalized` and `nothing`) — not from `anthropic_l`, `gemma_m`, `openai_l`,
 `anthropic_m`, `qwen_s`, `qwen_m` or `gemma_l` (§3.3).
 
@@ -251,13 +251,13 @@ separated from 16 of the 23 other hosted arms (20 of 27 opponents counting `span
 | nothing | 0.1250 | 0.1250 | 1.000 | ~0 | $0 |
 
 
-### 3.2 The one separated win in this repo
+### 3.2 The one significant win in this repo
 
 `span_marker` vs a family of 27 declared before any p-value was read, Holm step-down at
 α = 0.05, sign-flip permutation on paired per-item F1:
 
 ```
-separated from 27 of 27 opponents; ahead on the point estimate against 27 of 27
+significantly different from 27 of 27 opponents; ahead on the point estimate against 27 of 27
 closest opponent: openai_m  delta +0.0810  wins 86/280  p = 0.0001  thresh 0.0500
 ```
 
@@ -270,9 +270,9 @@ definitions, no examples. It does not say how an LLM given labelled examples wou
 `openai_m` vs the same family:
 
 ```
-separated from 20 of 27; ahead on the point estimate against 26 of 27
+significantly different from 20 of 27; ahead on the point estimate against 26 of 27
 
-  NOT separated:
+  NOT significant:
     gemma_l      +0.0383  p = 0.0084   ($0.0134)
     qwen_m       +0.0316  p = 0.0244   ($0.0396)
     qwen_s       +0.0214  p = 0.1481   ($0.0157)
@@ -413,7 +413,7 @@ the `gemma_m` and `openai_l` rows above. F1 is mean per-sentence F1 throughout.
 **`span_marker` moves four to six times less than the hosted field**, because it was
 trained on the convention and was never losing those points. Its 0.0810 lead over
 `openai_m` becomes **0.0503** under the bound: **up to 38% of that lead is agreement with
-the annotation.** It stays ahead — separation was not retested under the bound — but the
+the annotation.** It stays ahead — significance was not retested under the bound — but the
 margin is materially smaller than the leaderboard shows. The 38% is the figure against the arm the relabelling
 helps most: against `anthropic_l` it is 22.3%, `gemma_m` 19.4%, `openai_l` 34.1%.
 
@@ -458,18 +458,18 @@ smaller one by talking itself out of an answer.
 The budget was not tuned after seeing this, because that would be tuning on the measurement
 set. It is reported as a property of the arm.
 
-### 3.8 The dev slice predicted the ranking, and the winner held
+### 3.8 The pilot slice predicted the ranking, and the winner held
 
-Spearman ρ between the 56 dev items and the 280-item measurement slice, 28 arms:
-**0.963**, from the dev items inside the committed 280-item runs (`stats.spearman`, ties
-given midranks); the separate dev-slice runs were not committed. Dev leader and measurement
+Spearman ρ between the 56 pilot items and the 280-item test slice, 28 arms:
+**0.963**, from the pilot items inside the committed 280-item runs (`stats.spearman`, ties
+given midranks); the separate pilot-slice runs were not committed. Pilot leader and measurement
 leader are the same arm, `span_marker`.
 
-Mean |rank move| 1.71 positions; **max 5** — `deepseek_l` (22nd on the dev items, 17th on
-the full slice) and `llama_m` (15th → 20th). `glm_l` is 21st on the dev items and 22nd on
-the full slice; it truncates 14.3% of the dev items against the 0.114 in §3.7.
+Mean |rank move| 1.71 positions; **max 5** — `deepseek_l` (22nd on the pilot items, 17th on
+the full slice) and `llama_m` (15th → 20th). `glm_l` is 21st on the pilot items and 22nd on
+the full slice; it truncates 14.3% of the pilot items against the 0.114 in §3.7.
 
-**No winner's curse.** On the 224 items the dev slice never contained:
+**No winner's curse.** On the 224 items the pilot slice never contained:
 
 ```
 global test (permutation on within-item ranks): p = 0.0002 -> an arm effect exists
@@ -481,7 +481,7 @@ pairs distinguishable: 152 of 378
 
 > The critical values come from [`tools/nemenyi_table.py`](../harness/tools/nemenyi_table.py), which solves the
 > studentised-range integral and reproduces all 24 of Demsar's published values to
-> within 0.0007. Every separation claim here comes from `family_test.py`'s Holm step-down,
+> within 0.0007. Every significance claim here comes from `family_test.py`'s Holm step-down,
 > which does not use this table.
 
 This is the direct opposite of the summarisation result, where BART's 0.0737 lead at n=20
@@ -515,7 +515,7 @@ ties are handled; the classification corpora, whose metric does tie, are in
 ## 4. Discussion
 
 **The honest summary of "small ML model vs LLM" is narrower than the leaderboard makes it
-look.** `span_marker` wins outright and separates from all 27 opponents. But decompose it:
+look.** `span_marker` wins outright and differs significantly from all 27 opponents. But decompose it:
 
 - 57% of the margin over `openai_m` (30–57% across the 24 hosted arms) is one type,
   `other`, which the bare-label prompt never defined.
@@ -592,7 +592,7 @@ prints these, and `fetch.py` does not claim the floor is *exactly* the empty-gol
 - **Consensus counts arms, not occurrences**: one arm emitting a span twice votes once.
 - **Every number here comes from one instrument**: all 28 measurement runs share one
   `items_sha256` and one adapter sha256, and all 28 were rescored under one scoring rule
-  (`derived.with`: one `scorer_sha256`, one `parser_sha256`). The dev-slice runs were not
+  (`derived.with`: one `scorer_sha256`, one `parser_sha256`). The pilot-slice runs were not
   committed.
 
 ---
@@ -601,19 +601,19 @@ prints these, and `fetch.py` does not claim the floor is *exactly* the empty-gol
 
 This section is deliberately as detailed as the results.
 
-- **The pilot, from its own runs.** The 56-item dev-slice runs were never committed, so ρ,
-  the rank moves and the dev leader in §3.8 are computed from the dev items inside the
-  committed 280-item runs, the method the classification report uses. A separate dev-slice
+- **The pilot, from its own runs.** The 56-item pilot-slice runs were never committed, so ρ,
+  the rank moves and the pilot leader in §3.8 are computed from the pilot items inside the
+  committed 280-item runs, the method the classification report uses. A separate pilot-slice
   run need not give the same figures.
 - **No confidence/calibration analysis.** Hosted arms have no `confidence`: logprobs were
   never requested. The classification report's calibration section has no counterpart here.
-- **Boundary errors are not separated from detection errors.** A prediction that overlaps a
+- **Boundary errors are not significantly different from detection errors.** A prediction that overlaps a
   gold span but does not match it after normalisation counts as one fp and one fn, exactly
   like a miss. Few-NERD's IO tagging guarantees some gold boundaries are unrecoverable by
   construction (two adjacent same-type entities merge into one span), so some share of
   every arm's error is structural. **That share is not quantified anywhere in this report.**
 - **`gliner`'s threshold (0.5) is untuned.** It is the library default, and it is this arm's
-  decision boundary — moving it trades precision against recall. Tuning it on the dev slice
+  decision boundary — moving it trades precision against recall. Tuning it on the pilot slice
   would be legitimate, but it would then be a tuned arm. A tuned GLiNER might close some of
   the +0.3134 gap in §3.5, and nothing here bounds how much.
 - **Corpus micro-F1 still forgives an unreadable empty-gold item.** The per-item fix in §6

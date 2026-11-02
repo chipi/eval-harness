@@ -95,7 +95,7 @@ NODES = [
     ),
     (
         "references",
-        "References",
+        "Reference sets",
         "silver · gold",
         (
             "What each item is scored against: labels (a person's, a model's, a rule's) promoted on purpose, "
@@ -135,10 +135,10 @@ NODES = [
     (
         "tests",
         "Tests",
-        "separated or tied",
+        "significant or not",
         (
             "The leaderboard with its significance block, paired tests, Holm-corrected families. "
-            "A claim means separated, not scored higher."
+            "A claim means significant, not scored higher."
         ),
         "your terminal",
         "evh family-test --dataset-id … --a … --against …",
@@ -215,7 +215,7 @@ def lifecycle(interactive: bool = False) -> str:
     h = 12 + len(NODES) * step
     return (
         f'<svg class="lc" viewBox="0 0 {w} {h}" role="img" aria-label="The evaluation '
-        f"lifecycle: sources, dataset, materialized copy, references, arms, runs, tests, "
+        f"lifecycle: sources, dataset, materialized copy, reference sets, arms, runs, tests, "
         f'baseline, an optional re-measurement, and the next round">{"".join(parts)}</svg>'
     )
 
@@ -243,7 +243,7 @@ def lifecycle_panels(H) -> str:
 def chapters(H, f: dict) -> list:
     exps = f["evals"]
     by = {x["slug"]: x for x in exps}
-    ties = sum(x["n_tied"] > 0 for x in exps)
+    ties = sum(x["n_contenders"] > 0 for x in exps)
     s = by["summarization"]
     sf = by["scifact"]
     return [
@@ -396,7 +396,7 @@ def chapters(H, f: dict) -> list:
                 + "</p>"
             ),
             "habit": "Run every arm more than once and measure how far it disagrees with itself. "
-            "Tune on a small dev slice, report on the rest, and measure how many items a "
+            "Tune on a small pilot slice, report on the rest, and measure how many items a "
             "ranking needs instead of assuming it.",
             "tool": (
                 "evh run --repeat 3 · evh holdout · evh rank-stability",
@@ -409,15 +409,15 @@ def chapters(H, f: dict) -> list:
             "nodes": "tests",
             "kicker": "Significance",
             "title": "Tested, not read.",
-            "short": "Say separated, not higher.",
+            "short": "Say significant, not higher.",
             "story": (
                 f"<p>A leaderboard sorts, so something is always first. In {ties} of "
-                f"{len(exps)} evals here the leader cannot be separated from a group of "
-                f"others — on summarisation, from {s['n_tied']} of them, the cheapest paid one "
-                f"{H.times(s['tied_ratio'])} cheaper than the dearest model in the field.</p>"
-                "<p>Every separation claim on this site rests on a paired permutation test "
+                f"{len(exps)} evals here the leader is not significantly different from a group of "
+                f"others — on summarisation, from {s['n_contenders']} of them, the cheapest paid one "
+                f"{H.times(s['contender_ratio'])} cheaper than the dearest model in the field.</p>"
+                "<p>Every significance claim on this site rests on a paired permutation test "
                 "per item, with a Holm correction for the number of comparisons made at "
-                "once. A tie means the test could not separate two arms at this many items, "
+                "once. Not significant means the test could not tell two arms apart at this many items, "
                 "not that they are equal. Intervals elsewhere (the human ceiling) are "
                 "bootstrapped, and the price slopes are fits, not tests.</p>"
             ),
@@ -426,12 +426,12 @@ def chapters(H, f: dict) -> list:
             "tool": (
                 "evh family-test · evh leaderboard",
                 (
-                    f"separated from {sf['n_arms'] - 1 - sf['n_tied']} of {sf['n_arms'] - 1} opponents"
+                    f"significantly different from {sf['n_arms'] - 1 - sf['n_contenders']} of {sf['n_arms'] - 1} opponents"
                     f"   ← SciFact's leader, {sf['leader_row']['arm']}"
                 ),
             ),
-            "yours": "When the answer is “tied”, look at the gap and the sample size first: if the "
-            "gap is one you can live with, the cheapest member of the tie is the decision.",
+            "yours": "When the answer is “not significant”, look at the gap and the sample size first: if the "
+            "gap is one you can live with, the cheapest arm in that group is the decision.",
         },
         {
             "id": "record",
@@ -482,7 +482,7 @@ LASTING = [
         "Production is the test, not the answer key.",
         (
             "Keep what your system decided as a capture, every record hashed. Its decisions become an arm, scored "
-            "against labels; what happened next is a rule's labels, never a reference until you promote it. The rows "
+            "against labels; what happened next is a rule's labels, never a reference set until you promote it. The rows "
             "worth keeping are picked for the next version of a dataset you govern."
         ),
         "evh capture · evh arm-from-capture · evh label-from-capture · evh pick",
@@ -602,7 +602,7 @@ def patterns(H, f: dict) -> list:
             "Is the cheaper model good enough?",
             "arms = models, same prompt",
             (
-                f"On DBpedia a {H.times(db['tied_ratio'])} price difference was not shown to buy accuracy. "
+                f"On DBpedia a {H.times(db['contender_ratio'])} price difference was not shown to buy accuracy. "
                 "Run both on your items; if they tie and the gap is one you can live with, the cheap "
                 "one wins."
             ),
@@ -612,7 +612,7 @@ def patterns(H, f: dict) -> list:
         (
             "Did my prompt change help?",
             "arms = prompts, same model",
-            "Name the pair before you look, tune on a dev slice, confirm on the held-out rest.",
+            "Name the pair before you look, tune on a pilot slice, confirm on the held-out rest.",
             "summarization-cnn-dailymail",
             "pair-test · holdout",
         ),
@@ -653,7 +653,7 @@ def patterns(H, f: dict) -> list:
                 "Score a few dozen outputs yourself, then measure how well each judge orders them "
                 "the way you do. On SummEval the best judges reached 93% of an expert's agreement "
                 "(the best of 24, chosen on the same articles; 92% held out), and an open-weight one at 1/23 of the "
-                "leader's price was not separated from it.",
+                "leader's price was not significantly different from it.",
                 JUDGE,
             )
             + " Pin the provider: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart."
@@ -760,7 +760,7 @@ STEPS = [
         "2-onboard-it",
     ),
     (
-        "Run the best arm; its outputs become the reference",
+        "Run the best arm; its outputs become the reference set",
         "Your best system answers first; its answers become a model's labels, promoted to silver, and the others are measured by how close they come.",
         "evh run --config data/configs/tickets_author.yaml\nevh label-from-run --run … --set author_v1\nevh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason … --by me",
         "data/references/silver/tickets_v1: 6 of 6 item(s), silver, promoted from tickets_v1/author_v1",
@@ -786,7 +786,7 @@ STEPS = [
     (
         "Choose, and record why",
         "Promote with a reason that says what the tests showed; validate in CI.",
-        'evh run-promote --run … --reason "leads on silver but separates from neither arm at n=6"',
+        'evh run-promote --run … --reason "leads on silver but differs significantly from neither arm at n=6"',
         "VALIDATION PASSED",
         GUIDE,
         "8-choose",
@@ -906,7 +906,7 @@ def use_page(H, f: dict) -> str:
       <li>Datasets frozen by content hash, re-checked on every use.</li>
       <li>A fingerprint per run: data, prompt, code, model, build.</li>
       <li>Each arm's own noise, measured.</li>
-      <li>Paired and Holm-corrected tests — separated or tied.</li>
+      <li>Paired and Holm-corrected tests — significant or not.</li>
       <li>Billed cost and latency beside quality.</li>
       <li>Re-scoring from stored outputs for $0; validation for CI; baselines with reasons.</li>
       <li>A recommendation per goal, with its reasons, beside the baseline a person promoted.</li>
@@ -930,8 +930,8 @@ def use_page(H, f: dict) -> str:
   <div class="eyebrow"><span class="num">05</span>Three doors</div>
   <h2>Look at ours, rerun ours, or build yours.</h2>
   <div class="cards doors">
-    <a class="card" href="{H.CATALOG}"><div class="task">Look at ours</div><h3>Every run, in the catalog.</h3><p>The six evals as the harness shows them: every goal, dataset, arm and reference, and an inspector that tests any arms against a baseline, item by item. Nothing to install; your agent can ask it too, at <code>evals.humancopilot.eu/mcp</code>.</p><div class="meta"><span>evals.humancopilot.eu/catalog</span><b>The catalog →</b></div></a>
-    <a class="card" href="docs/REPRODUCE/"><div class="task">Rerun ours</div><h3>Check every finding yourself.</h3><p>Five levels, from recomputing every number for $0 to rerunning every model with one key — with a replication card that re-tests every separation.</p><div class="meta"><span>make verify</span><b>Reproduce it →</b></div></a>
+    <a class="card" href="{H.CATALOG}"><div class="task">Look at ours</div><h3>Every run, in the catalog.</h3><p>The six evals as the harness shows them: every goal, dataset, arm and reference set, and an inspector that tests any arms against a baseline, item by item. Nothing to install; your agent can ask it too, at <code>evals.humancopilot.eu/mcp</code>.</p><div class="meta"><span>evals.humancopilot.eu/catalog</span><b>The catalog →</b></div></a>
+    <a class="card" href="docs/REPRODUCE/"><div class="task">Rerun ours</div><h3>Check every finding yourself.</h3><p>Five levels, from recomputing every number for $0 to rerunning every model with one key — with a replication card that re-tests every significance verdict.</p><div class="meta"><span>make verify</span><b>Reproduce it →</b></div></a>
     <a class="card" href="docs/GUIDE/"><div class="task">Build yours</div><h3>Your first evaluation, end to end.</h3><p>Freeze a dataset, build a golden reference set, measure, compare honestly, promote a baseline — offline, with the real output of every step.</p><div class="meta"><span>harness/tutorial</span><b>The guide →</b></div></a>
   </div>
 </div></section>
@@ -1001,7 +1001,7 @@ def eval_lesson(H, x: dict) -> tuple:
             "tested",
             "Tested, not read.",
             (
-                f"{x['n_tied']} arms cannot be separated from the leader. A saturated benchmark "
+                f"{x['n_contenders']} arms are not significantly different from the leader. A saturated benchmark "
                 "sorts; it does not rank — and the table still prints them first, second, third."
             ),
         )
@@ -1033,5 +1033,5 @@ def eval_lesson(H, x: dict) -> tuple:
     return (
         "noise",
         "Measure the noise before the difference.",
-        H.q("The dev slice's leader finished 10th of 19, a rank inside a tie.", RET),
+        H.q("The pilot slice's leader finished 10th of 19, a rank inside a tie.", RET),
     )

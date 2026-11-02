@@ -9,9 +9,9 @@
 # thinking tokens INSIDE the output budget, so a tight cap does not buy terseness, it buys
 # a truncated answer that scores like a bad model. `truncated` is recorded per item.
 #
-# The measurement slice. ONLY config_id and dataset_id differ from arm_glm_s.yaml, so a
-# delta against the dev run is attributable to n and nothing else. Every one of the 24
-# hosted arms is run here — none is selected on its dev score, because selecting on n=20
+# The test slice. ONLY config_id and dataset_id differ from arm_glm_s.yaml, so a
+# delta against the pilot run is attributable to n and nothing else. Every one of the 24
+# hosted arms is run here — none is selected on its pilot score, because selecting on n=20
 # and reporting on n=200 is exactly the bias this repo exists to catch, and at roughly
 # $0.02 an arm the selection would save nothing.
 config_id: ag_glm_s_n200_v1

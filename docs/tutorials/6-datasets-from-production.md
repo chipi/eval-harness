@@ -2,7 +2,7 @@
 
 Getting started froze six tickets someone wrote by hand. A real project often has something better: what its
 system did in production, and what happened afterwards. This tutorial keeps that as a **capture**, makes a
-dataset from it, turns the outcomes into labels, splits dev from heldout, then scores production's own decisions
+dataset from it, turns the outcomes into labels, splits validation from test, then scores production's own decisions
 against what happened, finds where it was wrong, and picks those tickets for the next version of a dataset you
 govern. It runs offline, on the kit's support-desk export (`tutorial/production/desk_export.jsonl`: the same six
 tickets, with when each arrived, its channel, where the desk's router sent it, and how it ended). The design is
@@ -90,19 +90,19 @@ promote them, at the tier you choose and with the reason
 need engineering?") would be scored against, beside a person's labels; the six-ticket summarisers are not.
 `examples/triage-fleet/` is a full project built this way, on a real agent's decisions.
 
-## 4 · Dev and heldout
+## 4 · Validation and test
 
 ```bash
-evh dataset-split tickets_desk_v1 --heldout 0.34 --seed 7
+evh dataset-split tickets_desk_v1 --test 0.34 --seed 7
 ```
 ```text
-data/datasets/tickets_desk_v1_dev.json  (5 item(s))
-data/datasets/tickets_desk_v1_heldout.json  (1 item(s))
+data/datasets/tickets_desk_v1_validation.json  (5 item(s))
+data/datasets/tickets_desk_v1_test.json  (1 item(s))
 ```
 
-Each item goes to heldout when the hash of the seed and its key falls below the share, so it keeps its side in
+Each item goes to test when the hash of the seed and its key falls below the share, so it keeps its side in
 every later version. `--key F` keeps every item sharing a field value on one side (one fingerprint, one
-customer); `--by time --key F` makes the newest share heldout.
+customer); `--by time --key F` makes the newest share test.
 
 `evh validate` checks the capture too (V17): every record against the hash it was captured with.
 

@@ -608,8 +608,8 @@ def mutation_test_bootstrap_test() -> int:
     check("mutation bootstrap_test: runs ok", result.returncode == 0, result.stderr[:300])
     check("mutation bootstrap_test: reports delta", "delta" in result.stdout.lower(), result.stdout[:500])
     check(
-        "mutation bootstrap_test: reports SEPARATED for clear difference",
-        "SEPARATED" in result.stdout,
+        "mutation bootstrap_test: reports SIGNIFICANT for clear difference",
+        "SIGNIFICANT" in result.stdout,
         result.stdout[:1000],
     )
     return 3

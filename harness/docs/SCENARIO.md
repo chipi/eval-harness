@@ -63,7 +63,7 @@ Write the items yourself, so nothing has to be fetched or licensed:
   labelled billing, technical, account or shipping, in `data/sources/messages_gold/<item_id>.txt`.
   Include a couple that sit between two intents (a shipping refund is billing).
 
-Your answers become a person's labels, promoted to gold with why (a reference is only ever labels promoted on
+Your answers become a person's labels, promoted to gold with why (a reference set is only ever labels promoted on
 purpose):
 
 ```bash
@@ -267,7 +267,7 @@ the page's.
   reference, which run is the baseline and why, and what each round decided.
 - The spend stays under the cap and matches the sum of what each command printed.
 - Each goal group's recommendation follows its strategy and says why: on `intents_v1` the
-  keyword arm (0.875, free) is not separated from the frontier arm (1.000) but is further off
+  keyword arm (0.875, free) is not significantly different from the frontier arm (1.000) but is further off
   than the 2% margin, so `balanced` recommends the frontier arm; `evh goals --goal` and the
   home page's glance say the same.
 
@@ -324,8 +324,8 @@ step 11's screenshots.
 
 After the third run (candidate `80e8f3f5`), fixed in code: `evh rounds` suggests retiring the arm
 that wrote a silver reference when the round is read against gold (only on its own silver is it the
-yardstick), never suggests retiring the baseline the round started from, says "separated worse
-than" r(n-1)'s best when it is, and suggests `--promote` only for a leader separated better than
+yardstick), never suggests retiring the baseline the round started from, says "significantly worse
+than" r(n-1)'s best when it is, and suggests `--promote` only for a leader significantly better than
 the baseline it started from and not behind the previous round's best (otherwise it says why it
 promotes nothing); the goal page's "leader" mark and its "test every arm against its leader" link
 use the decision's leader, never a retired arm. Fixed in the docs: how many `--retry-unparsed`

@@ -4,7 +4,7 @@ published number, on the protocol that number was measured on.
 Every eval here scores a 200-ish item slice. A calibration row runs ONE known model
 or baseline on the benchmark's full test set (or a large seeded sample of it, stated as
 such) and compares the result with the value its authors published. It answers the
-question no separation test can: is this instrument, on this data, measuring what the
+question no significance test can: is this instrument, on this data, measuring what the
 field measures? The summarisation slice's CNN-only bias went unnoticed until one existed.
 
 Stdlib only. Results land in docs/evidence/calibration/<eval>.json, which

@@ -1910,8 +1910,8 @@ def test_two_runs_sharing_a_config_id_are_refused() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
-def test_the_reports_separation_counts_are_real() -> None:
-    """A "separated from N of M" in a report must match what `family_test.py` says.
+def test_the_reports_significance_counts_are_real() -> None:
+    """A "significantly different from N of M" in a report must match what `family_test.py` says.
 
     The third class round 2 named that nothing checked: "it also checks only single-run
     primary metrics, so it wouldn't have caught any of the round-1 cost, ratio or
@@ -1928,7 +1928,7 @@ def test_the_reports_separation_counts_are_real() -> None:
 
     reparsed = HERE.parent / "data" / "runs"
     if not any(reparsed.glob("sf_glm_s_n200_v1_*/predictions.jsonl")):
-        print("  --   separation counts: skipped (no reparsed SciFact runs on disk)")
+        print("  --   significance counts: skipped (no reparsed SciFact runs on disk)")
         return
 
     # Only the 2026-09-28 sweep: the re-runs duplicate arms and would double the family.
@@ -1953,10 +1953,10 @@ def test_the_reports_separation_counts_are_real() -> None:
             env={"EVAL_RUNS_DIR": str(scope)},
         )
 
-    m = _re.search(r"separated from (\d+) of (\d+) opponents", r.stdout or "")
+    m = _re.search(r"significantly different from (\d+) of (\d+) opponents", r.stdout or "")
     if not m:
         check(
-            "separation counts: family_test produced a verdict",
+            "significance counts: family_test produced a verdict",
             False,
             ((r.stderr or "") + (r.stdout or ""))[-160:],
         )
@@ -1993,7 +1993,7 @@ def test_the_reports_separation_counts_are_real() -> None:
         if not (_ok(lo, hi, sep) or _ok(lo, hi, fam - sep))
     ]
     check(
-        f"...and EVERY one is consistent with {sep} separated or {fam - sep} tied",
+        f"...and EVERY one is consistent with {sep} significant or {fam - sep} not",
         not bad,
         f"the tool says {sep}/{fam - sep}; the report also states " + ", ".join(bad),
     )
@@ -3485,7 +3485,7 @@ def main() -> int:
         test_v10_fails_when_a_derived_run_states_no_scorer,
         test_nemenyi_table_is_computed_not_copied,
         test_two_runs_sharing_a_config_id_are_refused,
-        test_the_reports_separation_counts_are_real,
+        test_the_reports_significance_counts_are_real,
         test_promote_reads_its_reason_from_the_env,
         test_rescore_refuses_a_missing_reference_set,
         test_spearman_is_tie_correct,

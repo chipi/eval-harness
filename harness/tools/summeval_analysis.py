@@ -99,7 +99,7 @@ def tier_tests(per_item: dict, items: list, permutations: int = 20000) -> dict:
             out[fam] = {"delta": statistics.fmean(d), "p": sign_flip_p(d, permutations, rng=rng)}
     verdicts = holm({fam: v["p"] for fam, v in out.items()})
     for fam, v in out.items():
-        v["holm_threshold"], v["separated"] = verdicts[fam]
+        v["holm_threshold"], v["significant"] = verdicts[fam]
     return out
 
 
@@ -198,7 +198,7 @@ def main() -> int:
     for fam, t in sorted(f["tier_tests"].items(), key=lambda kv: kv[1]["p"]):
         print(
             f"  {fam:9s} {t['delta']:+.4f}  p {t['p']:.4f}  threshold {t['holm_threshold']:.4f}  "
-            f"{'separated' if t['separated'] else 'not separated'}"
+            f"{'significant' if t['significant'] else 'not significant'}"
         )
     print("\nper-dimension leaders among the judges")
     for d, r in f["dimensions"].items():

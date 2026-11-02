@@ -97,7 +97,7 @@ def main() -> int:
         setup(
             "dataset-create",
             "--dataset-id",
-            "tickets_dev_v1",
+            "tickets_pilot_v1",
             "--source-dir",
             "tutorial/tickets",
             "--limit",
@@ -130,7 +130,7 @@ def main() -> int:
             "owner",
         )
         # gold a script builds, for reference-manifest below: the texts where a fetch script would put them
-        fetched = proj / "data/references/gold/tickets_dev_v1"
+        fetched = proj / "data/references/gold/tickets_pilot_v1"
         fetched.mkdir(parents=True)
         for f in sorted((proj / "tutorial/gold").glob("*.txt"))[:2]:
             shutil.copy(f, fetched / f.name)
@@ -170,7 +170,7 @@ def main() -> int:
                 "reference-manifest",
                 [
                     "--reference-id",
-                    "gold/tickets_dev_v1",
+                    "gold/tickets_pilot_v1",
                     "--source",
                     "tutorial/gold",
                     "--labelled-by",
@@ -231,7 +231,7 @@ def main() -> int:
                 ["--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--against", "tickets_"],
                 "for classification",
             ),
-            ("holdout", ["--dataset-id", "tickets_v1", "--exclude-dataset", "tickets_dev_v1"], "ok"),
+            ("holdout", ["--dataset-id", "tickets_v1", "--exclude-dataset", "tickets_pilot_v1"], "ok"),
             ("rank-stability", ["--dataset-id", "tickets_v1"], "too few"),
             (
                 "import-run",
@@ -272,7 +272,7 @@ def main() -> int:
                 "ok:record(s) from jsonl",
             ),
             ("capture-scrub", ["c1", "--command", "true {records}"], "ok:0 of"),
-            ("dataset-split", ["tickets_v1", "--heldout", "0.5", "--seed", "3"], "ok:tickets_v1_heldout"),
+            ("dataset-split", ["tickets_v1", "--test", "0.5", "--seed", "3"], "ok:tickets_v1_test"),
             ("captures", ["--capture", "c1"], "ok:c1:"),
             ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
             # Labels (RFC-023): installed and reading their arguments; the flow is tests/test_label_sets.py.
@@ -347,7 +347,7 @@ def main() -> int:
             ("datasets", ["--period", "30d"], "ok:runs in period"),
             ("arms", ["--by", "config", "--period", "30d"], "ok:config tickets_lead2_v1"),
             ("arms", ["--configs"], "ok:rank on each goal"),
-            ("arms", ["--quality", "ties"], "ok:no arm matches: only arms a goal's decision weighs"),
+            ("arms", ["--quality", "contender"], "ok:no arm matches: only arms a goal's decision weighs"),
             (
                 "arms",
                 ["--weights", "open"],

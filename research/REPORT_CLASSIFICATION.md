@@ -18,7 +18,7 @@ public BERT fine-tunes (0.9600, 0.9500, 0.9450) score above all 24 hosted LLMs
 is labelled Sci/Tech, and non-US news, sport included, World. Against gold adjudicated by
 topic by one reader, who was shown the hosted field's answer (§3.4; 29 items reviewed from both
 sides, 17 changed), every hosted LLM scores above every fine-tune: `anthropic_l` leads at 0.9850
-and is separated from all three (tied at 0.9050).
+and differs significantly from all three (tied at 0.9050).
 The fine-tunes were trained on AG News's own training split; with fewer labels they were
 not measured.
 
@@ -26,7 +26,7 @@ not measured.
 `qwen_s` (~$26) or the fine-tuned `bert_base_fy` (438 MB on a CPU, $0 marginal). Do not pay for
 `anthropic_l` ($1,351) or `openai_m` ($850).** The top eleven arms (0.9786–0.9929) sit within 4
 items of each other across a 115× price range, and the leader, `qwen_m`, at ~$51 and 0.9929, is
-separated from only 8 of the 27 others. At 280 items no gap under 10 items was separated, so
+significantly different from only 8 of the 27 others. At 280 items no gap under 10 items was significant, so
 a gain of up to about 3 points from paying more is not ruled out, only not shown.
 
 Both are as run here: hosted LLMs zero-shot with one prompt and no label definitions, one
@@ -41,19 +41,19 @@ This is one of six evals; what all six agree on is in [`REPORT_SYNTHESIS.md`](RE
 
 | the choice | AG News (headroom) | DBpedia-14 (saturated) |
 |---|---|---|
-| **Self-host · small ML** | **`bert_mini`** (44 MB): 0.9450, not separated from `bert_base_ta`, 438 MB and 0.9600 (p = 0.55) and 11× faster when both are timed on one Linux machine (4.3 vs 49 ms median, §3.1). `bert_base_ta` has the best point estimate and is separated from 26 of the 29 others. Read §3.4 first. | **`bert_base_fy`** (438 MB, 87 ms/item on a 4-core Linux CPU): 0.9857, two items behind the leader, not separated (p = 0.62). In the top group; does not lead it. |
-| **Self-host · open-weight LLM, absolute** | **`llama_m`** (Llama-3.3-70B, ~141 GB): 0.8800 as providers served it. 0.0800 behind `bert_base_ta` (separated); 0.0650 behind `bert_mini`, 3,205× smaller (p = 0.0149 against 0.0063, not separated). | **`glm_m`** (GLM-4.6, MIT, 357B / ~714 GB): 0.9857, not separated from the overall winner. The score is the providers'; no self-hosted run was made and the hardware it needs is unverified. |
+| **Self-host · small ML** | **`bert_mini`** (44 MB): 0.9450, not significantly different from `bert_base_ta`, 438 MB and 0.9600 (p = 0.55) and 11× faster when both are timed on one Linux machine (4.3 vs 49 ms median, §3.1). `bert_base_ta` has the best point estimate and differs significantly from 26 of the 29 others. Read §3.4 first. | **`bert_base_fy`** (438 MB, 87 ms/item on a 4-core Linux CPU): 0.9857, two items behind the leader, not significant (p = 0.62). In the top group; does not lead it. |
+| **Self-host · open-weight LLM, absolute** | **`llama_m`** (Llama-3.3-70B, ~141 GB): 0.8800 as providers served it. 0.0800 behind `bert_base_ta` (significant); 0.0650 behind `bert_mini`, 3,205× smaller (p = 0.0149 against 0.0063, not significant). | **`glm_m`** (GLM-4.6, MIT, 357B / ~714 GB): 0.9857, not significantly different from the overall winner. The score is the providers'; no self-hosted run was made and the hardware it needs is unverified. |
 | **Self-host · open-weight LLM, ≤128 GB** | Not measured: `llama_m` at int8 (~70 GB); the 0.8800 is not an int8 build's. Native alternative `gemma_s` (27B, 55 GB): 0.8750. | **`gemma_m`** (Gemma-4-26B-A4B, 52 GB native): 0.9857, the same score as GLM-4.6 at 1/14 the size. The weight size is native; the score is as served by its providers. |
 | **Self-host · open-weight LLM, ≤64 GB** | Not measured: int4, ~35 GB. At native precision, with weights in 85% of memory (54.4 GB, the synthesis's rule): `mistral_s` (48 GB), 0.8600. `gemma_s` (55 GB), 0.8750, is just over that line. | Still `gemma_m`, 52 GB native; no self-hosted run was made. |
-| **Deploy — rented API** | **Highest point estimate: `anthropic_m`**, $351 per 1M items, 0.9100; separated from only 3 of the 23 other hosted arms. Cheapest it is not separated from: `gemma_m`, $8, 0.8550 (0.0550 behind, p = 0.0081 against 0.0025). `qwen_m`: $35, 0.8850 (0.0250 behind, p = 0.18). | **Cheapest of the top group: `gemma_m`**, ~$12/month per 1M items, 0.9857 (two items behind `qwen_m`, p = 0.50); `qwen_s` ~$26, same score. `qwen_m`, ~$51 and 0.9929, leads on the point estimate, proprietary with no self-host option. |
+| **Deploy — rented API** | **Highest point estimate: `anthropic_m`**, $351 per 1M items, 0.9100; significantly different from only 3 of the 23 other hosted arms. Cheapest it is not significantly different from: `gemma_m`, $8, 0.8550 (0.0550 behind, p = 0.0081 against 0.0025). `qwen_m`: $35, 0.8850 (0.0250 behind, p = 0.18). | **Cheapest of the top group: `gemma_m`**, ~$12/month per 1M items, 0.9857 (two items behind `qwen_m`, p = 0.50); `qwen_s` ~$26, same score. `qwen_m`, ~$51 and 0.9929, leads on the point estimate, proprietary with no self-host option. |
 | **What should I not deploy?** | **`anthropic_l`**, $875/month: 0.9000, 6.3% below `bert_base_ta`. `openai_m` ($636) scores 0.8950. | **`anthropic_l`**, $1,351/month: one item (−0.4%) below `qwen_m`, p = 1.0. `openai_m` ($850) is also in the top group. |
 | **Does paying more help?** | **Marginally: +2.3%** per 10× cost (log-cost fit over the 24 hosted arms: +0.0214 accuracy per decade ÷ the best hosted score, 0.9100; r = 0.63). | **Barely: +0.9%** per 10× cost (+0.0094 ÷ 0.9929; r = 0.40). |
-| **Not separated from the leader?** | **3 of the 29 others** from `bert_base_ta`: the two other fine-tunes and `anthropic_m` (+0.0100 to +0.0500). "Not separated" is not "equal". | **19 of the 27 others** from `qwen_m`, at gaps of 1 to 8 items (+0.0036 to +0.0286); the ranking is mostly noise. The smallest gap separated is 10 items. |
-| **What limits the score?** | **The annotation, and a prompt that states no convention.** 17 items are missed by ≥80% of the hosted field (19 at 75%, 20 at 70%); the fine-tunes get 12–14 of them right, the best hosted arms 0–3. Adjudicated by topic by one reader shown the hosted answer, the gold was wrong on all 17. The 17 are selected by the hosted arms' own errors (§3.4). | **The annotation: adjudicated by one reader shown the hosted answer, the gold was wrong on all 3.** Top eleven separated by 4 items; 3 items missed by 24–25 of the 26 learned arms, each with a dissenter (the DBpedia-trained arm on one, `qwen_m` and zero-shot `bart_mnli` on another, `bart_mnli` on the third). |
-| **Is a pilot enough?** | **No.** 12 of 30 arms tied at the top of the 20-item dev slice; its "pick", `anthropic_l`, is the alphabetically first and is truly **5th of 30**. ρ = 0.701* at 30 arms. | **Close, by luck of a small slice.** `bert_base_fy` is alone at the top of the 56-item dev slice (56 of 56), with 13 arms tied one item behind it; on the full 280 it is 3rd= of 28, in a five-way tie two items behind the leader `qwen_m`. ρ = 0.768* at 28 arms. |
-| **Fine-tune or pay?** | **Fine-tune, for this corpus's labels; not shown to beat the best paid arm** (`bert_base_ta` vs `anthropic_m`, p = 0.022 against 0.0167). The three share AG News's labels, so they are not independent confirmations. Licences: AG News `unknown`, non-commercial; `bert_base_fy` apache-2.0; `bert_base_ta` and `bert_mini` state none (checked 2026-10-19). | **Fine-tune for cost, not for quality:** 0.9857 at $0 marginal, not separated from the leader (−0.0071; the leader wins 3 items, the fine-tune 1; p = 0.62). One apache-2.0 checkpoint, trained on CC-BY-SA data (ShareAlike); training cost is not in the $0. |
+| **Not significantly different from the leader?** | **3 of the 29 others** from `bert_base_ta`: the two other fine-tunes and `anthropic_m` (+0.0100 to +0.0500). "Not significant" is not "equal". | **19 of the 27 others** from `qwen_m`, at gaps of 1 to 8 items (+0.0036 to +0.0286); the ranking is mostly noise. The smallest significant gap is 10 items. |
+| **What limits the score?** | **The annotation, and a prompt that states no convention.** 17 items are missed by ≥80% of the hosted field (19 at 75%, 20 at 70%); the fine-tunes get 12–14 of them right, the best hosted arms 0–3. Adjudicated by topic by one reader shown the hosted answer, the gold was wrong on all 17. The 17 are selected by the hosted arms' own errors (§3.4). | **The annotation: adjudicated by one reader shown the hosted answer, the gold was wrong on all 3.** Top eleven within 4 items; 3 items missed by 24–25 of the 26 learned arms, each with a dissenter (the DBpedia-trained arm on one, `qwen_m` and zero-shot `bart_mnli` on another, `bart_mnli` on the third). |
+| **Is a pilot enough?** | **No.** 12 of 30 arms tied at the top of the 20-item pilot slice; its "pick", `anthropic_l`, is the alphabetically first and is truly **5th of 30**. ρ = 0.701* at 30 arms. | **Close, by luck of a small slice.** `bert_base_fy` is alone at the top of the 56-item pilot slice (56 of 56), with 13 arms tied one item behind it; on the full 280 it is 3rd= of 28, in a five-way tie two items behind the leader `qwen_m`. ρ = 0.768* at 28 arms. |
+| **Fine-tune or pay?** | **Fine-tune, for this corpus's labels; not shown to beat the best paid arm** (`bert_base_ta` vs `anthropic_m`, p = 0.022 against 0.0167). The three share AG News's labels, so they are not independent confirmations. Licences: AG News `unknown`, non-commercial; `bert_base_fy` apache-2.0; `bert_base_ta` and `bert_mini` state none (checked 2026-10-19). | **Fine-tune for cost, not for quality:** 0.9857 at $0 marginal, not significantly different from the leader (−0.0071; the leader wins 3 items, the fine-tune 1; p = 0.62). One apache-2.0 checkpoint, trained on CC-BY-SA data (ShareAlike); training cost is not in the $0. |
 
-\* Spearman ρ with midranks for ties: dev-slice accuracy against 200-item accuracy over all arms, recomputed from the dev items inside the committed n=200 runs by `check_report_claims.py`. AG News 0.701 at 30 arms; DBpedia 0.768 at 28. The dev-slice runs behind the pilot were never committed (§5). The pick and its true rank are from committed runs. The **dev slice** is the small pilot set run before the full slices — 20 AG News items and 56 DBpedia items, all contained in the measured 200 and 280 (§1).
+\* Spearman ρ with midranks for ties: pilot-slice accuracy against 200-item accuracy over all arms, recomputed from the pilot items inside the committed n=200 runs by `check_report_claims.py`. AG News 0.701 at 30 arms; DBpedia 0.768 at 28. The pilot-slice runs behind the pilot were never committed (§5). The pick and its true rank are from committed runs. The **pilot slice** is the small pilot set run before the full slices — 20 AG News items and 56 DBpedia items, all contained in the measured 200 and 280 (§1).
 
 *How to read this table: every bare score is accuracy on that corpus's slice (0 to 1,
 higher is better; 0.9600 = 192 of 200 right). **$/month** is what the provider billed for
@@ -72,18 +72,18 @@ to beat.*
 
 #### What these evals specifically found
 
-1. **AG News: three fine-tunes lead on the point estimate, and only one is separated from most of the field.**
+1. **AG News: three fine-tunes lead on the point estimate, and only one differs significantly from most of the field.**
    `bert_base_ta` **0.9600** (438 MB, 76 ms), `bert_base_fy` 0.9500, `bert_mini` 0.9450
    (44 MB, 7 ms) are all ahead of every hosted arm (0.835–0.910). They are three fine-tunes
    of AG News's own labels, two of them by different authors, not three independent tests.
-   Holm over m=29: the leader is ahead of all 29 and **separated from 26**; not from the
+   Holm over m=29: the leader is ahead of all 29 and **significantly different from 26**; not from the
    other two fine-tunes nor from `anthropic_m` (p = 0.022 vs 0.0167). `bert_base_fy` is
-   separated from 23 (not from `openai_l`, `openai_m`, `anthropic_l`, `anthropic_m`);
+   significantly different from 23 (not from `openai_l`, `openai_m`, `anthropic_l`, `anthropic_m`);
    `bert_mini` from 16 (not from 11 hosted arms, among them `anthropic_l`, +0.0450,
    p = 0.063). The two bert-base fine-tunes agree on 192 of 200 labels.
 
 2. **The AG News lead lives in 17 items the hosted arms get wrong; adjudicated by topic, by
-   one reader shown the hosted answer, the gold was wrong on all 17 (§3.4, reference v2).**
+   one reader shown the hosted answer, the gold was wrong on all 17 (§3.4, reference set v2).**
    17 items are missed by ≥80% of the 24 hosted arms (19 at 75%, 20 at 70%; `anthropic_m`
    gets 3 of the 17 right). The fine-tunes agree with the gold on 12–14 of them;
    `anthropic_l` on none. The reader's reason: the labels follow the source feed's section,
@@ -104,12 +104,12 @@ to beat.*
    `qwen_m` led at **0.9929 for $0.0143**; `anthropic_l` was one item in 280 behind at
    **0.9893 for $0.3784**, p = 1.0000 — and that one item is a disputed-gold item (Bharhut,
    filed `Building`: `qwen_m` gets it, `anthropic_l` misses all three disputed items), so
-   the leader exists because of one disputed label. The leader separated from only **8 of
-   27**; it is not separated from the other **19**, at gaps of 1 to 8 items, and the top
+   the leader exists because of one disputed label. The leader is significantly different from only **8 of
+   27**; it is not significantly different from the other **19**, at gaps of 1 to 8 items, and the top
    eleven arms, leader included, sit within four items of each other across a 115× price
    range. One of those eleven costs nothing: the **fine-tuned `bert_base_fy` scores 0.9857
    at $0 marginal**, two items behind the leader (−0.0071, p = 0.62). At n = 280 the
-   smallest gap Holm separated from `qwen_m` is 10 items (+0.0357); 8 items (+0.0286,
+   smallest gap Holm finds significant against `qwen_m` is 10 items (+0.0357); 8 items (+0.0286,
    `mistral_l`, p = 0.0076 against 0.0026) and 7 items (+0.0250, `qwen_l`, p = 0.0166
    against 0.0028) are not, so a benefit of up to about 3 points from paying cannot be
    ruled out. Where there is no headroom, training bought a place in the top group, not a
@@ -118,7 +118,7 @@ to beat.*
 4. **Both corpora have recurring label noise, and on DBpedia it is the same size as the
    signal.** Items nearly the whole field misses are candidates for a wrong gold label —
    one reader adjudicated them, shown the hosted answer, and found the gold wrong on every
-   one the field missed (§3.4, reference v2): a canal filed under `NaturalPlace`, a "historic school" filed under
+   one the field missed (§3.4, reference set v2): a canal filed under `NaturalPlace`, a "historic school" filed under
    `Building`, an IPO story filed under `World`. The top eleven DBpedia arms are separated by
    four items; three items are missed by 24–25 of the 26 learned arms, and each has a
    dissenter that agrees with the gold: the arm trained on DBpedia on the canal, `qwen_m`
@@ -126,14 +126,14 @@ to beat.*
    `anthropic_l` make no errors outside those three items.
 
 5. **On deployment the two corpora differ.** On AG News a **438 MB** fine-tune is ahead of
-   the best self-hostable LLM (Llama-3.3-70B, ~141 GB) by **0.0800 and separated from it**;
+   the best self-hostable LLM (Llama-3.3-70B, ~141 GB) by **0.0800 and significantly different from it**;
    the **44 MB** one is ahead by 0.0650 — a 3,205× size difference — but that gap does not
-   survive Holm (p = 0.0149, threshold 0.0063), and it is not separated from `gemma_s`,
+   survive Holm (p = 0.0149, threshold 0.0063), and it is not significantly different from `gemma_s`,
    `gemma_l` or `deepseek_l` either. The highest-scoring self-hostable arm is a CPU model
    under half a gigabyte; whether the 44 MB one is better than the open-weight LLMs is a
    point estimate this data does not confirm. On DBpedia the fine-tuned arm scores **0.9857 at 438 MB**,
    the same as Gemma-4-26B at 52 GB and GLM-4.6 at 714 GB (those two as served by providers;
-   neither was self-hosted here), and like them it is not separated from the overall winner.
+   neither was self-hosted here), and like them it is not significantly different from the overall winner.
    The top group therefore contains a CPU-sized classifier and open-weight models as well as
    the proprietary leader.
 
@@ -148,8 +148,8 @@ to beat.*
 | property | AG News | DBpedia-14 |
 | --- | --- | --- |
 | task | news snippet → 1 of 4 topics | Wikipedia abstract → 1 of 14 ontology classes |
-| measurement slice | 200 items, 50/class — the first 50 per class of the first 1,600 test rows | 280 items, 20/class, seeded |
-| dev slice (pilot subset of the measurement slice) | 20 items (first-k per class) | 56 items (seeded-random per class) |
+| test slice | 200 items, 50/class — the first 50 per class of the first 1,600 test rows | 280 items, 20/class, seeded |
+| pilot slice (pilot subset of the test slice) | 20 items (first-k per class) | 56 items (seeded-random per class) |
 | licence | **`unknown`**, source says non-commercial | **CC-BY-SA 3.0 + GFDL** (ShareAlike) |
 | fine-tuned checkpoint licences (Hub pages, 2026-10-19) | `bert_base_fy` apache-2.0; `bert_base_ta` and `bert_mini` state none | `bert_base_fy` apache-2.0 |
 | median length | 40 words | 52 words |
@@ -249,49 +249,49 @@ is 44 MB at 7 ms on the 12-core Mac. Re-timed together on the Linux machine (med
 200 items is consistent with it, and both new arms' confusion matrices are diagonal — the
 `label_order` the configs assume (`LABEL_0…3` carry no names) is the right one.
 
-**The rented choice, on gold v1.** The paid leader, `anthropic_m`, at $351 per 1M items and 0.9100, is separated from 3 of the 23 other hosted arms; the cheapest it is not separated from is `gemma_m`, at $8 and 0.8550, 0.0550 behind (`qwen_m`, at $35 and 0.8850, sits between).
+**The rented choice, on gold v1.** The paid leader, `anthropic_m`, at $351 per 1M items and 0.9100, differs significantly from 3 of the 23 other hosted arms; the cheapest it is not significantly different from is `gemma_m`, at $8 and 0.8550, 0.0550 behind (`qwen_m`, at $35 and 0.8850, sits between).
 
 **Is the ordering real?** `p = 0.0002`, **Nemenyi CD 3.30** rank positions,
 **38 of 435** pairs distinguishable, observed span 10.65 (k=30). Holdout on the 180 items
-outside the dev slice: CD 3.48, **35 of 435**.
+outside the pilot slice: CD 3.48, **35 of 435**.
 
 *The critical values come from [`tools/nemenyi_table.py`](../harness/tools/nemenyi_table.py), which solves the
 studentised-range integral (all 24 of Demšar's published values reproduced to 0.0007).*
 
 **Family test for the new leader** (`bert_base_ta`, Holm over the m=29 others): ahead on
-the point estimate against **29 of 29**, separated from **26**. Not separated from
+the point estimate against **29 of 29**, significantly different from **26**. Not significantly different from
 `bert_mini` (+0.0150, p = 0.55), `bert_base_fy` (+0.0100, p = 0.72), or `anthropic_m`
-(+0.0500, p = 0.022 against a threshold of 0.0167 — a boundary case). It **is** separated
-from `llama_m`, the best self-hostable LLM, which `bert_mini` never was.
+(+0.0500, p = 0.022 against a threshold of 0.0167 — a boundary case). It **is** significantly better
+than `llama_m`, the best self-hostable LLM, which `bert_mini` never was.
 
 **The leader-conditioned test on `bert_mini`** (it led when the family was declared; the
 family was fixed before its p-values were read, but the arm was chosen because it led), re-run
-at m=29: ahead of 27 of 29, **separated from 16**. A count that moves when unrelated
-arms join is a count to quote with its family size. `bert_mini` is **not separated from 11 hosted arms**: `anthropic_l` (+0.0450,
+at m=29: ahead of 27 of 29, **significantly different from 16**. A count that moves when unrelated
+arms join is a count to quote with its family size. `bert_mini` is **not significantly different from 11 hosted arms**: `anthropic_l` (+0.0450,
 p = 0.063), `anthropic_m` (+0.0350, p = 0.116), `openai_m` (+0.0500, p = 0.044 against a
 threshold of 0.0100), `openai_l`, `qwen_m`, `llama_m`, `mistral_l`, `qwen_s`, `gemma_s`,
 `deepseek_l` and `gemma_l` — nor from the other two fine-tunes. `bert_base_fy` (m=29) is
-**separated from 23** and ahead on the point estimate against 28; not from `openai_l`
+**significantly different from 23** and ahead on the point estimate against 28; not from `openai_l`
 (+0.0600, p and Holm threshold both 0.0083), `openai_m`, `anthropic_l`, `anthropic_m`, nor the other
 two fine-tunes.
 
-**Macro-F1** (paired bootstrap, `bert_base_ta` vs the m=29 others): separated from 27, and
+**Macro-F1** (paired bootstrap, `bert_base_ta` vs the m=29 others): significantly different from 27, and
 only 2 of 29 intervals span zero — the two other fine-tunes. On this metric the leader *does*
-separate from `anthropic_m` (+0.0494, p = 0.0104 vs 0.0167); the bootstrap is the more liberal
+differ significantly from `anthropic_m` (+0.0494, p = 0.0104 vs 0.0167); the bootstrap is the more liberal
 test (§3.3), so that is an upper bound, not a reversal.
 
 The defensible claim is therefore, as run here (hosted arms zero-shot, one prompt,
 temperature 0, reasoning off, no provider pinned): **`bert_base_ta` leads at 0.9600 and is
-separated from 26 of the 29 other arms, not from the other two fine-tunes nor from
-`anthropic_m`. The three fine-tunes of 44–438 MB are not separated from each other and lead
-every hosted arm on the point estimate; `bert_base_fy` (separated from 23) and `bert_mini`
-(separated from 16) are not separated from the best paid arms** — all at zero marginal cost
+significantly different from 26 of the 29 other arms, not from the other two fine-tunes nor from
+`anthropic_m`. The three fine-tunes of 44–438 MB are not significantly different from each other and lead
+every hosted arm on the point estimate; `bert_base_fy` (significantly different from 23) and `bert_mini`
+(significantly different from 16) are not significantly different from the best paid arms** — all at zero marginal cost
 and lower latency (end-to-end per-request time, network included for the hosted arms, not
 compute: `bert_mini` 61×–1,078× faster than the hosted field, timed on the same Mac; the two
 bert-base fine-tunes roughly 5×–100×, timed on a Linux machine, a cross-machine ratio good to
 about a factor of two) — with the qualification in §3.4 about *what* they are better at.
 
-### 3.2 DBpedia-14 — no winner: the leader is not separated from 19 of the 27 others
+### 3.2 DBpedia-14 — no winner: the leader is not significantly different from 19 of the 27 others
 
 ```
 arm                accuracy  macro_f1     $/280    arm              accuracy    $/280
@@ -315,11 +315,11 @@ anthropic_s          0.9786    0.9782    0.0536    glm_s              0.9393    
 ◆ = fine-tuned on DBpedia-14, local, $0, 87 ms/item on a 4-core Linux CPU (61 ms median), measured 2026-09-30.
 
 `p = 0.0002`, **CD 2.58**, **77 of 378** pairs distinguishable, observed span 12.90
-(k=28). Holdout on the 224 items outside the dev slice: CD 2.89, **76 of 378**.
+(k=28). Holdout on the 224 items outside the pilot slice: CD 2.89, **76 of 378**.
 
 **Leader-conditioned family test** (`qwen_m`, Holm over m=27; the family was declared before
 the p-values were read, the arm was picked because it led): ahead against **27 of 27**,
-separated from **8** — so it is not separated from the other **19** (18 paid arms and the
+significantly different from **8** — so it is not significantly different from the other **19** (18 paid arms and the
 fine-tune; the top eleven arms, within four items of each other, are the head of that group).
 Their gaps run from +0.0036 (one item) to +0.0286 (eight items: `mistral_l`, p = 0.0076
 against a threshold of 0.0026; `qwen_l` and `glm_l` are seven items behind). Against
@@ -328,12 +328,12 @@ arm: **+0.0071**, two items, **p = 0.62**.
 
 **The fine-tuned arm, measured.** The checkpoint's `main` revision ships only a pickle, which `transformers`
 refuses below torch 2.6; it ran unmodified on Linux.
-`bert_base_fy` from its own side (Holm over m=27): **separated from 5 of 27** — the three
+`bert_base_fy` from its own side (Holm over m=27): **significantly different from 5 of 27** — the three
 non-LLM floors, `glm_s` and `deepseek_s` — and ahead on the point estimate against 21.
 It sits in the block of five arms tied at 0.9857, and in 9% of item resamples it is the
 unique leader. **Training on this dataset bought a free seat in the top group; it did not
 buy the top.** That is the handover's first scenario, stated before the run: *"if it lands
-~0.99 and does not separate from the top group, the AG News finding does NOT generalise:
+~0.99 and does not differ significantly from the top group, the AG News finding does NOT generalise:
 task-specific training wins where there is headroom and buys nothing where there is
 not."*
 
@@ -344,11 +344,11 @@ confusion matrix confirms it: 276 of 280 on the diagonal, and no off-diagonal ba
 anything it can detect (−0.0071 against the leader, p = 0.62). `gemma_m` costs $0.0033, `anthropic_l` $0.3784, the fine-tuned arm nothing, and
 all three are within one item of each other.
 
-**What "can detect" means at n = 280.** Against `qwen_m`, Holm separated no gap smaller than
-10 items (+0.0357: `mistral_s`, `llama_s`, `mistral_m`). An 8-item gap (+0.0286, `mistral_l`,
+**What "can detect" means at n = 280.** Against `qwen_m`, Holm found no gap smaller than
+10 items significant (+0.0357: `mistral_s`, `llama_s`, `mistral_m`). An 8-item gap (+0.0286, `mistral_l`,
 p = 0.0076 against a threshold of 0.0026) and a 7-item gap (+0.0250, `qwen_l`, p = 0.0166
-against 0.0028) were not separated. So a benefit of paying of up to about 3 points cannot be
-ruled out here, and "not separated" in this section means that, not "no difference".
+against 0.0028) were not significant. So a benefit of paying of up to about 3 points cannot be
+ruled out here, and "not significant" in this section means that, not "no difference".
 
 ### 3.3 Macro-F1, and why it needed a different test
 
@@ -358,16 +358,16 @@ value. `bootstrap_test.py` resamples items, scoring both arms on the same draw.
 Accuracy can be tested **both** ways, so it was, on the same arm and Holm family:
 
 ```
-family_test.py     sign-flip permutation, exact null    separated from  8 of 27
-bootstrap_test.py  paired percentile bootstrap          separated from 11 of 27
+family_test.py     sign-flip permutation, exact null    significantly different from  8 of 27
+bootstrap_test.py  paired percentile bootstrap          significantly different from 11 of 27
 ```
 
 The bootstrap is consistently the more liberal — against `anthropic_l`, p = 0.7340 where
 the permutation says 1.0000. That is the known behaviour of a percentile bootstrap with
-few items and a metric near its ceiling. **A `SEPARATED` verdict from the bootstrap is an
+few items and a metric near its ceiling. **A `SIGNIFICANT` verdict from the bootstrap is an
 upper bound**, and the permutation test wins wherever it applies.
 
-On macro-F1, where nothing exact exists: `qwen_m` ahead of 27 of 27, separated from at
+On macro-F1, where nothing exact exists: `qwen_m` ahead of 27 of 27, significantly different from at
 most 11, and **8 of 27 intervals span zero** — the fine-tuned arm's among them
 (+0.0072, interval −0.0064 to +0.0230). Macro-F1 agrees with accuracy that the top group
 is not ordered by this data.
@@ -392,7 +392,7 @@ AG News   "Rivals Try to Turn Tables on Charles Schwab"   gold Sci/Tech   26/28 
 ```
 
 The field's answer is defensible on all three, and one reader, shown the hosted answer,
-judged the gold wrong on each (reference v2, below). **On DBpedia the top eleven arms are separated by four items in total
+judged the gold wrong on each (reference set v2, below). **On DBpedia the top eleven arms are separated by four items in total
 and three items are missed by 24–25 of the 26 learned arms: the noise floor and the signal are
 the same size.** Any ranking inside that group ranks which model best reproduces the corpus's
 ontology quirks, and this data cannot say whether it also ranks which classifies better.
@@ -438,7 +438,7 @@ taken on trust (the corpus is not redistributed; these are headlines only). The 
 lists which of the three fine-tunes (`ta` = `bert_base_ta`, `fy` = `bert_base_fy`, `mini` =
 `bert_mini`) agree with the gold label; "—" means none of them does. "Field's majority" is
 the label most of the 24 hosted arms chose; on all 17 it is also the adjudicated label
-(reference v2, below).
+(reference set v2, below).
 
 | headline | gold | field's majority | fine-tunes agreeing with gold |
 |---|---|---|---|
@@ -468,7 +468,7 @@ stock-market report, an oil-price record, an IPO story and a steel buyout are fi
 the topic, says Business, Sports or World.
 
 **Three cautions about the table.** The "other 183" column is selected by the hosted arms'
-own errors, so it flatters them by construction — and even so it shows no separable difference, not a
+own errors, so it flatters them by construction — and even so it shows no significant difference, not a
 reversal; it does *not* show that LLMs are more accurate readers of news. "Agrees with gold"
 on these 17 is agreement with a label the adjudication judged wrong, not a virtue. And the prompt (`prompt.txt`) gives no `Sci/Tech`-versus-
 `Business` convention, so the convention gap is partly a prompt gap; a prompt with label
@@ -487,7 +487,7 @@ clearly — it was one arm; three fine-tunes (all trained on AG News's labels, t
 different authors) agreeing with the gold where 24 LLMs agree with each other is a pattern,
 though not three independent tests of it.
 
-#### Re-measured against adjudicated gold (reference v2)
+#### Re-measured against adjudicated gold (reference set v2)
 
 The disputed items were adjudicated on 2026-10-19 by one reader, the operator, who was shown
 each item's text, its gold label and the hosted field's majority answer. So that the review
@@ -517,10 +517,10 @@ predictions and the adjudication records. The original runs and scores are uncha
 | `bert_base_fy` | 0.9500 (2) | 0.9050 (25–27) |
 | `bert_mini` | 0.9450 (3) | 0.9050 (25–27) |
 
-Holm over the 29 other arms, on v2: `anthropic_l` is separated from 9, including all three
-fine-tunes (p 0.0001–0.0005), and not separated from 20 hosted arms. `bert_base_ta` is
-separated below `anthropic_l` and `openai_m`. On DBpedia the top stays a crowd: `gemma_m`
-and `qwen_m` lead at 0.9964, `gemma_m` is separated from only 5 of 27, and `bert_base_fy`
+Holm over the 29 other arms, on v2: `anthropic_l` differs significantly from 9, including all three
+fine-tunes (p 0.0001–0.0005), and is not significantly different from 20 hosted arms. `bert_base_ta` is
+significantly below `anthropic_l` and `openai_m`. On DBpedia the top stays a crowd: `gemma_m`
+and `qwen_m` lead at 0.9964, `gemma_m` differs significantly from only 5 of 27, and `bert_base_fy`
 moves from 3rd= to 11th= (tied with `openai_s` and `gemma_l`) at an unchanged 0.9857.
 
 So the fine-tunes' AG News lead was the corpus's convention, learned. If your labels follow a
@@ -529,7 +529,7 @@ the zero-shot LLMs here score above the public fine-tunes. One reader adjudicate
 items some arm disagreed with were reviewed: an error the gold and every arm share would
 not have been seen.
 
-Reference v1, the dataset's own gold, stays primary: it is what the literature and the
+Reference set v1, the dataset's own gold, stays primary: it is what the literature and the
 calibration use, and anyone can repeat it. v2 is this repository's adjudication and may be
 extended.
 
@@ -598,7 +598,7 @@ means the halves crown different ones — the same thing that happens in summari
 
 **The two corpora disagree, and that is the finding.** On AG News, task-specific training
 led — on this corpus's labels (§3.4), against zero-shot hosted arms as run here — and the
-price tiers spread over 7.5 points. On DBpedia, everything above 0.97 is not separated from
+price tiers spread over 7.5 points. On DBpedia, everything above 0.97 is not significantly different from
 the leader and the cheapest paid arm in it costs 1/115 of the dearest; the fine-tuned arm in it costs nothing. A practitioner
 reading only the first would buy a fine-tuned model; reading only the second, the cheapest
 API. **Which is right may turn on whether the task has headroom. Two corpora, each on one
@@ -607,10 +607,10 @@ almost never measured.**
 
 **On AG News the fine-tune's lead is concentrated in the corpus's labelling; on DBpedia it is
 level with the top group.** On AG News the best fine-tune is 0.050 ahead of the best paid arm
-(10 items, p = 0.022 against a threshold of 0.0167 — not separated at this n, on the
+(10 items, p = 0.022 against a threshold of 0.0167 — not significant at this n, on the
 boundary), and that lead sits in items the corpus's labels reward (§3.4). On DBpedia it is two
-items behind the leader and not separated (−0.0071, p = 0.62), inside the top group, not
-above it. On neither corpus is a fine-tune separated from the best paid arm; on both it
+items behind the leader and not significant (−0.0071, p = 0.62), inside the top group, not
+above it. On neither corpus is a fine-tune significantly different from the best paid arm; on both it
 costs less to run. The pair is consistent with headroom deciding whether training buys
 quality, and it always bought the price, but that is two corpora, not a mechanism.
 
@@ -634,17 +634,17 @@ run.
   them disputed labels; a RoBERTa or a newer fine-tune could land one item higher or lower
   and nothing here would say which.
 - **How much of each arm's error is irreducible.** One reader, the operator, adjudicated
-  the disputed items, shown the hosted answer (§3.4, reference v2); no blind or second
+  the disputed items, shown the hosted answer (§3.4, reference set v2); no blind or second
   annotator has, and only items some arm disagreed with were reviewed, so an error the gold
   and every arm share was not seen.
-- **The pilot ρ values, from committed data.** The dev-slice runs were never committed, so
-  the pilot ρ cannot be checked from this repository. Ranking the dev items *inside* the
+- **The pilot ρ values, from committed data.** The pilot-slice runs were never committed, so
+  the pilot ρ cannot be checked from this repository. Ranking the pilot items *inside* the
   committed n=200 runs by accuracy, ties given midranks, gives 0.701 on AG News's 30 arms and
   0.768 on DBpedia's 28; `check_report_claims.py` recomputes both from the runs. The ρ
-  matters less than the top of the dev slice. On AG News's 20 items 12 of 30 arms tie, and
+  matters less than the top of the pilot slice. On AG News's 20 items 12 of 30 arms tie, and
   the "pick", `anthropic_l`, is the alphabetically first of them: a tie-break, not a
   measurement. On DBpedia's 56 one arm, `bert_base_fy`, is alone at the top, one item ahead of
-  13, and lands 3rd= on the full slice: the slice separated it from those 13 by one item.
+  13, and lands 3rd= on the full slice: the slice put it one item behind those 13.
   The two methods need not agree.
 - **Hosted run-to-run variance.** Every arm was run once; no AG News or DBpedia re-run
   exists. On DBpedia the top eleven are 1–4 items apart and `qwen_m`'s one-item lead over

@@ -246,7 +246,7 @@ try:
     check(
         "catalog: the goal page says what the goal weighs, its strategy and its tie-break",
         "<dt>weighs</dt>" in html
-        and "balanced: tied" in html
+        and "balanced: contenders" in html
         and "<dt>tie-break</dt><dd>cost, speed</dd>" in html,
     )
     check(
@@ -317,13 +317,13 @@ try:
     )
     check(
         "catalog: the chosen strategy, the tie-break order and the limit are shown",
-        "frugal: tied" in html and "speed, cost" in html and "limit ≤ 60,000" in html,
+        "frugal: contenders" in html and "speed, cost" in html and "limit ≤ 60,000" in html,
     )
     # A limit an arm breaks: the arms page badges it "over a limit", not "not eligible", and evh arms
     # says the same. No arm in this repository's own data breaks a limit, so this is the proof.
-    r = evh("arms", "--quality", "ties")
+    r = evh("arms", "--quality", "contender")
     check(
-        "evh arms --quality ties: the goal's quality leader, and no arm it ranks below",
+        "evh arms --quality contender: the goal's quality leader, and no arm it ranks below",
         r.returncode == 0 and "leader" in r.stdout and "no arm matches" not in r.stdout,
         r.stdout[-500:] + r.stderr[-300:],
     )
@@ -351,13 +351,13 @@ try:
         check(f"V14: fails {why}", "FAIL" in line, line)
     goal_path.write_text(original)
 
-    # A dataset the goal never decides on (a dev slice, a generalization check): its groups keep
+    # A dataset the goal never decides on (a pilot slice, a generalization check): its groups keep
     # their leader, never a recommendation, and the home page's glance leaves it out.
-    goal_path.write_text(original.replace("role: dev,", "role: dev, decides: false,"))
+    goal_path.write_text(original.replace("role: validation,", "role: validation, decides: false,"))
     r = evh("goals", "--goal", "tickets_summary")
     check(
         "decides: false: the goal page says it does not decide there, and recommends nothing",
-        "The goal does not decide on tickets_v1 (dev)" in r.stdout and "recommended:" not in r.stdout,
+        "The goal does not decide on tickets_v1 (validation)" in r.stdout and "recommended:" not in r.stdout,
         r.stdout[-700:],
     )
     r = evh("overview")

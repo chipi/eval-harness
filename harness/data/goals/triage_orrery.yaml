@@ -19,7 +19,7 @@ success_criteria:
   min_items: 30   # triage_cost is scored on all 65 labelled decisions
   strategy: frugal
 datasets:
-  - {dataset_id: orrery_triage_v1_labelled, role: dev, notes: "65 decisions the owner labelled, one per fingerprint, 2026-07-25 to 2026-10-29; mostly rebuilt evidence"}
+  - {dataset_id: orrery_triage_v1_labelled, role: validation, notes: "65 decisions the owner labelled, one per fingerprint, 2026-07-25 to 2026-10-29; mostly rebuilt evidence"}
 references:
   - {reference_id: gold/orrery_triage_v1_labelled, tier: gold, format: label}
 measures:

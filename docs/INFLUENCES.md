@@ -29,7 +29,7 @@ so each line can be checked.
 
 ## Other foundations
 
-- **Testing separations, not reading rank order** — the statistics are older than any of
+- **Testing differences for significance, not reading rank order** — the statistics are older than any of
   this: Holm (1979) for multiple comparisons, Demšar (2006) for comparing systems over
   many items, Dror et al. (2018) for significance testing in NLP. Full references in
   [REFERENCE](REFERENCE.md) and [papers](papers/README.md).

@@ -29,7 +29,7 @@ Put one item per file under `data/sources/briefs/`, and, if a person has written
 each, one `<item_id>.txt` per item in a folder of its own, say `data/sources/briefs_gold/` (the
 item id is the file name without `.txt`). Twenty items is enough to learn something; write them
 yourself if nothing can be fetched or licensed. The answers become a person's labels, and you
-promote them to gold, with why: a reference is only ever labels promoted on purpose. No gold yet?
+promote them to gold, with why: a reference set is only ever labels promoted on purpose. No gold yet?
 [Tutorial 3](3-frontier-reference-and-judging.md) makes silver from a frontier model's run.
 
 <!-- guide-check: skip -->
@@ -204,7 +204,7 @@ three runs: promote any one of them (`_r1` will do). The baseline records that r
 under `repeats`, all three and their mean, which is what the catalog, the inspector and the tests
 read; `run-promote` prints the two side by side. The leading sentence of a news
 brief is a strong baseline: in the scenario, on twenty briefs, the first sentence was not
-separated from the leading hosted LLM, and both small models were separated below that LLM. Find
+significantly different from the leading hosted LLM, and both small models were significantly below that LLM. Find
 out which holds on your items before paying for a model.
 
 Next: [tutorial 2](2-hosted-llm.md) adds a hosted LLM to the same comparison, and

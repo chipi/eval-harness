@@ -10,7 +10,7 @@
   "goal": "scientific_retrieval_scifact",
   "promoted_at": "2026-10-25T14:08:24Z",
   "promoted_from": "sf_e5_base_n200_v1_20260928T174656Z",
-  "reason": "Build e5_base retrieval first: 0.7191 at $0 per query, not separated from any of the twelve BM25-then-rerank pipelines; add a reranker on its top 20 only if about +0.07 nDCG@10 is worth about $732 per 1M queries. REPORT_RETRIEVAL, executive summary.",
+  "reason": "Build e5_base retrieval first: 0.7191 at $0 per query, not significantly different from any of the twelve BM25-then-rerank pipelines; add a reranker on its top 20 only if about +0.07 nDCG@10 is worth about $732 per 1M queries. REPORT_RETRIEVAL, executive summary.",
   "reference_tier": "gold",
   "scores": {
     "cost_usd": 0.0,

@@ -24,13 +24,13 @@ THE CORPUS IS NEVER SLICED, AND THAT IS NOT AN OVERSIGHT
   A 200-query run and a 40-query run over the same corpus are comparable; over different
   corpora they are two different tasks wearing one name.
 
-  It also means the dev slice is genuinely cheap in the only dimension that costs money
+  It also means the pilot slice is genuinely cheap in the only dimension that costs money
   (queries) and free in the one that costs time (indexing, which `warmup()` pays once).
 
 WHY THE SLICE IS A SEEDED PREFIX
   Same reason as the other three: `--n 40` takes a prefix of the same permutation `--n 200`
   does, so the two are NESTED and `holdout_significance --exclude-dataset` can ask whether
-  the dev slice's winner survives on queries it never saw.
+  the pilot slice's winner survives on queries it never saw.
 
 WHAT THE DATA LOOKS LIKE
   SciFact is scientific claim verification repurposed as retrieval: the query is a claim

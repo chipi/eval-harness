@@ -17,7 +17,7 @@ WHY THIS AND NOT k(k-1)/2
 HOLM, AND WHY IT IS STRICTLY BETTER THAN BONFERRONI HERE
   Sort the family's p-values ascending. Compare the smallest to alpha/m, the next to
   alpha/(m-1), ... the largest to alpha/1. Stop at the first failure; everything from there
-  down is not-separated. Every step after the first is LOOSER than Bonferroni's alpha/m, so
+  down is not significant. Every step after the first is LOOSER than Bonferroni's alpha/m, so
   Holm rejects at least everything Bonferroni does and sometimes more, with the same
   family-wise error guarantee. Nothing is traded away for it.
 
@@ -242,11 +242,13 @@ def _run(args) -> int:
         pv = ("~" if any(est) and not all(est) and r["n"] > EXACT_UP_TO else "") + fmt_p(r["p"])
         print(
             f"    {r['opp']:{width}} {r['delta']:+9.4f} {r['wins']:>4}/{r['n']:<4} "
-            f"{pv:>8} {r['thresh']:8.4f}   {'SEPARATED' if r['sep'] else '--'}"
+            f"{pv:>8} {r['thresh']:8.4f}   {'SIGNIFICANT' if r['sep'] else '--'}"
         )
     sep = sum(1 for r in rows if r["sep"])
     ahead = sum(1 for r in rows if (r["delta"] < 0 if lower else r["delta"] > 0))
-    print(f"\n    separated from {sep} of {m} opponents; ahead on the point estimate against {ahead} of {m}")
+    print(
+        f"\n    significantly different from {sep} of {m} opponents; ahead on the point estimate against {ahead} of {m}"
+    )
     # The gap between those two numbers is the finding most of the time: an ordering the
     # means assert and the data cannot support.
     return 0

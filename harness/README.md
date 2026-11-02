@@ -36,7 +36,7 @@ evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
     --reason "the best system we have ranks the rest" --by me          # ...promoted to silver
 evh run --config data/configs/arm_a.yaml --repeat 3     # + the arm's own noise
 evh leaderboard --dataset-id my_v1                                 # the ranking, and whether it is real
-evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_     # is the winner separated?
+evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_     # is the winner significantly better?
 evh run-promote --run <run_id> --reason "what the tests showed"    # the choice, with why
 ```
 
@@ -175,7 +175,7 @@ Three readings, all computed over the whole table at once:
 - **Rank probabilities** — resample the items, re-rank everything from scratch, and report
   how often each arm lands 1st / in the top 5 / in the bottom 5. This replaced a 95% rank
   interval per arm: those were marginal, so two non-overlapping intervals read as "this
-  pair is separated" — exactly the claim they cannot make. Context, never a pairwise
+  pair differs significantly" — exactly the claim they cannot make. Context, never a pairwise
   verdict; the critical-difference line is the verdict.
 
 What this deliberately does **not** do is walk down the table comparing each arm to a
@@ -252,7 +252,7 @@ evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2
 evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --tag source=prod             # a frozen selection
 evh label-from-capture --dataset-id prod_v1 --capture prod_2026_10 \
     --map outcomes.yaml --set prod_outcomes                                              # labels from what happened
-evh dataset-split prod_v1 --heldout 0.3 --seed 7                                         # dev and heldout
+evh dataset-split prod_v1 --test 0.3 --seed 7                                         # validation and test
 evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2026_11 \
     --since-capture prod_2026_10                                                         # later: what came since
 ```
@@ -260,7 +260,7 @@ evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2
 What came since makes the next dataset version; for newer outcomes of the records you hold, take a fresh capture
 of the same query and make a new label set from it (tutorial 6 §5).
 
-Labels are not references: arms are scored against a label set as it is, and a reference is labels promoted on
+Labels are not reference sets: arms are scored against a label set as it is, and a reference set is labels promoted on
 purpose, at the tier chosen then. Production's own decisions become an arm (`evh arm-from-capture`), scored like any;
 `evh inspect --dataset-id prod_v1 --rows` shows each item's decisions, labels and signals (wrong, disagree, new) to
 pick the ones worth keeping (`evh pick`); `evh dataset-extend` makes the next version of a governed dataset from

@@ -107,7 +107,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | the models page: every model record, its deployments, settings, onboarding, arms (0.6.0, RFC-020) | `evh models [--kind K] [--where self-hosted\|hosted] [--status vetted\|onboarded\|check\|none]` | |
 | a model page: its deployments and their onboarding, settings history, arms | `evh models --model <id>` | |
 | (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard <id> --deployment <d>`, `evh arm-smoke --config <arm>` | |
-| reference pages | `evh references [--reference-id <id>]` | `make references` |
+| reference set pages | `evh references [--reference-id <id>]` | `make references` |
 | the Captures page | `evh captures [--capture ID] [--json]` | |
 | the Labels page; a dataset page's labels (0.6.0) | `evh labels [--dataset-id D]` | |
 | (no page action) labelling: a sheet to fill, then its import (0.6.0) | `evh label-sheet --dataset-id D --out sheet.csv [--items …] [--item ID …]`, `evh label-import sheet.csv --dataset-id D --set S --by NAME` | |

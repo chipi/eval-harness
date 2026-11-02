@@ -11,7 +11,7 @@
   "goal": "news_summary_cnn",
   "promoted_at": "2026-10-25T14:08:24Z",
   "promoted_from": "cnn_bart_l_n200_v1_20260926T153757Z",
-  "reason": "bart_l (BART-large-CNN, MIT, $0 on a CPU) leads on coverage at 0.3461, not separated from deepseek_m (0.3460, p = 0.99), for CNN-style text; rent deepseek_m if you need speed. REPORT_SUMMARIZATION, executive summary.",
+  "reason": "bart_l (BART-large-CNN, MIT, $0 on a CPU) leads on coverage at 0.3461, not significantly different from deepseek_m (0.3460, p = 0.99), for CNN-style text; rent deepseek_m if you need speed. REPORT_SUMMARIZATION, executive summary.",
   "reference_tier": "gold",
   "scores": {
     "compression": 0.132142,

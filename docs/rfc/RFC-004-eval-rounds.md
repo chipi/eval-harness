@@ -100,9 +100,9 @@ Suggestions, each a sentence and a command:
 
 | when | suggestion | command |
 | --- | --- | --- |
-| an arm is `separated: worse` than the leader after Holm, and did not write a silver reference | retire it, with the test as the reason | `evh round-retire … --reason "separated worse than <leader> on <measure> after Holm (p …)"` |
-| arms are `not separated` from the leader | more items would separate them | `evh rank-stability --dataset-id D` |
-| the round's best is not separated better than the previous round's | change course, or close | (none) |
+| an arm is `significant: worse` against the leader after Holm, and did not write a silver reference | retire it, with the test as the reason | `evh round-retire … --reason "significantly worse than <leader> on <measure> after Holm (p …)"` |
+| arms are `not significant` against the leader | more items may tell them apart | `evh rank-stability --dataset-id D` |
+| the round's best is not significantly better than the previous round's | change course, or close | (none) |
 | always | close the round with what it showed | `evh round-close … --conclusion "..." --promote <leader's run>` |
 
 ### Pages
@@ -151,6 +151,6 @@ way into the inspector for a round. Not in 0.4.0:
 
 `harness/tests/test_rounds.py`, in a throwaway project built from the tutorial ($0, offline): a
 round opened carrying two arms, a third running in it, the suggestion to retire the arm the test
-separates as worse, the retirement and the close with promotion, a closed round refusing new runs,
+finds significantly worse, the retirement and the close with promotion, a closed round refusing new runs,
 the next round continuing it, validate checking the records, the leaderboard scoped to a round,
 and the goal page showing the rounds.

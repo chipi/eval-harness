@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 HARNESS = ROOT / "harness"
 DATA = HARNESS / "data"
 
-#: The measurement slices on the site, from the registry `make reproduce` uses too -- so the site
+#: The test slices on the site, from the registry `make reproduce` uses too -- so the site
 #: and a stranger's rerun cannot mean different evals. `base` is the directory the
 #: REPORT is computed from; billed cost always comes from data/runs, where the provider's
 #: response was recorded.
@@ -87,8 +87,8 @@ def _weights() -> dict:
     return out
 
 
-def _not_separated(exp: dict) -> list:
-    """Opponents the leader's Holm family test does not separate from."""
+def _not_significant(exp: dict) -> list:
+    """Opponents the leader's Holm family test finds not significantly different."""
     r = subprocess.run(
         [
             sys.executable,
@@ -141,9 +141,9 @@ def eval_figures(exp: dict, weights: dict) -> dict:
     hosted = [a for a in arms if a["kind"] == "hosted"]
     paid = sorted(hosted, key=lambda a: a["cost"])
     dearest = max(hosted, key=lambda a: a["cost"])
-    tied = _not_separated(exp)
-    tied_paid = [a for a in hosted if a["arm"] in tied]
-    cheapest_tied = min(tied_paid, key=lambda a: a["cost"]) if tied_paid else None
+    contenders = _not_significant(exp)
+    contenders_paid = [a for a in hosted if a["arm"] in contenders]
+    cheapest_contender = min(contenders_paid, key=lambda a: a["cost"]) if contenders_paid else None
     leader = next(a for a in arms if a["arm"] == exp["leader"])
     n_items = json.loads((next(iter(scored.values())) / "metrics.json").read_text())["n_items"]
     return {
@@ -157,11 +157,11 @@ def eval_figures(exp: dict, weights: dict) -> dict:
         "dearest": dearest,
         "cheapest_paid": paid[0],
         "best_hosted": hosted[0] if hosted else None,
-        "tied": tied,
-        "n_tied": len(tied),
-        "n_tied_paid": len(tied_paid),
-        "cheapest_tied": cheapest_tied,
-        "tied_ratio": (dearest["cost"] / cheapest_tied["cost"]) if cheapest_tied else None,
+        "contenders": contenders,
+        "n_contenders": len(contenders),
+        "n_contenders_paid": len(contenders_paid),
+        "cheapest_contender": cheapest_contender,
+        "contender_ratio": (dearest["cost"] / cheapest_contender["cost"]) if cheapest_contender else None,
         "dearest_ratio": dearest["cost"] / paid[0]["cost"],
         "billed_total": sum(a["cost"] for a in arms),
     }
@@ -462,9 +462,9 @@ def compute() -> dict:
         "dearest_not_best_frontier": sum(
             _has_frontier(e) and e["dearest"]["arm"] != e["top"]["arm"] for e in exps
         ),
-        "local_first_or_tied": sum(
+        "local_first_or_contender": sum(
             e["top"]["kind"] == "local"
-            or any(a["kind"] == "local" for a in e["arms"] if a["arm"] in e["tied"])
+            or any(a["kind"] == "local" for a in e["arms"] if a["arm"] in e["contenders"])
             for e in exps
         ),
         "calibration": cal,
@@ -494,8 +494,8 @@ if __name__ == "__main__":
         print(
             f"{e['bench']:14s} n={e['n_items']} arms={e['n_arms']} top={e['top']['arm']} "
             f"{e['top']['score']:.4f} dearest={e['dearest']['arm']} rank {e['dearest']['rank']}"
-            f"/{e['n_arms']} tied={e['n_tied']} ({e['n_tied_paid']} paid) cheapest_tied="
-            f"{e['cheapest_tied']['arm'] if e['cheapest_tied'] else '-'} ${e['billed_total']:.2f}"
+            f"/{e['n_arms']} contenders={e['n_contenders']} ({e['n_contenders_paid']} paid) cheapest_contender="
+            f"{e['cheapest_contender']['arm'] if e['cheapest_contender'] else '-'} ${e['billed_total']:.2f}"
         )
     print(
         "total arms",

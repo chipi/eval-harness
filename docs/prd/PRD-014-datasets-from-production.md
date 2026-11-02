@@ -122,11 +122,11 @@ comment that says what it was.
   match labels the item, no match leaves it unlabelled; the result is a `rule` label set (PRD-002), whoever wrote
   the outcome.
 - **FR4.2**: The set records the capture, the mapping and its hash, and the counts matched, skipped and unmatched.
-  It is promoted to a reference only by `reference-promote`, like any set.
+  It is promoted to a reference set only by `reference-promote`, like any set.
 
 ### FR5: Splits
 
-- **FR5.1**: `evh dataset-split` writes dev and heldout as ordinary datasets, by hash (stable across versions,
+- **FR5.1**: `evh dataset-split` writes validation and test as ordinary datasets, by hash (stable across versions,
   optionally grouped by a field) or by time.
 
 ### FR6: Text kept off public surfaces
@@ -181,7 +181,7 @@ comment that says what it was.
 ## Success Metrics
 
 - The triage example runs end to end: capture, dataset, production as an arm, labels, the deployed config and a
-  candidate scored against them, the rows view, picks, a v2, a promoted reference, live on the fleet.
+  candidate scored against them, the rows view, picks, a v2, a promoted reference set, live on the fleet.
 - Every existing test passes, and each FR above has its own.
 
 ## Release Considerations

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Split a dataset into dev and heldout (RFC-019): two ordinary datasets, each a version of it.
+"""Split a dataset into validation and test (RFC-019): two ordinary datasets, each a version of it.
 
-    evh dataset-split triage_v1 --heldout 0.3 --seed 7
-    evh dataset-split triage_v1 --heldout 0.3 --seed 7 --key fingerprint
-    evh dataset-split triage_v1 --heldout 0.3 --by time --key decision_date
+    evh dataset-split triage_v1 --test 0.3 --seed 7
+    evh dataset-split triage_v1 --test 0.3 --seed 7 --key fingerprint
+    evh dataset-split triage_v1 --test 0.3 --by time --key decision_date
 
-Writes <D>_dev and <D>_heldout. They point at the parent's own source files (nothing is copied),
+Writes <D>_validation and <D>_test. They point at the parent's own source files (nothing is copied),
 record the parent as `derived_from` (with the items each leaves out) and the rule as `split`, and a
 goal names them with the roles it has today.
 
---by hash (default): an item goes to heldout when the hash of (seed, its key) falls below the share.
+--by hash (default): an item goes to test when the hash of (seed, its key) falls below the share.
 The key is the item id, or with --key an item field, so all items sharing a value (one fingerprint)
 land on one side. Items keep their side in every later version, and new items fall in proportion.
---by time: the newest share by --key (a date or time field) is heldout.
+--by time: the newest share by --key (a date or time field) is test.
 """
 
 from __future__ import annotations
@@ -32,16 +32,16 @@ from evaluation_harness.dataset_create import _lineage, _write
 
 
 def side(seed: int, key: str, share: float) -> str:
-    """dev or heldout for one key: stable for a seed, whatever else is in the dataset."""
+    """validation or test for one key: stable for a seed, whatever else is in the dataset."""
     h = int(hashlib.sha256(f"{seed}:{key}".encode()).hexdigest()[:15], 16) / 16**15
-    return "heldout" if h < share else "dev"
+    return "test" if h < share else "validation"
 
 
 def main() -> int:
-    """Split a dataset into <D>_dev and <D>_heldout."""
+    """Split a dataset into <D>_validation and <D>_test."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("dataset_id", help="the dataset to split")
-    ap.add_argument("--heldout", type=float, required=True, help="the heldout share, between 0 and 1")
+    ap.add_argument("--test", type=float, required=True, help="the test share, between 0 and 1")
     ap.add_argument("--by", choices=("hash", "time"), default="hash")
     ap.add_argument(
         "--key",
@@ -52,8 +52,8 @@ def main() -> int:
         "--force", action="store_true", help="overwrite the two datasets if nothing cites them yet"
     )
     args = ap.parse_args()
-    if not 0 < args.heldout < 1:
-        die("--heldout is a share between 0 and 1")
+    if not 0 < args.test < 1:
+        die("--test is a share between 0 and 1")
     if args.by == "time" and not args.key:
         die("--by time needs --key: the item field holding each item's date or time")
     parent = load_dataset(dataset_id_ok(args.dataset_id))
@@ -68,19 +68,19 @@ def main() -> int:
         return str(v)
 
     if args.by == "hash":
-        assign = {it["item_id"]: side(args.seed, key_of(it), args.heldout) for it in items}
+        assign = {it["item_id"]: side(args.seed, key_of(it), args.test) for it in items}
     else:
         order = sorted(items, key=lambda it: (key_of(it), it["item_id"]))
-        n_held = round(len(order) * args.heldout)
+        n_held = round(len(order) * args.test)
         newest = {it["item_id"] for it in order[len(order) - n_held :]}
-        assign = {it["item_id"]: "heldout" if it["item_id"] in newest else "dev" for it in items}
+        assign = {it["item_id"]: "test" if it["item_id"] in newest else "validation" for it in items}
 
     fieldset = _fields.load_fieldset(parent["fieldset"]) if parent.get("fieldset") else None
-    rule = {"from": args.dataset_id, "heldout": args.heldout, "by": args.by, "key": args.key}
+    rule = {"from": args.dataset_id, "test": args.test, "by": args.by, "key": args.key}
     if args.by == "hash":
         rule["seed"] = args.seed
     written = []
-    for part in ("dev", "heldout"):
+    for part in ("validation", "test"):
         out_id = f"{args.dataset_id}_{part}"
         out = DATASETS / f"{dataset_id_ok(out_id)}.json"
         if out.exists() and not args.force:

@@ -13,7 +13,7 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
-- **Labels, and the references promoted from them** (RFC-023, PRD-002, ADR-0022). A **label** says what is right
+- **Labels, and the reference sets promoted from them** (RFC-023, PRD-002, ADR-0022). A **label** says what is right
   for one item and who said it: a `person`, a `model` or a `rule`. Labels come in **sets**, never edited, under
   `data/labels/<dataset>/<set>/`, and follow an item by its sha256 into any dataset holding the same bytes.
   - **`evh label-from-run`**: a finished run's outputs as a model's labels, no calls, the refusals a reference's
@@ -36,15 +36,15 @@ that can move a result is never a patch release without saying so under **Change
     every one of the 18,460 item scores of the 284 runs against it is the same replayed old and new. The outcome
     rules give the same two answers, so gold and the rules accept the same answers on 34 of the 34 items both label
     (kappa 1.00).
-  - **`evh reference-promote`** makes a reference of a set, at the tier you choose, with a reason and who promoted
+  - **`evh reference-promote`** makes a reference set of a label set, at the tier you choose, with a reason and who promoted
     it; the manifest records where it came from (for a model's set, the run and model that wrote it). No rule ties
-    the tier to the source. Every existing reference records how it was promoted (20 here; 6 copied byte for byte
+    the tier to the source. Every existing reference set records how it was promoted (20 here; 6 copied byte for byte
     into label sets, 209 labels), every run's fingerprint unchanged.
   - **Scoring against a label set without promoting it**: `evh rescore --labels SET`, `evh run --labels
     SET`. The run records `reference_id: labels/<dataset>/<set>` and lands in `data/runs-labels-<dataset>-<set>/`, an
     arm of its own; a goal groups such arms under the set, the arm that made a model's labels flagged.
   - The catalog: a tier is a **pill** in its own colour, a label set a **source chip**, wherever either is named; a
-    **Labels** page; a dataset's label sets and how often two agree; where each reference was promoted from.
+    **Labels** page; a dataset's label sets and how often two agree; where each reference set was promoted from.
 - **Evaluating what production did** (RFC-023, PRD-014, ADR-0023). A capture's decisions are evaluated against
   labels; the governed datasets grow only by a version you make:
   - **`evh arm-from-capture`** makes production's recorded decisions an arm (`provider: recorded`): each output the
@@ -90,7 +90,7 @@ that can move a result is never a patch release without saying so under **Change
     typed fields from a field set, and `--tag K=V` labels; only the body becomes the item.
   - What happened afterwards becomes labels by a small rule set (`when`, `unless`, `exists`, `absent`, `range`,
     `min_age_days`): `evh label-from-capture`, above.
-  - **`evh dataset-split`** makes `<D>_dev` and `<D>_heldout` by hash (stable across versions, a group
+  - **`evh dataset-split`** makes `<D>_validation` and `<D>_test` by hash (stable across versions, a group
     kept whole with `--key`) or by time.
   - **V17** checks every capture's records against their hashes; a capture whose records a project keeps
     out of git (fetched from where it publishes them) is named as not fetched, not failed.
@@ -165,19 +165,37 @@ that can move a result is never a patch release without saying so under **Change
 - **`evh experiment-run` is `evh run`, and an *experiment* is an *eval***: industry words (OpenAI evals,
   inspect_ai, Weave, Langfuse); what Braintrust and LangSmith call an experiment is a run here. The site's
   Experiments page is Evals (`evals.html`); the old address redirects.
-- **`reference-create` and `reference-from-outcomes` are removed** (ADR-0022): a reference is made only by
+- **Dataset roles are *validation* and *test*** (were dev and heldout): `evh dataset-split --test SHARE` (was
+  `--heldout`) writes `<D>_validation` and `<D>_test`, and a split dataset records `split.test` and `part`
+  validation or test. A goal's `role:` says validation, test or pilot. The reports' dev slice is the *pilot slice*,
+  a small slice inside the test slice (not a validation split), and their measurement slice the *test slice*.
+  `evh holdout` keeps its name.
+- **The paired test's verdict is *significant*** (was separated): `significant: better`, `significant: worse`,
+  `not significant`, everywhere they are printed or shown (`evh` output, the catalog, the inspector, the site,
+  the reports); `family_test` and `bootstrap_test` print `SIGNIFICANT`, `pair-test` `SIGNIFICANT` or
+  `NOT-SIGNIFICANT`. A project reading the old verdict strings reads the new ones.
+- **A goal's arms that may win the tie-break are its *contenders*** (were tied): the decision's key is
+  `contenders` (was `tied`), `evh arms --quality contender|below` (was `ties|below`), the arms page's facet
+  "a contender", and the why-lines say "Contenders beside it" and "Still undecided after the tie-break". A tie
+  is still what it was in a paired test: an item where two arms score the same.
+- **A promoted reference is a *reference set*** (the governed collection under `data/references/<tier>/<name>/`);
+  a *reference* is the expected answer for one item. The catalog's References page is Reference sets. Commands,
+  paths and keys (`reference-promote`, `reference_id`, `reference_tier`) keep their names. REFERENCE.md maps
+  every term to what inspect_ai, lm-evaluation-harness, HELM, OpenAI evals, Braintrust, LangSmith, Langfuse and
+  Hugging Face call it.
+- **`reference-create` and `reference-from-outcomes` are removed** (ADR-0022): a reference set is made only by
   promoting labels. A run's outputs are `label-from-run`'s (with the same refusals and `--not-redistributed`),
-  outcomes `label-from-capture`'s (the same rules). A reference made from outcomes has no rule of its own any more:
+  outcomes `label-from-capture`'s (the same rules). A reference set made from outcomes has no rule of its own any more:
   promoted, it is a silver like any (with gold beside it, gold still decides; ADR-0020 is superseded). The one
-  reference here that named `reference-create` as its rebuild says where its texts come from instead.
-- **`validate` fails a reference with no manifest (V16)**, where it noted one: texts copied into
-  `data/references/` by hand are a reference nobody promoted. Import them as labels where they are and promote
+  reference set here that named `reference-create` as its rebuild says where its texts come from instead.
+- **`validate` fails a reference set with no manifest (V16)**, where it noted one: texts copied into
+  `data/references/` by hand are a reference set nobody promoted. Import them as labels where they are and promote
   them: `reference-promote` adopts the folder when its texts are the labels' (writing its manifest; a folder whose
   texts differ is still never overwritten). Tutorial 1, the newcomer scenario, `evh self-test` and the tests make
   gold that way.
 - **`evh reference-manifest` is a promotion**: it takes `--labelled-by`, `--reason` and `--by` (and `--kind`), and
-  records them as `promoted_from` and the reason, so every reference says where it came from; the reference schema
-  requires both. This repository's references are aligned: the caveats name where their labels came from (no
+  records them as `promoted_from` and the reason, so every reference set says where it came from; the reference schema
+  requires both. This repository's reference sets are aligned: the caveats name where their labels came from (no
   "human-authored" or "model-generated" tier wording), the two that named a removed command as their rebuild name
   the 0.6.0 ones, and `from_outcomes` and `cost_usd`, which only the removed commands wrote, are gone. No run's
   fingerprint moves (none of these is hashed).
@@ -241,11 +259,11 @@ that can move a result is never a patch release without saying so under **Change
 - **The label-set and agreement tables keep their promoted and agreement columns on screen** on a desktop: long set
   ids may break there (a phone still scrolls the table sideways).
 - **`evh deploy-sheet` says "against no reference"** for a run scored against none, not `None (None)`.
-- **The leaderboard's silver note no longer says "model-generated"**: a silver reference can be a person's or a
+- **The leaderboard's silver note no longer says "model-generated"**: a silver reference set can be a person's or a
   rule's labels.
-- **A retired arm read through its re-score is out of the goal's tie.** A round's retirements name the arm's
+- **A retired arm read through its re-score is out of the goal's contenders.** A round's retirements name the arm's
   config, and an arm read from `runs-rescored/<scorer>/` kept the prefix, so it was never matched as retired and
-  stayed among the tied (the triage goal's tie: 76 arms, 51 once read right).
+  stayed among the contenders (the triage goal's: 76 arms, 51 once read right).
 - **Sorting a page's later table sorts it by the column clicked.** Its header's index was counted over every sortable
   header on the page, so a second table sorted by a column it does not have and threw.
 - **`evh mcp --public` sees only public fields in `inspect`.** The tool runs the command in its own

@@ -282,7 +282,7 @@ try:
     )
     nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
     check(
-        "nav: Overview, Goals, Data (Datasets, Captures, Labels, References), Arms (Arms, Configs, Models, Metrics), Activity, Inspector",
+        "nav: Overview, Goals, Data (Datasets, Captures, Labels, Reference sets), Arms (Arms, Configs, Models, Metrics), Activity, Inspector",
         nav.count("<a ") == 12
         and re.findall(r"<summary[^>]*>([^<]+)</summary>", nav) == ["Data", "Arms"]
         and all(
@@ -291,7 +291,7 @@ try:
                 ">Datasets<",
                 ">Captures<",
                 ">Labels<",
-                ">References<",
+                ">Reference sets<",
                 ">Arms<",
                 ">Configs<",
                 ">Models<",
@@ -377,10 +377,14 @@ try:
     tiles = cb.home_counts(
         HarnessAdapter(data3), cb.collect(HarnessAdapter(data3)), HarnessAdapter(data3).spend()
     )
-    lines = {ln.split()[0]: ln.split()[1] for ln in ov.splitlines()[1:11] if ln.startswith("  ")}
+    lines = {
+        re.split(r"\s{2,}", ln.strip())[0]: re.split(r"\s{2,}", ln.strip())[1]
+        for ln in ov.splitlines()[1:11]
+        if ln.startswith("  ")
+    }
     check(
         "evh overview --period all: every stock tile is the page's count, then the sections",
-        all(lines.get(k) == str(n) for k, n, _ in tiles[:7])
+        all(lines.get(cb.TILE_LABEL.get(k, k)) == str(n) for k, n, _ in tiles[:7])
         and all(x in ov for x in ("goals at a glance", "activity", "coverage:")),
         ov[:600],
     )
@@ -525,7 +529,7 @@ try:
     row = r["rows"][0]
     deltas = [vals[i] - 0.5 for i in sorted(vals)]
     check("compare: p is stats.sign_flip_p on the per-item deltas", row["p"] == stats.sign_flip_p(deltas))
-    check("compare: verdict and direction", row["verdict"] == "separated: better" and row["wins"] == 10)
+    check("compare: verdict and direction", row["verdict"] == "significant: better" and row["wins"] == 10)
     pair = {"runs": ["runs/ds1/arm_a,runs/ds1/arm_b"], "baseline": ["runs/ds1/arm_a"]}
     check(
         "compare: a threshold above alpha from the URL is refused, not obeyed",

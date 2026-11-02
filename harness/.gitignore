@@ -12,7 +12,7 @@ data/materialized/*
 # whose entire argument is "verify the instrument" was itself unverifiable. So:
 #
 #   metrics.json      1.0 MB total — every leaderboard, cost and headline figure
-#   predictions.jsonl  39 MB total — per-item scores, so every separation test,
+#   predictions.jsonl  39 MB total — per-item scores, so every significance test,
 #                                    rank-stability curve and holdout can be rerun
 #   outputs/           COMMITTED, 7.3 MB — see below
 #
@@ -22,7 +22,7 @@ data/materialized/*
 # sentence, no abstract.
 # OUTPUTS ARE COMMITTED TOO, and the earlier decision not to rested on two wrong
 # numbers of mine. I estimated "128 MB of copyrighted derivatives" from a `du` that
-# counted directory blocks and the excluded dev runs. Measured per example:
+# counted directory blocks and the excluded pilot runs. Measured per example:
 #
 #   AG News      0.0 MB   single words -- "World"
 #   DBpedia      0.1 MB   single words -- "Artist"
@@ -74,7 +74,7 @@ data/runs/*/outputs/.*.tmp
 #   make run CONFIG=../examples/summarization-cnn-dailymail/configs/arm_<x>.yaml ARGS="--repeat 3"
 #
 # THE OUTPUTS LINE BELOW WAS MISSING AND IT MATTERED. These four patterns excluded the
-# dev runs' metrics and predictions, and then `!data/runs/*/outputs/**` above re-admitted
+# pilot runs' metrics and predictions, and then `!data/runs/*/outputs/**` above re-admitted
 # their outputs behind that exclusion -- so 144 of these directories were committed as
 # outputs ONLY: 2,880 files of CNN/DailyMail paraphrases with no metrics.json to say what
 # they are, which no tool in this repo can read. All of the copyright exposure of the

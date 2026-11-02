@@ -22,7 +22,7 @@ benchmarks. On each eval's primary metric the most expensive hosted model never 
 SciFact only the twelve cheapest hosted models ran); re-measured, against labels a person
 corrected on AG News and by LLM judges on summarisation, it is first on the point estimate in
 both, and neither re-measurement is confirmed
-([judging](https://evals.humancopilot.eu/evals/judging.html)). In five of six the leader could not be separated from other arms,
+([judging](https://evals.humancopilot.eu/evals/judging.html)). In five of six the leader was not significantly different from other arms,
 each time including one that cost less than the dearest hosted model, at 100–280 items — not
 shown different, which is not the same as equal.
 
@@ -50,10 +50,10 @@ It was built to answer four questions anyone building with AI ends up asking:
    reaches 63%, so how much of a score is reading the summary is not measured. Why the
    trained model lost there is not tested; one task, one model.
 4. **Own it or rent it?** Every cost is read off the provider's bill and set beside
-   quality. Here the best proprietary arm never separated from the best open-weight arm, and
+   quality. Here the best proprietary arm never differed significantly from the best open-weight arm, and
    at native precision the best model that fits a 64 GB machine matched the
-   unlimited-hardware answer on two of the six tasks, was not separated from it on two more,
-   and was separated below it on summarisation and SummEval (scores as the providers served
+   unlimited-hardware answer on two of the six tasks, was not significantly different from it on two more,
+   and was significantly below it on summarisation and SummEval (scores as the providers served
    them; nothing was run on a 64 GB machine).
 
 **Start where you are:**
@@ -61,7 +61,7 @@ It was built to answer four questions anyone building with AI ends up asking:
 | you want to | go to |
 |---|---|
 | **see what it is** | **[evals.humancopilot.eu](https://evals.humancopilot.eu/)**: the harness, what it does, and what it found |
-| **measure your own system** | [**Getting started**](docs/GUIDE.md): the loop once, offline, in fifteen minutes: a dataset, arms, a reference from the best arm's labels, a comparison, a choice. Then the [**tutorials**](docs/GUIDE.md#where-to-go-next): a local model, a hosted LLM with your own key, a frontier reference and judges, rounds, the catalog, datasets from production and evaluating what production did, setting a model up. Or [**Use it on your problem**](https://evals.humancopilot.eu/use.html), the patterns |
+| **measure your own system** | [**Getting started**](docs/GUIDE.md): the loop once, offline, in fifteen minutes: a dataset, arms, a reference set from the best arm's labels, a comparison, a choice. Then the [**tutorials**](docs/GUIDE.md#where-to-go-next): a local model, a hosted LLM with your own key, a frontier reference and judges, rounds, the catalog, datasets from production and evaluating what production did, setting a model up. Or [**Use it on your problem**](https://evals.humancopilot.eu/use.html), the patterns |
 | **learn the method** | [**The method**](https://evals.humancopilot.eu/method.html): six habits for measuring AI systems, as these evals taught them |
 | **read what it found** | [**The evals**](https://evals.humancopilot.eu/evals.html): 24 LLMs, fine-tunes and baselines on six benchmarks, generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md): five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
@@ -85,10 +85,10 @@ evh dataset-materialize --dataset-id my_v1
 evh run --config data/configs/best_model.yaml           # the best system you have
 evh label-from-run --run <its run_id> --set best_v1                  # optional: its outputs as a model's labels
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
-    --reason "the best system we have ranks the rest" --by me           # ...promoted: the reference
+    --reason "the best system we have ranks the rest" --by me           # ...promoted: the reference set
 evh run --config data/configs/arm_a.yaml --repeat 3      # each arm, with its own noise
 evh leaderboard --dataset-id my_v1                                  # the ranking, and whether it is real
-evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_      # is the winner separated?
+evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_      # does the winner differ significantly?
 evh run-promote --run <run_id> --reason "what the tests showed"     # the choice, recorded with why
 ```
 
@@ -148,7 +148,7 @@ system lives in one file, `adapter.py`, with two functions, `call_system` and `s
   concluded.
 
 And it **refuses** to mislead: it won't compare runs measured on different data, it won't
-promote a baseline from a dirty or unknown build, and a reference is only ever labels promoted on
+promote a baseline from a dirty or unknown build, and a reference set is only ever labels promoted on
 purpose, its tier (gold or silver) and its source (a person, a model, a rule) recorded beside it.
 The refusals are the product.
 
@@ -218,29 +218,29 @@ pick, as run here:
 
 - **Summarisation.** The dearest arm, at **143× the price** of the cheapest, ranks **18th of
   29**. Two *independent* 100-article measurements of the same models agree at only **ρ = 0.79**;
-  at 20 articles, **ρ = 0.44**. BART fine-tuned on this corpus is not separated from the
+  at 20 articles, **ρ = 0.44**. BART fine-tuned on this corpus is not significantly different from the
   best LLM (0.0001 apart), for $0; the same BART fine-tuned on XSum finishes **last** on
   `coverage`, below copying the first three sentences (it also decodes shorter). *Scope: the 200 articles are all CNN's.* Re-run on 200 DailyMail articles,
   the local models keep every verdict; the paid ones were not re-run
   ([§3.7](research/REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice)).
 - **Classification.** Three small fine-tuned models lead the 24 hosted LLMs on AG News on
-  the point estimate, LLMs as run here; only the first is separated from all but one paid
+  the point estimate, LLMs as run here; only the first differs significantly from all but one paid
   arm. The lead is concentrated in 17 items the hosted field mostly gets wrong; adjudicated
   by topic by one reader shown the hosted answer, the gold was wrong on all 17, and on that gold every hosted LLM scores above
   every fine-tune. On DBpedia a **115× price
-  difference** was not shown to buy accuracy (no gap under 10 items is detectable at n = 280), and the fine-tuned model is not separated from
+  difference** was not shown to buy accuracy (no gap under 10 items is detectable at n = 280), and the fine-tuned model is not significantly different from
   the top group: the top eleven arms are within four items, three of them items whose
   label the field disputes; one reader adjudicated them, shown the hosted answer, and found the gold wrong on all three.
-- **Extraction.** A 499 MB span tagger separated from **all 27** opponents, but **57%** of
+- **Extraction.** A 499 MB span tagger differed significantly from **all 27** opponents, but **57%** of
   its margin over the best LLM is one entity type whose meaning exists only inside that
   corpus, and **up to 38%** of that lead is agreeing with annotation the rest of the field
   rejects: an upper bound, one reader's judgement. The two overlap and cannot be added.
-- **Retrieval.** The leading LLM reranker cannot be separated from eleven or twelve other arms (a Holm boundary),
+- **Retrieval.** The leading LLM reranker is not significantly different from eleven or twelve other arms (a Holm boundary),
   ten rerankers *and two free local encoders*. A prediction registered before the arm existed (that swapping only the
   first stage would move the pipeline from 0.74 to 0.786–0.797) came back at **0.7891** for
   one of the two rerankers tested; the other landed outside the range.
 - **Judging.** Asked to grade summaries the way three experts did, 23 of the 24 LLMs are
-  separated from, and ahead of, the best free scorer measured — UniEval, an evaluator
+  significantly ahead of the best free scorer measured — UniEval, an evaluator
   trained for exactly this — and all 24 from BARTScore and ROUGE. That is against free
   scorers that were measured: the judges rank all 16 summaries in one call while UniEval
   scores one at a time, and a pointwise LLM judge was not run. Scored against two experts, as one expert is against the
@@ -248,7 +248,7 @@ pick, as run here:
   articles; 92% held out) and UniEval 64%, on 2019-era summaries with reasoning off. A
   no-model lookup of which system wrote each summary reaches 63%, so how much of a judge's
   score is reading the summary is not measured. The leader
-  cannot be separated from five other judges, and an open-weight one sits 0.0013 behind it for $0.0278 per 100
+  is not significantly different from five other judges, and an open-weight one sits 0.0013 behind it for $0.0278 per 100
   articles. ROUGE agrees with the experts at τ 0.14–0.16, and
   this repository's own summarisation metric below that.
 
@@ -267,7 +267,7 @@ make data EXP=scifact && make reproduce EXP=scifact LEVEL=local && make compare 
 ```
 
 `make compare` writes a replication card: each rerun arm against its committed run, and
-every committed separation and tie re-tested with your reruns in place. `make list` shows
+every committed verdict, significant or not, re-tested with your reruns in place. `make list` shows
 all seven measurements and what each billed; `LEVEL=hosted` reruns the LLMs with one
 `OPENROUTER_API_KEY` in `harness/.env`. The full walkthrough, including what a rerun
 cannot reproduce and how to add a model of your own: **[docs/REPRODUCE.md](docs/REPRODUCE.md)**.

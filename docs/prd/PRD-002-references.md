@@ -1,15 +1,15 @@
-# PRD-002: Labels, and the references promoted from them
+# PRD-002: Labels, and the reference sets promoted from them
 
 - **Status**: Implemented (v0.4.0) for gold, silver and re-scoring; labels (FR2), promotion (FR3) and scoring against
   labels (FR6) built for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md)); they replace
   `reference-create`
 - **Authors**: Marko Dragoljevic
-- **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Labels and References pages, the tier pills, row
+- **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Labels and Reference sets pages, the tier pills, row
   tints), [UXS-002](../uxs/UXS-002-inspector.md) (what the inspector refuses to compare; labels in the item view),
   [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the label and promotion commands)
 - **Related RFCs**: [RFC-023](../rfc/RFC-023-labels-and-references.md) (labels and promotion),
   [RFC-002](../rfc/RFC-002-run-records-and-derived-runs.md) (derived runs: re-scoring onto another reference)
-- **Related ADRs**: [ADR-0022](../adr/ADR-0022-references-are-promoted-labels.md) (a reference is labels you promote)
+- **Related ADRs**: [ADR-0022](../adr/ADR-0022-references-are-promoted-labels.md) (a reference set is labels you promote)
 - **Related PRDs**: [PRD-001](PRD-001-evals-and-comparison.md), [PRD-003](PRD-003-judging.md),
   [PRD-014](PRD-014-datasets-from-production.md) (labels on production data)
 
@@ -119,7 +119,7 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
   copies the chosen labels (the set on this dataset, or `DATASET/SET` on another with the same items) into
   `references/<tier>/<name>/`; the manifest records `promoted_from` (the set, its dataset, its source), the reason,
   who and when, and for a `model` set who authored the texts (its config, model and run). A reason must be a
-  sentence; a reference is never overwritten.
+  sentence; a reference set is never overwritten.
 - **FR3.2** (0.6.0): `reference-create` and `reference-from-outcomes` are removed; `label-from-run` keeps their
   refusals and `--not-redistributed`, `label-from-capture` their rule language.
 - **FR3.3**: Every existing reference records how it was promoted ("promoted before labels existed"), with every

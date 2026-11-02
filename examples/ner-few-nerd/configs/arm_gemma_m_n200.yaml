@@ -8,8 +8,8 @@
 # scores 0 for that ITEM — which would read as a model that cannot do NER rather than a
 # budget that was too small. `truncated` and `parsed` are both recorded per item.
 #
-# The measurement slice. ONLY config_id and dataset_id differ from arm_gemma_m.yaml. Every
-# hosted arm runs here; none is selected on its dev score.
+# The test slice. ONLY config_id and dataset_id differ from arm_gemma_m.yaml. Every
+# hosted arm runs here; none is selected on its pilot score.
 config_id: fn_gemma_m_n200_v1
 dataset_id: few_nerd_280
 adapter: ../adapter.py

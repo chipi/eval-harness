@@ -5,7 +5,7 @@
   owner's call.
 - **Replaced in part**: references from outcomes (`reference-from-outcomes`, and second references as silver) by
   [RFC-023](RFC-023-labels-and-references.md): labels from a capture's outcomes are a `rule` label set, and
-  a reference is labels you promote.
+  a reference set is labels you promote.
 - **Authors**: Marko Dragoljevic
 - **Related PRD**: [PRD-014](../prd/PRD-014-datasets-from-production.md); also
   [PRD-006](../prd/PRD-006-datasets-versions-fields.md) (versions, item fields),
@@ -13,7 +13,7 @@
 - **Related ADRs**: [ADR-0019](../adr/ADR-0019-capture-lane.md), [ADR-0020](../adr/ADR-0020-second-references-are-silver.md)
 - **Related RFCs**: [RFC-006](RFC-006-item-fields-and-url-items.md) (field sets),
   [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP server); on branch `070`: 0.7.0's RFC-013 (declarations,
-  consent), RFC-015 (dev and heldout, test looks), RFC-016 (MCP tools)
+  consent), RFC-015 (validation and test, test looks), RFC-016 (MCP tools)
 
 ## Abstract
 
@@ -24,7 +24,7 @@ the method:
 - optionally **scrub** them with the project's own scrubber;
 - **select** items from a capture into a new **dataset version**;
 - take a **reference from outcomes**, what production recorded afterwards;
-- **split** a dataset into dev and heldout.
+- **split** a dataset into validation and test.
 
 The lane ends in the files the method already reads (a dataset file, a reference file), so materialize, run,
 compare and goals work as they are. Every step is a command that reads and writes files: no server, no state
@@ -122,7 +122,7 @@ any public surface.
 - **It also closes two holes.** The MCP `inspect --where/--by` hole on hidden fields was closed in 0.6.0's first
   part. A profile written `--with-text` is now checked again whenever the catalog builds.
 
-### 5. References from outcomes
+### 5. Reference sets from outcomes
 
 - **The command** (removed in 0.6.0 by RFC-023: `evh label-from-capture` reads the same rules into a `rule` label
   set): `reference-from-outcomes --dataset-id D --capture C --map outcomes.yaml [--name NAME]`.
@@ -143,11 +143,11 @@ any public surface.
 
 ### 6. Splits
 
-- **The command:** `evh dataset-split D --heldout 0.3 [--by hash|time] [--key F] --seed S` writes `D_dev` and
-  `D_heldout`, ordinary datasets with lineage.
+- **The command:** `evh dataset-split D --test 0.3 [--by hash|time] [--key F] --seed S` writes `D_validation` and
+  `D_test`, ordinary datasets with lineage.
 - **By hash** of the key (item id by default, or a field, so one fingerprint never lands on both sides): stable
   across versions.
-- **By time**: the newest share is heldout.
+- **By time**: the newest share is test.
 
 ### 7. The catalog, the CLI and MCP
 
@@ -177,8 +177,8 @@ The data, the references, the arms and the cost are in the application plan (`re
 
 **What round 1 showed, and did not** (2026-10-31; the numbers in `research/internal/TRIAGE_RESULTS_LIVE.md`, its
 table generated from the harness). The lane works end to end: capture, dataset, gold, every arm replayed, scored
-and compared in the catalog. The comparison decides nothing yet: on 65 decisions the paired test separates no arm
-under the ceiling from the leader (`evh goals` names all 39 as tied, the always-dismiss stub among them). The
+and compared in the catalog. The comparison decides nothing yet: on 65 decisions the paired test finds no arm
+under the ceiling significantly different from the leader (`evh goals` names all 39 as contenders, the always-dismiss stub among them). The
 ceiling was set after the results and sits within one or two false alarms of 18 rows. 20 of the 65 gold labels are
 production's own decision, accepted by the owner after a model of the Anthropic family agreed with it. A no-decision
 replay scores as an escalation, a path production does not have. How large the gold must be, and how a no-decision
@@ -186,8 +186,8 @@ is scored, are settled by the owner before round 2.
 
 Settled 2026-10-31, and applied as round 2 of the goal, the scoring change RFC-022 makes a step of its own: a
 no-decision is wrong on both sides, and the false-alarm ceiling is no worse than production (the baseline) by the
-paired test, each arm on its own. Re-scored at $0, round 1's runs still separate nothing (the three gpt-oss:20b rows
-fall from the top; two arms are ruled out on false alarms; 54 stay tied with the leader). The next round grows the
+paired test, each arm on its own. Re-scored at $0, round 1's runs still show no significant difference (the three gpt-oss:20b rows
+fall from the top; two arms are ruled out on false alarms; 54 stay contenders). The next round grows the
 gold to the owner's 93 labelled decisions and runs the onboarded models.
 
 ## Not in scope

@@ -689,17 +689,17 @@ def _arm_costs(prefix, dataset_id):
 
 
 #: (label, prefix, dataset, cheap arm, claimed ratio against the DEAREST paid arm)
-#: (label, prefix, dataset, cheapest tied arm, the synthesis table row that states it)
+#: (label, prefix, dataset, cheapest arm not significantly different from the leader, the synthesis table row that states it)
 CHEAPNESS = [
     (
-        "Summarisation cheapest-tied vs dearest",
+        "Summarisation cheapest not-significant vs dearest",
         "cnn_",
         "cnn_dailymail_200",
         "deepseek_s",
         "| Summarisation · CNN/DM | 15 arms (13 paid) |",
     ),
     (
-        "DBpedia cheapest-tied vs dearest",
+        "DBpedia cheapest not-significant vs dearest",
         "db_",
         "dbpedia_280",
         "gemma_m",
@@ -707,14 +707,14 @@ CHEAPNESS = [
     ),
     # Was gemma_s / 9 arms around bert_mini. The bert-base leader ties with one paid arm.
     (
-        "AG News cheapest-tied vs dearest",
+        "AG News cheapest not-significant vs dearest",
         "ag_",
         "ag_news_200",
         "anthropic_m",
         "| Classification · AG News | 3 arms (1 paid) |",
     ),
     (
-        "SummEval cheapest-tied vs dearest",
+        "SummEval cheapest not-significant vs dearest",
         "se_",
         "summeval_100",
         "gemma_l",
@@ -762,10 +762,10 @@ for label, pref, ds, cheap, row_key in CHEAPNESS:
     )
 
 #: THE TIE GROUP ITSELF, recomputed. The rows above lock onto "| … | 15 arms (13 paid) |"
-#: and check only the ratio after it; the group size and the cheapest tied arm were
+#: and check only the ratio after it; the group size and its cheapest arm were
 #: literals in this file, so when two arms joined AG News and the group went from 9 to 3,
 #: nothing here could have noticed. Now: run the leader's Holm family test, count what it
-#: does not separate from, split paid from free by the provider each run recorded, and
+#: finds not significantly different, split paid from free by the provider each run recorded, and
 #: compare all three to what the synthesis row says. (leader, runs dir, dataset, metric,
 #: prefix, the row's first cell)
 TIE_GROUPS = [
@@ -776,8 +776,8 @@ TIE_GROUPS = [
 ]
 
 
-def _not_separated(leader, runs_dir, dataset_id, metric):
-    """Opponents the leader's Holm family test does not separate from, or None."""
+def _not_significant(leader, runs_dir, dataset_id, metric):
+    """Opponents the leader's Holm family test finds not significantly different, or None."""
     import subprocess  # noqa: PLC0415
 
     suffix = _SIZE_SUFFIX.search(leader).group(0)
@@ -825,12 +825,12 @@ for leader, rdir, ds, metric, pref, cell in TIE_GROUPS:
         missing += 1
         print(f"  --   tie group {cell.strip('| ')}: row not found in the synthesis — skipped")
         continue
-    tied = _not_separated(leader, rdir, ds, metric)
-    if tied is None:
+    level = _not_significant(leader, rdir, ds, metric)
+    if level is None:
         missing += 1
         print(f"  --   tie group {cell.strip('| ')}: family test did not run — skipped")
         continue
-    paid_arms = [a for a in tied if _provider(rdir, a) == "litellm"]
+    paid_arms = [a for a in level if _provider(rdir, a) == "litellm"]
     costs = _arm_costs(pref, ds)
     cheapest = (
         min(paid_arms, key=lambda a: costs.get(_arm_name(a, pref), float("inf"))) if paid_arms else None
@@ -839,15 +839,15 @@ for leader, rdir, ds, metric, pref, cell in TIE_GROUPS:
     got_name = _arm_name(cheapest, pref) if cheapest else None
     check(
         f"tie group {cell.strip('| ')}: {n} arms ({n_paid} paid), cheapest `{named}`",
-        len(tied) == n and len(paid_arms) == n_paid and got_name == named,
+        len(level) == n and len(paid_arms) == n_paid and got_name == named,
         f"the row says {n} ({n_paid} paid), cheapest {named}; the family test gives "
-        f"{len(tied)} ({len(paid_arms)} paid), cheapest {got_name}",
+        f"{len(level)} ({len(paid_arms)} paid), cheapest {got_name}",
     )
 
-# ---- THE CLASSIFICATION REPORT'S "NOT SEPARATED" AND LABEL-NOISE FIGURES --------------
+# ---- THE CLASSIFICATION REPORT'S "NOT SIGNIFICANT" AND LABEL-NOISE FIGURES --------------
 #
 # Review 2026-10-19: the report called all three AG News fine-tunes "clearly separated
-# from all but one" hosted arm. That is true of the leader only. The per-arm separation
+# from all but one" hosted arm (the report's old wording). That is true of the leader only. The per-arm significance
 # counts, the 17-item set and the "other 183" comparison below are DERIVED from the
 # committed runs and then looked for in the report, so a sentence that drifts from them
 # fails here instead of surviving on the tie-group row alone.
@@ -860,17 +860,17 @@ for _arm, _name in (
     ("ag_bert_base_fy_n200_v1", "bert_base_fy"),
     ("ag_bert_mini_n200_v1", "bert_mini"),
 ):
-    _tied = _not_separated(_arm, DATA, "ag_news_200", "correct")
+    _tied = _not_significant(_arm, DATA, "ag_news_200", "correct")
     if _tied is None:
         missing += 1
         print(f"  --   classification: family test for {_name} did not run — skipped")
         continue
     _sep = _AG_FAMILY - len(_tied)
     check(
-        f"classification: {_name} is separated from {_sep} of {_AG_FAMILY} and the report says so",
-        f"separated from **{_sep}**" in _CLS
-        or f"separated from {_sep} of" in _CLS
-        or f"(separated from {_sep}" in _CLS,
+        f"classification: {_name} differs significantly from {_sep} of {_AG_FAMILY} and the report says so",
+        f"significantly different from **{_sep}**" in _CLS
+        or f"significantly different from {_sep} of" in _CLS
+        or f"(significantly different from {_sep}" in _CLS,
         f"family_test gives {_sep} of {_AG_FAMILY}; the report does not state it",
     )
 
@@ -963,9 +963,9 @@ if "qwen_m" in _DB and "anthropic_l" in _DB:
 # ---- THE CLASSIFICATION SUMMARY'S RENTED-API PICKS, MINIMUM GAP AND PILOT FIGURES --------
 #
 # Stage-two review 2026-10-19. The summary names the cheapest HOSTED arm the best paid arm
-# cannot be separated from, the smallest gap Holm separated on DBpedia, and the pilot's
+# is not significantly different from, the smallest gap Holm finds significant on DBpedia, and the pilot's
 # tie-aware rho. None of those had a producer. Each is derived here and then looked for
-# in the report. The rho is Pearson on midranks (ties share a rank), dev-slice accuracy
+# in the report. The rho is Pearson on midranks (ties share a rank), pilot-slice accuracy
 # against 200-item accuracy over every arm, which is what the report's footnote states.
 import subprocess as _clsp  # noqa: E402
 
@@ -984,7 +984,7 @@ def _cl_pilot(runs, dev_file, drop=()):
 
 
 def _cl_runner_up(runs, dev_file):
-    """How many arms share the dev slice's second-best accuracy."""
+    """How many arms share the pilot slice's second-best accuracy."""
     _ids = {
         (_i if isinstance(_i, str) else (_i.get("item_id") or _i.get("id")))
         for _i in json.loads((ROOT / "harness" / "data" / "datasets" / dev_file).read_text())["items"]
@@ -998,12 +998,12 @@ if "bert_mini" in _AG and "qwen_m" in _DB:
     _r30, _t30, _n30 = _cl_pilot(_AG, "ag_news_20.json")
     _d28, _dt28, _dn28 = _cl_pilot(_DB, "dbpedia_56.json")
     check(
-        "classification: pilot rho (midranks) and the tie at the top of the dev slice",
+        "classification: pilot rho (midranks) and the tie at the top of the pilot slice",
         (_n30, _dn28) == (30, 28)
         and f"AG News {_r30:.3f} at 30 arms; DBpedia {_d28:.3f} at 28" in _CLS
-        and f"{len(_t30)} of 30 arms tied at the top of the 20-item dev slice" in _CLS
+        and f"{len(_t30)} of 30 arms tied at the top of the 20-item pilot slice" in _CLS
         and _dt28 == ["bert_base_fy"]
-        and "`bert_base_fy` is alone at the top of the 56-item dev slice (56 of 56), with "
+        and "`bert_base_fy` is alone at the top of the 56-item pilot slice (56 of 56), with "
         f"{_cl_runner_up(_DB, 'dbpedia_56.json')} arms tied one item behind it"
         in _CLS
         and sorted(_t30)[0] == "anthropic_l",
@@ -1011,7 +1011,7 @@ if "bert_mini" in _AG and "qwen_m" in _DB:
     )
 
     # AG News: the best paid arm's own family test, not the leader's.
-    _am = _not_separated("ag_anthropic_m_n200_v1", DATA, "ag_news_200", "correct")
+    _am = _not_significant("ag_anthropic_m_n200_v1", DATA, "ag_news_200", "correct")
     if _am is None or len(_HOSTED) != 24:
         missing += 1
         print("  --   classification: anthropic_m family test did not run — skipped")
@@ -1024,20 +1024,20 @@ if "bert_mini" in _AG and "qwen_m" in _DB:
         _sep_h = 23 - len(_hosted_ns)
         _per_m = lambda a: round(_ag_cost[a] / 200 * 1e6)  # noqa: E731
         check(
-            "classification: anthropic_m is separated from 3 of the 23 other hosted arms; "
-            "the cheapest hosted arm it is not separated from, with its gap",
-            f"separated from {_sep_h} of the 23 other hosted arms" in _CLS
+            "classification: anthropic_m differs significantly from 3 of the 23 other hosted arms; "
+            "the cheapest hosted arm it is not significantly different from, with its gap",
+            f"differs significantly from {_sep_h} of the 23 other hosted arms" in _CLS
             and f"is `{_cheap}`, at ${_per_m(_cheap)} and {_acc(_cheap):.4f}, "
             f"{_acc('anthropic_m') - _acc(_cheap):.4f} behind"
             in _CLS
             and f"`qwen_m`, at ${_per_m('qwen_m')} and {_acc('qwen_m'):.4f}" in _CLS
             and f"`anthropic_m`, at ${_per_m('anthropic_m')} per 1M items and {_acc('anthropic_m'):.4f}"
             in _CLS,
-            f"derived: separated from {_sep_h}, cheapest not separated {_cheap} "
+            f"derived: significantly different from {_sep_h}, cheapest not significant {_cheap} "
             f"${_per_m(_cheap)} {_acc(_cheap):.4f}",
         )
 
-    # DBpedia: the smallest gap the leader's Holm test separated.
+    # DBpedia: the smallest gap the leader's Holm test finds significant.
     _fo = _clsp.run(
         [
             sys.executable,
@@ -1059,29 +1059,29 @@ if "bert_mini" in _AG and "qwen_m" in _DB:
     _rows_f = [
         ln.split()
         for ln in _fo.stdout.splitlines()
-        if ln.strip().startswith("db_") and ln.split()[-1] in ("SEPARATED", "--")
+        if ln.strip().startswith("db_") and ln.split()[-1] in ("SIGNIFICANT", "--")
     ]
     if _fo.returncode != 0 or not _rows_f:
         missing += 1
         print("  --   classification: qwen_m family test did not run — skipped")
     else:
-        _lo_sep = min(abs(float(r[1])) for r in _rows_f if r[-1] == "SEPARATED")
+        _lo_sep = min(abs(float(r[1])) for r in _rows_f if r[-1] == "SIGNIFICANT")
         _hi_ns = max(
             abs(float(r[1])) for r in _rows_f if r[-1] == "--" and r[0] not in ("db_bert_base_fy_n200_v1",)
         )
         check(
-            "classification: DBpedia, no gap under 10 items separated; 8 items are not",
+            "classification: DBpedia, no gap under 10 items significant; 8 items are not",
             round(_lo_sep * 280) == 10
             and round(_hi_ns * 280) == 8
-            and "smallest gap Holm separated from `qwen_m` is 10 items" in _CLS
+            and "smallest gap Holm finds significant against `qwen_m` is 10 items" in _CLS
             and "8 items (+0.0286" in _CLS
             and "10 items (+0.0357" in _CLS,
-            f"derived smallest separated {round(_lo_sep * 280)} items, "
-            f"largest not separated {round(_hi_ns * 280)}",
+            f"derived smallest significant {round(_lo_sep * 280)} items, "
+            f"largest not significant {round(_hi_ns * 280)}",
         )
 
 
-#: Re-measured against adjudicated gold (reference v2). Recomputed from the committed
+#: Re-measured against adjudicated gold (reference set v2). Recomputed from the committed
 #: predictions and the committed adjudication record, not from data/runs-adjudicated
 #: (gitignored: rescore copies the outputs): an item's verdict replaces its gold, every
 #: other item keeps the correctness the run recorded.
@@ -1210,19 +1210,19 @@ _fo2 = _v2_family("classification-ag-news", "ag_news_200", "ag_", "ag_anthropic_
 _rows2 = [
     ln.split()
     for ln in (_fo2 or "").splitlines()
-    if ln.strip().startswith("ag_") and ln.split()[-1] in ("SEPARATED", "--")
+    if ln.strip().startswith("ag_") and ln.split()[-1] in ("SIGNIFICANT", "--")
 ]
 if not _rows2:
     missing += 1
     print("  --   classification: AG News v2 family test did not run — skipped")
 else:
-    _sep2 = {r[0] for r in _rows2 if r[-1] == "SEPARATED"}
+    _sep2 = {r[0] for r in _rows2 if r[-1] == "SIGNIFICANT"}
     _fts = ("ag_bert_mini_n200_v1", "ag_bert_base_ta_n200_v1", "ag_bert_base_fy_n200_v1")
     _p_ft = [_pf(r[3]) for r in _rows2 if r[0] in _fts]
     _ns2 = [r[0] for r in _rows2 if r[-1] == "--"]
     check(
-        "classification: AG News v2, anthropic_l separated from 9 of 29 (all three fine-tunes, "
-        "p 0.0001-0.0005), not separated from 20; the fine-tunes tie at 0.9050",
+        "classification: AG News v2, anthropic_l significantly different from 9 of 29 (all three fine-tunes, "
+        "p 0.0001-0.0005), not significantly different from 20; the fine-tunes tie at 0.9050",
         len(_rows2) == 29
         and len(_sep2) == 9
         and len(_ns2) == 20
@@ -1230,11 +1230,11 @@ else:
         and round(min(_p_ft), 4) == 0.0001
         and round(max(_p_ft), 4) == 0.0005
         and all(round(_v2_ag[a], 4) == 0.9050 for a in ("bert_mini", "bert_base_ta", "bert_base_fy"))
-        and f"`anthropic_l` is separated from {len(_sep2)}, including all three fine-tunes (p 0.0001–0.0005)"
+        and f"`anthropic_l` differs significantly from {len(_sep2)}, including all three fine-tunes (p 0.0001–0.0005)"
         in _CLS
-        and f"not separated from {len(_ns2)} hosted arms" in _CLS
+        and f"not significantly different from {len(_ns2)} hosted arms" in _CLS
         and "Holm over the 29 other arms, on v2" in _CLS,
-        f"derived separated {len(_sep2)} of {len(_rows2)}, not separated {len(_ns2)}, "
+        f"derived significant {len(_sep2)} of {len(_rows2)}, not significant {len(_ns2)}, "
         f"fine-tune p {min(_p_ft):.4f}-{max(_p_ft):.4f}, "
         f"fine-tune v2 {[round(_v2_ag[a], 4) for a in ('bert_mini', 'bert_base_ta', 'bert_base_fy')]}",
     )
@@ -1243,19 +1243,19 @@ _fo3 = _v2_family("classification-dbpedia-14", "dbpedia_280", "db_", "db_gemma_m
 _rows3 = [
     ln.split()
     for ln in (_fo3 or "").splitlines()
-    if ln.strip().startswith("db_") and ln.split()[-1] in ("SEPARATED", "--")
+    if ln.strip().startswith("db_") and ln.split()[-1] in ("SIGNIFICANT", "--")
 ]
 if not _rows3:
     missing += 1
     print("  --   classification: DBpedia v2 family test did not run — skipped")
 else:
-    _sep3 = [r[0] for r in _rows3 if r[-1] == "SEPARATED"]
+    _sep3 = [r[0] for r in _rows3 if r[-1] == "SIGNIFICANT"]
     check(
-        "classification: DBpedia v2, the top stays a crowd -- gemma_m separated from only 5 of 27",
+        "classification: DBpedia v2, the top stays a crowd -- gemma_m significantly different from only 5 of 27",
         len(_rows3) == 27
         and len(_sep3) == 5
-        and f"`gemma_m` is separated from only {len(_sep3)} of {len(_rows3)}" in _CLS,
-        f"derived separated {len(_sep3)} of {len(_rows3)}: {_sep3}",
+        and f"`gemma_m` differs significantly from only {len(_sep3)} of {len(_rows3)}" in _CLS,
+        f"derived significant {len(_sep3)} of {len(_rows3)}: {_sep3}",
     )
 
 #: Summarisation re-measured with validated judges (report §3.8). Every figure comes from
@@ -1510,16 +1510,16 @@ def _judged_family(scorer, a):
         return r.stdout
 
 
-def _separated_from(stdout):
-    _mm = re.search(r"separated from (\d+) of (\d+) opponents", stdout or "")
+def _significant_from(stdout):
+    _mm = re.search(r"significantly different from (\d+) of (\d+) opponents", stdout or "")
     return (int(_mm.group(1)), int(_mm.group(2))) if _mm else (None, None)
 
 
 _ft1 = _judged_family("judge-summ-v1", "cnn_bart_l_n200_v1")
 check(
-    "summarisation: on judge-summ-v1, bart_l is separated from all 28 others (below all 24 hosted)",
-    _separated_from(_ft1) == (28, 28) and "is separated below all 24 hosted LLMs" in _SUMM,
-    f"derived {_separated_from(_ft1)}",
+    "summarisation: on judge-summ-v1, bart_l differs significantly from all 28 others (below all 24 hosted)",
+    _significant_from(_ft1) == (28, 28) and "is significantly below all 24 hosted LLMs" in _SUMM,
+    f"derived {_significant_from(_ft1)}",
 )
 
 #: The frontier re-measurement (judge-summ-v2), the same judging set: every figure the report
@@ -1548,13 +1548,13 @@ _ft2b = _judged_family("judge-summ-v2", "cnn_bart_l_n200_v1")
 _ft2a = _judged_family("judge-summ-v2", "cnn_anthropic_l_n200_v1")
 _ns2 = [ln.split()[0] for ln in _ft2a.splitlines() if ln.strip().endswith("--")]
 check(
-    "summarisation, frontier judges: bart_l separated from all 28; anthropic_l from 27 of 28, "
+    "summarisation, frontier judges: bart_l significantly different from all 28; anthropic_l from 27 of 28, "
     "all but deepseek_m",
-    _separated_from(_ft2b) == (28, 28)
-    and _separated_from(_ft2a) == (27, 28)
+    _significant_from(_ft2b) == (28, 28)
+    and _significant_from(_ft2a) == (27, 28)
     and _ns2 == ["cnn_deepseek_m_n200_v1"]
-    and "separated from 27 of its 28 opponents, all but `deepseek_m`" in _V2,
-    f"derived bart_l {_separated_from(_ft2b)}, anthropic_l {_separated_from(_ft2a)} not {_ns2}",
+    and "significantly different from 27 of its 28 opponents, all but `deepseek_m`" in _V2,
+    f"derived bart_l {_significant_from(_ft2b)}, anthropic_l {_significant_from(_ft2a)} not {_ns2}",
 )
 _hc2 = _JF2["human_check"]
 check(
@@ -1711,7 +1711,7 @@ check(
     f"derived {_zcost}",
 )
 
-#: Pairwise cost ratios the summarisation report states in its separation tables.
+#: Pairwise cost ratios the summarisation report states in its significance tables.
 CNN = _arm_costs("cnn_", "cnn_dailymail_200")
 for dear, cheap in (("anthropic_m", "deepseek_m"), ("openai_l", "deepseek_m")):
     m = re.search(r"`deepseek_m` vs `" + dear + r"` — ([0-9.]+)×", SUMM)
@@ -1779,7 +1779,7 @@ else:
 # correlation, so the report's figures were checked against nothing. Derived from the
 # committed runs and looked for in the report: the correlation and its interval, how many
 # arms were served by several providers, the pilot-overlap rho, and the cost gap of the
-# three dominated arms whose dominator's quality lead is not separated.
+# three dominated arms whose dominator's quality lead is not significant.
 import math as _pqm  # noqa: E402
 
 
@@ -1833,7 +1833,7 @@ if len(_hq) == 24 and all(CNN.get(_a) for _a in _hq):
         f"multi-provider max ${_maxmulti:.4f}",
     )
 
-    # The three dominated arms whose dominator's quality lead is not separated (p in the
+    # The three dominated arms whose dominator's quality lead is not significant (p in the
     # report comes from pair_test.py; here only that the dominance holds and the cost gap).
     _dom_ok, _dom_say = True, []
     for _a, _b in (("llama_l", "deepseek_m"), ("mistral_s", "deepseek_s"), ("gemma_l", "llama_s")):
@@ -2045,7 +2045,7 @@ _wrong_arms = [_x for _x in _stated_arms if _x != _arm_n]
 check(
     f"the synthesis states {_arm_n} measured arms, everywhere it says so ({len(_stated_arms)} place(s))",
     bool(_stated_arms) and not _wrong_arms,
-    f"data/runs holds {_arm_n} arms across the {len(_SLICES)} measurement slices; the "
+    f"data/runs holds {_arm_n} arms across the {len(_SLICES)} test slices; the "
     f"synthesis says {_wrong_arms or 'nothing'}",
 )
 # ANCHORED TO THE CLAIM, not the phrase. A bare "$N billed" also matches "that
@@ -2304,10 +2304,10 @@ for _trow in _tied_rows:
     if _want not in _SEV:
         _bad_tie.append(_want)
 check(
-    f"SummEval tie table (§3.2): the {len(_tied_rows)} arms {_lead} cannot separate from, "
+    f"SummEval tie table (§3.2): the {len(_tied_rows)} arms not significantly different from {_lead}, "
     "with delta, wins, p and threshold",
     bool(_tied_rows) and not _bad_tie,
-    "; ".join(_bad_tie[:3]) or "the family test returned no tied rows",
+    "; ".join(_bad_tie[:3]) or "the family test returned no not-significant rows",
 )
 
 _judges = sorted(a for a in _se_arms if a not in _sea.FREE)
@@ -2332,15 +2332,15 @@ _bft = _subp.run(
 _bart = {
     ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[2])
     for ln in _bft.stdout.splitlines()
-    if ln.strip().endswith(("SEPARATED", "--")) and ln.split()[0].endswith("_n100_v1")
+    if ln.strip().endswith(("SIGNIFICANT", "--")) and ln.split()[0].endswith("_n100_v1")
 }
-_not_sep = [a for a in _judges if a not in _bart or _bart[a][1] != "SEPARATED" or _bart[a][0] >= 0]
+_not_sep = [a for a in _judges if a not in _bart or _bart[a][1] != "SIGNIFICANT" or _bart[a][0] >= 0]
 check(
-    f"SummEval: BARTScore is separated from all {len(_judges)} judges, every one ahead of it",
+    f"SummEval: BARTScore differs significantly from all {len(_judges)} judges, every one ahead of it",
     len(_judges) == 24
     and not _not_sep
-    and "Every judge is separated from, and ahead of, BARTScore" in " ".join(_SEV.split()),
-    f"not separated, or not behind: {_not_sep}",
+    and "Every judge differs significantly from, and ahead of, BARTScore" in " ".join(_SEV.split()),
+    f"not significant, or not behind: {_not_sep}",
 )
 _weakest = min(_judges, key=lambda a: _se_arms[a]["scores"]["tau"])
 _bw = _bart.get(_weakest, (0, "", "?/100"))[2].split("/")[0]
@@ -2349,8 +2349,8 @@ check(
     f"`{_weakest}`" in _SEV and f"BARTScore wins only {_bw} of 100 articles" in _SEV,
     f"the family test gives {_bw}/100 against {_weakest}",
 )
-# UniEval, the free evaluator trained for the task, on both sets of inputs (§3.3): separated
-# from every judge but the weakest, and the §3.3 table row against that one as the test gives it.
+# UniEval, the free evaluator trained for the task, on both sets of inputs (§3.3): significantly
+# different from every judge but the weakest, and the §3.3 table row against that one as the test gives it.
 _ue = {}
 for _u in ("unievalpub", "unieval"):
     _uft = _subp.run(
@@ -2374,9 +2374,9 @@ for _u in ("unievalpub", "unieval"):
     _ue[_u] = {
         ln.split()[0][3:-8]: (float(ln.split()[1]), ln.split()[-1], ln.split()[2], _pf(ln.split()[3]))
         for ln in _uft.stdout.splitlines()
-        if ln.strip().endswith(("SEPARATED", "--")) and ln.split()[0].endswith("_n100_v1")
+        if ln.strip().endswith(("SIGNIFICANT", "--")) and ln.split()[0].endswith("_n100_v1")
     }
-    _unsep = sorted(a for a, v in _ue[_u].items() if v[1] != "SEPARATED")
+    _unsep = sorted(a for a, v in _ue[_u].items() if v[1] != "SIGNIFICANT")
     _behind = [a for a in _judges if a != _weakest and (_ue[_u].get(a, (1,))[0] >= 0)]
     _delta, _, _w, _pv = _ue[_u].get(_weakest, (0, "", "?/100", 1))
     _row = (
@@ -2384,16 +2384,16 @@ for _u in ("unievalpub", "unieval"):
         f"| {_pv:.4f} | {len(_ue[_u]) - len(_unsep)} of {len(_ue[_u])}, all but `{_weakest}` |"
     )
     check(
-        f"SummEval: {_u} is separated from every arm but the weakest judge, {_weakest}, and §3.3 says so",
+        f"SummEval: {_u} differs significantly from every arm but the weakest judge, {_weakest}, and §3.3 says so",
         _unsep == [_weakest] and not _behind and _row in _SEV,
-        f"not separated from {_unsep}; ahead of {_behind}; or §3.3 lacks {_row}",
+        f"not significantly different from {_unsep}; ahead of {_behind}; or §3.3 lacks {_row}",
     )
 _dpub = _ue["unievalpub"].get("unieval", (0, "", "?/100", 1))
 check(
     f"SummEval: the inputs move UniEval by {_dpub[0]:.4f}, p {_dpub[3]:.4f}, "
     f"{_dpub[2].split('/')[0]} of 100 articles",
-    _dpub[1] == "SEPARATED"
-    and f"worth {_dpub[0]:.4f} τ, separated (p {_dpub[3]:.4f}; `unievalpub`"
+    _dpub[1] == "SIGNIFICANT"
+    and f"worth {_dpub[0]:.4f} τ, significant (p {_dpub[3]:.4f}; `unievalpub`"
     f" wins {_dpub[2].split('/')[0]} of 100 articles)"
     in " ".join(_SEV.split()),
     "§3.3 does not state the paired difference between the two UniEval arms",
@@ -2402,7 +2402,7 @@ check(
 _per_m = lambda a: f"${_se_arms[a]['billed'] / _SE['n_items'] * 1e6:,.0f}"  # noqa: E731
 _cheap_tie = min((_t[0][3:-8] for _t in _tied_rows), key=lambda a: _se_arms[a]["billed"])
 check(
-    f"SummEval cheapest tied judge {_cheap_tie} at {_per_m(_cheap_tie)} per million, "
+    f"SummEval cheapest judge not significantly different from the leader {_cheap_tie} at {_per_m(_cheap_tie)} per million, "
     f"the leader at {_per_m(_lead)}, 1/{round(_se_arms[_lead]['billed'] / _se_arms[_cheap_tie]['billed'])}",
     f"**{_per_m(_cheap_tie)} per million articles**" in _SEV
     and _per_m(_lead) in _SEV
@@ -2584,11 +2584,13 @@ check(
     f"{_bad_rank}: {[(a, _order.index(a) + 1) for a in _bad_rank]}",
 )
 _n_above = sum(
-    1 for a in _judges if _ue["unievalpub"].get(a, (0, ""))[1] == "SEPARATED" and _ue["unievalpub"][a][0] < 0
+    1
+    for a in _judges
+    if _ue["unievalpub"].get(a, (0, ""))[1] == "SIGNIFICANT" and _ue["unievalpub"][a][0] < 0
 )
 _pw_pair = (_ue["unievalpub"][_weakest][3], _ue["unieval"][_weakest][3])
 check(
-    f"SummEval: {_n_above} of the {len(_judges)} judges are separated above UniEval; "
+    f"SummEval: {_n_above} of the {len(_judges)} judges are significantly above UniEval; "
     f"p {_pw_pair[0]:.2f} and {_pw_pair[1]:.2f} against {_weakest}",
     f"below {_n_above} of the {len(_judges)} judges" in _SEVn
     and f"p {_pw_pair[0]:.2f} and {_pw_pair[1]:.2f}" in _SEVn
@@ -2596,9 +2598,9 @@ check(
     "the headline counts or p-values do not match the family tests",
 )
 check(
-    f"SummEval: both UniEval arms are separated above BARTScore, by "
+    f"SummEval: both UniEval arms are significantly above BARTScore, by "
     f"{-_bart['unieval'][0]:.4f} and {-_bart['unievalpub'][0]:.4f}",
-    _bart["unieval"][1] == _bart["unievalpub"][1] == "SEPARATED"
+    _bart["unieval"][1] == _bart["unievalpub"][1] == "SIGNIFICANT"
     and f"(by {-_bart['unieval'][0]:.4f} and {-_bart['unievalpub'][0]:.4f})" in _SEVn,
     "",
 )
@@ -2609,18 +2611,18 @@ check(
     f"{_lt - _pt:.3f} below the leader" in _SEVn
     and _SYN.count(f"**−{100 * (1 - _pt / _lt):.1f}%**") == 2
     and f"**paid wins +{100 * (_lt / _pt - 1):.1f}%**" in _SYN
-    and f"**LLM wins by {_tau['gemma_l'] - _pt:.4f}, separated**" in _SYN
+    and f"**LLM wins by {_tau['gemma_l'] - _pt:.4f}, significant**" in _SYN
     and f"by {_tau['gemma_l'] - _pt:.4f}, scored on UniEval's" in _SYN,
     "",
 )
-_sep_lead = sum(1 for ln in _ft.stdout.splitlines() if ln.strip().endswith("SEPARATED"))
+_sep_lead = sum(1 for ln in _ft.stdout.splitlines() if ln.strip().endswith("SIGNIFICANT"))
 _m_lead = sum(
     1
     for ln in _ft.stdout.splitlines()
-    if ln.strip().endswith(("SEPARATED", "--")) and ln.split()[0].endswith("_n100_v1")
+    if ln.strip().endswith(("SIGNIFICANT", "--")) and ln.split()[0].endswith("_n100_v1")
 )
 check(
-    f"SummEval leader separated from {_sep_lead} of {_m_lead} in the synthesis' table",
+    f"SummEval leader significantly different from {_sep_lead} of {_m_lead} in the synthesis' table",
     f"| {_m_lead} of {_m_lead} | {_sep_lead} of {_m_lead} ({round(100 * _sep_lead / _m_lead)}%) |" in _SYN,
     "",
 )
@@ -2668,12 +2670,15 @@ check(
     f"rank {_rank_pl}",
 )
 _tt = _SE["tier_tests"]
-_sep_t = sorted(f for f, v in _tt.items() if v["separated"])
-_not_t = sorted(f for f, v in _tt.items() if not v["separated"])
+_sep_t = sorted(f for f, v in _tt.items() if v["significant"])
+_not_t = sorted(f for f, v in _tt.items() if not v["significant"])
 check(
-    f"SummEval §3.4: large tier separated above small in {len(_sep_t)} of {len(_tt)} families, "
+    f"SummEval §3.4: large tier significantly above small in {len(_sep_t)} of {len(_tt)} families, "
     f"not in {', '.join(_not_t)}",
-    ("separated in " + ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight"][len(_sep_t)])
+    (
+        "significant in "
+        + ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight"][len(_sep_t)]
+    )
     in _SEVn
     and all(
         f"{f.capitalize() if f != 'openai' else 'OpenAI'} +{_tt[f]['delta']:.4f}" in _SEVn
@@ -2681,7 +2686,7 @@ check(
         if f not in ("glm",)
     )
     and all(f"+{_tt[f]['delta']:.4f} (p {_tt[f]['p']:.4f})" in _SEVn for f in _not_t),
-    str({f: (round(v["delta"], 4), round(v["p"], 4), v["separated"]) for f, v in _tt.items()}),
+    str({f: (round(v["delta"], 4), round(v["p"], 4), v["significant"]) for f, v in _tt.items()}),
 )
 _sel = _hc.get("selection_corrected_best_judge") or {}
 check(
@@ -2721,8 +2726,8 @@ check(
 # 0.0000 on `other` on this count, and it needs no gold, so it runs wherever the runs do.
 _NERT = " ".join((ROOT / "research" / "REPORT_NER.md").read_text().split())
 
-# NER's pilot rho, the way the classification ones are derived: dev-slice mean f1 against the
-# full 280-item mean over every committed arm, midranks for ties. The few_nerd_56 dev runs
+# NER's pilot rho, the way the classification ones are derived: pilot-slice mean f1 against the
+# full 280-item mean over every committed arm, midranks for ties. The few_nerd_56 pilot runs
 # were never committed, so this is the only pilot figure the repository can check.
 _FN = _cls_correct("fn")
 if len(_FN) == 28 and "span_marker" in _FN:
@@ -2738,12 +2743,12 @@ if len(_FN) == 28 and "span_marker" in _FN:
     _fn_rho = _stats.spearman(_fn_d, _fn_f)
     _fn_lead = [a for a, v in zip(_fn_arms, _fn_d) if v == max(_fn_d)]
     check(
-        "NER: pilot rho from the dev items in the committed runs, and its leader",
+        "NER: pilot rho from the pilot items in the committed runs, and its leader",
         f"ρ = {_fn_rho:.3f} over the 28 arms" in _NERT
         and f"| Extraction · Few-NERD | {_fn_rho:.3f} committed |" in _SYN
         and _fn_lead == ["span_marker"]
         and _fn_f.index(max(_fn_f)) == _fn_arms.index("span_marker"),
-        f"derived rho {_fn_rho:.3f}, dev leader {_fn_lead}",
+        f"derived rho {_fn_rho:.3f}, pilot leader {_fn_lead}",
     )
 else:
     missing += 1

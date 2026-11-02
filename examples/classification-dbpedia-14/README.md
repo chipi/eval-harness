@@ -12,9 +12,9 @@ conclusion the pair does.
 | --- | --- | --- |
 | classes | 4 | 14 |
 | hosted field | 0.835 – 0.910 | 0.939 – 0.993 |
-| fine-tuned ML arm | ahead of all 24 on the point estimate; the best one is not separated from `anthropic_m`, the others from more | **0.9857 — in the top group, not above it** (`main` needs torch ≥ 2.6; its safetensors conversion PR loads on 2.2.2) |
+| fine-tuned ML arm | ahead of all 24 on the point estimate; the best one is not significantly different from `anthropic_m`, the others from more | **0.9857 — in the top group, not above it** (`main` needs torch ≥ 2.6; its safetensors conversion PR loads on 2.2.2) |
 | licence | `unknown`, non-commercial | **CC-BY-SA 3.0 + GFDL** |
-| outcome | a leader separated from 26 of 29, not from two other fine-tunes and `anthropic_m` | no winner: the leader is not separated from 19 of the 27 others |
+| outcome | a leader significantly different from 26 of 29, not from two other fine-tunes and `anthropic_m` | no winner: the leader is not significantly different from 19 of the 27 others |
 
 > **Rerun this eval** from the repository root — `EXP=dbpedia`:
 >
@@ -34,7 +34,7 @@ conclusion the pair does.
 cd examples/classification-dbpedia-14
 uv sync --extra local          # --extra local matters; the zero-shot arm needs torch
 uv run fetch.py --n 280        # 20 per class
-uv run fetch.py --n 56         # dev slice, a random subset of the 280
+uv run fetch.py --n 56         # pilot slice, a random subset of the 280
 ```
 
 Then freeze them:
@@ -55,7 +55,7 @@ and re-checked on every row it receives. A re-upload that reordered the split wo
 otherwise produce a confidently mislabelled dataset.
 
 Within each block the draw is a **seeded random** prefix of a permutation, not the first
-k. That is the fix for what AG News found: its first-k dev slice was nested but
+k. That is the fix for what AG News found: its first-k pilot slice was nested but
 unrepresentative, and one arm read 0.35 there against 0.67 on the full set — about 3 SD.
 Here the same arm reads 0.625 and 0.707, which is 1.3 SE. Nested *and* representative.
 
@@ -94,9 +94,9 @@ which the result says you do not need.
 **$0.0143 billed**; `anthropic_l` is one item behind at 0.9893 for **$0.3784**, and
 `gemma_m` scores the same 0.9857 as the fine-tuned arm for $0.0033 — 115× cheaper. Holm over a family
 of 27 declared before the p-values were read (the leader was picked because it led): the
-leader is ahead of 27 of 27 and **separated from only 8**. It is not separated from the other
+leader is ahead of 27 of 27 and **significantly different from only 8**. It is not significantly different from the other
 19, one of them the free fine-tuned classifier, at gaps of 1 to 8 items; the top eleven sit
-within four items of each other. The smallest gap Holm separated is 10 items (+0.0357), so a
+within four items of each other. The smallest gap Holm found significant is 10 items (+0.0357), so a
 benefit of paying of up to about 3 points cannot be ruled out.
 
 **Label noise is the same size as the signal.** Three items are missed by 24–25 of the 26
@@ -105,7 +105,7 @@ rather than `EducationalInstitution`, Bharhut labelled `Building`. Each has a di
 sides with the gold: the arm trained on DBpedia on the canal, `qwen_m` and zero-shot
 `bart_mnli` on Bharhut, `bart_mnli` on the school. The field's answer is defensible on all
 three, and one reader who adjudicated them, shown the hosted answer, found the gold wrong on all three (REPORT_CLASSIFICATION §3.4; the dataset's gold stays primary). The leader's one-item lead over `anthropic_l` is Bharhut.
-The top eleven arms are separated by four items in total. Any ranking within that
+The top eleven arms lie within four items in total. Any ranking within that
 group ranks which model best reproduces DBpedia's ontology quirks; this data cannot say
 whether it also ranks which classifies better.
 
@@ -119,7 +119,7 @@ have.** It ships `pytorch_model.bin` without safetensors, and `transformers` ref
 pickle below torch 2.6. On Linux or Apple Silicon `uv sync --extra local` resolves torch
 2.14 and it runs unmodified; its safetensors conversion PR (`refs/pr/1`) loads on torch
 2.2.2 with byte-identical outputs on all 280 items (see
-[`KNOWN_ISSUES.md`](../../research/internal/KNOWN_ISSUES.md)). **0.9857 at $0 marginal, 87 ms/item on CPU — not separated
+[`KNOWN_ISSUES.md`](../../research/internal/KNOWN_ISSUES.md)). **0.9857 at $0 marginal, 87 ms/item on CPU — not significantly different
 from the $0.0143 leader (p = 0.62), not above it.** AG News's fine-tuned lead does not
 carry over to a saturated task; a $0 marginal inference cost does (training and hosting cost were not measured).
 
@@ -129,7 +129,7 @@ carry over to a saturated task; a $0 marginal inference cost does (training and 
 [`entity_topic_dbpedia`](https://evals.humancopilot.eu/catalog/g/entity_topic_dbpedia.html), with an inspector that tests any arms against the baseline item by
 item. An agent can ask the same over MCP, read-only and without sign-in: connect
 `https://evals.humancopilot.eu/mcp` ([how](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp))
-and ask, say, "what does the `entity_topic_dbpedia` goal recommend, and is it separated from the baseline?".
+and ask, say, "what does the `entity_topic_dbpedia` goal recommend, and is it significantly different from the baseline?".
 
 ## Results
 

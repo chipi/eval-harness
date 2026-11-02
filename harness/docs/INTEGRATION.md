@@ -234,7 +234,7 @@ can extend later without re-authoring what you have.
 | eval rounds (optional) | round on round: what each round tried, what it kept and dropped and why, what it concluded ([tutorial 4](../../docs/tutorials/4-rounds-and-versions.md)) |
 | item fields | the facts you know about each item (typed, declared once in a field set), checked by `evh validate`; items fetched from a pinned URL |
 | a catalog and an inspector | pages over your runs, and a local server that tests any arms against a baseline and shows outputs beside references; every view is also an `evh` command |
-| labels and references | what is right for an item and who said it (a person, a model, a rule), in sets that follow an item by its bytes; a reference is only ever labels promoted on purpose, with a reason |
+| labels and references | what is right for an item and who said it (a person, a model, a rule), in sets that follow an item by its bytes; a reference set is only ever labels promoted on purpose, with a reason |
 | production, evaluated | what your system did, kept as a capture; its decisions scored as an arm against labels; the rows where it was wrong picked for the next version of a dataset you govern ([tutorial 6](../../docs/tutorials/6-datasets-from-production.md)); the deploy sheet says what production must match to run what you promoted |
 
 ---

@@ -20,7 +20,7 @@ Change the pin to `@v0.6.0`. Two formats change, and both are migrated by a scri
   the old file the record's alias. Write a record per entry (`model_id`, `kind`, `aliases`, `weights`,
   `licence`) and delete the file; `validate` (V1, V18) checks them.
 
-**References are labels you promote** (RFC-023, ADR-0022). `reference-create` and `reference-from-outcomes` are
+**Reference sets are labels you promote** (RFC-023, ADR-0022). `reference-create` and `reference-from-outcomes` are
 removed. A run's outputs become a model's labels (`evh label-from-run`: the same refusals, and `--not-redistributed`),
 a sheet or a folder of answers a person's (`evh label-sheet`, `evh label-import`), a capture's outcomes a `rule` set
 (`evh label-from-capture`, the same rule language); `evh reference-promote` makes a reference of a set, at the tier
@@ -313,7 +313,7 @@ runs after upgrading. Re-scoring from stored outputs costs nothing.
 
 | if you… | the bug | fixed in |
 |---|---|---|
-| used `pair_test --family N` and called it Holm | it was **Bonferroni labelled as Holm** (more conservative, so some real separations were reported as ties). `family_test.py` now does the genuine step-down; `pair_test` says what it does | `a57d778b` |
+| used `pair_test --family N` and called it Holm | it was **Bonferroni labelled as Holm** (more conservative, so some real significant differences were reported as not significant). `family_test.py` now does the genuine step-down; `pair_test` says what it does | `a57d778b` |
 | had a run crash or stop mid-sweep | **every paid item before the crash was lost**: outputs reached disk only after the pass. Now each output is written as it arrives | `c6e8365f` |
 | resumed a run (`--resume`) | a fully resumed run **wrote empty scores and reported success**; replayed items lost their cost, tokens and diagnostics (a resumed run under-reported spend: $0.03 for $0.05 real); `--resume` **accepted another arm's outputs** without complaint | `c6e8365f`, `897c0bbc`, `3f16a79b` |
 | ran out of disk, or killed a run | writes were not atomic, so a **half-written output was replayed as the model's answer** and scored | `8e98a885` |
@@ -356,7 +356,7 @@ runs after upgrading. Re-scoring from stored outputs costs nothing.
 | `make family-test DATASET_ID=… A=… AGAINST=…` | one arm against a declared family, genuine Holm, with a result cache |
 | `make leaderboard` | Friedman permutation test and Nemenyi critical difference before it prints an order |
 | `make rank-stability` | how many items a ranking needs, measured by splitting into disjoint halves |
-| `make holdout` | tune on a dev slice, confirm on the held-out rest |
+| `make holdout` | tune on a pilot slice, confirm on the held-out rest |
 | `make bootstrap-test` | intervals for corpus-level metrics (with the caveat that it is anti-conservative) |
 | `make cost-report` | billed cost and projections per arm |
 | `make validate` / `make check` | schema and tree validation that exits non-zero, for CI |

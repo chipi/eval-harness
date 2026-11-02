@@ -128,7 +128,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   - a tier is a large pill in its own colour wherever a reference or a tier is named; a label set is named by its
     source chip (person, model, rule), never in a tier's colours; "scored against" names one or the other, always;
   - a Labels page under Data: every label set, its source, coverage, guideline, and what was promoted from it; a
-    reference's page says which set it was promoted from, by whom, when and why;
+    reference set's page says which label set it was promoted from, by whom, when and why;
   - the dataset page: its label sets, how often two agree, its picks waiting (a selection gives the
     `dataset-extend` command), and for a version made from picks, where each added item came from;
   - a recorded arm (production's decisions) is badged, its capture named (linked from its page), no cost; a promoted arm's page and the
@@ -142,8 +142,8 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR2.2**: It refuses arms on different `dataset_id`s, and, on a metric scored against a
   reference, does not test an arm scored against another reference than the baseline's.
 - **FR2.3**: It tests each arm against the baseline with `evaluation_harness.stats` (exact p up
-  to 30 items, Holm across the family) and gives a verdict in words: `separated: better`,
-  `separated: worse`, `not separated` (on a neutral metric, `separated: higher` or `lower`;
+  to 30 items, Holm across the family) and gives a verdict in words: `significant: better`,
+  `significant: worse`, `not significant` (on a neutral metric, `significant: higher` or `lower`;
   `identical` or `untestable` where no test applies) ([UXS-002](../uxs/UXS-002-inspector.md)).
 - **FR2.4**: It reads only arms the adapter's `arms()` reaches and references `references()`
   lists.

@@ -11,7 +11,7 @@ dataset_id: cnn_dailymail_200
 #            different vendor from gemma_l, and the cheapest judge in the top six besides
 #            gemma_l. Chosen over openai_l (tau 0.5398, $0.635 per 100) and qwen37max
 #            (0.5204, $0.444) because those cost 16x and 12x as much for a tau gap of 0.02
-#            or less. Not tested here: whether that gap is separated (REPORT_SUMMEVAL §3.2).
+#            or less. Not tested here: whether that gap is significant (REPORT_SUMMEVAL §3.2).
 # Both families are also arms in the summarisation eval (gemma_*, qwen_*); the pass
 # flags those arms in the matching judge's column rather than excluding them.
 judges:

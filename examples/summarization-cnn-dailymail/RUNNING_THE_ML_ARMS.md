@@ -177,7 +177,7 @@ Three things are worth looking at before any ranking:
 3. **`bart_l_xsum`'s `summary_words` and `length_vs_reference`.** It is decoded at
    `max_length: 62` because that is what XSum trained it to produce. If it scores badly on
    `coverage`, length is at least as plausible an explanation as training distribution, and
-   the two cannot be separated without a second arm at CNN/DailyMail decode lengths.
+   the two cannot be told apart without a second arm at CNN/DailyMail decode lengths.
 
 ## Optional, and genuinely useful
 

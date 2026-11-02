@@ -212,7 +212,7 @@ importer-check:
 capture:
 	$(PYTHON) scripts/capture.py $(ARGS)
 
-# split a dataset into <id>_dev and <id>_heldout, stable across versions
+# split a dataset into <id>_validation and <id>_test, stable across versions
 dataset-split:
 	$(PYTHON) scripts/dataset_split.py $(ARGS)
 

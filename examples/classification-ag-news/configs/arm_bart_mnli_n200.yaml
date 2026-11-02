@@ -14,7 +14,7 @@
 # THE HYPOTHESIS TEMPLATE IS THIS ARM'S PROMPT. "This news article is about {}." versus
 # "This text is about {}." are different questions and produce different accuracy, so it
 # is fingerprinted exactly as prompt_sha256 is for a hosted arm. It is also the obvious
-# thing to tune — and tuning it on the 20-item dev slice while claiming the result on the
+# thing to tune — and tuning it on the 20-item pilot slice while claiming the result on the
 # held-out 180 is the discipline, not an optional extra.
 #
 # Ships model.safetensors (1.63GB), so it runs on x86_64 macOS.

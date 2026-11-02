@@ -8,7 +8,7 @@ opened_at: '2026-09-28T07:07:54Z'
 closed_at: '2026-10-01T14:21:01Z'
 conclusion:
   text: span_marker (fine-tuned on Few-NERD's training split; 499 MB, CPU, $0) scores 0.7674 against 0.6864
-    for the best of 24 zero-shot hosted LLMs (openai_m) and is separated from all 27 other arms. With
+    for the best of 24 zero-shot hosted LLMs (openai_m) and differs significantly from all 27 other arms. With
     labelled data in a fixed taxonomy, fine-tune a small tagger; if you rent, take the cheapest of the
-    arms openai_m is not separated from, gemma_m. (REPORT_NER, executive summary.)
+    arms openai_m is not significantly different from, gemma_m. (REPORT_NER, executive summary.)
   promoted_run: fn_span_marker_n200_v1_20260928T070856Z

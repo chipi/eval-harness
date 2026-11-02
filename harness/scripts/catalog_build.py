@@ -97,6 +97,9 @@ ICON = {
     + '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>',
 }
 
+#: A home tile's label, where it is not the tile's key (catalog_periods.TILES).
+TILE_LABEL = {"references": "reference sets"}
+
 #: The catalog's menu, by the home tiles' subjects. An entry is (key, page, label), or a group
 #: (key, [entries], label) that opens a short list; on a phone the ☰ menu lists every page.
 NAV = [
@@ -108,7 +111,7 @@ NAV = [
             ("datasets", "datasets.html", "Datasets"),
             ("captures", "captures.html", "Captures"),
             ("labels", "labels.html", "Labels"),
-            ("references", "references.html", "References"),
+            ("references", "references.html", "Reference sets"),
         ],
         "Data",
     ),
@@ -368,7 +371,7 @@ ROW_KEY = (
     '<p class="rowkey small muted"><span class="key t-silver">scored against silver</span>'
     '<span class="key t-judged">scored by a judge</span>'
     '<span class="key t-author">wrote the reference it is scored against</span>'
-    '<span class="key t-labels">scored against a label set, not a reference</span>'
+    '<span class="key t-labels">scored against a label set, not a reference set</span>'
     "<span>unmarked rows are scored against gold</span></p>"
 )
 
@@ -1001,7 +1004,7 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 "runs in period",
                 "runs per day",
                 "spend in period",
-                "references",
+                "reference sets",
                 "goals",
                 "baseline",
                 "last run",
@@ -1186,7 +1189,7 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
         for ans in goal_answers(g, by_ds):
             ds = ans["dataset"]
             if not decides_on(g, ds):
-                continue  # a dev slice or a generalization check: on the goal page, not the glance
+                continue  # a pilot slice or a generalization check: on the goal page, not the glance
             v = by_ds.get(ds) or {}
             bl, base = baseline_read(v, g["goal_id"])
             # The gold group decides; without one, the first group scored against a reference,
@@ -1441,7 +1444,7 @@ def _coverage(A: Adapter, by_ds: dict) -> str:
             "dataset",
             f"{e(A.item_word)}s",
             "arms scored against",
-            "references",
+            "reference sets",
             "metrics",
             "goals",
             "last run",
@@ -1538,8 +1541,8 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     tile_html = (
         '<div class="tiles">'
         + "".join(
-            f'<a class="tile" href="{href}" data-tile="{i}" data-group="{cp.TILES[i][3]}"{" data-period-link" if ".html" in href else ""} title="{e(n)} {e(k)}"><b>{tile_value(n)}</b>'
-            f'<span>{e(k)}</span><small class="trend"></small></a>'
+            f'<a class="tile" href="{href}" data-tile="{i}" data-group="{cp.TILES[i][3]}"{" data-period-link" if ".html" in href else ""} title="{e(n)} {e(TILE_LABEL.get(k, k))}"><b>{tile_value(n)}</b>'
+            f'<span>{e(TILE_LABEL.get(k, k))}</span><small class="trend"></small></a>'
             for i, (k, n, href) in enumerate(home_counts(A, by_ds, w["spend"]))
         )
         + "</div>"
@@ -1561,7 +1564,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         "Every evaluation, at a glance",
         "Pages the harness builds from this project's committed runs: what each goal concludes so far, "
         "when the work happened and what it cost, what each dataset covers, and everything recorded. "
-        "Every name is a link: goals, datasets, arms, models, references and metrics each have a page, and the "
+        "Every name is a link: goals, datasets, arms, models, reference sets and metrics each have a page, and the "
         "inspector tests any arms against a baseline, item by item.",
         (f'<div class="about">{ABOUT}</div>' if ABOUT else "") + switch + tile_html,
     )
@@ -1861,7 +1864,7 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
         body += block(f"{n:02d}", "versions", v["versions"], "versions")
     if refs:
         n += 1
-        body += block(f"{n:02d}", "references", f"<ul>{refs}</ul>")
+        body += block(f"{n:02d}", "reference sets", f"<ul>{refs}</ul>")
     labels_html = render_labels_of(A, ds, v)
     if labels_html:
         n += 1
@@ -1909,7 +1912,7 @@ def _made_line(source: dict, created_at) -> str:
 
 
 def _promoted_as(A: Adapter, set_id: str) -> str:
-    """The reference promoted from a label set, with its pill, or "not promoted"."""
+    """The reference set promoted from a label set, with its pill, or "not promoted"."""
     ds, _, name = set_id.partition("/")
     hit = [
         r
@@ -2616,7 +2619,7 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
 
 
 def _fold(text: str, at: int = 200) -> str:
-    """A suggestion as one line: past `at` characters (45 tied arms named one by one), its opening words up to
+    """A suggestion as one line: past `at` characters (45 arms named one by one), its opening words up to
     the list, with the whole text folded under them."""
     if len(text) <= at:
         return e(text)
@@ -3030,8 +3033,8 @@ def retired_in_of(A: Adapter, g: dict) -> dict:
 def retired_round(retired_in: dict, arm: str) -> str | None:
     """The round that retired this arm: by its arm id, else by its config id. An arm read through its re-score
     (`runs-rescored/<scorer>/<arm>`, RFC-022, the goal's reading of it) is the arm it re-scored: without this, an
-    arm a round retired stayed in the goal's tie whenever it had been re-scored (found 2026-11-01: 25 of the
-    triage goal's 76 tied arms were round 3's retirements)."""
+    arm a round retired stayed among the goal's contenders whenever it had been re-scored (found 2026-11-01: 25 of
+    the triage goal's 76 contenders were round 3's retirements)."""
     if arm.startswith("runs-rescored/") and arm.count("/") >= 3:
         arm = arm.split("/", 2)[2]
     return retired_in.get(arm) or retired_in.get(arm.rsplit("/", 1)[-1])
@@ -3072,7 +3075,7 @@ def group_decision(
     gold: str | None = None,
 ) -> dict:
     """The goal's decision over one group of arms on one dataset (axes.decide): its axes, limits,
-    the quality leader, the tie and the tie-break. A judge's group decides on the judge's score;
+    the quality leader, the contenders and the tie-break. A judge's group decides on the judge's score;
     an arm a round retired is shown, never recommended. `gold`: this group is scored against
     silver and that gold reference's group is on the same dataset, so gold decides and this group
     only shows its leader; so does a group measured by unvalidated judges."""
@@ -3100,13 +3103,13 @@ def group_decision(
         goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines, baseline=baseline
     ) | {"goal": goal}
     if not decides_on(g, ds):
-        # The goal never decides here (a dev slice, a generalization check): the leader stands, the
+        # The goal never decides here (a pilot slice, a generalization check): the leader stands, the
         # recommendation does not.
         role = next((d.get("role") for d in g.get("datasets") or [] if d.get("dataset_id") == ds), "") or ""
         dec["recommended"] = None
         dec["shown_only"] = True
         dec["why"] = [
-            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still tied"))],
+            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still undecided"))],
             f"The goal does not decide on {ds}"
             + (f" ({role})" if role else "")
             + ": shown, not recommended.",
@@ -3115,7 +3118,7 @@ def group_decision(
         dec["recommended"] = None
         dec["shown_only"] = True
         dec["why"] = [
-            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still tied"))],
+            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still undecided"))],
             (
                 f"Scored against silver, beside {gold}: gold decides on {ds}; this group is shown, not "
                 "recommended. Silver is not what the goal decides on: a model's opinion (its author's "
@@ -3126,7 +3129,7 @@ def group_decision(
         dec["recommended"] = None
         dec["shown_only"] = True
         dec["why"] = [
-            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still tied"))],
+            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still undecided"))],
             (
                 f"{gm}: judges never compared with people for this use, a trial rather than a "
                 "measurement; this group is shown, not recommended."
@@ -3150,7 +3153,7 @@ def decides_on(g: dict, ds: str) -> bool:
 
 def baseline_gap(A: Adapter, dec: dict, rows: list, gm: str) -> str:
     """When the rule recommends another arm than the promoted baseline in this group: by how much
-    the recommended arm differs on quality, and whether the paired test separates them. Both can
+    the recommended arm differs on quality, and whether the paired test finds the difference significant. Both can
     be right: the rule follows the strategy, the baseline is a person's decision."""
     from evaluation_harness import stats  # noqa: PLC0415
 
@@ -3216,7 +3219,7 @@ def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "") -> s
     return (
         f'<div class="decision"><p class="lead">{head}</p><ul class="small">{why}</ul>'
         f'<p class="small muted">Strategy <b>{e(strategy_of(dec["goal"]))}</b> '
-        f"({e(STRATEGIES[strategy_of(dec['goal'])])}). Weighs {e(weighs)}. Among arms tied on quality, "
+        f"({e(STRATEGIES[strategy_of(dec['goal'])])}). Weighs {e(weighs)}. Among the contenders on quality, "
         f"the tie-break is {e(', '.join(tie_break_of(dec['goal'])))}. The rule recommends; promoting "
         "is <code>evh run-promote</code>; the goal chooses its strategy (<code>strategy:</code>).</p></div>"
     )
@@ -3403,7 +3406,7 @@ TIER_WORDS = {
 
 
 def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
-    """One page per reference: what it is, who wrote it, and every arm scored against it."""
+    """One page per reference set: what it is, who wrote it, and every arm scored against it."""
     for ds, v in by_ds.items():
         tiers = {r["id"]: r["tier"] for r in v["refs"]}
         for r in v["refs"]:
@@ -3957,7 +3960,7 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
     write_period_rows(out, "references", period_rows)
     body = hero(
         "references",
-        "References",
+        "Reference sets",
         "What arms are scored against: labels promoted on purpose, at the tier chosen then. Gold is the "
         "yardstick a decision rests on; silver is consistent, good for ranking arms against each other, not a "
         "claim that any arm is right.",
@@ -3965,12 +3968,12 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
     )
     body += block(
         "01",
-        "references",
-        cp.row_chips("references", "references")
+        "reference sets",
+        cp.row_chips("references", "reference sets")
         + table(
             "references",
             [
-                "reference",
+                "reference set",
                 "tier",
                 "dataset",
                 f"{e(A.item_word)}s",
@@ -3981,11 +3984,11 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
                 "runs in period",
             ],
             rows,
-            "filter references",
+            "filter reference sets",
             period=True,
         )
         if rows
-        else '<p class="muted">No references yet: a reference is a label set promoted on purpose, '
+        else '<p class="muted">No reference sets yet: a reference set is a label set promoted on purpose, '
         '<code>evh reference-promote --dataset-id D --labels SET --tier gold|silver --reason "…" --by WHO</code>; '
         'the label sets are on the <a class="cell-link" href="labels.html">labels page</a>.</p>',
     )
@@ -3993,7 +3996,7 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
         out,
         "references.html",
         page(
-            "References",
+            "Reference sets",
             body,
             0,
             "references",

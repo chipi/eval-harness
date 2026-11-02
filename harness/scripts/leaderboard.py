@@ -56,7 +56,7 @@ from evaluation_harness._runs import matrix as matrix_of
 # What is NOT used: any walk down the table comparing each arm to a running "leader".
 # That is a sorting algorithm, not a comparison -- its answer depends on whether you
 # walk top-down or bottom-up, and on this data those two directions disagree about
-# whether the top arm is separated from the field at all.
+# whether the top arm differs significantly from the field at all.
 
 #: Two per-item values closer than this count as tied.
 #:
@@ -275,7 +275,7 @@ def significance(
     #
     # This used to print a 95% rank interval per arm. Those are MARGINAL: each is correct
     # on its own, but jointly they cover only ~57% of resamples, and two non-overlapping
-    # intervals read as "this pair is separated" when that is exactly the claim they
+    # intervals read as "this pair differs significantly" when that is exactly the claim they
     # cannot make -- the critical-difference line above is the only thing that can. A
     # simultaneous band would be honest but useless here: its half-width is 14-17 rank
     # positions out of 24.

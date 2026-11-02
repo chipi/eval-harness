@@ -17,14 +17,14 @@ run      reruns the chosen arms into harness/data/runs-repro/<eval>/ -- gitignor
          never beside the committed runs, which stay the record. A hosted arm's spend is
          capped at twice what it was billed when measured (EVAL_MAX_COST_USD per run).
 compare  a replication card: each rerun arm against its committed run on the same items,
-         and every committed separation and tie re-tested with your reruns substituted
+         and every committed verdict (significant or not) re-tested with your reruns substituted
          in. Written to harness/data/runs-repro/<eval>/REPLICATION.md.
 
 What counts as reproduced is different for the two kinds of arm, and the card says which
 applies. A local model with pinned weights should give the same answers, so its card
 reports exact item agreement. A hosted model is not deterministic even at temperature 0,
 and can be updated or retired upstream, so its digits are not expected to match: what
-must hold is the VERDICT -- which arms are separated from which. The committed
+must hold is the VERDICT -- which arms differ significantly from which. The committed
 predictions remain the record either way.
 """
 
@@ -364,7 +364,7 @@ def _paired_p(a: list, b: list, perms: int = 10000, seed: int = 20261014) -> flo
 
 
 def _family(exp: dict, runs_dir: Path, arm: str | None = None) -> tuple[list, list]:
-    """(not separated, separated) opponents of `arm` (the leader by default), Holm-corrected."""
+    """(not significant, significant) opponents of `arm` (the leader by default), Holm-corrected."""
     a_cid = f"{exp['prefix']}{arm or exp['leader']}{exp['suffix']}"
     r = subprocess.run(
         [
@@ -387,13 +387,13 @@ def _family(exp: dict, runs_dir: Path, arm: str | None = None) -> tuple[list, li
     )
     if r.returncode != 0:
         raise SystemExit(f"family test failed:\n{r.stderr[-800:]}")
-    tied, sep = [], []
+    level, sep = [], []
     for ln in r.stdout.splitlines():
         parts = ln.split()
         if parts and parts[0].endswith(exp["suffix"]) and parts[0] != a_cid:
             arm = parts[0][len(exp["prefix"]) : -len(exp["suffix"])]
-            (tied if ln.strip().endswith("--") else sep).append(arm)
-    return tied, sep
+            (level if ln.strip().endswith("--") else sep).append(arm)
+    return level, sep
 
 
 def compare(exp: dict) -> int:
@@ -450,15 +450,15 @@ def compare(exp: dict) -> int:
         )
 
     # VERDICTS. Substitute every rerun for its committed run and re-test the leader against
-    # the same family: the committed findings are statements about separations, so that is
+    # the same family: the committed findings are statements about significant differences, so that is
     # what a replication has to check.
     with tempfile.TemporaryDirectory() as tmp:
         merged = Path(tmp)
         for a, v in arms.items():
             src = reruns.get(a, v["dir"])
             (merged / src.name).symlink_to(src.resolve(), target_is_directory=True)
-        tied_c, sep_c = _family(exp, DATA / exp["base"])
-        tied_m, sep_m = _family(exp, merged)
+        level_c, sep_c = _family(exp, DATA / exp["base"])
+        level_m, sep_m = _family(exp, merged)
         new = sorted(a for a in reruns if a not in arms)
         placed = {}
         if new:
@@ -470,38 +470,38 @@ def compare(exp: dict) -> int:
                         (field / v["dir"].name).symlink_to(v["dir"].resolve(), target_is_directory=True)
                     (field / reruns[a].name).symlink_to(reruns[a].resolve(), target_is_directory=True)
                     placed[a] = _family(exp, field, a)
-    moved = sorted(set(tied_c) ^ set(tied_m))
+    moved = sorted(set(level_c) ^ set(level_m))
     lines += [
         "",
         f"## Verdicts: `{exp['leader']}` against the field, Holm-corrected",
         "",
         f"With {len(reruns)} rerun arm(s) substituted for their committed runs:",
         "",
-        f"- not separated from the leader — committed: {len(tied_c)}, with reruns: {len(tied_m)}",
-        f"- separated — committed: {len(sep_c)}, with reruns: {len(sep_m)}",
+        f"- not significantly different from the leader — committed: {len(level_c)}, with reruns: {len(level_m)}",
+        f"- significantly different — committed: {len(sep_c)}, with reruns: {len(sep_m)}",
     ]
     if moved:
         for a in moved:
-            was = "tied" if a in tied_c else "separated"
-            now = "tied" if a in tied_m else "separated"
+            was = "not significant" if a in level_c else "significant"
+            now = "not significant" if a in level_m else "significant"
             lines.append(f"- **`{a}` moved: {was} → {now}**")
     else:
-        lines.append("- **every committed separation and tie holds**")
+        lines.append("- **every committed verdict holds, significant or not**")
     if placed:
         lines += [
             "",
             "## Your arms, against the committed field",
             "",
-            "| arm | score | rank | not separated from | separated from | vs the leader |",
+            "| arm | score | rank | not significantly different from | significantly different from | vs the leader |",
             "|---|---:|---:|---|---:|---|",
         ]
-        for a, (tied, sep) in placed.items():
+        for a, (level, sep) in placed.items():
             score = st.fmean(_items(reruns[a], exp["metric"]).values())
             rank = 1 + sum(v["score"] > score for v in arms.values())
-            vs = "not separated" if exp["leader"] in tied else "separated"
+            vs = "not significant" if exp["leader"] in level else "significant"
             lines.append(
                 f"| `{a}` | {score:.4f} | {rank} of {len(arms) + 1} | "
-                f"{', '.join(f'`{t}`' for t in sorted(tied)) or '—'} | {len(sep)} | {vs} |"
+                f"{', '.join(f'`{t}`' for t in sorted(level)) or '—'} | {len(sep)} | {vs} |"
             )
     lines += [
         "",

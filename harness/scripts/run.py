@@ -730,9 +730,9 @@ def main() -> int:
     elif ref_tier:
         print(f"  scoring against {ref_tier.upper()} references for {cfg['dataset_id']}")
     else:
-        print(f"  no references for {cfg['dataset_id']} — quality cannot be scored.")
+        print(f"  no reference set for {cfg['dataset_id']} — quality cannot be scored.")
         print(
-            "  a reference is labels you promote (RFC-023): a run of the arm you trust most as a model's labels,"
+            "  a reference set is labels you promote (RFC-023): a run of the arm you trust most as a model's labels,"
         )
         print("    evh label-from-run --run <run_id> --set <name>")
         print(

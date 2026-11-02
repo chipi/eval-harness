@@ -45,11 +45,11 @@ COMMANDS = {
     ),
     "reference-promote": (
         "reference_promote.py",
-        "promote a label set's labels to a reference, at a tier, with a reason",
+        "promote a label set's labels to a reference set, at a tier, with a reason",
     ),
     "reference-manifest": (
         "reference_manifest.py",
-        "the checksummed manifest of a reference a fetch script built",
+        "the checksummed manifest of a reference set a fetch script built",
     ),
     "run": ("run.py", "run one arm over a dataset (--dry-run to cost it)"),
     "arm-smoke": (
@@ -79,13 +79,13 @@ COMMANDS = {
         "judge_score.py",
         "re-measure frozen outputs with a validated LLM judge (--dry-run first)",
     ),
-    "silver-calibrate": ("silver_calibrate.py", "how far silver references drift from gold"),
+    "silver-calibrate": ("silver_calibrate.py", "how far silver reference sets drift from gold"),
     "cost-report": ("cost_report.py", "billed cost per arm, with projections"),
     "leaderboard": ("leaderboard.py", "rank arms, with Friedman/Nemenyi before any order"),
     "pair-test": ("pair_test.py", "paired permutation test, two arms"),
     "family-test": ("family_test.py", "one arm against a declared family, Holm-corrected"),
     "bootstrap-test": ("bootstrap_test.py", "bootstrap intervals for corpus-level metrics"),
-    "holdout": ("holdout_significance.py", "tune on a dev slice, confirm on the rest"),
+    "holdout": ("holdout_significance.py", "tune on a pilot slice, confirm on the rest"),
     "rank-stability": ("rank_stability.py", "how many items a ranking needs"),
     "import-run": ("import_run.py", "per-item scores from another tool, as a run the tests can read"),
     "importer-check": (
@@ -95,7 +95,7 @@ COMMANDS = {
     "capture": ("capture.py", "keep a production system's records as a capture (data/captures/)"),
     "dataset-split": (
         "dataset_split.py",
-        "split a dataset into <id>_dev and <id>_heldout, stable across versions",
+        "split a dataset into <id>_validation and <id>_test, stable across versions",
     ),
     "capture-scrub": (
         "capture_scrub.py",
@@ -153,20 +153,23 @@ COMMANDS = {
         "view_overview.py",
         "the catalog's home page: goals at a glance, activity, spend, coverage, what was recorded",
     ),
-    "datasets": ("view_datasets.py", "every dataset, or one: its versions, references and arms"),
+    "datasets": ("view_datasets.py", "every dataset, or one: its versions, reference sets and arms"),
     "arms": ("view_arms.py", "every arm, or one: its metrics, runs, config, conditions and rounds"),
     "models": (
         "view_models.py",
         "every model record, or one: its deployments, onboarding, settings history and arms",
     ),
-    "references": ("view_references.py", "every reference, or one: who wrote it, what is scored against it"),
+    "references": (
+        "view_references.py",
+        "every reference set, or one: who wrote it, what is scored against it",
+    ),
     "metrics": ("view_metrics.py", "what each metric measures, or one in full with the arms recording it"),
     "goals": ("view_goals.py", "every goal, or one: its arms on each of its datasets"),
     "activity": (
         "view_activity.py",
         "the activity page: runs, spend and tokens by dataset, arm and kind, in a period",
     ),
-    "search": ("view_search.py", "the catalog's search: datasets, arms, references, metrics, goals"),
+    "search": ("view_search.py", "the catalog's search: datasets, arms, reference sets, metrics, goals"),
     "inspect": (
         "view_inspect.py",
         "the inspector in the terminal: verdicts, conditions, a breakdown, one item, the per-item table, the charts",

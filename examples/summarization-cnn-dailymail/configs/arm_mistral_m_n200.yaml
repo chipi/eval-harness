@@ -9,7 +9,7 @@
 #
 # WHY IT IS WORTH THE CALLS: the Nemenyi critical difference is q(k)*sqrt(k(k+1)/6N). At
 # k=24, N=20 that is 8.13 rank positions against an observed span of 8.57 — the threshold
-# was wider than the whole table, which is why exactly 1 of 276 pairs separated. At
+# was wider than the whole table, which is why exactly 1 of 276 pairs differed significantly. At
 # k=24, N=200 it is 2.57. Same test, same arms, a third of the threshold.
 #
 # r=1, not r=3: with articles available, repeats are the wrong place to spend the same

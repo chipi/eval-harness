@@ -5,7 +5,7 @@
 
 In a throwaway project built from the tutorial ($0, offline, the echo provider): a round of a goal
 is opened carrying two arms in, a third runs naming it; `evh rounds` suggests retiring the arm the
-test separates as worse, with the command; the retirement and the close (promoting the leader) are
+test finds significantly worse, with the command; the retirement and the close (promoting the leader) are
 recorded; a closed round refuses new runs; the next round continues it; validate checks the
 records; the leaderboard scopes to a round; the goal page shows the rounds. Rounds are optional:
 a project without them is unchanged (every other test).
@@ -114,11 +114,11 @@ try:
     )
 
     r = evh("rounds", "--goal", "tickets_summary")
-    # On gold over six tickets lead2 leads and no arm separates: the evidence says tie, more items.
+    # On gold over six tickets lead2 leads and no arm differs significantly: more items, the evidence says.
     check(
         "rounds: the evidence and its suggestions, each as the command that does it",
         "leader tickets_lead2_v1" in r.stdout
-        and "tie with the leader" in r.stdout
+        and "not significantly different from the leader" in r.stdout
         and "evh rank-stability --dataset-id tickets_v1" in r.stdout
         and "evh round-close --goal tickets_summary --round r1" in r.stdout,
         r.stdout[-900:],
@@ -363,7 +363,7 @@ finally:
     shutil.rmtree(proj, ignore_errors=True)
 
 # Promote only a leader the evidence puts ahead (the 2026-10-25 newcomer run: r2 suggested
-# promoting an arm not separated from the baseline, and r1's best was ahead of it).
+# promoting an arm not significantly different from the baseline, and r1's best was ahead of it).
 from evaluation_harness.rounds import _promote_hold  # noqa: E402
 
 
@@ -373,20 +373,20 @@ def row(label, verdict, delta=0.01, p=0.5):
 
 BASE, PREV = "the baseline it started from", "r1's best"
 check(
-    "promote: a leader separated better than the baseline, not behind r1's best, is promoted",
-    _promote_hold([row(BASE, "separated: better", p=0.01), row(PREV, "not separated")], "r1") == "",
+    "promote: a leader significantly better than the baseline, not behind r1's best, is promoted",
+    _promote_hold([row(BASE, "significant: better", p=0.01), row(PREV, "not significant")], "r1") == "",
 )
 check(
-    "promote: a leader not separated from the baseline is not, and the reason says so with its p",
-    _promote_hold([row(BASE, "not separated", 0.001, 0.9661)], "r1").startswith(
-        "not ahead of the baseline it started from (not separated, Δ +0.0010, p 0.9661"
+    "promote: a leader not significantly different from the baseline is not, and the reason says so with its p",
+    _promote_hold([row(BASE, "not significant", 0.001, 0.9661)], "r1").startswith(
+        "not ahead of the baseline it started from (not significant, Δ +0.0010, p 0.9661"
     ),
 )
 check(
-    "promote: a leader separated worse than the previous round's best is not",
+    "promote: a leader significantly worse than the previous round's best is not",
     _promote_hold(
-        [row(BASE, "separated: better", p=0.01), row(PREV, "separated: worse", -0.06, 0.03)], "r1"
-    ).startswith("behind r1's best (separated: worse"),
+        [row(BASE, "significant: better", p=0.01), row(PREV, "significant: worse", -0.06, 0.03)], "r1"
+    ).startswith("behind r1's best (significant: worse"),
 )
 check(
     "promote: a round with no baseline and no previous round promotes its leader",

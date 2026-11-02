@@ -8,7 +8,7 @@ WHY
   you do not have until you have run the eval -- and if you take that effect size
   from a small pilot you inherit the pilot's error. This repo did exactly that: journal
   entry 40 predicted deepseek_m vs deepseek_s would need n~2472 from a delta measured on
-  20 articles; it separated at 200, because the real delta was 4x the pilot's.
+  20 articles; it was significant at 200, because the real delta was 4x the pilot's.
 
   This asks the question the other way round, from data already on disk. Draw TWO DISJOINT
   subsets of n items, rank the arms independently in each, and correlate the two rankings.

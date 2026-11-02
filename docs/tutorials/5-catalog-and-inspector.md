@@ -68,7 +68,7 @@ runs when it starts, so after a new run, stop it and start it again.
 | a dataset page: its versions, references and every arm with its headline number | `evh datasets --dataset-id tickets_v1` |
 | a dataset page's "what's inside": its items, their lengths and gold, each item's link | `evh dataset-items --dataset-id tickets_v1` (after `evh dataset-profile --dataset-id tickets_v1`) |
 | an arm page: its metrics, runs, config, conditions, rounds | `evh arms --arm tickets_lead1_v1` |
-| a reference page: its tier, the label set it was promoted from, by whom and why, every arm scored against it | `evh references --reference-id silver/tickets_v1` |
+| a reference set's page: its tier, the label set it was promoted from, by whom and why, every arm scored against it | `evh references --reference-id silver/tickets_v1` |
 | the labels page, and a dataset page's labels: every label set with its source (person, model, rule), its coverage, what it was promoted to, how often two agree | `evh labels`, `evh labels --dataset-id tickets_v1` |
 | the captures page: what was read from production, when, and the datasets and recorded arm made from it ([tutorial 6](6-datasets-from-production.md)) | `evh captures` |
 | a dataset page's "Explore its rows": one row per item, what each arm decided, its labels, and the signals (wrong, disagree, split, new, unlabelled) | `evh inspect --dataset-id tickets_v1 --rows` |
@@ -92,7 +92,7 @@ which writes) is an MCP tool: `evh mcp`
 serves them, and the agent gets
 the same numbers you do: the command's own output, its JSON where it has one. In Claude Code, in
 this project, `claude mcp add evh -- evh mcp`; then ask it, say, *"which tickets summariser does
-the goal recommend, and is it separated from the baseline?"*, and it calls `goals` and `inspect`.
+the goal recommend, and is it significantly better than the baseline?"*, and it calls `goals` and `inspect`.
 No tool writes your project, spends or runs a model (the one file a call keeps is a cache of the
 goals' tests, in the ignored `.cache/`). Other clients, and a shared server for a team:
 [INTEGRATION](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp).
@@ -108,7 +108,7 @@ evh goals --goal tickets_summary
 
 the answer so far:
   ...
-tickets_v1 · dev
+tickets_v1 · validation
 
   scored against silver/tickets_v1
   ...
@@ -133,8 +133,8 @@ Each group also says what the goal recommends, and why. Beside quality, every go
 (dollars and tokens per item) and speed (latency p50 and p95): a column each, and a chart of
 quality against each. The rule ([ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md)): an
 arm past a limit is out; a flagged or retired arm is never recommended; the goal's strategy
-says who is tied with the quality leader (by default `balanced`: not separated by the paired
-test and within 2% of it); among the tied, the cheaper wins, then the faster. The reasons
+says who the contenders are beside the quality leader (by default `balanced`: not significantly
+different by the paired test and within 2% of it); among the contenders, the cheaper wins, then the faster. The reasons
 list each step, so the page says why it recommends what it does. A goal changes the rule in its
 `success_criteria`:
 
@@ -143,7 +143,7 @@ success_criteria:
   primary: {measure: overlap_f1, direction: higher}
   axes:
     speed: {limit: 500}                 # ms, on the p95: a slower arm is out
-    quality: {margin: 0.05}             # tied if within 0.05 and not separated
+    quality: {margin: 0.05}             # a contender if within 0.05 and not significantly different
   strategy: balanced                    # or quality_first, or frugal
   tie_break: [cost, speed]
   guardrails:
@@ -177,7 +177,7 @@ evh inspect --runs tickets_lead1_v1,tickets_lead2_v1
 ```text
 overlap_f1 (higher is better) · baseline tickets_lead1_v1 ×3: mean 0.641 · Holm across 1
   ...
-  tickets_lead2_v1 ×3  separated: better  6  0.900  0.259  +0.140 to +0.423  6–0          0.0312  0.0500
+  tickets_lead2_v1 ×3  significant: better  6  0.900  0.259  +0.140 to +0.423  6–0          0.0312  0.0500
 
 Same conditions: all ... recorded fields match (machine, libraries, harness, scorer, items, reference bytes).
 ```
@@ -207,8 +207,8 @@ NOTE: Broken down by deadline: 2 tests, Holm-corrected together, so a group is h
   ...
 by deadline (Holm across 2):
   deadline  run vs baseline      verdict        n  Δ      p
-  true      tickets_lead2_v1 ×3  not separated  2  0.285  0.5000
-  false     tickets_lead2_v1 ×3  not separated  4  0.246  0.1250
+  true      tickets_lead2_v1 ×3  not significant  2  0.285  0.5000
+  false     tickets_lead2_v1 ×3  not significant  4  0.246  0.1250
 ```
 
 Two tickets name a deadline and four do not, and on two tickets no test can reach 0.05: a

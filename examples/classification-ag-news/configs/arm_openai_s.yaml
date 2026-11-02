@@ -9,7 +9,7 @@
 # thinking tokens INSIDE the output budget, so a tight cap does not buy terseness, it buys
 # a truncated answer that scores like a bad model. `truncated` is recorded per item.
 #
-# n=20 is the DEV slice. Prompt and parser may be tuned against it; the claim is made on
+# n=20 is the PILOT slice. Prompt and parser may be tuned against it; the claim is made on
 # the 180 items of ag_news_200 that it does not contain — `make holdout DATASET_ID=
 # ag_news_200 EXCLUDE=ag_news_20`. Tuning on the set you then report is the winner's curse,
 # and the summarisation study watched a 0.0737 lead become 0.00008 that way.

@@ -166,8 +166,8 @@ against:
 evh run --config data/configs/tickets_author.yaml
 ```
 ```text
-  no references for tickets_v1 — quality cannot be scored.
-  a reference is labels you promote (RFC-023): a run of the arm you trust most as a model's labels,
+  no reference set for tickets_v1 — quality cannot be scored.
+  a reference set is labels you promote (RFC-023): a run of the arm you trust most as a model's labels,
     evh label-from-run --run <run_id> --set <name>
   ...
 wrote 1 run(s) to .../my-evals/data/runs
@@ -280,11 +280,11 @@ evh pair-test --dataset-id tickets_v1 --a tickets_lead2_v1 --b tickets_lead1_v1
 ```text
     items A wins       6/6
     sign-flip p        0.0312  (exact, all 2^6 sign patterns)
-    verdict            SEPARATED at 0.05
+    verdict            SIGNIFICANT at 0.05
     (uncorrected: valid only if this pair was named before the table was read)
 ```
 
-**A winner claim.** "lead2 is the best" means *separated from every other arm*, with the
+**A winner claim.** "lead2 is the best" means *significantly better than every other arm*, with the
 correction for testing several at once. If you picked the pair *after* looking at the
 leaderboard, the `pair-test` p-value above is wrong; `family-test` corrects for every
 comparison you could have made:
@@ -302,10 +302,10 @@ evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_
     tickets_lead1_v1           +0.2592    6/6      0.0312   0.0250   --
     tickets_lead2_noisy_v1     +0.1011    6/6      0.0312   0.0500   --
 
-    separated from 0 of 2 opponents; ahead on the point estimate against 2 of 2
+    significantly different from 0 of 2 opponents; ahead on the point estimate against 2 of 2
 ```
 
-Ahead of both on every ticket (`A wins`: the items `lead2` wins), and separated from neither: on
+Ahead of both on every ticket (`A wins`: the items `lead2` wins), and significantly different from neither: on
 six items the smallest p a paired test can reach is 0.0312, and with two comparisons the first
 must beat 0.025. Up to 30 items the p is exact, and every command prints the same one; above
 that it is a seeded estimate, and the line under the header says which
@@ -320,7 +320,7 @@ reason. The reason has to say what the tests showed, not what you hoped:
 
 ```bash
 evh run-promote --run <the tickets_lead2_v1 run_id> \
-  --reason "lead2 is closest to the author's silver on all six tickets but separates from neither arm at n=6; working baseline until the dataset grows"
+  --reason "lead2 is closest to the author's silver on all six tickets but differs significantly from neither arm at n=6; working baseline until the dataset grows"
 evh runs-list --baselines
 ```
 ```text
@@ -333,7 +333,7 @@ tickets_v1_baseline
     dataset  tickets_v1
     ...
     scored   silver references, adapter scripts/adapter.py
-    why      lead2 is closest to the author's silver on all six tickets but separates from neither arm at n=6; working baseline until the dataset grows
+    why      lead2 is closest to the author's silver on all six tickets but differs significantly from neither arm at n=6; working baseline until the dataset grows
 ```
 
 `lead2` ran three times; any of its repeats can be promoted, and the baseline records every
@@ -371,7 +371,7 @@ Each tutorial starts from where this page ends, or from a project of your own:
 | [**3 · A frontier model's run as the reference, gold, and judging**](tutorials/3-frontier-reference-and-judging.md) | how good the silver was, measured against answers a person wrote, and re-measuring the stored outputs with LLM judges |
 | [**4 · Eval rounds and dataset versions**](tutorials/4-rounds-and-versions.md) | round on round: keep what wins, drop what lost, record why; a new version of a dataset that remembers where it came from |
 | [**5 · The catalog and the inspector**](tutorials/5-catalog-and-inspector.md) | pages over your runs, an inspector that tests arms item by item, and the `evh` command behind every view |
-| [**6 · Datasets from production**](tutorials/6-datasets-from-production.md) | what your system did in production, kept as a capture: a dataset from it, labels from what happened afterwards, dev and heldout; then production's own decisions scored against those labels, the rows where it was wrong picked, and the next version of a dataset you govern made from them |
+| [**6 · Datasets from production**](tutorials/6-datasets-from-production.md) | what your system did in production, kept as a capture: a dataset from it, labels from what happened afterwards, validation and test; then production's own decisions scored against those labels, the rows where it was wrong picked, and the next version of a dataset you govern made from them |
 | [**7 · Set up a model before you test it**](tutorials/7-set-up-a-model.md) | a model record, onboarding it where it runs (its build, whether it reasons, JSON, determinism), an arm that names it, a smoke before the full run; on your own machine with Ollama |
 
 And the references, for when you know what you are looking for:

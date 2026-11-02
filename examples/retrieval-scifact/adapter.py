@@ -340,7 +340,7 @@ def _rerank(query: str, params: Dict[str, Any]) -> Result:
         "ranking": ranked,
         # THE LLM'S RAW REPLY, kept because `res.output` is overwritten below with the
         # PIPELINE's ranking. Without it a reranking arm cannot be diagnosed at all:
-        # qwen_s scored exactly BM25's nDCG on the dev slice and the stored outputs could
+        # qwen_s scored exactly BM25's nDCG on the pilot slice and the stored outputs could
         # not say whether it had reasoned itself out of tokens, over-generated, or
         # refused -- the only recoverable fact was `finish_reason: length`. Truncated,
         # because the point is to see the shape of the failure, not to archive prose.

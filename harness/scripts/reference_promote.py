@@ -40,16 +40,16 @@ CAVEAT = {
 
 
 def main() -> int:
-    """Promote a label set's labels to a reference."""
+    """Promote a label set's labels to a reference set."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dataset-id", required=True, help="the dataset the reference is for")
+    ap.add_argument("--dataset-id", required=True, help="the dataset the reference set is for")
     ap.add_argument("--labels", required=True, help="SET (made on this dataset) or DATASET/SET")
     ap.add_argument("--tier", required=True, choices=("gold", "silver"))
     ap.add_argument("--reason", required=True, help="why these labels are the yardstick (a sentence)")
     ap.add_argument(
         "--items", action="append", default=[], help="only this item (repeatable; default all labelled)"
     )
-    ap.add_argument("--name", help="the reference's name under its tier (default: the dataset's id)")
+    ap.add_argument("--name", help="the reference set's name under its tier (default: the dataset's id)")
     ap.add_argument("--by", required=True, help="who promotes (recorded in the manifest)")
     args = ap.parse_args()
 
@@ -66,7 +66,7 @@ def main() -> int:
     kept_out = (ref_dir / "manifest.json").is_file() and not any(ref_dir.glob("*.txt"))
     hand_made = ref_dir.is_dir() and not (ref_dir / "manifest.json").exists() and any(ref_dir.glob("*.txt"))
     if ref_dir.exists() and any(ref_dir.iterdir()) and not kept_out and not hand_made:
-        die(f"{ref_dir} exists: a reference is never overwritten. Name another with --name.")
+        die(f"{ref_dir} exists: a reference set is never overwritten. Name another with --name.")
     ds = load_dataset(args.dataset_id)
     ids = [it["item_id"] for it in ds.get("items") or []]
     mine = {
@@ -142,7 +142,7 @@ def main() -> int:
     )
     if not_here:
         (ref_dir / ".gitignore").write_text(
-            "# the reference's texts are not redistributed (see manifest.json)\n*.txt\n"
+            "# the reference set's texts are not redistributed (see manifest.json)\n*.txt\n"
         )
     print(
         f"{ref_dir}: {len(chosen)} of {len(ids)} item(s), {args.tier}, promoted from {set_ds}/{set_name} "
@@ -172,7 +172,7 @@ def _rebuild(ref_dir, mine: dict, set_ds: str, set_name: str) -> int:
     pf = m.get("promoted_from") or {}
     if (pf.get("labels"), pf.get("dataset_id")) != (set_name, set_ds):
         die(
-            f"{ref_dir} exists, promoted from {pf.get('dataset_id')}/{pf.get('labels')}: a reference is never overwritten"
+            f"{ref_dir} exists, promoted from {pf.get('dataset_id')}/{pf.get('labels')}: a reference set is never overwritten"
         )
     want = m.get("items_sha256") or {}
     texts = {iid: mine[iid]["text"] + "\n" for iid in want if iid in mine}

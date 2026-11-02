@@ -148,7 +148,7 @@ def drive(cat: Path, base: str) -> None:
         for facet, value, attr in (
             ("weights", "open", "weights"),
             ("weights", "proprietary", "weights"),
-            ("quality", "ties the leader", "quality"),
+            ("quality", "a contender", "quality"),
         ):
             chip = page.locator(f'.facet-chips[data-for="arms"] [data-facet="{facet}"][data-value="{value}"]')
             chip.click()

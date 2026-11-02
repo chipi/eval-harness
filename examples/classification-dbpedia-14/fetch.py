@@ -10,12 +10,12 @@ WHY THE DRAW IS SEEDED-RANDOM AND NOT FIRST-K
   The AG News example took the FIRST k items of each class. That guarantees the small
   slice is a subset of the large one -- which is what `holdout_significance
   --exclude-dataset` needs -- and it does NOT make the small slice representative. It bit
-  us immediately: the `keyword` arm scored 0.35 on the 20-item dev slice and 0.67 on the
-  200-item measurement slice, a ~3 SD gap, because the first few items of each class are
+  us immediately: the `keyword` arm scored 0.35 on the 20-item pilot slice and 0.67 on the
+  200-item test slice, a ~3 SD gap, because the first few items of each class are
   not typical of the class.
 
   So here: shuffle each class's block with a FIXED seed, take the first `per_class` of the
-  permutation for the measurement slice, and take the dev slice from the head of that SAME
+  permutation for the test slice, and take the pilot slice from the head of that SAME
   permutation. Nesting holds by construction, both slices are random samples, and the same
   --n and --seed reproduce the same items on any machine.
 
@@ -37,7 +37,7 @@ WHY THIS DATASET
   worth reading, both of which AG News barely exercised.
 
   Expect a CEILING. Published accuracy on DBpedia-14 is ~0.98-0.99 for fine-tuned
-  transformer classifiers. If the arms bunch at the top and nothing separates, that is the
+  transformer classifiers. If the arms bunch at the top and nothing differs significantly, that is the
   finding, not a failure -- and it is the opposite regime from AG News, where the spread
   was 0.84 to 0.945.
 

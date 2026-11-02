@@ -478,7 +478,7 @@ def load_dataset(dataset_id: str) -> dict[str, Any]:
 def dataset_item_ids(dataset_id: str) -> set:
     """The item ids a dataset freezes, read from its dataset file.
 
-    Commands that exclude a dev slice (`--exclude-dataset`) used to glob
+    Commands that exclude a pilot slice (`--exclude-dataset`) used to glob
     `data/sources/<id>/*.txt` instead: empty for an item that is not a .txt file, for a
     dataset built from a manifest, and for a project whose sources live elsewhere, and
     "nothing excluded" was then reported as if it were true."""

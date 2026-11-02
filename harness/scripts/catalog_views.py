@@ -131,9 +131,9 @@ PERIOD_HEADS = {
 
 
 def datasets(argv) -> int:
-    """evh datasets: every dataset, or one with its versions, references and arms."""
+    """evh datasets: every dataset, or one with its versions, reference sets and arms."""
     ap = argparse.ArgumentParser(prog="evh datasets", description="Every dataset, or one in full.")
-    ap.add_argument("--dataset-id", help="one dataset: its versions, references and arms")
+    ap.add_argument("--dataset-id", help="one dataset: its versions, reference sets and arms")
     ap.add_argument(
         "--tag", action="append", default=[], metavar="K=V", help="only datasets with this tag (repeatable)"
     )
@@ -169,7 +169,7 @@ def datasets(argv) -> int:
             ]
             for ds, v in sorted(by_ds.items())
         ]
-        heads = ["dataset", f"{A.item_word}s", "arms", "configs", "references", "made from", "tags"]
+        heads = ["dataset", f"{A.item_word}s", "arms", "configs", "reference sets", "made from", "tags"]
         _table(heads + (["", *(PERIOD_HEADS[f] for f in flows)] if per else []), rows)
         return 0
     v = by_ds.get(args.dataset_id)
@@ -284,10 +284,10 @@ def _fields_block(A, dataset: str) -> None:
 
 
 def references(argv) -> int:
-    """evh references: every reference, or one with its provenance and what is scored against it."""
-    ap = argparse.ArgumentParser(prog="evh references", description="Every reference, or one in full.")
+    """evh references: every reference set, or one with its provenance and what is scored against it."""
+    ap = argparse.ArgumentParser(prog="evh references", description="Every reference set, or one in full.")
     ap.add_argument(
-        "--reference-id", help="one reference: who wrote it, from which run, what is scored against it"
+        "--reference-id", help="one reference set: who wrote it, from which run, what is scored against it"
     )
     _period_option(ap)
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
@@ -317,7 +317,7 @@ def references(argv) -> int:
         return 0
     hit = next(((ds, r) for ds, r in refs if r["id"] == args.reference_id), None)
     if hit is None:
-        die(f"no reference {args.reference_id!r}: one of {', '.join(sorted(r['id'] for _, r in refs))}")
+        die(f"no reference set {args.reference_id!r}: one of {', '.join(sorted(r['id'] for _, r in refs))}")
     ds, r = hit
     print(f"{r['id']}\n  {cb.TIER_WORDS.get(r['tier'], '')}\n")
     for k, label in (
@@ -471,7 +471,7 @@ def overview(argv) -> int:
         else:
             line = t["trend"]["text"] + (f" vs {against}" if t["trend"]["pct"] is not None else "")
             value = cb.fmt_amount(t["value"], "usd") if t["what"] == "billed" else f"{round(t['value']):,}"
-        print(f"  {t['what']:15} {value:>16}  {line}".rstrip())
+        print(f"  {cb.TILE_LABEL.get(t['what'], t['what']):15} {value:>16}  {line}".rstrip())
     print(
         "\ngoals at a glance (the leader of the gold group against the baseline, one test, threshold 0.05):"
     )
@@ -543,7 +543,15 @@ def overview(argv) -> int:
         print("\nactivity and spend: nothing is recorded with a date yet")
     print("\ncoverage:")
     _table(
-        ["dataset", f"{A.item_word}s", "arms scored against", "references", "metrics", "goals", "last run"],
+        [
+            "dataset",
+            f"{A.item_word}s",
+            "arms scored against",
+            "reference sets",
+            "metrics",
+            "goals",
+            "last run",
+        ],
         [
             [
                 c["dataset"] + (f" (from {c['parent']})" if c["parent"] else ""),
@@ -588,8 +596,8 @@ def arms(argv) -> int:
     )
     ap.add_argument(
         "--quality",
-        choices=("ties", "below"),
-        help="only arms a goal ties with its quality leader, or only those it ranks below the leader",
+        choices=("contender", "below"),
+        help="only arms a goal counts as contenders beside its quality leader, or only those it ranks below the leader",
     )
     ap.add_argument(
         "--configs",
@@ -608,7 +616,10 @@ def arms(argv) -> int:
             and (not args.where or r["local"] == (args.where == "local"))
             and (not args.tier or r["tier"] == args.tier)
             and (not args.weights or r["weights"] == args.weights)
-            and (not args.quality or r["quality"] == f"{args.quality} the leader")
+            and (
+                not args.quality
+                or r["quality"] == {"contender": "a contender", "below": "below the leader"}[args.quality]
+            )
         ]
         if not rows:
             why = []
@@ -1353,7 +1364,7 @@ def inspect(argv) -> int:
                 _fmt(r["mean"]),
                 _fmt(r["delta"]),
                 "—" if not r.get("ci") else f"{r['ci'][0]:+.3f} to {r['ci'][1]:+.3f}",
-                f"{r['wins']}–{r['losses']}" + (f" ({r['ties']} tied)" if r.get("ties") else ""),
+                f"{r['wins']}–{r['losses']}" + (f" ({r['ties']} ties)" if r.get("ties") else ""),
                 "—" if r.get("p") is None else fmt_p(r["p"]),
                 "—" if not r.get("threshold") else f"{r['threshold']:.4f}",
             ]
@@ -1658,7 +1669,7 @@ def activity(argv) -> int:
 def search(argv) -> int:
     """evh search: the catalog's search box, with the command that shows each hit."""
     ap = argparse.ArgumentParser(
-        prog="evh search", description="Search datasets, arms, references, metrics and goals."
+        prog="evh search", description="Search datasets, arms, reference sets, metrics and goals."
     )
     ap.add_argument("text", nargs="+")
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")

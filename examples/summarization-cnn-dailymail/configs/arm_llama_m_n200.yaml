@@ -18,7 +18,7 @@
 #
 # WHAT n=200 CAN BUY (journal entry 40): minimum detectable delta falls 0.0446 -> 0.0141.
 # That reaches the price question (0.0308) and best-vs-5th (0.0193). It does NOT reach
-# deepseek_m vs deepseek_s (0.0048, n~2472). Expect a separated top GROUP, not a winner.
+# deepseek_m vs deepseek_s (0.0048, n~2472). Expect a top GROUP with no significant difference inside it, not a winner.
 #
 # r=1, not r=3: with articles available, repeats are the wrong place to spend the same
 # budget — n=60/r=1 gave sd(delta) 0.0090 against n=20/r=3 at 0.0133 (journal entry 10).

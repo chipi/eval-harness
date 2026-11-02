@@ -50,8 +50,8 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
     "cost", "latency", "first", "last"}. `weights` is "open", "proprietary" or "" (unknown: the
     adapter's model_facts does not list the model). `record` is the model record the arm uses ("" when
     none), `deployment` the deployment of it its config named ("" when none) and `smoke` that record's latest smoke of the arm's config: pass, check or none ("" without a
-    record). `quality` is "ties the leader" when a goal's
-    decision ties the arm with its quality leader (the leader too), "below the leader" when it
+    record). `quality` is "a contender" when a goal's
+    decision makes the arm a contender beside its quality leader (the leader too), "below the leader" when it
     weighs the arm and does not, "" when no decision weighs it. A role "over a limit" is an arm a
     goal leaves out for a limit it breaks; "not eligible" one it leaves out for another reason.
     `how` says what the arm is beside the config's other arms: measured, rescored against a
@@ -83,8 +83,8 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
         if dec:
             for arm in dec["rows"]:
                 measure_of.setdefault(arm, (g, r["measure"], r["lower"]))
-                if arm in (dec.get("tied") or []):
-                    quality[arm] = "ties the leader"
+                if arm in (dec.get("contenders") or []):
+                    quality[arm] = "a contender"
                 elif arm in dec["eligible"]:
                     quality.setdefault(arm, "below the leader")
                 if arm not in dec["eligible"] and arm not in (r.get("retired") or {}):
@@ -385,7 +385,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
     if any(r["quality"] for r in rows):
         facet_chips += "".join(
             f'<button type="button" class="chip" data-facet="quality" data-value="{v}" aria-pressed="false">{v}</button>'
-            for v in ("ties the leader", "below the leader")
+            for v in ("a contender", "below the leader")
         )
     if any(r["weights"] for r in rows):
         facet_chips += "".join(

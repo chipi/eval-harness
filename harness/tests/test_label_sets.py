@@ -438,7 +438,7 @@ try:
         out(r)[-300:],
     )
 
-    # ── reference-promote (step 3): a reference is labels you promote ─────────────────────────
+    # ── reference-promote (step 3): a reference set is labels you promote ─────────────────────────
     REF = proj / "data" / "references"
     reason = "the owner's labels of three tickets, for this test"
     r = evh(

@@ -338,8 +338,8 @@ def _against(A, label: str, other: str, leader: str, metric: str) -> dict | None
 
 def _promote_hold(against: list[dict], prev_id: str | None) -> str:
     """Why a round's leader is not to be promoted, from its `against` rows, or "" to promote it: it
-    must be separated better than the baseline the round started from, and not separated worse
-    than the previous round's best. A mean that leads by chance is no reason to promote."""
+    must be significantly better than the baseline the round started from, and not significantly
+    worse than the previous round's best. A mean that leads by chance is no reason to promote."""
     row_of = {r["label"]: r for r in against}
     vs_base = row_of.get("the baseline it started from")
     vs_prev = next((r for k, r in row_of.items() if k.endswith("'s best")), None)
@@ -347,9 +347,9 @@ def _promote_hold(against: list[dict], prev_id: str | None) -> str:
     def said(r: dict) -> str:
         return f"{r['verdict']}, Δ {r['delta']:+.4f}, p {fmt_p(r['p'])}"
 
-    if vs_base is not None and vs_base["verdict"] != "separated: better":
+    if vs_base is not None and vs_base["verdict"] != "significant: better":
         return f"not ahead of the baseline it started from ({said(vs_base)})"
-    if prev_id and vs_prev is not None and vs_prev["verdict"] == "separated: worse":
+    if prev_id and vs_prev is not None and vs_prev["verdict"] == "significant: worse":
         return f"behind {prev_id}'s best ({said(vs_prev)})"
     return ""
 
@@ -456,19 +456,19 @@ def evidence(goal: str, rnd: dict) -> dict:
         authors = {a for rid, a in _silver_authors(A, ds) if rid == round_ref}
         for r in out["rows"]:
             cid = r["arm"].rsplit("/", 1)[-1]
-            if r["verdict"] == "separated: worse" and r["arm"] not in authors and r["arm"] != barm:
-                reason = f"separated worse than {leader.rsplit('/', 1)[-1]} on {metric} after Holm (p {fmt_p(r['p'])})"
+            if r["verdict"] == "significant: worse" and r["arm"] not in authors and r["arm"] != barm:
+                reason = f"significantly worse than {leader.rsplit('/', 1)[-1]} on {metric} after Holm (p {fmt_p(r['p'])})"
                 out["suggest"].append(
                     (
                         f"retire {cid}",
                         f'evh round-retire --goal {goal} --round {rnd["round_id"]} --arm {cid} --reason "{reason}"',
                     )
                 )
-        ties = [r["arm"].rsplit("/", 1)[-1] for r in out["rows"] if r["verdict"] == "not separated"]
-        if ties:
+        level = [r["arm"].rsplit("/", 1)[-1] for r in out["rows"] if r["verdict"] == "not significant"]
+        if level:
             out["suggest"].append(
                 (
-                    f"{len(ties)} arm(s) tie with the leader ({', '.join(ties)}): more items would separate them",
+                    f"{len(level)} arm(s) not significantly different from the leader ({', '.join(level)}): more items may tell them apart",
                     f"evh rank-stability --dataset-id {ds}",
                 )
             )
@@ -479,11 +479,11 @@ def evidence(goal: str, rnd: dict) -> dict:
             row = _against(A, f"{prev['round_id']}'s best", pbest, leader, metric)
             if row:
                 out["against"].append(row)
-                if row["verdict"] != "separated: better":
+                if row["verdict"] != "significant: better":
                     how = (
-                        "is separated worse than"
-                        if row["verdict"] == "separated: worse"
-                        else "is not separated from"
+                        "is significantly worse than"
+                        if row["verdict"] == "significant: worse"
+                        else "is not significantly different from"
                     )
                     out["suggest"].append(
                         (
@@ -512,7 +512,7 @@ def evidence(goal: str, rnd: dict) -> dict:
     lead_run = sorted(d.name for d in _dirs(A, leader))[0] if _dirs(A, leader) else "<run_id>"
     # Promote only what is not already the baseline: the leader may be the run the round began from.
     already = lead_run == rnd.get("baseline") or any(d.name == rnd.get("baseline") for d in _dirs(A, leader))
-    # And only a leader the evidence puts ahead: separated better than the baseline it started from,
+    # And only a leader the evidence puts ahead: significantly better than the baseline it started from,
     # and not behind the previous round's best. A mean that leads by chance is no reason to promote.
     hold = _promote_hold(out["against"], prev["round_id"] if prev else None)
     promote = not already and not hold

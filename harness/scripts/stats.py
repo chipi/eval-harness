@@ -10,8 +10,8 @@ summeval_analysis, silver_calibrate and the judge scorer (judging.py) use.
 EXACT UP TO 30 ITEMS. The two-sided p is counted over all 2^n sign patterns (meet in the
 middle: two halves of at most 2^15 sums each, so it is instant). Before 0.4.0 the harness
 estimated it by Monte Carlo at every n, and near a threshold the estimate can land on either
-side: one pair is p 0.0254 exactly (26 of 1024 patterns, not separated at a 0.025 Holm
-step) against a 20,000-permutation estimate of 0.0237 (separated). Above 30 items it is the
+side: one pair is p 0.0254 exactly (26 of 1024 patterns, not significant at a 0.025 Holm
+step) against a 20,000-permutation estimate of 0.0237 (significant). Above 30 items it is the
 seeded estimate, unchanged: p = (hits + 1) / (permutations + 1).
 
 Standard library only.
@@ -279,7 +279,7 @@ def fmt_p(p: float) -> str:
 
 
 def holm(pvalues: dict, alpha: float = ALPHA, family: int | None = None) -> dict:
-    """{name: (threshold, separated)} by Holm step-down; stops at the first p over its threshold.
+    """{name: (threshold, significant)} by Holm step-down; stops at the first p over its threshold.
 
     family: the number of comparisons being corrected for, when it is larger than the ones
     passed (a pair opened from a page that tested many keeps that page's correction).
@@ -388,12 +388,12 @@ def _set_verdict(row: dict, thr, ok: bool, higher_is_better: bool, neutral: bool
     if row["p"] is None:
         row["verdict"] = "untestable" if row["n"] < 2 else "identical"
     elif ok and neutral:  # a measurement with no better direction (length, counts)
-        row["verdict"] = "separated: higher" if row["delta"] > 0 else "separated: lower"
+        row["verdict"] = "significant: higher" if row["delta"] > 0 else "significant: lower"
     elif ok:
         better = (row["delta"] > 0) == higher_is_better
-        row["verdict"] = "separated: better" if better else "separated: worse"
+        row["verdict"] = "significant: better" if better else "significant: worse"
     else:
-        row["verdict"] = "not separated"
+        row["verdict"] = "not significant"
 
 
 def compare_by(
@@ -406,7 +406,7 @@ def compare_by(
 ) -> dict:
     """`compare` within each group of items, with ONE Holm correction over every (group, arm)
     test. Breaking a comparison into k groups makes k times the chances of a false
-    "separated", so the correction counts all of them, ranked together, not each group alone.
+    "significant", so the correction counts all of them, ranked together, not each group alone.
 
     groups: {group name: set of item ids}. Returns {"groups": [{"group", "items", "rows"}],
     "family_size"}; each row is `compare`'s, its threshold and verdict from the joint Holm.

@@ -51,8 +51,8 @@ strong = [0.9 + 0.001 * k for k in range(12)]
 weak = [0.2] * 12
 d = axes.decide(GOAL, {"a": arm("A", strong, 0.01, 100), "b": arm("B", weak, 0.001, 50)})
 check(
-    "decide: a separated leader is recommended, whatever it costs",
-    d["leader"] == "a" and d["tied"] == ["a"] and d["recommended"] == "a",
+    "decide: a significantly better leader is recommended, whatever it costs",
+    d["leader"] == "a" and d["contenders"] == ["a"] and d["recommended"] == "a",
     d["why"],
 )
 
@@ -60,8 +60,8 @@ check(
 near = [0.9 + 0.001 * k + (0.0005 if k % 2 else -0.0005) for k in range(12)]
 d = axes.decide(GOAL, {"a": arm("A", strong, 0.01, 100), "b": arm("B", near, 0.001, 300)})
 check(
-    "decide: arms not separated on quality are tied, and the cheaper is recommended",
-    d["tied"] == ["a", "b"] or set(d["tied"]) == {"a", "b"},
+    "decide: arms not significantly different on quality are contenders, and the cheaper is recommended",
+    d["contenders"] == ["a", "b"] or set(d["contenders"]) == {"a", "b"},
     d["why"],
 )
 check("decide: ... recommended by cost", d["recommended"] == "b", d["why"])
@@ -85,7 +85,7 @@ tail = [100] * 11 + [5000]
 d = axes.decide(limited, {"a": arm("A", strong, 0.01, tail)})
 check("decide: a slow tail breaks a p95 limit the mean would pass", "a" in d["out"], d["rows"]["a"]["speed"])
 
-# Missing numbers are not recorded, never 0, never a reason to drop an arm, and an axis a tied arm
+# Missing numbers are not recorded, never 0, never a reason to drop an arm, and an axis a contender
 # does not record cannot break the tie (an unpriced hosted call must not lose on cost).
 d = axes.decide(limited, {"a": arm("A", strong, None, None), "b": arm("B", near, 0.001, 100)})
 check(
@@ -103,7 +103,7 @@ check(
     d["why"],
 )
 
-# Identical per-item scores are tied in every strategy, whatever order the arms come in.
+# Identical per-item scores are contenders in every strategy, whatever order the arms come in.
 same = [1.0] * 12
 for strategy in ("balanced", "quality_first", "frugal"):
     for order in (("a", "b"), ("b", "a")):
@@ -113,8 +113,8 @@ for strategy in ("balanced", "quality_first", "frugal"):
             {k: both[k] for k in order},
         )
         check(
-            f"decide ({strategy}, order {order}): identical scores are tied and the cheaper is recommended",
-            set(d["tied"]) == {"a", "b"} and d["recommended"] == "b" and d["leader"] == "a",
+            f"decide ({strategy}, order {order}): identical scores are contenders and the cheaper is recommended",
+            set(d["contenders"]) == {"a", "b"} and d["recommended"] == "b" and d["leader"] == "a",
             d["why"],
         )
 
@@ -155,7 +155,7 @@ d = axes.decide(
 )
 check(
     "decide: a leader at 0 takes its margin from the group's range, and says so",
-    "b" in d["tied"]
+    "b" in d["contenders"]
     and d["recommended"] == "b"
     and any("of the group's range, the leader being 0" in w for w in d["why"]),
     d["why"],
@@ -227,7 +227,7 @@ d = axes.decide(GOAL, {"a": arm("A", strong, 0.0, 100, tokens=500), "b": arm("B"
 check("cost: tokens per item shown beside the dollars", d["rows"]["a"]["cost"]["tokens"]["mean"] == 500)
 
 # The strategies, on the case that made them: 32 items, a 1.000 leader and a free 0.875 arm the
-# paired test cannot separate from it (4 items differ).
+# paired test finds not significantly different from it (4 items differ).
 ITEMS[:] = [f"m{k:02d}" for k in range(32)]
 top = [1.0] * 32
 cheap = [1.0] * 28 + [0.0] * 4
@@ -240,8 +240,8 @@ def with_criteria(**extra):
 
 d = axes.decide(GOAL, pair)
 check(
-    "balanced (default): not separated but 0.125 off is not tied; the leader is recommended",
-    d["rows"]["k"]["quality"]["vs_leader"]["verdict"] == "not separated" and d["recommended"] == "a",
+    "balanced (default): not significantly different but 0.125 off is not a contender; the leader is recommended",
+    d["rows"]["k"]["quality"]["vs_leader"]["verdict"] == "not significant" and d["recommended"] == "a",
     d["why"],
 )
 check(
@@ -249,13 +249,13 @@ check(
 )
 d = axes.decide(with_criteria(strategy="frugal"), pair)
 check(
-    "frugal: anything the test cannot separate is tied, and the cheaper wins",
+    "frugal: anything not significantly different is a contender, and the cheaper wins",
     d["recommended"] == "k",
     d["why"],
 )
 d = axes.decide(with_criteria(axes={"quality": {"margin": 0.15}}), pair)
 check(
-    "balanced with the goal's margin (0.15): the free arm is tied, and wins on cost",
+    "balanced with the goal's margin (0.15): the free arm is a contender, and wins on cost",
     d["recommended"] == "k",
     d["why"],
 )
@@ -271,7 +271,7 @@ check(
     d["why"],
 )
 
-# frugal + [cost, quality]: the cheapest of what the test cannot separate, then the best of those.
+# frugal + [cost, quality]: the cheapest of what is not significantly different, then the best of those.
 ITEMS[:] = [f"q{k:02d}" for k in range(12)]
 lead = [0.9] * 12
 free_hi = [0.9] * 10 + [0.6] * 2
@@ -391,7 +391,7 @@ jfake: Any = Judged(judged)
 d = group_decision(jfake, goal, "ds", rows_j, "judge_score", {})
 check(
     "judge group: the goal's quality margin (0.5, for its own measure) is not used on the judge's score",
-    "y" not in d["tied"] and any("2% of the leader" in w for w in d["why"]),
+    "y" not in d["contenders"] and any("2% of the leader" in w for w in d["why"]),
     d["why"],
 )
 

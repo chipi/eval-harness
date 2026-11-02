@@ -13,7 +13,7 @@
 #
 # THE THRESHOLD IS THIS ARM'S DECISION BOUNDARY. Move it and precision trades against
 # recall; it is as much part of the system as a prompt, and it is in the fingerprint. 0.5
-# is the library default, chosen for that reason and not tuned — tuning it on the dev
+# is the library default, chosen for that reason and not tuned — tuning it on the pilot
 # slice would be legitimate, but it would then be a tuned arm and has to say so.
 config_id: fn_gliner_v1
 dataset_id: few_nerd_56

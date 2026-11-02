@@ -91,7 +91,7 @@ to BM25's, to four decimals.
 price-ordered and declared before any result was read. A reranking prompt carries 20 full
 abstracts (**3,926 input tokens per query** against NER's 125), so the five frontier arms
 would have cost **about $12** against this sweep's **$1.94 billed**. The consequence is stated
-plainly in the report: the top group (12–13 arms, the count on a Holm boundary) that the data cannot separate
+plainly in the report: the top group (12–13 arms, the count on a Holm boundary) whose differences the data cannot show significant
 is made of *cheap* models, and this example
 **cannot say whether a frontier model reranks better**. See
 [`HANDOVER_RETRIEVAL_FRONTIER_ARMS.md`](../../research/internal/HANDOVER_RETRIEVAL_FRONTIER_ARMS.md).

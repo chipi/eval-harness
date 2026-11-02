@@ -1,7 +1,7 @@
 # Tutorial 3 · A frontier model's run as the reference, gold, and judging
 
 In [getting started](../GUIDE.md) the `author` arm ran first, and its outputs, as a model's labels,
-were promoted to the silver reference every other arm was scored against. In a real project the author is a
+were promoted to the silver reference set every other arm was scored against. In a real project the author is a
 frontier model: too expensive to run on every item in production, cheap enough to run once.
 You pay for one pass, and the cheaper arms are measured by how close they come to it.
 
@@ -134,7 +134,7 @@ none does). Arms are named without their `_vN` suffix: an arm's versions are poo
 rank by silver, check it against a gold slice. How big a gold set must be is a measurement too:
 `evh rank-stability` shows how many items it takes before the order stops moving.
 
-## 4. Is the winner separated, on gold?
+## 4. Is the winner significantly better, on gold?
 
 ```bash
 evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_ \
@@ -151,10 +151,10 @@ evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_ 
     tickets_lead2_noisy_v1     +0.0146    4/6      0.1562   0.0250   --
     tickets_author_v1          +0.0122    4/6      0.3125   0.0500   --
 
-    separated from 0 of 3 opponents; ahead on the point estimate against 3 of 3
+    significantly different from 0 of 3 opponents; ahead on the point estimate against 3 of 3
 ```
 
-Ahead of every arm on the point estimate, separated from none; against `lead2_noisy` the delta is
+Ahead of every arm on the point estimate, significantly different from none; against `lead2_noisy` the delta is
 smaller than that arm's own spread, and its sign can change from one run to the next. That is the
 honest state of this eval: a bigger gold set is the next step, not a conclusion.
 
@@ -164,7 +164,7 @@ honest state of this eval: a bigger gold set is the next step, not a conclusion.
   fingerprint hashes them. Fix a gold answer → a new set, or a rescore that records the change.
 - **Never mix tiers in one number.** A run is scored against gold *or* silver, and says which.
   If you publish a silver-scored number, say so.
-- **Keep a dev slice apart.** Tune prompts on a small nested dataset (`tickets_dev_v1`) and
+- **Keep a pilot slice apart.** Tune prompts on a small nested dataset (`tickets_pilot_v1`) and
   report on the rest: `evh holdout` re-tests excluding it.
 - **Disputed gold is a finding, not noise.** When most strong systems disagree with a gold
   answer, read it: in this repository's AG News and DBpedia evals, one reader adjudicated
