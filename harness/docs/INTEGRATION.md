@@ -107,7 +107,10 @@ When more than one answer is right for an item, its reference accepts each of th
 loop run and rank arms crudely, not enough to defend a decision. Replace it
 with what your domain actually rewards.
 
-Beside `score()`, say what your metrics are: `PRIMARY_METRIC` (the one that decides),
+Beside `score()`, say what your metrics are: `PRIMARY_METRIC` (the one that decides; an adapter whose arms
+measure different things, as a judge validated in several modes, may define `primary_metric(params)` instead:
+given an arm's `params` it names that arm's primary, which `run` and `rescore` record, and `PRIMARY_METRIC` is
+the fallback; the SummEval adapter's is `tau`, `top1` or `pair_agreement` by `params["mode"]`),
 `METRIC_DIRECTIONS` (a quality metric that improves going down, `{"wer": "lower"}`) and
 `METRIC_DESCRIPTIONS` (one sentence each, `{"rouge_l": "ROUGE-L F1 against the reference"}`,
 or `{"summary": "one line", "details": "how it is computed and read"}`). Every run records
@@ -122,8 +125,8 @@ in the same file:
 
 | function | what it answers | read by |
 |---|---|---|
-| `decision(output)` | the decision in one output (a disposition, a label), without the reasons and traces around it | the rows view shows it per arm; with no `same`, two outputs agree when their decisions do |
-| `same(a, b)` | whether two outputs are one decision | agreement: `inspect --disagree`, the rows view's disagree and split, `label-sheet --items disagree` (default: the same decision, else the same text) |
+| `decision(output)` | the decision in one output (a disposition, a label), without the reasons and traces around it | the sheet shows it per arm; with no `same`, two outputs agree when their decisions do |
+| `same(a, b)` | whether two outputs are one decision | agreement: `inspect --disagree`, the sheet's disagree and split, `label-sheet --items disagree` (default: the same decision, else the same text) |
 | `recorded_output(record)` | production's own decision, from a capture's record | `arm-from-capture` (else `--field`) |
 | `production_ran(record)` | what production ran for a record, under the keys a run's items report (`_meta`) | `deploy-sheet --capture` |
 
@@ -290,14 +293,14 @@ which references exist, what one arm wrote for one item.
   | what each model's weights are (optional) | `model_facts()`: `{model: {"weights": "open" \| "proprietary", "licence": …}}`, keyed by the model a run records (`params.model`); the arms page's open-weights and proprietary filters and `evh arms --weights` read it. The harness's own adapter reads the model records, `data/models/<model_id>.yaml` (`schemas/model.schema.json`, validate V1: `aliases` are the ids runs record, `weights`, `licence`, and `deployments`, each place the model runs with its own onboarding); a model not listed is in neither |
   | metrics that need no reference (optional) | `reference_free(metric)`: True when the metric is measured off the bill or the clock, so arms scored against different references can still be compared on it; when absent, a metric whose name contains cost, latency or tokens |
   | labels (optional, RFC-023) | `label_sets()`: every set, `{dataset, set, id, source, n_items, guideline, created_at, items}`; `label_coverage(dataset)`: the sets covering a dataset's items (by their sha256) and how often two agree; `item_labels(dataset, item)`: every label one item has, with its source; the Labels page, a dataset page's labels and the inspector's item view read them. `describe(arm)` may add `"labels_source"` (an arm scored against a label set) and `references()` `"promoted_from"`, `"reason"`, `"promoted_by"` |
-  | production (optional, RFC-019, RFC-023) | `captures()`: every capture, as `evh captures` lists them (the Captures page); `dataset_meta(dataset)`: its tags and where it came from (a capture, or the version it was derived from); `describe(arm)["recorded"]`: the capture a recorded arm read production's decisions from; `same_output(arm)`: whether two outputs are one decision (the adapter's `same(a, b)`), for agreement and the rows view |
+  | production (optional, RFC-019, RFC-023) | `captures()`: every capture, as `evh captures` lists them (the Captures page); `dataset_meta(dataset)`: its tags and where it came from (a capture, or the version it was derived from); `describe(arm)["recorded"]`: the capture a recorded arm read production's decisions from; `same_output(arm)`: whether two outputs are one decision (the adapter's `same(a, b)`), for agreement and the sheet |
   | picks and the deploy sheet (optional, ADR-0023) | `picks_waiting(dataset)`: the picks naming a dataset as their target; `deploy_sheet(arm)`: what production must match to run a promoted arm, and what each capture says it ran |
   | the inspector's view kinds | `item_view` returns `{"kind": "text", "text"}`, `{"kind": "none", "note"}`, or a structured `insights` (`items` of `{text, grounded}`, `quotes`), `nodes` (`groups`) or `entities` (`items`); any may carry `info` |
 
   Every page and comparison is also a command that asks the same adapter the same questions:
   `evh datasets`, `evh references`, `evh metrics`, `evh goals`, `evh rounds`, `evh search` and
-  `evh inspect --runs …` (`--items`, `--analysis`, `--item`; with `--adapter` for a project
-  adapter not named in `config.yaml`). The
+  `evh inspect --runs …` (`--analysis`, `--item`) and `evh inspect --sheet --dataset-id … --runs …` (with
+  `--adapter` for a project adapter not named in `config.yaml`). The
   pages are a comfort; [tutorial 5](../../docs/tutorials/5-catalog-and-inspector.md#3-every-page-and-its-command)
   maps each page to its command.
 
@@ -342,7 +345,7 @@ which references exist, what one arm wrote for one item.
 `evh mcp` serves the project's read commands to an agent over MCP (the official SDK): the
 catalog's views (`overview`, `datasets`, `dataset-items`, `arms`, `models`, `goals`, `references`, `metrics`,
 `activity`, `search`, `captures`, `labels`, `picks`, `deploy-sheet`), the inspector in the terminal (`inspect`, its
-rows view included), `rounds`, `runs-list` and
+sheet included, without the options that write a file: `--csv`, `--fill` and theirs), `rounds`, `runs-list` and
 `validate`. Each call runs the command as a person would, with `--json` where the command has it,
 so the agent sees the same numbers you do. No tool writes project data, spends or runs a model:
 running arms, promoting a baseline and closing a round stay your commands. (The one file a call
@@ -387,7 +390,7 @@ evh mcp --http --bind 0.0.0.0 --port 8766 --allowed-host evals.team.example [--p
 ```
 
 `--allowed-host` is required beyond the loopback (the server checks the Host against DNS
-rebinding); `--public` leaves out the options that answer with an item's text (an item, the rows view), and the
+rebinding); `--public` leaves out the options that answer with an item's text (an item, the sheet), and the
 `validate` tool (17 tools); `--rate` (per
 caller), `--rate-total` (everyone together), `--concurrent` and `--timeout` bound the load, and a
 caller has one call running at a time; `--client-header` names the header your proxy sets for the

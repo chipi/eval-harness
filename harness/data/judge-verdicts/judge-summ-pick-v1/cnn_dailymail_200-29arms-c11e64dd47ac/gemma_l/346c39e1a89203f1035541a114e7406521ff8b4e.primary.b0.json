@@ -1,0 +1,28 @@
+{
+  "best": [
+    4,
+    24,
+    29
+  ],
+  "block": 0,
+  "cost_known": true,
+  "cost_usd": 0.0003518,
+  "created_at": "2026-11-02T16:04:29Z",
+  "finish_reason": "stop",
+  "item_id": "346c39e1a89203f1035541a114e7406521ff8b4e",
+  "judge": "gemma_l",
+  "judge_fp": "5031d8671837eb80",
+  "latency_ms": 1285.609,
+  "n": 29,
+  "output": "{\"best\": [4, 24, 29]}",
+  "output_sha256": "a9bd68171210a1506f63efde39145624de7fd035e0aaa44dd15fd1b60554150b",
+  "output_withheld": false,
+  "pass": "primary",
+  "prompt_sha256": "297e4a9f84f725b5f383459f9560063d9dadfc74266c344e385edb127464495d",
+  "provider": "CoreWeave",
+  "response_model": "eval-gemma-31b",
+  "set_id": "cnn_dailymail_200-29arms-c11e64dd47ac",
+  "tokens_in": 3467,
+  "tokens_out": 15,
+  "truncated": 0.0
+}

@@ -1,12 +1,12 @@
 # PRD-014: Datasets from production, and evaluating what production did
 
 - **Status**: Built for 0.6.0 for FR1 to FR3, FR5, FR6 and the Captures page (2026-10-31, the capture window and
-  sampling 2026-11-01), FR4 (labels from outcomes) FR7 (the recorded arm, agreement), FR8 (the rows view, in the terminal and the inspector), FR9 (picks) and
+  sampling 2026-11-01), FR4 (labels from outcomes) FR7 (the recorded arm, agreement), FR8 (the sheet, in the terminal and the inspector), FR9 (picks) and
   FR10 (versions from picks) built
   ([RFC-023](../rfc/RFC-023-labels-and-references.md))
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the Captures, Labels and dataset pages),
-  [UXS-002](../uxs/UXS-002-inspector.md) (the rows view), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the
+  [UXS-002](../uxs/UXS-002-inspector.md) (the sheet), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the
   commands)
 - **Related RFCs**: [RFC-019](../rfc/RFC-019-datasets-from-production.md) (captures),
   [RFC-023](../rfc/RFC-023-labels-and-references.md) (labels, the recorded arm, picks, versions)
@@ -79,7 +79,7 @@ comment that says what it was.
 - _As an engineer, I check that production ran what I promoted (`evh deploy-sheet`)._
 - _As an operator, my close comments become labels through a mapping I can read (`evh label-from-capture`)._
 - _As an engineer, I open the rows where production was wrong on something the governed dataset does not cover
-  (`evh inspect --dataset-id D --rows --wrong-against S --new-vs V1`) and pick the ones worth keeping._
+  (`evh inspect --sheet --dataset-id D --runs P,C --wrong-against S --new-vs V1`) and pick the ones worth keeping._
 - _As a dataset owner, a month later I make v2 of my dataset from v1 and seven of the picks waiting
   (`evh dataset-extend V1 --dataset-id V2 --pick …`), and promote its labels._
 
@@ -148,14 +148,16 @@ comment that says what it was.
   where an arm decided differently from the baseline, the same filter the inspector page offers ("only where they disagree"), and
   `evh label-sheet --items disagree` reads the same hook.
 
-### FR8: Exploring rows (0.6.0)
+### FR8: The sheet: exploring every item (0.6.0)
 
-- **FR8.1**: `evh inspect --dataset-id D --rows` shows one row per item: its fields, production's decision, each
-  chosen arm's decision, every label with its source, and the signals: **wrong** (`--wrong-against SET`),
+- **FR8.1**: `evh inspect --sheet --dataset-id D --runs P,C,…` shows the items down and a column per run across
+  (the first is production's): what each wrote, every score it has, every label with its source, the winner per
+  item, a footer per run (its mean, its win rate, its verdict), and the signals: **wrong** (`--wrong-against SET`),
   **disagree**, **split** (candidates disagree among themselves), **new** (`--new-vs V`: a field value the governed
   dataset has never had), **unlabelled**; each a filter and a sort, with `--where` and `--by`.
-- **FR8.2** (0.6.0): The inspector's rows view shows the same; a selection of rows gives the `evh pick` and
-  `evh label-sheet` commands for them. The page writes nothing.
+- **FR8.2** (0.6.0): The inspector's sheet shows the same, and downloads its CSV; a selection of rows gives the
+  `evh pick` and `evh label-sheet` commands for them. The page writes nothing. It replaces the rows view and
+  `inspect --items`, which are gone.
 
 ### FR9: Picks (0.6.0)
 
@@ -181,7 +183,7 @@ comment that says what it was.
 ## Success Metrics
 
 - The triage example runs end to end: capture, dataset, production as an arm, labels, the deployed config and a
-  candidate scored against them, the rows view, picks, a v2, a promoted reference set, live on the fleet.
+  candidate scored against them, the sheet, picks, a v2, a promoted reference set, live on the fleet.
 - Every existing test passes, and each FR above has its own.
 
 ## Release Considerations

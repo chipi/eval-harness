@@ -427,7 +427,14 @@ class HarnessAdapter:
         primary = m.get("primary_metric") or ""
         if judged:  # a judged run's headline is the judge's score, not the source run's metric
             keys = set(self.scores(arm))
-            primary = next((k for k in ("judge_score", "judge_score_unvalidated") if k in keys), primary)
+            primary = next(
+                (
+                    k
+                    for k in ("judge_score", "judge_score_unvalidated", "judge_won", "judge_won_unvalidated")
+                    if k in keys
+                ),
+                primary,
+            )
         ref = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id", "")
         if (ref or "").startswith(_common.LABELS_PREFIX):
             # A label set a model's run made (RFC-023): its arm scored against it is graded against its own outputs.

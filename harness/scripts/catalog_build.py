@@ -145,6 +145,11 @@ BUILTIN_METRICS = {
     "judge_score_unvalidated": "The judges' mean score for the output on the scorer's scale, over "
     "its dimensions and judges (evh judge-score). The judges were not validated against human "
     "ratings: a trial, not a measurement.",
+    "judge_won": "The share of the item the arm won, by judges who picked the best output (1, or 1/k when k "
+    "share the best) or compared outputs two at a time (the share of its pairs won): evh judge-score, "
+    "mode pick or pairwise. The judges were validated in that mode against human preferences.",
+    "judge_won_unvalidated": "Computed as judge_won is, by judges not validated against human preferences "
+    "in this mode (or filled in a sheet elsewhere): a trial, not a measurement.",
     "overlap_f1": "Token-overlap F1 against the reference: the bundled adapter's placeholder, "
     "enough to run the loop, not to defend a decision.",
     "output_words": "How many words the output has: a description of the output, not a quality.",
@@ -184,6 +189,14 @@ BUILTIN_DETAILS = {
     "judge_score_unvalidated": "Computed as judge_score is, by judges that were never compared "
     "with human ratings for this use. It ranks arms by what the judges prefer, which may not be "
     "what people prefer: read it as a trial. A validated scorer turns it into judge_score.",
+    "judge_won": "evh judge-score in pick mode shows every arm's output for an item at once, blind and "
+    "shuffled, and each judge names the best; in pairwise mode it shows two at a time and the judge says "
+    "which is better, for every pair. An arm's judge_won for an item is its share of that item (1 alone "
+    "best, 1/k shared; its share of the pairs won), the mean over judges. Its mean over items is the arm's "
+    "win rate; the summary adds Bradley-Terry strengths with intervals, and the position and noise checks.",
+    "judge_won_unvalidated": "Computed as judge_won is, by judges never compared with human preferences in "
+    "this mode, or filled in a sheet outside the harness (evh sheet-import): it ranks arms by what the "
+    "judges prefer, which may not be what people prefer.",
     "overlap_f1": "The bundled adapter's score: the output and the reference as sets of lowercased "
     "words, precision is the share of the output's words in the reference, recall the share of the "
     "reference's words in the output, and F1 their harmonic mean. Word order, synonyms and "
@@ -220,7 +233,7 @@ def describe_metric(metric: str, project: dict) -> str:
     if metric in BUILTIN_METRICS:
         return BUILTIN_METRICS[metric]
     m = re.fullmatch(r"judge_(.+?)(_unvalidated)?", metric)
-    if m and not metric.startswith("judge_score"):
+    if m and not metric.startswith(("judge_score", "judge_won")):
         return f"Judge {m.group(1)}'s mean score for the output, on the scorer's scale" + (
             ", not validated against human ratings." if m.group(2) else "."
         )
@@ -1803,10 +1816,10 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
             f"Inspect the {len(members)} arms {what}</a>"
             + (f'<span class="muted small">{more}</span>' if more else "")
         )
-    # The rows view (RFC-023): its items one per row, production's recorded arm first when there is one.
+    # The sheet (RFC-023): its items one per row, production's recorded arm first when there is one.
     rec = [a["arm"] for a in arms if a.get("recorded")]
-    q = f"dataset={quote(ds, safe='')}&rows=1" + (f"&runs={quote(','.join(rec), safe=',/')}" if rec else "")
-    btns.append(f'<a class="btn" href="../inspect.html?{q}">Explore its rows</a>')
+    q = f"dataset={quote(ds, safe='')}&sheet=1" + (f"&runs={quote(','.join(rec), safe=',/')}" if rec else "")
+    btns.append(f'<a class="btn" href="../inspect.html?{q}">Open its sheet</a>')
     btn = f'<p class="btns">{"".join(btns)}</p>' if btns else ""
     for b in v.get("baselines", [])[-1:]:
         label = next((a["label"] for a in arms if a["arm"] == b.get("arm")), b["run"])
@@ -2060,7 +2073,7 @@ def render_picks_waiting(A: Adapter, ds: str) -> str:
                 ),
                 (
                     f'<a class="cell-link" href="../inspect.html?dataset={quote(str(p.get("from")), safe="")}'
-                    f'&rows=1&item={quote(str(p.get("item")), safe="")}"><code>{e(p.get("item"))}</code></a>'
+                    f'&sheet=1&item={quote(str(p.get("item")), safe="")}"><code>{e(p.get("item"))}</code></a>'
                 ),
                 dataset_link(str(p.get("from")), "../")
                 + (f" <small>capture {e(p['capture'])}</small>" if p.get("capture") else ""),

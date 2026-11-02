@@ -1,0 +1,16 @@
+The user wants a 2-3 sentence news wire style summary of this article about John Travolta's response to the HBO documentary "Going Clear."
+
+Key points:
+- John Travolta, high-profile Scientologist, says he hasn't seen and doesn't care to see the HBO documentary "Going Clear"
+- He defended Scientology, calling it "brilliant" and saying his 40 years of experience have been positive
+- He credited the church with helping him survive his son Jett's death in 2009
+
+News wire style is terse, factual, typically starting with the subject. Let me draft:
+
+"Actor John Travolta says he has not seen HBO's critical Scientology documentary 'Going Clear' and doesn't care to. The longtime church member, who called Scientology 'brilliant,' said his 40 years of experience have been positive and credited the organization with helping him cope with his son's 2009 death."
+
+That's two sentences, terse, captures the key facts. Could add a third about the documentary being based on Lawrence Wright's book, but the core news is Travolta's dismissal. Maybe keep it to 2-3 sentences. Let me refine:
+
+"Actor John Travolta says he has not seen HBO's Scientology documentary 'Going Clear' and doesn't care to. The high-profile church member, who called Scientology 'brilliant,' dismissed the film as the work of disgruntled former members and said his 40 years with the organization have been positive. Travolta also credited the church with helping him survive the 2009 death of his teenage son, Jett."
+
+That's three sentences, terse, wire-style. Output only the summary asActor John Travolta says he has not seen HBO's Scientology documentary "Going Clear" and doesn't care to. The high-profile church member dismissed the film as the work of disgruntled former members, calling Scientology "brilliant" and saying his 40 years with the organization have been positive. Travolta also credited the church with helping him survive the 2009 death of his teenage son, Jett.

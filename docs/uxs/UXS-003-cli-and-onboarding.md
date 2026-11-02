@@ -115,7 +115,8 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | a reference's "promoted from" (0.6.0) | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |
 | scored against a label set (0.6.0) | `evh rescore --labels D/S`, `evh run --labels D/S` | |
 | a recorded arm's badge (0.6.0) | `evh arm-from-capture --dataset-id D --capture C --as NAME` | |
-| the inspector's rows view; its selection's commands (0.6.0) | `evh inspect --dataset-id D --rows …`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
+| the inspector's sheet, its downloads; its selection's commands (0.6.0) | `evh inspect --sheet --dataset-id D --runs A,B … [--csv FILE [--fill label\|pick\|scores]]`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
+| (no page action) a sheet filled elsewhere, read back (0.6.0) | `evh sheet-import sheet.csv --dataset-id D --by WHO [--kind person\|model] [--set S] [--scorer S]` | `make sheet-import ARGS="…"` |
 | a dataset page's picks waiting; its selection's command (0.6.0) | `evh picks [--for V] [--tag k=v]`, `evh pick --dataset-id D --item ITEM --drop`; `evh dataset-extend V1 --dataset-id V2 --picks`, `evh dataset-extend V1 --dataset-id V2 --pick ITEM` | |
 | a promoted arm's deploy sheet (0.6.0) | `evh deploy-sheet --config ARM [--capture C]` | |
 | the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
@@ -123,7 +124,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | inspector: a comparison | `evh inspect --runs a,b [--baseline a] [--metric m]` | `make inspect RUNS=a,b` |
 | inspector: filter, breakdown | `evh inspect --runs … --where field:value --by field` | |
 | inspector: one item | `evh inspect --runs … --item <item_id>` | |
-| inspector: the per-item table | `evh inspect --runs … --items` | |
+| inspector: the per-item table | `evh inspect --sheet --dataset-id D --runs …` (the sheet; `--scores-only`) | |
 | inspector: the analysis charts, as numbers | `evh inspect --runs … --analysis [--x <metric>]` | |
 | the catalog's global search | `evh search <text>` | |
 | "promote its run" (a goal page with no decision) | `evh run-promote --run <run_id> --reason "…"` | `make run-promote` |

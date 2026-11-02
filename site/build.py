@@ -918,7 +918,7 @@ def home(f: dict) -> str:
             "Pick",
             "What to keep",
             "The rows where it was wrong, or saw something new, picked for the dataset you govern.",
-            "evh inspect --rows · pick",
+            "evh inspect --sheet · pick",
         ),
         (
             "Round 5",

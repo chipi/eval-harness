@@ -183,11 +183,23 @@ try:
                 "datasets with an option: passed as the command line",
                 not res.is_error and "tickets_v1" in res.content[0].text,
             )
+            props = set(by["inspect"].input_schema["properties"])
             check(
-                "inspect: the rows view's options are in its schema",
-                {"rows", "dataset-id", "wrong-against", "new-vs", "split", "unlabelled"}
-                <= set(by["inspect"].input_schema["properties"]),
-                str(sorted(by["inspect"].input_schema["properties"])),
+                "inspect: the sheet's options are in its schema; the ones that write a file (the CSV and its fill) are not, nor the removed --rows and --items",
+                {
+                    "sheet",
+                    "dataset-id",
+                    "wrong-against",
+                    "new-vs",
+                    "split",
+                    "unlabelled",
+                    "scores-only",
+                    "metric",
+                    "from",
+                }
+                <= props
+                and not {"csv", "fill", "choices", "seed", "rubric", "scale", "rows", "items"} & props,
+                str(sorted(props)),
             )
             res = await s.call_tool("labels", {"dataset-id": "tickets_v1"})
             want = evh("labels", "--dataset-id", "tickets_v1", "--json").stdout

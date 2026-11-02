@@ -61,6 +61,7 @@ bounds how much a lead on the summarisation leaderboard means to a person — me
 | `coverage` | **This repository's own** summarisation metric, imported from that example's scorer. How well it agrees with experts is how much a `coverage` lead means. |
 | `length` | The summary's word count. A confound to rule out: if it agreed with the experts, anything that rewards length would too. |
 | `random` | Seeded random scores, the floor near τ = 0. |
+| `gemma_l`, `qwen_s` in pick and pairwise mode, with a `random` floor in each | A judge is validated in the mode it is used (RFC-005, "Judging modes"), and a judge that grades like the experts says nothing about how it picks. `mode: pick`: one call per article, the 16 summaries, the best named ([`prompt_pick.txt`](prompt_pick.txt)). `mode: pairwise`: one call per pair, 8 seeded pairs an article ([`prompt_pairwise.txt`](prompt_pairwise.txt)). The `random` arm in each mode is the `min_metric` a judge must clear. |
 
 A reference-based metric gives one number per summary, so it stands for all four
 dimensions at once; a judge scores each dimension separately.
@@ -74,6 +75,12 @@ reported beside it because the literature reports both.
 - **A rank correlation, because the question is ordering.** A judge that scores everything
   one point too high but in the right order is a good judge; a calibrated scale is a
   separate property, and not one this eval asks about.
+- **In pick and pairwise mode, the same experts, asked the mode's question.** `top1` is 1 when the pick is among
+  the summaries the three experts rate best (their mean over the four dimensions), beside `top1_chance`, what a
+  random pick gets on that article (the share of its 16 that are best). `pair_agreement` is the share of the
+  sampled pairs the experts rank apart where the judge prefers the one they rate higher, a tie counting a half;
+  `n_pairs` says how many such pairs an article had. The adapter's `primary_metric(params)` makes each arm's
+  primary its mode's metric.
 - **τ-b, not τ-a, because judges tie.** Integer 1–5 scores give 16 summaries at most five
   distinct values, so a judge ties constantly. τ-b corrects for ties on both sides; τ-a
   would punish every tie. `tie_rate` reports how often each judge ties, and it barely

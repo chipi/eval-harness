@@ -56,10 +56,24 @@ that can move a result is never a patch release without saying so under **Change
   - **Agreement**: the adapter's **`same(a, b)`** says when two outputs are one decision (default: the same text;
     the triage adapter compares dispositions). **`evh inspect --disagree`** and the inspector's "only where they
     disagree" keep the items where the arms decided differently; `label-sheet --items disagree` reads the same hook.
-  - **The rows view**, `evh inspect --dataset-id D --rows` and the inspector's **05 rows**: one row per item, what each
-    chosen arm decided, every label with its source, and the signals **wrong** (against a label set), **disagree**,
-    **split**, **new** (a field value a governed dataset never had), **unlabelled**, each a filter; the rows you tick
-    give the `evh pick` and `evh label-sheet` commands. Local only: a public server refuses it.
+  - **The sheet**, `evh inspect --sheet --dataset-id D --runs A,B,…` and the inspector's **05 sheet** (the dataset
+    page's "Open its sheet"): the items down, a column per arm across with what it wrote and every score it has
+    (its run's metrics, and a judging pass's where one covered the run; `--metric M` or `SCORER/M` chooses the one it
+    is read on; `--scores-only` leaves the outputs out), every label set and reference set, the winner per item (on
+    that metric, and per pick or pairwise judge), the signals **wrong** (`--wrong-against SET`), **disagree**,
+    **split**, **new** (`--new-vs D`: a field value it never had), **unlabelled**, each a filter beside `--where` and
+    `--by`, and a footer per arm: its mean, its win rate and its verdict (the goal's decision, else the paired test
+    against the leader). The item column stays in place as the arms scroll; the rows you tick give the `evh pick`
+    and `evh label-sheet` commands. `--csv FILE` writes it (UTF-8 with the mark Excel needs), and the inspector
+    downloads the same (`/api/sheet`, `&format=csv`). Local only: a public server refuses it.
+  - **A sheet to fill, and `evh sheet-import`** (`make sheet-import`): `--csv FILE --fill label` adds `label`, `also
+    right` and `note` (`--choices`); `--fill pick` or `scores` writes the outputs as blind columns A, B, C… shuffled
+    per row (`--seed`), a `pick` or a `score: X` column per output (`--scale LO..HI`), the rubric as the first row
+    (`#rubric`; `--rubric FILE`) and its key beside the sheet (`sheet.key.json`). `evh sheet-import FILE --dataset-id
+    D --by WHO` reads back what was filled: labels as a label set (`--set`, `--kind person|model`), picks or scores
+    as judged runs under `data/runs-judged/<scorer>/` (`--scorer`), `judge_won_unvalidated` or
+    `judge_score_unvalidated` per arm per item, through the key. A row or text the key does not have, a letter not on
+    its row, a score off the scale and a name already used are refused, with nothing written.
   - **Picks**: `evh pick` marks a production item for the next version of one or more governed datasets (targets,
     tags, a note) in `data/picks.jsonl`, append-only; **`evh picks`** lists what waits (an MCP tool), and the target
     dataset's page shows them with a box per row. **`evh dataset-extend V1 --dataset-id V2 --picks`** (or `--pick`)
@@ -161,6 +175,20 @@ that can move a result is never a patch release without saying so under **Change
   needs one, and a key that is set is used.
 - **Tutorial 7, set up a model before you test it**: a model record, onboarding it where it runs, an arm that
   names it, a smoke before the full run; on your own machine with Ollama.
+- **Judging modes** (RFC-005, PRD-003 FR5): a scorer's **`mode`** says what a judge is asked: `grade` (the default,
+  as before), `pick` (the best of an item's outputs, in one call: `outputs_per_call` must hold every arm) or
+  `pairwise` (the better of two, every pair of arms; `outputs_per_call` 2). Pick and pairwise project `won` per arm
+  per item (judged runs' primary `judge_won`) and report each arm's win rate and Bradley-Terry strength with a 95%
+  interval from resampling the items, and the position and noise checks as the share of verdicts that held. A judge
+  is validated in its mode (`validation.mode` must be `mode`). The SummEval example validates `gemma_l` and
+  `qwen_s` in both (`mode: pick`, scored `top1` beside `top1_chance`; `mode: pairwise`, scored `pair_agreement`
+  with `n_pairs`; a `random` floor each): picks 0.364 and 0.263 against a random 0.070, pairwise 0.825 and 0.813
+  against 0.473; the prompts ask for the JSON first and nothing after it. `judge-summ-pick-v1` and
+  `judge-summ-pairwise-v1` judge the summarisation eval with them (29 arms in one pick: the order moved about half
+  the picks, see the SummEval README).
+- **An adapter's optional `primary_metric(params)`**: it names an arm's primary metric from the arm's params,
+  beside `PRIMARY_METRIC` (its fallback); `run` and `rescore` record it. The SummEval adapter's is `tau`, `top1` or
+  `pair_agreement` by mode.
 
 ### Changed
 
@@ -201,10 +229,14 @@ that can move a result is never a patch release without saying so under **Change
   "human-authored" or "model-generated" tier wording), the two that named a removed command as their rebuild name
   the 0.6.0 ones, and `from_outcomes` and `cost_usd`, which only the removed commands wrote, are gone. No run's
   fingerprint moves (none of these is hashed).
-- **The rows view shows each arm's decision, the signals first**: an adapter's optional `decision(output)` (the
-  triage example's: its disposition) is what a row shows, the output itself otherwise; with no `same(a, b)`, two
-  outputs agree when their decisions do. The browser's columns follow the terminal's: item, signals, the decisions,
-  labels, picked, fields (UXS-002).
+- **The sheet shows each arm's decision, the signals first**: an adapter's optional `decision(output)` (the
+  triage example's: its disposition) is what an arm's column shows, the output itself otherwise; with no
+  `same(a, b)`, two outputs agree when their decisions do. The browser's columns follow the terminal's (UXS-002).
+- **`evh inspect --items` is gone, and so is `--rows`; the sheet replaces both** (no aliases): `evh inspect --sheet
+  --dataset-id D --runs …` shows every item's scores per arm and the rows view's signals in one table. The
+  inspector's endpoints `/api/rows` and `/api/label-sheet` are gone; `/api/sheet` serves the sheet, and its
+  `&format=csv` the download. The MCP tool `inspect` offers the sheet's options but not the ones that write a file
+  (`--csv`, `--fill` and theirs).
 - **The triage example's `write_gold.py` is `labels_from_verdicts.py`**: a source's labels from `verdicts.jsonl`,
   one file per item, for `evh label-import`; the tier is the promotion's. Its owner labels rebuild the committed
   gold set byte for byte.

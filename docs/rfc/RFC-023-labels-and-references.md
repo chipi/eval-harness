@@ -111,7 +111,7 @@ The harness cannot do steps 6 and after:
   set, a re-score or (fixed in step 8) a measured run, goes to `data/runs-labels-<dataset>-<set>/`, a plain runs
   folder every reader already finds, never the re-score place goals read in place of a run: in `data/runs` a measured
   run joined the config's arm, and the catalog, reading one reference per arm, set the gold runs aside, a promoted
-  baseline's run with them. `--runs` (the sheet, the rows view) finds a run there too. An arm scored against a `model` set of its own outputs is flagged, as a reference's author
+  baseline's run with them. `--runs` (the sheet) finds a run there too. An arm scored against a `model` set of its own outputs is flagged, as a reference's author
   is.
 - A goal suggests a finalist for a group scored against a label set as it does for a reference's group, the group
   headed by its labels; you choose the baseline either way (owner, 2026-11-01).
@@ -138,7 +138,10 @@ The harness cannot do steps 6 and after:
 
 ### The rows view: exploring, and what to pick
 
-In the inspector, for one dataset (`evh inspect --dataset-id D --rows`):
+**As built (0.6.0):** replaced by [the sheet](#the-sheet-one-view-of-everything-060) before it shipped; `--rows`
+and `inspect --items` are gone. The signals and the selection below are the sheet's, as described here.
+
+In the inspector, for one dataset (as specified, a `--rows` view of `evh inspect --dataset-id D`):
 
 - **One row per item**: its fields, production's decision, each chosen arm's decision, every label with its
   source chip, and the markers below. A row opens the item in full: its fields, the item itself, every output and
@@ -167,10 +170,80 @@ In the inspector, for one dataset (`evh inspect --dataset-id D --rows`):
   and signal. The view ends with the `evh pick` and `evh label-sheet` commands for the rows it shows, writes
   nothing, and is refused on a public server (`evh mcp --public` leaves its options out).
 
+### The sheet: one view of everything (0.6.0)
+
+The owner's requirement (2026-11-02): one sheet to look at. "Which arm writes the best summary": the dataset's items
+down, a column per arm across, what each wrote and every score it has, the labels, the winner per row, and the verdict
+per arm at the bottom. It replaces the rows view and `inspect --items`, which showed halves of it: `--rows` and
+`--items` are gone (no aliases), their options (`--wrong-against`, `--new-vs`, `--split`, `--unlabelled`, `--where`,
+`--by`) are the sheet's, and so are the `evh pick` and `evh label-sheet` commands for the rows ticked.
+
+`evh inspect --sheet --dataset-id D --runs A,B,… [--metric M] [--from DIR]`, the inspector's sheet, and its CSV:
+
+- **Rows**: the dataset's items, each with its id, the start of the item, and its fields.
+- **One column per arm**: its output (shortened; the item view has it in full) and every score it has on that item:
+  the run's metrics (the primary first) and, where a judging pass covered it, the judge's (`judge_score`, or
+  `judge_won` for pick and pairwise). `--scores-only` leaves the outputs out.
+- **Labels**: a column per label set or reference set covering the items, as "escalate or file" when a label
+  accepts several answers.
+- **Winner**: the judge's pick when a pick or pairwise pass covers the row; else the best arm on the chosen metric
+  (`--metric`, else the goal's or the primary), every arm tied for best named. When both exist each has a column, so a
+  row where they differ shows.
+- **Signals**: wrong, disagree, split, new, unlabelled, as specified for the rows view above, each a column and a filter.
+- **The last row**, per arm: its mean, its win rate (the share of rows it is the winner of, a shared win split), and
+  whether it is significantly different from the leader or a contender (the goal's strategy, when a goal names the
+  dataset).
+- The item column stays in place as the arms scroll across. The terminal prints the same table; `--csv FILE` writes it,
+  UTF-8 with the mark Excel needs; the local inspector downloads it.
+
+**As built (0.6.0):** `evh inspect --sheet --dataset-id D --runs A,B,…` (`harness/scripts/_sheet.py`), the
+inspector's 05 sheet (`?dataset=D&sheet=1`, the dataset page's "Open its sheet") and `/api/sheet` (`&format=csv`
+for the download; the local inspector only, a public server refuses it). A judge's scores are read from the judging
+passes under `data/runs-judged/<scorer>/` that covered a run, and `--metric` names one as `SCORER/M`. The footer's
+verdict is the goal's decision (`axes.decide`) when a goal names the dataset, else the paired test against the
+leader. The filters are `--disagree`, `--split`, `--unlabelled`, `--wrong-against SET`, `--new-vs D`, `--where` and
+`--by`; the select box and the item column stay in place (sticky) as the arms scroll. `/api/rows` and
+`/api/label-sheet` are gone.
+
+### A sheet filled elsewhere: labels or judgements (0.6.0)
+
+A person, or any AI tool, fills a sheet's empty columns, and one command reads back whatever was filled (owner,
+2026-11-02: "who cares, is it labelling or judging"). The records stay two kinds, because they mean different things:
+a label says what is right for the item and scores any arm, a later one too; a judgement says which of these arms did
+best and cannot score an arm added next week. Mixing them would let a judgement quietly become a reference set.
+
+- `evh inspect --sheet … --csv sheet.csv --fill label` adds the empty `label` and `also right` columns (`--choices`
+  as label-sheet's); `--fill pick` adds `pick`; `--fill scores` adds a `score: X` column per arm.
+- **Judging columns are blind**: with `--fill pick` or `scores` the arms' outputs are columns A, B, C… in an order
+  shuffled per row by a seed, and the sheet names no arm; the key (which letter was which arm on each row) is written
+  beside it (`sheet.key.json`), kept on this machine. The rubric goes at the top of the sheet (what to judge; the scale,
+  or "pick the best"), and its sha256 into the key.
+- `evh sheet-import sheet.csv --dataset-id D --by WHO [--kind person|model] [--set S] [--scorer S]` reads it back:
+  a filled `label` column becomes a label set (`--set`; source `person`, or `model` with the tool named in `--by`); a
+  filled `pick` or `score:` column becomes judged runs under `data/runs-judged/<scorer>/` (`--scorer`, a name of the
+  importer's choosing), mapped back through the key, with `judge_won` or `judge_score` per arm per item, the rubric's
+  sha256 and who filled it recorded. Such judged runs are **unvalidated** (labelled so everywhere, as `--unvalidated`
+  judging is) until the same judge is validated as any judge is.
+
+**As built (0.6.0)** (`harness/scripts/sheet_import.py`), where it differs from or adds to the above:
+
+- `--fill label` adds `label`, `also right` and `note` (`--choices` puts the allowed answers in the label's header).
+- The rubric is the sheet's first data row, its `item_id` `#rubric` (`--rubric FILE`, else a plain one for the
+  fill); the import leaves out every row whose `item_id` starts `#`. The key holds the rubric's text and its sha256,
+  which letter was which arm on each row, and each cell's text hash. The key is `<sheet>.key.json` beside the sheet
+  (`sheet.csv` → `sheet.key.json`); `--key` names another. `--seed` (default 0) shuffles; `--scale LO..HI` (default
+  1..5) bounds the scores.
+- The imported judgements are named with the `_unvalidated` ending: each arm's run under
+  `data/runs-judged/<scorer>/` carries `judge_won_unvalidated` (1 for the pick, 0 for the others; `A|B` for a tie,
+  each taking half) or `judge_score_unvalidated` per item, and the label "unvalidated: filled in a sheet by WHO".
+- Refused, naming the rows, with nothing written: a row the key does not have, a cell whose text is not the one the
+  key recorded, a pick naming a letter not on its row, a score off the scale, both `pick` and `score:` filled, and a
+  set or scorer name already used. `--guideline FILE` (with `--set`) records what the labeller followed.
+
 ### Picks
 
 - **A pick** is a production item marked as a candidate for one or more governed datasets: `evh pick --dataset-id
-  <production dataset> --item <id> … [--for D …] [--tag key=value …] [--note "…"]`, the command the rows view gives
+  <production dataset> --item <id> … [--for D …] [--tag key=value …] [--note "…"]`, the command the sheet gives
   for the rows you select. `--for` may
   name several datasets, or none yet; tags group candidates (`case=oom`, `kind=missed-regression`).
 - **Where they wait**: the project's one list, `data/picks.jsonl`, in git like the rest of `data/` (owner,
@@ -248,7 +321,8 @@ The docs and the site say so and imply neither.
 | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | the chosen labels become a reference, recording the set, its source and the reason | `reference-create` |
 | `evh rescore --labels D/S`, `evh run --labels D/S` | score against a label set, without promoting it | — |
 | `evh arm-from-capture --dataset-id D --capture C --as NAME` | production's recorded decisions as an arm | — |
-| `evh inspect --dataset-id D --rows …` | every row with its signals (wrong, disagree, split, new, unlabelled), to explore, label and pick from | — |
+| `evh inspect --sheet --dataset-id D --runs A,B …` | every item with each arm's output and scores, the labels, the winner, the signals (wrong, disagree, split, new, unlabelled) and a footer per arm, to explore, label and pick from; `--csv FILE [--fill label\|pick\|scores]` writes it to fill | `inspect --rows`, `inspect --items` |
+| `evh sheet-import sheet.csv --dataset-id D --by WHO [--kind person\|model] [--set S] [--scorer S]` | a filled sheet read back: labels as a label set, picks or scores as unvalidated judged runs | — |
 | `evh pick`, `evh picks`, `evh pick … --drop` | mark an item for datasets (targets, tags, note), list what waits, drop one | — |
 | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) | the next version: v1's items and the chosen picks, with their lineage | — |
 | `evh deploy-sheet --config ARM` | what production must match; checked against a capture | — |
@@ -280,7 +354,7 @@ Page by page (UXS-001 and UXS-002 updated with the build):
   headed by the set's source chip and name, never a tier pill; the deploy sheet beside the baseline, with whether
   production matches it.
 - **The inspector** (UXS-002): label sets as "scored against", the disagreement filter, every label in the item
-  view; the rows view with its signals as filters and sorts, and a selection that gives the `evh pick` and
+  view; the sheet with its signals as filters and sorts, and a selection that gives the `evh pick` and
   `evh label-sheet` commands for its rows. Nothing on a page writes.
 - **The header** names the project the catalog was built from, and `catalog-serve` prints its own port, so two
   catalogs open side by side are never confused.
@@ -293,11 +367,11 @@ Page by page (UXS-001 and UXS-002 updated with the build):
 4. `evh label-from-capture --map outcomes.yaml --set issue_verdicts`: your verdicts on the fleet's issues, where
    an issue reached the decision (a `rule` set).
 5. `evh label-sheet --items disagree --runs production_2026_11,<leader> --propose issue_verdicts` (or the sheet
-   the rows view's selection gives): you label where they disagree, plus a small random slice, then
+   `evh inspect --sheet … --csv sheet.csv --fill label` writes, read back by `evh sheet-import`): you label where they disagree, plus a small random slice, then
    `evh label-import` → the set `owner_2026_11` (`person`).
 6. `evh rescore --labels orrery_triage_2026_11/owner_2026_11`: production, the deployed config and the leader,
    against your labels; agreement everywhere; `evh deploy-sheet` says whether production ran what was promoted.
-7. `evh inspect --dataset-id orrery_triage_2026_11 --rows --runs production_2026_11,<leader> --wrong-against
+7. `evh inspect --sheet --dataset-id orrery_triage_2026_11 --runs production_2026_11,<leader> --wrong-against
    owner_2026_11 --new-vs orrery_triage_v1_labelled`: where production was wrong on something v1 does not cover;
    pick those worth keeping, for `orrery_triage_v1_labelled`, tagged by case.
 8. Steps 1 to 7 again on later captures; the picks accumulate (`evh picks --for orrery_triage_v1_labelled`).
@@ -340,12 +414,12 @@ outcomes are replaced.
 - The migration on this repository's references, with every run's score unchanged (the reference files are the
   same bytes).
 - Labels following an item into a new version by its hash, and not following an edited one.
-- The rows view's signals on a small fixture, each against a hand-counted answer.
+- The sheet's signals on a small fixture, each against a hand-counted answer.
 - Two projects at once: both serve their catalogs on their own ports, write their model records and run their
   arms, and neither sees the other's.
 - The triage walk-through above as the acceptance case, on the fleet's 233 Orrery decisions split by time (owner,
   2026-11-01): the older half captured and made the governed dataset; the newer half captured as a continuation
-  (`--since-capture`), standing in for production after deployment; step 6, the rows view and picks on it; then v2
+  (`--since-capture`), standing in for production after deployment; step 6, the sheet and picks on it; then v2
   from the governed v1 and the picks chosen. `check_guide` runs the tutorial that teaches it.
 
 ## Decisions (owner, 2026-11-01)
@@ -360,6 +434,6 @@ outcomes are replaced.
 - **A6** One pick list per project; a pick names its targets (several, or none yet) and may carry tags.
 - **A8** A label set records the guideline it was labelled by when one is given: optional (`--guideline FILE`),
   hashed into the set (owner, 2026-11-01: "1A").
-- **A7** The pages never write (PRD-004's non-goal, ADR-0004, kept): the rows view and the dataset page select and
+- **A7** The pages never write (PRD-004's non-goal, ADR-0004, kept): the sheet and the dataset page select and
   give the command; labelling is the sheet.
 

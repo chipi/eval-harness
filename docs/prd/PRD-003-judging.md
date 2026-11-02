@@ -1,6 +1,6 @@
 # PRD-003: Re-measuring with a validated LLM judge
 
-- **Status**: Implemented (0.3.0)
+- **Status**: Implemented (0.3.0); judging modes (FR5) in 0.6.0
 - **Authors**: Marko Dragoljevic
 - **Related RFC**: [RFC-005](../rfc/RFC-005-judge-scorers.md) (the judging pass, technically)
 - **Related ADR**: [ADR-0001](../adr/ADR-0001-judge-scorers.md)
@@ -95,6 +95,23 @@ and step 10 of the [GUIDE](../GUIDE.md).
 - **FR4.1**: A judged arm's row on the catalog reads "judge <scorer>" and is tinted; judged and
   reference-scored numbers are never ranked together
   ([UXS-001](../uxs/UXS-001-catalog.md)).
+
+### FR5: What a judge is asked (0.6.0)
+
+[RFC-005](../rfc/RFC-005-judge-scorers.md), "Judging modes".
+
+- **FR5.1**: A scorer's `mode` says what its judges are asked: `grade` (the default: each output scored per
+  dimension on the scale), `pick` (the best of every arm's output for an item, in one call) or `pairwise` (the
+  better of two, for every pair of arms on every item).
+- **FR5.2**: A judge is validated in the mode it is used: the scorer's `validation.mode` must be its `mode`, or
+  the scorer is refused. A pick scorer whose `outputs_per_call` cannot hold every arm, and a pairwise one whose
+  `outputs_per_call` is not 2, are refused.
+- **FR5.3**: Pick and pairwise project `won` per arm per item (judged runs' primary `judge_won`), read by goals,
+  rounds, `inspect` and the sheet as `judge_score` is; the pass reports each arm's win rate and Bradley-Terry
+  strength with an interval, and the position and noise checks as the share of verdicts that held.
+- **FR5.4**: The SummEval example validates judges in each mode as arms (`top1` for pick, `pair_agreement` for
+  pairwise), with a random arm as the floor; an adapter may name an arm's primary metric by its params
+  (`primary_metric(params)`), so each arm is ranked on its mode's metric.
 
 ## Success Criteria
 

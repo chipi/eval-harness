@@ -2003,4 +2003,1294 @@ check(
     != functools.reduce(operator.iadd, vz.blocks("a2", [f"s{i:02d}" for i in range(19)], 16), []),
 )
 
+
+# ══ judging modes: pick and pairwise (RFC-005 "Judging modes") ═══════════════════════════════════════
+# A small world for the modes: 4 arms whose outputs differ only in length (arm k is k + 1 'w's longer
+# than arm 0), 6 items. The fake judge ranks by length (`prefer: longer`), so who wins is known.
+import itertools  # noqa: E402
+import math  # noqa: E402
+
+import jsonschema  # noqa: E402
+import yaml  # noqa: E402
+
+SCHEMAS = HERE.parent / "schemas"
+EXAMPLE = HERE.parents[1] / "examples" / "summeval-judging"
+MARMS = ARMS[:4]
+MIDS = [a["config_id"] for a in MARMS]
+MITEMS = [f"it{n}" for n in range(6)]
+MARTICLES = {i: f"Article {i}. It is long enough to be an article." for i in MITEMS}
+
+
+def m_outputs(extra=None):
+    """arm k's text is 'summary' plus k + 1 w's; `extra` maps arm index -> w's, to make ties."""
+    w = {k: k + 1 for k in range(4)} | (extra or {})
+    return {a["config_id"]: {i: f"summary {'w' * w[k]} {i}" for i in MITEMS} for k, a in enumerate(MARMS)}
+
+
+PICK_BASE = (EXAMPLE / "prompt_pick.txt").read_text(encoding="utf-8").strip()
+PAIR_BASE = (EXAMPLE / "prompt_pairwise.txt").read_text(encoding="utf-8").strip()
+
+
+def mscorer(mode, prefer=("longer", "longer"), position=0.5, noise=0.5, **over):
+    sc = scorer(
+        mode=mode,
+        judges=[
+            {
+                "id": jid,
+                "params": {
+                    "provider": "fake",
+                    "model": f"m_{jid}",
+                    "family": fam_,
+                    "prefer": pf,
+                    "usd_per_mtok_in": 1.0,
+                    "usd_per_mtok_out": 2.0,
+                },
+            }
+            for jid, fam_, pf in zip(("ja", "jb"), ("gemma", "qwen"), prefer)
+        ],
+        prompt={"file": "examples/summeval-judging/prompt_pick.txt"},
+        protocol={
+            "outputs_per_call": 2 if mode == "pairwise" else 4,
+            "blinding": True,
+            "order_seed": 0,
+            "position_check_fraction": position,
+            "noise_check_fraction": noise,
+        },
+    )
+    sc.update(over)
+    return sc
+
+
+def base_of(sc):
+    return {"pairwise": PAIR_BASE, "pick": PICK_BASE}.get(mode_of_(sc), BASE)
+
+
+def mmanifest(sc, outputs=None, arms=None):
+    base = base_of(sc)
+    return js.build_manifest(
+        sc, "ds", "1" * 64, MITEMS, arms or MARMS, MARTICLES, outputs or m_outputs(), base
+    )
+
+
+def mode_of_(sc):
+    return sc.get("mode") or "grade"
+
+
+def mrun(vdir, sc, man, outputs=None, call=judging.call_judge, cap=None, retry=False):
+    base = base_of(sc)
+    return js.run_judging(
+        man,
+        sc,
+        base,
+        MARTICLES,
+        outputs or m_outputs(),
+        Path(vdir),
+        call,
+        cap,
+        retry_unparsed=retry,
+        log=lambda *_: None,
+    )
+
+
+def mproj(sc, man, vdir):
+    return js.project(sc, js.load_scores(man, sc, Path(vdir)), MITEMS)
+
+
+# ── parsers ──────────────────────────────────────────────────────────────────
+check("parse_pick: one number", judging.parse_pick('{"best": [3]}', 16) == [3])
+check("parse_pick: several, in the order given", judging.parse_pick('{"best": [7, 3]}', 16) == [7, 3])
+check(
+    "parse_pick: wrapped in a fence and a sentence still parses",
+    judging.parse_pick('Here:\n```json\n{"best": [2]}\n```', 4) == [2],
+)
+for what_, reply_ in (
+    ("a number out of range", '{"best": [5]}'),
+    ("zero", '{"best": [0]}'),
+    ("a repeat", '{"best": [2, 2]}'),
+    ("an empty list", '{"best": []}'),
+    ("a bare number, not a list", '{"best": 3}'),
+    ("a string number", '{"best": ["3"]}'),
+    ("true", '{"best": [true]}'),
+    ("a float", '{"best": [2.0]}'),
+    ("the wrong key", '{"better": [2]}'),
+    ("no JSON", "number 3"),
+    ("a JSON list", "[3]"),
+    ("empty", ""),
+):
+    check(f"parse_pick: {what_} is None", judging.parse_pick(reply_, 4) is None)
+check("parse_pick: None is None", judging.parse_pick(None, 4) is None)
+check(
+    "parse_pairwise: 1, 2 and tie",
+    [judging.parse_pairwise(f'{{"better": {v}}}') for v in ("1", "2", '"tie"')] == [1, 2, "tie"],
+)
+check("parse_pairwise: Tie is a tie", judging.parse_pairwise('{"better": "Tie"}') == "tie")
+for what_, reply_ in (
+    ("3", '{"better": 3}'),
+    ("0", '{"better": 0}'),
+    ("true", '{"better": true}'),
+    ('"1"', '{"better": "1"}'),
+    ("1.0", '{"better": 1.0}'),
+    ("a list", '{"better": [1]}'),
+    ("the wrong key", '{"best": 1}'),
+    ("no JSON", "the first"),
+):
+    check(f"parse_pairwise: {what_} is None", judging.parse_pairwise(reply_) is None)
+
+# ── messages: layout, the reminder, and byte-equality with the SummEval adapter ──────────
+ad_item: dict = {"article": "  An article.\n", "summaries": [f" s{i} \n" for i in range(16)]}
+pm_ = judging.build_pick_message(PICK_BASE, ad_item["article"], ad_item["summaries"])
+check(
+    "pick message: prompt for 16, ARTICLE, numbered SUMMARIES, then the answer-only-JSON instruction",
+    pm_.startswith("You will be shown a news article and 16 numbered summaries")
+    and "\n\nARTICLE:\nAn article.\n\nSUMMARIES:\n1. s0\n2. s1\n" in pm_
+    and pm_.endswith(judging.PICK_REMINDER)
+    and "{n}" not in pm_,
+)
+check(
+    "pick message: byte-identical to the SummEval adapter's own",
+    pm_ == ad._pick_message(ad_item, {"prompt": PICK_BASE}),
+)
+pw_ = judging.build_pairwise_message(PAIR_BASE, ad_item["article"], ad_item["summaries"][3:5])
+check(
+    "pairwise message: two summaries, the pair reminder last, byte-identical to the adapter's own",
+    "\n\nSUMMARIES:\n1. s3\n2. s4\n\n" in pw_
+    and pw_.endswith(judging.PAIR_REMINDER)
+    and "shown a news article and 2 numbered summaries" in pw_
+    and pw_ == ad._pair_message(ad_item, 3, 4, {"prompt": PAIR_BASE}),
+)
+check(
+    "the adapter's reminders are the package's",
+    ad.PICK_REMINDER == judging.PICK_REMINDER and ad.PAIR_REMINDER == judging.PAIR_REMINDER,
+)
+
+
+def _raises(exc, fn):
+    try:
+        fn()
+    except exc:
+        return True
+    return False
+
+
+check(
+    "pairwise message: three outputs are refused",
+    _raises(ValueError, lambda: judging.build_pairwise_message(PAIR_BASE, "a", ["x", "y", "z"])),
+)
+check(
+    "the grade message is untouched by the modes",
+    judging.build_message(BASE, ad_item["article"], ad_item["summaries"])
+    == ad._judge_message(ad_item, {"prompt": judging.render_prompt(BASE, 16)}),
+)
+
+# ── the scorer: mode, its checks, and what only a declared mode changes ────────────────────
+clean_ = {k: v for k, v in real.items() if not k.startswith("_")}
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+
+    def load_with(label, **over):
+        pth = td / f"{label}.yaml"
+        pth.write_text(yaml.safe_dump(dict(clean_, **over)))
+        return pth
+
+    def refused_with(label, needle, **over):
+        msg = _exit(lambda: js.load_scorer(load_with(label, **over)))
+        return needle in msg
+
+    val_pick = dict(clean_["validation"], mode="pick")
+    val_pair = dict(clean_["validation"], mode="pairwise")
+    pr2 = dict(clean_["protocol"], outputs_per_call=2)
+    check("mode: an unknown mode is refused", refused_with("bogus", "mode must be one of", mode="bogus"))
+    check(
+        "mode: pick with a validation that has no mode (grade) is refused",
+        refused_with("pick-grade", "validation.mode is 'grade' but mode is 'pick'", mode="pick"),
+    )
+    check(
+        "mode: grade with validation.mode pick is refused",
+        refused_with(
+            "grade-pick", "validation.mode is 'pick' but mode is 'grade'", mode="grade", validation=val_pick
+        ),
+    )
+    check(
+        "mode: an absent mode with validation.mode pairwise is refused",
+        refused_with("none-pair", "validation.mode is 'pairwise'", validation=val_pair),
+    )
+    check(
+        "mode: pick whose validation.mode is pairwise is refused",
+        refused_with(
+            "pick-pair", "validation.mode is 'pairwise' but mode is 'pick'", mode="pick", validation=val_pair
+        ),
+    )
+    ok_pick = js.load_scorer(load_with("ok-pick", mode="pick", validation=val_pick))
+    check(
+        "mode: pick with validation.mode pick loads",
+        ok_pick["mode"] == "pick" and js.mode_of(ok_pick) == "pick",
+    )
+    check(
+        "mode: pairwise with outputs_per_call 16 is refused, and says a pair is 2",
+        refused_with("pair-16", "exactly 2 outputs", mode="pairwise", validation=val_pair),
+    )
+    ok_pair = js.load_scorer(load_with("ok-pair", mode="pairwise", validation=val_pair, protocol=pr2))
+    check("mode: pairwise with outputs_per_call 2 loads", js.mode_of(ok_pair) == "pairwise")
+    check(
+        "mode: pairwise still needs its position check (a call of 2 has an order)",
+        refused_with(
+            "pair-nopos",
+            "position_check_fraction",
+            mode="pairwise",
+            validation=val_pair,
+            protocol=dict(pr2, position_check_fraction=0),
+        ),
+    )
+    check(
+        "mode: grade written out and absent are the same scorer in effect",
+        js.mode_of(js.load_scorer(load_with("explicit-grade", mode="grade"))) == "grade"
+        and js.mode_of(real) == "grade",
+    )
+    # the gate: a validation run measured in another mode does not validate the scorer
+    prob_pick = js.validation_problems(
+        dict(real, mode="pick", validation=val_pick), runs_dir=HERE.parent / "data" / "runs"
+    )
+    check(
+        "gate: a validation run measured in grade mode does not validate a pick scorer",
+        any("measured mode='grade', the scorer uses 'pick'" in p for p in prob_pick),
+        str(prob_pick[:2]),
+    )
+    check(
+        "gate: a scorer whose validation.mode differs from its mode is a problem even built in code",
+        any("validation.mode" in p for p in js.validation_problems(dict(real, mode="pick"))),
+    )
+    check(
+        "gate: the committed grade scorers still gate as before (a run's absent mode is grade)",
+        js.validation_problems(real) == [],
+    )
+
+    # V13 reads a pick and a pairwise scorer as well-formed (their prompts render)
+    sdir = td / "scorers"
+    sdir.mkdir()
+    for sid_, mode_, proto_ in (("judge-mode-pick", "pick", {}), ("judge-mode-pair", "pairwise", pr2)):
+        body = {k: v for k, v in real.items() if not k.startswith("_") and k != "validation"} | {
+            "scorer_id": sid_,
+            "mode": mode_,
+            "protocol": dict(real["protocol"]) | proto_,
+            "prompt": {
+                "file": f"examples/summeval-judging/prompt_{'pick' if mode_ == 'pick' else 'pairwise'}.txt"
+            },
+        }
+        (sdir / f"{sid_}.yaml").write_text(yaml.safe_dump(body))
+        jsonschema.validate(body, json.loads((SCHEMAS / "scorer.schema.json").read_text()))
+    check(
+        "V13: a pick and a pairwise scorer are well-formed",
+        vt.scorer_problems(sdir) == [],
+        str(vt.scorer_problems(sdir)),
+    )
+    bad_body = yaml.safe_load((sdir / "judge-mode-pick.yaml").read_text()) | {"mode": "sideways"}
+    try:
+        jsonschema.validate(bad_body, json.loads((SCHEMAS / "scorer.schema.json").read_text()))
+        check("scorer schema: mode outside grade/pick/pairwise is invalid", False)
+    except jsonschema.ValidationError:
+        check("scorer schema: mode outside grade/pick/pairwise is invalid", True)
+
+# pick needs one call per item
+sc_pick_small = mscorer("pick", protocol={**mscorer("pick")["protocol"], "outputs_per_call": 3})
+msg_ = _exit(lambda: mmanifest(sc_pick_small))
+check(
+    "pick: outputs_per_call below the number of arms is refused, and says why",
+    "at least the number of arms (4)" in msg_ and "each block's winner, not the item's" in msg_,
+    msg_,
+)
+check(
+    "pick: outputs_per_call equal to the arms is accepted; above it too",
+    not _exit(lambda: mmanifest(mscorer("pick")))
+    and not _exit(
+        lambda: mmanifest(mscorer("pick", protocol={**mscorer("pick")["protocol"], "outputs_per_call": 16}))
+    ),
+)
+
+# ── the judging set ──────────────────────────────────────────────────────────
+g_sc = scorer(protocol={**scorer()["protocol"], "outputs_per_call": 4})
+g_plain = mmanifest(g_sc)
+g_explicit = mmanifest(dict(g_sc, mode="grade"))
+mp_, mw_ = mmanifest(mscorer("pick")), mmanifest(mscorer("pairwise"))
+check(
+    "grade: no `mode` key in the set, and `mode: grade` written out is the same set (same hash and id)",
+    "mode" not in g_plain and g_plain == g_explicit,
+)
+check(
+    "a declared mode enters the hash: pick, pairwise and grade are three different sets",
+    len({g_plain["judging_set_sha256"], mp_["judging_set_sha256"], mw_["judging_set_sha256"]}) == 3
+    and mp_["mode"] == "pick"
+    and mw_["mode"] == "pairwise",
+)
+check(
+    "every manifest recomputes to its stored hash (V11's rule) in every mode",
+    all(js.manifest_hash(m) == m["judging_set_sha256"] for m in (g_plain, mp_, mw_)),
+)
+check(
+    "pick: one block of all 4 arms per item, the position pass a permutation of it",
+    all(
+        len(it["primary"]) == 1
+        and sorted(it["primary"][0]) == sorted(MIDS)
+        and sorted(it["position"][0]) == sorted(MIDS)
+        for it in mp_["items"]
+    )
+    and any(it["primary"] != it["position"] for it in mp_["items"])
+    and mp_["protocol"]["block_sizes"] == [4],
+)
+want_pairs = {frozenset(p) for p in itertools.combinations(MIDS, 2)}
+check(
+    "pairwise: one block per pair of arms per item (n(n-1)/2 = 6), every pair once, blocks of 2",
+    all(
+        len(it["primary"]) == 6
+        and {frozenset(b) for b in it["primary"]} == want_pairs
+        and all(len(b) == 2 for b in it["primary"])
+        for it in mw_["items"]
+    )
+    and mw_["protocol"]["block_sizes"] == [2],
+)
+check(
+    "pairwise: the position pass is the same pairs in swapped order, block for block",
+    all(it["position"] == [b[::-1] for b in it["primary"]] for it in mw_["items"]),
+)
+check(
+    "pairwise: pairs are not oriented by one order per item (arms sit first and second across pairs)",
+    any(
+        len({b[0] for b in it["primary"]} | {b[1] for b in it["primary"]}) == 4
+        and len({b[0] for b in it["primary"]}) > 1
+        for it in mw_["items"]
+    ),
+)
+check(
+    "the control subsets are the same in every mode (a fraction of the items)",
+    len(mp_["position_items"]) == 3 == len(mw_["noise_items"])
+    and mp_["position_items"] == mw_["position_items"],
+)
+sets_schema = json.loads((SCHEMAS / "judging-set.schema.json").read_text())
+check(
+    "judging-set schema: pick and pairwise sets validate",
+    all(jsonschema.Draft202012Validator(sets_schema).is_valid(m) for m in (mp_, mw_)),
+)
+check(
+    "judging-set schema: a grade set (no mode) still validates",
+    jsonschema.Draft202012Validator(sets_schema).is_valid(
+        json.loads(next((HERE.parent / "data" / "judging-sets").glob("*.json")).read_text())
+    ),
+)
+check(
+    "the same arm outputs in a pairwise set: a changed output is a different set",
+    mmanifest(mscorer("pairwise"), outputs=m_outputs({2: 9}))["judging_set_id"] != mw_["judging_set_id"],
+)
+
+# blinding: a pick or pairwise prompt names no arm, run or family
+names_m = [*MIDS, *(a["run"] for a in MARMS), "gemma", "qwen"]
+msgs_m = [
+    js.message_for(m, PICK_BASE if m["mode"] == "pick" else PAIR_BASE, MARTICLES, m_outputs(), it, p, b)
+    for m in (mp_, mw_)
+    for it in m["items"]
+    for p in ("primary", "position")
+    for b in range(len(it[p]))
+]
+check(
+    "pick and pairwise prompts name no arm, run or family", not any(n in m for m in msgs_m for n in names_m)
+)
+check(
+    "pick prompts number 4 summaries; pairwise prompts number 2",
+    all(
+        len(re.findall(r"^\d+\. ", m.split("SUMMARIES:\n")[1], re.M))
+        == (4 if "best" in m.rsplit("\n", 1)[-1] else 2)
+        for m in msgs_m
+    ),
+)
+
+# ── the fake judge answers in the shape of the mode ─────────────────────────────────────
+fp_ = {"provider": "fake", "model": "m", "usd_per_mtok_in": 1.0, "usd_per_mtok_out": 1.0}
+msg4 = judging.build_pick_message(PICK_BASE, "A", ["aa", "bbbb", "cc", "bbbb"])
+check(
+    "fake judge, pick: the longest outputs are named, all of them when equal",
+    json.loads(judging.call_judge(msg4, fp_ | {"_mode": "pick"}).output) == {"best": [2, 4]}
+    and json.loads(judging.call_judge(msg4, fp_ | {"_mode": "pick", "prefer": "shorter"}).output)
+    == {"best": [1, 3]}
+    and json.loads(judging.call_judge(msg4, fp_ | {"_mode": "pick", "prefer": "first"}).output)
+    == {"best": [1]},
+)
+msg2 = judging.build_pairwise_message(PAIR_BASE, "A", ["aa", "bbb"])
+msg2t = judging.build_pairwise_message(PAIR_BASE, "A", ["aa", "bb"])
+check(
+    "fake judge, pairwise: the longer wins, equal lengths tie, `first` always says 1",
+    json.loads(judging.call_judge(msg2, fp_ | {"_mode": "pairwise"}).output) == {"better": 2}
+    and json.loads(judging.call_judge(msg2, fp_ | {"_mode": "pairwise", "prefer": "shorter"}).output)
+    == {"better": 1}
+    and json.loads(judging.call_judge(msg2t, fp_ | {"_mode": "pairwise"}).output) == {"better": "tie"}
+    and json.loads(judging.call_judge(msg2, fp_ | {"_mode": "pairwise", "prefer": "first"}).output)
+    == {"better": 1},
+)
+check(
+    "fake judge: its answers parse with the real parsers",
+    judging.parse_pick(judging.call_judge(msg4, fp_ | {"_mode": "pick"}).output, 4) == [2, 4]
+    and judging.parse_pairwise(judging.call_judge(msg2t, fp_ | {"_mode": "pairwise"}).output) == "tie",
+)
+check(
+    "fake judge: an unknown `prefer` is an error, not a silent default",
+    _raises(ValueError, lambda: judging.call_judge(msg4, fp_ | {"_mode": "pick", "prefer": "best"})),
+)
+check(
+    "fake judge in grade mode is unchanged: no _mode, scores on the scale",
+    sorted(json.loads(judging.call_judge(msg4.replace("\n\nAnswer only", "\n\nx"), fp_).output))
+    == sorted(js.DIMS),
+)
+check(
+    "judge_params tells a fake judge the mode, a real judge nothing",
+    js.judge_params(mscorer("pick"), mscorer("pick")["judges"][0])["_mode"] == "pick"
+    and "_mode"
+    not in js.judge_params(mscorer("pick"), {"id": "x", "params": {"provider": "openai", "model": "m"}}),
+)
+
+# ── pick, end to end with fake judges ───────────────────────────────────────────────
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    sc = mscorer("pick")
+    man = mp_
+    n_tasks = len(js.tasks(man))
+    st = mrun(td, sc, man)
+    check(
+        "pick: calls = judges x (items + position items + noise items) = 2 x (6 + 3 + 3)",
+        st["calls"] == 2 * 12 == 2 * n_tasks and st["skipped"] == 0 and not st["aborted"],
+    )
+    stored = json.loads((td / "ja" / f"{MITEMS[0]}.primary.b0.json").read_text())
+    check(
+        "pick: a verdict stores `best` (1-based, block order) in place of `scores`, with the reply",
+        "scores" not in stored
+        and stored["best"] == [man["items"][0]["primary"][0].index(MIDS[3]) + 1]
+        and json.loads(stored["output"]) == {"best": stored["best"]}
+        and stored["n"] == 4
+        and stored["pass"] == "primary",
+        str(stored),
+    )
+    proj = mproj(sc, man, td)
+    check(
+        "pick: the longest arm alone wins every item -> won 1, the others 0, for both judges and the mean",
+        all(
+            proj[i][c][k] == (1.0 if c == MIDS[3] else 0.0)
+            for i in MITEMS
+            for c in MIDS
+            for k in ("ja", "jb", "_mean")
+        ),
+    )
+    summ = js.summarise(man, sc, MARMS, js.load_scores(man, sc, td), proj, st, "unvalidated judge", False, td)
+    pa = summ["per_arm"]
+    check(
+        "pick summary: judge_won and win_rate per arm; no judge_score (that is grade's)",
+        pa[MIDS[3]]["judge_won"] == 1.0
+        and pa[MIDS[3]]["win_rate"] == 1.0
+        and pa[MIDS[0]]["win_rate"] == 0.0
+        and "judge_score" not in pa[MIDS[0]]
+        and pa[MIDS[3]]["judge_ja"] == 1.0
+        and summ["mode"] == "pick",
+    )
+    bt = {c: pa[c]["bt_strength"] for c in MIDS}
+    check(
+        "pick summary: Bradley-Terry puts the winner first, the three losers (never compared with each other) level",
+        bt[MIDS[3]] > bt[MIDS[0]] == bt[MIDS[1]] == bt[MIDS[2]] and abs(math.prod(bt.values()) - 1.0) < 1e-4,
+        str(bt),
+    )
+    check(
+        "pick summary: identical items give a degenerate interval (every resample is the full sample)",
+        all(pa[c]["bt_low"] == pa[c]["bt_strength"] == pa[c]["bt_high"] for c in MIDS),
+    )
+    check(
+        "pick summary: position and noise kept every verdict (the longest wins wherever it sits)",
+        all(
+            summ["controls"][j][k]["agreement"] == 1.0 and summ["controls"][j][k]["n_verdicts"] == 3
+            for j in ("ja", "jb")
+            for k in ("position", "noise")
+        ),
+        str(summ["controls"]),
+    )
+    check(
+        "pick summary: the two judges name the same winner on every item",
+        summ["judge_agreement"]["ja~jb"]["winner_agreement"] == 1.0
+        and summ["judge_agreement"]["ja~jb"]["n_items"] == 6,
+    )
+    check(
+        "pick summary: 5 sections kept: per_judge counts, controls per judge, bradley_terry method",
+        summ["per_judge"]["ja"]["verdicts"] == 12
+        and summ["per_judge"]["ja"]["unparsed"] == 0
+        and summ["bradley_terry"]["comparisons"] == 6 * 2 * 3
+        and summ["bradley_terry"]["resamples"] == js.BT_RESAMPLES,
+        str(summ["bradley_terry"]),
+    )
+    # resume and $0 re-read
+    before = {f: f.read_bytes() for f in td.glob("*/*.json")}
+    j2 = {"n": 0}
+
+    def counting(m, p):
+        j2["n"] += 1
+        return judging.call_judge(m, p)
+
+    st2 = mrun(td, sc, man, call=counting)
+    check(
+        "pick: a second run makes no call and rewrites nothing",
+        j2["n"] == 0 and st2["calls"] == 0 and all(f.read_bytes() == b for f, b in before.items()),
+    )
+    victim_ = next(td.glob("jb/*.primary.b0.json"))
+    victim_.unlink()
+    st3 = mrun(td, sc, man, call=counting)
+    check("pick: one deleted verdict costs exactly one call", st3["calls"] == 1 and j2["n"] == 1)
+    check(
+        "pick: --no-calls (call=None) re-reads and calls nothing", mrun(td, sc, man, call=None)["calls"] == 0
+    )
+    again = mproj(sc, man, td)
+    check("pick: the re-read projection equals the first", again == proj)
+    est = js.estimate(man, sc, PICK_BASE, MARTICLES, m_outputs(), Path(tempfile.mkdtemp(dir=td)))
+    check(
+        "pick: dry-run counts one call per item, position item and noise item, per judge",
+        est["ja"]["calls"] == est["jb"]["calls"] == 12
+        and est["ja"]["tokens_in"] > 0
+        and est["ja"]["tokens_out"] == 12 * js.OUT_TOKENS_ANSWER,
+    )
+    check(
+        "pick: dry-run does not price what is stored",
+        js.estimate(man, sc, PICK_BASE, MARTICLES, m_outputs(), td)["ja"]["calls"] == 0,
+    )
+    # schema and V11/V12 on what the pass wrote
+    vschema = jsonschema.Draft202012Validator(json.loads((SCHEMAS / "verdict.schema.json").read_text()))
+    check(
+        "verdict schema: stored pick verdicts validate",
+        all(vschema.is_valid(json.loads(f.read_text())) for f in td.glob("*/*.json")),
+    )
+    root_ = Path(tempfile.mkdtemp(dir=td))
+    sets_ = root_ / "judging-sets"
+    js.freeze(man, sets_)
+    vroot_ = root_ / "judge-verdicts" / sc["scorer_id"] / man["judging_set_id"]
+    shutil.copytree(td / "ja", vroot_ / "ja")
+    shutil.copytree(td / "jb", vroot_ / "jb")
+    check(
+        "V11 and V12 accept a pick set and its verdicts",
+        vt.judging_set_problems(sets_) == [] and vt.verdict_problems(root_ / "judge-verdicts", sets_) == [],
+        str(vt.verdict_problems(root_ / "judge-verdicts", sets_)[:2]),
+    )
+
+# a shared pick: arms 1 and 2 are the equally longest
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    sc, outs = mscorer("pick"), m_outputs({0: 3, 1: 4, 2: 4, 3: 1})
+    man = mmanifest(sc, outputs=outs)
+    st = mrun(td, sc, man, outputs=outs)
+    proj = mproj(sc, man, td)
+    check(
+        "pick: two arms named together share the item: won 1/2 each, 0 for the rest",
+        all(proj[i][c]["_mean"] == {MIDS[1]: 0.5, MIDS[2]: 0.5}.get(c, 0.0) for i in MITEMS for c in MIDS),
+    )
+    stored = json.loads(next(td.glob("ja/*.primary.b0.json")).read_text())
+    check("pick: the shared verdict stores both numbers", len(stored["best"]) == 2)
+    comps = js.item_comparisons("pick", man["items"][0]["primary"], {0: tuple(sorted(MIDS[1:3]))})
+    check(
+        "Bradley-Terry input from a shared pick: each named arm beats each unnamed; the named tie",
+        sorted(comps)
+        == sorted(
+            [
+                (MIDS[1], MIDS[0], 1.0, 0.0),
+                (MIDS[1], MIDS[3], 1.0, 0.0),
+                (MIDS[2], MIDS[0], 1.0, 0.0),
+                (MIDS[2], MIDS[3], 1.0, 0.0),
+                (MIDS[1], MIDS[2], 0.5, 0.5),
+            ]
+        ),
+        str(comps),
+    )
+    sm = js.summarise(man, sc, MARMS, js.load_scores(man, sc, td), proj, st, "unvalidated judge", False, td)
+    pa = sm["per_arm"]
+    check(
+        "shared pick: the tied arms get one strength, above the unnamed arms'",
+        pa[MIDS[1]]["bt_strength"]
+        == pa[MIDS[2]]["bt_strength"]
+        > pa[MIDS[0]]["bt_strength"]
+        == pa[MIDS[3]]["bt_strength"],
+    )
+
+# a judge with position bias, and two judges that disagree
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    sc = mscorer("pick", prefer=("longer", "first"))
+    man = mmanifest(sc)
+    st = mrun(td, sc, man)
+    proj = mproj(sc, man, td)
+    firsts = {it["item_id"]: it["primary"][0][0] for it in man["items"]}
+    check(
+        "pick: a judge that always names the first-listed output wins the arm that was listed first",
+        all(proj[i][c]["jb"] == (1.0 if c == firsts[i] else 0.0) for i in MITEMS for c in MIDS),
+    )
+    sm = js.summarise(man, sc, MARMS, js.load_scores(man, sc, td), proj, st, "unvalidated judge", False, td)
+    held = sum(
+        man["items"][int(i[2:])]["primary"][0][0] == man["items"][int(i[2:])]["position"][0][0]
+        for i in man["position_items"]
+    )
+    check(
+        "pick: position agreement is the share of re-shuffles whose first-listed arm is unchanged (the biased judge); the content judge keeps all",
+        sm["controls"]["jb"]["position"]["kept"] == held
+        and sm["controls"]["jb"]["position"]["n_verdicts"] == 3
+        and sm["controls"]["ja"]["position"]["agreement"] == 1.0
+        and sm["controls"]["jb"]["noise"]["agreement"] == 1.0,
+        str(sm["controls"]["jb"]) + f" held={held}",
+    )
+    expect_agree = sum({MIDS[3]} == {firsts[i]} for i in MITEMS) / len(MITEMS)
+    check(
+        "pick: inter-judge winner agreement = the share of items where the biased judge's first arm is the longest",
+        abs(sm["judge_agreement"]["ja~jb"]["winner_agreement"] - round(expect_agree, 6)) < 1e-9,
+    )
+
+# unparsed replies, --retry-unparsed
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    sc, man = mscorer("pick"), mp_
+    reply_budget = {"left": 2}
+
+    def garbage_first(m, p):
+        if p["model"] == "m_ja" and reply_budget["left"] > 0:
+            reply_budget["left"] -= 1
+            return SimpleNamespace(
+                output='{"best": [9]}', tokens_in=10, tokens_out=3, cost_usd=0.001, extra={}, meta={}
+            )
+        return judging.call_judge(m, p)
+
+    st = mrun(td, sc, man, call=garbage_first)
+    bad_recs = [f for f in td.glob("ja/*.json") if json.loads(f.read_text())["best"] is None]
+    check(
+        "pick: an out-of-range pick is stored unparsed (best null), the reply kept",
+        len(bad_recs) == 2 and all(json.loads(f.read_text())["output"] == '{"best": [9]}' for f in bad_recs),
+    )
+    p_unparsed = mproj(sc, man, td)
+    check(
+        "pick: an item with an unparsed verdict is not projected",
+        len(p_unparsed)
+        == 6
+        - len(
+            {
+                json.loads(f.read_text())["item_id"]
+                for f in bad_recs
+                if json.loads(f.read_text())["pass"] == "primary"
+            }
+        ),
+    )
+    check("pick: a rerun without --retry-unparsed keeps them", mrun(td, sc, man)["calls"] == 0)
+    st_r = mrun(td, sc, man, retry=True)
+    check(
+        "pick: --retry-unparsed calls again exactly the unparsed ones",
+        st_r["calls"] == 2
+        and all(json.loads(f.read_text())["best"] is not None for f in td.glob("ja/*.json")),
+    )
+    smu = js.summarise(man, sc, MARMS, js.load_scores(man, sc, td), mproj(sc, man, td), st_r, "x", False, td)
+    check("pick: the summary counts no unparsed once retried", smu["per_judge"]["ja"]["unparsed"] == 0)
+
+# cost cap
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+
+    def priced(m, p):
+        r = judging.call_judge(m, p)
+        r.cost_usd = 0.01
+        return r
+
+    st = mrun(td, mscorer("pick"), mp_, call=priced, cap=0.055)
+    check(
+        "pick: the cost cap stops the pass mid-run and keeps what was bought",
+        st["aborted"] and st["calls"] == 6 and len(list(td.glob("*/*.json"))) == 6,
+    )
+    check(
+        "pick: a rerun with room finishes only what is missing",
+        mrun(td, mscorer("pick"), mp_, call=priced, cap=1.0)["calls"] == 24 - 6,
+    )
+
+# ── pairwise, end to end ────────────────────────────────────────────────────────────
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    sc, man = mscorer("pairwise"), mw_
+    st = mrun(td, sc, man)
+    n_tasks = len(js.tasks(man))
+    check(
+        "pairwise: calls = judges x (36 pairs + 18 position + 18 noise) = 2 x 72",
+        st["calls"] == 144 == 2 * n_tasks and not st["aborted"],
+    )
+    first = man["items"][0]["primary"][0]
+    stored = json.loads((td / "ja" / f"{MITEMS[0]}.primary.b0.json").read_text())
+    check(
+        "pairwise: a verdict stores `better` (1 or 2 = the arm listed first or second), n 2",
+        "scores" not in stored
+        and stored["better"] == (1 if MIDS.index(first[0]) > MIDS.index(first[1]) else 2)
+        and stored["n"] == 2
+        and json.loads(stored["output"]) == {"better": stored["better"]},
+        str(stored),
+    )
+    proj = mproj(sc, man, td)
+    k_of = {c: k for k, c in enumerate(MIDS)}
+    check(
+        "pairwise: an arm's won is its share of its 3 pairs it won: 0, 1/3, 2/3, 1 by length",
+        all(
+            abs(proj[i][c][k] - k_of[c] / 3) < 1e-12
+            for i in MITEMS
+            for c in MIDS
+            for k in ("ja", "jb", "_mean")
+        ),
+        str({c: proj[MITEMS[0]][c]["_mean"] for c in MIDS}),
+    )
+    sm = js.summarise(man, sc, MARMS, js.load_scores(man, sc, td), proj, st, "unvalidated judge", False, td)
+    pa = sm["per_arm"]
+    check(
+        "pairwise summary: win rate = mean won; Bradley-Terry orders the arms by length, geometric mean 1",
+        all(
+            abs(pa[c]["win_rate"] - k_of[c] / 3) < 1e-6 and pa[c]["judge_won"] == pa[c]["win_rate"]
+            for c in MIDS
+        )
+        and pa[MIDS[0]]["bt_strength"]
+        < pa[MIDS[1]]["bt_strength"]
+        < pa[MIDS[2]]["bt_strength"]
+        < pa[MIDS[3]]["bt_strength"]
+        and abs(math.prod(pa[c]["bt_strength"] for c in MIDS) - 1.0) < 1e-3,
+        str({c: pa[c]["bt_strength"] for c in MIDS}),
+    )
+    check(
+        "pairwise summary: every comparison is a pairwise outcome: 6 items x 2 judges x 6 pairs",
+        sm["bradley_terry"]["comparisons"] == 72,
+    )
+    check(
+        "pairwise summary: position (swapped pair) and noise (repeat) kept every verdict; judges agree on the winner",
+        all(
+            sm["controls"][j][k]["agreement"] == 1.0 and sm["controls"][j][k]["n_verdicts"] == 18
+            for j in ("ja", "jb")
+            for k in ("position", "noise")
+        )
+        and sm["judge_agreement"]["ja~jb"]["winner_agreement"] == 1.0,
+        str(sm["controls"]),
+    )
+    # resume
+    before = {f: f.read_bytes() for f in td.glob("*/*.json")}
+    cnt = {"n": 0}
+
+    def counting_pw(m, p):
+        cnt["n"] += 1
+        return judging.call_judge(m, p)
+
+    check(
+        "pairwise: a second run makes no call and rewrites nothing",
+        mrun(td, sc, man, call=counting_pw)["calls"] == 0
+        and cnt["n"] == 0
+        and all(f.read_bytes() == b for f, b in before.items()),
+    )
+    next(td.glob("ja/*.position.b3.json")).unlink()
+    check(
+        "pairwise: one deleted verdict costs exactly one call",
+        mrun(td, sc, man, call=counting_pw)["calls"] == 1,
+    )
+    check(
+        "pairwise: --no-calls re-reads for $0 and projects the same",
+        mrun(td, sc, man, call=None)["calls"] == 0 and mproj(sc, man, td) == proj,
+    )
+    est = js.estimate(man, sc, PAIR_BASE, MARTICLES, m_outputs(), Path(tempfile.mkdtemp(dir=td)))
+    check(
+        "pairwise: dry-run counts 72 calls per judge",
+        est["ja"]["calls"] == est["jb"]["calls"] == 72,
+        str(est["ja"]),
+    )
+    vschema = jsonschema.Draft202012Validator(json.loads((SCHEMAS / "verdict.schema.json").read_text()))
+    check(
+        "verdict schema: stored pairwise verdicts validate",
+        all(vschema.is_valid(json.loads(f.read_text())) for f in td.glob("*/*.json")),
+    )
+    root_ = Path(tempfile.mkdtemp(dir=td))
+    js.freeze(man, root_ / "judging-sets")
+    vroot_ = root_ / "judge-verdicts" / sc["scorer_id"] / man["judging_set_id"]
+    shutil.copytree(td / "ja", vroot_ / "ja")
+    shutil.copytree(td / "jb", vroot_ / "jb")
+    check(
+        "V11 and V12 accept a pairwise set (blocks of 2) and its verdicts",
+        vt.judging_set_problems(root_ / "judging-sets") == []
+        and vt.verdict_problems(root_ / "judge-verdicts", root_ / "judging-sets") == [],
+        str(vt.verdict_problems(root_ / "judge-verdicts", root_ / "judging-sets")[:2]),
+    )
+
+# pairwise ties, and a judge that is all position bias
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    sc = mscorer("pairwise", prefer=("longer", "first"))
+    outs = m_outputs({1: 1})  # arms 0 and 1 are the same length: their pair is a tie
+    man = mmanifest(sc, outputs=outs)
+    st = mrun(td, sc, man, outputs=outs)
+    proj = mproj(sc, man, td)
+    exp_a = {MIDS[0]: 0.5 / 3, MIDS[1]: 0.5 / 3, MIDS[2]: 2 / 3, MIDS[3]: 1.0}
+    check(
+        "pairwise: a tie counts half to each side: the longer judge's won is exact",
+        all(abs(proj[i][c]["ja"] - exp_a[c]) < 1e-12 for i in MITEMS for c in MIDS),
+        str({c: proj[MITEMS[0]][c]["ja"] for c in MIDS}),
+    )
+    firsts_n = {
+        i: {c: sum(b[0] == c for b in it["primary"]) for c in MIDS}
+        for it in man["items"]
+        for i in [it["item_id"]]
+    }
+    check(
+        "pairwise: the first-listed judge's won is the share of pairs in which the arm was listed first",
+        all(abs(proj[i][c]["jb"] - firsts_n[i][c] / 3) < 1e-12 for i in MITEMS for c in MIDS),
+    )
+    sm = js.summarise(man, sc, MARMS, js.load_scores(man, sc, td), proj, st, "unvalidated judge", False, td)
+    check(
+        "pairwise: the swapped pair flips every verdict of the biased judge (agreement 0) and none of the content judge's, except ties",
+        sm["controls"]["jb"]["position"]["agreement"] == 0.0
+        and sm["controls"]["jb"]["position"]["kept"] == 0
+        and sm["controls"]["jb"]["noise"]["agreement"] == 1.0
+        and sm["controls"]["ja"]["position"]["agreement"] == 1.0,
+        str(sm["controls"]),
+    )
+    check(
+        'pairwise: the content judge\'s tie is stored as better "tie" and is a tie after the swap',
+        any(json.loads(f.read_text())["better"] == "tie" for f in td.glob("ja/*.json")),
+    )
+    check(
+        "pairwise: the judges disagree on some item's winner",
+        sm["judge_agreement"]["ja~jb"]["winner_agreement"] < 1.0,
+    )
+    check(
+        "pairwise: the self-family flag and contested use the win rates",
+        sm["per_arm"][MIDS[0]]["self_family"] == {"ja": True, "jb": False}
+        and all(
+            (abs(v["judge_ja"] - v["judge_jb"]) > 0.25) == v["contested"] for v in sm["per_arm"].values()
+        ),
+    )
+
+# ── Bradley-Terry ────────────────────────────────────────────────────────────────────
+r_ = js._bt_solve([[0.0, 3.0], [1.0, 0.0]], [1.0, 1.0])
+check(
+    "Bradley-Terry: 3 wins to 1 with the half-draw prior fits p0/p1 = (3 + .25)/(1 + .25) = 2.6, geometric mean 1",
+    abs(r_[0] / r_[1] - 2.6) < 1e-6 and abs(r_[0] * r_[1] - 1.0) < 1e-9,
+    str(r_),
+)
+cyc = js._bt_solve([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0, 0.0]], [1.0] * 3)
+check("Bradley-Terry: a symmetric 3-cycle gives equal strengths", all(abs(x - 1.0) < 1e-9 for x in cyc))
+never = js._bt_solve([[0.0, 5.0], [0.0, 0.0]], [1.0, 1.0])
+check(
+    "Bradley-Terry: an arm that never won has a finite, positive strength (the prior)",
+    0 < never[1] < 1 < never[0] < 1e6,
+    str(never),
+)
+mm = js._bt_solve([[0.0, 6.0, 3.0], [2.0, 0.0, 5.0], [4.0, 1.0, 0.0]], [1.0] * 3)
+grad = []  # MM's fixed point: each W_i = sum_j n_ij p_i/(p_i + p_j)
+w3 = [[0.0, 6.0, 3.0], [2.0, 0.0, 5.0], [4.0, 1.0, 0.0]]
+for r_i in range(3):
+    n_i = sum(
+        (w3[r_i][j] + w3[j][r_i] + js.BT_PRIOR) * mm[r_i] / (mm[r_i] + mm[j]) for j in range(3) if j != r_i
+    )
+    grad.append(n_i - (sum(w3[r_i]) + 2 * js.BT_PRIOR / 2))
+check(
+    "Bradley-Terry: the fit solves the likelihood equations (W_i = sum_j n_ij p_i / (p_i + p_j))",
+    all(abs(g) < 1e-6 for g in grad),
+    str(grad),
+)
+
+per_item_v = [[("a", "b", 1.0, 0.0)] * 1 for _ in range(7)] + [[("a", "b", 0.0, 1.0)] for _ in range(3)]
+old_res = js.BT_RESAMPLES
+js.BT_RESAMPLES = 200
+bt1 = js.bradley_terry(["a", "b"], per_item_v, "seed-1")
+bt2 = js.bradley_terry(["a", "b"], per_item_v, "seed-1")
+bt3 = js.bradley_terry(["a", "b"], per_item_v, "seed-2")
+js.BT_RESAMPLES = old_res
+check("Bradley-Terry bootstrap: seeded, so a rerun gives the same numbers", bt1 == bt2)
+check("Bradley-Terry bootstrap: another seed resamples differently", bt1 != bt3)
+check(
+    "Bradley-Terry bootstrap: 7 wins in 10 items gives a proper interval around the strength",
+    bt1["a"]["low"] < bt1["a"]["strength"] < bt1["a"]["high"]
+    and bt1["a"]["strength"] > 1 > bt1["b"]["strength"],
+    str(bt1),
+)
+check(
+    "Bradley-Terry bootstrap: the interval is on the strength scale and 95% wide (2.5% - 97.5% quantiles)",
+    js._quantile([0.0, 1.0, 2.0, 3.0, 4.0], 0.5) == 2.0
+    and abs(js._quantile([0.0, 10.0], 0.025) - 0.25) < 1e-12,
+)
+
+# ── the projection and the judged runs ───────────────────────────────────────────────
+with tempfile.TemporaryDirectory() as tmp:
+    td = Path(tmp)
+    sc, man = mscorer("pick"), mp_
+    vdir = td / "v"
+    mrun(vdir, sc, man)
+    proj = mproj(sc, man, vdir)
+    runs = td / "runs"
+    arms_d = []
+    for a in MARMS:
+        d = runs / a["run"]
+        (d / "outputs").mkdir(parents=True)
+        outs = m_outputs()
+        for i in MITEMS:
+            (d / "outputs" / f"{i}.txt").write_text(outs[a["config_id"]][i])
+        (d / "predictions.jsonl").write_text(
+            "".join(
+                json.dumps({"item_id": i, "coverage": 0.3, "cost_usd": 0.001, "latency_ms": 5.0}) + "\n"
+                for i in MITEMS
+            )
+        )
+        (d / "metrics.json").write_text(
+            json.dumps(
+                {
+                    "config_id": a["config_id"],
+                    "run_id": a["run"],
+                    "dataset_id": "ds",
+                    "created_at": "2026",
+                    "primary_metric": "coverage",
+                    "scores": {"coverage": 0.3},
+                    "metric_kinds": {"coverage": "quality", "cost_usd": "cost"},
+                    "params": {"family": a["family"]},
+                    "fingerprint": {
+                        "hash": "abc",
+                        "instrument": {"adapter": {"id": "old"}},
+                        "arm": {"config_id": a["config_id"]},
+                    },
+                }
+            )
+        )
+        arms_d.append(dict(a, dir=d))
+    out = td / "judged" / sc["scorer_id"]
+    js.write_scored_runs(man, sc, arms_d, proj, out, "unvalidated judge", False)
+    win_dir = out / MARMS[3]["run"]
+    rows = [json.loads(x) for x in (win_dir / "predictions.jsonl").read_text().splitlines()]
+    mj = json.loads((win_dir / "metrics.json").read_text())
+    check(
+        "pick judged runs: the primary is judge_won (judge_won_unvalidated while unvalidated), with per-judge columns",
+        mj["primary_metric"] == "judge_won_unvalidated"
+        and rows[0]["judge_won_unvalidated"] == 1.0
+        and {"judge_ja_unvalidated", "judge_jb_unvalidated", "cost_usd"} <= set(rows[0])
+        and "judge_score_unvalidated" not in rows[0]
+        and mj["scores"]["judge_won_unvalidated"] == 1.0
+        and mj["derived"]["with"]["mode"] == "pick",
+    )
+    js.write_scored_runs(man, sc, arms_d, proj, td / "judged2", "validated judge", True)
+    mv = json.loads((td / "judged2" / MARMS[0]["run"] / "metrics.json").read_text())
+    check(
+        "pick judged runs: validated, the primary is judge_won and a quality metric; a loser scores 0",
+        mv["primary_metric"] == "judge_won"
+        and mv["scores"]["judge_won"] == 0.0
+        and mv["metric_kinds"]["judge_won"] == "quality"
+        and mv["metric_kinds"]["judge_ja"] == "quality",
+    )
+    env_ = dict(os.environ, EVAL_RUNS_DIR=str(td / "judged2"))
+    lb_pick = subprocess.run(
+        [sys.executable, str(HERE / "leaderboard.py"), "--dataset-id", "ds"],
+        cwd=HERE.parent,
+        env=env_,
+        capture_output=True,
+        text=True,
+    )
+    check(
+        "pick judged runs: the leaderboard reads them (exit 0, shows judge_won)",
+        lb_pick.returncode == 0 and "judge_won" in lb_pick.stdout,
+        (lb_pick.stdout + lb_pick.stderr)[-300:],
+    )
+    # a grade scorer's judged run carries no mode in its provenance
+    gsc = mscorer("grade")
+    del gsc["mode"]
+    gman = mmanifest(gsc)
+    gv = td / "gv"
+    mrun(gv, gsc, gman, outputs=m_outputs())
+    gproj = js.project(gsc, js.load_scores(gman, gsc, gv), MITEMS)
+    js.write_scored_runs(gman, gsc, arms_d, gproj, td / "gjudged", "validated judge", True)
+    gm = json.loads((td / "gjudged" / MARMS[0]["run"] / "metrics.json").read_text())
+    check(
+        "grade judged runs are as before: primary judge_score, no mode in their provenance",
+        gm["primary_metric"] == "judge_score" and "mode" not in gm["derived"]["with"],
+    )
+    gsm = js.summarise(gman, gsc, MARMS, js.load_scores(gman, gsc, gv), gproj, {}, "x", True, gv)
+    check(
+        "grade summary has none of the modes' keys: no mode, no bradley_terry, no win_rate, no winner_agreement",
+        not ({"mode", "bradley_terry"} & set(gsm))
+        and not any({"win_rate", "judge_won", "bt_strength"} & set(v) for v in gsm["per_arm"].values())
+        and all("winner_agreement" not in v for v in gsm["judge_agreement"].values())
+        and "judge_score" in gsm["per_arm"][MIDS[0]],
+    )
+    gverdict = json.loads(next(gv.glob("ja/*.json")).read_text())
+    check(
+        "grade verdicts keep `scores` and gain neither `best` nor `better`",
+        "scores" in gverdict and "best" not in gverdict and "better" not in gverdict,
+    )
+
+# ── the committed grade data is untouched ───────────────────────────────────────────
+committed_sets = sorted((HERE.parent / "data" / "judging-sets").glob("*.json"))
+check(
+    "the committed judging sets still recompute to their stored hashes and ids",
+    len(committed_sets) >= 2
+    and all(
+        js.manifest_hash(json.loads(f.read_text())) == json.loads(f.read_text())["judging_set_sha256"]
+        and f.stem.endswith(js.manifest_hash(json.loads(f.read_text()))[:12])
+        for f in committed_sets
+    ),
+)
+check(
+    "the committed grading sets carry no mode; a pick or pairwise set declares its own",
+    all(json.loads(f.read_text()).get("mode", "grade") in ("grade", "pick", "pairwise") for f in committed_sets)
+    and all(json.loads(f.read_text()).get("mode") != "grade" for f in committed_sets)
+    and sum("mode" not in json.loads(f.read_text()) for f in committed_sets) >= 2,
+)
+for sid_ in ("judge-summ-v1", "judge-summ-v2"):
+    sc_ = js.load_scorer(HERE.parent / "data" / "scorers" / f"{sid_}.yaml")
+    sdir_ = next((HERE.parent / "data" / "judge-verdicts" / sid_).iterdir())
+    man_ = json.loads((HERE.parent / "data" / "judging-sets" / f"{sdir_.name}.json").read_text())
+    old_summ = json.loads((HERE.parent / "data" / "runs-judged" / sid_ / "summary.json").read_text())
+    st_ = js.run_judging(man_, sc_, js.prompt_text(sc_), {}, {}, sdir_, None, None, log=lambda *_: None)
+    got_ = js.load_scores(man_, sc_, sdir_)
+    proj_ = js.project(sc_, got_, [it["item_id"] for it in man_["items"]])
+    check(
+        f"{sid_}: the committed verdicts re-read for $0 (no call, none missing) and project the items the committed summary scored",
+        st_["calls"] == 0 and st_["missing"] == 0 and len(proj_) == old_summ["items_scored"],
+        str(st_),
+    )
+    arms_ = [{"config_id": c, "family": a["family"]} for c, a in old_summ["per_arm"].items()]
+    new_summ = js.summarise(
+        man_, sc_, arms_, got_, proj_, old_summ["cost"], old_summ["label"], old_summ["validated"], sdir_
+    )
+    check(
+        f"{sid_}: re-summarising the committed verdicts gives the committed summary.json, key for key",
+        new_summ == old_summ,
+        str([k for k in old_summ if new_summ.get(k) != old_summ[k]]),
+    )
+
+# ── the SummEval adapter: pick and pairwise validation ──────────────────────────────────
+gold_ = {d: [float(k % 5) for k in range(16)] for d in ad.DIMS}
+gold_["coherence"][7] = 9.0  # mean 3.75: still below the 4.0 of summaries 4, 9, 14
+ref_ = json.dumps(gold_)
+means_ = ad._expert_means(ref_)
+check(
+    "adapter: the experts' mean over the four dimensions per summary",
+    abs(means_[7] - 3.75) < 1e-12 and means_[4] == 4.0 and means_[0] == 0.0,
+)
+sp = lambda best: ad.score(json.dumps({"best": best}), ref_)  # noqa: E731
+check(
+    "adapter pick: a pick among the experts' best (ties form the set) scores 1, chance 3/16",
+    sp([5])["top1"] == 1.0
+    and sp([10])["top1"] == 1.0
+    and sp([15])["top1"] == 1.0
+    and sp([5])["top1_chance"] == 0.1875,
+    str(sp([5])),
+)
+check(
+    "adapter pick: a pick outside the best set scores 0 (summary 8 is 3.75)",
+    sp([8])["top1"] == 0.0 and sp([1])["top1"] == 0.0,
+)
+check(
+    "adapter pick: several named score the share of them that are best",
+    sp([5, 8])["top1"] == 0.5 and sp([5, 10, 15])["top1"] == 1.0 and sp([1, 5, 8, 2])["top1"] == 0.25,
+)
+check(
+    "adapter pick: not a valid pick (out of range, repeat, null) scores 0 and parsed 0, with the chance beside it",
+    all(
+        ad.score(json.dumps({"best": b}), ref_) == {"parsed": 0.0, "top1": 0.0, "top1_chance": 0.1875}
+        for b in (None, [], [17], [0], [2, 2], "3")
+    ),
+)
+check(
+    "adapter pick: without a reference only `parsed` is reported",
+    ad.score('{"best": [3]}', None) == {"parsed": 1.0},
+)
+pairs_out = lambda *ps: json.dumps({"pairs": [{"a": a, "b": b, "better": v} for a, b, v in ps]})  # noqa: E731
+sw = lambda *ps: ad.score(pairs_out(*ps), ref_)  # noqa: E731
+# summaries 4 (mean 4.0) and 0 (0.0): experts prefer 4. shown (a=4, b=0): 1 prefers a.
+check(
+    "adapter pairwise: the judge preferring the expert-preferred summary scores 1, either way round",
+    sw((4, 0, 1))["pair_agreement"] == 1.0 and sw((0, 4, 2))["pair_agreement"] == 1.0,
+)
+check(
+    "adapter pairwise: the opposite scores 0",
+    sw((4, 0, 2))["pair_agreement"] == 0.0 and sw((0, 4, 1))["pair_agreement"] == 0.0,
+)
+check("adapter pairwise: a tie counts half", sw((4, 0, "tie"))["pair_agreement"] == 0.5)
+check(
+    "adapter pairwise: a pair the experts tie (summaries 4 and 9 are both 4.0) is left out; n_pairs counts the rest",
+    sw((4, 9, 1), (4, 0, 1)) == {"parsed": 1.0, "pair_agreement": 1.0, "n_pairs": 1.0},
+    str(sw((4, 9, 1), (4, 0, 1))),
+)
+check(
+    "adapter pairwise: an unreadable answer scores 0 and lowers `parsed`",
+    sw((4, 0, 1), (3, 1, None)) == {"parsed": 0.5, "pair_agreement": 0.5, "n_pairs": 2.0},
+    str(sw((4, 0, 1), (3, 1, None))),
+)
+check(
+    "adapter pairwise: an article with no pair the experts rank apart scores the 0.5 chance with n_pairs 0",
+    sw((4, 9, 1)) == {"parsed": 1.0, "pair_agreement": 0.5, "n_pairs": 0.0},
+)
+grade_reply = json.dumps({d: [float(k + 1) for k in range(16)] for d in ad.DIMS})
+check(
+    "adapter grade scoring is untouched: an ordered reply against ordered gold is tau 1, no pick or pair keys",
+    ad.score(grade_reply, json.dumps({d: [float(k) for k in range(16)] for d in ad.DIMS}))["tau"] == 1.0
+    and "top1" not in ad.score(grade_reply, ref_)
+    and "pair_agreement" not in ad.score(grade_reply, ref_),
+)
+ad_text = json.dumps(
+    {"article": "An article.", "summaries": [f"summary {k}" for k in range(16)], "references": ["r"]}
+)
+ad_item2 = json.loads(ad_text)
+p1_, p2_ = ad._pairs(ad_item2, {}), ad._pairs(ad_item2, {})
+check(
+    "adapter pairs: 8 distinct pairs of the 16, deterministic, the same for every arm (the seed is the article's)",
+    p1_ == p2_
+    and len(p1_) == 8
+    and len({frozenset(p) for p in p1_}) == 8
+    and all(a != b and 0 <= a < 16 and 0 <= b < 16 for a, b in p1_),
+)
+check(
+    "adapter pairs: another article, another seed or another pairs_per_item gives another sample; the orientation varies",
+    ad._pairs({**ad_item2, "article": "Another."}, {}) != p1_
+    and ad._pairs(ad_item2, {"pair_seed": 1}) != p1_
+    and len(ad._pairs(ad_item2, {"pairs_per_item": 3})) == 3
+    and len({a < b for a, b in ad._pairs(ad_item2, {"pairs_per_item": 100})}) == 2,
+)
+check(
+    "adapter pairs: pairs_per_item must be a whole number from 1 to 120",
+    all(
+        raises_exit(lambda v=v: ad._pairs(ad_item2, {"pairs_per_item": v})) for v in (0, 121, 2.5, "8", True)
+    ),
+)
+r_pick = [ad.call_system(ad_text, {"provider": "random", "mode": "pick", "seed": s}) for s in range(300)]
+tops = [ad.score(r.output, ref_) for r in r_pick]
+check(
+    "adapter random floor, pick: a valid pick every time, cost 0, top1 near its chance (3/16)",
+    all(t["parsed"] == 1.0 for t in tops)
+    and 0.10 < sum(t["top1"] for t in tops) / 300 < 0.27
+    and all(r.cost_usd == 0.0 for r in r_pick),
+    str(sum(t["top1"] for t in tops) / 300),
+)
+r_pw = [ad.call_system(ad_text, {"provider": "random", "mode": "pairwise", "seed": s}) for s in range(300)]
+pas = [ad.score(r.output, ref_)["pair_agreement"] for r in r_pw]
+check(
+    "adapter random floor, pairwise: 8 pairs, the same pairs for every seed, pair_agreement near 0.5",
+    all(len(json.loads(r.output)["pairs"]) == 8 for r in r_pw)
+    and len({tuple((p["a"], p["b"]) for p in json.loads(r.output)["pairs"]) for r in r_pw}) == 1
+    and 0.40 < sum(pas) / 300 < 0.60,
+    str(sum(pas) / 300),
+)
+check(
+    "adapter random floor: seeded, so a rerun is identical",
+    ad.call_system(ad_text, {"provider": "random", "mode": "pick", "seed": 5}).output == r_pick[5].output,
+)
+grade_rand = ad.call_system(ad_text, {"provider": "random", "seed": 5})
+check(
+    "adapter random floor in grade mode is unchanged: 4 dimensions x 16 integers 1..5",
+    sorted(json.loads(grade_rand.output)) == sorted(ad.DIMS)
+    and all(len(v) == 16 and all(1 <= x <= 5 for x in v) for v in json.loads(grade_rand.output).values()),
+)
+check(
+    "adapter: mode on a provider that cannot pick (rouge) is refused; an unknown mode too",
+    raises_exit(lambda: ad.call_system(ad_text, {"provider": "rouge", "mode": "pick"}))
+    and raises_exit(lambda: ad.call_system(ad_text, {"provider": "random", "mode": "tournament"})),
+)
+fp_pick = ad.fingerprint({"provider": "random", "mode": "pick"})
+check(
+    "adapter fingerprint: the random floor in pick mode records its mode and a code hash that is not grade's",
+    fp_pick["mode"] == "pick"
+    and fp_pick["code_sha256"] != ad.fingerprint({"provider": "random"})["code_sha256"]
+    and "mode" not in ad.fingerprint({"provider": "random"}),
+)
+check(
+    "adapter: pick and pairwise outputs are canonical JSON even when the judge's reply is not",
+    json.loads(ad._pick_output("I think 3."))["best"] is None
+    and json.loads(ad._pick_output("I think 3."))["reply"] == "I think 3."
+    and json.loads(ad._pick_output('Sure: {"best": [3]}')) == {"best": [3]}
+    and ad.score(ad._pick_output("I think 3."), ref_)["parsed"] == 0.0,
+)
+check(
+    "adapter: the metrics are classified (top1 and pair_agreement quality; top1_chance and n_pairs descriptive) and described",
+    ad.METRIC_KINDS["top1"] == ad.METRIC_KINDS["pair_agreement"] == "quality"
+    and ad.METRIC_KINDS["top1_chance"] == ad.METRIC_KINDS["n_pairs"] == "descriptive"
+    and all(k in ad.METRIC_DESCRIPTIONS for k in ("top1", "top1_chance", "pair_agreement", "n_pairs")),
+)
+chat_calls: list = []
+
+
+def fake_chat(content, params):
+    chat_calls.append(content)
+    reply = '{"best": [3]}' if '"best"' in content.rsplit("\n", 1)[-1] else '{"better": 2}'
+    return ad.Result(
+        output=reply,
+        tokens_in=10,
+        tokens_out=3,
+        cost_usd=0.001,
+        extra={"truncated": 0.0},
+        meta={"finish_reason": "stop"},
+    )
+
+
+real_chat, ad._chat = ad._chat, fake_chat
+try:
+    res_pick = ad._litellm(ad_text, {"mode": "pick", "prompt": PICK_BASE})
+    n_pick, chat_calls[:] = len(chat_calls), []
+    res_pair = ad._litellm(ad_text, {"mode": "pairwise", "prompt": PAIR_BASE})
+    n_pair = len(chat_calls)
+    res_grade = ad._litellm(ad_text, {"prompt": "grade it"})
+finally:
+    ad._chat = real_chat
+check(
+    "adapter judge, pick: one call; the output is the canonical pick",
+    n_pick == 1 and json.loads(res_pick.output) == {"best": [3]} and res_pick.cost_usd == 0.001,
+)
+check(
+    "adapter judge, pairwise: one call per sampled pair (8), tokens and cost summed, a verdict per pair",
+    n_pair == 8
+    and res_pair.tokens_in == 80
+    and res_pair.tokens_out == 24
+    and abs(res_pair.cost_usd - 0.008) < 1e-12
+    and [(p["a"], p["b"]) for p in json.loads(res_pair.output)["pairs"]] == ad._pairs(ad_item2, {})
+    and all(p["better"] == 2 for p in json.loads(res_pair.output)["pairs"]),
+)
+from evaluation_harness.run import _unreachable  # noqa: E402
+
+# The first paid pairwise validation (2026-11-02) stopped before its first item: the merged result's
+# meta["calls"] was the number of calls, and `evh run` reads that key as a list of call records.
+check(
+    "adapter judge, pairwise: meta follows the run's contract (calls a list of records, finish_reason a string)",
+    isinstance(res_pair.meta["calls"], list)
+    and len(res_pair.meta["calls"]) == 8
+    and res_pair.meta["finish_reason"] == "stop"
+    and _unreachable(res_pair) is None,
+    str(res_pair.meta)[:300],
+)
+_pick_file = (
+    (HERE.parents[1] / "examples" / "summeval-judging" / "prompt_pick.txt")
+    .read_text(encoding="utf-8")
+    .strip()
+)
+_pair_file = (
+    (HERE.parents[1] / "examples" / "summeval-judging" / "prompt_pairwise.txt")
+    .read_text(encoding="utf-8")
+    .strip()
+)
+check(
+    "the pick and pairwise messages the harness sends equal the validation arm's, byte for byte (as grading's at 16)",
+    js.build_pick_message(_pick_file, ad_item2["article"].strip(), [s.strip() for s in ad_item2["summaries"]])
+    == ad._pick_message(ad_item2, {"prompt_file": "prompt_pick.txt"})
+    and js.build_pairwise_message(
+        _pair_file,
+        ad_item2["article"].strip(),
+        [ad_item2["summaries"][3].strip(), ad_item2["summaries"][9].strip()],
+    )
+    == ad._pair_message(ad_item2, 3, 9, {"prompt_file": "prompt_pairwise.txt"}),
+)
+check(
+    "adapter judge, grade: the message is _judge_message's and the reply passes through unchanged",
+    chat_calls[-1] == ad._judge_message(ad_item2, {"prompt": "grade it"})
+    and res_grade.output == '{"better": 2}',
+)
+# Answer first (owner, 2026-11-02): qwen_s wrote its analysis before the JSON and was cut at max_tokens on 8-13%
+# of the validation's pick replies. The JSON begins the reply now; the explanation after it may hold braces, or be
+# cut off, and the verdict still reads.
+_first = '{"best": [3, 7]}\nBecause summary 3 keeps {the key facts} and 7 ties with it; summary 12'
+_pair_first = '{"better": 2}\nSummary 2 says {"who": "the council"}, and summary 1'
+check(
+    "pick and pairwise replies: the first JSON object is the verdict, whatever follows it (both sides read it so)",
+    js.parse_pick(_first, 16) == [3, 7]
+    and ad._read_pick(_first) == [3, 7]
+    and js.parse_pairwise(_pair_first) == 2
+    and ad._read_better(_pair_first) == 2
+    and js.parse_pick("I think summary 3 is the best.", 16) is None,
+)
+check(
+    "the pick and pairwise prompts ask for the JSON first and nothing after it",
+    all("Begin your reply with" in t and "nothing after it" in t for t in (_pick_file, _pair_file))
+    and "Begin your reply with the JSON object" in judging.PICK_REMINDER
+    and "Begin your reply with the JSON object" in judging.PAIR_REMINDER,
+)
+
 sys.exit(summary())

@@ -219,7 +219,7 @@ try:
         and "owner" in pick_row
         and 'data-prefix="evh dataset-extend tickets_v1 --dataset-id &lt;next&gt;"' in dp
         and 'data-flag="--pick"' in dp
-        and "rows=1&item=p2" in pick_row,
+        and "sheet=1&item=p2" in pick_row,
         pick_row[:700],
     )
     arm_row = row_of(dp, "labels.html#set-tickets_v1-author_v1")
@@ -357,7 +357,7 @@ try:
         deploy_verdicts(bad),
     )
 
-    # ── the inspector's rows view and item view (the server's functions, as /api/rows and /api/item answer) ──
+    # ── the inspector's sheet and item view (the server's functions, as /api/sheet and /api/item answer) ──
     def serve_call(code):
         r = subprocess.run(
             [
@@ -381,42 +381,53 @@ try:
 
     arms = "runs/tickets_v1/tickets_lead1_v1,runs/tickets_v1/tickets_author_v1"
     rw = serve_call(
-        f"print(json.dumps(cs.rows({{'dataset': ['tickets_v1'], 'runs': ['{arms}'], 'wrong': ['owner_v1']}})))"
+        f"print(json.dumps(cs.sheet({{'dataset': ['tickets_v1'], 'runs': ['{arms}'], 'wrong': ['owner_v1']}})))"
     )
     by = {r["item"]: r for r in rw.get("rows", [])}
     check(
-        "/api/rows: every item, each arm's decision, its labels, the signals and their counts, the sets to choose",
+        "/api/sheet: every item, each arm's cell (output, scores), its labels, the signals and their counts, the sets to choose, the footer",
         len(by) == 6
-        and set(by["t01_login"]["decisions"]) == set(arms.split(","))
-        and any(
-            x["set"] == "tickets_v1/owner_v1" and x["kind"] == "person" for x in by["t01_login"]["labels"]
-        )
+        and set(by["t01_login"]["cells"]) == set(arms.split(","))
+        and by["t01_login"]["labels"].get("tickets_v1/owner_v1")
+        and any(c["scores"] for c in by["t01_login"]["cells"].values())
+        and any(c["kind"] == "person" and c["key"] == "tickets_v1/owner_v1" for c in rw["label_cols"])
         and "unlabelled" not in by["t01_login"]["signals"]
         and rw["counts"]["unlabelled"] == 0
         and "tickets_v1/owner_v1" in rw["sets"]
-        and "prod_v1" in rw["datasets"],
+        and "prod_v1" in rw["datasets"]
+        and set(rw["footer"]["mean"]) == set(arms.split(","))
+        and rw["metric"],
         json.dumps(rw)[:600],
     )
     pr = serve_call(
-        "print(json.dumps(cs.rows({'dataset': ['prod_v1'], 'runs': ['runs/prod_v1/production_v1']})))"
+        "print(json.dumps(cs.sheet({'dataset': ['prod_v1'], 'runs': ['runs/prod_v1/production_v1']})))"
     )
     pby = {r["item"]: r for r in pr.get("rows", [])}
     check(
-        "/api/rows: a pick waiting says for which dataset; a refused arm is said in its own words",
+        "/api/sheet: a pick waiting says for which dataset; a refused arm is said in its own words",
         pby.get("p2", {}).get("picked") == ["tickets_v1"]
         and "not an arm on prod_v1"
         in serve_call(
-            "print(json.dumps(cs.rows({'dataset': ['prod_v1'], 'runs': ['runs/tickets_v1/x_v1']})))"
+            "print(json.dumps(cs.sheet({'dataset': ['prod_v1'], 'runs': ['runs/tickets_v1/x_v1']})))"
         ).get("error", ""),
         json.dumps(pr)[:400],
     )
     pub = serve_call(
-        "cs.LIMITS['hosts'] = ('public',); print(json.dumps(cs.rows({'dataset': ['tickets_v1']})))"
+        "cs.LIMITS['hosts'] = ('public',); print(json.dumps(cs.sheet({'dataset': ['tickets_v1']})))"
     )
-    check("/api/rows is not served publicly", "not served publicly" in pub.get("error", ""), json.dumps(pub))
+    check("/api/sheet is not served publicly", "not served publicly" in pub.get("error", ""), json.dumps(pub))
+    sc = serve_call(
+        "cs.LIMITS['hosts'] = ('public',); "
+        "print(json.dumps(list(cs.sheet_csv('dataset=tickets_v1&format=csv')[:1] + (cs.sheet_csv('dataset=tickets_v1&format=csv')[1].decode(),))))"
+    )
+    check(
+        "the sheet's CSV is not served publicly either",
+        isinstance(sc, list) and sc[0] == 403 and "not served publicly" in sc[1],
+        json.dumps(sc),
+    )
     it = serve_call("print(json.dumps(cs.item({'dataset': ['tickets_v1'], 'item': ['t01_login']})))")
     check(
-        "/api/item for a dataset alone (the rows view): the item's fields and every label, with its source",
+        "/api/item for a dataset alone (the sheet): the item's fields and every label, with its source",
         it.get("views") == {}
         and any(
             x["set"] == "tickets_v1/owner_v1" and x["kind"] == "person" and x["text"]
@@ -431,8 +442,8 @@ try:
         json.dumps(ri)[:400],
     )
     check(
-        "the dataset page's explore-rows button opens the rows view, production's recorded arm chosen first",
-        'inspect.html?dataset=prod_v1&rows=1&runs=runs/prod_v1/production_v1"' in pp,
+        "the dataset page's sheet button opens the sheet, production's recorded arm chosen first",
+        'inspect.html?dataset=prod_v1&sheet=1&runs=runs/prod_v1/production_v1"' in pp,
         "",
     )
     check(

@@ -220,7 +220,9 @@ families, the task they score, the prompt, and the runs that validated each judg
 human ratings. The command refuses a judge nobody validated (`--unvalidated` runs it with
 every number labelled), freezes a blinded, shuffled judging set, stores every verdict so a
 rerun costs $0, and writes scored runs that `leaderboard`, `pair-test` and `family-test`
-read unchanged. An eval's primary metric changes only by a recorded decision.
+read unchanged. The scorer's `mode` says what a judge is asked: `grade` each output (the default), `pick` the
+best of an item's outputs, or `pairwise` the better of two; a judge is validated in the mode it is used, and pick
+and pairwise report win rates and Bradley-Terry strengths. An eval's primary metric changes only by a recorded decision.
 Walkthrough: [tutorial 3](../docs/tutorials/3-frontier-reference-and-judging.md#5-re-measure-with-an-llm-judge-optional);
 reference: [RUNBOOK §12](docs/RUNBOOK.md#12-re-measure-with-a-validated-judge); why:
 [ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
@@ -262,8 +264,8 @@ of the same query and make a new label set from it (tutorial 6 §5).
 
 Labels are not reference sets: arms are scored against a label set as it is, and a reference set is labels promoted on
 purpose, at the tier chosen then. Production's own decisions become an arm (`evh arm-from-capture`), scored like any;
-`evh inspect --dataset-id prod_v1 --rows` shows each item's decisions, labels and signals (wrong, disagree, new) to
-pick the ones worth keeping (`evh pick`); `evh dataset-extend` makes the next version of a governed dataset from
+`evh inspect --sheet --dataset-id prod_v1 --runs …` shows each item's outputs, scores, labels and signals (wrong,
+disagree, new) to pick the ones worth keeping (`evh pick`); `evh dataset-extend` makes the next version of a governed dataset from
 them; `evh deploy-sheet` says what production must match to run what you promoted, and whether a capture shows it
 did. Importers for
 JSONL, TSV, GitHub issues and Langfuse traces come with the harness, and `text: hidden` keeps a dataset's text off

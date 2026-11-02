@@ -51,6 +51,7 @@ python examples/summeval-judging/fetch.py      # or, from the root: make data EX
 | `bartscore` | log-likelihood of the summary given the article under `facebook/bart-large-cnn` ([Yuan et al. 2021](https://arxiv.org/abs/2106.11520)), pinned to the revision the summarisation eval measured; local, CPU |
 | `length` | the summary's word count: a confound to rule out, not a judge |
 | `random` | seeded random scores: the floor, near τ = 0 |
+| `gemma_l`, `qwen_s`, `random` in pick and pairwise mode | the judges of the summarisation scorer, validated in the other two judging modes ([RFC-005](../../docs/rfc/RFC-005-judge-scorers.md), "Judging modes"): `mode: pick` names the best of the 16 summaries ([prompt_pick.txt](prompt_pick.txt)), scored `top1` beside `top1_chance`; `mode: pairwise` says which of two is better for 8 seeded pairs an article ([prompt_pairwise.txt](prompt_pairwise.txt)), scored `pair_agreement` (with `n_pairs`); the `random` arm in each mode is the floor. Configs `configs/arm_*_pick_n100.yaml` and `arm_*_pairwise_n100.yaml` |
 
 A reference-based metric gives one number per summary; it stands for all four dimensions.
 
@@ -138,6 +139,37 @@ for a in anthropic_s anthropic_m anthropic_l openai_s openai_m openai_l \
     --config ../examples/summeval-judging/configs/arm_${a}_n100.yaml; done
 make leaderboard DATASET_ID=summeval_100
 ```
+
+The pick and pairwise validations, the same way (the `random` arms call nothing):
+
+```bash
+for a in gemma_l qwen_s random; do for m in pick pairwise; do
+  ../examples/summeval-judging/.venv/bin/python scripts/run.py \
+    --config ../examples/summeval-judging/configs/arm_${a}_${m}_n100.yaml; done; done
+```
+
+Each arm's primary is its mode's metric (`tau`, `top1` or `pair_agreement`: the adapter's `primary_metric(params)`).
+The scorers that cite these runs, `judge-summ-pick-v1` and `judge-summ-pairwise-v1`
+([RUNBOOK §12](../../harness/docs/RUNBOOK.md#judging-modes-grade-pick-pairwise)), judge the summarisation eval in
+those modes; their `min_metric` is the `random` arm's value.
+
+What they measured (2026-11-02, 100 articles; each value recomputed from the experts' scores):
+
+| judge | pick: `top1` (a random pick: 0.070; chance 0.088) | pairwise: `pair_agreement` (random: 0.473) |
+|---|---|---|
+| `gemma_l` | 0.364 | 0.825 |
+| `qwen_s` | 0.263 | 0.813 |
+
+Both prompts ask for the JSON object first and nothing after it. An earlier wording that let a judge explain first
+had `qwen_s` cut off at `max_tokens` before its answer on 8–13% of picks; a later one that invited an explanation
+after the JSON made `gemma_l` write about 270 tokens a reply. On this wording a reply is about 7–11 tokens; every pick
+was readable, and 1 of `qwen_s`'s 800 pairwise replies was not.
+
+On the summarisation eval (`judge-summ-pick-v1`, 29 arms, 198 of 200 articles, $0.17), the two judges named the same
+winner on 0.36 of the articles; a re-shuffle of the order kept the pick on 0.55 (`gemma_l`) and 0.45 (`qwen_s`) of
+20, and a repeat on 0.75 and 0.95. A pick among 29 summaries depends on their order about half the time: read the
+win rates as a ranking of what these judges prefer, beside `judge-summ-v1`'s grades and the experts, not instead of
+them.
 
 ## What this cannot say
 

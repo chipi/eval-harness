@@ -1,0 +1,26 @@
+{
+  "best": [
+    2
+  ],
+  "block": 0,
+  "cost_known": true,
+  "cost_usd": 0.000379746,
+  "created_at": "2026-11-02T16:04:40Z",
+  "finish_reason": "stop",
+  "item_id": "37477ed1fc065f438021ee3b6d3e2b827e270353",
+  "judge": "qwen_s",
+  "judge_fp": "c0ecf5eb99cea0b5",
+  "latency_ms": 1883.533,
+  "n": 29,
+  "output": "{\n \"best\": [2]\n}",
+  "output_sha256": "efa03faedf47e49c3f9a3cfdd539e4834b69261af4c0bfafcc47448f9efc5a70",
+  "output_withheld": false,
+  "pass": "primary",
+  "prompt_sha256": "fae3036deefb0a5c1538b66fd3626157a001ff9cd9bcd03b1ec6c22ef287bda7",
+  "provider": "Alibaba",
+  "response_model": "eval-qwen-flash",
+  "set_id": "cnn_dailymail_200-29arms-c11e64dd47ac",
+  "tokens_in": 2729,
+  "tokens_out": 10,
+  "truncated": 0.0
+}

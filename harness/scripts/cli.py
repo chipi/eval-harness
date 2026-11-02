@@ -111,6 +111,10 @@ COMMANDS = {
         "a sheet of a dataset's items to label, with what production or an arm decided",
     ),
     "label-import": ("label_import.py", "a filled label sheet as a person's label set"),
+    "sheet-import": (
+        "sheet_import.py",
+        "a sheet filled elsewhere, read back: labels as a label set, picks or scores as judged runs",
+    ),
     "label-from-run": (
         "label_from_run.py",
         "a finished run's outputs as a model's label set (calls nothing)",
@@ -172,7 +176,7 @@ COMMANDS = {
     "search": ("view_search.py", "the catalog's search: datasets, arms, reference sets, metrics, goals"),
     "inspect": (
         "view_inspect.py",
-        "the inspector in the terminal: verdicts, conditions, a breakdown, one item, the per-item table, the charts",
+        "the inspector in the terminal: verdicts, conditions, a breakdown, one item, the charts, the sheet of a dataset",
     ),
     "catalog": ("catalog_build.py", "build the catalog: static pages over the runs, by dataset"),
     "catalog-serve": ("catalog_serve.py", "serve the catalog and the run inspector on 127.0.0.1"),

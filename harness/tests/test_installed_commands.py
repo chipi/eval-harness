@@ -287,6 +287,11 @@ def main() -> int:
                 ["installed_sheet.csv", "--dataset-id", "tickets_v1", "--set", "installed_v1", "--by", "t"],
                 "no labels",
             ),
+            (
+                "sheet-import",
+                ["installed_sheet.csv", "--dataset-id", "tickets_v1", "--by", "t", "--set", "installed_v2"],
+                "nothing filled",
+            ),
             ("label-from-run", ["--run", "no_such_run", "--set", "installed_v1"], "no finished run"),
             ("picks", [], "ok:No picks waiting"),
             ("deploy-sheet", ["--config", "no_such_v1"], "no run of that config"),
@@ -371,6 +376,11 @@ def main() -> int:
             # lead2 against lead1 on gold: the p of tutorial 3 step 4 (3/32 = 0.09375, printed 0.0938; exact over 2^6)
             ("inspect", ["--runs", "tickets_lead1_v1,tickets_lead2_v1"], "ok:0.0938"),
             ("inspect", ["--runs", "tickets_lead1_v1,no_such_v1"], "no arm with that id"),
+            (
+                "inspect",
+                ["--sheet", "--dataset-id", "tickets_v1", "--runs", "tickets_lead1_v1,tickets_lead2_v1"],
+                "ok:tickets_v1: 6 of 6",
+            ),
             (
                 "inspect",
                 ["--runs", "tickets_lead1_v1,tickets_lead2_v1", "--item", "t01_login"],

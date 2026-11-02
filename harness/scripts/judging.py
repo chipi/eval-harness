@@ -11,6 +11,11 @@ examples/_shared/gateway.py, which an installed package does not have. They live
                the message is byte-identical to the one SummEval's adapter builds (self-tested
                against it), so the validation a judge earned there still describes what is sent.
   parsing      `parse_block`: every dimension, exactly n numbers each, each inside the scale.
+               `parse_pick` and `parse_pairwise` for the other two modes (below).
+  modes        a scorer's `mode`: `grade` (the default: each output scored on the scale), `pick`
+               (the judge names the best of every output of an item, `{"best": [3]}`) or
+               `pairwise` (the judge says which of two is better, `{"better": 1}`, 2 or "tie").
+               `build_pick_message` and `build_pairwise_message` lay out their calls.
   statistics   `spearman`, `kendall_tau_b` (tie-corrected: a judge ties constantly).
   the call     `call_judge`: the provider the judge names (`provider:` in its params: openai,
                anthropic, openrouter or litellm), through the same `_providers` an arm's call
@@ -44,6 +49,8 @@ from evaluation_harness import stats as _stats
 DIMS = ("coherence", "consistency", "fluency", "relevance")
 FAKE = "fake"
 COUNT = "{n}"
+MODES = ("grade", "pick", "pairwise")
+DEFAULT_MODE = "grade"
 
 #: What a scorer without a `task` block judges: SummEval's task, which the committed
 #: summarisation scorers and their judging sets were built on.
@@ -152,7 +159,93 @@ def build_message(
     )
 
 
+PICK_REMINDER = (
+    'Begin your reply with the JSON object, for example {"best": [3]}, naming several numbers when '
+    "they are equally the best; write nothing after it."
+)
+PAIR_REMINDER = (
+    'Begin your reply with the JSON object: {"better": 1}, {"better": 2} or {"better": "tie"}; '
+    "write nothing after it."
+)
+
+
+def _layout(prompt: str, source: str, outputs: Sequence[str], source_label: str, output_label: str) -> str:
+    numbered = "\n".join(f"{i}. {s.strip()}" for i, s in enumerate(outputs, 1))
+    return f"{prompt}\n\n{source_label}:\n{source.strip()}\n\n{output_label}:\n{numbered}"
+
+
+def build_pick_message(
+    base: str,
+    source: str,
+    outputs: Sequence[str],
+    source_label: str = "ARTICLE",
+    output_label: str = "SUMMARIES",
+) -> str:
+    """The pick call: the prompt for this many outputs, the source, every output numbered, and
+    the instruction to answer only the JSON. The layout of `build_message`, so a judge validated
+    on one reads the other the same way."""
+    body = _layout(render_prompt(base, len(outputs)), source, outputs, source_label, output_label)
+    return f"{body}\n\n{PICK_REMINDER}"
+
+
+def build_pairwise_message(
+    base: str,
+    source: str,
+    outputs: Sequence[str],
+    source_label: str = "ARTICLE",
+    output_label: str = "SUMMARIES",
+) -> str:
+    """The pairwise call: two numbered outputs of one item, and the instruction to answer only the JSON."""
+    if len(outputs) != 2:
+        raise ValueError(f"a pairwise call judges exactly 2 outputs, got {len(outputs)}")
+    body = _layout(render_prompt(base, 2), source, outputs, source_label, output_label)
+    return f"{body}\n\n{PAIR_REMINDER}"
+
+
+#: The grade reply's object (parse_block), from the first brace to the last, as it was validated.
 _JSON = re.compile(r"\{.*\}", re.S)
+
+
+def _object(output: str | None) -> dict[str, Any] | None:
+    """The first JSON object in a reply (an explanation may follow it, braces and all), or None."""
+    text = output or ""
+    dec = json.JSONDecoder()
+    i = text.find("{")
+    while i != -1:
+        try:
+            obj, _ = dec.raw_decode(text, i)
+        except json.JSONDecodeError:
+            i = text.find("{", i + 1)
+            continue
+        return obj if isinstance(obj, dict) else None
+    return None
+
+
+def parse_pick(output: str | None, n: int) -> list[int] | None:
+    """The 1-based numbers a pick reply names, or None. Lenient about wrapping, strict about
+    content: `best` is a non-empty list of whole numbers, each in 1..n, none repeated."""
+    obj = _object(output)
+    v = obj.get("best") if obj else None
+    if not isinstance(v, list) or not v:
+        return None
+    if any(isinstance(x, bool) or not isinstance(x, int) or not 1 <= x <= n for x in v):
+        return None
+    if len(set(v)) != len(v):
+        return None
+    return [int(x) for x in v]
+
+
+def parse_pairwise(output: str | None) -> int | str | None:
+    """1, 2 or "tie", or None. `better` must be exactly one of those."""
+    obj = _object(output)
+    v = obj.get("better") if obj else None
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, int) and v in (1, 2):
+        return v
+    if isinstance(v, str) and v.strip().lower() == "tie":
+        return "tie"
+    return None
 
 
 def parse_block(
@@ -289,18 +382,45 @@ class JudgeResult:
     meta: dict[str, Any] = field(default_factory=dict)
 
 
+def _fake_keys(texts: Sequence[str], prefer: str) -> list[int]:
+    """What a fake judge ranks the numbered outputs by, higher is better. `prefer: longer` (the
+    default) ranks by length, `shorter` by its negative, `first` prefers whichever is listed
+    first (a judge that is all position bias). Outputs of equal length are equal: a pick names
+    them all, a pair is a tie."""
+    if prefer == "first":
+        return [len(texts) - i for i in range(len(texts))]
+    if prefer == "shorter":
+        return [-len(t.strip()) for t in texts]
+    if prefer == "longer":
+        return [len(t.strip()) for t in texts]
+    raise ValueError(f"fake judge `prefer` must be longer, shorter or first, got {prefer!r}")
+
+
 def _fake_call(message: str, params: dict[str, Any]) -> JudgeResult:
-    """Scores each numbered output on the task's scale from a hash of its text and the judge's
-    model, so two fake judges disagree a little and a rerun reproduces itself. The task arrives
-    in `params["_task"]` (judge_score puts it there for fake judges only)."""
+    """Grade: scores each numbered output on the task's scale from a hash of its text and the
+    judge's model, so two fake judges disagree a little and a rerun reproduces itself. Pick and
+    pairwise: answers by `_fake_keys`, so a test can say who wins. The task and the mode arrive
+    in `params["_task"]` and `params["_mode"]` (judge_score puts them there for fake judges only)."""
     task = params.get("_task") or DEFAULT_TASK
     head = f"\n\n{task['output_label']}:\n"
     body = message.rsplit(head, 1)[1] if head in message else ""
     sums = re.findall(r"^\d+\. (.*)$", body, re.M)
     model = str(params.get("model", ""))
-    lo, hi = int(task["scale"][0]), int(task["scale"][1])
-    s = [lo + int(hashlib.sha256(f"{model}|{x}".encode()).hexdigest()[:8], 16) % (hi - lo + 1) for x in sums]
-    out = json.dumps(dict.fromkeys(task["dimensions"], s))
+    mode = params.get("_mode") or DEFAULT_MODE
+    if mode == "grade":
+        lo, hi = int(task["scale"][0]), int(task["scale"][1])
+        s = [
+            lo + int(hashlib.sha256(f"{model}|{x}".encode()).hexdigest()[:8], 16) % (hi - lo + 1)
+            for x in sums
+        ]
+        out = json.dumps(dict.fromkeys(task["dimensions"], s))
+    else:
+        keys = _fake_keys(sums, str(params.get("prefer", "longer")))
+        top = max(keys)
+        if mode == "pick":
+            out = json.dumps({"best": [i + 1 for i, k in enumerate(keys) if k == top]})
+        else:
+            out = json.dumps({"better": "tie" if keys[0] == keys[1] else 1 + keys.index(top)})
     tin, tout = max(1, len(message) // 4), max(1, len(out) // 4)
     return JudgeResult(
         output=out,

@@ -473,7 +473,7 @@ def rescore_one(
         scores=scores,
         n_items=len(rows),
         metric_kinds=_kinds(adapter_path) or m.get("metric_kinds") or {},
-        primary_metric=_primary(adapter_path) or m.get("primary_metric"),
+        primary_metric=_primary(adapter_path, m.get("params") or {}) or m.get("primary_metric"),
         metric_descriptions=_descriptions(adapter_path) or m.get("metric_descriptions"),
         metric_directions=_directions(adapter_path) or m.get("metric_directions"),
         reference_tier=tier if reference_id else None,
@@ -619,10 +619,10 @@ def _kinds(path):
     return metric_kinds(path)
 
 
-def _primary(path):
+def _primary(path, params=None):
     from evaluation_harness._adapter import primary_metric  # noqa: PLC0415
 
-    return primary_metric(path)
+    return primary_metric(path, params)
 
 
 def _directions(path):

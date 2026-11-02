@@ -20,7 +20,7 @@ TIER ?= silver
         dataset-create dataset-materialize dataset-profile dataset-items reference-manifest \
         mcp search self-test \
         reference-promote arm-smoke model-onboard fingerprint-migrate score-preview importer-check capture \
-        dataset-split capture-scrub captures labels label-sheet label-import label-from-run label-from-capture pick \
+        dataset-split capture-scrub captures labels label-sheet label-import sheet-import label-from-run label-from-capture pick \
         picks dataset-extend deploy-sheet arm-from-capture dataset-from-capture models \
         holdout pair-test rank-stability \
         run-dry-run run sweep \
@@ -235,6 +235,10 @@ label-sheet:
 # a filled label sheet as a person's label set
 label-import:
 	$(PYTHON) scripts/label_import.py $(ARGS)
+
+# a sheet filled elsewhere, read back: labels as a label set, picks or scores as judged runs
+sheet-import:
+	$(PYTHON) scripts/sheet_import.py $(ARGS)
 
 # a finished run's outputs as a model's label set (calls nothing)
 label-from-run:

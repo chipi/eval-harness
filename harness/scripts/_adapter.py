@@ -82,7 +82,7 @@ def _same_text(a: str, b: str) -> bool:
 
 
 def decision_of(adapter_spec: str | None) -> Any:
-    """`decision(output)` from the adapter a run recorded (UXS-002): the decision in one output, what the rows view
+    """`decision(output)` from the adapter a run recorded (UXS-002): the decision in one output, what the sheet
     shows for it; None when the adapter has none or cannot be imported here (the output is shown)."""
     fn = getattr(adapter_module(adapter_spec), "decision", None)
     return fn if callable(fn) else None
@@ -190,8 +190,9 @@ def _descriptions_of(module: Any) -> dict[str, Any]:
     return out
 
 
-def primary_metric(adapter_path: Path | None) -> str | None:
-    """`PRIMARY_METRIC` from the adapter, or None.
+def primary_metric(adapter_path: Path | None, params: dict[str, Any] | None = None) -> str | None:
+    """The arm's primary metric: the adapter's `primary_metric(params)` when it has one (one adapter whose arms
+    measure different things, a judge validated in several modes), else its `PRIMARY_METRIC`, else None.
 
     WHICH quality facet heads the table is a judgement the adapter author makes, not
     something to settle alphabetically. Without this the leaderboard sorted by whichever
@@ -199,7 +200,13 @@ def primary_metric(adapter_path: Path | None) -> str | None:
     and `concision`, is `concision`: brevity, quietly promoted to the headline. The same
     shape of accident once ranked a ten-model sweep by `compression`.
     """
-    value = getattr(_module_or_none(adapter_path), "PRIMARY_METRIC", None)
+    module = _module_or_none(adapter_path)
+    fn = getattr(module, "primary_metric", None)
+    if callable(fn) and params is not None:
+        got = fn(dict(params))
+        if isinstance(got, str) and got:
+            return got
+    value = getattr(module, "PRIMARY_METRIC", None)
     return value if isinstance(value, str) and value else None
 
 

@@ -29,7 +29,11 @@ you choose, with a reason and who promoted it. A reference made before has no `p
 was made and copies its texts into a label set, no run's score or hash moving. A reference made from outcomes has no rule of its own any
 more: promoted, it is a silver like any (with gold beside it, gold still decides).
 
-Six behaviours change without a migration:
+Seven behaviours change without a migration:
+
+- **The `--items` flag of `evh inspect` is gone**, replaced by the sheet: `evh inspect --sheet --dataset-id D --runs A,B`
+  shows every item's scores per arm, beside what each wrote, the labels and the winner (`--scores-only` for the
+  scores alone). A script that parsed `--items` reads `--sheet --csv FILE` instead.
 
 - **A reference folder with no manifest fails `validate` (V16).** Texts copied into `data/references/<tier>/<id>/`
   by hand said nothing of where they came from, and runs scored against them as if promoted. Import them as a
@@ -55,8 +59,10 @@ Everything else is added and optional: the capture lane (`evh capture`, `importe
 `capture-scrub`, `dataset-from-capture`, `dataset-split`, `text: hidden`; RFC-019); evaluating what production did
 (`evh labels`, a label accepting more than one answer, `{"accept": [...]}`, read by `answers(reference)` from
 `evaluation_harness.adapter`, scoring against a label set with `--labels`, `evh arm-from-capture`, `inspect --disagree` and
-`--rows`, `evh pick`, `evh picks`, `evh dataset-extend`, `evh deploy-sheet`; the catalog's Labels page; an adapter's
-optional `same(a, b)`, `decision(output)`, `recorded_output(record)` and `production_ran(record)`; RFC-023);
+the sheet (`inspect --sheet`, `--csv`, `--fill`, read back by `evh sheet-import`), `evh pick`, `evh picks`,
+`evh dataset-extend`, `evh deploy-sheet`; the catalog's Labels page; an adapter's optional `same(a, b)`,
+`decision(output)`, `recorded_output(record)` and `production_ran(record)`; RFC-023); judging modes (a scorer's
+`mode: pick` or `pairwise`, validated in that mode; RFC-005) and an adapter's optional `primary_metric(params)`;
 model onboarding (`evh model-onboard`, `evh arm-smoke`, `evh models`, `model_record:` and `deployment:` in a
 config; RFC-020); scoring that evolves (`evh score-preview`, `evh rescore --goal --round --why`,
 `round-open --keep all --scoring` and `--adopt`, a goal axis's `limit: baseline`; RFC-022); `call_timeout_s` for

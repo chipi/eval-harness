@@ -151,10 +151,11 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   reference bytes differ, or latency is compared across deployments (where the model ran) or
   measured from different runners (RFC-021).
 - **FR2.6** (0.6.0): A label set can be what arms are scored against; the item view shows every label
-  with its source; `--disagree` keeps the items where the chosen arms decided differently; and the rows view
-  (`evh inspect --dataset-id D --rows`) shows one row per item with its signals (wrong, disagree, split, new,
-  unlabelled) as filters and sorts. A selection of rows gives the `evh pick` and `evh label-sheet` commands; the
-  page writes nothing (PRD-014 FR8).
+  with its source; `--disagree` keeps the items where the chosen arms decided differently; and the sheet
+  (`evh inspect --sheet --dataset-id D --runs …`) shows the items down and a column per arm across, with what each
+  wrote, its scores, the labels, the winner, the signals (wrong, disagree, split, new, unlabelled) as filters and
+  sorts, and a footer per arm. A selection of rows gives the `evh pick` and `evh label-sheet` commands, and its CSV
+  downloads; the page writes nothing (PRD-014 FR8).
 - **FR2.7** (0.6.0): `catalog-serve` serves each project on a stable port of its own (PRD-007 FR2.6), the next
   free one if that is taken, and prints the URL and the project; `--port` overrides. A local catalog (the default
   name, no `--link`) names its project in its header and tab title.
@@ -174,7 +175,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR4.1**: Every page and comparison is also a command that asks the same adapter and computes
   with the same functions: `evh overview` (the home dashboard), `evh activity`, `evh datasets`,
   `evh arms` (`--by`, `--where`, `--tier`, `--configs`), `evh references`, `evh metrics`,
-  `evh goals`, `evh search`, `evh inspect` (its comparison, `--items`, `--analysis`, `--item`)
+  `evh goals`, `evh search`, `evh inspect` (its comparison, `--analysis`, `--item`, `--sheet`)
   ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)); every list takes `--period P` and prints the
   page's period columns, from the same builder the page reads.
 - **FR4.2**: New views and actions are added to both. A decision the pages suggest is shown as

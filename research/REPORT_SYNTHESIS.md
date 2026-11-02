@@ -1,10 +1,10 @@
 # What six evals agree on
 
-**Six tasks · five metric shapes · 167 measured arms · $19.07 billed · one harness**
+**Six tasks · five metric shapes · 173 measured arms · $19.12 billed · one harness**
 
-*$19.07 is the 167 arms under `harness/data/runs/`. Including the six paired runs (four
+*$19.12 is the 173 arms under `harness/data/runs/`. Including the six paired runs (four
 behind the registered prediction, $0.60; two on SummEval's text, $0.13) and the three hosted
-repeat runs ($0.43), the repo has spent $20.23.*
+repeat runs ($0.43), the repo has spent $20.28.*
 
 ---
 

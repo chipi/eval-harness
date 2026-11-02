@@ -22,9 +22,20 @@
   (function elsewhere() {
     const t = document.querySelector('[data-elsewhere=term]'), m = document.querySelector('[data-elsewhere=mcp]');
     const args = {};
-    for (const k of ['runs', 'baseline', 'metric', 'by']) if (P.get(k)) args[k] = P.get(k);
+    if (P.get('sheet')) {
+      // The sheet: the flags that filter are the signals ticked (a flag always filters in the terminal).
+      args.sheet = true; args['dataset-id'] = P.get('dataset');
+      const only = P.getAll('only');
+      for (const k of ['runs', 'metric', 'by']) if (P.get(k)) args[k] = P.get(k);
+      if (P.get('wrong') && only.includes('wrong')) args['wrong-against'] = P.get('wrong');
+      if (P.get('new') && only.includes('new')) args['new-vs'] = P.get('new');
+      for (const k of ['disagree', 'split', 'unlabelled']) if (only.includes(k)) args[k] = true;
+      if (P.get('scores') === 'only') args['scores-only'] = true;
+    } else {
+      for (const k of ['runs', 'baseline', 'metric', 'by']) if (P.get(k)) args[k] = P.get(k);
+      if (P.get('rescore') === '0') args['no-rescore'] = true;
+    }
     if (P.getAll('where').length) args.where = P.getAll('where');
-    if (P.get('rescore') === '0') args['no-rescore'] = true;
     const opts = Object.entries(args).flatMap(([k, v]) =>
       v === true ? [`--${k}`] : (Array.isArray(v) ? v : [v]).map(x => `--${k} ${x}`));
     if (t) t.innerHTML = `<code>${esc(['evh inspect', ...opts].join(' '))}</code>`;
@@ -81,7 +92,7 @@
   }
 
   async function load() {
-    if (P.get('rows') && P.get('dataset')) return rowsView();
+    if (P.get('sheet') && P.get('dataset')) return sheetView();
     picker();
     if (!runs().length) { app.innerHTML = '<p class="muted">Pick runs from an eval or dataset page in the catalog ("Inspect runs"), or add them above.</p>'; return; }
     let d;
@@ -481,95 +492,150 @@
     box.scrollIntoView({behavior: 'smooth', block: 'start'});
   }
 
-  // ── 05 rows (RFC-023): one dataset's items, what each chosen arm decided, every label, the signals ────────────
-  // The page writes nothing: the rows ticked give the evh pick and evh label-sheet commands to copy.
+  // ── 05 sheet (RFC-023): one dataset's items down, a column per arm across: what it wrote, its scores, the labels, the winner ──
+  // The page writes nothing: the rows ticked give the evh pick and evh label-sheet commands to copy; the CSV is a read.
   const SIGNALS = ['wrong', 'disagree', 'split', 'new', 'unlabelled'];
-  async function rowsView() {
+  async function sheetView() {
     const ds = P.get('dataset');
     picker();
     let d;
-    try {
+    const params = () => {
       const q = new URLSearchParams({dataset: ds, runs: runs().join(',')});
-      for (const k of ['wrong', 'new']) if (P.get(k)) q.set(k, P.get(k));
+      for (const k of ['wrong', 'new', 'metric']) if (P.get(k)) q.set(k, P.get(k));
       for (const w of P.getAll('where')) q.append('where', w);
-      d = await (await fetch(API + 'rows?' + q)).json();
+      for (const o of P.getAll('only')) q.append('only', o);
+      return q;
+    };
+    try {
+      d = await (await fetch(API + 'sheet?' + params())).json();
     } catch (e) {
       app.innerHTML = `<p class="note"><b>No inspector server.</b> Start it with <code>${esc(SERVE)}</code> and open this page from the address it prints.</p>`;
       return;
     }
     if (d.error) { app.innerHTML = `<p class="note"><b>${esc(d.error)}</b></p>`; return; }
     const only = P.getAll('only');
-    const shown = d.rows.filter(r => only.every(s => s in r.signals));
-    const counts = `${d.rows.length} ${ITEMS}` + SIGNALS.filter(s => d.counts[s]).map(s => ` · ${d.counts[s]} ${s}`).join('');
+    const scoresOnly = P.get('scores') === 'only';
+    const counts = `${d.total} ${ITEMS}` + SIGNALS.filter(s => d.counts[s]).map(s => ` · ${d.counts[s]} ${s}`).join('');
     const opt = (xs, cur, none) => `<option value="">${none}</option>` + xs.map(x => `<option value="${esc(x)}" ${x === cur ? 'selected' : ''}>${esc(x)}</option>`).join('');
+    const mopts = d.metrics.map(m => `<option value="${esc(m)}" ${m === d.metric ? 'selected' : ''}>${esc(m)}</option>`).join('');
     const controls = `<div class="controls">
-      <label>wrong against <select id="rwrong">${opt(d.sets, d.wrong, 'no label set')}</select></label>
-      <label>new against <select id="rnew">${opt(d.datasets, d.new, 'no dataset')}</select></label>
-      ${SIGNALS.map(s => `<label class="tick"><input type="checkbox" class="ronly" value="${s}" ${only.includes(s) ? 'checked' : ''}> only ${s}</label>`).join('')}</div>`
+      ${d.metric ? `<label>read on <select id="smetric">${mopts}</select></label>` : ''}
+      <label>wrong against <select id="swrong">${opt(d.sets, d.wrong, 'no label set')}</select></label>
+      <label>new against <select id="snew">${opt(d.datasets, d.new, 'no dataset')}</select></label>
+      ${SIGNALS.map(s => `<label class="tick"><input type="checkbox" class="sonly" value="${s}" ${only.includes(s) ? 'checked' : ''}> only ${s}</label>`).join('')}
+      <label class="tick"><input type="checkbox" id="sscores" ${scoresOnly ? 'checked' : ''}> scores only</label></div>`
       + fieldControls(d);
     const first = d.runs[0];
-    // As in the terminal: the signals (why a row matters) next to the item, each run's decision, and the fields last.
-    const head = ['<input type="checkbox" id="rall" aria-label="select all shown">', ITEM, 'signals',
-      ...d.runs.map((r, i) => esc(short(r)) + (i === 0 ? '<br><small>first: production</small>' : '')), 'labels', 'picked', 'fields'];
+    // The terminal's order: the signals next to the item (they are why a row matters), each arm's output and scores,
+    // the labels, the winners, and the fields last.
+    const arms = d.arms;
+    const heads = [['sel', '<input type="checkbox" id="sall" aria-label="select all shown">'], ['item', ITEM], ['start', 'the start'], ['', 'signals']];
+    arms.forEach((a, i) => {
+      heads.push(['outc', esc(short(a.token)) + '<br><small>' + (i === 0 ? 'first: production' : 'output') + '</small>']);
+      a.scores.forEach(ref => heads.push(['scc', esc(short(a.token)) + '<br><small>' + esc(ref) + '</small>']));
+    });
+    d.label_cols.forEach(c => heads.push(['', `label ${chip(c.kind)} ${esc(c.name)}`]));
+    d.ref_cols.forEach(c => heads.push(['', 'reference<br><small>' + esc(c.key) + '</small>']));
+    d.winner_cols.forEach(w => heads.push(['', esc(w.header)]));
+    heads.push(['', 'picked'], ['', 'fields']);
     const fieldsOf = r => Object.entries(r.fields).map(([k, v]) => `${k}=${v}`).join(', ');
+    const win = (r, t, ref) => ref === d.metric && (r.winners['winner: ' + d.metric] || []).includes(t) ? ' win' : '';
     const body = rs => rs.map(r => `<tr class="eprow" data-ep="${esc(r.item)}" tabindex="0">
-      <td><input type="checkbox" class="rsel" value="${esc(r.item)}" aria-label="select ${esc(r.item)}"></td>
-      <td class="mono" title="${esc(r.item)}">${esc(r.item.length > 28 ? r.item.slice(0, 27) + '…' : r.item)}</td>
+      <td class="sel"><input type="checkbox" class="ssel" value="${esc(r.item)}" aria-label="select ${esc(r.item)}"></td>
+      <td class="item mono" title="${esc(r.item)}">${esc(r.item.length > 28 ? r.item.slice(0, 27) + '…' : r.item)}</td>
+      <td class="small start" title="${esc(r.text)}">${esc(r.text.length > 60 ? r.text.slice(0, 59) + '…' : r.text)}</td>
       <td>${Object.entries(r.signals).map(([s, x]) => `<span class="chip sig sig-${s}" title="${esc(x)}">${s}</span>`).join(' ')}</td>
-      ${d.runs.map(n => `<td class="small">${r.decisions[n] == null ? '<span class="muted">—</span>' : esc(r.decisions[n])}</td>`).join('')}
-      <td class="small">${r.labels.map(l => `${chip(l.kind)} <code>${esc(l.set.split('/').pop())}</code> ${esc(l.text)}`).join('<br>') || '<span class="muted">none</span>'}</td>
+      ${arms.map(a => {
+        const c = r.cells[a.token];
+        return `<td class="small outc">${c.output == null ? '<span class="muted">—</span>' : esc(c.output)}</td>`
+          + a.scores.map(ref => `<td class="num scc${win(r, a.token, ref)}">${fmt(c.scores[ref])}</td>`).join('');
+      }).join('')}
+      ${d.label_cols.map(c => `<td class="small">${r.labels[c.key] == null ? '<span class="muted">—</span>' : esc(r.labels[c.key])}</td>`).join('')}
+      ${d.ref_cols.map(c => `<td class="small">${r.references[c.key] == null ? '<span class="muted">—</span>' : esc(r.references[c.key])}</td>`).join('')}
+      ${d.winner_cols.map(w => `<td class="small">${esc((r.winners[w.key] || []).map(short).join(' = '))}</td>`).join('')}
       <td class="small">${esc(r.picked.join(', '))}</td>
       <td class="small">${esc(fieldsOf(r))}</td></tr>`).join('');
-    const table = `<div class="scroll-x"><table class="data" id="rowstable"><thead><tr>${head.map((h, i) => `<th data-col="${i}">${h}</th>`).join('')}</tr></thead><tbody>${body(shown)}</tbody></table></div>`;
-    const panel = `<div class="cmdpanel" id="rpanel" hidden><p class="small"><b><span id="rn">0</span> selected.</b> The page writes nothing; run these.</p>
-      <div class="controls"><label>for <input id="rfor" placeholder="a governed dataset" list="rdsl"></label><datalist id="rdsl">${d.datasets.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
-      <label>tags <input id="rtags" placeholder="case=oom kind=missed"></label><label>note <input id="rnote" placeholder="why it is worth keeping"></label></div>
-      <p><code class="cmd" id="rpick"></code> <button type="button" class="btn small copy" data-copy="">copy</button></p>
-      <p><code class="cmd" id="rsheet"></code> <button type="button" class="btn small copy" data-copy="">copy</button>
-      <a class="btn small" id="rsheetdl" href="#" download>download the sheet (CSV)</a></p></div>`;
+    // The footer, per arm: under the arm's columns. Its cells span the arm's columns (the output's too, unless hidden).
+    const f = d.footer, before = 4, after = d.label_cols.length + d.ref_cols.length + d.winner_cols.length + 2;
+    const line = (label, cell) => `<tr><th colspan="${before}" class="small">${label}</th>${arms.map(a =>
+      `<td class="small foot" data-n="${a.scores.length}">${cell(a.token)}</td>`).join('')}<td colspan="${after}"></td></tr>`;
+    const way = d.lower_is_better ? 'lower' : 'higher';
+    const pct = v => v == null ? '—' : (100 * v).toFixed(0) + '%';
+    const foot = !d.metric ? '' : '<tfoot>'
+      + line(`mean ${esc(f.metric)} <small>(${way} is better)</small>`, t => fmt(f.mean[t]))
+      + d.winner_cols.map(w => line(`win rate · ${esc(w.header)}`, t => pct(f.win_rate[w.key][t]))).join('')
+      + line('verdict' + (f.decided ? ` <small>(${esc(f.decided)})</small>` : ''), t => verdictCell(f.verdict[t]))
+      + '</tfoot>';
+    const table = `<div class="scroll-x"><table class="data sheet${scoresOnly ? ' scores-only' : ''}" id="sheettable"><thead><tr>${heads.map(([c, h], i) => `<th class="${c}" data-col="${i}">${h}</th>`).join('')}</tr></thead><tbody>${body(d.rows)}</tbody>${foot}</table></div>`;
+    const panel = `<div class="cmdpanel" id="spanel" hidden><p class="small"><b><span id="sn">0</span> selected.</b> The page writes nothing; run these.</p>
+      <div class="controls"><label>for <input id="sfor" placeholder="a governed dataset" list="sdsl"></label><datalist id="sdsl">${d.datasets.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+      <label>tags <input id="stags" placeholder="case=oom kind=missed"></label><label>note <input id="snote" placeholder="why it is worth keeping"></label></div>
+      <p><code class="cmd" id="spick"></code> <button type="button" class="btn small copy" data-copy="">copy</button></p>
+      <p><code class="cmd" id="ssheet"></code> <button type="button" class="btn small copy" data-copy="">copy</button>
+      <a class="btn small" id="ssheetdl" href="#" download>download these rows (CSV)</a></p></div>`;
     let by = '';
     const bf = P.get('by');
     if (bf) {
       const g = {};
-      for (const r of shown) { const k = String(r.fields[bf] ?? '—'); (g[k] = g[k] || []).push(r); }
+      for (const r of d.rows) { const k = String(r.fields[bf] ?? '—'); (g[k] = g[k] || []).push(r); }
       by = `<h3 class="sub">by ${esc(bf)}</h3><div class="scroll-x"><table class="data" data-nopage><thead><tr><th>${esc(bf)}</th><th>rows</th>${SIGNALS.map(s => `<th>${s}</th>`).join('')}</tr></thead><tbody>${Object.entries(g).map(([k, rs]) =>
         `<tr><td>${esc(k)}</td><td class="num">${rs.length}</td>${SIGNALS.map(s => `<td class="num">${rs.filter(r => s in r.signals).length}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
     }
-    app.innerHTML = `<p class="eyebrow"><span class="num">05</span>rows · ${esc(ds)}</p><p class="small" id="rcounts">${esc(counts)}${only.length ? ' · ' + shown.length + ' shown' : ''}</p>`
-      + controls + panel + by + table + `<p class="small muted">Tick rows to pick or label them; click a row to open the ${ITEM}.</p><div id="drill"></div>`;
+    app.innerHTML = `<p class="eyebrow"><span class="num">05</span>sheet · ${esc(ds)}</p><p class="small" id="scounts">${esc(counts)}${only.length ? ' · ' + d.rows.length + ' shown' : ''}${d.metric ? ' · read on ' + esc(d.metric) + ' (' + way + ' is better)' : ''}</p>`
+      + controls + `<p><a class="btn small" id="sheetdl" href="#" download>download (CSV)</a> <label class="tick small"><input type="checkbox" id="sfill"> with empty label columns to fill</label></p>`
+      + panel + by + table + `<p class="small muted">Tick rows to pick or label them; click a row to open the ${ITEM}.</p><div id="drill"></div>`;
     wireFields(d);
-    const t = document.getElementById('rowstable');
+    const t = document.getElementById('sheettable');
+    // The footer's cells span their arm's columns: the output's too, unless "scores only" hides it.
+    const span = () => t.querySelectorAll('td.foot').forEach(c => { c.colSpan = Math.max(1, +c.dataset.n + (t.classList.contains('scores-only') ? 0 : 1)); });
+    span();
     if (window.paginate) window.paginate(t);
-    document.getElementById('rwrong').onchange = ev => { ev.target.value ? P.set('wrong', ev.target.value) : P.delete('wrong'); go(); };
-    document.getElementById('rnew').onchange = ev => { ev.target.value ? P.set('new', ev.target.value) : P.delete('new'); go(); };
-    app.querySelectorAll('input.ronly').forEach(c => c.onchange = () => {
-      P.delete('only'); app.querySelectorAll('input.ronly:checked').forEach(x => P.append('only', x.value)); go(); });
+    document.getElementById('swrong').onchange = ev => { ev.target.value ? P.set('wrong', ev.target.value) : P.delete('wrong'); go(); };
+    document.getElementById('snew').onchange = ev => { ev.target.value ? P.set('new', ev.target.value) : P.delete('new'); go(); };
+    const sm = document.getElementById('smetric');
+    if (sm) sm.onchange = () => { P.set('metric', sm.value); go(); };
+    app.querySelectorAll('input.sonly').forEach(c => c.onchange = () => {
+      P.delete('only'); app.querySelectorAll('input.sonly:checked').forEach(x => P.append('only', x.value)); go(); });
     const q = s => s.includes(' ') || s.includes('"') ? '"' + s.replace(/"/g, '\\"') + '"' : s;
-    const upd = () => {
-      const sel = [...app.querySelectorAll('input.rsel:checked')].map(i => i.value);
-      document.getElementById('rpanel').hidden = !sel.length;
-      document.getElementById('rn').textContent = sel.length;
-      const items = sel.map(i => '--item ' + i).join(' ');
-      const f = document.getElementById('rfor').value.trim(), tg = document.getElementById('rtags').value.trim().split(/\s+/).filter(Boolean);
-      const note = document.getElementById('rnote').value.trim();
-      const pk = `evh pick --dataset-id ${ds} ${items}` + (f ? ` --for ${f}` : '') + tg.map(x => ` --tag ${x}`).join('') + (note ? ` --note ${q(note)}` : '');
-      const sh = `evh label-sheet --dataset-id ${ds} ${items} --out sheet.csv` + (d.runs.length ? ` --runs ${d.runs.join(',')}` : '');
-      const [a, b] = app.querySelectorAll('#rpanel button.copy');
-      document.getElementById('rpick').textContent = pk; a.dataset.copy = pk;
-      document.getElementById('rsheet').textContent = sh; b.dataset.copy = sh;
-      // The same sheet, built by the server as label-sheet builds it (a read: nothing is written).
-      const qs = new URLSearchParams({dataset: ds}); sel.forEach(i => qs.append('item', i));
-      if (d.runs.length) qs.set('runs', d.runs.join(','));
-      const dl = document.getElementById('rsheetdl');
-      dl.href = '/api/label-sheet?' + qs; dl.download = `label-sheet-${ds}.csv`;
+    // The CSV the server builds as the command does (a read: nothing is written): every row shown, or the ticked ones.
+    const csv = items => {
+      const qs = params(); qs.set('format', 'csv');
+      if (document.getElementById('sscores').checked) qs.set('scores_only', '1');
+      if (document.getElementById('sfill').checked) qs.set('fill', 'label');
+      items.forEach(i => qs.append('item', i));
+      return API + 'sheet?' + qs;
     };
-    app.querySelectorAll('input.rsel').forEach(c => c.onchange = upd);
-    for (const id of ['rfor', 'rtags', 'rnote']) document.getElementById(id).oninput = upd;
-    document.getElementById('rall').onchange = ev => {
-      [...t.tBodies[0].rows].filter(r => !r.hidden && r.style.display !== 'none').forEach(r => { r.querySelector('input.rsel').checked = ev.target.checked; });
+    const upd = () => {
+      const sel = [...app.querySelectorAll('input.ssel:checked')].map(i => i.value);
+      document.getElementById('spanel').hidden = !sel.length;
+      document.getElementById('sn').textContent = sel.length;
+      const items = sel.map(i => '--item ' + i).join(' ');
+      const fr = document.getElementById('sfor').value.trim(), tg = document.getElementById('stags').value.trim().split(/\s+/).filter(Boolean);
+      const note = document.getElementById('snote').value.trim();
+      const pk = `evh pick --dataset-id ${ds} ${items}` + (fr ? ` --for ${fr}` : '') + tg.map(x => ` --tag ${x}`).join('') + (note ? ` --note ${q(note)}` : '');
+      const sh = `evh label-sheet --dataset-id ${ds} ${items} --out sheet.csv` + (d.runs.length ? ` --runs ${d.runs.join(',')}` : '');
+      const [a, b] = app.querySelectorAll('#spanel button.copy');
+      document.getElementById('spick').textContent = pk; a.dataset.copy = pk;
+      document.getElementById('ssheet').textContent = sh; b.dataset.copy = sh;
+      const dl = document.getElementById('ssheetdl');
+      dl.href = csv(sel); dl.download = `sheet-${ds}.csv`;
+      const all = document.getElementById('sheetdl');
+      all.href = csv([]); all.download = `sheet-${ds}.csv`;
+    };
+    document.getElementById('sscores').onchange = ev => {
+      t.classList.toggle('scores-only', ev.target.checked);
+      ev.target.checked ? P.set('scores', 'only') : P.delete('scores');
+      history.replaceState(null, '', '?' + P);
+      span(); upd(); };
+    document.getElementById('sfill').onchange = upd;
+    app.querySelectorAll('input.ssel').forEach(c => c.onchange = upd);
+    for (const id of ['sfor', 'stags', 'snote']) document.getElementById(id).oninput = upd;
+    upd();
+    document.getElementById('sall').onchange = ev => {
+      [...t.tBodies[0].rows].filter(r => !r.hidden && r.style.display !== 'none').forEach(r => { r.querySelector('input.ssel').checked = ev.target.checked; });
       upd(); };
-    // A sort by any column (a header that is not the select-all box): text, as shown.
-    t.querySelectorAll('th').forEach(th => th.onclick = ev => {
+    // A sort by any column (a header that is not the select-all box): numbers as numbers, text as shown.
+    t.tHead.querySelectorAll('th').forEach(th => th.onclick = ev => {
       if (ev.target.closest('input')) return;
       const i = th.cellIndex, dir = th.dataset.dir === 'asc' ? 'desc' : 'asc';
       t.querySelectorAll('th').forEach(x => delete x.dataset.dir); th.dataset.dir = dir;
@@ -585,6 +651,13 @@
     const want = P.get('item');
     const hit = want && [...app.querySelectorAll('tr.eprow')].find(tr => tr.dataset.ep === want);
     if (hit) drill(want, d.runs, first, label, '', hit);
+  }
+
+  // A footer verdict, as the comparison page tints one: better and worse by their words, else plain.
+  function verdictCell(v) {
+    if (!v) return '<span class="muted">—</span>';
+    const cls = v.startsWith('leader') ? 'v-better' : v.startsWith('out') || v.includes('significant: worse') ? 'v-worse' : 'v-none';
+    return `<span class="chip ${cls}">${esc(v)}</span>`;
   }
 
   load();

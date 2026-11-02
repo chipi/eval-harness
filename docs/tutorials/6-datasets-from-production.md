@@ -167,18 +167,18 @@ reads it with `recorded_output(record)`), and it costs nothing. Scored against a
 the others, in `data/runs-labels-tickets_desk_v1-desk_outcomes/`. Where was it wrong?
 
 ```bash
-evh inspect --dataset-id tickets_desk_v1 --rows --runs desk_router_v1 --wrong-against desk_outcomes
+evh inspect --sheet --dataset-id tickets_desk_v1 --runs desk_router_v1 --wrong-against desk_outcomes
 ```
 ```text
-tickets_desk_v1: 2 of 6 item(s) (wrong) · wrong 2
+tickets_desk_v1: 2 of 6 item(s) (wrong) · wrong 2 · read on overlap_f1 (higher is better)
   ...
 label them: evh label-sheet --dataset-id tickets_desk_v1 --item t01_login --item t04_api --out sheet.csv --runs desk_router_v1
 ```
 
-Each row is a ticket: what each run decided, every label it has with its source (the author's labels from Getting
-started are there too: the same tickets, by their bytes), and the signals (`--disagree`, `--split`, `--new-vs`,
-`--unlabelled`, and `--where` on its fields). The view writes nothing: it ends with the commands for its rows. The
-inspector shows the same, from the dataset page's "Explore its rows".
+Each row is a ticket: what each run wrote and its scores, every label it has with its source (the author's labels
+from Getting started are there too: the same tickets, by their bytes), and the signals (`--disagree`, `--split`,
+`--new-vs`, `--unlabelled`, and `--where` on its fields). The sheet writes nothing: it ends with the commands for its
+rows. The inspector shows the same, from the dataset page's "Open its sheet".
 
 Say the routing set you govern was frozen from the email tickets only. The router's two mistakes came on a web and
 an API ticket it does not hold: pick them for it, and make its next version from the picks.

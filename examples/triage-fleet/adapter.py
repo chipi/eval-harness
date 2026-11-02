@@ -306,7 +306,7 @@ def _label(reference: str) -> tuple[tuple[str, ...], str | None]:
 
 
 def decision(output: str) -> str:
-    """The decision in one output, what the rows view shows for it (UXS-002): its disposition, not the probe trace
+    """The decision in one output, what the sheet shows for it (UXS-002): its disposition, not the probe trace
     and reasons around it; a bare label (a recorded or labelled answer) as it is."""
     try:
         return str((json.loads(output) or {}).get("disposition") or output.strip())

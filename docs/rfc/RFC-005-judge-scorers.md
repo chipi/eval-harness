@@ -1,6 +1,6 @@
 # RFC-005: Judge scorers and the judging pass
 
-- **Status**: Completed (0.3.0); judge-scorer YAMLs hashed by content in 0.4.0 ([RFC-001](RFC-001-fingerprint-and-code-identity.md))
+- **Status**: Completed (0.3.0); judge-scorer YAMLs hashed by content in 0.4.0 ([RFC-001](RFC-001-fingerprint-and-code-identity.md)); judging modes (pick, pairwise) in 0.6.0
 - **Authors**: Marko Dragoljevic
 - **Related PRD**: [PRD-003](../prd/PRD-003-judging.md)
 - **Related ADR**: [ADR-0001](../adr/ADR-0001-judge-scorers.md)
@@ -101,6 +101,35 @@ transfers to the outputs being judged.
 
 `--dry-run` builds the judging set and prints calls, tokens and the estimated cost, calling
 nothing. `evh judge` stays the older pointwise judge panel.
+
+### Judging modes (0.6.0)
+
+What a judge is asked is the scorer's `mode` (owner, 2026-11-02). It lives in the scorer, not on the command line,
+because a judge is validated in the mode it is used: a judge that grades like people says nothing about how it picks.
+
+- **`mode: grade`** (the default, everything above): each output gets its own score per dimension on the scale.
+- **`mode: pick`**: the judge sees every arm's output for an item at once, blind and shuffled, and names the best
+  (`{"best": [3]}`; several when they are equally best, `{"best": [3, 7]}`). An item is one call, so a pick scorer
+  needs `outputs_per_call` at least the number of arms; a pick made in blocks would name each block's winner, not the
+  item's, so it is refused. Each arm's per-item `won` is 1 when it alone is best, 1/k when it shares the best with
+  k − 1 others, else 0.
+- **`mode: pairwise`**: the judge sees two outputs at a time and says which is better (`{"better": 1}`, `2` or
+  `"tie"`), for every pair of arms on every item (n(n − 1)/2 calls an item; `--dry-run` says how many). Each arm's
+  per-item `won` is its share of the item's pairs it won, a tie counting a half.
+
+For pick and pairwise, `won` is the projected metric (`judge_won`, the mean over judges, is the primary), written as
+judged runs exactly as grading's: goals, rounds, `inspect` and the paired tests read them unchanged. The controls
+stay: the position check re-shuffles (pick) or swaps the two outputs (pairwise) and reports how often the verdict
+holds; the noise check repeats calls; judges are compared with each other. The summary adds each arm's **win rate**
+(its mean `won`) and **Bradley-Terry strengths** (Hunter 2004's MM fit over every pairwise outcome: a pick is the
+winner beating each other output of its item), each with a 95% interval from resampling the items.
+
+**Validation in the mode.** The scorer's `validation.mode` must be its `mode`. The SummEval example validates a pick
+judge as it validates a grading one, as an arm on `summeval_100`: with `mode: pick` the judge picks the best of an
+article's 16 summaries, scored `top1` (1 when its pick is among the summaries the three experts rate best, by their
+mean over the four dimensions) beside `top1_chance` (what a random pick gets: the share of best summaries); a pairwise
+judge is scored `pair_agreement` on a seeded sample of pairs the experts rank apart. `min_metric` is the random arm's
+value, so a judge no better than chance is refused.
 
 ## What the first uses found
 

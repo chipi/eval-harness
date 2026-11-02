@@ -15,7 +15,9 @@
 Every list (datasets, arms, references, metrics, goals) takes --period P too: the page's columns
 for that period, counted from today, with their trends against the period before.
     evh inspect    --runs A,B,... [--baseline A]     the inspector's comparison: verdicts, conditions, a breakdown
-                   [--metric M] [--where F:V] [--by F] [--item ITEM] [--items] [--analysis [--x M]]
+                   [--metric M] [--where F:V] [--by F] [--item ITEM] [--analysis [--x M]]
+    evh inspect    --sheet --dataset-id D --runs A,B,... [--metric M] [--csv FILE [--fill label|pick|scores]]
+                                                      one sheet: the items down, a column per arm: outputs, scores, labels, the winner
     evh search     TEXT                              the catalog's search box: datasets, arms, references, metrics, goals
 
 They read the project through the same adapter as the pages (`--adapter`, else config.yaml's
@@ -38,8 +40,9 @@ import statistics
 import sys
 import textwrap
 from datetime import date
+from pathlib import Path
 
-from evaluation_harness import _jsonout
+from evaluation_harness import _jsonout, _sheet
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_models as cm
 from evaluation_harness import catalog_periods as cp
@@ -1198,16 +1201,13 @@ def inspect(argv) -> int:
     ap.add_argument(
         "--disagree",
         action="store_true",
-        help="only the items where the arms decided differently from the baseline (with --rows: from the first run; the adapter's same(a, b))",
+        help="only the items where the arms decided differently from the baseline (with --sheet: from the first run; the adapter's same(a, b))",
     )
     ap.add_argument("--item", help="show one item: each arm's output beside the reference")
     ap.add_argument(
         "--no-rescore",
         action="store_true",
         help="read only what is on record (the inspector's re-score box unticked; an adapter that can re-score)",
-    )
-    ap.add_argument(
-        "--items", action="store_true", help="the per-item table: every item's score per arm, and Δ"
     )
     ap.add_argument(
         "--analysis",
@@ -1218,28 +1218,60 @@ def inspect(argv) -> int:
         "--x", dest="xmetric", help="with --analysis: each arm's mean on this metric too (the scatter)"
     )
     ap.add_argument(
-        "--rows",
+        "--sheet",
         action="store_true",
-        help="one row per item of --dataset-id: what each run in --runs decided (the first is production's), its labels, its signals",
+        help="one sheet of --dataset-id: its items down, a column per run in --runs (the first is production's): what it wrote, its scores, the labels, the winner, the signals, and a footer per run",
     )
-    ap.add_argument("--dataset-id", help="with --rows: the dataset whose items are shown")
+    ap.add_argument("--dataset-id", help="with --sheet: the dataset whose items are shown")
+    ap.add_argument(
+        "--scores-only",
+        action="store_true",
+        help="with --sheet: leave the runs' outputs out, keep their scores",
+    )
     ap.add_argument(
         "--wrong-against",
         metavar="SET",
-        help="with --rows: only the items where the first run's decision is not this label set's (SET or DATASET/SET)",
+        help="with --sheet: only the items where the first run's decision is not this label set's (SET or DATASET/SET)",
     )
     ap.add_argument(
         "--new-vs",
         metavar="DATASET",
-        help="with --rows: only the items with a field value this dataset has never had",
+        help="with --sheet: only the items with a field value this dataset has never had",
     )
     ap.add_argument(
         "--split",
         action="store_true",
-        help="with --rows: only the items the candidates (the runs after the first) decided differently among themselves",
+        help="with --sheet: only the items the candidates (the runs after the first) decided differently among themselves",
     )
     ap.add_argument(
-        "--unlabelled", action="store_true", help="with --rows: only the items no label set labels yet"
+        "--unlabelled", action="store_true", help="with --sheet: only the items no label set labels yet"
+    )
+    ap.add_argument(
+        "--csv",
+        type=Path,
+        metavar="FILE",
+        help="with --sheet: write the sheet as CSV (UTF-8 with the mark Excel needs) instead of printing it",
+    )
+    ap.add_argument(
+        "--fill",
+        choices=_sheet.FILLS,
+        help="with --csv: add the columns to fill. label: label, also right, note. pick, scores: the outputs as blind columns A, B, C… shuffled per row, a key beside the sheet (sheet.key.json), the rubric as its first row; evh sheet-import reads it back",
+    )
+    ap.add_argument(
+        "--choices",
+        help="with --fill label: the allowed answers, comma-separated (e.g. file,dismiss,escalate), written into the label column's header",
+    )
+    ap.add_argument(
+        "--seed", type=int, default=None, help="with --fill pick or scores: the shuffle's seed (default 0)"
+    )
+    ap.add_argument(
+        "--rubric",
+        type=Path,
+        help="with --fill pick or scores: a file saying what to judge (default: a plain one)",
+    )
+    ap.add_argument(
+        "--scale",
+        help="with --fill scores: the scores' range, LO..HI (default 1..5)",
     )
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
@@ -1249,23 +1281,30 @@ def inspect(argv) -> int:
         # Run for a public MCP server: the inspector's public rules, so a --where or --by on a
         # field not marked public is refused instead of leaking its values through the counts.
         cs.LIMITS["hosts"] = ("public",)
-    only_rows = [
+    only_sheet = [
         f
         for f, on in (
+            ("--dataset-id", args.dataset_id),
             ("--wrong-against", args.wrong_against),
             ("--new-vs", args.new_vs),
             ("--split", args.split),
             ("--unlabelled", args.unlabelled),
-            ("--dataset-id", args.dataset_id),
+            ("--scores-only", args.scores_only),
+            ("--csv", args.csv),
+            ("--fill", args.fill),
+            ("--choices", args.choices),
+            ("--seed", args.seed is not None),
+            ("--rubric", args.rubric),
+            ("--scale", args.scale),
         )
         if on
     ]
-    if args.rows:
-        return _rows_view(A, args)
-    if only_rows:
-        die(f"{', '.join(only_rows)}: with --rows (evh inspect --dataset-id D --rows …)")
+    if args.sheet:
+        return _sheet_view(A, args)
+    if only_sheet:
+        die(f"{', '.join(only_sheet)}: with --sheet (evh inspect --sheet --dataset-id D --runs A,B …)")
     if not (args.runs or args.round):
-        die("one of --runs, --round or --rows (with --dataset-id) is required")
+        die("one of --runs, --round or --sheet (with --dataset-id) is required")
     round_leader = None
     if args.round:
         from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
@@ -1402,23 +1441,6 @@ def inspect(argv) -> int:
             )
     if args.analysis:
         _analysis(d, label, args.xmetric)
-    if args.items:
-        order = list(d["series"])
-        base_s = d["series"].get(d["baseline"], {})
-        others = [a for a in order if a != d["baseline"]]
-
-        def delta(a: str, i: str) -> str:
-            v = d["series"][a].get(i)
-            return "—" if v is None or i not in base_s else f"{v - base_s[i]:+.3f}"
-
-        print(f"\nper {A.item_word} ({d['metric']}; Δ is each arm minus the baseline):")
-        _table(
-            [A.item_word, *[label.get(a, a) for a in order], *[f"Δ {label.get(a, a)}" for a in others]],
-            [
-                [i, *[_fmt(d["series"][a].get(i)) for a in order], *[delta(a, i) for a in others]]
-                for i in d.get("items") or sorted(base_s)
-            ],
-        )
     br = d.get("breakdown")
     if br:
         print(f"\nby {args.by} (Holm across {br['family_size']}):")
@@ -1440,22 +1462,29 @@ def inspect(argv) -> int:
     return 0
 
 
-def _short(text: str | None, n: int = 48) -> str:
-    one = " ".join((text or "").split())
-    return one if len(one) <= n else one[: n - 1] + "…"
+def _show(heads: list, rows: list) -> None:
+    """A table of the sheet: under --json its values as they are, in the terminal numbers rounded and gaps a dash."""
+    if _jsonout.table(heads, rows):
+        return
+    _table(heads, [["—" if v is None else _fmt(v) if isinstance(v, float) else v for v in r] for r in rows])
 
 
-def _rows_view(A, args) -> int:
-    """evh inspect --dataset-id D --rows: one row per item, its decisions, labels and signals (RFC-023, _rows)."""
-    from evaluation_harness import _fields, _picks, _rows  # noqa: PLC0415
-    from evaluation_harness._label_sets import label_line, source_line  # noqa: PLC0415
+def _sheet_view(A, args) -> int:
+    """evh inspect --sheet --dataset-id D --runs A,B: the dataset's items down, a column per run: printed, or written
+    as a CSV to fill (RFC-023, _sheet)."""
+    from evaluation_harness import _picks  # noqa: PLC0415
 
     if os.environ.get("EVH_PUBLIC"):
-        die("--rows shows the items' outputs and labels: not served publicly")
+        die("--sheet shows the items' outputs and labels: not served publicly")
     if not args.dataset_id:
-        die("--rows: name the dataset with --dataset-id")
+        die("--sheet: name the dataset with --dataset-id")
     if args.round:
-        die("--rows takes --runs (run ids, or config ids: their latest run on the dataset), not --round")
+        die("--sheet takes --runs (run ids, or config ids: their latest run on the dataset), not --round")
+    for flag, on in (("--item", args.item), ("--analysis", args.analysis), ("--baseline", args.baseline)):
+        if on:
+            die(
+                f"{flag}: not with --sheet (the sheet is a view of every item; the first run stands for production)"
+            )
     runs = [t.strip() for t in (args.runs or "").split(",") if t.strip()]
     for flag, n, on in (
         ("--disagree", 2, args.disagree),
@@ -1464,17 +1493,25 @@ def _rows_view(A, args) -> int:
     ):
         if on and len(runs) < n:
             die(f"{flag} needs {n} run(s) or more in --runs (the first is production's)")
-    found = _rows.rows(args.dataset_id, runs, cs._fields_of, args.wrong_against, args.new_vs)
-    decl, _ = cs._fields_of(args.dataset_id)
-    for w in args.where:
-        name, _, want = w.partition(":")
-        if name not in decl:
-            die(f"--where {w}: no field {name!r} on {args.dataset_id}")
-        try:
-            found = [r for r in found if _fields.matches(decl[name], r["fields"].get(name), want)]
-        except ValueError as exc:
-            die(f"--where {w}: {exc}")
-    if args.by and args.by not in decl:
+    if args.fill and not args.csv:
+        die("--fill: with --csv FILE (the sheet to fill in)")
+    if args.choices and args.fill != "label":
+        die("--choices: with --fill label")
+    if args.fill not in ("pick", "scores") and (args.seed is not None or args.rubric or args.scale):
+        die("--seed, --rubric and --scale: with --fill pick or scores")
+    if args.scale and args.fill != "scores":
+        die("--scale: with --fill scores")
+    model = _sheet.build(
+        args.dataset_id,
+        runs,
+        cs._fields_of,
+        metric=args.metric,
+        from_dir=args.from_dir,
+        wrong_against=args.wrong_against,
+        new_vs=args.new_vs,
+    )
+    found = _sheet.by_where(model, args.where)
+    if args.by and args.by not in model["decl"]:
         die(f"--by {args.by}: no field {args.by!r} on {args.dataset_id}")
     wanted = [
         s
@@ -1487,15 +1524,18 @@ def _rows_view(A, args) -> int:
         )
         if on
     ]
-    shown = sorted(
-        (r for r in found if all(s in r["signals"] for s in wanted)), key=lambda r: -len(r["signals"])
+    shown = _sheet.by_signals(found, wanted)
+    if args.csv:
+        return _sheet_csv(args, model, shown)
+    counts = _sheet.counts(found)
+    way = (
+        f"{model['metric']} ({'lower' if model['lower'] else 'higher'} is better)" if model["metric"] else ""
     )
-    counts = {s: sum(s in r["signals"] for r in found) for s in _rows.SIGNALS}
     print(
         f"{args.dataset_id}: {len(shown)} of {len(found)} {A.item_word}(s)"
         + (f" ({', '.join(wanted)})" if wanted else "")
-        + " · "
-        + " · ".join(f"{s} {n}" for s, n in counts.items() if n)
+        + "".join(f" · {s} {n}" for s, n in counts.items() if n)
+        + (f" · read on {way}" if way else "")
         + "\n"
     )
     state = _picks.state()
@@ -1506,34 +1546,20 @@ def _rows_view(A, args) -> int:
             return ""
         return f"for {', '.join(p['for'])}" if p.get("for") else "no target yet"
 
-    _table(
-        ["item", "signals", *runs, "labels", "picked", "fields"],
-        [
-            [
-                r["item"],
-                ", ".join(f"{s} ({d})" if d else s for s, d in r["signals"].items()),
-                *[_short(r["shown"].get(n)) for n in runs],
-                "; ".join(
-                    f"{x['set']} [{source_line(x['source'])}]: {_short(label_line(x['text']), 32)}"
-                    for x in r["labels"]
-                ),
-                picked(r["item"]),
-                _short(", ".join(f"{k}={v}" for k, v in r["fields"].items()), 60),
-            ]
-            for r in shown
-        ],
-    )
+    head, body, _ = _sheet.flat(model, shown, scores_only=args.scores_only, short=True, picked=picked)
+    _show(head, body)
+    if runs and model["metric"]:
+        fhead, flines = _sheet.footer_table(model, _sheet.footer(model, shown))
+        print(f"\nper run, over the {len(shown)} row(s) shown:")
+        _show(fhead, flines)
     if args.by:
         groups: dict[str, list] = {}
         for r in shown:
             groups.setdefault(str(r["fields"].get(args.by, "—")), []).append(r)
         print(f"\nby {args.by}:")
         _table(
-            [args.by, "rows", *_rows.SIGNALS],
-            [
-                [g, len(rs), *[sum(s in r["signals"] for r in rs) for s in _rows.SIGNALS]]
-                for g, rs in groups.items()
-            ],
+            [args.by, "rows", *_sheet.SIGNALS],
+            [[g, len(rs), *_sheet.counts(rs).values()] for g, rs in groups.items()],
         )
     if shown:
         items = " ".join(f"--item {r['item']}" for r in shown)
@@ -1544,6 +1570,62 @@ def _rows_view(A, args) -> int:
             f"label them: evh label-sheet --dataset-id {args.dataset_id} {items} --out sheet.csv"
             + (f" --runs {','.join(runs)}" if runs else "")
         )
+    return 0
+
+
+def _sheet_csv(args, model: dict, shown: list) -> int:
+    """--csv FILE: the sheet written as CSV for a spreadsheet (UTF-8 with the mark Excel needs), with the columns to
+    fill when --fill says so; for a blind fill the key beside it (sheet.key.json). Never over a file that exists."""
+    import re  # noqa: PLC0415
+
+    from evaluation_harness._common import write_json  # noqa: PLC0415
+    from evaluation_harness._sheets import write_csv  # noqa: PLC0415
+
+    key_file = _sheet.key_path(args.csv)
+    blind = args.fill in ("pick", "scores")
+    for f in (args.csv, key_file if blind else None):
+        if f is not None and f.exists():
+            die(f"{f} exists: a sheet is not overwritten (you may have filled it)")
+    if not blind:
+        choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
+        head, body = _sheet.csv_sheet(
+            model, shown, scores_only=args.scores_only, fill=args.fill, choices=choices
+        )
+        write_csv(head, body, args.csv)
+        print(f"{args.csv}: {len(shown)} row(s), {len(head)} column(s)")
+        if args.fill == "label":
+            print(
+                "  fill `label` (answers just as right in `also right`, separated by |), then: "
+                f"evh sheet-import {args.csv} --dataset-id {args.dataset_id} --by <you> --set <name>"
+            )
+        return 0
+    scale = (1, 5)
+    if args.scale:
+        m = re.fullmatch(r"(-?\d+)\.\.(-?\d+)", args.scale.strip())
+        if not m or int(m.group(1)) >= int(m.group(2)):
+            die(f"--scale {args.scale}: LO..HI, two whole numbers, LO below HI (e.g. 1..5)")
+        scale = (int(m.group(1)), int(m.group(2)))
+    if args.rubric and not args.rubric.is_file():
+        die(f"--rubric: no file {args.rubric}")
+    rubric = _sheet.rubric_text(
+        args.fill, scale, args.rubric.read_text(encoding="utf-8") if args.rubric else None
+    )
+    head, body, key, left_out = _sheet.blind(
+        model, shown, args.fill, seed=args.seed or 0, rubric=rubric, scale=scale
+    )
+    if len(body) < 2:
+        die(f"--fill {args.fill}: no row has outputs to judge (a pick needs two outputs on a row)")
+    write_csv(head, body, args.csv)
+    write_json(key_file, key)
+    print(
+        f"{args.csv}: {len(body) - 1} row(s) to judge, {len(model['arms'])} blind column(s)"
+        + (f" ({left_out} row(s) left out: too few outputs)" if left_out else "")
+        + f"\n  the key (which letter was which run on each row) is {key_file}: keep it here, not with the sheet"
+    )
+    what = "`pick` (the best letter, `A|B` for a tie)" if args.fill == "pick" else "`score: A`, `score: B`…"
+    print(
+        f"  fill {what}, then: evh sheet-import {args.csv} --dataset-id {args.dataset_id} --by <who> --scorer <name>"
+    )
     return 0
 
 

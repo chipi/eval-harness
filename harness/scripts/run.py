@@ -919,7 +919,7 @@ def main() -> int:
             metric_directions=metric_directions(adapter_path),
             metric_descriptions=metric_descriptions(adapter_path) or None,
             providers_seen=result.get("providers_seen") or {},
-            primary_metric=primary_metric(adapter_path),
+            primary_metric=primary_metric(adapter_path, cfg.get("params") or {}),
             # Outside `scores` on purpose: real, worth seeing, but not the arm's per-item
             # speed — and in scores it would reach the leaderboard's speed column and V5's
             # duplicate key, where it means something else.

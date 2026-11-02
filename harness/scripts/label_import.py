@@ -32,27 +32,12 @@ from evaluation_harness._label_sets import answers, label_text, write_set
 from evaluation_harness._sheets import ALSO, read_csv
 
 
-def main() -> int:
-    """Import a filled sheet as a person's label set."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument(
-        "sheet",
-        type=Path,
-        help="the filled sheet (.csv, as label-sheet writes it), or a folder of <item_id>.txt",
-    )
-    ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--set", required=True, dest="name", help="the label set's name (lowercase, _ . -)")
-    ap.add_argument("--by", required=True, help="who labelled")
-    ap.add_argument("--guideline", type=Path, help="the instructions the labeller followed")
-    args = ap.parse_args()
-
-    if args.sheet.is_dir():
-        return _folder(args)
-    if not args.sheet.is_file():
-        die(f"no sheet {args.sheet}")
-    rows, choices = read_csv(args.sheet)
-    if not rows or "item_id" not in rows[0] or "label" not in rows[0]:
-        die(f"{args.sheet}: a sheet has the columns item_id and label (evh label-sheet writes one)")
+def labels_from_rows(
+    rows: list[dict[str, str]], choices: list[str] | None
+) -> tuple[dict[str, str], dict[str, str]]:
+    """({item: label}, {item: note}) from a filled sheet's rows (read_csv's): a row with no `label` is left out, `yes`
+    takes the row's `proposal`, `also right` joins the others a label accepts. Refused, nothing read further, for
+    a `yes` with no proposal and for an answer outside the sheet's `choices`."""
     labels, notes, no_proposal = {}, {}, []
     for r in rows:
         text = (r.get("label") or "").strip()
@@ -78,6 +63,31 @@ def main() -> int:
                 + (" ..." if len(off) > 8 else "")
                 + ". Correct them in the sheet and import it again; nothing was written."
             )
+    return labels, notes
+
+
+def main() -> int:
+    """Import a filled sheet as a person's label set."""
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument(
+        "sheet",
+        type=Path,
+        help="the filled sheet (.csv, as label-sheet writes it), or a folder of <item_id>.txt",
+    )
+    ap.add_argument("--dataset-id", required=True)
+    ap.add_argument("--set", required=True, dest="name", help="the label set's name (lowercase, _ . -)")
+    ap.add_argument("--by", required=True, help="who labelled")
+    ap.add_argument("--guideline", type=Path, help="the instructions the labeller followed")
+    args = ap.parse_args()
+
+    if args.sheet.is_dir():
+        return _folder(args)
+    if not args.sheet.is_file():
+        die(f"no sheet {args.sheet}")
+    rows, choices = read_csv(args.sheet)
+    if not rows or "item_id" not in rows[0] or "label" not in rows[0]:
+        die(f"{args.sheet}: a sheet has the columns item_id and label (evh label-sheet writes one)")
+    labels, notes = labels_from_rows(rows, choices)
     source = {
         "kind": "person",
         "by": args.by,

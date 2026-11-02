@@ -154,10 +154,15 @@ def pointwise() -> dict[str, int]:
 
 def compute(scorer: str = SCORER) -> dict[str, Any]:
     """Every figure from the judge re-measurement, including Goyal and Zhang validations."""
-    sets = sorted((DATA / "judging-sets").glob(SET_GLOB))
+    # The grading set: a pick or pairwise pass over the same arms is a set of its own (RFC-005, "Judging modes").
+    sets = [
+        p
+        for p in sorted((DATA / "judging-sets").glob(SET_GLOB))
+        if (json.loads(p.read_text()).get("mode") or "grade") == "grade"
+    ]
     if len(sets) != 1:
         raise SystemExit(
-            f"expected exactly one {SET_GLOB} in data/judging-sets, found {[p.name for p in sets]}"
+            f"expected exactly one grading {SET_GLOB} in data/judging-sets, found {[p.name for p in sets]}"
         )
     m = json.loads(sets[0].read_text())
     if len(m["arms"]) != 29:

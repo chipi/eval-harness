@@ -46,7 +46,7 @@ further. This page is the reference for each step.
 | rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh rounds --goal …` |
 | browse and inspect | `evh catalog` · `evh catalog-serve` · `evh dataset-profile` · `evh dataset-items` |
 | ask from an agent | `evh mcp` |
-| the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--configs`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh search …` · `evh inspect --runs …` (`--items`, `--analysis`, `--item …`); every list takes `--period P` |
+| the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--configs`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh search …` · `evh inspect --runs …` (`--analysis`, `--item …`) · `evh inspect --sheet --dataset-id … --runs …`; every list takes `--period P` |
 | consistency | `evh validate` |
 | does the installed harness work here | `evh self-test` |
 | keep a production system's records | `evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture c1` · `evh captures` ([§15](#15-datasets-from-production-the-capture-lane)) |
@@ -57,7 +57,8 @@ further. This page is the reference for each step.
 | validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
 | production's own decisions as an arm | `evh arm-from-capture --dataset-id … --capture c1 --as production_v1 [--like CONFIG]` ([§15b](#15b-evaluating-what-production-did)) |
 | where arms decided differently | `evh inspect --runs A,B --disagree` |
-| every row, its signals | `evh inspect --dataset-id … --rows --runs A,B [--wrong-against SET] [--new-vs V]` |
+| the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh inspect --sheet --dataset-id … --runs A,B [--wrong-against SET] [--new-vs V] [--csv FILE [--fill label\|pick\|scores]]` |
+| a sheet filled elsewhere, read back | `evh sheet-import sheet.csv --dataset-id … --by WHO [--set S \| --scorer S]` |
 | pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
 | the next version of a dataset | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) |
 | what production must match | `evh deploy-sheet --config ARM [--capture C]` |
@@ -804,6 +805,33 @@ and to the news-summary judge, so neither is an `evh` command.
    with a reason; the old metric stays beside the new one (CONCEPTS: Re-measuring a frozen
    eval).
 
+### Judging modes: grade, pick, pairwise
+
+What a judge is asked is the scorer's `mode` ([RFC-005](../../docs/rfc/RFC-005-judge-scorers.md), "Judging
+modes"), and a judge is validated in the mode it is used (`validation.mode` must equal `mode`):
+
+- **`grade`** (the default, everything above): each output scored per dimension on the scale.
+- **`pick`**: one call per item with every arm's output, blind and shuffled; the judge names the best
+  (`{"best": [3]}`, several when they are equally best). `protocol.outputs_per_call` must be at least the number of
+  arms: a pick made in blocks would name each block's winner, so it is refused.
+- **`pairwise`**: one call per pair of arms on every item (`{"better": 1}`, `2` or `"tie"`);
+  `outputs_per_call` is 2. That is n(n − 1)/2 calls an item: read `--dry-run` first.
+
+Pick and pairwise project `won` per arm per item: 1 for an arm picked alone, 1/k when k share the best, else 0
+(pick); the share of its pairs it won, a tie a half (pairwise). The judged runs' primary is `judge_won`
+(`judge_won_unvalidated` with `--unvalidated`), and goals, rounds, `inspect` and the sheet read them as they read
+`judge_score`. `summary.json` and the terminal add each arm's win rate (its mean `won`) and its Bradley-Terry
+strength with a 95% interval from resampling the items; the position check (a re-shuffle, or the pair swapped) and
+the noise check (the same call repeated) are reported as the share of verdicts that held.
+This repository's two, `judge-summ-pick-v1` and `judge-summ-pairwise-v1`, use
+`judge-summ-v1`'s judges (`gemma_l`, `qwen_s`), each validated in its mode on SummEval:
+
+```bash
+evh judge-score --dataset-id cnn_dailymail_200 --scorer judge-summ-pick-v1 --dry-run   # free
+evh judge-score --dataset-id cnn_dailymail_200 --scorer judge-summ-pick-v1
+evh inspect --sheet --dataset-id cnn_dailymail_200 --runs … --metric judge-summ-pick-v1/judge_won
+```
+
 ### Validating a judge: what the gate needs
 
 A validation is an ordinary eval whose **arms are the judges** and whose items carry
@@ -822,12 +850,20 @@ validation:
     - {judge: gemma_l, run: <run_id>, value: 0.538416, min_metric: 0.371714}
 ```
 
+A pick or pairwise scorer adds `mode: pick` (or `pairwise`) to the block, and its `metric` is the validation
+run's in that mode: `top1` or `pair_agreement` in the SummEval example (below).
+
 The gate reads each named run's `metrics.json` and refuses unless the metric equals
 `value`, is at least `min_metric` (set it to the best free scorer's score on the same data,
 so a judge must beat it), and the run's model, params, prompt file and prompt sha256 are the
 scorer's. The worked example is
 [`examples/summeval-judging/`](../../examples/summeval-judging/README.md): its adapter turns
-a judge's JSON reply into tau against the experts, and `judge-summ-v1` cites two of its runs.
+a judge's JSON reply into tau against the experts, and `judge-summ-v1` cites two of its runs. An arm with
+`mode: pick` in its params picks the best of an article's 16 summaries (`prompt_pick.txt`), scored `top1` beside
+`top1_chance`; one with `mode: pairwise` judges seeded pairs (`prompt_pairwise.txt`), scored `pair_agreement` (with
+`n_pairs`); the `random` arm in each mode is the floor `min_metric` names (`configs/arm_*_pick_n100.yaml`,
+`arm_*_pairwise_n100.yaml`). The adapter's `primary_metric(params)` makes each arm's primary its mode's metric
+([INTEGRATION](INTEGRATION.md)); `judge-summ-pick-v1` and `judge-summ-pairwise-v1` cite those runs.
 
 **Validate on outputs like the ones you will judge.** In this repository, judges validated
 on SummEval's 2019 summaries ranked modern LLM summaries above a fine-tuned BART; one blind
@@ -912,7 +948,7 @@ evh mcp --http --bind 0.0.0.0 --allowed-host evals.team.example --public  # a sh
 
 **The catalog** is static pages over runs: one per dataset and goal, one per reference, the
 label sets and the captures (§15, §15b), a metrics page, and a search; the inspector adds each
-dataset's rows view. Every page carries counts and means only, and item text only where
+dataset's sheet. Every page carries counts and means only, and item text only where
 the repository already publishes it (a profile written `--with-text`, refused unless git has
 committed every item's file); otherwise item text is the local inspector's only. Build it offline with `evh catalog`, or together with the inspector. A dataset's
 page shows what is inside it once `evh dataset-profile` has written its profile where the
@@ -941,7 +977,7 @@ client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
   is answered 421 (DNS rebinding). `--allowed-origin` names the browser origins it accepts; an
   agent sends no Origin.
 - **`--public`**, for a server anyone can reach: no option that answers with an item's text or a label
-  (`inspect --item` and the rows view's options, `dataset-items --item`), and no `validate`.
+  (`inspect --item` and the sheet's options, `dataset-items --item`), and no `validate`.
 - **Load:** `--concurrent N` commands at once (default 4; a call that waits 30 s for a slot is
   refused, "busy"), `--timeout S` per call (default 300; the command is stopped, exit 124),
   `--rate N` calls a minute per caller and `--rate-total N` for everyone together (default: no
@@ -1008,10 +1044,10 @@ opening line as the description); `--card URL` adds the image a shared link show
 **In the terminal:** every view has a command. `evh overview [--period P]` for the home page,
 `evh activity` for the activity page, `evh arms` (`--by config`, `--configs`) for the arms page,
 `evh datasets`, `evh arms --arm …`, `evh references`, `evh metrics --metric …` and
-`evh goals --goal …` for the others, `evh inspect --runs …` (`--items` for the per-item table,
-`--analysis` for the charts, `--item <id>` for one item) for the inspector, `evh labels` and
-`evh captures` for the Labels and Captures pages, `evh inspect --dataset-id … --rows` for a dataset's
-rows, `evh picks` for the picks waiting and `evh deploy-sheet --config …` for a goal's deploy sheet.
+`evh goals --goal …` for the others, `evh inspect --runs …` (`--analysis` for the charts, `--item <id>`
+for one item) for the inspector, `evh labels` and `evh captures` for the Labels and Captures pages,
+`evh inspect --sheet --dataset-id … --runs …` for a dataset's sheet (the inspector's per-item scores too),
+`evh picks` for the picks waiting and `evh deploy-sheet --config …` for a goal's deploy sheet.
 
 ---
 
@@ -1075,7 +1111,7 @@ evh run --config data/configs/deployed.yaml                 # the deployed confi
 evh label-sheet --dataset-id prod_v1 --items disagree --runs production_v1,deployed_v1 --out sheet.csv
 evh label-import sheet.csv --dataset-id prod_v1 --set owner_2026_11 --by <you>
 evh rescore --dataset-id prod_v1 --labels owner_2026_11                # every arm, against your labels
-evh inspect --dataset-id prod_v1 --rows --runs production_v1,deployed_v1 \
+evh inspect --sheet --dataset-id prod_v1 --runs production_v1,deployed_v1 \
     --wrong-against owner_2026_11 --new-vs governed_v1                  # where production was wrong on something new
 evh pick --dataset-id prod_v1 --item … --for governed_v1 --tag case=…  # worth keeping
 evh dataset-extend governed_v1 --dataset-id governed_v2 --picks        # the next version, from the picks
@@ -1095,12 +1131,31 @@ evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did pro
   both label, how many accept the same answers, how many share one (apart: a label accepting more agrees more
   easily), Cohen's kappa and Krippendorff's alpha (MASI distance for several answers), which correct for the
   agreement chance alone gives when one class dominates. Free-text labels are not compared as text. An adapter's `score` reads such a reference with `answers(reference)` from `evaluation_harness.adapter`.
-- **The rows view** shows each item's signals first, then each arm's decision (the adapter's
-  `decision(output)`, else its output, shortened), every label and the fields. The signals: **wrong** (the
-  first run against a label set), **disagree**, **split** (the candidates among themselves), **new** (a field
-  value the governed dataset never had), **unlabelled**. Each is a filter; the view ends with the `evh pick`
-  and `evh label-sheet` commands for its rows. The inspector shows the same (its "Explore its rows"), with a
-  "download the sheet (CSV)" button for the rows ticked (the local inspector only; the page writes nothing).
+- **The sheet** (`evh inspect --sheet --dataset-id D --runs A,B,…`) shows the dataset's items down and a column per
+  arm across: what it wrote (the adapter's `decision(output)`, else its output, shortened; `--scores-only` leaves
+  it out) and every score it has on the item: its run's metrics, and a judging pass's where one under
+  `data/runs-judged/<scorer>/` covered the run (`--metric M`, or `SCORER/M` for a judge's, picks the one the sheet
+  is read on); a column per label set or reference set; the
+  winner per item (the best arm on that metric, and a pick or pairwise judge's choice where one covers the run);
+  the signals; the fields; and a footer per arm: its mean, its win rate (the share of the rows shown it wins, a
+  shared win split) and its verdict (the goal's decision when a goal names the dataset, else the paired test
+  against the leader). The signals: **wrong** (the first run against a label set, `--wrong-against`),
+  **disagree**, **split** (the candidates among themselves), **new** (a field value the dataset in `--new-vs` never
+  had), **unlabelled**. Each is a filter (`--disagree`, `--split`, `--unlabelled`, beside `--where` and `--by`);
+  the sheet ends with the `evh pick` and `evh label-sheet` commands for its rows. `--csv FILE` writes it (UTF-8
+  with the mark Excel needs). The inspector shows the same (the dataset page's "Open its sheet"), with downloads
+  of the CSV for the rows shown or ticked (the local inspector only; the page writes nothing).
+- **A sheet filled elsewhere.** `--csv sheet.csv --fill label` adds the empty `label`, `also right` and `note`
+  columns (`--choices a,b,c` puts the allowed answers in the label's header); `--fill pick` or `--fill scores`
+  writes the arms' outputs as blind columns A, B, C… shuffled per row (`--seed`, default 0), a `pick` column or a
+  `score: X` column per output (`--scale LO..HI`, default 1..5), the rubric as the first row (`#rubric`;
+  `--rubric FILE`, else a plain one) and the key beside the sheet (`sheet.key.json`: which letter was which arm,
+  the rubric and its sha256). A person or any AI tool fills it; `evh sheet-import sheet.csv --dataset-id D --by
+  WHO` reads it back: a `label` column as a label set (`--set S`; `--kind model` when a tool filled it), a `pick`
+  (`A|B` for a tie) or `score:` columns as judged runs under `data/runs-judged/<scorer>/` (`--scorer S`), one per
+  arm, with `judge_won_unvalidated` or `judge_score_unvalidated` per item: unvalidated until the same judge is
+  validated as any judge is. A row or text the key does not have, a letter not on its row, a score off the scale
+  and a name already used are refused, and nothing is written.
 - **Picks** wait in `data/picks.jsonl`, append-only: the latest line for an item wins; `pick --drop` takes
   one off. `dataset-extend` makes V2 of V1's items and the picks chosen, records `extended_from`, and the
   picks used leave the list; labels follow the items into V2. Nothing is promoted by it.

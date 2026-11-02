@@ -11,6 +11,7 @@
     "dataset_id": {"type": "string", "minLength": 1},
     "arms_match": {"type": "string", "description": "The default arm set: a config_id substring."},
     "cost_cap_usd": {"type": "number", "exclusiveMinimum": 0},
+    "mode": {"enum": ["grade", "pick", "pairwise"], "default": "grade", "description": "What a judge is asked: grade (each output scored on the scale), pick (name the best output of an item; outputs_per_call must cover every arm) or pairwise (which of two is better, every pair of arms; outputs_per_call is 2). Absent means grade."},
     "judges": {
       "type": "array",
       "minItems": 1,
@@ -77,6 +78,7 @@
       "additionalProperties": false,
       "properties": {
         "dataset_id": {"type": "string"},
+        "mode": {"enum": ["grade", "pick", "pairwise"], "default": "grade", "description": "The mode the judges were validated in; it must equal the scorer's mode. Absent means grade."},
         "what": {"type": "string"},
         "metric": {"type": "string"},
         "min_metric": {"type": "number"},

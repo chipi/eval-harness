@@ -3,7 +3,7 @@
 **Status:** Accepted (owner, 2026-11-01), with RFC-023; built for 0.6.0.
 **Date:** 2026-11-01
 **Detail:** [RFC-023](../rfc/RFC-023-labels-and-references.md), [PRD-014](../prd/PRD-014-datasets-from-production.md)
-(FR8 to FR10), [UXS-002](../uxs/UXS-002-inspector.md) (the rows view)
+(FR8 to FR10), [UXS-002](../uxs/UXS-002-inspector.md) (the sheet)
 
 ## Context
 
@@ -19,7 +19,7 @@ captures and many evaluations, and nothing kept it until the version was made.
 - A governed dataset grows only by a version you make on purpose: `dataset-extend V1 --dataset-id V2` with the picks
   you choose, the lineage recorded per item. Its references are then promoted as for any dataset; nothing is
   promoted by the extension.
-- The pages never write (PRD-004, ADR-0004): the rows view and the dataset page select and give the `pick` and
+- The pages never write (PRD-004, ADR-0004): the sheet and the dataset page select and give the `pick` and
   `dataset-extend` commands.
 
 ## Consequences

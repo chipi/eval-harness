@@ -1,0 +1,13 @@
+The user wants a 2-3 sentence news wire summary of this article. The article covers multiple superhero movie news items from around April 2015:
+
+1. Marvel revealed Paul Bettany as the Vision in a poster for "Avengers: Age of Ultron"
+2. Marvel showed the real Daredevil suit ahead of the Netflix series debut
+3. Bryan Singer announced Ben Hardy as Angel in "X-Men: Apocalypse"
+4. First look at Jamie Bell's The Thing in "Fantastic Four" reboot
+5. Also mentioned a new Deadpool photo with Ryan Reynolds
+
+A news wire summary should be terse, lead with the most important info. Let me draft:
+
+"Marvel has unveiled a poster revealing Paul Bettany as the Vision in 'Avengers: Age of Ultron,' ending speculation ahead of the film's release next month. The studio also released video of Charlie Cox's Daredevil suit ahead of the Netflix series' debut, while director Bryan Singer announced Ben Hardy will play Angel in 'X-Men: Apocalypse.' First looks at Jamie Bell's The Thing in the 'Fantastic Four' reboot and Ryan Reynolds' Deadpool also emerged, underscoring the superhero genre's continued momentum."
+
+That's 3 sentences, terse, wire-style. Good. Output only the summary as requestedMarvel revealed Paul Bettany as the Vision in a new poster for "Avengers: Age of Ultron," ending speculation less than a month before the film's release. The studio also showed Charlie Cox's Daredevil suit ahead of the Netflix series' debut, while director Bryan Singer announced Ben Hardy will play Angel in "X-Men: Apocalypse." First looks at Jamie Bell's The Thing in the "Fantastic Four" reboot and Ryan Reynolds' Deadpool also emerged, underscoring the superhero genre's continued momentum.

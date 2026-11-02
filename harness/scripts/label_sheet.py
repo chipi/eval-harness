@@ -70,8 +70,9 @@ def output(d: Path, item_id: str) -> str | None:
     return f.read_text(encoding="utf-8").strip() if f.is_file() else None
 
 
-def view(dataset_id: str, item_id: str) -> str:
-    """The start of the item itself, on one line, or "" when it is not materialized here."""
+def view(dataset_id: str, item_id: str, limit: int | None = VIEW) -> str:
+    """The start of the item itself (`limit` characters; all of it for None), on one line, or "" when it is not
+    materialized here."""
     p = item_path(dataset_id, item_id)
     if p is None:
         return ""
@@ -82,7 +83,7 @@ def view(dataset_id: str, item_id: str) -> str:
         except ValueError:
             pass
     one = " ".join(text.split())
-    return one if len(one) <= VIEW else one[: VIEW - 1] + "…"
+    return one if limit is None or len(one) <= limit else one[: limit - 1] + "…"
 
 
 def main() -> int:

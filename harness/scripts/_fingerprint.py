@@ -171,6 +171,7 @@ _PRODUCERS = (
     "reference_promote.py",
     "label_from_run.py",
     "label_import.py",
+    "sheet_import.py",
     "label_from_capture.py",
     "adapter.py",
 )

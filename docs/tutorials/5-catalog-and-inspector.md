@@ -71,7 +71,7 @@ runs when it starts, so after a new run, stop it and start it again.
 | a reference set's page: its tier, the label set it was promoted from, by whom and why, every arm scored against it | `evh references --reference-id silver/tickets_v1` |
 | the labels page, and a dataset page's labels: every label set with its source (person, model, rule), its coverage, what it was promoted to, how often two agree | `evh labels`, `evh labels --dataset-id tickets_v1` |
 | the captures page: what was read from production, when, and the datasets and recorded arm made from it ([tutorial 6](6-datasets-from-production.md)) | `evh captures` |
-| a dataset page's "Explore its rows": one row per item, what each arm decided, its labels, and the signals (wrong, disagree, split, new, unlabelled) | `evh inspect --dataset-id tickets_v1 --rows` |
+| a dataset page's "Open its sheet": its items down, a column per arm (what it wrote, its scores), the labels, the winner per item, the signals (wrong, disagree, split, new, unlabelled), and a footer per arm | `evh inspect --sheet --dataset-id tickets_v1 --runs tickets_lead1_v1,tickets_lead2_v1` |
 | a dataset page's picks waiting, and the command the ticked boxes give | `evh picks` |
 | a goal page's deploy sheet: what production must match to run the promoted arm, and whether a capture shows it did | `evh deploy-sheet --config tickets_lead2_v1` |
 | the metrics page: what each metric measures, which way is better, where it is recorded | `evh metrics` |
@@ -83,7 +83,6 @@ runs when it starts, so after a new run, stop it and start it again.
 | a goal page's inspect button on a round: its arms against its leader ([tutorial 4](4-rounds-and-versions.md)) | `evh inspect --round r2` |
 | the inspector: arms tested against a baseline, and whether they ran under the same conditions | `evh inspect --runs tickets_lead1_v1,tickets_lead2_v1` |
 | the inspector, filtered by a field, or broken down by one | `--where area:account`, `--by deadline` |
-| the inspector's per-item table: every item's score per arm, and its Δ against the baseline | `--items` |
 | the inspector's analysis charts, as numbers: the spread per arm, the difference from the baseline, each arm's mean against a second metric | `--analysis`, `--analysis --x latency_ms` |
 | the inspector, one item: the item itself, its fields, each arm's output beside the reference | `--item t01_login` |
 
@@ -214,20 +213,14 @@ by deadline (Holm across 2):
 Two tickets name a deadline and four do not, and on two tickets no test can reach 0.05: a
 breakdown needs items in every group, and the page says when it has too few.
 
-**Item by item, and the charts as numbers.** `--items` is the inspector's per-item table, and
-`--analysis` its charts (`--x` adds each arm's mean on a second metric, the scatter):
+**The charts as numbers.** `--analysis` prints the inspector's charts (`--x` adds each arm's mean on a second
+metric, the scatter):
 
 ```bash
-evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --items
 evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --analysis --x latency_ms
 ```
 <!-- guide-check: varies latency_ms -->
 ```text
-per item (overlap_f1; Δ is each arm minus the baseline):
-  item         tickets_lead1_v1 ×3  tickets_lead2_v1 ×3  Δ tickets_lead2_v1 ×3
-  t01_login    0.450                0.873                +0.423
-  t02_invoice  0.457                0.851                +0.394
-  ...
 spread per run (overlap_f1, one line per arm):
   arm                  mean   spread over the items
   tickets_lead1_v1 ×3  0.641  min 0.450  p25 0.498  median 0.687  p75 0.766  max 0.795
@@ -264,6 +257,31 @@ evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --item t01_login
 (run tickets_lead1_v1_..._r3 · shown the latest of 3 repeats; the score is the mean of all 3)
 Customer reports they cannot log in since this morning.
 ```
+
+**The sheet**, every ticket down and a column per arm across: what each wrote and every score it has on that
+ticket, the labels and references, the winner per ticket, and a footer per arm (its mean, its win rate, its
+verdict):
+
+```bash
+evh inspect --sheet --dataset-id tickets_v1 --runs tickets_lead1_v1,tickets_lead2_v1
+```
+```text
+tickets_v1: 6 of 6 item(s) · disagree 6 · read on overlap_f1 (higher is better)
+  ...
+per run, over the 6 row(s) shown:
+  ...
+  mean overlap_f1 (higher is better)             0.641                                           0.900
+  win rate · winner: overlap_f1                  0.000                                           1.000
+  verdict (the goal tickets_summary's decision)  not a contender: significant: worse (p 0.0312)  leader, recommended
+  ...
+```
+
+The winner per ticket is the best arm on the metric the sheet is read on (`--metric`, else the goal's measure,
+else the arms' primary), and the verdict is the goal's decision when a goal names the dataset, else the paired
+test against the leader. `--scores-only` leaves the outputs out; `--csv sheet.csv` writes the same sheet for a
+spreadsheet, and `--fill label`, `pick` or `scores` adds the columns to fill there, which `evh sheet-import`
+reads back ([tutorial 6](6-datasets-from-production.md)). The inspector shows the same sheet, from the dataset
+page's "Open its sheet".
 
 ## 4. What the pages show, and what they refuse
 

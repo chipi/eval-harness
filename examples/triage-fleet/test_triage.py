@@ -239,7 +239,7 @@ check(
     and adapter.same("not json", " not json "),
 )
 check(
-    "decision(): an output's disposition, what the rows view shows; a bare label as it is",
+    "decision(): an output's disposition, what the sheet shows; a bare label as it is",
     adapter.decision('{"disposition": "escalate", "reason": "x", "_probe_trace": []}') == "escalate"
     and adapter.decision("file\n") == "file"
     and adapter.decision('{"reason": "no decision"}') == '{"reason": "no decision"}',

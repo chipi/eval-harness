@@ -188,30 +188,41 @@ every catalog table. A row opens on click, Enter or Space.
 - (0.6.0) **Every label the item has**, each with its source chip, set name, who made it and note, above the
   outputs (the local inspector only); a recorded arm's output is headed "production, recorded" with its capture.
 
-## 05 rows (0.6.0: RFC-023)
+## 05 sheet (0.6.0: RFC-023)
 
-Opened from a dataset ("Explore its rows", production's recorded arm chosen first) or with
-`?dataset=<id>&rows=1[&runs=…][&item=<id>]`: one dataset's items, not a comparison. The local inspector only
-(`/api/rows`): its rows carry outputs and labels, so a public server refuses it. With no arm chosen, a row (or
-`&item=`, a pick's link) still opens the item, its fields and its labels.
+Opened from a dataset ("Open its sheet", production's recorded arm chosen first) or with
+`?dataset=<id>&sheet=1[&runs=…][&item=<id>]`: one dataset's items, not a comparison. The local inspector only
+(`/api/sheet`): it carries outputs and labels, so a public server refuses it. With no arm chosen, a row (or
+`&item=`, a pick's link) still opens the item, its fields and its labels. It is `evh inspect --sheet` in the
+browser, the same model.
 
-- **One row per item**, in this order, as the terminal prints it: **item** (short id, the full id in its title); the
-  markers, next to it because they are why a row matters: **wrong** (production's decision wrong against the chosen
-  label set), **disagree** (two chosen arms decided differently), **split** (the candidates disagree among
-  themselves), **new** (a field value the governed dataset chosen in "new against" has never had, the field named),
-  **unlabelled** (no label in any set); production's decision (the recorded arm, when one is chosen) and each chosen
-  arm's decision, as the adapter's `decision(output)` reads it (else the output, shortened; the item view has it
-  whole); every label with its source chip; **picked** (for which datasets); and its **fields**, last.
-- **Controls**: the arms (chips, as above), "wrong against" (a label set), "new against" (a governed dataset), one
-  checkbox per marker to keep only those rows, the field filters and breakdown above, and a sort by any column.
+- **The items down, a column per arm across**, in the terminal's order: **item** (short id, the full id in its
+  title) and the start of the item; the **signals**, next to it because they are why a row matters: **wrong**
+  (the first run's decision wrong against the chosen label set), **disagree** (another chosen arm decided
+  differently), **split** (the candidates disagree among themselves), **new** (a field value the dataset chosen
+  in "new against" has never had), **unlabelled** (no label in any set); then per arm its output (the adapter's
+  `decision(output)`, else the output, shortened; the item view has it whole; the first is headed "first:
+  production") and a column per score it has on the item (its run's metrics, and a judging pass's where one
+  covered the run); a column per label set with its source chip and per reference set; the **winner** columns
+  (on the metric the sheet is read on, and per pick or pairwise judge); **picked** (for which datasets); and the
+  item's **fields**, last. The best score per row on the chosen metric is marked.
+- **The select box and the item column stay in place** as the arms scroll across.
+- **The footer**, under each arm's columns: its mean on the chosen metric (and which way is better), its win
+  rate per winner column (the share of the rows shown it wins, a shared win split), and its verdict (the goal's
+  decision when a goal names the dataset, else the paired test against the leader).
+- **Controls**: the arms (chips, as above), "read on" (the metric), "wrong against" (a label set), "new
+  against" (a dataset), one checkbox per signal to keep only those rows, "scores only" (hides the outputs; kept
+  in the address as `scores=only`), the field filters and breakdown above, and a sort by any column.
 - **A row opens** the item view (04) for that item.
+- **Downloads**: "download (CSV)" for every row shown, with a box to add the empty label columns to fill
+  (`fill=label`); built by the server as `evh inspect --sheet … --csv` builds it (`/api/sheet?…&format=csv`), a
+  read: the page writes nothing (PRD-004).
 - **Selecting**: a box per row and "select all shown"; with rows selected, a panel gives two commands to copy:
   `evh pick --dataset-id <id> --item … --item … --for <dataset> --tag <key=value> --note "…"` (the target, tags
   and note typed in the panel fill the command) and `evh label-sheet --dataset-id <id> --item … --out sheet.csv`,
-  with "download the sheet (CSV)" beside it: the same sheet, built by the server (`/api/label-sheet`, the local
-  inspector only). The page writes nothing (PRD-004).
-- Paged 10 at a time like every catalog table; the counts of each marker above the table ("412 items · 9 wrong ·
-  31 disagree · 4 new").
+  with "download these rows (CSV)" beside it.
+- Paged 10 at a time like every catalog table; the counts above the table ("412 items · 9 wrong · 31 disagree ·
+  4 new") and the metric it is read on.
 
 ## Checklist for a change to the inspector
 
@@ -229,14 +240,16 @@ Opened from a dataset ("Explore its rows", production's recorded arm chosen firs
 | filter, breakdown | `--where field:value` (repeatable), `--by field` |
 | notes, verdicts, conditions, breakdown | printed in that order (notes as `NOTE:` lines) |
 | the item view | `--item <item_id>`: fields, the item itself, the reference, each arm's output under `(run <run_id>)`, or `(run <run_id> · shown the latest of N repeats; the score is the mean of all N)` for a repeated arm |
-| the per-item table | `--items`: every item's score per arm, and each arm's Δ against the baseline |
+| the per-item table | `evh inspect --sheet --dataset-id D --runs a,b`: every item's score per arm (the sheet; `--scores-only` leaves the outputs out) |
 | only where they disagree (0.6.0) | `--disagree` (an arm scored against a label set is chosen like any) |
-| the rows view (0.6.0) | `evh inspect --dataset-id D --rows [--runs A,B] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value]` |
+| the sheet (0.6.0) | `evh inspect --sheet --dataset-id D --runs A,B [--metric M\|SCORER/M] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value] [--by field] [--scores-only]` |
+| the sheet's download (0.6.0) | `--csv FILE`; `--fill label [--choices a,b]` adds the columns to fill; `--fill pick\|scores [--seed N] [--rubric FILE] [--scale LO..HI]` writes blind columns and a key, read back by `evh sheet-import` |
 | selecting rows: the pick and sheet commands (0.6.0) | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
 
 For an agent, `evh inspect` is the MCP tool `inspect`, with the same options (`runs`, `baseline`,
-`metric`, `where`, `by`, `disagree`, `items`, `analysis`, `x`, `round`, `goal`, `from`, `no-rescore`, `item`, and the
-rows view's `rows`, `dataset-id`, `wrong-against`, `new-vs`, `split`, `unlabelled`). A public server (`evh mcp --public`,
-and this repository's at `/mcp`) leaves out `item` and the rows view, as the public inspector serves no item text,
-output or label.
+`metric`, `where`, `by`, `disagree`, `analysis`, `x`, `round`, `goal`, `from`, `no-rescore`, `item`, and the
+sheet's `sheet`, `dataset-id`, `scores-only`, `wrong-against`, `new-vs`, `split`, `unlabelled`); the options that
+write a file (`csv`, `fill`, `choices`, `seed`, `rubric`, `scale`) are not offered. A public server (`evh mcp
+--public`, and this repository's at `/mcp`) leaves out `item` and the sheet, as the public inspector serves no item
+text, output or label.

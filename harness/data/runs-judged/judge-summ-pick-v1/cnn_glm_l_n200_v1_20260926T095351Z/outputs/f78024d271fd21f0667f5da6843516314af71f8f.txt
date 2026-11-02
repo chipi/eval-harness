@@ -1,0 +1,11 @@
+The user wants a 2-3 sentence news wire summary of this article about Memories Pizza in Indiana. Key facts:
+
+- Memories Pizza in Walkerton, Indiana said it would refuse to cater same-sex weddings, citing the state's Religious Freedom Restoration Act
+- This sparked backlash, boycotts, threats (including a threat to burn down the restaurant, leading to police recommending charges), and the restaurant closed temporarily
+- Supporters raised over $842,000 via GoFundMe
+
+Terse news wire style: factual, concise, no editorializing. Let me draft:
+
+"An Indiana pizzeria that said it would refuse to cater same-sex weddings under the state's Religious Freedom Restoration Act has closed amid threats and online backlash. Police recommended charges against a woman who tweeted a threat to burn down Memories Pizza in Walkerton. Supporters raised more than $842,000 for the restaurant through a GoFundMe campaign."
+
+That's three sentences, terse, wireAn Indiana pizzeria that said it would refuse to cater same-sex weddings, citing the state's new Religious Freedom Restoration Act, closed temporarily amid online backlash and threats. Police recommended charges against a woman who tweeted a threat to burn down Memories Pizza in Walkerton. Supporters raised more than $842,000 for the restaurant through a crowdfunding campaign.

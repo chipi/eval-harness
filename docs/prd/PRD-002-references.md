@@ -98,6 +98,10 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
   filled rows. The sheet is CSV that Excel opens and saves (UTF-8 with its mark; `,` or `;`); `--choices`
   writes the allowed answers into the label column's header and the import refuses any other; a workbook
   (.xlsx) is refused, saying how to save it as CSV. The local inspector downloads the same sheet.
+- **FR2.3b** (0.6.0): The sheet of `evh inspect --sheet … --csv FILE --fill label` is filled the same way, and
+  `evh sheet-import FILE --dataset-id D --by WHO --set S` makes its `label` column a set: `person`, or `model` with
+  `--kind model` when a tool filled it. A filled `pick` or `score:` column is a judgement, not a label: it becomes
+  unvalidated judged runs (`--scorer`, PRD-003), never a label set.
 - **FR2.4**: `evh label-from-run --run R --set S` makes a `model` set of a finished run's outputs and calls nothing;
   it refuses what `run-promote` refuses (a dirty tree, an unknown build), an unfinished, derived or other-dataset
   run, an empty output and outputs that stopped at `max_tokens` (`--allow-cut-off`).

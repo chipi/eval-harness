@@ -357,7 +357,7 @@ tiles open it.
   pair's confusion matrix folded below it. Empty: "No labels yet", with the `evh label-sheet`
   and `evh label-from-run` commands.
 - `picks waiting` (0.6.0), for a dataset some picks name as their target: one row per pick: **item**
-  (opens the inspector's rows view on it), **from** (the production dataset, its capture), **labels** (source chips, or
+  (opens the inspector's sheet on it), **from** (the production dataset, its capture), **labels** (source chips, or
   "none yet"), **tags**, **note**, **picked** (who, when), and a select box per row; the rows selected give the
   command `evh dataset-extend <this> --dataset-id <next> --pick … --pick …`, shown to copy. The page writes nothing.
 - `added from production` (0.6.0), for a version made by `dataset-extend`: each item it added, with the

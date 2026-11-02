@@ -175,15 +175,14 @@ try:
         r.returncode != 0 and "not in play" in out(r),
         out(r)[-300:],
     )
-    # CLI parity: the inspector's per-item table and analysis charts, and the catalog's search.
-    r = evh("inspect", "--round", "r1", "--goal", "tickets_summary", "--items", "--analysis")
+    # CLI parity: the inspector's sheet and analysis charts, and the catalog's search.
+    r = evh("inspect", "--sheet", "--dataset-id", "tickets_v1", "--runs", "tickets_lead1_v1,tickets_lead2_v1")
     check(
-        "evh inspect --items: every item's score per arm, and each arm's Δ against the baseline",
-        r.returncode == 0
-        and "(overlap_f1; Δ is each arm minus the baseline)" in r.stdout
-        and "Δ tickets_" in r.stdout,
+        "evh inspect --sheet: every item's score per arm, the winner per row and each arm's win rate",
+        r.returncode == 0 and "overlap_f1" in r.stdout and "win rate" in r.stdout,
         out(r)[-500:],
     )
+    r = evh("inspect", "--round", "r1", "--goal", "tickets_summary", "--analysis")
     check(
         "evh inspect --analysis: the charts' numbers (spread per run, difference from the baseline)",
         "spread per run (overlap_f1" in r.stdout and "difference from the baseline" in r.stdout,

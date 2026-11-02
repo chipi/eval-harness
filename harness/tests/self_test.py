@@ -698,7 +698,11 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_rows.py",
-            "the rows view: every item's decisions, labels and signals; each signal a filter; the pick and sheet commands",
+            "the sheet: every item's decisions, scores, labels and signals; each signal a filter; winners (ties, direction), win rate, verdicts, the CSV",
+        ),
+        (
+            "test_sheet_import.py",
+            "a sheet filled elsewhere: --fill label/pick/scores (blind, shuffled, keyed) and sheet-import back to a label set or judged runs; every refusal",
         ),
         (
             "test_deploy_sheet.py",

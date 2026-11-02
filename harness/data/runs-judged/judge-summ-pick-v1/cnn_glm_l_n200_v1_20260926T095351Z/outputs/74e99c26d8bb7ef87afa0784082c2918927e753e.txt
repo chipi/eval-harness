@@ -1,0 +1,11 @@
+The user wants a 2-3 sentence news wire style summary of this article. Key facts:
+- 978 migrants rescued Friday in Mediterranean, 30 miles off Libya coast, per Italian Coast Guard
+- Italy registered 10,000+ arrivals in Q1 2015; 2,000 rescued first weekend of April
+- At least 480 deaths this year vs fewer than 50 same time last year
+- Migrants mostly from West Africa, Somalia, Syria, transiting through Libya
+
+News wire style is terse, factual, lead with the most important info. Let me draft:
+
+"Italian Coast Guard rescued 978 migrants in the Mediterranean on Friday, picking them up 30 miles off the Libyan coast. Italy has registered more than 10,000 migrant arrivals in the first three months of 2015, with most coming from West Africa, Somalia and Syria via Libya. At least 480 migrants have died making the crossing this year, up from fewer than 50 at the same point in 2014, the International Organization for Migration said."
+
+That's three sentences, terse, wireItalian Coast Guard rescued 978 migrants in the Mediterranean on Friday, picking them up 30 miles off the coast of Libya. Italy registered more than 10,000 migrant arrivals in the first three months of 2015, with most coming from West Africa, Somalia and Syria via Libya. At least 480 migrants have died crossing the Mediterranean this year, up from fewer than 50 at the same point last year, the International Organization for Migration said.

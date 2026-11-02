@@ -87,6 +87,7 @@ NOT_TOOLS = {
     "dataset-from-capture": "writes",
     "label-sheet": "writes a sheet",
     "label-import": "writes a label set",
+    "sheet-import": "writes a label set or judged runs",
     "label-from-run": "writes a label set",
     "label-from-capture": "writes a label set",
     "reference-promote": "writes a reference",
@@ -304,11 +305,24 @@ def run_command(
     return p.returncode, out, err
 
 
+#: Options no tool offers: they write a file (the sheet's CSV and its key), and a tool writes nothing.
+TOOL_HIDDEN = {
+    "inspect": {"--csv", "--fill", "--choices", "--seed", "--rubric", "--scale"},
+}
 #: In --public mode, the options that would answer with an item's text, an arm's output or a label (the
-#: rows view): a public server answers with numbers and ids only, as catalog-serve --public does without
+#: sheet): a public server answers with numbers and ids only, as catalog-serve --public does without
 #: --publish.
 PUBLIC_HIDDEN = {
-    "inspect": {"--item", "--rows", "--dataset-id", "--wrong-against", "--new-vs", "--split", "--unlabelled"},
+    "inspect": {
+        "--item",
+        "--sheet",
+        "--dataset-id",
+        "--scores-only",
+        "--wrong-against",
+        "--new-vs",
+        "--split",
+        "--unlabelled",
+    },
     "dataset-items": {"--item"},
 }
 #: In --public mode, the tools left out, and why: a public server serves a copy of the data, not a
@@ -424,6 +438,9 @@ def build_server(
     from mcp.server import Server  # noqa: PLC0415
 
     parsers = {c: parser_of(c) for c in tools_for(public)}
+    for c, flags in TOOL_HIDDEN.items():
+        if c in parsers:
+            parsers[c]._actions = [a for a in parsers[c]._actions if not set(a.option_strings) & flags]
     if public:
         for c, flags in PUBLIC_HIDDEN.items():
             p = parsers[c]
