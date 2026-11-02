@@ -10,7 +10,7 @@ first that matches gives the item's label, or skips it. Each rule has any of:
   absent: [field, ...]                 missing or null
   range:  {field: {min: N, max: N}}    a number within bounds (either bound optional)
   min_age_days: N                      the record is at least N days older than the capture
-and one of `label: TEXT` or `skip: true`.
+and one of `label: TEXT` (or `label: [TEXT, ...]`: more than one answer is right) or `skip: true`.
 """
 
 from __future__ import annotations
@@ -40,6 +40,9 @@ def load_rules(path: Path) -> list:
             )
         if ("label" in r) == bool(r.get("skip")):
             die(f"{path}: rule {n}: exactly one of label or skip: true")
+        lab = r.get("label")
+        if isinstance(lab, list) and not (lab and all(str(a).strip() for a in lab)):
+            die(f"{path}: rule {n}: a label list names the right answers, none empty; got {lab!r}")
     return rules
 
 

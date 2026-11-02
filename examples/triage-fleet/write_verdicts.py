@@ -11,7 +11,8 @@ One line per label: {id, label, source, issue, detail, note}. `source` says who 
   outcome-mapping      computed from what happened afterwards (outcomes.yaml): shown, never deciding
   fixture              the fleet's own earlier hand labels, carried by fingerprint
 A decision can have one owner row and rows of the other sources. Labels: file, dismiss, escalate,
-cleanup, and file-or-escalate (an issue fixed later: filing and escalating were both right).
+cleanup, and file-or-escalate (an issue fixed later: filing and escalating were both right; labels_from_verdicts.py
+makes it a label accepting both).
 """
 
 from __future__ import annotations

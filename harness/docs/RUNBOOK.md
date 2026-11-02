@@ -271,7 +271,8 @@ cheaper system: pay for the expensive one once, then chase it.
 
 **Gold** is a person's labels promoted at gold: label the items in a sheet (`evh label-sheet
 --dataset-id my_v1 --out sheet.csv`, `--propose best_v1 --items all` to start from the model's
-answers, `yes` taking one), or write one `<item_id>.txt` per item in a folder, then `evh label-import`
+answers, `yes` taking one; where more than one answer is right, the others go in `also right`, separated by `|`),
+or write one `<item_id>.txt` per item in a folder (`{"accept": ["escalate", "file"]}` for several), then `evh label-import`
 it as a person's set and promote it with `--tier gold`. Gold always wins over silver for new runs. Runs made before the gold set existed are re-scored against it for $0:
 `evh rescore --dataset-id my_v1 --reference-id gold/my_v1 --out data/runs-gold`.
 
@@ -1085,6 +1086,10 @@ evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did pro
 - **Agreement**: two outputs are one decision when the adapter's `same(a, b)` says so (default: the same
   decision, by the adapter's `decision(output)`, else the same text). `inspect --disagree` and
   `label-sheet --items disagree` keep the items where the arms differ.
+- **More than one right answer**: a label can accept several (`also right` in the sheet, `label: [file, escalate]`
+  in a rule), written `{"accept": ["escalate", "file"]}` and shown "escalate or file". Two label sets agree on an
+  item when they share an answer (`evh labels`), and a decision is **wrong** against a label when it is none of
+  them. An adapter's `score` reads such a reference with `answers(reference)` from `evaluation_harness.adapter`.
 - **The rows view** shows each item's signals first, then each arm's decision (the adapter's
   `decision(output)`, else its output, shortened), every label and the fields. The signals: **wrong** (the
   first run against a label set), **disagree**, **split** (the candidates among themselves), **new** (a field

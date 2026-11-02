@@ -24,9 +24,9 @@ Change the pin to `@v0.6.0`. Two formats change, and both are migrated by a scri
 removed. A run's outputs become a model's labels (`evh label-from-run`: the same refusals, and `--not-redistributed`),
 a sheet or a folder of answers a person's (`evh label-sheet`, `evh label-import`), a capture's outcomes a `rule` set
 (`evh label-from-capture`, the same rule language); `evh reference-promote` makes a reference of a set, at the tier
-you choose, with a reason and who promoted it. A reference made before keeps working as it is (`promoted_from` is
-optional); `harness/tools/migrate_references_to_labels.py`, run from a checkout, records how each was made and copies
-its texts into a label set, no run's score or hash moving. A reference made from outcomes has no rule of its own any
+you choose, with a reason and who promoted it. A reference made before has no `promoted_from` and fails `validate`
+(V1, V16) until it records one: `harness/tools/migrate_references_to_labels.py`, run from a checkout, records how each
+was made and copies its texts into a label set, no run's score or hash moving. A reference made from outcomes has no rule of its own any
 more: promoted, it is a silver like any (with gold beside it, gold still decides).
 
 Six behaviours change without a migration:
@@ -53,7 +53,8 @@ Six behaviours change without a migration:
 
 Everything else is added and optional: the capture lane (`evh capture`, `importer-check`, `captures`,
 `capture-scrub`, `dataset-from-capture`, `dataset-split`, `text: hidden`; RFC-019); evaluating what production did
-(`evh labels`, scoring against a label set with `--labels`, `evh arm-from-capture`, `inspect --disagree` and
+(`evh labels`, a label accepting more than one answer, `{"accept": [...]}`, read by `answers(reference)` from
+`evaluation_harness.adapter`, scoring against a label set with `--labels`, `evh arm-from-capture`, `inspect --disagree` and
 `--rows`, `evh pick`, `evh picks`, `evh dataset-extend`, `evh deploy-sheet`; the catalog's Labels page; an adapter's
 optional `same(a, b)`, `decision(output)`, `recorded_output(record)` and `production_ran(record)`; RFC-023);
 model onboarding (`evh model-onboard`, `evh arm-smoke`, `evh models`, `model_record:` and `deployment:` in a

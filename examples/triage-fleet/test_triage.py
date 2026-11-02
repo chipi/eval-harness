@@ -24,6 +24,10 @@ def out(d):
     return json.dumps({"disposition": d})
 
 
+#: A real problem whose issue was fixed: filing and escalating were both right.
+REAL = '{"accept": ["escalate", "file"]}'
+
+
 # ── the scorer ─────────────────────────────────────────────────────────────────────────────
 check(
     "no reference: only escalated, nothing else counted",
@@ -49,15 +53,15 @@ check(
 )
 check("not-file counts as dismiss", adapter.score(out("dismiss"), "not-file")["correct"] == 1.0)
 check(
-    "file-or-escalate: an escalation is correct, a dismissal is a false dismissal",
+    "a label accepting file and escalate: an escalation is correct, so is filing, a dismissal is a false dismissal",
     {
         k: v
-        for k, v in adapter.score(out("escalate"), "file-or-escalate").items()
+        for k, v in adapter.score(out("escalate"), REAL).items()
         if not k.startswith(("model_", "triage_cost"))
     }
     == {"escalated": 1.0, "correct": 1.0, "false_dismiss": 0.0}
-    and adapter.score(out("file"), "file-or-escalate")["correct"] == 1.0
-    and adapter.score(out("dismiss"), "file-or-escalate")["false_dismiss"] == 1.0,
+    and adapter.score(out("file"), REAL)["correct"] == 1.0
+    and adapter.score(out("dismiss"), REAL)["false_dismiss"] == 1.0,
 )
 check(
     "JSON reference with correct_autonomous=escalate: a dismissal is a silent drop",
@@ -67,14 +71,24 @@ check(
     == 1.0,
 )
 check(
-    "an unknown label scores nothing but escalated",
-    adapter.score(out("file"), "maybe") == {"escalated": 0.0, "model_escalated": 0.0},
+    "an unknown label scores nothing but escalated (the old composite word too)",
+    adapter.score(out("file"), "maybe") == {"escalated": 0.0, "model_escalated": 0.0}
+    and adapter.score(out("file"), "file-or-escalate") == {"escalated": 0.0, "model_escalated": 0.0},
+)
+mixed = adapter.score(out("dismiss"), '{"accept": ["dismiss", "file"]}')
+check(
+    "a label accepting a real-problem and a noise answer: either is correct, neither a miss nor a false alarm",
+    mixed["correct"] == 1.0
+    and adapter.score(out("file"), '{"accept": ["dismiss", "file"]}')["correct"] == 1.0
+    and "false_dismiss" not in mixed
+    and "false_alarm" not in mixed,
+    mixed,
 )
 # A no-decision (the replay's fallback escalation) is wrong on both sides (owner, 2026-10-31).
 nd = json.dumps(
     {"disposition": "escalate", "reason": "no terminal decision: the model's last reply was empty"}
 )
-nd_real, nd_noise = adapter.score(nd, "file-or-escalate"), adapter.score(nd, "dismiss")
+nd_real, nd_noise = adapter.score(nd, REAL), adapter.score(nd, "dismiss")
 check(
     "no decision on a real problem: a miss, not the escalation it falls back to, for the fleet and the model",
     nd_real["false_dismiss"] == 1.0
@@ -95,12 +109,10 @@ check(
 )
 check(
     "a real escalation (any other reason) still counts as one",
-    adapter.score(json.dumps({"disposition": "escalate", "reason": "needs a person"}), "file-or-escalate")[
-        "correct"
-    ]
+    adapter.score(json.dumps({"disposition": "escalate", "reason": "needs a person"}), REAL)["correct"]
     == 1.0,
 )
-c_miss = adapter.score(out("dismiss"), "file-or-escalate")
+c_miss = adapter.score(out("dismiss"), REAL)
 c_alarm = adapter.score(out("file"), "dismiss")
 c_right = adapter.score(out("dismiss"), "dismiss")
 check(
@@ -229,7 +241,7 @@ check(
 check(
     "decision(): an output's disposition, what the rows view shows; a bare label as it is",
     adapter.decision('{"disposition": "escalate", "reason": "x", "_probe_trace": []}') == "escalate"
-    and adapter.decision("file-or-escalate\n") == "file-or-escalate"
+    and adapter.decision("file\n") == "file"
     and adapter.decision('{"reason": "no decision"}') == '{"reason": "no decision"}',
 )
 o = r1["outcome"]

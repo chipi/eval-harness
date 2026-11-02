@@ -33,6 +33,9 @@ from typing import Any, Callable
 # a call (the bill when the response carries one, else the config's prices, else unpriced).
 from evaluation_harness import _providers
 
+# A reference with several right answers ({"accept": [...]}) read as its answers: `score` reads references through it.
+from evaluation_harness._label_sets import answers  # adapters import it from here
+
 
 @dataclass
 class Result:
@@ -112,7 +115,8 @@ def score(output: str, reference: str | None) -> dict[str, float]:
 
     Called with the golden reference when one exists for the item, and with
     None when it does not — so the same adapter works before and after you have
-    ground truth.
+    ground truth. A reference may accept several answers (`answers`): the default
+    scores the output against the one it is closest to.
 
     The default is deliberately crude: token-overlap F1 against the reference,
     plus the output length. It is a placeholder that produces a real number so
@@ -124,13 +128,17 @@ def score(output: str, reference: str | None) -> dict[str, float]:
     out_len = float(len(output.split()))
     if reference is None:
         return {"output_words": out_len}
+    return {"output_words": out_len, "overlap_f1": max(_overlap_f1(output, r) for r in answers(reference))}
+
+
+def _overlap_f1(output: str, reference: str) -> float:
+    """Token-overlap F1 of an output against one right answer."""
     a, b = set(output.lower().split()), set(reference.lower().split())
     if not a or not b:
-        return {"output_words": out_len, "overlap_f1": 0.0}
+        return 0.0
     overlap = len(a & b)
     precision, recall = overlap / len(a), overlap / len(b)
-    f1 = 0.0 if precision + recall == 0 else 2 * precision * recall / (precision + recall)
-    return {"output_words": out_len, "overlap_f1": f1}
+    return 0.0 if precision + recall == 0 else 2 * precision * recall / (precision + recall)
 
 
 # ── example adapters — delete the ones you do not use ────────────────────────

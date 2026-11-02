@@ -6,7 +6,8 @@
     evh label-import answers/ --dataset-id tickets_v1 --set owner_gold --by owner
 
 A sheet: every row with a `label` becomes one label; `yes` takes the row's `proposal`; a row with no label is left
-out; a row's `note` is kept beside its label. A folder: each `<item_id>.txt` in it is that item's label. The set's
+out; a row's `note` is kept beside its label. When more than one answer is right for an item, `also right` names
+the others, separated by `|` (`file` and `escalate`: the label accepts either, written {"accept": [...]}). A folder: each `<item_id>.txt` in it is that item's label. The set's
 source is `person`: who (`--by`), and the sheet's (or the folder's files') sha256. A set is never edited: a second
 pass is a new set.
 """
@@ -25,7 +26,10 @@ import hashlib
 from pathlib import Path
 
 from evaluation_harness._common import die
-from evaluation_harness._label_sets import write_set
+from evaluation_harness._label_sets import answers, label_text, write_set
+
+#: The sheet's column for the other right answers of an item that has more than one, separated by |.
+ALSO = "also right"
 
 
 def main() -> int:
@@ -60,7 +64,8 @@ def main() -> int:
             if not text:
                 no_proposal.append(r["item_id"])
                 continue
-        labels[r["item_id"]] = text
+        also = [a.strip() for a in (r.get(ALSO) or "").split("|") if a.strip()]
+        labels[r["item_id"]] = label_text([*answers(text), *also]) if also else text
         if (r.get("note") or "").strip():
             notes[r["item_id"]] = r["note"].strip()
     if no_proposal:

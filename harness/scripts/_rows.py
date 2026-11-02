@@ -29,7 +29,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 from typing import Any
 
 from evaluation_harness._common import die, load_dataset, read_json
-from evaluation_harness._label_sets import labels_for, sets
+from evaluation_harness._label_sets import answers, labels_for, sets
 from evaluation_harness.label_sheet import output, run_dir
 
 SIGNALS = ("wrong", "disagree", "split", "new", "unlabelled")
@@ -83,7 +83,7 @@ def rows(
     score = getattr(adapter_module(spec), "score", None) if dirs else None
 
     def is_wrong(label: str, output: str) -> bool:
-        """The adapter's verdict on an output against a label (`correct` 0), else not the label's decision."""
+        """The adapter's verdict on an output against a label (`correct` 0), else none of the label's answers."""
         if callable(score):
             try:
                 got = score(output, label)
@@ -91,7 +91,7 @@ def rows(
                 got = None
             if isinstance(got, dict) and "correct" in got:
                 return got["correct"] == 0
-        return same is not None and not same(label, output)
+        return same is not None and not any(same(a, output) for a in answers(label))
 
     if wrong_against:
         _set_named(wrong_against)

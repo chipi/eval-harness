@@ -21,7 +21,7 @@ import argparse
 import json
 
 from evaluation_harness._common import die
-from evaluation_harness._label_sets import labels_for, source_line
+from evaluation_harness._label_sets import label_line, labels_for, source_line
 from evaluation_harness._picks import waiting
 
 
@@ -48,7 +48,11 @@ def main() -> int:
         if ds not in labels_by_ds:
             labels_by_ds[ds] = labels_for(ds)
         r["labels"] = [
-            {"set": f"{x['dataset_id']}/{x['set']}", "source": source_line(x["source"]), "label": x["text"]}
+            {
+                "set": f"{x['dataset_id']}/{x['set']}",
+                "source": source_line(x["source"]),
+                "label": label_line(x["text"]),
+            }
             for x in labels_by_ds[ds].get(r["item"], [])
         ]
     if args.json:

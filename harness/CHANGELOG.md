@@ -24,7 +24,15 @@ that can move a result is never a patch release without saying so under **Change
     each run's decision and a proposal beside an empty label; **`evh label-import`** reads it back, or a folder of
     `<item_id>.txt`, as a person's set (`yes` takes the proposal; notes kept). **`evh label-from-capture`** turns a
     capture's recorded outcomes into a `rule` set by the rules `reference-from-outcomes` read. **`evh labels`** lists
-    the sets, what each covers and how often two give the same label (an MCP tool). **V19** checks every set.
+    the sets, what each covers and how often two agree (an MCP tool). **V19** checks every set.
+  - **A label can accept more than one answer**, when several are right for an item: `{"accept": ["escalate",
+    "file"]}`, sorted and without repeats, made by the sheet's `also right` column, a rule's `label: [file,
+    escalate]` or a folder's text, shown "escalate or file". Two labels agree when they share an answer, and a
+    decision is wrong against a label when it is none of them. An adapter's `score` reads a reference with
+    **`answers(reference)`** (`evaluation_harness.adapter`); the bundled one keeps the best overlap. The triage gold's
+    23 `file-or-escalate` labels (and their reference) are written so now, by `labels_from_verdicts.py` byte for byte:
+    every one of the 18,460 item scores of the 284 runs against it is the same replayed old and new, and gold agrees
+    with the outcome rules on 34 of the 34 items both label (11 when only the same text agreed).
   - **`evh reference-promote`** makes a reference of a set, at the tier you choose, with a reason and who promoted
     it; the manifest records where it came from (for a model's set, the run and model that wrote it). No rule ties
     the tier to the source. Every existing reference records how it was promoted (20 here; 6 copied byte for byte

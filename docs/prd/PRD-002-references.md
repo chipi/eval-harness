@@ -102,8 +102,12 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 - **FR2.5**: `evh label-from-capture` makes a `rule` set from a capture's recorded outcomes (PRD-014).
 - **FR2.6**: A set is never edited; a correction is a new set. Labels follow the item by its sha256.
 - **FR2.7**: `evh labels [--dataset-id D]` lists every set: source, coverage, guideline, and how often two sets
-  agree; the pages show what was promoted from it (UXS-001).
+  agree (share an answer, FR2.9); the pages show what was promoted from it (UXS-001).
 - **FR2.8**: `evh validate` V19 checks every set's labels against the sha256 it recorded.
+- **FR2.9**: A label is one right answer, or several when more than one is right for the item (owner, 2026-11-02),
+  written `{"accept": ["escalate", "file"]}`, sorted and without repeats; the sheet's `also right` column, a rule's
+  `label: [a, b]` and a folder's text make one. Two labels agree when they share an answer; a decision is wrong
+  against a label when it is none of them; a scorer reads a reference through `answers()`.
 
 ### FR3: Promotion (0.6.0)
 

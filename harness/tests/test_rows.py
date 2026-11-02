@@ -216,6 +216,19 @@ try:
     )
     r, rs = rows("--wrong-against", f"{D}/owner")
     check("--wrong-against DATASET/SET names the same set", sorted(ids(rs)) == want, out(r)[-300:])
+    # A label accepting both answers on t02: production's A is one of them, so not wrong; the rows show both.
+    (proj / "two.csv").write_text("item_id,label,also right\nt02_invoice,B,A\n")
+    r = evh("label-import", "two.csv", "--dataset-id", D, "--set", "owner_two", "--by", "owner")
+    r2, rs = rows("--wrong-against", "owner_two")
+    _, every_row = rows()
+    t02: dict = next((x for x in every_row if x["item"] == "t02_invoice"), {})
+    check(
+        "--wrong-against a label with several right answers: the decision is one of them, so not wrong; shown as A or B",
+        r.returncode == 0 and r2.returncode == 0 and ids(rs) == [] and "A or B" in t02.get("labels", ""),
+        out(r)[-200:] + out(r2)[-300:] + str(t02)[:300],
+    )
+    shutil.rmtree(proj / "data" / "labels" / D / "owner_two")
+    (proj / "two.csv").unlink()  # the view-writes-nothing check compares the project to before
     r, rs = rows("--new-vs", "tickets_gov")
     by = {x["item"]: x for x in rs}
     check(

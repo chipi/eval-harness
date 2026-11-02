@@ -689,7 +689,7 @@ def rows(params: dict) -> dict:
         return {"error": "the rows view shows outputs and labels: not served publicly"}
     from evaluation_harness import _picks, _rows  # noqa: PLC0415
     from evaluation_harness._common import DATASETS  # noqa: PLC0415
-    from evaluation_harness._label_sets import coverage  # noqa: PLC0415
+    from evaluation_harness._label_sets import coverage, label_line  # noqa: PLC0415
 
     ds = params.get("dataset", [""])[0]
     if not ds or not plain_item(ds) or not (DATASETS / f"{ds}.json").is_file():
@@ -730,7 +730,7 @@ def rows(params: dict) -> dict:
                     {
                         "set": f"{x['dataset_id']}/{x['set']}",
                         "kind": (x.get("source") or {}).get("kind", ""),
-                        "text": short(x["text"]),
+                        "text": short(label_line(x["text"])),
                     }
                     for x in r["labels"]
                 ],

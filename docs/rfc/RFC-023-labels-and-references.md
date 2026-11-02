@@ -79,6 +79,14 @@ The harness cannot do steps 6 and after:
 - **Labels follow the item, not the dataset** (owner, 2026-11-01): a set records each item's sha256, and an item
   with the same bytes in another dataset (a later version, a production dataset) has the same labels. An edited
   item has another hash, and its old labels do not follow it.
+- **A label can accept more than one answer** (owner, 2026-11-02): when several are right for an item (a real
+  problem that filing and escalating both handle), its text is `{"accept": ["escalate", "file"]}`, sorted and without
+  repeats, so one meaning has one text. The sheet takes the others in `also right` (separated by `|`), a rule as
+  `label: [file, escalate]`, a folder as the text itself. **Two labels agree when they share an answer**; a decision
+  is wrong against a label when it is none of its answers. A scorer reads a reference through `answers(reference)`
+  (`evaluation_harness.adapter`); the bundled one scores an output against the answer it is closest to. The views
+  show such a label as "escalate or file". It replaces the triage example's composite word `file-or-escalate`, which
+  no code reads any more.
 
 ### References
 
@@ -150,7 +158,8 @@ In the inspector, for one dataset (`evh inspect --dataset-id D --rows`):
 - The terminal prints the same rows; `evh label-sheet --items disagree` puts the same rows in a sheet.
 - As built (step 6, 2026-11-01, the terminal; the page is step 8): `--runs` takes run ids or config ids (a
   config's latest run on the dataset), the first standing for production. **wrong** compares the first run's
-  decision with the set's label by the first run's adapter's `same(a, b)`, so an unlabelled item is never wrong;
+  decision with the set's label by the first run's adapter: its `score` (`correct` 0), else none of the label's
+  answers `same(a, b)` as the decision, so an unlabelled item is never wrong;
   **split** needs two candidates that answered; **new** compares only the fields the governed dataset has at most
   30 values for (`_rows.NEW_MAX`), so a free text is not "new" on every item. The signals asked for are ANDed
   with `--where`; rows are sorted by how many signals they carry; `--by FIELD` counts the rows shown per value
@@ -230,11 +239,11 @@ The docs and the site say so and imply neither.
 
 | Command | What it does | Replaces |
 | --- | --- | --- |
-| `evh label-sheet --dataset-id D --out sheet.csv [--items unlabelled\|all\|disagree --runs A,B] [--item ID …] [--propose SET\|RUN]` | a sheet: item, a short view of it, what production or an arm decided, a proposal, an empty `label` column | `label_sheet.py` |
+| `evh label-sheet --dataset-id D --out sheet.csv [--items unlabelled\|all\|disagree --runs A,B] [--item ID …] [--propose SET\|RUN]` | a sheet: item, a short view of it, what production or an arm decided, a proposal, empty `label`, `also right` and `note` columns | `label_sheet.py` |
 | `evh label-import sheet.csv --dataset-id D --set S --by NAME [--guideline FILE]` | the filled rows become a `person` set | `write_verdicts.py`, `write_gold.py` |
 | `evh label-from-run --run R --set S [--guideline FILE]` | a run's outputs become a `model` set | `reference-create --from-run`, `--config` |
 | `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | rules over recorded outcomes become a `rule` set | `reference-from-outcomes` |
-| `evh labels [--dataset-id D]` | every set: source, coverage, guideline, how often two sets agree, what was promoted | — |
+| `evh labels [--dataset-id D]` | every set: source, coverage, guideline, how often two sets agree (share an answer), what was promoted | — |
 | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | the chosen labels become a reference, recording the set, its source and the reason | `reference-create` |
 | `evh rescore --labels D/S`, `evh experiment-run --labels D/S` | score against a label set, without promoting it | — |
 | `evh arm-from-capture --dataset-id D --capture C --as NAME` | production's recorded decisions as an arm | — |

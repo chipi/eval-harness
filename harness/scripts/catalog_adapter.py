@@ -54,6 +54,7 @@ from evaluation_harness._common import (  # noqa: E402
 )
 from evaluation_harness._fields import fieldset_problems, load_fieldset  # noqa: E402 -- part of the adapter contract
 from evaluation_harness._fingerprint import items_digest  # noqa: E402
+from evaluation_harness._label_sets import label_line, overlap  # noqa: E402
 from evaluation_harness._record import derived_with  # noqa: E402
 from evaluation_harness._runs import item_rows, lower_is_better_on, runs_on, score_of  # noqa: E402
 
@@ -706,7 +707,7 @@ class HarnessAdapter:
                             "a": a,
                             "b": b,
                             "both": len(both),
-                            "agree": sum(texts[a][x] == texts[b][x] for x in both),
+                            "agree": sum(overlap(texts[a][x], texts[b][x]) for x in both),
                         }
                     )
         return {"sets": sets, "agreement": agreement}
@@ -733,7 +734,7 @@ class HarnessAdapter:
                             "set": ls["id"],
                             "kind": src.get("kind", ""),
                             "by": src.get("by") or src.get("config_id") or src.get("capture") or "",
-                            "text": t.read_text(encoding="utf-8").strip() if t.is_file() else None,
+                            "text": label_line(t.read_text(encoding="utf-8")) if t.is_file() else None,
                             "note": (row or {}).get("note") or "",
                         }
                     )

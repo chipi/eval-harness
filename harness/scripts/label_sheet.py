@@ -8,8 +8,8 @@
 
 One row per item: `item_id`, `item` (the start of the item itself, when it is materialized here), one column per
 run in --runs (what it decided, its output), `proposal` (a label set's label, or a run's output) and the empty
-columns `label` and `note`. Fill `label` (or write `yes` to take the proposal) in any spreadsheet, then
-`evh label-import`. Which items: --items unlabelled (the default: no label in any set yet), all, or disagree (the
+columns `label`, `also right` and `note`. Fill `label` (or write `yes` to take the proposal) in any spreadsheet, and
+where more than one answer is right, the others in `also right` (separated by `|`); then `evh label-import`. Which items: --items unlabelled (the default: no label in any set yet), all, or disagree (the
 runs in --runs decided differently); or exactly those named with --item. A run is a run id or a config id (its
 latest run on the dataset). Nothing is written but the sheet.
 """
@@ -138,7 +138,9 @@ def main() -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["item_id", "item", *[f"decided: {n}" for n in names], "proposal", "label", "note"])
+        w.writerow(
+            ["item_id", "item", *[f"decided: {n}" for n in names], "proposal", "label", "also right", "note"]
+        )
         for i in chosen:
             w.writerow(
                 [
@@ -148,11 +150,12 @@ def main() -> int:
                     proposal.get(i, ""),
                     "",
                     "",
+                    "",
                 ]
             )
     print(f"{args.out}: {len(chosen)} item(s) of {len(ids)} to label")
     print(
-        f"  fill `label` (or `yes` for the proposal), then: evh label-import {args.out} --dataset-id {args.dataset_id} --set <name> --by <you>"
+        f"  fill `label` (or `yes` for the proposal; other right answers in `also right`, separated by |), then: evh label-import {args.out} --dataset-id {args.dataset_id} --set <name> --by <you>"
     )
     return 0
 

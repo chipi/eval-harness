@@ -190,6 +190,78 @@ try:
     (proj / "empty").mkdir()
     r = evh("label-import", "empty", "--dataset-id", "tickets_v1", "--set", "none_v1", "--by", "owner")
     check("label-import: an empty folder is refused", refused(r, "no <item_id>.txt"), out(r)[-200:])
+    # ── an item with more than one right answer (owner, 2026-11-02: a label can accept several) ───────────────────
+    (proj / "several.csv").write_text(
+        "item_id,label,also right,note\nt01_login,file,escalate | file,\nt02_invoice,dismiss,,\n"
+    )
+    r = evh(
+        "label-import", "several.csv", "--dataset-id", "tickets_v1", "--set", "several_v1", "--by", "owner"
+    )
+    several = LABELS / "tickets_v1" / "several_v1"
+    check(
+        "label-import: `also right` adds the other right answers; one meaning, one text (sorted, no repeats)",
+        r.returncode == 0
+        and (several / "t01_login.txt").read_text() == '{"accept": ["escalate", "file"]}\n'
+        and (several / "t02_invoice.txt").read_text() == "dismiss\n",
+        out(r)[-300:],
+    )
+    (answers / "t01_login.txt").write_text('{"accept": ["file", "escalate", "file"]}\n')
+    (answers / "t04_api.txt").unlink()
+    r = evh(
+        "label-import", "answers", "--dataset-id", "tickets_v1", "--set", "several_files", "--by", "owner"
+    )
+    check(
+        "label-import: a folder's {\"accept\": [...]} is the same label as the sheet's",
+        r.returncode == 0
+        and (LABELS / "tickets_v1" / "several_files" / "t01_login.txt").read_text()
+        == (several / "t01_login.txt").read_text(),
+        out(r)[-300:],
+    )
+    (proj / "notalist.csv").write_text('item_id,label\nt01_login,"{""accept"": ""file""}"\n')
+    r = evh(
+        "label-import", "notalist.csv", "--dataset-id", "tickets_v1", "--set", "bad_accept", "--by", "owner"
+    )
+    check(
+        'label-import: {"accept": ...} that is not a list of answers is refused, saying how to write one',
+        refused(r, "not a list of answers") and not (LABELS / "tickets_v1" / "bad_accept").exists(),
+        out(r)[-300:],
+    )
+    (proj / "one.csv").write_text("item_id,label\nt01_login,escalate\nt02_invoice,file\n")
+    evh("label-import", "one.csv", "--dataset-id", "tickets_v1", "--set", "one_v1", "--by", "owner")
+    r = evh("labels", "--dataset-id", "tickets_v1", "--json")
+    pairs = {
+        frozenset((p["a"], p["b"])): p
+        for p in (json.loads(r.stdout) if r.returncode == 0 else {}).get("agreement", [])
+    }
+    p = pairs.get(frozenset(("tickets_v1/one_v1", "tickets_v1/several_v1")), {})
+    check(
+        "labels: two labels agree when they share an answer (escalate is one of file and escalate; file is not dismiss)",
+        p.get("both") == 2 and p.get("agree") == 1,
+        str(p) + r.stdout[-300:],
+    )
+    from evaluation_harness._label_sets import answers as accepted
+    from evaluation_harness._label_sets import label_line, label_text
+
+    check(
+        "answers / label_text / label_line: a bare label is its one answer; a set reads, writes and shows",
+        accepted("Login fails.\n") == ["Login fails."]
+        and accepted('{"accept": ["escalate", "file"]}') == ["escalate", "file"]
+        and label_text(["file"]) == "file"
+        and label_text(["file", "escalate"]) == '{"accept": ["escalate", "file"]}'
+        and label_line('{"accept": ["escalate", "file"]}') == "escalate or file"
+        and accepted('{"accept": "file"}') == ['{"accept": "file"}'],
+    )
+    from evaluation_harness.adapter import score as default_score
+
+    both = '{"accept": ["login fails after sso", "the export is empty"]}'
+    check(
+        "the bundled adapter scores an output against the right answer it is closest to",
+        default_score("the export is empty", both)["overlap_f1"] == 1.0
+        and default_score("login fails after sso", both)["overlap_f1"] == 1.0
+        and default_score("nothing alike", both)["overlap_f1"] == 0.0,
+    )
+    for s in ("several_v1", "several_files", "one_v1"):
+        shutil.rmtree(LABELS / "tickets_v1" / s)
     shutil.rmtree(LABELS / "tickets_v1" / "owner_files")  # the later checks count the sets on tickets_v1
     (proj / "bad.csv").write_text("id,answer\nt01_login,x\n")
     r = evh("label-import", "bad.csv", "--dataset-id", "tickets_v1", "--set", "bad_v1", "--by", "owner")

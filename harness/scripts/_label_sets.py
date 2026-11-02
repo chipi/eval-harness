@@ -6,6 +6,9 @@ A label set is one labelling pass over one dataset by one source, never edited:
     data/labels/<dataset>/<set>/labels.json     the dataset, the set, its source, when, the guideline it followed,
                                                 and per item the label's sha256 and the item's (`source_sha256`)
 
+A label is one right answer, or several when more than one is right for the item, written
+{"accept": ["escalate", "file"]} (`answers` reads either; two labels agree when they share an answer).
+
 The source is `person` (who), `model` (the run its outputs came from) or `rule` (a mapping over a capture's
 recorded outcomes). Labels follow the item, not the dataset: a set records each item's sha256, so an item with the
 same bytes in another dataset (a later version, a production dataset) has the same labels. (Not `_labels.py`: that
@@ -21,6 +24,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import hashlib
+import json
 import re
 from pathlib import Path
 from typing import Any
@@ -49,6 +53,37 @@ def set_dir(dataset_id: str, name: str) -> Path:
 
 def _sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def answers(label: str) -> list[str]:
+    """The answers a label (or a reference) accepts: several when it is written {"accept": ["escalate", "file"]} (an
+    item with more than one right answer), else the label itself."""
+    text = label.strip()
+    if text.startswith('{"accept"'):
+        try:
+            got = json.loads(text).get("accept")
+        except ValueError:
+            got = None
+        if isinstance(got, list) and got and all(isinstance(a, str) and a.strip() for a in got):
+            return [a.strip() for a in got]
+    return [text]
+
+
+def label_text(accepted: list[str]) -> str:
+    """How a label accepting these answers is written: the answer itself when there is one, else
+    {"accept": [...]}, sorted and without repeats, so one meaning has one text (and one hash)."""
+    got = sorted({a.strip() for a in accepted if a.strip()})
+    return got[0] if len(got) == 1 else json.dumps({"accept": got}, ensure_ascii=False) if got else ""
+
+
+def label_line(label: str) -> str:
+    """A label as a view shows it: its answer, or its answers joined by "or"."""
+    return " or ".join(answers(label))
+
+
+def overlap(a: str, b: str) -> bool:
+    """Two labels agree when one answer is right for both (the same text, or a shared answer of several)."""
+    return bool(set(answers(a)) & set(answers(b)))
 
 
 def guideline_of(path: Path | None) -> dict[str, str] | None:
@@ -98,10 +133,20 @@ def write_set(
         )
     if not labels:
         die("no labels: nothing written")
+    bad = sorted(
+        i
+        for i, t in labels.items()
+        if answers(str(t)) == [str(t).strip()] and str(t).strip().startswith('{"accept"')
+    )
+    if bad:
+        die(
+            f'{len(bad)} label(s) start {{"accept" but are not a list of answers: {", ".join(bad[:8])}. '
+            'Several right answers are written {"accept": ["escalate", "file"]}.'
+        )
     out.mkdir(parents=True, exist_ok=True)
     rows: dict[str, dict[str, str]] = {}
     for iid in sorted(labels):
-        text = str(labels[iid]).strip() + "\n"
+        text = label_text(answers(str(labels[iid]))) + "\n"
         (out / f"{iid}.txt").write_text(text, encoding="utf-8")
         rows[iid] = {"sha256": _sha(text), "item_sha256": str(items[iid].get("source_sha256") or "")}
     doc: dict[str, Any] = {
@@ -196,7 +241,8 @@ def coverage(dataset_id: str) -> list[dict[str, Any]]:
 
 
 def agreement(dataset_id: str) -> list[dict[str, Any]]:
-    """For each pair of sets covering this dataset: on how many of its items both label, and on how many they agree."""
+    """For each pair of sets covering this dataset: on how many of its items both label, and on how many they agree
+    (one answer is right for both: `overlap`)."""
     per_item = labels_for(dataset_id)
     names = sorted({(r["dataset_id"], r["set"]) for rows in per_item.values() for r in rows})
     out = []
@@ -208,7 +254,7 @@ def agreement(dataset_id: str) -> list[dict[str, Any]]:
                 tb = next((r["text"] for r in rows if (r["dataset_id"], r["set"]) == b), None)
                 if ta is not None and tb is not None:
                     both += 1
-                    agree += ta == tb
+                    agree += overlap(ta, tb)
             if both:
                 out.append({"a": "/".join(a), "b": "/".join(b), "both": both, "agree": agree})
     return out

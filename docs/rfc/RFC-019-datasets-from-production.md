@@ -230,7 +230,7 @@ What the build changed or added beyond the third draft, each in the code and its
 - **How the owner's verdicts reach a decision**: an issue's verdict labels the decision that filed it and earlier
   decisions on the same fingerprint (a missed problem). It does not label decisions made while the issue was
   open (finding duplicates is the filing stage's job) nor issues linked only by title (one generic title matched
-  37 fingerprints). A fixed issue gives `file-or-escalate`: filing and escalating were both right.
+  37 fingerprints). A fixed issue gives a label accepting `file` and `escalate`: both were right.
 - **The exact decisions no issue verdict reaches** were labelled with a labeller model's help: it proposed a
   label with a reason, judging from what the agent could see and using hindsight only for what the signal was;
   the owner decided every row where it disagreed with production. `verdicts.jsonl` records the source of every

@@ -18,7 +18,8 @@ making a reference each time.
 
 - A **label** says what is right for one item and who said it: its **source**, `person`, `model` or `rule`,
   recorded with when and the guideline followed. Labels come in **sets**, never edited, and follow an item by its
-  sha256 into any dataset holding the same item.
+  sha256 into any dataset holding the same item. What is right can be more than one answer (owner, 2026-11-02):
+  a label then accepts each of them, and two labels agree when they share one.
 - A **reference** is made only by **promoting** labels: chosen on purpose, with a reason, at the tier you decide.
   No rule ties the tier to the source; the promotion records the source beside the tier.
 - Arms can be scored against a label set without promoting it; every view names what a number was scored against,

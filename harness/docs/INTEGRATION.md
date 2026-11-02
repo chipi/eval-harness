@@ -98,6 +98,11 @@ adapter works before and after you have references. Return only what you can com
 reference then (an output's length, a format check), or `{}`: the run still records its outputs,
 cost and latency, and `evh rescore` scores them once references exist.
 
+When more than one answer is right for an item, its reference accepts each of them, written
+`{"accept": ["escalate", "file"]}`. Read a reference with `answers(reference)` (from
+`evaluation_harness.adapter`, beside `Result`): a list of one answer, or several. The bundled
+`score` keeps the best overlap with any of them; yours decides what "right" means against a set.
+
 **The shipped default is a placeholder.** Token-overlap F1 — enough to make the
 loop run and rank arms crudely, not enough to defend a decision. Replace it
 with what your domain actually rewards.

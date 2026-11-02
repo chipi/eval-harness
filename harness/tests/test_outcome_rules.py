@@ -145,6 +145,46 @@ try:
         src.get("kind") == "rule" and src.get("capture") == "oc" and len(src.get("mapping_sha256", "")) == 64,
         json.dumps(src),
     )
+    # A rule naming more than one right answer: a fixed one was right to file or to escalate.
+    (proj / "map_two.yaml").write_text(
+        "- {when: {verdict: open}, skip: true}\n- {when: {verdict: fixed}, label: [file, escalate]}\n"
+        "- {when: {verdict: noise}, label: dismiss}\n"
+    )
+    r = evh(
+        "label-from-capture",
+        "--dataset-id",
+        "tickets_v1",
+        "--capture",
+        "oc",
+        "--map",
+        "map_two.yaml",
+        "--set",
+        "outcomes_two",
+    )
+    two = data / "labels" / "tickets_v1" / "outcomes_two"
+    check(
+        "label-from-capture: `label: [file, escalate]` is a label accepting both",
+        r.returncode == 0
+        and sorted({p.read_text().strip() for p in two.glob("*.txt")})
+        == ["dismiss", '{"accept": ["escalate", "file"]}'],
+        said(r)[-300:],
+    )
+    shutil.rmtree(two, ignore_errors=True)
+    (proj / "map_empty.yaml").write_text("- {when: {verdict: fixed}, label: []}\n")
+    r = evh(
+        "label-from-capture",
+        "--dataset-id",
+        "tickets_v1",
+        "--capture",
+        "oc",
+        "--map",
+        "map_empty.yaml",
+        "--set",
+        "outcomes_empty",
+    )
+    check(
+        "a rule's empty label list is refused", r.returncode != 0 and "label list" in said(r), said(r)[-300:]
+    )
     name = "tickets_v1_outcomes"
     r = evh(
         "reference-promote",

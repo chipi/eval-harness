@@ -26,7 +26,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 
 from evaluation_harness._common import REFERENCES, die, load_dataset, now, read_json
-from evaluation_harness._label_sets import labels_for, sets, source_line
+from evaluation_harness._label_sets import answers, label_text, labels_for, sets, source_line
 from evaluation_harness._references import write_manifest
 
 CAVEAT = {
@@ -95,7 +95,9 @@ def main() -> int:
         # A folder made by hand, with no manifest (ADR-0022): adopted only when it holds exactly these labels, so a
         # reference is still never overwritten; it then gets the promotion record it never had.
         here = {f.stem: f.read_text(encoding="utf-8").strip() for f in ref_dir.glob("*.txt")}
-        if set(here) != set(chosen) or any(here[i] != mine[i]["text"].strip() for i in chosen):
+        if set(here) != set(chosen) or any(
+            label_text(answers(here[i])) != mine[i]["text"].strip() for i in chosen
+        ):
             die(
                 f"{ref_dir} exists, made by hand with no manifest, and its texts are not {set_ds}/{set_name}'s: a "
                 f"reference is never overwritten. To keep it, import it as the labels first (evh label-import "

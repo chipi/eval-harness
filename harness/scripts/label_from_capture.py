@@ -25,7 +25,7 @@ from pathlib import Path
 
 from evaluation_harness._common import CAPTURES, die, load_dataset
 from evaluation_harness._importers import parse_time
-from evaluation_harness._label_sets import write_set
+from evaluation_harness._label_sets import label_text, write_set
 from evaluation_harness._outcome_rules import load_rules, matches
 from evaluation_harness.dataset_from_capture import load_capture
 
@@ -61,7 +61,11 @@ def main() -> int:
             counts["skipped"] += 1
         else:
             counts["matched"] += 1
-            labels[it["item_id"]] = str(rule["label"])
+            labels[it["item_id"]] = (
+                label_text([str(a) for a in rule["label"]])
+                if isinstance(rule["label"], list)
+                else str(rule["label"])
+            )
     if not labels:
         die(f"no item got a label ({dict(counts)}): nothing written")
     source = {

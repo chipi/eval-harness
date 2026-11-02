@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "harness"))
-from evaluation_harness.adapter import Result  # noqa: E402
+from evaluation_harness.adapter import Result, answers  # noqa: E402
 
 PRIMARY_METRIC = "triage_cost"
 #: What one missed real problem costs, in false alarms (owner, 2026-10-30): 5 decides; 3 and 10 show whether
@@ -290,13 +290,19 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
     )
 
 
-def _label(reference: str) -> tuple[str | None, str | None]:
-    """(disposition, correct_autonomous) from a bare label or a JSON reference."""
+#: A real problem (filing or escalating it is right), and noise (dismissing or cleaning it up is right).
+REAL, NOISE = {"file", "escalate"}, {"dismiss", "cleanup"}
+
+
+def _label(reference: str) -> tuple[tuple[str, ...], str | None]:
+    """(the right dispositions, correct_autonomous) from a label: one disposition, several ({"accept": ["escalate",
+    "file"]}: a real problem whose issue was fixed, where filing and escalating were both right), or a JSON reference.
+    A `not-file` label (a filed issue closed as not planned) counts as `dismiss`."""
     text = reference.strip()
-    if text.startswith("{"):
+    if text.startswith("{") and not text.startswith('{"accept"'):
         d = json.loads(text)
-        return d.get("disposition"), d.get("correct_autonomous")
-    return text, None
+        return (d.get("disposition"),), d.get("correct_autonomous")
+    return tuple("dismiss" if a == "not-file" else a for a in answers(text)), None
 
 
 def decision(output: str) -> str:
@@ -387,13 +393,12 @@ def _no_decision(reference: str | None) -> dict[str, float]:
     if reference is None:
         return row
     want, _ = _label(reference)
-    want = "dismiss" if want == "not-file" else want
-    if want not in (*DISPOSITIONS, "file-or-escalate"):
+    if not want or not set(want) <= set(DISPOSITIONS):
         return row
     row["correct"] = 0.0
-    if want in ("file", "escalate", "file-or-escalate"):
+    if set(want) <= REAL:
         row["false_dismiss"] = 1.0
-    if want in ("dismiss", "cleanup"):
+    if set(want) <= NOISE:
         row["false_alarm"] = 1.0
     return row
 
@@ -403,17 +408,13 @@ def _score(got: str | None, reference: str | None) -> dict[str, float]:
     if reference is None:
         return row
     want, autonomous = _label(reference)
-    if want == "not-file":
-        want = "dismiss"
-    # A real problem (its issue was fixed): filing it and escalating it are both right.
-    ok = ("file", "escalate") if want == "file-or-escalate" else (want,)
-    if want not in (*DISPOSITIONS, "file-or-escalate"):
+    if not want or not set(want) <= set(DISPOSITIONS):
         return row
-    row["correct"] = float(got in ok)
-    if want in ("file", "escalate", "file-or-escalate"):
-        row["false_dismiss"] = float(got in ("dismiss", "cleanup"))
-    if want in ("dismiss", "cleanup"):
-        row["false_alarm"] = float(got in ("file", "escalate"))
+    row["correct"] = float(got in want)
+    if set(want) <= REAL:
+        row["false_dismiss"] = float(got in NOISE)
+    if set(want) <= NOISE:
+        row["false_alarm"] = float(got in REAL)
     if autonomous == "escalate":
         row["silent_drop"] = float(got == "dismiss")
     return row
