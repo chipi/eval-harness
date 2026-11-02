@@ -12,7 +12,7 @@ each dataset's own page is what binds.*
 | | in this repository | you download |
 |---|---|---|
 | **The corpora** (articles, snippets, abstracts, sentences) | **no** | yes, with each example's `fetch.py`, from the public source |
-| **Gold and silver references** for the six experiments | **no**, only each gold reference's `manifest.json` (the checksum of every item) | rebuilt by `fetch.py`, byte for byte (seeded); `evh validate` checks the copy against the manifest |
+| **Gold and silver references** for the six evals | **no**, only each gold reference's `manifest.json` (the checksum of every item) | rebuilt by `fetch.py`, byte for byte (seeded); `evh validate` checks the copy against the manifest |
 | **Run outputs** (`outputs/`, `predictions.jsonl`) | **yes**: what each system produced, and its scores | — |
 | **Scores, costs, fingerprints** (`metrics.json`) | yes | — |
 | **Dataset profiles** (`data/profiles/`): item counts and lengths, the gold's shape, and per item its length, its gold **when the gold is a label** (a few short values that repeat, as AG News' classes; any other gold only as a count) and a link to its row in the source's viewer | yes: **no item text**, only what describes it, so a reader can see what a dataset holds and open any item at its source. A label per item is the one piece of a gold reference published, as in the source dataset itself | — |
@@ -26,7 +26,7 @@ bytes, so you can prove you have the same items without anyone redistributing th
 Run outputs are committed so every number can be recomputed for $0. They are derived from
 the datasets, so each one's licence follows its data:
 
-| experiment | what an output is | contains dataset text? | governed by |
+| eval | what an output is | contains dataset text? | governed by |
 |---|---|---|---|
 | **Summarisation · CNN/DM** | a summary of one article | **yes.** The lead-3 baseline's output *is* each article's first three sentences, verbatim, and other systems' summaries may quote sentences from the article | CNN/DailyMail: **Apache-2.0** |
 | **Classification · AG News** | one topic label | no: a class word | AG News terms (see below) |
@@ -34,8 +34,8 @@ the datasets, so each one's licence follows its data:
 | **Extraction · Few-NERD** | a list of entity spans and types | short spans (names, places) quoted from the sentences | **CC BY-SA 4.0** |
 | **Retrieval · SciFact** | a ranked list of document ids | no: numeric ids | CC BY-SA 4.0 |
 | **Judging · SummEval** | 64 scores (16 summaries × 4 dimensions), as JSON | no: numbers | MIT (SummEval); the articles are CNN/DailyMail, Apache-2.0 |
-| **Re-measurement · judging sets** (`judging-sets/`) | which arms' outputs go in which block, in which order | no: item ids, run ids and sha256 hashes | the experiment's dataset |
-| **Re-measurement · verdicts** (`judge-verdicts/`) | each judge's reply, its scores per output, and hashes | no: a reply is committed only as bare JSON scores; one that is not, or that repeats 8 consecutive words of the article or an output, is kept as its hash (validate V12 checks every one) | the experiment's dataset: CNN/DailyMail, Apache-2.0 |
+| **Re-measurement · judging sets** (`judging-sets/`) | which arms' outputs go in which block, in which order | no: item ids, run ids and sha256 hashes | the eval's dataset |
+| **Re-measurement · verdicts** (`judge-verdicts/`) | each judge's reply, its scores per output, and hashes | no: a reply is committed only as bare JSON scores; one that is not, or that repeats 8 consecutive words of the article or an output, is kept as its hash (validate V12 checks every one) | the eval's dataset: CNN/DailyMail, Apache-2.0 |
 | **Judge validation** (`judge-validation/`) | each judge's reply on a published human-rated set, its scores and hashes, and `report.json` | no: the same rule as the verdicts | the rated set's terms (below) |
 
 ## Each dataset

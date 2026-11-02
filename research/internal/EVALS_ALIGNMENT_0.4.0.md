@@ -29,7 +29,7 @@ answer matched its report:
 | F | Dev slices are recorded as versions of their heldout sets (lineage). No dev runs are derived: the harness has no subset command, and such runs would repeat the same outputs on fewer items. The goal decides on heldout. | $0 |
 | G | No new repeat runs. | $0 |
 | H | Silver from a run plus silver-calibrate on CNN; the judge panel on SummEval; both from stored outputs. Item fields stay unused (ADR-0003). | $0 |
-| I | The site reads every conclusion from the catalog (goal decisions, baselines, reasons), not from `examples/experiments.json`. It describes 0.4.0 and links each experiment to its goal page; a link check joins `--check`. DNS for docs./catalog. is a cutover step. | $0 |
+| I | The site reads every conclusion from the catalog (goal decisions, baselines, reasons), not from `examples/evals.json`. It describes 0.4.0 and links each experiment to its goal page; a link check joins `--check`. DNS for docs./catalog. is a cutover step. | $0 |
 | — | MBPP+ is not part of this alignment: its runs are not in this tree (they wait on the DGX). It joins when they exist. | — |
 | — | Other $0 fixes: `cost_usd` from the stored bill where a reply carried one; judged runs rebuilt from the 2,800 stored verdicts (`judge-score --no-calls`) and committed; AG's adjudicated gold as a reference; `METRIC_DESCRIPTIONS` in the six adapters. | $0 |
 

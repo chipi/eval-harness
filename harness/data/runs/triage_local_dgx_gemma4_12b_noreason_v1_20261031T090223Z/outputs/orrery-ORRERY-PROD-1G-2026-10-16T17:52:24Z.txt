@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "delete me", "model_disposition": "cleanup", "reason": "The signal contains an explicit 'delete me' marker in the summary and alert name, indicating it is a known test or noise event."}

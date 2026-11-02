@@ -1,0 +1,11 @@
+# The open-weight gemma4:31b, hosted (OpenRouter): the twin of the self-hosted Ollama arms of the same weights.
+# Arms differ only in the model: the fleet's prompt, probes and gates are the same for every arm.
+config_id: triage_hosted_gemma4_31b_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: eval-gemma-31b
+  usd_per_mtok_in: 0.2
+  usd_per_mtok_out: 0.4

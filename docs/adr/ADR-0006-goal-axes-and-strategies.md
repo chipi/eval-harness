@@ -16,8 +16,8 @@ already record per item (`cost_usd`, `tokens_in`, `tokens_out`, `latency_ms`), t
 the answer. A reader deciding which system to run looks at cost against quality against speed,
 and some goals care about a measure of their own as well (grounding, a word error rate).
 
-The first rule tried was "among the arms the paired test cannot separate from the quality
-leader, pick the cheapest". On the intent-routing scenario (32 customer messages) it picked a
+The first rule tried was "among the arms the paired test finds not significantly different from
+the quality leader, pick the cheapest". On the intent-routing scenario (32 customer messages) it picked a
 free keyword matcher at accuracy 0.875 over the frontier model at 1.000: 4 items differ, and on
 32 items the test could not separate them. A test that cannot tell two arms apart on a small
 set is not evidence that they are equally good.
@@ -38,25 +38,25 @@ set is not evidence that they are equally good.
   arm a round retired are shown and never recommended.
 - **The leader** is the best eligible arm on quality; among equal values the first by label,
   so the order the arms come in never decides.
-- **A strategy says who is tied with the quality leader** (`success_criteria.strategy`):
-  - `balanced` (the default): not separated by the paired test AND within the quality margin
+- **A strategy says who the contenders are** beside the quality leader (`success_criteria.strategy`):
+  - `balanced` (the default): not significantly different from the leader by the paired test AND within the quality margin
     (`axes.quality.margin`; by default 2% of the leader's mean, so it means the same on a 0-1
     rate and a 1-5 score, and 2% of the group's range when the leader is 0, where a share of
-    the leader would tie nothing. With only two arms that range is their gap, so a 0 leader
+    the leader would admit nothing. With only two arms that range is their gap, so a 0 leader
     needs the goal's own margin, and the reasons say so);
   - `quality_first`: the same quality only;
-  - `frugal`: anything the paired test cannot separate.
-  Identical per-item scores are tied in every strategy. A judge's group decides on the judge's
+  - `frugal`: anything the paired test finds not significantly different.
+  Identical per-item scores are contenders in every strategy. A judge's group decides on the judge's
   score, so the goal's quality limit and margin (written for its own measure) do not apply there.
-- **A tie-break picks among the tied** (`success_criteria.tie_break`, default cost then speed,
+- **A tie-break picks among the contenders** (`success_criteria.tie_break`, default cost then speed,
   any axis the goal weighs, quality included: `frugal` with `[cost, quality]` is "the cheapest,
   then the best of the equally cheap"; validate's V14 refuses an axis it does not weigh).
 - **What is not known is said.** A number an arm does not record is "not recorded", never 0,
-  and is never a reason to drop it. An axis that some tied arm does not record cannot break the
+  and is never a reason to drop it. An axis that some contender does not record cannot break the
   tie: it is skipped with the reason and the next axis decides (an unpriced hosted call must not
   lose on cost to a priced one). Speed is not compared, nor used to break a tie, between arms
   whose runs recorded different machines; arms that recorded none count as one machine.
-- **A goal decides only where it says so**: a dataset marked `decides: false` (a dev slice, a
+- **A goal decides only where it says so**: a dataset marked `decides: false` (a pilot slice, a
   generalization check) shows its groups and their leader, never a recommendation. So does a
   group scored against silver beside a gold group on its dataset (gold decides; silver favours
   its author's family), and a group measured by unvalidated judges (a trial, not a measurement).
@@ -68,7 +68,7 @@ set is not evidence that they are equally good.
 ## Consequences
 
 - **Positive.** The goal page shows, per group, the recommendation and why: the strategy, who
-  was tied, who was out and for what. Beside the reasons it shows each arm's cost and speed, and
+  the contenders were, who was out and for what. Beside the reasons it shows each arm's cost and speed, and
   a chart of quality against each axis. The home page's glance gains the recommended arm with
   its cost and speed against the baseline; the dataset and arm pages show cost and speed; the
   inspector's scatter takes cost and tokens. `evh goals --goal` and `evh overview` print the

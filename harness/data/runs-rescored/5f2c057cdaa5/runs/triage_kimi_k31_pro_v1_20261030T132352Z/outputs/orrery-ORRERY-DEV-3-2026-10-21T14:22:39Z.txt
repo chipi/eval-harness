@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "zz-probe-dev-throw", "model_disposition": "cleanup", "reason": "The error name explicitly identifies a synthetic development probe rather than a genuine application failure; remove this probe noise at its source."}

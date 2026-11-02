@@ -1,0 +1,11 @@
+The user wants a 2-3 sentence news wire style summary of this article. Key points:
+
+1. Iran plans to lift the ban on women attending some sports events (indoor events), per Deputy Sports Minister Abdolhamid Ahmadi, effective within the next year.
+2. The ban has been in place since the 1979 Islamic Revolution.
+3. FIFA pressure and international criticism context.
+
+News wire style is terse, factual, lead with the news. Let me draft:
+
+"Iran will allow women to attend some sports events for the first time since the 1979 Islamic Revolution, Deputy Sports Minister Abdolhamid Ahmadi said Saturday. The change, to take effect within the next year, will apply to indoor events, though restrictions will remain for some men's matches. The move follows international pressure, including FIFA President Sepp Blatter's call to end the 'intolerable' ban."
+
+That's three sentences, terse, wireIran will lift its decades-old ban on women attending some men's sports events, Deputy Sports Minister Abdolhamid Ahmadi said Saturday. The change, to take effect within the next year, will apply to indoor events, though restrictions will remain for some men's matches. The move follows international pressure, including FIFA President Sepp Blatter's call to end the "intolerable" ban.

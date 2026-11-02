@@ -1,0 +1,5 @@
+model_id: fabriceyhc-bert-base-uncased-dbpedia_14
+kind: ml
+aliases:
+- fabriceyhc/bert-base-uncased-dbpedia_14
+weights: open

@@ -65,7 +65,7 @@ LABELS = ["art", "building", "event", "location", "organization", "other", "pers
           "product"]
 
 #: The most frequent type in the corpus, used by the `capitalized` baseline as its guess.
-#: Measured on the dev slice (location 40 of 149), not chosen to flatter it.
+#: Measured on the pilot slice (location 40 of 149), not chosen to flatter it.
 MAJORITY_TYPE = "location"
 
 
@@ -205,7 +205,7 @@ def _parse_entities(text: str) -> Optional[List[dict]]:
         # set. A bare object falls through and is handled below as a one-element set.
         return None
     # Repairs are tried in order, each strictly more forgiving than the last, and every
-    # one of them fixes a failure OBSERVED on the dev slice rather than an imagined one:
+    # one of them fixes a failure OBSERVED on the pilot slice rather than an imagined one:
     #
     #   trailing comma   `[{...},]`  -- common, harmless
     #   unquoted key     llama_m emitted `{"text": "Palm Beach County",type: "location"}`.
@@ -293,7 +293,7 @@ def _parser_sha256() -> str:
 def _nothing(text: str, params: Dict[str, Any]) -> Result:
     """Predicts no entities, ever.
 
-    Scores exactly the share of sentences whose gold is also empty -- 0.1429 on the dev
+    Scores exactly the share of sentences whose gold is also empty -- 0.1429 on the pilot
     slice. Any other value means the scorer's empty-set conventions are wrong, and no
     other row in the table can be trusted until this one reads right.
     """

@@ -84,7 +84,7 @@ check(
     stats.holm({"a": 0.02}, family=3)["a"] == (0.05 / 3, False),
 )
 check(
-    "holm: a p exactly at its threshold is separated (family_test and bootstrap_test said not)",
+    "holm: a p exactly at its threshold is significant (family_test and bootstrap_test said not)",
     all(sep for _, sep in stats.holm({"a": 0.025, "b": 0.05}).values()),
 )
 _here = Path(__file__).resolve().parent
@@ -102,11 +102,11 @@ arms = {
 rows = {x["arm"]: x for x in stats.compare(arms, "base")["rows"]}
 check(
     "compare: direction and wins",
-    rows["better"]["verdict"] == "separated: better" and rows["better"]["wins"] == 10,
+    rows["better"]["verdict"] == "significant: better" and rows["better"]["wins"] == 10,
 )
 check("compare: one shared item is untestable", rows["one_item"]["verdict"] == "untestable")
 low = {x["arm"]: x for x in stats.compare(arms, "base", higher_is_better=False)["rows"]}
-check("compare: lower is better flips the verdict", low["better"]["verdict"] == "separated: worse")
+check("compare: lower is better flips the verdict", low["better"]["verdict"] == "significant: worse")
 
 check(
     "interval: none at 5 items (no shift can be rejected)",
@@ -116,7 +116,7 @@ d = [0.1, 0.3, -0.05, 0.2, 0.15, 0.25, 0.12, 0.18, 0.05, 0.22]
 lo, hi = stats.exact_ci(d)
 check("interval: contains the mean", lo < statistics.fmean(d) < hi)
 check(
-    "interval: excludes zero exactly when the test separates",
+    "interval: excludes zero exactly when the test finds a significant difference",
     (lo > 0) == (stats.sign_flip_p(d) <= stats.ALPHA),
 )
 check(
@@ -134,7 +134,7 @@ check(f"interval: misses zero at about the nominal rate under no difference ({mi
 # compare_by: the paired test per group of items, one Holm over every (group, arm) test
 # Three groups of 10 items. Arm a: p 0.0020 on short, 0.0039 on mid, 0.0156 on long; arm b ties
 # the baseline in sign everywhere (p 1.0). Long alone: a's 0.0156 is under its 0.025 threshold;
-# jointly (6 tests) it ranks third, under 0.0125, and is not separated.
+# jointly (6 tests) it ranks third, under 0.0125, and is not significant.
 g1, g3, g2 = ([f"i{k:02d}" for k in range(s, s + 10)] for s in (0, 10, 20))
 base = dict.fromkeys(g1 + g2 + g3, 0.0)
 arm_a = {
@@ -151,7 +151,7 @@ check("compare_by: the family is every (group, arm) test", by["family_size"] == 
 check(
     "compare_by: each threshold and verdict is the joint Holm's",
     all(
-        (r["threshold"], r["verdict"].startswith("separated")) == want[(g["group"], r["arm"])]
+        (r["threshold"], r["verdict"].startswith("significant")) == want[(g["group"], r["arm"])]
         for g in by["groups"]
         for r in g["rows"]
         if r["p"] is not None
@@ -170,7 +170,7 @@ flipped = [
     (g["group"], r["arm"])
     for g in by["groups"]
     for r in g["rows"]
-    if alone[g["group"]][r["arm"]].startswith("separated") and not r["verdict"].startswith("separated")
+    if alone[g["group"]][r["arm"]].startswith("significant") and not r["verdict"].startswith("significant")
 ]
 check("compare_by: a group tested alone can separate where the joint correction does not", bool(flipped))
 check("compare_by: items per group", [g["items"] for g in by["groups"]] == [10, 10, 10])

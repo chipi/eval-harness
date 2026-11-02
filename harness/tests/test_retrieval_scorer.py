@@ -146,7 +146,7 @@ check(
 )
 check("a bare single-id array is still a ranking", parse_ranking("[6157837]") == ["6157837"])
 
-# COMMA-SEPARATED IDS ON ONE LINE. Rejected whole before, because the line has a space,
+# COMMA-SIGNIFICANT IDS ON ONE LINE. Rejected whole before, because the line has a space,
 # so the most natural non-JSON answer scored as unreadable.
 check("comma-separated ids parse", parse_ranking("4983, 13734012") == ["4983", "13734012"])
 check("comma-separated, no spaces", parse_ranking("4983,13734012") == ["4983", "13734012"])

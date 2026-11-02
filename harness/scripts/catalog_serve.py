@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Serve the catalog and the run inspector: on this machine (127.0.0.1) by default, or --public behind a proxy.
 
-    evh catalog-serve [--port 8765] [--adapter path/to/file.py:Class]
+    evh catalog-serve [--port N] [--adapter path/to/file.py:Class]
     make catalog-serve
 
 Builds nothing: run `evh catalog` first. Static files are the built catalog and the data tree
@@ -13,6 +13,11 @@ Builds nothing: run `evh catalog` first. Static files are the built catalog and 
       the paired test (stats.py: exact p up to 30 items, Holm across the family)
   GET /api/item?arms=<arm>,...&item=<item_id>[&ref=<reference_id>]
       each arm's output for one item, and the reference's
+  GET /api/sheet?dataset=<id>[&runs=<arm>,...][&metric=<m>][&wrong=<label set>][&new=<dataset>]
+      [&where=<field>:<value>][&only=<signal>][&format=csv[&item=<id>][&fill=label][&scores_only=1]]
+      (the sheet, RFC-023: the local inspector only) one dataset's items, a column per arm: outputs, scores,
+      labels, the winner, the signals and a footer per arm, as JSON for the page or as the CSV the page offers to
+      download. A read: the server builds the CSV in memory, writes nothing.
 
 Runs on different dataset_ids are never compared: the request is refused, as `run-compare`
 refuses.
@@ -54,7 +59,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _fields, stats  # noqa: E402
+from evaluation_harness import _fields, _visibility, stats  # noqa: E402
 from evaluation_harness._common import ROOT, SPEED_KEYS  # noqa: E402
 from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
 
@@ -314,7 +319,7 @@ def _warnings(ctx: dict) -> list:
         w.append(
             f"Filtered to the {n} {item}(s) where "
             + " and ".join(x.replace(":", " = ", 1) for x in ctx["wheres"])
-            + ": a subset is a smaller sample, so less can be separated."
+            + ": a subset is a smaller sample, so fewer differences can be significant."
         )
     if ctx.get("breakdown"):
         w.append(
@@ -388,6 +393,30 @@ def _number(params: dict, key: str, kind):
         return None
 
 
+def _disagreeing(series: dict, baseline: str) -> dict:
+    """Only the items where the arms decided differently (RFC-023): an item stays when any arm's output is not the
+    same decision as the baseline's, by the baseline arm's adapter's `same(a, b)` (else the same text)."""
+    fn = getattr(A, "same_output", None)
+    same = fn(baseline) if callable(fn) else (lambda a, b: a.strip() == b.strip())
+
+    def out(arm: str, item: str) -> str | None:
+        v = A.item_view(arm, item)  # the adapter keeps an item name from leaving its run
+        return v.get("text") if v.get("kind") == "text" else None
+
+    keep = set()
+    for item in series.get(baseline, {}):
+        b = out(baseline, item)
+        if b is None:
+            continue
+        if any(
+            item in vals and (o := out(a, item)) is not None and not same(b, o)
+            for a, vals in series.items()
+            if a != baseline
+        ):
+            keep.add(item)
+    return {a: {i: v for i, v in vals.items() if i in keep} for a, vals in series.items()}
+
+
 def compare(params: dict) -> dict:
     """Compare arms: parse query params, get scores, run paired tests, return result."""
     runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
@@ -437,10 +466,13 @@ def compare(params: dict) -> dict:
     series, error = _filter(series, decl, fvalues, wheres)
     if error:
         return {"error": error}
+    disagree = params.get("disagree", [""])[0] == "1"
+    if disagree:
+        series = _disagreeing(series, baseline)
     higher, neutral = not A.lower_is_better(metric, dataset), A.is_neutral(metric, dataset or None)
     # A family and a threshold come from the URL, so they are checked, not trusted: a family
     # smaller than the arms tested here, or a threshold above alpha (or below what the family
-    # allows), would turn "not separated" into "separated" by editing a link.
+    # allows), would turn "not significant" into "significant" by editing a link.
     family = _number(params, "family", int) or None
     threshold = _number(params, "threshold", float)
     tested = max(len(series) - 1, 1)
@@ -507,6 +539,7 @@ def compare(params: dict) -> dict:
         "warnings": _warnings(ctx),
         "fields": _field_list(decl),
         "where": wheres,
+        "disagree": disagree,
         "by": by,
         "breakdown": breakdown,
         "conditions": _conditions(list(series), metric),
@@ -558,15 +591,22 @@ def _conditions(arms: list, metric: str) -> dict | None:
         )
     if "data.items_sha256" in names:
         warnings.append("Measured on different item bytes.")
-    if any(n.startswith("machine.") for n in names) and (metric in SPEED_KEYS or "latency" in metric):
-        warnings.append(
-            f"{metric} compared across machines: the difference may be the machine's, not the arm's."
-        )
+    if metric in SPEED_KEYS or "latency" in metric:
+        if any(n.startswith("deployment.") for n in names):
+            warnings.append(
+                f"{metric} compared across deployments (where the model ran): the difference may be the "
+                "machine's or the server's, not the arm's."
+            )
+        elif any(n.startswith("machine.") for n in names):
+            warnings.append(
+                f"{metric} measured from different runners: a model called over the network includes each "
+                "runner's network time, and one run in process includes its machine."
+            )
     return {"fields": len(keys), "differ": differ, "warnings": warnings}
 
 
 #: An item id: the name of a file in a run's outputs/ or a reference, never a path.
-_ITEM_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,199}")
+_ITEM_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:@+=-]{0,199}")
 
 
 def plain_item(item_id: str) -> bool:
@@ -579,16 +619,27 @@ def item(params: dict) -> dict:
     arms = [a for a in params.get("arms", [""])[0].split(",") if a.strip()]
     it = params.get("item", [""])[0]
     refs = _known()[1]
-    if not it or not arms or any(not _arms_known(a) for a in arms):
+    # No arm chosen, a dataset named (the sheet, RFC-023; the local inspector only): the item, its fields, labels.
+    alone = params.get("dataset", [""])[0] if not arms and not LIMITS["hosts"] else ""
+    if alone:
+        from evaluation_harness._common import DATASETS  # noqa: PLC0415
+
+        if not plain_item(alone) or not (DATASETS / f"{alone}.json").is_file():
+            return {"error": "need dataset=<a dataset id>"}
+    if not it or (not arms and not alone) or any(not _arms_known(a) for a in arms):
         return {"error": "need arms=<arm>,... known to the catalog and item=<item_id>"}
     if not plain_item(it):  # an item is a file's name in a run, never a path: ../ would leave it
-        return {"error": "not an item id: letters, digits, '.', '_', '-'"}
+        return {"error": "not an item id: letters, digits and . _ : @ + = -"}
     # PUBLIC MODE PUBLISHES TEXT ONLY WHEN TOLD (--publish outputs,references). An arm's output
     # can quote its input (an extractive arm returns the article's own sentences) and a reference
     # can be a dataset's licensed text, so a public server serves numbers unless the deployment
     # has decided to publish them. The local inspector shows everything, on this machine.
     public = bool(LIMITS["hosts"])
     published = LIMITS.get("publish") or ()
+    dataset = alone or A.describe(A.arms_of(arms[0])[0]).get("dataset", "")
+    if not _visibility.text_shown(dataset, public=public):
+        # `text: hidden` (RFC-019): nothing that comes from this dataset's text, whatever is published.
+        published = ()
     if public and "outputs" not in published:
         withheld = {
             "kind": "none",
@@ -597,11 +648,12 @@ def item(params: dict) -> dict:
         out = {"item": it, "views": {a: dict(withheld) for a in arms}}
     else:
         out = {"item": it, "views": {a: A.item_view(a, it) for a in arms}}
-    decl, values = _fields_of(A.describe(A.arms_of(arms[0])[0]).get("dataset", ""))
+    decl, values = _fields_of(dataset)
     out["fields"] = [
         dict(f, value=values.get(it, {})[f["name"]])
         for f in _field_list(decl)
         if f["name"] in values.get(it, {})
+        and (_visibility.text_shown(dataset, public=public) or f["type"] not in ("text", "url"))
     ]
     ref = params.get("ref", [""])[0]
     if ref and ref not in refs:
@@ -623,8 +675,141 @@ def item(params: dict) -> dict:
     # project may not be free to redistribute.
     src = getattr(A, "item_text", None)
     if callable(src) and not LIMITS["hosts"]:
-        out["source"] = src(A.describe(A.arms_of(arms[0])[0]).get("dataset", ""), it)
+        out["source"] = src(dataset, it)
+    # Every label the item has (RFC-023), and which output is production's recorded one: the local inspector only.
+    lab = getattr(A, "item_labels", None)
+    if callable(lab) and not LIMITS["hosts"]:
+        out["labels"] = lab(dataset, it)
+    out["recorded"] = {a: rec for a in arms if (rec := A.describe(A.arms_of(a)[0]).get("recorded"))}
     return out
+
+
+def _sheet_rows(params: dict) -> tuple[dict, list, list]:
+    """The sheet a question asks for: (the model, the rows after --where, the rows shown). A refusal raises
+    SystemExit (an arm not on the dataset, no such label set, a field the dataset lacks) with its own words."""
+    from evaluation_harness import _sheet  # noqa: PLC0415
+    from evaluation_harness._common import DATASETS  # noqa: PLC0415
+
+    ds = params.get("dataset", [""])[0]
+    if not ds or not plain_item(ds) or not (DATASETS / f"{ds}.json").is_file():
+        raise SystemExit("need dataset=<a dataset id>")
+    runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
+    if len(runs) > LIMITS["max_arms"]:
+        raise SystemExit(f"{len(runs)} arms asked for; at most {LIMITS['max_arms']}")
+    only = params.get("only", [])
+    if bad := [x for x in only if x not in _sheet.SIGNALS]:
+        raise SystemExit(f"no signal {bad[0]!r}: one of {', '.join(_sheet.SIGNALS)}")
+    items = [i for i in params.get("item", []) if plain_item(i)] if "item" in params else None
+    model = _sheet.build(
+        ds,
+        runs,
+        _fields_of,
+        metric=params.get("metric", [""])[0] or None,
+        wrong_against=params.get("wrong", [""])[0] or None,
+        new_vs=params.get("new", [""])[0] or None,
+        items=items,
+    )
+    found = _sheet.by_where(model, params.get("where", []))
+    return model, found, _sheet.by_signals(found, only)
+
+
+def _error(exc: SystemExit) -> dict:
+    return {"error": str(exc).removeprefix("ERROR: ").splitlines()[0]}
+
+
+def sheet_csv(query: str) -> tuple[int, bytes, str]:
+    """The sheet as a download (RFC-023): the CSV `evh inspect --sheet --csv` writes, built in memory by the same
+    code, so the page still writes nothing. The local inspector only: a sheet carries item text and outputs."""
+    if LIMITS["hosts"]:
+        return 403, b"the sheet shows item text and outputs: not served publicly", "text/plain; charset=utf-8"
+    from evaluation_harness import _sheet  # noqa: PLC0415
+    from evaluation_harness._sheets import write_csv  # noqa: PLC0415
+
+    params = parse_qs(query)
+    fill = params.get("fill", [""])[0] or None
+    if fill not in (None, "label"):
+        return (
+            400,
+            b"fill=label (a blind fill needs its key written beside the sheet: evh inspect --sheet --csv)",
+            "text/plain; charset=utf-8",
+        )
+    choices = [c.strip() for c in params.get("choices", [""])[0].split(",") if c.strip()] or None
+    try:
+        model, _, shown = _sheet_rows(params)
+    except SystemExit as exc:
+        return 400, _error(exc)["error"].encode(), "text/plain; charset=utf-8"
+    head, body = _sheet.csv_sheet(
+        model, shown, scores_only=bool(params.get("scores_only", [""])[0]), fill=fill, choices=choices
+    )
+    return 200, write_csv(head, body).encode("utf-8"), "text/csv; charset=utf-8"
+
+
+def sheet(params: dict) -> dict:
+    """The sheet (RFC-023, UXS-002 05): one dataset's items down, a column per arm across (the first stands for
+    production): outputs and scores, a column per label set, the winners, the signals, the footer per arm;
+    `evh inspect --sheet --dataset-id D` in the browser. The local inspector only: it carries outputs and labels."""
+    if LIMITS["hosts"]:
+        return {"error": "the sheet shows outputs and labels: not served publicly"}
+    from evaluation_harness import _picks, _sheet  # noqa: PLC0415
+    from evaluation_harness._common import DATASETS  # noqa: PLC0415
+
+    try:
+        model, found, shown = _sheet_rows(params)
+    except SystemExit as exc:  # a refusal: its own words
+        return _error(exc)
+    ds = model["dataset_id"]
+    state = _picks.state()
+
+    def short(t):
+        one = " ".join((t or "").split())
+        return one if len(one) <= 160 else one[:159] + "…"
+
+    tokens = [a["token"] for a in model["arms"]]
+    out_rows = []
+    for r in shown:
+        p = state.get((ds, r["item"])) or {}
+        out_rows.append(
+            {
+                "item": r["item"],
+                "text": short(r["text"]),
+                "fields": r["fields"],
+                "cells": {
+                    t: {
+                        "output": None if r["shown"].get(t) is None else short(r["shown"][t]),
+                        "scores": r["scores"][t],
+                    }
+                    for t in tokens
+                },
+                "labels": {k: short(v) for k, v in r["label_text"].items()},
+                "references": {k: short(v) for k, v in r["references"].items()},
+                "winners": r["winners"],
+                "picked": (p.get("for") or ["no target yet"]) if p.get("action") == "pick" else [],
+                "signals": r["signals"],
+            }
+        )
+    return {
+        "dataset": ds,
+        "runs": tokens,
+        "arms": [
+            {"token": a["token"], "config_id": a["config_id"], "scores": a["scores"]} for a in model["arms"]
+        ],
+        "metric": model["metric"],
+        "lower_is_better": model["lower"],
+        "goal": model["goal"],
+        "metrics": model["metrics"],
+        "label_cols": model["label_cols"],
+        "ref_cols": model["ref_cols"],
+        "winner_cols": [{"key": w["key"], "header": w["header"]} for w in model["winner_cols"]],
+        "rows": out_rows,
+        "footer": _sheet.footer(model, shown),
+        "total": len(found),
+        "counts": _sheet.counts(found),
+        "sets": [c["key"] for c in model["label_cols"]],
+        "datasets": sorted(p.stem for p in DATASETS.glob("*.json") if p.stem != ds),
+        "fields": _field_list(model["decl"]),
+        "wrong": params.get("wrong", [""])[0],
+        "new": params.get("new", [""])[0],
+    }
 
 
 #: Set by main(): the public mode's limits. max_arms applies locally too (a URL is not a query).
@@ -663,7 +848,13 @@ def answer(path: str, query: str) -> tuple:
     params = parse_qs(query)
     with _COMPUTE:
         try:
-            body = compare(params) if path == "/api/compare" else item(params)
+            body = (
+                compare(params)
+                if path == "/api/compare"
+                else sheet(params)
+                if path == "/api/sheet"
+                else item(params)
+            )
             code = 400 if "error" in body else 200
         except Exception as exc:  # noqa: BLE001 — report, don't kill the server
             body = {"error": "internal error" if LIMITS["hosts"] else f"{type(exc).__name__}: {exc}"}
@@ -749,7 +940,7 @@ def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
 
 
 #: The API's endpoints. Anything else under /api/ is 404: it is not a way into the files.
-API_ROUTES = ("/api/health", "/api/compare", "/api/item")
+API_ROUTES = ("/api/health", "/api/compare", "/api/item", "/api/sheet")
 
 
 def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
@@ -921,7 +1112,19 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if url.path == "/api/health":
             return self._json(200, {"ok": True})
-        if url.path in ("/api/compare", "/api/item"):
+        if url.path == "/api/sheet" and parse_qs(url.query).get("format") == ["csv"]:
+            code, data, ctype = sheet_csv(url.query)
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            if code == 200:
+                ds = parse_qs(url.query).get("dataset", ["sheet"])[0]
+                self.send_header("Content-Disposition", f'attachment; filename="sheet-{ds}.csv"')
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        if url.path in ("/api/compare", "/api/item", "/api/sheet"):
             # A client-supplied header is trusted only when named (--client-header): behind a
             # proxy that sets it, with the origin reachable only through that proxy. Otherwise
             # anyone can send a new value per request and never hit the limit.
@@ -963,7 +1166,11 @@ def _common_prog() -> str | None:
 def main() -> int:
     """Start the catalog server on localhost or in public mode."""
     ap = argparse.ArgumentParser(prog=_common_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--port", type=int, default=8765)
+    ap.add_argument(
+        "--port",
+        type=int,
+        help="the port (default: the project's own, the same every time; 8765 with --public)",
+    )
     ap.add_argument(
         "--adapter",
         help="path/to/file.py:Class (default: config.yaml catalog.adapter, else the harness's own layout)",
@@ -1006,6 +1213,10 @@ def main() -> int:
         help="answer every comparison this built catalog links to, in the background",
     )
     args = ap.parse_args()
+    if args.port is None:
+        from evaluation_harness._common import project_port  # noqa: PLC0415
+
+        args.port = 8765 if args.public else project_port("catalog")
     global HOOKS
     HOOKS = load_hooks(args.hooks) if args.hooks else None
     set_adapter(load_catalog_adapter(args.adapter))
@@ -1051,6 +1262,7 @@ def main() -> int:
         )
     else:
         print(f"catalog: http://127.0.0.1:{args.port}{Handler.prefixes[0]}   (Ctrl-C to stop)", flush=True)
+        print(f"  the project {ROOT}, on a port of its own", flush=True)
         print("  it reads the runs once: restart it to see runs made after it started", flush=True)
     try:
         server.serve_forever()

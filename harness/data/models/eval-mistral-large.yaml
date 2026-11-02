@@ -1,0 +1,6 @@
+model_id: eval-mistral-large
+kind: llm
+aliases:
+- eval-mistral-large
+weights: open
+licence: Apache-2.0

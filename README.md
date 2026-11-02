@@ -15,14 +15,14 @@ most leaderboards skip: is this ranking real, or a lucky sample?**
 Freeze a dataset, run your system against it, and get an answer that says whether one
 system is actually better than another, or only ahead on this sample.
 
-This is ongoing work. The harness and its method are the point; the six experiments below are
+This is ongoing work. The harness and its method are the point; the six evals below are
 worked examples of them, not a benchmark, and they are still being extended. As those
 examples, it measured 24 LLMs, small fine-tuned models and baselines on six public
-benchmarks. On each experiment's primary metric the most expensive hosted model never won (on
+benchmarks. On each eval's primary metric the most expensive hosted model never won (on
 SciFact only the twelve cheapest hosted models ran); re-measured, against labels a person
 corrected on AG News and by LLM judges on summarisation, it is first on the point estimate in
 both, and neither re-measurement is confirmed
-([judging](https://evals.humancopilot.eu/experiments/judging.html)). In five of six the leader could not be separated from other arms,
+([judging](https://evals.humancopilot.eu/evals/judging.html)). In five of six the leader was not significantly different from other arms,
 each time including one that cost less than the dearest hosted model, at 100–280 items — not
 shown different, which is not the same as equal.
 
@@ -40,7 +40,7 @@ It was built to answer four questions anyone building with AI ends up asking:
    side by side, with a test that says whether the ranking is real.
 3. **Do I need an LLM, or a GPU, at all?** Put a small classic model or a plain baseline
    in the same comparison, on the same data and scoring. Here a free model that needs no
-   GPU was first, or not separable from first, in five of the six experiments, against LLMs
+   GPU was first, or not separable from first, in five of the six evals, against LLMs
    run with one prompt and no examples; the clearest wins were on text like the text it was
    trained on. On the sixth, judging summaries, even a free model
    trained for the task lost, and an LLM judge scored above every free scorer measured: the best judges
@@ -50,10 +50,10 @@ It was built to answer four questions anyone building with AI ends up asking:
    reaches 63%, so how much of a score is reading the summary is not measured. Why the
    trained model lost there is not tested; one task, one model.
 4. **Own it or rent it?** Every cost is read off the provider's bill and set beside
-   quality. Here the best proprietary arm never separated from the best open-weight arm, and
+   quality. Here the best proprietary arm never differed significantly from the best open-weight arm, and
    at native precision the best model that fits a 64 GB machine matched the
-   unlimited-hardware answer on two of the six tasks, was not separated from it on two more,
-   and was separated below it on summarisation and SummEval (scores as the providers served
+   unlimited-hardware answer on two of the six tasks, was not significantly different from it on two more,
+   and was significantly below it on summarisation and SummEval (scores as the providers served
    them; nothing was run on a 64 GB machine).
 
 **Start where you are:**
@@ -61,11 +61,11 @@ It was built to answer four questions anyone building with AI ends up asking:
 | you want to | go to |
 |---|---|
 | **see what it is** | **[evals.humancopilot.eu](https://evals.humancopilot.eu/)**: the harness, what it does, and what it found |
-| **measure your own system** | [**Getting started**](docs/GUIDE.md): the loop once, offline, in fifteen minutes: a dataset, arms, a reference from a run, a comparison, a choice. Then the [**tutorials**](docs/GUIDE.md#where-to-go-next): a local model, a hosted LLM with your own key, a frontier reference and judges, rounds, the catalog. Or [**Use it on your problem**](https://evals.humancopilot.eu/use.html), the patterns |
-| **learn the method** | [**The method**](https://evals.humancopilot.eu/method.html): six habits for measuring AI systems, as these experiments taught them |
-| **read what it found** | [**The experiments**](https://evals.humancopilot.eu/experiments.html): 24 LLMs, fine-tunes and baselines on six benchmarks, generated from the runs in this repository, so every number on it is checked |
+| **measure your own system** | [**Getting started**](docs/GUIDE.md): the loop once, offline, in fifteen minutes: a dataset, arms, a reference set from the best arm's labels, a comparison, a choice. Then the [**tutorials**](docs/GUIDE.md#where-to-go-next): a local model, a hosted LLM with your own key, a frontier reference and judges, rounds, the catalog, datasets from production and evaluating what production did, setting a model up. Or [**Use it on your problem**](https://evals.humancopilot.eu/use.html), the patterns |
+| **learn the method** | [**The method**](https://evals.humancopilot.eu/method.html): six habits for measuring AI systems, as these evals taught them |
+| **read what it found** | [**The evals**](https://evals.humancopilot.eu/evals.html): 24 LLMs, fine-tunes and baselines on six benchmarks, generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md): five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
-| **browse the runs, test any two** | [**The catalog**](https://evals.humancopilot.eu/catalog/): every run of the six experiments, with the run inspector; `evh catalog-serve` gives you the same over your own runs |
+| **browse the runs, test any two** | [**The catalog**](https://evals.humancopilot.eu/catalog/): every run of the six evals, with the run inspector; `evh catalog-serve` gives you the same over your own runs |
 | **ask it from your agent** | `https://evals.humancopilot.eu/mcp`: the catalog's views as read-only MCP tools, for Claude, ChatGPT, the OpenAI API, Gemini or any MCP client, no sign-in; `evh mcp` serves your own project ([how to connect](harness/docs/INTEGRATION.md#for-an-agent-evh-mcp)) |
 | **read the full documentation** | [evals.humancopilot.eu/docs](https://evals.humancopilot.eu/docs/): guide, concepts, runbook, integration, architecture, protocol, reference |
 | **review or contribute** | [KNOWN_ISSUES](research/internal/KNOWN_ISSUES.md) (what is open), [CONTRIBUTING](CONTRIBUTING.md) |
@@ -77,16 +77,18 @@ model provider you use is your choice, with your own key.
 
 ```bash
 cd your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.5.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.0#subdirectory=harness"
 evh init
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
 # write adapter.py at the project root -> call_system() talks to YOUR system
-evh experiment-run --config data/configs/best_model.yaml           # the best system you have
-evh reference-create --dataset-id my_v1 --from-run <its run_id>     # optional: its outputs as the reference
-evh experiment-run --config data/configs/arm_a.yaml --repeat 3      # each arm, with its own noise
+evh run --config data/configs/best_model.yaml           # the best system you have
+evh label-from-run --run <its run_id> --set best_v1                  # optional: its outputs as a model's labels
+evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
+    --reason "the best system we have ranks the rest" --by me           # ...promoted: the reference set
+evh run --config data/configs/arm_a.yaml --repeat 3      # each arm, with its own noise
 evh leaderboard --dataset-id my_v1                                  # the ranking, and whether it is real
-evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_      # is the winner separated?
+evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_      # does the winner differ significantly?
 evh run-promote --run <run_id> --reason "what the tests showed"     # the choice, recorded with why
 ```
 
@@ -95,8 +97,10 @@ offline, with the real output of every command. The tutorials take it further:
 [a local model against a baseline](docs/tutorials/1-local-model.md),
 [a hosted LLM with your own key](docs/tutorials/2-hosted-llm.md),
 [a frontier model's run as the reference, gold and judging](docs/tutorials/3-frontier-reference-and-judging.md),
-[experiment rounds and dataset versions](docs/tutorials/4-rounds-and-versions.md), and
-[the catalog and the inspector](docs/tutorials/5-catalog-and-inspector.md). Then
+[eval rounds and dataset versions](docs/tutorials/4-rounds-and-versions.md),
+[the catalog and the inspector](docs/tutorials/5-catalog-and-inspector.md),
+[datasets from production and evaluating what production did](docs/tutorials/6-datasets-from-production.md), and
+[setting a model up](docs/tutorials/7-set-up-a-model.md). Then
 [`harness/docs/INTEGRATION.md`](harness/docs/INTEGRATION.md) to drop it into your project and
 [`harness/docs/RUNBOOK.md`](harness/docs/RUNBOOK.md) for every command and flag.
 
@@ -108,9 +112,10 @@ offline, with the real output of every command. The tutorials take it further:
 | `evh pair-test --dataset-id my_v1 --a … --b …` | one comparison you named in advance, without paying the multiplicity price for 275 you didn't |
 | `evh holdout --dataset-id my_v1 --exclude-dataset …` | the same test minus items a smaller dataset already contained |
 | `evh rank-stability --dataset-id my_v1` | how many items before the ordering stops moving: measured, not assumed |
-| `evh silver-calibrate --dataset-id my_v1` | is a model-authored reference usable? Read it against the ceiling it prints |
+| `evh silver-calibrate --dataset-id my_v1` | is a silver reference usable? How far it drifts from gold, read against the ceiling it prints |
 | `evh rescore --dataset-id my_v1 --out data/runs-rescored` | recompute scores from stored outputs, no API calls |
-| `evh judge-score --dataset-id my_v1 --scorer …` | optional: re-measure stored outputs with LLM judges, refused until they are validated against people ([tutorial 3](docs/tutorials/3-frontier-reference-and-judging.md)) |
+| `evh judge-score --dataset-id my_v1 --scorer …` | optional: re-measure stored outputs with LLM judges that grade each output, pick the best or compare two (the scorer's `mode`), refused until they are validated against people in that mode ([tutorial 3](docs/tutorials/3-frontier-reference-and-judging.md)) |
+| `evh inspect --sheet --dataset-id my_v1 --runs …` | one sheet: every item, what each arm wrote and its scores, the labels, the winner and a footer per arm; `--csv FILE --fill label\|pick\|scores` for a person or a tool to fill, `evh sheet-import` to read it back |
 | `evh catalog-serve` | browse every run and test any arms against a baseline, item by item; every view is also a command ([tutorial 5](docs/tutorials/5-catalog-and-inspector.md)) |
 
 `evh --help` lists every verb.
@@ -125,9 +130,12 @@ system lives in one file, `adapter.py`, with two functions, `call_system` and `s
 
 - **A frozen dataset.** Items are hashed; a run records `items_sha256`. Change the data
   and you get a different id, not a silently different number.
-- **A fingerprint per run.** The resolved upstream model id (not your gateway's alias),
-  the prompt's sha256, the adapter's sha256, library versions, whether the tree was dirty.
-  So "we varied one thing" is *checkable* rather than asserted.
+- **A fingerprint per run.** In four parts, each hashed: the instrument (the harness and the
+  adapter's code, whether the tree was dirty), the data (item and reference bytes), the
+  deployment (the resolved upstream model id, not your gateway's alias; the weights' digest and
+  the server and machine it ran on, where known) and the settings (how it was asked: the prompt,
+  reasoning, the reply cap). The machine `evh` ran on is recorded beside it, outside the hash. So
+  "we varied one thing" is *checkable* rather than asserted, and `run-compare` names what moved.
 - **A leaderboard that argues with itself.** Before printing an ordering it runs a
   Friedman permutation test and a Nemenyi critical difference over every pair at once, and
   says plainly when nothing is distinguishable.
@@ -141,8 +149,9 @@ system lives in one file, `adapter.py`, with two functions, `call_system` and `s
   concluded.
 
 And it **refuses** to mislead: it won't compare runs measured on different data, it won't
-promote a baseline from a dirty or unknown build, and it records whether a reference is
-gold (checked by a person) or silver (written by a model). The refusals are the product.
+promote a baseline from a dirty or unknown build, and a reference set is only ever labels promoted on
+purpose, its tier (gold or silver) and its source (a person, a model, a rule) recorded beside it.
+The refusals are the product.
 
 ## Try it in a checkout
 
@@ -176,11 +185,11 @@ hosted LLM arms in the checkout, copy `harness/.env.example` to `harness/.env`, 
 checkout every `evh` command is also a `make` target (`make pair-test DATASET_ID=my_v1 A=… B=…`);
 without `DATASET_ID` the Makefile falls back to the demo dataset, `smoke_v1`.
 
-## Pointed at 24 LLMs: the experiments
+## Pointed at 24 LLMs: the evals
 
-Six tasks, five metric shapes, one harness. Each experiment exists because it breaks
+Six tasks, five metric shapes, one harness. Each eval exists because it breaks
 something the previous one did not, and each ships a download recipe rather than a corpus.
-On the site: **[the experiments](https://evals.humancopilot.eu/experiments.html)**;
+On the site: **[the evals](https://evals.humancopilot.eu/evals.html)**;
 what all six agree on: **[`research/REPORT_SYNTHESIS.md`](research/REPORT_SYNTHESIS.md)**.
 
 | Example | Task | Shape of the answer | Report |
@@ -209,30 +218,30 @@ pick, as run here:
   own human judgements first.
 
 - **Summarisation.** The dearest arm, at **143× the price** of the cheapest, ranks **18th of
-  29**. Two *independent* 100-article evals of the same models agree at only **ρ = 0.79**;
-  at 20 articles, **ρ = 0.44**. BART fine-tuned on this corpus is not separated from the
+  29**. Two *independent* 100-article measurements of the same models agree at only **ρ = 0.79**;
+  at 20 articles, **ρ = 0.44**. BART fine-tuned on this corpus is not significantly different from the
   best LLM (0.0001 apart), for $0; the same BART fine-tuned on XSum finishes **last** on
   `coverage`, below copying the first three sentences (it also decodes shorter). *Scope: the 200 articles are all CNN's.* Re-run on 200 DailyMail articles,
   the local models keep every verdict; the paid ones were not re-run
   ([§3.7](research/REPORT_SUMMARIZATION.md#37-does-it-hold-outside-cnn-the-dailymail-slice)).
 - **Classification.** Three small fine-tuned models lead the 24 hosted LLMs on AG News on
-  the point estimate, LLMs as run here; only the first is separated from all but one paid
+  the point estimate, LLMs as run here; only the first differs significantly from all but one paid
   arm. The lead is concentrated in 17 items the hosted field mostly gets wrong; adjudicated
   by topic by one reader shown the hosted answer, the gold was wrong on all 17, and on that gold every hosted LLM scores above
   every fine-tune. On DBpedia a **115× price
-  difference** was not shown to buy accuracy (no gap under 10 items is detectable at n = 280), and the fine-tuned model is not separated from
+  difference** was not shown to buy accuracy (no gap under 10 items is detectable at n = 280), and the fine-tuned model is not significantly different from
   the top group: the top eleven arms are within four items, three of them items whose
   label the field disputes; one reader adjudicated them, shown the hosted answer, and found the gold wrong on all three.
-- **Extraction.** A 499 MB span tagger separated from **all 27** opponents, but **57%** of
+- **Extraction.** A 499 MB span tagger differed significantly from **all 27** opponents, but **57%** of
   its margin over the best LLM is one entity type whose meaning exists only inside that
   corpus, and **up to 38%** of that lead is agreeing with annotation the rest of the field
   rejects: an upper bound, one reader's judgement. The two overlap and cannot be added.
-- **Retrieval.** The leading LLM reranker cannot be separated from eleven or twelve other arms (a Holm boundary),
+- **Retrieval.** The leading LLM reranker is not significantly different from eleven or twelve other arms (a Holm boundary),
   ten rerankers *and two free local encoders*. A prediction registered before the arm existed (that swapping only the
   first stage would move the pipeline from 0.74 to 0.786–0.797) came back at **0.7891** for
   one of the two rerankers tested; the other landed outside the range.
 - **Judging.** Asked to grade summaries the way three experts did, 23 of the 24 LLMs are
-  separated from, and ahead of, the best free scorer measured — UniEval, an evaluator
+  significantly ahead of the best free scorer measured — UniEval, an evaluator
   trained for exactly this — and all 24 from BARTScore and ROUGE. That is against free
   scorers that were measured: the judges rank all 16 summaries in one call while UniEval
   scores one at a time, and a pointwise LLM judge was not run. Scored against two experts, as one expert is against the
@@ -240,11 +249,11 @@ pick, as run here:
   articles; 92% held out) and UniEval 64%, on 2019-era summaries with reasoning off. A
   no-model lookup of which system wrote each summary reaches 63%, so how much of a judge's
   score is reading the summary is not measured. The leader
-  cannot be separated from five other judges, and an open-weight one sits 0.0013 behind it for $0.0278 per 100
+  is not significantly different from five other judges, and an open-weight one sits 0.0013 behind it for $0.0278 per 100
   articles. ROUGE agrees with the experts at τ 0.14–0.16, and
   this repository's own summarisation metric below that.
 
-Every experiment has a $0 answer you can run on hardware you own — on SummEval a 63 GB
+Every eval has a $0 answer you can run on hardware you own — on SummEval a 63 GB
 open-weight judge, which a 64 GB machine holds only at int8, a precision that was not
 measured. Full index,
 with what each one broke in the harness: **[`examples/README.md`](examples/README.md)**.
@@ -259,12 +268,12 @@ make data EXP=scifact && make reproduce EXP=scifact LEVEL=local && make compare 
 ```
 
 `make compare` writes a replication card: each rerun arm against its committed run, and
-every committed separation and tie re-tested with your reruns in place. `make list` shows
+every committed verdict, significant or not, re-tested with your reruns in place. `make list` shows
 all seven measurements and what each billed; `LEVEL=hosted` reruns the LLMs with one
 `OPENROUTER_API_KEY` in `harness/.env`. The full walkthrough, including what a rerun
 cannot reproduce and how to add a model of your own: **[docs/REPRODUCE.md](docs/REPRODUCE.md)**.
 
-What each experiment measured, on which data, against which published baseline:
+What each eval measured, on which data, against which published baseline:
 **[`docs/PROTOCOL.md`](docs/PROTOCOL.md)**. Every metric, model, dataset and statistical test
 explained and linked to source: **[`docs/REFERENCE.md`](docs/REFERENCE.md)**.
 
@@ -274,7 +283,7 @@ The approach builds on **Chip Huyen's books**, *AI Engineering* (O'Reilly, 2025)
 *Designing Machine Learning Systems* (O'Reilly, 2022): evaluation as engineering work on
 your own data, a private leaderboard rather than a public one, the dataset as a design
 decision, every experiment tracked and versioned. This repository adds a tool that
-enforces that framing and six experiments that test it. Idea by idea, with chapters, and
+enforces that framing and six evals that test it. Idea by idea, with chapters, and
 the statistics it also stands on: [docs/INFLUENCES.md](docs/INFLUENCES.md).
 
 ## Layout
@@ -282,8 +291,8 @@ the statistics it also stands on: [docs/INFLUENCES.md](docs/INFLUENCES.md).
 ```
 harness/     the harness, installed into a project as the `evaluation-harness` package
              (pip install, then evh init; harness/README.md)
-examples/    the six experiments, each with its own uv environment
-research/    the experiment reports and the synthesis; research/internal/ is the lab
+examples/    the six evals, each with its own uv environment
+research/    the eval reports and the synthesis; research/internal/ is the lab
              notebook: handovers, review rounds and an append-only journal
 site/        the public site, generated from the runs (make site; checked by make ci)
 docs/        the guide, architecture, REPRODUCE, PROTOCOL, REFERENCE, evidence/: published
@@ -303,7 +312,7 @@ he helps teams answer on their own data. Principles for engineers who build end 
 
 `research/internal/NOTES.md` is the append-only journal, corrections included. Findings
 have been retracted along the way, several caused by bugs in this harness's own scorer.
-The retraction rate is itself a result: it measures how much of a first-pass eval is
+The retraction rate is itself a result: it measures how much of a first-pass evaluation is
 instrument rather than signal.
 
 No corpus is committed; examples ship a download recipe. What *is* committed, each dataset's licence, and what it asks of you: **[docs/DATA.md](docs/DATA.md)**.

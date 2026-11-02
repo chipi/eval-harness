@@ -49,14 +49,14 @@ from evaluation_harness._runs import matrix as matrix_of
 
 # ── is the ordering above real? ──────────────────────────────────────────────
 # A leaderboard sorted by a mean always produces an ordering. Whether that ordering
-# survives re-running the experiment is a different question, and it is the only one
+# survives re-running the eval is a different question, and it is the only one
 # that matters -- so the answer is printed, not left to the reader.
 #
 # THREE readings, all order-independent, all computed over the whole table at once.
 # What is NOT used: any walk down the table comparing each arm to a running "leader".
 # That is a sorting algorithm, not a comparison -- its answer depends on whether you
 # walk top-down or bottom-up, and on this data those two directions disagree about
-# whether the top arm is separated from the field at all.
+# whether the top arm differs significantly from the field at all.
 
 #: Two per-item values closer than this count as tied.
 #:
@@ -106,7 +106,7 @@ NEMENYI_Q05 = {
     #
     # It used to stop at 25 and this file REFUSED to print a critical difference above
     # that, rather than reuse a smaller k's value and understate the CD. The refusal
-    # was right; the scope was not. Four of five experiments here have 26-28 arms, so
+    # was right; the scope was not. Four of five evals here have 26-28 arms, so
     # four of five had no pairwise verdict at all -- over roughly thirty lines of
     # arithmetic. Found by external review.
     2: 1.9600,
@@ -234,7 +234,7 @@ def significance(
     # ABOVE THE TABLE, SAY SO. This used to default to the k=25 value for any larger
     # k, which is too SMALL -- so the critical difference was too small and more pairs
     # were called distinguishable than the test supports. Four of this repo's five
-    # experiments have 26-28 arms, so four of five published "pairs distinguishable"
+    # evals have 26-28 arms, so four of five published "pairs distinguishable"
     # counts were mildly anti-conservative. Guessing a critical value is worse than
     # declining to print one.
     q = NEMENYI_Q05.get(k)
@@ -275,7 +275,7 @@ def significance(
     #
     # This used to print a 95% rank interval per arm. Those are MARGINAL: each is correct
     # on its own, but jointly they cover only ~57% of resamples, and two non-overlapping
-    # intervals read as "this pair is separated" when that is exactly the claim they
+    # intervals read as "this pair differs significantly" when that is exactly the claim they
     # cannot make -- the critical-difference line above is the only thing that can. A
     # simultaneous band would be honest but useless here: its half-width is 14-17 rank
     # positions out of 24.
@@ -678,7 +678,7 @@ def _table(args: argparse.Namespace, found: list) -> None:
         print(
             f"\n  RANKED ON A DESCRIPTIVE METRIC ({sort_key}) — it measures what the output\n"
             "  WAS, not whether it was good, so this ordering rewards verbosity. Author\n"
-            f"  references ({how('evh reference-create', 'make reference-create')}) so runs carry a quality score, or pass\n"
+            f"  references (labels you promote: evh reference-promote) so runs carry a quality score, or pass\n"
             "  --sort <metric> explicitly."
         )
 
@@ -711,7 +711,7 @@ def _table(args: argparse.Namespace, found: list) -> None:
         _judging_summary(found)
     if any("silver" in r["tiers"] for r in rows):
         print(
-            "\n  Scored against SILVER references (model-generated). Good for ranking\n"
+            "\n  Scored against SILVER references (consistent, not correct). Good for ranking\n"
             "  these arms against each other; not a claim that any of them is correct."
         )
     if not any(kinds.get(k) == "cost" for k in show):

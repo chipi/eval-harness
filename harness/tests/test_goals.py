@@ -50,12 +50,39 @@ try:
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset is created and materialized", r.returncode == 0, r.stderr[-300:])
-    shutil.copytree(KIT / "gold", data / "references" / "gold" / "tickets_v1")
+    r = evh(
+        "label-import",
+        str(KIT / "gold"),
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_gold",
+        "--by",
+        "owner",
+    )
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "owner_gold",
+            "--tier",
+            "gold",
+            "--reason",
+            "The kit's hand-written summaries decide.",
+            "--by",
+            "owner",
+        )
+    )
+    check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
 
     cfg = (KIT / "configs" / "tickets_lead2.yaml").read_text()
     (data / "configs" / "bad.yaml").write_text(cfg + "goal: no_such_goal\n")
-    r = evh("experiment-run", "--config", str(data / "configs" / "bad.yaml"))
+    r = evh("run", "--config", str(data / "configs" / "bad.yaml"))
     check(
         "run: a config naming an unknown goal is refused before it runs",
         r.returncode != 0 and "no_such_goal" in (r.stdout + r.stderr) and not (data / "runs").exists(),
@@ -65,7 +92,7 @@ try:
     (data / "configs" / "keyed.yaml").write_text(
         cfg.replace("params:\n", "params:\n  api_key: sk-LITERAL-0001\n", 1)
     )
-    r = evh("experiment-run", "--config", str(data / "configs" / "keyed.yaml"))
+    r = evh("run", "--config", str(data / "configs" / "keyed.yaml"))
     check(
         "run: a config with a key written into its params is refused before it runs, and says how instead",
         r.returncode != 0 and "api_key_env" in (r.stdout + r.stderr) and not (data / "runs").exists(),
@@ -74,7 +101,7 @@ try:
     (data / "configs" / "keyed.yaml").unlink()
 
     (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\nformat: paragraph\n")
-    r = evh("experiment-run", "--config", str(data / "configs" / "lead2.yaml"))
+    r = evh("run", "--config", str(data / "configs" / "lead2.yaml"))
     runs = sorted((data / "runs").glob("*/metrics.json"))
     m = json.loads(runs[0].read_text()) if runs else {}
     check(
@@ -199,12 +226,15 @@ try:
     )
     answer = html.find("the answer so far")
     check(
-        "catalog: the goal page leads with the answer, the promoted baseline and its reason, before what it is for",
-        0 <= answer < html.find("what it is for") and "lead2 answers the triage goal on six tickets" in html,
+        "catalog: the goal page explains what it is for first, then the answer: the promoted baseline and its reason",
+        0 <= html.find("what it is for") < answer and "lead2 answers the triage goal on six tickets" in html,
     )
     check(
-        "catalog: the goal page groups its arms by what they are scored against, with the baseline tagged",
-        "scored against gold/tickets_v1" in html and 'class="tag-base"' in html,
+        "catalog: the goal page groups its arms by what they are scored against (linked, its pill), the baseline tagged",
+        'scored against <a class="cell-link" href="../r/gold-tickets_v1.html">gold/tickets_v1</a> '
+        '<span class="pill tier-gold">gold</span>'
+        in html
+        and 'class="tag-base"' in html,
     )
     ds_page = (proj / ".build/catalog/d/tickets_v1.html").read_text()
     check(
@@ -216,7 +246,7 @@ try:
     check(
         "catalog: the goal page says what the goal weighs, its strategy and its tie-break",
         "<dt>weighs</dt>" in html
-        and "balanced: tied" in html
+        and "balanced: contenders" in html
         and "<dt>tie-break</dt><dd>cost, speed</dd>" in html,
     )
     check(
@@ -287,13 +317,13 @@ try:
     )
     check(
         "catalog: the chosen strategy, the tie-break order and the limit are shown",
-        "frugal: tied" in html and "speed, cost" in html and "limit ≤ 60,000" in html,
+        "frugal: contenders" in html and "speed, cost" in html and "limit ≤ 60,000" in html,
     )
     # A limit an arm breaks: the arms page badges it "over a limit", not "not eligible", and evh arms
     # says the same. No arm in this repository's own data breaks a limit, so this is the proof.
-    r = evh("arms", "--quality", "ties")
+    r = evh("arms", "--quality", "contender")
     check(
-        "evh arms --quality ties: the goal's quality leader, and no arm it ranks below",
+        "evh arms --quality contender: the goal's quality leader, and no arm it ranks below",
         r.returncode == 0 and "leader" in r.stdout and "no arm matches" not in r.stdout,
         r.stdout[-500:] + r.stderr[-300:],
     )
@@ -321,13 +351,13 @@ try:
         check(f"V14: fails {why}", "FAIL" in line, line)
     goal_path.write_text(original)
 
-    # A dataset the goal never decides on (a dev slice, a generalization check): its groups keep
+    # A dataset the goal never decides on (a pilot slice, a generalization check): its groups keep
     # their leader, never a recommendation, and the home page's glance leaves it out.
-    goal_path.write_text(original.replace("role: dev,", "role: dev, decides: false,"))
+    goal_path.write_text(original.replace("role: validation,", "role: validation, decides: false,"))
     r = evh("goals", "--goal", "tickets_summary")
     check(
         "decides: false: the goal page says it does not decide there, and recommends nothing",
-        "The goal does not decide on tickets_v1 (dev)" in r.stdout and "recommended:" not in r.stdout,
+        "The goal does not decide on tickets_v1 (validation)" in r.stdout and "recommended:" not in r.stdout,
         r.stdout[-700:],
     )
     r = evh("overview")

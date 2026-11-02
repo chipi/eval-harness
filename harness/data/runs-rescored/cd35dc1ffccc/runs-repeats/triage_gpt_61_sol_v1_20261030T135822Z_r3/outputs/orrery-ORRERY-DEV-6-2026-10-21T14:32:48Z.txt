@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "zz-probe-dev-reject-in-timeout", "model_disposition": "cleanup", "reason": "The signal contains an explicit development-probe marker. Remove or isolate this synthetic rejection from operational alerting."}

@@ -21,15 +21,11 @@ ROOT = Path(__file__).resolve().parents[1]
 HARNESS = ROOT / "harness"
 DATA = HARNESS / "data"
 
-#: The measurement slices on the site, from the registry `make reproduce` uses too -- so the site
-#: and a stranger's rerun cannot mean different experiments. `base` is the directory the
+#: The test slices on the site, from the registry `make reproduce` uses too -- so the site
+#: and a stranger's rerun cannot mean different evals. `base` is the directory the
 #: REPORT is computed from; billed cost always comes from data/runs, where the provider's
 #: response was recorded.
-EXPERIMENTS = [
-    e
-    for e in json.loads((ROOT / "examples" / "experiments.json").read_text())["experiments"]
-    if e.get("site")
-]
+EVALS = [e for e in json.loads((ROOT / "examples" / "evals.json").read_text())["evals"] if e.get("site")]
 
 #: Arms that are not models at all — calibration floors for the scorer. On SummEval that
 #: is every free scorer but BARTScore and UniEval: ROUGE, `coverage` and length are rules, not models.
@@ -91,8 +87,8 @@ def _weights() -> dict:
     return out
 
 
-def _not_separated(exp: dict) -> list:
-    """Opponents the leader's Holm family test does not separate from."""
+def _not_significant(exp: dict) -> list:
+    """Opponents the leader's Holm family test finds not significantly different."""
     r = subprocess.run(
         [
             sys.executable,
@@ -121,7 +117,7 @@ def _not_separated(exp: dict) -> list:
     ]
 
 
-def experiment(exp: dict, weights: dict) -> dict:
+def eval_figures(exp: dict, weights: dict) -> dict:
     scored = _runs(exp["base"], exp["dataset"], exp["prefix"], exp["suffix"])
     billed = _runs("runs", exp["dataset"], exp["prefix"], exp["suffix"])
     arms = []
@@ -145,9 +141,9 @@ def experiment(exp: dict, weights: dict) -> dict:
     hosted = [a for a in arms if a["kind"] == "hosted"]
     paid = sorted(hosted, key=lambda a: a["cost"])
     dearest = max(hosted, key=lambda a: a["cost"])
-    tied = _not_separated(exp)
-    tied_paid = [a for a in hosted if a["arm"] in tied]
-    cheapest_tied = min(tied_paid, key=lambda a: a["cost"]) if tied_paid else None
+    contenders = _not_significant(exp)
+    contenders_paid = [a for a in hosted if a["arm"] in contenders]
+    cheapest_contender = min(contenders_paid, key=lambda a: a["cost"]) if contenders_paid else None
     leader = next(a for a in arms if a["arm"] == exp["leader"])
     n_items = json.loads((next(iter(scored.values())) / "metrics.json").read_text())["n_items"]
     return {
@@ -161,11 +157,11 @@ def experiment(exp: dict, weights: dict) -> dict:
         "dearest": dearest,
         "cheapest_paid": paid[0],
         "best_hosted": hosted[0] if hosted else None,
-        "tied": tied,
-        "n_tied": len(tied),
-        "n_tied_paid": len(tied_paid),
-        "cheapest_tied": cheapest_tied,
-        "tied_ratio": (dearest["cost"] / cheapest_tied["cost"]) if cheapest_tied else None,
+        "contenders": contenders,
+        "n_contenders": len(contenders),
+        "n_contenders_paid": len(contenders_paid),
+        "cheapest_contender": cheapest_contender,
+        "contender_ratio": (dearest["cost"] / cheapest_contender["cost"]) if cheapest_contender else None,
         "dearest_ratio": dearest["cost"] / paid[0]["cost"],
         "billed_total": sum(a["cost"] for a in arms),
     }
@@ -216,15 +212,15 @@ def calibration() -> list:
 
 
 def hardware() -> list:
-    """The machines behind the experiments (docs/evidence/hardware.json), each with the
+    """The machines behind the evals (docs/evidence/hardware.json), each with the
     committed runs whose fingerprint names it. Every run must match exactly one machine,
     or the build stops: a run measured somewhere undocumented is a gap, not a footnote."""
     hw = json.loads((ROOT / "docs" / "evidence" / "hardware.json").read_text())["machines"]
     machines = [{**m, "hosted": 0, "local": 0} for m in hw]
-    for exp in EXPERIMENTS:
+    for exp in EVALS:
         for _arm, d in _runs("runs", exp["dataset"], exp["prefix"], exp["suffix"]).items():
             fp = json.loads((d / "metrics.json").read_text()).get("fingerprint") or {}
-            host = fp.get("host") or {}
+            host = fp.get("runner") or {}
             hits = [
                 m
                 for m in machines
@@ -302,7 +298,7 @@ def judged_summarisation(exps: list, scorer: str = "") -> dict:
 
     scorer = scorer or jf.SCORER
     jfig = jf.compute(scorer)
-    m = json.loads(next((DATA / "judging-sets").glob(jf.SET_GLOB)).read_text())
+    m = json.loads(jf.grading_set().read_text())
     sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
     vdir = DATA / "judge-verdicts" / scorer / m["judging_set_id"]
     ids = [i["item_id"] for i in m["items"]]
@@ -389,7 +385,7 @@ def zhang_figures() -> dict:
 
 def instrument_check(exps: list) -> dict:
     """How well each instrument agrees with SummEval's experts (mean Kendall tau): the
-    summarisation experiment's own metric, ROUGE-1, the best free scorer, the best judge."""
+    summarisation eval's own metric, ROUGE-1, the best free scorer, the best judge."""
     x = next(e for e in exps if e["slug"] == "summeval")
     s = {a["arm"]: a["score"] for a in x["arms"]}
     local = [a for a in x["arms"] if a["kind"] == "local"]
@@ -406,9 +402,9 @@ def instrument_check(exps: list) -> dict:
 
 
 def goal_decisions(exps: list) -> None:
-    """Each experiment's goal decision, as the catalog computes it (tools/goal_decisions.py): the
+    """Each eval's goal decision, as the catalog computes it (tools/goal_decisions.py): the
     gold leader, the promoted baseline and its reason, the recommendation and its reasons, with
-    arm ids shortened to the site's arm names. Added to each experiment as `goal`."""
+    arm ids shortened to the site's arm names. Added to each eval as `goal`."""
     rows = json.loads(
         subprocess.run(
             [sys.executable, str(HARNESS / "tools" / "goal_decisions.py")],
@@ -440,7 +436,7 @@ def goal_decisions(exps: list) -> None:
 
 def compute() -> dict:
     weights = _weights()
-    exps = [experiment(e, weights) for e in EXPERIMENTS]
+    exps = [eval_figures(e, weights) for e in EVALS]
     goal_decisions(exps)
     all_arms = sum(e["n_arms"] for e in exps)
     billed = sum(e["billed_total"] for e in exps)
@@ -456,19 +452,19 @@ def compute() -> dict:
         raise SystemExit("check_report_claims is not green; the site will not claim it is")
     return {
         "claims_checked": int(m.group(2)),
-        "experiments": exps,
+        "evals": exps,
         "total_arms": all_arms,
         "total_billed": billed,
         "dearest_never_best": sum(e["dearest"]["arm"] != e["top"]["arm"] for e in exps),
         # SciFact ran only the twelve cheapest hosted models, so its dearest arm is not a
-        # frontier model; the headline stat counts only experiments where one ran.
+        # frontier model; the headline stat counts only evals where one ran.
         "frontier_exps": sum(_has_frontier(e) for e in exps),
         "dearest_not_best_frontier": sum(
             _has_frontier(e) and e["dearest"]["arm"] != e["top"]["arm"] for e in exps
         ),
-        "local_first_or_tied": sum(
+        "local_first_or_contender": sum(
             e["top"]["kind"] == "local"
-            or any(a["kind"] == "local" for a in e["arms"] if a["arm"] in e["tied"])
+            or any(a["kind"] == "local" for a in e["arms"] if a["arm"] in e["contenders"])
             for e in exps
         ),
         "calibration": cal,
@@ -494,12 +490,12 @@ def _has_frontier(e) -> bool:
 
 if __name__ == "__main__":
     f = compute()
-    for e in f["experiments"]:
+    for e in f["evals"]:
         print(
             f"{e['bench']:14s} n={e['n_items']} arms={e['n_arms']} top={e['top']['arm']} "
             f"{e['top']['score']:.4f} dearest={e['dearest']['arm']} rank {e['dearest']['rank']}"
-            f"/{e['n_arms']} tied={e['n_tied']} ({e['n_tied_paid']} paid) cheapest_tied="
-            f"{e['cheapest_tied']['arm'] if e['cheapest_tied'] else '-'} ${e['billed_total']:.2f}"
+            f"/{e['n_arms']} contenders={e['n_contenders']} ({e['n_contenders_paid']} paid) cheapest_contender="
+            f"{e['cheapest_contender']['arm'] if e['cheapest_contender'] else '-'} ${e['billed_total']:.2f}"
         )
     print(
         "total arms",

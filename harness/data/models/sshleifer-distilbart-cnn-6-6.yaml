@@ -1,0 +1,5 @@
+model_id: sshleifer-distilbart-cnn-6-6
+kind: ml
+aliases:
+- sshleifer/distilbart-cnn-6-6
+weights: open

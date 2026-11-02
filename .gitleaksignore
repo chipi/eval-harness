@@ -1,0 +1,6 @@
+# Findings that are not secrets, by exact fingerprint (commit:path:rule:line), so nothing else is hidden.
+# The silver dedup reference's manifest lists each item's sha256 under `items_sha256`, keyed by the item's id
+# ("glitchtip:PODCAST-API-2": "<64 hex>"): a checksum of a dataset item, which the generic-api-key rule
+# reads as a key. .gitleaks.toml's sha256 allowlist covers keys ending in _sha256 only.
+ad94f6e90c9f686be2853359777db76e58602742:harness/data/references/silver/fleet_dedup_v1/manifest.json:generic-api-key:31
+cc140fdf9e43efd679f3bc51b0f374b2ede6d0d4:harness/data/references/silver/fleet_dedup_v1/manifest.json:generic-api-key:31

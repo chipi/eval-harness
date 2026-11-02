@@ -1,11 +1,11 @@
-# PRD-005: Goals, and experiment rounds
+# PRD-005: Goals, and eval rounds
 
-- **Status**: Implemented (v0.4.0)
+- **Status**: Implemented (v0.4.0); groups scored against a label set (FR1.7) and the deploy sheet (FR3) built for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md))
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the goal page), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the round commands)
-- **Related RFC**: [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds: files, commands, the evidence)
-- **Related ADRs**: [ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md) (goals first-class), [ADR-0004](../adr/ADR-0004-experiment-rounds.md) (rounds), [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) (axes and strategies)
-- **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md), [PRD-004](PRD-004-catalog-and-inspector.md)
+- **Related RFC**: [RFC-004](../rfc/RFC-004-eval-rounds.md) (rounds: files, commands, the evidence)
+- **Related ADRs**: [ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md) (goals first-class), [ADR-0004](../adr/ADR-0004-eval-rounds.md) (rounds), [ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md) (axes and strategies)
+- **Related PRDs**: [PRD-001](PRD-001-evals-and-comparison.md), [PRD-004](PRD-004-catalog-and-inspector.md)
 
 ## Summary
 
@@ -21,7 +21,7 @@ opens a round sees none of it.
 ## Background & Context
 
 Without goals, a run is a number with no question attached: nothing says which measure decides,
-so the same table can be read to support any choice. Without rounds, experiments still go round
+so the same table can be read to support any choice. Without rounds, evals still go round
 on round (try some arms, keep what won, drop what lost, change something, compare again), but
 the harness recorded none of it: runs were a flat set per dataset, and nothing said which arms
 belonged together, why one was dropped, or what a round concluded. The newcomer scenario
@@ -34,7 +34,7 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 - A goal's page answers first: the promoted baseline and why, or that nothing is decided yet and
   the command that decides it.
 - Arms are ranked only against arms scored against the same thing.
-- A sequence of experiments has a record: hypothesis, changes, retirements with reasons,
+- A sequence of comparisons has a record: hypothesis, changes, retirements with reasons,
   conclusion.
 - The next decision is suggested from the evidence, but made by a person, by command.
 
@@ -71,11 +71,11 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 - **FR1.1**: A goal is `data/goals/<goal_id>.yaml`, validated by `schemas/goal.schema.json`.
   Required: `goal_id`, `title`, `statement`, `decision`, `success_criteria` (the primary measure
   and its direction: `higher`, `lower`, or `non_inferior`, a guard that ranks nothing) and
-  `datasets` (each with an optional role: dev, heldout, ...; empty for a goal checked by a gate
+  `datasets` (each with an optional role: validation, test, ...; empty for a goal checked by a gate
   rather than measured on a dataset). Optional: `context` (its audience), `output_contract`,
   `references`, `measures`, `min_items` (in `success_criteria`), `links` (shown on the goal
   page and by `evh goals --goal`: a web address as a link, a project path as text), `status`.
-- **FR1.2**: A config names its goal (`goal:`) and may declare its `format`; `experiment-run`
+- **FR1.2**: A config names its goal (`goal:`) and may declare its `format`; `evh run`
   refuses an unknown goal before it spends anything. The run records both outside the
   fingerprint; `run-promote` carries both onto the baseline.
 - **FR1.3**: `evh validate` V14 fails a goal that breaks its schema or whose `goal_id` is not its
@@ -92,11 +92,15 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 - **FR1.6**: A goal weighs cost, quality and speed (cost and speed built in, with no
   configuration) and may add its own per-item metrics as axes, each with an optional limit. Arms
   over a limit, flagged arms and retired arms are never recommended. The goal's strategy
-  (`balanced` by default, `quality_first`, `frugal`) decides who is tied with the quality leader;
+  (`balanced` by default, `quality_first`, `frugal`) decides who the contenders beside the quality leader are;
   its tie-break (default cost, then speed) picks among them. Cost is shown in dollars and tokens
   per item; speed as p50 and p95. The goal page names the recommended arm per group with the
   reasons, and the home page's glance shows it with its cost and speed against the baseline;
   the CLI says the same. Guardrails (rules in words) are shown, never computed.
+- **FR1.7** (0.6.0): Arms scored against a label set (PRD-002 FR6) form a group of their own, named by the set
+  (`labels/<dataset>/<set>`), never a tier; the group gets its recommended arm as a reference's group does, the arm
+  that made a `model` set's labels flagged. The baseline is still the arm you promote. The page heads the group by
+  the set's source chip and name (UXS-001).
 
 ### FR2: Rounds (optional)
 
@@ -108,16 +112,16 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   another round of the goal is open. `--from rN`, `--hypothesis`, `--change` (repeatable),
   `--keep` (carried in, not run again), `--retire … --reason "…"`, `--budget-usd`.
 - **FR2.3**: An arm joins a round by naming it in its config (`round: rN`, beside `goal:`);
-  `experiment-run` refuses a config naming a round that does not exist, is closed, or is on
+  `evh run` refuses a config naming a round that does not exist, is closed, or is on
   another dataset.
 - **FR2.4**: `evh rounds --goal G [--round rN]` shows each round and, for the open one, the
   arms against its leader, its leader against the previous round's best, the baseline it started
   from and the arm that wrote a silver reference of the dataset, its spend against the budget and
   the cost per item, all read against the reference most of its arms use (gold before silver on
   a tie; arms scored against another are named, not compared), and suggestions (never to retire
-  the arm that wrote the silver reference): retire an arm separated as worse
-  (`evh round-retire …`), more items where arms tie with the leader (`evh rank-stability …`), change course when the round's best
-  is not separated from the previous round's, and close (`evh round-close …`).
+  the arm that wrote the silver reference): retire an arm significantly worse than the leader
+  (`evh round-retire …`), more items where arms are not significantly different from the leader (`evh rank-stability …`), change course when the round's best
+  is not significantly better than the previous round's, and close (`evh round-close …`).
 - **FR2.5**: `evh round-retire --goal G --round rN --arm C --reason "…"` and
   `evh round-close --goal G --round rN --conclusion "…" [--promote RUN_ID]` record decisions;
   a reason or conclusion must be a sentence. If the promotion is refused, the round stays open.
@@ -129,6 +133,21 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
   resolve, `from` exists, a closed round has a conclusion, every run naming a round names one
   that exists.
 
+### FR3: The deploy sheet (0.6.0)
+
+- **FR3.1**: `evh deploy-sheet --config ARM` prints what production must match to run what was measured: the model
+  and its build (the model record's deployment: tag, digest, server and its settings), every setting the arm
+  sends, the prompt and its hash, the adapter and its version, and the dataset and reference it was promoted on.
+  It reads the run the arm was promoted with (the latest baseline whose run is the arm's), else the arm's latest
+  run, and says which; it notes a model record's setting the arm did not send. The promoted arm's page and the
+  goal page beside its baseline (folded) show the same, with what each capture says production ran.
+- **FR3.2**: `evh deploy-sheet --config ARM --capture C` checks a capture whose records say what production ran (for
+  triage: the ledger's `model`, `prompt_ver`, `prompt_sha`, through the adapter): "every captured decision was made
+  by the promoted model and prompt", or what differs and on how many records. Each record's account comes from
+  the adapter's `production_ran(record)`; a key is matched against what the run's own items reported (`_meta`), the
+  model also against the model record's id, aliases and deployment tags; a record that does not say is not a
+  match. It exits 1 unless every record matches.
+
 ## Success Criteria
 
 - `harness/tests/test_rounds.py` passes: open, run, suggest, retire, close, the next round,
@@ -138,5 +157,5 @@ belonged together, why one was dropped, or what a round concluded. The newcomer 
 
 ## Related Documents
 
-- [RFC-004](../rfc/RFC-004-experiment-rounds.md), [ADR-0004](../adr/ADR-0004-experiment-rounds.md).
+- [RFC-004](../rfc/RFC-004-eval-rounds.md), [ADR-0004](../adr/ADR-0004-eval-rounds.md).
 - [UXS-001: the goal page](../uxs/UXS-001-catalog.md#the-goal-page).

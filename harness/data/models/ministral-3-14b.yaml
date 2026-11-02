@@ -1,0 +1,120 @@
+model_id: ministral-3-14b
+kind: llm
+name: Ministral 3 14B
+aliases:
+- ministral-3:14b
+weights: open
+licence: Apache-2.0
+deployments:
+- id: x3
+  where: x3
+  tag: ministral-3:14b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: ministral-3:14b
+  server: ollama 0.40.13
+  digest: 4760c35aeb9d9e9c6174c2492562c0b999e80a222804fd96b1915ab72bbcdcf7
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T14:05:49Z'
+  onboarding:
+    status: check
+    at: '2026-10-31T14:05:49Z'
+    where: x3
+    flags:
+    - 'format: the JSON probe''s answer is not valid JSON'
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11434/v1
+        model: ministral-3:14b
+      digest_found: 4760c35aeb9d9e9c6174c2492562c0b999e80a222804fd96b1915ab72bbcdcf7
+      default:
+        s: 7.85
+        tokens_out: 92
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 3.84
+        tokens_out: 92
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 23.9
+      deterministic: true
+      json_valid: false
+- id: dgx
+  where: dgx
+  tag: ministral-3:14b
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: ministral-3:14b
+  digest: 4760c35aeb9d9e9c6174c2492562c0b999e80a222804fd96b1915ab72bbcdcf7
+  checked_at: '2026-10-31T14:07:46Z'
+  onboarding:
+    status: check
+    at: '2026-10-31T14:07:46Z'
+    where: dgx
+    flags:
+    - 'format: the JSON probe''s answer is not valid JSON'
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: ministral-3:14b
+      digest_found: 4760c35aeb9d9e9c6174c2492562c0b999e80a222804fd96b1915ab72bbcdcf7
+      default:
+        s: 8.45
+        tokens_out: 85
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 3.42
+        tokens_out: 85
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 24.8
+      deterministic: true
+      json_valid: false
+  server: ollama 0.40.13
+- id: mac
+  where: mac
+  tag: ministral-3:14b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11435/v1
+    model: ministral-3:14b
+  server: ollama 0.40.13
+  digest: 4760c35aeb9d9e9c6174c2492562c0b999e80a222804fd96b1915ab72bbcdcf7
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T13:55:45Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:55:45Z'
+    where: mac
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11435/v1
+        model: ministral-3:14b
+      digest_found: 4760c35aeb9d9e9c6174c2492562c0b999e80a222804fd96b1915ab72bbcdcf7
+      default:
+        s: 8.35
+        tokens_out: 32
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 1.37
+        tokens_out: 32
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 23.4
+      deterministic: true
+      json_valid: true
+capabilities:
+  reasons: false
+  json_mode: false

@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "delete me", "model_disposition": "cleanup", "reason": "Signal contains explicit test/synthetic marker \"delete me\" indicating it is a cleanup event, not a real error."}

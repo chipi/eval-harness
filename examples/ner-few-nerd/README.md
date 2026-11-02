@@ -13,7 +13,7 @@ members and you have to decide which member matches which.
 
 Every interesting decision in this example is in that matching.
 
-> **Rerun this experiment** from the repository root — `EXP=few-nerd`:
+> **Rerun this eval** from the repository root — `EXP=few-nerd`:
 >
 > ```bash
 > make plan EXP=few-nerd  &&  make data EXP=few-nerd  &&  make reproduce EXP=few-nerd  &&  make compare EXP=few-nerd
@@ -32,8 +32,8 @@ Every interesting decision in this example is in that matching.
 ```bash
 cd examples/ner-few-nerd
 uv sync --extra local         # --extra local pulls gliner + span_marker; plain `uv sync` does not
-uv run fetch.py --n 280       # the measurement slice
-uv run fetch.py --n 56        # the dev slice, a strict PREFIX of the 280
+uv run fetch.py --n 280       # the test slice
+uv run fetch.py --n 56        # the pilot slice, a strict PREFIX of the 280
 ```
 
 `uv sync` without `--extra local` provisions only the hosted arms, and the two ML arms then
@@ -62,7 +62,7 @@ which is what `holdout_significance --exclude-dataset` needs to be honest.
 
 ### Degenerate items are filtered, and that is not cherry-picking
 
-`--min-tokens 3` drops sentences too short to pose the task. The dev slice contained one
+`--min-tokens 3` drops sentences too short to pose the task. The pilot slice contained one
 whose entire text was the single character `p`.
 
 It is a real row, and keeping it would be defensible on faithfulness grounds — except for
@@ -89,7 +89,7 @@ that relevance is what this example gives up to keep the licence clean.
 ```bash
 cd "$(git rev-parse --show-toplevel)/harness"     # from anywhere in the repo
 for f in ../examples/ner-few-nerd/configs/arm_*_n200.yaml; do
-  ../examples/ner-few-nerd/.venv/bin/python scripts/experiment_run.py --config "$f"
+  ../examples/ner-few-nerd/.venv/bin/python scripts/run.py --config "$f"
 done
 ```
 
@@ -198,16 +198,16 @@ not measured. The ML-vs-LLM answer rests on `span_marker` against the 24 hosted 
 [`entities_few_nerd`](https://evals.humancopilot.eu/catalog/g/entities_few_nerd.html), with an inspector that tests any arms against the baseline item by
 item. An agent can ask the same over MCP, read-only and without sign-in: connect
 `https://evals.humancopilot.eu/mcp` ([how](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp))
-and ask, say, "what does the `entities_few_nerd` goal recommend, and is it separated from the baseline?".
+and ask, say, "what does the `entities_few_nerd` goal recommend, and is it significantly different from the baseline?".
 
 ## Results
 
 Full write-up: [`../../research/REPORT_NER.md`](../../research/REPORT_NER.md).
 
 ```
-span_marker   0.7674   $0        separated from all 27 other arms under Holm
-openai_m      0.6864   $0.6507   best hosted; separated from 16 of the 23 other hosted arms
-gemma_m       0.6733   $0.0088   not separated from openai_m (gap 0.0131); 78x cheaper than anthropic_l
+span_marker   0.7674   $0        significantly different from all 27 other arms under Holm
+openai_m      0.6864   $0.6507   best hosted; significantly different from 16 of the 23 other hosted arms
+gemma_m       0.6733   $0.0088   not significantly different from openai_m (gap 0.0131); 78x cheaper than anthropic_l
 gliner        0.4540   $0        zero-shot, different architecture, no training-split exposure
 capitalized   0.1913   $0
 nothing       0.1250   $0        = the rate at which an empty answer is correct
@@ -217,9 +217,9 @@ Costs are what the provider **billed** (`usage.cost`).
 
 Three things worth reading the report for:
 
-1. **The one separated win in this repo — as run here:** a Few-NERD-trained tagger against 24 hosted arms on one
+1. **The one significant win in this repo — as run here:** a Few-NERD-trained tagger against 24 hosted arms on one
    zero-shot prompt of bare type names, no definitions, no examples, provider unpinned.
-   Both classification corpora produced a top group the data could not separate. This produced a separated first place.
+   Both classification corpora produced a top group with no significant difference inside it. This produced a significant first place.
 2. **57% of that winner's lead over `openai_m` is one entity type** — `other`, Few-NERD's
    catch-all (30–57% across the 24 hosted arms, for a prompt that defines no type). On
    `person`, three hosted arms edge it by at most 0.0067 (untested).

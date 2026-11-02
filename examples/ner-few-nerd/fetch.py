@@ -28,7 +28,7 @@ WHAT THE CORPUS LOOKS LIKE (measured, first 300 test rows)
   Rebalancing would make the slice unrepresentative of the task.
 
 DEGENERATE ITEMS ARE FILTERED, AND WHY THAT IS NOT CHERRY-PICKING
-  `--min-tokens` (default 3) drops sentences too short to pose the task. The dev slice
+  `--min-tokens` (default 3) drops sentences too short to pose the task. The pilot slice
   contained one whose entire text was the single character "p".
 
   It is a real row in Few-NERD's test split, and keeping it would have been defensible on
@@ -65,7 +65,8 @@ WHY THIS DATASET
   gitignored.
 
 WHY THE REFERENCE IS GOLD
-  Few-NERD is expert-annotated, not model-generated. A reference file here holds a JSON
+  Few-NERD is expert-annotated, not model output: the reason it was promoted at gold. A reference file
+  here holds a JSON
   array of {text, type} objects rather than one word, because the answer to this task is
   a SET.
 """
@@ -226,7 +227,7 @@ def main() -> int:
     if (ROOT / "data" / "datasets" / f"{dataset_id}.json").is_file():
         # Frozen and committed: check the fetched bytes against it, never re-create it.
         print(f"  cd {ROOT} && make dataset-materialize DATASET_ID={dataset_id}")
-        print("  (or, from the repository root: make data EXP=<experiment> does all of this)")
+        print("  (or, from the repository root: make data EXP=<eval> does all of this)")
     else:
         print(f"  make dataset-create DATASET_ID={dataset_id} ARGS='--source-dir data/sources/{dataset_id}'")
         print(f"  make dataset-materialize DATASET_ID={dataset_id}")

@@ -15,7 +15,9 @@ hit it. This checks, in every fenced block and inline code span of the current d
 
 History is not checked: the research journal and the CHANGELOG describe commands as they
 were when written. Nor is a proposal: an ADR or RFC whose status is Proposed or Draft describes commands
-that do not exist yet; it is checked once accepted. Exits 1 on any problem.
+that do not exist yet; it is checked once accepted. Nor is a part of a shipped doc marked planned: a heading,
+list item (with what is indented under it), table row or paragraph that says "(0.6.0, planned" describes work
+still to be built, and is checked once the build takes the marker off. Exits 1 on any problem.
 """
 
 from __future__ import annotations
@@ -43,6 +45,8 @@ DOCS = [
 ]
 SKIP = {HARNESS / "CHANGELOG.md"}
 FENCE = re.compile(r"^```(\w*)")
+PLANNED = re.compile(r"\(\d+\.\d+(?:\.\d+)?, planned\b")
+ITEM = re.compile(r"^(\s*)(?:[-*]|\d+\.)\s")
 INLINE = re.compile(r"`([^`\n]+)`")
 TARGET = re.compile(r"^([A-Za-z][\w.-]*(?:[ \t]+[A-Za-z][\w.-]*)*)\s*:(?!=)", re.M)
 
@@ -94,6 +98,59 @@ def commands_in(text: str) -> list:
             buf = ""
         elif fence is None:
             out += [(n, m) for m in INLINE.findall(line)]
+    return out
+
+
+def planned_lines(text: str) -> set:
+    """The line numbers (1-based) inside a part marked planned: a heading's section (to the next heading of its
+    level or higher), a list item with the lines indented under it, a table row, or a paragraph."""
+    lines = text.splitlines()
+    out: set[int] = set()
+    n = 0
+    while n < len(lines):
+        line = lines[n]
+        head = re.match(r"^(#+)\s", line)
+        if head:
+            if PLANNED.search(line):
+                end = next(
+                    (
+                        k
+                        for k in range(n + 1, len(lines))
+                        if (h := re.match(r"^(#+)\s", lines[k])) and len(h.group(1)) <= len(head.group(1))
+                    ),
+                    len(lines),
+                )
+                out.update(range(n + 1, end + 1))
+                n = end
+                continue
+            n += 1
+            continue
+        if not line.strip():
+            n += 1
+            continue
+        item = ITEM.match(line)
+        end = n + 1
+        if line.lstrip().startswith("|"):
+            pass
+        elif item:
+            indent = len(item.group(1))
+            while (
+                end < len(lines)
+                and lines[end].strip()
+                and (len(lines[end]) - len(lines[end].lstrip())) > indent
+            ):
+                end += 1
+        else:
+            while (
+                end < len(lines)
+                and lines[end].strip()
+                and not ITEM.match(lines[end])
+                and not lines[end].startswith(("#", "|"))
+            ):
+                end += 1
+        if any(PLANNED.search(x) for x in lines[n:end]):
+            out.update(range(n + 1, end + 1))
+        n = end
     return out
 
 
@@ -168,11 +225,34 @@ def self_check() -> list:
         ("evh leaderboard --dataset-id x --sort overlap_f1", False),
         ("make -C harness ci", False),
     ]
-    return [
+    bad = [
         f"self-check: {line!r} should {'' if want else 'not '}be reported"
         for line, want in cases
         if bool(check_line(line)) != want
     ]
+    doc = (
+        "- shipped: `evh nosuch-a`\n"
+        "- (0.6.0, planned) a new one: `evh nosuch-b`\n"
+        "  indented under it: `evh nosuch-c`\n"
+        "- shipped again: `evh nosuch-d`\n"
+        "\n"
+        "## A section (0.6.0, planned)\n"
+        "\n"
+        "`evh nosuch-e`\n"
+        "\n"
+        "### Under it: `evh nosuch-f`\n"
+        "\n"
+        "## Shipped\n"
+        "\n"
+        "| a row | `evh nosuch-g` |\n"
+        "| a row (0.6.0, planned) | `evh nosuch-h` |\n"
+    )
+    skipped = planned_lines(doc)
+    got = sorted(cmd.split()[1] for n, cmd in commands_in(doc) if n not in skipped)
+    want_left = ["nosuch-a", "nosuch-d", "nosuch-g"]
+    if got != want_left:
+        bad.append(f"self-check: planned parts skipped wrongly: left {got}, want {want_left}")
+    return bad
 
 
 def main() -> int:
@@ -183,10 +263,17 @@ def main() -> int:
             continue
         text = doc.read_text(encoding="utf-8")
         # A proposal names commands still to be built: an ADR's `**Status:** Proposed`, an RFC's
-        # `- **Status**: Draft`.
-        if re.search(r"^(?:- )?\*\*Status(?::\*\*|\*\*:) (?:Proposed|Draft)", text, re.M):
+        # `- **Status**: Draft`, or one accepted and still to build (`Accepted …, (0.6.0, planned)`).
+        if re.search(
+            r"^(?:- )?\*\*Status(?::\*\*|\*\*:) (?:Proposed|Draft|Accepted.*\(\d+\.\d+(?:\.\d+)?, planned)",
+            text,
+            re.M,
+        ):
             continue
+        skipped = planned_lines(text)
         for n, cmd in commands_in(text):
+            if n in skipped:
+                continue
             if re.search(r"\b(evh|make)\s", cmd):
                 seen += 1
             for p in check_line(cmd):

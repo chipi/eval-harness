@@ -43,7 +43,7 @@ from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common, _fields  # noqa: E402
+from evaluation_harness import _common, _fields, _visibility  # noqa: E402
 from evaluation_harness._common import ROOT  # noqa: E402
 from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
@@ -97,6 +97,9 @@ ICON = {
     + '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>',
 }
 
+#: A home tile's label, where it is not the tile's key (catalog_periods.TILES).
+TILE_LABEL = {"references": "reference sets"}
+
 #: The catalog's menu, by the home tiles' subjects. An entry is (key, page, label), or a group
 #: (key, [entries], label) that opens a short list; on a phone the ☰ menu lists every page.
 NAV = [
@@ -104,17 +107,23 @@ NAV = [
     ("goals", "goals.html", "Goals"),
     (
         "data",
-        [("datasets", "datasets.html", "Datasets"), ("references", "references.html", "References")],
+        [
+            ("datasets", "datasets.html", "Datasets"),
+            ("captures", "captures.html", "Captures"),
+            ("labels", "labels.html", "Labels"),
+            ("references", "references.html", "Reference sets"),
+        ],
         "Data",
     ),
     (
-        "experiments",
+        "arms",
         [
             ("arms", "arms.html", "Arms"),
             ("configs", "arms.html#configs", "Configs"),
+            ("models", "models.html", "Models"),
             ("metrics", "metrics.html", "Metrics"),
         ],
-        "Experiments",
+        "Arms",
     ),
     ("activity", "activity.html", "Activity"),
     ("inspect", "inspect.html", "Inspector"),
@@ -136,6 +145,11 @@ BUILTIN_METRICS = {
     "judge_score_unvalidated": "The judges' mean score for the output on the scorer's scale, over "
     "its dimensions and judges (evh judge-score). The judges were not validated against human "
     "ratings: a trial, not a measurement.",
+    "judge_won": "The share of the item the arm won, by judges who picked the best output (1, or 1/k when k "
+    "share the best) or compared outputs two at a time (the share of its pairs won): evh judge-score, "
+    "mode pick or pairwise. The judges were validated in that mode against human preferences.",
+    "judge_won_unvalidated": "Computed as judge_won is, by judges not validated against human preferences "
+    "in this mode (or filled in a sheet elsewhere): a trial, not a measurement.",
     "overlap_f1": "Token-overlap F1 against the reference: the bundled adapter's placeholder, "
     "enough to run the loop, not to defend a decision.",
     "output_words": "How many words the output has: a description of the output, not a quality.",
@@ -175,6 +189,14 @@ BUILTIN_DETAILS = {
     "judge_score_unvalidated": "Computed as judge_score is, by judges that were never compared "
     "with human ratings for this use. It ranks arms by what the judges prefer, which may not be "
     "what people prefer: read it as a trial. A validated scorer turns it into judge_score.",
+    "judge_won": "evh judge-score in pick mode shows every arm's output for an item at once, blind and "
+    "shuffled, and each judge names the best; in pairwise mode it shows two at a time and the judge says "
+    "which is better, for every pair. An arm's judge_won for an item is its share of that item (1 alone "
+    "best, 1/k shared; its share of the pairs won), the mean over judges. Its mean over items is the arm's "
+    "win rate; the summary adds Bradley-Terry strengths with intervals, and the position and noise checks.",
+    "judge_won_unvalidated": "Computed as judge_won is, by judges never compared with human preferences in "
+    "this mode, or filled in a sheet outside the harness (evh sheet-import): it ranks arms by what the "
+    "judges prefer, which may not be what people prefer.",
     "overlap_f1": "The bundled adapter's score: the output and the reference as sets of lowercased "
     "words, precision is the share of the output's words in the reference, recall the share of the "
     "reference's words in the output, and F1 their harmonic mean. Word order, synonyms and "
@@ -211,7 +233,7 @@ def describe_metric(metric: str, project: dict) -> str:
     if metric in BUILTIN_METRICS:
         return BUILTIN_METRICS[metric]
     m = re.fullmatch(r"judge_(.+?)(_unvalidated)?", metric)
-    if m and not metric.startswith("judge_score"):
+    if m and not metric.startswith(("judge_score", "judge_won")):
         return f"Judge {m.group(1)}'s mean score for the output, on the scorer's scale" + (
             ", not validated against human ratings." if m.group(2) else "."
         )
@@ -255,9 +277,61 @@ def _label_of(by_ds: dict, ds: str, arm: str) -> str:
     return next((a["label"] for a in (by_ds.get(ds) or {}).get("arms", []) if a["arm"] == arm), arm)
 
 
+#: {arm: capture}: production's recorded arms (RFC-023), filled by collect(); arm_link badges them.
+RECORDED: dict[str, str] = {}
+
+
 def arm_link(arm: str, label: str, up: str = "") -> str:
-    """An arm's label, linked to its page."""
-    return f'<a class="cell-link" href="{up}{arm_page(arm)}">{e(label)}</a>'
+    """An arm's label, linked to its page; a recorded arm (production's decisions) carries its badge."""
+    badge = (
+        f' <span class="badge recorded" title="production\'s decisions, from the capture {e(RECORDED[arm])}">recorded</span>'
+        if arm in RECORDED
+        else ""
+    )
+    return f'<a class="cell-link" href="{up}{arm_page(arm)}">{e(label)}</a>{badge}'
+
+
+def tier_pill(tier: str) -> str:
+    """A reference's tier as a pill in its own colour (UXS-001): gold on gold, silver on silver."""
+    if tier not in ("gold", "silver"):
+        return e(tier) if tier else ""
+    return f'<span class="pill tier-{tier}">{tier}</span>'
+
+
+def source_chip(kind: str) -> str:
+    """A label set's source as a chip (person, model, rule), never a tier's colours (UXS-001)."""
+    k = kind if kind in ("person", "model", "rule") else "unknown"
+    return f'<span class="src src-{k}">{e(kind or "unknown")}</span>'
+
+
+def labels_page_anchor(set_id: str) -> str:
+    """A label set's row on the labels page, relative to the catalog root."""
+    return f"labels.html#set-{slug(set_id)}"
+
+
+def label_set_html(set_id: str, kind: str, up: str = "") -> str:
+    """A label set: its source chip, then its name linked to its row on the labels page."""
+    name = set_id.rsplit("/", 1)[-1]
+    return f'{source_chip(kind)} <a class="cell-link" href="{up}{labels_page_anchor(set_id)}"><code>{e(name)}</code></a>'
+
+
+def promoted_from_html(r: dict, up: str = "") -> str:
+    """Where a reference was promoted from: the label set with its source chip (and the arm a model set came from),
+    else the source a reference made before labels existed names."""
+    pf = r.get("promoted_from") or {}
+    src = pf.get("source") or {}
+    kind = str(src.get("kind") or "")
+    if pf.get("labels"):
+        out = label_set_html(f"{pf.get('dataset_id')}/{pf['labels']}", kind, up)
+    elif kind:
+        # A model's run is named once, below, as the arm.
+        who = src.get("by") or ("" if kind == "model" else src.get("config_id")) or ""
+        out = source_chip(kind) + (f" <small>{e(who)}</small>" if who else "")
+    else:
+        return "—"
+    if kind == "model" and src.get("config_id"):
+        out += f" <small>the arm: <code>{e(src['config_id'])}</code></small>"
+    return out
 
 
 def dataset_page(ds: str) -> str:
@@ -288,24 +362,31 @@ def row_kind(a: dict, tiers: dict) -> str:
         return "t-author"
     if a.get("judge"):
         return "t-judged"
+    if (a.get("reference") or "").startswith("labels/"):
+        return "t-labels"
     tier = tiers.get(a.get("reference", "")) or (a.get("reference") or "").split("/", 1)[0]
     return "t-silver" if tier == "silver" else ""
 
 
 def scored_against(a: dict, up: str) -> str:
-    """The table cell that says what an arm was scored against: a judge, or a reference, linked."""
+    """The table cell that says what an arm was scored against: a judge, a reference with its tier pill, or a label
+    set with its source chip (RFC-023), linked."""
     if a.get("judge"):
         return f'judge <code class="small">{e(a["judge"])}</code>'
     ref = a.get("reference")
     if not ref:
         return "—"
-    return f'<a class="cell-link" href="{up}{reference_page(ref)}">{e(ref)}</a>'
+    if ref.startswith("labels/"):
+        return label_set_html(ref.removeprefix("labels/"), a.get("labels_source") or "", up)
+    tier = ref.split("/", 1)[0]
+    return f'<a class="cell-link" href="{up}{reference_page(ref)}">{e(ref)}</a> {tier_pill(tier)}'.rstrip()
 
 
 ROW_KEY = (
     '<p class="rowkey small muted"><span class="key t-silver">scored against silver</span>'
     '<span class="key t-judged">scored by a judge</span>'
     '<span class="key t-author">wrote the reference it is scored against</span>'
+    '<span class="key t-labels">scored against a label set, not a reference set</span>'
     "<span>unmarked rows are scored against gold</span></p>"
 )
 
@@ -384,7 +465,15 @@ def page(
         else ""
     )
     logo_href = e(parts[0][1]) if parts else here_href
-    brand_text = f"<span>{e(brand)}</span>"
+    # A catalog under the default name and in no publication (no --link) is a project's own, read locally: it names
+    # its project, so two open side by side are never confused (ADR-0024). A deployment names itself and is not
+    # changed.
+    local = brand == "eval catalog" and not parts
+    brand_text = (
+        f'<span>{e(brand)}<small class="proj"> · {e(ROOT.name)}</small></span>'
+        if local
+        else f"<span>{e(brand)}</span>"
+    )
     built = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     foot = footer or (
         f"Built {built} by <code>evh catalog</code>. The pages carry counts and means only, "
@@ -399,7 +488,7 @@ def page(
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>{e(title)} · {e(brand)}</title>
+<title>{e(title)} · {e(brand)}{f" · {e(ROOT.name)}" if local else ""}</title>
 {share_card(title, brand, body)}
 <meta name="color-scheme" content="dark light">
 <script src="{up}assets/head.js"></script>
@@ -682,8 +771,11 @@ def collect(A: Adapter) -> dict:
     """{dataset: {"arms": [row], "refs": [ref], "items": n}}: what every page needs, read once."""
     by_ds: dict = {}
     runs_of = getattr(A, "arm_runs", None)
+    RECORDED.clear()
     for arm in A.arms():
         d = A.describe(arm)
+        if d.get("recorded"):
+            RECORDED[arm] = d["recorded"]
         sc = A.scores(arm)
         runs = runs_of(arm) if callable(runs_of) else []
         head = d.get("primary") or d.get("task") or ""
@@ -700,6 +792,8 @@ def collect(A: Adapter) -> dict:
                 "reference": d.get("reference", ""),
                 "judge": d.get("judge", ""),
                 "wrote": bool(d.get("wrote_reference")),
+                "labels_source": d.get("labels_source", ""),
+                "recorded": d.get("recorded", ""),
                 "machine": _machine(A, arm),
                 "goal": d.get("goal", ""),
                 "format": d.get("format", ""),
@@ -715,6 +809,7 @@ def collect(A: Adapter) -> dict:
         )
     for r in A.references():
         by_ds.setdefault(r["dataset"], {"arms": [], "refs": [], "items": 0})["refs"].append(r)
+    _mark_superseded(by_ds)
     bl = getattr(A, "baselines", None)
     for b in bl() if callable(bl) else []:
         v = by_ds.get(b["dataset"])
@@ -724,21 +819,58 @@ def collect(A: Adapter) -> dict:
         for a in v["arms"]:
             if a["arm"] == b["arm"]:
                 a["baseline"] = b
+        # A baseline whose arm is read from its re-score is the re-score's (RFC-022): the goal reads that one.
+        for a in v["arms"]:
+            if a.get("baseline") and a.get("superseded_by"):
+                for t in v["arms"]:
+                    if t["arm"] == a["superseded_by"]:
+                        t["baseline"] = a["baseline"]
     _versions(A, by_ds)
     # The dataset's own size, from the ADAPTER: the harness's DATASETS path is not where a
     # project with its own layout keeps them. An adapter that cannot say falls back to the
     # most items any arm scored.
     size = getattr(A, "dataset_items", None)
+    meta = getattr(A, "dataset_meta", None)
     for ds, v in by_ds.items():
         n = size(ds) if callable(size) else None
         v["items"] = n if n is not None else max((a["n"] for a in v["arms"]), default=0)
+        m = (meta(ds) if callable(meta) else None) or {}
+        v["tags"], v["origin"], v["capture"] = (
+            m.get("tags") or {},
+            m.get("origin") or "",
+            m.get("capture") or "",
+        )
     return by_ds
 
 
+def _mark_superseded(by_ds: dict) -> None:
+    """An arm every run of which was re-scored (`evh rescore`) against the same reference gets
+    "superseded_by": the arm holding the latest re-score. A scorer that changes after runs were measured
+    leaves their scores stale, and the re-score is the same outputs read by the current scorer; showing
+    both ranks one arm twice (and an old score may lack the goal's measure entirely). The goal pages read
+    the re-score; the measured arm keeps its page as the record of what was first scored."""
+    for v in by_ds.values():
+        latest: dict = {}
+        for a in v["arms"]:
+            for r in a["run_list"]:
+                if r.get("derived") == "rescore" and r.get("from"):
+                    key = (a["reference"], r["from"])
+                    if key not in latest or (r["created_at"], a["arm"]) > latest[key][0]:
+                        latest[key] = ((r["created_at"], a["arm"]), a["arm"])
+        for a in v["arms"]:
+            ids = [r["run_id"] for r in a["run_list"]]
+            by = {latest.get((a["reference"], i), (None, None))[1] for i in ids}
+            if ids and len(by) == 1 and None not in by and a["arm"] not in by:
+                a["superseded_by"] = by.pop()
+
+
 def _machine(A: Adapter, arm: str) -> str:
-    """The machine an arm ran on, in a few words (EVAL_HOST_LABEL when set), from its conditions."""
+    """The machine an arm ran on, in a few words: the deployment's machine when its fingerprint names one,
+    else the runner's (EVAL_HOST_LABEL when set), from its conditions."""
     fn = getattr(A, "conditions", None)
     c = fn(arm) if callable(fn) else {}
+    if c.get("deployment.machine"):
+        return c["deployment.machine"]
     if c.get("machine.label"):
         return c["machine.label"]
     bits = [c.get("machine.platform"), c.get("machine.cpu_count") and f"{c['machine.cpu_count']} CPUs"]
@@ -820,6 +952,8 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     goals = _goals_of(A)
     w = window(A, by_ds)
     period_rows = period_datasets(A, by_ds)
+    # every tag key some dataset carries: each is a "group by" chip (RFC-019: tags group and filter)
+    tag_keys = sorted({k for v in by_ds.values() for k in (v.get("tags") or {})})
     rows = []
     for ds in sorted(by_ds, key=lambda d: (-len(by_ds[d]["arms"]), d)):
         v = by_ds[ds]
@@ -830,13 +964,23 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         runs, usd = period_rows[ds]["runs"], period_rows[ds]["usd"]
         # A dataset under several goals is a group of its own, named after all of them.
         its_goals = " · ".join(g.get("title") or g["goal_id"] for g in goals.get(ds, [])) or "no goal"
+        tags = v.get("tags") or {}
         rows.append(
             {
                 "key": ds,
                 "made": period_rows[ds]["made"],
-                "data": {"goal": its_goals},
+                "data": {"goal": its_goals, **{f"tag-{k}": tags.get(k) or f"no {k}" for k in tag_keys}},
                 "cells": [
-                    dataset_link(ds) + (f"<br><small>from {dataset_link(parent)}</small>" if parent else ""),
+                    dataset_link(ds)
+                    + (f"<br><small>from {dataset_link(parent)}</small>" if parent else "")
+                    + (f"<br><small>{origin_html(v)}</small>" if v.get("origin") and not parent else ""),
+                    # A chip per tag: run together as text, five tags and a Hugging Face pin made one tall
+                    # unreadable cell (owner, 2026-10-31).
+                    "".join(
+                        f'<span class="tag" title="{e(k)}: {e(t)}"><b>{e(k)}</b> {e(t)}</span>'
+                        for k, t in sorted(tags.items())
+                    )
+                    or "—",
                     f'<span data-v="{v["items"]}">{v["items"]}</span>',
                     f'<span data-v="{len(v["arms"])}">{len(v["arms"])}</span>',
                     f'<span data-flow="runs">{len(runs)}</span>',
@@ -863,18 +1007,19 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     body += block(
         "01",
         "datasets",
-        group_chips("datasets", (("", "no grouping"), ("goal", "goal")))
+        group_chips("datasets", (("", "no grouping"), ("goal", "goal"), *((f"tag-{k}", k) for k in tag_keys)))
         + cp.row_chips("datasets", "datasets")
         + table(
             "datasets",
             [
                 "dataset",
+                "tags",
                 f"{e(A.item_word)}s",
                 "arms",
                 "runs in period",
                 "runs per day",
                 "spend in period",
-                "references",
+                "reference sets",
                 "goals",
                 "baseline",
                 "last run",
@@ -1035,6 +1180,15 @@ def ref_tier(tiers: dict, key: str) -> str:
     return tiers.get(key) or (key.split("/", 1)[0] if key.startswith(("gold/", "silver/")) else "")
 
 
+def baseline_read(v: dict, goal_id: str) -> tuple[list, str | None]:
+    """A dataset's baselines for a goal, and the arm the goal reads for the latest one: its latest re-score when
+    it was re-scored (RFC-022), as the goal page reads it, else the promoted arm itself."""
+    bl = [x for x in v.get("baselines", []) if not x.get("goal") or x.get("goal") == goal_id]
+    base = bl[-1]["arm"] if bl and bl[-1].get("arm") else None
+    moved = next((a.get("superseded_by") for a in v.get("arms", []) if base and a["arm"] == base), None)
+    return bl, moved or base
+
+
 def glance(A: Adapter, by_ds: dict) -> list[dict]:
     """Per goal and dataset: the deciding measure, the promoted baseline, the leader of the gold
     group, the paired test of the leader against the baseline (one test, threshold 0.05), and what
@@ -1050,17 +1204,27 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
         for ans in goal_answers(g, by_ds):
             ds = ans["dataset"]
             if not decides_on(g, ds):
-                continue  # a dev slice or a generalization check: on the goal page, not the glance
+                continue  # a pilot slice or a generalization check: on the goal page, not the glance
             v = by_ds.get(ds) or {}
-            bl = [x for x in v.get("baselines", []) if not x.get("goal") or x.get("goal") == g["goal_id"]]
-            base = bl[-1]["arm"] if bl and bl[-1].get("arm") else None
+            bl, base = baseline_read(v, g["goal_id"])
             # The gold group decides; without one, the first group scored against a reference,
             # named in the row so it is never read as gold.
             tiers = {r["id"]: r["tier"] for r in v.get("refs", [])}
 
             plain = [x for x in ans["groups"] if not x["key"].startswith("judge ")]
             grp = next((x for x in plain if ref_tier(tiers, x["key"]) == "gold"), plain[0] if plain else None)
-            dec = group_decision(A, g, ds, grp["rows"], measure, retired_in) if grp else None
+            dec = (
+                group_decision(
+                    A,
+                    g,
+                    ds,
+                    grp["rows"],
+                    measure,
+                    retired_in,
+                )
+                if grp
+                else None
+            )
             # The decision's leader: the best arm it may recommend, so never a retired or flagged one.
             leader = (
                 next((r for r in grp["rows"] if dec and r["arm"] == dec["leader"]), None) if grp else None
@@ -1135,7 +1299,7 @@ def coverage(A: Adapter, by_ds: dict) -> list[dict]:
     for ds in sorted(by_ds, key=lambda d: (-len(by_ds[d]["arms"]), d)):
         v = by_ds[ds]
         tiers = {r["id"]: r["tier"] for r in v["refs"]}
-        kinds = {"gold": 0, "silver": 0, "judged": 0, "none": 0}
+        kinds = {"gold": 0, "silver": 0, "labels": 0, "judged": 0, "none": 0}
         for a in v["arms"]:
             k = (
                 "judged"
@@ -1295,7 +1459,7 @@ def _coverage(A: Adapter, by_ds: dict) -> str:
             "dataset",
             f"{e(A.item_word)}s",
             "arms scored against",
-            "references",
+            "reference sets",
             "metrics",
             "goals",
             "last run",
@@ -1324,6 +1488,7 @@ def _feed(ev: list[dict], since: str) -> str:
 
 def home_counts(A: Adapter, by_ds: dict, spend: list[dict]) -> list[tuple]:
     """The home page's tiles, in catalog_periods.TILES' order: (what, how many, page)."""
+    from evaluation_harness.catalog_models import entries  # noqa: PLC0415
     from evaluation_harness.catalog_periods import TILES  # noqa: PLC0415
 
     billed = sum(float(x["usd"]) for x in spend if isinstance(x.get("usd"), (int, float)))
@@ -1333,6 +1498,7 @@ def home_counts(A: Adapter, by_ds: dict, spend: list[dict]) -> list[tuple]:
         "datasets": len(by_ds),
         "configs": _n_configs(by_ds),
         "arms": sum(len(v["arms"]) for v in by_ds.values()),
+        "models": len(entries(A)),
         "references": sum(len(v["refs"]) for v in by_ds.values()),
         "metrics": len(metric_index(A, by_ds)),
         "measured runs": sum(
@@ -1390,8 +1556,8 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     tile_html = (
         '<div class="tiles">'
         + "".join(
-            f'<a class="tile" href="{href}" data-tile="{i}" data-group="{cp.TILES[i][3]}"{" data-period-link" if ".html" in href else ""} title="{e(n)} {e(k)}"><b>{tile_value(n)}</b>'
-            f'<span>{e(k)}</span><small class="trend"></small></a>'
+            f'<a class="tile" href="{href}" data-tile="{i}" data-group="{cp.TILES[i][3]}"{" data-period-link" if ".html" in href else ""} title="{e(n)} {e(TILE_LABEL.get(k, k))}"><b>{tile_value(n)}</b>'
+            f'<span>{e(TILE_LABEL.get(k, k))}</span><small class="trend"></small></a>'
             for i, (k, n, href) in enumerate(home_counts(A, by_ds, w["spend"]))
         )
         + "</div>"
@@ -1401,7 +1567,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
             for g, name in (
                 ("goals", "goals"),
                 ("data", "data"),
-                ("experiments", "experiments"),
+                ("arms", "arms"),
                 ("work", "work and spend"),
             )
         )
@@ -1413,7 +1579,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         "Every evaluation, at a glance",
         "Pages the harness builds from this project's committed runs: what each goal concludes so far, "
         "when the work happened and what it cost, what each dataset covers, and everything recorded. "
-        "Every name is a link: goals, datasets, arms, references and metrics each have a page, and the "
+        "Every name is a link: goals, datasets, arms, models, reference sets and metrics each have a page, and the "
         "inspector tests any arms against a baseline, item by item.",
         (f'<div class="about">{ABOUT}</div>' if ABOUT else "") + switch + tile_html,
     )
@@ -1429,7 +1595,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         "activity and spend",
         f'<div class="duo"><div id="activity"><h3 class="sub">activity</h3><div data-chart="activity">{activity}</div></div>'
         f'<div id="spend"><h3 class="sub">spend</h3><div data-chart="spend">{spending}</div></div></div>'
-        '<p><a class="btn small" href="activity.html" data-period-link>every dataset, arm and kind of spend in the period →</a></p>',
+        '<p><a class="btn small" href="activity.html" data-period-link>every dataset, arm and kind of spend in the period</a></p>',
     )
     body += block("03", "coverage", _coverage(A, by_ds), "coverage")
     body += block(
@@ -1617,7 +1783,7 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
                     f"{' ↓' if a['lower'] else ''}</span>"
                 ),
                 f'<span data-v="{a["n"]}">{a["n"]}</span>',
-                *(axis_cell(ax, c) for ax, c in zip(bax, cells[a["arm"]])),
+                *(NO_CALL if a.get("recorded") else axis_cell(ax, c) for ax, c in zip(bax, cells[a["arm"]])),
                 str(a["runs"]),
                 scored_against(a, "../"),
                 f'<a class="btn small" href="{inspect_url([a["arm"]], "../")}">inspect</a>',
@@ -1652,6 +1818,10 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
             f"Inspect the {len(members)} arms {what}</a>"
             + (f'<span class="muted small">{more}</span>' if more else "")
         )
+    # The sheet (RFC-023): its items one per row, production's recorded arm first when there is one.
+    rec = [a["arm"] for a in arms if a.get("recorded")]
+    q = f"dataset={quote(ds, safe='')}&sheet=1" + (f"&runs={quote(','.join(rec), safe=',/')}" if rec else "")
+    btns.append(f'<a class="btn" href="../inspect.html?{q}">Open its sheet</a>')
     btn = f'<p class="btns">{"".join(btns)}</p>' if btns else ""
     for b in v.get("baselines", [])[-1:]:
         label = next((a["label"] for a in arms if a["arm"] == b.get("arm")), b["run"])
@@ -1664,8 +1834,8 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     if goals:
         btn += '<p class="small">goals: ' + ", ".join(goal_link(g, "../") for g in goals) + "</p>"
     refs = "".join(
-        f"<li>{reference_link(r['id'], '../')} · {e(r['tier'])}"
-        + (f" · written by {_author_link(r, v, '../')}" if r.get("author") else "")
+        f"<li>{reference_link(r['id'], '../')} {tier_pill(r['tier'])}"
+        + (f" · promoted from {promoted_from_html(r, '../')}" if r.get("promoted_from") else "")
         + "</li>"
         for r in v["refs"]
     )
@@ -1709,7 +1879,19 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
         body += block(f"{n:02d}", "versions", v["versions"], "versions")
     if refs:
         n += 1
-        body += block(f"{n:02d}", "references", f"<ul>{refs}</ul>")
+        body += block(f"{n:02d}", "reference sets", f"<ul>{refs}</ul>")
+    labels_html = render_labels_of(A, ds, v)
+    if labels_html:
+        n += 1
+        body += block(f"{n:02d}", "labels", labels_html, "labels")
+    picks_html = render_picks_waiting(A, ds)
+    if picks_html:
+        n += 1
+        body += block(f"{n:02d}", "picks waiting", picks_html, "picks")
+    added_html = render_added(A, ds)
+    if added_html:
+        n += 1
+        body += block(f"{n:02d}", "added from production", added_html, "added")
     fields_html = render_fields(A, ds)
     if fields_html:
         n += 1
@@ -1733,6 +1915,235 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
                 else ()
             ),
         ),
+    )
+
+
+def _made_line(source: dict, created_at) -> str:
+    """Who or which run made a label set, and when."""
+    from evaluation_harness._label_sets import source_line  # noqa: PLC0415
+
+    when = (created_at or "")[:10]
+    return e(source_line(source)) + (f" <small>{e(when)}</small>" if when else "")
+
+
+def _promoted_as(A: Adapter, set_id: str) -> str:
+    """The reference set promoted from a label set, with its pill, or "not promoted"."""
+    ds, _, name = set_id.partition("/")
+    hit = [
+        r
+        for r in A.references()
+        if (r.get("promoted_from") or {}).get("labels") == name
+        and (r.get("promoted_from") or {}).get("dataset_id") == ds
+    ]
+    return (
+        ", ".join(f"{reference_link(r['id'], '../')} {tier_pill(r['tier'])}" for r in hit)
+        if hit
+        else '<span class="muted">not promoted</span>'
+    )
+
+
+def render_labels_of(A: Adapter, ds: str, v: dict) -> str:
+    """A dataset's label sets (RFC-023): those covering its items, matched by hash, and how often two agree."""
+    fn = getattr(A, "label_coverage", None)
+    if not callable(fn):
+        return ""
+    cov = fn(ds)
+    n = v.get("items") or 0
+    if not cov["sets"]:
+        return (
+            '<p class="muted">No labels yet. A sheet to fill: <code>evh label-sheet --dataset-id '
+            f"{e(ds)} --out sheet.csv</code>; a run's outputs as a model set: <code>evh label-from-run --run R "
+            "--set S</code>.</p>"
+        )
+    rows = [
+        {
+            "cells": [
+                label_set_html(x["id"], (x.get("source") or {}).get("kind", ""), "../"),
+                dataset_link(x["dataset"], "../")
+                if x["dataset"] != ds
+                else '<span class="muted">this one</span>',
+                f'<span data-v="{len(x["covers"])}">{len(x["covers"])} of {n}</span>',
+                e((x.get("guideline") or {}).get("path") or "none"),
+                _made_line(x.get("source") or {}, x.get("created_at")),
+                _promoted_as(A, x["id"]),
+            ]
+        }
+        for x in cov["sets"]
+    ]
+    html_ = table(f"labels-{slug(ds)}", ["set", "made on", "coverage", "guideline", "made", "promoted"], rows)
+    if cov["agreement"]:
+        html_ += (
+            '<h3 class="sub">how often two sets agree <small>on the items both label: the same answers, sharing '
+            "one, and chance-corrected (Cohen's κ, Krippendorff's α)</small></h3>"
+            + table(
+                f"agree-{slug(ds)}",
+                # In <small>: a header is uppercased, and Κ and Α read as K and A.
+                [
+                    "set",
+                    "set",
+                    "both label",
+                    "same answers",
+                    "share an answer",
+                    "<small>κ</small>",
+                    "<small>α</small>",
+                ],
+                [
+                    {"cells": [f"<code>{e(a['a'])}</code>", f"<code>{e(a['b'])}</code>", *agreement_cells(a)]}
+                    for a in cov["agreement"]
+                ],
+            )
+            + "".join(confusion_html(a) for a in cov["agreement"])
+        )
+    return html_
+
+
+def agreement_cells(a: dict) -> list[str]:
+    """One pair of label sets compared (`_label_sets.compare`): the items, the same answers, a shared one, κ, α."""
+    both = a["both"]
+    if a.get("kind") != "categories":
+        free = '<span class="muted">free text: not compared as text</span>'
+        return [str(both), free, "", "", ""]
+
+    def share(k: str) -> str:
+        return f"{a[k]} ({a[k] / both:.0%})" if both else "0"
+
+    def coef(k: str) -> str:
+        return "—" if a.get(k) is None else f"{a[k]:.2f}"
+
+    alpha = coef("alpha") + (
+        " <small>MASI</small>" if a.get("alpha_distance") == "MASI" and a.get("alpha") is not None else ""
+    )
+    return [str(both), share("same"), share("share"), coef("kappa"), alpha]
+
+
+def confusion_html(a: dict) -> str:
+    """One pair's confusion matrix, folded: a's labels down, b's across."""
+    conf = a.get("confusion") or {}
+    if not conf:
+        return ""
+    cols = sorted({c for row in conf.values() for c in row})
+    rows = [
+        {
+            "cells": [
+                e(r),
+                *[str(conf[r].get(c, 0)) if conf[r].get(c) else '<span class="muted">0</span>' for c in cols],
+            ]
+        }
+        for r in sorted(conf)
+    ]
+    head = [f"{e(a['a'])} ↓ · {e(a['b'])} →", *[e(c) for c in cols]]
+    return (
+        f"<details><summary>where <code>{e(a['a'])}</code> and <code>{e(a['b'])}</code> differ</summary>"
+        + table(f"confusion-{slug(a['a'])}-{slug(a['b'])}", head, rows)
+        + "</details>"
+    )
+
+
+def _label_sets_of(A: Adapter) -> list:
+    """The adapter's label sets (optional: an adapter without them has none)."""
+    fn = getattr(A, "label_sets", None)
+    return fn() if callable(fn) else []
+
+
+def _labels_of_sha(A: Adapter, sha: str) -> str:
+    """The source chips of every label set holding an item with these bytes (labels follow the item)."""
+    sets = [
+        ls
+        for ls in _label_sets_of(A)
+        if any((row or {}).get("item_sha256") == sha for row in ls["items"].values())
+    ]
+    return (
+        " ".join(label_set_html(ls["id"], (ls.get("source") or {}).get("kind", ""), "../") for ls in sets)
+        if sets
+        else '<span class="muted">none yet</span>'
+    )
+
+
+def cmdpick(prefix: str, flag: str, empty: str, inner: str) -> str:
+    """A selection that gives a command (RFC-023): the boxes ticked in `inner` (input.cmdsel, their value the
+    argument) become `prefix flag v flag v …`, shown to copy; catalog.js keeps it current. The page writes nothing."""
+    return (
+        f'<div class="cmdpick" data-prefix="{e(prefix)}" data-flag="{e(flag)}" data-empty="{e(empty)}">{inner}'
+        f'<p class="cmdbox"><code class="cmd">{e(empty)}</code> '
+        '<button type="button" class="btn small copy" data-copy="" hidden>copy</button></p></div>'
+    )
+
+
+def render_picks_waiting(A: Adapter, ds: str) -> str:
+    """The picks waiting for this dataset (ADR-0023), a box per row; the rows ticked give dataset-extend."""
+    fn = getattr(A, "picks_waiting", None)
+    picks = fn(ds) if callable(fn) else []
+    if not picks:
+        return ""
+    rows = [
+        {
+            "cells": [
+                (
+                    f'<input type="checkbox" class="cmdsel" value="{e(p.get("from"))}:{e(p.get("item"))}" '
+                    f'aria-label="pick {e(p.get("item"))}">'
+                ),
+                (
+                    f'<a class="cell-link" href="../inspect.html?dataset={quote(str(p.get("from")), safe="")}'
+                    f'&sheet=1&item={quote(str(p.get("item")), safe="")}"><code>{e(p.get("item"))}</code></a>'
+                ),
+                dataset_link(str(p.get("from")), "../")
+                + (f" <small>capture {e(p['capture'])}</small>" if p.get("capture") else ""),
+                _labels_of_sha(A, str(p.get("sha256") or "")),
+                e(", ".join(f"{k}={v_}" for k, v_ in (p.get("tags") or {}).items())) or "—",
+                e(p.get("note") or "") or "—",
+                e(" ".join(x for x in (str(p.get("by") or ""), str(p.get("at") or "")[:10]) if x)) or "—",
+            ]
+        }
+        for p in picks
+    ]
+    tbl = table(
+        f"picks-{slug(ds)}",
+        [
+            '<input type="checkbox" class="cmdall" aria-label="select all shown">',
+            "item",
+            "from",
+            "labels",
+            "tags",
+            "note",
+            "picked",
+        ],
+        rows,
+    )
+    return cmdpick(
+        f"evh dataset-extend {ds} --dataset-id <next>",
+        "--pick",
+        "tick the picks to add: the command to make the next version shows here",
+        f'<p class="small muted">{len(picks)} pick(s) name this dataset as a target. The page writes nothing: '
+        "it gives the command for the rows you tick.</p>" + tbl,
+    )
+
+
+def render_added(A: Adapter, ds: str) -> str:
+    """A version made by dataset-extend: each item it added, where it came from, the note, the labels it carried."""
+    meta = getattr(A, "dataset_meta", None)
+    ext = ((meta(ds) if callable(meta) else None) or {}).get("extended_from")
+    if not ext:
+        return ""
+    sha = {}
+    got = getattr(A, "data_dir", None)
+    if got is not None:
+        doc = json.loads((Path(got) / "datasets" / f"{ds}.json").read_text(encoding="utf-8"))
+        sha = {it["item_id"]: it.get("source_sha256") for it in doc.get("items") or []}
+    rows = [
+        {
+            "cells": [
+                f"<code>{e(p.get('item_id'))}</code>",
+                dataset_link(str(p.get("from")), "../")
+                + (f" <small>capture {e(p['capture'])}</small>" if p.get("capture") else ""),
+                e(p.get("note") or "") or "—",
+                _labels_of_sha(A, str(sha.get(p.get("item_id")) or "")),
+            ]
+        }
+        for p in ext.get("picks") or []
+    ]
+    return (
+        f'<p class="small">Made from {dataset_link(str(ext.get("dataset")), "../")} and {len(rows)} pick(s).</p>'
+        + table(f"added-{slug(ds)}", ["item", "from", "note", "labels it carried"], rows)
     )
 
 
@@ -1790,6 +2201,13 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
             f"<code>evh dataset-profile --dataset-id {e(ds)}</code> writes one: its {e(A.item_word)}s, how long "
             f"they are, the gold's shape and where each can be read.</p>"
         )
+    hide = _visibility.hidden(ds)
+    if hide:
+        p = _visibility.public_profile(p)
+    elif any(r.get("text") for r in p.get("rows") or []) and not _texts_tracked(ds):
+        # A profile written --with-text is checked again here: text whose source git no longer
+        # tracks is not shown, whatever the profile carries.
+        p = {**p, "rows": [{k: v for k, v in r.items() if k != "text"} for r in p["rows"]]}
     it, w = p["items"], p["items"].get("words") or {}
     src = p.get("source")
     lines = [
@@ -1818,6 +2236,11 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
         lines.append(
             f'<span class="note">The items changed since this profile was written: run '
             f"<code>evh dataset-profile --dataset-id {e(ds)}</code> again.</span>"
+        )
+    if hide:
+        lines.append(
+            f"This dataset's text is kept off public pages (<code>text: hidden</code>): its {e(A.item_word)}s, "
+            "their labels and links are not shown, only their number and length."
         )
     head = "".join(f"<p>{x}</p>" for x in lines)
     chart = (
@@ -1858,6 +2281,20 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
         + '<p class="small muted">Each row is the profile <code>evh dataset-items --dataset-id '
         + f"{e(ds)}</code> prints; <b>inspect</b> opens the {e(A.item_word)} in the inspector with the dataset's "
         + "largest group of comparable arms, and its text where the inspector runs on a machine that has it.</p>"
+    )
+
+
+def _texts_tracked(ds: str) -> bool:
+    """Whether git still tracks every item's source file (what --with-text required when written)."""
+    from evaluation_harness import dataset_profile  # noqa: PLC0415
+
+    try:
+        d = _common.load_dataset(ds)
+    except SystemExit:
+        return False
+    src = ROOT / d.get("source_dir", "data/sources")
+    return not dataset_profile.tracked(
+        [src / (it.get("source_path") or it["item_id"]) for it in d.get("items") or []]
     )
 
 
@@ -1967,7 +2404,20 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
     for d in goal.get("datasets") or []:
         ds = d.get("dataset_id", "")
         rows = []
-        for a in (by_ds.get(ds) or {}).get("arms", []):
+        arms = (by_ds.get(ds) or {}).get("arms", [])
+        # the measured arms read through a re-score (an older re-score superseded by a newer one is not another)
+        moved = [
+            a for a in arms if a.get("superseded_by") and not any(r.get("derived") for r in a["run_list"])
+        ]
+        notes = d.get("notes", "")
+        if moved:
+            notes = (notes.rstrip(". ") + ". " if notes else "") + (
+                f"{len(moved)} arm(s) are read from their re-score with the current scorer, not their first "
+                "score (the measured run keeps its own page)."
+            )
+        for a in arms:
+            if a.get("superseded_by"):
+                continue
             # A judged arm records its judge's score, not the goal's measure: it is shown in its
             # judge's group, read on that score (never ranked with the reference-scored groups).
             use = measure if measure in a["means"] else (a["metric"] if a.get("judge") else None)
@@ -1982,7 +2432,7 @@ def _goal_rows(goal: dict, by_ds: dict) -> list:
             if a["wrote"]:
                 flags.append("wrote the reference it is scored against")
             rows.append(dict(a, mean=mean, n=n, measure=use, filed=a["goal"] == goal["goal_id"], flags=flags))
-        out.append((ds, d.get("role", ""), d.get("notes", ""), rows))
+        out.append((ds, d.get("role", ""), notes, rows))
     return out
 
 
@@ -2109,24 +2559,73 @@ def _when(stamp: str) -> str:
     return (stamp or "")[:10]
 
 
+def _sheet_fold(A: Adapter, b: dict) -> str:
+    """The baseline's deploy sheet, folded, with what the captures say production ran (UXS-001)."""
+    fn = getattr(A, "deploy_sheet", None)
+    sh = fn(b["arm"]) if b.get("arm") and callable(fn) else None
+    if not sh:
+        return ""
+    v = deploy_verdicts(sh).replace("{up}", "../")
+    return (
+        (f'<ul class="small">{v}</ul>' if v else "")
+        + '<details class="inline small"><summary>deploy sheet: what production must match</summary>'
+        + deploy_sheet_html(sh, "../")
+        + "</details>"
+    )
+
+
 def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
     """The goal's answer so far: on each of its datasets, the promoted baseline and why, or that
     nothing has been decided, with the command that decides it."""
     parts = []
+    # A round closed after the baseline was promoted says what is known now, so it leads; the promotion's reason
+    # is why that run was kept, and can name a plan a later round replaced (the triage gold "grows to 93").
+    fn = getattr(A, "rounds", None)
+    closed = sorted(
+        (
+            r
+            for r in (fn() if callable(fn) else [])
+            if r.get("goal") == g["goal_id"]
+            and r.get("status") == "closed"
+            and (r.get("conclusion") or {}).get("text")
+        ),
+        key=lambda r: str(r.get("closed_at") or ""),
+    )
+    latest = closed[-1] if closed else None
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id", "")
         v = by_ds.get(ds) or {}
         bl = [b for b in v.get("baselines", []) if not b.get("goal") or b.get("goal") == g["goal_id"]]
         label = {a["arm"]: a["label"] for a in v.get("arms", [])}
         head = dataset_link(ds, "../")
-        if bl:
+        if bl and latest and str(latest.get("closed_at") or "") > str(bl[-1].get("promoted_at") or ""):
+            b = bl[-1]
+            arm = label.get(b.get("arm") or "", b["run"])
+            who = arm_link(b["arm"], arm, "../") if b.get("arm") else e(arm)
+            parts.append(
+                f'<div class="answer"><p class="small muted">{head} · round {e(latest["round_id"])} concluded '
+                f"{e(_when(str(latest.get('closed_at') or '')))}</p>"
+                f"<p>{e(latest['conclusion']['text'])}</p>"
+                f'<p class="small">baseline: <b>{who}</b>, promoted {e(_when(b["promoted_at"]))}'
+                + (f" · scored against {tier_pill(b['tier'])}" if b.get("tier") else "")
+                + f'</p><details class="inline small"><summary>why it was promoted</summary>{e(b["reason"])}</details>'
+                + _sheet_fold(A, b)
+                + (
+                    f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
+                    if b.get("arm")
+                    else ""
+                )
+                + "</div>"
+            )
+        elif bl:
             b = bl[-1]
             arm = label.get(b.get("arm") or "", b["run"])
             who = arm_link(b["arm"], arm, "../") if b.get("arm") else e(arm)
             parts.append(
                 f'<div class="answer"><p class="small muted">{head} · baseline promoted {e(_when(b["promoted_at"]))}'
-                + (f" · scored against {e(b['tier'])}" if b.get("tier") else "")
+                + (f" · scored against {tier_pill(b['tier'])}" if b.get("tier") else "")
                 + f'</p><p class="lead"><b>{who}</b></p><p>{e(b["reason"])}</p>'
+                + _sheet_fold(A, b)
                 + (
                     f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
                     if b.get("arm")
@@ -2143,7 +2642,16 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
     return "".join(parts) or '<p class="muted">The goal names no dataset.</p>'
 
 
-def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
+def _fold(text: str, at: int = 200) -> str:
+    """A suggestion as one line: past `at` characters (45 arms named one by one), its opening words up to
+    the list, with the whole text folded under them."""
+    if len(text) <= at:
+        return e(text)
+    head = text[: text.find(" (")] if " (" in text[:at] else text[:80] + "…"
+    return f'<details class="inline"><summary>{e(head)}</summary><small>{e(text)}</small></details>'
+
+
+def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | None = None) -> str:
     """A goal's rounds (ADR-0004), newest first: what each set out to learn, what changed, its arms
     in play and those retired (with why), its best arm and how it compares with the previous
     round's best, its conclusion; for the open round, what the evidence suggests next, each as the
@@ -2153,6 +2661,15 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
     if not rounds:
         return ""
     by_id = {r["round_id"]: r for r in rounds}
+    # As the goal reads them (RFC-022): an arm every run of which was re-scored is read from its latest re-score.
+    instead = {
+        a["arm"]: a["superseded_by"]
+        for v in (by_ds if by_ds is not None else collect(A)).values()
+        for a in v["arms"]
+        if a.get("superseded_by")
+    }
+    for r in rounds:
+        r["arms"] = [instead.get(a, a) for a in r.get("arms") or []]
 
     def best(r):
         means = {}
@@ -2168,6 +2685,7 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
     rows, details = [], []
     for r in sorted(rounds, key=lambda r: -int(r["round_id"][1:] or 0)):
         arm, mean = best(r)
+        n_cfg = len({a.rsplit("/", 1)[-1] for a in r.get("arms") or []})
         prev = by_id.get(r.get("from") or "")
         prev_best, _ = best(prev) if prev else (None, None)
         vs = (
@@ -2181,11 +2699,18 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
             {
                 "cls": "" if r.get("status") == "closed" else "t-open",
                 "cells": [
-                    f"<b>{e(r['round_id'])}</b>"
-                    + (f" <small>from {e(r['from'])}</small>" if r.get("from") else ""),
-                    e(r.get("status", "")),
-                    e(r.get("hypothesis", "") or "—"),
-                    f'<span data-v="{len(r.get("arms") or [])}">{len(r.get("arms") or [])}</span>'
+                    f"<b>{e(r['round_id'])}</b> <small>{e(r.get('status', ''))}</small>"
+                    + (f"<br><small>from {e(r['from'])}</small>" if r.get("from") else ""),
+                    # The conclusion leads, with room to be read: last, in a narrow column, a round's answer ran
+                    # thirty lines down the page (owner, 2026-10-31).
+                    '<div class="concl">'
+                    + (e(concl) or ("<i>open</i>" if r.get("status") == "open" else "—"))
+                    + "</div>",
+                    '<div class="hyp">' + e(r.get("hypothesis", "") or "—") + "</div>",
+                    # Arms, best and the comparison in one narrow cell: three columns of mostly "—" took the width
+                    # the conclusion needs (owner, 2026-10-31).
+                    # Counted by config, as `evh rounds` counts: a re-score of a run (runs-rescored/...) is that arm.
+                    f'<div class="armsbest"><span data-v="{n_cfg}">{n_cfg} arms</span>'
                     + (f" <small>({len(r.get('retired') or [])} retired)</small>" if r.get("retired") else "")
                     # The round's arms in the inspector, against its leader: `evh inspect --round`.
                     + (
@@ -2193,32 +2718,57 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
                         f'href="{inspect_url((r.get("arms") or [])[:INSPECT_MAX], "../", baseline=arm, metric=measure)}">inspect</a>'
                         if arm and len(r.get("arms") or []) > 1
                         else ""
-                    ),
-                    (f"{arm_link(arm, label, '../')} <small>{fmt(mean)}</small>" if arm else "—"),
-                    vs,
-                    e(concl) or ("<i>open</i>" if r.get("status") == "open" else "—"),
+                    )
+                    + (
+                        f"<br><small>best</small> {arm_link(arm, label, '../')} <small>{fmt(mean)}</small>"
+                        if arm
+                        else ""
+                    )
+                    + (f"<br>{vs}" if vs != "—" else "")
+                    + "</div>",
                 ],
             }
         )
-        lines = [f"<li>changed: {e(c)}</li>" for c in r.get("changes") or []]
-        lines += [
-            f"<li>retired {_config_link(A, r, x['config_id'])}: {e(x['reason'])}</li>"
-            for x in r.get("retired") or []
+        # An opened round, one heading per part: a single list mixing changes, arms, scoring and evidence read as
+        # data tossed in (owner, 2026-10-31).
+        changed = [f"<li>{e(c)}</li>" for c in r.get("changes") or []]
+        by_reason: dict = {}
+        for x in r.get("retired") or []:
+            by_reason.setdefault(x["reason"], []).append(x["config_id"])
+        carried = r.get("carried") or []
+        arms_li = [
+            f"<li><b>retired {len(cs)}</b>: {e(why)}<br><small>{', '.join(_config_link(A, r, c) for c in cs)}</small></li>"
+            for why, cs in by_reason.items()
+        ] + (
+            [
+                (
+                    f'<li><details class="inline"><summary><b>carried in unchanged {len(carried)}</b></summary>'
+                    f"<small>{', '.join(_config_link(A, r, c) for c in carried)}</small></details></li>"
+                )
+            ]
+            if carried
+            else []
+        )
+        # The scorer it is judged by, and each change of it (RFC-022): `evh rounds` prints the same lines.
+        scoring_li = ([f"<li>judged by <code>{e(r['scorer'])}</code></li>"] if r.get("scorer") else []) + [
+            f"<li>{e(str(sc.get('at', ''))[:10])}: {e(sc.get('why', ''))} (<code>{e(sc.get('scorer', ''))}</code>, "
+            f"{int(sc.get('runs') or 0)} run(s) re-scored into {e(', '.join(sc.get('written') or []) or '—')})</li>"
+            for sc in r.get("scoring") or []
         ]
-        lines += [f"<li>carried in unchanged: {_config_link(A, r, c)}</li>" for c in r.get("carried") or []]
-        sugg = ""
+        evidence_li: list = []
+        sugg, notes = "", ""
         if r.get("status") == "open" and getattr(A, "data_dir", None) == _common.DATA:
             try:
                 from evaluation_harness.rounds import evidence  # noqa: PLC0415
 
                 ev = evidence(g["goal_id"], r)
-                lines += [
-                    f"<li>against {e(v['label'])} (<code>{e(v['other'].rsplit('/', 1)[-1])}</code>): "
+                evidence_li = [
+                    f"<li>the leader against {e(v['label'])} (<code>{e(v['other'].rsplit('/', 1)[-1])}</code>): "
                     f"{e(v['verdict'])}, Δ {v['delta']:+.4f}, p {fmt_p(v['p'])}</li>"
                     for v in ev["against"]
                 ]
                 sugg = "".join(
-                    f"<li>{e(what)}"
+                    f"<li>{_fold(what)}"
                     + (
                         f'<br><code class="cmd">{e(cmd)}</code> <button type="button" class="btn small copy" data-copy="{e(cmd)}">copy</button>'
                         if cmd
@@ -2226,44 +2776,72 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool) -> str:
                     )
                     + "</li>"
                     for what, cmd in ev["suggest"]
-                ) + "".join(f'<li class="muted">{e(n)}</li>' for n in ev["notes"])
-            except SystemExit:
-                sugg = ""
-        if lines or sugg:
-            details.append(
-                f'<details class="rounddetail"{" open" if r.get("status") == "open" else ""}><summary>{e(r["round_id"])}'
-                f" · {e(r.get('status', ''))}</summary><ul>{''.join(lines)}</ul>"
-                + (
-                    f'<p class="small"><b>suggested next</b>, each as the command that does it (the catalog only reads):</p><ul class="suggest">{sugg}</ul>'
-                    if sugg
-                    else ""
                 )
-                + "</details>"
+                notes = "".join(f"<li>{e(n)}</li>" for n in ev["notes"])
+            except SystemExit:
+                sugg = notes = ""
+        # One section per round: its header is the row the rounds table had, its body the detail that sat in a
+        # second list below the table; one place per round, folded until opened (owner, 2026-10-31).
+        cells = rows[-1]["cells"]
+        counts = " · ".join(
+            x
+            for x in (
+                f"{len(r.get('changes') or [])} change(s)" if r.get("changes") else "",
+                f"{len(r.get('retired') or [])} retired" if r.get("retired") else "",
+                f"{len(carried)} carried" if carried else "",
+                f"judged by {e(str(r['scorer'])[:12])}" if r.get("scorer") else "",
+                "suggested next" if sugg else "",
             )
+            if x
+        )
+
+        def part(title: str, items: list | str, note: str = "", cls: str = "") -> str:
+            inner = "".join(items) if isinstance(items, list) else items
+            if not inner:
+                return ""
+            return (
+                f'<h4 class="rc-h">{title}</h4>'
+                + (f'<p class="small muted">{note}</p>' if note else "")
+                + f"<ul{f' class={chr(34)}{cls}{chr(34)}' if cls else ''}>{inner}</ul>"
+            )
+
+        body = (
+            part("what changed", changed)
+            + part("arms", arms_li)
+            + part("scoring", scoring_li)
+            + part("evidence", evidence_li)
+            + part(
+                "suggested next",
+                sugg,
+                "each as the command that does it; the catalog only reads",
+                "suggest",
+            )
+            + part("notes", notes, cls="muted")
+        )
+        details.append(
+            f'<details class="roundcard {rows[-1]["cls"]}" id="round-{e(r["round_id"])}">'
+            f'<summary><div class="rc-round">{cells[0]}</div><div class="rc-concl">{cells[1]}</div>'
+            f'<div class="rc-hyp">{cells[2]}</div><div class="rc-arms">{cells[3]}'
+            + (f'<br><small class="muted">{counts}</small>' if counts else "")
+            + "</div></summary>"
+            + (f'<div class="rc-body">{body}</div>' if body else "")
+            + "</details>"
+        )
     return (
         '<p class="small muted">Rounds are optional: each one sets out to learn something, changes a few '
         "arms, drops what lost and says why, and ends in a conclusion. Decisions are made with "
         "<code>evh round-open</code>, <code>round-retire</code> and <code>round-close</code>; "
-        "<code>evh rounds</code> says the same as this page.</p>"
-        + table(
-            "rounds",
-            [
-                "round",
-                "status",
-                "set out to learn",
-                "arms in play",
-                f"best on {e(measure)}",
-                "against the previous round",
-                "concluded",
-            ],
-            rows,
-        )
+        "<code>evh rounds</code> says the same as this page. Open a round for what changed, what was "
+        "retired and why, and what to do next.</p>"
+        '<div class="roundcards"><div class="rc-head" aria-hidden="true"><div>round</div>'
+        f"<div>concluded</div><div>set out to learn</div><div>arms · best on {e(measure)}</div></div>"
         + "".join(details)
+        + "</div>"
     )
 
 
 def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
-    """One goal: its answer so far (the promoted baselines) first, then what it is for, then on
+    """One goal: what it is for, its answer so far (the promoted baselines), how it got there (its rounds), then on
     each of its datasets the arms that record its measure, grouped by what they are scored
     against, a leader chosen within each group."""
     crit = g.get("success_criteria") or {}
@@ -2325,14 +2903,15 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     if see:
         dl += f'<dt>links</dt><dd><ul class="small">{see}</ul></dd>'
     body = hero("goal", e(g.get("title") or g["goal_id"]), e(g.get("statement", "")))
-    body += block("01", "the answer so far", _answer(A, g, by_ds, measure))
-    n = 2
-    rounds_html = _rounds_block(A, g, measure, prim.get("direction") == "lower")
+    # What the goal is for, then the answer so far, then how it was reached (its rounds): the page explains the
+    # goal before it concludes (owner, 2026-10-31).
+    body += block("01", "what it is for", f'<dl class="kv">{dl}</dl>')
+    body += block("02", "the answer so far", _answer(A, g, by_ds, measure))
+    n = 3
+    rounds_html = _rounds_block(A, g, measure, prim.get("direction") == "lower", by_ds)
     if rounds_html:
-        body += block(f"{n:02d}", "rounds", rounds_html, "rounds")
+        body += block(f"{n:02d}", "how we got here: rounds", rounds_html, "rounds")
         n += 1
-    body += block(f"{n:02d}", "what it is for", f'<dl class="kv">{dl}</dl>')
-    n += 1
     retired_in = retired_in_of(A, g)
     for ans in goal_answers(g, by_ds):
         ds, v = ans["dataset"], by_ds.get(ans["dataset"]) or {}
@@ -2372,7 +2951,13 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                 rows = grp["rows"]
                 gm = rows[0].get("measure", measure) if rows else measure  # a judge's group: its score
                 dec = group_decision(
-                    A, g, ds, rows, gm, retired_in, gold_beside(tiers, ans["groups"], grp["key"])
+                    A,
+                    g,
+                    ds,
+                    rows,
+                    gm,
+                    retired_in,
+                    gold_beside(tiers, ans["groups"], grp["key"]),
                 )
                 # The decision's leader, as the glance has it: never a retired or flagged arm, so the
                 # table, its "test vs leader" links and the decision box name the same arm.
@@ -2405,7 +2990,12 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                                 arm_link(r["arm"], r["label"], "../") + tag,
                                 f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>',
                                 f'<span data-v="{r["n"]}">{r["n"]}</span>',
-                                *(axis_cell(ax, dec["rows"][r["arm"]][ax["name"]]) for ax in shown),
+                                *(
+                                    NO_CALL
+                                    if r.get("recorded") and ax["name"] in ("cost", "speed")
+                                    else axis_cell(ax, dec["rows"][r["arm"]][ax["name"]])
+                                    for ax in shown
+                                ),
                                 e("; ".join(r["flags"] + dec["out"].get(r["arm"], [])) or "—"),
                                 link,
                             ],
@@ -2413,7 +3003,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                     )
                 arms = [r["arm"] for r in rows][:INSPECT_MAX]
                 what = grp["key"]
-                inner += f'<h3 class="sub">{"scored by " + e(what) if what.startswith("judge ") else "scored against " + e(what)}</h3>'
+                inner += f'<h3 class="sub">{group_heading(what, rows)}</h3>'
                 if leader and len(arms) > 1:
                     inner += (
                         f'<p><a class="btn" href="{inspect_url(arms, "../", baseline=leader["arm"], metric=gm)}">'
@@ -2467,7 +3057,12 @@ def retired_in_of(A: Adapter, g: dict) -> dict:
 
 
 def retired_round(retired_in: dict, arm: str) -> str | None:
-    """The round that retired this arm: by its arm id, else by its config id."""
+    """The round that retired this arm: by its arm id, else by its config id. An arm read through its re-score
+    (`runs-rescored/<scorer>/<arm>`, RFC-022, the goal's reading of it) is the arm it re-scored: without this, an
+    arm a round retired stayed among the goal's contenders whenever it had been re-scored (found 2026-11-01: 25 of
+    the triage goal's 76 contenders were round 3's retirements)."""
+    if arm.startswith("runs-rescored/") and arm.count("/") >= 3:
+        arm = arm.split("/", 2)[2]
     return retired_in.get(arm) or retired_in.get(arm.rsplit("/", 1)[-1])
 
 
@@ -2497,10 +3092,16 @@ def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
 
 
 def group_decision(
-    A: Adapter, g: dict, ds: str, rows: list, gm: str, retired_in: dict, gold: str | None = None
+    A: Adapter,
+    g: dict,
+    ds: str,
+    rows: list,
+    gm: str,
+    retired_in: dict,
+    gold: str | None = None,
 ) -> dict:
     """The goal's decision over one group of arms on one dataset (axes.decide): its axes, limits,
-    the quality leader, the tie and the tie-break. A judge's group decides on the judge's score;
+    the quality leader, the contenders and the tie-break. A judge's group decides on the judge's score;
     an arm a round retired is shown, never recommended. `gold`: this group is scored against
     silver and that gold reference's group is on the same dataset, so gold decides and this group
     only shows its leader; so does a group measured by unvalidated judges."""
@@ -2523,17 +3124,18 @@ def group_decision(
         for r in rows
     }
     machines = {r["arm"]: r.get("machine", "") for r in rows}
-    dec = axes.decide(goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines) | {
-        "goal": goal
-    }
+    baseline = next((r["arm"] for r in rows if r.get("baseline")), None)
+    dec = axes.decide(
+        goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines, baseline=baseline
+    ) | {"goal": goal}
     if not decides_on(g, ds):
-        # The goal never decides here (a dev slice, a generalization check): the leader stands, the
+        # The goal never decides here (a pilot slice, a generalization check): the leader stands, the
         # recommendation does not.
         role = next((d.get("role") for d in g.get("datasets") or [] if d.get("dataset_id") == ds), "") or ""
         dec["recommended"] = None
         dec["shown_only"] = True
         dec["why"] = [
-            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still tied"))],
+            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still undecided"))],
             f"The goal does not decide on {ds}"
             + (f" ({role})" if role else "")
             + ": shown, not recommended.",
@@ -2542,17 +3144,18 @@ def group_decision(
         dec["recommended"] = None
         dec["shown_only"] = True
         dec["why"] = [
-            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still tied"))],
+            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still undecided"))],
             (
                 f"Scored against silver, beside {gold}: gold decides on {ds}; this group is shown, not "
-                "recommended. Silver is a model's opinion, and its author's family ranks higher on it."
+                "recommended. Silver is not what the goal decides on: a model's opinion (its author's "
+                "family ranks higher on it) or what production recorded afterwards; its caveat says which."
             ),
         ]
     elif gm.endswith("_unvalidated"):
         dec["recommended"] = None
         dec["shown_only"] = True
         dec["why"] = [
-            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still tied"))],
+            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still undecided"))],
             (
                 f"{gm}: judges never compared with people for this use, a trial rather than a "
                 "measurement; this group is shown, not recommended."
@@ -2576,7 +3179,7 @@ def decides_on(g: dict, ds: str) -> bool:
 
 def baseline_gap(A: Adapter, dec: dict, rows: list, gm: str) -> str:
     """When the rule recommends another arm than the promoted baseline in this group: by how much
-    the recommended arm differs on quality, and whether the paired test separates them. Both can
+    the recommended arm differs on quality, and whether the paired test finds the difference significant. Both can
     be right: the rule follows the strategy, the baseline is a person's decision."""
     from evaluation_harness import stats  # noqa: PLC0415
 
@@ -2642,7 +3245,7 @@ def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "") -> s
     return (
         f'<div class="decision"><p class="lead">{head}</p><ul class="small">{why}</ul>'
         f'<p class="small muted">Strategy <b>{e(strategy_of(dec["goal"]))}</b> '
-        f"({e(STRATEGIES[strategy_of(dec['goal'])])}). Weighs {e(weighs)}. Among arms tied on quality, "
+        f"({e(STRATEGIES[strategy_of(dec['goal'])])}). Weighs {e(weighs)}. Among the contenders on quality, "
         f"the tie-break is {e(', '.join(tie_break_of(dec['goal'])))}. The rule recommends; promoting "
         "is <code>evh run-promote</code>; the goal chooses its strategy (<code>strategy:</code>).</p></div>"
     )
@@ -2681,8 +3284,9 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
             quality_name,
             lower_x=ax["direction"] == "lower",
             higher_y=q["direction"] == "higher",
-            x_limit=ax.get("limit"),
-            y_limit=q.get("limit"),
+            # a number draws its line; the baseline limit is a paired test, not a line
+            x_limit=ax.get("limit") if isinstance(ax.get("limit"), (int, float)) else None,
+            y_limit=q.get("limit") if isinstance(q.get("limit"), (int, float)) else None,
             fmt_x=(lambda v: f"${v:.4f}") if ax["name"] == "cost" and ax["measure"] == "cost_usd" else None,
             width=HALF,
         )
@@ -2821,23 +3425,25 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
 
 
 TIER_WORDS = {
-    "gold": "Gold: written or checked by a person. Every arm scored against it is measured against "
-    "what a person signed.",
-    "silver": "Silver: written by a model. Consistent, not correct: good for ranking arms against "
-    "each other, never a claim that any of them is right. The arm that wrote it is graded against "
-    "its own outputs.",
+    "gold": "Promoted as gold: the yardstick a decision rests on.",
+    "silver": "Promoted as silver: consistent, not a claim that any arm is right; good for ranking arms against "
+    "each other.",
 }
 
 
 def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
-    """One page per reference: what it is, who wrote it, and every arm scored against it."""
+    """One page per reference set: what it is, who wrote it, and every arm scored against it."""
     for ds, v in by_ds.items():
         tiers = {r["id"]: r["tier"] for r in v["refs"]}
         for r in v["refs"]:
             scored = [a for a in v["arms"] if a["reference"] == r["id"] and not a["judge"]]
+            pf = r.get("promoted_from") or {}
             facts = [
-                ("tier", r["tier"]),
+                ("tier", tier_pill(r["tier"])),
                 ("dataset", f'<a class="cell-link" href="../d/{slug(ds or "none")}.html">{e(ds)}</a>'),
+                ("promoted from", promoted_from_html(r, "../") if pf else ""),
+                ("promoted by", e(r.get("promoted_by") or "")),
+                ("why", e(r.get("reason") or "")),
                 (f"{A.item_word}s", e(r.get("items", "")) if r.get("items") is not None else ""),
                 ("written by", _author_link(r, v, "../") if r.get("author") else ""),
                 ("from the run", f"<code>{e(r['from_run'])}</code>" if r.get("from_run") else ""),
@@ -2858,7 +3464,19 @@ def render_references(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 }
                 for a in sorted(scored, key=lambda a: (a["metric"], -(a["mean"] or 0)))
             ]
-            body = hero("reference", f"<code>{e(r['id'])}</code>", e(TIER_WORDS.get(r["tier"], "")))
+            dek = e(TIER_WORDS.get(r["tier"], ""))
+            if pf:
+                when = (r.get("created_at") or "")[:10]
+                by = f", by {e(r['promoted_by'])}" if r.get("promoted_by") else ""
+                dek += (
+                    f"<br>Promoted from {promoted_from_html(r, '../')}"
+                    + (f", {e(when)}" if when else "")
+                    + by
+                    + (f": {e(r['reason'])}" if r.get("reason") else "")
+                )
+                if ((pf.get("source") or {}).get("kind")) == "model":
+                    dek += "<br>The arm whose outputs these are is graded against its own outputs."
+            body = hero("reference", f"<code>{e(r['id'])}</code> {tier_pill(r['tier'])}", dek)
             body += block("01", "what it is", f'<dl class="kv">{dl}</dl>')
             body += block(
                 "02",
@@ -2908,6 +3526,109 @@ def _siblings(by_ds: dict, a: dict, ds: str) -> list:
     return [x for x in by_ds[ds]["arms"] if x["arm"] != a["arm"] and x["arm"].rsplit("/", 1)[-1] == cid]
 
 
+NO_CALL = '<span class="muted">recorded, no call</span>'
+
+
+def group_heading(key: str, rows: list) -> str:
+    """A goal's group of arms, headed by what they are scored against: a judge, a label set by its source chip, a
+    reference with its tier pill (UXS-001)."""
+    if key.startswith("judge "):
+        return "scored by " + e(key)
+    if key.startswith("labels/"):
+        kind = next((r.get("labels_source") for r in rows if r.get("labels_source")), "")
+        return "scored against " + label_set_html(key.removeprefix("labels/"), kind, "../")
+    return f"scored against {reference_link(key, '../')} {tier_pill(key.split('/', 1)[0])}".rstrip()
+
+
+def deploy_verdicts(sh: dict) -> str:
+    """Per capture whose records say what production ran: "matches", or what differs on how many records."""
+    out = []
+    for c in sh.get("captures") or []:
+        cap = f'capture <a class="cell-link" href="{{up}}captures.html#capture-{e(c["capture"])}">{e(c["capture"])}</a>'
+        if c.get("ok"):
+            out.append(
+                f"{cap}: every one of its {c['records']} decisions was made by the promoted model and prompt"
+            )
+            continue
+        bits = []
+        for k, row in c["keys"].items():
+            b = f"<code>{e(k)}</code> {row['match']} match"
+            if row["differ"]:
+                b += "; differ: " + ", ".join(f"{e(v)} ({n})" for v, n in list(row["differ"].items())[:5])
+            if row["missing"]:
+                b += f"; not recorded: {row['missing']}"
+            bits.append(b)
+        out.append(f"{cap}, {c['records']} decisions: " + " · ".join(bits))
+    return "".join(f"<li>{x}</li>" for x in out)
+
+
+def deploy_sheet_html(sh: dict, up: str) -> str:
+    """The deploy sheet (PRD-005 FR3): what production must match to run what was measured, then what each capture
+    says production ran."""
+    m = sh.get("model") or {}
+    dep = m.get("deployment") or {}
+    facts = [
+        ("measured by", f"<code>{e(sh['run_id'])}</code> on {dataset_link(sh.get('dataset_id') or '', up)}"),
+        ("against", e((sh.get("reference") or {}).get("id") or "")),
+        ("model sent", f"<code>{e(m.get('sent') or '')}</code>"),
+        (
+            "model record",
+            f"<code>{e(m.get('record'))}</code>" if m.get("record") else "no model record names it",
+        ),
+        ("deployment", e(" · ".join(str(dep[k]) for k in ("id", "where", "tag") if dep.get(k)))),
+        ("server", e(str(m.get("server") or "not recorded"))),
+        ("build", e(str(m.get("build") or "none recorded (a hosted model has no digest)"))),
+        (
+            "settings sent",
+            "<br>".join(
+                f"<code>{e(k)}: {e(json.dumps(v) if not isinstance(v, str) else v)}</code>"
+                for k, v in (sh.get("sent") or {}).items()
+            ),
+        ),
+        (
+            "not sent",
+            "<br>".join(
+                [f"bookkeeping: <code>{e(', '.join(sh.get('not_sent') or []))}</code>"]
+                * bool(sh.get("not_sent"))
+                + [
+                    f"<b>the record sets <code>{e(k)}: {e(json.dumps(v) if not isinstance(v, str) else v)}</code>; this arm did not send it</b>"
+                    for k, v in (sh.get("record_settings_not_sent") or {}).items()
+                ]
+            ),
+        ),
+        (
+            "declared",
+            "<br>".join(
+                f"<code>{e(part)}.{e(k)}: {e(v)}</code>"
+                for part, kv in (sh.get("declared") or {}).items()
+                for k, v in kv.items()
+            ),
+        ),
+        (
+            "reported per item",
+            "<br>".join(
+                f"<code>{e(k)}: {e(', '.join(vs))}</code>" for k, vs in (sh.get("reported") or {}).items()
+            ),
+        ),
+        (
+            "adapter",
+            f"<code>{e((sh.get('adapter') or {}).get('id') or '')}</code> <small>{e((sh.get('adapter') or {}).get('sha256') or '')[:12]}</small>",
+        ),
+        ("harness", e(" ".join(str(x) for x in (sh.get("harness") or {}).values() if x))),
+    ]
+    dl = "".join(f"<dt>{e(k)}</dt><dd>{v}</dd>" for k, v in facts if v)
+    v = deploy_verdicts(sh).replace("{up}", up)
+    caps = (
+        f'<p class="small">What production ran, as its captures say:</p><ul class="small">{v}</ul>'
+        if v
+        else '<p class="small muted">No capture here says what production ran (the adapter\'s production_ran).</p>'
+    )
+    return (
+        f'<dl class="kv">{dl}</dl>{caps}<p class="small">Command: <code>evh deploy-sheet --config '
+        f"{e(sh['config_id'])} [--capture C]</code></p>"
+    )
+
+
 def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) -> None:
     """One arm: what it is scored against and for which goal, every metric it records, its runs,
     its config, the conditions it ran under, and the same config scored other ways."""
@@ -2929,6 +3650,13 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         facts.append(
             ("note", "wrote the reference it is scored against: its row measures agreement with itself")
         )
+    if a.get("superseded_by"):
+        facts.append(
+            (
+                "re-scored",
+                f"the goals read its re-score, {arm_link(a['superseded_by'], a['superseded_by'], '../')}",
+            )
+        )
     dl = "".join(f"<dt>{e(k)}</dt><dd>{x}</dd>" for k, x in facts if x)
     base = (v.get("baselines") or [None])[-1]
     btns = [f'<a class="btn" href="{inspect_url([a["arm"]], "../")}">Inspect it</a>']
@@ -2949,8 +3677,16 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         )
     body = hero(
         "arm",
-        e(a["label"]) + (' <span class="tag-base">baseline</span>' if a.get("baseline") else ""),
-        f"One config on {dataset_link(ds, '../')}, scored one way; its repeats averaged per {e(A.item_word)}.",
+        e(a["label"])
+        + (' <span class="tag-base">baseline</span>' if a.get("baseline") else "")
+        + (' <span class="badge recorded">recorded</span>' if a.get("recorded") else ""),
+        (
+            f"Production's decisions, from the capture "
+            f'<a class="cell-link" href="../captures.html#capture-{e(a["recorded"])}">{e(a["recorded"])}</a>; '
+            f"no model was called. Scored like any arm on {dataset_link(ds, '../')}."
+        )
+        if a.get("recorded")
+        else f"One config on {dataset_link(ds, '../')}, scored one way; its repeats averaged per {e(A.item_word)}.",
         f'<dl class="kv">{dl}</dl><p class="btns">{"".join(btns)}</p>',
     )
     n = 1
@@ -2969,7 +3705,14 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
     n += 1
     sc = A.scores(a["arm"])
     cs = [(ax, cell_of(ax, sc)) for ax in builtin_axes()]
-    if any(c["n"] or (c.get("tokens") or {}).get("n") for _, c in cs):
+    if a.get("recorded"):
+        body += block(
+            f"{n:02d}",
+            "cost and speed",
+            f'<p class="small">{NO_CALL}: its outputs are what production decided, read from the capture.</p>',
+        )
+        n += 1
+    elif any(c["n"] or (c.get("tokens") or {}).get("n") for _, c in cs):
         kv = "".join(f"<dt>{e(axis_title(ax))}</dt><dd>{e(cell_text(ax, c))}</dd>" for ax, c in cs)
         body += block(
             f"{n:02d}",
@@ -2999,7 +3742,23 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         n += 1
     cfg_fn = getattr(A, "arm_config", None)
     cfg = cfg_fn(a["arm"]) if callable(cfg_fn) else {}
-    if cfg.get("params"):
+    if a.get("recorded"):
+        kv = "".join(
+            f"<dt>{e(k)}</dt><dd>{v_}</dd>"
+            for k, v_ in (
+                (
+                    "capture",
+                    f'<a class="cell-link" href="../captures.html#capture-{e(a["recorded"])}">{e(a["recorded"])}</a>',
+                ),
+                ("recorded arm", f"<code>{e(cfg.get('config_id', ''))}</code>"),
+                ("outputs read by", e(cfg.get("recorded_by") or "")),
+                ("adapter", f"<code>{e(cfg.get('adapter') or '')}</code>"),
+            )
+            if v_
+        )
+        body += block(f"{n:02d}", "config", f'<dl class="kv">{kv}</dl>')
+        n += 1
+    elif cfg.get("params"):
         kv = "".join(
             f"<dt>{e(k)}</dt><dd><code>{e(json.dumps(x) if not isinstance(x, str) else x)}</code></dd>"
             for k, x in sorted(cfg["params"].items())
@@ -3007,9 +3766,15 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         extra = (
             f'<p class="small muted">config <code>{e(cfg.get("config_id", ""))}</code>'
             + (f" · adapter <code>{e(cfg['adapter'])}</code>" if cfg.get("adapter") else "")
+            + (f" · deployment <code>{e(cfg['deployment'])}</code>" if cfg.get("deployment") else "")
             + " · credentials are never shown</p>"
         )
         body += block(f"{n:02d}", "config", extra + f'<dl class="kv">{kv}</dl>')
+        n += 1
+    sheet_fn = getattr(A, "deploy_sheet", None)
+    sheet = sheet_fn(a["arm"]) if a.get("baseline") and callable(sheet_fn) else None
+    if sheet:
+        body += block(f"{n:02d}", "deploy sheet", deploy_sheet_html(sheet, "../"), "deploy-sheet")
         n += 1
     cond_fn = getattr(A, "conditions", None)
     cond = cond_fn(a["arm"]) if callable(cond_fn) else {}
@@ -3206,10 +3971,11 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
                     "made": (r.get("created_at") or "")[:10],
                     "cells": [
                         reference_link(r["id"]),
-                        e(r["tier"]),
+                        tier_pill(r["tier"]),
                         dataset_link(ds),
                         f'<span data-v="{r.get("items") or ""}">{r.get("items") if r.get("items") is not None else "—"}</span>',
-                        _author_link(r, v, "") if r.get("author") else "—",
+                        promoted_from_html(r)
+                        + (f" <small>{_author_link(r, v, '')}</small>" if r.get("author") else ""),
                         e((r.get("created_at") or "")[:10]) or "—",
                         f'<span data-v="{len(scored)}">{len(scored)}</span>',
                         f'<span data-flow="arms">{len({x[1] for x in period_rows[r["id"]]["runs"]})}</span>',
@@ -3220,41 +3986,43 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
     write_period_rows(out, "references", period_rows)
     body = hero(
         "references",
-        "References",
-        "What arms are scored against. Gold is written or checked by a person; silver is written by "
-        "a model, consistent rather than correct, and its author is graded against its own outputs.",
+        "Reference sets",
+        "What arms are scored against: labels promoted on purpose, at the tier chosen then. Gold is the "
+        "yardstick a decision rests on; silver is consistent, good for ranking arms against each other, not a "
+        "claim that any arm is right.",
         cp.bar(w["first"], w["until"]),
     )
     body += block(
         "01",
-        "references",
-        cp.row_chips("references", "references")
+        "reference sets",
+        cp.row_chips("references", "reference sets")
         + table(
             "references",
             [
-                "reference",
+                "reference set",
                 "tier",
                 "dataset",
                 f"{e(A.item_word)}s",
-                "written by",
+                "promoted from",
                 "created",
                 "arms scored",
                 "arms scored in period",
                 "runs in period",
             ],
             rows,
-            "filter references",
+            "filter reference sets",
             period=True,
         )
         if rows
-        else '<p class="muted">No references yet: gold goes in <code>data/references/gold/&lt;dataset&gt;/</code>, '
-        "or make one from a run with <code>evh reference-create --from-run</code>.</p>",
+        else '<p class="muted">No reference sets yet: a reference set is a label set promoted on purpose, '
+        '<code>evh reference-promote --dataset-id D --labels SET --tier gold|silver --reason "…" --by WHO</code>; '
+        'the label sets are on the <a class="cell-link" href="labels.html">labels page</a>.</p>',
     )
     write(
         out,
         "references.html",
         page(
-            "References",
+            "Reference sets",
             body,
             0,
             "references",
@@ -3263,6 +4031,167 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
             item=A.item_word,
             elsewhere=(("references", {}),),
         ),
+    )
+
+
+def origin_html(v: dict, up: str = "") -> str:
+    """A dataset's origin in a few words, its capture linked to the Captures page."""
+    cap = v.get("capture") or ""
+    text = e(v.get("origin") or "")
+    if not cap:
+        return text
+    return text.replace(
+        e(f"capture {cap}"), f'capture <a href="{up}captures.html#capture-{e(cap)}">{e(cap)}</a>', 1
+    )
+
+
+def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
+    """captures.html: what a production system did, kept as records (RFC-019), and the datasets frozen from each
+    capture; an adapter without captures shows how to make one."""
+    fn = getattr(A, "captures", None)
+    caps = fn() if callable(fn) else []
+    rows = []
+    for c in caps:
+        imp = str(c.get("importer") or "").rsplit("/", 1)[-1]
+        when = (
+            f"{_when(str(c.get('first') or ''))} – {_when(str(c.get('last') or ''))}"
+            if c.get("first")
+            else "—"
+        )
+        rows.append(
+            [
+                f'<b id="capture-{e(c["capture"])}">{e(c["capture"])}</b>'
+                + (
+                    f'<br><small class="muted">continues {e(c["continues"])}</small>'
+                    if c.get("continues")
+                    else ""
+                ),
+                f'<span data-v="{int(c.get("records") or 0)}">{int(c.get("records") or 0)}</span>'
+                + (
+                    f'<br><small class="muted">a sample: rate {e(str(c["sample"]["rate"]))}, '
+                    f"of {int(c['sample'].get('read') or 0)} read</small>"
+                    if isinstance(c.get("sample"), dict)
+                    else ""
+                ),
+                f"<code>{e(imp)}</code>"
+                + (' <small class="muted">scrubbed</small>' if c.get("scrubbed") else ""),
+                f'<span data-v="{e(str(c.get("captured_at") or ""))}">{e(_when(str(c.get("captured_at") or "")))}</span>',
+                e(when),
+                ", ".join(
+                    (dataset_link(d) if d in by_ds else f'{e(d)} <small class="muted">no runs yet</small>')
+                    + _sets_on(A, d)
+                    for d in c.get("datasets") or []
+                )
+                or "—",
+                ", ".join(
+                    arm_link(a, a.rsplit("/", 1)[-1])
+                    for a, cap in sorted(RECORDED.items())
+                    if cap == c["capture"]
+                )
+                or "—",
+            ]
+        )
+    body = hero(
+        "captures",
+        "Captures",
+        "What a system did in production, kept as records, each hashed: the source of the datasets frozen from them. "
+        "What happened next becomes labels through rules you can read (<code>evh label-from-capture</code>): a "
+        "<code>rule</code> label set, promoted like any.",
+    )
+    body += block(
+        "01",
+        "captures",
+        table(
+            "captures",
+            [
+                "capture",
+                "records",
+                "importer",
+                "captured",
+                "records from – to",
+                "datasets made from it",
+                "recorded arm",
+            ],
+            rows,
+            "filter captures",
+        )
+        if rows
+        else '<p class="muted">No captures yet: <code>evh capture --importer jsonl --query \'{"path": "…"}\' '
+        "--capture &lt;id&gt;</code> keeps what a system did, then <code>evh dataset-from-capture</code> freezes a "
+        "dataset from it.</p>",
+    )
+    write(
+        out,
+        "captures.html",
+        page("Captures", body, 0, "captures", nav=nav, item=A.item_word, elsewhere=(("captures", {}),)),
+    )
+
+
+def _sets_on(A: Adapter, ds: str) -> str:
+    """The label sets made on a dataset, as source chips with their names, under it."""
+    sets = [x for x in _label_sets_of(A) if x["dataset"] == ds]
+    if not sets:
+        return ""
+    return (
+        "<br><small>"
+        + " ".join(label_set_html(x["id"], (x.get("source") or {}).get("kind", "")) for x in sets)
+        + "</small>"
+    )
+
+
+def render_labels(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
+    """labels.html (RFC-023): every label set, its source, what it covers, who made it, whether it was promoted."""
+    fn = getattr(A, "label_sets", None)
+    sets = fn() if callable(fn) else []
+    size = getattr(A, "dataset_items", None)
+    rows = []
+    for x in sets:
+        n = (
+            (size(x["dataset"]) if callable(size) else None)
+            or (by_ds.get(x["dataset"]) or {}).get("items")
+            or 0
+        )
+        kind = (x.get("source") or {}).get("kind", "")
+        rows.append(
+            {
+                "key": x["id"],
+                "cells": [
+                    f'<span id="set-{slug(x["id"])}">{label_set_html(x["id"], kind)}</span>',
+                    dataset_link(x["dataset"])
+                    if x["dataset"] in by_ds
+                    else f"<code>{e(x['dataset'])}</code>",
+                    f'<span data-v="{x["n_items"]}">{x["n_items"]} of {n or "?"}</span>',
+                    e((x.get("guideline") or {}).get("path") or "none"),
+                    _made_line(x.get("source") or {}, x.get("created_at")),
+                    _promoted_as(A, x["id"]).replace('href="../', 'href="'),
+                ],
+            }
+        )
+    body = hero(
+        "labels",
+        "Labels",
+        "A label is what is right for one item, and who said it: a person, a model or a rule. A label set is never "
+        "edited, and its labels follow an item by its bytes into any dataset holding it. A reference is labels "
+        "promoted on purpose, at the tier chosen then.",
+    )
+    body += block(
+        "01",
+        "label sets",
+        table(
+            "labelsets",
+            ["set", "dataset", "coverage", "guideline", "made", "promoted"],
+            rows,
+            "filter label sets",
+        )
+        if rows
+        else '<p class="muted">No labels yet: <code>evh label-sheet --dataset-id D --out sheet.csv</code>, filled '
+        "and read back with <code>evh label-import sheet.csv --dataset-id D --set S --by WHO</code>; a run's outputs "
+        "with <code>evh label-from-run --run R --set S</code>.</p>",
+    )
+    write(
+        out,
+        "labels.html",
+        page("Labels", body, 0, "labels", nav=nav, item=A.item_word, elsewhere=(("labels", {}),)),
     )
 
 
@@ -3422,9 +4351,12 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     write_periods(A, by_ds, out)
     render_home(A, by_ds, out, nav)
     render_activity(A, by_ds, out, nav)
-    from evaluation_harness.catalog_arms import render_arms  # noqa: PLC0415
+    from evaluation_harness.catalog_arms import arm_rows, render_arms  # noqa: PLC0415
+    from evaluation_harness.catalog_models import render_models  # noqa: PLC0415
 
-    render_arms(A, by_ds, out, nav)
+    arms_rows = arm_rows(A, by_ds)
+    render_arms(A, by_ds, out, nav, arms_rows)
+    render_models(A, by_ds, out, nav, arms_rows)
     render_datasets(A, by_ds, out, nav)
     for ds, v in by_ds.items():
         v["versions"] = _version_links(by_ds, ds, "../")
@@ -3438,6 +4370,8 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     for m, where in metric_index(A, by_ds).items():
         render_metric(A, m, where, by_ds, project, out, nav)
     render_references(A, by_ds, out, nav)
+    render_captures(A, by_ds, out, nav)
+    render_labels(A, by_ds, out, nav)
     render_reference_index(A, by_ds, out, nav)
     write_search(A, by_ds, out)
     render_inspect(A, out, nav=nav, pages=True)

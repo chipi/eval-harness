@@ -1,0 +1,9 @@
+The user wants a 2-3 sentence news wire style summary of this article. Key facts:
+
+- Nyia Parler, 41, mother of a quadriplegic 21-year-old man with cerebral palsy
+- Left her son in Cobbs Creek Park woods in Philadelphia on April 6 while she went to Maryland to visit her boyfriend
+- He was found Friday after more than four days, suffering dehydration, malnutrition, eye problems, cut to back
+- She was taken into custody in Maryland but cannot be extradited until she completes unspecified "treatment"
+- She faces charges of aggravated assault, simple assault, recklessly endangering another person
+
+Terse news wire style. 2-3 short sentences. OutputA Maryland woman accused of abandoning her quadriplegic son in a Philadelphia park for more than four days cannot be extradited until she completes unspecified treatment, police said. Nyia Parler, 41, left the 21-year-old, who also has cerebral palsy, in Cobbs Creek Park while traveling to visit her boyfriend in Maryland, according to authorities. She faces charges including aggravated assault and recklessly endangering another person.

@@ -1,0 +1,11 @@
+# claude-haiku-5.5: Anthropic, small tier.
+# Arms differ only in the model: the fleet's prompt, probes and gates are the same for every arm.
+config_id: triage_haiku_55_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: eval-claude-haiku-55
+  usd_per_mtok_in: 0.1
+  usd_per_mtok_out: 0.5

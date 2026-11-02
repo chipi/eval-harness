@@ -83,7 +83,7 @@
     g += `<line class="zero" x1="${x(0)}" x2="${x(0)}" y1="${HEAD - 6}" y2="${H - 30}"/>`;
     const maxN = tested.length ? Math.max(...tested.map(r => r.n)) : 0;
     const word = r => {
-      if (!r.verdict.startsWith('separated')) return ['·', ''];
+      if (!r.verdict.startsWith('significant')) return ['·', ''];
       if (neutral) return [r.delta > 0 ? 'higher' : 'lower', ''];
       return r.verdict.includes('better') ? ['✓ better', 'good'] : ['✗ worse', 'bad'];
     };
@@ -121,7 +121,7 @@
     const dir = neutral ? 'a count: left lower, right higher, neither better' : better ? 'right is better' : 'left is better';
     const how = maxN && maxN < 6
       ? `<br><b>With ${maxN} ${ITEMS} nothing here can be called a difference</b> (the smallest attainable p is over 0.05): the dotted line is the range of per-${ITEM} differences and the numbers are wins–losses. Read it as direction only.`
-      : ' The line is the 95% interval that agrees with the paired test: zero outside it means the test separates before correction.';
+      : ' The line is the 95% interval that agrees with the paired test: zero outside it means the test finds a significant difference before correction.';
     box.innerHTML = `<figure class="chart"><figcaption><b>Every answer against this baseline</b> ·${sel} · dot = mean per-${ITEM} difference, ${dir}. `
       + `Right column: difference, wins–losses, verdict (Holm across all ${d.family_size} answers on this dataset; the same correction carries into the inspector when you click a row). ↻ = re-scored live with the project's scorer.${refFam ? ` ⚑ = same model family (${esc(refFam)}) as the reference's author, which may favour it.` : ''}${how}</figcaption>`
       + `${notes}<div class="scroll-x"><svg class="forest" viewBox="0 0 ${W} ${H}" role="img" aria-label="Answers against this baseline">${g}</svg></div></figure>`;

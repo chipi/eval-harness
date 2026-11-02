@@ -1,0 +1,162 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "80048ccb9078ffd6cf7d5017c23c7ffb524b5e12",
+    "source": "git"
+  },
+  "config_id": "triage_deepseek_41flash_v2",
+  "created_at": "2026-10-31T14:53:54Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "deployment_id": "hosted",
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_deepseek_41flash_v2",
+      "labels": {
+        "usd_per_mtok_in": 0.045,
+        "usd_per_mtok_out": 0.5
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled",
+      "items_sha256": "d428aca49adc8e762dcbbcad6c9a1dba1ac4e4e3315ff26025af975faba1176a",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled",
+      "reference_tier": "gold",
+      "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
+    },
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": {
+        "fleet_code_sha256": "248e25030011aab82f5798eeb7c74fd03f2d7cfd04866b8b017d3740663727d9",
+        "fleet_commit": "f07efa9"
+      },
+      "hosted": null,
+      "id": "deepseek-4.1-flash@hosted",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-deepseek-41flash",
+      "provider": "litellm",
+      "server": {
+        "name": null,
+        "settings": null,
+        "url": null,
+        "version": null
+      },
+      "source": "record",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": "homelab LiteLLM (the fleet's gateway)"
+      }
+    },
+    "deployment_sha256": "a85a8999c3622b195d89d079e1c2fa0abe9420234e954d27c6326493307f318c",
+    "hash": "51eedb5ff78575115d2505e05af6f2a1c7cb5b6bc2ee8c5b2223d2cc096cae8a",
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "3d3a6afdb978f2db2d6c6f732d5842d09c3df0eca24ef724171a162b4b937527"
+      },
+      "harness": {
+        "code_sha256": "216b9a5df01c9986c4f863acb6f4d79c9796becf8a6944ba1e82f747844cd244",
+        "commit": "80048ccb9078",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "instrument_sha256": "3b207b4b332c7433f6d77d2cb32a86e20ee3d6d5fb3fc6f99614ccae34d9faaa",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "declared": {
+        "prompt_sha256": "77f26d87ad9f4d117cd1cbdbd5be9bbb5fcd9666294055c37376fe6938bd1131"
+      },
+      "max_tokens": 1024,
+      "reasoning_effort": "none"
+    },
+    "settings_sha256": "83bc149f988af266ec3d8a37275c5d0dbddf08b1c83d8c3036324b075259fbeb",
+    "version": 5
+  },
+  "goal": "triage_orrery",
+  "metric_directions": {
+    "deferred": "lower",
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "model_triage_cost": "lower",
+    "no_decision": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower",
+    "triage_cost": "lower",
+    "triage_cost_p10": "lower",
+    "triage_cost_p3": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "model_record": "deepseek-4.1-flash",
+  "n_items": 65,
+  "params": {
+    "max_tokens": 1024,
+    "model": "eval-deepseek-41flash",
+    "provider": "gateway",
+    "reasoning_effort": "none",
+    "usd_per_mtok_in": 0.045,
+    "usd_per_mtok_out": 0.5
+  },
+  "primary_metric": "triage_cost",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "round": "r3",
+  "run_id": "triage_deepseek_41flash_v2_20261031T145019Z",
+  "scores": {
+    "correct": 0.523077,
+    "cost_usd": 0.000355,
+    "deferred": 0.0,
+    "escalated": 0.584615,
+    "false_alarm": 0.612903,
+    "false_dismiss": 0.235294,
+    "latency_ms": 3281.940909,
+    "model_correct": 0.476923,
+    "model_escalated": 0.0,
+    "model_false_alarm": 0.064516,
+    "model_false_dismiss": 0.852941,
+    "model_triage_cost": 2.261538,
+    "n_probes": 2.138462,
+    "no_decision": 0.0,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 4447.276923,
+    "tokens_out": 309.215385,
+    "total_cost_usd": 0.02305779,
+    "total_tokens_in": 289073.0,
+    "total_tokens_out": 20099.0,
+    "triage_cost": 0.907692,
+    "triage_cost_p10": 1.523077,
+    "triage_cost_p3": 0.661538
+  }
+}

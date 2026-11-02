@@ -14,7 +14,7 @@ WHY THIS ONE STRATIFIES AND THE SUMMARISATION ONE DOES NOT
       first  20: {'Business': 1, 'Sci/Tech': 19}
       first 200: {'Business': 29, 'Sci/Tech': 57, 'Sports': 53, 'World': 61}
 
-  A 20-item slice that is 95% one class is not a hard eval, it is a broken one: an arm that
+  A 20-item slice that is 95% one class is not a hard test, it is a broken one: an arm that
   always answers "Sci/Tech" scores 0.95 and the table ranks constants above models. Even at
   200 the 1.7:1 spread between Business and World would make macro-F1 and accuracy disagree
   for a reason that is an artefact of paging rather than a property of any arm.
@@ -45,7 +45,8 @@ LICENCE -- READ THIS, IT IS WEAKER THAN THE SUMMARISATION EXAMPLE'S
 
 WHY THE REFERENCE IS GOLD
   The labels are human-assigned editorial categories from the source news feeds, not model
-  output -- so `references/gold/`. A reference file here holds one word.
+  output -- the reason they were promoted at gold (the manifest records it; the promotion, not the
+  source, sets the tier: ADR-0022). A reference file here holds one word.
 
 A CAVEAT WORTH KNOWING BEFORE READING ANY RESULT
   Many AG News texts carry their syndication tag inline: "(AP)", "(Reuters)",
@@ -188,7 +189,7 @@ def main() -> int:
     if (ROOT / "data" / "datasets" / f"{dataset_id}.json").is_file():
         # Frozen and committed: check the fetched bytes against it, never re-create it.
         print(f"  cd {ROOT} && make dataset-materialize DATASET_ID={dataset_id}")
-        print("  (or, from the repository root: make data EXP=<experiment> does all of this)")
+        print("  (or, from the repository root: make data EXP=<eval> does all of this)")
     else:
         print(f"  make dataset-create DATASET_ID={dataset_id} ARGS='--source-dir data/sources/{dataset_id}'")
         print(f"  make dataset-materialize DATASET_ID={dataset_id}")

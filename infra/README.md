@@ -5,8 +5,8 @@ Four addresses, one repository:
 | address | what | served by |
 |---|---|---|
 | `evals.humancopilot.eu` | the harness site: the harness and its findings (`site/public`, built by `make site`) | prod VPS: `evals-nginx` |
-| `evals.humancopilot.eu/catalog` | the harness deployed on these example experiments: the catalog, goal pages and run inspector | prod VPS: `evals-nginx` (pages) + `evals-inspector` (`/api/*`) |
-| `evals.humancopilot.eu/mcp` | the same experiments for an agent: the harness's read commands as MCP tools (Streamable HTTP, read-only, no sign-in) | prod VPS: `evals-mcp` |
+| `evals.humancopilot.eu/catalog` | the harness deployed on these example evals: the catalog, goal pages and run inspector | prod VPS: `evals-nginx` (pages) + `evals-inspector` (`/api/*`) |
+| `evals.humancopilot.eu/mcp` | the same evals for an agent: the harness's read commands as MCP tools (Streamable HTTP, read-only, no sign-in) | prod VPS: `evals-mcp` |
 | `evals.humancopilot.eu/docs` | the documentation (mkdocs) | prod VPS: `evals-nginx` (built into each release by `render.sh`); the same docs are also on GitHub Pages, `chipi.github.io/eval-harness` (`.github/workflows/pages.yml`) |
 
 Everything on the VPS follows the box's tenant pattern, copied from chipi/humancopilot.eu

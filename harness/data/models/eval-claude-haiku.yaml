@@ -1,0 +1,5 @@
+model_id: eval-claude-haiku
+kind: llm
+aliases:
+- eval-claude-haiku
+weights: proprietary

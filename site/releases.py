@@ -4,9 +4,10 @@ The changelog is the one record of what each release shipped. The GitHub Release
 takes its notes from the same section (harness-release.yml), the docs site shows the file
 itself, and this page shows it on the harness site, so the three cannot disagree.
 
-Only the Markdown the changelog uses is rendered: `##`/`###` headings, `- ` bullets (wrapped
-lines continue them), paragraphs, **bold**, `code` and [links](url). Anything else stays as
-text, so a new construct shows up plainly instead of silently breaking the page.
+Only the Markdown the changelog uses is rendered: `##`/`###` headings, `- ` bullets nested by
+their indent (two spaces a level; wrapped lines continue them), paragraphs, **bold** (which may
+hold `code` and *italics*), *italics*, `code` and [links](url). Anything else stays as text, so
+a new construct shows up plainly instead of silently breaking the page.
 """
 
 from __future__ import annotations
@@ -21,8 +22,17 @@ _RELEASE = re.compile(r"^##\s+(\d+\.\d+\.\d+)(?:\s+—\s+(\d{4}-\d{2}-\d{2}|unre
 
 def _inline(H, text: str, blob: str) -> str:
     out = H.e(text)
-    out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
-    out = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", out)
+    # Code first, set aside so a `*` inside it is never emphasis.
+    codes: list[str] = []
+
+    def keep(m):
+        codes.append(m.group(1))
+        return f"\x00{len(codes) - 1}\x00"
+
+    out = re.sub(r"`([^`]+)`", keep, out)
+    out = re.sub(r"\*\*((?:[^*]|\*[^*]+\*)+)\*\*", r"<b>\1</b>", out)
+    out = re.sub(r"(?<![\w*])\*([^*\s](?:[^*]*[^*\s])?)\*(?![\w*])", r"<em>\1</em>", out)
+    out = re.sub(r"\x00(\d+)\x00", lambda m: f"<code>{codes[int(m.group(1))]}</code>", out)
 
     def link(m):
         label, url = m.group(1), m.group(2)
@@ -60,13 +70,20 @@ def releases(text: str) -> list:
         if line.startswith("### "):
             cur["blocks"].append(("h3", line[4:].strip()))
             para, item = [], None
-        elif line.startswith("- "):
-            item = [line[2:].strip()]
-            cur["blocks"].append(("li", item))
+        elif (
+            line.lstrip().startswith("- ")
+            and (len(line) - len(line.lstrip())) % 2 == 0
+            and (not line.startswith(" ") or (cur["blocks"] and cur["blocks"][-1][0] == "li"))
+        ):
+            # A bullet's depth is its indent, two spaces a level (a nested list inside a bullet).
+            item = [line.lstrip()[2:].strip()]
+            cur["blocks"].append(("li", item, (len(line) - len(line.lstrip())) // 2))
             para = []
         elif not line.strip():
             item, para = None, []
-        elif item is not None and raw.startswith("  "):
+        elif raw.startswith("  ") and cur["blocks"] and cur["blocks"][-1][0] == "li":
+            # A wrapped line, or an indented paragraph inside the bullet after a blank line: the bullet's text.
+            item = cur["blocks"][-1][1]
             item.append(line.strip())
         else:
             if not para:
@@ -88,23 +105,27 @@ def releases(text: str) -> list:
 
 
 def release_html(H, rel: dict, blob: str, repo: str) -> str:
-    parts, in_list = [], False
-    for kind, val in rel["blocks"]:
+    parts: list[str] = []
+    depth = 0  # how many lists are open; an item at depth d sits in the d+1-th
+    for kind, val, *rest in rel["blocks"]:
         if kind == "li":
-            if not in_list:
-                parts.append("<ul>")
-                in_list = True
-            parts.append(f"<li>{_inline(H, ' '.join(val), blob)}</li>")
+            d = min(rest[0], depth)  # a level deeper at most: a stray indent is not two new lists
+            if depth == 0 or d + 1 > depth:
+                parts.append("<ul><li>")
+            else:
+                parts.append("</li></ul>" * (depth - d - 1) + "</li><li>")
+            depth = d + 1
+            parts.append(_inline(H, " ".join(val), blob))
             continue
-        if in_list:
-            parts.append("</ul>")
-            in_list = False
+        if depth:
+            parts.append("</li></ul>" * depth)
+            depth = 0
         if kind == "h3":
             parts.append(f"<h3>{H.e(val)}</h3>")
         else:
             parts.append(f"<p>{_inline(H, ' '.join(val), blob)}</p>")
-    if in_list:
-        parts.append("</ul>")
+    if depth:
+        parts.append("</li></ul>" * depth)
     v = rel["version"]
     date = rel["date"] or "unreleased"
     tag = (

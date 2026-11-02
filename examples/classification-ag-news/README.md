@@ -6,8 +6,8 @@ model, a hand-written rule set, and a constant.
 
 > **Result:** the three fine-tunes lead on the
 > point estimate (`bert_base_ta` 0.9600, `bert_base_fy` 0.9500, `bert_mini` 0.9450) against
-> a hosted field of 0.835–0.910. Only `bert_base_ta` is separated from 26 of the 29 other
-> arms (not from the other two fine-tunes or `anthropic_m`); `bert_mini` is separated from 16
+> a hosted field of 0.835–0.910. Only `bert_base_ta` differs significantly from 26 of the 29 other
+> arms (not from the other two fine-tunes or `anthropic_m`); `bert_mini` differs significantly from 16
 > and not from `anthropic_l`. The lead is concentrated in 17 items the hosted field mostly
 > gets wrong; adjudicated by topic by one reader shown the hosted answer, the gold was wrong
 > on all 17, and on that gold every hosted LLM scores above every fine-tune. As run here: hosted
@@ -23,7 +23,7 @@ It is the second worked example for [`../../harness`](../../harness), and it exi
 because classification breaks things the summarisation example never touched. The
 interesting parts of this one are mostly about the instrument rather than the models.
 
-> **Rerun this experiment** from the repository root — `EXP=ag-news`:
+> **Rerun this eval** from the repository root — `EXP=ag-news`:
 >
 > ```bash
 > make plan EXP=ag-news  &&  make data EXP=ag-news  &&  make reproduce EXP=ag-news  &&  make compare EXP=ag-news
@@ -43,7 +43,7 @@ interesting parts of this one are mostly about the instrument rather than the mo
 cd examples/classification-ag-news
 uv sync                       # provisions its own Python 3.11 and deps
 uv run fetch.py --n 200       # ~2 seconds, stdlib only, no `datasets` library
-uv run fetch.py --n 20        # the dev slice, a strict subset of the 200
+uv run fetch.py --n 20        # the pilot slice, a strict subset of the 200
 ```
 
 That writes texts into `../../harness/data/sources/ag_news_<n>/` and their labels into
@@ -69,7 +69,7 @@ first  20: {'Business': 1, 'Sci/Tech': 19}
 first 200: {'Business': 29, 'Sci/Tech': 57, 'Sports': 53, 'World': 61}
 ```
 
-A 20-item slice that is 95% one class is not a hard eval, it is a broken one — a constant
+A 20-item slice that is 95% one class is not a hard test, it is a broken one — a constant
 answer scores 0.95 and the table ranks constants above models. So `fetch.py` takes n/4 per
 class in split order: deterministic without a seed, and nested, so the 20-item slice stays
 a strict subset of the 200 and `holdout_significance --exclude-dataset` still means what
@@ -114,8 +114,8 @@ cd ../../harness
 PY=../examples/classification-ag-news/.venv/bin/python
 CFG=../examples/classification-ag-news/configs
 
-$PY scripts/experiment_run.py --config $CFG/arm_deepseek_m_n200.yaml --dry-run
-$PY scripts/experiment_run.py --config $CFG/arm_deepseek_m_n200.yaml
+$PY scripts/run.py --config $CFG/arm_deepseek_m_n200.yaml --dry-run
+$PY scripts/run.py --config $CFG/arm_deepseek_m_n200.yaml
 
 $PY scripts/leaderboard.py --dataset-id ag_news_200
 $PY tools/classification_report.py --dataset-id ag_news_200
@@ -127,12 +127,12 @@ The hosted arms need one `OPENROUTER_API_KEY` in `../../harness/.env` (copy
 
 **Cost.** Billed, a 200-item hosted arm ranges from $0.0014 to $0.1750 and all 24 come
 to **$0.58** — about a tenth of the summarisation sweep's $5.74 — because the
-answer is one word. That is why no arm is selected on its dev score: selecting would save
+answer is one word. That is why no arm is selected on its pilot score: selecting would save
 nothing and buy a bias.
 
-### Dev and measurement slices
+### Pilot and test slices
 
-`ag_news_20` is the **dev** slice. Prompt and parser may be tuned against it. `ag_news_200`
+`ag_news_20` is the **pilot** slice. Prompt and parser may be tuned against it. `ag_news_200`
 is where the claim is made, and because the 20 are nested inside the 200, the honest read
 is on the 180 it does not contain:
 
@@ -198,7 +198,7 @@ summarisation metric could have asked.
 | `constant` | always answers World | 0 |
 
 `bart_mnli` is the control the summarisation study could not run. That study ended with
-`bart_l` not separated from the best of 24 hosted models, and the objection was that it had been
+`bart_l` not significantly different from the best of 24 hosted models, and the objection was that it had been
 fine-tuned on exactly that corpus. This is the same architecture family with **no**
 exposure to AG News, run beside a model that was fine-tuned on it — so "BART is good" and
 "that checkpoint saw the test distribution" stop being the same hypothesis.
@@ -217,7 +217,7 @@ exist.
 [`news_topic_ag`](https://evals.humancopilot.eu/catalog/g/news_topic_ag.html), with an inspector that tests any arms against the baseline item by
 item. An agent can ask the same over MCP, read-only and without sign-in: connect
 `https://evals.humancopilot.eu/mcp` ([how](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp))
-and ask, say, "what does the `news_topic_ag` goal recommend, and is it separated from the baseline?".
+and ask, say, "what does the `news_topic_ag` goal recommend, and is it significantly different from the baseline?".
 
 ## Results
 

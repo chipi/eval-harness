@@ -1,0 +1,531 @@
+{
+  "created_at": "2026-10-30T14:29:51Z",
+  "dataset_id": "fleet_dedup_v1",
+  "description": "100 scrubbed GlitchTip signals (2026-08-28) through the fleet's filing-stage functions; no model.",
+  "items": [
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3L",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3L.json",
+      "source_sha256": "9c9e457e9f480922807d5f017bf814f19976632a51250e63b1862bf8bc5fb614"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-42",
+      "source_path": "glitchtip:PODCAST-PIPELINE-42.json",
+      "source_sha256": "5dc71264b39410ade40139e3fdaeb746639a691451fa0dff7ac5d60835197e12"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-41",
+      "source_path": "glitchtip:PODCAST-PIPELINE-41.json",
+      "source_sha256": "80d3b78eabf49b3700e025e1b8546c01eb0822a3a00410ee902377c46ed9f932"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3N",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3N.json",
+      "source_sha256": "fd1ce46a8986ef50101cdbdffdf5ad58d9e1fcd626b339e5c141914f075d805f"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-40",
+      "source_path": "glitchtip:PODCAST-PIPELINE-40.json",
+      "source_sha256": "09b16531eccb6436a0d919c2a707729b06fbe7aa26caf0ee4f67ea7c661546f1"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-8",
+      "source_path": "glitchtip:PODCAST-PIPELINE-8.json",
+      "source_sha256": "8163e1f403b2308a1f5ff7b5780bd77064c8dc28f5f3f1c862ad04a8466cec82"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3V",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3V.json",
+      "source_sha256": "0f1e3f7241dbcfe2dbca1dcd668b2447f7e42c055b9bf3d9c44f3cb9580cd6b0"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1B",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1B.json",
+      "source_sha256": "08b0430dfbd857c6f46e6afdf91057e441bf45cee5cf82e833a7cb9a26278d8d"
+    },
+    {
+      "item_id": "glitchtip:PLAYER-8",
+      "source_path": "glitchtip:PLAYER-8.json",
+      "source_sha256": "9ab8f16cb01b0e7d40500f698afe8fbad987415e16b46c53b1bcf4c0cd29d480"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3U",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3U.json",
+      "source_sha256": "92f4de28eb278e02eb979574a23eded78bada5b6a39fd93927d091f8d004165f"
+    },
+    {
+      "item_id": "glitchtip:ORRERY-9",
+      "source_path": "glitchtip:ORRERY-9.json",
+      "source_sha256": "dcbc5887206043283c9cc6e562c49b9325d692571c96f271b4988114f6b4e0f6"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3T",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3T.json",
+      "source_sha256": "2c36695fe794a5ebb9ef36896c44ed0ba86c15cff9c7c5d96f77fd658bdd594b"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3S",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3S.json",
+      "source_sha256": "8ca5987d7eff4e8be118bead2817cfc011672d40ea254a0f1446cdc720894618"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3R",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3R.json",
+      "source_sha256": "a15b0dfa6a3ee676ccbe05312904d827b2c64ec4684ab657cada25815c67680e"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-5",
+      "source_path": "glitchtip:PODCAST-PIPELINE-5.json",
+      "source_sha256": "2549f0e12f8ed375bb041f33ca7892d6266be344c33ff8f0dac847f96da63424"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3Q",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3Q.json",
+      "source_sha256": "fdaa27836e5b0bb1136295126cb58c360805c5074efeebb8dba9b527a369bb21"
+    },
+    {
+      "item_id": "glitchtip:PLAYER-7",
+      "source_path": "glitchtip:PLAYER-7.json",
+      "source_sha256": "10d7e1ecbc79759981dbcbf392e7d97c0702575d726a52bd9a0420cfb7f243e0"
+    },
+    {
+      "item_id": "glitchtip:PLAYER-6",
+      "source_path": "glitchtip:PLAYER-6.json",
+      "source_sha256": "a123961f5089accbe1b96a9247ea4b5476d9021116f6c36fec8bccb3a2c251be"
+    },
+    {
+      "item_id": "glitchtip:PLAYER-5",
+      "source_path": "glitchtip:PLAYER-5.json",
+      "source_sha256": "18e09223f4d24b0523e62318a35f41877a94d856501004e34984030b3e5ae92c"
+    },
+    {
+      "item_id": "glitchtip:PLAYER-4",
+      "source_path": "glitchtip:PLAYER-4.json",
+      "source_sha256": "dc8c85f85f2af18742cc4119ad3be116464f1a474e2b1a0ef15903c4be39fd1d"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3P",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3P.json",
+      "source_sha256": "cad7ca4d12edd9cb536b75cc2d8922af91ca346699785d5639cc4fd8b3b59212"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3O",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3O.json",
+      "source_sha256": "1ccf1f058c2957b05fc1d303d1441d9961afe54908aace6505e5e4ebe21c632f"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3M",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3M.json",
+      "source_sha256": "a17d1214d26413d64533e11bcc2f73a0e3885589b25a298fbcae60ec68117cd6"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-31",
+      "source_path": "glitchtip:PODCAST-PIPELINE-31.json",
+      "source_sha256": "56c8f624a68288bc06dbd4aa0572ba01658d91f4d6c54e2a759917ac80a9e801"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3K",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3K.json",
+      "source_sha256": "1d7761cf5107c5c38cbde1ce40b940c4c0afe629dcb902ddc3b12223d4d15a60"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3J",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3J.json",
+      "source_sha256": "db28f32bb590c95c61713c43e8418619a5eff56a06f317aa82376f2bf5093141"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3I",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3I.json",
+      "source_sha256": "1477ed55fc5fd8e751eceeb0d2fe12229c46a5888eaf5220065fc85e0da3efa1"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3H",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3H.json",
+      "source_sha256": "b3760cc7389bd165c9d566884a2baaaf1154f0695cde098443a5406a0db2dedb"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3G",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3G.json",
+      "source_sha256": "d9469fb92a1b14e028e08cd05c650216386a36dee9e862de8ec1a69e7090301c"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1C",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1C.json",
+      "source_sha256": "db444da29d31f034889c0f8720d106b96a3c60205ccfe9c8de5717c66613b50e"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3F",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3F.json",
+      "source_sha256": "0dc9e14f26929cfd9f6b1293c3ab9f8805e9916b81e0e15e10406ebc848d9c07"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3E",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3E.json",
+      "source_sha256": "4d9f837b489ca4683deb6866825eed96fc3095f2f6a05c93adb0b19356c46078"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3D",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3D.json",
+      "source_sha256": "1136474ae553c62f7200387f38bed5dacbbc6bfdbadd22cecf2bde06b3804ac7"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3C",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3C.json",
+      "source_sha256": "b5a0435bed596ad92e3dee845b0e860a477fe46f0ca5de578f90e327fdb0b77f"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3B",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3B.json",
+      "source_sha256": "d391917f1c1483c7e0ce4566e2285690a03596f3ddd7a1d39fa14e87f6f559dc"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3A",
+      "source_path": "glitchtip:PODCAST-PIPELINE-3A.json",
+      "source_sha256": "655645b73d80e1f79db7eb9d654f64395dbc71119b5e7298ae9e46685eff1155"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-39",
+      "source_path": "glitchtip:PODCAST-PIPELINE-39.json",
+      "source_sha256": "96d4f4817500e26e055a0cc09aba5ba28da9045a06d3b296811625b6656fbb87"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-38",
+      "source_path": "glitchtip:PODCAST-PIPELINE-38.json",
+      "source_sha256": "9cfe9c028fee1bde900bbeb8d8b5fad18e3485c4a5a9fb784924377db80cd311"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-37",
+      "source_path": "glitchtip:PODCAST-PIPELINE-37.json",
+      "source_sha256": "c59e440bcafb4db92105b0afa5a751533a4443eaa1fec7e518c472b5823192ba"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-36",
+      "source_path": "glitchtip:PODCAST-PIPELINE-36.json",
+      "source_sha256": "874f30036c96e2c9ab4cf827bd13b981ecbcbba9468d7b5279362d784ed38285"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-35",
+      "source_path": "glitchtip:PODCAST-PIPELINE-35.json",
+      "source_sha256": "ea0f2bba5a07816560a554ac155000008ac60d7ae6cdd547029f62f54ea07194"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-34",
+      "source_path": "glitchtip:PODCAST-PIPELINE-34.json",
+      "source_sha256": "1eaf71f86cb5aa8011529f9c65c25194b4ab742c3f8c77e2bd426f84ef3b36c4"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-33",
+      "source_path": "glitchtip:PODCAST-PIPELINE-33.json",
+      "source_sha256": "12c997167cf43f9941603e292fa5a733dba267301b87581f1a10ba4dcc455272"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-32",
+      "source_path": "glitchtip:PODCAST-PIPELINE-32.json",
+      "source_sha256": "020387c123e2fe754f000915ae631784fa4c6d5c2a0f086dfa226e948e7b6051"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-30",
+      "source_path": "glitchtip:PODCAST-PIPELINE-30.json",
+      "source_sha256": "26c1ab08da6345d29d1f27e3fd202903861f3c7bafb5b185c9e8c928a4f87d44"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-API-2",
+      "source_path": "glitchtip:PODCAST-API-2.json",
+      "source_sha256": "991d3868d27df556a89cbc2924c5c423c649418669e06c705c0fee8bd12c78a2"
+    },
+    {
+      "item_id": "glitchtip:ORRERY-C",
+      "source_path": "glitchtip:ORRERY-C.json",
+      "source_sha256": "94513bd717178fd5365cf89967fbd3d88144b7fdcd35bfdaa79e201be3a67c92"
+    },
+    {
+      "item_id": "glitchtip:ORRERY-B",
+      "source_path": "glitchtip:ORRERY-B.json",
+      "source_sha256": "e3f3719c4b9b741635b46a96911b8e87f0cd69508f4f2c3772722bba986b1c82"
+    },
+    {
+      "item_id": "glitchtip:ORRERY-A",
+      "source_path": "glitchtip:ORRERY-A.json",
+      "source_sha256": "777237b11e521b130ee64a66b8f8c6495bc013a9b5023ee5314e31191dac4c09"
+    },
+    {
+      "item_id": "glitchtip:ORRERY-8",
+      "source_path": "glitchtip:ORRERY-8.json",
+      "source_sha256": "8c66cd3e75fb7e9dcfe657274693c1dd9b69c368c58c856c1128a197eb2386bf"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2V",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2V.json",
+      "source_sha256": "c19ed0ef7b3da92c4d9a909c59b4b2bb0bff7c9f652f3a8ac3865c1f0f2d64e2"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2U",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2U.json",
+      "source_sha256": "c3e7067005466612e0b260149aef8f9941977a653cde143391fbb304a3fab05d"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2T",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2T.json",
+      "source_sha256": "f4076eb39e5b0a014f3817fd791d0adda1a84ebb0c1bddb611727bf81ef58a39"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2S",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2S.json",
+      "source_sha256": "5179c725fd6aef7a7b8570f2f535589460df02299b9c0ded21ab74a9e4147e50"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2R",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2R.json",
+      "source_sha256": "2e8410323fc1c48aa2cf897f79e83fadc4c3e611b405b2d408127a08de9e4c93"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2Q",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2Q.json",
+      "source_sha256": "2f2aa27a0880e23d7f8dd9259952d3d1c1a3d9368f17a415419f9004b9390f55"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2P",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2P.json",
+      "source_sha256": "4cf65d56b9718ba2168f727a8d851fdeab39cdf0182eb6e9ab9d717515f0dcbe"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-19",
+      "source_path": "glitchtip:PODCAST-PIPELINE-19.json",
+      "source_sha256": "26b529468147fd6455c1b501e776a6b55d4a3c21ef2f09ce9075392cec6ba66a"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2O",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2O.json",
+      "source_sha256": "00bb2e8f7bdb9582a63d01c08f6208739e35b7567ee1d0fcf1cc604d31a9957a"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2N",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2N.json",
+      "source_sha256": "3761154eb5594820293947b5299e87e2209d61e11af55402ce8dda1019115c5a"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2M",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2M.json",
+      "source_sha256": "3aaf35418585d4273f523d30537bfe49918d100e7c9e40a8fb8e9e0ae696e93a"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2L",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2L.json",
+      "source_sha256": "d774d0338a520dcec78f2b5c7621f0a1d6e4546577467149ae6e2df7adca5589"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2K",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2K.json",
+      "source_sha256": "5cea391c08eb5267e04d88b255de8cc76ee3565ee1a777a5ab8e69cee2ed53f8"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2J",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2J.json",
+      "source_sha256": "64e950eee043d6158dbb0413d939ee64a67319f12a48ce5a055188c8bead98a6"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2I",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2I.json",
+      "source_sha256": "133ade1efb092c872a34b682c5a60fb45d4a581600c315c1aa36f08bcddcfec4"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2H",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2H.json",
+      "source_sha256": "47d959f5eba6598a23f97ae28c650f1f9733e48ff25f84de0d1fc4175d66ea5a"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2G",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2G.json",
+      "source_sha256": "d661d849da2335d84024b5ad1304d781e2e33f70af5726291d48359540bb5002"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2F",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2F.json",
+      "source_sha256": "ce876406cb420776ebc226c871e6f1817b44d164bc25fee7a8769d70a8c3371c"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2E",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2E.json",
+      "source_sha256": "a056c8e284db6212016476702aefa713fa01824df59b129e05386f7cd368a63c"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2D",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2D.json",
+      "source_sha256": "f5baacfcaba3ca6eea92192831de122fb01c58a990ee37c8cfe15b0bf459579d"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2C",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2C.json",
+      "source_sha256": "a44c2fecf87a0fdbe426e1f6d8351c8e74fd49859b9057ee9857c1534bc17516"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2B",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2B.json",
+      "source_sha256": "da6c7658058dff452dae016c2fadcbd95cce0bf65278fd543dc49d677be19bc4"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2A",
+      "source_path": "glitchtip:PODCAST-PIPELINE-2A.json",
+      "source_sha256": "780edcab678b0f0241cddde483a510c1f6fe2107e86cd722b3b6554399959237"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-29",
+      "source_path": "glitchtip:PODCAST-PIPELINE-29.json",
+      "source_sha256": "72037e53e6a66eb33b3766d5f31a1fc4e814a09442b6ab4afb20a2105adddad8"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-28",
+      "source_path": "glitchtip:PODCAST-PIPELINE-28.json",
+      "source_sha256": "0baa1d7e3d14c8da49ee6b3b57dc3d39d355085295ce6f31b64525c75f48cf2b"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-27",
+      "source_path": "glitchtip:PODCAST-PIPELINE-27.json",
+      "source_sha256": "fd6d52c3baf9e551bae0c47f8ce91c5ee43dbf4806bcb41f6713031269d0769c"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-26",
+      "source_path": "glitchtip:PODCAST-PIPELINE-26.json",
+      "source_sha256": "3ef7953d30dd06c31729c9abe361a737222c87fdb9a6bee2a53accb1462d0f28"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-25",
+      "source_path": "glitchtip:PODCAST-PIPELINE-25.json",
+      "source_sha256": "f345c583f4c3c9dfbe69cebb8b4fd710cdb2d6f7043c87a2fd4d5d774ecb6cfb"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-24",
+      "source_path": "glitchtip:PODCAST-PIPELINE-24.json",
+      "source_sha256": "d8dd3d528ac79bd14a9b7bd4442adb9870cbc72d296f39619faab7c0f6e52453"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-23",
+      "source_path": "glitchtip:PODCAST-PIPELINE-23.json",
+      "source_sha256": "dc0a3d1b065aac28a76afc7fc6952067bce03af78cb2c4ab1285dc0ef9690b2d"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-22",
+      "source_path": "glitchtip:PODCAST-PIPELINE-22.json",
+      "source_sha256": "2268c83e384fedecf757977f0d9562962e1e8d0e88cb3d6643f8e7aeaae8f4b0"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-20",
+      "source_path": "glitchtip:PODCAST-PIPELINE-20.json",
+      "source_sha256": "15d614044081c5916a9a4ef1fbfd06a79344af73b0e2b1c3f414eecb36783a81"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1V",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1V.json",
+      "source_sha256": "78f8fc3fede6afb89e307aab32785bfe83f4bf7266720db23ddccf533b911e6d"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1U",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1U.json",
+      "source_sha256": "4912c4071d28924638ba3254ae6bd54f29122a774c6c75aac608a1d78af55b6a"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-21",
+      "source_path": "glitchtip:PODCAST-PIPELINE-21.json",
+      "source_sha256": "4179d1fc78c523e9308fbc9062787a7de72b93607632d24668b795be12d95ca5"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1T",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1T.json",
+      "source_sha256": "54b8daec0ed5e839ecf18355e79ca8ccc05848b5802d5a39f41403962075989d"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1S",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1S.json",
+      "source_sha256": "319ddbe7d229674ebf5bda004aae489dd84801d589b9b3dea8e124ebe5d70d0d"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1R",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1R.json",
+      "source_sha256": "c9389d725d71818e9e6e67abffab14978e1257fb05fee102858e65cffc9e8e14"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1Q",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1Q.json",
+      "source_sha256": "d9b631866606f4800cb96d3272fbe9e9af682fc376088a86fb4d3bcbb3318ce7"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1P",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1P.json",
+      "source_sha256": "a438a3ff5cb2e420f96551c47e85c0d92785d6c5a48f189157f5b2047d9d8d71"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1O",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1O.json",
+      "source_sha256": "51773792a92ddb9b3eb85f03dcc9e53c62d8b7446a04b3ef3ea56e17d8cda1a3"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1N",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1N.json",
+      "source_sha256": "d5bc8d5f91e6466361ac46709513bceb1671bbef2485f1feb3bbbd9d1f402373"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1M",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1M.json",
+      "source_sha256": "c4eec4ad954f563d7b4aa4187275db4e4d13002fb1ef5f41f19ee80cf0395d76"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1L",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1L.json",
+      "source_sha256": "1dda5b025c182b2676383d2eae89b1708b5115fa1c4768646883aa812fe81ba4"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1K",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1K.json",
+      "source_sha256": "9d9b03319c2112fd042a4056408cc6495607f799c5c7af0abdc421509d7d8e42"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1J",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1J.json",
+      "source_sha256": "a73912b967ea7e23acd2b4e91812eb4ed2a649ed22312871946c93281e75f471"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1I",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1I.json",
+      "source_sha256": "3568647a35433a6795b71380284ae82288f5265ed6208207dcaf16265bc8e5c2"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1H",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1H.json",
+      "source_sha256": "74c3860293b5941ffd897ffcfb6070a0d9372047ed46059f3af145f66a82351c"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1G",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1G.json",
+      "source_sha256": "cc49de62fba642a49216648d59a475aa7f146f6d1988437e3d7d2a2e0020a073"
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1F",
+      "source_path": "glitchtip:PODCAST-PIPELINE-1F.json",
+      "source_sha256": "d49acfec06290b56e738c36d71e689a2515326ca47d96823dc1d14cb1c3cb1ae"
+    }
+  ],
+  "made_from": {
+    "by": null,
+    "capture": "fleet_dedup_2026_08",
+    "capture_sha256": "644e7f4fbfdaf06bdcf9eca7758f7d3e6188ba305dbd680b84bbc456da982f38",
+    "dedup": null,
+    "kept": 100,
+    "one_per": null,
+    "query": {
+      "body": "row",
+      "id": "fingerprint",
+      "path": "data/sources/fleet_dedup_v1.hf/signals.jsonl"
+    },
+    "records": 100,
+    "sample": null,
+    "seed": null,
+    "where": []
+  },
+  "source_dir": "data/sources/fleet_dedup_v1",
+  "tags": {
+    "hf": "chipi-nbgd/signal-fleet-dedup@v1",
+    "purpose": "regression-guard",
+    "source": "triage-fleet"
+  },
+  "version": "1.0"
+}

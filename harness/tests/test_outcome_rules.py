@@ -1,0 +1,275 @@
+#!/usr/bin/env python3
+"""Outcomes as labels (RFC-019, RFC-023): the rule language, a rule label set, promoted like any, and a dataset's tags.
+
+    python tests/test_outcome_rules.py
+
+The rule language first (_outcome_rules). Then, in a throwaway project built from the tutorial ($0, offline): two
+arms run against gold/tickets_v1; a capture's outcomes become a `rule` label set (`evh label-from-capture`); it is
+promoted to silver and the runs rescored against it. With gold beside it the goal recommends from gold and shows
+the silver group; with no gold the silver group is governed like any silver (ADR-0022: outcomes are no special case
+once promoted). A dataset's tags group and filter it.
+"""
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness._outcome_rules import matches  # noqa: E402
+
+KIT = HERE.parent / "tutorial"
+
+# ── the rule language ──────────────────────────────────────────────────────────────────────
+out = {"verdict": "fixed", "days": -3, "issue": 12, "gone": None, "flag": True}
+for rule, age, want, label in (
+    ({"when": {"verdict": "fixed"}}, None, True, "when: equal"),
+    ({"when": {"verdict": ["noise", "fixed"]}}, None, True, "when: any of a list"),
+    ({"when": {"verdict": "noise"}}, None, False, "when: different"),
+    ({"when": {"missing": "x"}}, None, False, "when: a missing field never matches"),
+    ({"unless": {"verdict": "fixed"}}, None, False, "unless: holds, so the rule fails"),
+    ({"unless": {"verdict": "noise"}}, None, True, "unless: does not hold"),
+    ({"exists": ["issue"]}, None, True, "exists: present"),
+    ({"exists": ["gone"]}, None, False, "exists: null is not present"),
+    ({"absent": ["gone", "missing"]}, None, True, "absent: null or missing"),
+    ({"range": {"days": {"min": -5, "max": 0}}}, None, True, "range: a signed value within bounds"),
+    ({"range": {"days": {"min": 0}}}, None, False, "range: below the minimum"),
+    ({"range": {"verdict": {"min": 0}}}, None, False, "range: not a number never matches"),
+    ({"range": {"flag": {"min": 0}}}, None, False, "range: a boolean is not a number"),
+    ({"min_age_days": 14}, 20.0, True, "min_age_days: old enough"),
+    ({"min_age_days": 14}, 3.0, False, "min_age_days: too young"),
+    ({"min_age_days": 14}, None, False, "min_age_days: no time, no match"),
+):
+    check(f"rule {label}", matches(rule, out, age) == want)
+
+# ── a rule label set, promoted like any ────────────────────────────────────────────────────
+proj = Path(tempfile.mkdtemp(prefix="evh-outrules-"))
+env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-outrules")
+env.pop("EVAL_DATA_DIR", None)
+env.pop("EVAL_RUNS_DIR", None)
+
+
+def evh(*args):
+    return subprocess.run(
+        [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
+    )
+
+
+def said(r):
+    return r.stdout + r.stderr
+
+
+try:
+    data = proj / "data"
+    (data / "configs").mkdir(parents=True)
+    (data / "goals").mkdir()
+    shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
+    evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
+    evh("dataset-materialize", "--dataset-id", "tickets_v1")
+    r = evh(
+        "label-import",
+        str(KIT / "gold"),
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_gold",
+        "--by",
+        "owner",
+    )
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "owner_gold",
+            "--tier",
+            "gold",
+            "--reason",
+            "The owner's hand-written summaries are what the arms are judged by.",
+            "--by",
+            "owner",
+        )
+    )
+    check("setup: the owner's gold, promoted", r.returncode == 0, said(r)[-300:])
+    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    for c in ("tickets_lead1", "tickets_lead2"):
+        cfg = data / "configs" / f"{c}.yaml"
+        cfg.write_text((KIT / "configs" / f"{c}.yaml").read_text() + "goal: tickets_summary\n")
+        r = evh("run", "--config", str(cfg))
+        check(f"setup: {c} runs", r.returncode == 0, said(r)[-300:])
+
+    items = [it["item_id"] for it in json.loads((data / "datasets" / "tickets_v1.json").read_text())["items"]]
+    rows = [
+        {"id": iid, "body": "x", "outcome": {"verdict": ["noise", "fixed", "open"][i % 3]}}
+        for i, iid in enumerate(items)
+    ]
+    (proj / "out.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    evh("capture", "--importer", "jsonl", "--query", json.dumps({"path": "out.jsonl"}), "--capture", "oc")
+    (proj / "map.yaml").write_text(
+        "- {when: {verdict: open}, skip: true}\n- {when: {verdict: fixed}, label: file}\n- {when: {verdict: noise}, label: dismiss}\n"
+    )
+    r = evh(
+        "label-from-capture",
+        "--dataset-id",
+        "tickets_v1",
+        "--capture",
+        "oc",
+        "--map",
+        "map.yaml",
+        "--set",
+        "outcomes",
+    )
+    lab = data / "labels" / "tickets_v1" / "outcomes"
+    doc = json.loads((lab / "labels.json").read_text()) if (lab / "labels.json").is_file() else {}
+    src = doc.get("source") or {}
+    check(
+        "label-from-capture: skipped items have no label, the rest their rule's",
+        r.returncode == 0
+        and sorted(p.stem for p in lab.glob("*.txt")) == sorted(i for n, i in enumerate(items) if n % 3 != 2)
+        and src.get("matched") == 4
+        and src.get("skipped") == 2
+        and sorted({(lab / f"{i}.txt").read_text().strip() for i in doc.get("items", {})})
+        == ["dismiss", "file"],
+        said(r)[-300:] + json.dumps(src),
+    )
+    check(
+        "the set's source is rule: the capture and the mapping's hash",
+        src.get("kind") == "rule" and src.get("capture") == "oc" and len(src.get("mapping_sha256", "")) == 64,
+        json.dumps(src),
+    )
+    # A rule naming more than one right answer: a fixed one was right to file or to escalate.
+    (proj / "map_two.yaml").write_text(
+        "- {when: {verdict: open}, skip: true}\n- {when: {verdict: fixed}, label: [file, escalate]}\n"
+        "- {when: {verdict: noise}, label: dismiss}\n"
+    )
+    r = evh(
+        "label-from-capture",
+        "--dataset-id",
+        "tickets_v1",
+        "--capture",
+        "oc",
+        "--map",
+        "map_two.yaml",
+        "--set",
+        "outcomes_two",
+    )
+    two = data / "labels" / "tickets_v1" / "outcomes_two"
+    check(
+        "label-from-capture: `label: [file, escalate]` is a label accepting both",
+        r.returncode == 0
+        and sorted({p.read_text().strip() for p in two.glob("*.txt")})
+        == ["dismiss", '{"accept": ["escalate", "file"]}'],
+        said(r)[-300:],
+    )
+    shutil.rmtree(two, ignore_errors=True)
+    (proj / "map_empty.yaml").write_text("- {when: {verdict: fixed}, label: []}\n")
+    r = evh(
+        "label-from-capture",
+        "--dataset-id",
+        "tickets_v1",
+        "--capture",
+        "oc",
+        "--map",
+        "map_empty.yaml",
+        "--set",
+        "outcomes_empty",
+    )
+    check(
+        "a rule's empty label list is refused", r.returncode != 0 and "label list" in said(r), said(r)[-300:]
+    )
+    name = "tickets_v1_outcomes"
+    r = evh(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v1",
+        "--labels",
+        "outcomes",
+        "--tier",
+        "silver",
+        "--name",
+        name,
+        "--reason",
+        "What happened next ranks the arms, beside the gold.",
+        "--by",
+        "owner",
+    )
+    man = data / "references" / "silver" / name / "manifest.json"
+    m = json.loads(man.read_text()) if man.is_file() else {}
+    check(
+        "promoted to silver like any set: from the rule set, with its reason",
+        r.returncode == 0
+        and m.get("tier") == "silver"
+        and (m.get("promoted_from") or {}).get("labels") == "outcomes"
+        and m.get("caveat", "").startswith("SILVER:"),
+        said(r)[-300:],
+    )
+    r = evh("validate")
+    check("validate passes with it (V16, V19)", r.returncode == 0, said(r)[-400:])
+    r = evh(
+        "rescore",
+        "--dataset-id",
+        "tickets_v1",
+        "--reference-id",
+        f"silver/{name}",
+        "--out",
+        "data/runs-outcomes",
+    )
+    check("the runs rescore against it", r.returncode == 0, said(r)[-300:])
+    r = evh("goals", "--goal", "tickets_summary")
+    lines = r.stdout.splitlines()
+    check(
+        "with gold beside it: one recommendation, from gold; the silver group shown, not recommended",
+        r.returncode == 0
+        and sum(ln.strip().startswith("recommended:") for ln in lines) == 1
+        and "recommended: tickets_lead2_v1" in r.stdout
+        and f"scored against silver/{name}" in r.stdout
+        and "shown, not recommended" in r.stdout,
+        r.stdout[-1500:],
+    )
+
+    # The views: a dataset's tags group and filter, and its origin is named (RFC-019 P7).
+    dsf = data / "datasets" / "tickets_v1.json"
+    dsf.write_text(
+        json.dumps({**json.loads(dsf.read_text()), "tags": {"source": "support"}}, indent=2) + "\n"
+    )
+    r = evh("datasets", "--tag", "source=support")
+    check(
+        "evh datasets --tag: the datasets with that tag, with the tag shown",
+        r.returncode == 0 and "tickets_v1" in r.stdout and "source=support" in r.stdout,
+        said(r)[-600:],
+    )
+    r = evh("datasets", "--tag", "source=nothing")
+    check(
+        "evh datasets --tag no dataset has: none listed", r.returncode == 0 and "tickets_v1" not in r.stdout
+    )
+    r = evh("datasets", "--dataset-id", "tickets_v1")
+    check("evh datasets --dataset-id: its tags", "tags: source=support" in r.stdout, said(r)[:500])
+    r = evh("catalog")
+    page = (proj / ".build" / "catalog" / "datasets.html").read_text() if r.returncode == 0 else ""
+    check(
+        "the catalog's datasets page: a tags column and a group-by chip per tag key",
+        'data-group-by="tag-source"' in page and "source: support" in page,
+        said(r)[-300:],
+    )
+
+    # With no gold, the promoted rule set is a silver like any (ADR-0022): its group recommends.
+    shutil.move(str(data / "references" / "gold"), str(proj / "gold-aside"))
+    shutil.move(str(data / "runs"), str(proj / "runs-aside"))
+    r = evh("goals", "--goal", "tickets_summary")
+    check(
+        "NO GOLD: the promoted rule set is governed like any silver: its group recommends",
+        r.returncode == 0 and f"scored against silver/{name}" in r.stdout and "recommended:" in r.stdout,
+        r.stdout[-1500:],
+    )
+finally:
+    shutil.rmtree(proj, ignore_errors=True)
+
+sys.exit(summary())

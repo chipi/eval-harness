@@ -19,7 +19,7 @@ WHAT IS SHARED AND WHAT IS NOT
 
   The second list is the task. An example declares it, gets the first list, and adds
   nothing else. `LABELS` is not a default here on purpose -- a classification adapter with
-  a plausible-looking default label set is a way to run the wrong experiment quietly.
+  a plausible-looking default label set is a way to run the wrong eval quietly.
 """
 
 from __future__ import annotations
@@ -196,7 +196,7 @@ class ClassificationTask:
 
         The shape of a rule-based classifier that is already in production somewhere and
         has never been measured. Its failure mode is worth knowing: on AG News the rules
-        under-triggered so badly that the default fired on 15 of 20 dev items, which
+        under-triggered so badly that the default fired on 15 of 20 pilot items, which
         accuracy alone did not reveal and the confusion matrix did immediately.
         """
         low = text.lower()

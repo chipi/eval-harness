@@ -8,10 +8,10 @@
 # hard way: reasoning models spend thinking tokens INSIDE the output budget, so a tight cap
 # buys a truncated answer that scores like a bad model. `truncated` is recorded per item.
 #
-# n=56 is the DEV slice: 4 per class, a seeded-RANDOM subset of the 280 rather than a
-# first-k prefix. That is the fix for what AG News found -- its first-k dev slice was
+# n=56 is the PILOT slice: 4 per class, a seeded-RANDOM subset of the 280 rather than a
+# first-k prefix. That is the fix for what AG News found -- its first-k pilot slice was
 # nested but unrepresentative, and one arm read 0.35 there against 0.67 on the full set.
-# Prompt and parser may be tuned here; the claim is made on the 224 items the dev slice
+# Prompt and parser may be tuned here; the claim is made on the 224 items the pilot slice
 # does not contain: `make holdout DATASET_ID=dbpedia_280 EXCLUDE=dbpedia_56`.
 config_id: db_anthropic_l_v1
 dataset_id: dbpedia_56

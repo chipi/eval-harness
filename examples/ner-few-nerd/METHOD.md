@@ -1,4 +1,4 @@
-# Method — why this experiment is built the way it is
+# Method — why this eval is built the way it is
 
 Companion to [`README.md`](README.md) and
 [`REPORT_NER.md`](../../research/REPORT_NER.md). Terms in
@@ -78,7 +78,7 @@ Plus two floors: `nothing` (the empty set, always) and `capitalized` (every capi
 run minus an orthography stoplist).
 
 > **`gliner`'s threshold is untuned** — 0.5, the library default. It is this arm's decision
-> boundary and is in the fingerprint. Tuning it on the dev slice would be legitimate, but
+> boundary and is in the fingerprint. Tuning it on the pilot slice would be legitimate, but
 > it would then be a *tuned* arm and would have to say so. A tuned GLiNER might close some
 > of the +0.3134 gap, and nothing here bounds how much.
 

@@ -5,12 +5,12 @@ F1 its model card publishes.
 
     python examples/ner-few-nerd/calibrate.py [--n 2000]
 
-WHY A DIFFERENT METRIC FROM THE EXPERIMENT. The experiment's primary metric is the MEAN
+WHY A DIFFERENT METRIC FROM THE EVAL. The eval's primary metric is the MEAN
 of per-sentence F1 over 8 coarse types, matched on normalised surface strings -- chosen so
 an LLM's free-text answer can be scored at all. The literature reports entity-level
 MICRO-F1 over the 66 fine types, matched on token spans. They are different numbers, and
 no published figure is comparable to ours. This scores the standard way, so the instrument
-can be checked against a published value even though the experiment's metric cannot.
+can be checked against a published value even though the eval's metric cannot.
 
     span_marker  guishe/span-marker-generic-ner-v1-fewnerd-fine-super   F1 0.7040 (card)
 

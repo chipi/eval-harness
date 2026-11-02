@@ -400,7 +400,7 @@
     "outputs_per_call": 16
   },
   "scorer_id": "judge-summ-v2",
-  "scorer_sha256": "f4992082a4e0814b4437d183a752932564a1f6c7fa0e0a2b0971e325f9ceab2f",
+  "scorer_sha256": "1d957df0ff06522071447bb6dfd0f234e160178d4cc14ef808ed0885e135c01f",
   "self_family_gap": {
     "anthropic_l": {
       "own_family_arms": 3,

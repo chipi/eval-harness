@@ -22,9 +22,20 @@
   (function elsewhere() {
     const t = document.querySelector('[data-elsewhere=term]'), m = document.querySelector('[data-elsewhere=mcp]');
     const args = {};
-    for (const k of ['runs', 'baseline', 'metric', 'by']) if (P.get(k)) args[k] = P.get(k);
+    if (P.get('sheet')) {
+      // The sheet: the flags that filter are the signals ticked (a flag always filters in the terminal).
+      args.sheet = true; args['dataset-id'] = P.get('dataset');
+      const only = P.getAll('only');
+      for (const k of ['runs', 'metric', 'by']) if (P.get(k)) args[k] = P.get(k);
+      if (P.get('wrong') && only.includes('wrong')) args['wrong-against'] = P.get('wrong');
+      if (P.get('new') && only.includes('new')) args['new-vs'] = P.get('new');
+      for (const k of ['disagree', 'split', 'unlabelled']) if (only.includes(k)) args[k] = true;
+      if (P.get('scores') === 'only') args['scores-only'] = true;
+    } else {
+      for (const k of ['runs', 'baseline', 'metric', 'by']) if (P.get(k)) args[k] = P.get(k);
+      if (P.get('rescore') === '0') args['no-rescore'] = true;
+    }
     if (P.getAll('where').length) args.where = P.getAll('where');
-    if (P.get('rescore') === '0') args['no-rescore'] = true;
     const opts = Object.entries(args).flatMap(([k, v]) =>
       v === true ? [`--${k}`] : (Array.isArray(v) ? v : [v]).map(x => `--${k} ${x}`));
     if (t) t.innerHTML = `<code>${esc(['evh inspect', ...opts].join(' '))}</code>`;
@@ -75,14 +86,15 @@
     ? `<a class="cell-link" href="${UP}a/${slug(id)}.html" title="${esc(id)}">${esc(text)}</a>` : esc(text);
 
   function verdictChip(v) {
-    const cls = v.startsWith('separated: better') ? 'v-better' : v.startsWith('separated: worse') ? 'v-worse' : 'v-none';
+    const cls = v.startsWith('significant: better') ? 'v-better' : v.startsWith('significant: worse') ? 'v-worse' : 'v-none';
     const sym = cls === 'v-better' ? '▲ ' : cls === 'v-worse' ? '▼ ' : '';
     return `<span class="chip ${cls}">${sym}${esc(v)}</span>`;
   }
 
   async function load() {
+    if (P.get('sheet') && P.get('dataset')) return sheetView();
     picker();
-    if (!runs().length) { app.innerHTML = '<p class="muted">Pick runs from an experiment or dataset page in the catalog ("Inspect runs"), or add them above.</p>'; return; }
+    if (!runs().length) { app.innerHTML = '<p class="muted">Pick runs from a goal, dataset or arm page in the catalog ("Inspect it", "test vs leader"), or add them above.</p>'; return; }
     let d;
     try {
       const r = await fetch(API + 'compare?' + P.toString());
@@ -108,8 +120,9 @@
     const controls = `<div class="controls">
       <label>metric <select id="metric">${mopts}</select></label>
       <label>baseline <select id="baseline">${bopts}</select></label>
-      ${d.can_rescore ? `<label class="tick"><input type="checkbox" id="rescore" ${resc ? 'checked' : ''}> re-score what is not on record</label>` : ''}</div>`
-      + fieldControls(d);
+      ${d.can_rescore ? `<label class="tick"><input type="checkbox" id="rescore" ${resc ? 'checked' : ''}> re-score what is not on record</label>` : ''}
+      <label class="tick"><input type="checkbox" id="disagree" ${P.get('disagree') ? 'checked' : ''}> only where they disagree</label></div>`
+      + scoredAgainst(d) + fieldControls(d);
 
     const rows = [...d.rows].sort((a, b) => (a.p ?? 9) - (b.p ?? 9));
     // A row's tint says what its scores are measured against, as on the catalog's pages.
@@ -120,7 +133,7 @@
       <td>${verdictChip(r.verdict)}${r.n && r.min_p > 0.05 ? ' <small class="muted">' + r.n + ' ' + ITEMS + ' cannot reach 0.05</small>' : ''}</td>
       <td class="num">${r.n}</td><td class="num">${fmt(r.mean)}</td><td class="num">${fmt(r.delta)}</td>
       <td class="num">${r.ci ? (r.ci[0] >= 0 ? '+' : '') + r.ci[0].toFixed(3) + ' to ' + (r.ci[1] >= 0 ? '+' : '') + r.ci[1].toFixed(3) : '—'}</td>
-      <td class="num">${r.wins}–${r.losses}${r.ties ? ' (' + r.ties + ' tied)' : ''}</td>
+      <td class="num">${r.wins}–${r.losses}${r.ties ? ' (' + r.ties + ' ties)' : ''}</td>
       <td class="num">${fmtp(r.p)}</td><td class="num">${r.threshold ? r.threshold.toFixed(4) : '—'}</td></tr>`).join('');
     const baseMean = d.items.length ? (() => { const v = Object.values(d.series[d.baseline]); return v.reduce((a, b) => a + b, 0) / v.length; })() : null;
     const verdicts = `<div class="scroll-x"><table class="data" data-nopage><thead><tr><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>mean</th><th>Δ vs baseline</th><th>95% CI of Δ</th><th>wins–losses</th><th>p (exact ≤30)</th><th>Holm threshold</th></tr></thead>
@@ -158,6 +171,7 @@
     if (window.paginate) app.querySelectorAll('table.data').forEach(t => window.paginate(t));
     document.getElementById('metric').onchange = ev => { P.set('metric', ev.target.value); go(); };
     document.getElementById('baseline').onchange = ev => { P.set('baseline', ev.target.value); go(); };
+    document.getElementById('disagree').onchange = ev => { ev.target.checked ? P.set('disagree', '1') : P.delete('disagree'); go(); };
     const rs = document.getElementById('rescore');
     if (rs) rs.onchange = ev => { ev.target.checked ? P.delete('rescore') : P.set('rescore', '0'); go(); };
     // The reference the metric names ("<metric> vs <reference>"), else the one the baseline was scored against.
@@ -173,6 +187,21 @@
     else if (want) document.getElementById('drill').innerHTML = `<p class="note">${esc(ITEM)} ${esc(want)} is not among the ${ITEMS} these arms share.</p>`;
   }
 
+
+  // What the chosen arms' scores are read against (RFC-023): a reference with its tier pill, a label set with its
+  // source chip. Arms against different ones are set aside by the server, as for two references.
+  const pill = t => (t === 'gold' || t === 'silver') ? `<span class="pill tier-${t}">${t}</span>` : esc(t || '');
+  const chip = k => `<span class="src src-${['person', 'model', 'rule'].includes(k) ? k : 'unknown'}">${esc(k || 'unknown')}</span>`;
+  function against(a) {
+    const r = a.reference || '';
+    if (a.judge) return `judge <code>${esc(a.judge)}</code>`;
+    if (r.startsWith('labels/')) return `${chip(a.labels_source)} <code>${esc(r.slice(7).split('/').pop())}</code>`;
+    return r ? `<code>${esc(r)}</code> ${pill(r.split('/')[0])}` : 'nothing';
+  }
+  function scoredAgainst(d) {
+    const seen = [...new Map((d.arms || []).map(a => [a.judge || a.reference || '', a])).values()];
+    return seen.length ? `<p class="small">scored against: ${seen.map(against).join(' · ')}</p>` : '';
+  }
 
   // ── item fields (ADR-0003): filter the comparison, break it down by a choice or yes/no field ─
   function fieldControls(d) {
@@ -245,7 +274,7 @@
     return `<h3 class="sub">By ${esc(f.label)} · ${b.groups.length} group(s)</h3>
       <div class="scroll-x"><table class="data" data-nopage><thead><tr><th>${esc(f.label)}</th><th>run vs baseline</th><th>verdict</th><th>${ITEMS}</th><th>Δ vs baseline</th><th>wins–losses</th><th>p</th><th>Holm threshold</th></tr></thead>
       <tbody>${rows || '<tr><td colspan="8" class="muted">No group has two arms to test.</td></tr>'}</tbody></table></div>
-      <p class="small muted">The same paired test within each group, Holm-corrected over all ${b.family_size} tests together: each extra group is another chance of a false "separated", so the thresholds are stricter than for one group alone.</p>`;
+      <p class="small muted">The same paired test within each group, Holm-corrected over all ${b.family_size} tests together: each extra group is another chance of a false "significant", so the thresholds are stricter than for one group alone.</p>`;
   }
 
   function fieldsTable(fs) {
@@ -343,11 +372,11 @@
       g += `<line class="meanmark" x1="${x(mu)}" x2="${x(mu)}" y1="${y - 11}" y2="${y + 11}"/>`;
       // Words, not arrows: for a lower-is-better metric an up-arrow beside a negative number reads wrong.
       const v = r.verdict || '';
-      const word = !v.startsWith('separated') ? '·' : d.neutral ? (mu > 0 ? 'higher' : 'lower') : v.includes('better') ? '✓ better' : '✗ worse';
+      const word = !v.startsWith('significant') ? '·' : d.neutral ? (mu > 0 ? 'higher' : 'lower') : v.includes('better') ? '✓ better' : '✗ worse';
       g += rowValue(y, W - RIGHT - 150, `${mu >= 0 ? '+' : ''}${tfmt(mu)} ${r.wins != null ? r.wins + '–' + r.losses : ''} ${word}`);
     });
     const side = d.neutral ? '← lower · higher →' : d.higher_is_better ? '← worse · better →' : '← better · worse →';
-    return `<figure class="chart"><figcaption><b>Difference from the baseline</b> · each ${ITEM}'s ${esc(d.metric)} minus the baseline's (${esc(label[d.baseline] || d.baseline)}); bar = mean difference; right column: mean difference, wins–losses, and ✓ better / ✗ worse when separated after Holm. <span class="muted">${side}</span></figcaption>
+    return `<figure class="chart"><figcaption><b>Difference from the baseline</b> · each ${ITEM}'s ${esc(d.metric)} minus the baseline's (${esc(label[d.baseline] || d.baseline)}); bar = mean difference; right column: mean difference, wins–losses, and ✓ better / ✗ worse when significant after Holm. <span class="muted">${side}</span></figcaption>
       <div class="scroll-x"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Per-${ITEM} difference from the baseline">${g}</svg></div></figure>`;
   }
 
@@ -441,21 +470,196 @@
     const box = document.getElementById('drill');
     box.innerHTML = '<p class="muted">Loading outputs…</p>';
     const q = new URLSearchParams({arms: arms.join(','), item: ep});
+    if (!arms.length) { q.delete('arms'); q.set('dataset', P.get('dataset') || ''); }
     if (ref) q.set('ref', ref);
     const d = await (await fetch(API + 'item?' + q)).json();
     if (d.error) { box.innerHTML = `<p class="note">${esc(d.error)}</p>`; return; }
     const base = d.views[baseline];
-    const cols = Object.entries(d.views).map(([a, v]) => `<div class="outcol"><h3>${esc(label[a] || a)}${a === baseline ? ' <small class="muted">baseline</small>' : ''}</h3>${view(v, a === baseline ? null : base)}</div>`).join('');
+    const rec = d.recorded || {};
+    const cols = Object.entries(d.views).map(([a, v]) => `<div class="outcol"><h3>${rec[a] ? 'production, recorded <small class="muted">capture ' + esc(rec[a]) + '</small> · ' : ''}${esc(label[a] || a)}${a === baseline ? ' <small class="muted">baseline</small>' : ''}</h3>${view(v, a === baseline ? null : base)}</div>`).join('');
+    const labs = (d.labels || []).length ? `<h3 class="sub">labels · ${d.labels.length}</h3><ul class="labels">${d.labels.map(l =>
+      `<li>${chip(l.kind)} <code>${esc(l.set.split('/').pop())}</code>${l.by ? ' <small class="muted">' + esc(l.by) + '</small>' : ''}${l.note ? ' <small>' + esc(l.note) + '</small>' : ''}<div class="outtext">${l.text == null ? '<span class="muted">(its text is not here)</span>' : esc(l.text)}</div></li>`).join('')}</ul>`
+      : (d.labels ? `<p class="small muted">No label for this ${ITEM} yet.</p>` : '');
     const refcol = d.reference && d.reference.view && d.reference.view.kind !== 'none' ? `<div class="outcol refcol"><h3>${esc(d.reference.id)} <small class="muted">reference</small></h3>${view(d.reference.view, null)}</div>` : '';
     const hasText = Object.values(d.views).some(v => v && v.kind === 'text');
     const toggle = hasText ? `<label class="tick small"><input type="checkbox" id="difft" ${DIFF ? 'checked' : ''}> mark what each run <ins>adds</ins> and <del>drops</del> against the baseline (useful between near-identical outputs, noisy between independent ones)</label>` : '';
     // The item itself, what every arm read (the local inspector only); folded when it is long.
     const src = d.source && d.source.kind !== 'none' && d.source.text
       ? `<details class="srcbox"${d.source.text.length <= 1500 ? ' open' : ''}><summary>the ${ITEM} itself <small class="muted">${d.source.text.length.toLocaleString()} characters, what every arm read</small></summary><div class="outtext">${esc(d.source.text)}</div></details>` : '';
-    box.innerHTML = `<p class="eyebrow gap"><span class="num">04</span>${ITEM} · ${esc(ep)}</p>${fieldsTable(d.fields)}${src}${toggle}<div class="outgrid">${refcol}${cols}</div>`;
+    box.innerHTML = `<p class="eyebrow gap"><span class="num">04</span>${ITEM} · ${esc(ep)}</p>${fieldsTable(d.fields)}${src}${labs}${toggle}<div class="outgrid">${refcol}${cols}</div>`;
     const t = document.getElementById('difft');
     if (t) t.onchange = () => { DIFF = t.checked; drill(ep, arms, baseline, label, ref, tr); };
     box.scrollIntoView({behavior: 'smooth', block: 'start'});
+  }
+
+  // ── 05 sheet (RFC-023): one dataset's items down, a column per arm across: what it wrote, its scores, the labels, the winner ──
+  // The page writes nothing: the rows ticked give the evh pick and evh label-sheet commands to copy; the CSV is a read.
+  const SIGNALS = ['wrong', 'disagree', 'split', 'new', 'unlabelled'];
+  async function sheetView() {
+    const ds = P.get('dataset');
+    picker();
+    let d;
+    const params = () => {
+      const q = new URLSearchParams({dataset: ds, runs: runs().join(',')});
+      for (const k of ['wrong', 'new', 'metric']) if (P.get(k)) q.set(k, P.get(k));
+      for (const w of P.getAll('where')) q.append('where', w);
+      for (const o of P.getAll('only')) q.append('only', o);
+      return q;
+    };
+    try {
+      d = await (await fetch(API + 'sheet?' + params())).json();
+    } catch (e) {
+      app.innerHTML = `<p class="note"><b>No inspector server.</b> Start it with <code>${esc(SERVE)}</code> and open this page from the address it prints.</p>`;
+      return;
+    }
+    if (d.error) { app.innerHTML = `<p class="note"><b>${esc(d.error)}</b></p>`; return; }
+    const only = P.getAll('only');
+    const scoresOnly = P.get('scores') === 'only';
+    const counts = `${d.total} ${ITEMS}` + SIGNALS.filter(s => d.counts[s]).map(s => ` · ${d.counts[s]} ${s}`).join('');
+    const opt = (xs, cur, none) => `<option value="">${none}</option>` + xs.map(x => `<option value="${esc(x)}" ${x === cur ? 'selected' : ''}>${esc(x)}</option>`).join('');
+    const mopts = d.metrics.map(m => `<option value="${esc(m)}" ${m === d.metric ? 'selected' : ''}>${esc(m)}</option>`).join('');
+    const controls = `<div class="controls">
+      ${d.metric ? `<label>read on <select id="smetric">${mopts}</select></label>` : ''}
+      <label>wrong against <select id="swrong">${opt(d.sets, d.wrong, 'no label set')}</select></label>
+      <label>new against <select id="snew">${opt(d.datasets, d.new, 'no dataset')}</select></label>
+      ${SIGNALS.map(s => `<label class="tick"><input type="checkbox" class="sonly" value="${s}" ${only.includes(s) ? 'checked' : ''}> only ${s}</label>`).join('')}
+      <label class="tick"><input type="checkbox" id="sscores" ${scoresOnly ? 'checked' : ''}> scores only</label></div>`
+      + fieldControls(d);
+    const first = d.runs[0];
+    // The terminal's order: the signals next to the item (they are why a row matters), each arm's output and scores,
+    // the labels, the winners, and the fields last.
+    const arms = d.arms;
+    const heads = [['sel', '<input type="checkbox" id="sall" aria-label="select all shown">'], ['item', ITEM], ['start', 'the start'], ['', 'signals']];
+    // An arm's id has no spaces (runs-judged/<scorer>/<dataset>/<config>): a break is offered after each '/'.
+    const armHead = t => esc(short(t)).replace(/\//g, '/<wbr>');
+    arms.forEach((a, i) => {
+      heads.push(['outc', armHead(a.token) + '<br><small>' + (i === 0 ? 'first: production' : 'output') + '</small>']);
+      a.scores.forEach(ref => heads.push(['scc', armHead(a.token) + '<br><small>' + esc(ref) + '</small>']));
+    });
+    d.label_cols.forEach(c => heads.push(['', `label ${chip(c.kind)} ${esc(c.name)}`]));
+    d.ref_cols.forEach(c => heads.push(['', 'reference<br><small>' + esc(c.key) + '</small>']));
+    d.winner_cols.forEach(w => heads.push(['', esc(w.header)]));
+    heads.push(['', 'picked'], ['', 'fields']);
+    const fieldsOf = r => Object.entries(r.fields).map(([k, v]) => `${k}=${v}`).join(', ');
+    const win = (r, t, ref) => ref === d.metric && (r.winners['winner: ' + d.metric] || []).includes(t) ? ' win' : '';
+    const body = rs => rs.map(r => `<tr class="eprow" data-ep="${esc(r.item)}" tabindex="0">
+      <td class="sel"><input type="checkbox" class="ssel" value="${esc(r.item)}" aria-label="select ${esc(r.item)}"></td>
+      <td class="item mono" title="${esc(r.item)}">${esc(r.item.length > 28 ? r.item.slice(0, 27) + '…' : r.item)}</td>
+      <td class="small start" title="${esc(r.text)}">${esc(r.text.length > 60 ? r.text.slice(0, 59) + '…' : r.text)}</td>
+      <td>${Object.entries(r.signals).map(([s, x]) => `<span class="chip sig sig-${s}" title="${esc(x)}">${s}</span>`).join(' ')}</td>
+      ${arms.map(a => {
+        const c = r.cells[a.token];
+        return `<td class="small outc">${c.output == null ? '<span class="muted">—</span>' : esc(c.output)}</td>`
+          + a.scores.map(ref => `<td class="num scc${win(r, a.token, ref)}">${fmt(c.scores[ref])}</td>`).join('');
+      }).join('')}
+      ${d.label_cols.map(c => `<td class="small">${r.labels[c.key] == null ? '<span class="muted">—</span>' : esc(r.labels[c.key])}</td>`).join('')}
+      ${d.ref_cols.map(c => `<td class="small">${r.references[c.key] == null ? '<span class="muted">—</span>' : esc(r.references[c.key])}</td>`).join('')}
+      ${d.winner_cols.map(w => `<td class="small">${esc((r.winners[w.key] || []).map(short).join(' = '))}</td>`).join('')}
+      <td class="small">${esc(r.picked.join(', '))}</td>
+      <td class="small">${esc(fieldsOf(r))}</td></tr>`).join('');
+    // The footer, per arm: under the arm's columns. Its cells span the arm's columns (the output's too, unless hidden).
+    const f = d.footer, before = 4, after = d.label_cols.length + d.ref_cols.length + d.winner_cols.length + 2;
+    const line = (label, cell) => `<tr><th colspan="${before}" class="small">${label}</th>${arms.map(a =>
+      `<td class="small foot" data-n="${a.scores.length}">${cell(a.token)}</td>`).join('')}<td colspan="${after}"></td></tr>`;
+    const way = d.lower_is_better ? 'lower' : 'higher';
+    const pct = v => v == null ? '—' : (100 * v).toFixed(0) + '%';
+    const foot = !d.metric ? '' : '<tfoot>'
+      + line(`mean ${esc(f.metric)} <small>(${way} is better)</small>`, t => fmt(f.mean[t]))
+      + d.winner_cols.map(w => line(`win rate · ${esc(w.header)}`, t => pct(f.win_rate[w.key][t]))).join('')
+      + line('verdict' + (f.decided ? ` <small>(${esc(f.decided)})</small>` : ''), t => verdictCell(f.verdict[t]))
+      + '</tfoot>';
+    const table = `<div class="scroll-x"><table class="data sheet${scoresOnly ? ' scores-only' : ''}" id="sheettable"><thead><tr>${heads.map(([c, h], i) => `<th class="${c}" data-col="${i}">${h}</th>`).join('')}</tr></thead><tbody>${body(d.rows)}</tbody>${foot}</table></div>`;
+    const panel = `<div class="cmdpanel" id="spanel" hidden><p class="small"><b><span id="sn">0</span> selected.</b> The page writes nothing; run these.</p>
+      <div class="controls"><label>for <input id="sfor" placeholder="a governed dataset" list="sdsl"></label><datalist id="sdsl">${d.datasets.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+      <label>tags <input id="stags" placeholder="case=oom kind=missed"></label><label>note <input id="snote" placeholder="why it is worth keeping"></label></div>
+      <p><code class="cmd" id="spick"></code> <button type="button" class="btn small copy" data-copy="">copy</button></p>
+      <p><code class="cmd" id="ssheet"></code> <button type="button" class="btn small copy" data-copy="">copy</button>
+      <a class="btn small" id="ssheetdl" href="#" download>download these rows (CSV)</a></p></div>`;
+    let by = '';
+    const bf = P.get('by');
+    if (bf) {
+      const g = {};
+      for (const r of d.rows) { const k = String(r.fields[bf] ?? '—'); (g[k] = g[k] || []).push(r); }
+      by = `<h3 class="sub">by ${esc(bf)}</h3><div class="scroll-x"><table class="data" data-nopage><thead><tr><th>${esc(bf)}</th><th>rows</th>${SIGNALS.map(s => `<th>${s}</th>`).join('')}</tr></thead><tbody>${Object.entries(g).map(([k, rs]) =>
+        `<tr><td>${esc(k)}</td><td class="num">${rs.length}</td>${SIGNALS.map(s => `<td class="num">${rs.filter(r => s in r.signals).length}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    }
+    app.innerHTML = `<p class="eyebrow"><span class="num">05</span>sheet · ${esc(ds)}</p><p class="small" id="scounts">${esc(counts)}${only.length ? ' · ' + d.rows.length + ' shown' : ''}${d.metric ? ' · read on ' + esc(d.metric) + ' (' + way + ' is better)' : ''}</p>`
+      + controls + `<p><a class="btn small" id="sheetdl" href="#" download>download (CSV)</a> <label class="tick small"><input type="checkbox" id="sfill"> with empty label columns to fill</label></p>`
+      + panel + by + table + `<p class="small muted">Tick rows to pick or label them; click a row to open the ${ITEM}.</p><div id="drill"></div>`;
+    wireFields(d);
+    const t = document.getElementById('sheettable');
+    // The footer's cells span their arm's columns: the output's too, unless "scores only" hides it.
+    const span = () => t.querySelectorAll('td.foot').forEach(c => { c.colSpan = Math.max(1, +c.dataset.n + (t.classList.contains('scores-only') ? 0 : 1)); });
+    span();
+    if (window.paginate) window.paginate(t);
+    document.getElementById('swrong').onchange = ev => { ev.target.value ? P.set('wrong', ev.target.value) : P.delete('wrong'); go(); };
+    document.getElementById('snew').onchange = ev => { ev.target.value ? P.set('new', ev.target.value) : P.delete('new'); go(); };
+    const sm = document.getElementById('smetric');
+    if (sm) sm.onchange = () => { P.set('metric', sm.value); go(); };
+    app.querySelectorAll('input.sonly').forEach(c => c.onchange = () => {
+      P.delete('only'); app.querySelectorAll('input.sonly:checked').forEach(x => P.append('only', x.value)); go(); });
+    const q = s => s.includes(' ') || s.includes('"') ? '"' + s.replace(/"/g, '\\"') + '"' : s;
+    // The CSV the server builds as the command does (a read: nothing is written): every row shown, or the ticked ones.
+    const csv = items => {
+      const qs = params(); qs.set('format', 'csv');
+      if (document.getElementById('sscores').checked) qs.set('scores_only', '1');
+      if (document.getElementById('sfill').checked) qs.set('fill', 'label');
+      items.forEach(i => qs.append('item', i));
+      return API + 'sheet?' + qs;
+    };
+    const upd = () => {
+      const sel = [...app.querySelectorAll('input.ssel:checked')].map(i => i.value);
+      document.getElementById('spanel').hidden = !sel.length;
+      document.getElementById('sn').textContent = sel.length;
+      const items = sel.map(i => '--item ' + i).join(' ');
+      const fr = document.getElementById('sfor').value.trim(), tg = document.getElementById('stags').value.trim().split(/\s+/).filter(Boolean);
+      const note = document.getElementById('snote').value.trim();
+      const pk = `evh pick --dataset-id ${ds} ${items}` + (fr ? ` --for ${fr}` : '') + tg.map(x => ` --tag ${x}`).join('') + (note ? ` --note ${q(note)}` : '');
+      const sh = `evh label-sheet --dataset-id ${ds} ${items} --out sheet.csv` + (d.runs.length ? ` --runs ${d.runs.join(',')}` : '');
+      const [a, b] = app.querySelectorAll('#spanel button.copy');
+      document.getElementById('spick').textContent = pk; a.dataset.copy = pk;
+      document.getElementById('ssheet').textContent = sh; b.dataset.copy = sh;
+      const dl = document.getElementById('ssheetdl');
+      dl.href = csv(sel); dl.download = `sheet-${ds}.csv`;
+      const all = document.getElementById('sheetdl');
+      all.href = csv([]); all.download = `sheet-${ds}.csv`;
+    };
+    document.getElementById('sscores').onchange = ev => {
+      t.classList.toggle('scores-only', ev.target.checked);
+      ev.target.checked ? P.set('scores', 'only') : P.delete('scores');
+      history.replaceState(null, '', '?' + P);
+      span(); upd(); };
+    document.getElementById('sfill').onchange = upd;
+    app.querySelectorAll('input.ssel').forEach(c => c.onchange = upd);
+    for (const id of ['sfor', 'stags', 'snote']) document.getElementById(id).oninput = upd;
+    upd();
+    document.getElementById('sall').onchange = ev => {
+      [...t.tBodies[0].rows].filter(r => !r.hidden && r.style.display !== 'none').forEach(r => { r.querySelector('input.ssel').checked = ev.target.checked; });
+      upd(); };
+    // A sort by any column (a header that is not the select-all box): numbers as numbers, text as shown.
+    t.tHead.querySelectorAll('th').forEach(th => th.onclick = ev => {
+      if (ev.target.closest('input')) return;
+      const i = th.cellIndex, dir = th.dataset.dir === 'asc' ? 'desc' : 'asc';
+      t.querySelectorAll('th').forEach(x => delete x.dataset.dir); th.dataset.dir = dir;
+      const tb = t.tBodies[0];
+      [...tb.rows].sort((a, b) => { const x = a.cells[i].textContent.trim(), y = b.cells[i].textContent.trim();
+        return x.localeCompare(y, undefined, {numeric: true}) * (dir === 'asc' ? 1 : -1); }).forEach(r => tb.appendChild(r));
+      if (t._repage) t._repage(); });
+    const label = Object.fromEntries(d.runs.map(r => [r, short(r)]));
+    app.querySelectorAll('tr.eprow').forEach(tr => {
+      tr.onclick = ev => { if (ev.target.closest('input')) return; drill(tr.dataset.ep, d.runs, first, label, '', tr); };
+      tr.onkeydown = ev => { if (ev.key === 'Enter') tr.onclick(ev); };
+    });
+    const want = P.get('item');
+    const hit = want && [...app.querySelectorAll('tr.eprow')].find(tr => tr.dataset.ep === want);
+    if (hit) drill(want, d.runs, first, label, '', hit);
+  }
+
+  // A footer verdict, as the comparison page tints one: better and worse by their words, else plain.
+  function verdictCell(v) {
+    if (!v) return '<span class="muted">—</span>';
+    const cls = v.startsWith('leader') ? 'v-better' : v.startsWith('out') || v.includes('significant: worse') ? 'v-worse' : 'v-none';
+    return `<span class="chip ${cls}">${esc(v)}</span>`;
   }
 
   load();

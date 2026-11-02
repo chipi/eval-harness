@@ -1,6 +1,6 @@
 """The JSON repairs must fix the observed failures and must NOT invent answers.
 
-Every case here is one an arm actually produced on the Few-NERD dev slice, plus the
+Every case here is one an arm actually produced on the Few-NERD pilot slice, plus the
 negative cases that stop the repairs going too far. The asymmetry is the point: widening
 a parser to accept a readable answer is legitimate, widening it to mine entities out of
 an explanation would be scoring answers the model never gave.
@@ -18,7 +18,7 @@ from evaluation_harness._common import load_module  # noqa: E402
 # By path: `import adapter` names the harness's bundled adapter as well as this example's.
 _parse_entities = load_module(NER / "adapter.py", "ner_few_nerd_adapter")._parse_entities
 
-# observed on the dev slice
+# observed on the pilot slice
 r1 = _parse_entities('{"text": "p", "type": "other"}')
 check("deepseek_s bare object -> one-element set", r1 == [{"text": "p", "type": "other"}], r1)
 r2 = _parse_entities('[\n  {\n    "text": "Palm Beach County",type: "location"\n  }\n]')

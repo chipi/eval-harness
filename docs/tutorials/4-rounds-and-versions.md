@@ -1,7 +1,9 @@
-# Tutorial 4 · Experiment rounds and dataset versions
+# Tutorial 4 · Eval rounds and dataset versions
 
-Experiments go round on round: try some arms, keep what wins, drop what lost, change something,
-compare again. **Rounds** record that, optionally: what each round set out to learn, what
+Evals go round on round: try some arms, keep what wins, drop what lost, change something,
+compare again. Before a release, that is how a field narrows (twenty candidates, then ten, a new scoring rule, a new
+prompt, then a choice); after it, the same goal goes on, on what the deployed system decides. **Rounds** record
+that, optionally: what each round set out to learn, what
 changed, which arms were carried in and which were dropped and why, and what it concluded. A
 project that never opens a round sees none of it. **Dataset versions** are the other thing
 that changes between rounds: a new item arrives, and the dataset that includes it is a new
@@ -12,7 +14,7 @@ This tutorial starts from the project [getting started](../GUIDE.md) leaves, off
 ([tutorial 3](3-frontier-reference-and-judging.md)), or in a fresh copy of the project: once
 gold exists, a new arm is scored against gold while the arms you carry in were scored against
 silver, and a round compares arms only on one reference. Design:
-[ADR-0004](../adr/ADR-0004-experiment-rounds.md).
+[ADR-0004](../adr/ADR-0004-eval-rounds.md).
 
 ## 1. Round 1: the arms you already have
 
@@ -51,12 +53,12 @@ r1 · open · tickets_v1
   hypothesis: how many leading sentences make the best one-line summary
 
   on overlap_f1: 3 arm(s) in play, leader tickets_lead2_v1
-    tickets_lead1_v1                 not separated      Δ -0.2592  p 0.0312
-    tickets_lead2_noisy_v1           not separated      Δ -0.1011  p 0.0312
+    tickets_lead1_v1                 not significant    Δ -0.2592  p 0.0312
+    tickets_lead2_noisy_v1           not significant    Δ -0.1011  p 0.0312
   NOTE: cost per item: tickets_lead2_v1 $0.000000
 
   suggested next:
-    - 2 arm(s) tie with the leader (tickets_lead1_v1, tickets_lead2_noisy_v1): more items would separate them
+    - 2 arm(s) not significantly different from the leader (tickets_lead1_v1, tickets_lead2_noisy_v1): more items may tell them apart
         evh rank-stability --dataset-id tickets_v1
     - close the round with what it showed (tickets_lead2_v1 is already the baseline)
         evh round-close --goal tickets_summary --round r1 --conclusion "..."
@@ -65,7 +67,7 @@ r1 · open · tickets_v1
 `evh rounds` reads the evidence the way the inspector does (every arm in play against the
 round's leader, Holm-corrected) and suggests the next decision, each as the command that makes
 it. It decides nothing: you do, with the commands. Here every arm is behind `lead2` on every
-ticket and none is separated at six items, so the honest decisions are about wording, not
+ticket and none is significantly different at six items, so the honest decisions are about wording, not
 winners.
 
 ## 3. Drop an arm, and close the round
@@ -77,7 +79,7 @@ the round with what it showed:
 evh round-retire --goal tickets_summary --round r1 --arm tickets_lead1_v1 \
     --reason "one sentence is behind two on every ticket"
 evh round-close --goal tickets_summary --round r1 \
-    --conclusion "lead2 is ahead of lead1 and lead2_noisy on all six tickets, separated from neither at n=6; lead2 stays the baseline"
+    --conclusion "lead2 is ahead of lead1 and lead2_noisy on all six tickets, not significantly at n=6; lead2 stays the baseline"
 git add data/rounds && git commit -qm "tickets_summary r1: closed"
 ```
 ```text
@@ -124,7 +126,7 @@ goal: tickets_summary
 round: r2
 EOF
 git add -A && git commit -qm "tickets_summary r2: open; lead2_noisy v2"
-evh experiment-run --config data/configs/tickets_lead2_noisy_v2.yaml --repeat 3
+evh run --config data/configs/tickets_lead2_noisy_v2.yaml --repeat 3
 ```
 <!-- guide-check: varies spread -->
 ```text
@@ -140,9 +142,9 @@ Every run records the round it ran in.
 ```bash
 evh rounds --goal tickets_summary
 ```
-<!-- guide-check: varies tickets_lead2_noisy_v2 retire separated -->
+<!-- guide-check: varies tickets_lead2_noisy_v2 retire signifi -->
 ```text
-  r1   closed  tickets_v1  2 arm(s), 1 retired  lead2 is ahead of lead1 and lead2_noisy on all six tickets, separated
+  r1   closed  tickets_v1  2 arm(s), 1 retired  lead2 is ahead of lead1 and lead2_noisy on all six tickets, not signifi
   r2   open    tickets_v1  2 arm(s), 1 retired
 
 r2 · open · tickets_v1 · from r1
@@ -151,19 +153,19 @@ r2 · open · tickets_v1 · from r1
   retired: tickets_lead2_noisy_v1 (replaced by v2, which drops fewer words)
   ...
   on overlap_f1: 2 arm(s) in play, leader tickets_lead2_v1
-    tickets_lead2_noisy_v2           separated: worse   Δ -0.0207  p 0.0312
+    tickets_lead2_noisy_v2           significant: worse Δ -0.0207  p 0.0312
   NOTE: spent $0.0000 of $0.01
   NOTE: cost per item: tickets_lead2_v1 $0.000000
 
   suggested next:
     - retire tickets_lead2_noisy_v2
-        evh round-retire --goal tickets_summary --round r2 --arm tickets_lead2_noisy_v2 --reason "separated worse than tickets_lead2_v1 on overlap_f1 after Holm (p 0.0312)"
+        evh round-retire --goal tickets_summary --round r2 --arm tickets_lead2_noisy_v2 --reason "significantly worse than tickets_lead2_v1 on overlap_f1 after Holm (p 0.0312)"
     - close the round with what it showed (tickets_lead2_v1 is already the baseline)
   ...
 ```
 
 Your Δ will differ (the arm is unseeded), and on a draw where it drops no word from one ticket it
-is not separated, and the first suggestion goes. The same comparison, as the inspector would draw
+is not significant, and the first suggestion goes. The same comparison, as the inspector would draw
 it, and the round's leaderboard:
 
 ```bash
@@ -194,7 +196,7 @@ evh pair-test --dataset-id tickets_v1 --round r2 --b tickets_lead2_noisy_v2
     delta (A - B)      +0.0216
     items A wins       6/6
     sign-flip p        0.0312  (exact, all 2^6 sign patterns)
-    verdict            SEPARATED at 0.05
+    verdict            SIGNIFICANT at 0.05
     (uncorrected: valid only if this pair was named before the table was read)
 ```
 
@@ -216,7 +218,7 @@ A run naming a closed round is refused before it calls anything, so a round's ev
 grow after its conclusion:
 
 ```bash
-evh experiment-run --config data/configs/tickets_lead2_noisy_v2.yaml
+evh run --config data/configs/tickets_lead2_noisy_v2.yaml
 ```
 ```text
 ERROR: data/configs/tickets_lead2_noisy_v2.yaml: round r2 of tickets_summary is closed; open the next one (evh round-open --from r2)
@@ -248,7 +250,7 @@ evh datasets
 evh datasets --dataset-id tickets_v2
 ```
 ```text
-  dataset     items  arms  configs  references         made from
+  dataset     items  arms  configs  reference sets     made from
   tickets_v1  6      5     5        silver/tickets_v1
   tickets_v2  7      0     0        —                  tickets_v1
 tickets_v2: 7 items, 0 arms from 0 configs (a config rescored against silver or by a judge is an arm of its own)
@@ -261,7 +263,10 @@ no arm has run on it yet
 
 Nothing measured on `tickets_v1` moves: its runs, references and baseline stay its own. An arm
 measured on `tickets_v2` is a config with `dataset_id: tickets_v2`, and needs a reference for
-`tickets_v2` (silver from a run, as in getting started, or gold). `evh validate` (V2) fails a
+`tickets_v2`. Labels follow an item by its bytes, so v1's six tickets already carry the author's labels in
+`tickets_v2`: `evh reference-promote --dataset-id tickets_v2 --labels tickets_v1/author_v1 --tier silver
+--reason "…" --by me` promotes them for it, and the new ticket waits for a label of its own (`evh label-sheet
+--dataset-id tickets_v2 --items unlabelled`). `evh validate` (V2) fails a
 version whose parent dataset is gone, and the catalog links the versions both ways with what
 changed.
 
@@ -270,3 +275,41 @@ Commit the sources and the new dataset:
 ```bash
 git add data/sources data/datasets && git commit -qm "tickets_v2 from tickets_v1: t07_reports"
 ```
+
+## 7. When the scoring changes
+
+A rule can turn out wrong after a round has run: a measure that rewards the wrong thing, a case it never
+counted. The outputs are stored, so changing the rule costs no run. Preview first; it re-scores in a scratch
+directory and writes nothing:
+
+```bash
+evh score-preview --goal tickets_summary
+```
+```text
+score-preview: tickets_summary, ... re-scored in a temporary directory by ...; nothing written
+  tickets_lead2_v1        0.900  0.900  +0.0000  in
+  leader       tickets_lead2_v1
+  recommended  tickets_lead2_v1
+Apply it: evh rescore --goal G --round rN --why "..." (re-score a round), or evh round-open --from rN --scoring "..." (adopt it from the next round).
+```
+
+With the scorer unchanged nothing moves: every arm reads `+0.0000`, and the leader and the recommendation are the
+same. After you change `score()` in your adapter, the preview shows each arm before and after, and whether the
+decision moves. Then apply the change one of two ways:
+
+- **Re-score a round**: `evh rescore --goal tickets_summary --round r2 --why "what was wrong"` re-scores the round's
+  arms at $0 into `data/runs-rescored/<scorer>/`, and the round records the scorer it is now judged by, and why.
+- **Adopt it from the next round**: `evh round-open --goal tickets_summary --dataset tickets_v1 --from r2 --scoring
+  "what was wrong"` opens round 3 judged by the new scorer, re-scoring every arm it carries in first.
+
+The goals, the rounds and the catalog read an arm from its latest re-score, so the evidence of a round is always
+measured by one scorer, and the page says which ([RFC-022](../rfc/RFC-022-scoring-that-evolves.md)).
+
+## After deploy
+
+A goal's rounds do not stop when the arm you chose is deployed (one version, or A and B side by side). The next ones
+run on what it decides in production: [tutorial 6](6-datasets-from-production.md) keeps that as a capture, scores
+its decisions against labels and picks the tickets worth keeping for the next version of the dataset you govern,
+and a round of the same goal then measures the baseline you promoted against new candidates on it, each set up
+first ([tutorial 7](7-set-up-a-model.md)). The harness does no online A/B test and no drift detection: it measures
+what was captured.

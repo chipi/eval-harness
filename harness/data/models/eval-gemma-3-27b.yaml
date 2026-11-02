@@ -1,0 +1,6 @@
+model_id: eval-gemma-3-27b
+kind: llm
+aliases:
+- eval-gemma-3-27b
+weights: open
+licence: Gemma, gated

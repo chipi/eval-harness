@@ -71,7 +71,7 @@ corrected together: a group is held to a stricter threshold than it would be alo
 ## Measure the arm's own noise before believing any delta
 
 ```bash
-evh experiment-run --config ... --repeat 3
+evh run --config ... --repeat 3
 ```
 
 ```text
@@ -92,30 +92,41 @@ differently from omitting the flag.
 
 ---
 
-## Gold is not silver
+## Gold is not silver, and a label is not a reference
+
+A **label** says what is right for one item, and who said it: a **person**, a **model** (a run's
+outputs) or a **rule** (what happened afterwards, mapped by rules you commit). Labels come in sets,
+never edited, and follow an item by its bytes into any dataset that holds it. When more than one
+answer is right, a label accepts each, and two labels agree when they accept the same answers. A **reference** is
+labels you **promote**, on purpose, with a reason, at the tier you choose then:
 
 | tier | means |
 | --- | --- |
-| **gold** | human-authored or human-reviewed. The only thing you can honestly call correct. |
-| **silver** | model-generated. Consistent, cheap, plentiful — and it encodes that model's opinion, including its mistakes. |
+| **gold** | the yardstick a decision rests on: usually a person's labels you would sign. |
+| **silver** | consistent, not a claim that any arm is right: good for **ranking arms against each other**, often a strong model's labels. |
+
+No rule ties the tier to the source: a person's labelling can be poor, and is then simply never
+promoted. The reference records its source beside its tier, and every view names both: a tier
+pill for a reference, a source chip for a label set. Arms can be scored against a label set without
+promoting it, so evaluating new data never makes a reference.
 
 Silver is a legitimate starting point: it lets you **rank arms against each
 other** today. It is not a claim about correctness, and a number scored against
 it must say so.
 
 Every run records `reference_tier`. The manifest beside the references carries
-the caveat in full, and a reference made from a run (`reference-create --from-run`) names the run
-it came from. The failure this prevents is quiet: silver numbers get quoted in a decision six
+the caveat in full, and a reference promoted from a model's labels names the run
+they came from. The failure this prevents is quiet: silver numbers get quoted in a decision six
 months later as though they were ground truth, and the model that authored them is the one
 being evaluated. That is why the leaderboard marks the arm that wrote the reference it is scored
 against, and why a goal page never makes it the leader: its row measures agreement with itself.
 
 ---
 
-## Re-measuring a frozen experiment
+## Re-measuring a frozen eval
 
 A run's outputs are the expensive, frozen record; its scores are arithmetic over them. So
-an experiment can be measured again, without regenerating anything, when a better
+an eval can be measured again, without regenerating anything, when a better
 instrument arrives. There are three kinds:
 
 | kind | what changes | cost | how |
@@ -125,8 +136,11 @@ instrument arrives. There are three kinds:
 | judge scorer | the metric, delivered by a validated model | billed | `evh judge-score` ([ADR-0001](../../docs/adr/ADR-0001-judge-scorers.md), [RUNBOOK §12](RUNBOOK.md)) |
 
 Two rules hold for all three. The originals are never overwritten: a re-measurement is
-written to its own runs directory, and the leaderboard is pointed at it. And an
-experiment's primary measurement changes only by a recorded decision, with the old one
+written to its own runs directory (a code re-score to one place the harness designates,
+`data/runs-rescored/<scorer>/<source>/`, which the goals and rounds then read the arm from), and the
+leaderboard is pointed at it. `evh score-preview` shows what a scoring change would move before anything is
+written. And an
+eval's primary measurement changes only by a recorded decision, with the old one
 kept beside it. In this repository AG News and DBpedia keep the dataset's own gold as
 primary, because anyone can repeat it, and report the adjudicated gold beside it.
 
@@ -142,7 +156,7 @@ them is a decision.
 
 A call's cost is the provider's bill when its response carries one (OpenRouter, and a LiteLLM
 proxy that passes `usage.cost` through), and otherwise the config's prices × tokens. Prices live
-in the experiment config, not in code, so a run records the prices it was costed at. A figure
+in the arm's config, not in code, so a run records the prices it was costed at. A figure
 computed from today's price list is not comparable to one from last quarter without saying so.
 Which provider records which: [RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system).
 
@@ -171,7 +185,8 @@ A number answers a question only if someone wrote the question down. A goal name
 output, the decision it informs, the measure that decides it and which way is better, and the
 datasets it rests on; each config names its goal, and every run records it. It is optional until
 a project sets a date from which every run must name one (`required_from`). The catalog's goal
-page leads with its answer, the promoted baseline and why, or "no decision yet". Every field of a
+page says first what the goal is for, then its answer (the latest round's conclusion, the promoted
+baseline and why, or "no decision yet"), then how it got there, round by round. Every field of a
 goal file and its allowed values:
 [RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field).
 
@@ -179,11 +194,60 @@ goal file and its allowed values:
 
 ## A round records a decision, not just a result
 
-Experiments go round on round, and the reasons an arm was dropped are the first thing lost. An
-optional round ([ADR-0004](../../docs/adr/ADR-0004-experiment-rounds.md)) records what it set out
+Evals go round on round, and the reasons an arm was dropped are the first thing lost. An
+optional round ([ADR-0004](../../docs/adr/ADR-0004-eval-rounds.md)) records what it set out
 to learn, what changed, which arms it carried in and which it dropped and why, and what it
 concluded. `evh rounds` suggests the next decision from the evidence, as a command; it never
 makes one. A closed round refuses new runs, so its evidence cannot grow after its conclusion.
+
+A round also records the scorer it is judged by. Scoring may change between rounds (a rule the
+evaluation got wrong, found by looking): the change is a step of its own, re-scoring the round's arms
+at $0 or adopted by the next round, recorded with why
+([RFC-022](../../docs/rfc/RFC-022-scoring-that-evolves.md)).
+
+---
+
+## A model is set up once, where it runs
+
+A model that reasons by default, cuts its answers at a reply cap, or answers in a format the system
+does not read is measured as broken when it is only unset. So a model is set up once, before any
+eval uses it, in a record of its own (`data/models/<id>.yaml`): what it is, the settings that hold
+whatever the task, each with why, and its **deployments**, each place and build it runs. `evh
+model-onboard` probes each deployment and writes what it found; `evh arm-smoke` runs an arm on a few
+items before its full run. A model is *vetted* when an arm that names it passed its smoke on the task's
+own items. What a deployment always raises, a hosted gateway's unpinned build for one, is accepted on that
+deployment with why, never hidden ([RUNBOOK §16](RUNBOOK.md#16-set-up-a-model-before-you-test-it),
+[RFC-020](../../docs/rfc/RFC-020-onboarding-a-model.md)).
+
+---
+
+## A fingerprint says what was measured, not where `evh` ran
+
+The same deployment run from two laptops is the same measurement; the same laptop calling two builds is
+not. So a run's fingerprint is four parts, each hashed: the **instrument** (the harness and the adapter's
+code), the **data**, the **deployment** (the weights, the server, where the system ran) and the
+**settings** (the parameters that change its behaviour). The machine `evh` ran on is the **runner**,
+recorded beside the hash and outside it. `evh run-compare` names the part that moved
+([RFC-021](../../docs/rfc/RFC-021-fingerprint-v5.md)).
+
+---
+
+## Production is evaluated; the governed datasets decide
+
+Gold and silver are what you govern: the datasets and references a decision rests on. What a system did
+in production, once deployed, is what you **evaluate** against them: the most realistic test data there
+is, and the least trustworthy label. A **capture** keeps the records as they were, hashed; a dataset is
+frozen from a selection of them; production's own decisions become an arm, scored like any; what happened
+afterwards (an issue closed as fixed) becomes a `rule` label set, and you or a model label the rest. None
+of that is a reference until you promote it
+([RUNBOOK §15](RUNBOOK.md#15-datasets-from-production-the-capture-lane), [§15b](RUNBOOK.md#15b-evaluating-what-production-did)).
+
+From production back to the governed datasets is a choice, item by item: the rows where production was
+wrong, or saw something the governed dataset never had, are **picked**, and the next version of the
+governed dataset is made from its items and the picks you choose, with where each came from. The deploy
+sheet says what production must match to run what you promoted, and a capture says whether it did.
+Production goes on after a capture: the next capture continues from it, and a fresh capture of the same
+records gives their newer outcomes, for a new label set; a frozen dataset never moves.
 
 ---
 

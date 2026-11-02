@@ -5,7 +5,7 @@
 
 One row per goal and dataset: the measure, the gold group's leader, the promoted baseline and
 its recorded reason, what the goal's strategy recommends and its reasons. The site reads this,
-so an experiment page says what the catalog says (site/figures.py).
+so an eval page says what the catalog says (site/figures.py).
 """
 
 import json

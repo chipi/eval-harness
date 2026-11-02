@@ -14,7 +14,7 @@ the same scripts run through `make`). It holds **code and schemas only**. A proj
 datasets, configs, runs, references and goals, lives in the project and is found through
 `EVAL_HOME` and `EVAL_DATA_DIR`, so an upgrade changes code and never touches results.
 
-This repository is the package plus six worked experiments run with it, the public site that
+This repository is the package plus six worked evals run with it, the public site that
 explains the harness and its findings, and these docs.
 
 ## The layers
@@ -24,13 +24,13 @@ Each layer freezes what it produces, so the next one can be redone without redoi
 | layer | what it records | commands | what it refuses |
 |---|---|---|---|
 | **1. Data** | a dataset: every item and the sha256 of its bytes, from a file or a pinned URL, and the typed fields a project declares for it | `dataset-create`, `dataset-materialize` | a working copy whose bytes differ from the frozen hashes; a field nobody declared |
-| **2. Arms and runs** | a config per arm; per run its outputs, scores, cost, latency and a fingerprint of the system, the instrument and the data | `experiment-run`, `sweep`, `import-run` | a run missing any of the three inputs; an unknown goal |
+| **2. Arms and runs** | a config per arm; per run its outputs, scores, cost, latency and a fingerprint of the system, the instrument and the data | `evh run`, `sweep`, `import-run` | a run missing any of the three inputs; an unknown goal |
 | **3. Scoring** | scores are arithmetic over stored outputs, so they can be redone | `rescore` ($0), `judge-score` (billed, optional) | an `--out` that is a directory it reads runs from; a judge that is not validated |
 | **4. Decisions** | paired tests, rankings, baselines with a reason | `pair-test`, `family-test`, `leaderboard`, `run-promote` | comparing runs on two different `dataset_id`s |
 | **5. Goals** | what an evaluation is for and the measure that decides | `goal:` on configs, validate V14 | a config or run naming a goal that does not exist |
 | **6. Looking** | the catalog (static pages), the run inspector (a local server), and the same read commands as MCP tools for an agent | `catalog`, `catalog-serve`, `mcp` | item text in the static pages or a public server's answers; mixed datasets in one comparison |
 
-Under all of them, `validate` (V1–V16) checks the tree in CI and exits non-zero, and
+Under all of them, `validate` (V1–V19) checks the tree in CI and exits non-zero, and
 `self-test` checks the harness itself. The tests that run `evh` install the package from its
 real wheel, the GUIDE is run in a fresh project on every change (`guide-check`), and the
 catalog and the inspector are driven in headless Chromium (`browser-check`).
@@ -66,7 +66,7 @@ family. The harness therefore:
 - stores every verdict, so a rerun costs $0, and writes judged runs beside the originals, never
   over them.
 
-A judged score never replaces an experiment's primary metric by itself: that is a recorded
+A judged score never replaces an eval's primary metric by itself: that is a recorded
 decision.
 
 ## Catalog, inspector and goals
@@ -103,7 +103,7 @@ records that it changed. `validate` (V15) refuses an undeclared field and a valu
 wrong type. The catalog summarises a field's values only when it is marked public; the
 inspector filters a comparison by a field, and breaks it down by a choice or yes/no field
 with one Holm correction over every group, since each group is another chance of a false
-"separated".
+"significant".
 
 An item can also live at a URL: it is frozen by its sha256 like any other, fetched once into a
 cache, and refused when the bytes there are not the pinned ones.
@@ -113,8 +113,8 @@ cache, and refused when the bytes there are not the pinned ones.
 | address | what | where |
 |---|---|---|
 | `evals.humancopilot.eu` | the public site: the harness and its findings | prod VPS, nginx |
-| `evals.humancopilot.eu/catalog` | the harness deployed on these experiments: catalog, goal pages, run inspector | prod VPS, nginx and the inspector |
-| `evals.humancopilot.eu/mcp` | the same experiments for an agent: the read commands as MCP tools (Streamable HTTP, read-only, no sign-in) | prod VPS, the MCP server |
+| `evals.humancopilot.eu/catalog` | the harness deployed on these evals: catalog, goal pages, run inspector | prod VPS, nginx and the inspector |
+| `evals.humancopilot.eu/mcp` | the same evals for an agent: the read commands as MCP tools (Streamable HTTP, read-only, no sign-in) | prod VPS, the MCP server |
 | `evals.humancopilot.eu/docs` | these docs | prod VPS, nginx (and GitHub Pages) |
 
 Both sites on the VPS sit behind the box's shared Caddy edge, each container read-only with

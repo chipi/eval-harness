@@ -1,4 +1,4 @@
-# Pointwise variant of judge-summ-v1: one summary per call, an experiment, not a validated scorer.
+# Pointwise variant of judge-summ-v1: one summary per call, a trial, not a validated scorer.
 #   make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-pointwise-v1 \
 #     ARGS="--arms <a>,<b> --unvalidated --dry-run"
 scorer_id: judge-summ-pointwise-v1
@@ -52,4 +52,4 @@ protocol:
 # scorer; it runs only with --unvalidated and every number is labelled "unvalidated judge".
 # It becomes validated when a pointwise SummEval run is committed and named here.
 
-cost_cap_usd: 0.25   # the approved budget for this experiment
+cost_cap_usd: 0.25   # the approved budget for this trial

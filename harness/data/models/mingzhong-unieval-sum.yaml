@@ -1,0 +1,5 @@
+model_id: mingzhong-unieval-sum
+kind: ml
+aliases:
+- MingZhong/unieval-sum
+weights: open

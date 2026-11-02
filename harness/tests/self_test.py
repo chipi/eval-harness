@@ -33,7 +33,10 @@ sys.path.insert(1, str(HERE.parent / "tools"))  # the report checks some tests e
 
 def at(script: str) -> str:
     """A script's path from the harness root: the package's code is in scripts/, this
-    repository's tests in tests/ and its report and judge checks in tools/."""
+    repository's tests in tests/ and its report and judge checks in tools/; a path with a slash is
+    taken as it is (an example's own test, ../examples/<example>/test_x.py)."""
+    if "/" in script:
+        return script
     for d in ("scripts", "tests", "tools"):
         if (ROOT / d / script).is_file():
             return f"{d}/{script}"
@@ -165,12 +168,12 @@ def test_cli_help_works() -> None:
     for script in (
         "dataset_create",
         "materialize",
-        "experiment_run",
+        "run",
         "compare_runs",
         "promote_baseline",
         "validate_tree",
         "list_runs",
-        "reference_create",
+        "reference_promote",
         "reference_manifest",
         "leaderboard",
         "sweep",
@@ -260,7 +263,7 @@ def test_no_absolute_home_path_in_committed_data() -> None:
     # directory whose contents can never be committed by definition. A test that fails on
     # files outside its own subject teaches people to ignore it.
     #
-    # This is not a narrowing to make a failure go away: the cause -- experiment_run.py
+    # This is not a narrowing to make a failure go away: the cause -- run.py
     # writing an absolute adapter path into every metrics.json -- is fixed at source in
     # `_portable_id`. This check still catches the real case, including someone choosing
     # to track `data/runs/` (the private eval repo does exactly that).
@@ -397,6 +400,21 @@ def test_fingerprint_reports_library_versions_without_importing_them() -> None:
     versions = _installed_versions()
     check("fingerprint: version lookup imports nothing", ("torch" in sys.modules) == before)
     check("fingerprint: reports something installed", isinstance(versions, dict))
+
+
+def _declared_identity(m: dict) -> dict:
+    """What a run's adapter declared about its system under test, from the v5 deployment: the hook's own
+    keys (`declared`), with the id (kept in `declared` only when it is not the model asked for) and the
+    revision that have a place of their own."""
+    dep = (m.get("fingerprint") or {}).get("deployment") or {}
+    declared = dep.get("declared") or {}
+    weights = dep.get("weights") or {}
+    return {
+        **declared,
+        "id": declared.get("id") or dep.get("model"),
+        "revision": weights.get("revision"),
+        "revision_source": weights.get("revision_source"),
+    }
 
 
 def test_fingerprint_does_not_invent_a_revision() -> None:
@@ -594,7 +612,7 @@ def test_fingerprint_hash_changes_when_anything_does() -> None:
     check("fingerprint: changes when a param moves", base["hash"] != moved["hash"])
     check(
         "fingerprint: names the field that moved",
-        differing_paths(base, moved) == ["arm.params.sentences"],
+        differing_paths(base, moved) == ["settings.sentences"],
         f"got {differing_paths(base, moved)}",
     )
     # Different DATA must move it too — dataset_id is a name, the item hashes are identity.
@@ -636,6 +654,80 @@ def test_example_scorer_suites_pass() -> None:
         ("test_mcp_server.py", "evh mcp: the read commands as tools, through the SDK's own client"),
         ("test_p_cache.py", "the on-disk p cache: the same p, read back by a fresh process"),
         ("test_mcp_http.py", "evh mcp --http: health, Host check, --public, --rate, hooks"),
+        (
+            "test_capture.py",
+            "importers, importer-check and capture: mapping, the contract, hashes, continuing",
+        ),
+        (
+            "test_outcome_rules.py",
+            "outcomes as labels: the rules, a rule set promoted like any, a dataset's tags",
+        ),
+        ("test_importers.py", "tsv, github (events with their comments), langfuse: offline stand-ins"),
+        ("test_split.py", "dataset-split: the share, stable across versions, groups kept whole, by time"),
+        ("test_hidden_text.py", "text: hidden: none of a hidden dataset's text on any public surface"),
+        ("test_models.py", "model records: the weights facts, and what V18 catches"),
+        ("test_arm_smoke.py", "evh arm-smoke: the calls it reads, the projection, every flag"),
+        (
+            "test_scoring_evolves.py",
+            "scoring that evolves: --adopt, score-preview writes nothing, rescore --round, round-open --scoring",
+        ),
+        (
+            "test_triage_results_doc.py",
+            "the triage results table is the harness's, and evh goals prints a dataset's notes",
+        ),
+        (
+            "test_runs_location.py",
+            "where runs land: a warning for a git-ignored runs directory, and validate's note",
+        ),
+        (
+            "test_fingerprint_v5.py",
+            "fingerprint v5: the parts and their hashes, the runner outside the hash, the deployment sources, the migration, run-compare",
+        ),
+        ("test_catalog_models.py", "the Models page, a page per model, the arms badge, evh models"),
+        (
+            "test_site_releases.py",
+            "the site's release notes: nested bullets, bold holding code and italics, code never emphasis",
+        ),
+        (
+            "test_parallel_projects.py",
+            "two projects at once: a port each, the same every time; each catalog names its project; EVAL_HOME noted",
+        ),
+        (
+            "test_label_sets.py",
+            "label sets: from a run, a sheet and its import, a capture's outcomes; never edited; they follow the item; V19",
+        ),
+        (
+            "test_picks.py",
+            "picks: the append-only list, retarget, drop; dataset-extend from chosen picks, its lineage, labels following",
+        ),
+        (
+            "test_rows.py",
+            "the sheet: every item's decisions, scores, labels and signals; each signal a filter; winners (ties, direction), win rate, verdicts, the CSV",
+        ),
+        (
+            "test_sheet_import.py",
+            "a sheet filled elsewhere: --fill label/pick/scores (blind, shuffled, keyed) and sheet-import back to a label set or judged runs; every refusal",
+        ),
+        (
+            "test_deploy_sheet.py",
+            "the deploy sheet: what production must match; a capture checked against it, what differs, exit 1",
+        ),
+        (
+            "test_catalog_labels.py",
+            "the catalog's RFC-023 pages: pills, chips, the labels page, a dataset's labels, picks and added items",
+        ),
+        (
+            "test_model_onboard.py",
+            "evh model-onboard: reasoning, format, determinism and the build, against a fake server",
+        ),
+        (
+            "../examples/signal-fleet-dedup/test_dedup.py",
+            "the de-duplication example: its scorer; the fleet's functions where the fleet and the signals are here",
+        ),
+        (
+            "../examples/triage-fleet/test_triage.py",
+            "the triage example: its scorer, its importer on the fleet's export, the adapter if the fleet is here",
+        ),
         ("test_axes.py", "a goal's axes and strategy: limits, the tie, the tie-break, the ratios"),
         (
             "test_references.py",
@@ -645,15 +737,15 @@ def test_example_scorer_suites_pass() -> None:
         ("test_lineage.py", "dataset versions: --from, V2, the catalog's links"),
         (
             "test_rounds.py",
-            "experiment rounds: open, run, suggest, retire, close, the next, validate, the page",
+            "eval rounds: open, run, suggest, retire, close, the next, validate, the page",
         ),
         (
             "test_run_reports.py",
             "a run with a project adapter: latency, cut-off outputs, a crash and its resume",
         ),
         (
-            "test_reference_from_run.py",
-            "a run's outputs as the reference: provenance, refusals, the author's row",
+            "test_label_from_run.py",
+            "a run's outputs as a model's labels: provenance, refusals, the author's row, kept out of git",
         ),
         ("test_installed_commands.py", "every evh command in a project that pins the package"),
         ("test_judge_score.py", "judging pass"),
@@ -678,7 +770,7 @@ def test_example_scorer_suites_pass() -> None:
         ("test_runs_adapter.py", "run reading, direction, adapter loading, the judge panel"),
         ("check_report_claims.py", "report claims vs committed runs"),
         ("check_links.py", "markdown links and anchors"),
-        ("check_terminology.py", "experiment tables use the canonical Task · Dataset labels"),
+        ("check_terminology.py", "eval tables use the canonical Task · Dataset labels"),
         ("test_summeval_analysis.py", "SummEval split-half: a tied top is undecided"),
         ("check_commands.py", "documented commands: every make target, evh command and flag exists"),
         ("check_model_facts.py", "model facts vs the evidence capture"),
@@ -745,9 +837,9 @@ def test_fingerprint_version_is_read_somewhere() -> None:
         adapter_id="a",
         adapter_path=None,
     )
-    # v4 since 2026-10-24: code hashed by behaviour (_codeid), a manifest's caveat outside the
-    # reference digest; documentation never moves a fingerprint.
-    check("new fingerprints are version 4", fp.get("version") == 4, str(fp.get("version")))
+    # v5 since 2026-10-31 (RFC-021): the deployment and the settings are parts of their own, the host
+    # (now the runner) is outside the hash; v4 hashed code by behaviour (_codeid), and that stays.
+    check("new fingerprints are version 5", fp.get("version") == 5, str(fp.get("version")))
 
 
 def test_verdict_honours_declared_kinds() -> None:
@@ -789,12 +881,25 @@ def test_fingerprint_covers_reference_bytes() -> None:
     import tempfile  # noqa: PLC0415
 
     from evaluation_harness._fingerprint import build_fingerprint  # noqa: PLC0415
+    from evaluation_harness._references import write_manifest  # noqa: PLC0415
+
+    def promote(text: str) -> None:
+        """The label `text` promoted to gold/t1, with the manifest reference-promote writes (RFC-023)."""
+        (refs / "i1.txt").write_text(text, encoding="utf-8")
+        write_manifest(
+            refs,
+            "gold",
+            "t1",
+            promoted_from={"labels": "owner_v1", "dataset_id": "t1", "source": {"kind": "person", "by": "o"}},
+            reason="the owner's labels decide",
+            promoted_by="self-test",
+        )
 
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
         refs = root / "data" / "references" / "gold" / "t1"
         refs.mkdir(parents=True)
-        (refs / "i1.txt").write_text("alpha", encoding="utf-8")
+        promote("alpha")
         ds = {"dataset_id": "t1", "items": [{"item_id": "i1", "source_sha256": "aa"}]}
         kw: dict = {
             "root": root,
@@ -807,7 +912,7 @@ def test_fingerprint_covers_reference_bytes() -> None:
             "adapter_path": None,
         }
         before = build_fingerprint(**kw)
-        (refs / "i1.txt").write_text("beta", encoding="utf-8")
+        promote("beta")  # other labels promoted under the same name
         after = build_fingerprint(**kw)
         check("fingerprint: editing a reference changes the hash", before["hash"] != after["hash"])
         check(
@@ -841,7 +946,7 @@ def test_resume_scores_and_persists() -> None:
     runs = HERE.parent / "data" / "runs-selftest-resume"
     shutil.rmtree(runs, ignore_errors=True)
     env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
-    r = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", env=env)
+    r = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", env=env)
     if r.returncode != 0:
         print("  --   resume: skipped (demo arm did not run)")
         shutil.rmtree(runs, ignore_errors=True)
@@ -871,7 +976,7 @@ def test_resume_scores_and_persists() -> None:
     # Simulate a crash: drop all but one output, as if the pass died at item 2.
     for f in outs[1:]:
         f.unlink()
-    r2 = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", "--resume", src, env=env)
+    r2 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", "--resume", src, env=env)
     check("resume: the resumed pass exits 0", r2.returncode == 0, (r2.stderr or "")[-160:])
     newest = max((p for p in runs.iterdir() if p.is_dir()), key=lambda p: p.stat().st_mtime)
     rows = [ln for ln in (newest / "predictions.jsonl").read_text().splitlines() if ln.strip()]
@@ -944,9 +1049,7 @@ def test_resume_scores_and_persists() -> None:
         "rows must be appended during the pass, not written at the end",
     )
 
-    r3 = run(
-        "scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", "--resume", "crashed", env=env
-    )
+    r3 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", "--resume", "crashed", env=env)
     check(
         "resume: an outputs-only crashed run resumes",
         r3.returncode == 0,
@@ -1008,9 +1111,7 @@ def test_resume_scores_and_persists() -> None:
         "config_id: fx_extra_v1\ndataset_id: smoke_v1\nadapter: fx_adapter.py\nparams:\n  provider: fixture\n"
     )
     cfg_fx = str((fx / "arm_fx.yaml").relative_to(HERE.parent))
-    rf = run(
-        "scripts/experiment_run.py", "--config", cfg_fx, "--run-id", "fx_src", env={**env, "FX_PASS": "1"}
-    )
+    rf = run("scripts/run.py", "--config", cfg_fx, "--run-id", "fx_src", env={**env, "FX_PASS": "1"})
     if rf.returncode != 0:
         check(
             "resume: the extra-carrying fixture arm runs",
@@ -1024,7 +1125,7 @@ def test_resume_scores_and_persists() -> None:
         (runs / "fx_src" / "metrics.json").unlink(missing_ok=True)
         (runs / "fx_src" / "predictions.jsonl").unlink(missing_ok=True)
         rr = run(
-            "scripts/experiment_run.py",
+            "scripts/run.py",
             "--config",
             cfg_fx,
             "--run-id",
@@ -1075,7 +1176,7 @@ def test_resume_scores_and_persists() -> None:
     # RESUMING FROM ANOTHER ARM MUST BE REFUSED. `--resume` took a run id and read its
     # outputs; nothing compared the arms, so one mistyped id replayed a different
     # model's answers and recorded them under this one, with a valid fingerprint.
-    other = run("scripts/experiment_run.py", "--config", "data/configs/arm_a.yaml", "--resume", src, env=env)
+    other = run("scripts/run.py", "--config", "data/configs/arm_a.yaml", "--resume", src, env=env)
     msg = (other.stderr or "") + (other.stdout or "")
     check(
         "resume: another arm's outputs are refused",
@@ -1090,9 +1191,7 @@ def test_resume_scores_and_persists() -> None:
     shutil.rmtree(anon, ignore_errors=True)
     (anon / "outputs").mkdir(parents=True)
     (anon / "outputs" / "item_01.txt").write_text("from who knows where")
-    r4 = run(
-        "scripts/experiment_run.py", "--config", "data/configs/arm_a.yaml", "--resume", "anonymous", env=env
-    )
+    r4 = run("scripts/run.py", "--config", "data/configs/arm_a.yaml", "--resume", "anonymous", env=env)
     m4 = (r4.stderr or "") + (r4.stdout or "")
     check(
         "resume: an unidentifiable source is refused, not warned about",
@@ -1267,8 +1366,8 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
     """`source_path` lives in the dataset. rescore was reading it off the prediction row.
 
     No prediction row has ever carried one -- 0 of 20,001 across every committed run.
-    `dataset_create.py` writes it into the DATASET, and experiment_run, materialize,
-    reference_create and validate_tree all read it from there. rescore was the single
+    `dataset_create.py` writes it into the DATASET, and run, materialize,
+    reference_promote and validate_tree all read it from there. rescore was the single
     place looking in the wrong object, so its fallback to `<item_id>.txt` fired every
     time and, on a dataset whose files are named anything else, the source text arrived
     as None -- silently, because a scorer that wanted the source then measured nothing
@@ -1407,7 +1506,7 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
     # assertions with nothing measured and FAILED on the control. A test that is green
     # on the author's laptop and red in a fresh clone is the exact shape of bug this
     # review found elsewhere, so it must skip honestly instead.
-    r2 = run("scripts/experiment_run.py", "--config", "data/configs/arm_b.yaml", env=env)
+    r2 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", env=env)
     out2 = (r2.stdout or "") + (r2.stderr or "")
     if r2.returncode != 0 and "is not materialized" in out2:
         print("  --   cost cap: skipped (smoke_v1 is not materialized in this checkout)")
@@ -1426,7 +1525,7 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
     r = run(
-        "scripts/experiment_run.py",
+        "scripts/run.py",
         "--config",
         "data/configs/arm_b.yaml",
         env={**env, "EVAL_MAX_COST_USD": "0"},
@@ -1708,7 +1807,7 @@ def test_nemenyi_table_is_computed_not_copied() -> None:
     `leaderboard.py` carried 24 numbers transcribed from Demsar (2006) and refused to
     print a critical difference above k = 25 rather than reuse a smaller k's value.
     The refusal was right -- reusing one understates the CD and overstates how many
-    pairs differ -- but four of five experiments here have 26-28 arms, so four of five
+    pairs differ -- but four of five evals here have 26-28 arms, so four of five
     had no pairwise verdict, over about thirty lines of arithmetic. Found by external
     review.
 
@@ -1743,7 +1842,7 @@ def test_nemenyi_table_is_computed_not_copied() -> None:
         "; ".join(drift) or "no k>25 entries shipped",
     )
 
-    # And the covering assertion: every experiment here must now get a verdict.
+    # And the covering assertion: every eval here must now get a verdict.
     check(
         "nemenyi: the table covers every arm count this repo measures (<= 28)",
         all(k in NEMENYI_Q05 for k in range(2, 29)),
@@ -1819,8 +1918,8 @@ def test_two_runs_sharing_a_config_id_are_refused() -> None:
     shutil.rmtree(runs, ignore_errors=True)
 
 
-def test_the_reports_separation_counts_are_real() -> None:
-    """A "separated from N of M" in a report must match what `family_test.py` says.
+def test_the_reports_significance_counts_are_real() -> None:
+    """A "significantly different from N of M" in a report must match what `family_test.py` says.
 
     The third class round 2 named that nothing checked: "it also checks only single-run
     primary metrics, so it wouldn't have caught any of the round-1 cost, ratio or
@@ -1837,7 +1936,7 @@ def test_the_reports_separation_counts_are_real() -> None:
 
     reparsed = HERE.parent / "data" / "runs"
     if not any(reparsed.glob("sf_glm_s_n200_v1_*/predictions.jsonl")):
-        print("  --   separation counts: skipped (no reparsed SciFact runs on disk)")
+        print("  --   significance counts: skipped (no reparsed SciFact runs on disk)")
         return
 
     # Only the 2026-09-28 sweep: the re-runs duplicate arms and would double the family.
@@ -1862,10 +1961,10 @@ def test_the_reports_separation_counts_are_real() -> None:
             env={"EVAL_RUNS_DIR": str(scope)},
         )
 
-    m = _re.search(r"separated from (\d+) of (\d+) opponents", r.stdout or "")
+    m = _re.search(r"significantly different from (\d+) of (\d+) opponents", r.stdout or "")
     if not m:
         check(
-            "separation counts: family_test produced a verdict",
+            "significance counts: family_test produced a verdict",
             False,
             ((r.stderr or "") + (r.stdout or ""))[-160:],
         )
@@ -1902,7 +2001,7 @@ def test_the_reports_separation_counts_are_real() -> None:
         if not (_ok(lo, hi, sep) or _ok(lo, hi, fam - sep))
     ]
     check(
-        f"...and EVERY one is consistent with {sep} separated or {fam - sep} tied",
+        f"...and EVERY one is consistent with {sep} significant or {fam - sep} not",
         not bad,
         f"the tool says {sep}/{fam - sep}; the report also states " + ", ".join(bad),
     )
@@ -2208,11 +2307,46 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
     if not src.is_dir():
         return
     runs, gold = base / "runs-selftest-refid", base / "references" / "gold" / "selftest_refid"
-    for d in (runs, gold):
+    labels = base / "labels" / "smoke_v1" / "selftest_refid"
+    for d in (runs, gold, labels):
         shutil.rmtree(d, ignore_errors=True)
     try:
         shutil.copytree(src, runs / src.name)
-        shutil.copytree(src / "outputs", gold)
+        # the run's outputs, as a person's labels promoted to gold (RFC-023: a reference is only promoted labels)
+        made = run(
+            "scripts/label_import.py",
+            str((src / "outputs").relative_to(HERE.parent)),
+            "--dataset-id",
+            "smoke_v1",
+            "--set",
+            "selftest_refid",
+            "--by",
+            "self-test",
+        )
+        made = (
+            made
+            if made.returncode
+            else run(
+                "scripts/reference_promote.py",
+                "--dataset-id",
+                "smoke_v1",
+                "--labels",
+                "selftest_refid",
+                "--tier",
+                "gold",
+                "--name",
+                "selftest_refid",
+                "--reason",
+                "the run's own outputs, so the score must become 1.0",
+                "--by",
+                "self-test",
+            )
+        )
+        check(
+            "rescore/reference-id: the new set, imported and promoted",
+            made.returncode == 0,
+            ((made.stderr or "") + (made.stdout or ""))[-200:],
+        )
         out = runs / "out"
         r = run(
             "scripts/rescore.py",
@@ -2258,12 +2392,12 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
         )
         check("rescore/reference-id: a missing set is refused", bad.returncode != 0)
     finally:
-        for d in (runs, gold):
+        for d in (runs, gold, labels):
             shutil.rmtree(d, ignore_errors=True)
 
 
 def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
-    """examples/models.json, litellm.config.yaml and experiments.json are what a stranger's
+    """examples/models.json, litellm.config.yaml and evals.json are what a stranger's
     rerun is built from. Each is a copy of something else -- configs, the proxy, committed
     runs -- and a copy that drifts sends a rerun to the wrong model or the wrong record."""
     import json  # noqa: PLC0415
@@ -2296,12 +2430,12 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     for d in ("runs", "runs-pair", "runs-repeats", "runs-linux"):
         for f in (ROOT / "data" / d).glob("*/metrics.json"):
             m = json.loads(f.read_text())
-            sut = ((m.get("fingerprint") or {}).get("system_under_test") or {}).get("model") or {}
+            sut = _declared_identity(m)
             if sut.get("id_source") == "proxy-model-info" and sut.get("id") != table.get(sut.get("alias")):
                 wrong.append(f.parent.name)
     check("models.json: agrees with every upstream id a committed run resolved", not wrong, f"{wrong[:3]}")
 
-    reg = json.loads((ex / "experiments.json").read_text())["experiments"]
+    reg = json.loads((ex / "evals.json").read_text())["evals"]
     sys.path.insert(0, str(ex))
     import reproduce  # noqa: PLC0415
 
@@ -2309,22 +2443,22 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
         arms = reproduce.committed(e)
         cfg_ids = set(reproduce.configs(e))
         check(
-            f"experiments.json {e['slug']}: has committed runs and its leader among them",
+            f"evals.json {e['slug']}: has committed runs and its leader among them",
             bool(arms) and e["leader"] in arms,
             f"{len(arms)} arms",
         )
         missing = sorted(a for a, v in arms.items() if v["cid"] not in cfg_ids)
         check(
-            f"experiments.json {e['slug']}: every measured arm has a config to rerun it",
+            f"evals.json {e['slug']}: every measured arm has a config to rerun it",
             not missing,
             f"no config for {missing}",
         )
         unknown = [d for d in e["datasets"] if not (ROOT / "data" / "datasets" / f"{d}.json").is_file()]
-        check(f"experiments.json {e['slug']}: every dataset it fetches is frozen", not unknown, f"{unknown}")
+        check(f"evals.json {e['slug']}: every dataset it fetches is frozen", not unknown, f"{unknown}")
         local = [a for a, v in arms.items() if v["kind"] == "local" and "/" in str(v["model"])]
         unpinned = [a for a in local if not arms[a]["revision"]]
         check(
-            f"experiments.json {e['slug']}: every local model is pinned in local_models.json",
+            f"evals.json {e['slug']}: every local model is pinned in local_models.json",
             not unpinned,
             f"{unpinned}",
         )
@@ -2337,9 +2471,7 @@ def test_the_reproduction_tables_agree_with_the_configs_and_runs() -> None:
     clash = []
     for d in ("runs", "runs-pair", "runs-repeats", "runs-linux"):
         for f in (ROOT / "data" / d).glob("*/metrics.json"):
-            sut = ((json.loads(f.read_text()).get("fingerprint") or {}).get("system_under_test") or {}).get(
-                "model"
-            ) or {}
+            sut = _declared_identity(json.loads(f.read_text()))
             if sut.get("revision_source") in ("hf-snapshot", "loaded-model"):
                 got = sut.get("loaded_revision") or sut.get("revision")
                 if sut.get("id") in pins and pins[sut["id"]] != got:
@@ -2584,10 +2716,37 @@ def test_a_project_elsewhere_imports_runs_and_tests_them() -> None:
     # A git project with gold references under the moved data root: the fingerprint read
     # `<root>/data`, so it recorded references_sha256 None and every run after the first
     # made the tree dirty (its own untracked run output under data/eval/stats/runs).
-    gold = data / "references" / "gold" / "proj_v1"
-    gold.mkdir(parents=True)
+    answers = proj / "answers"
+    answers.mkdir()
     for i in ids:
-        (gold / f"{i}.txt").write_text(f"reference {i}\n", encoding="utf-8")
+        (answers / f"{i}.txt").write_text(f"reference {i}\n", encoding="utf-8")
+    made = run(
+        "scripts/label_import.py",
+        str(answers),
+        "--dataset-id",
+        "proj_v1",
+        "--set",
+        "owner",
+        "--by",
+        "t",
+        env=env,
+    )
+    made = (
+        made
+        if made.returncode
+        else run(
+            "scripts/reference_promote.py",
+            *("--dataset-id", "proj_v1", "--labels", "owner", "--tier", "gold"),
+            *("--reason", "the owner's answers decide", "--by", "t"),
+            env=env,
+        )
+    )
+    gold = data / "references" / "gold" / "proj_v1"
+    check(
+        "project elsewhere: gold imported as labels and promoted under EVAL_DATA_DIR",
+        made.returncode == 0 and (gold / "manifest.json").is_file(),
+        (made.stderr or made.stdout)[-300:],
+    )
     git = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false"]
     for argv in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "project"]):
         subprocess.run([*git, *argv], cwd=proj, capture_output=True, text=True)
@@ -2874,15 +3033,26 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
         steps = [
             evh("dataset-create", "--dataset-id", "rs_v1", "--source-dir", str(data / "sources" / "rs_v1")),
             evh("dataset-materialize", "--dataset-id", "rs_v1"),
-            # silver first, so the runs are scored against it and rescore moves them to gold
+            evh("run", "--config", str(data / "configs" / "arm_echo4.yaml"), "--run-id", "author"),
+        ]
+        # silver first, so the runs are scored against it and rescore moves them to gold: arm_echo4's outputs as
+        # a model's labels, promoted (RFC-023)
+        steps += [
+            evh("label-from-run", "--run", "author", "--set", "echo4_v1", "--allow-unknown-build"),
             evh(
-                "reference-create",
+                "reference-promote",
                 "--dataset-id",
                 "rs_v1",
-                "--config",
-                str(data / "configs" / "arm_echo4.yaml"),
+                "--labels",
+                "echo4_v1",
+                "--tier",
+                "silver",
+                "--reason",
+                "The four-sentence arm's answers rank the others.",
+                "--by",
+                "self-test",
             ),
-            *(evh("experiment-run", "--config", str(c)) for c in sorted((data / "configs").glob("*.yaml"))),
+            *(evh("run", "--config", str(c)) for c in sorted((data / "configs").glob("*.yaml"))),
         ]
         check(
             "installed rescore: a run made with the bundled adapter",
@@ -2896,10 +3066,34 @@ def test_rescore_finds_the_bundled_adapter_from_an_installed_package() -> None:
             made and all(m.get("primary_metric") == "overlap_f1" for m in made),
             [m.get("primary_metric") for m in made],
         )
-        gold = data / "references" / "gold" / "rs_v1"
-        gold.mkdir(parents=True)
+        answers = data.parent / "rs_gold"
+        answers.mkdir(parents=True)
         for i in ("t1", "t2", "t3"):
-            (gold / f"{i}.txt").write_text(f"Ticket {i}: cannot log in.\n")
+            (answers / f"{i}.txt").write_text(f"Ticket {i}: cannot log in.\n")
+        r = evh(
+            "label-import", str(answers), "--dataset-id", "rs_v1", "--set", "owner_gold", "--by", "self-test"
+        )
+        r = (
+            r
+            if r.returncode
+            else evh(
+                "reference-promote",
+                "--dataset-id",
+                "rs_v1",
+                "--labels",
+                "owner_gold",
+                "--tier",
+                "gold",
+                "--reason",
+                "The answers written for the test decide.",
+                "--by",
+                "self-test",
+            )
+        )
+        check(
+            "installed rescore: gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:]
+        )
+        gold = data / "references" / "gold" / "rs_v1"
         r = evh(
             "rescore",
             "--dataset-id",
@@ -3299,7 +3493,7 @@ def main() -> int:
         test_v10_fails_when_a_derived_run_states_no_scorer,
         test_nemenyi_table_is_computed_not_copied,
         test_two_runs_sharing_a_config_id_are_refused,
-        test_the_reports_separation_counts_are_real,
+        test_the_reports_significance_counts_are_real,
         test_promote_reads_its_reason_from_the_env,
         test_rescore_refuses_a_missing_reference_set,
         test_spearman_is_tie_correct,

@@ -1,0 +1,6 @@
+model_id: eval-glm-5
+kind: llm
+aliases:
+- eval-glm-5
+weights: open
+licence: MIT

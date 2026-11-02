@@ -15,9 +15,9 @@ success_criteria:
   guardrails:
     - {"name": "one run per arm", "rule": "Between-run variance is unmeasured: second runs moved nDCG@10 by up to 0.0126, each mixed with an adapter difference.", "source": "research/REPORT_RETRIEVAL.md, between-run variance"}
 datasets:
-  - {dataset_id: scifact_200, role: heldout, notes: 200 seeded queries, full 5,183-document corpus}
-  - {dataset_id: scifact_40, decides: false, role: dev, notes: the pilot slice; all 40 of its items are in scifact_200}
+  - {dataset_id: scifact_200, role: test, notes: 200 seeded queries, full 5,183-document corpus}
+  - {dataset_id: scifact_40, decides: false, role: pilot, notes: the pilot slice; all 40 of its items are in scifact_200}
 measures:
   - {id: ndcg_10, kind: metric, validity: validated}
 links:
-  - {url: https://evals.humancopilot.eu/experiments/scifact.html, note: the findings on the site}
+  - {url: https://evals.humancopilot.eu/evals/scifact.html, note: the findings on the site}

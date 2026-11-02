@@ -1,11 +1,11 @@
 {
-  "what": "The machines behind the experiments: what each is, as read from the machine itself, and which of the site's committed runs it measured (matched on each run's fingerprint host block). Captured 2026-10-18 with hardware/linux.sh and hardware/mac.sh. The cloud runner could not be captured: its fingerprints record only a 4-core Linux container, and that it was the operator's cloud coding sessions is the operator's account.",
+  "what": "The machines behind the evals: what each is, as read from the machine itself, and which of the site's committed runs it measured (matched on each run's fingerprint host block). Captured 2026-10-18 with hardware/linux.sh and hardware/mac.sh. The cloud runner could not be captured: its fingerprints record only a 4-core Linux container, and that it was the operator's cloud coding sessions is the operator's account.",
   "captured": "2026-10-18",
   "machines": [
     {
       "id": "mac_mini",
       "name": "Mac mini (2018)",
-      "role": "the homelab host: it ran the first five experiments, local arms on its CPU and hosted arms as API calls through a LiteLLM gateway it also hosts",
+      "role": "the homelab host: it ran the first five evals, local arms on its CPU and hosted arms as API calls through a LiteLLM gateway it also hosts",
       "captured_output": {
         "model": "Macmini8,1", "cpu": "Intel(R) Core(TM) i7-8700B CPU @ 3.20GHz",
         "cores": 6, "threads": 12, "memory_bytes": 34359738368, "arch": "x86_64",
@@ -25,7 +25,7 @@
     {
       "id": "evo_x3",
       "name": "GMKtec EVO-X3",
-      "role": "the workstation SummEval's 24 hosted judges were called from, and where its two UniEval arms ran on CPU; local LLMs for a planned next experiment are run here, and none is in the committed results",
+      "role": "the workstation SummEval's 24 hosted judges were called from, and where its two UniEval arms ran on CPU; local LLMs for a planned next eval are run here, and none is in the committed results",
       "captured_output": {
         "cpu": "AMD RYZEN AI MAX+ 395 w/ Radeon 8060S", "threads": 32,
         "memory_kb": 130485068, "vendor": "GMKtec", "product": "EVO-X3",

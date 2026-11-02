@@ -42,6 +42,7 @@ READ_TOOLS = (
     "datasets",
     "dataset-items",
     "arms",
+    "models",
     "goals",
     "references",
     "metrics",
@@ -51,6 +52,10 @@ READ_TOOLS = (
     "rounds",
     "runs-list",
     "validate",
+    "captures",
+    "labels",
+    "picks",
+    "deploy-sheet",
 )
 NOT_TOOLS = {
     "init": "writes a project",
@@ -58,11 +63,14 @@ NOT_TOOLS = {
     "dataset-create": "writes",
     "dataset-materialize": "writes",
     "dataset-profile": "writes",
-    "reference-create": "writes, and may call a model",
     "reference-manifest": "writes",
-    "experiment-run": "runs a system and may spend",
+    "run": "runs a system and may spend",
+    "arm-smoke": "runs a system on a few items, may spend, and writes the model record",
+    "model-onboard": "calls a model and writes the model record",
+    "fingerprint-migrate": "rewrites the committed runs' fingerprints",
     "sweep": "runs systems and may spend",
     "rescore": "writes runs",
+    "score-preview": "runs the project's own scoring code",
     "judge": "calls models and spends",
     "judge-score": "calls models and spends",
     "silver-calibrate": "writes",
@@ -74,6 +82,20 @@ NOT_TOOLS = {
     "holdout": "a statistics command; not yet a tool",
     "rank-stability": "a statistics command; not yet a tool",
     "import-run": "writes runs",
+    "importer-check": "reads a production system, not the project",
+    "capture": "reads a production system and writes",
+    "dataset-from-capture": "writes",
+    "label-sheet": "writes a sheet",
+    "label-import": "writes a label set",
+    "sheet-import": "writes a label set or judged runs",
+    "label-from-run": "writes a label set",
+    "label-from-capture": "writes a label set",
+    "reference-promote": "writes a reference",
+    "arm-from-capture": "writes a config and a run",
+    "pick": "writes the pick list",
+    "dataset-extend": "writes a dataset",
+    "dataset-split": "writes",
+    "capture-scrub": "runs a project's command and writes",
     "run-compare": "a statistics command; not yet a tool",
     "run-promote": "a decision: a person's",
     "round-open": "a decision: a person's",
@@ -85,8 +107,19 @@ NOT_TOOLS = {
     "mcp": "this server",
 }
 #: The views that take --json (catalog_views via _jsonout; dataset-items its profile).
-JSON = {"overview", "datasets", "arms", "goals", "references", "metrics", "activity", "search", "inspect"}
-JSON |= {"dataset-items"}
+JSON = {
+    "overview",
+    "datasets",
+    "arms",
+    "models",
+    "goals",
+    "references",
+    "metrics",
+    "activity",
+    "search",
+    "inspect",
+}
+JSON |= {"dataset-items", "captures", "labels", "picks", "deploy-sheet"}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
 HIDDEN = {"--adapter", "--json", "--help"}
@@ -272,9 +305,26 @@ def run_command(
     return p.returncode, out, err
 
 
-#: In --public mode, the options that would answer with an item's text or an arm's output: a
-#: public server answers with numbers and ids only, as catalog-serve --public does without --publish.
-PUBLIC_HIDDEN = {"inspect": {"--item"}, "dataset-items": {"--item"}}
+#: Options no tool offers: they write a file (the sheet's CSV and its key), and a tool writes nothing.
+TOOL_HIDDEN = {
+    "inspect": {"--csv", "--fill", "--choices", "--seed", "--rubric", "--scale"},
+}
+#: In --public mode, the options that would answer with an item's text, an arm's output or a label (the
+#: sheet): a public server answers with numbers and ids only, as catalog-serve --public does without
+#: --publish.
+PUBLIC_HIDDEN = {
+    "inspect": {
+        "--item",
+        "--sheet",
+        "--dataset-id",
+        "--scores-only",
+        "--wrong-against",
+        "--new-vs",
+        "--split",
+        "--unlabelled",
+    },
+    "dataset-items": {"--item"},
+}
 #: In --public mode, the tools left out, and why: a public server serves a copy of the data, not a
 #: whole project (no corpora, no example code), so validate would only ever report what is not there.
 PUBLIC_DROPPED = {"validate": "a public copy is not a whole project: validate fails by design"}
@@ -388,6 +438,9 @@ def build_server(
     from mcp.server import Server  # noqa: PLC0415
 
     parsers = {c: parser_of(c) for c in tools_for(public)}
+    for c, flags in TOOL_HIDDEN.items():
+        if c in parsers:
+            parsers[c]._actions = [a for a in parsers[c]._actions if not set(a.option_strings) & flags]
     if public:
         for c, flags in PUBLIC_HIDDEN.items():
             p = parsers[c]
@@ -566,8 +619,9 @@ def main(argv: list[str] | None = None) -> int:
         "--http", action="store_true", help="serve Streamable HTTP instead of stdio (a shared server)"
     )
     ap.add_argument("--bind", default="127.0.0.1", help="--http: the address (default: 127.0.0.1)")
-    # Not 8765: catalog-serve takes it, and both may run on one machine.
-    ap.add_argument("--port", type=int, default=8766, help="--http: the port (default: 8766)")
+    ap.add_argument(
+        "--port", type=int, help="--http: the port (default: the project's own, the same every time)"
+    )
     ap.add_argument("--path", default="/mcp", help="--http: the endpoint's path (default: /mcp)")
     ap.add_argument(
         "--allowed-host",
@@ -628,6 +682,10 @@ def main(argv: list[str] | None = None) -> int:
         help="a deployment's observability: path/to/file.py[:NAME] or module[:NAME] (start, request, error, routes)",
     )
     args = ap.parse_args(argv)
+    if args.http and args.port is None:
+        from evaluation_harness._common import project_port  # noqa: PLC0415
+
+        args.port = project_port("mcp", args.project)
     import anyio  # noqa: PLC0415
 
     project = args.project.resolve()

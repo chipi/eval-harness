@@ -13,11 +13,11 @@ success_criteria:
   strategy: frugal
   guardrails:
     - {"name": "licence", "rule": "DBpedia-14 is CC-BY-SA 3.0 + GFDL, inherited from Wikipedia: anything redistributed that contains its text is share-alike.", "source": "docs/DATA.md"}
-    - {"name": "not shown is not ruled out", "rule": "At 280 items no gap under 10 items was separated: a gain of up to about 3 points from paying more is not ruled out, only not shown.", "source": "research/REPORT_CLASSIFICATION.md, executive summary"}
+    - {"name": "not shown is not ruled out", "rule": "At 280 items no gap under 10 items was significant: a gain of up to about 3 points from paying more is not ruled out, only not shown.", "source": "research/REPORT_CLASSIFICATION.md, executive summary"}
 datasets:
-  - {dataset_id: dbpedia_280, role: heldout, notes: 20 per class, seeded}
-  - {dataset_id: dbpedia_56, decides: false, role: dev, notes: the pilot slice; all 56 of its items are in dbpedia_280}
+  - {dataset_id: dbpedia_280, role: test, notes: 20 per class, seeded}
+  - {dataset_id: dbpedia_56, decides: false, role: pilot, notes: the pilot slice; all 56 of its items are in dbpedia_280}
 measures:
   - {id: correct, kind: metric, validity: validated}
 links:
-  - {url: https://evals.humancopilot.eu/experiments/dbpedia.html, note: the findings on the site}
+  - {url: https://evals.humancopilot.eu/evals/dbpedia.html, note: the findings on the site}

@@ -1,7 +1,7 @@
 """Adapters: finding one, loading it once, and what it declares.
 
 Every example's adapter file is `adapter.py`. Two registries used to name loaded adapters:
-`experiment_run` by file stem (`eval_adapter_adapter` for all of them) and `_common` by
+`run` by file stem (`eval_adapter_adapter` for all of them) and `_common` by
 stem plus path digest, and the metric-kind and primary-metric lookups read the first and
 fell back to `import adapter`, the BUNDLED adapter. A process that loaded a project's
 adapter through the second registry and then asked for its metric kinds got the bundled
@@ -75,6 +75,49 @@ def adapter_module(adapter_spec: str | None) -> Any:
     classification labels' parser."""
     cand = resolve_adapter_path(adapter_spec) if adapter_spec else None
     return _module_or_none(cand) if cand is not None else None
+
+
+def _same_text(a: str, b: str) -> bool:
+    return a.strip() == b.strip()
+
+
+def decision_of(adapter_spec: str | None) -> Any:
+    """`decision(output)` from the adapter a run recorded (UXS-002): the decision in one output, what the sheet
+    shows for it; None when the adapter has none or cannot be imported here (the output is shown)."""
+    fn = getattr(adapter_module(adapter_spec), "decision", None)
+    return fn if callable(fn) else None
+
+
+def title_of(adapter_spec: str | None) -> Any:
+    """`title(item)` from the adapter a run recorded (UXS-002): a line that names an item (an alert's name, a
+    ticket's subject), what the sheet shows as its start; None when the adapter has none (the item's own start)."""
+    fn = getattr(adapter_module(adapter_spec), "title", None)
+    return fn if callable(fn) else None
+
+
+def shown(decide: Any, output: str | None) -> str | None:
+    """What a view shows for one output: its decision when the adapter says what that is, else the output itself."""
+    if output is None or decide is None:
+        return output
+    try:
+        got = decide(output)
+    except Exception:  # noqa: BLE001 - an output the adapter cannot read is shown as it is
+        return output
+    return output if got is None else str(got)
+
+
+def same_of(adapter_spec: str | None) -> Any:
+    """`same(a, b)` from the adapter a run recorded (RFC-023): whether two outputs are one decision, for agreement and
+    `--disagree`; else, when the adapter says what an output's decision is (`decision`), the same decision; else the
+    same text (also when the adapter cannot be imported here)."""
+    module = adapter_module(adapter_spec)
+    fn = getattr(module, "same", None)
+    if callable(fn):
+        return fn
+    decide = getattr(module, "decision", None)
+    if callable(decide):
+        return lambda a, b: _same_text(shown(decide, a) or "", shown(decide, b) or "")
+    return _same_text
 
 
 def metric_kinds(adapter_path: Path | None) -> dict[str, str]:
@@ -154,8 +197,9 @@ def _descriptions_of(module: Any) -> dict[str, Any]:
     return out
 
 
-def primary_metric(adapter_path: Path | None) -> str | None:
-    """`PRIMARY_METRIC` from the adapter, or None.
+def primary_metric(adapter_path: Path | None, params: dict[str, Any] | None = None) -> str | None:
+    """The arm's primary metric: the adapter's `primary_metric(params)` when it has one (one adapter whose arms
+    measure different things, a judge validated in several modes), else its `PRIMARY_METRIC`, else None.
 
     WHICH quality facet heads the table is a judgement the adapter author makes, not
     something to settle alphabetically. Without this the leaderboard sorted by whichever
@@ -163,7 +207,13 @@ def primary_metric(adapter_path: Path | None) -> str | None:
     and `concision`, is `concision`: brevity, quietly promoted to the headline. The same
     shape of accident once ranked a ten-model sweep by `compression`.
     """
-    value = getattr(_module_or_none(adapter_path), "PRIMARY_METRIC", None)
+    module = _module_or_none(adapter_path)
+    fn = getattr(module, "primary_metric", None)
+    if callable(fn) and params is not None:
+        got = fn(dict(params))
+        if isinstance(got, str) and got:
+            return got
+    value = getattr(module, "PRIMARY_METRIC", None)
     return value if isinstance(value, str) and value else None
 
 

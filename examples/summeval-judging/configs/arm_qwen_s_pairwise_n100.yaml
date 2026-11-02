@@ -1,0 +1,17 @@
+# The qwen_s judge validated in pairwise mode on SummEval: it says which of two summaries is better for 8 seeded pairs an article (../prompt_pairwise.txt); scored `pair_agreement` on the pairs the experts rank apart.
+config_id: se_qwen_s_n100_pairwise_v1
+dataset_id: summeval_100
+adapter: ../adapter.py
+params:
+  provider: litellm
+  model: eval-qwen-flash
+  family: qwen
+  price_tier: small
+  temperature: 0.0
+  reasoning:
+    enabled: false
+  usd_per_mtok_in: 0.05
+  usd_per_mtok_out: 0.2
+  prompt_file: prompt_pairwise.txt
+  max_tokens: 1500
+  mode: pairwise

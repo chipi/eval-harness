@@ -1,0 +1,5 @@
+model_id: eval-opus-5
+kind: llm
+aliases:
+- eval-opus-5
+weights: proprietary

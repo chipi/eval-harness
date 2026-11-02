@@ -33,6 +33,9 @@ from typing import Any, Callable
 # a call (the bill when the response carries one, else the config's prices, else unpriced).
 from evaluation_harness import _providers
 
+# A reference with several right answers ({"accept": [...]}) read as its answers: `score` reads references through it.
+from evaluation_harness._label_sets import answers  # adapters import it from here
+
 
 @dataclass
 class Result:
@@ -57,7 +60,7 @@ class Result:
 def call_system(text: str, params: dict[str, Any]) -> Result:
     """Run YOUR system over one item. Replace the body.
 
-    `params` is whatever the experiment config put under `params:` — model name,
+    `params` is whatever the arm's config put under `params:` — model name,
     temperature, prompt version, thresholds. Keep the knobs in the config, not
     in here, so an arm is a YAML file rather than a code edit.
 
@@ -91,7 +94,7 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
 
 # RETRIES LIVE IN THE CORE, NOT HERE.
 #
-# `experiment_run` wraps every `call_system` in its own retry loop (EVAL_MAX_RETRIES), for
+# `run` wraps every `call_system` in its own retry loop (EVAL_MAX_RETRIES), for
 # every adapter. Do not add a second loop in an adapter: the two multiply, and a failing item
 # on a paid provider is then attempted many times over. To make more errors retryable, declare
 # `TRANSIENT_MARKERS` (substrings of the error message); the core honours them.
@@ -110,9 +113,11 @@ PRIMARY_METRIC = "overlap_f1"
 def score(output: str, reference: str | None) -> dict[str, float]:
     """Score one output. Replace with whatever "good" means for you.
 
-    Called with the golden reference when one exists for the item, and with
+    Called with the item's reference when there is one (the answer a reference set or a
+    label set gives it: `--labels` scores against labels never promoted), and with
     None when it does not — so the same adapter works before and after you have
-    ground truth.
+    ground truth. A reference may accept several answers (`answers`): the default
+    scores the output against the one it is closest to.
 
     The default is deliberately crude: token-overlap F1 against the reference,
     plus the output length. It is a placeholder that produces a real number so
@@ -124,13 +129,17 @@ def score(output: str, reference: str | None) -> dict[str, float]:
     out_len = float(len(output.split()))
     if reference is None:
         return {"output_words": out_len}
+    return {"output_words": out_len, "overlap_f1": max(_overlap_f1(output, r) for r in answers(reference))}
+
+
+def _overlap_f1(output: str, reference: str) -> float:
+    """Token-overlap F1 of an output against one right answer."""
     a, b = set(output.lower().split()), set(reference.lower().split())
     if not a or not b:
-        return {"output_words": out_len, "overlap_f1": 0.0}
+        return 0.0
     overlap = len(a & b)
     precision, recall = overlap / len(a), overlap / len(b)
-    f1 = 0.0 if precision + recall == 0 else 2 * precision * recall / (precision + recall)
-    return {"output_words": out_len, "overlap_f1": f1}
+    return 0.0 if precision + recall == 0 else 2 * precision * recall / (precision + recall)
 
 
 # ── example adapters — delete the ones you do not use ────────────────────────
@@ -177,7 +186,7 @@ def _hosted(text: str, params: dict[str, Any]) -> Result:
         tokens_out=c.tokens_out,
         cost_usd=c.cost_usd,
         extra={**({"reasoning_tokens": float(c.reasoning_tokens)} if c.reasoning_tokens is not None else {})},
-        # "length" means the output stopped at max_tokens; experiment-run warns about it. The bill,
+        # "length" means the output stopped at max_tokens; evh run warns about it. The bill,
         # when the provider sent one, is kept where cost-report and rescore read it.
         meta={
             **({"finish_reason": c.finish_reason} if c.finish_reason else {}),

@@ -1,0 +1,6 @@
+model_id: guishe-span-marker-generic-ner-v1-fewnerd-fine-super
+kind: ml
+aliases:
+- guishe/span-marker-generic-ner-v1-fewnerd-fine-super
+weights: open
+licence: cc-by-sa-4.0

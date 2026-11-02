@@ -5,14 +5,14 @@
 data/materialized/*
 !data/materialized/README.md
 
-# Experiment output. THE SCORES ARE COMMITTED; the generations are not.
+# Run output. THE SCORES ARE COMMITTED; the generations are not.
 #
 # An external review found the decisive gap: with every run ignored, not one number in
 # the five reports could be recomputed by anyone but the author on one laptop. A repo
 # whose entire argument is "verify the instrument" was itself unverifiable. So:
 #
 #   metrics.json      1.0 MB total — every leaderboard, cost and headline figure
-#   predictions.jsonl  39 MB total — per-item scores, so every separation test,
+#   predictions.jsonl  39 MB total — per-item scores, so every significance test,
 #                                    rank-stability curve and holdout can be rerun
 #   outputs/           COMMITTED, 7.3 MB — see below
 #
@@ -22,7 +22,7 @@ data/materialized/*
 # sentence, no abstract.
 # OUTPUTS ARE COMMITTED TOO, and the earlier decision not to rested on two wrong
 # numbers of mine. I estimated "128 MB of copyrighted derivatives" from a `du` that
-# counted directory blocks and the excluded dev runs. Measured per example:
+# counted directory blocks and the excluded pilot runs. Measured per example:
 #
 #   AG News      0.0 MB   single words -- "World"
 #   DBpedia      0.1 MB   single words -- "Artist"
@@ -71,10 +71,10 @@ data/runs/*/outputs/.*.tmp
 # bytes, describing content that no longer exists -- a worse failure than withholding
 # the file. No MEASUREMENT run is affected; every number in the reports comes from the
 # n=200/280 runs, which are committed. Regenerate these with
-#   make experiment-run CONFIG=../examples/summarization-cnn-dailymail/configs/arm_<x>.yaml ARGS="--repeat 3"
+#   make run CONFIG=../examples/summarization-cnn-dailymail/configs/arm_<x>.yaml ARGS="--repeat 3"
 #
 # THE OUTPUTS LINE BELOW WAS MISSING AND IT MATTERED. These four patterns excluded the
-# dev runs' metrics and predictions, and then `!data/runs/*/outputs/**` above re-admitted
+# pilot runs' metrics and predictions, and then `!data/runs/*/outputs/**` above re-admitted
 # their outputs behind that exclusion -- so 144 of these directories were committed as
 # outputs ONLY: 2,880 files of CNN/DailyMail paraphrases with no metrics.json to say what
 # they are, which no tool in this repo can read. All of the copyright exposure of the
@@ -207,6 +207,28 @@ data/runs-adjudicated/*/*
 !data/runs-adjudicated/*/outputs/**
 data/runs-adjudicated/*/outputs/_rows.jsonl
 
+# data/runs-rescored/<scorer>/<source>/ — re-scores (evh rescore, RFC-022): the stored outputs read again by
+# another scorer, $0, the scorer by its code, the source the runs directory read. The one place the tool
+# designates, so a new scorer never needs a block of its own here.
+!data/runs-rescored/
+data/runs-rescored/*/*/*/*
+!data/runs-rescored/*/*/*/metrics.json
+!data/runs-rescored/*/*/*/predictions.jsonl
+!data/runs-rescored/*/*/*/outputs
+!data/runs-rescored/*/*/*/outputs/**
+data/runs-rescored/*/*/*/outputs/_rows.jsonl
+
+# data/runs-labels-<dataset>-<set>/ — runs scored against a label set (RFC-023: `rescore --labels`,
+# `evh run --labels`, a recorded arm with `--labels`): arms of their own, never one more run of the config's
+# arm on a reference. Kept as the other run folders are: the catalog reads only what git keeps.
+!data/runs-labels-*/
+data/runs-labels-*/*/*
+!data/runs-labels-*/*/metrics.json
+!data/runs-labels-*/*/predictions.jsonl
+!data/runs-labels-*/*/outputs
+!data/runs-labels-*/*/outputs/**
+data/runs-labels-*/*/outputs/_rows.jsonl
+
 # data/runs-silver/ — the CNN arms re-scored ($0) against silver/cnn_dailymail_200, the frontier
 # arm's summaries: a silver group beside gold on the goal page, where silver's family bias shows.
 # Their outputs are the same bytes as the measured runs' in data/runs.
@@ -301,3 +323,12 @@ data/external/
 # that run's outputs, rebuilt with `evh reference-create --from-run <run_id>` (the manifest
 # names the run).
 !data/references/silver/*/manifest.json
+
+# The triage fleet's decisions (examples/triage-fleet/fetch.py): published on Hugging Face
+# (chipi-nbgd/orrery-triage, CC-BY-4.0) and fetched by revision; git holds their ids and hashes.
+data/sources/orrery_triage_*/
+data/sources/orrery_triage_v1.hf/
+# A capture's records are the captured content; capture.json (ids and hashes) is what git holds.
+data/captures/*/records/
+data/sources/fleet_dedup_*/
+data/sources/fleet_dedup_v1.hf/

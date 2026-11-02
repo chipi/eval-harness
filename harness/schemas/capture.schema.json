@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "capture",
+  "description": "data/captures/<capture_id>/capture.json: what evh capture read from a production system (RFC-019), and the hash of every record it kept in records/<id>.json. A candidate pool, never evidence: no run is scored on a capture.",
+  "type": "object",
+  "required": ["capture_id", "importer", "importer_sha256", "query", "captured_at", "n_records", "records"],
+  "additionalProperties": false,
+  "properties": {
+    "capture_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+    "importer": {"type": "string", "description": "A built-in importer's name, a project importer's name, or path.py:Class."},
+    "importer_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "The importer's source file, as it read the records."},
+    "query": {"type": "object", "description": "The importer's query, verbatim."},
+    "window": {"type": "object", "properties": {"since": {"type": "string"}, "until": {"type": "string"}}, "additionalProperties": false},
+    "captured_at": {"type": "string"},
+    "n_records": {"type": "integer", "minimum": 0},
+    "skipped_as_already_captured": {"type": "integer", "minimum": 0},
+    "continues": {"type": ["string", "null"], "description": "The capture this one continues (--since-capture)."},
+    "scrubbed": {
+      "type": "object",
+      "description": "evh capture-scrub: the project's scrubber, run over the records.",
+      "required": ["command", "at", "records_changed"],
+      "properties": {
+        "command": {"type": "string"},
+        "files_sha256": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+        "at": {"type": "string"},
+        "records_changed": {"type": "integer", "minimum": 0}
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "sha256", "body_sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string"},
+          "created_at": {"type": ["string", "null"]},
+          "url": {"type": ["string", "null"]},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "The whole record as stored, outcome included."},
+          "body_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "What becomes the item: the body, else the fields."},
+          "sha256_before_scrub": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    }
+  }
+}

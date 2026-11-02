@@ -38,8 +38,8 @@ MEASURED: THIS TEST IS ANTI-CONSERVATIVE, AND BY HOW MUCH
   The cross-check was run and the two tests DISAGREE. Same arm, same data, same metric
   (`correct`), same Holm family of 26 on dbpedia_280:
 
-      family_test.py   sign-flip permutation, exact null    separated from  8 of 26
-      bootstrap_test.py  paired percentile bootstrap        separated from 11 of 26
+      family_test.py   sign-flip permutation, exact null    significantly different from  8 of 26
+      bootstrap_test.py  paired percentile bootstrap        significantly different from 11 of 26
 
   Per-opponent, the bootstrap's p is consistently the smaller one -- against
   `anthropic_l` the permutation says 1.0000 and the bootstrap says 0.7353; against
@@ -48,7 +48,7 @@ MEASURED: THIS TEST IS ANTI-CONSERVATIVE, AND BY HOW MUCH
   That is the known failure mode of a percentile bootstrap with few items and a metric
   pinned near its ceiling, which is exactly this dataset. So:
 
-      TREAT A `SEPARATED` VERDICT HERE AS AN UPPER BOUND on how much separation exists.
+      TREAT A `SIGNIFICANT` VERDICT HERE AS AN UPPER BOUND on how many differences are significant.
       Where a permutation test is available, IT is the answer and this is a sanity check.
       Use this script for macro-F1 because nothing exact exists for macro-F1 -- not
       because it is a second opinion worth weighing equally.
@@ -83,7 +83,7 @@ from evaluation_harness._common import (  # noqa: E402
 )
 from evaluation_harness._labels import per_class, predictions, reference_labels  # noqa: E402
 from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
-from evaluation_harness.stats import holm  # noqa: E402 -- one Holm: p equal to its threshold is separated
+from evaluation_harness.stats import holm  # noqa: E402 -- one Holm: p equal to its threshold is significant
 
 
 def _macro_f1(pairs: list, labels: list) -> float:
@@ -189,12 +189,14 @@ def main() -> int:
         ci = f"[{r['lo']:+.4f}, {r['hi']:+.4f}]"
         print(
             f"    {r['opp']:{w}} {r['delta']:+9.4f} {ci:>20} {r['p']:8.4f} "
-            f"{r['thresh']:8.4f}   {'SEPARATED' if r['sep'] else '--'}"
+            f"{r['thresh']:8.4f}   {'SIGNIFICANT' if r['sep'] else '--'}"
         )
     sep = sum(1 for r in rows if r["sep"])
     ahead = sum(1 for r in rows if r["delta"] > 0)
     spans = sum(1 for r in rows if r["lo"] <= 0 <= r["hi"])
-    print(f"\n    separated from {sep} of {m}; ahead on the point estimate against {ahead} of {m}")
+    print(
+        f"\n    significantly different from {sep} of {m}; ahead on the point estimate against {ahead} of {m}"
+    )
     print(f"    {spans} of {m} intervals span zero — those arms are not ordered by this data,")
     print("    whatever the point estimates say.")
     return 0

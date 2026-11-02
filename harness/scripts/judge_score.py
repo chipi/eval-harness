@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Re-measure a frozen experiment with a validated LLM judge (docs/adr/ADR-0001).
+"""Re-measure a frozen eval with a validated LLM judge (docs/adr/ADR-0001).
 
     make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1 ARGS=--dry-run
     make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1
@@ -30,6 +30,12 @@ source item, the label of the numbered outputs, the dimensions and the scale. Wi
 is SummEval's (ARTICLE, SUMMARIES, coherence/consistency/fluency/relevance, 1-5), which the
 committed summarisation scorer uses. A declared task is part of the judging set's hash.
 
+MODES. The scorer's `mode` is what a judge is asked: `grade` (the default, all of the above),
+`pick` (one call per item: the best of every arm's output, `{"best": [3]}`) or `pairwise` (one
+call per pair of arms: `{"better": 1}`). Pick and pairwise store `best` / `better` in place of
+`scores`, project `won` per arm per item (judged runs' primary `judge_won`) and summarise win
+rates and Bradley-Terry strengths. Only a declared non-default mode enters the judging set's hash.
+
 BLOCKS. SummEval validated 16 summaries per call. With more arms than that, an item is
 judged in the fewest blocks of at most `outputs_per_call`, sizes as equal as possible: 29
 arms are 15 + 14, never 16 + 13, so no call is further from the validated size than it must
@@ -50,8 +56,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import hashlib
+import itertools
 import json
 import math
+import random
 import shutil
 import statistics
 import sys
@@ -80,17 +88,24 @@ from evaluation_harness._common import (
     write_json,
     write_text_atomic,
 )
+from evaluation_harness._fingerprint import seal
 from evaluation_harness._providers import identity_params
 from evaluation_harness._record import aggregate_scores, derived_record
 from evaluation_harness._retry import call_with_retries
 from evaluation_harness._runs import mixed_versions, runs_on
 from evaluation_harness.judging import (
+    DEFAULT_MODE,
     DIMS,
     FAKE,
+    MODES,
     build_message,
+    build_pairwise_message,
+    build_pick_message,
     call_judge,
     kendall_tau_b,
     parse_block,
+    parse_pairwise,
+    parse_pick,
     render_prompt,  # noqa: F401 — re-exported: validate_tree and the tests call js.render_prompt
     shingles,
     spearman,
@@ -110,6 +125,20 @@ JUDGED = DATA / "runs-judged"
 
 PASSES = ("primary", "position", "noise")
 
+#: The key a verdict stores its parsed answer under, by mode.
+VERDICT_KEY = {"grade": "scores", "pick": "best", "pairwise": "better"}
+#: A pairwise outcome that is a tie (no arm id is empty).
+TIE = ""
+#: Bradley-Terry: bootstrap resamples of the items, the interval's coverage, and the virtual
+#: draw between every two arms. The draw keeps an arm that never won (or never lost) at a finite
+#: strength, which the maximum-likelihood fit does not have; its weight (half a comparison per
+#: pair) is small against a real eval's thousands of comparisons.
+BT_RESAMPLES = 1000
+BT_COVERAGE = 0.95
+BT_PRIOR = 0.5
+BT_TOL = 1e-9
+BT_MAX_ITER = 5000
+
 
 class JudgeCallFailed(Exception):
     """A judge call failed after its retries, or was refused (a provider budget, a policy)."""
@@ -123,6 +152,8 @@ CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "truncated", "reas
 #: A task with other dimensions scales it by their number.
 OUT_TOKENS_PER_SUMMARY = 14
 OUT_TOKENS_FIXED = 10
+#: A pick or pairwise reply is one short JSON object ({"best": [3, 7]}, {"better": "tie"}).
+OUT_TOKENS_ANSWER = 12
 CHARS_PER_TOKEN = 4
 
 
@@ -188,11 +219,46 @@ def load_scorer(path: Path) -> dict[str, Any]:
             f"{path.name}: protocol.position_check_fraction must be above 0 when a call sees "
             f"{pr['outputs_per_call']} outputs: their order can move a verdict"
         )
+    bad = mode_problems(sc)
+    if bad:
+        die(f"{path.name}: {bad[0]}")
     try:
         sc["_task"] = task_of(sc)
     except ValueError as exc:
         die(f"{path.name}: {exc}")
     return sc
+
+
+def mode_of(doc: dict[str, Any]) -> str:
+    """What a judge is asked: the scorer's (or a frozen set's) `mode`, `grade` when it has none."""
+    return doc.get("mode") or DEFAULT_MODE
+
+
+def mode_problems(sc: dict[str, Any]) -> list[str]:
+    """What is wrong with a scorer's `mode` and what hangs on it; empty when nothing is.
+
+    Whether a pick scorer's `outputs_per_call` covers the arms is checked when the arms are
+    known (build_manifest)."""
+    mode = mode_of(sc)
+    if mode not in MODES:
+        return [f"mode must be one of {', '.join(MODES)}, got {mode!r}"]
+    v = sc.get("validation")
+    if isinstance(v, dict) and mode_of(v) != mode:
+        return [
+            (
+                f"validation.mode is {mode_of(v)!r} but mode is {mode!r}: a judge is validated in the "
+                f"mode it is used in (one that grades like people says nothing about how it picks)"
+            )
+        ]
+    n = (sc.get("protocol") or {}).get("outputs_per_call")
+    if mode == "pairwise" and n != 2:
+        return [
+            (
+                f"protocol.outputs_per_call is {n!r} but a pairwise call judges exactly 2 outputs: "
+                f"every pair of arms is its own call, so set it to 2"
+            )
+        ]
+    return []
 
 
 def task_for(sc: dict[str, Any]) -> dict[str, Any]:
@@ -211,6 +277,7 @@ def judge_params(sc: dict[str, Any], j: dict[str, Any]) -> dict[str, Any]:
     p = dict(j["params"])
     if p.get("provider") == FAKE:
         p["_task"] = task_for(sc)
+        p["_mode"] = mode_of(sc)
     return p
 
 
@@ -259,7 +326,7 @@ def validation_problems(
     v = sc.get("validation")
     if not isinstance(v, dict) or not v.get("runs"):
         return ["no `validation` block naming a committed run"]
-    out: list[str] = []
+    out: list[str] = mode_problems(sc)
     metric = v.get("metric")
     named = {r.get("judge"): r for r in v["runs"] if isinstance(r, dict)}
     want = sc["prompt"].get("sha256_at_16") or ""
@@ -281,9 +348,9 @@ def validation_problems(
             out.append(f"judge {j['id']!r}: validation run {r.get('run')!r} is not in {runs_dir}")
             continue
         m = read_json(d / "metrics.json")
-        if v.get("experiment") and m.get("dataset_id") != v["experiment"]:
+        if v.get("dataset_id") and m.get("dataset_id") != v["dataset_id"]:
             out.append(
-                f"judge {j['id']!r}: run {r['run']} is on {m.get('dataset_id')!r}, not {v['experiment']!r}"
+                f"judge {j['id']!r}: run {r['run']} is on {m.get('dataset_id')!r}, not {v['dataset_id']!r}"
             )
         got = (m.get("scores") or {}).get(metric)
         if got is None or r.get("value") is None or abs(float(got) - float(r["value"])) > 1e-6:
@@ -296,6 +363,11 @@ def validation_problems(
                 f"judge {j['id']!r}: run {r['run']} has {metric}={got}, below the scorer's min_metric {floor}"
             )
         rec = m.get("params") or {}
+        if mode_of(rec) != mode_of(sc):
+            out.append(
+                f"judge {j['id']!r}: run {r['run']} measured mode={mode_of(rec)!r}, "
+                f"the scorer uses {mode_of(sc)!r}"
+            )
         for k in OUTPUT_PARAMS:
             if rec.get(k) != j["params"].get(k):
                 out.append(
@@ -307,7 +379,7 @@ def validation_problems(
                 f"judge {j['id']!r}: run {r['run']} used prompt file "
                 f"{rec.get('prompt_file')!r}, the scorer uses {Path(sc['prompt']['file']).name!r}"
             )
-        ran = (((m.get("fingerprint") or {}).get("system_under_test") or {}).get("model") or {}).get(
+        ran = (((m.get("fingerprint") or {}).get("settings") or {}).get("declared") or {}).get(
             "prompt_sha256"
         )
         if not ran:
@@ -321,7 +393,7 @@ def validation_problems(
 
 def validated_label(sc: dict[str, Any]) -> str:
     """Says where the validation was done, not that the judge is valid for this use."""
-    exp = (sc.get("validation") or {}).get("experiment")
+    exp = (sc.get("validation") or {}).get("dataset_id")
     return (
         f"validated on {exp} (provenance)" if exp else "validated by the runs its scorer names (provenance)"
     )
@@ -348,6 +420,28 @@ def blocks_for(arm_ids: Sequence[str], seed: Any, salt: str, item_id: str, per_c
         out.append(order[i : i + s])
         i += s
     return out
+
+
+def _blocks_of(
+    mode: str, arm_ids: Sequence[str], seed: Any, item_id: str, per_call: int
+) -> tuple[list[list[str]], list[list[str]]]:
+    """An item's (primary, position) blocks.
+
+    grade: balanced blocks of at most per_call, the position pass a second shuffle.
+    pick: one block of every arm (per_call covers them), the position pass a second shuffle.
+    pairwise: one block per pair of arms, each pair in a seeded order; the position pass is the
+    same pairs in the swapped order.
+    """
+    if mode != "pairwise":
+        return (
+            blocks_for(arm_ids, seed, "primary", item_id, per_call),
+            blocks_for(arm_ids, seed, "position", item_id, per_call),
+        )
+    primary = [
+        shuffled(pair, seed, f"primary|{pair[0]}|{pair[1]}", item_id)
+        for pair in itertools.combinations(sorted(arm_ids), 2)
+    ]
+    return primary, [b[::-1] for b in primary]
 
 
 def pick_subset(item_ids: Sequence[str], frac: float, seed: Any, salt: str) -> list[str]:
@@ -378,7 +472,7 @@ def discover_arms(dataset_id: str, match: str, runs_dir: Path = RUNS) -> list[di
                 "run": d.name,
                 "dir": d,
                 "family": (m.get("params") or {}).get("family")
-                or (m.get("fingerprint", {}).get("arm", {}).get("params") or {}).get("family"),
+                or (m.get("fingerprint", {}).get("settings") or {}).get("family"),
             }
         )
     return arms
@@ -433,14 +527,22 @@ def build_manifest(
     arm_ids = [a["config_id"] for a in arms]
     if len(arm_ids) < 2:
         die("a judging set needs at least two arms")
+    mode = mode_of(sc)
+    if mode not in MODES:
+        die(f"mode must be one of {', '.join(MODES)}, got {mode!r}")
+    if mode == "pick" and per_call < len(arm_ids):
+        die(
+            f"a pick scorer needs protocol.outputs_per_call of at least the number of arms "
+            f"({len(arm_ids)}), got {per_call}: a pick made in blocks would name each block's winner, "
+            f"not the item's. Raise outputs_per_call, or judge fewer arms (--match, --arms)"
+        )
     items = []
     for i in item_ids:
         items.append(
             {
                 "item_id": i,
                 "article_sha256": _sha(articles[i]),
-                "primary": blocks_for(arm_ids, seed, "primary", i, per_call),
-                "position": blocks_for(arm_ids, seed, "position", i, per_call),
+                **dict(zip(("primary", "position"), _blocks_of(mode, arm_ids, seed, i, per_call))),
             }
         )
     body = {
@@ -459,11 +561,12 @@ def build_manifest(
             "outputs_per_call": per_call,
             "blinding": bool(pr.get("blinding", True)),
             "order_seed": seed,
-            "block_sizes": block_sizes(len(arm_ids), per_call),
+            "block_sizes": [2] if mode == "pairwise" else block_sizes(len(arm_ids), per_call),
         },
         "prompt_sha256_at_16": _sha(base_prompt),
-        # Only a declared task is hashed, so a scorer without one keeps the set id it had.
+        # Only a declared task and a declared mode are hashed, so a grade scorer keeps the set id it had.
         **({"task": task_for(sc)} if sc.get("task") else {}),
+        **({"mode": mode} if mode != DEFAULT_MODE else {}),
         "items": items,
         "position_items": pick_subset(list(item_ids), pr["position_check_fraction"], seed, "position-subset"),
         "noise_items": pick_subset(list(item_ids), pr["noise_check_fraction"], seed, "noise-subset"),
@@ -496,7 +599,10 @@ def message_for(
     key = "position" if pass_name == "position" else "primary"  # noqa: S105 — a judging pass, not a password
     arm_ids = item[key][block]
     task = manifest.get("task") or task_of({})
-    return build_message(
+    build = {"pick": build_pick_message, "pairwise": build_pairwise_message}.get(
+        mode_of(manifest), build_message
+    )
+    return build(
         base,
         articles[item["item_id"]],
         [outputs[a][item["item_id"]] for a in arm_ids],
@@ -568,6 +674,21 @@ def stored_cost(vdir: Path) -> float:
     return total
 
 
+def parse_reply(mode: str, output: str, n: int, task: dict[str, Any]) -> dict[str, Any]:
+    """The verdict fields a reply parses to, under the key its mode stores them in; None when
+    it did not parse."""
+    if mode == "pick":
+        return {"best": parse_pick(output, n)}
+    if mode == "pairwise":
+        return {"better": parse_pairwise(output)}
+    return {"scores": parse_block(output, n, task["dimensions"], task["scale"])}
+
+
+def verdict_parsed(rec: dict[str, Any]) -> bool:
+    """Whether a stored verdict holds an answer (of any mode) rather than an unreadable reply."""
+    return any(rec.get(k) is not None for k in VERDICT_KEY.values())
+
+
 def run_judging(
     manifest: dict[str, Any],
     sc: dict[str, Any],
@@ -607,7 +728,7 @@ def run_judging(
                         )
                     if old.get("set_id") != manifest["judging_set_id"]:
                         die(f"{path}: belongs to judging set {old.get('set_id')}")
-                    if old.get("scores") is not None or not retry_unparsed:
+                    if old.get(VERDICT_KEY[mode_of(manifest)]) is not None or not retry_unparsed:
                         stats["skipped"] += 1
                         continue
                 if call is None:
@@ -642,7 +763,7 @@ def run_judging(
                 est, known = call_cost(res, j["params"])
                 cost = est if est is not None else 0.0
                 meta = getattr(res, "meta", None) or {}
-                scores = parse_block(res.output, n, task_for(sc)["dimensions"], task_for(sc)["scale"])
+                answer = parse_reply(mode_of(manifest), res.output, n, task_for(sc))
                 arms = item["position" if pass_name == "position" else "primary"][block]  # noqa: S105 — a judging pass, not a password
                 why = withheld_reason(
                     res.output,
@@ -667,7 +788,7 @@ def run_judging(
                         "output_sha256": _sha(res.output or ""),
                         "output_withheld": bool(why),
                         **({"withheld_reason": why} if why else {}),
-                        "scores": scores,
+                        **answer,
                         "tokens_in": res.tokens_in,
                         "tokens_out": res.tokens_out,
                         "cost_usd": cost + earlier,
@@ -705,7 +826,7 @@ def run_judging(
                         f"readable, git-ignored, at {local}: "
                         f"{j['id']} {item['item_id'][:8]} {pass_name} b{block}"
                     )
-                if scores is None:
+                if all(v is None for v in answer.values()):
                     log(f"    unparsed reply: {j['id']} {item['item_id'][:8]} {pass_name} b{block}")
                 elif stats["calls"] % 25 == 0:
                     log(f"    {stats['calls']} calls, ${spent:.4f}")
@@ -724,11 +845,72 @@ def run_judging(
 
 
 # ── projection ───────────────────────────────────────────────────────────────
+def block_outcome(mode: str, arm_ids: Sequence[str], value: Any) -> Any:
+    """What a stored verdict says about the arms of its block: a pick, the arms named best
+    (a sorted tuple); a pairwise call, the winning arm or TIE."""
+    if mode == "pick":
+        return tuple(sorted(arm_ids[i - 1] for i in value))
+    return TIE if value == "tie" else arm_ids[value - 1]
+
+
+def load_readings(
+    manifest: dict[str, Any], sc: dict[str, Any], vdir: Path
+) -> dict[str, dict[str, dict[str, dict[int, Any]]]]:
+    """{judge: {pass: {item: {block: outcome}}}} for pick and pairwise: every stored verdict that
+    parsed, by block (`block_outcome`). An item may hold only some of its blocks."""
+    mode = mode_of(manifest)
+    out: dict[str, dict[str, dict[str, dict[int, Any]]]] = {}
+    for j in sc["judges"]:
+        out[j["id"]] = {p: {} for p in PASSES}
+        for it in manifest["items"]:
+            for p in PASSES:
+                blocks = it["position" if p == "position" else "primary"]
+                for b, arm_ids in enumerate(blocks):
+                    f = verdict_path(vdir, j["id"], it["item_id"], p, b)
+                    v = read_json(f).get(VERDICT_KEY[mode]) if f.is_file() else None
+                    if v is not None:
+                        out[j["id"]][p].setdefault(it["item_id"], {})[b] = block_outcome(mode, arm_ids, v)
+    return out
+
+
+def won_from(mode: str, blocks: Sequence[Sequence[str]], outcomes: dict[int, Any]) -> dict[str, float]:
+    """Each arm's `won` on one item from a judge's complete reading of it.
+
+    pick: 1 when the arm alone was named best, 1/k when it shares the best with k - 1 others,
+    else 0. pairwise: the share of the arm's pairs it won, a tie counting a half.
+    """
+    if mode == "pick":
+        best = outcomes[0]
+        return {a: (1.0 / len(best) if a in best else 0.0) for a in blocks[0]}
+    wins: dict[str, float] = {}
+    for b, pair in enumerate(blocks):
+        for a in pair:
+            wins.setdefault(a, 0.0)
+            if outcomes[b] == TIE:
+                wins[a] += 0.5
+            elif outcomes[b] == a:
+                wins[a] += 1.0
+    return {a: w / (len(wins) - 1) for a, w in wins.items()}
+
+
 def load_scores(
     manifest: dict[str, Any], sc: dict[str, Any], vdir: Path
 ) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
-    """{judge: {pass: {item: {arm: score}}}} for the items whose every block parsed."""
+    """{judge: {pass: {item: {arm: score}}}} for the items whose every block parsed. For pick and
+    pairwise the number is the arm's `won` on the item (see `won_from`)."""
     out: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
+    mode = mode_of(manifest)
+    if mode != DEFAULT_MODE:
+        readings = load_readings(manifest, sc, vdir)
+        for j in sc["judges"]:
+            out[j["id"]] = {p: {} for p in PASSES}
+            for it in manifest["items"]:
+                for p in PASSES:
+                    blocks = it["position" if p == "position" else "primary"]
+                    read = readings[j["id"]][p].get(it["item_id"])
+                    if read is not None and len(read) == len(blocks):
+                        out[j["id"]][p][it["item_id"]] = won_from(mode, blocks, read)
+        return out
     for j in sc["judges"]:
         out[j["id"]] = {p: {} for p in PASSES}
         for it in manifest["items"]:
@@ -790,6 +972,128 @@ def compare_passes(a: dict[str, dict[str, float]], b: dict[str, dict[str, float]
     }
 
 
+_MODE_NOTES = {
+    "pick": (
+        "Each judge named the best of an item's outputs in one call. won is 1 for an arm named alone, "
+        "1/k when k share the best, else 0; win_rate is its mean. The position control re-shuffles the "
+        "item and the share of picks that kept the same arms is controls.position.agreement."
+    ),
+    "pairwise": (
+        "Each judge compared every pair of an item's outputs in its own call. won is the share of an "
+        "arm's pairs it won, a tie half; win_rate is its mean. The position control swaps the pair and "
+        "the share of verdicts that kept the same winner (or tie) is controls.position.agreement."
+    ),
+}
+
+
+def item_comparisons(
+    mode: str, blocks: Sequence[Sequence[str]], outcomes: dict[int, Any]
+) -> list[tuple[str, str, float, float]]:
+    """(arm, arm, first's win, second's win) for every comparison one judge's reading of an item
+    holds, a tie being half a win each way. A pick: each arm named best beats each arm not named;
+    arms sharing the best tie with each other. A pairwise call: its pair."""
+    out: list[tuple[str, str, float, float]] = []
+    if mode == "pick":
+        best = outcomes[0]
+        out += [(w, a, 1.0, 0.0) for w in best for a in blocks[0] if a not in best]
+        out += [(x, y, 0.5, 0.5) for x, y in itertools.combinations(best, 2)]
+        return out
+    for b, (x, y) in enumerate(blocks):
+        o = outcomes[b]
+        out.append((x, y, 0.5, 0.5) if o == TIE else (x, y, 1.0, 0.0) if o == x else (x, y, 0.0, 1.0))
+    return out
+
+
+def _bt_solve(w: list[list[float]], p: list[float]) -> list[float]:
+    """Bradley-Terry strengths from w[i][j], i's (fractional) wins over j, by the MM iteration
+    (Hunter 2004, eq. 3): p_i <- W_i / sum_j n_ij / (p_i + p_j), scaled to geometric mean 1.
+    Every pair carries the virtual draw BT_PRIOR, so the fit exists for any data."""
+    n = len(w)
+    tot = [[w[i][j] + w[j][i] + BT_PRIOR for j in range(n)] for i in range(n)]
+    won = [sum(w[i]) + (n - 1) * BT_PRIOR / 2 for i in range(n)]
+    for _ in range(BT_MAX_ITER):
+        new = [won[i] / sum(tot[i][j] / (p[i] + p[j]) for j in range(n) if j != i) for i in range(n)]
+        g = math.exp(sum(math.log(x) for x in new) / n)
+        new = [x / g for x in new]
+        done = max(abs(a / b - 1.0) for a, b in zip(new, p)) < BT_TOL
+        p = new
+        if done:
+            break
+    return p
+
+
+def _quantile(xs: Sequence[float], q: float) -> float:
+    """The q-quantile of sorted xs, linearly interpolated."""
+    pos = q * (len(xs) - 1)
+    lo = math.floor(pos)
+    hi = min(lo + 1, len(xs) - 1)
+    return xs[lo] + (xs[hi] - xs[lo]) * (pos - lo)
+
+
+def bradley_terry(
+    arm_ids: Sequence[str], per_item: Sequence[Sequence[tuple[str, str, float, float]]], seed: str
+) -> dict[str, dict[str, float]]:
+    """{arm: {strength, low, high}}: each arm's Bradley-Terry strength over every comparison
+    (geometric mean 1 across arms: 2.0 is twice as strong as the average arm) and a 95% percentile
+    interval from BT_RESAMPLES resamples of the items with replacement, seeded by `seed`."""
+    n, m = len(arm_ids), len(per_item)
+    idx = {a: i for i, a in enumerate(arm_ids)}
+    items = [[(idx[a], idx[b], x, y) for a, b, x, y in comps] for comps in per_item]
+
+    def matrix(counts: Sequence[int]) -> list[list[float]]:
+        w = [[0.0] * n for _ in range(n)]
+        for comps, c in zip(items, counts):
+            for a, b, x, y in comps if c else []:
+                w[a][b] += c * x
+                w[b][a] += c * y
+        return w
+
+    full = _bt_solve(matrix([1] * m), [1.0] * n)
+    rng = random.Random(seed)
+    reps: list[list[float]] = []
+    for _ in range(BT_RESAMPLES):
+        counts = [0] * m
+        for _ in range(m):
+            counts[rng.randrange(m)] += 1
+        reps.append(_bt_solve(matrix(counts), full))
+    tail = (1.0 - BT_COVERAGE) / 2
+    out = {}
+    for i, a in enumerate(arm_ids):
+        col = sorted(r[i] for r in reps)
+        out[a] = {
+            "strength": round(full[i], 6),
+            "low": round(_quantile(col, tail), 6),
+            "high": round(_quantile(col, 1.0 - tail), 6),
+        }
+    return out
+
+
+def verdict_agreement(base: dict[str, dict[int, Any]], other: dict[str, dict[int, Any]]) -> dict[str, Any]:
+    """How many of `other`'s verdicts say what `base`'s do for the same block: the position check
+    (the reshuffled pick, the swapped pair) or the noise check (the repeat) of a pick or pairwise
+    judge. A pick is kept when the same arms are named best."""
+    items = kept = total = 0
+    for item, blocks in other.items():
+        shared = [b for b in blocks if b in (base.get(item) or {})]
+        if shared:
+            items += 1
+        for b in shared:
+            total += 1
+            kept += blocks[b] == base[item][b]
+    return {
+        "n_items": items,
+        "n_verdicts": total,
+        "kept": kept,
+        "agreement": round(kept / total, 6) if total else None,
+    }
+
+
+def winner_set(cells: dict[str, float]) -> frozenset[str]:
+    """The arms with the highest `won` on an item: its winner, or its winners when they tie."""
+    top = max(cells.values())
+    return frozenset(a for a, v in cells.items() if abs(v - top) < 1e-12)
+
+
 def summarise(
     manifest: dict[str, Any],
     sc: dict[str, Any],
@@ -801,10 +1105,16 @@ def summarise(
     validated: bool,
     vdir: Path,
 ) -> dict[str, Any]:
-    """Summarize the judging: per-arm scores, judge agreement, controls, and cost."""
+    """Summarize the judging: per-arm scores, judge agreement, controls, and cost. For pick and
+    pairwise the per-arm number is the win rate (mean `won`), with Bradley-Terry strengths beside
+    it, and the controls are how often the position and noise checks kept the verdict."""
+    mode = mode_of(manifest)
+    graded = mode == DEFAULT_MODE
+    pkey = "judge_score" if graded else "judge_won"
     jids = [j["id"] for j in sc["judges"]]
     fam = {j["id"]: j["params"].get("family") for j in sc["judges"]}
-    thr = float(sc["protocol"].get("contested_threshold", 0.5))
+    # `won` runs 0..1, so the panel's 0.5 on a 1-5 scale would never flag anything.
+    thr = float(sc["protocol"].get("contested_threshold", 0.5 if graded else 0.25))
     per_arm: dict = {}
     for a in arms:
         cid = a["config_id"]
@@ -813,7 +1123,7 @@ def summarise(
         vals = [v for v in col.values() if v is not None]
         per_arm[cid] = {
             "family": a.get("family"),
-            "judge_score": pm,
+            pkey: pm,
             **{f"judge_{j}": col[j] for j in jids},
             "self_family": {j: a.get("family") == fam[j] for j in jids},
             "contested": bool(len(vals) > 1 and max(vals) - min(vals) > thr),
@@ -841,6 +1151,20 @@ def summarise(
                 "arm_mean_abs_diff": _mean(
                     [abs(p - q) for p, q in zip(ma, mb) if p is not None and q is not None]
                 ),
+                **(
+                    {}
+                    if graded
+                    else {
+                        "winner_agreement": round(
+                            statistics.fmean(
+                                winner_set({c: proj[i][c][ja] for c in proj[i]})
+                                == winner_set({c: proj[i][c][jb] for c in proj[i]})
+                                for i in proj
+                            ),
+                            6,
+                        )
+                    }
+                ),
             }
     self_gap = {}
     for j in jids:
@@ -854,11 +1178,43 @@ def summarise(
             else None,
         }
     ctrl = {}
-    for j in jids:
+    for j in jids if graded else []:
         p = scores[j]
         ctrl[j] = {
             "position": compare_passes(p["primary"], p["position"]),
             "noise": compare_passes(p["primary"], p["noise"]),
+        }
+    bt_meta: dict[str, Any] = {}
+    if not graded:
+        readings = load_readings(manifest, sc, vdir)
+        ctrl = {
+            j: {
+                "position": verdict_agreement(readings[j]["primary"], readings[j]["position"]),
+                "noise": verdict_agreement(readings[j]["primary"], readings[j]["noise"]),
+            }
+            for j in jids
+        }
+        by_id = {it["item_id"]: it for it in manifest["items"]}
+        per_item = [
+            [c for j in jids for c in item_comparisons(mode, by_id[i]["primary"], readings[j]["primary"][i])]
+            for i in proj
+        ]
+        arm_ids = sorted(per_arm)
+        seed = f"{manifest['protocol']['order_seed']}|bradley-terry|{manifest['judging_set_id']}"
+        bt = bradley_terry(arm_ids, per_item, seed)
+        for cid, r in bt.items():
+            per_arm[cid].update(
+                win_rate=per_arm[cid][pkey], bt_strength=r["strength"], bt_low=r["low"], bt_high=r["high"]
+            )
+        bt_meta = {
+            "bradley_terry": {
+                "method": "MM algorithm (Hunter 2004), strengths scaled to geometric mean 1",
+                "comparisons": sum(len(c) for c in per_item),
+                "resamples": BT_RESAMPLES,
+                "interval": f"{BT_COVERAGE:.0%} percentile, items resampled with replacement",
+                "seed": seed,
+                "virtual_draw_per_pair": BT_PRIOR,
+            }
         }
     calls = {}
     for j in jids:
@@ -866,7 +1222,7 @@ def summarise(
         vs = [read_json(f) for f in files]
         calls[j] = {
             "verdicts": len(vs),
-            "unparsed": sum(1 for v in vs if v.get("scores") is None),
+            "unparsed": sum(1 for v in vs if not verdict_parsed(v)),
             "truncated": sum(1 for v in vs if v.get("truncated")),
             "billed_usd": round(sum(float(v.get("cost_usd") or 0) for v in vs), 6),
             "cost_unknown": sum(1 for v in vs if not v.get("cost_known", True)),
@@ -888,17 +1244,26 @@ def summarise(
         "judge_agreement": agreement,
         "self_family_gap": self_gap,
         "controls": ctrl,
+        **({} if graded else {"mode": mode, **bt_meta}),
         "notes": [
             (
-                f"Each judge scored each item's arms in blocks; scores are absolute "
-                f"{task_for(sc)['scale'][0]:g}-{task_for(sc)['scale'][1]:g} per "
-                "dimension and block scores are pooled. The position control re-forms the blocks."
+                (
+                    f"Each judge scored each item's arms in blocks; scores are absolute "
+                    f"{task_for(sc)['scale'][0]:g}-{task_for(sc)['scale'][1]:g} per "
+                    "dimension and block scores are pooled. The position control re-forms the blocks."
+                )
+                if graded
+                else _MODE_NOTES[mode]
             ),
             (
                 "self_family: the arm and the judge are the same vendor family. own_minus_others "
                 "is a raw gap, not a bias estimate: families differ in real quality."
             ),
-            f"contested: two judges' arm means differ by more than {thr} (the judge panel's rule).",
+            (
+                f"contested: two judges' arm means differ by more than {thr} (the judge panel's rule)."
+                if graded
+                else f"contested: two judges' win rates for an arm differ by more than {thr}."
+            ),
         ],
     }
 
@@ -917,7 +1282,8 @@ def write_scored_runs(
     """One directory per original run, same name, predictions.jsonl + metrics.json, shaped
     like rescore's so leaderboard / family_test / pair_test read them with EVAL_RUNS_DIR."""
     sfx = "" if validated else "_unvalidated"
-    primary = f"judge_score{sfx}"
+    mode = mode_of(manifest)
+    primary = f"{'judge_score' if mode == DEFAULT_MODE else 'judge_won'}{sfx}"
     jids = [j["id"] for j in sc["judges"]]
     fam = {j["id"]: j["params"].get("family") for j in sc["judges"]}
     written = []
@@ -978,6 +1344,7 @@ def write_scored_runs(
             primary_metric=primary,
             with_={
                 "label": label,
+                **({} if mode == DEFAULT_MODE else {"mode": mode}),
                 "scorer_id": sc["scorer_id"],
                 "scorer_sha256": sc["_sha256"],
                 "judging_set_id": manifest["judging_set_id"],
@@ -1006,7 +1373,7 @@ def write_scored_runs(
                 # By behaviour (_codeid): documentation in judge_score.py is not a new scorer.
                 "sha256": file_sha256(self_path),
             }
-            fp["hash"] = None
+            seal(fp, whole=False)
             fp["hash_invalid_because"] = (
                 "scores were produced by a judge scorer, not the adapter this fingerprint "
                 "was built from; see derived.with"
@@ -1043,6 +1410,8 @@ def estimate(
             e["tokens_out"] += (
                 OUT_TOKENS_FIXED
                 + math.ceil(OUT_TOKENS_PER_SUMMARY * len(task_for(sc)["dimensions"]) / len(DIMS)) * n
+                if mode_of(manifest) == DEFAULT_MODE
+                else OUT_TOKENS_ANSWER
             )
     for j in sc["judges"]:
         e, pr = per_judge[j["id"]], j["params"]
@@ -1081,13 +1450,33 @@ def judge_access(sc: dict[str, Any]) -> list[tuple[str, str, list[str]]]:
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
+def print_win_summary(summ: dict[str, Any]) -> None:
+    """The pick / pairwise summary on the terminal: each arm's win rate and Bradley-Terry strength
+    with its interval, then how often the controls kept the verdict and the judges' winners agree."""
+    bt = summ["bradley_terry"]
+    print(f"\n  {summ['mode']}: win rate and Bradley-Terry strength ({bt['interval']}), best first")
+    for cid, a in sorted(summ["per_arm"].items(), key=lambda kv: -(kv[1]["win_rate"] or 0.0)):
+        print(
+            f"    {cid:40s} win {a['win_rate']:.3f}  strength {a['bt_strength']:7.3f} "
+            f"[{a['bt_low']:.3f}, {a['bt_high']:.3f}]"
+        )
+
+    def share(c: dict[str, Any]) -> str:
+        return f"{c['agreement']:.3f} of {c['n_verdicts']}" if c["agreement"] is not None else "n/a"
+
+    for j, c in summ["controls"].items():
+        print(f"  judge {j:8s} position kept {share(c['position'])}, noise kept {share(c['noise'])}")
+    for pair, a in summ["judge_agreement"].items():
+        print(f"  judges {pair}: same item winner on {a['winner_agreement']:.3f} of {a['n_items']} items")
+
+
 def real_call(message: str, params: dict[str, Any]) -> Any:
     """Call a judge; the call_with_retries hook."""
     return call_judge(message, params)
 
 
 def main() -> int:
-    """Re-measure a frozen experiment with a validated LLM judge."""
+    """Re-measure a frozen eval with a validated LLM judge."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--scorer", required=True, help="scorer id (data/scorers/<id>.yaml)")
@@ -1182,9 +1571,16 @@ def main() -> int:
     vdir = VERDICTS / sc["scorer_id"] / sid
     cap = effective_cap(sc)
     print(f"judging set  {sid}")
+    mode = mode_of(manifest)
+    per_item = {
+        "grade": f"blocks per item {manifest['protocol']['block_sizes']}",
+        "pick": "one pick of all the arms per item",
+        "pairwise": f"{len(arms) * (len(arms) - 1) // 2} pair calls per item",
+    }[mode]
     print(
-        f"  arms {len(arms)}, items {len(item_ids)}, blocks per item "
-        f"{manifest['protocol']['block_sizes']}, position items {len(manifest['position_items'])}, "
+        f"  arms {len(arms)}, items {len(item_ids)}, "
+        + (f"mode {mode}, " if mode != DEFAULT_MODE else "")
+        + f"{per_item}, position items {len(manifest['position_items'])}, "
         f"noise items {len(manifest['noise_items'])}"
     )
     blocked = False
@@ -1240,6 +1636,8 @@ def main() -> int:
     written = write_scored_runs(manifest, sc, arms, proj, out_root, label, validated)
     write_json(out_root / "summary.json", summ)
     print(f"\n{len(written)} scored run(s) -> {out_root}  ({len(proj)}/{len(item_ids)} items, {label})")
+    if mode != DEFAULT_MODE:
+        print_win_summary(summ)
     print(
         f"  calls {stats['calls']}, spent this run ${stats['billed_this_run']:.4f}, "
         f"stored total ${stats['spent_usd']:.4f}  (the provider's bill where it reports one, else the price table)"

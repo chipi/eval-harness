@@ -1,6 +1,6 @@
 # SummEval judging: can a model grade summaries the way experts do?
 
-Experiment 6. Every other experiment in this repository asks a system to *do* a task; this
+Eval 6. Every other eval in this repository asks a system to *do* a task; this
 one asks it to *grade* one. Each item is a CNN/DailyMail article with 16 machine summaries.
 The system scores every summary on four dimensions (coherence, consistency, fluency,
 relevance), and it is measured by how well its scores **order** the 16 the way three expert
@@ -11,7 +11,7 @@ Two questions this repository already asks, made measurable:
 - **Can an LLM judge be trusted?** Every silver reference, every "LLM-as-judge" pipeline,
   rests on it.
 - **How good are the metrics we rank by?** ROUGE and this repository's own `coverage` (the
-  summarisation experiment's primary metric) are arms here. How well they agree with experts
+  summarisation eval's primary metric) are arms here. How well they agree with experts
   bounds how much that leaderboard's lead means to a person — measured on 2019-era
   summaries, not the LLM-written ones it ranks.
 
@@ -44,13 +44,14 @@ python examples/summeval-judging/fetch.py      # or, from the root: make data EX
 
 | arm | what it is |
 |---|---|
-| 24 hosted LLM judges | the same 24 models as the other experiments, with `qwen37max` in place of `qwen_l`, whose model OpenRouter does not serve; one call per article; shown the article and the 16 summaries, **never the human references** ([prompt.txt](prompt.txt)) |
+| 24 hosted LLM judges | the same 24 models as the other evals, with `qwen37max` in place of `qwen_l`, whose model OpenRouter does not serve; one call per article; shown the article and the 16 summaries, **never the human references** ([prompt.txt](prompt.txt)) |
 | `unieval`, `unievalpub` | [UniEval](https://arxiv.org/abs/2210.07197) (Zhong et al. 2022), a T5-large evaluator trained to answer one yes/no question per dimension, for exactly these four; `MingZhong/unieval-sum`, pinned, licence not stated on its model card; local, CPU. `unieval` scores the text every other arm saw, plus one human reference for relevance; `unievalpub` scores UniEval's own published SummEval inputs (the same articles, summaries and reference, cased and tokenised differently), the protocol behind its published figures |
 | `rouge1`, `rouge2`, `rougeL` | ROUGE F1 of each summary against each of the 11 human references, averaged |
 | `coverage` | this repository's summarisation metric, imported from that example's own scorer, averaged over the references |
-| `bartscore` | log-likelihood of the summary given the article under `facebook/bart-large-cnn` ([Yuan et al. 2021](https://arxiv.org/abs/2106.11520)), pinned to the revision the summarisation experiment measured; local, CPU |
+| `bartscore` | log-likelihood of the summary given the article under `facebook/bart-large-cnn` ([Yuan et al. 2021](https://arxiv.org/abs/2106.11520)), pinned to the revision the summarisation eval measured; local, CPU |
 | `length` | the summary's word count: a confound to rule out, not a judge |
 | `random` | seeded random scores: the floor, near τ = 0 |
+| `gemma_l`, `qwen_s`, `random` in pick and pairwise mode | the judges of the summarisation scorer, validated in the other two judging modes ([RFC-005](../../docs/rfc/RFC-005-judge-scorers.md), "Judging modes"): `mode: pick` names the best of the 16 summaries ([prompt_pick.txt](prompt_pick.txt)), scored `top1` beside `top1_chance`; `mode: pairwise` says which of two is better for 8 seeded pairs an article ([prompt_pairwise.txt](prompt_pairwise.txt)), scored `pair_agreement` (with `n_pairs`); the `random` arm in each mode is the floor. Configs `configs/arm_*_pick_n100.yaml` and `arm_*_pairwise_n100.yaml` |
 
 A reference-based metric gives one number per summary; it stands for all four dimensions.
 
@@ -62,7 +63,7 @@ articles, with ROUGE-1 F1 averaged over the references: **ρ 0.190, τ 0.149**, 
 dimension within 0.01 of every published value. (Max over references gives ρ 0.198 and the
 first reference alone 0.159; neither reproduces the published row, so averaging is the
 setup.) UniEval reproduces as well, on its own inputs: τ 0.372 against G-Eval's 0.377, inside the
-interval on every dimension (on this experiment's text it scores 0.348; see the report,
+interval on every dimension (on this eval's text it scores 0.348; see the report,
 §3.3). The instrument reproduces the literature before anything new is read off it.
 [`calibrate.py`](calibrate.py) recomputes all of this from the committed runs and writes
 [`docs/evidence/calibration/summeval.json`](../../docs/evidence/calibration/summeval.json),
@@ -72,7 +73,7 @@ which `make ci` checks this page against.
 [`summary_judge_summeval`](https://evals.humancopilot.eu/catalog/g/summary_judge_summeval.html), with an inspector that tests any arms against the baseline item by
 item. An agent can ask the same over MCP, read-only and without sign-in: connect
 `https://evals.humancopilot.eu/mcp` ([how](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp))
-and ask, say, "what does the `summary_judge_summeval` goal recommend, and is it separated from the baseline?".
+and ask, say, "what does the `summary_judge_summeval` goal recommend, and is it significantly different from the baseline?".
 
 ## Results: the free arms
 
@@ -94,7 +95,7 @@ Four things already worth saying:
 
 - **UniEval, the one free arm trained to judge, is the best free arm** — and how the text is
   written moves it: the same articles and summaries, cased and tokenised as UniEval's own
-  file has them, score 0.024 higher, a separated difference.
+  file has them, score 0.024 higher, a significant difference.
 
 - **BARTScore, a model that never sees a reference, scores above every reference-based metric**
   (τ 0.256 against ROUGE-2's 0.158). G-Eval publishes BARTScore at τ 0.305 / ρ 0.385; ours is
@@ -117,9 +118,9 @@ Four things already worth saying:
 
 ## Results: the hosted judges
 
-All 24 hosted judges are measured ($7.03 billed). 23 of them are separated from, and ahead
-of, UniEval on either set of inputs; the weakest, `llama_s`, cannot be told apart from it.
-Every one is ahead of BARTScore. The leader cannot be separated from five others, led by `openai_l` (τ 0.540), with `gemma_l` (τ 0.538) the
+All 24 hosted judges are measured ($7.03 billed). 23 of them are significantly
+ahead of UniEval on either set of inputs; the weakest, `llama_s`, cannot be told apart from it.
+Every one is ahead of BARTScore. The leader is not significantly different from five others, led by `openai_l` (τ 0.540), with `gemma_l` (τ 0.538) the
 cheapest member at $0.03 for all 100 articles. Scored against the mean of two experts, as one
 expert is against the other two, the best judges reach 93% of a human's agreement (95% interval 89–97%; the best of 24, chosen on these
 articles, and 92% when chosen on half the articles and scored on the other half), UniEval 64%, and a no-model lookup of which system wrote each summary 63% ([`human_ceiling.py`](human_ceiling.py)). The full results, the significance tests and
@@ -134,10 +135,42 @@ With `OPENROUTER_API_KEY` in `harness/.env`, from `harness/` (about $7 for all 2
 for a in anthropic_s anthropic_m anthropic_l openai_s openai_m openai_l \
          deepseek_s deepseek_m deepseek_l gemma_s gemma_m gemma_l glm_s glm_m glm_l \
          llama_s llama_m llama_l mistral_s mistral_m mistral_l qwen_s qwen_m qwen37max; do
-  ../examples/summeval-judging/.venv/bin/python scripts/experiment_run.py \
+  ../examples/summeval-judging/.venv/bin/python scripts/run.py \
     --config ../examples/summeval-judging/configs/arm_${a}_n100.yaml; done
 make leaderboard DATASET_ID=summeval_100
 ```
+
+The pick and pairwise validations, the same way (the `random` arms call nothing):
+
+```bash
+for a in gemma_l qwen_s random; do for m in pick pairwise; do
+  ../examples/summeval-judging/.venv/bin/python scripts/run.py \
+    --config ../examples/summeval-judging/configs/arm_${a}_${m}_n100.yaml; done; done
+```
+
+Each arm's primary is its mode's metric (`tau`, `top1` or `pair_agreement`: the adapter's `primary_metric(params)`).
+The scorers that cite these runs, `judge-summ-pick-v1` and `judge-summ-pairwise-v1`
+([RUNBOOK §12](../../harness/docs/RUNBOOK.md#judging-modes-grade-pick-pairwise)), are the summarisation eval's
+judges in those modes; their `min_metric` is the `random` arm's value. The pick pass has been run on it (below);
+the pairwise scorer is validated and not yet run there.
+
+What they measured (2026-11-02, 100 articles; each value recomputed from the experts' scores):
+
+| judge | pick: `top1` (a random pick: 0.070; chance 0.088) | pairwise: `pair_agreement` (random: 0.473) |
+|---|---|---|
+| `gemma_l` | 0.364 | 0.825 |
+| `qwen_s` | 0.263 | 0.813 |
+
+Both prompts ask for the JSON object first and nothing after it. An earlier wording that let a judge explain first
+had `qwen_s` cut off at `max_tokens` before its answer on 8–13% of picks; a later one that invited an explanation
+after the JSON made `gemma_l` write about 270 tokens a reply. On this wording a reply is about 7–11 tokens; every pick
+was readable, and 1 of `qwen_s`'s 800 pairwise replies was not.
+
+On the summarisation eval (`judge-summ-pick-v1`, 29 arms, 198 of 200 articles, $0.17), the two judges named the same
+winner on 0.36 of the articles; a re-shuffle of the order kept the pick on 0.55 (`gemma_l`) and 0.45 (`qwen_s`) of
+20, and a repeat on 0.75 and 0.95. A pick among 29 summaries depends on their order about half the time: read the
+win rates as a ranking of what these judges prefer, beside `judge-summ-v1`'s grades and the experts, not instead of
+them.
 
 ## What this cannot say
 
@@ -157,7 +190,7 @@ make leaderboard DATASET_ID=summeval_100
 - **One trained evaluator.** UniEval is the only free arm trained to judge. Part of its
   training data is built from CNN/DailyMail, and its paper does not say from which split, so
   it may have seen these articles' text; its paper does not train on their expert scores.
-- **How the prompt was developed is not recorded.** There is no dev slice, so nothing here
+- **How the prompt was developed is not recorded.** There is no pilot slice, so nothing here
   is reported on articles the prompt and parser were not written against.
 
 - **n = 100 articles**, and every summary is from a 2019-era system; modern summaries are
@@ -168,4 +201,4 @@ make leaderboard DATASET_ID=summeval_100
   token probabilities (G-Eval's probability-weighted score), are different judges; they are
   not measured here.
 - **The articles are mostly DailyMail** (87 of 100; 13 CNN), unlike the summarisation
-  experiment's sample, which is all CNN.
+  eval's sample, which is all CNN.

@@ -81,7 +81,7 @@ try:
     # A run on v1 only: v2 has no arm, and still gets a page because it is v1's version.
     shutil.copy(KIT / "configs" / "tickets_lead1.yaml", data / "configs")
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
-    r = evh("experiment-run", "--config", "data/configs/tickets_lead1.yaml")
+    r = evh("run", "--config", "data/configs/tickets_lead1.yaml")
     check("setup: an arm runs on v1", r.returncode == 0, r.stderr[-300:])
     r = evh("catalog")
     out = proj / ".build" / "catalog"

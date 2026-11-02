@@ -11,16 +11,19 @@ VENV ?= .venv
 DATASET_ID ?= smoke_v1
 CONFIG ?= data/configs/demo.yaml
 REPEAT ?= 1
-OUT ?= data/runs-rescored
+OUT ?=
 NOISE ?=
 TIER ?= silver
 
 .PHONY: help demo init env-check install venv-init catalog catalog-serve \
         overview activity datasets arms references metrics goals inspect round-open round-retire round-close rounds \
-        dataset-create dataset-materialize dataset-profile dataset-items reference-create reference-manifest \
+        dataset-create dataset-materialize dataset-profile dataset-items reference-manifest \
         mcp search self-test \
+        reference-promote arm-smoke model-onboard fingerprint-migrate score-preview importer-check capture \
+        dataset-split capture-scrub captures labels label-sheet label-import sheet-import label-from-run label-from-capture pick \
+        picks dataset-extend deploy-sheet arm-from-capture dataset-from-capture models \
         holdout pair-test rank-stability \
-        experiment-dry-run experiment-run sweep \
+        run-dry-run run sweep \
         runs-list baselines-list run-compare leaderboard run-promote \
         validate judge judge-score check guide-check browser-install browser-check budget-check browser-real-check guard-check commands-check coverage ci test smoke-fixture cost-report clean clean-cache \
         bootstrap-test family-test import-run rescore silver-calibrate site site-check docs
@@ -40,11 +43,12 @@ help:
 	@echo "  3. make dataset-create  DATASET_ID=my_v1"
 	@echo "  4. make dataset-materialize DATASET_ID=my_v1"
 	@echo "  5. write adapter.py           call_system() -> YOUR system (copy scripts/adapter.py)"
-	@echo "  6. make reference-create DATASET_ID=my_v1 RUN=<run_id of your best arm>   (or CONFIG=<arm>)"
+	@echo "  6. evh label-from-run --run <run_id of your best arm> --set best_v1"
+	@echo "     evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver --reason \"…\" --by <you>"
 	@echo ""
 	@echo "MEASURE  (dry-run first — it costs nothing and tells you what the sweep will)"
-	@echo "  make experiment-dry-run CONFIG=data/configs/arm_a.yaml"
-	@echo "  make experiment-run     CONFIG=data/configs/arm_a.yaml REPEAT=3"
+	@echo "  make run-dry-run CONFIG=data/configs/arm_a.yaml"
+	@echo "  make run     CONFIG=data/configs/arm_a.yaml REPEAT=3"
 	@echo "  make sweep CONFIGS=\"data/configs/arm_*.yaml\" REPEAT=2"
 	@echo ""
 	@echo "TRUST THE REFERENCE?  (free — no API calls)"
@@ -54,8 +58,8 @@ help:
 	@echo "      the ceiling it prints, not against 1.0"
 	@echo ""
 	@echo "RE-MEASURE  (free — recomputes scores from stored outputs, no API calls)"
-	@echo "  make rescore DATASET_ID=my_v1 MATCH=_v2   after changing a metric"
-	@echo "  EVAL_RUNS_DIR=data/runs-rescored make leaderboard DATASET_ID=my_v1"
+	@echo "  make rescore DATASET_ID=my_v1 MATCH=_v2   after changing a metric (or GOAL=g ROUND=r1 WHY=\"...\")"
+	@echo "  EVAL_RUNS_DIR=data/runs-rescored/<scorer>/runs make leaderboard DATASET_ID=my_v1"
 	@echo ""
 	@echo "RE-MEASURE WITH A VALIDATED JUDGE  (BILLED and cost-capped; --dry-run first, it is free)"
 	@echo "  make judge-score DATASET_ID=my_v1 SCORER=<id> ARGS=--dry-run   calls, tokens, estimated cost"
@@ -155,7 +159,7 @@ demo:
 	  echo "  make dataset-create DATASET_ID=my_v1"; exit 1; }
 	@$(MAKE) --no-print-directory dataset-create DATASET_ID=$(DATASET_ID) ARGS="--force"
 	@$(MAKE) --no-print-directory dataset-materialize DATASET_ID=$(DATASET_ID)
-	@$(MAKE) --no-print-directory experiment-run CONFIG=$(CONFIG) REPEAT=3
+	@$(MAKE) --no-print-directory run CONFIG=$(CONFIG) REPEAT=3
 	@$(MAKE) --no-print-directory validate
 	@echo ""
 	@echo "Now: make runs-list, then make leaderboard DATASET_ID=$(DATASET_ID)"
@@ -175,26 +179,114 @@ dataset-profile:
 dataset-items:
 	$(PYTHON) scripts/dataset_items.py --dataset-id $(DATASET_ID) $(ARGS)
 
-# Author ground truth with a model you trust. SILVER by default (model-generated);
-# TIER=gold once a human has reviewed it.
-# The checksummed manifest of a reference a fetch script built.
+# Gold a fetch script builds, promoted where it is: its manifest, with whose labels they are and why.
 reference-manifest:
 	$(PYTHON) scripts/reference_manifest.py $(ARGS)
+
+# ── the commands added in 0.5.0 and 0.6.0, each with its own flags in ARGS ─────────────────────────────
+# promote a label set's labels to a reference, at a tier, with a reason
+reference-promote:
+	$(PYTHON) scripts/reference_promote.py $(ARGS)
+
+# smoke an arm on a few items before its full run: checks, projection, flags
+arm-smoke:
+	$(PYTHON) scripts/arm_smoke.py $(ARGS)
+
+# onboard a model once: probe a deployment, write what was found into its record
+model-onboard:
+	$(PYTHON) scripts/model_onboard.py $(ARGS)
+
+# migrate the committed runs' fingerprints to version 5, once (idempotent)
+fingerprint-migrate:
+	$(PYTHON) scripts/fingerprint_migrate.py $(ARGS)
+
+# what the scorer in this tree would move in a goal's decision; writes nothing
+score-preview:
+	$(PYTHON) scripts/score_preview.py $(ARGS)
+
+# check an importer: its records are well-formed, ids unique, two reads the same
+importer-check:
+	$(PYTHON) scripts/importer_check.py $(ARGS)
+
+# keep a production system's records as a capture (data/captures/)
+capture:
+	$(PYTHON) scripts/capture.py $(ARGS)
+
+# split a dataset into <id>_validation and <id>_test, stable across versions
+dataset-split:
+	$(PYTHON) scripts/dataset_split.py $(ARGS)
+
+# run the project's own scrubber over a capture's records, and record it
+capture-scrub:
+	$(PYTHON) scripts/capture_scrub.py $(ARGS)
+
+# every capture, or one: what was read, when, the datasets made from it
+captures:
+	$(PYTHON) scripts/view_captures.py $(ARGS)
+
+# every label set, or a dataset's: source, coverage, guideline, how often two agree
+labels:
+	$(PYTHON) scripts/view_labels.py $(ARGS)
+
+# a sheet of a dataset's items to label, with what production or an arm decided
+label-sheet:
+	$(PYTHON) scripts/label_sheet.py $(ARGS)
+
+# a filled label sheet as a person's label set
+label-import:
+	$(PYTHON) scripts/label_import.py $(ARGS)
+
+# a sheet filled elsewhere, read back: labels as a label set, picks or scores as judged runs
+sheet-import:
+	$(PYTHON) scripts/sheet_import.py $(ARGS)
+
+# a finished run's outputs as a model's label set (calls nothing)
+label-from-run:
+	$(PYTHON) scripts/label_from_run.py $(ARGS)
+
+# rules over a capture's recorded outcomes as a rule label set
+label-from-capture:
+	$(PYTHON) scripts/label_from_capture.py $(ARGS)
+
+# pick production items for the next version of governed datasets, or drop a pick
+pick:
+	$(PYTHON) scripts/pick.py $(ARGS)
+
+# the picks waiting: per target, where each came from, its labels, tags and note
+picks:
+	$(PYTHON) scripts/view_picks.py $(ARGS)
+
+# the next version of a dataset: its items and the picks you choose
+dataset-extend:
+	$(PYTHON) scripts/dataset_extend.py $(ARGS)
+
+# what production must match to run a promoted arm, and whether a capture says it did
+deploy-sheet:
+	$(PYTHON) scripts/deploy_sheet.py $(ARGS)
+
+# production's recorded decisions as an arm, scored like any (no call)
+arm-from-capture:
+	$(PYTHON) scripts/arm_from_capture.py $(ARGS)
+
+# make a dataset version from a capture: choose records, freeze their bodies as items
+dataset-from-capture:
+	$(PYTHON) scripts/dataset_from_capture.py $(ARGS)
+
+# every model record, or one: its deployments, onboarding, settings history and arms
+models:
+	$(PYTHON) scripts/view_models.py $(ARGS)
+
 
 # Does the installed harness work here? (in a checkout: the full test suite)
 self-test:
 	$(PYTHON) scripts/self_check.py $(ARGS)
 
-reference-create:
-	@test -n "$(RUN)$(CONFIG)" || { echo "RUN=<run_id whose outputs become the reference> or CONFIG=<config that authors it> is required"; exit 1; }
-	$(PYTHON) scripts/reference_create.py --dataset-id $(DATASET_ID) $(if $(RUN),--from-run $(RUN),--config $(CONFIG)) --tier $(TIER) $(ARGS)
+# ── evals ───────────────────────────────────────────────────────────────────
+run-dry-run:
+	$(PYTHON) scripts/run.py --config $(CONFIG) --repeat $(REPEAT) --dry-run
 
-# ── experiments ─────────────────────────────────────────────────────────────
-experiment-dry-run:
-	$(PYTHON) scripts/experiment_run.py --config $(CONFIG) --repeat $(REPEAT) --dry-run
-
-experiment-run:
-	$(PYTHON) scripts/experiment_run.py --config $(CONFIG) --repeat $(REPEAT) $(ARGS)
+run:
+	$(PYTHON) scripts/run.py --config $(CONFIG) --repeat $(REPEAT) $(ARGS)
 
 # CONFIGS is a glob: make sweep CONFIGS="data/configs/arm_*.yaml"
 sweep:
@@ -220,10 +312,9 @@ silver-calibrate:
 	  $(if $(REF_MATCH),--ref-match $(REF_MATCH),) $(if $(ARM_MATCH),--arm-match $(ARM_MATCH),) \
 	  $(if $(METRIC),--metric $(METRIC),) $(if $(GROUP_BY),--group-by $(GROUP_BY),)
 
+# Without OUT the re-scores land where the tool designates (data/runs-rescored/<scorer>/<source>/, RFC-022).
 rescore:
-	$(PYTHON) scripts/rescore.py --dataset-id $(DATASET_ID) $(if $(MATCH),--match $(MATCH),) $(if $(REFERENCE),--reference-id $(REFERENCE),) --out $(OUT)
-	@echo ""
-	@echo "  EVAL_RUNS_DIR=$(OUT) make leaderboard DATASET_ID=$(DATASET_ID)"
+	$(PYTHON) scripts/rescore.py $(if $(ROUND),--goal $(GOAL) --round $(ROUND) --why "$(WHY)",--dataset-id $(DATASET_ID)) $(if $(MATCH),--match $(MATCH),) $(if $(REFERENCE),--reference-id $(REFERENCE),) $(if $(OUT),--out $(OUT),)
 
 # What each arm actually cost, from `_meta.usage.cost` rather than the price table in
 # its yaml. Added because RUNBOOK §7b documented this verb before it existed.
@@ -352,7 +443,7 @@ inspect:
 	@test -n "$(RUNS)" || { echo "RUNS=<arm>,<arm>,... is required (config ids, or arm ids from make datasets)"; exit 1; }
 	$(PYTHON) scripts/view_inspect.py --runs $(RUNS) $(if $(BASELINE),--baseline $(BASELINE),) $(ARGS)
 
-# EXPERIMENT ROUNDS (ADR-0004), optional: a round of a goal, its decisions as commands.
+# EVAL ROUNDS (ADR-0004), optional: a round of a goal, its decisions as commands.
 # make round-open GOAL=g DATASET_ID=d ARGS='--from r1 --hypothesis "..." --keep a,b --retire c --reason "..."'
 round-open:
 	@test -n "$(GOAL)" -a -n "$(DATASET_ID)" || { echo "GOAL=<goal_id> DATASET_ID=<dataset> are required"; exit 1; }

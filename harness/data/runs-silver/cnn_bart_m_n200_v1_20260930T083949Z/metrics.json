@@ -20,19 +20,9 @@
   "fingerprint": {
     "arm": {
       "config_id": "cnn_bart_m_n200_v1",
-      "params": {
-        "device": "cpu",
-        "early_stopping": true,
+      "labels": {
         "family": "bart",
-        "length_penalty": 2.0,
-        "max_length": 142,
-        "min_length": 56,
-        "model": "sshleifer/distilbart-cnn-12-6",
-        "no_repeat_ngram_size": 3,
-        "num_beams": 4,
-        "precision": "fp32",
-        "price_tier": "free",
-        "provider": "hf_local"
+        "price_tier": "free"
       }
     },
     "data": {
@@ -46,16 +36,40 @@
       "references_sha256": "b7cd73d14c009e1ee5559a332cfc37143e24b4debcc75d1fdda9235a85b26f3d",
       "references_sha256_at_measurement": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
     },
+    "data_sha256": "66c42ddae2a884ddffb4093bb47f43bf49bf2f06d0a15cb5cbea3b59da33260f",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": "sshleifer/distilbart-cnn-12-6",
+      "in_process": true,
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.0",
+        "transformers": "4.55.4"
+      },
+      "model": "sshleifer/distilbart-cnn-12-6",
+      "provider": "hf_local",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
+    },
+    "deployment_sha256": "99adb6ba0025b75ad68978d1b1dbe5287435d6ccb9b87c11229751bf3c2a38ff",
     "hash": null,
     "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
-    "host": {
-      "cpu_count": 4,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": "x86_64",
-      "python": "3.11.15",
-      "release": "6.18.44-fc-v50"
-    },
     "instrument": {
       "adapter": {
         "id": "examples/summarization-cnn-dailymail/adapter.py",
@@ -66,24 +80,26 @@
         "dirty": false
       }
     },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "2.4.6",
-        "openai": "3.19.2",
-        "rouge-score": "0.1.2",
-        "torch": "2.14.0",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "device": "cpu",
-        "id": "sshleifer/distilbart-cnn-12-6",
-        "identity_declared": true,
-        "precision": "fp32",
-        "revision": null,
-        "revision_source": "unavailable"
-      }
+    "instrument_sha256": "49bd058a76c6555809af2c5f063d4536f09cb2f8c5468620606480b9356cf099",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v50"
     },
-    "version": 4
+    "settings": {
+      "early_stopping": true,
+      "length_penalty": 2.0,
+      "max_length": 142,
+      "min_length": 56,
+      "no_repeat_ngram_size": 3,
+      "num_beams": 4
+    },
+    "settings_sha256": "656435dcd94a2e6c1a0f2804bc3184adf0e955e8cf36a710519ed655ba6ac508",
+    "version": 5
   },
   "goal": "news_summary_cnn",
   "metric_descriptions": {

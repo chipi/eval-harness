@@ -4,7 +4,7 @@ These two configs are kept OUT of `configs/`, so `make sweep CONFIGS="configs/ar
 cannot pick them up.
 
 They are reference-grade models. Their job is to be the ceiling you measure toward, and to
-author a **silver** reference where no human one exists. An arm is something you might
+author a **silver** reference set where no human one exists. An arm is something you might
 actually choose to deploy; these are the answer to "how good does this get", which is a
 different question and belongs in a different place.
 
@@ -25,7 +25,8 @@ Two concrete reasons, and the second is a correctness one:
    the reference here is gold. It bites in every example that has no human reference, and
    the rule is cheaper to keep than to remember.
 
-To use one as a reference author:
+To use one as a reference-set author: run it as an arm, take its outputs as a model's labels, and promote them:
 
-    make reference-create DATASET_ID=<id> TIER=silver \
-      CONFIG=examples/summarization-cnn-dailymail/reference/arm_anthropic_opus.yaml
+    evh run --config examples/summarization-cnn-dailymail/reference/arm_anthropic_opus.yaml
+    evh label-from-run --run <that run> --set opus_silver --not-redistributed
+    evh reference-promote --dataset-id <id> --labels opus_silver --tier silver --reason "…" --by <you>

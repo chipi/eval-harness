@@ -4,7 +4,9 @@
 python tests/test_axes.py
 """
 
+import re
 import sys
+from html import unescape
 from pathlib import Path
 from typing import Any
 
@@ -49,8 +51,8 @@ strong = [0.9 + 0.001 * k for k in range(12)]
 weak = [0.2] * 12
 d = axes.decide(GOAL, {"a": arm("A", strong, 0.01, 100), "b": arm("B", weak, 0.001, 50)})
 check(
-    "decide: a separated leader is recommended, whatever it costs",
-    d["leader"] == "a" and d["tied"] == ["a"] and d["recommended"] == "a",
+    "decide: a significantly better leader is recommended, whatever it costs",
+    d["leader"] == "a" and d["contenders"] == ["a"] and d["recommended"] == "a",
     d["why"],
 )
 
@@ -58,8 +60,8 @@ check(
 near = [0.9 + 0.001 * k + (0.0005 if k % 2 else -0.0005) for k in range(12)]
 d = axes.decide(GOAL, {"a": arm("A", strong, 0.01, 100), "b": arm("B", near, 0.001, 300)})
 check(
-    "decide: arms not separated on quality are tied, and the cheaper is recommended",
-    d["tied"] == ["a", "b"] or set(d["tied"]) == {"a", "b"},
+    "decide: arms not significantly different on quality are contenders, and the cheaper is recommended",
+    d["contenders"] == ["a", "b"] or set(d["contenders"]) == {"a", "b"},
     d["why"],
 )
 check("decide: ... recommended by cost", d["recommended"] == "b", d["why"])
@@ -83,7 +85,7 @@ tail = [100] * 11 + [5000]
 d = axes.decide(limited, {"a": arm("A", strong, 0.01, tail)})
 check("decide: a slow tail breaks a p95 limit the mean would pass", "a" in d["out"], d["rows"]["a"]["speed"])
 
-# Missing numbers are not recorded, never 0, never a reason to drop an arm, and an axis a tied arm
+# Missing numbers are not recorded, never 0, never a reason to drop an arm, and an axis a contender
 # does not record cannot break the tie (an unpriced hosted call must not lose on cost).
 d = axes.decide(limited, {"a": arm("A", strong, None, None), "b": arm("B", near, 0.001, 100)})
 check(
@@ -101,7 +103,7 @@ check(
     d["why"],
 )
 
-# Identical per-item scores are tied in every strategy, whatever order the arms come in.
+# Identical per-item scores are contenders in every strategy, whatever order the arms come in.
 same = [1.0] * 12
 for strategy in ("balanced", "quality_first", "frugal"):
     for order in (("a", "b"), ("b", "a")):
@@ -111,8 +113,8 @@ for strategy in ("balanced", "quality_first", "frugal"):
             {k: both[k] for k in order},
         )
         check(
-            f"decide ({strategy}, order {order}): identical scores are tied and the cheaper is recommended",
-            set(d["tied"]) == {"a", "b"} and d["recommended"] == "b" and d["leader"] == "a",
+            f"decide ({strategy}, order {order}): identical scores are contenders and the cheaper is recommended",
+            set(d["contenders"]) == {"a", "b"} and d["recommended"] == "b" and d["leader"] == "a",
             d["why"],
         )
 
@@ -153,7 +155,7 @@ d = axes.decide(
 )
 check(
     "decide: a leader at 0 takes its margin from the group's range, and says so",
-    "b" in d["tied"]
+    "b" in d["contenders"]
     and d["recommended"] == "b"
     and any("of the group's range, the leader being 0" in w for w in d["why"]),
     d["why"],
@@ -225,7 +227,7 @@ d = axes.decide(GOAL, {"a": arm("A", strong, 0.0, 100, tokens=500), "b": arm("B"
 check("cost: tokens per item shown beside the dollars", d["rows"]["a"]["cost"]["tokens"]["mean"] == 500)
 
 # The strategies, on the case that made them: 32 items, a 1.000 leader and a free 0.875 arm the
-# paired test cannot separate from it (4 items differ).
+# paired test finds not significantly different from it (4 items differ).
 ITEMS[:] = [f"m{k:02d}" for k in range(32)]
 top = [1.0] * 32
 cheap = [1.0] * 28 + [0.0] * 4
@@ -238,8 +240,8 @@ def with_criteria(**extra):
 
 d = axes.decide(GOAL, pair)
 check(
-    "balanced (default): not separated but 0.125 off is not tied; the leader is recommended",
-    d["rows"]["k"]["quality"]["vs_leader"]["verdict"] == "not separated" and d["recommended"] == "a",
+    "balanced (default): not significantly different but 0.125 off is not a contender; the leader is recommended",
+    d["rows"]["k"]["quality"]["vs_leader"]["verdict"] == "not significant" and d["recommended"] == "a",
     d["why"],
 )
 check(
@@ -247,13 +249,13 @@ check(
 )
 d = axes.decide(with_criteria(strategy="frugal"), pair)
 check(
-    "frugal: anything the test cannot separate is tied, and the cheaper wins",
+    "frugal: anything not significantly different is a contender, and the cheaper wins",
     d["recommended"] == "k",
     d["why"],
 )
 d = axes.decide(with_criteria(axes={"quality": {"margin": 0.15}}), pair)
 check(
-    "balanced with the goal's margin (0.15): the free arm is tied, and wins on cost",
+    "balanced with the goal's margin (0.15): the free arm is a contender, and wins on cost",
     d["recommended"] == "k",
     d["why"],
 )
@@ -269,7 +271,7 @@ check(
     d["why"],
 )
 
-# frugal + [cost, quality]: the cheapest of what the test cannot separate, then the best of those.
+# frugal + [cost, quality]: the cheapest of what is not significantly different, then the best of those.
 ITEMS[:] = [f"q{k:02d}" for k in range(12)]
 lead = [0.9] * 12
 free_hi = [0.9] * 10 + [0.6] * 2
@@ -389,7 +391,7 @@ jfake: Any = Judged(judged)
 d = group_decision(jfake, goal, "ds", rows_j, "judge_score", {})
 check(
     "judge group: the goal's quality margin (0.5, for its own measure) is not used on the judge's score",
-    "y" not in d["tied"] and any("2% of the leader" in w for w in d["why"]),
+    "y" not in d["contenders"] and any("2% of the leader" in w for w in d["why"]),
     d["why"],
 )
 
@@ -430,6 +432,46 @@ check(
     and ref_tier({}, "no reference") == "",
 )
 
+# The glance's baseline is the one the goal reads (RFC-022): its latest re-score when it has one.
+from evaluation_harness.catalog_build import baseline_read  # noqa: E402
+
+v_bl = {
+    "baselines": [{"arm": "runs/ds/old_v1"}, {"arm": "runs/ds/b_v1", "goal": "g1"}],
+    "arms": [
+        {"arm": "runs/ds/b_v1", "superseded_by": "runs-rescored/s1/runs/ds/b_v1"},
+        {"arm": "runs-rescored/s1/runs/ds/b_v1"},
+        {"arm": "runs/ds/old_v1"},
+    ],
+}
+check(
+    "glance baseline: a re-scored baseline is read from its re-score; one never re-scored is itself; none is None",
+    baseline_read(v_bl, "g1")[1] == "runs-rescored/s1/runs/ds/b_v1"
+    and baseline_read({**v_bl, "baselines": v_bl["baselines"][:1]}, "g1")[1] == "runs/ds/old_v1"
+    and baseline_read({"arms": []}, "g1") == ([], None),
+)
+
+# A frontier name stays inside the chart: a long one on a dot in the middle goes to the side it fits on.
+from evaluation_harness.catalog_build import HALF  # noqa: E402
+from evaluation_harness.catalog_charts import LABEL_W, RIGHT, scatter  # noqa: E402
+
+long_name = "triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1 · rescored 3d3a6afd"
+svg = scatter([(0.0, 0.0, "a", ""), (0.55, 1.0, long_name, ""), (1.0, 0.5, "z", "")], "x", "y", width=HALF)
+spans = []
+for m in re.finditer(r'<text x="([0-9.]+)"[^>]*class="tick name"( text-anchor=end)?>([^<]*)<', svg):
+    x, end, name = float(m.group(1)), bool(m.group(2)), unescape(m.group(3))
+    spans.append((x - LABEL_W * len(name), x) if end else (x, x + LABEL_W * len(name)))
+check(
+    "chart names: every frontier name, a long one in the middle of a half-width chart too, lies inside the plot (clear of the y axis)",
+    len(spans) == 2 and all(x0 >= 70 and x1 <= HALF - RIGHT + 1 for x0, x1 in spans),
+    str(spans),
+)
+NAME_CLASS = 'class="tick name"'
+check(
+    "chart names are drawn after every dot, so no dot covers a name",
+    svg.rfind("<circle") < svg.find(NAME_CLASS),
+    f"last dot at {svg.rfind('<circle')}, first name at {svg.find(NAME_CLASS)}",
+)
+
 # Chart labels: a name that would cover one already placed moves a line; a clear one stays.
 placed = [(100.0, 200.0, 50.0)]
 check("labels: a clear spot is kept", label_y(80.0, 100.0, 200.0, placed, 10, 200) == 80.0)
@@ -438,6 +480,53 @@ check("labels: an overlapping name moves at least a line away", abs(moved - 50.0
 check(
     "labels: names that do not overlap in x share a line",
     label_y(50.0, 210.0, 300.0, placed, 10, 200) == 50.0,
+)
+
+# A limit that is the baseline (RFC-022): out only when the paired test finds the arm worse than the baseline.
+BL = {
+    "success_criteria": {
+        "primary": {"measure": "q", "direction": "higher"},
+        "axes": {"noise": {"measure": "noise", "direction": "lower", "limit": "baseline"}},
+    }
+}
+base = arm("base", 0.5, noise=[1] * 2 + [0] * 10)
+arms_bl = {
+    "base": base,
+    "worse": arm("worse", 0.6, noise=[1] * 12),
+    "same": arm("same", 0.6, noise=[1] * 3 + [0] * 9),
+}
+d = axes.decide(BL, arms_bl, baseline="base")
+check(
+    "limit baseline: an arm the paired test finds worse than the baseline is out, with the reason",
+    "worse" in d["out"] and "worse than the baseline base" in "; ".join(d["out"]["worse"]),
+    d["out"],
+)
+check(
+    "limit baseline: an arm the paired test does not separate from the baseline stays in",
+    "same" not in d["out"]
+    and d["rows"]["same"]["noise"]["within"] is True
+    and d["rows"]["base"]["noise"]["within"],
+    d["out"],
+)
+d0 = axes.decide(BL, arms_bl)
+check(
+    "limit baseline: without a baseline no limit applies, and the decision says so",
+    not d0["out"] and any("has none promoted" in w for w in d0["why"]),
+    d0["why"],
+)
+# Each arm on its own (owner, 2026-10-31): one arm worse at p = 2/64 among ten others is out, which Holm across the
+# eleven would not rule out (its first threshold is 0.05 / 11).
+many = {"base": arm("base", 0.5, noise=[0] * 12), "worse": arm("worse", 0.6, noise=[1] * 6 + [0] * 6)}
+many |= {f"f{k}": arm(f"f{k}", 0.6, noise=[1] + [0] * 11) for k in range(10)}
+dm = axes.decide(BL, many, baseline="base")
+check(
+    "limit baseline: each arm is gated on its own, not corrected across the group",
+    "worse" in dm["out"] and not any(k.startswith("f") for k in dm["out"]),
+    dm["out"],
+)
+check(
+    "limit baseline: the axis title says what the limit is",
+    "no worse than the baseline (paired test)" in axes.axis_title(axes.axes_of(BL)[-1]),
 )
 
 sys.exit(summary())

@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "(delete me)", "model_disposition": "cleanup", "reason": "The alert name contains the explicit test marker \"(delete me)\", indicating this is a synthetic sourcemap probe used for testing and not a real production error."}

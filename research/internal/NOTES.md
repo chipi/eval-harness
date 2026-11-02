@@ -2496,7 +2496,7 @@ hash-checked, and BM25 reproduced exactly: 0.645085 against the committed 0.6451
   one key, mapped through `examples/models.json`.
   - `examples/litellm.config.yaml` is the same table as a ready-to-run proxy config.
   - A raw OpenRouter id passes straight through, so anyone can add a model of their own.
-- `examples/experiments.json`: one registry that `examples/reproduce.py` and the site
+- `examples/evals.json`: one registry that `examples/reproduce.py` and the site
   both read.
 - `make plan / data / reproduce / compare` from the repository root.
   - Reruns go to the gitignored `runs-repro/`, never beside the committed runs.

@@ -1,0 +1,544 @@
+{
+  "bradley_terry": {
+    "comparisons": 14185,
+    "interval": "95% percentile, items resampled with replacement",
+    "method": "MM algorithm (Hunter 2004), strengths scaled to geometric mean 1",
+    "resamples": 1000,
+    "seed": "0|bradley-terry|cnn_dailymail_200-29arms-c11e64dd47ac",
+    "virtual_draw_per_pair": 0.5
+  },
+  "controls": {
+    "gemma_l": {
+      "noise": {
+        "agreement": 0.75,
+        "kept": 15,
+        "n_items": 20,
+        "n_verdicts": 20
+      },
+      "position": {
+        "agreement": 0.55,
+        "kept": 11,
+        "n_items": 20,
+        "n_verdicts": 20
+      }
+    },
+    "qwen_s": {
+      "noise": {
+        "agreement": 0.947368,
+        "kept": 18,
+        "n_items": 19,
+        "n_verdicts": 19
+      },
+      "position": {
+        "agreement": 0.45,
+        "kept": 9,
+        "n_items": 20,
+        "n_verdicts": 20
+      }
+    }
+  },
+  "cost": {
+    "aborted": false,
+    "billed_this_run": 0.054817022000000014,
+    "calls": 169,
+    "cap_usd": 1.0,
+    "missing": 0,
+    "skipped": 311,
+    "spent_usd": 0.17025748200000002
+  },
+  "items_scored": 198,
+  "items_total": 200,
+  "judge_agreement": {
+    "gemma_l~qwen_s": {
+      "arm_mean_abs_diff": 0.006832,
+      "arm_mean_spearman": 0.637037,
+      "mean_item_tau": 0.508946,
+      "n_items": 198,
+      "winner_agreement": 0.363636
+    }
+  },
+  "judging_set_id": "cnn_dailymail_200-29arms-c11e64dd47ac",
+  "judging_set_sha256": "c11e64dd47ac32f0978d73166d64264d603a6eb690434af2586cc99c1c258830",
+  "label": "validated on summeval_100 (provenance)",
+  "mode": "pick",
+  "notes": [
+    "Each judge named the best of an item's outputs in one call. won is 1 for an arm named alone, 1/k when k share the best, else 0; win_rate is its mean. The position control re-shuffles the item and the share of picks that kept the same arms is controls.position.agreement.",
+    "self_family: the arm and the judge are the same vendor family. own_minus_others is a raw gap, not a bias estimate: families differ in real quality.",
+    "contested: two judges' win rates for an arm differ by more than 0.25."
+  ],
+  "partial": true,
+  "per_arm": {
+    "cnn_anthropic_l_n200_v1": {
+      "bt_high": 118.601428,
+      "bt_low": 51.13845,
+      "bt_strength": 64.478248,
+      "contested": false,
+      "family": "anthropic",
+      "judge_gemma_l": 0.38468,
+      "judge_qwen_s": 0.419192,
+      "judge_won": 0.401936,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.401936
+    },
+    "cnn_anthropic_m_n200_v1": {
+      "bt_high": 45.994478,
+      "bt_low": 17.63318,
+      "bt_strength": 23.968671,
+      "contested": false,
+      "family": "anthropic",
+      "judge_gemma_l": 0.145623,
+      "judge_qwen_s": 0.141414,
+      "judge_won": 0.143519,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.143519
+    },
+    "cnn_anthropic_s_n200_v1": {
+      "bt_high": 70.098217,
+      "bt_low": 29.869497,
+      "bt_strength": 38.45467,
+      "contested": false,
+      "family": "anthropic",
+      "judge_gemma_l": 0.24062,
+      "judge_qwen_s": 0.212121,
+      "judge_won": 0.226371,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.226371
+    },
+    "cnn_bart_l_n200_v1": {
+      "bt_high": 0.133295,
+      "bt_low": 0.065665,
+      "bt_strength": 0.076792,
+      "contested": false,
+      "family": "bart",
+      "judge_gemma_l": 0.0,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.0,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.0
+    },
+    "cnn_bart_l_xsum_n200_v1": {
+      "bt_high": 0.133295,
+      "bt_low": 0.065665,
+      "bt_strength": 0.076792,
+      "contested": false,
+      "family": "bart",
+      "judge_gemma_l": 0.0,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.0,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.0
+    },
+    "cnn_bart_m_n200_v1": {
+      "bt_high": 0.133295,
+      "bt_low": 0.065665,
+      "bt_strength": 0.076792,
+      "contested": false,
+      "family": "bart",
+      "judge_gemma_l": 0.0,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.0,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.0
+    },
+    "cnn_bart_s_n200_v1": {
+      "bt_high": 0.133295,
+      "bt_low": 0.065665,
+      "bt_strength": 0.076792,
+      "contested": false,
+      "family": "bart",
+      "judge_gemma_l": 0.0,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.0,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.0
+    },
+    "cnn_deepseek_l_n200_v1": {
+      "bt_high": 6.215949,
+      "bt_low": 1.284539,
+      "bt_strength": 2.896884,
+      "contested": false,
+      "family": "deepseek",
+      "judge_gemma_l": 0.007295,
+      "judge_qwen_s": 0.020202,
+      "judge_won": 0.013749,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.013749
+    },
+    "cnn_deepseek_m_n200_v1": {
+      "bt_high": 27.159898,
+      "bt_low": 11.021974,
+      "bt_strength": 14.935228,
+      "contested": false,
+      "family": "deepseek",
+      "judge_gemma_l": 0.091089,
+      "judge_qwen_s": 0.075758,
+      "judge_won": 0.083424,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.083424
+    },
+    "cnn_deepseek_s_n200_v1": {
+      "bt_high": 2.303696,
+      "bt_low": 0.11406,
+      "bt_strength": 0.982316,
+      "contested": false,
+      "family": "deepseek",
+      "judge_gemma_l": 0.007295,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.003648,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.003648
+    },
+    "cnn_gemma_l_n200_v1": {
+      "bt_high": 1.575072,
+      "bt_low": 0.100688,
+      "bt_strength": 0.648065,
+      "contested": false,
+      "family": "gemma",
+      "judge_gemma_l": 0.001283,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.000641,
+      "self_family": {
+        "gemma_l": true,
+        "qwen_s": false
+      },
+      "win_rate": 0.000641
+    },
+    "cnn_gemma_m_n200_v1": {
+      "bt_high": 3.195693,
+      "bt_low": 0.085443,
+      "bt_strength": 0.99391,
+      "contested": false,
+      "family": "gemma",
+      "judge_gemma_l": 0.005772,
+      "judge_qwen_s": 0.005051,
+      "judge_won": 0.005411,
+      "self_family": {
+        "gemma_l": true,
+        "qwen_s": false
+      },
+      "win_rate": 0.005411
+    },
+    "cnn_gemma_s_n200_v1": {
+      "bt_high": 1.690845,
+      "bt_low": 0.089772,
+      "bt_strength": 0.665664,
+      "contested": false,
+      "family": "gemma",
+      "judge_gemma_l": 0.003086,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.001543,
+      "self_family": {
+        "gemma_l": true,
+        "qwen_s": false
+      },
+      "win_rate": 0.001543
+    },
+    "cnn_glm_l_n200_v1": {
+      "bt_high": 3.064501,
+      "bt_low": 0.388772,
+      "bt_strength": 1.294719,
+      "contested": false,
+      "family": "glm",
+      "judge_gemma_l": 0.012506,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.006253,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.006253
+    },
+    "cnn_glm_m_n200_v1": {
+      "bt_high": 3.067566,
+      "bt_low": 0.367287,
+      "bt_strength": 1.257165,
+      "contested": false,
+      "family": "glm",
+      "judge_gemma_l": 0.010522,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.005261,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.005261
+    },
+    "cnn_glm_s_n200_v1": {
+      "bt_high": 2.040884,
+      "bt_low": 0.126282,
+      "bt_strength": 0.949897,
+      "contested": false,
+      "family": "glm",
+      "judge_gemma_l": 0.002004,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.001002,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.001002
+    },
+    "cnn_lead3_n200_v1": {
+      "bt_high": 0.133295,
+      "bt_low": 0.065665,
+      "bt_strength": 0.076792,
+      "contested": false,
+      "family": "lead",
+      "judge_gemma_l": 0.0,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.0,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.0
+    },
+    "cnn_llama_l_n200_v1": {
+      "bt_high": 1.879725,
+      "bt_low": 0.081826,
+      "bt_strength": 0.660549,
+      "contested": false,
+      "family": "llama",
+      "judge_gemma_l": 0.000842,
+      "judge_qwen_s": 0.005051,
+      "judge_won": 0.002946,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.002946
+    },
+    "cnn_llama_m_n200_v1": {
+      "bt_high": 1.233282,
+      "bt_low": 0.075553,
+      "bt_strength": 0.363903,
+      "contested": false,
+      "family": "llama",
+      "judge_gemma_l": 0.001263,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.000631,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.000631
+    },
+    "cnn_llama_s_n200_v1": {
+      "bt_high": 1.177024,
+      "bt_low": 0.074361,
+      "bt_strength": 0.383443,
+      "contested": false,
+      "family": "llama",
+      "judge_gemma_l": 0.002525,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.001263,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.001263
+    },
+    "cnn_mistral_l_n200_v1": {
+      "bt_high": 1.344653,
+      "bt_low": 0.073705,
+      "bt_strength": 0.385895,
+      "contested": false,
+      "family": "mistral",
+      "judge_gemma_l": 0.0,
+      "judge_qwen_s": 0.005051,
+      "judge_won": 0.002525,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.002525
+    },
+    "cnn_mistral_m_n200_v1": {
+      "bt_high": 0.133295,
+      "bt_low": 0.065665,
+      "bt_strength": 0.076792,
+      "contested": false,
+      "family": "mistral",
+      "judge_gemma_l": 0.0,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.0,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.0
+    },
+    "cnn_mistral_s_n200_v1": {
+      "bt_high": 1.965801,
+      "bt_low": 0.085703,
+      "bt_strength": 0.700361,
+      "contested": false,
+      "family": "mistral",
+      "judge_gemma_l": 0.007576,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.003788,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.003788
+    },
+    "cnn_openai_l_n200_v1": {
+      "bt_high": 3.473288,
+      "bt_low": 0.117823,
+      "bt_strength": 1.292341,
+      "contested": false,
+      "family": "openai",
+      "judge_gemma_l": 0.003808,
+      "judge_qwen_s": 0.005051,
+      "judge_won": 0.004429,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.004429
+    },
+    "cnn_openai_m_n200_v1": {
+      "bt_high": 3.176709,
+      "bt_low": 0.126282,
+      "bt_strength": 1.294309,
+      "contested": false,
+      "family": "openai",
+      "judge_gemma_l": 0.002004,
+      "judge_qwen_s": 0.005051,
+      "judge_won": 0.003527,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.003527
+    },
+    "cnn_openai_s_n200_v1": {
+      "bt_high": 4.182412,
+      "bt_low": 0.568076,
+      "bt_strength": 1.933749,
+      "contested": false,
+      "family": "openai",
+      "judge_gemma_l": 0.005491,
+      "judge_qwen_s": 0.010101,
+      "judge_won": 0.007796,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "win_rate": 0.007796
+    },
+    "cnn_qwen_l_n200_v1": {
+      "bt_high": 18.732991,
+      "bt_low": 6.445608,
+      "bt_strength": 9.522735,
+      "contested": false,
+      "family": "qwen",
+      "judge_gemma_l": 0.047559,
+      "judge_qwen_s": 0.070707,
+      "judge_won": 0.059133,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": true
+      },
+      "win_rate": 0.059133
+    },
+    "cnn_qwen_m_n200_v1": {
+      "bt_high": 8.138084,
+      "bt_low": 2.251148,
+      "bt_strength": 4.136352,
+      "contested": false,
+      "family": "qwen",
+      "judge_gemma_l": 0.014911,
+      "judge_qwen_s": 0.025253,
+      "judge_won": 0.020082,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": true
+      },
+      "win_rate": 0.020082
+    },
+    "cnn_qwen_s_n200_v1": {
+      "bt_high": 2.086947,
+      "bt_low": 0.115139,
+      "bt_strength": 0.917647,
+      "contested": false,
+      "family": "qwen",
+      "judge_gemma_l": 0.002245,
+      "judge_qwen_s": 0.0,
+      "judge_won": 0.001122,
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": true
+      },
+      "win_rate": 0.001122
+    }
+  },
+  "per_judge": {
+    "gemma_l": {
+      "billed_usd": 0.074755,
+      "cost_unknown": 0,
+      "truncated": 0,
+      "unparsed": 0,
+      "verdicts": 240
+    },
+    "qwen_s": {
+      "billed_usd": 0.095503,
+      "cost_unknown": 0,
+      "truncated": 2,
+      "unparsed": 2,
+      "verdicts": 240
+    }
+  },
+  "protocol": {
+    "blinding": true,
+    "block_sizes": [
+      29
+    ],
+    "order_seed": 0,
+    "outputs_per_call": 29
+  },
+  "scorer_id": "judge-summ-pick-v1",
+  "scorer_sha256": "25d9c154221901bad4693a4dec994d859a5d2864084871b496d7b72f609e13ba",
+  "self_family_gap": {
+    "gemma_l": {
+      "own_family_arms": 3,
+      "own_minus_others": -0.034691
+    },
+    "qwen_s": {
+      "own_family_arms": 3,
+      "own_minus_others": -0.002784
+    }
+  },
+  "validated": true
+}

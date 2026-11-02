@@ -4,7 +4,7 @@
 
 How to use [eval-harness](https://evals.humancopilot.eu/) on your own system, the
 ideas it is built on, and the reference behind
-[its six experiments](https://evals.humancopilot.eu/experiments.html): what each
+[its six evals](https://evals.humancopilot.eu/evals.html): what each
 measured, every metric, model and test with its source, and how to rerun all of it yourself.
 Every run behind them is in [the catalog](https://evals.humancopilot.eu/catalog/).
 
@@ -12,11 +12,11 @@ Every run behind them is in [the catalog](https://evals.humancopilot.eu/catalog/
 
 <div class="eh-cards" markdown>
 
-[<span class="n">01</span><b>Getting started</b><span class="d">The loop once, offline, in fifteen minutes: create a dataset, run arms, make a reference from the best one's run, compare honestly, choose a baseline.</span>](GUIDE.md)
+[<span class="n">01</span><b>Getting started</b><span class="d">The loop once, offline, in fifteen minutes: create a dataset, run arms, make a reference from the best one's labels, compare honestly, choose a baseline.</span>](GUIDE.md)
 
-[<span class="n">02</span><b>Tutorials</b><span class="d">A local model against a baseline; a hosted LLM with your own key; a frontier reference, gold and judging; experiment rounds and dataset versions; the catalog and the inspector, and the command behind each view.</span>](GUIDE.md#where-to-go-next)
+[<span class="n">02</span><b>Tutorials</b><span class="d">A local model against a baseline; a hosted LLM with your own key; a frontier reference, gold and judging; eval rounds and dataset versions; the catalog and the inspector, and the command behind each view; datasets from production, and evaluating what production did; setting a model up.</span>](GUIDE.md#where-to-go-next)
 
-[<span class="n">03</span><b>Concepts</b><span class="d">The ideas it is built on: frozen datasets, fingerprints, gold and silver references, paired tests.</span>](../harness/docs/CONCEPTS.md)
+[<span class="n">03</span><b>Concepts</b><span class="d">The ideas it is built on: frozen datasets, fingerprints, labels and the gold and silver references promoted from them, paired tests.</span>](../harness/docs/CONCEPTS.md)
 
 [<span class="n">04</span><b>Integration</b><span class="d">Drop the harness into another project: one adapter, two functions. And ask it from your agent: <code>evh mcp</code>.</span>](../harness/docs/INTEGRATION.md)
 
@@ -28,15 +28,15 @@ Every run behind them is in [the catalog](https://evals.humancopilot.eu/catalog/
 
 </div>
 
-<div class="eh-kicker">The experiments</div>
+<div class="eh-kicker">The evals</div>
 
 <div class="eh-cards" markdown>
 
-[<span class="n">08</span><b>The catalog</b><span class="d">The harness's catalog, live on the six experiments: every goal, dataset (and what is inside it), arm and run, and an inspector that tests any arms against a baseline, item by item. Nothing to install; an agent can ask it too, over MCP at evals.humancopilot.eu/mcp.</span>](https://evals.humancopilot.eu/catalog/)
+[<span class="n">08</span><b>The catalog</b><span class="d">The harness's catalog, live on the six evals: every goal, dataset (and what is inside it), arm and run, and an inspector that tests any arms against a baseline, item by item. Nothing to install; an agent can ask it too, over MCP at evals.humancopilot.eu/mcp.</span>](https://evals.humancopilot.eu/catalog/)
 
-[<span class="n">09</span><b>Reproduce it</b><span class="d">Rerun any experiment and check its findings, from recomputing every number for $0 to rerunning every model with one key, and adding your own.</span>](REPRODUCE.md)
+[<span class="n">09</span><b>Reproduce it</b><span class="d">Rerun any eval and check its findings, from recomputing every number for $0 to rerunning every model with one key, and adding your own.</span>](REPRODUCE.md)
 
-[<span class="n">10</span><b>Protocol</b><span class="d">What each experiment measured, on which data and metric, and how that relates to the field's standard, with a calibration row each.</span>](PROTOCOL.md)
+[<span class="n">10</span><b>Protocol</b><span class="d">What each eval measured, on which data and metric, and how that relates to the field's standard, with a calibration row each.</span>](PROTOCOL.md)
 
 [<span class="n">11</span><b>Reference</b><span class="d">Every metric, model, dataset and statistical test, with sources and licences.</span>](REFERENCE.md)
 
@@ -56,7 +56,7 @@ Every run behind them is in [the catalog](https://evals.humancopilot.eu/catalog/
 
 </div>
 
-The experiment reports live in the repository's
+The eval reports live in the repository's
 [`research/`](https://github.com/chipi/eval-harness/tree/main/research) directory, and
 the lab notebook — handovers, review rounds, the journal, every correction — in
 [`research/internal/`](https://github.com/chipi/eval-harness/tree/main/research/internal).

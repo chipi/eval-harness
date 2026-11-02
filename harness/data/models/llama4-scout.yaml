@@ -1,0 +1,82 @@
+model_id: llama4-scout
+kind: llm
+name: Llama 4 Scout
+aliases:
+- llama4:scout
+weights: open
+licence: LLAMA 4 COMMUNITY LICENSE AGREEMENT
+deployments:
+- id: x3
+  where: x3
+  tag: llama4:scout
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: llama4:scout
+  server: ollama 0.40.13
+  digest: bf31604e25c25d964e250bcf28a82bfbdbe88af5f236257fabb27629bb24c7f3
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T13:57:44Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:57:44Z'
+    where: x3
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11434/v1
+        model: llama4:scout
+      digest_found: bf31604e25c25d964e250bcf28a82bfbdbe88af5f236257fabb27629bb24c7f3
+      default:
+        s: 24.96
+        tokens_out: 22
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 1.4
+        tokens_out: 22
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 15.7
+      deterministic: true
+      json_valid: true
+- id: dgx
+  where: dgx
+  tag: llama4:scout
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: llama4:scout
+  digest: bf31604e25c25d964e250bcf28a82bfbdbe88af5f236257fabb27629bb24c7f3
+  checked_at: '2026-10-31T14:09:06Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:09:06Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: llama4:scout
+      digest_found: bf31604e25c25d964e250bcf28a82bfbdbe88af5f236257fabb27629bb24c7f3
+      default:
+        s: 14.33
+        tokens_out: 22
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 1.29
+        tokens_out: 22
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 17.1
+      deterministic: true
+      json_valid: true
+  server: ollama 0.40.13
+capabilities:
+  reasons: false
+  json_mode: true

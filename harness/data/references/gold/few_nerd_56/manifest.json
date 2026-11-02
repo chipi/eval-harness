@@ -1,5 +1,5 @@
 {
-  "caveat": "GOLD: human-authored or human-reviewed.",
+  "caveat": "GOLD: promoted as gold from the labels its script fetches (person · the dataset's authors): the answers a decision rests on.",
   "created_at": "2026-10-25T13:14:25Z",
   "dataset_id": "few_nerd_56",
   "items_sha256": {
@@ -61,6 +61,16 @@
     "fac5fa7ae1d1b060459581f5084962c317db173f": "7ff33420446e9f3efd884b879fc159ddde1d323dba63541c05c1ca7e52577195"
   },
   "n_items": 56,
+  "promoted_from": {
+    "dataset_id": "few_nerd_56",
+    "labels": null,
+    "source": {
+      "by": "the dataset's authors",
+      "kind": "person",
+      "via": "examples/ner-few-nerd/fetch.py"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "redistributed": false,
   "source": "examples/ner-few-nerd/fetch.py",
   "tier": "gold"

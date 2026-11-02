@@ -1,6 +1,6 @@
 # PRD-004: The catalog and the run inspector
 
-- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (v0.5.0)
+- **Status**: Implemented (v0.4.0); FR6, the same views for an agent: Implemented (v0.5.0); the Captures page (FR1.13) built for 0.6.0; the port per project (FR2.7) built for 0.6.0; FR1.14 and FR2.6 built for 0.6.0 ([RFC-023](../rfc/RFC-023-labels-and-references.md))
 - **Authors**: Marko Dragoljevic
 - **Related UX specs**: [UXS-001](../uxs/UXS-001-catalog.md) (the catalog's pages),
   [UXS-002](../uxs/UXS-002-inspector.md) (the inspector), [UXS-003](../uxs/UXS-003-cli-and-onboarding.md) (the same views as commands)
@@ -48,10 +48,10 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 
 - **The engineer** exploring which arm to keep, who wants to click from a mean to the items
   behind it.
-- **The reviewer or reader** of a published experiment, who wants to check a claim without
+- **The reviewer or reader** of a published eval, who wants to check a claim without
   installing anything (the public catalog).
 - **The terminal user** who wants the same answers without a browser.
-- **The agent** (Claude, ChatGPT, Gemini, any MCP client) that a person asks about the experiments,
+- **The agent** (Claude, ChatGPT, Gemini, any MCP client) that a person asks about the evals,
   and that needs the same numbers, refusals included, as data it can call for.
 
 ## User Stories
@@ -106,7 +106,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   dataset; and everything recorded, newest first; each for a period counted from today (the last
   14, 7, 30 or 90 days, this or last week or month, this year, all time), the counts with their
   trends against the period before. The tiles are grouped and coloured by subject (goals; data;
-  experiments; work and spend), never red or green for a direction.
+  evals; work and spend), never red or green for a direction.
 - **FR1.9** (0.4.2): A tile is a door: the page it opens shows what it counts, for the same
   period, carried in the link. The goals, datasets, arms, references and metrics pages mark the
   rows new in the period, keep only the new or the active ones on request, and show the period's
@@ -121,6 +121,18 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
   charts.
 - **FR1.12** (0.4.2): The menu groups the pages by the same subjects as the tiles, so it fits a
   desktop bar; a phone's menu lists every page.
+- **FR1.13** (0.6.0): A Captures page, under Data, lists every capture (its records, importer, sample rule, the
+  time its records span, what it continues) with the datasets made from each; a dataset made from a capture links
+  its origin to it.
+- **FR1.14** (0.6.0):
+  - a tier is a large pill in its own colour wherever a reference or a tier is named; a label set is named by its
+    source chip (person, model, rule), never in a tier's colours; "scored against" names one or the other, always;
+  - a Labels page under Data: every label set, its source, coverage, guideline, and what was promoted from it; a
+    reference set's page says which label set it was promoted from, by whom, when and why;
+  - the dataset page: its label sets, how often two agree, its picks waiting (a selection gives the
+    `dataset-extend` command), and for a version made from picks, where each added item came from;
+  - a recorded arm (production's decisions) is badged, its capture named (linked from its page), no cost; a promoted arm's page and the
+    goal page beside its baseline show the deploy sheet (PRD-005 FR3);
 
 ### FR2: The inspector (local server)
 
@@ -130,13 +142,23 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR2.2**: It refuses arms on different `dataset_id`s, and, on a metric scored against a
   reference, does not test an arm scored against another reference than the baseline's.
 - **FR2.3**: It tests each arm against the baseline with `evaluation_harness.stats` (exact p up
-  to 30 items, Holm across the family) and gives a verdict in words: `separated: better`,
-  `separated: worse`, `not separated` (on a neutral metric, `separated: higher` or `lower`;
+  to 30 items, Holm across the family) and gives a verdict in words: `significant: better`,
+  `significant: worse`, `not significant` (on a neutral metric, `significant: higher` or `lower`;
   `identical` or `untestable` where no test applies) ([UXS-002](../uxs/UXS-002-inspector.md)).
 - **FR2.4**: It reads only arms the adapter's `arms()` reaches and references `references()`
   lists.
 - **FR2.5**: It compares the arms' recorded conditions and warns when the scorer or the
-  reference bytes differ, or latency is compared across machines.
+  reference bytes differ, or latency is compared across deployments (where the model ran) or
+  measured from different runners (RFC-021).
+- **FR2.6** (0.6.0): A label set can be what arms are scored against; the item view shows every label
+  with its source; `--disagree` keeps the items where the chosen arms decided differently; and the sheet
+  (`evh inspect --sheet --dataset-id D --runs …`) shows the items down and a column per arm across, with what each
+  wrote, its scores, the labels, the winner, the signals (wrong, disagree, split, new, unlabelled) as filters and
+  sorts, and a footer per arm. A selection of rows gives the `evh pick` and `evh label-sheet` commands, and its CSV
+  downloads; the page writes nothing (PRD-014 FR8).
+- **FR2.7** (0.6.0): `catalog-serve` serves each project on a stable port of its own (PRD-007 FR2.6), the next
+  free one if that is taken, and prints the URL and the project; `--port` overrides. A local catalog (the default
+  name, no `--link`) names its project in its header and tab title.
 
 ### FR3: Public mode
 
@@ -153,7 +175,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 - **FR4.1**: Every page and comparison is also a command that asks the same adapter and computes
   with the same functions: `evh overview` (the home dashboard), `evh activity`, `evh datasets`,
   `evh arms` (`--by`, `--where`, `--tier`, `--configs`), `evh references`, `evh metrics`,
-  `evh goals`, `evh search`, `evh inspect` (its comparison, `--items`, `--analysis`, `--item`)
+  `evh goals`, `evh search`, `evh inspect` (its comparison, `--analysis`, `--item`, `--sheet`)
   ([UXS-003](../uxs/UXS-003-cli-and-onboarding.md)); every list takes `--period P` and prints the
   page's period columns, from the same builder the page reads.
 - **FR4.2**: New views and actions are added to both. A decision the pages suggest is shown as

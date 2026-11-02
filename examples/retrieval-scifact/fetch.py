@@ -24,13 +24,13 @@ THE CORPUS IS NEVER SLICED, AND THAT IS NOT AN OVERSIGHT
   A 200-query run and a 40-query run over the same corpus are comparable; over different
   corpora they are two different tasks wearing one name.
 
-  It also means the dev slice is genuinely cheap in the only dimension that costs money
+  It also means the pilot slice is genuinely cheap in the only dimension that costs money
   (queries) and free in the one that costs time (indexing, which `warmup()` pays once).
 
 WHY THE SLICE IS A SEEDED PREFIX
   Same reason as the other three: `--n 40` takes a prefix of the same permutation `--n 200`
   does, so the two are NESTED and `holdout_significance --exclude-dataset` can ask whether
-  the dev slice's winner survives on queries it never saw.
+  the pilot slice's winner survives on queries it never saw.
 
 WHAT THE DATA LOOKS LIKE
   SciFact is scientific claim verification repurposed as retrieval: the query is a claim
@@ -255,7 +255,7 @@ def main() -> int:
     if (ROOT / "data" / "datasets" / f"{dataset_id}.json").is_file():
         # Frozen and committed: check the fetched bytes against it, never re-create it.
         print(f"  cd {ROOT} && make dataset-materialize DATASET_ID={dataset_id}")
-        print("  (or, from the repository root: make data EXP=<experiment> does all of this)")
+        print("  (or, from the repository root: make data EXP=<eval> does all of this)")
     else:
         print(f"  make dataset-create DATASET_ID={dataset_id} ARGS='--source-dir data/sources/{dataset_id}'")
         print(f"  make dataset-materialize DATASET_ID={dataset_id}")

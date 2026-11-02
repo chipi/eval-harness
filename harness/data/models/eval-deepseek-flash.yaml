@@ -1,0 +1,6 @@
+model_id: eval-deepseek-flash
+kind: llm
+aliases:
+- eval-deepseek-flash
+weights: open
+licence: MIT

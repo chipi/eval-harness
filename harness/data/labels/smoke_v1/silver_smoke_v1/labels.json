@@ -1,0 +1,35 @@
+{
+  "created_at": "2026-11-01T13:46:42Z",
+  "dataset_id": "smoke_v1",
+  "guideline": null,
+  "items": {
+    "item_01": {
+      "item_sha256": "9c530b220455e00527a434b6702e42be7bf2425169dc1ba742cd59f0f37e53ab",
+      "sha256": "9f530c2a647ca50928e078a54415695806b81d05efd09f9ee64f98b03c50390c"
+    },
+    "item_02": {
+      "item_sha256": "a1541a44934017894797eb76361daedfc17b0ef52ef42b0f7cb3199d1d975fb1",
+      "sha256": "7294042e5a9aff334c0640c5ccbe4eefc4c2606e029675128459e6f6d9b8a564"
+    },
+    "item_03": {
+      "item_sha256": "62535e22572b20092d2dfc00d6af68f5b31a502110fe88ed2ccdbeaa885a905e",
+      "sha256": "197ce67244a5740c87e82dc2e3cbb1ff8bb988d67f4e1baa8b36ae1224434205"
+    },
+    "item_04": {
+      "item_sha256": "db248ed9c3998606bb25971fd0031c2bccb560c13c6635bf2a6b9ba26461bc53",
+      "sha256": "95b9f3d32e05e53581490dbe85979f2028700bd59f3dc98a02ab675c38cd212c"
+    },
+    "item_05": {
+      "item_sha256": "d051e6d6435b9800cece2746423236ed1f7f94b788788de0c55292fe3046207f",
+      "sha256": "983fee0412a934a46592ebe64b50930a43d7664eaf3cbd6a26370b6b01aed829"
+    }
+  },
+  "n_items": 5,
+  "note": "made from the reference silver/smoke_v1, which existed before labels did",
+  "set": "silver_smoke_v1",
+  "source": {
+    "config_id": "reference_opus_v1",
+    "kind": "model",
+    "model": "eval-claude-opus"
+  }
+}

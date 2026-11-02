@@ -46,10 +46,12 @@ def _base(arm: str) -> str:
 def arm_rows(A, by_ds: dict) -> list[dict]:
     """One row per arm, by dataset, then config, the config's own measurement first:
     {"arm", "label", "dataset", "config", "model", "provider", "family", "tier", "local",
-    "weights", "quality", "scored", "how", "roles", "goal", "measure", "value", "lower", "repeats",
+    "weights", "record", "smoke", "quality", "scored", "how", "roles", "goal", "measure", "value", "lower", "repeats",
     "cost", "latency", "first", "last"}. `weights` is "open", "proprietary" or "" (unknown: the
-    adapter's model_facts does not list the model). `quality` is "ties the leader" when a goal's
-    decision ties the arm with its quality leader (the leader too), "below the leader" when it
+    adapter's model_facts does not list the model). `record` is the model record the arm uses ("" when
+    none), `deployment` the deployment of it its config named ("" when none) and `smoke` that record's latest smoke of the arm's config: pass, check or none ("" without a
+    record). `quality` is "a contender" when a goal's
+    decision makes the arm a contender beside its quality leader (the leader too), "below the leader" when it
     weighs the arm and does not, "" when no decision weighs it. A role "over a limit" is an arm a
     goal leaves out for a limit it breaks; "not eligible" one it leaves out for another reason.
     `how` says what the arm is beside the config's other arms: measured, rescored against a
@@ -58,10 +60,12 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
     (rescored, re-parsed, run again), that arm and how far the deciding measure moved from it; None
     when there is none, or the two are not on the same measure (a judge scores its own)."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+    from evaluation_harness import catalog_models as cm  # noqa: PLC0415
 
     cfg = getattr(A, "arm_config", None)
     fn = getattr(A, "model_facts", None)
     facts = (fn() if callable(fn) else None) or {}
+    records = cm.arm_records(A)
     roles: dict = {}
     quality: dict = {}
     measure_of: dict = {}
@@ -79,8 +83,8 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
         if dec:
             for arm in dec["rows"]:
                 measure_of.setdefault(arm, (g, r["measure"], r["lower"]))
-                if arm in (dec.get("tied") or []):
-                    quality[arm] = "ties the leader"
+                if arm in (dec.get("contenders") or []):
+                    quality[arm] = "a contender"
                 elif arm in dec["eligible"]:
                     quality.setdefault(arm, "below the leader")
                 if arm not in dec["eligible"] and arm not in (r.get("retired") or {}):
@@ -125,6 +129,9 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                         (p.get("provider") or "") in HOSTED_PROVIDERS or p.get("usd_per_mtok_in") is not None
                     ),
                     "weights": (facts.get(p.get("model") or "") or {}).get("weights") or "",
+                    "record": (records.get(a["arm"]) or {}).get("model_id", ""),
+                    "deployment": (c or {}).get("deployment") or "",
+                    "smoke": cm.smoke_of(records[a["arm"]], cid) if a["arm"] in records else "",
                     "quality": quality.get(a["arm"], ""),
                     "scored": "judge" if a["judge"] else (tiers.get(a["reference"]) or "none"),
                     "how": how,
@@ -140,6 +147,7 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                     "last": max(dated, default="")[:10],
                     "source": None,
                     "moved": None,
+                    "superseded_by": a.get("superseded_by") or "",
                 }
             )
     measured = {(r["dataset"], r["config"]): r for r in out if r["how"] == "measured"}
@@ -224,18 +232,23 @@ def period_arms(A, by_ds: dict, rows: list[dict]) -> dict:
         out[f"c:{cid}"] = {
             "runs": runs,
             "usd": cp.spend_of(w["spend"], lambda x, ids=ids: x.get("kind") == "arm" and x.get("arm") in ids),
-            "made": min((x[0] for x in runs), default=""),
+            # The day its first run was made, any run (a re-parsed one too), as the home page's configs tile dates it.
+            "made": min(
+                (r["created_at"][:10] for a in ids for r in by_arm[a]["run_list"] if r.get("created_at")),
+                default="",
+            ),
         }
     return out
 
 
-def render_arms(A, by_ds: dict, out, nav: list) -> None:
+def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) -> None:
     """Write arms.html."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
+    from evaluation_harness import catalog_models as cm  # noqa: PLC0415
     from evaluation_harness import catalog_periods as cp  # noqa: PLC0415
 
     w = cb.window(A, by_ds)
-    rows = arm_rows(A, by_ds)
+    rows = rows if rows is not None else arm_rows(A, by_ds)
     period_rows, trs = period_arms(A, by_ds, rows), []
     for r in rows:
         latency = f"{r['latency']:.0f} ms" if r["latency"] else "—"
@@ -265,10 +278,22 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
                         f"({r['moved']:+.3f}) vs measured</small>"
                         if r["moved"] is not None
                         else ""
+                    )
+                    + (
+                        '<br><small class="muted">the goals read its re-score</small>'
+                        if r["superseded_by"]
+                        else ""
                     ),
                     cb.dataset_link(r["dataset"]),
                     (f"<code>{e(r['model'])}</code>" if r["model"] else "—")
-                    + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>',
+                    + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>'
+                    + (
+                        f"<br>{cm.model_link(r['record'])}"
+                        + (f' <small class="muted">@ {e(r["deployment"])}</small>' if r["deployment"] else "")
+                        + f" {cm.SMOKE_BADGE[r['smoke']]}"
+                        if r["record"]
+                        else ""
+                    ),
                     (
                         cb.metric_link(r["measure"])
                         + f' <span data-v="{r["value"]}">{cb.fmt(r["value"])}</span>'
@@ -364,7 +389,7 @@ def render_arms(A, by_ds: dict, out, nav: list) -> None:
     if any(r["quality"] for r in rows):
         facet_chips += "".join(
             f'<button type="button" class="chip" data-facet="quality" data-value="{v}" aria-pressed="false">{v}</button>'
-            for v in ("ties the leader", "below the leader")
+            for v in ("a contender", "below the leader")
         )
     if any(r["weights"] for r in rows):
         facet_chips += "".join(

@@ -24,12 +24,12 @@ so each line can be checked.
 | **The dataset is a design decision** — small, high-quality gold; size measured, not assumed | *AI Engineering* ch. 8: quality, coverage and quantity; a small amount of high-quality data can beat a large amount of noisy data; annotation guidelines are hard; performance-gain curves across dataset sizes | Datasets frozen by content hash and re-checked on every use; `rank-stability` to measure how many items a ranking needs |
 | **Sampling, and the population a sample claims to represent** | *Designing ML Systems* ch. 4 (sampling methods) and ch. 8 (data distribution shifts) | The calibration rows that caught this repository's own all-CNN sample, and the DailyMail slice that tested whether findings travel |
 | **Labels are expensive** — start without perfect ones | *Designing ML Systems* ch. 4: hand labels are expensive and slow; alternatives to them | Silver references by default, gold where a person has checked, and the tier stated wherever a number is published |
-| **Baselines** | *Designing ML Systems* ch. 6: evaluation metrics don't mean much without a baseline to compare them to | Floor arms in every experiment (lead-3, keyword rules, a constant, random rankings); promoted baselines recorded with their reason |
+| **Baselines** | *Designing ML Systems* ch. 6: evaluation metrics don't mean much without a baseline to compare them to | Floor arms in every eval (lead-3, keyword rules, a constant, random rankings); promoted baselines recorded with their reason |
 | **Track and version every experiment** | *Designing ML Systems* ch. 6: intensive tracking and versioning of experiments, automated by tooling | A fingerprint per run — data, prompt, scorer, upstream model, libraries, commit — and refusals when it cannot be trusted (dirty tree, unknown build, two runs of one config) |
 
 ## Other foundations
 
-- **Testing separations, not reading rank order** — the statistics are older than any of
+- **Testing differences for significance, not reading rank order** — the statistics are older than any of
   this: Holm (1979) for multiple comparisons, Demšar (2006) for comparing systems over
   many items, Dror et al. (2018) for significance testing in NLP. Full references in
   [REFERENCE](REFERENCE.md) and [papers](papers/README.md).

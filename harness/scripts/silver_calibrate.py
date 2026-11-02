@@ -124,7 +124,7 @@ def main() -> int:
     spec = arms_side[arms[0]]["adapter"]
     if not spec:
         die("runs record no adapter — cannot score")
-    # One lookup for every tool that scores a finished run again (experiment_run): this
+    # One lookup for every tool that scores a finished run again (run): this
     # script once joined ROOT.parent unconditionally and could never find the bundled
     # adapter, and later, with its own copy of the lookup, not in a pinned project either.
     found = load_recorded_adapter(spec)
@@ -141,7 +141,7 @@ def main() -> int:
         metric = primary_metric(adapter_path) or "overlap_f1"
 
     ref_id = args.reference_id
-    # GOLD WHEN IT EXISTS -- the rule every run follows (experiment_run._reference_for).
+    # GOLD WHEN IT EXISTS -- the rule every run follows (run._reference_for).
     # The default used to be whichever reference the first run in glob order recorded, so a
     # dataset whose early runs predate its gold set was "calibrated" against SILVER: a
     # proxy measured against a proxy, printed as if against ground truth. Found by writing

@@ -1,0 +1,5 @@
+model_id: eval-gpt-mini
+kind: llm
+aliases:
+- eval-gpt-mini
+weights: proprietary

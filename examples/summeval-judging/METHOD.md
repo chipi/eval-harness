@@ -1,4 +1,4 @@
-# Method — why this experiment is built the way it is
+# Method — why this eval is built the way it is
 
 Companion to [`README.md`](README.md) (how to run it) and
 [`REPORT_SUMMEVAL.md`](../../research/REPORT_SUMMEVAL.md) (what it found). This file is the
@@ -10,7 +10,7 @@ up. Terms are defined in [`docs/REFERENCE.md`](../../docs/REFERENCE.md).
 ## The task, and why it is sixth
 
 Score 16 machine summaries of a news article on four dimensions, and be graded on how well
-those scores **order** the summaries the way three experts did. Every earlier experiment
+those scores **order** the summaries the way three experts did. Every earlier eval
 asks a system to *do* a task and grades the output against a reference. This one asks a
 system to *grade*, and grades the grading.
 
@@ -46,21 +46,22 @@ bounds how much a lead on the summarisation leaderboard means to a person — me
   are more fluent, and a judge's skill at catching 2019 failures may not transfer.
 - **The annotations are public** and could be in a judge's training data. Memorising
   per-summary scores for 1,600 summaries is unlikely; it is not ruled out.
-- **Mostly DailyMail** (87 of 100 articles, 13 CNN), where the summarisation experiment's
+- **Mostly DailyMail** (87 of 100 articles, 13 CNN), where the summarisation eval's
   sample is all CNN.
 
 ## Why these arms
 
 | Arm | Why it is here |
 |---|---|
-| 24 hosted LLMs | The same 8 vendors × 3 price tiers as every other experiment, so a model's judging can be set beside its doing. One call per article: the article and the 16 numbered summaries, and a request for JSON scores ([`prompt.txt`](prompt.txt)). The judge never sees the human references. |
+| 24 hosted LLMs | The same 8 vendors × 3 price tiers as every other eval, so a model's judging can be set beside its doing. One call per article: the article and the 16 numbered summaries, and a request for JSON scores ([`prompt.txt`](prompt.txt)). The judge never sees the human references. |
 | `qwen37max` | Replaces `qwen_l`, whose model is no longer served. A different model under its own arm name, never read as `qwen_l` ([report §6](../../research/REPORT_SUMMEVAL.md#6-conditions-of-this-run)). |
-| `bartscore` | [BARTScore](https://arxiv.org/abs/2106.11520), the log-likelihood of the summary given the article under `facebook/bart-large-cnn`, pinned to the revision the summarisation experiment measured. In G-Eval's Table 1 it is the strongest of the metrics G-Eval does not group with those that learn from human ratings (τ 0.305; UniEval, a trained evaluator, reaches 0.377 there). It is also a model fine-tuned on this very corpus — to write summaries, not to grade them. |
-| `unieval`, `unievalpub` | [UniEval](https://arxiv.org/abs/2210.07197), the free evaluator in G-Eval's table that was trained for these four dimensions, re-implemented from its MIT code (`adapter.py` says how). The bar a judge must clear to earn its bill. Run twice, because its published figures come from its own copy of SummEval, cased and tokenised differently from the text the other arms see: `unievalpub` is the calibration row, `unieval` the comparison on this experiment's text (still with one human reference for relevance, which no judge is shown). |
+| `bartscore` | [BARTScore](https://arxiv.org/abs/2106.11520), the log-likelihood of the summary given the article under `facebook/bart-large-cnn`, pinned to the revision the summarisation eval measured. In G-Eval's Table 1 it is the strongest of the metrics G-Eval does not group with those that learn from human ratings (τ 0.305; UniEval, a trained evaluator, reaches 0.377 there). It is also a model fine-tuned on this very corpus — to write summaries, not to grade them. |
+| `unieval`, `unievalpub` | [UniEval](https://arxiv.org/abs/2210.07197), the free evaluator in G-Eval's table that was trained for these four dimensions, re-implemented from its MIT code (`adapter.py` says how). The bar a judge must clear to earn its bill. Run twice, because its published figures come from its own copy of SummEval, cased and tokenised differently from the text the other arms see: `unievalpub` is the calibration row, `unieval` the comparison on this eval's text (still with one human reference for relevance, which no judge is shown). |
 | `rouge1`, `rouge2`, `rougeL` | The reference-based metrics the field still ranks summarisers by, against each of the 11 references and averaged. They are also the calibration rows. |
 | `coverage` | **This repository's own** summarisation metric, imported from that example's scorer. How well it agrees with experts is how much a `coverage` lead means. |
 | `length` | The summary's word count. A confound to rule out: if it agreed with the experts, anything that rewards length would too. |
 | `random` | Seeded random scores, the floor near τ = 0. |
+| `gemma_l`, `qwen_s` in pick and pairwise mode, with a `random` floor in each | A judge is validated in the mode it is used (RFC-005, "Judging modes"), and a judge that grades like the experts says nothing about how it picks. `mode: pick`: one call per article, the 16 summaries, the best named ([`prompt_pick.txt`](prompt_pick.txt)). `mode: pairwise`: one call per pair, 8 seeded pairs an article ([`prompt_pairwise.txt`](prompt_pairwise.txt)). The `random` arm in each mode is the `min_metric` a judge must clear. |
 
 A reference-based metric gives one number per summary, so it stands for all four
 dimensions at once; a judge scores each dimension separately.
@@ -73,7 +74,13 @@ reported beside it because the literature reports both.
 
 - **A rank correlation, because the question is ordering.** A judge that scores everything
   one point too high but in the right order is a good judge; a calibrated scale is a
-  separate property, and not one this experiment asks about.
+  separate property, and not one this eval asks about.
+- **In pick and pairwise mode, the same experts, asked the mode's question.** `top1` is 1 when the pick is among
+  the summaries the three experts rate best (their mean over the four dimensions), beside `top1_chance`, what a
+  random pick gets on that article (the share of its 16 that are best). `pair_agreement` is the share of the
+  sampled pairs the experts rank apart where the judge prefers the one they rate higher, a tie counting a half;
+  `n_pairs` says how many such pairs an article had. The adapter's `primary_metric(params)` makes each arm's
+  primary its mode's metric.
 - **τ-b, not τ-a, because judges tie.** Integer 1–5 scores give 16 summaries at most five
   distinct values, so a judge ties constantly. τ-b corrects for ties on both sides; τ-a
   would punish every tie. `tie_rate` reports how often each judge ties, and it barely

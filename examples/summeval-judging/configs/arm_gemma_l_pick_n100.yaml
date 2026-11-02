@@ -1,0 +1,17 @@
+# The gemma_l judge validated in pick mode on SummEval: it names the best of the 16 summaries (../prompt_pick.txt); scored `top1` against the experts' best.
+config_id: se_gemma_l_n100_pick_v1
+dataset_id: summeval_100
+adapter: ../adapter.py
+params:
+  provider: litellm
+  model: eval-gemma-31b
+  family: gemma
+  price_tier: large
+  temperature: 0.0
+  reasoning:
+    enabled: false
+  usd_per_mtok_in: 0.1
+  usd_per_mtok_out: 0.2
+  prompt_file: prompt_pick.txt
+  max_tokens: 1500
+  mode: pick

@@ -25,17 +25,9 @@
   "fingerprint": {
     "arm": {
       "config_id": "fn_gemma_s_n200_v1",
-      "params": {
+      "labels": {
         "family": "gemma",
-        "max_tokens": 600,
-        "model": "eval-gemma-3-27b",
         "price_tier": "small",
-        "prompt_file": "prompt.txt",
-        "provider": "litellm",
-        "reasoning": {
-          "enabled": false
-        },
-        "temperature": 0.0,
         "usd_per_mtok_in": 0.07,
         "usd_per_mtok_out": 0.15
       }
@@ -48,41 +40,12 @@
       "reference_tier": "gold",
       "references_sha256": "7cdd09fe0084ba29c616ab65fbfa08bf149e9006819641e9e91fe502ebe15a2b"
     },
-    "hash": null,
-    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/ner-few-nerd/adapter.py",
-        "sha256": "d147da55107305786c21b75ac87d748b9ea4fb3e57ebdff622aafecd826559b1"
-      },
-      "harness": {
-        "commit": "b3cc5d861cf2",
-        "dirty": true
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "datasets": "5.0.1",
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "scikit-learn": "1.9.1",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
+    "data_sha256": "cecb78ae587a106dae95259e45ea0cddd1c4619f465fc6a4dff35011c4706b47",
+    "deployment": {
+      "declared": {
         "alias": "eval-gemma-3-27b",
         "endpoint": "http://127.0.0.1:4001",
-        "id": "eval-gemma-3-27b",
         "id_source": "alias-unresolved",
-        "identity_declared": true,
         "labels": [
           "art",
           "building",
@@ -93,20 +56,84 @@
           "person",
           "product"
         ],
-        "max_tokens": 600,
         "normalizer_sha256": "a7c22b054099a72f91d772754dcd49b748fa739340ea4f38f2934eb18950a942",
         "parser_sha256": "101110f889f26b800af7eacbd887bab82aef1556713b869ab27d86f78a605181",
-        "prompt_sha256": "6c6c79fa47400fd9353d788503373df0958fcce007c845eeb71353b0a237483b",
+        "provider": "litellm"
+      },
+      "hosted": {
         "provider": "litellm",
+        "provider_id": null,
+        "route": null
+      },
+      "id": "eval-gemma-3-27b",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gemma-3-27b",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "9ba94c5a3292fb3f5522206f9a7351b5599b6643278d3f53a4b35c7a80ca8706",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/ner-few-nerd/adapter.py",
+        "sha256": "d147da55107305786c21b75ac87d748b9ea4fb3e57ebdff622aafecd826559b1"
+      },
+      "harness": {
+        "commit": "b3cc5d861cf2",
+        "dirty": true
+      }
+    },
+    "instrument_sha256": "e4ee62504d4173b243fbf8bffe949f8caf93698b3e3a175a76472b6348fe3522",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": {
+        "datasets": "5.0.1",
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "declared": {
+        "max_tokens": 600,
+        "prompt_sha256": "6c6c79fa47400fd9353d788503373df0958fcce007c845eeb71353b0a237483b",
         "reasoning": {
           "enabled": false
         },
-        "revision": null,
-        "revision_source": "unavailable",
         "temperature": 0.0
-      }
+      },
+      "max_tokens": 600,
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0
     },
-    "version": 4
+    "settings_sha256": "e2b8cf6f3e5f9d1e393b4013a011d2b3306ad9fbd4c5dd0a0c14ca69c7d86cec",
+    "version": 5
   },
   "goal": "entities_few_nerd",
   "metric_kinds": {

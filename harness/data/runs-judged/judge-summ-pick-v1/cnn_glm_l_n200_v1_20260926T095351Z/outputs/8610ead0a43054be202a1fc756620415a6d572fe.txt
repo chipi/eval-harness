@@ -1,0 +1,12 @@
+The user wants a 2-3 sentence news wire style summary of this article. The article is about a New York judge authorizing service of divorce papers via Facebook, and discusses the evolution of service of process law, comparing it to older methods like "nail and mail" and service by publication.
+
+Key points:
+- A New York judge authorized serving divorce papers entirely via Facebook
+- The article discusses how service of process law has evolved, with traditional methods like nail-and-mail and publication being unreliable
+- The author argues online service may be more practical in the digital age, since people are more reachable online than at physical addresses
+
+News wire style is terse. Let me draft:
+
+"A New York judge has authorized a husband to be served divorce papers entirely via Facebook private message. The ruling reflects the evolution of 'service of process' law, as traditional alternatives like nailing papers to a door or publishing legal notices have proven unreliable for evasive defendants. As people increasingly live online, digital service may offer better notification and tracking than physical methods."
+
+That's three sentences, terse, wireA New York judge has authorized a husband to be served divorce papers entirely via Facebook private message. The ruling reflects the evolution of "service of process" law, as traditional alternatives such as nailing papers to a door or publishing legal notices have proven unreliable for evasive defendants. As people increasingly live online, digital service may offer more reliable notification and tracking than physical methods.

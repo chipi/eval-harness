@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import tempfile
@@ -51,6 +52,50 @@ def project_root() -> Path:
     return next((d for d in (here, *here.parents) if (d / "data").is_dir()), here)
 
 
+#: Where a project's own ports start (ADR-0024): catalog-serve in 18000-18999, mcp --http in 19000-19999, the same
+#: offset in each, so a project's two servers read as a pair.
+PORT_BASE = {"catalog": 18000, "mcp": 19000}
+
+
+def port_offset(root: Path) -> int:
+    """Where in each port range a project's servers sit: from its root's resolved path, 0 to 999."""
+    return int(hashlib.sha256(str(root.resolve()).encode()).hexdigest(), 16) % 1000
+
+
+def project_port(kind: str, root: Path | None = None) -> int:
+    """A port of the project's own for a local server (ADR-0024): the offset of its root's path in the kind's
+    range, so the same project gets the same URL every time and two projects do not take one port; the next free
+    one when another program holds it."""
+    base = PORT_BASE[kind]
+    off = port_offset(root or project_root())
+    for k in range(1000):
+        port = base + (off + k) % 1000
+        with socket.socket() as s:
+            # As the servers bind (HTTPServer's allow_reuse_address): a port a stopped server left in TIME_WAIT
+            # is still the project's; one another program listens on is not.
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind(("127.0.0.1", port))
+            except OSError:
+                continue
+            return port
+    raise SystemExit(f"no free port in {base}-{base + 999}: pass --port N")
+
+
+def stray_home() -> str:
+    """A warning when EVAL_HOME names one project and the folder you are in belongs to another (ADR-0024): a
+    shell left pointing at a project would otherwise send every command there without a word; "" otherwise."""
+    home = os.environ.get("EVAL_HOME", "").strip()
+    if not home:
+        return ""
+    here = Path.cwd().resolve()
+    mine = next((d for d in (here, *here.parents) if (d / "data").is_dir()), None)
+    target = Path(home).expanduser().resolve()
+    if mine is None or mine == target:
+        return ""
+    return f"note: EVAL_HOME is {target}, so this command acts on that project, not on {mine} where you are"
+
+
 def how(evh: str, make: str) -> str:
     """The command a hint should name: `evh …` when the harness runs as the installed tool,
     the Makefile target in a checkout. A pinned project has no Makefile, so a `make …` hint
@@ -63,7 +108,7 @@ def load_dotenv(path: Path | None = None) -> int:
 
     Loaded when a harness command starts (below), so keys are never exported by hand and
     never pasted into a command that lands in shell history. An already-exported variable
-    WINS — so `ANTHROPIC_API_KEY=... make experiment-run` overrides the file for one call
+    WINS — so `ANTHROPIC_API_KEY=... make run` overrides the file for one call
     without editing it.
 
     Create `.env` in the project with the keys your providers read (`evh env-check` lists
@@ -147,10 +192,14 @@ def _paths() -> dict[str, Path]:
         "GOALS": root / Path(goals_override).expanduser() if goals_override else data / "goals",
         # Field sets (ADR-0003): one <fieldset_id>.yaml each, declaring the fields items may carry.
         "FIELDS": data / "fields",
-        # Experiment rounds (ADR-0004), optional: data/rounds/<goal_id>/<round_id>.yaml.
+        # Eval rounds (ADR-0004), optional: data/rounds/<goal_id>/<round_id>.yaml.
         "ROUNDS": data / "rounds",
         # Items fetched from a source_url, by their sha256. Derived and gitignored, like materialized/.
         "ITEM_CACHE": root / ".cache" / "items",
+        # Captures from production systems (RFC-019): data/captures/<capture_id>/.
+        "CAPTURES": data / "captures",
+        # Label sets (RFC-023): data/labels/<dataset>/<set>/, what is right for an item and who said it.
+        "LABELS": data / "labels",
     }
 
 
@@ -169,6 +218,8 @@ GOALS: Path
 FIELDS: Path
 ROUNDS: Path
 ITEM_CACHE: Path
+CAPTURES: Path
+LABELS: Path
 
 
 def __getattr__(name: str) -> Path:
@@ -203,6 +254,53 @@ class CostCapExceeded(RuntimeError):
     stops the bill the moment the cap is hit. Callers catch it and write
     whatever they have, so a capped run still yields a usable partial report.
     """
+
+
+def ignored_by_git(path: Path) -> bool:
+    """Whether git ignores `path` (a runs directory, say): runs written there are not committed, and a
+    published catalog, which copies only what git tracks, will not show them. False outside a checkout."""
+    import subprocess  # noqa: PLC0415
+
+    # A run's metrics file, not the directory: the re-allow blocks admit `<dir>/<run>/metrics.json`
+    # under a denied `data/runs-*/`, so only that path answers the question. Absolute, because `-C`
+    # moves git's working directory and a relative probe would then name some other file.
+    probe = Path(path).resolve() / "_probe_run" / "metrics.json"
+    anchor = next((p for p in probe.parents if p.exists()), Path.cwd())
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(anchor), "check-ignore", "-q", str(probe)], capture_output=True, timeout=10
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return r.returncode == 0
+
+
+#: Directory names that are throwaway by convention (.gitignore denies them by glob): writing there is the point.
+THROWAWAY_RUNS = ("runs-smoke", "runs-tune")
+
+
+def warn_if_ignored(runs_dir: Path, data_dir: Path | None = None) -> None:
+    """Say, loudly, when runs are about to land where they will not be kept or read: a directory git ignores, or
+    one outside the project's data (`data_dir`, default the project's). Silent for the throwaway directories
+    (runs-smoke*, runs-tune*), where not keeping them is the intent."""
+    runs_dir = Path(runs_dir)
+    if runs_dir.name.startswith(THROWAWAY_RUNS):
+        return
+    where = Path(data_dir) if data_dir else _paths()["DATA"]
+    outside = not runs_dir.resolve().is_relative_to(where.resolve())
+    if not outside and not ignored_by_git(runs_dir):
+        return
+    why = (
+        f"is outside the project's data ({where}): no catalog, goal or validate reads it"
+        if outside
+        else "is ignored by git: its runs are not committed, so no clone, CI run or catalog (this one included) has them"
+    )
+    print(
+        f"  WARNING: {runs_dir} {why}. Measured runs go in data/runs (the default: leave EVAL_RUNS_DIR unset). "
+        "A derived set (re-scored, re-judged) keeps the measured runs' config_ids, so it needs its own "
+        "data/runs-<name> directory, re-allowed in .gitignore beside the others under '--- re-allowed'. Throwaway "
+        "passes go in data/runs-smoke*."
+    )
 
 
 def now() -> str:
@@ -380,7 +478,7 @@ def load_dataset(dataset_id: str) -> dict[str, Any]:
 def dataset_item_ids(dataset_id: str) -> set:
     """The item ids a dataset freezes, read from its dataset file.
 
-    Commands that exclude a dev slice (`--exclude-dataset`) used to glob
+    Commands that exclude a pilot slice (`--exclude-dataset`) used to glob
     `data/sources/<id>/*.txt` instead: empty for an item that is not a .txt file, for a
     dataset built from a manifest, and for a project whose sources live elsewhere, and
     "nothing excluded" was then reported as if it were true."""
@@ -397,6 +495,41 @@ def item_selection(exclude_dataset: str | None, items_file: Path | None) -> tupl
     the only ids to use (None: no restriction)."""
     drop = dataset_item_ids(exclude_dataset) if exclude_dataset else set()
     return drop, (read_item_ids(items_file) if items_file else None)
+
+
+#: What a run scored against a label set records as its reference_id: "labels/<dataset>/<set>" (RFC-023), and as its
+#: tier, so it is never read as gold or silver.
+LABELS_PREFIX = "labels/"
+LABELS_TIER = "labels"
+
+
+def scored_against_dir(reference_id: str | None) -> Path | None:
+    """Where what a run is scored against lives: a label set ("labels/<dataset>/<set>", under data/labels) or a
+    reference ("<tier>/<name>", under data/references); None when it is scored against nothing."""
+    if not reference_id:
+        return None
+    if reference_id.startswith(LABELS_PREFIX):
+        return _paths()["LABELS"] / reference_id[len(LABELS_PREFIX) :]
+    return _paths()["REFERENCES"] / reference_id
+
+
+def labels_reference(spec: str, dataset_id: str) -> str:
+    """The reference_id a run scored against labels records, from `SET` or `DATASET/SET`; refused when the set is on
+    another dataset (its item ids are that dataset's) or does not exist."""
+    set_ds, _, name = spec.rpartition("/")
+    set_ds = set_ds or dataset_id
+    if set_ds != dataset_id:
+        die(
+            f"--labels {spec}: a set on {set_ds}, not {dataset_id}. Scoring reads labels by this dataset's item ids: "
+            f"promote them (evh reference-promote --dataset-id {dataset_id} --labels {spec} …) or label this dataset"
+        )
+    rid = f"{LABELS_PREFIX}{dataset_id}/{name}"
+    d = scored_against_dir(rid)
+    if d is None or not (d / "labels.json").is_file():
+        die(
+            f"--labels {spec}: no label set at data/labels/{dataset_id}/{name} (evh labels --dataset-id {dataset_id})"
+        )
+    return rid
 
 
 def item_path(dataset_id: str, item_id: str) -> Path | None:
@@ -462,10 +595,20 @@ def load_module(path: Path, name: str) -> Any:
     runs, because a module-level @dataclass resolves its own module through sys.modules and an
     unregistered one makes that None. ModuleNotLoadable when there is no spec for the file;
     anything the module raises while running propagates."""
+    import importlib.machinery  # noqa: PLC0415
     import importlib.util  # noqa: PLC0415
     import sys  # noqa: PLC0415
 
-    spec = importlib.util.spec_from_file_location(name, path)
+    class _FromSource(importlib.machinery.SourceFileLoader):
+        # Compiled from the source every time, never from __pycache__: a .pyc is trusted while the source's
+        # mtime (whole seconds) and size match, so a scorer edited within the second to a same-length value
+        # (BONUS = 0.0 -> 0.5) ran its old code while the run recorded the new code's hash (RFC-022).
+        def get_code(self, fullname):
+            del fullname  # the loader passes it; the path is all this needs
+            return compile(self.get_data(self.path), self.path, "exec", dont_inherit=True)
+
+    loader = _FromSource(name, str(path)) if str(path).endswith(".py") else None
+    spec = importlib.util.spec_from_file_location(name, path, loader=loader)
     if spec is None or spec.loader is None:
         raise ModuleNotLoadable(f"cannot load {path}")
     mod = importlib.util.module_from_spec(spec)
@@ -491,8 +634,8 @@ def reference_texts(root: Path, dataset_id: str, tier: str = "gold") -> list[Pat
     if not files and (root / "manifest.json").is_file():
         die(
             f"the {tier} references for {dataset_id} are not on this machine: {root} holds their "
-            "checksums only (manifest.json). Fetch the dataset first, as the experiment's README and "
-            "docs/REPRODUCE.md say (`make data EXP=<experiment>`, or the example's fetch.py)."
+            "checksums only (manifest.json). Fetch the dataset first, as the eval's README and "
+            "docs/REPRODUCE.md say (`make data EXP=<eval>`, or the example's fetch.py)."
         )
     return files
 
@@ -559,7 +702,7 @@ DESCRIPTIVE_KEYS = ("output_words", "output_chars", "lines", "chars", "n_items",
 
 #: Per-item columns a run records that are bookkeeping, not a measurement: judge_score marks
 #: whether each judge shares the judged arm's model family (`self_family_<judge>`), and
-#: experiment-run whether an item was replayed by --resume (`resumed`, whose mean is the share
+#: evh run whether an item was replayed by --resume (`resumed`, whose mean is the share
 #: replayed). They stay in the record; no table, menu or spread lists them as metrics.
 BOOKKEEPING_PREFIXES = ("self_family_", "resumed")
 

@@ -1,0 +1,14 @@
+# nemotron-3.5-bolt:e4b-q4_K_M, the GGUF build (the e4b tag names the same layers) (Nemotron, smallest tier: about 4B effective), self-hosted with Ollama 0.40.13 on MacBook Pro: Apple M4 Pro, 48 GB unified (Metal).
+# The same weights run on each machine that fits them; arms differ only in the model and where it runs.
+config_id: triage_local_mac_nemotron_35_bolt_e4b_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: "nemotron-3.5-bolt:e4b-q4_K_M"
+  url: http://127.0.0.1:11435/v1/chat/completions
+  call_timeout_s: 600
+  machine: mac
+  usd_per_mtok_in: 0
+  usd_per_mtok_out: 0

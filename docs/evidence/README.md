@@ -68,6 +68,6 @@ per-expert scores (`model_annotations.aligned.jsonl`, MIT; its sha256 is in the 
 records one expert's Kendall τ against the mean of the other two, and every SummEval arm's τ
 against the same two-expert references, so that a judge's agreement can be read against a
 human's (REPORT_SUMMEVAL §3.7). The script refuses to write it unless the experts' means
-reproduce the experiment's gold on all 100 articles and every arm's committed outputs
+reproduce the eval's gold on all 100 articles and every arm's committed outputs
 re-score to their committed τ; `check_report_claims.py` checks the report against it.
 

@@ -9,7 +9,7 @@ commands from the repository root.
 | **0 · verify** | every number in every report, recomputed from the committed predictions | a clone | $0, ~20 min |
 | **1 · data** | the public data still matches what was measured, byte for byte | network | $0, minutes |
 | **2 · local** | rerun every local model and baseline on your own CPU | disk for models | $0, CPU hours |
-| **3 · hosted** | rerun the hosted LLMs (24 per experiment, 12 on SciFact) | one OpenRouter key | what `make plan` says, ≈ $0.58–$7.03 per experiment as billed when measured; prices move |
+| **3 · hosted** | rerun the hosted LLMs (24 per eval, 12 on SciFact) | one OpenRouter key | what `make plan` says, ≈ $0.58–$7.03 per eval as billed when measured; prices move |
 | **4 · extend** | measure a model of your own against the whole committed field | a config file | your model |
 
 You need `git`, `make`, Python ≥ 3.11 and [uv](https://docs.astral.sh/uv/) (`curl -LsSf
@@ -40,13 +40,13 @@ that is what the next levels are for.
 ## 1 · Data — is it still the same data? ($0)
 
 ```bash
-make data EXP=scifact             # or any experiment from `make list`
+make data EXP=scifact             # or any eval from `make list`
 ```
 
 Creates the example's environment, downloads its slice of the public benchmark from the
 Hugging Face datasets API (no corpus is committed — licences), and hashes every item
 against the committed dataset file. A mismatch stops here: a rerun on different bytes
-would be a different experiment wearing the same name.
+would be a different eval wearing the same name.
 
 ## 2 · Local — rerun the free arms ($0)
 
@@ -57,7 +57,7 @@ make compare   EXP=scifact
 ```
 
 `LEVEL=baselines` runs only the floors (seconds); `ARMS=bm25,e5_base` picks arms by name.
-Reruns go to `harness/data/runs-repro/<experiment>/`, which is gitignored and never
+Reruns go to `harness/data/runs-repro/<eval>/`, which is gitignored and never
 mixed with the committed runs — those stay the record.
 
 Model weights download from Hugging Face on first use, at the revision the committed run
@@ -105,7 +105,7 @@ it has, and prints a `--resume` line so nothing is paid for twice.
 **What to expect.** Not the same digits. A hosted model is not deterministic even at
 temperature 0; OpenRouter may route the request to a different provider than it did; and
 a model can be updated or retired under the same id. So the card asks the question the
-reports actually make claims about: **does every separation and every non-separation still hold?** It
+reports actually make claims about: **does every significant difference, and every difference that is not significant, still hold?** It
 substitutes your reruns for the committed runs and re-tests the leader against the same
 family, with the same Holm correction. Per arm it also reports whether your rerun is
 distinguishable from the committed one, whether the upstream model id changed, and which
@@ -113,7 +113,7 @@ provider served it.
 
 ## 4 · Extend — your model against the field
 
-Copy any hosted config in the experiment's `configs/` directory, give it a new
+Copy any hosted config in the eval's `configs/` directory, give it a new
 `config_id` (keep the prefix and suffix, e.g. `sf_mymodel_n200_v1`), and set `model:` to
 any OpenRouter id (`vendor/model`). Then:
 
@@ -123,13 +123,13 @@ make compare   EXP=scifact
 ```
 
 The card ranks your arm in the committed field and tests it against every committed arm,
-Holm-corrected — so "better than X" means *separated from* X, not *scored above* it. For a
+Holm-corrected — so "better than X" means *significantly better than* X, not *scored above* it. For a
 system that is not an OpenAI-compatible endpoint, write an adapter instead:
 [INTEGRATION](../harness/docs/INTEGRATION.md) is the four-function contract.
 
 ## The replication card
 
-`make compare` writes `harness/data/runs-repro/<experiment>/REPLICATION.md`:
+`make compare` writes `harness/data/runs-repro/<eval>/REPLICATION.md`:
 
 | column | meaning |
 |---|---|
@@ -139,7 +139,7 @@ system that is not an OpenAI-compatible endpoint, write an adapter instead:
 | upstream | for a hosted arm, whether the model id behind the alias changed |
 | status | `exact` · `consistent` (hosted, not distinguishable) · `within noise, not exact` (local) · `DIFFERS` |
 
-Then the verdicts: how many arms are separated from the leader and how many are not, in the
+Then the verdicts: how many arms differ significantly from the leader and how many do not, in the
 committed record and with your reruns substituted in, and any arm that moved. `make
 compare` exits non-zero when a verdict moved or an arm differs.
 

@@ -1,0 +1,10 @@
+You will be shown a news article and {n} numbered summaries of it. Decide which of the two is the better summary: the one a careful reader would rate higher overall on four qualities, each judged against the article:
+
+- coherence: the collective quality of all sentences. A good summary is well-structured and well-organised, building from sentence to sentence into a coherent body of information about the topic, not a heap of related facts.
+- consistency: factual alignment with the article. A consistent summary contains only statements that are entailed by the article; penalise any hallucinated or contradicted fact.
+- fluency: the quality of the individual sentences: grammatical, free of formatting problems, capitalisation errors and obvious mistakes, and easy to read.
+- relevance: selection of the important content from the article. A relevant summary includes only the important information and contains no redundancy or excess detail.
+
+Compare the two with each other; they may share mistakes. If they are equally good, say so. Begin your reply with a JSON object with one key, "better": 1 if summary 1 is better, 2 if summary 2 is better, or "tie", for example:
+{"better": 2}
+Write nothing before the JSON object and nothing after it.

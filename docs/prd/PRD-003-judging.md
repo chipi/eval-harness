@@ -1,10 +1,10 @@
 # PRD-003: Re-measuring with a validated LLM judge
 
-- **Status**: Implemented (0.3.0)
+- **Status**: Implemented (0.3.0); judging modes (FR5) in 0.6.0
 - **Authors**: Marko Dragoljevic
 - **Related RFC**: [RFC-005](../rfc/RFC-005-judge-scorers.md) (the judging pass, technically)
 - **Related ADR**: [ADR-0001](../adr/ADR-0001-judge-scorers.md)
-- **Related PRDs**: [PRD-001](PRD-001-experiments-and-comparison.md), [PRD-002](PRD-002-references.md)
+- **Related PRDs**: [PRD-001](PRD-001-evals-and-comparison.md), [PRD-002](PRD-002-references.md)
 
 ## Summary
 
@@ -19,9 +19,9 @@ rerun costs $0.
 
 ## Background & Context
 
-In this repository, the summarisation experiment ranked 29 arms by its own overlap metric, and
-the SummEval experiment then showed that metric agrees with human experts far less than the
-best LLM judges do. One experiment had validated a better instrument for another. The full
+In this repository, the summarisation eval ranked 29 arms by its own overlap metric, and
+the SummEval eval then showed that metric agrees with human experts far less than the
+best LLM judges do. One eval had validated a better instrument for another. The full
 reasoning, and what the first uses found, are in [RFC-005](../rfc/RFC-005-judge-scorers.md);
 how to run it is in [Runbook §12](../../harness/docs/RUNBOOK.md#12-re-measure-with-a-validated-judge)
 and step 10 of the [GUIDE](../GUIDE.md).
@@ -37,8 +37,8 @@ and step 10 of the [GUIDE](../GUIDE.md).
 
 ## Non-Goals
 
-- A judged score never replaces an experiment's primary metric by itself: that is a recorded
-  decision ([Concepts](../../harness/docs/CONCEPTS.md#re-measuring-a-frozen-experiment)).
+- A judged score never replaces an eval's primary metric by itself: that is a recorded
+  decision ([Concepts](../../harness/docs/CONCEPTS.md#re-measuring-a-frozen-eval)).
 - The gate checks that a validation exists and is current, not that it transfers to the
   user's outputs.
 - Not the older judge **panel** (`evh judge`), which narrows finalists on a cheap metric and
@@ -96,6 +96,23 @@ and step 10 of the [GUIDE](../GUIDE.md).
   reference-scored numbers are never ranked together
   ([UXS-001](../uxs/UXS-001-catalog.md)).
 
+### FR5: What a judge is asked (0.6.0)
+
+[RFC-005](../rfc/RFC-005-judge-scorers.md), "Judging modes".
+
+- **FR5.1**: A scorer's `mode` says what its judges are asked: `grade` (the default: each output scored per
+  dimension on the scale), `pick` (the best of every arm's output for an item, in one call) or `pairwise` (the
+  better of two, for every pair of arms on every item).
+- **FR5.2**: A judge is validated in the mode it is used: the scorer's `validation.mode` must be its `mode`, or
+  the scorer is refused. A pick scorer whose `outputs_per_call` cannot hold every arm, and a pairwise one whose
+  `outputs_per_call` is not 2, are refused.
+- **FR5.3**: Pick and pairwise project `won` per arm per item (judged runs' primary `judge_won`), read by goals,
+  rounds, `inspect` and the sheet as `judge_score` is; the pass reports each arm's win rate and Bradley-Terry
+  strength with an interval, and the position and noise checks as the share of verdicts that held.
+- **FR5.4**: The SummEval example validates judges in each mode as arms (`top1` for pick, `pair_agreement` for
+  pairwise), with a random arm as the floor; an adapter may name an arm's primary metric by its params
+  (`primary_metric(params)`), so each arm is ranked on its mode's metric.
+
 ## Success Criteria
 
 - GUIDE step 10 runs offline and free with fake judges, through the refusal, the dry run, the
@@ -105,5 +122,5 @@ and step 10 of the [GUIDE](../GUIDE.md).
 ## Related Documents
 
 - [RFC-005](../rfc/RFC-005-judge-scorers.md), [ADR-0001](../adr/ADR-0001-judge-scorers.md).
-- The [judging page](https://evals.humancopilot.eu/experiments/judging.html): what judging found
+- The [judging page](https://evals.humancopilot.eu/evals/judging.html): what judging found
   in this repository.

@@ -28,9 +28,16 @@ Each check exists because its absence let a real defect through somewhere:
                      not exist, or carrying fields without one; a value of an undeclared field,
                      of the wrong type or outside its choices; a required field with no value;
                      a fields_sha256 that is not the hash of the fields
-  V16 references     a reference whose manifest breaks its schema, whose texts differ from the
-                     checksums it records, or whose committed texts are missing (a manifest
-                     with no texts and `redistributed: false` is a reference fetched elsewhere)
+  V16 references     a reference with no manifest (ADR-0022: made only by promoting labels), whose
+                     manifest breaks its schema, whose texts differ from the checksums it
+                     records, or whose committed texts are missing (a manifest with no texts and
+                     `redistributed: false` is a reference fetched elsewhere)
+  V17 captures       a capture whose record files are partly missing, or whose records differ from the
+                     ids and sha256 it recorded (RFC-019)
+  V18 model records  a model record not named by its id, an alias claimed twice, a deployment id used
+                     twice, or a config naming a record or deployment that does not exist (RFC-020)
+  V19 label sets     a label set whose labels differ from the sha256 it recorded, whose label files are
+                     missing, whose dataset does not exist, or whose count is not its labels' (RFC-023)
 
 Exit 1 on any failure, so it can gate.
 
@@ -54,6 +61,7 @@ from pathlib import Path
 
 from evaluation_harness._common import (
     BASELINES,
+    CAPTURES,
     CONFIGS,
     DATA,
     DATASETS,
@@ -63,8 +71,10 @@ from evaluation_harness._common import (
     ROOT,
     RUNS,
     SCHEMAS,
+    THROWAWAY_RUNS,
     data_rel,
     goal_policy,
+    ignored_by_git,
     load_goals,
     load_module,
     lower_is_better,
@@ -84,7 +94,7 @@ problems: list[str] = []
 notes: list[str] = []
 
 #: The bundled demo: `demo_v1` on `smoke_v1` is run many times by `make demo` and by the
-#: self-test, smoke_v1 is not an experiment, and no report cites it. A project adds its own
+#: self-test, smoke_v1 is not an eval, and no report cites it. A project adds its own
 #: exceptions in `duplicate_ok`, each one a deliberate, justified edit.
 _DEMO_DUPLICATE = ("smoke_v1", "demo_v1")
 
@@ -100,11 +110,17 @@ def policy() -> dict:
 
 
 def committed_dirs() -> list[str]:
-    """The run directories that back the project's claims: `committed` in validate.json,
-    else every git-tracked <data>/runs* directory holding a run."""
-    declared = policy().get("committed")
-    if declared:
-        return list(declared)
+    """The run directories that back the project's claims: those `committed` in validate.json names (with
+    their floors), then every other git-tracked <data>/runs* directory holding a run. A directory someone
+    re-allowed in .gitignore is checked whether or not they also listed it here: a re-scored set's
+    runs were committed and never checked because the list was not edited too."""
+    declared = list(policy().get("committed") or [])
+    return declared + [d for d in tracked_run_dirs() if d not in declared]
+
+
+def tracked_run_dirs() -> list[str]:
+    """Every git-tracked <data>/runs* directory holding a run's metrics.json, and each
+    runs-rescored/<scorer>/<source> (RFC-022)."""
     tracked = subprocess.run(
         ["git", "ls-files", data_rel(DATA)], cwd=ROOT, capture_output=True, text=True
     ).stdout.split()
@@ -112,7 +128,9 @@ def committed_dirs() -> list[str]:
     names = set()
     for f in tracked:
         parts = f[len(prefix) :].split("/") if f.startswith(prefix) else []
-        if len(parts) >= 3 and parts[0].startswith("runs") and parts[2] == "metrics.json":
+        if len(parts) >= 5 and parts[0] == "runs-rescored" and parts[4] == "metrics.json":
+            names.add("/".join(parts[:3]))
+        elif len(parts) >= 3 and parts[0].startswith("runs") and parts[2] == "metrics.json":
             names.add(parts[0])
     return sorted(names)
 
@@ -145,8 +163,9 @@ def v1_schemas() -> None:
         ((DATA / "scorers").glob("*.yaml"), "scorer.schema.json"),
         ((DATA / "judging-sets").glob("*.json"), "judging-set.schema.json"),
         ((DATA / "judge-verdicts").glob("*/*/*/*.json"), "verdict.schema.json"),
-        ([DATA / "models.yaml"], "models.schema.json"),
+        ((DATA / "models").glob("*.yaml"), "model.schema.json"),
         ((DATA / "profiles").glob("*.json"), "profile.schema.json"),
+        (CAPTURES.glob("*/capture.json"), "capture.schema.json"),
     ]
     bad = 0
     n = 0
@@ -441,7 +460,7 @@ def v7_committed_runs_are_readable() -> None:
     `compare_runs` and every report script key off `metrics.json` and skip a directory
     without one.
 
-    The cause was two rules interacting. Those dev runs are excluded BY NAME because
+    The cause was two rules interacting. Those pilot runs are excluded BY NAME because
     they record an absolute username path; the exclusion named `metrics.json` and
     `predictions.jsonl`, and a later force-include of `outputs/**` reached underneath
     it. All of the copyright exposure and none of the reproducibility benefit.
@@ -468,7 +487,7 @@ def v7_committed_runs_are_readable() -> None:
     check(
         "V7 every committed run has metrics.json",
         not bad,
-        f"{len(bad)} run(s) stopped before they finished (outputs, no metrics.json): resume each with experiment-run --resume <run_id>, or delete it",
+        f"{len(bad)} run(s) stopped before they finished (outputs, no metrics.json): resume each with evh run --resume <run_id>, or delete it",
     )
 
 
@@ -618,7 +637,7 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
     #: The callable returns either a str (one hash) or a dict of named hashes, and
     #: EVERY key of that dict is compared -- naming one key here is how the parser went
     #: unwatched. `data/runs` predates `scorer_sha256` and states `parser_sha256` alone,
-    #: under `system_under_test.model`, so that is what is compared there.
+    #: under the fingerprint's `deployment.declared`, so that is what is compared there.
     #: Declared per project in validate.json `scorer_sources`; a project without them has
     #: nothing for V10 to compare.
     SOURCES = [
@@ -882,7 +901,7 @@ def validation_record_problems(validation_dir: Path) -> list[str]:
 def scorer_problems(scorers_dir: Path) -> list[str]:
     """Every scorer yaml loads and is structurally sound. Not the paid gate: whether a
     scorer is VALIDATED is judge_score's `validation_problems`, and an unvalidated
-    experiment scorer is allowed to exist."""
+    eval scorer is allowed to exist."""
     from evaluation_harness import judge_score as js  # noqa: PLC0415
 
     bad = []
@@ -1129,10 +1148,15 @@ def v16_references() -> None:
         texts = any(d.glob("*.txt"))
         if not mf_path.is_file():
             if texts:
+                # ADR-0022: a reference set is made only by promoting labels, with a record of where it came from.
                 unchecked += 1
-                notes.append(
-                    f"V16: {rel} has no manifest, so a rebuilt copy cannot be checked "
-                    f"(evh reference-manifest --reference-id {rel} --source <how it is built>)"
+                tier, name = rel.split("/", 1)
+                bad.append(
+                    f"{rel}: no manifest, so nothing says where it came from. Make it a promoted reference where it "
+                    f"is: evh label-import data/references/{rel} --dataset-id {name} --set {name}_hand --by WHO, then "
+                    f"evh reference-promote --dataset-id {name} --labels {name}_hand --tier {tier} --reason … --by WHO "
+                    f"(the promotion adopts the folder: its texts are the labels'). For gold a script builds: "
+                    f"evh reference-manifest --reference-id {rel} --source <how it is built>"
                 )
             continue
         mf = read_json(mf_path)
@@ -1159,6 +1183,191 @@ def v16_references() -> None:
         not bad,
         f"{len(bad)} problem(s)",
     )
+
+
+def v17_captures() -> None:
+    """V17: every capture's records are the ones it recorded (RFC-019): each record file present,
+    its id the one listed, and its hash the capture's `sha256` (the whole record, outcome included,
+    so an edited outcome is caught as surely as an edited body). A capture with no record file at all
+    is not fetched yet (records are content a project may keep out of git, restored by its fetcher):
+    named, not failed. One with some records and not others fails."""
+    from evaluation_harness._importers import record_sha256  # noqa: PLC0415
+
+    caps = sorted(CAPTURES.glob("*/capture.json")) if CAPTURES.is_dir() else []
+    if not caps:
+        print("  --   V17 captures (none)")
+        return
+    bad: list[str] = []
+    n = 0
+    unfetched = []
+    for c in caps:
+        doc = read_json(c)
+        if doc.get("records") and not any((c.parent / "records").glob("*.json")):
+            unfetched.append(c.parent.name)
+            continue
+        for entry in doc.get("records") or []:
+            n += 1
+            rf = c.parent / "records" / f"{entry.get('id')}.json"
+            if not rf.is_file():
+                bad.append(f"{c.parent.name}/{entry.get('id')}: record file missing")
+                continue
+            rec = read_json(rf)
+            if rec.get("id") != entry.get("id") or record_sha256(rec) != entry.get("sha256"):
+                bad.append(f"{c.parent.name}/{entry.get('id')}: does not match the hash the capture recorded")
+        if doc.get("n_records") != len(doc.get("records") or []):
+            bad.append(
+                f"{c.parent.name}: n_records {doc.get('n_records')} but {len(doc.get('records') or [])} listed"
+            )
+    for b in bad[:10]:
+        print(f"       {b}")
+    if unfetched:
+        print(f"  --   V17 captures not fetched here (no record files): {', '.join(unfetched)}")
+    check(
+        f"V17 captures — {len(caps) - len(unfetched)} capture(s), {n} record(s) match their hashes",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
+def v19_label_sets() -> None:
+    """V19: every label set's labels are the ones it recorded (RFC-023): each label file present, its sha256 the
+    set's, the set's dataset a dataset of the project, and its n_items the count. A set is never edited, so any
+    difference is an edit or a loss."""
+    import hashlib  # noqa: PLC0415
+
+    from evaluation_harness import _common  # noqa: PLC0415
+
+    found = sorted(_common.LABELS.glob("*/*/labels.json")) if _common.LABELS.is_dir() else []
+    if not found:
+        print("  --   V19 label sets (none)")
+        return
+    bad: list[str] = []
+    n = 0
+    for lj in found:
+        doc = read_json(lj)
+        rel = f"{lj.parent.parent.name}/{lj.parent.name}"
+        if not (_common.DATASETS / f"{doc.get('dataset_id')}.json").is_file():
+            bad.append(f"{rel}: its dataset {doc.get('dataset_id')!r} does not exist")
+        items = doc.get("items") or {}
+        if doc.get("n_items") != len(items):
+            bad.append(f"{rel}: n_items {doc.get('n_items')} but {len(items)} listed")
+        kept_out = doc.get("redistributed") is False and not any(lj.parent.glob("*.txt"))
+        for iid, row in items.items():
+            n += 1
+            tf = lj.parent / f"{iid}.txt"
+            if (
+                kept_out
+            ):  # its texts are kept out of git (labels.json says how to rebuild them): nothing to check
+                continue
+            if not tf.is_file():
+                bad.append(f"{rel}/{iid}: label file missing")
+            elif hashlib.sha256(tf.read_bytes()).hexdigest() != row.get("sha256"):
+                bad.append(f"{rel}/{iid}: differs from the sha256 the set recorded (a set is never edited)")
+    for b in bad[:10]:
+        print(f"       {b}")
+    check(
+        f"V19 label sets — {len(found)} set(s), {n} label(s) match their hashes",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
+def config_files() -> list[Path]:
+    """The arm configs V18 reads: data/configs, and the globs `configs` in validate.json names (relative to
+    the project root), for a project that keeps its arms elsewhere (this repository's are in examples/)."""
+    found = set(CONFIGS.glob("*.yaml"))
+    for pattern in policy().get("configs") or []:
+        found |= {f for f in ROOT.glob(pattern) if f.is_file()}
+    return sorted(found)
+
+
+def v18_model_records() -> None:
+    """V18: the model records (RFC-020, optional; their schema is V1's): each file named by its id, no
+    alias claimed by two records, a deployment id used twice in one record, every config that names a record
+    (`model_record:`) naming one that exists, and `deployment:` only beside a `model_record:` that has it. The
+    configs are config_files(): data/configs and the globs validate.json's `configs` adds."""
+    import yaml  # noqa: PLC0415
+    from evaluation_harness import _models  # noqa: PLC0415
+
+    recs = {r.get("model_id") for r in _models.load(DATA)}
+    if not recs and not (DATA / "models").is_dir():
+        print("  --   V18 model records (none)")
+        return
+    bad = _models.problems(DATA)
+    for c in config_files():
+        cfg = yaml.safe_load(c.read_text(encoding="utf-8")) or {}
+        rid = cfg.get("model_record") if isinstance(cfg, dict) else None
+        dep = cfg.get("deployment") if isinstance(cfg, dict) else None
+        if dep and not rid:
+            bad.append(f"{c.name}: deployment {dep!r} is used without a model_record")
+        if rid and rid not in recs:
+            bad.append(f"{c.name}: model_record {rid!r} has no data/models/{rid}.yaml")
+        elif rid:
+            rec = _models.find(DATA, rid) or {}
+            if dep and _models.deployment_of(rec, dep) is None:
+                bad.append(f"{c.name}: deployment {dep!r} is not one of {rid}'s deployments")
+                continue
+            params = _models.resolve(cfg, DATA).get("params") or {}
+            if cfg.get("config_id") not in (rec.get("smokes") or {}):
+                notes.append(f"{c.name}: never smoked (evh arm-smoke --config {c.name})")
+            if (rec.get("capabilities") or {}).get("reasons") and "max_tokens" not in params:
+                notes.append(f"{c.name}: {rid} reasons, and no max_tokens bounds its replies")
+    for r in _models.load(DATA):
+        by_tag: dict[str, set[str]] = {}
+        for b in r.get("deployments") or []:
+            if b.get("tag") and b.get("digest"):
+                by_tag.setdefault(b["tag"], set()).add(b["digest"][:12])
+        for tag, digests in by_tag.items():
+            if len(digests) > 1:
+                notes.append(
+                    f"model {r.get('model_id')}: {tag} is a different build on different machines ({', '.join(sorted(digests))})"
+                )
+    for b in bad[:10]:
+        print(f"       {b}")
+    check(f"V18 model records — {len(recs)} record(s)", not bad, f"{len(bad)} problem(s)")
+
+
+def note_uncommitted_runs() -> None:
+    """A note, never a failure: finished runs in a runs directory git ignores. They are on this disk only;
+    a fresh clone, CI and the published catalog never see them, so a result kept there splits the record
+    in two (the self-hosted triage runs sat in data/runs-local that way). Throwaway names are skipped."""
+    for d in sorted(DATA.glob("runs*")):
+        if not d.is_dir() or d.name.startswith(THROWAWAY_RUNS) or not ignored_by_git(d):
+            continue
+        n = sum(1 for r in d.iterdir() if (r / "metrics.json").is_file())
+        if n:
+            notes.append(
+                f"{data_rel(d)}: {n} finished run(s) that git ignores, so they are not committed and no catalog "
+                "shows them. Move measured runs to data/runs, or re-allow a derived set in .gitignore."
+            )
+
+
+def note_round_scorers() -> None:
+    """A note, never a failure (RFC-022): a round whose arms through one adapter were scored by more than one version
+    of it may compare them on different rules (the adapter's code is the scorer's identity, so an edit to its calling
+    code alone counts too: score-preview says whether the scores move). Arms with different adapters (a hosted LLM's
+    and a fine-tune's) are not that: each adapter is checked against itself."""
+    from evaluation_harness import _rounds  # noqa: PLC0415
+    from evaluation_harness import rescore as rs  # noqa: PLC0415
+
+    for rnd in _rounds.load_rounds():
+        by_adapter: dict[str, dict[str, set[str]]] = {}
+        for d, m in rs.measured_runs(rnd["dataset_id"], set(_rounds.arms_of(rnd))):
+            scorer, _from = rs.latest_scoring(d, m)
+            by_adapter.setdefault(m.get("adapter") or "?", {}).setdefault(scorer or "?", set()).add(
+                m["config_id"]
+            )
+        for adapter, seen in sorted(by_adapter.items()):
+            if len(seen) > 1:
+                parts = ", ".join(
+                    f"{k} ({len(v)} arm(s))" for k, v in sorted(seen.items(), key=lambda kv: -len(kv[1]))
+                )
+                notes.append(
+                    f"round {rnd['round_id']} of {rnd['goal']}: its arms through {adapter} were scored by {len(seen)} "
+                    f"versions of that adapter, {parts}. An edit to its calling code alone makes a new version too: "
+                    f"evh score-preview --goal {rnd['goal']} --round {rnd['round_id']} shows whether re-scoring moves "
+                    f'anything; evh rescore --goal {rnd["goal"]} --round {rnd["round_id"]} --why "..." puts them on one'
+                )
 
 
 def main() -> int:
@@ -1188,6 +1397,11 @@ def main() -> int:
         v14_goals,
         v15_item_fields,
         v16_references,
+        v17_captures,
+        v18_model_records,
+        v19_label_sets,
+        note_uncommitted_runs,
+        note_round_scorers,
     ):
         fn()
     for n in notes:

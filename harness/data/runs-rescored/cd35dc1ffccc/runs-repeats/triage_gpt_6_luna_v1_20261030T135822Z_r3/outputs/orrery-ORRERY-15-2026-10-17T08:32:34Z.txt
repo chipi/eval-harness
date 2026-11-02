@@ -1,0 +1,1 @@
+{"_probe_trace": [], "disposition": "cleanup", "marker": "orrery-staging-isolation-probe", "model_disposition": "cleanup", "reason": "This is an explicitly named staging isolation probe, indicating synthetic test activity rather than a production error."}

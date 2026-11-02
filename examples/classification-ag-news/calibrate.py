@@ -4,7 +4,7 @@ on the FULL 7,600-item test set, against the accuracy each model card publishes.
 
     python examples/classification-ag-news/calibrate.py
 
-The experiment scores 200 items (50 per class from the first 1,600 test rows). This runs
+The eval scores 200 items (50 per class from the first 1,600 test rows). This runs
 the same adapter, with each arm's own config, on all 7,600 and compares with the card:
 
     bert_mini     mrm8488/bert-mini-finetuned-age_news-classification   0.9339 (HF-verified, test)

@@ -1,13 +1,13 @@
 """Shared plumbing for each example's `calibrate.py`: check the instrument against a
 published number, on the protocol that number was measured on.
 
-Every experiment here scores a 200-ish item slice. A calibration row runs ONE known model
+Every eval here scores a 200-ish item slice. A calibration row runs ONE known model
 or baseline on the benchmark's full test set (or a large seeded sample of it, stated as
 such) and compares the result with the value its authors published. It answers the
-question no separation test can: is this instrument, on this data, measuring what the
+question no significance test can: is this instrument, on this data, measuring what the
 field measures? The summarisation slice's CNN-only bias went unnoticed until one existed.
 
-Stdlib only. Results land in docs/evidence/calibration/<experiment>.json, which
+Stdlib only. Results land in docs/evidence/calibration/<eval>.json, which
 check_report_claims reads, so a calibration figure quoted in a report cannot drift.
 """
 
@@ -53,9 +53,9 @@ def verdict(measured: float, ci95: float, published: float, tolerance: float) ->
     return "consistent" if abs(measured - published) <= ci95 + tolerance else "differs"
 
 
-def write(experiment: str, result: dict) -> Path:
+def write(eval_slug: str, result: dict) -> Path:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    path = OUT_DIR / f"{experiment}.json"
+    path = OUT_DIR / f"{eval_slug}.json"
     path.write_text(json.dumps(result, indent=2) + "\n")
     return path
 

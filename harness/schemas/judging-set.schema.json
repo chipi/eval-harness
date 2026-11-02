@@ -42,6 +42,7 @@
     },
     "prompt_sha256_at_16": {"$ref": "#/$defs/sha256"},
     "task": {"type": "object", "description": "The scorer's declared task, when it has one."},
+    "mode": {"enum": ["pick", "pairwise"], "description": "The scorer's mode when it is not grade (grade sets carry no mode, so their hash is unchanged). A pick item has one block of every arm; a pairwise item has one block per pair of arms, and its position blocks are the pairs swapped."},
     "items": {
       "type": "array",
       "minItems": 1,

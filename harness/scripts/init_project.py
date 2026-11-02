@@ -41,6 +41,9 @@ IGNORE = """\
 .cache/
 data/materialized/
 __pycache__/
+# throwaway passes (smoke runs, sweeps): never results, never in the catalog
+data/runs-smoke*/
+data/runs-tune*/
 """
 
 

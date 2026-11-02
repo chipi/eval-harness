@@ -118,7 +118,7 @@ def main() -> int:
             "REFUSED — this run does not identify its build.\n"
             "  A baseline whose build is unknown cannot be attributed to any code.\n"
             "  Declare it and re-run:  EVAL_BUILD_REF=<version|digest|sha> "
-            + how("evh experiment-run ...", "make experiment-run ...")
+            + how("evh run ...", "make run ...")
             + "\n"
             "  (--allow-unknown-build overrides, but then the baseline names no system.)"
         )

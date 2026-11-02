@@ -1,0 +1,17 @@
+# gemma4:12b set up normally, self-hosted with Ollama 0.40.13 on MacBook Pro: Apple M4 Pro, 48 GB unified (Metal):
+# reasoning off (reasoning_effort none: with the server's default it reasoned in a loop and never answered),
+# each reply capped at 1024 tokens (a decision is 64-414), each call limited to 30 s (a normal call is 4-18 s).
+config_id: triage_local_mac_gemma4_12b_noreason_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: "gemma4:12b"
+  url: http://127.0.0.1:11435/v1/chat/completions
+  reasoning_effort: none
+  max_tokens: 1024
+  call_timeout_s: 30
+  machine: mac
+  usd_per_mtok_in: 0
+  usd_per_mtok_out: 0

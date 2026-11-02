@@ -17,7 +17,8 @@ WHAT AN ITEM IS
 WHY THE REFERENCE IS GOLD
   Each summary's score on each dimension is the mean of three EXPERT annotators
   (Fabbri et al. 2021, "SummEval: Re-evaluating Summarization Evaluation"). People, not a
-  model, so `references/gold/`. The crowd ratings are not used: the paper shows they
+  model: the reason they were promoted at gold (the manifest records it; ADR-0022). The crowd ratings
+  are not used: the paper shows they
   disagree with the experts.
 
 LICENCE

@@ -524,7 +524,7 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
     # RESOLVE THE ALIAS. `params["model"]` is a name WE invented on our own proxy
     # ("eval-opus-5"). Recording it as the system under test meant the fingerprint stayed
     # byte-identical if the alias were re-pointed at a different upstream model -- the
-    # experiment could change completely and every provenance check would still pass.
+    # eval could change completely and every provenance check would still pass.
     # That is the exact failure a fingerprint exists to prevent, so the upstream id is
     # resolved from the proxy and recorded as the identity; the alias is kept beside it
     # because it is what the config asked for.

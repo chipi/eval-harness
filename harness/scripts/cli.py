@@ -43,15 +43,34 @@ COMMANDS = {
         "dataset_items.py",
         "a dataset's profile: its shape, then one row per item (--item for one)",
     ),
-    "reference-create": ("reference_create.py", "make references from a run (--from-run) or with a config"),
+    "reference-promote": (
+        "reference_promote.py",
+        "promote a label set's labels to a reference set, at a tier, with a reason",
+    ),
     "reference-manifest": (
         "reference_manifest.py",
-        "the checksummed manifest of a reference a fetch script built",
+        "the checksummed manifest of a reference set a fetch script built",
     ),
-    "experiment-run": ("experiment_run.py", "run one arm over a dataset (--dry-run to cost it)"),
+    "run": ("run.py", "run one arm over a dataset (--dry-run to cost it)"),
+    "arm-smoke": (
+        "arm_smoke.py",
+        "smoke an arm on a few items before its full run: checks, projection, flags",
+    ),
+    "model-onboard": (
+        "model_onboard.py",
+        "onboard a model once: probe a deployment, write what was found into its record",
+    ),
+    "fingerprint-migrate": (
+        "fingerprint_migrate.py",
+        "migrate the committed runs' fingerprints to version 5, once (idempotent)",
+    ),
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
     "runs-list": ("list_runs.py", "list runs (or baselines)"),
-    "rescore": ("rescore.py", "re-score stored outputs against references, for $0"),
+    "rescore": ("rescore.py", "re-score stored outputs, a round's or a dataset's, for $0"),
+    "score-preview": (
+        "score_preview.py",
+        "what the scorer in this tree would move in a goal's decision; writes nothing",
+    ),
     "judge": (
         "judge_panel.py",
         "the judge panel: promote finalists on a cheap metric, judge their stored outputs",
@@ -60,15 +79,71 @@ COMMANDS = {
         "judge_score.py",
         "re-measure frozen outputs with a validated LLM judge (--dry-run first)",
     ),
-    "silver-calibrate": ("silver_calibrate.py", "how far silver references drift from gold"),
+    "silver-calibrate": ("silver_calibrate.py", "how far silver reference sets drift from gold"),
     "cost-report": ("cost_report.py", "billed cost per arm, with projections"),
     "leaderboard": ("leaderboard.py", "rank arms, with Friedman/Nemenyi before any order"),
     "pair-test": ("pair_test.py", "paired permutation test, two arms"),
     "family-test": ("family_test.py", "one arm against a declared family, Holm-corrected"),
     "bootstrap-test": ("bootstrap_test.py", "bootstrap intervals for corpus-level metrics"),
-    "holdout": ("holdout_significance.py", "tune on a dev slice, confirm on the rest"),
+    "holdout": ("holdout_significance.py", "tune on a pilot slice, confirm on the rest"),
     "rank-stability": ("rank_stability.py", "how many items a ranking needs"),
     "import-run": ("import_run.py", "per-item scores from another tool, as a run the tests can read"),
+    "importer-check": (
+        "importer_check.py",
+        "check an importer: its records are well-formed, ids unique, two reads the same",
+    ),
+    "capture": ("capture.py", "keep a production system's records as a capture (data/captures/)"),
+    "dataset-split": (
+        "dataset_split.py",
+        "split a dataset into <id>_validation and <id>_test, stable across versions",
+    ),
+    "capture-scrub": (
+        "capture_scrub.py",
+        "run the project's own scrubber over a capture's records, and record it",
+    ),
+    "captures": ("view_captures.py", "every capture, or one: what was read, when, the datasets made from it"),
+    "labels": (
+        "view_labels.py",
+        "every label set, or a dataset's: source, coverage, guideline, how often two agree",
+    ),
+    "label-sheet": (
+        "label_sheet.py",
+        "a sheet of a dataset's items to label, with what production or an arm decided",
+    ),
+    "label-import": ("label_import.py", "a filled label sheet as a person's label set"),
+    "sheet-import": (
+        "sheet_import.py",
+        "a sheet filled elsewhere, read back: labels as a label set, picks or scores as judged runs",
+    ),
+    "label-from-run": (
+        "label_from_run.py",
+        "a finished run's outputs as a model's label set (calls nothing)",
+    ),
+    "label-from-capture": (
+        "label_from_capture.py",
+        "rules over a capture's recorded outcomes as a rule label set",
+    ),
+    "pick": ("pick.py", "pick production items for the next version of governed datasets, or drop a pick"),
+    "picks": (
+        "view_picks.py",
+        "the picks waiting: per target, where each came from, its labels, tags and note",
+    ),
+    "dataset-extend": (
+        "dataset_extend.py",
+        "the next version of a dataset: its items and the picks you choose",
+    ),
+    "deploy-sheet": (
+        "deploy_sheet.py",
+        "what production must match to run a promoted arm, and whether a capture says it did",
+    ),
+    "arm-from-capture": (
+        "arm_from_capture.py",
+        "production's recorded decisions as an arm, scored like any (no call)",
+    ),
+    "dataset-from-capture": (
+        "dataset_from_capture.py",
+        "make a dataset version from a capture: choose records, freeze their bodies as items",
+    ),
     "run-compare": ("compare_runs.py", "diff two runs, fingerprint first"),
     "run-promote": ("promote_baseline.py", "promote a run to a baseline, with a reason"),
     "round-open": (
@@ -82,19 +157,26 @@ COMMANDS = {
         "view_overview.py",
         "the catalog's home page: goals at a glance, activity, spend, coverage, what was recorded",
     ),
-    "datasets": ("view_datasets.py", "every dataset, or one: its versions, references and arms"),
+    "datasets": ("view_datasets.py", "every dataset, or one: its versions, reference sets and arms"),
     "arms": ("view_arms.py", "every arm, or one: its metrics, runs, config, conditions and rounds"),
-    "references": ("view_references.py", "every reference, or one: who wrote it, what is scored against it"),
+    "models": (
+        "view_models.py",
+        "every model record, or one: its deployments, onboarding, settings history and arms",
+    ),
+    "references": (
+        "view_references.py",
+        "every reference set, or one: who wrote it, what is scored against it",
+    ),
     "metrics": ("view_metrics.py", "what each metric measures, or one in full with the arms recording it"),
     "goals": ("view_goals.py", "every goal, or one: its arms on each of its datasets"),
     "activity": (
         "view_activity.py",
         "the activity page: runs, spend and tokens by dataset, arm and kind, in a period",
     ),
-    "search": ("view_search.py", "the catalog's search: datasets, arms, references, metrics, goals"),
+    "search": ("view_search.py", "the catalog's search: datasets, arms, reference sets, metrics, goals"),
     "inspect": (
         "view_inspect.py",
-        "the inspector in the terminal: verdicts, conditions, a breakdown, one item, the per-item table, the charts",
+        "the inspector in the terminal: verdicts, conditions, a breakdown, one item, the charts, the sheet of a dataset",
     ),
     "catalog": ("catalog_build.py", "build the catalog: static pages over the runs, by dataset"),
     "catalog-serve": ("catalog_serve.py", "serve the catalog and the run inspector on 127.0.0.1"),
@@ -139,6 +221,10 @@ def main(argv: list[str] | None = None) -> int:
     if name not in COMMANDS:
         print(f"evh: unknown command {name!r}\n\n{_usage()}", file=sys.stderr)
         return 2
+    from evaluation_harness._common import stray_home  # noqa: PLC0415
+
+    if note := stray_home():
+        print(note, file=sys.stderr)
     script = HERE / COMMANDS[name][0]
     sys.argv = [str(script), *rest]
     # The scripts' "next, run this" hints read it: `evh …` here, `make …` in a checkout.

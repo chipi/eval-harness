@@ -18,7 +18,7 @@ Pin it into your project, and start the project's folders:
 
 ```bash
 cd /path/to/your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.5.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.0#subdirectory=harness"
 evh init         # data/sources, data/configs, data/goals, data/fields, a .gitignore
 ```
 
@@ -98,11 +98,19 @@ adapter works before and after you have references. Return only what you can com
 reference then (an output's length, a format check), or `{}`: the run still records its outputs,
 cost and latency, and `evh rescore` scores them once references exist.
 
+When more than one answer is right for an item, its reference accepts each of them, written
+`{"accept": ["escalate", "file"]}`. Read a reference with `answers(reference)` (from
+`evaluation_harness.adapter`, beside `Result`): a list of one answer, or several. The bundled
+`score` keeps the best overlap with any of them; yours decides what "right" means against a set.
+
 **The shipped default is a placeholder.** Token-overlap F1 — enough to make the
 loop run and rank arms crudely, not enough to defend a decision. Replace it
 with what your domain actually rewards.
 
-Beside `score()`, say what your metrics are: `PRIMARY_METRIC` (the one that decides),
+Beside `score()`, say what your metrics are: `PRIMARY_METRIC` (the one that decides; an adapter whose arms
+measure different things, as a judge validated in several modes, may define `primary_metric(params)` instead:
+given an arm's `params` it names that arm's primary, which `run` and `rescore` record, and `PRIMARY_METRIC` is
+the fallback; the SummEval adapter's is `tau`, `top1` or `pair_agreement` by `params["mode"]`),
 `METRIC_DIRECTIONS` (a quality metric that improves going down, `{"wer": "lower"}`) and
 `METRIC_DESCRIPTIONS` (one sentence each, `{"rouge_l": "ROUGE-L F1 against the reference"}`,
 or `{"summary": "one line", "details": "how it is computed and read"}`). Every run records
@@ -111,6 +119,17 @@ is documentation: the catalog reads it from the adapter as it is today, over wha
 so describing a metric later needs no new run and moves no fingerprint (`evh rescore` refreshes
 the record too, for $0). One metric name is described once across a project, so adapters that
 share a name share its sentence.
+
+**Optional, for evaluating what production did** (RFC-023, [RUNBOOK §15b](RUNBOOK.md#15b-evaluating-what-production-did)),
+in the same file:
+
+| function | what it answers | read by |
+|---|---|---|
+| `decision(output)` | the decision in one output (a disposition, a label), without the reasons and traces around it | the sheet shows it per arm; with no `same`, two outputs agree when their decisions do |
+| `title(item)` | a line that names an item (an alert's name, a ticket's subject) | the sheet shows it as the item's start, else the item's own first characters |
+| `same(a, b)` | whether two outputs are one decision | agreement: `inspect --disagree`, the sheet's disagree and split, `label-sheet --items disagree` (default: the same decision, else the same text) |
+| `recorded_output(record)` | production's own decision, from a capture's record | `arm-from-capture` (else `--field`) |
+| `production_ran(record)` | what production ran for a record, under the keys a run's items report (`_meta`) | `deploy-sheet --capture` |
 
 ---
 
@@ -142,7 +161,7 @@ its bill (`usage.cost`), the run records the bill. Which provider does:
 
 A config holds `config_id`, `dataset_id`, `params`, and optionally `adapter` (a project with
 several tasks names one per arm, `adapter: adapters/ner.py`), `goal` (what the evaluation is
-for, `data/goals/<goal_id>.yaml`), `round` (an experiment round of that goal, `rN`) and
+for, `data/goals/<goal_id>.yaml`), `round` (an eval round of that goal, `rN`) and
 `format` (the output's shape, one of its goal's `output_contract` formats:
 [RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)). Any other key is refused by
 `evh validate` (V1).
@@ -170,21 +189,21 @@ credentials (`<VAR>`), so you can run judges on separate budgets or the same one
 Most projects do not have it. The sequence that works:
 
 1. **Run your best model as an arm**, usually an expensive one you would not run in
-   production, read its results, and make its outputs the reference:
+   production, read its results, take its outputs as a model's labels, and promote them:
    ```bash
-   evh experiment-run --config data/configs/frontier.yaml
-   evh reference-create --dataset-id my_v1 --from-run <that run_id>
+   evh run --config data/configs/frontier.yaml
+   evh label-from-run --run <that run_id> --set frontier_v1
+   evh reference-promote --dataset-id my_v1 --labels frontier_v1 --tier silver --reason "…" --by <you>
    ```
-   That writes **silver** — model-generated. It is not correct, it is
-   *consistent*, which is enough to rank other arms against it: the cheaper arms are measured
-   by how close they come to the expensive one. It calls nothing, and the reference names the
-   run it came from. (`--config data/configs/frontier.yaml` instead of `--from-run` authors it
-   in a pass of its own.)
+   Promoted as **silver**: a model's answers, not correct but *consistent*, which is enough to
+   rank other arms against it: the cheaper arms are measured by how close they come to the
+   expensive one. It calls nothing, and the labels name the run they came from.
 
-2. **Review a few by hand.** Where you agree with the output, you now have gold: copy the
-   items you would sign into `data/references/gold/<dataset_id>/<item_id>.txt`. Gold outranks
-   silver for every new run; `evh rescore --reference-id gold/<dataset_id>` re-scores the runs
-   you have, for $0.
+2. **Review a few by hand.** Label the items you would sign in a sheet (`evh label-sheet
+   --dataset-id <dataset_id> --items all --propose frontier_v1 --out sheet.csv`: `yes` takes the model's
+   answer), import it as a person's labels (`evh label-import`) and promote them at gold. Gold
+   outranks silver for every new run; `evh rescore --reference-id gold/<dataset_id>` re-scores
+   the runs you have, for $0.
 
 3. **Never let the distinction blur.** A run records which tier it scored
    against (`reference_tier` in its `metrics.json`). Silver-scored numbers are for
@@ -216,19 +235,22 @@ can extend later without re-authoring what you have.
 | re-measurement | stored outputs scored again for a new reference or scorer at $0, or by validated LLM judges, without re-running an arm |
 | a judge panel | when the cheap metric is biased and you need an LLM to adjudicate |
 | goals | what each evaluation is for, named on every config and checked by `evh validate` |
-| experiment rounds (optional) | round on round: what each round tried, what it kept and dropped and why, what it concluded ([tutorial 4](../../docs/tutorials/4-rounds-and-versions.md)) |
+| eval rounds (optional) | round on round: what each round tried, what it kept and dropped and why, what it concluded ([tutorial 4](../../docs/tutorials/4-rounds-and-versions.md)) |
 | item fields | the facts you know about each item (typed, declared once in a field set), checked by `evh validate`; items fetched from a pinned URL |
 | a catalog and an inspector | pages over your runs, and a local server that tests any arms against a baseline and shows outputs beside references; every view is also an `evh` command |
+| labels and references | what is right for an item and who said it (a person, a model, a rule), in sets that follow an item by its bytes; a reference set is only ever labels promoted on purpose, with a reason |
+| production, evaluated | what your system did, kept as a capture; its decisions scored as an arm against labels; the rows where it was wrong picked for the next version of a dataset you govern ([tutorial 6](../../docs/tutorials/6-datasets-from-production.md)); the deploy sheet says what production must match to run what you promoted |
 
 ---
 
 ## The catalog and the inspector
 
 `evh catalog` builds static pages over your runs: one per dataset and per goal,
-one per reference (who wrote it, from which run, every arm scored against it), and a metrics page
-(what each metric measures, which way is better, where it is recorded). Every arm's row says what
-it is scored against, and rows scored against silver, scored by a judge, or scored against the
-reference the arm wrote itself are tinted apart from those scored against gold.
+one per reference (the label set it was promoted from, by whom and why, every arm scored against it),
+the label sets and the captures, and a metrics page (what each metric measures, which way is better,
+where it is recorded). Every arm's row says what it is scored against, and rows scored against silver,
+by a judge, against a label set, or against the reference the arm wrote itself are tinted apart from
+those scored against gold.
 `evh catalog-serve` serves them with the run inspector on 127.0.0.1. Both only ask an
 **adapter** questions: which arms exist, what each scored per item, which way is better,
 which references exist, what one arm wrote for one item.
@@ -263,20 +285,23 @@ which references exist, what one arm wrote for one item.
   | more files the pages link (optional) | `served_dirs`: further directories under the project the inspector serves read-only, beside `data_dir` (a project's reports) |
   | what each metric measures (optional) | `metric_descriptions()`: `{metric: sentence}` or `{metric: {"summary": sentence, "details": explanation}}`; without it the metrics page describes only the harness's own metrics |
   | what a row is scored against (optional keys) | `describe(arm)`: `"reference"`, `"judge"`, `"wrote_reference"`; `references()`: `"items"`, `"author"`, `"from_run"`, `"model"`, `"created_at"` |
-  | what an arm was measured under (optional) | `conditions(arm)`: `{"machine.platform": …, "library.torch": …, "harness.version": …, "scorer.sha256": …, "data.items_sha256": …, "reference.sha256": …}`; the inspector lists what differs between the arms it compares, and warns when it is the scorer, the reference or, for latency, the machine |
+  | what an arm was measured under (optional) | `conditions(arm)`: `{"machine.platform": …, "library.torch": …, "deployment.machine": …, "harness.version": …, "scorer.sha256": …, "data.items_sha256": …, "reference.sha256": …}` (`machine.*` and `library.*` are the runner, where `evh` ran; `deployment.*` is where the system under test ran; both come from the run's fingerprint, v5); the inspector lists what differs between the arms it compares, and warns when it is the scorer, the reference or, for latency, the machine |
   | dataset versions (optional) | `datasets()`: every dataset id, run or not; `dataset_lineage(dataset)`: `{"dataset_id", "added", "removed", "changed"}` or None; the dataset pages link versions both ways; `dataset_created(dataset)`: when it was frozen (ISO), the day the home page counts it new (else its first run) |
   | what is inside a dataset (optional) | `dataset_profile(dataset)`: the profile `evh dataset-profile` writes (`schemas/profile.schema.json`: `dataset_id`, `items_sha256`, `items`, `references`, `rows`, and `source` when known), plus `"stale": True` when the items changed since; the dataset page's "what's inside" shows it. The harness's own adapter reads `data/profiles/<dataset>.json` |
   | rounds: a config's arm id (optional) | `arm_of(dataset, config_id)`: `evh rounds` and `inspect --round` use it; `runs/<dataset>/<config_id>` when absent |
-  | arm page: runs and details (optional) | `arm_runs(arm)`: `[{"run_id", "created_at", "items", "cost_usd", "derived"}]`; `arm_config(arm)`: `{"config_id", "params" (credentials removed), "adapter"}`; an arm page shows them when present |
+  | arm page: runs and details (optional) | `arm_runs(arm)`: `[{"run_id", "created_at", "items", "cost_usd", "derived"}]`; `arm_config(arm)`: `{"config_id", "params" (credentials removed), "adapter", "deployment" (the model-record deployment its config named, "" for none)}`; an arm page shows them when present |
   | spend in USD and tokens (optional) | `spend()`: `[{"at", "usd", "tokens", "kind": "arm"\|"judge", "dataset", "what", "arm"}]` (usd or tokens None when unknown; measured runs and judging per set and day; `arm`, optional, names a measured run's arm); the home page's spend, the activity page and the arms page's spend columns, and `evh overview` and `evh activity` use it |
-  | what each model's weights are (optional) | `model_facts()`: `{model: {"weights": "open" \| "proprietary", "licence": …}}`, keyed by the model a run records (`params.model`); the arms page's open-weights and proprietary filters and `evh arms --weights` read it. The harness's own adapter reads `data/models.yaml` (`schemas/models.schema.json`, validate V1); a model not listed is in neither |
+  | what each model's weights are (optional) | `model_facts()`: `{model: {"weights": "open" \| "proprietary", "licence": …}}`, keyed by the model a run records (`params.model`); the arms page's open-weights and proprietary filters and `evh arms --weights` read it. The harness's own adapter reads the model records, `data/models/<model_id>.yaml` (`schemas/model.schema.json`, validate V1: `aliases` are the ids runs record, `weights`, `licence`, and `deployments`, each place the model runs with its own onboarding); a model not listed is in neither |
   | metrics that need no reference (optional) | `reference_free(metric)`: True when the metric is measured off the bill or the clock, so arms scored against different references can still be compared on it; when absent, a metric whose name contains cost, latency or tokens |
+  | labels (optional, RFC-023) | `label_sets()`: every set, `{dataset, set, id, source, n_items, guideline, created_at, items}`; `label_coverage(dataset)`: the sets covering a dataset's items (by their sha256) and how often two agree; `item_labels(dataset, item)`: every label one item has, with its source; the Labels page, a dataset page's labels and the inspector's item view read them. `describe(arm)` may add `"labels_source"` (an arm scored against a label set) and `references()` `"promoted_from"`, `"reason"`, `"promoted_by"` |
+  | production (optional, RFC-019, RFC-023) | `captures()`: every capture, as `evh captures` lists them (the Captures page); `dataset_meta(dataset)`: its tags and where it came from (a capture, or the version it was derived from); `describe(arm)["recorded"]`: the capture a recorded arm read production's decisions from; `same_output(arm)`: whether two outputs are one decision (the adapter's `same(a, b)`), for agreement and the sheet |
+  | picks and the deploy sheet (optional, ADR-0023) | `picks_waiting(dataset)`: the picks naming a dataset as their target; `deploy_sheet(arm)`: what production must match to run a promoted arm, and what each capture says it ran |
   | the inspector's view kinds | `item_view` returns `{"kind": "text", "text"}`, `{"kind": "none", "note"}`, or a structured `insights` (`items` of `{text, grounded}`, `quotes`), `nodes` (`groups`) or `entities` (`items`); any may carry `info` |
 
   Every page and comparison is also a command that asks the same adapter the same questions:
   `evh datasets`, `evh references`, `evh metrics`, `evh goals`, `evh rounds`, `evh search` and
-  `evh inspect --runs …` (`--items`, `--analysis`, `--item`; with `--adapter` for a project
-  adapter not named in `config.yaml`). The
+  `evh inspect --runs …` (`--analysis`, `--item`) and `evh inspect --sheet --dataset-id … --runs …` (with
+  `--adapter` for a project adapter not named in `config.yaml`). The
   pages are a comfort; [tutorial 5](../../docs/tutorials/5-catalog-and-inspector.md#3-every-page-and-its-command)
   maps each page to its command.
 
@@ -319,8 +344,9 @@ which references exist, what one arm wrote for one item.
 ## For an agent: `evh mcp`
 
 `evh mcp` serves the project's read commands to an agent over MCP (the official SDK): the
-catalog's views (`overview`, `datasets`, `dataset-items`, `arms`, `goals`, `references`, `metrics`,
-`activity`, `search`), the inspector in the terminal (`inspect`), `rounds`, `runs-list` and
+catalog's views (`overview`, `datasets`, `dataset-items`, `arms`, `models`, `goals`, `references`, `metrics`,
+`activity`, `search`, `captures`, `labels`, `picks`, `deploy-sheet`), the inspector in the terminal (`inspect`, its
+sheet included, without the options that write a file: `--csv`, `--fill` and theirs), `rounds`, `runs-list` and
 `validate`. Each call runs the command as a person would, with `--json` where the command has it,
 so the agent sees the same numbers you do. No tool writes project data, spends or runs a model:
 running arms, promoting a baseline and closing a round stay your commands. (The one file a call
@@ -337,7 +363,7 @@ Any other MCP client takes the command `evh mcp --project /absolute/path/to/proj
 client starts it from its own directory, not your project's, so give `--project`; and it starts it
 with its own `PATH`, so if `evh` is in a virtualenv, give the full path to that `evh`.
 
-**This repository's experiments, from anywhere**: `https://evals.humancopilot.eu/mcp` serves the
+**This repository's evals, from anywhere**: `https://evals.humancopilot.eu/mcp` serves the
 six worked examples (Streamable HTTP, read-only, no sign-in; it answers what the site and the
 catalog publish, never an item's text):
 
@@ -365,12 +391,12 @@ evh mcp --http --bind 0.0.0.0 --port 8766 --allowed-host evals.team.example [--p
 ```
 
 `--allowed-host` is required beyond the loopback (the server checks the Host against DNS
-rebinding); `--public` leaves out the options that answer with an item's text, and the
-`validate` tool (12 tools); `--rate` (per
+rebinding); `--public` leaves out the options that answer with an item's text (an item, the sheet), and the
+`validate` tool (17 tools); `--rate` (per
 caller), `--rate-total` (everyone together), `--concurrent` and `--timeout` bound the load, and a
 caller has one call running at a time; `--client-header` names the header your proxy sets for the
 caller's address (trust it only if nothing else can reach the port); `--hooks FILE` adds your error reporting, tracing
-and metrics. 0.5.0 has no accounts: put it behind what the team already uses (a VPN, an
+and metrics. It has no accounts: put it behind what the team already uses (a VPN, an
 authenticating proxy). The goals' tests are kept in the project's `.cache/` so a call that shows
 them answers in seconds after the first.
 
@@ -379,7 +405,7 @@ them answers in seconds after the first.
 ## The first hour, concretely
 
 ```bash
-cd your-project && pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.5.0#subdirectory=harness"
+cd your-project && pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.0#subdirectory=harness"
 evh init
 
 cp some/real/items/* data/sources/            # your data
@@ -389,12 +415,13 @@ evh dataset-profile --dataset-id pilot_v1              # what is inside, for its
 
 $EDITOR adapter.py                            # call_system() -> your code
 git add -A && git commit -m "pilot_v1, adapter, arms"   # a run from a dirty tree cannot become a reference
-evh experiment-run --config data/configs/best_model.yaml
-evh reference-create --dataset-id pilot_v1 --from-run <that run_id>
-git add data/references && git commit -m "pilot_v1: silver from best_model"
+evh run --config data/configs/best_model.yaml
+evh label-from-run --run <that run_id> --set best_v1
+evh reference-promote --dataset-id pilot_v1 --labels best_v1 --tier silver --reason "…" --by <you>
+git add data/labels data/references && git commit -m "pilot_v1: silver, best_model's labels"
 
-evh experiment-run --config data/configs/arm_a.yaml --repeat 3   # + the noise floor
-evh experiment-run --config data/configs/arm_b.yaml
+evh run --config data/configs/arm_a.yaml --repeat 3   # + the noise floor
+evh run --config data/configs/arm_b.yaml
 evh run-compare --baseline <a> --candidate <b> --noise <the spread you just measured>
 ```
 

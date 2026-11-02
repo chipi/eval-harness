@@ -1,0 +1,11 @@
+# kimi-k3.1-pro: Moonshot's newest.
+# Arms differ only in the model: the fleet's prompt, probes and gates are the same for every arm.
+config_id: triage_kimi_k31_pro_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: eval-kimi-k31-pro
+  usd_per_mtok_in: 2.0
+  usd_per_mtok_out: 10.0

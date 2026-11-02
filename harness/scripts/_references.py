@@ -22,11 +22,10 @@ from evaluation_harness._common import write_json
 
 #: What each tier is, said wherever a number scored against it is shown.
 CAVEATS = {
-    "gold": "GOLD: human-authored or human-reviewed.",
+    "gold": "GOLD: the answers a decision rests on.",
     "silver": (
-        "SILVER: model-generated. It encodes that model's opinion, including its mistakes. Good "
-        "enough to RANK arms against each other; not the same thing as correct. Say so wherever a "
-        "number scored against it is published."
+        "SILVER: consistent, not a claim that any arm is right. Good enough to RANK arms against each other; "
+        "say so wherever a number scored against it is published."
     ),
 }
 
@@ -36,9 +35,13 @@ def item_hashes(ref_dir: Path) -> dict[str, str]:
     return {f.stem: hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(ref_dir.glob("*.txt"))}
 
 
-def write_manifest(ref_dir: Path, tier: str, dataset_id: str, **extra: Any) -> dict[str, Any]:
-    """Write the manifest of the reference texts in `ref_dir`, with `extra` fields (author,
-    model, cost, source, redistributed, created_at); return it."""
+def write_manifest(
+    ref_dir: Path, tier: str, dataset_id: str, caveat: str | None = None, **extra: Any
+) -> dict[str, Any]:
+    """Write the manifest of the reference texts in `ref_dir`, with `extra` fields (the promotion: promoted_from,
+    reason, promoted_by; for a model's labels authored_by, model, from_run; source, redistributed, created_at);
+    return it. `caveat` replaces the tier's own words: reference-promote and reference-manifest name where the
+    labels came from."""
     hashes = item_hashes(ref_dir)
     doc = {
         "dataset_id": dataset_id,
@@ -46,7 +49,7 @@ def write_manifest(ref_dir: Path, tier: str, dataset_id: str, **extra: Any) -> d
         **extra,
         "n_items": len(hashes),
         "items_sha256": hashes,
-        "caveat": CAVEATS[tier],
+        "caveat": caveat or CAVEATS[tier],
     }
     write_json(ref_dir / "manifest.json", doc)
     return doc

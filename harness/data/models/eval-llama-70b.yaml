@@ -1,0 +1,6 @@
+model_id: eval-llama-70b
+kind: llm
+aliases:
+- eval-llama-70b
+weights: open
+licence: Llama 3.3, gated

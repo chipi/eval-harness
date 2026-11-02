@@ -1,7 +1,7 @@
 # Tutorial 3 · A frontier model's run as the reference, gold, and judging
 
-In [getting started](../GUIDE.md) the `author` arm ran first and its run became the silver
-reference that every other arm was scored against. In a real project the author is a
+In [getting started](../GUIDE.md) the `author` arm ran first, and its outputs, as a model's labels,
+were promoted to the silver reference set every other arm was scored against. In a real project the author is a
 frontier model: too expensive to run on every item in production, cheap enough to run once.
 You pay for one pass, and the cheaper arms are measured by how close they come to it.
 
@@ -35,39 +35,46 @@ goal: brief_summary
 
 <!-- guide-check: skip -->
 ```bash
-evh experiment-run --config data/configs/briefs_opus.yaml --dry-run     # price it first
-evh experiment-run --config data/configs/briefs_opus.yaml
-evh reference-create --dataset-id briefs_v1 --from-run <the briefs_opus_v1 run_id>
-git add data/references && git commit -qm "silver/briefs_v1 from the frontier arm's run"
+evh run --config data/configs/briefs_opus.yaml --dry-run     # price it first
+evh run --config data/configs/briefs_opus.yaml
+evh label-from-run --run <the briefs_opus_v1 run_id> --set opus_v1
+evh reference-promote --dataset-id briefs_v1 --labels opus_v1 --tier silver \
+    --reason "The frontier arm's summaries rank the cheaper arms." --by me
+git add data/labels data/references && git commit -qm "silver/briefs_v1: the frontier arm's labels, promoted"
 ```
 
-What `reference-create --from-run` refuses, and why:
+What `label-from-run` refuses, and why:
 
 - **An empty output, or one that stopped at `max_tokens`.** In the scenario's first run a
   frontier arm at `max_tokens: 80` wrote 19 of 20 summaries cut off mid-sentence; frozen as the
   reference, every arm would have been graded against fragments. That is why the config above
   has room to finish. If yours stops at the cap, raise `max_tokens` in a new `config_id`
   (`briefs_opus_v2`) and run again (`--allow-cut-off` is for outputs that end at the cap by
-  design). `experiment-run`
+  design). `evh run`
   already warns, naming the items, when outputs stop at the cap.
 - **A run from a dirty tree, or of an unknown build** (as `run-promote` does), an unfinished run,
-  a derived one (rescored or judged), or a run on another dataset.
-- **`--tier gold`.** Gold is what a person wrote or checked, never a model's run.
+  or a derived one (rescored or judged).
 
-Commit each reference before the next run: an uncommitted reference makes every run after it
-dirty. `--config` instead of `--from-run` authors the reference in a pass of its own, one call per
-item, when there is no run to read first; its outputs may then differ from the run you looked at.
+The tier is yours to choose when you promote, with the reason; the reference records that its labels
+came from a model, whatever the tier. Commit each reference before the next run: an uncommitted
+reference makes every run after it dirty. A corpus whose texts may not be redistributed keeps them
+out of git: `label-from-run --not-redistributed` records the command that rebuilds them, and the
+reference promoted from it is kept out too.
 
 ## 2. Make it golden
 
-A gold set is plain files: one `<item_id>.txt` per item, under
-`data/references/gold/<dataset_id>/`. Write them yourself, or review silver ones and keep those
-you would sign. The kit has six, written by hand:
+Gold is a person's labels, promoted at gold. Write them in a sheet (`evh label-sheet`, then
+`evh label-import`), or as plain files, one `<item_id>.txt` per item; review silver ones and keep
+those you would sign. The kit has six, written by hand:
 
 ```bash
-mkdir -p data/references/gold/tickets_v1
-cp tutorial/gold/*.txt data/references/gold/tickets_v1/
-git add data/references/gold/tickets_v1 && git commit -qm "tickets_v1: gold references"
+evh label-import tutorial/gold --dataset-id tickets_v1 --set owner_gold --by owner
+evh reference-promote --dataset-id tickets_v1 --labels owner_gold --tier gold \
+    --reason "The owner's own summaries are what the arms are judged by." --by owner
+git add data/labels data/references && git commit -qm "tickets_v1: gold, the owner's labels"
+```
+```text
+data/labels/tickets_v1/owner_gold: 6 label(s) from 6 file(s), source person · owner
 ```
 
 From now on every new run on `tickets_v1` is scored against gold automatically (gold always
@@ -127,7 +134,7 @@ none does). Arms are named without their `_vN` suffix: an arm's versions are poo
 rank by silver, check it against a gold slice. How big a gold set must be is a measurement too:
 `evh rank-stability` shows how many items it takes before the order stops moving.
 
-## 4. Is the winner separated, on gold?
+## 4. Is the winner significantly better, on gold?
 
 ```bash
 evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_ \
@@ -144,12 +151,12 @@ evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_ 
     tickets_lead2_noisy_v1     +0.0146    4/6      0.1562   0.0250   --
     tickets_author_v1          +0.0122    4/6      0.3125   0.0500   --
 
-    separated from 0 of 3 opponents; ahead on the point estimate against 3 of 3
+    significantly different from 0 of 3 opponents; ahead on the point estimate against 3 of 3
 ```
 
-Ahead of every arm on the point estimate, separated from none; against `lead2_noisy` the delta is
+Ahead of every arm on the point estimate, significantly different from none; against `lead2_noisy` the delta is
 smaller than that arm's own spread, and its sign can change from one run to the next. That is the
-honest state of this experiment: a bigger gold set is the next step, not a conclusion.
+honest state of this eval: a bigger gold set is the next step, not a conclusion.
 
 **Golden datasets, the rules:**
 
@@ -157,10 +164,10 @@ honest state of this experiment: a bigger gold set is the next step, not a concl
   fingerprint hashes them. Fix a gold answer → a new set, or a rescore that records the change.
 - **Never mix tiers in one number.** A run is scored against gold *or* silver, and says which.
   If you publish a silver-scored number, say so.
-- **Keep a dev slice apart.** Tune prompts on a small nested dataset (`tickets_dev_v1`) and
+- **Keep a pilot slice apart.** Tune prompts on a small nested dataset (`tickets_pilot_v1`) and
   report on the rest: `evh holdout` re-tests excluding it.
 - **Disputed gold is a finding, not noise.** When most strong systems disagree with a gold
-  answer, read it: in this repository's AG News and DBpedia experiments, one reader adjudicated
+  answer, read it: in this repository's AG News and DBpedia evals, one reader adjudicated
   those items by topic, shown the hosted answer, and found the gold wrong on all 20 (AG News 17,
   DBpedia 3). The dataset's own gold stays primary; the adjudicated one sits beside it
   ([RUNBOOK §11](../../harness/docs/RUNBOOK.md#11-adjudicate-disputed-gold)).
@@ -286,7 +293,7 @@ detectable arm effect.
 **When a real judge's scores disagree with your primary metric**, nothing changes until you
 decide it should. The primary metric stays what it was; making a judge's score primary is a
 recorded decision, with the old score kept beside it. Why the gate exists:
-[CONCEPTS](../../harness/docs/CONCEPTS.md#re-measuring-a-frozen-experiment) and
+[CONCEPTS](../../harness/docs/CONCEPTS.md#re-measuring-a-frozen-eval) and
 [ADR-0001](../adr/ADR-0001-judge-scorers.md).
 
 ## 6. Real judges

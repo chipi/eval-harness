@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "delete me", "model_disposition": "cleanup", "reason": "Signal originates from a test/synthetic probe marked with the explicit phrase \"delete me\", indicating it is noise intended for cleanup."}

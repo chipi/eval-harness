@@ -1,5 +1,5 @@
 {
-  "caveat": "GOLD: human-authored or human-reviewed.",
+  "caveat": "GOLD: promoted as gold from the labels its script fetches (person · the dataset's authors): the answers a decision rests on.",
   "created_at": "2026-10-25T13:14:25Z",
   "dataset_id": "ag_news_200",
   "items_sha256": {
@@ -205,6 +205,16 @@
     "f82b4a28bb3628e2965c8f0e0a44e9c71423804f": "78ae647dc5544d227130a0682a51e30bc7777fbb6d8a8f17007463a3ecd1d524"
   },
   "n_items": 200,
+  "promoted_from": {
+    "dataset_id": "ag_news_200",
+    "labels": null,
+    "source": {
+      "by": "the dataset's authors",
+      "kind": "person",
+      "via": "examples/classification-ag-news/fetch.py"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "redistributed": false,
   "source": "examples/classification-ag-news/fetch.py",
   "tier": "gold"

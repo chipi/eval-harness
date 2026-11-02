@@ -5,12 +5,13 @@
 - **Related PRDs**: [PRD-004](../prd/PRD-004-catalog-and-inspector.md) (catalog and inspector),
   [PRD-005](../prd/PRD-005-goals-and-rounds.md) (goals and rounds), [PRD-006](../prd/PRD-006-datasets-versions-fields.md) (versions, fields),
   [PRD-002](../prd/PRD-002-references.md) (references)
-- **Related RFCs**: [RFC-003](../rfc/RFC-003-catalog-adapter.md) (the adapter and the build), [RFC-004](../rfc/RFC-004-experiment-rounds.md) (rounds)
+- **Related RFCs**: [RFC-003](../rfc/RFC-003-catalog-adapter.md) (the adapter and the build), [RFC-004](../rfc/RFC-004-eval-rounds.md) (rounds)
 - **Related UX specs**: [UXS-002](UXS-002-inspector.md) (the inspector, linked from every page),
   [UXS-003](UXS-003-cli-and-onboarding.md) (the same views as commands)
 - **Implementation paths**: `harness/scripts/catalog_build.py` (pages),
   `harness/scripts/catalog_periods.py` (the periods, the tiles' trends, each row's period
   numbers), `harness/scripts/catalog_arms.py` (the arms page),
+  `harness/scripts/catalog_models.py` (the models page and a page per model),
   `harness/catalog_assets/style.css` and `catalog.css` (tokens and components),
   `harness/catalog_assets/catalog.js` (theme, search, filter, sort, paging),
   `period.js` (the period on every page), `overview.js` (the home tiles and the charts),
@@ -20,8 +21,8 @@
 
 `evh catalog` builds static pages over a project's runs into `.build/catalog/`: a home page with
 the whole project at a glance, an activity page, a datasets page and a page per dataset, an arms
-and configs page and a page per arm, a goals page and a page per goal, a references page and a
-page per reference, a metrics page and a page per metric, and the shell of the inspector. Every
+and configs page and a page per arm, a goals page and a page per goal, a reference sets page and a
+page per reference set, a metrics page and a page per metric, and the shell of the inspector. Every
 page is read-only and carries counts and means only, so the pages can be published. The pages a
 home tile opens carry the same period and trends as the tile ([the period](#the-period-every-listing-page)).
 This spec describes the pages as built at 0.5.0 (0.5.0 added each dataset page's "what's inside" and the footer's commands), checked by building the catalog on this
@@ -40,7 +41,7 @@ project with gold, silver and an open round.
   an MCP tool for an agent (`evh mcp`, [RFC-018](../rfc/RFC-018-read-only-mcp-server.md)), read-only
   the same way.
 - **Dense, quiet, both themes.** Tables carry the data; colour marks meaning, never decoration:
-  a subject (goals, data, experiments, work and spend), a row's tint, a series. Never red or
+  a subject (goals, data, arms, work and spend), a row's tint, a series. Never red or
   green for a direction: a count that went up is neither good nor bad.
 - **A tile is a door.** Whatever a home tile counts, the page it opens shows in more detail, for
   the same period.
@@ -81,7 +82,7 @@ every surface).
 | `--baseline` | `#6f6d66` | `#85837b` | silver tint, the baseline in charts |
 | `--proprietary` | `#3987e5` | `#2a78d6` | judged tint |
 | `--local` | `#d95926` | `#eb6834` | author tint, "retired" label |
-| `--open` | `#199e70` | `#1baf7a` | "separated: better" chip border |
+| `--open` | `#199e70` | `#1baf7a` | "significant: better" chip border |
 | `--s1` … `--s8` | categorical | categorical | one colour per arm in the inspector's charts |
 
 **Typography:** `--text` Inter (system fallbacks), `--display` Inter Tight for headings, `--mono`
@@ -94,14 +95,17 @@ tables 15px.
 
 - **Header bar:** the brand (the icon and the product's name, `--brand`, "eval catalog" by
   default, linking to the overview); the global search ("Search ( / )"); the nav, by the
-  subjects of the home tiles: **Overview**, **Goals**, **Data ▾** (Datasets, References),
-  **Experiments ▾** (Arms, Configs, Metrics), **Activity**, **Inspector**; the theme toggle. A
+  subjects of the home tiles: **Overview**, **Goals**, **Data ▾** (Datasets, Captures, Labels, Reference sets),
+  **Arms ▾** (Arms, Configs, Models, Metrics), **Activity**, **Inspector**; the theme toggle. A
   group opens a short list under its name and closes on a click elsewhere; the group a page
   belongs to is underlined like a current page. On a phone the nav is a ☰ menu at the left of
   the bar listing every page, a group's under its name; the name gives way to the icon, and the
   search is a round button beside the theme toggle that opens the search box on a row below the
   bar. The bar has the site's and the docs' geometry: 56 px high, 36 px round buttons
   (34 px under 375 px), 8 px apart, the same icons.
+- **The project** (0.6.0, ADR-0024): a local catalog (the default name, no `--link`) shows its project's folder
+  name after the brand, muted ("eval catalog · triage"), and in the tab title, so two catalogs open side by side
+  are never confused; `catalog-serve` prints its port and the project. A deployment's header is unchanged.
 - **Switcher (with `--link`):** the parts of the publication the catalog belongs to, in the
   order given, e.g. **Harness · Catalog · Docs**, the catalog marked, after the brand; the brand
   then opens the first part. The same control heads the deployment's site and docs, ☰ at the
@@ -170,6 +174,18 @@ out: "scored against silver", "scored by a judge", "wrote the reference it is sc
 The author tint wins over the others. The same classes tint the inspector's verdict rows, and
 `evh datasets --dataset-id` prints the same kind in a `row` column.
 
+### Tier pills and source chips (0.6.0: RFC-023)
+
+- **A tier is a pill**, large enough to read at a glance, in its own colour: **gold** on a gold ground, **silver**
+  on a silver ground, wherever a reference or its tier is named (the references list, every "scored against", the
+  goal's group headings, the arm rows, the reference page's hero). It replaces the small tier word.
+- **A label set is a source chip**: `person`, `model` or `rule`, each in a neutral colour of its own, never a tier's
+  colours, followed by the set's name ("person · owner_2026_11"). An arm scored against a label set is tinted
+  `t-labels` (`--muted` at 10%, 3px bar), keyed "scored against a label set, not a reference".
+- **"Scored against"** always names one of the two: a reference with its pill, or a label set with its chip.
+- **A recorded arm** (production's decisions, from a capture) has a `recorded` badge beside its name, its capture
+  named; its cost and speed read "recorded, no call".
+
 ## The period (every listing page)
 
 The home page, the activity page and the goals, datasets, arms, references and metrics pages
@@ -212,13 +228,14 @@ The whole project at a glance, for the period picked ([the period](#the-period-e
   (this repository's says which project the catalog shows, where its findings are, and that an
   agent can ask it over MCP at `https://evals.humancopilot.eu/mcp`); then the period bar and the **tiles**, in four subjects, one colour each (a band on
   top, its trend badge, its line), named in a legend under them: **goals** (goals); **data**
-  (datasets, references); **experiments** (configs, arms, metrics); **work and spend**
+  (datasets, references); **arms** (configs, arms, models, metrics); **work and spend**
   (measured runs, billed in USD, tokens). The colour says what a tile is about and nothing
   more. Each tile opens its page at the period picked: goals, datasets, references and metrics
-  their pages; arms the arms page; configs the arms page grouped by config; measured runs,
+  their pages; arms the arms page; models the models page; configs the arms page grouped by config; measured runs,
   billed and tokens the activity page.
   - A **stock** tile (goals to metrics) shows the total so far, "+N new" in the period (or "none
-    new") and a line of the total growing over the period.
+    new") and a line of the total growing over the period. A model is new from its first onboarding, history
+    entry or build check, else from its first arm's first run.
   - A **flow** tile (measured runs, billed, tokens) shows the period's total, its change against
     the period before (**▲ 12%**, **▼ 31%**, **▲ from 0**) and a line of the amount per day. The
     badge is in the tile's colour whichever way it goes, never red or green: up is neither good
@@ -275,12 +292,18 @@ tiles open it.
   `evh catalog` prints the same counts, and `evh datasets` has a `configs` column beside `arms`.
 - The period bar in the hero.
 - `01 datasets`: **group by** chips (no grouping, goal: a dataset under several goals is a group
-  named after all of them, one under none is "no goal"), the all / new / active chips, then one
+  named after all of them, one under none is "no goal"; then one chip per **tag key** any dataset
+  carries, a dataset without that key grouped as "no <key>"), the all / new / active chips, then one
   row per dataset, most arms first:
-  **dataset** ("from `<parent>`" under a version; the new badge), **items**, **arms**, **runs in
-  period** (with its trend), **runs per day** (a line), **spend in period**, **references**,
-  **goals**, **baseline** (the promoted arm), **last run**. Filterable.
-- Command: `evh datasets [--period P]`.
+  **dataset** ("from `<parent>`" under a version; under a dataset made from a capture, its origin:
+  "capture `<id>`, where …, one per …", the capture's id linked to its row on the Captures page; the new badge), **tags** (one chip per tag, one per line, the key muted, the value cut at a width with the whole tag on hover; RFC-019),
+  **items**, **arms**, **runs in period** (with its trend), **runs per day** (a line), **spend in
+  period**, **references**, **goals**, **baseline** (the promoted arm), **last run**. Filterable:
+  the filter matches tags too.
+- A dataset marked `text: hidden` shows its counts and its rows' ids and lengths, never its text, on
+  this page and its own.
+- Command: `evh datasets [--period P] [--tag K=V …]`; the list has `made from` (a parent, or a
+  capture) and `tags` columns, and `--dataset-id` prints the tags and origin.
 
 ## The dataset page
 
@@ -325,7 +348,20 @@ tiles open it.
   version, then "Runs on different versions measure different items, so they are never tested
   against each other; compare each version's arms on its own page." A version no arm has run on
   still gets a page when it is linked to one that has.
-- `references`: each reference (linked), its tier, and "written by `<config>`" for silver.
+- `references`: each reference (linked), its tier pill, and where it was promoted from (the label set and its
+  source chip).
+- `labels` (0.6.0): each label set covering the dataset's items (labels follow the item by its hash, so a
+  set made on another dataset with the same items counts): its source chip and name, **coverage** ("k of n
+  items"), **guideline** (the file, or "none"), **made**, **promoted** (the reference, or "not promoted"), and a
+  table of how two sets agree on the items both label (the same answers, sharing one, kappa, alpha), each
+  pair's confusion matrix folded below it. Empty: "No labels yet", with the `evh label-sheet`
+  and `evh label-from-run` commands.
+- `picks waiting` (0.6.0), for a dataset some picks name as their target: one row per pick: **item**
+  (opens the inspector's sheet on it), **from** (the production dataset, its capture), **labels** (source chips, or
+  "none yet"), **tags**, **note**, **picked** (who, when), and a select box per row; the rows selected give the
+  command `evh dataset-extend <this> --dataset-id <next> --pick … --pick …`, shown to copy. The page writes nothing.
+- `added from production` (0.6.0), for a version made by `dataset-extend`: each item it added, with the
+  capture and production dataset it came from, the pick's note, and the labels it carried.
 - `item fields`, when the dataset declares a field set: "Declared in the field set `<id>`", then
   one row per field: **field** (label and name), **type** (with its unit), **filled** ("k of n"),
   **description**, **values**: for a `public` field a summary (counts per value for a choice or
@@ -354,42 +390,51 @@ tiles open it.
 
 ## The goal page
 
-The page answers first, then explains, then shows the evidence.
+The page explains the goal, then answers, then shows how it got there and the evidence (owner, 2026-10-31).
 
 1. **Hero:** kicker `goal`, the goal's title, its statement.
-2. `01 the answer so far`: one answer box per dataset of the goal, linked to its dataset page.
-   With a baseline promoted for this goal: "baseline promoted <date> · scored against <tier>",
-   the arm in bold, the reason, and an **inspect it** button. Without one: "No decision yet. When
-   the tests separate an arm worth keeping, promote its run with the reason they give:
-   `evh run-promote --run <run_id> --reason "…"`".
-3. `02 rounds`, only when the goal has rounds ([PRD-005](../prd/PRD-005-goals-and-rounds.md)):
-   - a note: rounds are optional; decisions are made with `evh round-open`, `round-retire` and
-     `round-close`; `evh rounds` says the same as the page;
-   - a table, newest round first: **round** ("from rN" under it), **status**, **set out to
-     learn** (the hypothesis), **arms in play** ("(k retired)", and an **inspect** button when the
-     round has a leader and two or more arms: it opens the inspector on the round's arms, at most
-     40, against its leader, on the goal's measure; its tooltip is `evh inspect --round rN --goal
-     <id>`), **best on <measure>** (the arm
-     and its mean), **against the previous round** (a **vs rN's best** button opening the
-     inspector with the previous best as baseline), **concluded** (the conclusion, or *open*).
-     The open round's row carries the `--accent` tint (`t-open`);
-   - one folded section per round (the open one unfolded) listing "changed: …", "retired
-     `<config>`: <reason>", "carried in unchanged: `<config>`", and, for the open round, the
-     leader against the previous round's best, the baseline it started from and the arm that
-     wrote a silver reference of the dataset ("against the arm that wrote silver/<id>
-     (`<config>`): <verdict>, Δ, p"), then
-     **suggested next, each as the command that does it (the catalog only reads)**: each
-     suggestion with its command in a code chip that selects whole on one click and a **copy**
-     button beside it (it reads "copied" for a moment, or "selected" with the chip selected where
-     the browser refuses the clipboard), and notes such as the spend against the budget, the
-     cost per item, and the reference the round is read against with the arms not compared
-     (scored against another).
-4. `what it is for`: decision, audience, decides ("<measure>, higher is better" or "no
+2. `01 what it is for`: decision, audience, decides ("<measure>, higher is better" or "no
    significant drop against the baseline" for `non_inferior`, with its threshold), min items,
-   output contract, status. Then: weighs (the axes the goal measures, with limits shown in
-   column headers), strategy (balanced, quality_first, or frugal — how the rule decides who
-   ties with the quality leader), tie-break (the axes that break ties, in order; default: cost,
-   then speed), and guardrails (prose rules shown, never computed).
+   output contract, status. Then: weighs (the axes the goal measures, with limits shown in column
+   headers), strategy (balanced, quality_first, or frugal — how the rule decides who the contenders
+   beside the quality leader are), tie-break (the axes that break ties, in order; default: cost, then speed), and
+   guardrails (prose rules shown, never computed).
+3. `02 the answer so far`: one answer box per dataset of the goal, linked to its dataset page.
+   When a round closed after the baseline was promoted, it leads: "round rN concluded <date>" and
+   the conclusion, then "baseline: <arm>, promoted <date> · scored against <tier>" with the
+   promotion's reason folded under **why it was promoted** (a reason can name a plan a later round
+   replaced), and an **inspect it** button. Otherwise, with a baseline: "baseline promoted <date> ·
+   scored against <tier>", the arm in bold, the reason, and **inspect it**. Without one: "No
+   decision yet. When the tests separate an arm worth keeping, promote its run with the reason they
+   give: `evh run-promote --run <run_id> --reason "…"`".
+4. `03 how we got here: rounds`, only when the goal has rounds
+   ([PRD-005](../prd/PRD-005-goals-and-rounds.md)):
+   - a note: rounds are optional; decisions are made with `evh round-open`, `round-retire` and
+     `round-close`; `evh rounds` says the same as the page; open a round for what changed, what was
+     retired and why, and what to do next;
+   - one line of column names (round · concluded · set out to learn · arms · best on <measure>),
+     then **one folded section per round**, newest first, folded even when open. Its header is the
+     round's row: **round** (its status, "from rN" under it), **concluded** (the conclusion, or
+     *open*; the widest column), **set out to learn** (the hypothesis), and **arms · best**: "N arms
+     (k retired)", an **inspect** button when the round has a leader and two or more arms (the
+     inspector on the round's arms, at most 40, against its leader, on the goal's measure; its
+     tooltip is `evh inspect --round rN --goal <id>`), "best" with the arm and its mean, a **vs rN's
+     best** button when the best changed, and a line counting what is inside ("k change(s) · k
+     retired · k carried · judged by <scorer> · suggested next"). The open round carries the
+     `--accent` edge (`t-open`). Under 760 px the header stacks into one column;
+   - inside, a heading per part, each shown only when it has something (owner, 2026-10-31: one list read as
+     data tossed in): **what changed** (each change); **arms** ("**retired k**: <reason>" with the configs
+     under it, one line per reason; "**carried in unchanged k**" folded over its configs); **scoring** ("judged
+     by `<scorer>`" and each "<date>: <why> (`<scorer>`, N run(s) re-scored into <dirs>)", RFC-022; its arms
+     read from their re-scores, as the goal reads them); and, for the open round, **evidence** (the leader
+     against the previous round's best, the baseline it started from and the arm that wrote a silver reference
+     of the dataset: "the leader against <which> (`<config>`): <verdict>, Δ, p"), **suggested next** ("each as
+     the command that does it; the catalog only reads": each suggestion with its command in a code chip that
+     selects whole on one click and a **copy** button beside it, which reads "copied" for a moment, or
+     "selected" with the chip selected where the browser refuses the clipboard; a suggestion past 200
+     characters, a list of arms not significantly different from the leader, folds behind its opening words), and **notes** (the spend against the
+     budget, the cost per item, the arms read from their re-score, the reference the round is read against
+     with the arms not compared).
 5. **One section per dataset of the goal**, titled with the dataset and its role:
    - the dataset (linked), its size, role and "made from" link; its notes; its references
      (with "written by" for silver);
@@ -407,12 +452,12 @@ The page answers first, then explains, then shows the evidence.
      "Shown, not recommended" for a group that never recommends, with the reason as its last line: a
      dataset the goal does not decide on (`decides: false`), a silver group beside a gold one (gold
      decides), and a group measured by unvalidated judges (a trial); then the reasons, one per line: each arm that is out and why ("speed p95 3,462 ms > limit 2,000 ms"),
-     the strategy with the quality leader, who is tied with it and, under `balanced`, who is not
-     separated but further off, so not tied; and how the tie-break picked. With no eligible arm the
+     the strategy with the quality leader, who the contenders are and, under `balanced`, who is not
+     significantly different but further off, so not a contender; and how the tie-break picked. With no eligible arm the
      line counts the reasons ("No arm is eligible: n 31 < min_items 32 (5 arms)."). When the
      recommendation is not the promoted baseline, a bold last line says by how much and whether
-     the paired test separates them ("Differs from the promoted baseline, v1: v2 is +0.037 on
-     rouge_l against it, not separated (p 0.1246)…"): the rule follows the strategy, the baseline
+     the paired test finds the difference significant ("Differs from the promoted baseline, v1: v2 is +0.037 on
+     rouge_l against it, not significant (p 0.1246)…"): the rule follows the strategy, the baseline
      is a person's decision. A muted footer names the strategy and its rule, what the goal weighs,
      the tie-break order, and that promoting is `evh run-promote`.
    - the table: **arm** (linked to its page; tags: `filed` when its config names the goal, said
@@ -437,14 +482,22 @@ The page answers first, then explains, then shows the evidence.
 The suggestions appear on the page only when the catalog is built with the harness's own adapter
 over the project's data; with a project adapter the rounds table and details still show.
 
-## The reference page
+**Label sets and the deploy sheet** (0.6.0: RFC-023):
 
-- Hero: kicker `reference`, the reference id, and what its tier means. Gold: "written or checked
-  by a person. Every arm scored against it is measured against what a person signed." Silver:
-  "written by a model. Consistent, not correct: good for ranking arms against each other, never
-  a claim that any of them is right. The arm that wrote it is graded against its own outputs."
-- `01 what it is`: tier, dataset (linked), items, written by, from the run, model, created
-  (whichever the adapter knows).
+- Arms scored against a label set form a group of their own on each dataset, headed by the set's source chip and
+  name, never a tier pill; the group gets its recommended arm as a reference's group does, with the same reasons.
+- Beside the baseline, its deploy sheet (folded), and where a capture says what production ran, "production runs
+  the baseline" or what differs.
+
+## The reference set page
+
+- Hero: kicker `reference`, the reference id, its tier pill, and what the tier means. Gold: "promoted as gold: the
+  yardstick a decision rests on." Silver: "promoted as silver: consistent, not a claim that any arm is right; good
+  for ranking arms against each other." Then where it came from (0.6.0): "promoted from `<label set>`
+  (`<source chip>`), <date>, by <who>: <reason>"; for a `model` set, "the arm whose outputs these are is graded
+  against its own outputs".
+- `01 what it is`: tier, dataset (linked), items, the label set and its source, the guideline, the run and model a
+  `model` set came from, promoted when and why (whichever the adapter knows).
 - `02 scored against it · N`: the row key and a table of arms scored against it (**arm**,
   **metric**, **mean**, **items**, **inspect**), tinted; or "No arm is scored against it yet."
 - Command: `evh references --reference-id <id>`.
@@ -481,10 +534,10 @@ tile opens it grouped by config (`arms.html?group=config`).
     has a heading row with its name and arm count; a column's sort holds inside each group.
   - **only** chips: local, hosted (hosted when it runs through a provider that bills per call,
     litellm, openai, anthropic and the like, or its config prices tokens), then each price tier
-    the configs declare (free, small, mid, large); ties the leader, below the leader (the arm's
-    place in a goal's decision: tied with its quality leader, the leader included, or weighed and
-    not tied; an arm no decision weighs is in neither); open weights, proprietary (the model's
-    weights, from the project's `data/models.yaml`; an unlisted model is in neither; the chips
+    the configs declare (free, small, mid, large); a contender, below the leader (the arm's
+    place in a goal's decision: a contender beside its quality leader, the leader included, or weighed and
+    not a contender; an arm no decision weighs is in neither); open weights, proprietary (the model's
+    weights, from the model records in `data/models/`; an unlisted model is in neither; the chips
     show only when the file lists a model an arm ran). Within one kind any chip picked keeps a
     row; across kinds all must.
   - the all / new / active chips; a compare bar once an arm is ticked: "N picked", **open in the
@@ -495,7 +548,9 @@ tile opens it grouped by config (`arms.html?group=config`).
     limit it breaks), not eligible (left out for another reason)), **how measured** (measured;
     rescored against `<reference>`; judged by `<scorer>`; re-parsed; run again (`<runs dir>`);
     under a derived arm, how its deciding measure moved from the config's measured arm, "0.712 →
-    0.745 (+0.033) vs measured", when both are on the same measure: a judge scores its own),
+    0.745 (+0.033) vs measured", when both are on the same measure: a judge scores its own; under
+    a measured arm every run of which was re-scored against the same reference, "the goals read
+    its re-score", and `evh arms` says the same),
     **dataset**, **model · provider** (provider muted, "· local" for a local
     one), **deciding measure** (the goal's measure and the arm's mean on it, else its own
     headline), **repeats**, **cost / item**, **latency**, **runs in period** (with its line),
@@ -512,7 +567,7 @@ tile opens it grouped by config (`arms.html?group=config`).
 - `04 cost and quality, by goal`: a goal list; the goal's trade-off charts (its quality against
   cost and against speed, the frontier drawn), as on its goal page, one goal at a time.
 - Command: `evh arms [--dataset-id <id>] [--by dataset|config|model|provider|scored]
-  [--where local|hosted] [--tier <tier>] [--weights open|proprietary] [--quality ties|below]
+  [--where local|hosted] [--tier <tier>] [--weights open|proprietary] [--quality contender|below]
   [--period P]`, and `evh arms --configs` for `02`. A derived arm's **how measured** carries its
   move, "(+0.033 vs measured)".
 
@@ -521,7 +576,8 @@ tile opens it grouped by config (`arms.html?group=config`).
 - Hero: kicker `arm`, the arm's label (with the baseline tag when promoted), "One config on
   `<dataset>`, scored one way; its repeats averaged per item.", then its facts: **dataset**,
   **scored against** (the reference, or the judge), **goal**, **runs**, **headline** (its primary
-  metric and mean), **last run**, and when it applies "wrote the reference it is scored against".
+  metric and mean), **last run**, and when it applies "wrote the reference it is scored against",
+  and **re-scored** ("the goals read its re-score", linked; `evh arms --arm` prints the same line).
   Buttons: **Inspect it**, **Against the baseline** (when the dataset's baseline is scored the
   same way), **With the N arms scored the same way**.
 - `01 metrics`: every metric it records, the headline first: **metric**, **mean**, **items**,
@@ -533,14 +589,102 @@ tile opens it grouped by config (`arms.html?group=config`).
   rescore, judge, reparse).
 - `04 config`: the config id, the adapter, and the params; credentials are never shown
   (`api_key_env` is left out; a param named like a key, token, secret or password reads
-  "(hidden)", and `experiment-run` refuses such a config in the first place).
+  "(hidden)", and `evh run` refuses such a config in the first place).
 - `05 conditions`: what its runs were measured under (machine, libraries, harness, scorer, item
   and reference checksums).
 - `06 the same config, scored other ways`: the same config on the same dataset scored against
   another reference or by a judge, tinted as everywhere.
 - `07 rounds`: each round it was in, in play or retired, and the round's status.
 - Notes, when the adapter has any (runs left out, and why).
+- **A recorded arm** (0.6.0): the `recorded` badge in the hero, "production's decisions, from the capture
+  `<id>`; no model was called", its capture linked; `04 config` shows the capture, the recorded arm's name and the
+  adapter hook that read the outputs, in place of params.
+- **The deploy sheet** (0.6.0), on a promoted arm's page: a section `deploy sheet` with what production
+  must match (the model and its build, server and its settings, every setting the arm sends, the prompt and its
+  hash, the adapter and its version, the dataset and reference it was promoted on), and, for each capture whose
+  records say what production ran, "matches" or what differs on how many records. Command:
+  `evh deploy-sheet --config <id> [--capture C]`.
 - Command: `evh arms --arm <arm id or config id>`; `evh arms [--dataset-id <id>]` lists them.
+
+## The models page
+
+The project's model records (RFC-020): what each one is, how it is set up, whether it was vetted, and where it
+is used. A models tile on the home page opens it, beside arms.
+
+- Hero: kicker `models`, "Models", "N models: K vetted, O onboarded with no arm smoked, L to check, M not
+  onboarded yet. A model is onboarded once (its deployment on every machine, what it can do, the settings chosen
+  for it) and vetted when an arm passes its smoke on the task's own items; then any eval's arms use it.",
+  then the period bar.
+- `01 every model` (without records: how to add one):
+  - **only** chips, each shown only when some record has the value: llm, ml, baseline; self-hosted, hosted;
+    open weights, proprietary; vetted (every deployment's onboarding passed, and an arm that names the record
+    passed its smoke), onboarded, no arm smoked (the onboarding passed, no arm has), to check (any deployment's
+    onboarding flagged; an arm's flagged smoke shows on that arm, not here), not onboarded (otherwise); builds
+    differ. Within one kind any chip picked
+    keeps a row; across kinds all must. Self-hosted is a record with a deployment on a machine (it names a
+    server, a device or a place) and none with a provider id; hosted is a record with a deployment that has a
+    provider id (or the hosted backend); a record with no deployments is neither. Builds differ is the same tag
+    with a different digest, revision or hash in two deployments.
+  - the table, one line per cell (owner, 2026-10-31), vetted records first, then onboarded, to check and not
+    onboarded: **model** (linked; its kind under it), **build** (the first deployment's tag, "+k" for the others,
+    all of them on hover; a "differs" badge when a deployment's build is not the record's), **where** (the
+    deployments' ids, "x3, dgx, hosted", each one's machine or host on hover, muted when it was last checked more
+    than 30 days ago), **settings** (for an LLM "reasoning off"; for an ML model "cpu · fp32 · batch 1";
+    "defaults" when none is chosen), **onboarding** (the record's, from its deployments': pass / probed / check /
+    "not onboarded", the latest date, the flags on hover), **arms** (count, linked to the arms page filtered to
+    them by the record's id: `arms.html?q=<id>`), **goals** (the one goal, or "N goals" with the first named and
+    "+k" linking to the model's page; every goal's name kept for the filter), **best result** (its best place in
+    any goal by share of the field, "#3 of 35" and the goal, with "+k more" linking to the model's page).
+    Filterable.
+- `02 what changed in the period`: **when**, **model**, **what** (a deployment's onboarding, "<id> onboarding: pass";
+  each entry of the record's history, "reasoning_effort (server default) → none (why)"), only the period's.
+  A record's history is free text, so a build change shows only when its `history` says so.
+- Command: `evh models [--kind llm|ml|baseline] [--where self-hosted|hosted] [--status vetted|onboarded|check|none]`.
+
+## The model page
+
+`models/<id>.html`.
+
+- Hero: kicker `model`, the model's name and kind, then its facts: **weights** and **licence**, **aliases**
+  (the ids runs record for it), **settings** (each with its one line of why), **onboarding** (vetted, onboarded,
+  to check or not onboarded, from its deployments' and its arms' smokes, and the latest date), **best result
+  per goal** ("#3 of 35" and the goal, best first: the list the models page's cell points to). A button back
+  to the models page.
+- `01 deployments and their onboarding`: one folded section per place it runs (RFC-021), folded unless its
+  onboarding did not pass. Its header: the deployment's id (an arm names it with `deployment:`), where it runs,
+  its server or device, its tag, "onboarding pass <date>" (or not onboarded), its speed in tokens/s, and the
+  count of its flags and of the flags it accepts. Inside: **where** (machine or host, and its backend),
+  **server or device** (with its settings), **build** (tag, provider id, digest, revision, hash, quantization, in
+  full), **matches the record** (yes, or what differs: the first deployment of a tag is the record's), **checked**
+  (date, "stale" past 30 days), **onboarded on**; then that deployment's latest onboarding report, each probe with
+  its measurement and the flags that name it, the other flags, and **Accepted**: the flags it accepts, each with
+  why (the record's `accepted`, and the deployment's own). For an LLM the report's default and chosen calls carry
+  the time, tokens out, whether it reasoned and how it ended. A deployment never onboarded says so, with the
+  command (`evh model-onboard <id> --deployment <id>`). Under the sections, what the model can do across its
+  deployments (its capabilities). A record with no deployment says so: "No deployment is recorded for this
+  model. Not onboarded yet: `evh model-onboard <id>`". A deployment table beside a separate onboarding section
+  described the same deployments twice (owner, 2026-10-31).
+- `02 settings history`: **when**, **what changed** (from, to), **why**, newest first.
+- `03 arms`: every arm that uses it, by `model_record` or by an alias, one row per arm the goals read (an arm a
+  re-score stands in for shows as the re-score, as on the goal pages): **arm** (linked), **deployment** (the one
+  its config names, else the machine a self-hosted arm ran on, else the hosted deployment; linked to its
+  section above), **goal**, **its settings**
+  (the record settings it overrides, then the task's own: its reply cap, call limit, temperature; `evh models
+  --model` shows the same column), **arm smoke** (pass / check / none, date, flags
+  on hover), **result** (the deciding measure).
+- Command: `evh models --model <id>`.
+
+Not built as written: the settings history has no "smoke before / after" or "result before / after" columns (a
+history entry carries `at`, `what`, `from`, `to`, `why` and nothing links it to a smoke or a result), and the
+models page lists records only: an arm's model with no record is not a row of its own, and there is no "not
+onboarded" chip for it.
+
+On the arms page each arm that uses a record gets it under the model column, linked, with the deployment its
+config named after it ("@ dgx"), and a badge: "smoked", "smoke: check", or "not smoked" (the record's latest
+arm smoke of the arm's config). `evh arms` shows the same in a "model record" column ("gem@dgx (smoked)"),
+when any arm has a record. An arm's page names the deployment beside its config, and its conditions list the
+runner (`machine.*`, `library.*`: where `evh` ran, outside the fingerprint's hash) and where the system under
+test ran (`deployment.machine`, `deployment.backend`, `deployment.server`).
 
 ## The metric page
 
@@ -560,12 +704,38 @@ tile opens it grouped by config (`arms.html?group=config`).
   **items**, **scored against**, tinted.
 - Command: `evh metrics --metric <metric> [--dataset-id <id>]`.
 
-## The references page
+## The captures page
 
-- Hero: kicker `references`, and what gold and silver mean, then the period bar.
+- Hero: kicker `captures`, "Captures", and what a capture is: what a system did in production, kept as
+  records, each hashed; the source of the datasets frozen from them (RFC-019); what happened next becomes labels
+  through rules you can read, a `rule` label set promoted like any (RFC-023).
+- `01 captures`: one row per capture, by id: **capture** (its anchor `#capture-<id>`; "continues `<id>`"
+  under a continued one), **records**, **importer** (the file or built-in name; "scrubbed" beside it),
+  **captured**, **records from – to** (the first and last record's day), **datasets made from it** (each
+  linked to its page; one with no runs yet, and so no page, named with "no runs yet"). Filterable. Under
+  **records**, a sampled capture says "a sample: rate R, of N read".
+- (0.6.0) Beside the datasets, the label sets made on them (source chips); **recorded arm**: the recorded arm made
+  from the capture.
+- Empty: "No captures yet", with the `evh capture` and `evh dataset-from-capture` commands.
+- Command: `evh captures [--capture ID] [--json]` (the same listing, read the same way).
+
+## The labels page (0.6.0: RFC-023)
+
+- Hero: kicker `labels`, "Labels", and what a label is: what is right for one item, and who said it; a label set
+  is never edited; a reference set is labels promoted on purpose, at the tier chosen then.
+- `01 label sets`: one row per set: **set** (its source chip and name), **dataset** (linked), **coverage** ("k of n
+  items"), **guideline**, **made** (who or which run, when), **promoted** (the reference set with its pill, or "not
+  promoted"). Filterable by source.
+- Empty: "No labels yet", with `evh label-sheet`, `evh label-import` and `evh label-from-run`.
+- Command: `evh labels [--dataset-id D]` (the same listing, and how two sets agree; `--confusion` prints the matrices).
+
+## The reference sets page
+
+- Hero: kicker `references`, "Reference sets", and what gold and silver mean, then the period bar.
 - `01 references`: the all / new / active chips, then **reference** (the new badge),
-  **tier**, **dataset**, **items**, **written by** (linked to the author's arm), **created**,
-  **arms scored**, **arms scored in period**, **runs in period** (with its line). Filterable.
+  **tier** (its pill), **dataset**, **items**, **promoted from** (the label set with its source chip, and the
+  author's arm for a `model` set), **created**, **arms scored**, **arms scored in period**, **runs in period**
+  (with its line). Filterable.
 - Command: `evh references [--period P]`.
 
 ### Links everywhere

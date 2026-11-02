@@ -1,7 +1,7 @@
 # bert-mini fine-tuned ON AG News. The in-distribution specialist, at 44MB.
 #
-# WHY THIS IS THE ARM THAT MATTERS. The summarisation study ended with BART tied for first
-# against 24 hosted models, and the objection was that it had been fine-tuned on exactly
+# WHY THIS IS THE ARM THAT MATTERS. The summarisation study ended with BART first, not significantly
+# different from the best of 24 hosted models, and the objection was that it had been fine-tuned on exactly
 # that corpus while the LLMs were zero-shot. This is the same objection in a new setting,
 # with the size cranked down hard: 4 layers, hidden size 256, a 44MB checkpoint. If a
 # model that small, trained on this task, matches frontier LLMs, the finding is not about

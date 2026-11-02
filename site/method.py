@@ -1,8 +1,8 @@
 """The method page, the "use it on your problem" page, and the pieces of them that the
-landing and experiment pages borrow.
+landing and eval pages borrow.
 
 The findings are the hook; the method is the point. These pages tell the six habits as
-the experiments taught them, then show how to apply them to a problem of your own.
+the evals taught them, then show how to apply them to a problem of your own.
 
 Same rules as build.py: every number typed into quoted prose goes through `q()` and must
 appear in the report (or guide) it cites; everything else is computed from the runs.
@@ -19,6 +19,9 @@ SYN = "research/REPORT_SYNTHESIS.md"
 JUDGE = "research/REPORT_SUMMEVAL.md"
 GUIDE = "docs/GUIDE.md"
 TUTORIAL3 = "docs/tutorials/3-frontier-reference-and-judging.md"
+TUTORIAL4 = "docs/tutorials/4-rounds-and-versions.md"
+TUTORIAL6 = "docs/tutorials/6-datasets-from-production.md"
+TUTORIAL7 = "docs/tutorials/7-set-up-a-model.md"
 
 
 #: Where each lifecycle step is in this repository's catalog: (page, what it shows there).
@@ -29,6 +32,7 @@ CATALOG_STEP = {
     "runs": ("arms.html", "Every arm, how it was measured, its cost and speed"),
     "baseline": ("goals.html", "Every goal, its promoted baseline and its reason"),
     "remeasure": ("arms.html", "Re-scored and judged arms beside the originals"),
+    "rounds": ("goals.html", "Every goal, its rounds and their conclusions"),
 }
 #: Where each habit can be seen in this repository's catalog: (page, link text). "tested" opens
 #: the inspector on the summarisation field (H.catalog_inspect).
@@ -58,10 +62,11 @@ NODES = [
         "your inputs",
         (
             "Any files: tickets, transcripts, documents, prompts. Keep them under version control "
-            "— an untracked input makes every run unattributable."
+            "— an untracked input makes every run unattributable. Or what your system did in production, "
+            "kept as a capture: each record hashed, and a dataset frozen from a selection of them."
         ),
-        "data/sources/ — or anywhere",
-        "",
+        "data/sources/ — or anywhere · data/captures/&lt;id&gt;/",
+        "evh capture --importer jsonl --query … --capture …",
         (GUIDE, "1-create-a-dataset"),
     ),
     (
@@ -90,17 +95,17 @@ NODES = [
     ),
     (
         "references",
-        "References",
+        "Reference sets",
         "silver · gold",
         (
-            "What each item is scored against. Silver: a model wrote it — consistent, not correct; "
-            "usually an expensive arm's run, promoted, so the cheaper arms are measured by how close "
-            "they come to it. Gold: a person wrote or checked it. Gold always wins, and every run "
-            "says which it used."
+            "What each item is scored against: labels (a person's, a model's, a rule's) promoted on purpose, "
+            "at the tier chosen then. Silver: consistent, not correct, often an expensive arm's labels, so the "
+            "cheaper arms are measured by how close they come to it. Gold: the yardstick a decision rests on. "
+            "Gold always wins, and every run says which it used."
         ),
         "data/references/&lt;tier&gt;/&lt;id&gt;/",
-        "evh reference-create --dataset-id … --from-run …",
-        (GUIDE, "5-make-its-run-the-reference-optional"),
+        "evh label-from-run · evh reference-promote",
+        (GUIDE, "5-make-its-outputs-the-reference-optional"),
     ),
     (
         "arms",
@@ -108,10 +113,11 @@ NODES = [
         "one config each",
         (
             "One system under test: provider, model, prompt, settings, in a YAML file. Change one "
-            "thing, bump the config_id — the fingerprint will prove what moved."
+            "thing, bump the config_id — the fingerprint will prove what moved. An arm can name a model "
+            "record, set up once where it runs, and is smoked on a few items before its full run."
         ),
-        "data/configs/*.yaml",
-        "",
+        "data/configs/*.yaml · data/models/&lt;id&gt;.yaml",
+        "evh arm-smoke --config …",
         (GUIDE, "3-describe-your-arms"),
     ),
     (
@@ -123,16 +129,16 @@ NODES = [
             "latency, and a fingerprint of data, code, model and build. Repeat it to measure noise."
         ),
         "data/runs/&lt;run_id&gt;/",
-        "evh experiment-run --config … --repeat 3",
+        "evh run --config … --repeat 3",
         (GUIDE, "6-run-the-other-arms-three-times-each"),
     ),
     (
         "tests",
         "Tests",
-        "separated or tied",
+        "significant or not",
         (
             "The leaderboard with its significance block, paired tests, Holm-corrected families. "
-            "A claim means separated, not scored higher."
+            "A claim means significant, not scored higher."
         ),
         "your terminal",
         "evh family-test --dataset-id … --a … --against …",
@@ -157,13 +163,28 @@ NODES = [
         "optional · later",
         (
             "The same frozen outputs, measured again without re-running an arm: new gold or a new "
-            "code scorer for $0, or LLM judges, billed and capped, that the harness refuses until "
+            "code scorer for $0, or LLM judges (grading each output, picking the best, or comparing two), "
+            "billed and capped, that the harness refuses until "
             "they are validated against people. Written beside the originals, never over them; the "
-            "primary metric changes only by a recorded decision."
+            "primary metric changes only by a recorded decision. A new scoring rule is previewed first, "
+            "then re-scores a round, which records the scorer it is judged by."
         ),
-        "data/runs-rescored/ · data/runs-judged/&lt;scorer&gt;/",
-        "evh judge-score --dataset-id … --scorer …",
-        (TUTORIAL3, "5-re-measure-with-an-llm-judge-optional"),
+        "data/runs-rescored/&lt;scorer&gt;/ · data/runs-judged/&lt;scorer&gt;/",
+        "evh score-preview --goal … · evh rescore --goal … --round …",
+        (TUTORIAL4, "7-when-the-scoring-changes"),
+    ),
+    (
+        "rounds",
+        "Next round",
+        "optional · and on",
+        (
+            "A goal is answered in rounds: each says what it set out to learn, carries the arms that stay, "
+            "retires the rest with why, and closes with a conclusion. Before deploy they narrow a field; "
+            "after it the same goal goes on, on new dataset versions of what the deployed system decides."
+        ),
+        "data/rounds/&lt;goal&gt;/r&lt;n&gt;.yaml",
+        "evh round-open --goal … --from r1",
+        (TUTORIAL4, "4-round-2-change-one-thing"),
     ),
 ]
 
@@ -195,8 +216,8 @@ def lifecycle(interactive: bool = False) -> str:
     h = 12 + len(NODES) * step
     return (
         f'<svg class="lc" viewBox="0 0 {w} {h}" role="img" aria-label="The evaluation '
-        f"lifecycle: sources, dataset, materialized copy, references, arms, runs, tests, "
-        f'baseline, and an optional re-measurement">{"".join(parts)}</svg>'
+        f"lifecycle: sources, dataset, materialized copy, reference sets, arms, runs, tests, "
+        f'baseline, an optional re-measurement, and the next round">{"".join(parts)}</svg>'
     )
 
 
@@ -221,9 +242,9 @@ def lifecycle_panels(H) -> str:
 
 # ── the six habits ──────────────────────────────────────────────────────────
 def chapters(H, f: dict) -> list:
-    exps = f["experiments"]
+    exps = f["evals"]
     by = {x["slug"]: x for x in exps}
-    ties = sum(x["n_tied"] > 0 for x in exps)
+    ties = sum(x["n_contenders"] > 0 for x in exps)
     s = by["summarization"]
     sf = by["scifact"]
     return [
@@ -272,7 +293,7 @@ def chapters(H, f: dict) -> list:
                 + "</p>"
                 "<p>No check in the harness could see it: every one compared the repository "
                 "with itself. One <strong>calibration row</strong> — a known baseline against its "
-                "published value — caught it. Now every experiment has one, and "
+                "published value — caught it. Now every eval has one, and "
                 f"{f['calibration_consistent']} of {len(f['calibration'])} agree with the literature, "
                 f"{f['calibration_inside']} of them inside their own interval.</p>"
             ),
@@ -290,7 +311,7 @@ def chapters(H, f: dict) -> list:
             "nodes": "references remeasure",
             "kicker": "Ground truth",
             "title": "Silver is not gold.",
-            "short": "A model's answers rank; a person's answers judge.",
+            "short": "Silver ranks; gold judges. You choose which, when you promote.",
             "story": (
                 "<p>"
                 + H.q(
@@ -323,7 +344,7 @@ def chapters(H, f: dict) -> list:
                 + " Close to a person is not the same as a person.</p>"
                 "<p>"
                 + H.q(
-                    "Two of those judges re-measured the summarisation experiment and "
+                    "Two of those judges re-measured the summarisation eval and "
                     "ranked every hosted LLM above every BART model. The one blind human check on "
                     "those outputs, one non-expert reader on 20 pairs, preferred bart_l 14 to 6.",
                     SUMM,
@@ -333,16 +354,19 @@ def chapters(H, f: dict) -> list:
                 "people better than one rater does on coherence and relevance, not on faithfulness, "
                 "and not system by system. "
                 "So the harness refuses a judge until it is validated, and the "
-                "summarisation experiment still ranks by coverage.</p>"
+                "summarisation eval still ranks by coverage.</p>"
             ),
             "habit": "Silver gets you started; gold tells you the truth. Write a small gold set "
-            "early, check silver — and any AI judge — against it, and read every item "
-            "where strong systems agree against the gold.",
+            "early, promote it on purpose with why, check silver — and any AI judge — against it, and "
+            "read every item where strong systems agree against the gold.",
             "tool": (
-                "evh rescore --reference-id gold/… · evh silver-calibrate · evh judge-score",
                 (
-                    "re-score old runs against new gold for $0, measure how far silver drifts, "
-                    "re-measure with judges you have validated"
+                    "evh label-sheet · evh label-import · evh reference-promote --tier gold · "
+                    "evh rescore --reference-id gold/… · evh silver-calibrate · evh judge-score"
+                ),
+                (
+                    "label the items, promote the labels you would sign, re-score old runs against the new "
+                    "gold for $0, measure how far silver drifts, re-measure with judges you have validated"
                 ),
             ),
             "yours": "A small set of answers written by someone who knows the domain is worth more "
@@ -359,21 +383,24 @@ def chapters(H, f: dict) -> list:
                 "<p>"
                 + H.q("BART's apparent lead at n=20 was 0.0737; across 200 articles it was 0.00008.", SUMM)
                 + " "
-                + H.q("Two independent 100-article evals of the same models agree at only ρ = 0.79.", SUMM)
+                + H.q(
+                    "Two independent 100-article measurements of the same models agree at only ρ = 0.79.",
+                    SUMM,
+                )
                 + "</p>"
                 "<p>"
                 + H.q(
                     "A pilot correlates beautifully and picks the wrong winner — in "
-                    "three of the five experiments here that ran one.",
+                    "three of the five evals here that ran one.",
                     SYN,
                 )
                 + "</p>"
             ),
             "habit": "Run every arm more than once and measure how far it disagrees with itself. "
-            "Tune on a small dev slice, report on the rest, and measure how many items a "
+            "Tune on a small pilot slice, report on the rest, and measure how many items a "
             "ranking needs instead of assuming it.",
             "tool": (
-                "evh experiment-run --repeat 3 · evh holdout · evh rank-stability",
+                "evh run --repeat 3 · evh holdout · evh rank-stability",
                 H.q("treat deltas below 0.029372 as noise", GUIDE),
             ),
             "yours": "Before you believe the new prompt is a few points better, run the old one twice.",
@@ -383,15 +410,15 @@ def chapters(H, f: dict) -> list:
             "nodes": "tests",
             "kicker": "Significance",
             "title": "Tested, not read.",
-            "short": "Say separated, not higher.",
+            "short": "Say significant, not higher.",
             "story": (
                 f"<p>A leaderboard sorts, so something is always first. In {ties} of "
-                f"{len(exps)} experiments here the leader cannot be separated from a group of "
-                f"others — on summarisation, from {s['n_tied']} of them, the cheapest paid one "
-                f"{H.times(s['tied_ratio'])} cheaper than the dearest model in the field.</p>"
-                "<p>Every separation claim on this site rests on a paired permutation test "
+                f"{len(exps)} evals here the leader is not significantly different from a group of "
+                f"others — on summarisation, from {s['n_contenders']} of them, the cheapest paid one "
+                f"{H.times(s['contender_ratio'])} cheaper than the dearest model in the field.</p>"
+                "<p>Every significance claim on this site rests on a paired permutation test "
                 "per item, with a Holm correction for the number of comparisons made at "
-                "once. A tie means the test could not separate two arms at this many items, "
+                "once. Not significant means the test could not tell two arms apart at this many items, "
                 "not that they are equal. Intervals elsewhere (the human ceiling) are "
                 "bootstrapped, and the price slopes are fits, not tests.</p>"
             ),
@@ -400,21 +427,21 @@ def chapters(H, f: dict) -> list:
             "tool": (
                 "evh family-test · evh leaderboard",
                 (
-                    f"separated from {sf['n_arms'] - 1 - sf['n_tied']} of {sf['n_arms'] - 1} opponents"
+                    f"significantly different from {sf['n_arms'] - 1 - sf['n_contenders']} of {sf['n_arms'] - 1} opponents"
                     f"   ← SciFact's leader, {sf['leader_row']['arm']}"
                 ),
             ),
-            "yours": "When the answer is “tied”, look at the gap and the sample size first: if the "
-            "gap is one you can live with, the cheapest member of the tie is the decision.",
+            "yours": "When the answer is “not significant”, look at the gap and the sample size first: if the "
+            "gap is one you can live with, the cheapest arm in that group is the decision.",
         },
         {
             "id": "record",
             "nodes": "baseline",
             "kicker": "The record",
             "title": "Decide on the record.",
-            "short": "The scorer is part of the experiment. So is the reason.",
+            "short": "The scorer is part of the eval. So is the reason.",
             "story": (
-                "<p>Running the experiments found eight defects in the harness's own "
+                "<p>Running the evals found eight defects in the harness's own "
                 "instrument, each of which changed published numbers or would have. "
                 + H.q(
                     "Three of these — the parser, the unparsed-as-empty rule, the "
@@ -438,12 +465,63 @@ def chapters(H, f: dict) -> list:
     ]
 
 
+#: Four habits for an evaluation that goes on (0.6.0): not taught by the six evals, so not told as their
+#: stories; each with the step that keeps it (owner, 2026-11-01).
+LASTING = [
+    (
+        "Set it up before you measure it.",
+        (
+            "Settle once, per model and where it runs, what a server would otherwise choose: whether it reasons, how long "
+            "a reply may run, which build a tag names. Smoke an arm on a few items before its full run. Left at the "
+            "defaults, an arm measures the defaults. The measurement is the deployment (weights, server, machine), not "
+            "the laptop that ran it."
+        ),
+        "evh model-onboard · evh arm-smoke",
+        "docs/tutorials/7-set-up-a-model/",
+    ),
+    (
+        "Production is the test, not the answer key.",
+        (
+            "Keep what your system decided as a capture, every record hashed. Its decisions become an arm, scored "
+            "against labels; what happened next is a rule's labels, never a reference set until you promote it. The rows "
+            "worth keeping are picked for the next version of a dataset you govern."
+        ),
+        "evh capture · evh arm-from-capture · evh label-from-capture · evh pick",
+        "docs/tutorials/6-datasets-from-production/",
+    ),
+    (
+        "A changed rule is a decision too.",
+        (
+            "When a scoring rule turns out wrong, preview what the new one moves, then re-score the round or adopt it "
+            "from the next one, with why. A round's evidence is measured by one scorer, and says which."
+        ),
+        "evh score-preview · evh rescore --round",
+        "docs/tutorials/4-rounds-and-versions/#7-when-the-scoring-changes",
+    ),
+    (
+        "An evaluation doesn't stop at deploy.",
+        (
+            "Answer a goal in rounds. Before deploy they narrow a field; after it the same goal goes on, on what the "
+            "deployed system decides, against new candidates. Each round records what it set out to learn and what it "
+            "concluded."
+        ),
+        "evh round-open --from · evh rounds",
+        "docs/tutorials/4-rounds-and-versions/#after-deploy",
+    ),
+]
+
+
 def method_page(H, f: dict) -> str:
     chs = chapters(H, f)
+    lasting = "".join(
+        f'<div class="habit-card"><b>{H.e(t)}</b><span>{H.e(d)}</span>'
+        f'<code class="lasting-cmd">{H.e(cmd)}</code><span><a href="{href}">In the docs →</a></span></div>'
+        for t, d, cmd, href in LASTING
+    )
     toc = "".join(
         f'<a href="#{c["id"]}"><span>{i:02d}</span>{H.e(c["title"])}</a>' for i, c in enumerate(chs, 1)
     )
-    by = {x["slug"]: x for x in f["experiments"]}
+    by = {x["slug"]: x for x in f["evals"]}
     body_ch = []
     for i, c in enumerate(chs, 1):
         cmd, out = c["tool"]
@@ -464,21 +542,28 @@ def method_page(H, f: dict) -> str:
 <section class="hero"><div class="wrap">
   <div class="kicker"><b>The method</b> · six habits · learned the hard way</div>
   <h1>How to know what you <em>think you know.</em></h1>
-  <p class="dek">The findings on this site took no special model and no big budget. They took a method — six habits, each learned by getting something wrong first. Here they are as the experiments taught them, with the step in the harness that keeps each one, and what it means for your own work.</p>
+  <p class="dek">The findings on this site took no special model and no big budget. They took a method — six habits, each learned by getting something wrong first. Here they are as the evals taught them, with the step in the harness that keeps each one, and what it means for your own work; then <a href="#lasting">four more</a>, for an evaluation that goes on.</p>
   <nav class="toc">{toc}</nav>
 </div></section>
 
 <section class="block method"><div class="wrap method-grid">
-  <aside class="method-aside"><div class="sticky">{lifecycle()}<p class="aside-note">The lifecycle every experiment here followed. Each habit lights the step it protects.</p></div></aside>
+  <aside class="method-aside"><div class="sticky">{lifecycle()}<p class="aside-note">The lifecycle every eval here followed. Each habit lights the step it protects.</p></div></aside>
   <div class="chapters">{"".join(body_ch)}</div>
 </div></section>
 
+<section class="block" id="lasting"><div class="wrap">
+  <div class="eyebrow"><span class="num">07</span>And on</div>
+  <h2>Four more, for an evaluation that goes on.</h2>
+  <p class="lede">The six habits make one comparison trustworthy. These four keep an evaluation trustworthy as it goes on, round after round, before deploy and after it. Each is optional, and each is a step in the harness.</p>
+  <div class="habits two">{lasting}</div>
+</div></section>
+
 <section class="block" id="influences"><div class="wrap">
-  <div class="eyebrow"><span class="num">07</span>Standing on</div>
+  <div class="eyebrow"><span class="num">08</span>Standing on</div>
   <h2>Built on Chip Huyen's framing.</h2>
   <div class="cols">
     <div class="prose">
-      <p>The approach in this repository builds on Chip Huyen's books. Their framing — evaluation is engineering work on <strong>your</strong> data, a model is chosen on a private leaderboard rather than a public one, the dataset is a design decision, every experiment is tracked and versioned — is the foundation this harness was built on. What this project adds is a tool that enforces it, and six experiments that show what skipping it costs.</p>
+      <p>The approach in this repository builds on Chip Huyen's books. Their framing — evaluation is engineering work on <strong>your</strong> data, a model is chosen on a private leaderboard rather than a public one, the dataset is a design decision, every experiment is tracked and versioned — is the foundation this harness was built on. What this project adds is a tool that enforces it, and six evals that show what skipping it costs.</p>
       <p>The idea-by-idea mapping, with chapters, is in <a href="docs/INFLUENCES/">Influences</a>.</p>
     </div>
     <ul class="reading">
@@ -491,7 +576,7 @@ def method_page(H, f: dict) -> str:
     </ul>
   </div>
   <p>The habits hold when an agent does the work, too: it can read every number they rest on, the goals and their tests, from the catalog over MCP, and the decisions stay a person's (<a href="./#mcp">ask it from your agent</a>).</p>
-  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem →</a><a class="btn" href="docs/GUIDE/">The step-by-step guide</a><a class="btn" href="experiments.html">The experiments</a></div>
+  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem →</a><a class="btn" href="docs/GUIDE/">The step-by-step guide</a><a class="btn" href="evals.html">The evals</a></div>
 </div></section>
 <script>
 (function(){{const nodes=document.querySelectorAll('.method-aside .lc-node');
@@ -501,8 +586,9 @@ document.querySelectorAll('.chapter').forEach(c=>io.observe(c));}})();
 </script>"""
     return H.page(
         "The method — eval-harness",
-        "Six habits for measuring AI systems, as six experiments taught them: "
-        "experiments, frozen data, gold references, noise, significance, the record.",
+        "Six habits for measuring AI systems, as six evals taught them: "
+        "experiments, frozen data, gold references, noise, significance, the record; "
+        "and four for an evaluation that goes on.",
         body + H.author("method"),
         here="method",
     )
@@ -510,14 +596,14 @@ document.querySelectorAll('.chapter').forEach(c=>io.observe(c));}})();
 
 # ── use it on your problem ──────────────────────────────────────────────────
 def patterns(H, f: dict) -> list:
-    by = {x["slug"]: x for x in f["experiments"]}
+    by = {x["slug"]: x for x in f["evals"]}
     db = by["dbpedia"]
     return [
         (
             "Is the cheaper model good enough?",
             "arms = models, same prompt",
             (
-                f"On DBpedia a {H.times(db['tied_ratio'])} price difference was not shown to buy accuracy. "
+                f"On DBpedia a {H.times(db['contender_ratio'])} price difference was not shown to buy accuracy. "
                 "Run both on your items; if they tie and the gap is one you can live with, the cheap "
                 "one wins."
             ),
@@ -527,7 +613,7 @@ def patterns(H, f: dict) -> list:
         (
             "Did my prompt change help?",
             "arms = prompts, same model",
-            "Name the pair before you look, tune on a dev slice, confirm on the held-out rest.",
+            "Name the pair before you look, tune on a pilot slice, confirm on the held-out rest.",
             "summarization-cnn-dailymail",
             "pair-test · holdout",
         ),
@@ -568,7 +654,7 @@ def patterns(H, f: dict) -> list:
                 "Score a few dozen outputs yourself, then measure how well each judge orders them "
                 "the way you do. On SummEval the best judges reached 93% of an expert's agreement "
                 "(the best of 24, chosen on the same articles; 92% held out), and an open-weight one at 1/23 of the "
-                "leader's price was not separated from it.",
+                "leader's price was not significantly different from it.",
                 JUDGE,
             )
             + " Pin the provider: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart."
@@ -586,6 +672,37 @@ def patterns(H, f: dict) -> list:
             ),
             "summarization-cnn-dailymail",
             "coverage · ROUGE",
+        ),
+        (
+            "Is my system still deciding well in production?",
+            "arms = the deployed one + candidates",
+            (
+                "Capture what it decided, score its decisions as an arm against labels (a rule's over what "
+                "happened next, or a person's), and pick the rows where it was wrong for the next version of "
+                "the dataset you govern."
+            ),
+            "triage-fleet",
+            "capture · arm-from-capture · pick",
+        ),
+        (
+            "Is this model set up right before I compare it?",
+            "a model record",
+            (
+                "Onboard it where it runs (its build, whether it reasons, JSON, determinism), then smoke the "
+                "arm on a few items before its full run."
+            ),
+            "",
+            "model-onboard · arm-smoke",
+        ),
+        (
+            "My scoring rule was wrong: do I run everything again?",
+            "no: re-score",
+            (
+                "Preview what the new rule moves, then re-score the round at $0 from the stored outputs; "
+                "the round records the scorer and why."
+            ),
+            "",
+            "score-preview · rescore",
         ),
         (
             "Catch regressions before release",
@@ -615,7 +732,7 @@ STEPS = [
         "Set up",
         "A new folder, the harness pinned to a release, and the tutorial kit copied in.",
         'pip install "evaluation-harness @ git+{repo}@v{version}#subdirectory=harness"\nevh init --tutorial',
-        "wrote    24 file(s), the tutorial kit under tutorial/",
+        "wrote    26 file(s), the tutorial kit under tutorial/",
         GUIDE,
         "0-set-up",
     ),
@@ -636,17 +753,25 @@ STEPS = [
         "3-describe-your-arms",
     ),
     (
-        "Run the best arm; its run is the reference",
-        "Your best system answers first; the others are measured by how close they come — and the answers are labelled silver.",
-        "evh experiment-run --config data/configs/tickets_author.yaml\nevh reference-create --dataset-id tickets_v1 --from-run …",
-        "data/references/silver/tickets_v1  (6 item(s), tier=silver, $0.0000)",
+        "Optional: set the model up first",
+        "A record per model, a deployment per machine; onboarding checks its build, reasoning, JSON and determinism there.",
+        "evh model-onboard llama3.1-8b --deployment laptop",
+        "ONBOARD PASS",
+        TUTORIAL7,
+        "2-onboard-it",
+    ),
+    (
+        "Run the best arm; its outputs become the reference set",
+        "Your best system answers first; its answers become a model's labels, promoted to silver, and the others are measured by how close they come.",
+        "evh run --config data/configs/tickets_author.yaml\nevh label-from-run --run … --set author_v1\nevh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason … --by me",
+        "data/references/silver/tickets_v1: 6 of 6 item(s), silver, promoted from tickets_v1/author_v1",
         GUIDE,
-        "5-make-its-run-the-reference-optional",
+        "5-make-its-outputs-the-reference-optional",
     ),
     (
         "Run the others — three times",
         "The spread is how far an arm disagrees with itself.",
-        "evh experiment-run --config data/configs/tickets_lead2_noisy.yaml --repeat 3",
+        "evh run --config data/configs/tickets_lead2_noisy.yaml --repeat 3",
         "overlap_f1     spread=0.029372   treat deltas below 0.029372 as noise",
         GUIDE,
         "6-run-the-other-arms-three-times-each",
@@ -662,15 +787,38 @@ STEPS = [
     (
         "Choose, and record why",
         "Promote with a reason that says what the tests showed; validate in CI.",
-        'evh run-promote --run … --reason "leads on silver but separates from neither arm at n=6"',
+        'evh run-promote --run … --reason "leads on silver but differs significantly from neither arm at n=6"',
         "VALIDATION PASSED",
         GUIDE,
         "8-choose",
     ),
     (
+        "Then: the next round",
+        "Carry what stays, retire what lost with why, close with a conclusion. The goal goes on, before deploy and after.",
+        (
+            "evh round-retire --goal tickets_summary --round r1 --arm tickets_lead1_v1 --reason …\n"
+            "evh round-close --goal tickets_summary --round r1 --conclusion …"
+        ),
+        "round r1 of tickets_summary closed",
+        TUTORIAL4,
+        "3-drop-an-arm-and-close-the-round",
+    ),
+    (
+        "When the scoring changes",
+        "Preview what a new rule moves; then re-score the round at $0, or adopt the rule from the next round.",
+        "evh score-preview --goal tickets_summary",
+        "recommended  tickets_lead2_v1",
+        TUTORIAL4,
+        "7-when-the-scoring-changes",
+    ),
+    (
         "Then: make it golden",
-        "Add answers a person wrote; re-score every run against them for $0.",
-        "evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --out data/runs-gold",
+        "A person's answers, imported as labels and promoted at gold; re-score every run against them for $0.",
+        (
+            "evh label-import tutorial/gold --dataset-id tickets_v1 --set owner_gold --by owner\n"
+            "evh reference-promote --dataset-id tickets_v1 --labels owner_gold --tier gold --reason … --by owner\n"
+            "evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --out data/runs-gold"
+        ),
         "NO detectable arm effect · pairs distinguishable: 0 of 6",
         TUTORIAL3,
         "2-make-it-golden",
@@ -722,8 +870,8 @@ def use_page(H, f: dict) -> str:
 
 <section class="block" id="lifecycle"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>The lifecycle</div>
-  <h2>Eight things, one direction, and one optional pass.</h2>
-  <p class="lede">Every evaluation here — ours and yours — moves through the same eight artifacts; re-measuring the stored outputs later is optional. Pick one to see what it is, where it lives and the command that makes it.</p>
+  <h2>Eight things, one direction, and two optional passes.</h2>
+  <p class="lede">Every evaluation here — ours and yours — moves through the same eight artifacts; re-measuring the stored outputs later, and the next round, are optional. Pick one to see what it is, where it lives and the command that makes it.</p>
   <div class="lc-explorer">
     <div class="lc-map">{lifecycle(interactive=True)}</div>
     <div class="lc-panels">{lifecycle_panels(H)}</div>
@@ -733,13 +881,13 @@ def use_page(H, f: dict) -> str:
 <section class="block" id="patterns"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>Patterns</div>
   <h2>Your question is probably one of these.</h2>
-  <p class="lede">Each maps to an experiment in this repository you can copy — its adapter, its configs, its scorer — and change the data. The idea underneath all of them — build a private leaderboard for your own application instead of trusting a public one — is Chip Huyen's, from <i>AI Engineering</i> (<a href="docs/INFLUENCES/">influences</a>).</p>
+  <p class="lede">Each maps to an eval in this repository you can copy — its adapter, its configs, its scorer — and change the data. The idea underneath all of them — build a private leaderboard for your own application instead of trusting a public one — is Chip Huyen's, from <i>AI Engineering</i> (<a href="docs/INFLUENCES/">influences</a>).</p>
   <div class="patterns">{cards}</div>
 </div></section>
 
 <section class="block" id="steps"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Step by step</div>
-  <h2>Eight steps and an optional ninth, on a real example.</h2>
+  <h2>Eight steps and four optional ones, on a real example.</h2>
   <p class="lede">The tutorial kit ships six support tickets and summaries a person wrote. Every output below is what the command printed.</p>
   <ol class="findings steps">{steps}</ol>
 </div></section>
@@ -759,7 +907,7 @@ def use_page(H, f: dict) -> str:
       <li>Datasets frozen by content hash, re-checked on every use.</li>
       <li>A fingerprint per run: data, prompt, code, model, build.</li>
       <li>Each arm's own noise, measured.</li>
-      <li>Paired and Holm-corrected tests — separated or tied.</li>
+      <li>Paired and Holm-corrected tests — significant or not.</li>
       <li>Billed cost and latency beside quality.</li>
       <li>Re-scoring from stored outputs for $0; validation for CI; baselines with reasons.</li>
       <li>A recommendation per goal, with its reasons, beside the baseline a person promoted.</li>
@@ -783,8 +931,8 @@ def use_page(H, f: dict) -> str:
   <div class="eyebrow"><span class="num">05</span>Three doors</div>
   <h2>Look at ours, rerun ours, or build yours.</h2>
   <div class="cards doors">
-    <a class="card" href="{H.CATALOG}"><div class="task">Look at ours</div><h3>Every run, in the catalog.</h3><p>The six experiments as the harness shows them: every goal, dataset, arm and reference, and an inspector that tests any arms against a baseline, item by item. Nothing to install; your agent can ask it too, at <code>evals.humancopilot.eu/mcp</code>.</p><div class="meta"><span>evals.humancopilot.eu/catalog</span><b>The catalog →</b></div></a>
-    <a class="card" href="docs/REPRODUCE/"><div class="task">Rerun ours</div><h3>Check every finding yourself.</h3><p>Five levels, from recomputing every number for $0 to rerunning every model with one key — with a replication card that re-tests every separation.</p><div class="meta"><span>make verify</span><b>Reproduce it →</b></div></a>
+    <a class="card" href="{H.CATALOG}"><div class="task">Look at ours</div><h3>Every run, in the catalog.</h3><p>The six evals as the harness shows them: every goal, dataset, arm and reference set, and an inspector that tests any arms against a baseline, item by item. Nothing to install; your agent can ask it too, at <code>evals.humancopilot.eu/mcp</code>.</p><div class="meta"><span>evals.humancopilot.eu/catalog</span><b>The catalog →</b></div></a>
+    <a class="card" href="docs/REPRODUCE/"><div class="task">Rerun ours</div><h3>Check every finding yourself.</h3><p>Five levels, from recomputing every number for $0 to rerunning every model with one key — with a replication card that re-tests every significance verdict.</p><div class="meta"><span>make verify</span><b>Reproduce it →</b></div></a>
     <a class="card" href="docs/GUIDE/"><div class="task">Build yours</div><h3>Your first evaluation, end to end.</h3><p>Freeze a dataset, build a golden reference set, measure, compare honestly, promote a baseline — offline, with the real output of every step.</p><div class="meta"><span>harness/tutorial</span><b>The guide →</b></div></a>
   </div>
 </div></section>
@@ -806,7 +954,7 @@ show('dataset');}})();
     )
 
 
-# ── borrowed by the landing and experiment pages ────────────────────────────
+# ── borrowed by the landing and eval pages ──────────────────────────────────
 def landing_teaser(H, f: dict, num: str = "03") -> str:
     chs = chapters(H, f)
     habits = "".join(
@@ -825,8 +973,8 @@ def landing_teaser(H, f: dict, num: str = "03") -> str:
 """
 
 
-def experiment_lesson(H, x: dict) -> tuple:
-    """(chapter id, chapter title, what this experiment taught) for an experiment page."""
+def eval_lesson(H, x: dict) -> tuple:
+    """(chapter id, chapter title, what this eval taught) for an eval page."""
     slug = x["slug"]
     if slug == "summarization":
         return (
@@ -854,7 +1002,7 @@ def experiment_lesson(H, x: dict) -> tuple:
             "tested",
             "Tested, not read.",
             (
-                f"{x['n_tied']} arms cannot be separated from the leader. A saturated benchmark "
+                f"{x['n_contenders']} arms are not significantly different from the leader. A saturated benchmark "
                 "sorts; it does not rank — and the table still prints them first, second, third."
             ),
         )
@@ -880,11 +1028,11 @@ def experiment_lesson(H, x: dict) -> tuple:
                 "agreement with the other two.",
                 JUDGE,
             )
-            + " An LLM judge is a silver reference. This experiment is what checking one "
+            + " An LLM judge is a silver reference. This eval is what checking one "
             "against a gold set looks like.",
         )
     return (
         "noise",
         "Measure the noise before the difference.",
-        H.q("The dev slice's leader finished 10th of 19, a rank inside a tie.", RET),
+        H.q("The pilot slice's leader finished 10th of 19, a rank inside a tie.", RET),
     )

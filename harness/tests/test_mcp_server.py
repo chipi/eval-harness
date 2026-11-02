@@ -75,11 +75,38 @@ try:
     )
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
-    shutil.copytree(KIT / "gold", data / "references" / "gold" / "tickets_v1")
+    r = evh(
+        "label-import",
+        str(KIT / "gold"),
+        "--dataset-id",
+        "tickets_v1",
+        "--set",
+        "owner_gold",
+        "--by",
+        "owner",
+    )
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "owner_gold",
+            "--tier",
+            "gold",
+            "--reason",
+            "The kit's hand-written summaries decide.",
+            "--by",
+            "owner",
+        )
+    )
+    check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
     cfg = (KIT / "configs" / "tickets_lead2.yaml").read_text()
     (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\n")
-    r = evh("experiment-run", "--config", str(data / "configs" / "lead2.yaml"))
+    r = evh("run", "--config", str(data / "configs" / "lead2.yaml"))
     check("setup: one run", r.returncode == 0, r.stderr[-300:])
 
     # A PUBLIC SERVER'S inspect SEES ONLY PUBLIC FIELDS. It runs in its own process, where the
@@ -155,6 +182,34 @@ try:
             check(
                 "datasets with an option: passed as the command line",
                 not res.is_error and "tickets_v1" in res.content[0].text,
+            )
+            props = set(by["inspect"].input_schema["properties"])
+            check(
+                "inspect: the sheet's options are in its schema; the ones that write a file (the CSV and its fill) are not, nor the removed --rows and --items",
+                {
+                    "sheet",
+                    "dataset-id",
+                    "wrong-against",
+                    "new-vs",
+                    "split",
+                    "unlabelled",
+                    "scores-only",
+                    "metric",
+                    "from",
+                }
+                <= props
+                and not {"csv", "fill", "choices", "seed", "rubric", "scale", "rows", "items"} & props,
+                str(sorted(props)),
+            )
+            res = await s.call_tool("labels", {"dataset-id": "tickets_v1"})
+            want = evh("labels", "--dataset-id", "tickets_v1", "--json").stdout
+            check(
+                "labels: a read tool, its schema the command's options, its answer the command's JSON",
+                {"dataset-id"} <= set(by["labels"].input_schema["properties"])
+                and not res.is_error
+                and json.loads(res.content[0].text) == json.loads(want)
+                and res.structured_content == json.loads(want),
+                res.content[0].text[:300],
             )
             res = await s.call_tool("datasets", {"bogus": 1})
             check(

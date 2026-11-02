@@ -68,8 +68,8 @@ def split_half(scores: dict, items: list, n: int, rng: random.Random) -> dict:
 
 
 def summarisation_hosted(n: int = 20) -> dict:
-    """The same split-half for the summarisation experiment's hosted arms -- the same 24
-    models -- so the two experiments' stability is compared like for like. Its report's
+    """The same split-half for the summarisation eval's hosted arms -- the same 24
+    models -- so the two evals' stability is compared like for like. Its report's
     own figure (0.443) is over all 29 arms, local ones included."""
     scores = {}
     for mj in sorted(RUNS.glob("cnn_*_n200_v1_*/metrics.json")):
@@ -99,7 +99,7 @@ def tier_tests(per_item: dict, items: list, permutations: int = 20000) -> dict:
             out[fam] = {"delta": statistics.fmean(d), "p": sign_flip_p(d, permutations, rng=rng)}
     verdicts = holm({fam: v["p"] for fam, v in out.items()})
     for fam, v in out.items():
-        v["holm_threshold"], v["separated"] = verdicts[fam]
+        v["holm_threshold"], v["significant"] = verdicts[fam]
     return out
 
 
@@ -185,7 +185,7 @@ def main() -> int:
             f"   same unique winner {s['same_winner']:.0%}"
         )
     sh = f["summarisation_hosted_20"]
-    print(f"  the summarisation experiment's {sh['n_arms']} hosted arms, 20 per half: rho {sh['rho']:.3f}")
+    print(f"  the summarisation eval's {sh['n_arms']} hosted arms, 20 per half: rho {sh['rho']:.3f}")
     print(
         f"\nSpearman(billed cost, tau) = {f['spearman_cost_tau']:+.3f} over a "
         f"{f['price_range']:.1f}x price range ({f['dearest']} / {f['cheapest']})"
@@ -198,7 +198,7 @@ def main() -> int:
     for fam, t in sorted(f["tier_tests"].items(), key=lambda kv: kv[1]["p"]):
         print(
             f"  {fam:9s} {t['delta']:+.4f}  p {t['p']:.4f}  threshold {t['holm_threshold']:.4f}  "
-            f"{'separated' if t['separated'] else 'not separated'}"
+            f"{'significant' if t['significant'] else 'not significant'}"
         )
     print("\nper-dimension leaders among the judges")
     for d, r in f["dimensions"].items():

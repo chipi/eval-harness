@@ -19,10 +19,10 @@ like a model without needing one. A real model, local or hosted, is the
  sources/ ──dataset-create──▶ datasets/<id>.json ──dataset-materialize──▶ materialized/<id>/
  (your items)                 (item list + sha256)                         (hash-checked copy)
 
- configs/<arm>.yaml ──experiment-run──▶ runs/<run_id>/   outputs, per-item scores, cost, speed,
+ configs/<arm>.yaml ──evh run──▶ runs/<run_id>/   outputs, per-item scores, cost, speed,
  (one system = one arm)                                   fingerprint: data + code + model + build
                                               │
-                    reference-create --from-run ──▶ references/silver/<id>/   (optional)
+    label-from-run ──▶ labels/<id>/<set>/ ──reference-promote──▶ references/silver/<id>/   (optional)
                                               │
                          leaderboard · pair-test · family-test
                                               │
@@ -36,7 +36,8 @@ like a model without needing one. A real model, local or hosted, is the
 | **materialized** | a hash-checked working copy of the dataset | `data/materialized/<id>/` | derived; delete freely |
 | **arm** | one system under test: a config naming provider, model, prompt, settings | `data/configs/*.yaml` | a change is a new `config_id` |
 | **run** | one pass of an arm over a dataset: outputs, scores, fingerprint | `data/runs/<run_id>/` | never |
-| **reference** | what each item is scored against: **gold** (a person wrote it) or **silver** (a model did) | `data/references/<tier>/<id>/` | never; a change is a new set |
+| **label** | what is right for one item, and who said it: a person, a model or a rule; in sets | `data/labels/<dataset>/<set>/` | never; a correction is a new set |
+| **reference** | what each item is scored against: labels promoted at **gold** (the yardstick) or **silver** (good for ranking) | `data/references/<tier>/<id>/` | never; a change is a new one |
 | **goal** | what the evaluation is for: who uses the output, the decision, the measure | `data/goals/<goal_id>.yaml` | yes |
 | **baseline** | the run you chose to measure future changes against, with why | `data/baselines/` | replaced by the next choice, never edited |
 
@@ -49,7 +50,7 @@ everything: the hosted-model clients, the judges, the catalog. Nothing else to a
 ```bash
 mkdir my-evals && cd my-evals
 python3 -m venv .venv && . .venv/bin/activate
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.5.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.0#subdirectory=harness"
 ```
 
 Then the project's folders and the tutorial kit, under version control from the start:
@@ -60,7 +61,7 @@ git init -q && git add -A && git commit -qm "Start: the tutorial kit"
 ```
 ```text
   folders  data/sources, data/configs, data/goals, data/fields
-  wrote    24 file(s), the tutorial kit under tutorial/
+  wrote    26 file(s), the tutorial kit under tutorial/
 ```
 
 `data/` is where everything the harness freezes and records will live; `tutorial/` is the
@@ -145,7 +146,7 @@ git add -A && git commit -qm "tickets_v1: dataset, arms, goal"
 A dry run calls nothing and shows what a pass will cost:
 
 ```bash
-evh experiment-run --config data/configs/tickets_author.yaml --dry-run
+evh run --config data/configs/tickets_author.yaml --dry-run
 ```
 ```text
   config      tickets_author_v1  (echo)
@@ -162,38 +163,44 @@ would not run in production, and let its outputs be the answers the others are m
 against:
 
 ```bash
-evh experiment-run --config data/configs/tickets_author.yaml
+evh run --config data/configs/tickets_author.yaml
 ```
 ```text
-  no references for tickets_v1 — quality cannot be scored.
-  make them from a run of the arm you trust most (this one, if it is):
-    evh reference-create --dataset-id tickets_v1 --from-run <run_id>
-  or author them with a config:  evh reference-create --dataset-id tickets_v1 --config <a model you trust>
+  no reference set for tickets_v1 — quality cannot be scored.
+  a reference set is labels you promote (RFC-023): a run of the arm you trust most as a model's labels,
+    evh label-from-run --run <run_id> --set <name>
   ...
 wrote 1 run(s) to .../my-evals/data/runs
 ```
 
 With no reference it records only what needs none (the output's length, its cost, how long
-each call took), and it names the two ways to make one. The next step takes the first.
+each call took), and it says how to make one. The next step does.
 
-## 5 · Make its run the reference (optional)
+## 5 · Make its outputs the reference (optional)
+
+A **label** says what is right for one item, and who said it: a person, a model or a rule. A
+**reference** is labels you promote on purpose, with a reason, at the tier you choose. Here the
+author arm's outputs become a model's labels, and you promote them:
 
 ```bash
-evh reference-create --dataset-id tickets_v1 --from-run <the tickets_author_v1 run_id>
-git add data/references && git commit -qm "silver/tickets_v1 from the author arm's run"
+evh label-from-run --run <the tickets_author_v1 run_id> --set author_v1
+evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver \
+    --reason "The author arm's summaries rank the others until a person writes gold." --by me
+git add data/labels data/references && git commit -qm "silver/tickets_v1: the author arm's labels, promoted"
 ```
 ```text
-silver reference(s) for 6 item(s) from run tickets_author_v1_...: no calls
-data/references/silver/tickets_v1  (6 item(s), tier=silver, $0.0000)
-Runs against this dataset will now be scored against it automatically.
+data/labels/tickets_v1/author_v1: 6 label(s), source model · tickets_author_v1_...
+  every set on it: evh labels --dataset-id tickets_v1
+.../my-evals/data/references/silver/tickets_v1: 6 of 6 item(s), silver, promoted from tickets_v1/author_v1 (model · tickets_author_v1_...)
+  commit it before the next run: an untracked reference marks every run scored against it dirty
 ```
 
-`evh runs-list` prints the run ids. `--from-run` copies the run's outputs and calls nothing,
-and the reference records the run, its config and its fingerprint. These are **silver**
-references: consistent, cheap, and *not correct*. They encode the author's opinion, mistakes
-included: good enough to rank the other arms by how close they come to it, and every run
-scored against them says so. The step is optional: if you already have answers a person wrote
-(**gold**), put them in `data/references/gold/tickets_v1/` instead and skip it
+`evh runs-list` prints the run ids. `label-from-run` copies the run's outputs and calls nothing,
+and the labels record the run, its config and its fingerprint. Promoted as **silver**, they are
+consistent, cheap, and *not correct*: they encode the author's opinion, mistakes included, good
+enough to rank the other arms by how close they come to it, and every run scored against them
+says so. The step is optional: if you already have answers a person wrote (**gold**), import
+them as a person's labels (`evh label-import`) and promote them at gold instead
 ([tutorial 3](tutorials/3-frontier-reference-and-judging.md) adds gold to this project and shows
 what silver got wrong).
 
@@ -201,7 +208,7 @@ what silver got wrong).
 
 ```bash
 for a in lead1 lead2 lead2_noisy; do
-  evh experiment-run --config data/configs/tickets_$a.yaml --repeat 3
+  evh run --config data/configs/tickets_$a.yaml --repeat 3
 done
 ```
 <!-- guide-check: varies treat -->
@@ -249,7 +256,7 @@ evh leaderboard --dataset-id tickets_v1
     ...
     pairs distinguishable: 1 of 3
   ...
-  Scored against SILVER references (model-generated). Good for ranking
+  Scored against SILVER references (consistent, not correct). Good for ranking
   these arms against each other; not a claim that any of them is correct.
 
 === scored against no reference ===
@@ -273,11 +280,11 @@ evh pair-test --dataset-id tickets_v1 --a tickets_lead2_v1 --b tickets_lead1_v1
 ```text
     items A wins       6/6
     sign-flip p        0.0312  (exact, all 2^6 sign patterns)
-    verdict            SEPARATED at 0.05
+    verdict            SIGNIFICANT at 0.05
     (uncorrected: valid only if this pair was named before the table was read)
 ```
 
-**A winner claim.** "lead2 is the best" means *separated from every other arm*, with the
+**A winner claim.** "lead2 is the best" means *significantly better than every other arm*, with the
 correction for testing several at once. If you picked the pair *after* looking at the
 leaderboard, the `pair-test` p-value above is wrong; `family-test` corrects for every
 comparison you could have made:
@@ -295,10 +302,10 @@ evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_
     tickets_lead1_v1           +0.2592    6/6      0.0312   0.0250   --
     tickets_lead2_noisy_v1     +0.1011    6/6      0.0312   0.0500   --
 
-    separated from 0 of 2 opponents; ahead on the point estimate against 2 of 2
+    significantly different from 0 of 2 opponents; ahead on the point estimate against 2 of 2
 ```
 
-Ahead of both on every ticket (`A wins`: the items `lead2` wins), and separated from neither: on
+Ahead of both on every ticket (`A wins`: the items `lead2` wins), and significantly different from neither: on
 six items the smallest p a paired test can reach is 0.0312, and with two comparisons the first
 must beat 0.025. Up to 30 items the p is exact, and every command prints the same one; above
 that it is a seeded estimate, and the line under the header says which
@@ -313,7 +320,7 @@ reason. The reason has to say what the tests showed, not what you hoped:
 
 ```bash
 evh run-promote --run <the tickets_lead2_v1 run_id> \
-  --reason "lead2 is closest to the author's silver on all six tickets but separates from neither arm at n=6; working baseline until the dataset grows"
+  --reason "lead2 is closest to the author's silver on all six tickets but differs significantly from neither arm at n=6; working baseline until the dataset grows"
 evh runs-list --baselines
 ```
 ```text
@@ -326,7 +333,7 @@ tickets_v1_baseline
     dataset  tickets_v1
     ...
     scored   silver references, adapter scripts/adapter.py
-    why      lead2 is closest to the author's silver on all six tickets but separates from neither arm at n=6; working baseline until the dataset grows
+    why      lead2 is closest to the author's silver on all six tickets but differs significantly from neither arm at n=6; working baseline until the dataset grows
 ```
 
 `lead2` ran three times; any of its repeats can be promoted, and the baseline records every
@@ -362,8 +369,10 @@ Each tutorial starts from where this page ends, or from a project of your own:
 | [**1 · A local model against a baseline**](tutorials/1-local-model.md) | your own items, your own `adapter.py`, a small model on CPU against a no-model baseline |
 | [**2 · A hosted LLM, with your own key**](tutorials/2-hosted-llm.md) | the providers you can choose (OpenAI-compatible endpoints such as OpenRouter, Anthropic, a LiteLLM proxy), the variable each one reads, prices and a spend cap |
 | [**3 · A frontier model's run as the reference, gold, and judging**](tutorials/3-frontier-reference-and-judging.md) | how good the silver was, measured against answers a person wrote, and re-measuring the stored outputs with LLM judges |
-| [**4 · Experiment rounds and dataset versions**](tutorials/4-rounds-and-versions.md) | round on round: keep what wins, drop what lost, record why; a new version of a dataset that remembers where it came from |
+| [**4 · Eval rounds and dataset versions**](tutorials/4-rounds-and-versions.md) | round on round: keep what wins, drop what lost, record why; a new version of a dataset that remembers where it came from |
 | [**5 · The catalog and the inspector**](tutorials/5-catalog-and-inspector.md) | pages over your runs, an inspector that tests arms item by item, and the `evh` command behind every view |
+| [**6 · Datasets from production**](tutorials/6-datasets-from-production.md) | what your system did in production, kept as a capture: a dataset from it, labels from what happened afterwards, validation and test; then production's own decisions scored against those labels, the rows where it was wrong picked, and the next version of a dataset you govern made from them |
+| [**7 · Set up a model before you test it**](tutorials/7-set-up-a-model.md) | a model record, onboarding it where it runs (its build, whether it reasons, JSON, determinism), an arm that names it, a smoke before the full run; on your own machine with Ollama |
 
 And the references, for when you know what you are looking for:
 [INTEGRATION](../harness/docs/INTEGRATION.md) (your system in the harness: the adapter, what
@@ -374,5 +383,5 @@ command, flag, environment variable and exit code), [CONCEPTS](../harness/docs/C
 And for an agent: the catalog's views you ran here (`evh runs-list`, `validate`, `goals`,
 `inspect`) are also tools; the ranking and the tests (`leaderboard`, `pair-test`, `family-test`)
 are not tools yet. `evh mcp` serves them to Claude, ChatGPT, the OpenAI API, Gemini or any MCP client, on your project or for a team; this repository's own
-experiments answer at `https://evals.humancopilot.eu/mcp`, without sign-in
+evals answer at `https://evals.humancopilot.eu/mcp`, without sign-in
 ([INTEGRATION](../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp)).

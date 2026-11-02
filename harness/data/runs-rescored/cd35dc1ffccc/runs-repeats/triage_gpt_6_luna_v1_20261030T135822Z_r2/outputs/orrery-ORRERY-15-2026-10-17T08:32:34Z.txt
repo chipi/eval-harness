@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "orrery-staging-isolation-probe", "model_disposition": "cleanup", "reason": "The alert name identifies this as a staging isolation probe, so it is synthetic test noise rather than a production issue."}

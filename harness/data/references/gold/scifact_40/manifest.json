@@ -1,5 +1,5 @@
 {
-  "caveat": "GOLD: human-authored or human-reviewed.",
+  "caveat": "GOLD: promoted as gold from the labels its script fetches (person · the dataset's authors): the answers a decision rests on.",
   "created_at": "2026-10-25T13:14:25Z",
   "dataset_id": "scifact_40",
   "items_sha256": {
@@ -45,6 +45,16 @@
     "914": "b892d7d372b5bfda3c8e4c7ee897bc1f9f7461b561670f174bc4be4ca10cbc24"
   },
   "n_items": 40,
+  "promoted_from": {
+    "dataset_id": "scifact_40",
+    "labels": null,
+    "source": {
+      "by": "the dataset's authors",
+      "kind": "person",
+      "via": "examples/retrieval-scifact/fetch.py"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "redistributed": false,
   "source": "examples/retrieval-scifact/fetch.py",
   "tier": "gold"

@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "(delete me)", "model_disposition": "cleanup", "reason": "Signal contains explicit test/noise marker '(delete me)' in alert name, indicating this is test instrumentation that should be removed at the source."}

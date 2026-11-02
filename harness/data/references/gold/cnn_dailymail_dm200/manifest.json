@@ -1,5 +1,5 @@
 {
-  "caveat": "GOLD: human-authored or human-reviewed.",
+  "caveat": "GOLD: promoted as gold from the labels its script fetches (person · the dataset's authors): the answers a decision rests on.",
   "created_at": "2026-10-25T13:14:25Z",
   "dataset_id": "cnn_dailymail_dm200",
   "items_sha256": {
@@ -205,6 +205,16 @@
     "fe4531d4b8d7ea109e62bb89c055a5a2d844f524": "9f07b6752f2b37569d9377592c089794aa67cc5a13e1ab94881eda98acd95988"
   },
   "n_items": 200,
+  "promoted_from": {
+    "dataset_id": "cnn_dailymail_dm200",
+    "labels": null,
+    "source": {
+      "by": "the dataset's authors",
+      "kind": "person",
+      "via": "examples/summarization-cnn-dailymail/fetch.py"
+    }
+  },
+  "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "redistributed": false,
   "source": "examples/summarization-cnn-dailymail/fetch.py",
   "tier": "gold"

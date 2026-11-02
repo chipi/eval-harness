@@ -1,0 +1,1 @@
+{"pairs": [{"a": 1, "b": 13, "better": 1}, {"a": 7, "b": 9, "better": 1}, {"a": 10, "b": 8, "better": 1}, {"a": 14, "b": 1, "better": 1}, {"a": 6, "b": 14, "better": 2}, {"a": 11, "b": 10, "better": "tie"}, {"a": 4, "b": 0, "better": 2}, {"a": 1, "b": 2, "better": 1}]}

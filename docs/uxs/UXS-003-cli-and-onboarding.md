@@ -2,10 +2,10 @@
 
 - **Status**: Active
 - **Authors**: Marko Dragoljevic
-- **Related PRDs**: [PRD-001](../prd/PRD-001-experiments-and-comparison.md) (experiments),
+- **Related PRDs**: [PRD-001](../prd/PRD-001-evals-and-comparison.md) (evals),
   [PRD-007](../prd/PRD-007-packaging-and-providers.md) (one install), [PRD-004](../prd/PRD-004-catalog-and-inspector.md) (parity),
   [PRD-005](../prd/PRD-005-goals-and-rounds.md) (rounds)
-- **Related RFC**: [RFC-004](../rfc/RFC-004-experiment-rounds.md) (the round commands)
+- **Related RFC**: [RFC-004](../rfc/RFC-004-eval-rounds.md) (the round commands)
 - **Related UX specs**: [UXS-001](UXS-001-catalog.md), [UXS-002](UXS-002-inspector.md)
 - **Implementation paths**: `harness/scripts/cli.py` (`COMMANDS`: every command, one line of
   help each), `harness/Makefile` (the same scripts as `make` targets), `docs/GUIDE.md` (the
@@ -18,7 +18,7 @@ The harness's main surface is the terminal. One command, `evh`, with one subcomm
 repository each is also a `make` target running the same script. This spec covers the order in
 which a newcomer meets the commands, how every command speaks (refusals, hints, exit codes), the
 **parity table** that maps every catalog view and action to its command, and the flow of an
-experiment round.
+eval round.
 
 ## Principles
 
@@ -49,9 +49,9 @@ on every change, comparing each quoted output. Its order is the order a newcomer
 | 1 | freeze a dataset | `evh dataset-create --dataset-id tickets_v1 --source-dir tutorial/tickets` |
 | 2 | materialize | `evh dataset-materialize --dataset-id tickets_v1` |
 | 3 | describe the arms, name the goal, commit | copy configs, `goal: tickets_summary` |
-| 4 | run the best arm first (a dry run prices it) | `evh experiment-run --config data/configs/tickets_author.yaml [--dry-run]` |
-| 5 | optional: make its run the reference | `evh reference-create --dataset-id tickets_v1 --from-run <run_id>` |
-| 6 | run the other arms, three times each | `evh experiment-run --config … --repeat 3` |
+| 4 | run the best arm first (a dry run prices it) | `evh run --config data/configs/tickets_author.yaml [--dry-run]` |
+| 5 | optional: make its outputs the reference (its outputs become a model's labels, which you promote) | `evh label-from-run --run <run_id> --set author_v1`, then `evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "…" --by <you>` |
+| 6 | run the other arms, three times each | `evh run --config … --repeat 3` |
 | 7 | compare | `evh leaderboard`, `evh pair-test`, `evh family-test` |
 | 8 | choose: promote a baseline, then validate | `evh run-promote --run … --reason "…"`, `evh runs-list --baselines`, `evh validate` |
 
@@ -104,19 +104,36 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | the arms page: every arm, grouped, filtered (local / hosted, price tier) | `evh arms [--by dataset\|config\|model\|provider\|scored] [--where local\|hosted] [--tier T]` | `make arms` |
 | the arms page: the configs, with their rank on each goal | `evh arms --configs` | `make arms ARGS=--configs` |
 | an arm page: metrics, cost and speed, runs, config, conditions, rounds | `evh arms --arm <arm id or config id>` | `make arms ARM=<id>` |
-| reference pages | `evh references [--reference-id <id>]` | `make references` |
+| the models page: every model record, its deployments, settings, onboarding, arms (0.6.0, RFC-020) | `evh models [--kind K] [--where self-hosted\|hosted] [--status vetted\|onboarded\|check\|none]` | |
+| a model page: its deployments and their onboarding, settings history, arms | `evh models --model <id>` | |
+| (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard <id> --deployment <d>`, `evh arm-smoke --config <arm>` | |
+| reference set pages | `evh references [--reference-id <id>]` | `make references` |
+| the Captures page | `evh captures [--capture ID] [--json]` | |
+| the Labels page; a dataset page's labels (0.6.0) | `evh labels [--dataset-id D]` | |
+| (no page action) labelling: a sheet to fill, then its import (0.6.0) | `evh label-sheet --dataset-id D --out sheet.csv [--items …] [--item ID …]`, `evh label-import sheet.csv --dataset-id D --set S --by NAME` | |
+| (no page action) a run's outputs, or outcome rules, as labels (0.6.0) | `evh label-from-run --run R --set S`, `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | |
+| a reference's "promoted from" (0.6.0) | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |
+| scored against a label set (0.6.0) | `evh rescore --labels D/S`, `evh run --labels D/S` | |
+| a recorded arm's badge (0.6.0) | `evh arm-from-capture --dataset-id D --capture C --as NAME` | |
+| the inspector's sheet, its downloads; its selection's commands (0.6.0) | `evh inspect --sheet --dataset-id D --runs A,B … [--csv FILE [--fill label\|pick\|scores]]`; `evh pick --dataset-id D --item … [--for V] [--tag k=v] [--note "…"]` | |
+| (no page action) a sheet filled elsewhere, read back (0.6.0) | `evh sheet-import sheet.csv --dataset-id D --by WHO [--kind person\|model] [--set S] [--scorer S]` | `make sheet-import ARGS="…"` |
+| a dataset page's picks waiting; its selection's command (0.6.0) | `evh picks [--for V] [--tag k=v]`, `evh pick --dataset-id D --item ITEM --drop`; `evh dataset-extend V1 --dataset-id V2 --picks`, `evh dataset-extend V1 --dataset-id V2 --pick ITEM` | |
+| a promoted arm's deploy sheet (0.6.0) | `evh deploy-sheet --config ARM [--capture C]` | |
 | the metrics page | `evh metrics [--dataset-id <id>]` | `make metrics` |
 | a metric page: summary, details, goals, per-dataset strip chart and arms | `evh metrics --metric <metric>` | `make metrics METRIC=<metric>` |
 | inspector: a comparison | `evh inspect --runs a,b [--baseline a] [--metric m]` | `make inspect RUNS=a,b` |
 | inspector: filter, breakdown | `evh inspect --runs … --where field:value --by field` | |
 | inspector: one item | `evh inspect --runs … --item <item_id>` | |
-| inspector: the per-item table | `evh inspect --runs … --items` | |
+| inspector: the per-item table | `evh inspect --sheet --dataset-id D --runs …` (the sheet; `--scores-only`) | |
 | inspector: the analysis charts, as numbers | `evh inspect --runs … --analysis [--x <metric>]` | |
 | the catalog's global search | `evh search <text>` | |
 | "promote its run" (a goal page with no decision) | `evh run-promote --run <run_id> --reason "…"` | `make run-promote` |
 | a suggested retirement | `evh round-retire --goal g --round rN --arm <config> --reason "…"` | `make round-retire` |
 | a suggested close | `evh round-close --goal g --round rN --conclusion "…" [--promote <run_id>]` | `make round-close` |
-| (no page action) opening a round | `evh round-open --goal g --dataset d …` | `make round-open` |
+| (no page action) opening a round | `evh round-open --goal g --dataset d … [--adopt] [--keep all] [--scoring "…"]` | `make round-open` |
+| a round's scorer and its scoring changes (the goal page's round section) | `evh rounds --goal g --round rN` | |
+| (no page action) what a scoring change would move | `evh score-preview --goal g [--round rN]` | |
+| (no page action) re-scoring a round | `evh rescore --goal g --round rN --why "…"` | `make rescore` |
 | building and serving the pages | `evh catalog`, `evh catalog-serve` | `make catalog`, `make catalog-serve` |
 
 Every row has a command. Adding a view means adding its command in the same change.

@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "delete me", "model_disposition": "cleanup", "reason": "The error message 'sourcemap probe (delete me)' contains an explicit deletion marker indicating this is a test/synthetic event that should be removed."}

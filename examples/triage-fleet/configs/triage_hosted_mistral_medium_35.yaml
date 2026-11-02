@@ -1,0 +1,11 @@
+# The open-weight mistral-medium-3.5:128b, hosted (OpenRouter): the twin of the self-hosted Ollama arms of the same weights.
+# Arms differ only in the model: the fleet's prompt, probes and gates are the same for every arm.
+config_id: triage_hosted_mistral_medium_35_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: eval-mistral-medium-35
+  usd_per_mtok_in: 1.5
+  usd_per_mtok_out: 7.5

@@ -14,5 +14,5 @@ the gold summaries and the judge scorer, whose two judges are `provider: fake` (
 never validated; swap them for real models to use it for real),
 [tutorial 4](https://evals.humancopilot.eu/docs/tutorials/4-rounds-and-versions/) the goal's
 rounds, and [tutorial 5](https://evals.humancopilot.eu/docs/tutorials/5-catalog-and-inspector/)
-the fields. `judge_panel.yaml` is the judge panel's config (`evh judge --config
+the fields, and [tutorial 6](https://evals.humancopilot.eu/docs/tutorials/6-datasets-from-production/) `production/`: the same tickets as a support desk's export, with how each ended, and the rules that turn those outcomes into labels. `judge_panel.yaml` is the judge panel's config (`evh judge --config
 tutorial/judge_panel.yaml --use-fake-judge`).

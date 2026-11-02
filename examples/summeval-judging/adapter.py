@@ -5,14 +5,14 @@ and 11 human reference summaries. The system under test scores each of the 16 su
 four dimensions -- coherence, consistency, fluency, relevance -- and is graded on how well its
 scores ORDER the 16 the way the mean of three expert annotators does (Fabbri et al. 2021).
 
-WHAT THIS EXPERIMENT BREAKS THAT THE OTHER FIVE DID NOT
+WHAT THIS EVAL BREAKS THAT THE OTHER FIVE DID NOT
   1. The answer is a vector of judgements, and the metric is a RANK CORRELATION -- not
      overlap with a reference, not 0/1, not set F1, not nDCG. Kendall tau-b per article,
      averaged over the four dimensions, is the primary metric; it is per item, so the
      harness's paired permutation tests and Holm apply unchanged.
   2. It measures the instrument. Two of the arms are METRICS the rest of this repository
-     ranks by: ROUGE, and `coverage`, the summarisation experiment's own primary metric. How
-     well they agree with experts bounds what a lead on that experiment's leaderboard means
+     ranks by: ROUGE, and `coverage`, the summarisation eval's own primary metric. How
+     well they agree with experts bounds what a lead on that eval's leaderboard means
      to a person (measured on 2019-era summaries, not the LLM-written ones it ranks).
   3. It is the LLM-as-judge question in measurable form: when a model grades text, does it
      grade like a person? That is the question behind every silver reference.
@@ -30,12 +30,20 @@ THE ARMS
   length     the summary's word count. A confound, not a judge: if it correlates with the
              experts, so does anything that rewards length.
   random     seeded random scores: the floor every judge must clear, near tau = 0.
+
+MODES (litellm and random only; the default, `grade`, is everything above)
+  mode: pick      the judge names the best of the 16 summaries (prompt_pick.txt); scored `top1`
+                  beside `top1_chance`, what a random pick gets.
+  mode: pairwise  the judge says which of two is better for `pairs_per_item` (8) seeded pairs
+                  (prompt_pairwise.txt); scored `pair_agreement` over the pairs the experts
+                  rank apart. The `random` arm in either mode is the floor (`min_metric`).
 """
 
 from __future__ import annotations
 
 import hashlib
 import importlib.util
+import itertools
 import json
 import random
 import re
@@ -76,6 +84,115 @@ def _item(text: str) -> Dict[str, Any]:
 def _broadcast(values: List[float]) -> str:
     """A single score per summary, stood in for all four dimensions (metric arms)."""
     return json.dumps({d: [round(float(v), 10) for v in values] for d in DIMS})
+
+
+# ── what the system is asked: grade (above), pick the best, or compare pairs ─────────────
+# A judge scorer validated in a mode (docs/rfc/RFC-005 "Judging modes") is validated as an arm
+# with that `mode`: `pick` names the best of the article's 16 summaries and is scored `top1`;
+# `pairwise` says which of two is better, for `pairs_per_item` seeded pairs, and is scored
+# `pair_agreement`. Only the hosted judge (`litellm`) and the `random` floor have the modes.
+MODES = ("grade", "pick", "pairwise")
+PAIRS_PER_ITEM = 8
+PAIR_SEED = 20261015
+#: The last lines of the pick and pairwise messages: the same words judging.py's
+#: build_pick_message / build_pairwise_message end with (tests/test_judge_score.py holds them equal).
+PICK_REMINDER = (
+    'Begin your reply with the JSON object, for example {"best": [3]}, naming several numbers when '
+    "they are equally the best; write nothing after it."
+)
+PAIR_REMINDER = (
+    'Begin your reply with the JSON object: {"better": 1}, {"better": 2} or {"better": "tie"}; '
+    "write nothing after it."
+)
+TIE_EPS = 1e-9
+
+
+def _mode(params: Dict[str, Any]) -> str:
+    mode = params.get("mode") or "grade"
+    if mode not in MODES:
+        raise SystemExit(f"unknown mode {mode!r} -- expected one of {list(MODES)}")
+    return mode
+
+
+def _pairs_per_item(params: Dict[str, Any]) -> int:
+    k = params.get("pairs_per_item", PAIRS_PER_ITEM)
+    if isinstance(k, bool) or not isinstance(k, int) or not 1 <= k <= N_SUMMARIES * (N_SUMMARIES - 1) // 2:
+        raise SystemExit(f"pairs_per_item must be a whole number from 1 to 120, got {k!r}")
+    return k
+
+
+def _pairs(item: Dict[str, Any], params: Dict[str, Any]) -> List[tuple]:
+    """The pairs of an article's 16 summaries a pairwise arm compares: `pairs_per_item` of the
+    120, each as (shown first, shown second), seeded by `pair_seed` and the article alone. The
+    sample is drawn blind to the experts (call_system never sees them) and is the same for every
+    arm; `score` keeps the pairs the experts rank apart."""
+    ident = hashlib.sha256("\x00".join([item["article"], *item["summaries"]]).encode()).hexdigest()
+    rng = random.Random(f"{params.get('pair_seed', PAIR_SEED)}:{ident}")
+    chosen = rng.sample(list(itertools.combinations(range(N_SUMMARIES), 2)), _pairs_per_item(params))
+    return [(a, b) if rng.random() < 0.5 else (b, a) for a, b in chosen]
+
+
+def _pick_message(item: Dict[str, Any], params: Dict[str, Any]) -> str:
+    """Article and the 16 numbered summaries, as `_judge_message` lays them out, then the
+    instruction to answer only the JSON. The prompt's `{n}` is the count."""
+    summaries = "\n".join(f"{i}. {s.strip()}" for i, s in enumerate(item["summaries"], 1))
+    return (f"{_prompt(params).replace('{n}', str(N_SUMMARIES))}\n\nARTICLE:\n{item['article'].strip()}"
+            f"\n\nSUMMARIES:\n{summaries}\n\n{PICK_REMINDER}")
+
+
+def _pair_message(item: Dict[str, Any], first: int, second: int, params: Dict[str, Any]) -> str:
+    summaries = "\n".join(f"{i}. {item['summaries'][k].strip()}" for i, k in enumerate((first, second), 1))
+    return (f"{_prompt(params).replace('{n}', '2')}\n\nARTICLE:\n{item['article'].strip()}"
+            f"\n\nSUMMARIES:\n{summaries}\n\n{PAIR_REMINDER}")
+
+
+def _reply_object(output: Optional[str]) -> Optional[Dict[str, Any]]:
+    """The first JSON object in a reply (an explanation may follow it, braces and all), or None."""
+    text = output or ""
+    dec = json.JSONDecoder()
+    i = text.find("{")
+    while i != -1:
+        try:
+            obj, _ = dec.raw_decode(text, i)
+        except json.JSONDecodeError:
+            i = text.find("{", i + 1)
+            continue
+        return obj if isinstance(obj, dict) else None
+    return None
+
+
+def _read_pick(output: str) -> Optional[List[int]]:
+    """The 1-based numbers a pick reply names: a non-empty list of distinct whole numbers in
+    1..16, else None (judging.parse_pick)."""
+    v = (_reply_object(output) or {}).get("best")
+    if not isinstance(v, list) or not v or len(set(v)) != len(v):
+        return None
+    if any(isinstance(x, bool) or not isinstance(x, int) or not 1 <= x <= N_SUMMARIES for x in v):
+        return None
+    return list(v)
+
+
+def _read_better(output: str) -> Any:
+    """1, 2 or "tie", else None (judging.parse_pairwise)."""
+    v = (_reply_object(output) or {}).get("better")
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, int) and v in (1, 2):
+        return v
+    if isinstance(v, str) and v.strip().lower() == "tie":
+        return "tie"
+    return None
+
+
+def _pick_output(reply: str) -> str:
+    """What a pick arm stores: the parsed pick, or null with the start of the reply when it did
+    not parse, so `score` always knows the mode."""
+    best = _read_pick(reply)
+    return json.dumps({"best": best} if best else {"best": None, "reply": (reply or "")[:300]})
+
+
+def _pairs_output(pairs: List[tuple], betters: List[Any]) -> str:
+    return json.dumps({"pairs": [{"a": a, "b": b, "better": v} for (a, b), v in zip(pairs, betters)]})
 
 
 # ── the prompt, in one file ──────────────────────────────────────────────────
@@ -162,12 +279,46 @@ def _price(params: Dict[str, Any], tin: Optional[int], tout: Optional[int]) -> O
 
 
 def _litellm(text: str, params: Dict[str, Any]) -> Result:
-    client, route = gateway.client(params)
-    extra_body = gateway.extra_body(params, route)
     item = _item(text) if not params.get("_raw_message") else None
     if item is not None and params.get("inputs") == "published":
         item = _published_item(item)
-    content = text if item is None else _judge_message(item, params)
+    mode = _mode(params)
+    if item is None or mode == "grade":
+        return _chat(text if item is None else _judge_message(item, params), params)
+    if mode == "pick":
+        res = _chat(_pick_message(item, params), params)
+        res.output = _pick_output(res.output)
+        return res
+    pairs = _pairs(item, params)
+    replies = [_chat(_pair_message(item, a, b, params), params) for a, b in pairs]
+    return Result(
+        output=_pairs_output(pairs, [_read_better(r.output) for r in replies]),
+        tokens_in=_total([r.tokens_in for r in replies]),
+        tokens_out=_total([r.tokens_out for r in replies]),
+        cost_usd=_total([r.cost_usd for r in replies]),
+        extra={"truncated": max(r.extra.get("truncated", 0.0) for r in replies),
+               **({"reasoning_tokens": _total([r.extra.get("reasoning_tokens") for r in replies])}
+                  if all("reasoning_tokens" in r.extra for r in replies) else {})},
+        # The harness reads meta["calls"] as a list of call records and meta["finish_reason"] as the
+        # provider's string ("length" marks a reply cut at max_tokens): one record per pair's call.
+        meta={"finish_reason": next((f for r in replies if (f := r.meta.get("finish_reason")) == "length"),
+                                    replies[0].meta.get("finish_reason")),
+              "response_model": replies[0].meta.get("response_model"),
+              "provider": replies[0].meta.get("provider"),
+              "calls": [{"finish_reason": r.meta.get("finish_reason"), "tokens_in": r.tokens_in,
+                         "tokens_out": r.tokens_out} for r in replies]},
+    )
+
+
+def _total(values: List[Any]) -> Any:
+    """The sum of the calls' counts, or None when any call did not report one (None is not 0)."""
+    return None if any(v is None for v in values) else round(sum(values), 10)
+
+
+def _chat(content: str, params: Dict[str, Any]) -> Result:
+    """One call to the hosted judge with this message."""
+    client, route = gateway.client(params)
+    extra_body = gateway.extra_body(params, route)
     max_tokens = int(params.get("max_tokens", 1500))
     resp = client.chat.completions.create(
         model=route["model"],
@@ -259,6 +410,18 @@ def _random(text: str, params: Dict[str, Any]) -> Result:
                   cost_usd=0.0)
 
 
+def _random_modal(text: str, params: Dict[str, Any]) -> Result:
+    """The floor in pick and pairwise mode: a seeded random pick, or a random winner of each
+    sampled pair (never a tie). Its top1 is the chance a random pick has, its pair_agreement
+    near 0.5, which is the `min_metric` a judge must clear."""
+    item = _item(text)
+    rng = random.Random(f"{params.get('seed', 20261015)}:{hashlib.sha256(text.encode()).hexdigest()}")
+    if _mode(params) == "pick":
+        return Result(output=json.dumps({"best": [rng.randint(1, N_SUMMARIES)]}), cost_usd=0.0)
+    pairs = _pairs(item, params)
+    return Result(output=_pairs_output(pairs, [rng.choice([1, 2]) for _ in pairs]), cost_usd=0.0)
+
+
 _BART: Any = None
 _BART_KEY: Optional[tuple] = None
 
@@ -304,7 +467,7 @@ def _bartscore(text: str, params: Dict[str, Any]) -> Result:
 # P("Yes") / (P("Yes") + P("No")) at the first decoder step, inputs truncated to 1,024
 # tokens, and consistency and fluency are scored per sentence (nltk's sent_tokenize) and
 # averaged. `inputs` picks the text it scores:
-#   ours       this experiment's items -- the text every other arm saw -- with the first of
+#   ours       this eval's items -- the text every other arm saw -- with the first of
 #              the 11 references for relevance (UniEval asks for one);
 #   published  UniEval's own SummEval inputs (its reproduce/ file, cased text and its one
 #              reference), each summary matched to its row through the original release.
@@ -441,7 +604,7 @@ def _unieval_published() -> Any:
 def _published_item(item: Dict[str, Any]) -> Dict[str, Any]:
     """The item rewritten in UniEval's published copy of SummEval: the same article and
     summaries, cased and tokenised as that file has them. For the paired judge run that asks
-    whether the judges were held back by this experiment's lower-cased text."""
+    whether the judges were held back by this eval's lower-cased text."""
     norm, by_text, rows = _unieval_published()
     keys = [by_text.get(norm(s), set()) for s in item["summaries"]]
     docs = set.intersection(*[{d for d, _ in k} for k in keys]) if all(keys) else set()
@@ -496,6 +659,11 @@ def call_system(text: str, params: Dict[str, Any]) -> Result:
     fn = PROVIDERS.get(provider)
     if fn is None:
         raise SystemExit(f"unknown provider {provider!r} -- expected one of {sorted(PROVIDERS)}")
+    if _mode(params) != "grade":
+        if provider not in ("litellm", "random"):
+            raise SystemExit(f"mode {_mode(params)!r} is for the litellm judge and the random floor, "
+                             f"not provider {provider!r}")
+        fn = _random_modal if provider == "random" else fn
     started = time.perf_counter()
     result = fn(text, params)
     if result.latency_ms is None:
@@ -531,6 +699,11 @@ def warmup(params: Dict[str, Any]) -> None:
 def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
     provider = params.get("provider", "litellm")
     code = {"rouge": _rouge, "coverage": _coverage, "length": _length, "random": _random}
+    if provider == "random" and _mode(params) != "grade":
+        return {"provider": provider, "id": provider, "mode": _mode(params),
+                "kind": "deterministic metric, no model and no network",
+                "identity_declared": False, "revision_source": "not-a-model",
+                "code_sha256": code_digest(_random_modal, _pairs, _pairs_per_item, _pairs_output)}
     if provider in code:
         consts: Dict[str, Any] = {}
         if provider == "coverage":
@@ -577,6 +750,10 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
             "endpoint": gateway.endpoint(), "provider_routing": params.get("provider_routing"),
             "temperature": params.get("temperature"), "prompt_sha256": _prompt_sha256(params),
             "reasoning": params.get("reasoning"),
+            **({} if _mode(params) == "grade" else {
+                "mode": _mode(params),
+                **({"pairs_per_item": _pairs_per_item(params), "pair_seed": params.get("pair_seed", PAIR_SEED)}
+                   if _mode(params) == "pairwise" else {})}),
             **({"inputs": "published", "unieval_inputs_sha256": UNIEVAL_INPUTS_SHA256,
                 "original_release_sha256": ORIGINAL_SHA256}
                if params.get("inputs") == "published" else {})}
@@ -671,6 +848,9 @@ def score(output: str, reference: Optional[str], source: Optional[str] = None) -
     judge whose ordering is unrelated to the experts' -- and `parsed` says how many of the
     four dimensions arrived, so an unreadable reply is visible rather than averaged away.
     """
+    modal = _reply_object(output)
+    if modal is not None and ("best" in modal or "pairs" in modal):
+        return _score_modal(modal, reference)
     got = parse_scores(output)
     out: Dict[str, float] = {"parsed": sum(v is not None for v in got.values()) / len(DIMS)}
     if reference is None:
@@ -696,12 +876,64 @@ def score(output: str, reference: Optional[str], source: Optional[str] = None) -
     return out
 
 
-TRANSIENT_MARKERS = ("model is warming up", "no instances available", "upstream")
+def _expert_means(reference: str) -> List[float]:
+    """The experts' mean rating of each of the 16 summaries over the four dimensions."""
+    gold = json.loads(reference)
+    return [sum(gold[d][i] for d in DIMS) / len(DIMS) for i in range(N_SUMMARIES)]
+
+
+def _score_modal(obj: Dict[str, Any], reference: Optional[str]) -> Dict[str, float]:
+    """A pick arm or a pairwise arm, against the experts.
+
+    pick: `top1` is the share of the summaries it named that are among those the experts rate
+    highest (1 for a single correct pick; a pick of several scores the chance of drawing a
+    correct one from them), `top1_chance` what a random pick gets: |best set| / 16. A reply
+    that is not a valid pick scores 0 and `parsed` 0.
+    pairwise: `pair_agreement` is the share of the sampled pairs the experts rank apart where the
+    judge preferred the expert-preferred summary, a tie counting half and an unreadable answer 0;
+    an article with no such pair scores 0.5 and `n_pairs` 0.
+    """
+    if "best" in obj:
+        pick = _read_pick(json.dumps(obj))
+        out: Dict[str, float] = {"parsed": 1.0 if pick else 0.0}
+        if reference is None:
+            return out
+        means = _expert_means(reference)
+        top = max(means)
+        best = {i + 1 for i, v in enumerate(means) if top - v < TIE_EPS}
+        out["top1"] = round(sum(k in best for k in pick) / len(pick), 10) if pick else 0.0
+        out["top1_chance"] = round(len(best) / N_SUMMARIES, 10)
+        return out
+    pairs = obj["pairs"]
+    betters = [_read_better(json.dumps({"better": p.get("better")})) for p in pairs]
+    out = {"parsed": sum(v is not None for v in betters) / len(betters) if betters else 0.0}
+    if reference is None:
+        return out
+    means = _expert_means(reference)
+    credit = []
+    for p, v in zip(pairs, betters):
+        a, b = p["a"], p["b"]
+        if abs(means[a] - means[b]) < TIE_EPS:
+            continue
+        preferred = 1 if means[a] > means[b] else 2
+        credit.append(0.0 if v is None else 0.5 if v == "tie" else 1.0 if v == preferred else 0.0)
+    out["pair_agreement"] = round(sum(credit) / len(credit), 10) if credit else 0.5
+    out["n_pairs"] = float(len(credit))
+    return out
+
+
+TRANSIENT_MARKERS =("model is warming up", "no instances available", "upstream")
 
 #: tau-b, not Spearman: it is the statistic G-Eval and the SummEval paper report beside
 #: rho, and it is the one that handles the judges' constant ties honestly. Spearman is kept
 #: for the literature comparison.
 PRIMARY_METRIC = "tau"
+
+
+def primary_metric(params: Dict[str, Any]) -> str:
+    """The arm's primary metric by its mode: a grading judge is ranked on tau, a picking one on top1, a pairwise
+    one on pair_agreement (RFC-005 "Judging modes")."""
+    return {"pick": "top1", "pairwise": "pair_agreement"}.get(str(params.get("mode") or "grade"), PRIMARY_METRIC)
 
 METRIC_KINDS = {
     "tau": "quality", "rho": "quality",
@@ -710,6 +942,8 @@ METRIC_KINDS = {
     # Descriptive: how many dimensions came back readable, how often the judge tied two
     # summaries, whether it ran out of tokens, whether it billed reasoning, whether a
     # local model saw only part of the article.
+    "top1": "quality", "pair_agreement": "quality",
+    "top1_chance": "descriptive", "n_pairs": "descriptive",
     "parsed": "descriptive", "tie_rate": "descriptive", "truncated": "descriptive",
     "reasoning_tokens": "descriptive", "input_truncated": "descriptive",
 }
@@ -732,6 +966,16 @@ METRIC_DESCRIPTIONS = {
         f"(0 when the judge returned no {d} scores)." for d in DIMS},
     **{f"rho_{d}": f"Spearman's rho with the experts' {d} ratings across an article's 16 summaries "
         f"(0 when the judge returned no {d} scores)." for d in DIMS},
+    "top1": "Pick mode: how often the judge's pick of the best of an article's 16 summaries is a summary the "
+    "experts rate best (highest mean over the four dimensions; ties among the experts form the best set). 1 for a "
+    "correct single pick; a pick of several scores the share of them that are correct; an unreadable pick scores 0.",
+    "top1_chance": "Pick mode: what a random pick scores on the article, the share of its 16 summaries the experts "
+    "rate best (|best set| / 16). A judge's top1 is read against its mean.",
+    "pair_agreement": "Pairwise mode: among the sampled pairs of an article's summaries that the experts rank "
+    "apart, the share where the judge preferred the summary the experts prefer; a tie counts half and an "
+    "unreadable answer 0. Chance is 0.5.",
+    "n_pairs": "Pairwise mode: how many of the article's sampled pairs the experts ranked apart, the pairs "
+    "pair_agreement is averaged over.",
     "tie_rate": "Share of the 120 summary pairs the judge scored equal, averaged over the dimensions "
     "it returned: how often it could not tell two summaries apart.",
     "parsed": "Whether the reply could be read as an answer in the task's format: 1 or 0 per item, so its mean is the share readable (for the SummEval judges, the share of the four dimensions that came back readable). An unreadable reply scores 0 on the quality metrics, never skipped.",

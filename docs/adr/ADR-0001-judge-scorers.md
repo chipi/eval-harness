@@ -8,9 +8,9 @@
 ## Context
 
 A run's outputs are the frozen record and its scores can be recomputed, so a better scorer can
-re-measure an experiment without rerunning its arms. In this repository the SummEval experiment
+re-measure an eval without rerunning its arms. In this repository the SummEval eval
 validated LLM judges that agree with human experts far better than the summarisation
-experiment's own metric. A judge, though, is a model: billed, noisy, valid only under the
+eval's own metric. A judge, though, is a model: billed, noisy, valid only under the
 protocol it was validated with, and able to prefer its own vendor family.
 
 ## Decision
@@ -26,6 +26,6 @@ protocol it was validated with, and able to prefer its own vendor family.
 
 ## Consequences
 
-Experiments can be re-measured as scoring improves, with every existing test unchanged. Listwise
+Evals can be re-measured as scoring improves, with every existing test unchanged. Listwise
 scores depend on the arm set, so adding an arm means a new pass; the validation transfers only
 partly, and a report must say how.

@@ -2,15 +2,15 @@
 
 - **Status**: Completed (v0.4.0)
 - **Authors**: Marko Dragoljevic
-- **Related PRDs**: [PRD-001](../prd/PRD-001-experiments-and-comparison.md), [PRD-002](../prd/PRD-002-references.md), [PRD-003](../prd/PRD-003-judging.md)
+- **Related PRDs**: [PRD-001](../prd/PRD-001-evals-and-comparison.md), [PRD-002](../prd/PRD-002-references.md), [PRD-003](../prd/PRD-003-judging.md)
 - **Related RFCs**: [RFC-001](RFC-001-fingerprint-and-code-identity.md) (the fingerprint inside the record)
 - **Code**: `harness/scripts/_record.py`, `harness/schemas/metrics.schema.json`,
-  `harness/scripts/experiment_run.py`, `rescore.py`, `judge_score.py`, `import_run.py`
+  `harness/scripts/run.py`, `rescore.py`, `judge_score.py`, `import_run.py`
 
 ## Abstract
 
 A run is a directory; its record is `metrics.json`. 0.4.0 gives the record one format with two
-constructors: `run_record` for a **measured** run (`experiment-run`, `import-run`) and
+constructors: `run_record` for a **measured** run (`evh run`, `import-run`) and
 `derived_record` for a **derived** run, computed from another run's stored outputs (`rescore`,
 `judge-score`, and the SciFact example's re-parse). A derived run says what derived it, from
 which run, when and with what, in one block, `derived`. Every field the harness writes is
@@ -35,7 +35,7 @@ nothing.
 | `outputs/` | per item | what the arm wrote for each item |
 | `metrics.json` | only on a clean exit | the run record |
 
-`experiment-run --resume` continues a stopped run from its rows; it refuses rows written before
+`evh run --resume` continues a stopped run from its rows; it refuses rows written before
 0.4.0 (no `_extra`). A run that stops mid-pass prints which run, after how many items, and the
 exact `--resume` command.
 

@@ -62,7 +62,7 @@ on Linux.
 
 No GPU needed. The configs say `device: cpu` deliberately, so the wall-clock numbers stay
 comparable with the arms already measured. If you want GPU numbers that is a separate,
-legitimate experiment — but it is a different arm, because `latency_ms` is one of the three
+legitimate run — but it is a different arm, because `latency_ms` is one of the three
 axes the frontier is computed on, and changing the device silently would make the local
 arms' speed column incomparable with each other.
 
@@ -113,13 +113,13 @@ whatever you just downloaded, which destroys the check you just ran.
 ```bash
 PY=../examples/summarization-cnn-dailymail/.venv/bin/python
 for c in bart_m bart_s bart_l_xsum; do
-  $PY -u scripts/experiment_run.py \
+  $PY -u scripts/run.py \
      --config ../examples/summarization-cnn-dailymail/configs/arm_${c}_n200.yaml
 done
 ```
 
 Dry-run one first if you want the shape without the wait:
-`$PY scripts/experiment_run.py --config .../arm_bart_m_n200.yaml --dry-run`
+`$PY scripts/run.py --config .../arm_bart_m_n200.yaml --dry-run`
 
 **Commit before you run**, or every run records `harness.dirty: true` and cannot be
 reproduced from its own fingerprint. The runner warns when the tree is dirty; the warning
@@ -177,14 +177,14 @@ Three things are worth looking at before any ranking:
 3. **`bart_l_xsum`'s `summary_words` and `length_vs_reference`.** It is decoded at
    `max_length: 62` because that is what XSum trained it to produce. If it scores badly on
    `coverage`, length is at least as plausible an explanation as training distribution, and
-   the two cannot be separated without a second arm at CNN/DailyMail decode lengths.
+   the two cannot be told apart without a second arm at CNN/DailyMail decode lengths.
 
 ## Optional, and genuinely useful
 
 Re-run `bart_l` there too:
 
 ```bash
-$PY scripts/experiment_run.py --config ../examples/summarization-cnn-dailymail/configs/arm_bart_l_n200.yaml
+$PY scripts/run.py --config ../examples/summarization-cnn-dailymail/configs/arm_bart_l_n200.yaml
 ```
 
 Its numbers are already known from the Intel Mac (`coverage` 0.346121, `grounding`

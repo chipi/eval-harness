@@ -3,7 +3,7 @@
 
     python tests/test_reference_coverage.py
 
-experiment-run took a gold directory as covering the dataset: an item with no reference file
+evh run took a gold directory as covering the dataset: an item with no reference file
 was simply not scored, so gold for 20 of 200 items gave a 20-item mean recorded as a 200-item
 gold run, with no warning. Now: partial coverage is warned, recorded (reference_coverage) and
 named by the leaderboard; a reference directory with no file for any item is refused before a
@@ -45,12 +45,32 @@ try:
     check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
     shutil.copy(KIT / "configs" / "tickets_lead1.yaml", data / "configs")
     gold = data / "references" / "gold" / "tickets_v1"
-    gold.mkdir(parents=True)
     files = sorted((KIT / "gold").glob("*.txt"))
+    two = proj / "gold_two"
+    two.mkdir()
     for f in files[:2]:
-        shutil.copy(f, gold / f.name)
+        shutil.copy(f, two / f.name)
+    r = evh("label-import", "gold_two", "--dataset-id", "tickets_v1", "--set", "two", "--by", "owner")
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "two",
+            "--tier",
+            "gold",
+            "--reason",
+            "Two hand-written summaries, for a reference that covers some items.",
+            "--by",
+            "owner",
+        )
+    )
+    check("setup: gold for two of the items, promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 
-    r = evh("experiment-run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "partial")
+    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "partial")
     out = r.stdout + r.stderr
     m = json.loads((data / "runs" / "partial" / "metrics.json").read_text()) if r.returncode == 0 else {}
     check(
@@ -75,7 +95,7 @@ try:
     for f in gold.iterdir():
         f.unlink()
     (gold / "not_an_item.txt").write_text("x")
-    r = evh("experiment-run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "none")
+    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "none")
     check(
         "a reference directory with no file for any item is refused before a call",
         r.returncode != 0
@@ -100,9 +120,12 @@ try:
         "config_id: own_v1\ndataset_id: tickets_v1\nadapter: adapter.py\nparams:\n  provider: echo\n"
     )
     env["PYTHONPATH"] = str(HERE)
-    r = evh("experiment-run", "--config", "data/configs/own.yaml", "--run-id", "own")
+    r = evh("run", "--config", "data/configs/own.yaml", "--run-id", "own")
     r2 = evh("rescore", "--dataset-id", "tickets_v1", "--match", "own_v1")
-    resc = next((data / "runs-rescored").glob("own*/metrics.json"), None) if r2.returncode == 0 else None
+    # where the tool designates a re-score (RFC-022): runs-rescored/<scorer>/<source>/
+    resc = (
+        next((data / "runs-rescored").glob("*/runs/own*/metrics.json"), None) if r2.returncode == 0 else None
+    )
     mr = json.loads(resc.read_text()) if resc else {}
     check(
         "rescore keeps a project adapter's call-time extra, and reports nothing as dropped",

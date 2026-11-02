@@ -1,0 +1,453 @@
+model_id: qwen3.8-27b
+kind: llm
+name: Qwen 3.8 27B
+aliases:
+- qwen3.8:27b
+weights: open
+licence: Apache-2.0
+deployments:
+- id: x3
+  where: x3
+  tag: qwen3.8:27b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11434/v1
+    model: qwen3.8:27b
+  server: ollama 0.40.13
+  digest: aaee06c39dcf2437cde036998d960e1fc1494b8191be7cc9657d01e509097813
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T14:05:16Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:05:16Z'
+    where: x3
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11434/v1
+        model: qwen3.8:27b
+      digest_found: aaee06c39dcf2437cde036998d960e1fc1494b8191be7cc9657d01e509097813
+      default:
+        s: 8.66
+        tokens_out: 79
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.01
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 22.8
+      deterministic: true
+      json_valid: true
+- id: dgx
+  where: dgx
+  tag: qwen3.8:27b
+  endpoint:
+    provider: openai
+    base_url: http://100.69.49.126:11434/v1
+    model: qwen3.8:27b
+  digest: aaee06c39dcf2437cde036998d960e1fc1494b8191be7cc9657d01e509097813
+  checked_at: '2026-10-31T14:08:20Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:08:20Z'
+    where: dgx
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://100.69.49.126:11434/v1
+        model: qwen3.8:27b
+      digest_found: aaee06c39dcf2437cde036998d960e1fc1494b8191be7cc9657d01e509097813
+      default:
+        s: 8.18
+        tokens_out: 67
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 0.97
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 23.7
+      deterministic: true
+      json_valid: true
+  server: ollama 0.40.13
+- id: mac
+  where: mac
+  tag: qwen3.8:27b
+  endpoint:
+    provider: openai
+    base_url: http://127.0.0.1:11435/v1
+    model: qwen3.8:27b
+  server: ollama 0.40.13
+  digest: aaee06c39dcf2437cde036998d960e1fc1494b8191be7cc9657d01e509097813
+  quantization: Q4_K_M
+  checked_at: '2026-10-31T14:05:50Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T14:05:50Z'
+    where: mac
+    flags: []
+    report:
+      endpoint:
+        provider: openai
+        base_url: http://127.0.0.1:11435/v1
+        model: qwen3.8:27b
+      digest_found: aaee06c39dcf2437cde036998d960e1fc1494b8191be7cc9657d01e509097813
+      default:
+        s: 16.75
+        tokens_out: 73
+        reasoned: true
+        finish: stop
+      chosen:
+        s: 1.14
+        tokens_out: 23
+        reasoned: false
+        finish: stop
+        settings:
+          reasoning_effort: none
+      tokens_per_s: 20.2
+      deterministic: true
+      json_valid: true
+capabilities:
+  reasons: true
+  json_mode: true
+  reasoning_off: 'reasoning_effort: none'
+settings:
+  reasoning_effort: none
+settings_why:
+  reasoning_effort: 'it reasoned by default on the onboarding probe (2026-10-31);
+    off unless a task needs it (RUNBOOK §16): left at the server''s default, one model
+    reasons at length and the next not at all'
+history:
+- at: '2026-10-31'
+  what: reasoning_effort
+  from: (server default)
+  to: none
+  why: 'it reasoned by default on the onboarding probe (2026-10-31); off unless a
+    task needs it (RUNBOOK §16): left at the server''s default, one model reasons
+    at length and the next not at all'
+smokes:
+  triage_local_x3_qwen38_27b_v2:
+    status: check
+    at: '2026-10-31T14:47:45Z'
+    flags:
+    - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 24.21
+        output_chars: 1712
+        cost_usd: 0.0
+        scored: true
+        deterministic: false
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 26.53
+        output_chars: 2481
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 21.79
+        output_chars: 1878
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - tokens_out: 64
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 11.51
+      - tokens_out: 59
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.9
+      - tokens_out: 57
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.61
+      - tokens_out: 158
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 7.19
+      - tokens_out: 90
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 6.85
+      - tokens_out: 94
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.36
+      - tokens_out: 77
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.84
+      - tokens_out: 220
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 11.48
+      - tokens_out: 95
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 6.86
+      - tokens_out: 96
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.62
+      - tokens_out: 80
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.16
+      - tokens_out: 158
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 7.15
+      projection:
+        items: 65
+        minutes: 26.2
+        worst_minutes: 28.7
+        usd: 0.0
+      settings:
+        model: qwen3.8:27b
+        reasoning_effort: none
+        max_tokens: 1024
+        call_timeout_s: 600
+  triage_local_mac_qwen38_27b_v2:
+    status: pass
+    at: '2026-10-31T14:50:19Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 41.76
+        output_chars: 1523
+        cost_usd: 0.0
+        scored: true
+        deterministic: true
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 32.84
+        output_chars: 2492
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 37.58
+        output_chars: 2381
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - tokens_out: 64
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 27.06
+      - tokens_out: 59
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.78
+      - tokens_out: 65
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.8
+      - tokens_out: 129
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 7.12
+      - tokens_out: 72
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.27
+      - tokens_out: 76
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.86
+      - tokens_out: 78
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 5.19
+      - tokens_out: 244
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 14.53
+      - tokens_out: 88
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 8.87
+      - tokens_out: 89
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.56
+      - tokens_out: 76
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 5.52
+      - tokens_out: 241
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 18.62
+      projection:
+        items: 65
+        minutes: 40.5
+        worst_minutes: 45.2
+        usd: 0.0
+      settings:
+        model: qwen3.8:27b
+        reasoning_effort: none
+        max_tokens: 1024
+        call_timeout_s: 600
+  triage_local_dgx_qwen38_27b_v2:
+    status: pass
+    at: '2026-10-31T14:45:27Z'
+    flags: []
+    report:
+      items:
+      - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+        s: 23.18
+        output_chars: 1515
+        cost_usd: 0.0
+        scored: true
+        deterministic: true
+      - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+        s: 22.22
+        output_chars: 2652
+        cost_usd: 0.0
+        scored: true
+      - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+        s: 23.09
+        output_chars: 2440
+        cost_usd: 0.0
+        scored: true
+      calls:
+      - tokens_out: 64
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 11.46
+      - tokens_out: 72
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.24
+      - tokens_out: 64
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.14
+      - tokens_out: 127
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 5.34
+      - tokens_out: 87
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.38
+      - tokens_out: 91
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.27
+      - tokens_out: 85
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.51
+      - tokens_out: 263
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 11.06
+      - tokens_out: 89
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 4.79
+      - tokens_out: 84
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 2.89
+      - tokens_out: 84
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 3.62
+      - tokens_out: 252
+        reasoning_tokens: 0
+        reasoning_chars: 0
+        finish_reason: stop
+        answered: true
+        s: 11.8
+      projection:
+        items: 65
+        minutes: 24.7
+        worst_minutes: 25.1
+        usd: 0.0
+      settings:
+        model: qwen3.8:27b
+        reasoning_effort: none
+        max_tokens: 1024
+        call_timeout_s: 600

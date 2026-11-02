@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "delete me", "model_disposition": "cleanup", "reason": "The alert summary explicitly contains a test marker 'delete me' indicating it is a deliberate probe or test artifact."}

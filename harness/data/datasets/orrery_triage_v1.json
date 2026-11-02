@@ -1,0 +1,3528 @@
+{
+  "created_at": "2026-10-30T12:23:39Z",
+  "dataset_id": "orrery_triage_v1",
+  "description": "The triage fleet's 233 Orrery decisions, 2026-07-25 to 2026-10-29 (test signals removed).",
+  "fields_sha256": "4cef2a7d74d23b88c2c8bdcf5946647cbcc5d8572f9e319a7c1fdc3c2033b867",
+  "fieldset": "triage",
+  "items": [
+    {
+      "fields": {
+        "decision_date": "2026-07-25",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-5",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "deepseek/deepseek-v4-flash",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-5-2026-07-25T09:58:27Z",
+      "source_path": "orrery-ORRERY-STAGING-5-2026-07-25T09:58:27Z.json",
+      "source_sha256": "ee32f8e1f52de5e505fc18bb8de34970ff8563a41687f909f64942c96e2fd37c"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-25",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-E",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "deepseek/deepseek-v4-flash",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-E-2026-07-25T09:58:40Z",
+      "source_path": "orrery-ORRERY-E-2026-07-25T09:58:40Z.json",
+      "source_sha256": "3e0202a9364461f5d753343e59e9c87eb83cf4a7a81b3b304da49ec2082e1cef"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-25",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-4",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "deepseek/deepseek-v4-flash",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-4-2026-07-25T09:58:53Z",
+      "source_path": "orrery-ORRERY-STAGING-4-2026-07-25T09:58:53Z.json",
+      "source_sha256": "225f3e796625c58d6e2e9625a3ace5c4d3d2accf15912ce0f47d29d27fcf6193"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-25",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-3",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "deepseek/deepseek-v4-flash",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-3-2026-07-25T09:59:07Z",
+      "source_path": "orrery-ORRERY-STAGING-3-2026-07-25T09:59:07Z.json",
+      "source_sha256": "3622cee4fba664b568a0b936c647256a299d91a7ba2ec538b1e3ab52016d80b8"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-25",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-2",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "deepseek/deepseek-v4-flash",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-2-2026-07-25T09:59:12Z",
+      "source_path": "orrery-ORRERY-STAGING-2-2026-07-25T09:59:12Z.json",
+      "source_sha256": "1df7c8491118d8cfeb24b28c64e246986732ec0ef91569aacee78226d763c614"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-25",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1",
+        "fleet_disposition": "cleanup",
+        "fleet_model": "deepseek/deepseek-v4-flash",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1-2026-07-25T09:59:42Z",
+      "source_path": "orrery-ORRERY-STAGING-1-2026-07-25T09:59:42Z.json",
+      "source_sha256": "1746e19f592bd669dae4b2d6076a73d11fdbd1a086782fc628da64bf9b3e3f88"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-25",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-D",
+        "fleet_disposition": "cleanup",
+        "fleet_model": "deepseek/deepseek-v4-flash",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-D-2026-07-25T09:59:51Z",
+      "source_path": "orrery-ORRERY-D-2026-07-25T09:59:51Z.json",
+      "source_sha256": "a0edd02b0208e795f9bb999d233f51b3f8c85f324801a1d9585559cffbff4c14"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-25",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-DEV-1",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "deepseek/deepseek-v4-flash",
+        "labelled": "yes",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-DEV-1-2026-07-25T10:00:05Z",
+      "source_path": "orrery-ORRERY-DEV-1-2026-07-25T10:00:05Z.json",
+      "source_sha256": "9e82b69bc462a484eaab237ea1085e40318fa16ab084dd41b1470b8c657065b2"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-25",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-6",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-6-2026-07-25T13:07:58Z",
+      "source_path": "orrery-ORRERY-STAGING-6-2026-07-25T13:07:58Z.json",
+      "source_sha256": "2400fe08e631fe59ca9853a649e5ed9a4b2a2f4a4bc0aa78b7a56de6020f762d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-25",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-7",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-7-2026-07-25T19:37:49Z",
+      "source_path": "orrery-ORRERY-STAGING-7-2026-07-25T19:37:49Z.json",
+      "source_sha256": "e53b4798a41ab92d0b9db5cee966ad2ef36a6ff1e052a2da5c9bcb28db80815e"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-25",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-8",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-8-2026-07-25T20:07:58Z",
+      "source_path": "orrery-ORRERY-STAGING-8-2026-07-25T20:07:58Z.json",
+      "source_sha256": "f6f9ba328b1e4d46dc5e4f7e51ebad745a5e6df78b6fb387ac8a2176b4926e6f"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-26",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-9",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-9-2026-07-26T00:38:03Z",
+      "source_path": "orrery-ORRERY-STAGING-9-2026-07-26T00:38:03Z.json",
+      "source_sha256": "ca631598ea5053bbe1a97b08b9e4ac66d9cc54badf1a9378250e505a5bb5c0c5"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-26",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-A",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-A-2026-07-26T04:17:50Z",
+      "source_path": "orrery-ORRERY-STAGING-A-2026-07-26T04:17:50Z.json",
+      "source_sha256": "8ac75814794672f333b7a6e0653c5b07bcf3ba78a6e3bff9b31ffcfddf54b704"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-26",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-B",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-B-2026-07-26T06:37:58Z",
+      "source_path": "orrery-ORRERY-STAGING-B-2026-07-26T06:37:58Z.json",
+      "source_sha256": "3007e592d559dfa06faa6ac6141f40ac7ba900ef639cef8f581258e6a513f45a"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-26",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-D",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-D-2026-07-26T08:38:00Z",
+      "source_path": "orrery-ORRERY-STAGING-D-2026-07-26T08:38:00Z.json",
+      "source_sha256": "169b6cbbaacb437d53b00a953142c37bc06c8dd48ff5728121d17982b53e0ce5"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-26",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-C",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-C-2026-07-26T08:38:18Z",
+      "source_path": "orrery-ORRERY-STAGING-C-2026-07-26T08:38:18Z.json",
+      "source_sha256": "c51a4ca92edc2daf63c4ccb94f3145e82c0a49f74dc07cbafa57cdba559e49c8"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-26",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-E",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-E-2026-07-26T11:17:54Z",
+      "source_path": "orrery-ORRERY-STAGING-E-2026-07-26T11:17:54Z.json",
+      "source_sha256": "57ed2e3aed7476da1c10785cd80755887d740ff8003398382197bcc2e8cc1c57"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-26",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-F",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-F-2026-07-26T15:08:05Z",
+      "source_path": "orrery-ORRERY-STAGING-F-2026-07-26T15:08:05Z.json",
+      "source_sha256": "c8612305532ca9227525a47dc0bfa2c01ffb219771bc1c53b3861095a7c49ed3"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-27",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-H",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-H-2026-07-27T10:07:55Z",
+      "source_path": "orrery-ORRERY-STAGING-H-2026-07-27T10:07:55Z.json",
+      "source_sha256": "6e438880c36738e43d2f50144995adab2dbf0443cc9e70085da98f49a600c6d9"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-27",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-G",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-G-2026-07-27T10:08:17Z",
+      "source_path": "orrery-ORRERY-STAGING-G-2026-07-27T10:08:17Z.json",
+      "source_sha256": "a563b9c84c589c34033b89236adda48683155062575f89703b5a57549ca7b1e4"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-27",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-I",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-I-2026-07-27T21:48:01Z",
+      "source_path": "orrery-ORRERY-STAGING-I-2026-07-27T21:48:01Z.json",
+      "source_sha256": "7812e433e7f15fa4c2ce555c0938f131ec045205f09638dcadf463a352bd11ad"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-27",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-K",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-K-2026-07-27T23:27:52Z",
+      "source_path": "orrery-ORRERY-STAGING-K-2026-07-27T23:27:52Z.json",
+      "source_sha256": "841a43d04edb582b4e8df5fbce6650335f2e18a2c002495397fbbad505c1cc69"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-27",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-J",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-J-2026-07-27T23:27:59Z",
+      "source_path": "orrery-ORRERY-STAGING-J-2026-07-27T23:27:59Z.json",
+      "source_sha256": "a10de90a1ecbfa7fa5a9bd174bf23f3f07c7bde7f894ea1277b929e32debfaa1"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-28",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-L",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-L-2026-07-28T02:48:09Z",
+      "source_path": "orrery-ORRERY-STAGING-L-2026-07-28T02:48:09Z.json",
+      "source_sha256": "5834d22f89c0e195c6cb439b0a291b2882478a90f73545808e2460041a66aa8e"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-28",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-M",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-M-2026-07-28T02:48:28Z",
+      "source_path": "orrery-ORRERY-STAGING-M-2026-07-28T02:48:28Z.json",
+      "source_sha256": "ece66d88e7a5b4e74c370f29c67b56537f338d1f33c9d06777f90dac6a659f19"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-28",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-N",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-N-2026-07-28T03:27:58Z",
+      "source_path": "orrery-ORRERY-STAGING-N-2026-07-28T03:27:58Z.json",
+      "source_sha256": "049a815486d2e5cc4e72381408409210b59453b3becff3f25871a8d1da709ad1"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-28",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-O",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-O-2026-07-28T03:57:57Z",
+      "source_path": "orrery-ORRERY-STAGING-O-2026-07-28T03:57:57Z.json",
+      "source_sha256": "f399a2942c20b7bf273a855847b8ee4e1d771e080373fce87c130180552675fb"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-28",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-P",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-P-2026-07-28T04:37:56Z",
+      "source_path": "orrery-ORRERY-STAGING-P-2026-07-28T04:37:56Z.json",
+      "source_sha256": "a034e6e632d6033a3d8ac72807efd4e4e95354b4a6639afb112e043fbb5bbc9e"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-28",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-Q",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-Q-2026-07-28T05:07:58Z",
+      "source_path": "orrery-ORRERY-STAGING-Q-2026-07-28T05:07:58Z.json",
+      "source_sha256": "df2945abf2ce9405082ccebd094ea9b94e1256b01983657e5694a26e3f80efab"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-28",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-R",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-R-2026-07-28T05:47:59Z",
+      "source_path": "orrery-ORRERY-STAGING-R-2026-07-28T05:47:59Z.json",
+      "source_sha256": "0af38f1fe1b379257b14b4577f31891aba7617c187a4f31a0b276108e280de0f"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-28",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-S",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-S-2026-07-28T06:18:25Z",
+      "source_path": "orrery-ORRERY-STAGING-S-2026-07-28T06:18:25Z.json",
+      "source_sha256": "9eb0cbea621b18659e7a2d049225bbb67831ea09cd370944decd5680602666b6"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-28",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-T",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-T-2026-07-28T06:58:01Z",
+      "source_path": "orrery-ORRERY-STAGING-T-2026-07-28T06:58:01Z.json",
+      "source_sha256": "580de3ecc2f3bb08c723f8abb44aff653b16df45ec1432dd2179862d342f4c1d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-28",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-U",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-U-2026-07-28T06:58:30Z",
+      "source_path": "orrery-ORRERY-STAGING-U-2026-07-28T06:58:30Z.json",
+      "source_sha256": "f56e04f877b546bebb5e30c614c867a879676302c204ebfd6c9620939aafe200"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-28",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-V",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-V-2026-07-28T08:18:09Z",
+      "source_path": "orrery-ORRERY-STAGING-V-2026-07-28T08:18:09Z.json",
+      "source_sha256": "550ac27e13b97f4063db148a16082dea9f2f0a07533ca71c7726077ab52bdd8d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-28",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-10",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-10-2026-07-28T21:28:02Z",
+      "source_path": "orrery-ORRERY-STAGING-10-2026-07-28T21:28:02Z.json",
+      "source_sha256": "a1c55be679f6568a5568b72a879256fe82fabeafcc5198595102ed591161d1a8"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-29",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-12",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-12-2026-07-29T06:48:17Z",
+      "source_path": "orrery-ORRERY-STAGING-12-2026-07-29T06:48:17Z.json",
+      "source_sha256": "a3f77ec523ab2d572ee1a9c0ff96ba24a46a553c214b24fa045e9e520681015e"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-29",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-11",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-11-2026-07-29T06:48:35Z",
+      "source_path": "orrery-ORRERY-STAGING-11-2026-07-29T06:48:35Z.json",
+      "source_sha256": "fb2b7d3a22846e7e0c45694a025a44c3fe5b844c181b9d08f7432a29c74cb550"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-29",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-DEV-2",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-DEV-2-2026-07-29T10:48:00Z",
+      "source_path": "orrery-ORRERY-DEV-2-2026-07-29T10:48:00Z.json",
+      "source_sha256": "5703e6c45a68d260bcbbd06ec01a9f1c87a45a71b09191909aeb1dd6c50938fd"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-29",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-13",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-13-2026-07-29T11:28:03Z",
+      "source_path": "orrery-ORRERY-STAGING-13-2026-07-29T11:28:03Z.json",
+      "source_sha256": "ae0af68d9bdd02087d628195bb0f9bd564f48072abe90449e7f16244a7900139"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-29",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-14",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "shadow"
+      },
+      "item_id": "orrery-ORRERY-STAGING-14-2026-07-29T13:40:54Z",
+      "source_path": "orrery-ORRERY-STAGING-14-2026-07-29T13:40:54Z.json",
+      "source_sha256": "fa0ce52325d48e2cabc0ebd871c62fe485340e45cf9377dd805f69fd65673294"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-30",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-15",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-15-2026-07-30T06:52:46Z",
+      "source_path": "orrery-ORRERY-STAGING-15-2026-07-30T06:52:46Z.json",
+      "source_sha256": "3f67d9f0966285ce912658d597b03a56345dcf69945962c5134f430465c60084"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-30",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-16",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-16-2026-07-30T09:12:48Z",
+      "source_path": "orrery-ORRERY-STAGING-16-2026-07-30T09:12:48Z.json",
+      "source_sha256": "9c3f77602f6852066c125f6cd22f76405884c0fae0f0b58d1eff670fe17764a0"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-30",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-14",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z",
+      "source_path": "orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z.json",
+      "source_sha256": "30e829e246f34de33765d133997f2ed0dfae170ad65b68fac98ec14523577d93"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-31",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-18",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-18-2026-07-31T07:02:45Z",
+      "source_path": "orrery-ORRERY-STAGING-18-2026-07-31T07:02:45Z.json",
+      "source_sha256": "d6ee7c0088f9dac57936749f11d3185a280e337c15354f5e71367942702e41be"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-31",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-17",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-17-2026-07-31T07:02:50Z",
+      "source_path": "orrery-ORRERY-STAGING-17-2026-07-31T07:02:50Z.json",
+      "source_sha256": "38fdf851d556c2a0d8ac0761bb1ce6081e53bd3482c565065a96c510a7cd47bc"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-31",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1A",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1A-2026-07-31T22:12:42Z",
+      "source_path": "orrery-ORRERY-STAGING-1A-2026-07-31T22:12:42Z.json",
+      "source_sha256": "2406a91f0c217925b1ab412b076ce6f8244a379657c5a6be3c25878892231d48"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-07-31",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-19",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-19-2026-07-31T22:13:00Z",
+      "source_path": "orrery-ORRERY-STAGING-19-2026-07-31T22:13:00Z.json",
+      "source_sha256": "3a1264486d9b7a10ec4c1a6b3760a34bc44a4da2ae4ca2a1007a7053dc2a694a"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-01",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-F",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-F-2026-08-01T18:22:54Z",
+      "source_path": "orrery-ORRERY-F-2026-08-01T18:22:54Z.json",
+      "source_sha256": "68ef3f6c2509ea9f385a277da703abd8aa234e708ee6abb732697428455d816b"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-01",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-G",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-G-2026-08-01T21:12:55Z",
+      "source_path": "orrery-ORRERY-G-2026-08-01T21:12:55Z.json",
+      "source_sha256": "e7ccd3b55076d7892b9f4cb816475049f53d8d252725569606219a7454aaf1c1"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-02",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-I",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-I-2026-08-02T01:32:53Z",
+      "source_path": "orrery-ORRERY-I-2026-08-02T01:32:53Z.json",
+      "source_sha256": "7ba5c9af64b3329fd01bccb2db91262aa28624758895d70c363e8dafad27d6c5"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-02",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-H",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-H-2026-08-02T01:33:08Z",
+      "source_path": "orrery-ORRERY-H-2026-08-02T01:33:08Z.json",
+      "source_sha256": "b31adf8c17d1f990d8c52b1377a952850dffcf8b57b920625a562231417070a9"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-02",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-DEV-3",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-DEV-3-2026-08-02T09:12:50Z",
+      "source_path": "orrery-ORRERY-DEV-3-2026-08-02T09:12:50Z.json",
+      "source_sha256": "150484c112af3aeb92045a39db2030ca2f620eb8f88bf50e7dc96c844e281e9a"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-02",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1B",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1B-2026-08-02T14:42:20Z",
+      "source_path": "orrery-ORRERY-STAGING-1B-2026-08-02T14:42:20Z.json",
+      "source_sha256": "8ee2f26dac7ae95ed929e966ed3965e0bc3dcc1c2793a420c420ea8278845f81"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-02",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1C",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1C-2026-08-02T17:12:20Z",
+      "source_path": "orrery-ORRERY-STAGING-1C-2026-08-02T17:12:20Z.json",
+      "source_sha256": "a8751adf0cc4bebc15c23ea66d9f404f9ce46e7974a0d00c0f9c5e9f9f0daa81"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-03",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1D",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1D-2026-08-03T07:52:23Z",
+      "source_path": "orrery-ORRERY-STAGING-1D-2026-08-03T07:52:23Z.json",
+      "source_sha256": "5c7cb149e3e6ee00cc7fbddadb5dfd55df6504039a4472ab56be100652e10625"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-04",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-DEV-4",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-DEV-4-2026-08-04T07:22:36Z",
+      "source_path": "orrery-ORRERY-DEV-4-2026-08-04T07:22:36Z.json",
+      "source_sha256": "1b1228d0698e06a1270b8aa49b235bf69bc847ad90a95747bd94726b6c97332e"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-04",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-DEV-5",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-DEV-5-2026-08-04T23:52:38Z",
+      "source_path": "orrery-ORRERY-DEV-5-2026-08-04T23:52:38Z.json",
+      "source_sha256": "f087a8823e9bfd83e01c73ba3267ebecee86192ad943d2cb8e395741bddb2211"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-06",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1E",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1E-2026-08-06T03:42:35Z",
+      "source_path": "orrery-ORRERY-STAGING-1E-2026-08-06T03:42:35Z.json",
+      "source_sha256": "583e231c73944d0a7e9645682d498fcc3eaa2246c99fa2a71883f9c488ce5a6d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-06",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-J",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-J-2026-08-06T21:52:38Z",
+      "source_path": "orrery-ORRERY-J-2026-08-06T21:52:38Z.json",
+      "source_sha256": "468dced3435fb93939c43560b231b51d735d0c0b2379d6120eeea1fb3084916d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-06",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-DEV-6",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-DEV-6-2026-08-06T22:02:55Z",
+      "source_path": "orrery-ORRERY-DEV-6-2026-08-06T22:02:55Z.json",
+      "source_sha256": "b2652d4a92a620ecb47d35f09213b5bbacfffa177e3960a5372f932b6b6ed733"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-07",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1F",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1F-2026-08-07T04:12:55Z",
+      "source_path": "orrery-ORRERY-STAGING-1F-2026-08-07T04:12:55Z.json",
+      "source_sha256": "f0b3788589f0e222f031d6d240a6479457a155d44c841ad7c14e5cffaa259c3d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-07",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-13",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z",
+      "source_path": "orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z.json",
+      "source_sha256": "07a4f4c664cf87fc5d27d2cb48f77849b088fa68b69da98fc7bc2240184c1f8e"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-07",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-L",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-L-2026-08-07T07:13:12Z",
+      "source_path": "orrery-ORRERY-L-2026-08-07T07:13:12Z.json",
+      "source_sha256": "fb3e9e3d31541dbaa0be74bb3153a210054498c7976a9c5c2c94d9931d79c54a"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-07",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-K",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-K-2026-08-07T07:13:27Z",
+      "source_path": "orrery-ORRERY-K-2026-08-07T07:13:27Z.json",
+      "source_sha256": "a16f13a15e5ae886eb6ddcd748c679d9559d72c0163a7d12ffa0390baa2ee478"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-07",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1H",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1H-2026-08-07T23:12:40Z",
+      "source_path": "orrery-ORRERY-STAGING-1H-2026-08-07T23:12:40Z.json",
+      "source_sha256": "49e8d8eb5f20d908070c96921d3e3a3fbe970000ccef5460e75157edf35fd862"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-07",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1G",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1G-2026-08-07T23:13:02Z",
+      "source_path": "orrery-ORRERY-STAGING-1G-2026-08-07T23:13:02Z.json",
+      "source_sha256": "a7026dcfb6b8f4d414bcf849e9d350bbbb9925ebc1e264354a674da66cf6ab06"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-07",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1I",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1I-2026-08-07T23:32:37Z",
+      "source_path": "orrery-ORRERY-STAGING-1I-2026-08-07T23:32:37Z.json",
+      "source_sha256": "b6edba138f91927d90fc92128f25393a673ae9fa7af41972f49c6b5d8baf2ed4"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-08",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1J",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1J-2026-08-08T00:32:47Z",
+      "source_path": "orrery-ORRERY-STAGING-1J-2026-08-08T00:32:47Z.json",
+      "source_sha256": "35e2ddee56ee0ecab573238be591307f07e3b31a7e8e2431cbff49d11e5950df"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-08",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1K",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1K-2026-08-08T02:02:49Z",
+      "source_path": "orrery-ORRERY-STAGING-1K-2026-08-08T02:02:49Z.json",
+      "source_sha256": "d7e8dd5da66975de65199f5e979cd41bbd56723349ee13f6c1b5b7fadd37ba45"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-08",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1L",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1L-2026-08-08T02:42:48Z",
+      "source_path": "orrery-ORRERY-STAGING-1L-2026-08-08T02:42:48Z.json",
+      "source_sha256": "21e30eadfa7e02fff708dd79fa617ef01d6ad8aff67ef24e89809c0cb092070e"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-08",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-DEV-7",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-DEV-7-2026-08-08T16:32:56Z",
+      "source_path": "orrery-ORRERY-DEV-7-2026-08-08T16:32:56Z.json",
+      "source_sha256": "dadd5e52a932bdbfff20de79156199c9fa28986321acb68c8ad62ae851d05fa7"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-08",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-N",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-N-2026-08-08T19:32:53Z",
+      "source_path": "orrery-ORRERY-N-2026-08-08T19:32:53Z.json",
+      "source_sha256": "03833538f7751bcd0104522882f8f4efa5c2300f6f33f44994baaf1232bd2662"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-08",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-M",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-M-2026-08-08T19:33:25Z",
+      "source_path": "orrery-ORRERY-M-2026-08-08T19:33:25Z.json",
+      "source_sha256": "7b242370fe17156af1fbbdbe4c5df255e75eb0f36bb35c54ea611d70757d46c0"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-09",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-DEV-8",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-DEV-8-2026-08-09T06:32:54Z",
+      "source_path": "orrery-ORRERY-DEV-8-2026-08-09T06:32:54Z.json",
+      "source_sha256": "4b8f766f4fc5b7b40564a864e7561fcf1f2ffe75e512c2ac9d3901f30440fd29"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-10",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-O",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-O-2026-08-10T12:12:55Z",
+      "source_path": "orrery-ORRERY-O-2026-08-10T12:12:55Z.json",
+      "source_sha256": "edb14a85e8619cf0728df2208fb1592ac1d3851f6e96f05e8d2e87334e09817b"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-10",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-P",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-P-2026-08-10T18:42:48Z",
+      "source_path": "orrery-ORRERY-P-2026-08-10T18:42:48Z.json",
+      "source_sha256": "163574ba6a94769ad7fc84220e93c7ada2846938d78760b624796e4d71e0c667"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-11",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1N",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1N-2026-08-11T06:52:58Z",
+      "source_path": "orrery-ORRERY-STAGING-1N-2026-08-11T06:52:58Z.json",
+      "source_sha256": "c81594fc887cc96c98cf150bfc041067376edfba78bab4524b17d57df963f00f"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-11",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1M",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1M-2026-08-11T06:53:07Z",
+      "source_path": "orrery-ORRERY-STAGING-1M-2026-08-11T06:53:07Z.json",
+      "source_sha256": "7063a46db683ed47c965850824ce5adeea946f527318efdd2b99b997940fb592"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-11",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-O",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-O-2026-08-11T12:23:04Z",
+      "source_path": "orrery-ORRERY-O-2026-08-11T12:23:04Z.json",
+      "source_sha256": "ee113f54da31c4b226246fb0d57d248c0964751a195ada312ad2f5182d285832"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-11",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-Q",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-Q-2026-08-11T16:43:15Z",
+      "source_path": "orrery-ORRERY-Q-2026-08-11T16:43:15Z.json",
+      "source_sha256": "9d22adcaeaa538ce6651de330f82e023db4dc30893b450901975f0139e16757b"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-12",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1I",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1I-2026-08-12T06:42:54Z",
+      "source_path": "orrery-ORRERY-STAGING-1I-2026-08-12T06:42:54Z.json",
+      "source_sha256": "6d46ca9cf8e94432b5e6e8eee765b1933980ad24aa8321592c000a18d22c2c07"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-12",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-R",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-R-2026-08-12T12:43:26Z",
+      "source_path": "orrery-ORRERY-R-2026-08-12T12:43:26Z.json",
+      "source_sha256": "0189a3be2901ae4634df00478a53569c4162d9f5747b8b85fc631d02719373ad"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-12",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-L",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-L-2026-08-12T12:53:33Z",
+      "source_path": "orrery-ORRERY-L-2026-08-12T12:53:33Z.json",
+      "source_sha256": "e5bfff532cdc663b59758cdb34df185a0ada1ab4d6c850410d9421055859182a"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-12",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1O",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1O-2026-08-12T14:32:56Z",
+      "source_path": "orrery-ORRERY-STAGING-1O-2026-08-12T14:32:56Z.json",
+      "source_sha256": "dc0311e42caffb78e698cc5f3803d4a90458c859f3ccc18a3d3405ffefdc49b8"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-13",
+        "decision_kind": "triager_failure",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-S",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-S-2026-08-13T04:12:43Z",
+      "source_path": "orrery-ORRERY-S-2026-08-13T04:12:43Z.json",
+      "source_sha256": "f31ebdec6d8059543257c34c8fdd0b512a86ec23b26dcb813ad06938a7c212c4"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-13",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1Q",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1Q-2026-08-13T08:23:10Z",
+      "source_path": "orrery-ORRERY-STAGING-1Q-2026-08-13T08:23:10Z.json",
+      "source_sha256": "ad001206281a23c656c6001e56e1f4810c667dec36265cf787791bdd02046559"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-13",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1P",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1P-2026-08-13T08:23:25Z",
+      "source_path": "orrery-ORRERY-STAGING-1P-2026-08-13T08:23:25Z.json",
+      "source_sha256": "84544cccc1e870d0e565539a2b48b52aa168a5cee51fd061ca2c8db705d5d83b"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-13",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1R",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1R-2026-08-13T12:33:19Z",
+      "source_path": "orrery-ORRERY-STAGING-1R-2026-08-13T12:33:19Z.json",
+      "source_sha256": "9e4651aac5e7dc351e38ee11cc43fae840869c375c5bb7d6dfb525613fd1761c"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-13",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1S",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1S-2026-08-13T17:22:58Z",
+      "source_path": "orrery-ORRERY-STAGING-1S-2026-08-13T17:22:58Z.json",
+      "source_sha256": "2c0751af422b2e5f1a9198f8c48049a377dc4765795e2c0a015bec02331c8335"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-13",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1U",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1U-2026-08-13T18:13:02Z",
+      "source_path": "orrery-ORRERY-STAGING-1U-2026-08-13T18:13:02Z.json",
+      "source_sha256": "0dab54f3a42a6a003e93ba64f2af34ea21a2a8aeec91f75ede13895c2d359a82"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-13",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1T",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1T-2026-08-13T18:13:19Z",
+      "source_path": "orrery-ORRERY-STAGING-1T-2026-08-13T18:13:19Z.json",
+      "source_sha256": "d82f7ef83370a23f855f01c141eff8938036e28f3baa6fe2d3592d80ce8f85a8"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-14",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-T",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-T-2026-08-14T00:53:17Z",
+      "source_path": "orrery-ORRERY-T-2026-08-14T00:53:17Z.json",
+      "source_sha256": "3626bac9e261fae285654e26c58f8c34d63cb1e04a00f75197a2e411b0feff0d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-14",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-1V",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-1V-2026-08-14T07:13:21Z",
+      "source_path": "orrery-ORRERY-STAGING-1V-2026-08-14T07:13:21Z.json",
+      "source_sha256": "0ccff8c106820a61997055da87c59ac01e2add8c188f8e1b754ca1736b627867"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-14",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-U",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-U-2026-08-14T08:03:09Z",
+      "source_path": "orrery-ORRERY-U-2026-08-14T08:03:09Z.json",
+      "source_sha256": "03fdf8de7350f0e54ea27ce83e4b8adfbb2aae68ec51f817f5103e95dc1b612d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-14",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-10",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-10-2026-08-14T08:13:38Z",
+      "source_path": "orrery-ORRERY-10-2026-08-14T08:13:38Z.json",
+      "source_sha256": "671cc00f7231b13a0001922cbc4da1148b272661bea7850c94bde6aaf6dcf990"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-14",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-V",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-V-2026-08-14T08:14:04Z",
+      "source_path": "orrery-ORRERY-V-2026-08-14T08:14:04Z.json",
+      "source_sha256": "404c6ff24df0540249f5e597d1500f03f8c1efc2545f9a7adb5cfbce2d819622"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-14",
+        "decision_kind": "model",
+        "evidence_level": "ledger-only",
+        "fingerprint": "glitchtip:ORRERY-STAGING-20",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-STAGING-20-2026-08-14T08:23:41Z",
+      "source_path": "orrery-ORRERY-STAGING-20-2026-08-14T08:23:41Z.json",
+      "source_sha256": "ead61c929178ac89b3b3a9c7c373b730e94e1f1470ee4e911e6fe996ab711ce2"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-17",
+        "decision_kind": "triager_failure",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-4",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes"
+      },
+      "item_id": "orrery-ORRERY-4-2026-08-17T06:15:01Z",
+      "source_path": "orrery-ORRERY-4-2026-08-17T06:15:01Z.json",
+      "source_sha256": "75d1d0295ec15731ea9d8507e26ede704bcb19cb5e69a8f337e7325cf0618ec7"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-18",
+        "decision_kind": "triager_failure",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-5",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-5-2026-08-18T18:38:10Z",
+      "source_path": "orrery-ORRERY-5-2026-08-18T18:38:10Z.json",
+      "source_sha256": "4429615defffbecf12819d5f01b7e2210a4c757739128f4a64503182626f5c9b"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-18",
+        "decision_kind": "triager_failure",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-4",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-4-2026-08-18T18:38:11Z",
+      "source_path": "orrery-ORRERY-4-2026-08-18T18:38:11Z.json",
+      "source_sha256": "6e3acda3c6ef8a95e139d2974c53afdb7422409e99fc94f17549a11b54a36688"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-18",
+        "decision_kind": "triager_failure",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-7",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-7-2026-08-18T18:48:08Z",
+      "source_path": "orrery-ORRERY-7-2026-08-18T18:48:08Z.json",
+      "source_sha256": "af7e42a2fc25874b22a448350b95aceaf78f22912648ccc24d8fe88ee4aa93b0"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-18",
+        "decision_kind": "triager_failure",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-6",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-6-2026-08-18T18:48:08Z",
+      "source_path": "orrery-ORRERY-6-2026-08-18T18:48:08Z.json",
+      "source_sha256": "8003402ea36ce07330b3b1fd5405825b90aa36f59e0f223c71646501d722e036"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-20",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-9",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-9-2026-08-20T06:28:22Z",
+      "source_path": "orrery-ORRERY-9-2026-08-20T06:28:22Z.json",
+      "source_sha256": "b73443d2ef635b7f4583ae31e39e47cc152792f52a63374228d9d6c3becc979d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-20",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-8",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-8-2026-08-20T06:28:32Z",
+      "source_path": "orrery-ORRERY-8-2026-08-20T06:28:32Z.json",
+      "source_sha256": "8918035f96f81346da6e3162def13828796146c532ca58626ce7f012f41816d1"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-22",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-9",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-9-2026-08-22T06:32:04Z",
+      "source_path": "orrery-ORRERY-9-2026-08-22T06:32:04Z.json",
+      "source_sha256": "6377627e87685c3c62008fcdcd99316a22c5379757c921d050e2a6fd6bec9793"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-23",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-A",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-A-2026-08-23T06:32:05Z",
+      "source_path": "orrery-ORRERY-A-2026-08-23T06:32:05Z.json",
+      "source_sha256": "be203b6dca0f08df0a3cd7f68b87ba32edbf0da20dfbc47ab0909e739fe4c8cb"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-23",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-9",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-9-2026-08-23T06:41:53Z",
+      "source_path": "orrery-ORRERY-9-2026-08-23T06:41:53Z.json",
+      "source_sha256": "b5561081e3ab28b3bd0e95c176dddabc76fb03e202493404f785d16b95b8f4cb"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-23",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-B",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-B-2026-08-23T15:22:06Z",
+      "source_path": "orrery-ORRERY-B-2026-08-23T15:22:06Z.json",
+      "source_sha256": "7679878ec6f90ba6f1cd23d9164304e76b67c817579cdb1756c15f19f73fd45e"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-24",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-C",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-C-2026-08-24T03:12:07Z",
+      "source_path": "orrery-ORRERY-C-2026-08-24T03:12:07Z.json",
+      "source_sha256": "33879d0e34c6444e6bcbe029441e3ecaf717ae739f725dbf6e3f19b6fe8cfd5b"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-24",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-9",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-9-2026-08-24T06:52:06Z",
+      "source_path": "orrery-ORRERY-9-2026-08-24T06:52:06Z.json",
+      "source_sha256": "f2ed5a1c469f606cf34fd42f88fe1710be1e10f8ad93bd516bdb096a7c553c17"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-27",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-9",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-9-2026-08-27T07:42:30Z",
+      "source_path": "orrery-ORRERY-9-2026-08-27T07:42:30Z.json",
+      "source_sha256": "445009ad748029be3dbe24d0e4edc6efdf6a6ff79798e42c06b497b78d0d9dce"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-30",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-D",
+        "fleet_disposition": "cleanup",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-D-2026-08-30T05:52:25Z",
+      "source_path": "orrery-ORRERY-D-2026-08-30T05:52:25Z.json",
+      "source_sha256": "4524436a2fd626e7cc708ab88d4eb85af59831ce1b0a623d6835923dea198c09"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-30",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-1",
+        "fleet_disposition": "cleanup",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1-2026-08-30T06:12:16Z",
+      "source_path": "orrery-ORRERY-PROD-1-2026-08-30T06:12:16Z.json",
+      "source_sha256": "a6ee02f0e9e0eccf316ff51637476f8613f27e8026145b707b38a0c08730f487"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-30",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-2",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-2-2026-08-30T23:52:27Z",
+      "source_path": "orrery-ORRERY-PROD-2-2026-08-30T23:52:27Z.json",
+      "source_sha256": "160747f109b18507b49434190c0b35089672563bb8a64b14a60bcfe7eb4747af"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-08-31",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-3",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-3-2026-08-31T06:52:21Z",
+      "source_path": "orrery-ORRERY-PROD-3-2026-08-31T06:52:21Z.json",
+      "source_sha256": "8a0f686bc5e34a25b5c3aea568197211311ebeb82b8a5a8fa072cacbb12725a5"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-01",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-4",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-4-2026-09-01T03:52:32Z",
+      "source_path": "orrery-ORRERY-PROD-4-2026-09-01T03:52:32Z.json",
+      "source_sha256": "38cd96d89c602d2c74d2bde28f7578bc287f1221a4bc50ca4b7bcb0693ff253f"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-01",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-5",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-5-2026-09-01T16:52:52Z",
+      "source_path": "orrery-ORRERY-PROD-5-2026-09-01T16:52:52Z.json",
+      "source_sha256": "a7da371b272c02647388788f9568e2601fca2d2e7476359d754926e29b9951cb"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-02",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-6",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-6-2026-09-02T05:22:34Z",
+      "source_path": "orrery-ORRERY-PROD-6-2026-09-02T05:22:34Z.json",
+      "source_sha256": "6fe3c67df1afec1f7b617d4ca4ebcc5677b39c81208f4d72b6aa996811c0dfec"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-03",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-3",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-3-2026-09-03T10:42:29Z",
+      "source_path": "orrery-ORRERY-PROD-3-2026-09-03T10:42:29Z.json",
+      "source_sha256": "e389329ddf10d6ea7dcb48b88333bf1e170197d76c24c19213ec1e6360121f91"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-04",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-7",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-7-2026-09-04T00:32:28Z",
+      "source_path": "orrery-ORRERY-PROD-7-2026-09-04T00:32:28Z.json",
+      "source_sha256": "e68e626b9ec3fad1975a93c2f1c0a646dce77888de9da944912fb051672af178"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-04",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-8",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-8-2026-09-04T10:42:38Z",
+      "source_path": "orrery-ORRERY-PROD-8-2026-09-04T10:42:38Z.json",
+      "source_sha256": "982a3a4e2d71c7ad4ed911df02867322bb4d4f6bdaf6c3a89a602fc25f7abb49"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-06",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-E",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-E-2026-09-06T12:52:40Z",
+      "source_path": "orrery-ORRERY-E-2026-09-06T12:52:40Z.json",
+      "source_sha256": "c25a56b6bd63591b682da109ca4280a90d86ae99f3f1652034a68321d8e4b3c6"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-07",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-9",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-9-2026-09-07T21:32:56Z",
+      "source_path": "orrery-ORRERY-PROD-9-2026-09-07T21:32:56Z.json",
+      "source_sha256": "182bf89e052d3a749ab3792968c4f17bb9f939ae09e971208921dc9194afa9b0"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-07",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-A",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-A-2026-09-07T22:23:00Z",
+      "source_path": "orrery-ORRERY-PROD-A-2026-09-07T22:23:00Z.json",
+      "source_sha256": "616012f57244c15e9fae3ccf97b218186beaf9a443fd0128b1a0d92708e9c85c"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-07",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-D",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-D-2026-09-07T22:32:39Z",
+      "source_path": "orrery-ORRERY-PROD-D-2026-09-07T22:32:39Z.json",
+      "source_sha256": "acb4c0d6b32cc10eb5da2a5d6487155e9f8de87ce5de4f9f41f6220a75d36ac3"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-07",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-C",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-C-2026-09-07T22:33:08Z",
+      "source_path": "orrery-ORRERY-PROD-C-2026-09-07T22:33:08Z.json",
+      "source_sha256": "3a11f8c1adf7352d411e4a57b81da49b9c17a39d5fa23c2185bc15ddc1caf2c8"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-07",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-B",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-B-2026-09-07T22:33:17Z",
+      "source_path": "orrery-ORRERY-PROD-B-2026-09-07T22:33:17Z.json",
+      "source_sha256": "a6b6eb1f03256e6d950639fe82c43198a36bd2b91aca48431ce1e88d36e8514d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-08",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-E",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-E-2026-09-08T03:22:56Z",
+      "source_path": "orrery-ORRERY-PROD-E-2026-09-08T03:22:56Z.json",
+      "source_sha256": "11d90c3aa26d8a2ebf1e2833311234b5020db1cf8a01f99ccc79d51e19d2268c"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-08",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-F",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-F-2026-09-08T09:42:55Z",
+      "source_path": "orrery-ORRERY-PROD-F-2026-09-08T09:42:55Z.json",
+      "source_sha256": "c99d1e99ca2575e2b245a2a02da1882d3a03abfe736df067d9a5b0bd75001b13"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-10",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-F",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-F-2026-09-10T06:34:34Z",
+      "source_path": "orrery-ORRERY-F-2026-09-10T06:34:34Z.json",
+      "source_sha256": "c37ab349944f3251e4199f6c80be4350bdd5c83a15c324bcf1848ea53b1046cf"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-10",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-9",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-9-2026-09-10T06:35:05Z",
+      "source_path": "orrery-ORRERY-PROD-9-2026-09-10T06:35:05Z.json",
+      "source_sha256": "632bfba15a17cedd3363c4539aca020b23f021f0bfd1a5e0e5596cde8355dd56"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-10",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-G",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-G-2026-09-10T17:38:19Z",
+      "source_path": "orrery-ORRERY-PROD-G-2026-09-10T17:38:19Z.json",
+      "source_sha256": "c8f903b1e131042e8967542647d34e5104ed9fcda1b5497a5ec7f53c9554f99a"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-12",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-H",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-H-2026-09-12T14:18:41Z",
+      "source_path": "orrery-ORRERY-PROD-H-2026-09-12T14:18:41Z.json",
+      "source_sha256": "ce975bf5fce74c606c3240e9748cfe278cc0565fff694e5fe7c35b0d4067c902"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-12",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-I",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-I-2026-09-12T14:19:18Z",
+      "source_path": "orrery-ORRERY-PROD-I-2026-09-12T14:19:18Z.json",
+      "source_sha256": "951e72e7a5758fb160adb614124b4eacf63c4aa300393cc686da21aa824823b2"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-12",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-J",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-J-2026-09-12T14:19:56Z",
+      "source_path": "orrery-ORRERY-PROD-J-2026-09-12T14:19:56Z.json",
+      "source_sha256": "a8e3290b92e0ec691e6cd41467a0f7cb4bcc02939d6e369ef88372c8136d8db9"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-12",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-K",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-K-2026-09-12T18:38:43Z",
+      "source_path": "orrery-ORRERY-PROD-K-2026-09-12T18:38:43Z.json",
+      "source_sha256": "beed5874afa493aca098d03988968de2c9b180eadb16bb4335a6cd5d9543f716"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-12",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-L",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-L-2026-09-12T19:58:28Z",
+      "source_path": "orrery-ORRERY-PROD-L-2026-09-12T19:58:28Z.json",
+      "source_sha256": "445280f67533f172afafbf8dff337898028a2d29cffcb95e7e31a4abb760ab5a"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-13",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-M",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-M-2026-09-13T10:18:21Z",
+      "source_path": "orrery-ORRERY-PROD-M-2026-09-13T10:18:21Z.json",
+      "source_sha256": "47096c5ad909a4302eb57f21cdafe4fe257b2c251ed364534a62fd6ec3025548"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-13",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-H",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-H-2026-09-13T14:28:14Z",
+      "source_path": "orrery-ORRERY-PROD-H-2026-09-13T14:28:14Z.json",
+      "source_sha256": "7e5152b91eb5641657787bd6248474f666c4b879fcb74eaf41110d2e8e8e50bb"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-13",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-J",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-J-2026-09-13T14:29:00Z",
+      "source_path": "orrery-ORRERY-PROD-J-2026-09-13T14:29:00Z.json",
+      "source_sha256": "1d6cdd774382f0e86aadc18c1b5075cbc214685210d406ff6af263dfa5b9cbc2"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-13",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-I",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-I-2026-09-13T14:29:31Z",
+      "source_path": "orrery-ORRERY-PROD-I-2026-09-13T14:29:31Z.json",
+      "source_sha256": "61b7fe9c0097e2edf1afd3997386e8097dc0ad7d5fb95757d17478565bd35486"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-13",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-N",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-N-2026-09-13T16:38:24Z",
+      "source_path": "orrery-ORRERY-PROD-N-2026-09-13T16:38:24Z.json",
+      "source_sha256": "5247edc3182310d6b086e772a06ae62a148c9eba437cef723d06999af93dc252"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-14",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-G",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-G-2026-09-14T09:18:56Z",
+      "source_path": "orrery-ORRERY-G-2026-09-14T09:18:56Z.json",
+      "source_sha256": "f16a75a0cd0190fdfc46d5cc03e7f2ccc290277dd82b6d41a5cd42c0d18eceef"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-15",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-O",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-O-2026-09-15T02:38:30Z",
+      "source_path": "orrery-ORRERY-PROD-O-2026-09-15T02:38:30Z.json",
+      "source_sha256": "e06635727e334b3c4904fc95d397f202363258a47d85277100ff9e26a2978dd2"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-15",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-P",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-P-2026-09-15T03:28:31Z",
+      "source_path": "orrery-ORRERY-PROD-P-2026-09-15T03:28:31Z.json",
+      "source_sha256": "8fd1b07d5df7b9b5839000953d21b374d9f651e4709082dc9165f2656559084d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-15",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-Q",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-Q-2026-09-15T12:28:27Z",
+      "source_path": "orrery-ORRERY-PROD-Q-2026-09-15T12:28:27Z.json",
+      "source_sha256": "ab8385dfd5f073a02169fd8792f5c13080fbcc85e6c36de861f421acd5ed321b"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-16",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-H",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-H-2026-09-16T09:08:44Z",
+      "source_path": "orrery-ORRERY-H-2026-09-16T09:08:44Z.json",
+      "source_sha256": "884dc38d11d11164d47fff7f230ce9eda800bf09629eafd4bb8f6e5dba5e86b2"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-16",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-R",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-R-2026-09-16T22:18:24Z",
+      "source_path": "orrery-ORRERY-PROD-R-2026-09-16T22:18:24Z.json",
+      "source_sha256": "04169bfab134771064c0c8aa3006adacf583da182ad4b003e0f2eee44d1a734e"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-17",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-N",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-N-2026-09-17T11:28:55Z",
+      "source_path": "orrery-ORRERY-PROD-N-2026-09-17T11:28:55Z.json",
+      "source_sha256": "360179b957c8de2ba26170325bff7ef5f92099131f5258b304b5c44511ee93a8"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-18",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-N",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-N-2026-09-18T21:28:35Z",
+      "source_path": "orrery-ORRERY-PROD-N-2026-09-18T21:28:35Z.json",
+      "source_sha256": "6e206014a70fc5d589aeb854a05b0a08100c7302238ad76507c4c08bd2135e41"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-19",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-S",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-S-2026-09-19T22:08:53Z",
+      "source_path": "orrery-ORRERY-PROD-S-2026-09-19T22:08:53Z.json",
+      "source_sha256": "302e3b314db7a28422a3467a7a6d144d4856c1b1452c43e24e826e7415ae99d0"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-20",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-G",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-G-2026-09-20T17:08:48Z",
+      "source_path": "orrery-ORRERY-PROD-G-2026-09-20T17:08:48Z.json",
+      "source_sha256": "b24396f2ed0f8900f4f5d95a74176ae3a300ac8bbe4eab34f2537c1f6bf308ba"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-21",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-T",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-T-2026-09-21T07:08:43Z",
+      "source_path": "orrery-ORRERY-PROD-T-2026-09-21T07:08:43Z.json",
+      "source_sha256": "9e3ec82dab0af6d048a0f817968a5e3b02a201e88032ac85286e6fc37533e179"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-21",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-M",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-M-2026-09-21T16:38:48Z",
+      "source_path": "orrery-ORRERY-PROD-M-2026-09-21T16:38:48Z.json",
+      "source_sha256": "f64a18329276e5b8174e5bdc039ec12bea942fd887331beadef4afa0d93e8484"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-22",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-U",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-U-2026-09-22T06:18:42Z",
+      "source_path": "orrery-ORRERY-PROD-U-2026-09-22T06:18:42Z.json",
+      "source_sha256": "6ee13e284aa6082c25ae2d3c0174e879d1a519fb4acb376c373b2000637ebbb8"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-22",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-V",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-V-2026-09-22T07:38:48Z",
+      "source_path": "orrery-ORRERY-PROD-V-2026-09-22T07:38:48Z.json",
+      "source_sha256": "827aa3cd29aa5c403b6ea2fff3e1b6735912467429e32a7655ef0cba4acffcc0"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-22",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-M",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-M-2026-09-22T16:48:43Z",
+      "source_path": "orrery-ORRERY-PROD-M-2026-09-22T16:48:43Z.json",
+      "source_sha256": "2b631e2598150dd8c89c3d8f72fbee68b71f4acf30b9336a4b92f0ff9125ae1c"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-24",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-N",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-N-2026-09-24T00:18:50Z",
+      "source_path": "orrery-ORRERY-PROD-N-2026-09-24T00:18:50Z.json",
+      "source_sha256": "e675036b0c19b05af4d4f420cf343654e59dd434941c6c07fd0e477f74d2963f"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-24",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-S",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-S-2026-09-24T07:48:46Z",
+      "source_path": "orrery-ORRERY-PROD-S-2026-09-24T07:48:46Z.json",
+      "source_sha256": "ef65475ccb35ad655b1c2ddfa572311628674d353d1df6754c3d315e73f60e1b"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-25",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-V",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-V-2026-09-25T20:38:59Z",
+      "source_path": "orrery-ORRERY-PROD-V-2026-09-25T20:38:59Z.json",
+      "source_sha256": "faab158e7967a55f4c499d46bea3721650e9bbba6fb04138f59ecfd6cd4bb2b9"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-27",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-I",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-I-2026-09-27T16:49:04Z",
+      "source_path": "orrery-ORRERY-I-2026-09-27T16:49:04Z.json",
+      "source_sha256": "a5f8b5e198caa91fef66959058a3ccf2f3aebc9fc4c10c008f35ecddcc4cec96"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-G",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-G-2026-09-28T13:59:13Z",
+      "source_path": "orrery-ORRERY-PROD-G-2026-09-28T13:59:13Z.json",
+      "source_sha256": "53af097888f00bacfba54419e8268216c588332000a1082b24074ab0ce13569b"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-V",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-V-2026-09-28T13:59:28Z",
+      "source_path": "orrery-ORRERY-PROD-V-2026-09-28T13:59:28Z.json",
+      "source_sha256": "2247c8818b7731a72d2943980132a7cb893cc99c5f13a93a0f1a21af8ef8438b"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-Q",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-Q-2026-09-28T14:28:59Z",
+      "source_path": "orrery-ORRERY-Q-2026-09-28T14:28:59Z.json",
+      "source_sha256": "7104c0b572bd06e1a781572756febf6b5e178bcdefba66748c530a287316c90c"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-P",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-P-2026-09-28T14:29:20Z",
+      "source_path": "orrery-ORRERY-P-2026-09-28T14:29:20Z.json",
+      "source_sha256": "0f81edb5fe5eb5d7b0647152405c6bcb3ed30b5ed8bef9d74dff61bcfdb68f03"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-O",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-O-2026-09-28T14:29:49Z",
+      "source_path": "orrery-ORRERY-O-2026-09-28T14:29:49Z.json",
+      "source_sha256": "84ca4b76a956a8ac7e7761ee41e236c92409bbcd4f62d0b188de92b704f87a3d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-N",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-N-2026-09-28T14:30:13Z",
+      "source_path": "orrery-ORRERY-N-2026-09-28T14:30:13Z.json",
+      "source_sha256": "dd5e9c2915f5fa06abb86b49656f056a8daf30d6ad9ac83cb01a7c25722ddcda"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-M",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-M-2026-09-28T14:30:34Z",
+      "source_path": "orrery-ORRERY-M-2026-09-28T14:30:34Z.json",
+      "source_sha256": "f51a9be1c0f66110cdc2e8fa4bbecc9e611f56b0ecd8300d981d0c02d4755961"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-L",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-L-2026-09-28T14:30:54Z",
+      "source_path": "orrery-ORRERY-L-2026-09-28T14:30:54Z.json",
+      "source_sha256": "415b86e4275f59112a743fa47e047b31b67061aa6a97bcf60ed1985ae5eb475a"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-K",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-K-2026-09-28T14:31:12Z",
+      "source_path": "orrery-ORRERY-K-2026-09-28T14:31:12Z.json",
+      "source_sha256": "cb7e7268acbb90336a2d2d2741d2420b1319dd69efb9df65066d4d4ffeddaf40"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-J",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-J-2026-09-28T14:31:30Z",
+      "source_path": "orrery-ORRERY-J-2026-09-28T14:31:30Z.json",
+      "source_sha256": "8f675480faaa07d42adb0779cc5703d7f6d5fe1429b93afef1eba6e1a345a0a4"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-T",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-T-2026-09-28T22:39:04Z",
+      "source_path": "orrery-ORRERY-T-2026-09-28T22:39:04Z.json",
+      "source_sha256": "2f1fa6f0e4f868df555c15a993eb3dcea565d6b910df59c72d6dcaa797f55c33"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-U",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-U-2026-09-28T22:39:27Z",
+      "source_path": "orrery-ORRERY-U-2026-09-28T22:39:27Z.json",
+      "source_sha256": "987d5b2ef92416cd483af812cbaf0b46752e06641e6e976447b22778171cec61"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-S",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-S-2026-09-28T22:39:57Z",
+      "source_path": "orrery-ORRERY-S-2026-09-28T22:39:57Z.json",
+      "source_sha256": "fd797b4095a99476cc8071a7e12cac1d16e73d8a678dd6efeefe9ecaed080988"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-28",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-R",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-R-2026-09-28T22:49:15Z",
+      "source_path": "orrery-ORRERY-R-2026-09-28T22:49:15Z.json",
+      "source_sha256": "504e905eafc6b56d4f6db7de7fadbf1105f5fcdb3f06beaefd50a36ce5e6add3"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-29",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-11",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-11-2026-09-29T02:58:59Z",
+      "source_path": "orrery-ORRERY-PROD-11-2026-09-29T02:58:59Z.json",
+      "source_sha256": "0067775dfa9a1fddc08f4dcb0a86274fa7debb31616034a360ead8f9656b4e58"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-29",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-10",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-10-2026-09-29T02:59:12Z",
+      "source_path": "orrery-ORRERY-PROD-10-2026-09-29T02:59:12Z.json",
+      "source_sha256": "ff6d9da1babade4e5706cf2d82dde612725063b344cd1b7239669ec933c63488"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-09-30",
+        "decision_kind": "model",
+        "evidence_level": "no-logs",
+        "fingerprint": "glitchtip:ORRERY-PROD-U",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-U-2026-09-30T01:28:58Z",
+      "source_path": "orrery-ORRERY-PROD-U-2026-09-30T01:28:58Z.json",
+      "source_sha256": "01d4b9609d3475d5dc12db8914bf2e971b5c3784126cf10fd007a59bcc95a3e7"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-01",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-PROD-12",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-12-2026-10-01T00:53:06Z",
+      "source_path": "orrery-ORRERY-PROD-12-2026-10-01T00:53:06Z.json",
+      "source_sha256": "e320f1a0f68e2ba9d5217c9bda6bac22a303835221f649bc89a72cbf32f1743e"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-01",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-PROD-G",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-G-2026-10-01T10:33:36Z",
+      "source_path": "orrery-ORRERY-PROD-G-2026-10-01T10:33:36Z.json",
+      "source_sha256": "28d4162f608f76d552439f0175b2f14b2357221bf3b87a574dc4e5ceaf49f65e"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-03",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-V",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-V-2026-10-03T19:31:55Z",
+      "source_path": "orrery-ORRERY-V-2026-10-03T19:31:55Z.json",
+      "source_sha256": "69e7538e618d16881c50bee2bd5aa08c926973739f325295a296cb5e216a398c"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-03",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-PROD-13",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-13-2026-10-03T19:51:46Z",
+      "source_path": "orrery-ORRERY-PROD-13-2026-10-03T19:51:46Z.json",
+      "source_sha256": "79d85655fdbaa3f49b21829e862f47030ab12c8f2f60c8435087429b70677b06"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-03",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-PROD-15",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-15-2026-10-03T20:01:51Z",
+      "source_path": "orrery-ORRERY-PROD-15-2026-10-03T20:01:51Z.json",
+      "source_sha256": "5a69820f1fed4ca045874611760b85104cefcd3082145dededfa8567bee7269e"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-03",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-PROD-14",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-14-2026-10-03T20:02:10Z",
+      "source_path": "orrery-ORRERY-PROD-14-2026-10-03T20:02:10Z.json",
+      "source_sha256": "fd5fdbaae23b3fb17920c50a40ed5ab52f4cdd7515d319e0393124f856f2eff0"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-03",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-PROD-16",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-16-2026-10-03T21:02:03Z",
+      "source_path": "orrery-ORRERY-PROD-16-2026-10-03T21:02:03Z.json",
+      "source_sha256": "368e270eef5f66e9e7ceb0d75275a0222bc26c131b1218f95dd75b251678155c"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-04",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-PROD-17",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-17-2026-10-04T18:11:46Z",
+      "source_path": "orrery-ORRERY-PROD-17-2026-10-04T18:11:46Z.json",
+      "source_sha256": "adb96251f08e90632216c4b8cd81ba95b9db4e34b430b7e6e3a13d544b456aa7"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-04",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-PROD-8",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-8-2026-10-04T21:01:50Z",
+      "source_path": "orrery-ORRERY-PROD-8-2026-10-04T21:01:50Z.json",
+      "source_sha256": "415798c6901a518571a5281f652816446a5a2376d5052630a4d592f53724f439"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-05",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-10",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-10-2026-10-05T03:02:01Z",
+      "source_path": "orrery-ORRERY-10-2026-10-05T03:02:01Z.json",
+      "source_sha256": "c896f07b5404d4eb23ccbfa19c2f8147a40944dba54eebdd262f979ded4cc771"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-05",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-PROD-N",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-N-2026-10-05T07:01:50Z",
+      "source_path": "orrery-ORRERY-PROD-N-2026-10-05T07:01:50Z.json",
+      "source_sha256": "35123d2093762e4831a2944144d4cf7a7a989ab4b2a013403b62205439db30aa"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-05",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-PROD-18",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-18-2026-10-05T10:31:52Z",
+      "source_path": "orrery-ORRERY-PROD-18-2026-10-05T10:31:52Z.json",
+      "source_sha256": "51976bedf3e2fe4ba6f59f473b66e13aa6c1dce08e94a174c2594b786a7447bb"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-05",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-11",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-11-2026-10-05T13:12:02Z",
+      "source_path": "orrery-ORRERY-11-2026-10-05T13:12:02Z.json",
+      "source_sha256": "fa009c2b94c7b810c02f736e4d0487b1779bad75c890179acd42c78d02d912a5"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-05",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-12",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-12-2026-10-05T13:21:57Z",
+      "source_path": "orrery-ORRERY-12-2026-10-05T13:21:57Z.json",
+      "source_sha256": "51a88d9bd9d17b5808b1080a55f7938b40bd167e46443a201e386d14ebed6477"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-07",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-PROD-19",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-19-2026-10-07T14:42:20Z",
+      "source_path": "orrery-ORRERY-PROD-19-2026-10-07T14:42:20Z.json",
+      "source_sha256": "0ce8bf815ab553fa808d84ff72568a6da8438f1c53b674af8e55b562055117e8"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-07",
+        "decision_kind": "model",
+        "evidence_level": "no-traces",
+        "fingerprint": "glitchtip:ORRERY-PROD-N",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-N-2026-10-07T19:02:08Z",
+      "source_path": "orrery-ORRERY-PROD-N-2026-10-07T19:02:08Z.json",
+      "source_sha256": "65b8ec07aaa64779a87d61eb53850a361254f3b26e6e8874d884ff51346b2c70"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-08",
+        "decision_kind": "model",
+        "evidence_level": "full-rebuild",
+        "fingerprint": "glitchtip:ORRERY-PROD-1A",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1A-2026-10-08T00:22:05Z",
+      "source_path": "orrery-ORRERY-PROD-1A-2026-10-08T00:22:05Z.json",
+      "source_sha256": "9d8516acadf54985e6bc86e99d82300e9f1d1c0ce4aec8a4ae55cea053710595"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-10",
+        "decision_kind": "model",
+        "evidence_level": "full-rebuild",
+        "fingerprint": "glitchtip:ORRERY-PROD-1B",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1B-2026-10-10T13:02:18Z",
+      "source_path": "orrery-ORRERY-PROD-1B-2026-10-10T13:02:18Z.json",
+      "source_sha256": "8d556a6f2d5d90028c83141a53dd00140beaea69938886c8e669fe80bff9f32d"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-11",
+        "decision_kind": "model",
+        "evidence_level": "full-rebuild",
+        "fingerprint": "glitchtip:ORRERY-13",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-13-2026-10-11T03:42:21Z",
+      "source_path": "orrery-ORRERY-13-2026-10-11T03:42:21Z.json",
+      "source_sha256": "5c5b25d9befab9f31f72eabff52696ec2c3a08f4b9c3078d403485ddc8d36d84"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-11",
+        "decision_kind": "model",
+        "evidence_level": "full-rebuild",
+        "fingerprint": "glitchtip:ORRERY-14",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-14-2026-10-11T13:32:23Z",
+      "source_path": "orrery-ORRERY-14-2026-10-11T13:32:23Z.json",
+      "source_sha256": "6937fa5ffcbc8344983f851bff46a72a289820d70fcf1466f0120317a6f9e8d1"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-12",
+        "decision_kind": "model",
+        "evidence_level": "full-rebuild",
+        "fingerprint": "glitchtip:ORRERY-PROD-N",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-N-2026-10-12T08:32:49Z",
+      "source_path": "orrery-ORRERY-PROD-N-2026-10-12T08:32:49Z.json",
+      "source_sha256": "70a388b57c2af44769aa66620a4562fc74960927e587c5e85ea87b89337aa203"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-12",
+        "decision_kind": "model",
+        "evidence_level": "full-rebuild",
+        "fingerprint": "glitchtip:ORRERY-PROD-11",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "no",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-11-2026-10-12T15:52:32Z",
+      "source_path": "orrery-ORRERY-PROD-11-2026-10-12T15:52:32Z.json",
+      "source_sha256": "9756565f03928cd5b08995cab30ffad4c5b14aee39330aa022527f901524c306"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-16",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1D",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1D-2026-10-16T13:02:46Z",
+      "source_path": "orrery-ORRERY-PROD-1D-2026-10-16T13:02:46Z.json",
+      "source_sha256": "d2b2578d373af373ed12cd09384ae4263d52ce3803cc9711466a58762fbc2b43"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-16",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1E",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1E-2026-10-16T14:32:38Z",
+      "source_path": "orrery-ORRERY-PROD-1E-2026-10-16T14:32:38Z.json",
+      "source_sha256": "148784f0ac337cae1611b5b7d84294cf0840f7578fcfcfd0163f5f4c459decab"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-16",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-U",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-U-2026-10-16T16:02:48Z",
+      "source_path": "orrery-ORRERY-PROD-U-2026-10-16T16:02:48Z.json",
+      "source_sha256": "910b31cdef165843be4a7a280dc8d56505f93fa8adac90d39cb7646e34885628"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-16",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1F",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1F-2026-10-16T16:03:15Z",
+      "source_path": "orrery-ORRERY-PROD-1F-2026-10-16T16:03:15Z.json",
+      "source_sha256": "a7df5131267d9f9d9c6b4b457c04170de94e0beed57c151b7d918115b8aa742f"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-16",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-18",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-18-2026-10-16T16:03:49Z",
+      "source_path": "orrery-ORRERY-PROD-18-2026-10-16T16:03:49Z.json",
+      "source_sha256": "4b6181850ced65d9169696684b77881c76fffa70781ce6d1a658c82ed5a6b953"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-16",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1G",
+        "fleet_disposition": "cleanup",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1G-2026-10-16T17:52:24Z",
+      "source_path": "orrery-ORRERY-PROD-1G-2026-10-16T17:52:24Z.json",
+      "source_sha256": "0b6d2aeb4b27199b71fa06ab3a74a7fb6167031642b9b7131c570caad1ae8e16"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-16",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-13",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-13-2026-10-16T19:42:45Z",
+      "source_path": "orrery-ORRERY-13-2026-10-16T19:42:45Z.json",
+      "source_sha256": "ae9a912c6befb2302328a0b5eeb6db8b4319d458dc688c22298b999fb3b8e88f"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-17",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1J",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1J-2026-10-17T03:32:42Z",
+      "source_path": "orrery-ORRERY-PROD-1J-2026-10-17T03:32:42Z.json",
+      "source_sha256": "95829d500679c0952e5ca5395fcb85df2d13a0ca5f39eeb0404a484dd3c47f1c"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-17",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-DEV-1",
+        "fleet_disposition": "cleanup",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-DEV-1-2026-10-17T07:52:34Z",
+      "source_path": "orrery-ORRERY-DEV-1-2026-10-17T07:52:34Z.json",
+      "source_sha256": "d1801d115d511f53eeb842974787813335b5ebc3f27713cfae5a503818ce4db8"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-17",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-15",
+        "fleet_disposition": "cleanup",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-15-2026-10-17T08:32:34Z",
+      "source_path": "orrery-ORRERY-15-2026-10-17T08:32:34Z.json",
+      "source_sha256": "93c9b090192ac8eb76f326e8cc4285d52e561b1089a020b6c26155571b51c992"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-17",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-DEV-2",
+        "fleet_disposition": "cleanup",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-DEV-2-2026-10-17T08:32:48Z",
+      "source_path": "orrery-ORRERY-DEV-2-2026-10-17T08:32:48Z.json",
+      "source_sha256": "41f4cf6dc48e5291d93fc2f6c30804e64fa7638dfaf419c4d173ced1526727b3"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-17",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1L",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1L-2026-10-17T15:22:37Z",
+      "source_path": "orrery-ORRERY-PROD-1L-2026-10-17T15:22:37Z.json",
+      "source_sha256": "dd22f4b2522529e18724289841309e4a1097124d770d3219937119d1c70644d9"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-19",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1M",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1M-2026-10-19T07:12:51Z",
+      "source_path": "orrery-ORRERY-PROD-1M-2026-10-19T07:12:51Z.json",
+      "source_sha256": "8b69b3037d81e110d36a1a928dcb0e419f932fd7e43e9bd071b10cb75a755a63"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-19",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-16",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-16-2026-10-19T08:12:37Z",
+      "source_path": "orrery-ORRERY-16-2026-10-19T08:12:37Z.json",
+      "source_sha256": "cba2c649de6717fefc784adc26e3a587f6e08e7cfefa885df4be8599e573ccc9"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-19",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1N",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1N-2026-10-19T09:23:04Z",
+      "source_path": "orrery-ORRERY-PROD-1N-2026-10-19T09:23:04Z.json",
+      "source_sha256": "908d98bc4bf68097b007e0342933aa2ad8470811d734f548e4fae49625eb0e32"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-19",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1O",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1O-2026-10-19T10:32:41Z",
+      "source_path": "orrery-ORRERY-PROD-1O-2026-10-19T10:32:41Z.json",
+      "source_sha256": "c69e5139bf02271b733388622cdd4bb942978eb8338f75d44c8d70ee5a267b33"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-19",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-17",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-17-2026-10-19T13:32:52Z",
+      "source_path": "orrery-ORRERY-17-2026-10-19T13:32:52Z.json",
+      "source_sha256": "99ea46c44806288860596625e1e4e03acc8ce17814980c7f1828414d12c879dd"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-20",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1P",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1P-2026-10-20T06:42:52Z",
+      "source_path": "orrery-ORRERY-PROD-1P-2026-10-20T06:42:52Z.json",
+      "source_sha256": "b8e9efc471b5271c5936eb6e48e8de95fe04d3019f1e0ac6bc8aa6c07ff4a177"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-20",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1O",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1O-2026-10-20T10:43:08Z",
+      "source_path": "orrery-ORRERY-PROD-1O-2026-10-20T10:43:08Z.json",
+      "source_sha256": "87f4363395bcfab23ac5abcbae9f82daa62ada8dca302f1f9766210a35586423"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-20",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1Q",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1Q-2026-10-20T16:02:56Z",
+      "source_path": "orrery-ORRERY-PROD-1Q-2026-10-20T16:02:56Z.json",
+      "source_sha256": "0d2396ae643aa279e4b709a9f0f5713aed21332020ed38983ae6b197ff89c551"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-20",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-18",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-18-2026-10-20T16:22:52Z",
+      "source_path": "orrery-ORRERY-18-2026-10-20T16:22:52Z.json",
+      "source_sha256": "cbf649db556591b7511de542b443a8ea853b9b91b4c69b9004b4a4eaf0b6f712"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-21",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1R",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1R-2026-10-21T09:13:14Z",
+      "source_path": "orrery-ORRERY-PROD-1R-2026-10-21T09:13:14Z.json",
+      "source_sha256": "3bd6f28f7924a5d67d2a8bb90ac2c06fbae0ed300f7cedbde1bf69ab31567836"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-21",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-17",
+        "fleet_disposition": "escalate",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-17-2026-10-21T13:22:56Z",
+      "source_path": "orrery-ORRERY-17-2026-10-21T13:22:56Z.json",
+      "source_sha256": "5a28ce966f849a8a7de0ee540e716388ad81a7fab0f875c2225dba4030375765"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-21",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-DEV-3",
+        "fleet_disposition": "cleanup",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-DEV-3-2026-10-21T14:22:39Z",
+      "source_path": "orrery-ORRERY-DEV-3-2026-10-21T14:22:39Z.json",
+      "source_sha256": "a097dc299dc42d923f38c8660e1ff0ecf850d0265c6bca52304da41e3c3678b6"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-21",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-DEV-6",
+        "fleet_disposition": "cleanup",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-DEV-6-2026-10-21T14:32:48Z",
+      "source_path": "orrery-ORRERY-DEV-6-2026-10-21T14:32:48Z.json",
+      "source_sha256": "a5080913bf8abf4fefbd34029141a36accbe8b3bdf7647db042f061c037dad2f"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-21",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-DEV-5",
+        "fleet_disposition": "cleanup",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-DEV-5-2026-10-21T14:32:59Z",
+      "source_path": "orrery-ORRERY-DEV-5-2026-10-21T14:32:59Z.json",
+      "source_sha256": "450cf82f5fb45e8ebd39a38553cce36048b990e4d80c502080ee37537166c628"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-21",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-DEV-4",
+        "fleet_disposition": "cleanup",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-DEV-4-2026-10-21T14:33:13Z",
+      "source_path": "orrery-ORRERY-DEV-4-2026-10-21T14:33:13Z.json",
+      "source_sha256": "7902cc538af735e2b02202832c9b21e2e64423264ba8609fad1489fc4d9a88af"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-22",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1T",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1T-2026-10-22T20:42:51Z",
+      "source_path": "orrery-ORRERY-PROD-1T-2026-10-22T20:42:51Z.json",
+      "source_sha256": "47b35a90c80319eafd1bcdb542d7f658caa748bd06e7fba73b0335da5f4bd730"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-23",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1U",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1U-2026-10-23T21:23:10Z",
+      "source_path": "orrery-ORRERY-PROD-1U-2026-10-23T21:23:10Z.json",
+      "source_sha256": "348253b9015b22272caa17ae6885ad05dfb6127c1b1c2b5a944a87ed2e8f3cc3"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-25",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-1V",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-1V-2026-10-25T08:23:12Z",
+      "source_path": "orrery-ORRERY-PROD-1V-2026-10-25T08:23:12Z.json",
+      "source_sha256": "ffaa174ad621d3477ad8a4e09322460a18a867a7ff76f3a79b23d87e1e3badc0"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-26",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-19",
+        "fleet_disposition": "dismiss",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-19-2026-10-26T03:02:55Z",
+      "source_path": "orrery-ORRERY-19-2026-10-26T03:02:55Z.json",
+      "source_sha256": "1fabb1a40425909b42bd9076e30b025e5747573462a8ec124997901573f5f297"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-29",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-20",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-20-2026-10-29T05:53:20Z",
+      "source_path": "orrery-ORRERY-PROD-20-2026-10-29T05:53:20Z.json",
+      "source_sha256": "0bdb4850458dd89756f67e84e1cae1acffbcfdded79340c6d5089a432e607cda"
+    },
+    {
+      "fields": {
+        "decision_date": "2026-10-29",
+        "decision_kind": "model",
+        "evidence_level": "exact",
+        "fingerprint": "glitchtip:ORRERY-PROD-20",
+        "fleet_disposition": "file",
+        "fleet_model": "fleet-triage-pro",
+        "labelled": "yes",
+        "stage": "propose"
+      },
+      "item_id": "orrery-ORRERY-PROD-20-2026-10-29T16:33:47Z",
+      "source_path": "orrery-ORRERY-PROD-20-2026-10-29T16:33:47Z.json",
+      "source_sha256": "973f961be84ad72d5a9f5b653484eaaa07ce34d01be7c5a2b792c559392a6386"
+    }
+  ],
+  "made_from": {
+    "by": null,
+    "capture": "orrery_2026_10",
+    "capture_sha256": "976182b7ce3fc931d84b084cc0915f63b13a5de6ff28f1c295445e923d1e0c17",
+    "dedup": null,
+    "kept": 233,
+    "one_per": null,
+    "query": {
+      "path": "data/sources/orrery_triage_v1.hf/decisions.jsonl",
+      "verdicts": "data/sources/orrery_triage_v1.hf/verdicts.jsonl"
+    },
+    "records": 233,
+    "sample": null,
+    "seed": null,
+    "where": []
+  },
+  "source_dir": "data/sources/orrery_triage_v1",
+  "tags": {
+    "environment": "prod",
+    "hf": "chipi-nbgd/orrery-triage@v1",
+    "project": "orrery",
+    "purpose": "catalog",
+    "source": "triage-fleet"
+  },
+  "version": "1.0"
+}

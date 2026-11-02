@@ -1,0 +1,27 @@
+{
+  "created_at": "2026-11-01T13:46:42Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "guideline": null,
+  "items": {
+    "orrery-ORRERY-5-2026-08-18T18:38:10Z": {
+      "item_sha256": "4429615defffbecf12819d5f01b7e2210a4c757739128f4a64503182626f5c9b",
+      "sha256": "dc3b1813dd4f72a77bda5d401811815b49da242c3fe9a0b72e7f136fbf7b6d7d"
+    },
+    "orrery-ORRERY-6-2026-08-18T18:48:08Z": {
+      "item_sha256": "8003402ea36ce07330b3b1fd5405825b90aa36f59e0f223c71646501d722e036",
+      "sha256": "dc3b1813dd4f72a77bda5d401811815b49da242c3fe9a0b72e7f136fbf7b6d7d"
+    },
+    "orrery-ORRERY-DEV-1-2026-10-17T07:52:34Z": {
+      "item_sha256": "d1801d115d511f53eeb842974787813335b5ebc3f27713cfae5a503818ce4db8",
+      "sha256": "dc3b1813dd4f72a77bda5d401811815b49da242c3fe9a0b72e7f136fbf7b6d7d"
+    }
+  },
+  "n_items": 3,
+  "note": "made from the reference silver/orrery_triage_v1_labelled_hand, which existed before labels did",
+  "set": "silver_orrery_triage_v1_labelled_hand",
+  "source": {
+    "by": "fixture labels",
+    "kind": "person",
+    "via": "examples/triage-fleet/write_gold.py --source fixture"
+  }
+}

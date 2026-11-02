@@ -20,19 +20,9 @@
   "fingerprint": {
     "arm": {
       "config_id": "ag_bert_mini_n200_v1",
-      "params": {
-        "device": "cpu",
+      "labels": {
         "family": "bert",
-        "label_order": [
-          "World",
-          "Sports",
-          "Business",
-          "Sci/Tech"
-        ],
-        "model": "mrm8488/bert-mini-finetuned-age_news-classification",
-        "precision": "fp32",
-        "price_tier": "free",
-        "provider": "hf_local"
+        "price_tier": "free"
       }
     },
     "data": {
@@ -46,38 +36,10 @@
       "references_sha256": "636e963d2e500587d0642c40b48ac32040d237eb160bf00e20696ccea4649534",
       "references_sha256_at_measurement": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
     },
-    "hash": null,
-    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/classification-ag-news/adapter.py",
-        "sha256": "ee92fea1f9920fd82b44a05ca1f35823d17f67adc3bf0bb73f07d357d0e583bd"
-      },
-      "harness": {
-        "commit": "1e80be6531e2",
-        "dirty": false
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "device": "cpu",
+    "data_sha256": "5f960d37e68d6cacd7850691b01c342690a21bb175321128c73ce2eb610e87a7",
+    "deployment": {
+      "declared": {
         "encoder_window": 512,
-        "id": "mrm8488/bert-mini-finetuned-age_news-classification",
-        "identity_declared": true,
         "label_order": [
           "World",
           "Sports",
@@ -92,16 +54,71 @@
         ],
         "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
         "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
-        "precision": "fp32",
         "provider": "hf_local",
-        "revision": "e94b474cce6f842ee5a90daa7352f5152fac4572",
-        "revision_source": "hf-snapshot",
         "weight_files": [
           "model.safetensors:44698846"
         ]
+      },
+      "hosted": null,
+      "id": "mrm8488/bert-mini-finetuned-age_news-classification",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": "mrm8488/bert-mini-finetuned-age_news-classification",
+      "provider": "hf_local",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "e94b474cce6f842ee5a90daa7352f5152fac4572",
+        "revision_source": "hf-snapshot"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
       }
     },
-    "version": 4
+    "deployment_sha256": "4e8671d1356f4a3f9b70c4753b070e59ad094139d8af4124e3e53c3e0872c56b",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-ag-news/adapter.py",
+        "sha256": "ee92fea1f9920fd82b44a05ca1f35823d17f67adc3bf0bb73f07d357d0e583bd"
+      },
+      "harness": {
+        "commit": "1e80be6531e2",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "cdec71ac0739190e10c68874977e48b6b4d863fcc29700f4b8d380451255279d",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "label_order": [
+        "World",
+        "Sports",
+        "Business",
+        "Sci/Tech"
+      ]
+    },
+    "settings_sha256": "43d3d5a6236eb57db905910b73121f6449b8eae837538ab3505a6cb90bcc9f29",
+    "version": 5
   },
   "goal": "news_topic_ag",
   "metric_kinds": {

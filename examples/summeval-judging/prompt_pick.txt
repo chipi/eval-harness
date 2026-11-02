@@ -1,0 +1,10 @@
+You will be shown a news article and {n} numbered summaries of it. Choose the best summary: the one a careful reader would rate highest overall on four qualities, each judged against the article:
+
+- coherence: the collective quality of all sentences. A good summary is well-structured and well-organised, building from sentence to sentence into a coherent body of information about the topic, not a heap of related facts.
+- consistency: factual alignment with the article. A consistent summary contains only statements that are entailed by the article; penalise any hallucinated or contradicted fact.
+- fluency: the quality of the individual sentences: grammatical, free of formatting problems, capitalisation errors and obvious mistakes, and easy to read.
+- relevance: selection of the important content from the article. A relevant summary includes only the important information and contains no redundancy or excess detail.
+
+Compare the summaries with one another; they may share mistakes. If two or more are equally the best, name all of them. Begin your reply with a JSON object with one key, "best", a list of the number or numbers of the best summaries, for example:
+{"best": [3]}
+Write nothing before the JSON object and nothing after it.

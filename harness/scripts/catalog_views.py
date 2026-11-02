@@ -5,6 +5,8 @@
     evh arms       [--dataset-id ID] [--arm ID]      every arm, or one: its metrics, runs, config, conditions, rounds
                    [--by G] [--where W] [--tier T] [--weights K] [--quality Q] [--configs]
                                                      the arms page: grouped, filtered; the configs
+    evh models     [--kind K] [--where W] [--status S] [--model ID]
+                                                     every model record, or one: deployments, onboarding, history, arms
     evh references [--reference-id ID]               every reference, or one: who wrote it, what is scored against it
     evh metrics    [--dataset-id ID] [--metric M]    what each metric measures, or one in full with the arms recording it
     evh goals      [--goal ID]                       every goal, or one: its answer on each of its datasets
@@ -13,7 +15,9 @@
 Every list (datasets, arms, references, metrics, goals) takes --period P too: the page's columns
 for that period, counted from today, with their trends against the period before.
     evh inspect    --runs A,B,... [--baseline A]     the inspector's comparison: verdicts, conditions, a breakdown
-                   [--metric M] [--where F:V] [--by F] [--item ITEM] [--items] [--analysis [--x M]]
+                   [--metric M] [--where F:V] [--by F] [--item ITEM] [--analysis [--x M]]
+    evh inspect    --sheet --dataset-id D --runs A,B,... [--metric M] [--csv FILE [--fill label|pick|scores]]
+                                                      one sheet: the items down, a column per arm: outputs, scores, labels, the winner
     evh search     TEXT                              the catalog's search box: datasets, arms, references, metrics, goals
 
 They read the project through the same adapter as the pages (`--adapter`, else config.yaml's
@@ -36,9 +40,11 @@ import statistics
 import sys
 import textwrap
 from datetime import date
+from pathlib import Path
 
-from evaluation_harness import _jsonout
+from evaluation_harness import _jsonout, _sheet
 from evaluation_harness import catalog_build as cb
+from evaluation_harness import catalog_models as cm
 from evaluation_harness import catalog_periods as cp
 from evaluation_harness import catalog_serve as cs
 from evaluation_harness._common import die
@@ -128,13 +134,26 @@ PERIOD_HEADS = {
 
 
 def datasets(argv) -> int:
-    """evh datasets: every dataset, or one with its versions, references and arms."""
+    """evh datasets: every dataset, or one with its versions, reference sets and arms."""
     ap = argparse.ArgumentParser(prog="evh datasets", description="Every dataset, or one in full.")
-    ap.add_argument("--dataset-id", help="one dataset: its versions, references and arms")
+    ap.add_argument("--dataset-id", help="one dataset: its versions, reference sets and arms")
+    ap.add_argument(
+        "--tag", action="append", default=[], metavar="K=V", help="only datasets with this tag (repeatable)"
+    )
     _period_option(ap)
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A, by_ds = _adapter(args)
+    want = []
+    for t in args.tag:
+        k, sep, val = t.partition("=")
+        if not sep or not k:
+            die(f"--tag {t!r}: KEY=VALUE")
+        want.append((k, val))
+    if want:
+        by_ds = {
+            d: v for d, v in by_ds.items() if all((v.get("tags") or {}).get(k) == val for k, val in want)
+        }
     if not args.dataset_id:
         per, line = _period(A, by_ds, cb.period_datasets(A, by_ds), args.period)
         flows = ("runs", "usd")
@@ -147,12 +166,13 @@ def datasets(argv) -> int:
                 len(v["arms"]),
                 cb._n_configs({ds: v}),
                 ", ".join(r["id"] for r in v["refs"]) or "—",
-                (v.get("parent") or {}).get("dataset_id", ""),
+                (v.get("parent") or {}).get("dataset_id", "") or v.get("origin", ""),
+                " ".join(f"{k}={t}" for k, t in sorted((v.get("tags") or {}).items())),
                 *(_pcells(per[ds], flows) if per else []),
             ]
             for ds, v in sorted(by_ds.items())
         ]
-        heads = ["dataset", f"{A.item_word}s", "arms", "configs", "references", "made from"]
+        heads = ["dataset", f"{A.item_word}s", "arms", "configs", "reference sets", "made from", "tags"]
         _table(heads + (["", *(PERIOD_HEADS[f] for f in flows)] if per else []), rows)
         return 0
     v = by_ds.get(args.dataset_id)
@@ -162,6 +182,10 @@ def datasets(argv) -> int:
         f"{args.dataset_id}: {v['items']} {A.item_word}s, {len(v['arms'])} arms from "
         f"{cb._n_configs({args.dataset_id: v})} configs (a config rescored against silver or by a judge is an arm of its own)\n"
     )
+    if v.get("tags"):
+        print("tags: " + ", ".join(f"{k}={t}" for k, t in sorted(v["tags"].items())))
+    if v.get("origin") and not v.get("parent"):
+        print(f"made from {v['origin']}")
     lin = v.get("parent")
     if lin:
         print(
@@ -263,10 +287,10 @@ def _fields_block(A, dataset: str) -> None:
 
 
 def references(argv) -> int:
-    """evh references: every reference, or one with its provenance and what is scored against it."""
-    ap = argparse.ArgumentParser(prog="evh references", description="Every reference, or one in full.")
+    """evh references: every reference set, or one with its provenance and what is scored against it."""
+    ap = argparse.ArgumentParser(prog="evh references", description="Every reference set, or one in full.")
     ap.add_argument(
-        "--reference-id", help="one reference: who wrote it, from which run, what is scored against it"
+        "--reference-id", help="one reference set: who wrote it, from which run, what is scored against it"
     )
     _period_option(ap)
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
@@ -296,7 +320,7 @@ def references(argv) -> int:
         return 0
     hit = next(((ds, r) for ds, r in refs if r["id"] == args.reference_id), None)
     if hit is None:
-        die(f"no reference {args.reference_id!r}: one of {', '.join(sorted(r['id'] for _, r in refs))}")
+        die(f"no reference set {args.reference_id!r}: one of {', '.join(sorted(r['id'] for _, r in refs))}")
     ds, r = hit
     print(f"{r['id']}\n  {cb.TIER_WORDS.get(r['tier'], '')}\n")
     for k, label in (
@@ -450,7 +474,7 @@ def overview(argv) -> int:
         else:
             line = t["trend"]["text"] + (f" vs {against}" if t["trend"]["pct"] is not None else "")
             value = cb.fmt_amount(t["value"], "usd") if t["what"] == "billed" else f"{round(t['value']):,}"
-        print(f"  {t['what']:15} {value:>16}  {line}".rstrip())
+        print(f"  {cb.TILE_LABEL.get(t['what'], t['what']):15} {value:>16}  {line}".rstrip())
     print(
         "\ngoals at a glance (the leader of the gold group against the baseline, one test, threshold 0.05):"
     )
@@ -522,7 +546,15 @@ def overview(argv) -> int:
         print("\nactivity and spend: nothing is recorded with a date yet")
     print("\ncoverage:")
     _table(
-        ["dataset", f"{A.item_word}s", "arms scored against", "references", "metrics", "goals", "last run"],
+        [
+            "dataset",
+            f"{A.item_word}s",
+            "arms scored against",
+            "reference sets",
+            "metrics",
+            "goals",
+            "last run",
+        ],
         [
             [
                 c["dataset"] + (f" (from {c['parent']})" if c["parent"] else ""),
@@ -563,12 +595,12 @@ def arms(argv) -> int:
     ap.add_argument(
         "--weights",
         choices=("open", "proprietary"),
-        help="only arms whose model's weights are open, or proprietary (data/models.yaml)",
+        help="only arms whose model's weights are open, or proprietary (the model records, data/models/)",
     )
     ap.add_argument(
         "--quality",
-        choices=("ties", "below"),
-        help="only arms a goal ties with its quality leader, or only those it ranks below the leader",
+        choices=("contender", "below"),
+        help="only arms a goal counts as contenders beside its quality leader, or only those it ranks below the leader",
     )
     ap.add_argument(
         "--configs",
@@ -587,12 +619,17 @@ def arms(argv) -> int:
             and (not args.where or r["local"] == (args.where == "local"))
             and (not args.tier or r["tier"] == args.tier)
             and (not args.weights or r["weights"] == args.weights)
-            and (not args.quality or r["quality"] == f"{args.quality} the leader")
+            and (
+                not args.quality
+                or r["quality"] == {"contender": "a contender", "below": "below the leader"}[args.quality]
+            )
         ]
         if not rows:
             why = []
             if args.weights:
-                why.append("an arm's weights come from data/models.yaml (the adapter's model_facts)")
+                why.append(
+                    "an arm's weights come from the model records (data/models/, the adapter's model_facts)"
+                )
             if args.quality:
                 why.append("only arms a goal's decision weighs have a place against its quality leader")
             print("no arm matches" + (f": {'; '.join(why)}" if why else ""))
@@ -624,6 +661,7 @@ def arms(argv) -> int:
         groups: dict = {}
         for r in rows:
             groups.setdefault(r[key] if key else "", []).append(r)
+        has_record = any(r["record"] for r in rows)
         for name in sorted(groups):
             if key:
                 print(f"\n{dict(ca.GROUPS)[key]} {name or '—'} ({len(groups[name])} arms)")
@@ -634,6 +672,7 @@ def arms(argv) -> int:
                     "dataset",
                     "model",
                     "provider",
+                    *(["model record"] if has_record else []),
                     "role",
                     "deciding measure",
                     *heads_p,
@@ -641,10 +680,21 @@ def arms(argv) -> int:
                 [
                     [
                         r["arm"],
-                        r["how"] + (f" ({r['moved']:+.3f} vs measured)" if r["moved"] is not None else ""),
+                        r["how"]
+                        + (f" ({r['moved']:+.3f} vs measured)" if r["moved"] is not None else "")
+                        + ("; the goals read its re-score" if r["superseded_by"] else ""),
                         r["dataset"],
                         r["model"] or "—",
                         (r["provider"] or "—") + (" (local)" if r["local"] else ""),
+                        *(
+                            [
+                                f"{r['record']}{'@' + r['deployment'] if r['deployment'] else ''} ({cm.SMOKE_WORDS[r['smoke']]})"
+                                if r["record"]
+                                else "—"
+                            ]
+                            if has_record
+                            else []
+                        ),
                         ", ".join(dict.fromkeys(r["roles"])) or "—",
                         f"{r['measure']} {_fmt(r['value'])}" if r["measure"] else "—",
                         *(_pcells(per[r["arm"]], flows) if per else []),
@@ -674,6 +724,8 @@ def arms(argv) -> int:
         print(
             "  note            wrote the reference it is scored against: its row measures agreement with itself"
         )
+    if a.get("superseded_by"):
+        print(f"  re-scored       the goals read its re-score, {a['superseded_by']}")
     sc = A.scores(a["arm"])
     cs = [(ax, cell_of(ax, sc)) for ax in builtin_axes()]
     if any(c["n"] or (c.get("tokens") or {}).get("n") for _, c in cs):
@@ -712,7 +764,9 @@ def arms(argv) -> int:
     cfg = cfg_fn(a["arm"]) if callable(cfg_fn) else {}
     if cfg.get("params"):
         print(
-            f"\nconfig {cfg.get('config_id', '')} (adapter {cfg.get('adapter') or '—'}; credentials are never shown):"
+            f"\nconfig {cfg.get('config_id', '')} (adapter {cfg.get('adapter') or '—'}"
+            + (f"; deployment {cfg['deployment']}" if cfg.get("deployment") else "")
+            + "; credentials are never shown):"
         )
         for k, x in sorted(cfg["params"].items()):
             print(f"  {k:20} {x}")
@@ -741,6 +795,182 @@ def arms(argv) -> int:
             )
     for note in A.notes(a["arm"]):
         print(f"note: {note}")
+    return 0
+
+
+def _onboarding(r: dict) -> str:
+    if r["status"] == "none":
+        return "none"
+    return f"{ {'vetted': 'pass', 'onboarded': 'probed'}.get(r['status'], 'check') } {r['onboarded']}"
+
+
+def _best(r: dict) -> str:
+    return "; ".join(f"{g['goal_id']} #{i} of {n}" for g, _ds, i, n in r["best"]) or "—"
+
+
+def models(argv) -> int:
+    """evh models: every model record, or one in full as its page shows it."""
+    ap = argparse.ArgumentParser(prog="evh models", description="Every model record, or one in full.")
+    ap.add_argument("--model", help="one model in full: its record id")
+    ap.add_argument("--kind", choices=("llm", "ml", "baseline"), help="only models of this kind")
+    ap.add_argument(
+        "--where",
+        choices=("self-hosted", "hosted"),
+        help="only models that run on our machines (a deployment with a server or device, no provider id), or only hosted ones",
+    )
+    ap.add_argument(
+        "--status",
+        choices=("vetted", "onboarded", "check", "none"),
+        help="only models whose onboarding passed and an arm passed its smoke (vetted), whose onboarding passed with no arm smoked (onboarded), any flagged something (check), or none ran (none)",
+    )
+    ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
+    args = ap.parse_args(argv)
+    A, by_ds = _adapter(args)
+    rows = cm.model_rows(A, by_ds)
+    if not args.model:
+        rows = [
+            r
+            for r in rows
+            if (not args.kind or r["kind"] == args.kind)
+            and (not args.where or r["hosting"] == args.where)
+            and (not args.status or r["status"] == args.status)
+        ]
+        if not rows:
+            print("no model matches" if cm.entries(A) else "no model records: data/models/<model_id>.yaml")
+            return 0
+        _table(
+            [
+                "model",
+                "kind",
+                "where",
+                "weights",
+                "build",
+                "deployments",
+                "settings",
+                "onboarding",
+                "arms",
+                "goals",
+                "best result",
+            ],
+            [
+                [
+                    r["id"],
+                    r["kind"],
+                    r["hosting"] or "—",
+                    r["weights"] or "—",
+                    ", ".join(r["build"]) + (" (differs)" if r["differs"] else "") if r["build"] else "—",
+                    ", ".join(b["id"] for b in r["deployments"]) or "—",
+                    r["settings"],
+                    _onboarding(r),
+                    len(r["arms"]),
+                    ", ".join(g["goal_id"] for g in r["goals"]) or "—",
+                    _best(r),
+                ]
+                for r in rows
+            ],
+        )
+        return 0
+    r = next((x for x in rows if x["id"] == args.model), None)
+    if r is None:
+        die(f"no model {args.model!r}: `evh models` lists them")
+    rec = r["record"]
+    print(r["name"] + f"  [{r['kind']}]")
+    for k, x in (
+        ("weights", r["weights"] or "—"),
+        ("licence", r["licence"] or "—"),
+        ("aliases", ", ".join(rec.get("aliases") or [])),
+        ("where", r["hosting"] or "—"),
+        ("onboarding", _onboarding(r)),
+    ):
+        print(f"  {k:15} {x}")
+    why = rec.get("settings_why") or {}
+    for k, x in (rec.get("settings") or {}).items():
+        print(f"  setting {k:12} {x}" + (f"  ({why[k]})" if why.get(k) else ""))
+    print("\ndeployments:")
+    if r["deployments"]:
+        _table(
+            [
+                "deployment",
+                "where",
+                "server or device",
+                "build",
+                "matches the record",
+                "checked",
+                "onboarding",
+            ],
+            [
+                [
+                    b["id"],
+                    b["where"] + (f" ({b['backend']})" if b.get("backend") else ""),
+                    b.get("server") or b.get("device") or b.get("backend") or "—",
+                    cm.build_text(b),
+                    f"differs: {diff}" if diff else "yes",
+                    cm.day(b.get("checked_at")) or "—",
+                    f"{o['status']} {cm.day(o.get('at'))}" if (o := b.get("onboarding") or {}) else "none",
+                ]
+                for b, diff in zip(r["deployments"], r["diffs"], strict=True)
+            ],
+        )
+    else:
+        print("  none recorded")
+    print("\nonboarding:")
+    if r["deployments"]:
+        for dep in r["deployments"]:
+            onb = dep.get("onboarding") or {}
+            if not onb:
+                print(f"  {dep['id']}: not onboarded: evh model-onboard {r['id']} --deployment {dep['id']}")
+                continue
+            print(
+                f"  {dep['id']}: {onb.get('status')} {cm.day(onb.get('at'))}"
+                + (f" on {onb['where']}" if onb.get("where") else "")
+            )
+            for k, v in (onb.get("report") or {}).items():
+                print(f"    {k.replace('_', ' '):16} {cm.kv(v) if isinstance(v, dict) else v}")
+            for f in onb.get("flags") or []:
+                print(f"    flag: {f}")
+    else:
+        print(f"  not onboarded: evh model-onboard {r['id']}")
+    print("\nsettings history:")
+    hist = sorted(rec.get("history") or [], key=lambda h: str(h.get("at")), reverse=True)
+    if hist:
+        _table(
+            ["when", "what changed", "why"],
+            [
+                [
+                    cm.day(h.get("at")),
+                    f"{h.get('what')}: {h.get('from', '—')} → {h.get('to', '—')}"
+                    if "from" in h or "to" in h
+                    else h.get("what"),
+                    h.get("why") or "—",
+                ]
+                for h in hist
+            ],
+        )
+    else:
+        print("  none recorded")
+    print("\narms:")
+    if r["arms"]:
+        cfg_fn = getattr(A, "arm_config", None)
+        _table(
+            ["arm id", "goal", "its settings", "arm smoke", "result"],
+            [
+                [
+                    a["arm"],
+                    a["goal"]["goal_id"] if a["goal"] else "—",
+                    ", ".join(
+                        cm.arm_settings(
+                            rec, ((cfg_fn(a["arm"]) if callable(cfg_fn) else {}) or {}).get("params") or {}
+                        )
+                    )
+                    or "—",
+                    cm.SMOKE_WORDS[a["smoke"]],
+                    f"{a['measure']} {_fmt(a['value'])}" if a["measure"] else "—",
+                ]
+                for a in r["arms"]
+            ],
+        )
+    else:
+        print("  none")
     return 0
 
 
@@ -846,13 +1076,21 @@ def goals(argv) -> int:
         ds = ans["dataset"]
         tiers = {r["id"]: r["tier"] for r in (by_ds.get(ds) or {}).get("refs", [])}
         print(f"\n{ds}" + (f" · {ans['role']}" if ans["role"] else ""))
+        if ans["notes"]:
+            print(textwrap.fill(ans["notes"], width=96, initial_indent="  ", subsequent_indent="  "))
         if not ans["groups"]:
             print(f"  no arm records {prim.get('measure', '')}")
         for grp in ans["groups"]:
             what = grp["key"]
             gm = (grp["rows"][0].get("measure") if grp["rows"] else None) or prim.get("measure", "")
             dec = cb.group_decision(
-                A, g, ds, grp["rows"], gm, retired_in, cb.gold_beside(tiers, ans["groups"], what)
+                A,
+                g,
+                ds,
+                grp["rows"],
+                gm,
+                retired_in,
+                cb.gold_beside(tiers, ans["groups"], what),
             )
             shown = cb.shown_axes(dec)
             leader = dec["leader"]  # the decision's: never a retired or flagged arm
@@ -938,7 +1176,7 @@ def inspect(argv) -> int:
     ap = argparse.ArgumentParser(
         prog="evh inspect", description="The inspector's comparison, in the terminal."
     )
-    pick = ap.add_mutually_exclusive_group(required=True)
+    pick = ap.add_mutually_exclusive_group()
     pick.add_argument("--runs", help="arms: config ids (looked up under --from) or arm ids, comma-separated")
     pick.add_argument("--round", help="the arms in play in this round of a goal (rN; ADR-0004)")
     ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
@@ -960,14 +1198,16 @@ def inspect(argv) -> int:
         help="FIELD:VALUE or FIELD:LO..HI, keep only matching items (repeatable)",
     )
     ap.add_argument("--by", help="break the comparison down by a choice or yes/no field")
+    ap.add_argument(
+        "--disagree",
+        action="store_true",
+        help="only the items where the arms decided differently from the baseline (with --sheet: from the first run; the adapter's same(a, b))",
+    )
     ap.add_argument("--item", help="show one item: each arm's output beside the reference")
     ap.add_argument(
         "--no-rescore",
         action="store_true",
         help="read only what is on record (the inspector's re-score box unticked; an adapter that can re-score)",
-    )
-    ap.add_argument(
-        "--items", action="store_true", help="the per-item table: every item's score per arm, and Δ"
     )
     ap.add_argument(
         "--analysis",
@@ -977,6 +1217,62 @@ def inspect(argv) -> int:
     ap.add_argument(
         "--x", dest="xmetric", help="with --analysis: each arm's mean on this metric too (the scatter)"
     )
+    ap.add_argument(
+        "--sheet",
+        action="store_true",
+        help="one sheet of --dataset-id: its items down, a column per run in --runs (the first is production's): what it wrote, its scores, the labels, the winner, the signals, and a footer per run",
+    )
+    ap.add_argument("--dataset-id", help="with --sheet: the dataset whose items are shown")
+    ap.add_argument(
+        "--scores-only",
+        action="store_true",
+        help="with --sheet: leave the runs' outputs out, keep their scores",
+    )
+    ap.add_argument(
+        "--wrong-against",
+        metavar="SET",
+        help="with --sheet: only the items where the first run's decision is not this label set's (SET or DATASET/SET)",
+    )
+    ap.add_argument(
+        "--new-vs",
+        metavar="DATASET",
+        help="with --sheet: only the items with a field value this dataset has never had",
+    )
+    ap.add_argument(
+        "--split",
+        action="store_true",
+        help="with --sheet: only the items the candidates (the runs after the first) decided differently among themselves",
+    )
+    ap.add_argument(
+        "--unlabelled", action="store_true", help="with --sheet: only the items no label set labels yet"
+    )
+    ap.add_argument(
+        "--csv",
+        type=Path,
+        metavar="FILE",
+        help="with --sheet: write the sheet as CSV (UTF-8 with the mark Excel needs) instead of printing it",
+    )
+    ap.add_argument(
+        "--fill",
+        choices=_sheet.FILLS,
+        help="with --csv: add the columns to fill. label: label, also right, note. pick, scores: the outputs as blind columns A, B, C… shuffled per row, a key beside the sheet (sheet.key.json), the rubric as its first row; evh sheet-import reads it back",
+    )
+    ap.add_argument(
+        "--choices",
+        help="with --fill label: the allowed answers, comma-separated (e.g. file,dismiss,escalate), written into the label column's header",
+    )
+    ap.add_argument(
+        "--seed", type=int, default=None, help="with --fill pick or scores: the shuffle's seed (default 0)"
+    )
+    ap.add_argument(
+        "--rubric",
+        type=Path,
+        help="with --fill pick or scores: a file saying what to judge (default: a plain one)",
+    )
+    ap.add_argument(
+        "--scale",
+        help="with --fill scores: the scores' range, LO..HI (default 1..5)",
+    )
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     A = load_catalog_adapter(args.adapter)
@@ -985,6 +1281,30 @@ def inspect(argv) -> int:
         # Run for a public MCP server: the inspector's public rules, so a --where or --by on a
         # field not marked public is refused instead of leaking its values through the counts.
         cs.LIMITS["hosts"] = ("public",)
+    only_sheet = [
+        f
+        for f, on in (
+            ("--dataset-id", args.dataset_id),
+            ("--wrong-against", args.wrong_against),
+            ("--new-vs", args.new_vs),
+            ("--split", args.split),
+            ("--unlabelled", args.unlabelled),
+            ("--scores-only", args.scores_only),
+            ("--csv", args.csv),
+            ("--fill", args.fill),
+            ("--choices", args.choices),
+            ("--seed", args.seed is not None),
+            ("--rubric", args.rubric),
+            ("--scale", args.scale),
+        )
+        if on
+    ]
+    if args.sheet:
+        return _sheet_view(A, args)
+    if only_sheet:
+        die(f"{', '.join(only_sheet)}: with --sheet (evh inspect --sheet --dataset-id D --runs A,B …)")
+    if not (args.runs or args.round):
+        die("one of --runs, --round or --sheet (with --dataset-id) is required")
     round_leader = None
     if args.round:
         from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
@@ -1056,6 +1376,7 @@ def inspect(argv) -> int:
         "baseline": [base],
         "metric": [args.metric or ""],
         "where": args.where,
+        "disagree": ["1" if args.disagree else ""],
         "by": [args.by or ""],
         "rescore": ["0" if args.no_rescore else "1"],
     }
@@ -1082,7 +1403,7 @@ def inspect(argv) -> int:
                 _fmt(r["mean"]),
                 _fmt(r["delta"]),
                 "—" if not r.get("ci") else f"{r['ci'][0]:+.3f} to {r['ci'][1]:+.3f}",
-                f"{r['wins']}–{r['losses']}" + (f" ({r['ties']} tied)" if r.get("ties") else ""),
+                f"{r['wins']}–{r['losses']}" + (f" ({r['ties']} ties)" if r.get("ties") else ""),
                 "—" if r.get("p") is None else fmt_p(r["p"]),
                 "—" if not r.get("threshold") else f"{r['threshold']:.4f}",
             ]
@@ -1120,23 +1441,6 @@ def inspect(argv) -> int:
             )
     if args.analysis:
         _analysis(d, label, args.xmetric)
-    if args.items:
-        order = list(d["series"])
-        base_s = d["series"].get(d["baseline"], {})
-        others = [a for a in order if a != d["baseline"]]
-
-        def delta(a: str, i: str) -> str:
-            v = d["series"][a].get(i)
-            return "—" if v is None or i not in base_s else f"{v - base_s[i]:+.3f}"
-
-        print(f"\nper {A.item_word} ({d['metric']}; Δ is each arm minus the baseline):")
-        _table(
-            [A.item_word, *[label.get(a, a) for a in order], *[f"Δ {label.get(a, a)}" for a in others]],
-            [
-                [i, *[_fmt(d["series"][a].get(i)) for a in order], *[delta(a, i) for a in others]]
-                for i in d.get("items") or sorted(base_s)
-            ],
-        )
     br = d.get("breakdown")
     if br:
         print(f"\nby {args.by} (Holm across {br['family_size']}):")
@@ -1155,6 +1459,173 @@ def inspect(argv) -> int:
                 for r in g["rows"]
             ],
         )
+    return 0
+
+
+def _show(heads: list, rows: list) -> None:
+    """A table of the sheet: under --json its values as they are, in the terminal numbers rounded and gaps a dash."""
+    if _jsonout.table(heads, rows):
+        return
+    _table(heads, [["—" if v is None else _fmt(v) if isinstance(v, float) else v for v in r] for r in rows])
+
+
+def _sheet_view(A, args) -> int:
+    """evh inspect --sheet --dataset-id D --runs A,B: the dataset's items down, a column per run: printed, or written
+    as a CSV to fill (RFC-023, _sheet)."""
+    from evaluation_harness import _picks  # noqa: PLC0415
+
+    if os.environ.get("EVH_PUBLIC"):
+        die("--sheet shows the items' outputs and labels: not served publicly")
+    if not args.dataset_id:
+        die("--sheet: name the dataset with --dataset-id")
+    if args.round:
+        die("--sheet takes --runs (run ids, or config ids: their latest run on the dataset), not --round")
+    for flag, on in (("--item", args.item), ("--analysis", args.analysis), ("--baseline", args.baseline)):
+        if on:
+            die(
+                f"{flag}: not with --sheet (the sheet is a view of every item; the first run stands for production)"
+            )
+    runs = [t.strip() for t in (args.runs or "").split(",") if t.strip()]
+    for flag, n, on in (
+        ("--disagree", 2, args.disagree),
+        ("--split", 3, args.split),
+        ("--wrong-against", 1, args.wrong_against),
+    ):
+        if on and len(runs) < n:
+            die(f"{flag} needs {n} run(s) or more in --runs (the first is production's)")
+    if args.fill and not args.csv:
+        die("--fill: with --csv FILE (the sheet to fill in)")
+    if args.choices and args.fill != "label":
+        die("--choices: with --fill label")
+    if args.fill not in ("pick", "scores") and (args.seed is not None or args.rubric or args.scale):
+        die("--seed, --rubric and --scale: with --fill pick or scores")
+    if args.scale and args.fill != "scores":
+        die("--scale: with --fill scores")
+    model = _sheet.build(
+        args.dataset_id,
+        runs,
+        cs._fields_of,
+        metric=args.metric,
+        from_dir=args.from_dir,
+        wrong_against=args.wrong_against,
+        new_vs=args.new_vs,
+    )
+    found = _sheet.by_where(model, args.where)
+    if args.by and args.by not in model["decl"]:
+        die(f"--by {args.by}: no field {args.by!r} on {args.dataset_id}")
+    wanted = [
+        s
+        for s, on in (
+            ("wrong", args.wrong_against),
+            ("disagree", args.disagree),
+            ("split", args.split),
+            ("new", args.new_vs),
+            ("unlabelled", args.unlabelled),
+        )
+        if on
+    ]
+    shown = _sheet.by_signals(found, wanted)
+    if args.csv:
+        return _sheet_csv(args, model, shown)
+    counts = _sheet.counts(found)
+    way = (
+        f"{model['metric']} ({'lower' if model['lower'] else 'higher'} is better)" if model["metric"] else ""
+    )
+    print(
+        f"{args.dataset_id}: {len(shown)} of {len(found)} {A.item_word}(s)"
+        + (f" ({', '.join(wanted)})" if wanted else "")
+        + "".join(f" · {s} {n}" for s, n in counts.items() if n)
+        + (f" · read on {way}" if way else "")
+        + "\n"
+    )
+    state = _picks.state()
+
+    def picked(item: str) -> str:
+        p = state.get((args.dataset_id, item)) or {}
+        if p.get("action") != "pick":
+            return ""
+        return f"for {', '.join(p['for'])}" if p.get("for") else "no target yet"
+
+    head, body, _ = _sheet.flat(model, shown, scores_only=args.scores_only, short=True, picked=picked)
+    _show(head, body)
+    if runs and model["metric"]:
+        fhead, flines = _sheet.footer_table(model, _sheet.footer(model, shown))
+        print(f"\nper run, over the {len(shown)} row(s) shown:")
+        _show(fhead, flines)
+    if args.by:
+        groups: dict[str, list] = {}
+        for r in shown:
+            groups.setdefault(str(r["fields"].get(args.by, "—")), []).append(r)
+        print(f"\nby {args.by}:")
+        _table(
+            [args.by, "rows", *_sheet.SIGNALS],
+            [[g, len(rs), *_sheet.counts(rs).values()] for g, rs in groups.items()],
+        )
+    if shown:
+        items = " ".join(f"--item {r['item']}" for r in shown)
+        print(
+            f'\npick them:  evh pick --dataset-id {args.dataset_id} {items} [--for V] [--tag k=v] [--note "…"]'
+        )
+        print(
+            f"label them: evh label-sheet --dataset-id {args.dataset_id} {items} --out sheet.csv"
+            + (f" --runs {','.join(runs)}" if runs else "")
+        )
+    return 0
+
+
+def _sheet_csv(args, model: dict, shown: list) -> int:
+    """--csv FILE: the sheet written as CSV for a spreadsheet (UTF-8 with the mark Excel needs), with the columns to
+    fill when --fill says so; for a blind fill the key beside it (sheet.key.json). Never over a file that exists."""
+    import re  # noqa: PLC0415
+
+    from evaluation_harness._common import write_json  # noqa: PLC0415
+    from evaluation_harness._sheets import write_csv  # noqa: PLC0415
+
+    key_file = _sheet.key_path(args.csv)
+    blind = args.fill in ("pick", "scores")
+    for f in (args.csv, key_file if blind else None):
+        if f is not None and f.exists():
+            die(f"{f} exists: a sheet is not overwritten (you may have filled it)")
+    if not blind:
+        choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
+        head, body = _sheet.csv_sheet(
+            model, shown, scores_only=args.scores_only, fill=args.fill, choices=choices
+        )
+        write_csv(head, body, args.csv)
+        print(f"{args.csv}: {len(shown)} row(s), {len(head)} column(s)")
+        if args.fill == "label":
+            print(
+                "  fill `label` (answers just as right in `also right`, separated by |), then: "
+                f"evh sheet-import {args.csv} --dataset-id {args.dataset_id} --by <you> --set <name>"
+            )
+        return 0
+    scale = (1, 5)
+    if args.scale:
+        m = re.fullmatch(r"(-?\d+)\.\.(-?\d+)", args.scale.strip())
+        if not m or int(m.group(1)) >= int(m.group(2)):
+            die(f"--scale {args.scale}: LO..HI, two whole numbers, LO below HI (e.g. 1..5)")
+        scale = (int(m.group(1)), int(m.group(2)))
+    if args.rubric and not args.rubric.is_file():
+        die(f"--rubric: no file {args.rubric}")
+    rubric = _sheet.rubric_text(
+        args.fill, scale, args.rubric.read_text(encoding="utf-8") if args.rubric else None
+    )
+    head, body, key, left_out = _sheet.blind(
+        model, shown, args.fill, seed=args.seed or 0, rubric=rubric, scale=scale
+    )
+    if len(body) < 2:
+        die(f"--fill {args.fill}: no row has outputs to judge (a pick needs two outputs on a row)")
+    write_csv(head, body, args.csv)
+    write_json(key_file, key)
+    print(
+        f"{args.csv}: {len(body) - 1} row(s) to judge, {len(model['arms'])} blind column(s)"
+        + (f" ({left_out} row(s) left out: too few outputs)" if left_out else "")
+        + f"\n  the key (which letter was which run on each row) is {key_file}: keep it here, not with the sheet"
+    )
+    what = "`pick` (the best letter, `A|B` for a tie)" if args.fill == "pick" else "`score: A`, `score: B`…"
+    print(
+        f"  fill {what}, then: evh sheet-import {args.csv} --dataset-id {args.dataset_id} --by <who> --scorer <name>"
+    )
     return 0
 
 
@@ -1280,7 +1751,7 @@ def activity(argv) -> int:
 def search(argv) -> int:
     """evh search: the catalog's search box, with the command that shows each hit."""
     ap = argparse.ArgumentParser(
-        prog="evh search", description="Search datasets, arms, references, metrics and goals."
+        prog="evh search", description="Search datasets, arms, reference sets, metrics and goals."
     )
     ap.add_argument("text", nargs="+")
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
@@ -1315,6 +1786,7 @@ def search(argv) -> int:
 VIEWS = {
     "overview": overview,
     "arms": arms,
+    "models": models,
     "datasets": datasets,
     "references": references,
     "metrics": metrics,

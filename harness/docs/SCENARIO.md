@@ -1,10 +1,10 @@
 # The newcomer scenario
 
 A person who has never used the harness pins a release candidate into an empty folder and,
-using only the published docs, runs two small experiments end to end: a summariser and a
+using only the published docs, runs two small evals end to end: a summariser and a
 classifier, with no-model baselines, cheap hosted LLMs, an expensive frontier model whose run
 becomes the reference, and LLM judges, and one small CPU model, the fastest, for the summaries. They
-take the summariser through two experiment rounds and a new dataset version, then browse everything
+take the summariser through two eval rounds and a new dataset version, then browse everything
 in the catalog and the inspector. It costs under $1 and keeps a friction log.
 
 **It is a smoke test of the newcomer's path, not a release ritual.** Run it when something a
@@ -35,7 +35,7 @@ release candidate `80e8f3f5`, through the proxy, for $0.17; nothing blocked, 10 
 - **Your own key, your choice of provider.** Any provider the bundled adapter supports: OpenAI or
   any OpenAI-compatible endpoint, OpenRouter, Anthropic, or a LiteLLM proxy (tutorial 2 lists the
   variable each reads). Put the key in the project's `.env` with `EVAL_MAX_COST_USD=1`, and check
-  with `evh env-check`. Add up what each command prints it spent (`experiment-run`:
+  with `evh env-check`. Add up what each command prints it spent (`evh run`:
   `spent $…`; `judge-score`: `spent this run $…`). What that figure is, the provider's bill
   or the config's price table, depends on the provider
   ([RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system)).
@@ -58,20 +58,27 @@ Write the items yourself, so nothing has to be fetched or licensed:
 
 - **briefs_v1**: 20 short invented local-news briefs (5 sentences each) in
   `data/sources/briefs/`, and a one-sentence summary of each, written by you, in
-  `data/references/gold/briefs_v1/<item_id>.txt`.
+  `data/sources/briefs_gold/<item_id>.txt`.
 - **intents_v1**: 32 one- or two-sentence customer messages in `data/sources/messages/`, each
-  labelled billing, technical, account or shipping, in `data/references/gold/intents_v1/`.
+  labelled billing, technical, account or shipping, in `data/sources/messages_gold/<item_id>.txt`.
   Include a couple that sit between two intents (a shipping refund is billing).
+
+Your answers become a person's labels, promoted to gold with why (a reference set is only ever labels promoted on
+purpose):
 
 ```bash
 evh dataset-create --dataset-id briefs_v1 --source-dir data/sources/briefs --glob "*.txt"
 evh dataset-create --dataset-id intents_v1 --source-dir data/sources/messages --glob "*.txt"
 evh dataset-materialize --dataset-id briefs_v1 && evh dataset-materialize --dataset-id intents_v1
+evh label-import data/sources/briefs_gold --dataset-id briefs_v1 --set my_gold --by me
+evh label-import data/sources/messages_gold --dataset-id intents_v1 --set my_gold --by me
+evh reference-promote --dataset-id briefs_v1 --labels my_gold --tier gold --reason "my own summaries" --by me
+evh reference-promote --dataset-id intents_v1 --labels my_gold --tier gold --reason "my own intents" --by me
 ```
 
 ## 2 · Goals
 
-One per experiment in `data/goals/`, `brief_summary` and `intent_routing`
+One per eval in `data/goals/`, `brief_summary` and `intent_routing`
 ([RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field) has every field and its allowed
 values): who uses the output, the decision ("which system runs it, given that a frontier model is
 too expensive to run on every item"), the measure that decides (`rouge_l`; `accuracy`), the
@@ -105,22 +112,23 @@ warnings in the adapter as tutorial 1's does, so the run's output is the harness
 
 ```bash
 git add -A && git commit -qm "datasets, gold, goals, adapters, arms"
-evh experiment-run --config data/configs/briefs_mistral_small.yaml --dry-run    # price it first
-evh experiment-run --config data/configs/<arm>.yaml                              # every arm
-evh experiment-run --config data/configs/<hosted arm>.yaml --repeat 3            # the noise floor; prints "spent $…"
+evh run --config data/configs/briefs_mistral_small.yaml --dry-run    # price it first
+evh run --config data/configs/<arm>.yaml                              # every arm
+evh run --config data/configs/<hosted arm>.yaml --repeat 3            # the noise floor; prints "spent $…"
 evh leaderboard --dataset-id briefs_v1
 evh family-test --dataset-id briefs_v1 --a briefs_mistral_small_v1 --against briefs_ --metric rouge_l
 ```
 
 The same for `intents_v1` (`--metric accuracy`).
 
-## 5 · The frontier arm's run becomes the silver reference
+## 5 · The frontier arm's outputs become the silver reference
 
 ```bash
-evh reference-create --dataset-id briefs_v1 --from-run <the briefs_opus_v1 run_id>
-git add data/references && git commit -qm "silver/briefs_v1 from the frontier arm"
-evh reference-create --dataset-id intents_v1 --from-run <the intents_opus_v1 run_id>
-git add data/references && git commit -qm "silver/intents_v1 from the frontier arm"
+evh label-from-run --run <the briefs_opus_v1 run_id> --set opus_v1
+evh reference-promote --dataset-id briefs_v1 --labels opus_v1 --tier silver --reason "The frontier arm ranks the rest." --by me
+evh label-from-run --run <the intents_opus_v1 run_id> --set opus_v1
+evh reference-promote --dataset-id intents_v1 --labels opus_v1 --tier silver --reason "The frontier arm ranks the rest." --by me
+git add data/labels data/references && git commit -qm "silver from the frontier arm's labels"
 evh rescore --dataset-id briefs_v1 --reference-id silver/briefs_v1 --out data/runs-silver
 evh rescore --dataset-id intents_v1 --reference-id silver/intents_v1 --out data/runs-silver
 EVAL_RUNS_DIR=data/runs-silver evh leaderboard --dataset-id briefs_v1    # the author's row is marked
@@ -193,7 +201,7 @@ evh round-open --goal brief_summary --dataset briefs_v1 --from r1 \
     --retire briefs_lead1_v1 --reason "<why it is dropped>" --budget-usd 0.05
 # data/configs/briefs_mistral_small_v2.yaml: the new prompt, a new config_id, and `round: r2` beside `goal:`
 git add -A && git commit -qm "brief_summary r2: open; mistral-small v2"
-evh experiment-run --config data/configs/briefs_mistral_small_v2.yaml --repeat 3
+evh run --config data/configs/briefs_mistral_small_v2.yaml --repeat 3
 git add data/runs && git commit -qm "brief_summary r2: runs"
 evh rounds --goal brief_summary                    # r2 against r1's best, the baseline, the budget
 evh inspect --round r2 --goal brief_summary --baseline briefs_mistral_small_v1
@@ -201,7 +209,7 @@ evh leaderboard --dataset-id briefs_v1 --round r2
 evh catalog && evh catalog-serve                   # screenshot the goal page's rounds now: r2's suggestions show only while it is open
 evh round-close --goal brief_summary --round r2 --conclusion "<what r2 showed>" [--promote <run_id>]
 git add data/rounds data/baselines && git commit -qm "brief_summary r2: closed"
-evh experiment-run --config data/configs/briefs_mistral_small_v2.yaml --dry-run   # refused: r2 is closed
+evh run --config data/configs/briefs_mistral_small_v2.yaml --dry-run   # refused: r2 is closed
 ```
 
 `--promote` only if r2 chose a new baseline; it then records the conclusion as the reason.
@@ -259,7 +267,7 @@ the page's.
   reference, which run is the baseline and why, and what each round decided.
 - The spend stays under the cap and matches the sum of what each command printed.
 - Each goal group's recommendation follows its strategy and says why: on `intents_v1` the
-  keyword arm (0.875, free) is not separated from the frontier arm (1.000) but is further off
+  keyword arm (0.875, free) is not significantly different from the frontier arm (1.000) but is further off
   than the 2% margin, so `balanced` recommends the frontier arm; `evh goals --goal` and the
   home page's glance say the same.
 
@@ -269,7 +277,7 @@ Fixed on the 0.4.0 branch: `reference-create --from-run`; references refuse empt
 outputs; the leaderboard marks the reference's author; reference-create's gold and commit notes;
 one install calls hosted models (`openai` and `anthropic` are core, `[llm]` is gone); providers
 are documented as a choice, with the variable each reads (tutorial 2); the core times every call;
-a run that stops mid-pass names itself and its `--resume` command; `experiment-run` warns when
+a run that stops mid-pass names itself and its `--resume` command; `evh run` warns when
 outputs stop at `max_tokens`, and the OpenAI-compatible provider records `finish_reason`; V5 no
 longer fails two different perfect arms; the goal page groups arms by what they are scored
 against and never makes the reference's author the leader; the catalog shows the promoted
@@ -279,8 +287,9 @@ Since then: `dataset-create --help` (`--recursive`) and the bundled adapter's re
 no development history;
 `evh env-check` and the `litellm` provider no longer mention `.env.example`; `provider:
 openrouter` reads `OPENROUTER_API_KEY` and calls OpenRouter's address by default; with no
-reference, `experiment-run` names `reference-create --from-run` first, and `evh --help` describes
-`reference-create` as making references from a run or with a config; `leaderboard` prints one
+reference, `experiment-run` (now `evh run`) named `reference-create --from-run` first, and `evh --help`
+described `reference-create` as making references from a run or with a config (both since replaced: a
+reference set is labels you promote, 0.6.0); `leaderboard` prints one
 table per reference and never averages across them; the bundled adapter stores `overlap_f1`
 unrounded, so the rounding note no longer fires for it; `run-promote` prints no `resumed`;
 `evh inspect --round` reads the goal's measure against the round's leader and names the arms it
@@ -300,7 +309,7 @@ out of the ordering test and the frontier; the dataset page and `evh datasets` s
 they are scored against; the goal page and `evh goals --goal` show a judge's group, and `evh goals
 --goal` lists the rounds and marks retired arms; every command prints p the same way (four
 decimals, `<0.0001`), and `family-test` says whether its p is exact or a seeded estimate and
-labels its column `A wins`; `experiment-run` prints what it spent and calls the cost and speed
+labels its column `A wins`; `evh run` prints what it spent and calls the cost and speed
 spread what it is; `judge-score` says its spend is the provider's bill where one is reported,
 else the price table; `silver-calibrate` explains rho and sibling lift; the catalog counts the
 configs behind its arms; "filed" reads "filed under this goal"; the item view says it shows the
@@ -316,8 +325,8 @@ step 11's screenshots.
 
 After the third run (candidate `80e8f3f5`), fixed in code: `evh rounds` suggests retiring the arm
 that wrote a silver reference when the round is read against gold (only on its own silver is it the
-yardstick), never suggests retiring the baseline the round started from, says "separated worse
-than" r(n-1)'s best when it is, and suggests `--promote` only for a leader separated better than
+yardstick), never suggests retiring the baseline the round started from, says "significantly worse
+than" r(n-1)'s best when it is, and suggests `--promote` only for a leader significantly better than
 the baseline it started from and not behind the previous round's best (otherwise it says why it
 promotes nothing); the goal page's "leader" mark and its "test every arm against its leader" link
 use the decision's leader, never a retired arm. Fixed in the docs: how many `--retry-unparsed`

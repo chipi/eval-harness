@@ -1,8 +1,8 @@
 # RFC-001: The run fingerprint and code identity (version 4)
 
-- **Status**: Completed (v0.4.0)
+- **Status**: Completed (v0.4.0); its `host` and `system_under_test` parts are superseded by [RFC-021](RFC-021-fingerprint-v5.md) (fingerprint v5, 0.6.0)
 - **Authors**: Marko Dragoljevic
-- **Related PRDs**: [PRD-001](../prd/PRD-001-experiments-and-comparison.md), [PRD-002](../prd/PRD-002-references.md)
+- **Related PRDs**: [PRD-001](../prd/PRD-001-evals-and-comparison.md), [PRD-002](../prd/PRD-002-references.md)
 - **Related RFCs**: [RFC-002](RFC-002-run-records-and-derived-runs.md) (the record that carries it),
   [RFC-003](RFC-003-catalog-adapter.md) (the inspector's conditions check reads it)
 - **Code**: `harness/scripts/_fingerprint.py`, `harness/scripts/_codeid.py`; tests
@@ -62,7 +62,7 @@ item ids and their `source_sha256` only ([RFC-006](RFC-006-item-fields-and-url-i
 
 - **The adapter** (`instrument.adapter.sha256`): `file_sha256` of the adapter file.
 - **The harness** (`instrument.harness.code_sha256`): over the **measuring modules**: the
-  run-writing commands (`experiment_run.py`, `rescore.py`, `judge_score.py`, `import_run.py`,
+  run-writing commands (`run.py`, `rescore.py`, `judge_score.py`, `import_run.py`,
   `reference_create.py`, `adapter.py`) and every module beside them they import, at any depth,
   found by reading their imports. Editing a test or a read-only command does not move it.
 - **`import-run --scorer-file`**: the harness hashes the given scoring code by the same rule

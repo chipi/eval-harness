@@ -1,10 +1,10 @@
-# Method — why this experiment is built the way it is
+# Method — why this eval is built the way it is
 
 Companion to [`README.md`](README.md) and
 [`REPORT_CLASSIFICATION.md`](../../research/REPORT_CLASSIFICATION.md). Terms in
 [`docs/REFERENCE.md`](../../docs/REFERENCE.md).
 
-**This experiment exists to disagree with [`classification-ag-news`](../classification-ag-news/METHOD.md).**
+**This eval exists to disagree with [`classification-ag-news`](../classification-ag-news/METHOD.md).**
 Same harness, same 24 arms, same statistics, same metric — a different corpus, chosen
 before any result was seen, to sit in the opposite regime. Read together or not at all.
 
@@ -13,7 +13,7 @@ before any result was seen, to sit in the opposite regime. Read together or not 
 ## Why a second classification task
 
 AG News produced a clean-looking story: a 44 MB fine-tuned model led all 24 hosted LLMs on
-the point estimate (separated from 16 of the 29 other arms, not from the best paid ones).
+the point estimate (significantly different from 16 of the 29 other arms, not from the best paid ones).
 That story is only trustworthy if you know what the *other* regime looks like, because a single
 corpus supports whatever conclusion it happens to produce.
 
@@ -37,9 +37,9 @@ The classes are ontological rather than topical — `NaturalPlace` vs `Building`
 `MeanOfTransportation` — which matters: **an ontology's boundaries are conventions**, and
 that turns out to be where the ceiling comes from.
 
-**The fetcher draws a seeded-random prefix, not first-k-per-class.** AG News's dev slice
-used first-k and was nested but *not representative* — `keyword` scored 0.35 on dev and
-0.67 on the measurement slice, roughly 3 SD apart. Fixed here.
+**The fetcher draws a seeded-random prefix, not first-k-per-class.** AG News's pilot slice
+used first-k and was nested but *not representative* — `keyword` scored 0.35 on the pilot slice and
+0.67 on the test slice, roughly 3 SD apart. Fixed here.
 
 ## Why these arms
 
@@ -53,10 +53,10 @@ ships a pickle checkpoint, which `transformers` refuses below torch 2.6
 no torch above 2.2.2 — see
 [`HANDOVER_DBPEDIA_BLOCKED_ARM.md`](../../research/internal/HANDOVER_DBPEDIA_BLOCKED_ARM.md). That
 absence is precisely why the NER example was built with a zero-shot control beside its fine-tune.
-**It ran on 2026-09-30, on Linux with torch 2.14, config unchanged:** 0.9857, not separated
+**It ran on 2026-09-30, on Linux with torch 2.14, config unchanged:** 0.9857, not significantly different
 from the top group (p = 0.62 against the leader), label order confirmed by a diagonal
 confusion matrix. The ML-vs-LLM question has an answer here too, and it differs
-from AG News's: not separated, at $0.
+from AG News's: not significantly different, at $0.
 
 `bart_mnli` did run, and its calibration is the interesting result: confidence 0.317
 against accuracy 0.629, an ECE of 0.311 — badly underconfident, because zero-shot NLI
@@ -70,7 +70,7 @@ regime with measurement.
 
 What differs is **what the criteria can do**:
 
-- **Accuracy stops discriminating.** The leader separated from only 8 of 27 opponents (8 of
+- **Accuracy stops discriminating.** The leader differed significantly from only 8 of 27 opponents (8 of
   26 before the fine-tuned arm); the top eleven are one group across a 115× price range,
   and the fine-tuned arm is inside it.
 - **So the label-noise pass becomes the main instrument, not a diagnostic.** On a saturated

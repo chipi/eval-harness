@@ -11,11 +11,9 @@
   "fingerprint": {
     "arm": {
       "config_id": "se_rouge1_n100_v1",
-      "params": {
+      "labels": {
         "family": "rouge",
-        "metric": "rouge1",
-        "price_tier": "free",
-        "provider": "rouge"
+        "price_tier": "free"
       }
     },
     "data": {
@@ -26,15 +24,43 @@
       "reference_tier": "gold",
       "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
     },
-    "hash": "e019dcfacb9644082d17f1bd5a85908c4823d9f6c25adf8c518d4c6deeeb30c9",
-    "host": {
-      "cpu_count": 4,
-      "label": null,
-      "platform": "Linux/x86_64",
-      "processor": "x86_64",
-      "python": "3.11.15",
-      "release": "6.18.44-fc-v114"
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "code_sha256": "0540094750d5582566308b718723f7d9c639b7945ac6824475939b4a0e459358",
+        "kind": "deterministic metric, no model and no network",
+        "provider": "rouge"
+      },
+      "hosted": null,
+      "id": "rouge1",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "model": "rouge1",
+      "provider": "rouge",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "not-a-model"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
     },
+    "deployment_sha256": "17ca2b444aab3861ff96ae6d22db32d2a9c0e16b23df471e80b09ca1512a2749",
+    "hash": "b4f5d878fbe9e8a102cd7239da89a23f0bf8b4e1c4697408a951b2db74cbde93",
     "instrument": {
       "adapter": {
         "id": "examples/summeval-judging/adapter.py",
@@ -45,25 +71,21 @@
         "dirty": false
       }
     },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.31.0",
-        "rouge-score": "0.1.2",
-        "torch": "2.14.1",
-        "transformers": "4.55.4"
-      },
-      "model": {
-        "code_sha256": "0540094750d5582566308b718723f7d9c639b7945ac6824475939b4a0e459358",
-        "id": "rouge1",
-        "identity_declared": false,
-        "kind": "deterministic metric, no model and no network",
-        "provider": "rouge",
-        "revision": null,
-        "revision_source": "not-a-model"
-      }
+    "instrument_sha256": "811a89ab82100a8bb586c026679bcf973654b99a86f8893ca1e0967f0ec923e4",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v114"
     },
-    "version": 4
+    "settings": {
+      "metric": "rouge1"
+    },
+    "settings_sha256": "4c6e189d461ce72f56bc4ad55baaf91ccc6e0fa74ced818d52de3749dd18adc3",
+    "version": 5
   },
   "goal": "summary_judge_summeval",
   "metric_kinds": {

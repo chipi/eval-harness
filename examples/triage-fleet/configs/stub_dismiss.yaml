@@ -1,0 +1,8 @@
+# A stand-in, no model and no network: always dismisses. For wiring the path through.
+config_id: triage_stub_dismiss_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../adapter.py
+goal: triage_orrery
+params:
+  provider: stub
+  stub_disposition: dismiss

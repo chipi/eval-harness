@@ -23,6 +23,9 @@ Missing Playwright is a failure that says how to install it, not a skip.
 
 from __future__ import annotations
 
+import csv
+import io
+import json
 import os
 import shutil
 import signal
@@ -83,9 +86,22 @@ def project(tmp: Path) -> tuple:
     evh("dataset-materialize", "--dataset-id", "tickets_v1")
     for f in (proj / "tutorial/configs").glob("tickets_*.yaml"):
         shutil.copy(f, proj / "data/configs/")
-    shutil.copytree(proj / "tutorial/gold", proj / "data/references/gold/tickets_v1")
+    evh("label-import", "tutorial/gold", "--dataset-id", "tickets_v1", "--set", "owner_gold", "--by", "owner")
+    evh(
+        "reference-promote",
+        "--dataset-id",
+        "tickets_v1",
+        "--labels",
+        "owner_gold",
+        "--tier",
+        "gold",
+        "--reason",
+        "The kit's hand-written summaries decide.",
+        "--by",
+        "owner",
+    )
     for arm in ("lead1", "lead2", "author"):
-        evh("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml")
+        evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
     # A goal with an open round: the goal page then carries its suggestions, each with a copy button.
     shutil.copy(proj / "tutorial/goals/tickets_summary.yaml", proj / "data/goals/")
     evh(
@@ -93,6 +109,28 @@ def project(tmp: Path) -> tuple:
         "--hypothesis", "how many leading sentences summarise a ticket best",
         "--keep", "tickets_lead1_v1,tickets_lead2_v1,tickets_author_v1",
     )  # fmt: skip
+    # Production tickets and a pick waiting for tickets_v1 (RFC-023): the dataset page's selection gives a command.
+    (proj / "prod.jsonl").write_text(
+        "".join(
+            json.dumps({"id": f"p{n}", "body": f"A new ticket {n}.", "created_at": f"2026-11-0{n}T09:00:00Z"})
+            + "\n"
+            for n in (1, 2)
+        )
+    )
+    evh(
+        "capture",
+        "--importer",
+        "jsonl",
+        "--query",
+        json.dumps({"path": "prod.jsonl"}),
+        "--capture",
+        "prod_c1",
+    )
+    evh("dataset-from-capture", "prod_c1", "--dataset-id", "prod_v1")
+    evh("pick", "--dataset-id", "prod_v1", "--item", "p1", "--item", "p2", "--for", "tickets_v1")
+    # A person's labels on two tickets: the sheet's wrong signal against them marks those two.
+    (proj / "sheet.csv").write_text("item_id,label\nt01_login,Login fails.\nt02_invoice,Invoice wrong.\n")
+    evh("label-import", "sheet.csv", "--dataset-id", "tickets_v1", "--set", "owner_v1", "--by", "owner")
     evh("catalog")
     return proj, env
 
@@ -147,7 +185,7 @@ def drive(base: str, overview: str = "") -> None:
         }
         cli = {
             ln[:17].strip(): ln[17:35].strip()
-            for ln in (overview or "").splitlines()[1:10]
+            for ln in (overview or "").splitlines()[1:11]
             if ln.startswith("  ")
         }
         check(
@@ -187,7 +225,12 @@ def drive(base: str, overview: str = "") -> None:
             page.locator("#period-span").inner_text().startswith("since ")
             and (page.get_attribute("#period-span", "title") or "").endswith(date.today().isoformat())
             and "compared" not in (page.get_attribute("#period-span", "title") or "")
-            and page.locator(".tile[data-tile='6'] .trend").inner_text() == "",
+            and page.locator(".tile[data-tile='7'] .trend").inner_text() == "",
+        )
+        check(
+            "home: the feed lists what the tutorial recorded today, and its 'nothing recorded' note stays hidden",
+            page.locator("#feeda tbody tr:not([hidden])").count() > 0
+            and not page.locator("[data-feed-empty]").is_visible(),
         )
         page.locator('#spend button[data-unit-show="tokens"]').click()
         check(
@@ -221,11 +264,11 @@ def drive(base: str, overview: str = "") -> None:
             page.locator("p.pempty").first.is_visible() and not page.locator("table#datasets").is_visible(),
         )
         page.goto(base + "index.html")
-        page.click('.nav details.navgroup[data-group="experiments"] > summary')
+        page.click('.nav details.navgroup[data-group="arms"] > summary')
         check(
-            "menu: Experiments opens Arms, Configs and Metrics",
-            page.locator('.nav details.navgroup[data-group="experiments"] .navlist a').all_inner_texts()
-            == ["Arms", "Configs", "Metrics"],
+            "menu: Arms opens Arms, Configs, Models and Metrics",
+            page.locator('.nav details.navgroup[data-group="arms"] .navlist a').all_inner_texts()
+            == ["Arms", "Configs", "Models", "Metrics"],
         )
         page.goto(base + "arms.html#p30d")
         rows = page.locator("table#arms tbody tr:not(.grouphead)")
@@ -266,6 +309,8 @@ def drive(base: str, overview: str = "") -> None:
             "goal page: the open round opens in the inspector (evh inspect --round)",
             page.locator('a[title^="evh inspect --round r1"]').count() == 1,
         )
+        # Each round is a folded section: open the open one, as a reader does, to reach its suggestions.
+        page.click("details.roundcard.t-open > summary")
         btn = page.locator("button.copy").first
         cmd = btn.get_attribute("data-copy") if btn.count() else None
         if cmd:
@@ -340,6 +385,34 @@ def drive(base: str, overview: str = "") -> None:
         check("dataset page: coverage, 6 of 6 and 2 of 6", "6 of 6" in ftable and "2 of 6" in ftable)
         check("dataset page: a public field summarised (account 2)", "account 2" in " ".join(ftable.split()))
         check("dataset page: the hidden field shows 'not public'", "not public" in ftable)
+        pickcmd = page.locator("#picks .cmdpick code.cmd")
+        check(
+            "picks waiting: nothing ticked, no command to copy",
+            "tick the picks" in pickcmd.inner_text() and page.locator("#picks button.copy").is_hidden(),
+            pickcmd.inner_text(),
+        )
+        page.locator('#picks input.cmdsel[value="prod_v1:p2"]').check()
+        check(
+            "picks waiting: a ticked row gives the dataset-extend command, to copy",
+            pickcmd.inner_text() == "evh dataset-extend tickets_v1 --dataset-id <next> --pick prod_v1:p2"
+            and page.locator("#picks button.copy").is_visible(),
+            pickcmd.inner_text(),
+        )
+        before = len(errors)
+        page.locator("#picks th", has_text="item").click()
+        page.locator("#picks th", has_text="item").click()
+        order = page.locator("#picks tbody tr td:nth-child(2)").all_inner_texts()
+        check(
+            "sort: a later table on a page sorts by the clicked column (desc: p2 first), no error",
+            order == ["p2", "p1"] and len(errors) == before,
+            f"{order} {errors[before:]}",
+        )
+        page.locator("#picks input.cmdall").check()
+        check(
+            "picks waiting: select all shown takes every row",
+            "--pick prod_v1:p1" in pickcmd.inner_text() and "--pick prod_v1:p2" in pickcmd.inner_text(),
+            pickcmd.inner_text(),
+        )
 
         # Paging (catalog.js): a 23-row table shows 10, then 20, then all 23; a filter pages its matches.
         paged = page.evaluate(
@@ -418,14 +491,200 @@ def drive(base: str, overview: str = "") -> None:
         it = page.locator("table.fields").inner_text().lower()
         check("inspector: an item shows its fields", "area" in it and "names a deadline" in it, it)
 
+        # The comparison's "only where they disagree" box (RFC-023): ticking it asks for disagree=1.
+        page.locator("#disagree").check()
+        page.wait_for_url("**disagree=1**", timeout=15000)
+        check(
+            "inspector: the disagree box narrows the comparison (disagree=1)",
+            "disagree=1" in page.url,
+            page.url,
+        )
+
+        # The sheet (RFC-023, UXS-002 05): one dataset's tickets down, a column per arm, a box per row giving the commands.
+        two = "runs/tickets_v1/tickets_lead1_v1,runs/tickets_v1/tickets_author_v1"
+        page.goto(f"{base}inspect.html?dataset=tickets_v1&sheet=1&runs={two}")
+        page.wait_for_selector("#sheettable", timeout=15000)
+        n_rows = page.locator("#sheettable tbody tr").count()
+        check(
+            "sheet: one row per ticket, the counts above it",
+            n_rows == 6 and page.locator("#scounts").inner_text().startswith("6 "),
+            f"{n_rows} {page.locator('#scounts').inner_text()}",
+        )
+        heads = [h.strip().lower() for h in page.locator("#sheettable thead th").all_inner_texts()]
+        check(
+            "sheet: the item, its start, the signals, then a column of output and of scores per arm; the fields last",
+            heads[2:4] == ["the start", "signals"]
+            and heads[-1] == "fields"
+            and sum("overlap_f1" in h and not h.startswith("winner") for h in heads) == 2
+            and sum("output" in h or "first: production" in h for h in heads) == 2
+            and any(h.startswith("winner:") for h in heads)
+            and any("label" in h and "owner_v1" in h for h in heads),
+            str(heads),
+        )
+        foot_rows = page.locator("#sheettable tfoot tr")
+        foot_text = [t.inner_text() for t in foot_rows.all()]
+        check(
+            "sheet: the footer, per arm: its mean, its win rate, its verdict (a leader among them)",
+            len(foot_text) >= 3
+            and foot_text[0].lower().startswith("mean overlap_f1")
+            and any(t.lower().startswith("win rate") and "%" in t for t in foot_text)
+            and foot_text[-1].lower().startswith("verdict")
+            and "leader" in foot_text[-1],
+            str(foot_text),
+        )
+        sel_cell = page.locator("#sheettable tbody tr").first.locator("td.item")
+        check(
+            "sheet: the item column is sticky",
+            sel_cell.evaluate("e => getComputedStyle(e).position") == "sticky",
+            sel_cell.evaluate("e => getComputedStyle(e).position"),
+        )
+        narrow = browser.new_page(viewport={"width": 640, "height": 800})
+        narrow.on("pageerror", lambda e: errors.append(str(e)))
+        narrow.goto(f"{base}inspect.html?dataset=tickets_v1&sheet=1&runs={two}")
+        narrow.wait_for_selector("#sheettable", timeout=15000)
+        box = narrow.locator("#sheettable").locator("xpath=ancestor::div[contains(@class,'scroll-x')][1]")
+        overflow = box.evaluate("e => e.scrollWidth - e.clientWidth")
+        item_cell = narrow.locator("#sheettable tbody tr").first.locator("td.item")
+        left0 = item_cell.evaluate("e => e.getBoundingClientRect().left")
+        box.evaluate("e => { e.scrollLeft = e.scrollWidth; }")
+        left1 = item_cell.evaluate("e => e.getBoundingClientRect().left")
+        far = (
+            narrow.locator("#sheettable tbody tr")
+            .first.locator("td")
+            .nth(-1)
+            .evaluate("e => e.getBoundingClientRect().left")
+        )
+        check(
+            "sheet: scrolled across the arms, the item stays in place",
+            overflow > 100 and abs(left1 - left0) < 2 and far < 640,
+            f"overflow {overflow}, item at {left0} then {left1}, the last column at {far}",
+        )
+        narrow.close()
+        check("sheet: nothing ticked, no commands", page.locator("#spanel").is_hidden())
+        first = page.locator("#sheettable tbody input.ssel").first
+        it_id = first.get_attribute("value") or ""
+        first.check()
+        page.locator("#sfor").fill("tickets_v2")
+        page.locator("#snote").fill("worth keeping")
+        pk, sh = page.locator("#spick").inner_text(), page.locator("#ssheet").inner_text()
+        check(
+            "sheet: a ticked row gives evh pick (with the target and note typed) and evh label-sheet",
+            pk == f'evh pick --dataset-id tickets_v1 --item {it_id} --for tickets_v2 --note "worth keeping"'
+            and sh == f"evh label-sheet --dataset-id tickets_v1 --item {it_id} --out sheet.csv --runs {two}",
+            f"{pk} | {sh}",
+        )
+        origin = base.rstrip("/").rsplit("/.build", 1)[0]
+
+        def download(selector):
+            href = page.locator(selector).get_attribute("href") or ""
+            got = page.request.get(origin + href) if href.startswith("/api/sheet?") else None
+            body = got.body() if got is not None else b""
+            rows_ = list(csv.reader(io.StringIO(body.decode("utf-8-sig", "replace"), newline="")))
+            return href, got, body, [",".join(x) for x in rows_], rows_
+
+        href, got, body, lines, cells = download("#ssheetdl")
+        check(
+            "sheet: 'download these rows (CSV)' gives the sheet for the ticked rows, as Excel reads it: the mark, the row, the footer",
+            got is not None
+            and got.status == 200
+            and "attachment" in (got.headers.get("content-disposition") or "")
+            and body.startswith(b"\xef\xbb\xbf")
+            and cells[0][:3] == ["item_id", "item", "signals"]
+            and cells[1][0] == it_id
+            and cells[2][0].startswith("#mean overlap_f1")
+            and any(x[0] == "#verdict" for x in cells)
+            and not any(x[0].startswith("t0") for x in cells[2:]),
+            f"{href} {got.status if got else None} {lines[:3]}",
+        )
+        href, got, body, lines, cells = download("#sheetdl")
+        rows_in = [x for x in lines[1:] if not x.startswith("#")]
+        check(
+            "sheet: 'download (CSV)' gives every row shown",
+            got is not None and got.status == 200 and len(rows_in) == 6 and "format=csv" in href,
+            f"{href} {len(rows_in)} rows",
+        )
+        page.locator("#sfill").check()
+        href, got, body, lines, cells = download("#sheetdl")
+        check(
+            "sheet: with the empty label columns to fill: label, also right, note, and no footer",
+            got is not None
+            and got.status == 200
+            and cells[0][-3:] == ["label", "also right", "note"]
+            and not any(x.startswith("#") for x in lines),
+            f"{href} {lines[:1]}",
+        )
+        page.locator("#sfill").uncheck()
+        page.locator("#sscores").check()
+        shown_out = page.locator("#sheettable thead th.outc").first.is_visible()
+        spans = page.locator("#sheettable tfoot td.foot").evaluate_all(
+            "es => es.every(e => e.colSpan === Math.max(1, +e.dataset.n))"
+        )
+        href, got, body, lines, cells = download("#sheetdl")
+        arm1 = two.split(",")[0]
+        check(
+            "sheet: 'scores only' hides the outputs (the footer follows) and the download leaves them out",
+            not shown_out
+            and spans
+            and "scores=only" in page.url
+            and got is not None
+            and arm1 not in cells[0]
+            and f"{arm1}: overlap_f1" in cells[0],
+            f"{shown_out} {spans} {page.url} {lines[:1]}",
+        )
+        page.locator("#sscores").uncheck()
+        page.locator("#sheettable tbody tr td:nth-child(2)").first.click()
+        page.wait_for_selector("#drill .eyebrow", timeout=15000)
+        drill_text = page.locator("#drill").inner_text()
+        check("sheet: a row opens the ticket", it_id.lower() in drill_text.lower(), drill_text[:300])
+        # wrong against the person's two labels: the first arm's one sentence is neither, so exactly those two rows
+        page.goto(f"{base}inspect.html?dataset=tickets_v1&sheet=1&runs={two}&wrong=tickets_v1/owner_v1")
+        page.wait_for_selector("#sheettable", timeout=15000)
+        carry = page.locator("#sheettable tbody tr .sig-wrong").count()
+        page.locator('input.sonly[value="wrong"]').check()
+        page.wait_for_url("**only=wrong**", timeout=15000)
+        page.wait_for_selector("#sheettable", timeout=15000)
+        kept = page.locator("#sheettable tbody tr").count()
+        marked = page.locator("#sheettable tbody tr .sig-wrong").count()
+        check(
+            "sheet: only a signal keeps the rows that carry it (wrong against the person's two labels)",
+            carry == 2 and kept == marked == carry,
+            f"{carry} carry it, {kept} rows kept, {marked} marked",
+        )
+        page.goto(f"{base}inspect.html?dataset=tickets_v1&sheet=1&runs={two}&metric=latency_ms")
+        page.wait_for_selector("#sheettable", timeout=15000)
+        check(
+            "sheet: the metric is chosen on the page (latency_ms: lower is better, said above the table)",
+            "lower is better" in page.locator("#scounts").inner_text()
+            and page.locator("#smetric").input_value() == "latency_ms",
+            page.locator("#scounts").inner_text(),
+        )
+        page.goto(f"{base}inspect.html?dataset=prod_v1&sheet=1&item=p1")
+        page.wait_for_selector("#drill .eyebrow", timeout=15000)
+        check(
+            "sheet with no arm (a pick's link): the item opens, its labels said",
+            "No label for this" in page.locator("#drill").inner_text(),
+            page.locator("#drill").inner_text()[:300],
+        )
+
         # A phone: the pages must not scroll sideways (tables scroll inside their own box).
         phone = browser.new_page(viewport={"width": 390, "height": 844})
         phone.on("pageerror", lambda e: errors.append(str(e)))
         for path, ready in (
-            *((p, "main") for p in ("index.html", "goals.html", "datasets.html", "references.html")),
+            *(
+                (p, "main")
+                for p in (
+                    "index.html",
+                    "goals.html",
+                    "datasets.html",
+                    "captures.html",
+                    "labels.html",
+                    "references.html",
+                )
+            ),
             *((p, "main") for p in ("metrics.html", "arms.html", "activity.html", "g/tickets_summary.html")),
             ("d/tickets_v1.html", "table#fields"),
             (f"inspect.html?runs={arms}&by=deadline", "h3.sub"),
+            (f"inspect.html?dataset=tickets_v1&sheet=1&runs={arms}", "#sheettable"),
         ):
             phone.goto(base + path)
             phone.wait_for_selector(ready, timeout=15000)

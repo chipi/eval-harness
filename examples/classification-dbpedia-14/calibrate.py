@@ -4,7 +4,7 @@ of the DBpedia-14 test split, against the 0.9903 its model card publishes.
 
     python examples/classification-dbpedia-14/calibrate.py
 
-The experiment scores 280 items (20 per class). The test split has 70,000; scoring all of
+The eval scores 280 items (20 per class). The test split has 70,000; scoring all of
 them takes over an hour on a CPU, so this scores 5,600 drawn as 56 seeded random pages of
 100 across the whole split. Sample error at that size is about ±0.003, smaller than any
 gap that would matter. The sample design is stated in the output rather than implied.

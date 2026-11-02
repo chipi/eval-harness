@@ -1,0 +1,16 @@
+# Round 3: triage_kimi_k31_pro_v1 again, with kimi-k3.1-pro's onboarded settings
+# The record supplies reasoning_effort (its settings_why says why); the arm sets the task's own: a reply cap
+# (a triage decision is 64-414 tokens; 1024 bounds a runaway) and the call limit round 1 used.
+config_id: triage_kimi_k31_pro_v2
+dataset_id: orrery_triage_v1_labelled
+adapter: ../adapter.py
+goal: triage_orrery
+round: r3
+model_record: kimi-k3.1-pro
+deployment: hosted
+params:
+  provider: gateway
+  model: eval-kimi-k31-pro
+  usd_per_mtok_in: 2.0
+  usd_per_mtok_out: 10.0
+  max_tokens: 1024

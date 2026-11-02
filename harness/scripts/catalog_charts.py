@@ -287,6 +287,8 @@ def scatter(
             + '"/>'
         )
     placed: list[tuple[float, float, float]] = []
+    # Names are drawn after every dot: a dot drawn later would cover a name placed before it.
+    names: list[str] = []
     for i, (x, y, lab, tip) in enumerate(points):
         on = i in front
         marks.append(
@@ -294,17 +296,24 @@ def scatter(
             f'fill="{"var(--s1)" if on else "var(--muted)"}"><title>{_e(tip)}</title></circle>'
         )
         if on:
-            # Named beside the dot, on its left when it sits in the right third (never cut off),
-            # moved up or down a line when it would cover a name already placed.
-            right = x_of(x) > left + (width - left - RIGHT) * 2 / 3
+            # Named beside the dot on the side the name fits inside the plot (never cut off, never over
+            # the y axis: a name too long for either side is shortened, the dot's tooltip keeps it
+            # whole), moved up or down a line when it would cover a name already placed.
+            room_r, room_l = width - RIGHT - (x_of(x) + 7), x_of(x) - 7 - left
+            need = LABEL_W * len(lab)
+            right = need > room_r and (need <= room_l or room_l > room_r)
+            room = room_l if right else room_r
+            if need > room:
+                lab = lab[: max(1, int(room / LABEL_W) - 1)] + "…"
             tx = x_of(x) + (-7 if right else 7)
             x0, x1 = (tx - LABEL_W * len(lab), tx) if right else (tx, tx + LABEL_W * len(lab))
             ty = label_y(y_of(y) - 6, x0, x1, placed, TOP + 10, h - bottom - 4)
             placed.append((x0, x1, ty))
-            marks.append(
+            names.append(
                 f'<text x="{tx:.1f}" y="{ty:.1f}" class="tick name"'
                 f"{' text-anchor=end' if right else ''}>{_e(lab)}</text>"
             )
+    marks.extend(names)
     corner = ("left" if lower_x else "right") + (" top" if higher_y else " bottom")
     frame = (
         f'<line x1="{left}" x2="{width - RIGHT}" y1="{h - bottom}" y2="{h - bottom}" stroke="var(--axis)"/>'

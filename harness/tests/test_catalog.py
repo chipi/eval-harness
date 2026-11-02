@@ -32,6 +32,15 @@ from evaluation_harness import stats  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 
+_pf = cb.promoted_from_html(
+    {"promoted_from": {"labels": None, "source": {"kind": "model", "config_id": "arm_x_v1"}}}
+)
+check(
+    "promoted from a run (no label set): the arm named once, as the arm",
+    _pf.count("arm_x_v1") == 1 and "the arm:" in _pf,
+    _pf,
+)
+
 SECRET = "zebra-quokka-unique-output-text"
 tmp = Path(tempfile.mkdtemp(prefix="evh-catalog-"))
 data = tmp / "data"
@@ -59,6 +68,27 @@ def run(runs_dir, run_id, dataset, config, scores, text=SECRET, kinds=None, ref=
     (d / "predictions.jsonl").write_text("\n".join(rows) + "\n")
 
 
+def promoted(ref_dir, tier, dataset, source, labels, **authorship):
+    """The manifest `evh reference-promote` writes for a label set promoted to `ref_dir` (RFC-023); the catalog
+    reads no dataset here, which promoting through the command needs."""
+    from evaluation_harness._common import now  # noqa: PLC0415
+    from evaluation_harness._label_sets import source_line  # noqa: PLC0415
+    from evaluation_harness._references import write_manifest  # noqa: PLC0415
+    from evaluation_harness.reference_promote import CAVEAT  # noqa: PLC0415
+
+    write_manifest(
+        ref_dir,
+        tier,
+        dataset,
+        caveat=CAVEAT[tier].format(set=f"{dataset}/{labels}", source=source_line(source)),
+        created_at=now(),
+        promoted_from={"labels": labels, "dataset_id": dataset, "source": source},
+        reason=f"{labels} decides what is right here.",
+        promoted_by="test",
+        **authorship,
+    )
+
+
 try:
     base = [0.5] * 12
     run("runs", "a_1", "ds1", "arm_a", base)
@@ -67,6 +97,9 @@ try:
     run("runs", "c_1", "ds2", "arm_c", base)
     (data / "references" / "gold" / "ds1").mkdir(parents=True)
     (data / "references" / "gold" / "ds1" / "i00.txt").write_text(SECRET + " reference")
+    promoted(
+        data / "references" / "gold" / "ds1", "gold", "ds1", {"kind": "person", "by": "owner"}, "owner_v1"
+    )
     (data / "runs" / ".hidden").mkdir()
     (data / "runs" / ".hidden" / "x.txt").write_text("hidden")
 
@@ -133,13 +166,13 @@ try:
         and all('<meta name="deploy-tag" content="ours">\n</head>' in p.read_text() for p in head_pages),
     )
     # --about: a deployment's paragraph on the overview only.
-    cb.ABOUT = '<p id="deploy-about">Our six experiments.</p>'
+    cb.ABOUT = '<p id="deploy-about">Our six evals.</p>'
     about_out = tmp / ".build" / "catalog-about"
     cb.build(A, about_out)
     cb.ABOUT = ""
     check(
         "--about: its HTML is on the overview, under the description, and on no other page",
-        '<div class="about"><p id="deploy-about">Our six experiments.</p></div>'
+        '<div class="about"><p id="deploy-about">Our six evals.</p></div>'
         in (about_out / "index.html").read_text()
         and not [
             p.name
@@ -165,6 +198,13 @@ try:
         '<a href="https://s.example/docs/">Docs</a>'
         and '<a class="brand" href="https://s.example/"' in ds_page
         and "<span>eval catalog</span></a>" in ds_page,
+    )
+    check(
+        "a retired arm is retired when the goal reads it through its re-score (runs-rescored/<scorer>/<arm>)",
+        cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs-rescored/3d3a6afdb978/runs/ds_v1/arm_v1") == "r3"
+        and cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs/ds_v1/arm_v1") == "r3"
+        and cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs-rescored/3d3a6afdb978/runs/ds_v1/other_v1")
+        is None,
     )
     check(
         "overview tiles: a long count also in short form for a phone, a short one as it is",
@@ -205,8 +245,15 @@ try:
     silver = data3 / "references" / "silver" / "ds3"
     silver.mkdir(parents=True)
     (silver / "i00.txt").write_text("x")
-    (silver / "manifest.json").write_text(
-        json.dumps({"authored_by": "arm_s", "from_run": {"run_id": "s_1"}, "model": "m-1", "tier": "silver"})
+    promoted(
+        silver,
+        "silver",
+        "ds3",
+        {"kind": "model", "run_id": "s_1", "config_id": "arm_s", "model": "m-1"},
+        "arm_s_v1",
+        authored_by="arm_s",
+        from_run={"run_id": "s_1", "config_id": "arm_s"},
+        model="m-1",
     )
     out3 = tmp / ".build" / "catalog3"
     cb.build(HarnessAdapter(data3), out3)
@@ -244,18 +291,32 @@ try:
     )
     nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
     check(
-        "nav: Overview, Goals, Data (Datasets, References), Experiments (Arms, Configs, Metrics), Activity, Inspector",
-        nav.count("<a ") == 9
-        and re.findall(r"<summary[^>]*>([^<]+)</summary>", nav) == ["Data", "Experiments"]
+        "nav: Overview, Goals, Data (Datasets, Captures, Labels, Reference sets), Arms (Arms, Configs, Models, Metrics), Activity, Inspector",
+        nav.count("<a ") == 12
+        and re.findall(r"<summary[^>]*>([^<]+)</summary>", nav) == ["Data", "Arms"]
         and all(
-            x in nav for x in (">Datasets<", ">References<", ">Arms<", ">Configs<", ">Metrics<", ">Activity<")
+            x in nav
+            for x in (
+                ">Datasets<",
+                ">Captures<",
+                ">Labels<",
+                ">Reference sets<",
+                ">Arms<",
+                ">Configs<",
+                ">Models<",
+                ">Metrics<",
+                ">Activity<",
+            )
         ),
         nav[:300],
     )
     menu = re.findall(r'<nav class="menu-links">(.*?)</nav>', home)[0]
     check(
         "the phone's menu lists every page, a group's under its name",
-        menu.count("<a ") == 9 and menu.count('class="menu-group"') == 2,
+        menu.count("<a ") == 12
+        and menu.count('class="menu-group"') == 2
+        and 'href="captures.html"' in menu
+        and 'href="labels.html"' in menu,
     )
     check(
         "the home tiles open their pages: activity, arms, configs grouped by config",
@@ -325,10 +386,14 @@ try:
     tiles = cb.home_counts(
         HarnessAdapter(data3), cb.collect(HarnessAdapter(data3)), HarnessAdapter(data3).spend()
     )
-    lines = {ln.split()[0]: ln.split()[1] for ln in ov.splitlines()[1:10] if ln.startswith("  ")}
+    lines = {
+        re.split(r"\s{2,}", ln.strip())[0]: re.split(r"\s{2,}", ln.strip())[1]
+        for ln in ov.splitlines()[1:11]
+        if ln.startswith("  ")
+    }
     check(
         "evh overview --period all: every stock tile is the page's count, then the sections",
-        all(lines.get(k) == str(n) for k, n, _ in tiles[:6])
+        all(lines.get(cb.TILE_LABEL.get(k, k)) == str(n) for k, n, _ in tiles[:7])
         and all(x in ov for x in ("goals at a glance", "activity", "coverage:")),
         ov[:600],
     )
@@ -473,7 +538,7 @@ try:
     row = r["rows"][0]
     deltas = [vals[i] - 0.5 for i in sorted(vals)]
     check("compare: p is stats.sign_flip_p on the per-item deltas", row["p"] == stats.sign_flip_p(deltas))
-    check("compare: verdict and direction", row["verdict"] == "separated: better" and row["wins"] == 10)
+    check("compare: verdict and direction", row["verdict"] == "significant: better" and row["wins"] == 10)
     pair = {"runs": ["runs/ds1/arm_a,runs/ds1/arm_b"], "baseline": ["runs/ds1/arm_a"]}
     check(
         "compare: a threshold above alpha from the URL is refused, not obeyed",
@@ -505,9 +570,9 @@ try:
         mj = data4 / "runs" / rid / "metrics.json"
         m = json.loads(mj.read_text())
         m["fingerprint"] = {
-            "version": 4,
-            "host": {"platform": machine, "cpu_count": 8},
-            "system_under_test": {"libraries": {"numpy": "2.0"}},
+            "version": 5,
+            "runner": {"platform": machine, "cpu_count": 8, "libraries": {"numpy": "2.0"}},
+            "deployment": {"where": {"machine": "dgx", "backend": "cuda"}, "server": {"name": "ollama"}},
             "instrument": {
                 "harness": {"version": "0.4.0"},
                 "adapter": {"id": "adapter.py", "sha256": scorer * 32},
@@ -524,7 +589,7 @@ try:
     )
     differ = {d["name"] for d in c4.get("differ", [])}
     check(
-        "compare: the conditions that differ (machine, scorer), not those that match (library, items)",
+        "compare: the conditions that differ (runner, scorer), not those that match (library, deployment, items)",
         differ == {"machine.platform", "scorer.sha256"} and c4.get("fields", 0) >= 8,
         c4,
     )
@@ -928,6 +993,12 @@ try:
     check(
         "fields: a public deployment refuses a filter on a hidden field",
         "error" in cs.compare({"runs": two, "where": [f"customer:{HIDDEN}"]}),
+    )
+    code, body, _ = cs.sheet_csv("dataset=ds1&format=csv")
+    check(
+        "sheet download: a public deployment refuses it (a sheet carries item text and outputs)",
+        code == 403 and b"not served publicly" in body,
+        body[:200],
     )
     cs.LIMITS.update(hosts=())
     cs.set_adapter(A)

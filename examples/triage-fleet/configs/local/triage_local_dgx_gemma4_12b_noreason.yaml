@@ -1,0 +1,17 @@
+# gemma4:12b set up normally, self-hosted with Ollama 0.40.13 on DGX: NVIDIA GB10, 128 GB unified (CUDA):
+# reasoning off (reasoning_effort none: with the server's default it reasoned in a loop and never answered),
+# each reply capped at 1024 tokens (a decision is 64-414), each call limited to 30 s (a normal call is 4-18 s).
+config_id: triage_local_dgx_gemma4_12b_noreason_v1
+dataset_id: orrery_triage_v1_labelled
+adapter: ../../adapter.py
+goal: triage_orrery
+params:
+  provider: gateway
+  model: "gemma4:12b"
+  url: http://100.69.49.126:11434/v1/chat/completions
+  reasoning_effort: none
+  max_tokens: 1024
+  call_timeout_s: 30
+  machine: dgx
+  usd_per_mtok_in: 0
+  usd_per_mtok_out: 0

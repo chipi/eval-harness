@@ -11,11 +11,10 @@
   "fingerprint": {
     "arm": {
       "config_id": "db_constant_n200_v1",
-      "params": {
+      "labels": {
         "family": "baseline",
         "label": "Company",
-        "price_tier": "free",
-        "provider": "constant"
+        "price_tier": "free"
       }
     },
     "data": {
@@ -26,32 +25,9 @@
       "reference_tier": "gold",
       "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
     },
-    "hash": "508b9cb059913d7a90abb1b0a7541c804b1906e9a7b872ae77da044cb12df016",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/classification-dbpedia-14/adapter.py",
-        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
-      },
-      "harness": {
-        "commit": "73604a08b84a",
-        "dirty": false
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "openai": "3.19.2"
-      },
-      "model": {
-        "id": "constant:Company",
-        "identity_declared": true,
+    "data_sha256": "ba266b3e1c4e465a922638baee9aea990c34420aa92c1b6ab2f97610c3e981e1",
+    "deployment": {
+      "declared": {
         "label": "Company",
         "labels": [
           "Company",
@@ -71,12 +47,57 @@
         ],
         "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
         "parser_sha256": "6cc7cbce25ef74dbcdaa7f18763cfaaf8ea7b2a0e0cc0222e4d70f9b92cf2fc6",
-        "provider": "constant",
+        "provider": "constant"
+      },
+      "hosted": null,
+      "id": "constant:Company",
+      "in_process": true,
+      "libraries": {
+        "openai": "3.19.2"
+      },
+      "model": "constant:Company",
+      "provider": "constant",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
         "revision": null,
         "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
       }
     },
-    "version": 4
+    "deployment_sha256": "c3142d1dcf6bddc7bd74513d942d3cd2a0960d6aa61e1e4a97d378a1de6b130e",
+    "hash": "00a46ff5aab825d31a8eba4587e87a58fc082e80137a6d8f852af13cd2ac29e0",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-dbpedia-14/adapter.py",
+        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
+      },
+      "harness": {
+        "commit": "73604a08b84a",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {},
+    "settings_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "version": 5
   },
   "goal": "entity_topic_dbpedia",
   "metric_kinds": {

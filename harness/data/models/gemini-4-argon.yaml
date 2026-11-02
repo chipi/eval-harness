@@ -1,0 +1,43 @@
+model_id: gemini-4-argon
+kind: llm
+name: Gemini 4 Argon
+aliases:
+- eval-gemini-4-argon
+weights: proprietary
+deployments:
+- id: hosted
+  where: homelab LiteLLM (the fleet's gateway)
+  tag: eval-gemini-4-argon
+  endpoint:
+    provider: litellm
+    base_url: http://homelab:4001/v1
+    model: eval-gemini-4-argon
+  checked_at: '2026-10-31T13:54:57Z'
+  onboarding:
+    status: pass
+    at: '2026-10-31T13:54:57Z'
+    where: homelab LiteLLM (the fleet's gateway)
+    flags: []
+    report:
+      endpoint:
+        provider: litellm
+        base_url: http://homelab:4001/v1
+        model: eval-gemini-4-argon
+      digest_found: null
+      default:
+        s: 3.0
+        tokens_out: 33
+        reasoned: false
+        finish: stop
+      chosen:
+        s: 2.88
+        tokens_out: 33
+        reasoned: false
+        finish: stop
+        settings: {}
+      tokens_per_s: 11.5
+      deterministic: true
+      json_valid: true
+capabilities:
+  reasons: false
+  json_mode: true

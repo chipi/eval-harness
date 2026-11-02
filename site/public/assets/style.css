@@ -183,8 +183,9 @@ table.data td.num small { font-family: var(--text); color: var(--muted); font-si
 .findings h3 { font-size: 22px; line-height: 1.25; margin: 0 0 6px; letter-spacing: -0.02em; }
 .findings p { margin: 0; color: var(--ink-2); }
 
-/* ── experiment cards ──────────────────────────────────── */
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 16px; }
+/* ── eval cards ──────────────────────────────────── */
+/* div only: table.data.cards is a table that becomes cards on a phone (below) */
+div.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 16px; }
 .card { display: flex; flex-direction: column; gap: 14px; padding: 26px; border: 1px solid var(--hair); border-radius: 14px; background: var(--surface); text-decoration: none; transition: border-color .15s, transform .15s; min-height: 280px; }
 .card:hover { border-color: var(--accent); transform: translateY(-2px); color: inherit; }
 .card .task { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
@@ -193,7 +194,7 @@ table.data td.num small { font-family: var(--text); color: var(--muted); font-si
 .card .meta { display: flex; justify-content: space-between; font: 500 12px/1.3 var(--mono); color: var(--ink-2); border-top: 1px solid var(--hair); padding-top: 14px; }
 .card .meta b { color: var(--accent); font-weight: 600; }
 
-/* ── facts grid (experiment pages) ─────────────────────── */
+/* ── facts grid (eval pages) ─────────────────────── */
 .facts { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--hair); margin-top: 56px; }
 .fact { padding: 20px 20px 22px 0; border-bottom: 1px solid var(--hair); }
 .fact .k { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
@@ -308,10 +309,29 @@ section[id] { scroll-margin-top: 72px; }
 @media (max-width: 900px) { .byo { grid-template-columns: 1fr; } .byo-col + .byo-col { padding-left: 0; border-left: 0; border-top: 1px solid var(--hair); } }
 .doors .card { min-height: 240px; }
 
-/* ── landing teaser + experiment lesson ────────────────── */
+/* ── landing teaser + eval lesson ────────────────── */
 .habits { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--hair); border-left: 1px solid var(--hair); }
 .habit-card { display: flex; flex-direction: column; gap: 8px; padding: 24px 24px 28px; border-right: 1px solid var(--hair); border-bottom: 1px solid var(--hair); text-decoration: none; transition: background .15s; }
 .habit-card:hover { background: var(--surface); color: inherit; }
+.habits.two { grid-template-columns: repeat(2, 1fr); }
+.habit-card .lasting-cmd { font: 12px/1.45 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.flow { display: flex; flex-direction: column; gap: 0; margin-top: 40px; border-top: 1px solid var(--hair); }
+.flow-row { display: grid; grid-template-columns: 9rem 1fr; gap: 16px; padding: 20px 0; }
+.flow-label { font: 600 12px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-top: 4px; }
+.flow-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.flow-step { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--hair); border-radius: 8px; min-width: 0; }
+.flow-step .flow-when { font: 600 11px/1 var(--mono); color: var(--accent); letter-spacing: .04em; text-transform: uppercase; }
+.flow-step b { font-size: 15px; }
+.flow-step span:not(.flow-when) { font-size: 13.5px; color: var(--ink-2); line-height: 1.45; }
+.flow-step code { font: 12px/1.4 var(--mono); color: var(--muted); overflow-wrap: anywhere; margin-top: auto; }
+.flow-release { display: flex; align-items: center; gap: 12px; color: var(--accent); font: 600 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.flow-release::before, .flow-release::after { content: ""; flex: 1; border-top: 2px dashed var(--accent); }
+@media (max-width: 860px) {
+  .flow-row { grid-template-columns: 1fr; gap: 8px; }
+  .flow-steps { grid-template-columns: 1fr 1fr; }
+  .habits.two { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) { .flow-steps { grid-template-columns: 1fr; } }
 .habit-card .n { font: 600 12px/1 var(--mono); color: var(--accent); }
 .habit-card b { font: 800 22px/1.1 var(--display); letter-spacing: -0.02em; color: var(--ink); }
 .habit-card span:last-child { color: var(--ink-2); font-size: 15px; }

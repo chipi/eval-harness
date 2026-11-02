@@ -1,0 +1,16 @@
+# Round 3: triage_hosted_gpt_oss_120b_v1 again, with gpt-oss-120b's onboarded settings
+# The record supplies reasoning_effort (its settings_why says why); the arm sets the task's own: a reply cap
+# (a triage decision is 64-414 tokens; 1024 bounds a runaway) and the call limit round 1 used.
+config_id: triage_hosted_gpt_oss_120b_v2
+dataset_id: orrery_triage_v1_labelled
+adapter: ../adapter.py
+goal: triage_orrery
+round: r3
+model_record: gpt-oss-120b
+deployment: hosted
+params:
+  provider: gateway
+  model: eval-gpt-oss-120b
+  usd_per_mtok_in: 0.15
+  usd_per_mtok_out: 0.6
+  max_tokens: 1024

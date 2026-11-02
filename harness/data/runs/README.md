@@ -62,5 +62,5 @@ What cannot be recomputed from this repo alone is the n=20 dev-slice half of
 `REPORT_SUMMARIZATION.md` §3.6 and its variance decomposition. Regenerate with:
 
 ```bash
-make experiment-run CONFIG=../examples/summarization-cnn-dailymail/configs/arm_<x>.yaml ARGS="--repeat 3"
+make run CONFIG=../examples/summarization-cnn-dailymail/configs/arm_<x>.yaml ARGS="--repeat 3"
 ```

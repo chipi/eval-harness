@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rerun any experiment in this repository and see whether its findings hold.
+"""Rerun any eval in this repository and see whether its findings hold.
 
     python examples/reproduce.py plan     scifact [--level local|hosted|baselines|all]
     python examples/reproduce.py data     scifact
@@ -13,18 +13,18 @@ plan     what a rerun involves before anything is spent: every arm, what it cost
          which route a hosted arm would take. Free, offline.
 data     the example's environment (`uv sync`), its public data (`fetch.py`), and the
          hash check against the committed dataset files (`make dataset-materialize`).
-run      reruns the chosen arms into harness/data/runs-repro/<experiment>/ -- gitignored,
+run      reruns the chosen arms into harness/data/runs-repro/<eval>/ -- gitignored,
          never beside the committed runs, which stay the record. A hosted arm's spend is
          capped at twice what it was billed when measured (EVAL_MAX_COST_USD per run).
 compare  a replication card: each rerun arm against its committed run on the same items,
-         and every committed separation and tie re-tested with your reruns substituted
-         in. Written to harness/data/runs-repro/<experiment>/REPLICATION.md.
+         and every committed verdict (significant or not) re-tested with your reruns substituted
+         in. Written to harness/data/runs-repro/<eval>/REPLICATION.md.
 
 What counts as reproduced is different for the two kinds of arm, and the card says which
 applies. A local model with pinned weights should give the same answers, so its card
 reports exact item agreement. A hosted model is not deterministic even at temperature 0,
 and can be updated or retired upstream, so its digits are not expected to match: what
-must hold is the VERDICT -- which arms are separated from which. The committed
+must hold is the VERDICT -- which arms differ significantly from which. The committed
 predictions remain the record either way.
 """
 
@@ -56,7 +56,7 @@ HOSTED_PROVIDERS = {"litellm", "rerank"}
 
 
 def registry() -> dict:
-    return {e["slug"]: e for e in json.loads((HERE / "experiments.json").read_text())["experiments"]}
+    return {e["slug"]: e for e in json.loads((HERE / "evals.json").read_text())["evals"]}
 
 
 def _load_dotenv() -> None:
@@ -134,8 +134,7 @@ def select(arms: dict, level: str, only: str | None) -> list:
         unknown = [a for a in names if a not in arms]
         if unknown:
             raise SystemExit(
-                f"not a measured arm of this experiment: {', '.join(unknown)}\n"
-                f"arms: {', '.join(sorted(arms))}"
+                f"not a measured arm of this eval: {', '.join(unknown)}\narms: {', '.join(sorted(arms))}"
             )
         return names
     kinds = {
@@ -266,7 +265,7 @@ def run(exp: dict, level: str, only: str | None, extra: str | None = None) -> in
             env["EVAL_MAX_COST_USD"] = f"{max(0.05, 2 * arms[a]['cost']):.2f}"
         print(f"\n── {a} ({arms[a]['kind']})", flush=True)
         _run(
-            [str(venv), "scripts/experiment_run.py", "--config", str(_pinned(cfgs[cid], arms[a], out))],
+            [str(venv), "scripts/run.py", "--config", str(_pinned(cfgs[cid], arms[a], out))],
             cwd=HARNESS,
             env=env,
         )
@@ -330,7 +329,7 @@ def _run_new_arm(exp: dict, arms: dict, path: Path, venv: Path, out: Path) -> No
         env["EVAL_MAX_COST_USD"] = "1.00"
         print("  EVAL_MAX_COST_USD not set -- capping this arm at $1.00")
     print(f"\n── {cid[len(exp['prefix']) : -len(exp['suffix'])]} (yours)", flush=True)
-    _run([str(venv), "scripts/experiment_run.py", "--config", str(path)], cwd=HARNESS, env=env)
+    _run([str(venv), "scripts/run.py", "--config", str(path)], cwd=HARNESS, env=env)
 
 
 # ── compare ─────────────────────────────────────────────────────────────────────────────
@@ -365,7 +364,7 @@ def _paired_p(a: list, b: list, perms: int = 10000, seed: int = 20261014) -> flo
 
 
 def _family(exp: dict, runs_dir: Path, arm: str | None = None) -> tuple[list, list]:
-    """(not separated, separated) opponents of `arm` (the leader by default), Holm-corrected."""
+    """(not significant, significant) opponents of `arm` (the leader by default), Holm-corrected."""
     a_cid = f"{exp['prefix']}{arm or exp['leader']}{exp['suffix']}"
     r = subprocess.run(
         [
@@ -388,13 +387,13 @@ def _family(exp: dict, runs_dir: Path, arm: str | None = None) -> tuple[list, li
     )
     if r.returncode != 0:
         raise SystemExit(f"family test failed:\n{r.stderr[-800:]}")
-    tied, sep = [], []
+    level, sep = [], []
     for ln in r.stdout.splitlines():
         parts = ln.split()
         if parts and parts[0].endswith(exp["suffix"]) and parts[0] != a_cid:
             arm = parts[0][len(exp["prefix"]) : -len(exp["suffix"])]
-            (tied if ln.strip().endswith("--") else sep).append(arm)
-    return tied, sep
+            (level if ln.strip().endswith("--") else sep).append(arm)
+    return level, sep
 
 
 def compare(exp: dict) -> int:
@@ -429,8 +428,7 @@ def compare(exp: dict) -> int:
         p = _paired_p(ca, ra)
         m_new = json.loads((reruns[a] / "metrics.json").read_text())
         m_old = json.loads((arms[a]["dir"] / "metrics.json").read_text())
-        up_new = ((m_new.get("fingerprint") or {}).get("system_under_test") or {}).get("model", {}).get("id")
-        up_old = ((m_old.get("fingerprint") or {}).get("system_under_test") or {}).get("model", {}).get("id")
+        up_new, up_old = (_upstream(x) for x in (m_new, m_old))
         upstream = (
             "—"
             if arms[a]["kind"] != "hosted"
@@ -452,15 +450,15 @@ def compare(exp: dict) -> int:
         )
 
     # VERDICTS. Substitute every rerun for its committed run and re-test the leader against
-    # the same family: the committed findings are statements about separations, so that is
+    # the same family: the committed findings are statements about significant differences, so that is
     # what a replication has to check.
     with tempfile.TemporaryDirectory() as tmp:
         merged = Path(tmp)
         for a, v in arms.items():
             src = reruns.get(a, v["dir"])
             (merged / src.name).symlink_to(src.resolve(), target_is_directory=True)
-        tied_c, sep_c = _family(exp, DATA / exp["base"])
-        tied_m, sep_m = _family(exp, merged)
+        level_c, sep_c = _family(exp, DATA / exp["base"])
+        level_m, sep_m = _family(exp, merged)
         new = sorted(a for a in reruns if a not in arms)
         placed = {}
         if new:
@@ -472,38 +470,38 @@ def compare(exp: dict) -> int:
                         (field / v["dir"].name).symlink_to(v["dir"].resolve(), target_is_directory=True)
                     (field / reruns[a].name).symlink_to(reruns[a].resolve(), target_is_directory=True)
                     placed[a] = _family(exp, field, a)
-    moved = sorted(set(tied_c) ^ set(tied_m))
+    moved = sorted(set(level_c) ^ set(level_m))
     lines += [
         "",
         f"## Verdicts: `{exp['leader']}` against the field, Holm-corrected",
         "",
         f"With {len(reruns)} rerun arm(s) substituted for their committed runs:",
         "",
-        f"- not separated from the leader — committed: {len(tied_c)}, with reruns: {len(tied_m)}",
-        f"- separated — committed: {len(sep_c)}, with reruns: {len(sep_m)}",
+        f"- not significantly different from the leader — committed: {len(level_c)}, with reruns: {len(level_m)}",
+        f"- significantly different — committed: {len(sep_c)}, with reruns: {len(sep_m)}",
     ]
     if moved:
         for a in moved:
-            was = "tied" if a in tied_c else "separated"
-            now = "tied" if a in tied_m else "separated"
+            was = "not significant" if a in level_c else "significant"
+            now = "not significant" if a in level_m else "significant"
             lines.append(f"- **`{a}` moved: {was} → {now}**")
     else:
-        lines.append("- **every committed separation and tie holds**")
+        lines.append("- **every committed verdict holds, significant or not**")
     if placed:
         lines += [
             "",
             "## Your arms, against the committed field",
             "",
-            "| arm | score | rank | not separated from | separated from | vs the leader |",
+            "| arm | score | rank | not significantly different from | significantly different from | vs the leader |",
             "|---|---:|---:|---|---:|---|",
         ]
-        for a, (tied, sep) in placed.items():
+        for a, (level, sep) in placed.items():
             score = st.fmean(_items(reruns[a], exp["metric"]).values())
             rank = 1 + sum(v["score"] > score for v in arms.values())
-            vs = "not separated" if exp["leader"] in tied else "separated"
+            vs = "not significant" if exp["leader"] in level else "significant"
             lines.append(
                 f"| `{a}` | {score:.4f} | {rank} of {len(arms) + 1} | "
-                f"{', '.join(f'`{t}`' for t in sorted(tied)) or '—'} | {len(sep)} | {vs} |"
+                f"{', '.join(f'`{t}`' for t in sorted(level)) or '—'} | {len(sep)} | {vs} |"
             )
     lines += [
         "",
@@ -522,11 +520,17 @@ def compare(exp: dict) -> int:
     return 1 if moved or any(s.startswith("DIFFERS") for s in statuses.values()) else 0
 
 
+def _upstream(m: dict) -> object:
+    """The model a run's adapter says answered: the id it declared, else the model asked for."""
+    dep = (m.get("fingerprint") or {}).get("deployment") or {}
+    return (dep.get("declared") or {}).get("id") or dep.get("model")
+
+
 def main() -> int:
     reg = registry()
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("command", choices=("plan", "data", "run", "compare", "list"))
-    ap.add_argument("experiment", nargs="?", help=" | ".join(reg))
+    ap.add_argument("eval", nargs="?", help=" | ".join(reg))
     ap.add_argument("--level", default="local", choices=("local", "hosted", "baselines", "all"))
     ap.add_argument("--arms", help="comma-separated arm names; overrides --level")
     ap.add_argument("--config", help="run: also measure YOUR arm from this config")
@@ -536,7 +540,7 @@ def main() -> int:
         help="data: skip the local-model extras (no PyTorch); enough for hosted arms, BM25 and the baselines",
     )
     a = ap.parse_args()
-    if a.command == "list" or not a.experiment:
+    if a.command == "list" or not a.eval:
         for e in reg.values():
             arms = committed(e)
             kinds = {k: sum(v["kind"] == k for v in arms.values()) for k in ("local", "baseline", "hosted")}
@@ -546,9 +550,9 @@ def main() -> int:
                 f"{kinds['baseline']} baselines, {kinds['hosted']:2d} hosted   billed ${cost:.2f}"
             )
         return 0
-    if a.experiment not in reg:
-        raise SystemExit(f"unknown experiment {a.experiment!r}; one of: {', '.join(reg)}")
-    exp = reg[a.experiment]
+    if a.eval not in reg:
+        raise SystemExit(f"unknown eval {a.eval!r}; one of: {', '.join(reg)}")
+    exp = reg[a.eval]
     return {
         "plan": lambda: plan(exp, a.level, a.arms),
         "data": lambda: data(exp, a.light),

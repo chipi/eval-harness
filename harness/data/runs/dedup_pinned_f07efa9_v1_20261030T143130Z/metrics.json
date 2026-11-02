@@ -1,0 +1,103 @@
+{
+  "adapter": "examples/signal-fleet-dedup/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "d67d421fb69a75a0fb94fdf315ac45b37dd309c0",
+    "source": "git"
+  },
+  "config_id": "dedup_pinned_f07efa9_v1",
+  "created_at": "2026-10-30T14:31:31Z",
+  "dataset_id": "fleet_dedup_v1",
+  "fingerprint": {
+    "arm": {
+      "config_id": "dedup_pinned_f07efa9_v1",
+      "labels": null
+    },
+    "data": {
+      "dataset_id": "fleet_dedup_v1",
+      "items_sha256": "b751fc5f940e7ad27f2470029ce7a87409a6b9b832d2da9eaa961eb9363e6a92",
+      "n_items": 100,
+      "reference_id": null,
+      "reference_tier": null,
+      "references_sha256": null
+    },
+    "data_sha256": "75587994752ce54a9ba3101bafe56e86faacc8bad010fdc8479b432686931d3f",
+    "deployment": {
+      "declared": null,
+      "hosted": null,
+      "id": null,
+      "in_process": true,
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "model": null,
+      "provider": null,
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": null
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "26322b5591eb7d863829cf576f7821d9977f9c2a10bb8602556d3781fb66c6a7",
+    "hash": "14a6373fde0ac04aa8782d262f0b619ce34a4044763afe3490179e5862c70ade",
+    "instrument": {
+      "adapter": {
+        "id": "examples/signal-fleet-dedup/adapter.py",
+        "sha256": "8104cf634a23b4134744729d631aaef79571f8e0a076ae5fe691d1f039471ff3"
+      },
+      "harness": {
+        "code_sha256": "0ab386969208f46c7448153422d5a5ab07833d963869b69fc216a6cd28feb110",
+        "commit": "d67d421fb69a",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "instrument_sha256": "da6ea413c336bb24942353a81d092db0cef8a320779d33b03eb1ee8f1e1508c3",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "fleet_commit": "f07efa9"
+    },
+    "settings_sha256": "879d492c9136e181686660ce215e02207bc6fd85f862f04a7dc671301d5720cc",
+    "version": 5
+  },
+  "metric_directions": {
+    "class_match": "higher",
+    "key_match": "higher"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 100,
+  "params": {
+    "fleet_commit": "f07efa9"
+  },
+  "primary_metric": "key_match",
+  "providers_seen": {},
+  "run_id": "dedup_pinned_f07efa9_v1_20261030T143130Z",
+  "scores": {
+    "latency_ms": 0.17378,
+    "resumed": 0.0
+  }
+}

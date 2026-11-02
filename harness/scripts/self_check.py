@@ -86,7 +86,6 @@ def main() -> int:
             for f in (tmp / "tutorial/configs").glob("tickets_lead*.yaml"):
                 if "noisy" not in f.name:
                     shutil.copy(f, tmp / "data/configs/")
-            shutil.copytree(tmp / "tutorial/gold", tmp / "data/references/gold/tickets_v1")
             steps = [
                 (
                     "dataset-create with fields",
@@ -104,12 +103,41 @@ def main() -> int:
                 ),
                 ("dataset-materialize", ["dataset-materialize", "--dataset-id", "tickets_v1"]),
                 (
-                    "experiment-run lead1 x2",
-                    ["experiment-run", "--config", "data/configs/tickets_lead1.yaml", "--repeat", "2"],
+                    "label-import: the tutorial's hand-written summaries, a person's labels",
+                    [
+                        "label-import",
+                        "tutorial/gold",
+                        "--dataset-id",
+                        "tickets_v1",
+                        "--set",
+                        "owner_gold",
+                        "--by",
+                        "owner",
+                    ],
                 ),
                 (
-                    "experiment-run lead2 x2",
-                    ["experiment-run", "--config", "data/configs/tickets_lead2.yaml", "--repeat", "2"],
+                    "reference-promote: those labels, promoted to gold",
+                    [
+                        "reference-promote",
+                        "--dataset-id",
+                        "tickets_v1",
+                        "--labels",
+                        "owner_gold",
+                        "--tier",
+                        "gold",
+                        "--reason",
+                        "The tutorial's hand-written summaries are what the arms are judged by.",
+                        "--by",
+                        "owner",
+                    ],
+                ),
+                (
+                    "evh run lead1 x2",
+                    ["run", "--config", "data/configs/tickets_lead1.yaml", "--repeat", "2"],
+                ),
+                (
+                    "evh run lead2 x2",
+                    ["run", "--config", "data/configs/tickets_lead2.yaml", "--repeat", "2"],
                 ),
                 (
                     "pair-test on the recorded primary metric",

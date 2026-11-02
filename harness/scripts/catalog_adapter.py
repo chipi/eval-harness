@@ -12,6 +12,7 @@ Without one, HarnessAdapter reads the harness's own layout:
 
     <data>/runs*/<run_id>/{metrics.json, predictions.jsonl, outputs/<item_id>.txt}
     <data>/runs-judged/<scorer_id>/<run_id>/...        (evh judge-score, 0.3.0+)
+    <data>/runs-rescored/<scorer>/<source>/<run_id>/... (evh rescore, RFC-022)
     <data>/references/<tier>/<dataset_id>/<item_id>.txt
 
 An ARM is a string id the adapter chooses. HarnessAdapter's is `<runs dir>/<dataset_id>/<config_id>`:
@@ -53,6 +54,7 @@ from evaluation_harness._common import (  # noqa: E402
 )
 from evaluation_harness._fields import fieldset_problems, load_fieldset  # noqa: E402 -- part of the adapter contract
 from evaluation_harness._fingerprint import items_digest  # noqa: E402
+from evaluation_harness._label_sets import compare, label_line  # noqa: E402
 from evaluation_harness._record import derived_with  # noqa: E402
 from evaluation_harness._runs import item_rows, lower_is_better_on, runs_on, score_of  # noqa: E402
 
@@ -170,8 +172,10 @@ class Adapter(Protocol):
     # harness's own metrics' descriptions and the rest as undescribed.
     # def metric_descriptions(self) -> dict[str, str]: ...
     # Optional: what an arm was measured under, {"machine.platform": ..., "library.torch": ...,
-    # "harness.version": ..., "scorer.sha256": ..., "data.items_sha256": ...,
+    # "deployment.machine": ..., "harness.version": ..., "scorer.sha256": ..., "data.items_sha256": ...,
     # "reference.sha256": ...}; the inspector lists what differs between the arms it compares.
+    # `machine.*` is the runner (where evh ran, outside the fingerprint's hash), `deployment.*` where
+    # the system under test ran.
     # def conditions(self, arm: str) -> dict[str, str]: ...
     # Optional: the promoted baselines (run-promote), [{"baseline_id", "dataset", "run", "arm",
     # "reason", "promoted_at", "tier", "goal"}]; the pages lead with them, the answer so far.
@@ -186,7 +190,10 @@ class Adapter(Protocol):
     # Optional: what each model's weights are, {model: {"weights": "open" | "proprietary",
     # "licence": ...}}, keyed by the model a run records; the arms page filters on it.
     # def model_facts(self) -> dict[str, dict]: ...
-    # Optional: experiment rounds (ADR-0004), each round's record with "arms", the arm ids in play;
+    # Optional: the model records (data/models/) with the arms that use each, [{"record": {...},
+    # "arms": [arm id]}]; the Models page and the arms page's model badge read it.
+    # def models(self) -> list[dict]: ...
+    # Optional: eval rounds (ADR-0004), each round's record with "arms", the arm ids in play;
     # a goal page shows them as its history.
     # def rounds(self) -> list[dict]: ...
     # Optional: every dataset id, including those no arm has run on yet.
@@ -197,6 +204,9 @@ class Adapter(Protocol):
     # Optional: when a dataset was frozen (ISO); the home page counts it new from that day, and
     # from its first run when this is absent or "".
     # def dataset_created(self, dataset: str) -> str: ...
+    # Optional: a dataset's own labels and origin, {"tags": {key: value}, "origin": "..."}: the
+    # datasets page groups and filters by its tags (RFC-019) and says where it came from.
+    # def dataset_meta(self, dataset: str) -> dict: ...
     # Optional: what is inside a dataset, without its text (`evh dataset-profile` writes it to
     # data/profiles/<dataset>.json): {"items": {"n", "kind", "words"}, "references": [...],
     # "rows": [{"item_id", "words", "reference", "source_url"?, "text"?}], "source", "items_sha256"},
@@ -206,8 +216,9 @@ class Adapter(Protocol):
     # "derived"}] ("derived": "" for a measured run, else how it was made: rescore, judge,
     # reparse); the arm page lists them and the home page's activity counts them.
     # def arm_runs(self, arm: str) -> list[dict]: ...
-    # Optional: what an arm was asked to do, {"config_id", "params", "adapter"}, params without
-    # credentials; the arm page shows it.
+    # Optional: what an arm was asked to do, {"config_id", "params", "adapter", "deployment"}, params
+    # without credentials, "deployment" the model-record deployment its config named ("" for none);
+    # the arm page shows it.
     # def arm_config(self, arm: str) -> dict: ...
     # Optional: what was spent and when, [{"at", "usd", "tokens", "kind": "arm" | "judge",
     # "dataset", "what", "arm" (a measured run's arm, optional)}] (usd or tokens None when unknown), each measured run and each judging
@@ -226,11 +237,31 @@ def item_fields(A, dataset: str) -> dict:
 def _flat_conditions(fp: dict) -> dict[str, str]:
     """A run fingerprint's conditions as {group.field: value} (see HarnessAdapter.conditions)."""
     out: dict[str, str] = {}
-    for k, v in (fp.get("host") or {}).items():
-        if v is not None:
+    runner = fp.get("runner") or {}
+    for k, v in runner.items():
+        if v is not None and k != "libraries":
             out[f"machine.{k}"] = str(v)
-    for k, v in ((fp.get("system_under_test") or {}).get("libraries") or {}).items():
+    dep = fp.get("deployment") or {}
+    for k, v in (runner.get("libraries") or dep.get("libraries") or {}).items():
         out[f"library.{k}"] = str(v)
+    for k, v in (dep.get("where") or {}).items():
+        if v:
+            out[f"deployment.{k}"] = str(v)
+    server = dep.get("server") or {}
+    if server.get("name"):
+        out["deployment.server"] = " ".join(x for x in (server["name"], server.get("version")) if x)
+    for k in ("model", "source"):
+        if dep.get(k):
+            out[f"deployment.{k}"] = str(dep[k])
+    weights = dep.get("weights") or {}
+    build = weights.get("digest") or weights.get("revision") or weights.get("file_hash")
+    if build:
+        out["deployment.build"] = str(build)
+    if weights.get("quantization") or weights.get("precision"):
+        out["deployment.quantization"] = str(weights.get("quantization") or weights.get("precision"))
+    hosted = dep.get("hosted") or {}
+    if hosted.get("provider_id"):
+        out["deployment.upstream"] = str(hosted["provider_id"])
     inst = fp.get("instrument") or {}
     harness = inst.get("harness") or {}
     for k in ("version", "code_sha256"):
@@ -280,24 +311,48 @@ def _plain_name(name: str) -> bool:
     return bool(name) and "/" not in name and "\\" not in name and ".." not in name and "\0" not in name
 
 
+def _dir_label(runs_dir: str) -> str:
+    """How an arm's runs directory reads beside its config: "silver", "repeats", "rescored cd35dc1f", "rescored
+    cd35dc1f, repeats" (runs-rescored/<scorer>/<source>, RFC-022)."""
+    parts = runs_dir.split("/")
+    if parts[0] == "runs-rescored" and len(parts) == 3:
+        src = parts[2].removeprefix("runs-")
+        return f"rescored {parts[1][:8]}" + ("" if parts[2] == "runs" else f", {src}")
+    return runs_dir.removeprefix("runs-")
+
+
 class HarnessAdapter:
     """The harness's own data tree. Arms are configs on a dataset, repeats averaged per item."""
 
     item_word = "item"
     can_rescore = False
 
-    def __init__(self, data_dir: Path | None = None):
+    def captures(self) -> list[dict]:
+        """Every capture in the data tree, as `evh captures` lists them (RFC-019): the Captures page reads these."""
+        from evaluation_harness.view_captures import listing  # noqa: PLC0415
+
+        return listing(self.data_dir)
+
+    def __init__(self, data_dir: Path | None = None, runs_root: Path | None = None):
         self.data_dir = Path(data_dir or _common.DATA)
         # The project's goals (EVAL_GOALS_DIR when set) unless a data directory is named.
         self.goals_dir = _common.GOALS if data_dir is None else self.data_dir / "goals"
+        # Where the runs* directories are read from: the data directory, or another one beside the project's
+        # references and goals (evh score-preview reads re-scores it made in a temporary directory, RFC-022).
+        self.runs_root = Path(runs_root) if runs_root else self.data_dir
 
     # -- arms ---------------------------------------------------------------------------
     @_memo
     def _index(self) -> dict[str, list[Path]]:
-        """{arm id: [run dirs]}, from every runs* directory and runs-judged/<scorer>/."""
+        """{arm id: [run dirs]}, from every runs* directory and runs-judged/<scorer>/ that git keeps. A directory
+        git ignores (a smoke pass, a sweep) is not read: the local catalog shows what a clone, CI and the published
+        one show, never runs that exist on this disk only. Outside a git checkout every directory is read."""
         out: dict[str, list[Path]] = {}
-        bases = [p for p in sorted(self.data_dir.glob("runs*")) if p.is_dir() and p.name != "runs-judged"]
-        bases += sorted(p for p in (self.data_dir / "runs-judged").glob("*") if p.is_dir())
+        nested = ("runs-judged", "runs-rescored")
+        bases = [p for p in sorted(self.runs_root.glob("runs*")) if p.is_dir() and p.name not in nested]
+        bases += sorted(p for p in (self.runs_root / "runs-judged").glob("*") if p.is_dir())
+        bases += sorted(p for p in (self.runs_root / "runs-rescored").glob("*/*") if p.is_dir())
+        bases = [p for p in bases if not _common.ignored_by_git(p)]
         refs: dict[Path, str] = {}
         made: dict[Path, str] = {}
         # Every run seen, before any is set aside below: what was billed counts them all.
@@ -306,7 +361,7 @@ class HarnessAdapter:
             for d, m in runs_on(runs_dir=base):
                 if not m.get("dataset_id"):
                     continue
-                rel = base.relative_to(self.data_dir).as_posix()
+                rel = base.relative_to(self.runs_root).as_posix()
                 arm = f"{rel}/{m['dataset_id']}/{m['config_id']}"
                 self._every.append((m["dataset_id"], d, m, arm))
                 out.setdefault(arm, []).append(d)
@@ -344,7 +399,7 @@ class HarnessAdapter:
         return [
             a
             for a, ds in self._index().items()
-            if any(d.relative_to(self.data_dir).as_posix() == path for d in ds)
+            if any(d.relative_to(self.runs_root).as_posix() == path for d in ds)
         ]
 
     def _dirs(self, arm: str) -> list[Path]:
@@ -354,21 +409,45 @@ class HarnessAdapter:
         ds = self._dirs(arm)
         return (_json(ds[-1] / "metrics.json") or {}) if ds else {}
 
+    def same_output(self, arm: str):
+        """`same(a, b)` for this arm's outputs (RFC-023): its adapter's, else the same text."""
+        from evaluation_harness._adapter import same_of  # noqa: PLC0415
+
+        return same_of(self._metrics(arm).get("adapter"))
+
     def describe(self, arm: str) -> dict:
         """Return arm metadata: id, label, dataset, task, etc."""
         base, _, rest = arm.rpartition("/")
         runs_dir, _, dataset = base.rpartition("/")
         m = self._metrics(arm)
         n = len(self._dirs(arm))
-        label = rest + ("" if runs_dir == "runs" else f" · {runs_dir.removeprefix('runs-')}")
+        label = rest + ("" if runs_dir == "runs" else f" · {_dir_label(runs_dir)}")
         label += f" ×{n}" if n > 1 else ""
         judged = derived_with(m, "judge").get("scorer_id")
         primary = m.get("primary_metric") or ""
         if judged:  # a judged run's headline is the judge's score, not the source run's metric
             keys = set(self.scores(arm))
-            primary = next((k for k in ("judge_score", "judge_score_unvalidated") if k in keys), primary)
+            primary = next(
+                (
+                    k
+                    for k in ("judge_score", "judge_score_unvalidated", "judge_won", "judge_won_unvalidated")
+                    if k in keys
+                ),
+                primary,
+            )
         ref = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id", "")
-        author = next((r.get("author") for r in self.references() if r["id"] == ref), None)
+        if (ref or "").startswith(_common.LABELS_PREFIX):
+            # A label set a model's run made (RFC-023): its arm scored against it is graded against its own outputs.
+            src = (
+                _json(self.data_dir / "labels" / ref.removeprefix(_common.LABELS_PREFIX) / "labels.json")
+                or {}
+            ).get("source") or {}
+            author = src.get("config_id") if src.get("kind") == "model" else None
+            labels_source = str(src.get("kind") or "")
+        else:
+            author = next((r.get("author") for r in self.references() if r["id"] == ref), None)
+            labels_source = ""
+        params = m.get("params") or {}
         return {
             "id": arm,
             "label": label,
@@ -383,6 +462,10 @@ class HarnessAdapter:
             "judge": judged or "",
             # Graded against its own outputs: the arm whose run (or config) wrote the reference.
             "wrote_reference": bool(author) and not judged and author == m.get("config_id"),
+            # Scored against a label set (RFC-023): its source (person, model, rule), for the chip.
+            "labels_source": labels_source,
+            # Production's recorded decisions (RFC-023): the capture they came from; no model was called.
+            "recorded": str(params.get("capture") or "") if params.get("provider") == "recorded" else "",
         }
 
     # -- scores -------------------------------------------------------------------------
@@ -505,7 +588,7 @@ class HarnessAdapter:
     @_memo
     def references(self) -> list[dict]:
         """Return all reference sets: {id, tier, dataset, task, archived, format}, plus what
-        the set's manifest.json says (reference-create and reference-manifest write one): author,
+        the set's manifest.json says (reference-promote and reference-manifest write one): author,
         from_run, model, created_at, items, caveat, and "fetched" (its texts are not here: a
         reference the project does not redistribute, listed from its manifest)."""
         out = []
@@ -533,9 +616,146 @@ class HarnessAdapter:
                             "model": mf.get("model"),
                             "created_at": mf.get("created_at"),
                             "caveat": mf.get("caveat"),
+                            "promoted_from": mf.get("promoted_from"),
+                            "reason": mf.get("reason"),
+                            "promoted_by": mf.get("promoted_by"),
                         }
                     )
         return out
+
+    def deploy_sheet(self, arm: str) -> dict | None:
+        """What production must match to run this arm (RFC-023, `evh deploy-sheet`), with a check against each capture
+        whose records say what production ran (the arm's adapter's `production_ran`); None when the arm's config was
+        never promoted, or its sheet cannot be read here."""
+        from collections import Counter  # noqa: PLC0415
+
+        from evaluation_harness import deploy_sheet as dsh  # noqa: PLC0415
+        from evaluation_harness._adapter import adapter_module  # noqa: PLC0415
+
+        cid = self._metrics(arm).get("config_id")
+        if not cid:
+            return None
+        try:
+            sh = dsh.sheet(cid, self.data_dir, self.runs_root / "runs")
+        except SystemExit:
+            return None
+        if not sh.get("promoted"):
+            return None
+        checks = []
+        caps = self.data_dir / "captures"
+        if callable(getattr(adapter_module(sh["_adapter_spec"]), "production_ran", None)):
+            for c in sorted(caps.glob("*/capture.json")) if caps.is_dir() else []:
+                try:
+                    got = dsh.check(sh, c.parent.name, caps)
+                except SystemExit:  # a record changed since it was captured: that capture says nothing here
+                    continue
+                if any(k["match"] or k["differ"] for k in got["keys"].values()):
+                    for k in got["keys"].values():
+                        k["differ"] = dict(Counter(k["differ"]).most_common())
+                    got["ok"] = all(not k["differ"] and not k["missing"] for k in got["keys"].values())
+                    checks.append(got)
+        return {**{k: v for k, v in sh.items() if not k.startswith("_")}, "captures": checks}
+
+    def label_sets(self) -> list[dict]:
+        """Every label set (RFC-023): {dataset, set, id ("<dataset>/<set>"), source, n_items, guideline, created_at,
+        items {item: {"item_sha256"}}}, from data/labels/<dataset>/<set>/labels.json; [] when there are none."""
+        out = []
+        for lf in sorted((self.data_dir / "labels").glob("*/*/labels.json")):
+            doc = _json(lf)
+            if isinstance(doc, dict):
+                out.append(
+                    {
+                        "dataset": str(doc.get("dataset_id") or lf.parent.parent.name),
+                        "set": str(doc.get("set") or lf.parent.name),
+                        "id": f"{lf.parent.parent.name}/{lf.parent.name}",
+                        "source": doc.get("source") or {},
+                        "n_items": doc.get("n_items") or len(doc.get("items") or {}),
+                        "guideline": doc.get("guideline"),
+                        "created_at": doc.get("created_at"),
+                        "items": doc.get("items") or {},
+                        "dir": lf.parent,
+                    }
+                )
+        return out
+
+    def label_coverage(self, dataset: str) -> dict:
+        """{"sets": [{set..., "covers": [item ids]}], "agreement": [{"a", "b", **_label_sets.compare(...)}]}: the label
+        sets covering this dataset's items, matched by the item's sha256 (labels follow the item), and how two compare
+        on the items both label (where the label texts are here; a release keeps only labels.json)."""
+        ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
+        by_sha: dict = {}
+        for it in ds.get("items") or [] if isinstance(ds, dict) else []:
+            if it.get("source_sha256"):
+                by_sha.setdefault(it["source_sha256"], []).append(it["item_id"])
+        sets, texts = [], {}
+        for ls in self.label_sets():
+            covers: dict = {}
+            for iid, row in ls["items"].items():
+                for mine in by_sha.get((row or {}).get("item_sha256") or "", []):
+                    t = ls["dir"] / f"{iid}.txt"
+                    covers[mine] = t.read_text(encoding="utf-8").strip() if t.is_file() else None
+            if covers:
+                sets.append(
+                    {**{k: v for k, v in ls.items() if k not in ("items", "dir")}, "covers": sorted(covers)}
+                )
+                texts[ls["id"]] = covers
+        agreement = []
+        ids = sorted(texts)
+        for i, a in enumerate(ids):
+            for b in ids[i + 1 :]:
+                both = [
+                    x
+                    for x in texts[a]
+                    if x in texts[b] and texts[a][x] is not None and texts[b][x] is not None
+                ]
+                if both:
+                    agreement.append({"a": a, "b": b, **compare([(texts[a][x], texts[b][x]) for x in both])})
+        return {"sets": sets, "agreement": agreement}
+
+    def item_labels(self, dataset: str, item: str) -> list[dict]:
+        """Every label one item has (RFC-023): {set ("<dataset>/<set>"), kind, by, text} from each set holding an item
+        with its bytes (labels follow the item); the text only where it is here (a release keeps labels.json only)."""
+        ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
+        sha = (
+            next(
+                (it.get("source_sha256") for it in (ds.get("items") or []) if it.get("item_id") == item), None
+            )
+            if isinstance(ds, dict)
+            else None
+        )
+        out = []
+        for ls in self.label_sets() if sha else []:
+            for iid, row in ls["items"].items():
+                if (row or {}).get("item_sha256") == sha:
+                    t = ls["dir"] / f"{iid}.txt"
+                    src = ls.get("source") or {}
+                    out.append(
+                        {
+                            "set": ls["id"],
+                            "kind": src.get("kind", ""),
+                            "by": src.get("by") or src.get("config_id") or src.get("capture") or "",
+                            "text": label_line(t.read_text(encoding="utf-8")) if t.is_file() else None,
+                            "note": (row or {}).get("note") or "",
+                        }
+                    )
+        return out
+
+    def picks_waiting(self, dataset: str) -> list[dict]:
+        """The picks waiting for this dataset (data/picks.jsonl, ADR-0023): the items whose latest line is a pick
+        naming it as a target. A release does not carry the pick list, so a published catalog shows none."""
+        f = self.data_dir / "picks.jsonl"
+        latest: dict = {}
+        for line in f.read_text(encoding="utf-8").splitlines() if f.is_file() else []:
+            try:
+                r = json.loads(line) if line.strip() else None
+            except ValueError:
+                continue
+            if isinstance(r, dict):
+                latest[(r.get("from"), r.get("item"))] = r
+        return sorted(
+            (r for r in latest.values() if r.get("action") == "pick" and dataset in (r.get("for") or [])),
+            key=lambda r: (str(r.get("from")), str(r.get("item"))),
+        )
 
     @_memo
     def metric_descriptions(self) -> dict[str, str]:
@@ -650,16 +870,35 @@ class HarnessAdapter:
 
     @_memo
     def model_facts(self) -> dict[str, dict]:
-        """data/models.yaml's models (models.schema.json), {} without it."""
-        import yaml  # noqa: PLC0415
+        """Each model alias a run records, to its weights and licence, from the model records
+        (data/models/, model.schema.json); {} without them."""
+        from evaluation_harness import _models  # noqa: PLC0415
 
-        f = self.data_dir / "models.yaml"
-        doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.is_file() else None
-        return (doc or {}).get("models") or {} if isinstance(doc, dict) else {}
+        return _models.facts(self.data_dir)
+
+    @_memo
+    def models(self) -> list[dict]:
+        """Each model record (data/models/) with the arms that use it: an arm uses a record when its
+        config names it (`model_record`, as its run recorded) or its run's params.model is one of the
+        record's aliases."""
+        from evaluation_harness import _models  # noqa: PLC0415
+
+        recs = _models.load(self.data_dir)
+        ids = {r.get("model_id") for r in recs}
+        alias = {a: r.get("model_id") for r in recs for a in r.get("aliases") or []}
+        used: dict = {r.get("model_id"): [] for r in recs}
+        for arm in self.arms():
+            m = self._metrics(arm)
+            rid = m.get("model_record")
+            if rid not in ids:
+                rid = alias.get((m.get("params") or {}).get("model"))
+            if rid in used:
+                used[rid].append(arm)
+        return [{"record": r, "arms": sorted(used[r.get("model_id")])} for r in recs]
 
     @_memo
     def rounds(self) -> list[dict]:
-        """Experiment rounds (ADR-0004, optional): each round's record, plus "arms" (the arm ids in
+        """Eval rounds (ADR-0004, optional): each round's record, plus "arms" (the arm ids in
         play: runs in any runs directory that name it, and the configs carried in, less the retired)
         and "retired_arms" (the arm ids it retired: a retirement names a runs directory, else the
         project's)."""
@@ -733,6 +972,33 @@ class HarnessAdapter:
         got = ds.get("created_at") if isinstance(ds, dict) else None
         return got if isinstance(got, str) else ""
 
+    def dataset_meta(self, dataset: str) -> dict:
+        """The dataset's `tags`, and its origin in a few words: a capture it was made from (with the
+        selection; `capture` names it, for the link to it), or the version it was derived from; {} when its file
+        says neither."""
+        got = _json(self.data_dir / "datasets" / f"{dataset}.json")
+        if not isinstance(got, dict):
+            return {}
+        ds: dict = got
+        tags: dict = ds["tags"] if isinstance(ds.get("tags"), dict) else {}
+        mf: dict = ds["made_from"] if isinstance(ds.get("made_from"), dict) else {}
+        origin = ""
+        if mf.get("capture"):
+            bits = [f"capture {mf['capture']}"]
+            bits += [f"where {w}" for w in mf.get("where") or []]
+            if mf.get("one_per"):
+                bits.append(f"one per {mf['one_per']}")
+            origin = ", ".join(bits)
+        elif isinstance(ds.get("derived_from"), dict) and ds["derived_from"].get("dataset_id"):
+            origin = f"version of {ds['derived_from']['dataset_id']}"
+        return {
+            "tags": {str(k): str(v) for k, v in tags.items()},
+            "origin": origin,
+            "capture": str(mf.get("capture") or ""),
+            # A version made from picks (dataset-extend): V1 and, per added item, where it came from.
+            "extended_from": ds["extended_from"] if isinstance(ds.get("extended_from"), dict) else None,
+        }
+
     def dataset_profile(self, dataset: str) -> dict | None:
         """data/profiles/<dataset>.json (`evh dataset-profile`), with "stale": True when the dataset's
         items no longer match the version it was computed on; None without one."""
@@ -757,6 +1023,7 @@ class HarnessAdapter:
                     "items": m.get("n_items"),
                     "cost_usd": (m.get("scores") or {}).get("total_cost_usd"),
                     "derived": (m.get("derived") or {}).get("kind", ""),
+                    "from": (m.get("derived") or {}).get("from", ""),
                 }
             )
         return sorted(out, key=lambda r: (r["created_at"], r["run_id"]))
@@ -767,10 +1034,24 @@ class HarnessAdapter:
         from evaluation_harness._providers import shown_params  # noqa: PLC0415
 
         m = self._metrics(arm)
+        params = m.get("params") or {}
+        read_by = ""
+        if params.get("provider") == "recorded":
+            from evaluation_harness._adapter import adapter_module  # noqa: PLC0415
+
+            hook = callable(getattr(adapter_module(m.get("adapter")), "recorded_output", None))
+            read_by = (
+                "the adapter's recorded_output(record)"
+                if hook
+                else f"the record's field {params.get('field')}"
+            )
         return {
             "config_id": m.get("config_id") or arm.rsplit("/", 1)[-1],
-            "params": shown_params(m.get("params") or {}),
+            "params": shown_params(params),
             "adapter": m.get("adapter") or "",
+            "deployment": m.get("deployment_id") or "",
+            # A recorded arm (RFC-023): its outputs are the capture's records, read this way; no model was called.
+            "recorded_by": read_by,
         }
 
     @_memo

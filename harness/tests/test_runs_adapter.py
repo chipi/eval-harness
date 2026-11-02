@@ -123,6 +123,20 @@ with tempfile.TemporaryDirectory() as tmp:
         "adapter: and their own PRIMARY_METRIC",
         (_adapter.primary_metric(adapters[0]), _adapter.primary_metric(adapters[1])) == ("one", "two"),
     )
+    moded = adapters[0].parent / "moded.py"
+    moded.write_text(
+        "PRIMARY_METRIC = 'tau'\n"
+        "def primary_metric(params):\n    return {'pick': 'top1'}.get(params.get('mode'), PRIMARY_METRIC)\n"
+        "def call_system(item, params):\n    return None\n"
+        "def score(output, reference):\n    return {}\n",
+        encoding="utf-8",
+    )
+    check(
+        "adapter: primary_metric(params) names an arm's primary by its params, else PRIMARY_METRIC",
+        _adapter.primary_metric(moded, {"mode": "pick"}) == "top1"
+        and _adapter.primary_metric(moded, {}) == "tau"
+        and _adapter.primary_metric(moded) == "tau",
+    )
     check(
         "adapter: a recorded spec resolves to the module that ran",
         _adapter.adapter_module(str(adapters[0])) is _adapter.module_at(adapters[0])
@@ -192,7 +206,7 @@ from evaluation_harness import _fingerprint  # noqa: E402
 hashed = {p.name for p in _fingerprint.measuring_modules()}
 check(
     "code hash: the run-writing commands and the adapter are in it",
-    {"experiment_run.py", "rescore.py", "judge_score.py", "adapter.py", "_common.py"} <= hashed,
+    {"run.py", "rescore.py", "judge_score.py", "adapter.py", "_common.py"} <= hashed,
     sorted(hashed),
 )
 check(

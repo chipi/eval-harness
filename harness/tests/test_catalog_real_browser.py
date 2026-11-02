@@ -109,6 +109,23 @@ def drive(cat: Path, base: str) -> None:
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
         page.on("pageerror", lambda e: errors.append(str(e)))
 
+        # The label tables at desktop width: long set ids wrap, so the columns that say something (promoted, the
+        # agreement counts) are on screen, not behind a sideways scroll.
+        labelled = [p.relative_to(cat).as_posix() for p in sorted((cat / "d").glob("*.html"))]
+        labelled = [p for p in labelled if 'id="agree-' in (cat / p).read_text(encoding="utf-8")][:3]
+        for path in ("labels.html", *labelled):
+            page.goto(base + path)
+            page.wait_for_selector("main", timeout=30000)
+            over = page.evaluate(
+                """[...document.querySelectorAll('table#labelsets, table[id^="agree-"], table[id^="labels-"]')]
+                .map(t => [t.id, t.scrollWidth - t.closest('.scroll-x').clientWidth]).filter(x => x[1] > 1)"""
+            )
+            check(
+                f"desktop width: the label tables on {path} fit, nothing behind a sideways scroll",
+                not over,
+                str(over),
+            )
+
         # The arms page at full size: all time, every row shown.
         page.goto(base + "arms.html#pall")
         page.wait_for_selector("table#arms")
@@ -131,7 +148,7 @@ def drive(cat: Path, base: str) -> None:
         for facet, value, attr in (
             ("weights", "open", "weights"),
             ("weights", "proprietary", "weights"),
-            ("quality", "ties the leader", "quality"),
+            ("quality", "a contender", "quality"),
         ):
             chip = page.locator(f'.facet-chips[data-for="arms"] [data-facet="{facet}"][data-value="{value}"]')
             chip.click()
@@ -202,6 +219,62 @@ def drive(cat: Path, base: str) -> None:
             rows > 0 and not unnamed,
             f"not named: {unnamed[:5]}",
         )
+        # Every config on the arms page has the day it was first run, as the home page's configs tile counts them:
+        # an undated row (a config whose runs were all re-parsed) never counts as new there.
+        ct = (cat / "arms.html").read_text(encoding="utf-8")
+        ct = ct[ct.index('<table id="configs"') :]
+        ct = ct[: ct.index("</table>")]
+        undated = re.findall(r'<tr data-key="(c:[^"]+)"(?![^>]*data-made)', ct)
+        check(
+            "arms page: every config row is dated (its first run, any kind)",
+            not undated,
+            ", ".join(undated[:5]),
+        )
+
+        # A goal page's rounds count their arms as `evh rounds` does: a re-scored run is the same arm.
+        differ = []
+        for gp in sorted((cat / "g").glob("*.html")):
+            shown = dict(
+                re.findall(r"<b>(r\d+)</b>.*?<span data-v=\"(\d+)\">\d+ arms</span>", gp.read_text(), re.S)
+            )
+            if not shown:
+                continue
+            cli = subprocess.run(
+                [sys.executable, str(HARNESS / "scripts" / "cli.py"), "rounds", "--goal", gp.stem],
+                cwd=HARNESS,
+                capture_output=True,
+                text=True,
+            ).stdout
+            said = dict(re.findall(r"^\s+(r\d+)\s+\S+\s+\S+\s+(\d+) arm\(s\)", cli, re.M))
+            differ += [
+                f"{gp.stem} {rid}: page {n}, evh rounds {said.get(rid)}"
+                for rid, n in shown.items()
+                if said.get(rid) != n
+            ]
+        check(
+            "goal pages: each round's arms counted as evh rounds counts them",
+            not differ,
+            "; ".join(differ[:4]),
+        )
+
+        # The sheet of a judging pass's arms, as a dataset page names them (runs-judged/<scorer>/<dataset>/<config>).
+        judged = sorted(q for q in links if "runs=runs-judged/" in q)
+        if judged:
+            q = max(judged, key=lambda x: x.count(","))
+            ds = q.split("runs=runs-judged/", 1)[1].split("/")[1]
+            arms = q.split("runs=", 1)[1].split("&", 1)[0].split(",")[:3]
+            page.goto(f"{base}inspect.html?dataset={ds}&sheet=1&runs={','.join(arms)}")
+            page.wait_for_selector("#sheettable, .callout, p.err", timeout=60000)
+            over = page.evaluate(
+                """[...document.querySelectorAll('#sheettable thead th')]
+                .filter(h => h.scrollWidth > h.clientWidth + 1).map(h => h.innerText.slice(0, 60))"""
+            )
+            check(
+                f"sheet: a judging pass's arms as the dataset page names them ({len(arms)} on {ds}) open, and no "
+                "column header runs over the next",
+                page.locator("#sheettable").count() == 1 and not over,
+                f"headers over their cells: {over[:3]}" if over else page.locator("main").inner_text()[-300:],
+            )
         check("no console errors", not errors, " | ".join(errors[:5]))
         browser.close()
 

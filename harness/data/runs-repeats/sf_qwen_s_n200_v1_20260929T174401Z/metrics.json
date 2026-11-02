@@ -20,21 +20,9 @@
   "fingerprint": {
     "arm": {
       "config_id": "sf_qwen_s_n200_v1",
-      "params": {
-        "corpus_id": "scifact",
+      "labels": {
         "family": "qwen",
-        "max_tokens": 700,
-        "model": "eval-qwen-flash",
         "price_tier": "small",
-        "prompt_file": "prompt.txt",
-        "provider": "rerank",
-        "reasoning": {
-          "enabled": false
-        },
-        "rerank_k": 20,
-        "snippet_chars": 900,
-        "temperature": 0.0,
-        "top_k": 100,
         "usd_per_mtok_in": 0.05,
         "usd_per_mtok_out": 0.2
       }
@@ -47,36 +35,9 @@
       "reference_tier": "gold",
       "references_sha256": "b522e08017ebc7dd71c5627bccfdd688c5124096df8a5e6454684141bc361d99"
     },
-    "hash": null,
-    "hash_invalid_because": "rankings were rebuilt from stored LLM replies with a parser this fingerprint does not describe; see derived.with",
-    "host": {
-      "cpu_count": 12,
-      "label": "mac-dev",
-      "platform": "Darwin/x86_64",
-      "processor": "i386",
-      "python": "3.11.8",
-      "release": "24.6.0"
-    },
-    "instrument": {
-      "adapter": {
-        "id": "examples/retrieval-scifact/adapter.py",
-        "sha256": "cd1ffd21ed850b315d8c2e0b8f61d11d0945e21c3c8c0d5b136247dedc285e9c"
-      },
-      "harness": {
-        "commit": "ebd54b604241",
-        "dirty": true
-      }
-    },
-    "system_under_test": {
-      "libraries": {
-        "numpy": "1.26.4",
-        "openai": "3.19.2",
-        "scikit-learn": "1.9.1",
-        "sentence-transformers": "3.4.1",
-        "torch": "2.2.2",
-        "transformers": "4.55.4"
-      },
-      "model": {
+    "data_sha256": "058780bbc950f96a825d2dd346f0d32254049af0c805c8c758540c1829cf079f",
+    "deployment": {
+      "declared": {
         "alias": "eval-qwen-flash",
         "bm25": {
           "b": 0.75,
@@ -92,25 +53,87 @@
         "first_stage_doc_prefix": "",
         "first_stage_model": null,
         "first_stage_query_prefix": "",
-        "id": "eval-qwen-flash",
-        "identity_declared": true,
+        "provider": "rerank",
+        "rerank_k": 20,
+        "scorer_sha256": "86a15248a8c36a0d13c41f5efe4f7e06134bfe84f0208066a2a2eebf3435d77f",
+        "snippet_chars": 900,
+        "tokenizer_sha256": "4c9a8288e422f5165204b385f450ee91b6005919a3cb8b508c196850050ab8bf",
+        "top_k": 100
+      },
+      "hosted": null,
+      "id": "eval-qwen-flash",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "scikit-learn": "1.9.1",
+        "sentence-transformers": "3.4.1",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": "eval-qwen-flash",
+      "provider": "rerank",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "2eb8481b7faf0c1ef610b9f76e6a20e538af3d1a8da27c3ae456fe419b9de83d",
+    "hash": null,
+    "hash_invalid_because": "rankings were rebuilt from stored LLM replies with a parser this fingerprint does not describe; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/retrieval-scifact/adapter.py",
+        "sha256": "cd1ffd21ed850b315d8c2e0b8f61d11d0945e21c3c8c0d5b136247dedc285e9c"
+      },
+      "harness": {
+        "commit": "ebd54b604241",
+        "dirty": true
+      }
+    },
+    "instrument_sha256": "4eb0b06bdc100bbf43a908604f012942ef6cc7354c70307bb1531799a6f80033",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "corpus_id": "scifact",
+      "declared": {
         "max_tokens": 700,
         "prompt_sha256": "a81ef5d8b150e4c31bfbaee6bfd9f98b1d56dd27dfbdcc15511154f79066abbe",
-        "provider": "rerank",
         "reasoning": {
           "enabled": false
         },
-        "rerank_k": 20,
-        "revision": null,
-        "revision_source": "unavailable",
-        "scorer_sha256": "86a15248a8c36a0d13c41f5efe4f7e06134bfe84f0208066a2a2eebf3435d77f",
-        "snippet_chars": 900,
-        "temperature": 0.0,
-        "tokenizer_sha256": "4c9a8288e422f5165204b385f450ee91b6005919a3cb8b508c196850050ab8bf",
-        "top_k": 100
-      }
+        "temperature": 0.0
+      },
+      "max_tokens": 700,
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "rerank_k": 20,
+      "snippet_chars": 900,
+      "temperature": 0.0,
+      "top_k": 100
     },
-    "version": 4
+    "settings_sha256": "e5ee121ec55c5d6477664172ebd344c6761f6b631ae9fc229579402e907a63cf",
+    "version": 5
   },
   "goal": "scientific_retrieval_scifact",
   "metric_kinds": {

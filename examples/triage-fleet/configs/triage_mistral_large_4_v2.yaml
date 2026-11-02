@@ -1,0 +1,18 @@
+# Round 3: triage_mistral_large_4_v1 again, with mistral-large-4's onboarded settings
+# The record supplies reasoning_effort (its settings_why says why); the arm sets the task's own: a reply cap
+# (a triage decision is 64-414 tokens; 1024 bounds a runaway) and the call limit round 1 used.
+# Mistral Large 4's cap is 4096: the cap counts its reasoning, and at low it reasoned 951-1023 tokens on two of
+# three smoke items' last call, so 1024 cut the answer off (arm-smoke, 2026-10-31).
+config_id: triage_mistral_large_4_v2
+dataset_id: orrery_triage_v1_labelled
+adapter: ../adapter.py
+goal: triage_orrery
+round: r3
+model_record: mistral-large-4
+deployment: hosted
+params:
+  provider: gateway
+  model: eval-mistral-large-4
+  usd_per_mtok_in: 0.7
+  usd_per_mtok_out: 2.1
+  max_tokens: 4096

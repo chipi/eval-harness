@@ -12,7 +12,7 @@ comparisons that **refuse** to mislead you.
 
 ```bash
 cd your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.5.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.0#subdirectory=harness"
 evh init --tutorial    # the data folders, a .gitignore, and the tutorial kit
 evh --help             # the verbs, in the order you need them
 ```
@@ -30,17 +30,20 @@ the best arm's run), compare, choose:
 ```bash
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
-evh experiment-run --config data/configs/best_model.yaml          # the arm that writes the reference
-evh reference-create --dataset-id my_v1 --from-run <its run_id>    # optional: silver from that run
-evh experiment-run --config data/configs/arm_a.yaml --repeat 3     # + the arm's own noise
+evh run --config data/configs/best_model.yaml          # the arm that writes the reference
+evh label-from-run --run <its run_id> --set best_v1                 # optional: its outputs as a model's labels
+evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
+    --reason "the best system we have ranks the rest" --by me          # ...promoted to silver
+evh run --config data/configs/arm_a.yaml --repeat 3     # + the arm's own noise
 evh leaderboard --dataset-id my_v1                                 # the ranking, and whether it is real
-evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_     # is the winner separated?
+evh family-test --dataset-id my_v1 --a arm_a_v1 --against arm_     # is the winner significantly better?
 evh run-promote --run <run_id> --reason "what the tests showed"    # the choice, with why
 ```
 
 **[Getting started](../docs/GUIDE.md)** walks it once, offline, in about fifteen minutes; the
 [tutorials](../docs/GUIDE.md#where-to-go-next) add a local model, a hosted LLM with your own
-key, a frontier reference and judges, experiment rounds and dataset versions, and the catalog.
+key, a frontier reference and judges, eval rounds and dataset versions, the catalog, datasets
+from what your system did in production, and setting a model up before you test it.
 In a checkout of this repository every `evh` command is also a `make` target (`make demo` runs
 the whole loop on bundled data, no API key, no network).
 
@@ -82,9 +85,11 @@ data/sources/        your raw inputs — IMMUTABLE, never edited in place
 data/datasets/       the dataset_id — the thing that makes two numbers comparable
       ↓  evh dataset-materialize     rebuild run inputs, re-verify every hash
 data/materialized/   derived, regenerable, disposable
-      ↓  evh experiment-run          → scores + cost + speed + build provenance
+      ↓  evh run          → scores + cost + speed + build provenance
 data/runs/
-      ↓  evh reference-create        ground truth to score against (gold | silver; --from-run a run's outputs)
+      ↓  evh label-from-run / label-import / label-from-capture   labels: a model's, a person's, a rule's
+data/labels/
+      ↓  evh reference-promote       ground truth to score against: labels promoted (gold | silver), with a reason
 data/references/
       ↓  evh leaderboard / pair-test / family-test / run-compare
 data/baselines/      evh run-promote — the number future work is judged against
@@ -95,14 +100,14 @@ data/runs-judged/    evh judge-score    a validated LLM judge, billed and capped
 
 beside them, also optional:
 data/goals/          what each evaluation is for; configs name one with `goal:`
-data/rounds/         experiment rounds of a goal: evh round-open / rounds / round-close
+data/rounds/         eval rounds of a goal: evh round-open / rounds / round-close
 data/fields/         field sets: the typed facts a project's items carry (`--fieldset`)
 data/profiles/       evh dataset-profile   what is inside a dataset, for its page (no text by default)
 .build/catalog/      evh catalog / evh catalog-serve   pages over the runs, and the inspector
 (an agent)           evh mcp            the read commands as MCP tools
 ```
 
-`evh validate` checks the whole tree — sixteen integrity rules (V1–V16), exits non-zero,
+`evh validate` checks the whole tree — nineteen integrity rules (V1–V19), exits non-zero,
 so it can gate CI.
 
 ### The three inputs
@@ -147,7 +152,7 @@ files sharing a `dataset_id`.
 ## Is the ranking real?
 
 A table sorted by a mean always produces an ordering. Whether that ordering survives
-re-running the experiment is a different question, and `evh leaderboard` answers it
+re-running the eval is a different question, and `evh leaderboard` answers it
 before it shows you anything else:
 
 ```
@@ -170,7 +175,7 @@ Three readings, all computed over the whole table at once:
 - **Rank probabilities** — resample the items, re-rank everything from scratch, and report
   how often each arm lands 1st / in the top 5 / in the bottom 5. This replaced a 95% rank
   interval per arm: those were marginal, so two non-overlapping intervals read as "this
-  pair is separated" — exactly the claim they cannot make. Context, never a pairwise
+  pair differs significantly" — exactly the claim they cannot make. Context, never a pairwise
   verdict; the critical-difference line is the verdict.
 
 What this deliberately does **not** do is walk down the table comparing each arm to a
@@ -184,11 +189,16 @@ Scores are arithmetic over outputs, and outputs are the expensive part. So a met
 should not cost a sweep:
 
 ```
-evh rescore --dataset-id my_v1 --match _v2 --out data/runs-rescored
-EVAL_RUNS_DIR=data/runs-rescored evh leaderboard --dataset-id my_v1
+evh score-preview --goal my_goal                                 # what a scoring change would move; writes nothing
+evh rescore --goal my_goal --round r2 --why "the rule I fixed"   # a round's arms, at $0, the why recorded
+evh rescore --dataset-id my_v1 --match _v2                       # or any runs of a dataset
 ```
 
-Rescored runs go to a separate directory and record `derived: {kind: rescore, from, at, with}`:
+Re-scores land in one place the harness designates, `data/runs-rescored/<scorer>/<source>/` (`--out` names
+another); the goals, the rounds and the catalog read an arm from its latest re-score, and a round records the
+scorer it is judged by, so a scoring change is a step of its own, applied to a round or adopted by the next
+(`round-open --scoring`; [RFC-022](../docs/rfc/RFC-022-scoring-that-evolves.md)). Each re-scored run records
+`derived: {kind: rescore, from, at, with}`:
 the source run, when, and the sha256 of the adapter (and its scorer) that rescored it, so a
 recomputation can never be mistaken for a measurement. Latency, cost
 and token counts are carried across untouched — they describe the call that happened, not
@@ -210,10 +220,58 @@ families, the task they score, the prompt, and the runs that validated each judg
 human ratings. The command refuses a judge nobody validated (`--unvalidated` runs it with
 every number labelled), freezes a blinded, shuffled judging set, stores every verdict so a
 rerun costs $0, and writes scored runs that `leaderboard`, `pair-test` and `family-test`
-read unchanged. An experiment's primary metric changes only by a recorded decision.
+read unchanged. The scorer's `mode` says what a judge is asked: `grade` each output (the default), `pick` the
+best of an item's outputs, or `pairwise` the better of two; a judge is validated in the mode it is used, and pick
+and pairwise report win rates and Bradley-Terry strengths. An eval's primary metric changes only by a recorded decision.
 Walkthrough: [tutorial 3](../docs/tutorials/3-frontier-reference-and-judging.md#5-re-measure-with-an-llm-judge-optional);
 reference: [RUNBOOK §12](docs/RUNBOOK.md#12-re-measure-with-a-validated-judge); why:
 [ADR-0001](../docs/adr/ADR-0001-judge-scorers.md).
+
+## Set a model up before you test it
+
+A server chooses for whatever an arm leaves unset (whether the model reasons first, how long a reply may run,
+which build a tag names), so two arms that leave them unset compare defaults as much as models. A model is set up
+once, in a record (`data/models/<id>.yaml`) with a deployment per place it runs, and checked there before any
+eval uses it:
+
+```bash
+evh model-onboard my-model --deployment laptop   # its build, whether it reasons, JSON, determinism, speed
+evh arm-smoke --config data/configs/my_arm.yaml  # a few items with the arm's own settings, before the full run
+evh models                                       # which models are onboarded, vetted, and where they run
+```
+
+An arm names the record and deployment (`model_record:`, `deployment:`), and its run's fingerprint takes the
+weights, server and machine from it. Walkthrough: [tutorial 7](../docs/tutorials/7-set-up-a-model.md); reference:
+[RUNBOOK §16](docs/RUNBOOK.md#16-set-up-a-model-before-you-test-it); design:
+[RFC-020](../docs/rfc/RFC-020-onboarding-a-model.md), [RFC-021](../docs/rfc/RFC-021-fingerprint-v5.md).
+
+## Datasets from what your system did
+
+What a system did in production is the most realistic test there is, and what happened afterwards can label it:
+
+```bash
+evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2026_10   # the records, hashed
+evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --tag source=prod             # a frozen selection
+evh label-from-capture --dataset-id prod_v1 --capture prod_2026_10 \
+    --map outcomes.yaml --set prod_outcomes                                              # labels from what happened
+evh dataset-split prod_v1 --test 0.3 --seed 7                                         # validation and test
+evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture prod_2026_11 \
+    --since-capture prod_2026_10                                                         # later: what came since
+```
+
+What came since makes the next dataset version; for newer outcomes of the records you hold, take a fresh capture
+of the same query and make a new label set from it (tutorial 6 §5).
+
+Labels are not reference sets: arms are scored against a label set as it is, and a reference set is labels promoted on
+purpose, at the tier chosen then. Production's own decisions become an arm (`evh arm-from-capture`), scored like any;
+`evh inspect --sheet --dataset-id prod_v1 --runs …` shows each item's outputs, scores, labels and signals (wrong,
+disagree, new) to pick the ones worth keeping (`evh pick`); `evh dataset-extend` makes the next version of a governed dataset from
+them; `evh deploy-sheet` says what production must match to run what you promoted, and whether a capture shows it
+did. Importers for
+JSONL, TSV, GitHub issues and Langfuse traces come with the harness, and `text: hidden` keeps a dataset's text off
+every public surface. Walkthrough: [tutorial 6](../docs/tutorials/6-datasets-from-production.md); reference:
+[RUNBOOK §15](docs/RUNBOOK.md#15-datasets-from-production-the-capture-lane); design:
+[RFC-019](../docs/rfc/RFC-019-datasets-from-production.md).
 
 ## Do you trust your reference?
 
@@ -231,7 +289,7 @@ and all of them are tried.
 
 Read the result against the **ceiling** it prints. Two runs of the same arms against the
 same gold do not rank identically either, so that retest correlation is the best any proxy
-could score. In the summarisation experiment's 24 hosted arms
+could score. In the summarisation eval's 24 hosted arms
 ([REPORT_SUMMARIZATION §3.5](../research/REPORT_SUMMARIZATION.md)): ceiling 0.92, silver
 authors −0.01–0.70 (mean 0.33).
 
@@ -270,7 +328,7 @@ how 18 arms of paid results were lost during this harness's own development.
 | **[CHANGELOG.md](CHANGELOG.md)** | what each release shipped, what can move a result |
 | **[RUNBOOK.md](docs/RUNBOOK.md)** | every command and flag, step by step, with the reasoning; environment variables and exit codes |
 | **[RELEASING.md](docs/RELEASING.md)** | pinning a release in your project, and cutting one: version, changelog, tag, GitHub Release |
-| **[SCENARIO.md](docs/SCENARIO.md)** | the newcomer scenario, a smoke test run when the newcomer's path changes: two experiments, real models, one CPU model, under $1 |
+| **[SCENARIO.md](docs/SCENARIO.md)** | the newcomer scenario, a smoke test run when the newcomer's path changes: two evals, real models, one CPU model, under $1 |
 | **[UPGRADING.md](docs/UPGRADING.md)** | from one release to the next (what can move a number), and for a copy of the harness taken before October 2026 |
 | **[CONCEPTS.md](docs/CONCEPTS.md)** | why each refusal exists, and the failure it prevents |
 
@@ -312,10 +370,10 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/dataset_create.py` | freeze a selection into a `dataset_id` |
 | `scripts/materialize.py` | build run inputs, verifying every hash |
 | `scripts/reference_create.py` | ground truth: a run's outputs as silver (`--from-run`), or authored with a config |
-| `scripts/experiment_run.py` | run an arm → scores, cost, speed, provenance |
+| `scripts/run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |
-| `scripts/validate_tree.py` | sixteen integrity checks (V1–V16) |
+| `scripts/validate_tree.py` | nineteen integrity checks (V1–V19) |
 | `scripts/list_runs.py` | what runs and baselines exist |
 | `schemas/` | the contracts: dataset, metrics (a run), baseline, config (an arm), goal, field set, judge scorer, judging set, verdict |
 | `scripts/_fields.py`, `scripts/_fetch.py` | item fields (types, checks, the catalog's summary) and items fetched from a pinned URL (ADR-0003) |

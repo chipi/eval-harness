@@ -1,6 +1,6 @@
 # BARTScore (Yuan et al. 2021), source->hypothesis: mean log-probability of each summary
 # given the article under facebook/bart-large-cnn, pinned to the revision the summarisation
-# experiment measured. Local, CPU.
+# eval measured. Local, CPU.
 config_id: se_bartscore_n100_v1
 dataset_id: summeval_100
 adapter: ../adapter.py

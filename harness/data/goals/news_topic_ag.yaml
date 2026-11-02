@@ -14,13 +14,13 @@ success_criteria:
     - {"name": "labelling convention", "rule": "The fine-tunes' lead is AG News's filing convention: against gold adjudicated by topic, every hosted LLM scores above every fine-tune. Read section 3.4 before choosing.", "source": "research/REPORT_CLASSIFICATION.md §3.4"}
     - {"name": "licence", "rule": "AG News is licensed `unknown`, for research and non-commercial use; bert_base_ta and bert_mini state no licence.", "source": "examples/classification-ag-news/README.md"}
 datasets:
-  - {dataset_id: ag_news_200, role: heldout, notes: first 50 per class from the first 1,600 test rows}
-  - {dataset_id: ag_news_20, decides: false, role: dev, notes: the pilot slice; all 20 of its items are in ag_news_200}
+  - {dataset_id: ag_news_200, role: test, notes: first 50 per class from the first 1,600 test rows}
+  - {dataset_id: ag_news_20, decides: false, role: pilot, notes: the pilot slice; all 20 of its items are in ag_news_200}
 references:
   - {reference_id: gold/ag_news_200, tier: gold, format: label}
   - {reference_id: gold/ag_news_200_adj1, tier: gold, format: label}
 measures:
   - {id: correct, kind: metric, validity: validated}
 links:
-  - {url: https://evals.humancopilot.eu/experiments/ag-news.html, note: the findings on the site}
+  - {url: https://evals.humancopilot.eu/evals/ag-news.html, note: the findings on the site}
   - {url: research/REPORT_CLASSIFICATION.md, note: the report}

@@ -5,6 +5,84 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.5.0 to 0.6.0
+
+Change the pin to `@v0.6.0`. Two formats change, and both are migrated by a script, never read in the old shape:
+
+- **Fingerprints are version 5** (RFC-021): `instrument`, `data`, `deployment`, `settings`, each hashed, and the
+  machine `evh` ran on as `runner`, outside the hash. A run made with 0.6.0 compares with a v4 run on no hash. Move
+  your committed runs once, from your project's root:
+  `evh fingerprint-migrate` (`--dry-run` counts first; it is idempotent and prints its counts; a
+  baseline's `fingerprint_hash` follows its run). Code that read `fingerprint.host` reads `fingerprint.runner`;
+  `fingerprint.system_under_test.model` is `fingerprint.deployment` (an adapter's `fingerprint(params)` hook keeps
+  its vocabulary; what it declares about the prompt is now `settings.declared`).
+- **`data/models.yaml` is replaced by `data/models/<model_id>.yaml`** (RFC-020): one record per model, its key in
+  the old file the record's alias. Write a record per entry (`model_id`, `kind`, `aliases`, `weights`,
+  `licence`) and delete the file; `validate` (V1, V18) checks them.
+
+**Reference sets are labels you promote** (RFC-023, ADR-0022). `reference-create` and `reference-from-outcomes` are
+removed. A run's outputs become a model's labels (`evh label-from-run`: the same refusals, and `--not-redistributed`),
+a sheet or a folder of answers a person's (`evh label-sheet`, `evh label-import`), a capture's outcomes a `rule` set
+(`evh label-from-capture`, the same rule language); `evh reference-promote` makes a reference of a set, at the tier
+you choose, with a reason and who promoted it. A reference made before has no `promoted_from` and fails `validate`
+(V1, V16) until it records one: `harness/tools/migrate_references_to_labels.py`, run from a checkout, records how each
+was made and copies its texts into a label set, no run's score or hash moving. A reference made from outcomes has no rule of its own any
+more: promoted, it is a silver like any (with gold beside it, gold still decides).
+
+Renamed to the field's words, with no alias (the old names stop working):
+
+- **The command `experiment-run` is `evh run`**, and its make target `make run` (was `experiment-run`). What 0.5.0 called an experiment
+  is an eval; the site's `experiments.html` redirects to `evals.html`.
+- **The paired test's verdict is `significant: better`, `significant: worse` or `not significant`** (was
+  `separated: …` and `not separated`), in `evh` output, the catalog, the inspector and the site; `pair-test`
+  prints `SIGNIFICANT` or `NOT-SIGNIFICANT`, `family_test` and `bootstrap_test` `SIGNIFICANT`. A script that
+  matched the old strings matches the new ones.
+- **A goal's arms that may win the tie-break are its contenders**: the decision's key is `contenders` (was
+  `tied`), and `evh arms --quality contender|below` (was `ties|below`).
+
+A goal's dataset `role:` is free text and keeps whatever you wrote; the docs now say validation, test and pilot
+(were dev and heldout).
+
+Seven behaviours change without a migration:
+
+- **The `--items` flag of `evh inspect` is gone**, replaced by the sheet: `evh inspect --sheet --dataset-id D --runs A,B`
+  shows every item's scores per arm, beside what each wrote, the labels and the winner (`--scores-only` for the
+  scores alone). A script that parsed `--items` reads `--sheet --csv FILE` instead.
+
+- **A reference folder with no manifest fails `validate` (V16).** Texts copied into `data/references/<tier>/<id>/`
+  by hand said nothing of where they came from, and runs scored against them as if promoted. Import them as a
+  person's labels where they are and promote them (`evh label-import data/references/<tier>/<id> --dataset-id D
+  --set S --by WHO`, then `evh reference-promote … --tier … --reason …`): the promotion adopts the folder, its
+  texts being the labels', so no run's reference moves.
+- **`evh reference-manifest` is a promotion too**: it takes `--labelled-by` (whose labels a script builds),
+  `--reason` and `--by`, and records them as `promoted_from` with the reason; a call without them is refused.
+- **Each project serves on a port of its own**: `catalog-serve` on one in 18000–18999 and `mcp --http` on one in
+  19000–19999, the same every time for a project's folder, the next free one if taken (`--port` overrides;
+  `catalog-serve --public` keeps 8765). Bookmarks of 127.0.0.1:8765 move; the command prints the address.
+
+- **The local catalog reads only what git keeps.** A `data/runs-*` directory your `.gitignore` ignores is no
+  longer shown, as it was never in a clone or the published catalog. Runs you meant to keep: re-allow the
+  directory in `.gitignore` and commit them, or move them into `data/runs`.
+- **`evh run` and `rescore` warn** when they write to a directory git ignores or outside the project's
+  data (throwaway `data/runs-smoke*` and `data/runs-tune*` stay silent), and `validate` notes one that holds
+  finished runs.
+- **`evh rescore` writes to one designated place**, `data/runs-rescored/<scorer>/<source>/`, unless `--out` names
+  another; the catalog, the goals and the rounds read an arm from its latest re-score there.
+
+Everything else is added and optional: the capture lane (`evh capture`, `importer-check`, `captures`,
+`capture-scrub`, `dataset-from-capture`, `dataset-split`, `text: hidden`; RFC-019); evaluating what production did
+(`evh labels`, a label accepting more than one answer, `{"accept": [...]}`, read by `answers(reference)` from
+`evaluation_harness.adapter`, scoring against a label set with `--labels`, `evh arm-from-capture`, `inspect --disagree` and
+the sheet (`inspect --sheet`, `--csv`, `--fill`, read back by `evh sheet-import`), `evh pick`, `evh picks`,
+`evh dataset-extend`, `evh deploy-sheet`; the catalog's Labels page; an adapter's optional `same(a, b)`,
+`decision(output)`, `title(item)`, `recorded_output(record)` and `production_ran(record)`; RFC-023); judging modes (a scorer's
+`mode: pick` or `pairwise`, validated in that mode; RFC-005) and an adapter's optional `primary_metric(params)`;
+model onboarding (`evh model-onboard`, `evh arm-smoke`, `evh models`, `model_record:` and `deployment:` in a
+config; RFC-020); scoring that evolves (`evh score-preview`, `evh rescore --goal --round --why`,
+`round-open --keep all --scoring` and `--adopt`, a goal axis's `limit: baseline`; RFC-022); `call_timeout_s` for
+the built-in providers. `evh init`'s `.gitignore` now ignores `data/runs-smoke*/` and `data/runs-tune*/`; add the
+two lines to an existing project's to keep scratch runs out of git.
+
 ## From 0.4.4 to 0.5.0
 
 Change the pin to `@v0.5.0`. No record, hash or p-value moves. Three things to check first:
@@ -177,15 +255,16 @@ so check these before you trust a `validate`:
   exist (`pages=True` parameter).
 - **Goals** (`data/goals/<goal_id>.yaml`, `goal:` on configs, validate V14). Nothing is
   required of an upgrading project until it sets `required_from` in `data/goals/policy.yaml`.
-- **Experiment rounds** (`evh round-open`, `evh round-retire`, `evh round-close`, `evh rounds`;
+- **Eval rounds** (`evh round-open`, `evh round-retire`, `evh round-close`, `evh rounds`;
   `round: rN` on configs; validate V14). `--round rN` on `leaderboard`, `family-test`,
   `pair-test` and `inspect`: `inspect --round` and `pair-test --round` default to the goal's
   measure and the round's leader (`pair-test`'s B: the baseline the round started from). A
   project that never opens a round sees none of it
   ([tutorial 4](https://evals.humancopilot.eu/docs/tutorials/4-rounds-and-versions/)).
-- **A run becomes a reference:** `evh reference-create --from-run <run_id>` copies a finished
-  run's outputs and calls nothing; the reference records the run. `reference-create` now refuses
-  an empty output and outputs that stopped at `max_tokens`, by either path (`--allow-cut-off`).
+- **A run becomes a reference:** `reference-create --from-run <run_id>` copied a finished
+  run's outputs and called nothing; the reference recorded the run, and it refused an empty output and
+  outputs that stopped at `max_tokens` (`--allow-cut-off`). (Removed in 0.6.0: `evh label-from-run`, then
+  `evh reference-promote`.)
 - **Dataset versions keep their lineage:** `evh dataset-create --dataset-id x_v2 --from x_v1`
   (`derived_from` in the dataset file; validate V2).
 - **Item fields and URL items** (`data/fields/<fieldset_id>.yaml`, `dataset-create --fieldset
@@ -254,7 +333,7 @@ runs after upgrading. Re-scoring from stored outputs costs nothing.
 
 | if you… | the bug | fixed in |
 |---|---|---|
-| used `pair_test --family N` and called it Holm | it was **Bonferroni labelled as Holm** (more conservative, so some real separations were reported as ties). `family_test.py` now does the genuine step-down; `pair_test` says what it does | `a57d778b` |
+| used `pair_test --family N` and called it Holm | it was **Bonferroni labelled as Holm** (more conservative, so some real significant differences were reported as not significant). `family_test.py` now does the genuine step-down; `pair_test` says what it does | `a57d778b` |
 | had a run crash or stop mid-sweep | **every paid item before the crash was lost**: outputs reached disk only after the pass. Now each output is written as it arrives | `c6e8365f` |
 | resumed a run (`--resume`) | a fully resumed run **wrote empty scores and reported success**; replayed items lost their cost, tokens and diagnostics (a resumed run under-reported spend: $0.03 for $0.05 real); `--resume` **accepted another arm's outputs** without complaint | `c6e8365f`, `897c0bbc`, `3f16a79b` |
 | ran out of disk, or killed a run | writes were not atomic, so a **half-written output was replayed as the model's answer** and scored | `8e98a885` |
@@ -297,7 +376,7 @@ runs after upgrading. Re-scoring from stored outputs costs nothing.
 | `make family-test DATASET_ID=… A=… AGAINST=…` | one arm against a declared family, genuine Holm, with a result cache |
 | `make leaderboard` | Friedman permutation test and Nemenyi critical difference before it prints an order |
 | `make rank-stability` | how many items a ranking needs, measured by splitting into disjoint halves |
-| `make holdout` | tune on a dev slice, confirm on the held-out rest |
+| `make holdout` | tune on a pilot slice, confirm on the held-out rest |
 | `make bootstrap-test` | intervals for corpus-level metrics (with the caveat that it is anti-conservative) |
 | `make cost-report` | billed cost and projections per arm |
 | `make validate` / `make check` | schema and tree validation that exits non-zero, for CI |
@@ -306,7 +385,7 @@ runs after upgrading. Re-scoring from stored outputs costs nothing.
 
 ### 4. What not to copy
 
-These exist for this repository's public showcase and assume its six experiments, its
+These exist for this repository's public showcase and assume its six evals, its
 reports and its site: `check_report_claims.py`, `check_model_facts.py`,
 `check_terminology.py`, `check_links.py`, `summeval_analysis.py`, the per-task
 `*_report.py` scripts, and the `site`/`docs` Makefile targets. Copy a report script only if

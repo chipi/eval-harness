@@ -16,7 +16,7 @@ local-news briefs. Your items can be anything text-shaped. Nothing here is run b
 ```bash
 mkdir briefs-evals && cd briefs-evals && git init -q
 python3 -m venv .venv && . .venv/bin/activate
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.5.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.0#subdirectory=harness"
 evh init
 # your system's own libraries: a CPU build of torch, the model's, and the metric's
 pip install torch --index-url https://download.pytorch.org/whl/cpu
@@ -26,15 +26,19 @@ pip install transformers sentencepiece rouge-score
 ## 1. Items, and gold if you have it
 
 Put one item per file under `data/sources/briefs/`, and, if a person has written the answer for
-each, one `<item_id>.txt` per item under `data/references/gold/briefs_v1/` (the item id is the
-file name without `.txt`). Twenty items is enough to learn something; write them yourself if
-nothing can be fetched or licensed. No gold yet?
+each, one `<item_id>.txt` per item in a folder of its own, say `data/sources/briefs_gold/` (the
+item id is the file name without `.txt`). Twenty items is enough to learn something; write them
+yourself if nothing can be fetched or licensed. The answers become a person's labels, and you
+promote them to gold, with why: a reference set is only ever labels promoted on purpose. No gold yet?
 [Tutorial 3](3-frontier-reference-and-judging.md) makes silver from a frontier model's run.
 
 <!-- guide-check: skip -->
 ```bash
 evh dataset-create --dataset-id briefs_v1 --source-dir data/sources/briefs --glob "*.txt"
 evh dataset-materialize --dataset-id briefs_v1
+evh label-import data/sources/briefs_gold --dataset-id briefs_v1 --set my_gold --by me
+evh reference-promote --dataset-id briefs_v1 --labels my_gold --tier gold \
+    --reason "My own summaries are what the arms are judged by." --by me
 ```
 
 ## 2. Your adapter
@@ -121,7 +125,7 @@ makes some. `PRIMARY_METRIC` is the metric that decides; `METRIC_DESCRIPTIONS` s
 catalog's metrics page. The harness times every call (`latency_ms`); `warmup(params)`, optional,
 runs once before the first item so a model's loading time is not counted as the first call's.
 The two `transformers.logging` lines keep the library's progress bar and warnings (flan-t5's
-"The tied weights mapping ... will NOT tie them") out of what `experiment-run` prints; they are
+"The tied weights mapping ... will NOT tie them") out of what `evh run` prints; they are
 your system's output, not the harness's. The first download from the Hugging Face Hub draws
 bars of its own: `HF_HUB_DISABLE_PROGRESS_BARS=1` in `.env` turns those off. (Checked with
 transformers 5.20.2 and huggingface_hub 2.3.0.)
@@ -170,9 +174,9 @@ with its answer. Every field and its allowed values (`output_contract`, `dataset
 <!-- guide-check: skip -->
 ```bash
 git add -A && git commit -qm "briefs_v1: dataset, gold, adapter, arms"
-evh experiment-run --config data/configs/briefs_lead1.yaml
-evh experiment-run --config data/configs/briefs_t5_small.yaml --repeat 3
-evh experiment-run --config data/configs/briefs_flan_t5_small.yaml --repeat 3
+evh run --config data/configs/briefs_lead1.yaml
+evh run --config data/configs/briefs_t5_small.yaml --repeat 3
+evh run --config data/configs/briefs_flan_t5_small.yaml --repeat 3
 evh leaderboard --dataset-id briefs_v1
 ```
 
@@ -180,7 +184,8 @@ Without sampling (`do_sample=False`) a local model on one machine usually gives 
 every time; the three repeats check that instead of assuming it (a `rouge_l` spread of 0 means
 every delta is real). Its `latency_ms` has a spread, and depends on the machine:
 set `EVAL_HOST_LABEL` in `.env` to name the machine, so latency is compared only where it was
-measured alike (the inspector warns when it is not).
+measured alike (the inspector warns when it is not). A model that runs in the harness's own process
+runs on the runner, so the runner's name and libraries are its deployment's too.
 
 ## 5. Compare, and choose
 
@@ -199,7 +204,7 @@ three runs: promote any one of them (`_r1` will do). The baseline records that r
 under `repeats`, all three and their mean, which is what the catalog, the inspector and the tests
 read; `run-promote` prints the two side by side. The leading sentence of a news
 brief is a strong baseline: in the scenario, on twenty briefs, the first sentence was not
-separated from the leading hosted LLM, and both small models were separated below that LLM. Find
+significantly different from the leading hosted LLM, and both small models were significantly below that LLM. Find
 out which holds on your items before paying for a model.
 
 Next: [tutorial 2](2-hosted-llm.md) adds a hosted LLM to the same comparison, and

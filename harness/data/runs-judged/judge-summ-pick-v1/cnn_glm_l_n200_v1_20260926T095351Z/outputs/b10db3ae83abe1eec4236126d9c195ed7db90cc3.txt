@@ -1,0 +1,13 @@
+The user wants a 2-3 sentence news wire style summary of this article. Key facts:
+
+- Shibuya ward in Tokyo passed an ordinance paving the way for "partnership certificates" for same-sex couples
+- Certificates allow some rights like hospital visitation and co-signing tenancy agreements
+- Not legally binding, not full marriage; national law needed for full equality
+- First such move in Japan; Setagaya ward may follow
+- Certificates to be issued later in summer
+
+Terse news wire style. Let me draft:
+
+"Tokyo's Shibuya ward passed an ordinance Wednesday paving the way for Japan's first same-sex 'partnership certificates,' granting couples limited rights such as hospital visitation and co-signing tenancy agreements. The certificates, to be issued this summer, are not legally binding and fall short of marriage, but activists hailed the move as a first step toward marriage equality. Neighboring Setagaya ward has indicated it may follow suit, though full equality would require national legislation."
+
+That's three sentences, terse, wire-styleTokyo's Shibuya ward passed an ordinance Wednesday paving the way for Japan's first same-sex "partnership certificates," granting couples limited rights such as hospital visitation and co-signing tenancy agreements. The certificates, to be issued this summer, are not legally binding and fall short of marriage, but activists called the move a significant first step toward marriage equality. Neighboring Setagaya ward has indicated it may follow suit, though full equality would require national legislation.

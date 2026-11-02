@@ -1,0 +1,164 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "045ce221b383a3dd047b5de8d2a0a9d3848338cb",
+    "source": "git"
+  },
+  "config_id": "triage_haiku_55_v1",
+  "created_at": "2026-10-31T13:23:23Z",
+  "dataset_id": "orrery_triage_v1_labelled",
+  "derived": {
+    "at": "2026-10-31T13:23:23Z",
+    "from": "triage_haiku_55_v1_20261030T135822Z_r2",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/triage-fleet/adapter.py",
+      "sha256": "77adc97b06a85e2dbb89100c1d2121c34b22f6194a4655d6fcf937427da492af"
+    }
+  },
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_haiku_55_v1",
+      "labels": {
+        "usd_per_mtok_in": 0.1,
+        "usd_per_mtok_out": 0.5
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled",
+      "items_sha256": "d428aca49adc8e762dcbbcad6c9a1dba1ac4e4e3315ff26025af975faba1176a",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled",
+      "reference_tier": "gold",
+      "references_sha256": "f617ad3bb9bb9f5feb8ffe54e0ef1b9b05dfb316fac13f63a925f9d35fb191cd"
+    },
+    "data_sha256": "c3061a4a7aa904ed81ad3d35063b140c1456f89affc2d85924308ef94fe47205",
+    "deployment": {
+      "declared": {
+        "fleet_code_sha256": "248e25030011aab82f5798eeb7c74fd03f2d7cfd04866b8b017d3740663727d9",
+        "fleet_commit": "f07efa9"
+      },
+      "hosted": {
+        "provider": "gateway",
+        "provider_id": null,
+        "route": null
+      },
+      "id": "eval-claude-haiku-55",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-claude-haiku-55",
+      "provider": "gateway",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "3e18e0b860ea9704f5aa92445f03b6c3295467f09aa6901bec6e4787fac1d884",
+    "hash": null,
+    "hash_invalid_because": "scores were recomputed by a different scorer than the one this fingerprint was built from; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "77adc97b06a85e2dbb89100c1d2121c34b22f6194a4655d6fcf937427da492af"
+      },
+      "harness": {
+        "code_sha256": "0ab386969208f46c7448153422d5a5ab07833d963869b69fc216a6cd28feb110",
+        "commit": "045ce221b383",
+        "dirty": false,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "instrument_sha256": "47f881b113977a8475985ff5785b65bcc6b5ffc35d5fe03105d6dbe6eda8fb64",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "declared": {
+        "prompt_sha256": "77f26d87ad9f4d117cd1cbdbd5be9bbb5fcd9666294055c37376fe6938bd1131"
+      }
+    },
+    "settings_sha256": "cb112319a55187ab7f0a7b1b310f901d796aa0711f9eca2a777f7ac55f28d74c",
+    "version": 5
+  },
+  "goal": "triage_orrery",
+  "metric_directions": {
+    "deferred": "lower",
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "model_triage_cost": "lower",
+    "no_decision": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower",
+    "triage_cost": "lower",
+    "triage_cost_p10": "lower",
+    "triage_cost_p3": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 65,
+  "params": {
+    "model": "eval-claude-haiku-55",
+    "provider": "gateway",
+    "usd_per_mtok_in": 0.1,
+    "usd_per_mtok_out": 0.5
+  },
+  "primary_metric": "triage_cost",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "repeat_index": 2,
+  "run_id": "triage_haiku_55_v1_20261030T135822Z_r2",
+  "scores": {
+    "correct": 0.6307692308,
+    "cost_usd": 0.0010077231,
+    "escalated": 0.1846153846,
+    "false_alarm": 0.6129032258,
+    "false_dismiss": 0.1176470588,
+    "latency_ms": 7375.643966347,
+    "model_correct": 0.6153846154,
+    "model_escalated": 0.0,
+    "model_false_alarm": 0.4516129032,
+    "model_false_dismiss": 0.3235294118,
+    "model_triage_cost": 1.0615384615,
+    "n_probes": 1.2923076923,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 4631.1538461538,
+    "tokens_out": 1089.2153846154,
+    "total_cost_usd": 0.065502,
+    "total_tokens_in": 301025.0,
+    "total_tokens_out": 70799.0,
+    "triage_cost": 0.6,
+    "triage_cost_p10": 0.9076923077,
+    "triage_cost_p3": 0.4769230769
+  },
+  "source_created_at": "2026-10-30T14:15:29Z"
+}

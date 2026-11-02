@@ -68,7 +68,12 @@ runs when it starts, so after a new run, stop it and start it again.
 | a dataset page: its versions, references and every arm with its headline number | `evh datasets --dataset-id tickets_v1` |
 | a dataset page's "what's inside": its items, their lengths and gold, each item's link | `evh dataset-items --dataset-id tickets_v1` (after `evh dataset-profile --dataset-id tickets_v1`) |
 | an arm page: its metrics, runs, config, conditions, rounds | `evh arms --arm tickets_lead1_v1` |
-| a reference page: who wrote it, from which run, every arm scored against it | `evh references --reference-id silver/tickets_v1` |
+| a reference set's page: its tier, the label set it was promoted from, by whom and why, every arm scored against it | `evh references --reference-id silver/tickets_v1` |
+| the labels page, and a dataset page's labels: every label set with its source (person, model, rule), its coverage, what it was promoted to, how often two agree | `evh labels`, `evh labels --dataset-id tickets_v1` |
+| the captures page: what was read from production, when, and the datasets and recorded arm made from it ([tutorial 6](6-datasets-from-production.md)) | `evh captures` |
+| a dataset page's "Open its sheet": its items down, a column per arm (what it wrote, its scores), the labels, the winner per item, the signals (wrong, disagree, split, new, unlabelled), and a footer per arm | `evh inspect --sheet --dataset-id tickets_v1 --runs tickets_lead1_v1,tickets_lead2_v1` |
+| a dataset page's picks waiting, and the command the ticked boxes give | `evh picks` |
+| a goal page's deploy sheet: what production must match to run the promoted arm, and whether a capture shows it did | `evh deploy-sheet --config tickets_lead2_v1` |
 | the metrics page: what each metric measures, which way is better, where it is recorded | `evh metrics` |
 | a metric page: what it measures, its kind, the goals it decides, per-dataset strip chart | `evh metrics --metric overlap_f1` |
 | the search box on every catalog page | `evh search lead2` |
@@ -78,7 +83,6 @@ runs when it starts, so after a new run, stop it and start it again.
 | a goal page's inspect button on a round: its arms against its leader ([tutorial 4](4-rounds-and-versions.md)) | `evh inspect --round r2` |
 | the inspector: arms tested against a baseline, and whether they ran under the same conditions | `evh inspect --runs tickets_lead1_v1,tickets_lead2_v1` |
 | the inspector, filtered by a field, or broken down by one | `--where area:account`, `--by deadline` |
-| the inspector's per-item table: every item's score per arm, and its Δ against the baseline | `--items` |
 | the inspector's analysis charts, as numbers: the spread per arm, the difference from the baseline, each arm's mean against a second metric | `--analysis`, `--analysis --x latency_ms` |
 | the inspector, one item: the item itself, its fields, each arm's output beside the reference | `--item t01_login` |
 
@@ -87,7 +91,7 @@ which writes) is an MCP tool: `evh mcp`
 serves them, and the agent gets
 the same numbers you do: the command's own output, its JSON where it has one. In Claude Code, in
 this project, `claude mcp add evh -- evh mcp`; then ask it, say, *"which tickets summariser does
-the goal recommend, and is it separated from the baseline?"*, and it calls `goals` and `inspect`.
+the goal recommend, and is it significantly better than the baseline?"*, and it calls `goals` and `inspect`.
 No tool writes your project, spends or runs a model (the one file a call keeps is a cache of the
 goals' tests, in the ignored `.cache/`). Other clients, and a shared server for a team:
 [INTEGRATION](../../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp).
@@ -103,7 +107,7 @@ evh goals --goal tickets_summary
 
 the answer so far:
   ...
-tickets_v1 · dev
+tickets_v1 · validation
 
   scored against silver/tickets_v1
   ...
@@ -128,8 +132,8 @@ Each group also says what the goal recommends, and why. Beside quality, every go
 (dollars and tokens per item) and speed (latency p50 and p95): a column each, and a chart of
 quality against each. The rule ([ADR-0006](../adr/ADR-0006-goal-axes-and-strategies.md)): an
 arm past a limit is out; a flagged or retired arm is never recommended; the goal's strategy
-says who is tied with the quality leader (by default `balanced`: not separated by the paired
-test and within 2% of it); among the tied, the cheaper wins, then the faster. The reasons
+says who the contenders are beside the quality leader (by default `balanced`: not significantly
+different by the paired test and within 2% of it); among the contenders, the cheaper wins, then the faster. The reasons
 list each step, so the page says why it recommends what it does. A goal changes the rule in its
 `success_criteria`:
 
@@ -138,7 +142,7 @@ success_criteria:
   primary: {measure: overlap_f1, direction: higher}
   axes:
     speed: {limit: 500}                 # ms, on the p95: a slower arm is out
-    quality: {margin: 0.05}             # tied if within 0.05 and not separated
+    quality: {margin: 0.05}             # a contender if within 0.05 and not significantly different
   strategy: balanced                    # or quality_first, or frugal
   tie_break: [cost, speed]
   guardrails:
@@ -172,7 +176,7 @@ evh inspect --runs tickets_lead1_v1,tickets_lead2_v1
 ```text
 overlap_f1 (higher is better) · baseline tickets_lead1_v1 ×3: mean 0.641 · Holm across 1
   ...
-  tickets_lead2_v1 ×3  separated: better  6  0.900  0.259  +0.140 to +0.423  6–0          0.0312  0.0500
+  tickets_lead2_v1 ×3  significant: better  6  0.900  0.259  +0.140 to +0.423  6–0          0.0312  0.0500
 
 Same conditions: all ... recorded fields match (machine, libraries, harness, scorer, items, reference bytes).
 ```
@@ -185,9 +189,10 @@ against 0.0327); `family-test` says which kind of p it printed. Every p is print
 decimals, and `<0.0001` for what would print as 0.0000. `wins–losses` is each row's arm against
 the baseline; `family-test`'s column is `A wins`, the items its A wins against each opponent. The
 last line compares
-the runs' fingerprints: the machine, library versions, the harness, the scorer, the items and
-the reference's bytes. When they differ it names the fields, arm by arm, and warns when the
-scorer or the reference differs (different measurements) or latency is compared across machines.
+the runs' fingerprints: the deployment (where the model ran), the runner (where `evh` ran) and its
+libraries, the harness, the scorer, the items and the reference's bytes. When they differ it names
+the fields, arm by arm, and warns when the scorer or the reference differs (different measurements),
+or when latency is compared across deployments or measured from different runners.
 
 **Fields in a comparison.** Filter it to the tickets whose field matches, or break it down by a
 choice or yes/no field: the paired test within each group, Holm-corrected over every group
@@ -201,27 +206,21 @@ NOTE: Broken down by deadline: 2 tests, Holm-corrected together, so a group is h
   ...
 by deadline (Holm across 2):
   deadline  run vs baseline      verdict        n  Δ      p
-  true      tickets_lead2_v1 ×3  not separated  2  0.285  0.5000
-  false     tickets_lead2_v1 ×3  not separated  4  0.246  0.1250
+  true      tickets_lead2_v1 ×3  not significant  2  0.285  0.5000
+  false     tickets_lead2_v1 ×3  not significant  4  0.246  0.1250
 ```
 
 Two tickets name a deadline and four do not, and on two tickets no test can reach 0.05: a
 breakdown needs items in every group, and the page says when it has too few.
 
-**Item by item, and the charts as numbers.** `--items` is the inspector's per-item table, and
-`--analysis` its charts (`--x` adds each arm's mean on a second metric, the scatter):
+**The charts as numbers.** `--analysis` prints the inspector's charts (`--x` adds each arm's mean on a second
+metric, the scatter):
 
 ```bash
-evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --items
 evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --analysis --x latency_ms
 ```
 <!-- guide-check: varies latency_ms -->
 ```text
-per item (overlap_f1; Δ is each arm minus the baseline):
-  item         tickets_lead1_v1 ×3  tickets_lead2_v1 ×3  Δ tickets_lead2_v1 ×3
-  t01_login    0.450                0.873                +0.423
-  t02_invoice  0.457                0.851                +0.394
-  ...
 spread per run (overlap_f1, one line per arm):
   arm                  mean   spread over the items
   tickets_lead1_v1 ×3  0.641  min 0.450  p25 0.498  median 0.687  p75 0.766  max 0.795
@@ -259,6 +258,31 @@ evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --item t01_login
 Customer reports they cannot log in since this morning.
 ```
 
+**The sheet**, every ticket down and a column per arm across: what each wrote and every score it has on that
+ticket, the labels and references, the winner per ticket, and a footer per arm (its mean, its win rate, its
+verdict):
+
+```bash
+evh inspect --sheet --dataset-id tickets_v1 --runs tickets_lead1_v1,tickets_lead2_v1
+```
+```text
+tickets_v1: 6 of 6 item(s) · disagree 6 · read on overlap_f1 (higher is better)
+  ...
+per run, over the 6 row(s) shown:
+  ...
+  mean overlap_f1 (higher is better)             0.641                                           0.900
+  win rate · winner: overlap_f1                  0.000                                           1.000
+  verdict (the goal tickets_summary's decision)  not a contender: significant: worse (p 0.0312)  leader, recommended
+  ...
+```
+
+The winner per ticket is the best arm on the metric the sheet is read on (`--metric`, else the goal's measure,
+else the arms' primary), and the verdict is the goal's decision when a goal names the dataset, else the paired
+test against the leader. `--scores-only` leaves the outputs out; `--csv sheet.csv` writes the same sheet for a
+spreadsheet, and `--fill label`, `pick` or `scores` adds the columns to fill there, which `evh sheet-import`
+reads back ([tutorial 6](6-datasets-from-production.md)). The inspector shows the same sheet, from the dataset
+page's "Open its sheet".
+
 ## 4. What the pages show, and what they refuse
 
 - **The catalog** is static pages: a home dashboard with counts, goals at a glance, activity and
@@ -268,8 +292,8 @@ Customer reports they cannot log in since this morning.
   page counts the arms and the configs behind them: an arm is one config on one dataset scored
   one way, so a config rescored against silver or judged is an arm of its own ("N arms on M
   datasets, from K configs"; `evh datasets` has a `configs` column). Each arm's row says what it is scored
-  against; rows scored against silver, by a judge, or against the reference the arm wrote itself
-  are tinted. The dataset page (and `evh datasets --dataset-id`) sorts its arms by what they are
+  against; rows scored against silver, by a judge, against a label set (not a reference), or against
+  the reference the arm wrote itself are tinted. The dataset page (and `evh datasets --dataset-id`) sorts its arms by what they are
   scored against first, gold, then silver, then each judge, then none, and only then by metric
   and mean, so a silver mean and a gold one never interleave. Counts and means only, never an
   item's text, so the pages can be published. The dataset page lists its fields and how many

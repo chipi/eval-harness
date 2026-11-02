@@ -97,7 +97,7 @@ def main() -> int:
         setup(
             "dataset-create",
             "--dataset-id",
-            "tickets_dev_v1",
+            "tickets_pilot_v1",
             "--source-dir",
             "tutorial/tickets",
             "--limit",
@@ -106,9 +106,36 @@ def main() -> int:
         setup("dataset-materialize", "--dataset-id", "tickets_v1")
         for f in (proj / "tutorial/configs").glob("tickets_*.yaml"):
             shutil.copy(f, proj / "data/configs/")
-        shutil.copytree(proj / "tutorial/gold", proj / "data/references/gold/tickets_v1")
+        setup(
+            "label-import",
+            "tutorial/gold",
+            "--dataset-id",
+            "tickets_v1",
+            "--set",
+            "owner_gold",
+            "--by",
+            "owner",
+        )
+        setup(
+            "reference-promote",
+            "--dataset-id",
+            "tickets_v1",
+            "--labels",
+            "owner_gold",
+            "--tier",
+            "gold",
+            "--reason",
+            "The kit's hand-written summaries decide.",
+            "--by",
+            "owner",
+        )
+        # gold a script builds, for reference-manifest below: the texts where a fetch script would put them
+        fetched = proj / "data/references/gold/tickets_pilot_v1"
+        fetched.mkdir(parents=True)
+        for f in sorted((proj / "tutorial/gold").glob("*.txt"))[:2]:
+            shutil.copy(f, fetched / f.name)
         for arm in ("lead1", "lead2", "lead2_noisy", "author"):
-            setup("experiment-run", "--config", f"data/configs/tickets_{arm}.yaml", "--repeat", "2")
+            setup("run", "--config", f"data/configs/tickets_{arm}.yaml", "--repeat", "2")
         shutil.copytree(proj / "tutorial/scorers", proj / "data/scorers")
         run_id = sorted(p.name for p in (proj / "data/runs").glob("tickets_lead2_v1_*"))[0]
         base_id = sorted(p.name for p in (proj / "data/runs").glob("tickets_lead1_v1_*"))[0]
@@ -138,22 +165,24 @@ def main() -> int:
             ("dataset-materialize", ["--dataset-id", "tickets_v1"], "ok"),
             ("dataset-profile", ["--dataset-id", "tickets_v1"], "ok:tickets_v1: 6 items"),
             ("dataset-items", ["--dataset-id", "tickets_v1"], "ok:6 items"),
-            (
-                "reference-create",
-                ["--dataset-id", "tickets_v1", "--config", "data/configs/tickets_author.yaml"],
-                "ok",
-            ),
-            (
-                "reference-create",
-                ["--dataset-id", "tickets_v1", "--from-run", run_id, "--force"],
-                "ok:no calls",
-            ),
+            ("label-from-run", ["--run", run_id, "--set", "installed_from_run"], "ok:label(s), source model"),
             (
                 "reference-manifest",
-                ["--reference-id", "gold/tickets_v1", "--source", "tutorial/gold"],
-                "ok:6 item(s), tier=gold",
+                [
+                    "--reference-id",
+                    "gold/tickets_pilot_v1",
+                    "--source",
+                    "tutorial/gold",
+                    "--labelled-by",
+                    "the kit's author",
+                    "--reason",
+                    "the kit's own answers decide",
+                    "--by",
+                    "owner",
+                ],
+                "ok:2 item(s), gold, promoted from person",
             ),
-            ("experiment-run", ["--config", "data/configs/tickets_lead1.yaml", "--dry-run"], "ok"),
+            ("run", ["--config", "data/configs/tickets_lead1.yaml", "--dry-run"], "ok"),
             (
                 "sweep",
                 [
@@ -202,7 +231,7 @@ def main() -> int:
                 ["--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--against", "tickets_"],
                 "for classification",
             ),
-            ("holdout", ["--dataset-id", "tickets_v1", "--exclude-dataset", "tickets_dev_v1"], "ok"),
+            ("holdout", ["--dataset-id", "tickets_v1", "--exclude-dataset", "tickets_pilot_v1"], "ok"),
             ("rank-stability", ["--dataset-id", "tickets_v1"], "too few"),
             (
                 "import-run",
@@ -224,6 +253,87 @@ def main() -> int:
                 ],
                 "ok",
             ),
+            # The capture lane (RFC-019), on the same scores file read as records.
+            (
+                "importer-check",
+                ["jsonl", "--query", '{"path": "imported.jsonl", "id": "item_id"}'],
+                "ok:PASS",
+            ),
+            (
+                "capture",
+                [
+                    "--importer",
+                    "jsonl",
+                    "--query",
+                    '{"path": "imported.jsonl", "id": "item_id"}',
+                    "--capture",
+                    "c1",
+                ],
+                "ok:record(s) from jsonl",
+            ),
+            ("capture-scrub", ["c1", "--command", "true {records}"], "ok:0 of"),
+            ("dataset-split", ["tickets_v1", "--test", "0.5", "--seed", "3"], "ok:tickets_v1_test"),
+            ("captures", ["--capture", "c1"], "ok:c1:"),
+            ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
+            # Labels (RFC-023): installed and reading their arguments; the flow is tests/test_label_sets.py.
+            ("labels", [], "ok:tickets_v1/installed_from_run: model"),
+            (
+                "label-sheet",
+                ["--dataset-id", "tickets_v1", "--items", "all", "--out", "installed_sheet.csv"],
+                "ok:to label",
+            ),
+            (
+                "label-import",
+                ["installed_sheet.csv", "--dataset-id", "tickets_v1", "--set", "installed_v1", "--by", "t"],
+                "no labels",
+            ),
+            (
+                "sheet-import",
+                ["installed_sheet.csv", "--dataset-id", "tickets_v1", "--by", "t", "--set", "installed_v2"],
+                "nothing filled",
+            ),
+            ("label-from-run", ["--run", "no_such_run", "--set", "installed_v1"], "no finished run"),
+            ("picks", [], "ok:No picks waiting"),
+            ("deploy-sheet", ["--config", "no_such_v1"], "no run of that config"),
+            ("pick", ["--dataset-id", "tickets_v1", "--item", "no_such_item"], "not in tickets_v1"),
+            ("dataset-extend", ["tickets_v1", "--dataset-id", "tickets_v9", "--picks"], "no pick is waiting"),
+            (
+                "arm-from-capture",
+                ["--dataset-id", "captured_v1", "--capture", "no_such_capture", "--as", "installed_rec_v1"],
+                "no capture no_such_capture",
+            ),
+            (
+                "reference-promote",
+                [
+                    "--dataset-id",
+                    "tickets_v1",
+                    "--labels",
+                    "no_such_set",
+                    "--tier",
+                    "silver",
+                    "--name",
+                    "installed_x",
+                    "--by",
+                    "t",
+                    "--reason",
+                    "only to read the arguments",
+                ],
+                "no labels of tickets_v1/no_such_set",
+            ),
+            (
+                "label-from-capture",
+                [
+                    "--dataset-id",
+                    "captured_v1",
+                    "--capture",
+                    "c1",
+                    "--map",
+                    "no_such_map.yaml",
+                    "--set",
+                    "o1",
+                ],
+                "--map: no file",
+            ),
             ("run-compare", ["--baseline", base_id, "--candidate", run_id], "ok"),
             (
                 "run-promote",
@@ -242,18 +352,35 @@ def main() -> int:
             ("datasets", ["--period", "30d"], "ok:runs in period"),
             ("arms", ["--by", "config", "--period", "30d"], "ok:config tickets_lead2_v1"),
             ("arms", ["--configs"], "ok:rank on each goal"),
-            ("arms", ["--quality", "ties"], "ok:no arm matches: only arms a goal's decision weighs"),
-            ("arms", ["--weights", "open"], "ok:no arm matches: an arm's weights come from data/models.yaml"),
+            ("arms", ["--quality", "contender"], "ok:no arm matches: only arms a goal's decision weighs"),
+            (
+                "arms",
+                ["--weights", "open"],
+                "ok:no arm matches: an arm's weights come from the model records (data/models/",
+            ),
             ("arms", [], "ok:runs/tickets_v1/tickets_lead2_v1"),
             ("arms", ["--arm", "runs/tickets_v1/tickets_lead2_v1"], "ok:metrics:"),
             ("arms", ["--arm", "tickets_lead2_v1"], "ok:scored against"),
             ("arms", ["--arm", "runs/tickets_v1/no_such_v1"], "no arm"),
             ("goals", [], "ok"),
+            # Model records (RFC-020, optional): installed, each answers in words; the flows are
+            # test_model_onboard.py, test_arm_smoke.py and test_catalog_models.py.
+            ("models", [], "ok:no model records"),
+            ("model-onboard", ["no_such_model"], "no model record 'no_such_model'"),
+            ("arm-smoke", ["--config", "no_such.yaml"], "no config at no_such.yaml"),
+            ("fingerprint-migrate", ["--dry-run"], "ok:after:"),
+            # Scoring that evolves (RFC-022): the flow is test_scoring_evolves.py.
+            ("score-preview", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
             ("search", ["lead2"], "ok:evh inspect --runs runs/tickets_v1/tickets_lead2_v1"),
             ("search", ["no_such_thing"], "No match."),
             # lead2 against lead1 on gold: the p of tutorial 3 step 4 (3/32 = 0.09375, printed 0.0938; exact over 2^6)
             ("inspect", ["--runs", "tickets_lead1_v1,tickets_lead2_v1"], "ok:0.0938"),
             ("inspect", ["--runs", "tickets_lead1_v1,no_such_v1"], "no arm with that id"),
+            (
+                "inspect",
+                ["--sheet", "--dataset-id", "tickets_v1", "--runs", "tickets_lead1_v1,tickets_lead2_v1"],
+                "ok:tickets_v1: 6 of 6",
+            ),
             (
                 "inspect",
                 ["--runs", "tickets_lead1_v1,tickets_lead2_v1", "--item", "t01_login"],

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Every "experiment" table cell must use the canonical `Task · Dataset` label. $0.
+"""Every "eval" table cell must use the canonical `Task · Dataset` label. $0.
 
     python tools/check_terminology.py
 
-WHY THIS IS A CHECK AND NOT A CONVENTION. The five experiments were referred to by
+WHY THIS IS A CHECK AND NOT A CONVENTION. The five evals were referred to by
 task name in some tables ("summarisation") and by dataset name in others ("AG News",
 "SciFact"), in the same column, across 65 rows. Two of them share the classification
 task, so a dataset-only label is ambiguous and a task-only label is wrong -- and
 nothing catches the drift by eye once a document is 500 lines long.
 
 The canonical labels are defined in docs/REFERENCE.md#terminology. This fails if a
-cell in any experiment-keyed table does not use one.
+cell in any eval-keyed table does not use one.
 """
 
 import pathlib
@@ -38,7 +38,7 @@ if not files:
 
 # WHAT THIS CHECK ACTUALLY COVERS, counted rather than implied. It used to report
 # "every experiment-column cell in 40 file(s)", which is how many markdown files it
-# READ. It only asserts on tables whose header row is `| experiment |`, and exactly 2
+# READ. It only asserts on tables whose header row is `| eval |`, and exactly 2
 # files have one -- so the message overstated coverage twentyfold, on a check whose
 # whole history is having reported green for reading nothing. Reading is not checking.
 bad = []
@@ -49,7 +49,9 @@ for f in files:
     in_exp = False
     seen_here = False
     for i, line in enumerate(lines, 1):
-        if re.match(r"^\| *experiment *\|", line, re.I):
+        # `experiment` was this column's name before 0.6.0; the lab notes in research/internal/
+        # keep it, and their tables are checked all the same.
+        if re.match(r"^\| *(eval|experiment) *\|", line, re.I):
             in_exp = True
             seen_here = True
             continue
@@ -73,20 +75,20 @@ for f in files:
         with_table.append(f.relative_to(root))
 
 if bad:
-    print(f"FAIL  {len(bad)} non-canonical experiment label(s):")
+    print(f"FAIL  {len(bad)} non-canonical eval label(s):")
     print("\n".join("  " + b for b in bad))
     sys.exit(1)
 if not cells:
     # Same hole as the hardcoded path, one level in: reading 40 files and asserting on
     # none of them is not a pass.
     print(
-        f"FAIL  {len(files)} markdown file(s) read, but NOT ONE experiment-column cell was "
+        f"FAIL  {len(files)} markdown file(s) read, but NOT ONE eval-column cell was "
         "checked — this check is asserting nothing"
     )
     sys.exit(1)
 print(
-    f"{cells} experiment-column cell(s) in {len(with_table)} of {len(files)} markdown file(s) use the canonical "
+    f"{cells} eval-column cell(s) in {len(with_table)} of {len(files)} markdown file(s) use the canonical "
     "Task · Dataset label"
 )
-print("  files with an experiment column: " + ", ".join(str(x) for x in with_table))
+print("  files with an eval column: " + ", ".join(str(x) for x in with_table))
 sys.exit(0)

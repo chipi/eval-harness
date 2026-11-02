@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "sourcemap probe (delete me)", "model_disposition": "cleanup", "reason": "The alert title itself carries an explicit synthetic marker: 'sourcemap probe (delete me)'. This is a deliberate test/validation event, not a real production error."}

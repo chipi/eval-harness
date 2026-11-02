@@ -4,7 +4,7 @@
     python examples/summarization-cnn-dailymail/calibrate.py
 
 WHY THIS EXISTS
-  Every experiment here scores a 200-item slice, and nothing compared a known baseline
+  Every eval here scores a 200-item slice, and nothing compared a known baseline
   with its published value on the protocol the literature uses. Had anything done so,
   the summarisation slice's bias would have shown at once: LEAD-3 scored ROUGE-1 0.30
   on it, against ~0.40 published, because the first 200 test rows are all CNN's
