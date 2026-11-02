@@ -5,11 +5,14 @@
     evh label-import sheet.csv --dataset-id tickets_v1 --set owner_2026_11 --by owner --guideline labelling.md
     evh label-import answers/ --dataset-id tickets_v1 --set owner_gold --by owner
 
-A sheet: every row with a `label` becomes one label; `yes` takes the row's `proposal`; a row with no label is left
-out; a row's `note` is kept beside its label. When more than one answer is right for an item, `also right` names
-the others, separated by `|` (`file` and `escalate`: the label accepts either, written {"accept": [...]}). A folder: each `<item_id>.txt` in it is that item's label. The set's
-source is `person`: who (`--by`), and the sheet's (or the folder's files') sha256. A set is never edited: a second
-pass is a new set.
+A sheet: CSV as Excel saves it (UTF-8 with or without its mark, `,` or `;` between columns; a workbook is refused,
+saying how to save it as CSV). Every row with a `label` becomes one label; `yes` takes the row's `proposal`; a row
+with no label is left out; a row's `note` is kept beside its label. When more than one answer is right for an item,
+`also right` names the others, separated by `|` (`file` and `escalate`: the label accepts either, written
+{"accept": [...]}). When the label column's header names the allowed answers (`label-sheet --choices`), any other is
+refused, naming its rows, and nothing is written. A folder: each `<item_id>.txt` in it is that item's label. The
+set's source is `person`: who (`--by`), and the sheet's (or the folder's files') sha256. A set is never edited: a
+second pass is a new set.
 """
 
 from __future__ import annotations
@@ -21,15 +24,12 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import csv
 import hashlib
 from pathlib import Path
 
 from evaluation_harness._common import die
 from evaluation_harness._label_sets import answers, label_text, write_set
-
-#: The sheet's column for the other right answers of an item that has more than one, separated by |.
-ALSO = "also right"
+from evaluation_harness._sheets import ALSO, read_csv
 
 
 def main() -> int:
@@ -50,8 +50,7 @@ def main() -> int:
         return _folder(args)
     if not args.sheet.is_file():
         die(f"no sheet {args.sheet}")
-    with args.sheet.open(newline="", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
+    rows, choices = read_csv(args.sheet)
     if not rows or "item_id" not in rows[0] or "label" not in rows[0]:
         die(f"{args.sheet}: a sheet has the columns item_id and label (evh label-sheet writes one)")
     labels, notes, no_proposal = {}, {}, []
@@ -70,6 +69,15 @@ def main() -> int:
             notes[r["item_id"]] = r["note"].strip()
     if no_proposal:
         die(f"`yes` with no proposal on {len(no_proposal)} row(s): {', '.join(no_proposal[:8])}")
+    if choices:
+        off = [(i, a) for i, t in labels.items() for a in answers(t) if a not in choices]
+        if off:
+            die(
+                f"{len(off)} answer(s) not among the sheet's choices ({', '.join(choices)}): "
+                + "; ".join(f"{i}: {a!r}" for i, a in off[:8])
+                + (" ..." if len(off) > 8 else "")
+                + ". Correct them in the sheet and import it again; nothing was written."
+            )
     source = {
         "kind": "person",
         "by": args.by,

@@ -160,7 +160,7 @@ def read_rows(path: Path) -> list[dict[str, Any]]:
     """Rows of a .csv (header row) or .jsonl file, as dicts."""
     if path.suffix.lower() == ".jsonl":
         return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
-    with path.open(newline="", encoding="utf-8") as fh:
+    with path.open(newline="", encoding="utf-8-sig") as fh:  # a spreadsheet's CSV may begin with a BOM
         return list(csv.DictReader(fh))
 
 

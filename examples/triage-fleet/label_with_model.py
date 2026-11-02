@@ -138,7 +138,7 @@ def main() -> int:
         r["id"]: r
         for r in (json.loads(x) for x in args.items.read_text(encoding="utf-8").splitlines() if x.strip())
     }
-    sheet = list(csv.DictReader((args.sheet / "items.csv").open(encoding="utf-8")))
+    sheet = list(csv.DictReader((args.sheet / "items.csv").open(encoding="utf-8-sig")))
     prompt_sha = hashlib.sha256(SYSTEM.encode()).hexdigest()[:12]
     # Every answer is kept as it arrives (a paid call): a rerun reuses the ones already answered.
     raw_path = args.sheet / f"items_model.raw.{args.model}.jsonl"

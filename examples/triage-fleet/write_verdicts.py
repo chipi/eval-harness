@@ -34,7 +34,7 @@ LABELS = ("file", "dismiss", "escalate", "cleanup", "file-or-escalate")
 
 
 def _csv(p: Path) -> list[dict]:
-    return list(csv.DictReader(p.open(encoding="utf-8")))
+    return list(csv.DictReader(p.open(encoding="utf-8-sig")))
 
 
 def owner_issue_rows(rows: list[dict], answers: list[dict]) -> list[dict]:

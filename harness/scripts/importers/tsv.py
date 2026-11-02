@@ -25,5 +25,5 @@ class Importer:
             raise ValueError("the tsv importer needs a path in its query")
         path = Path(query["path"])
         csv.field_size_limit(1 << 24)
-        with path.open(encoding="utf-8", newline="") as f:
+        with path.open(encoding="utf-8-sig", newline="") as f:
             yield from _rows.records(csv.DictReader(f, delimiter=query.get("delimiter", "\t")), query)

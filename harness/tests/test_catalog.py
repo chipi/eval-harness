@@ -985,6 +985,12 @@ try:
         "fields: a public deployment refuses a filter on a hidden field",
         "error" in cs.compare({"runs": two, "where": [f"customer:{HIDDEN}"]}),
     )
+    code, body, _ = cs.label_sheet_csv("dataset=ds1")
+    check(
+        "label sheet download: a public deployment refuses it (a sheet carries item text and outputs)",
+        code == 403 and b"not served publicly" in body,
+        body[:200],
+    )
     cs.LIMITS.update(hosts=())
     cs.set_adapter(A)
 

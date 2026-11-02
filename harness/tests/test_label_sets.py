@@ -95,7 +95,7 @@ try:
     def sheet(name, *args):
         p = proj / name
         r = evh("label-sheet", "--dataset-id", "tickets_v1", "--out", name, *args)
-        rows = list(csv.DictReader(p.open(encoding="utf-8"))) if r.returncode == 0 else []
+        rows = list(csv.DictReader(p.open(encoding="utf-8-sig"))) if r.returncode == 0 else []
         return r, rows
 
     r, rows = sheet("s_unlabelled.csv")
@@ -137,7 +137,7 @@ try:
 
     # ── label-import ──────────────────────────────────────────────────────────────────────
     filled = proj / "filled.csv"
-    with (proj / "s_all.csv").open(encoding="utf-8") as f:
+    with (proj / "s_all.csv").open(encoding="utf-8-sig") as f:
         rows = list(csv.DictReader(f))
     rows[0]["label"], rows[0]["note"] = "needs-engineering", "a real bug"
     rows[1]["label"] = "yes"
@@ -190,6 +190,62 @@ try:
     (proj / "empty").mkdir()
     r = evh("label-import", "empty", "--dataset-id", "tickets_v1", "--set", "none_v1", "--by", "owner")
     check("label-import: an empty folder is refused", refused(r, "no <item_id>.txt"), out(r)[-200:])
+    # ── a sheet opened in Excel and saved back (owner, 2026-11-02: CSV only, Excel-friendly) ──────────────────────
+    r = evh(
+        "label-sheet",
+        "--dataset-id",
+        "tickets_v1",
+        "--items",
+        "all",
+        "--choices",
+        "file,dismiss,escalate",
+        "--out",
+        "excel.csv",
+    )
+    raw = (proj / "excel.csv").read_bytes() if (proj / "excel.csv").is_file() else b""
+    check(
+        "label-sheet: UTF-8 with the mark Excel needs; the allowed answers in the label column's header",
+        r.returncode == 0
+        and raw.startswith(b"\xef\xbb\xbf")
+        and "label [file|dismiss|escalate]" in raw.decode("utf-8-sig").splitlines()[0],
+        out(r)[-300:] + raw[:200].decode("utf-8", "replace"),
+    )
+    # As Excel saves it where the comma is the decimal mark: the mark kept, `;` between columns, CRLF lines.
+    (proj / "excel_saved.csv").write_bytes(
+        "\ufeffitem_id;item;proposal;label [file|dismiss|escalate];also right;note\r\n"
+        "t01_login;Login fails;;file;escalate;\r\nt02_invoice;Invoice wrong;;dismiss;;\r\n".encode()
+    )
+    r = evh(
+        "label-import", "excel_saved.csv", "--dataset-id", "tickets_v1", "--set", "excel_v1", "--by", "owner"
+    )
+    check(
+        "label-import: Excel's own CSV (the mark, `;`, CRLF) reads back, also right included",
+        r.returncode == 0
+        and (LABELS / "tickets_v1" / "excel_v1" / "t01_login.txt").read_text()
+        == '{"accept": ["escalate", "file"]}\n'
+        and (LABELS / "tickets_v1" / "excel_v1" / "t02_invoice.txt").read_text() == "dismiss\n",
+        out(r)[-300:],
+    )
+    (proj / "excel_typo.csv").write_bytes(
+        "\ufeffitem_id;label [file|dismiss|escalate]\r\nt01_login;dismis\r\nt02_invoice;file\r\n".encode()
+    )
+    r = evh(
+        "label-import", "excel_typo.csv", "--dataset-id", "tickets_v1", "--set", "typo_v1", "--by", "owner"
+    )
+    check(
+        "label-import: an answer not among the sheet's choices is refused, naming the row; nothing is written",
+        refused(r, "t01_login: 'dismis'") and not (LABELS / "tickets_v1" / "typo_v1").exists(),
+        out(r)[-300:],
+    )
+    (proj / "book.xlsx").write_bytes(b"PK\x03\x04 a workbook")
+    r = evh("label-import", "book.xlsx", "--dataset-id", "tickets_v1", "--set", "book_v1", "--by", "owner")
+    check(
+        "label-import: a workbook is refused, saying how to save it as CSV",
+        refused(r, "Save As > CSV UTF-8"),
+        out(r)[-300:],
+    )
+    shutil.rmtree(LABELS / "tickets_v1" / "excel_v1", ignore_errors=True)
+
     # ── an item with more than one right answer (owner, 2026-11-02: a label can accept several) ───────────────────
     (proj / "several.csv").write_text(
         "item_id,label,also right,note\nt01_login,file,escalate | file,\nt02_invoice,dismiss,,\n"

@@ -273,7 +273,9 @@ cheaper system: pay for the expensive one once, then chase it.
 --dataset-id my_v1 --out sheet.csv`, `--propose best_v1 --items all` to start from the model's
 answers, `yes` taking one; where more than one answer is right, the others go in `also right`, separated by `|`),
 or write one `<item_id>.txt` per item in a folder (`{"accept": ["escalate", "file"]}` for several), then `evh label-import`
-it as a person's set and promote it with `--tier gold`. Gold always wins over silver for new runs. Runs made before the gold set existed are re-scored against it for $0:
+it as a person's set and promote it with `--tier gold`. The sheet is CSV that Excel opens as it is (UTF-8 with
+the mark Excel needs); save it back as CSV, `,` or `;` both read. `--choices file,dismiss,escalate` writes the
+allowed answers into the label column's header, and the import refuses any other, naming its rows. Gold always wins over silver for new runs. Runs made before the gold set existed are re-scored against it for $0:
 `evh rescore --dataset-id my_v1 --reference-id gold/my_v1 --out data/runs-gold`.
 
 Gold that a script builds (a dataset's own labels, fetched from where it is published) is promoted where the
@@ -1097,7 +1099,8 @@ evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did pro
   `decision(output)`, else its output, shortened), every label and the fields. The signals: **wrong** (the
   first run against a label set), **disagree**, **split** (the candidates among themselves), **new** (a field
   value the governed dataset never had), **unlabelled**. Each is a filter; the view ends with the `evh pick`
-  and `evh label-sheet` commands for its rows. The inspector shows the same (its "Explore its rows").
+  and `evh label-sheet` commands for its rows. The inspector shows the same (its "Explore its rows"), with a
+  "download the sheet (CSV)" button for the rows ticked (the local inspector only; the page writes nothing).
 - **Picks** wait in `data/picks.jsonl`, append-only: the latest line for an item wins; `pick --drop` takes
   one off. `dataset-extend` makes V2 of V1's items and the picks chosen, records `extended_from`, and the
   picks used leave the list; labels follow the items into V2. Nothing is promoted by it.

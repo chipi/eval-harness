@@ -681,6 +681,33 @@ def item(params: dict) -> dict:
     return out
 
 
+def label_sheet_csv(query: str) -> tuple[int, bytes, str]:
+    """The sheet `evh label-sheet` writes, as a download (RFC-023): built in memory by the same code, so the page
+    still writes nothing. The local inspector only: a sheet carries item text and outputs."""
+    if LIMITS["hosts"]:
+        return (
+            403,
+            b"the label sheet shows item text and outputs: not served publicly",
+            "text/plain; charset=utf-8",
+        )
+    from evaluation_harness._common import DATASETS  # noqa: PLC0415
+    from evaluation_harness._sheets import write_csv  # noqa: PLC0415
+    from evaluation_harness.label_sheet import build  # noqa: PLC0415
+
+    params = parse_qs(query)
+    ds = params.get("dataset", [""])[0]
+    if not ds or not plain_item(ds) or not (DATASETS / f"{ds}.json").is_file():
+        return 400, f"no dataset {ds!r}".encode(), "text/plain; charset=utf-8"
+    items = [i for i in params.get("item", []) if plain_item(i)]
+    runs = params.get("runs", [""])[0]
+    choices = [c.strip() for c in params.get("choices", [""])[0].split(",") if c.strip()] or None
+    try:
+        header, rows_, _ = build(ds, "all", items or None, runs, None, choices)
+    except SystemExit as exc:  # build() refuses what label-sheet refuses (an unknown item or run)
+        return 400, str(exc).encode(), "text/plain; charset=utf-8"
+    return 200, write_csv(header, rows_).encode("utf-8"), "text/csv; charset=utf-8"
+
+
 def rows(params: dict) -> dict:
     """The rows view (RFC-023, UXS-002 05): one dataset's items, what each chosen arm decided (the first stands for
     production), every label, the signals; `evh inspect --dataset-id D --rows` in the browser. The local inspector
@@ -879,7 +906,7 @@ def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
 
 
 #: The API's endpoints. Anything else under /api/ is 404: it is not a way into the files.
-API_ROUTES = ("/api/health", "/api/compare", "/api/item", "/api/rows")
+API_ROUTES = ("/api/health", "/api/compare", "/api/item", "/api/rows", "/api/label-sheet")
 
 
 def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
@@ -1051,6 +1078,18 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if url.path == "/api/health":
             return self._json(200, {"ok": True})
+        if url.path == "/api/label-sheet":
+            code, data, ctype = label_sheet_csv(url.query)
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            if code == 200:
+                ds = parse_qs(url.query).get("dataset", ["sheet"])[0]
+                self.send_header("Content-Disposition", f'attachment; filename="label-sheet-{ds}.csv"')
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if url.path in ("/api/compare", "/api/item", "/api/rows"):
             # A client-supplied header is trusted only when named (--client-header): behind a
             # proxy that sets it, with the origin reachable only through that proxy. Otherwise

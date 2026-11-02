@@ -207,8 +207,9 @@ Opened from a dataset ("Explore its rows", production's recorded arm chosen firs
 - **A row opens** the item view (04) for that item.
 - **Selecting**: a box per row and "select all shown"; with rows selected, a panel gives two commands to copy:
   `evh pick --dataset-id <id> --item … --item … --for <dataset> --tag <key=value> --note "…"` (the target, tags
-  and note typed in the panel fill the command) and `evh label-sheet --dataset-id <id> --item … --out sheet.csv`.
-  The page writes nothing (PRD-004).
+  and note typed in the panel fill the command) and `evh label-sheet --dataset-id <id> --item … --out sheet.csv`,
+  with "download the sheet (CSV)" beside it: the same sheet, built by the server (`/api/label-sheet`, the local
+  inspector only). The page writes nothing (PRD-004).
 - Paged 10 at a time like every catalog table; the counts of each marker above the table ("412 items · 9 wrong ·
   31 disagree · 4 new").
 

@@ -527,6 +527,26 @@ def drive(base: str, overview: str = "") -> None:
             and sh == f"evh label-sheet --dataset-id tickets_v1 --item {it_id} --out sheet.csv --runs {two}",
             f"{pk} | {sh}",
         )
+        href = page.locator("#rsheetdl").get_attribute("href") or ""
+        got = (
+            page.request.get(base.rstrip("/").rsplit("/.build", 1)[0] + href)
+            if href.startswith("/api/")
+            else None
+        )
+        body = got.body() if got is not None else b""
+        lines = body.decode("utf-8-sig", "replace").splitlines()
+        check(
+            "rows view: 'download the sheet (CSV)' gives label-sheet's sheet for the ticked rows, as Excel reads it",
+            got is not None
+            and got.status == 200
+            and "attachment" in (got.headers.get("content-disposition") or "")
+            and body.startswith(b"\xef\xbb\xbf")
+            and lines[0].startswith("item_id,item,")
+            and "label,also right,note" in lines[0]
+            and len(lines) == 2
+            and lines[1].startswith(it_id + ","),
+            f"{href} {got.status if got else None} {lines[:2]}",
+        )
         page.locator("#rowstable tbody tr td:nth-child(2)").first.click()
         page.wait_for_selector("#drill .eyebrow", timeout=15000)
         drill_text = page.locator("#drill").inner_text()

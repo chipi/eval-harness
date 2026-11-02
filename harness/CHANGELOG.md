@@ -22,7 +22,9 @@ that can move a result is never a patch release without saying so under **Change
     them) and records the command that rebuilds them, checked against the set's checksums.
   - **`evh label-sheet`** writes a sheet of the items to label (unlabelled, all, where runs disagree, or chosen),
     each run's decision and a proposal beside an empty label; **`evh label-import`** reads it back, or a folder of
-    `<item_id>.txt`, as a person's set (`yes` takes the proposal; notes kept). **`evh label-from-capture`** turns a
+    `<item_id>.txt`, as a person's set (`yes` takes the proposal; notes kept). The sheet is CSV that Excel opens
+    and saves (UTF-8 with its mark, `,` or `;`); **`--choices`** puts the allowed answers in the label column's
+    header and the import refuses any other; the local inspector downloads it. **`evh label-from-capture`** turns a
     capture's recorded outcomes into a `rule` set by the rules `reference-from-outcomes` read. **`evh labels`** lists
     the sets, what each covers and how two agree: the same answers, sharing one, Cohen's kappa, Krippendorff's
     alpha and (`--confusion`) the confusion matrix; free-text labels are not compared as text (an MCP tool).

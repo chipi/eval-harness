@@ -3,16 +3,18 @@
 
     evh label-sheet --dataset-id tickets_v1 --out sheet.csv
     evh label-sheet --dataset-id prod_2026_11 --items disagree --runs production_2026_11,triage_lead_v1 \\
-        --propose issue_verdicts --out sheet.csv
+        --propose issue_verdicts --choices file,dismiss,escalate,cleanup --out sheet.csv
     evh label-sheet --dataset-id prod_2026_11 --item a1 --item a7 --out sheet.csv
 
 One row per item: `item_id`, `item` (the start of the item itself, when it is materialized here), one column per
 run in --runs (what it decided, its output), `proposal` (a label set's label, or a run's output) and the empty
-columns `label`, `also right` and `note`. Fill `label` (or write `yes` to take the proposal) in any spreadsheet, and
-where more than one answer is fully right (each as right as the label, not "unsure which"), the others in `also
-right` (separated by `|`); then `evh label-import`. Which items: --items unlabelled (the default: no label in any set yet), all, or disagree (the
-runs in --runs decided differently); or exactly those named with --item. A run is a run id or a config id (its
-latest run on the dataset). Nothing is written but the sheet.
+columns `label`, `also right` and `note`. Open it in Excel or any spreadsheet (it is UTF-8 CSV with the mark Excel
+needs), fill `label` (or write `yes` to take the proposal) and, where more than one answer is fully right (each as
+right as the label, not "unsure which"), the others in `also right` (separated by `|`); save it as CSV and run `evh
+label-import`. --choices writes the allowed answers into the label column's header (`label [file|dismiss|…]`), and
+label-import refuses any other. Which items: --items unlabelled (the default: no label in any set yet), all, or
+disagree (the runs in --runs decided differently); or exactly those named with --item. A run is a run id or a config
+id (its latest run on the dataset). Nothing is written but the sheet.
 """
 
 from __future__ import annotations
@@ -24,7 +26,6 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import csv
 import json
 from pathlib import Path
 
@@ -32,6 +33,7 @@ from evaluation_harness import _common
 from evaluation_harness._common import die, item_path, load_dataset, read_json
 from evaluation_harness._label_sets import labels_for, sets, text_of
 from evaluation_harness._runs import runs_on
+from evaluation_harness._sheets import ALSO, NOTE, label_header, write_csv
 
 VIEW = 160
 
@@ -96,35 +98,58 @@ def main() -> int:
     ap.add_argument(
         "--propose", help="a label set (by name, on this dataset) or a run whose answers are proposed"
     )
+    ap.add_argument(
+        "--choices",
+        help="the allowed answers, comma-separated (e.g. file,dismiss,escalate): written into the label column's "
+        "header; label-import refuses any other",
+    )
     args = ap.parse_args()
-
-    ds = load_dataset(args.dataset_id)
-    ids = [it["item_id"] for it in ds.get("items") or []]
-    names = [x.strip() for x in args.runs.split(",") if x.strip()]
-    dirs = {n: run_dir(n, args.dataset_id) for n in names}
     if args.out.exists():
         die(f"{args.out} exists: a sheet is not overwritten (you may have filled it)")
-    if args.items == "disagree" and len(dirs) < 2:
+    choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
+    header, rows, n = build(args.dataset_id, args.items, args.item, args.runs, args.propose, choices)
+    write_csv(header, rows, args.out)
+    print(f"{args.out}: {len(rows)} item(s) of {n} to label")
+    print(
+        "  fill `label` (or `yes` for the proposal; answers just as right in `also right`, separated by |), "
+        f"then: evh label-import {args.out} --dataset-id {args.dataset_id} --set <name> --by <you>"
+    )
+    return 0
+
+
+def build(
+    dataset_id: str,
+    items: str = "unlabelled",
+    item: list[str] | None = None,
+    runs: str = "",
+    propose: str | None = None,
+    choices: list[str] | None = None,
+) -> tuple[list[str], list[list[str]], int]:
+    """The sheet's header and rows, and how many items the dataset has: `label-sheet` writes them to a file, the
+    inspector serves them as a download."""
+    ds = load_dataset(dataset_id)
+    ids = [it["item_id"] for it in ds.get("items") or []]
+    names = [x.strip() for x in runs.split(",") if x.strip()]
+    dirs = {n: run_dir(n, dataset_id) for n in names}
+    if items == "disagree" and len(dirs) < 2:
         die("--items disagree needs two runs or more in --runs")
     proposal: dict[str, str] = {}
-    if args.propose:
-        doc = next(
-            (d for d in sets() if d["dataset_id"] == args.dataset_id and d["set"] == args.propose), None
-        )
+    if propose:
+        doc = next((d for d in sets() if d["dataset_id"] == dataset_id and d["set"] == propose), None)
         if doc is not None:
             proposal = {i: t for i in ids if (t := text_of(doc, i)) is not None}
         else:
-            pd = run_dir(args.propose, args.dataset_id)
+            pd = run_dir(propose, dataset_id)
             proposal = {i: t for i in ids if (t := output(pd, i)) is not None}
-    if args.item:
-        unknown = sorted(set(args.item) - set(ids))
+    if item:
+        unknown = sorted(set(item) - set(ids))
         if unknown:
-            die(f"--item: not in {args.dataset_id}: {', '.join(unknown[:8])}")
-        chosen = [i for i in ids if i in set(args.item)]
-    elif args.items == "unlabelled":
-        have = labels_for(args.dataset_id)
+            die(f"--item: not in {dataset_id}: {', '.join(unknown[:8])}")
+        chosen = [i for i in ids if i in set(item)]
+    elif items == "unlabelled":
+        have = labels_for(dataset_id)
         chosen = [i for i in ids if i not in have]
-    elif args.items == "disagree":
+    elif items == "disagree":
         from evaluation_harness._adapter import same_of  # noqa: PLC0415
 
         first = next(iter(dirs.values()))
@@ -136,29 +161,28 @@ def main() -> int:
                 chosen.append(i)
     else:
         chosen = ids
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    with args.out.open("w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        w.writerow(
-            ["item_id", "item", *[f"decided: {n}" for n in names], "proposal", "label", "also right", "note"]
-        )
-        for i in chosen:
-            w.writerow(
-                [
-                    i,
-                    view(args.dataset_id, i),
-                    *[output(d, i) or "" for d in dirs.values()],
-                    proposal.get(i, ""),
-                    "",
-                    "",
-                    "",
-                ]
-            )
-    print(f"{args.out}: {len(chosen)} item(s) of {len(ids)} to label")
-    print(
-        f"  fill `label` (or `yes` for the proposal; answers just as right in `also right`, separated by |), then: evh label-import {args.out} --dataset-id {args.dataset_id} --set <name> --by <you>"
-    )
-    return 0
+    header = [
+        "item_id",
+        "item",
+        *[f"decided: {n}" for n in names],
+        "proposal",
+        label_header(choices),
+        ALSO,
+        NOTE,
+    ]
+    rows = [
+        [
+            i,
+            view(dataset_id, i),
+            *[output(d, i) or "" for d in dirs.values()],
+            proposal.get(i, ""),
+            "",
+            "",
+            "",
+        ]
+        for i in chosen
+    ]
+    return header, rows, len(ids)
 
 
 if __name__ == "__main__":

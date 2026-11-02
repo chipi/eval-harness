@@ -525,7 +525,8 @@
       <div class="controls"><label>for <input id="rfor" placeholder="a governed dataset" list="rdsl"></label><datalist id="rdsl">${d.datasets.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
       <label>tags <input id="rtags" placeholder="case=oom kind=missed"></label><label>note <input id="rnote" placeholder="why it is worth keeping"></label></div>
       <p><code class="cmd" id="rpick"></code> <button type="button" class="btn small copy" data-copy="">copy</button></p>
-      <p><code class="cmd" id="rsheet"></code> <button type="button" class="btn small copy" data-copy="">copy</button></p></div>`;
+      <p><code class="cmd" id="rsheet"></code> <button type="button" class="btn small copy" data-copy="">copy</button>
+      <a class="btn small" id="rsheetdl" href="#" download>download the sheet (CSV)</a></p></div>`;
     let by = '';
     const bf = P.get('by');
     if (bf) {
@@ -556,6 +557,11 @@
       const [a, b] = app.querySelectorAll('#rpanel button.copy');
       document.getElementById('rpick').textContent = pk; a.dataset.copy = pk;
       document.getElementById('rsheet').textContent = sh; b.dataset.copy = sh;
+      // The same sheet, built by the server as label-sheet builds it (a read: nothing is written).
+      const qs = new URLSearchParams({dataset: ds}); sel.forEach(i => qs.append('item', i));
+      if (d.runs.length) qs.set('runs', d.runs.join(','));
+      const dl = document.getElementById('rsheetdl');
+      dl.href = '/api/label-sheet?' + qs; dl.download = `label-sheet-${ds}.csv`;
     };
     app.querySelectorAll('input.rsel').forEach(c => c.onchange = upd);
     for (const id of ['rfor', 'rtags', 'rnote']) document.getElementById(id).oninput = upd;
