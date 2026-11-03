@@ -9,6 +9,25 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.6.2 — unreleased
+
+Faster answers from `evh` and its MCP server. No result moves.
+
+### Added
+
+- **`evh mcp --write-answers FILE` and `evh mcp --public --answers FILE`: a release's answers written ahead.** Each
+  call to the MCP server runs a fresh `evh` process, several seconds of CPU; a deployment that limits the server's CPU
+  pays it in tens of seconds (the evals server's first `goals` after each start, and after each hour, took 33 s at
+  half a core). `--write-answers` writes the answer of every tool that takes no argument and does not depend on the
+  date (not `overview` or `activity`); a public server started with `--answers` serves them without running the
+  command, for as long as it runs. A line another harness version wrote is not read.
+
+### Fixed
+
+- **A view and a catalog build read each arm's scores once.** `evh goals` read 1,054 arms' scores for 686 arms; that
+  reading was 79% of its CPU. The answers are byte for byte the same; `goals`, `arms` and `models` take about a
+  quarter to a third less CPU.
+
 ## 0.6.1 — 2026-11-03
 
 Fixes to 0.6.0, from two reviews of what it shows. Six can move a number or a verdict a project sees (Changed): the
