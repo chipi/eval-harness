@@ -293,6 +293,19 @@ def drive(cat: Path, base: str) -> None:
             f"first rows {firsts}",
         )
 
+        # Where an arm's time went, in one form on every dataset page: "served on <machine>" or "run on ...".
+        odd = sorted(
+            {
+                m
+                for f in (cat / "d").glob("*.html")
+                for m in re.findall(
+                    r"<br><small>((?:on|run on|served on) [^<]+)</small>", f.read_text(encoding="utf-8")
+                )
+                if m.startswith("on ")
+            }
+        )
+        check("dataset pages: the machine in one form (served on / run on)", not odd, ", ".join(odd[:5]))
+
         # A config's place in a goal's field is counted as the site counts it: one place per config, no arm a round
         # retired (a re-timing on Linux, a paired side run).
         def place(cfg: str) -> str:

@@ -865,16 +865,21 @@ def _mark_superseded(by_ds: dict) -> None:
 
 
 def _machine(A: Adapter, arm: str) -> str:
-    """The machine an arm ran on, in a few words: the deployment's machine when its fingerprint names one,
-    else the runner's (EVAL_HOST_LABEL when set), from its conditions."""
+    """Where an arm's time was spent, in one form: "served on <machine>" when its deployment names the machine
+    that served the model, else "run on [<label> · ]<platform>, <n> CPUs" for the runner (the label is
+    EVAL_HOST_LABEL, when set). Four forms in one table ("mac-dev", "Darwin/x86_64 · 12 CPUs", "x3") read as four
+    kinds of thing; a runner without a label is never guessed to be a labelled one."""
     fn = getattr(A, "conditions", None)
     c = fn(arm) if callable(fn) else {}
     if c.get("deployment.machine"):
-        return c["deployment.machine"]
-    if c.get("machine.label"):
-        return c["machine.label"]
-    bits = [c.get("machine.platform"), c.get("machine.cpu_count") and f"{c['machine.cpu_count']} CPUs"]
-    return " · ".join(b for b in bits if b)
+        return f"served on {c['deployment.machine']}"
+    hw = ", ".join(
+        b
+        for b in (c.get("machine.platform"), c.get("machine.cpu_count") and f"{c['machine.cpu_count']} CPUs")
+        if b
+    )
+    name = " · ".join(b for b in (c.get("machine.label"), hw) if b)
+    return f"run on {name}" if name else ""
 
 
 def _versions(A: Adapter, by_ds: dict) -> None:
@@ -1783,11 +1788,7 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
             "cells": [
                 arm_link(a["arm"], a["label"], "../")
                 + (' <span class="tag-base">baseline</span>' if a.get("baseline") else "")
-                + (
-                    f"<br><small>on {e(a['machine'])}</small>"
-                    if len(machines) > 1 and a.get("machine")
-                    else ""
-                ),
+                + (f"<br><small>{e(a['machine'])}</small>" if len(machines) > 1 and a.get("machine") else ""),
                 metric_link(a["metric"], "../"),
                 (
                     f'<span data-v="{a["mean"] if a["mean"] is not None else ""}">{fmt(a["mean"])}'
