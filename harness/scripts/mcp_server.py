@@ -22,6 +22,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import contextlib
 import json
+import math
 import os
 import re
 import runpy
@@ -335,6 +336,64 @@ def tools_for(public: bool) -> tuple:
     return tuple(c for c in READ_TOOLS if not (public and c in PUBLIC_DROPPED))
 
 
+#: The tools whose answer with no argument depends on today's date (a period counted from today, by default):
+#: never written ahead, since an answer kept past the day would read the wrong period.
+DATED = {"overview", "activity"}
+
+
+def answerable_ahead(public: bool) -> list[str]:
+    """The tools whose answer can be written ahead for a release that never changes (--write-answers): each one
+    that takes no required argument, but those whose default depends on the date (DATED)."""
+    out = []
+    for c in tools_for(public):
+        if c in DATED:
+            continue
+        try:
+            argv_of(parser_of(c), {})
+        except ValueError:  # it needs an argument: a call names what to answer
+            continue
+        out.append(c)
+    return out
+
+
+def write_answers(project: Path, path: Path, public: bool, timeout: float = TIMEOUT_S) -> int:
+    """--write-answers: each tool answerable ahead, run once with no argument as a call runs it, its answer one JSON
+    line {tool, argv, out, harness}. A tool that fails or answers past MAX_OUT is left out: a call runs it. A fresh
+    `evh` process a call takes several seconds of CPU (every arm's scores read again); a deployment that limits
+    the server's CPU paid it in tens of seconds on the first call after each start and after each hour."""
+    from evaluation_harness._version import __version__  # noqa: PLC0415
+
+    lines, left = [], []
+    for c in answerable_ahead(public):
+        code, out, _err = run_command(project, c, [], timeout, public)
+        if code != 0 or len(out) > MAX_OUT:
+            left.append(f"{c} (exit {code})" if code else f"{c} ({len(out):,} bytes)")
+            continue
+        lines.append(json.dumps({"tool": c, "argv": [], "out": out, "harness": __version__}))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(x + "\n" for x in lines), encoding="utf-8")
+    print(
+        f"{path}: {len(lines)} answer(s) written ahead" + (f"; left out: {', '.join(left)}" if left else "")
+    )
+    return 0
+
+
+def _answer(types, name: str, out: str, public: bool):
+    """A command's output as the tool's answer: its text, and its JSON as structured content when it has one."""
+    structured = None
+    if name in JSON:
+        try:
+            structured = json.loads(out)
+        except ValueError:
+            structured = None
+    if public and name == "dataset-items" and isinstance(structured, dict):
+        # L2: a profile written --with-text carries item text; a public server serves none.
+        for r in (structured.get("result") or {}).get("rows") or []:
+            r.pop("text", None)
+        out = json.dumps(structured, indent=1)
+    return types.CallToolResult(content=[types.TextContent(text=out)], structured_content=structured)
+
+
 #: What the log line leaves out of a call: who made it (its address, its user agent). The hooks
 #: get both (analytics count a visitor by them); a log is kept and read by more hands.
 PRIVATE = ("client", "agent")
@@ -419,12 +478,14 @@ def build_server(
     rate_total: int = 0,
     client_header: str | None = None,
     hooks: Hooks | None = None,
+    answers_file: Path | None = None,
 ):
     """The MCP server: its tools, and how a call runs. `public`: no option that answers with text;
     `concurrent`: how many commands run at once (a call that waits 30 s for a slot is refused);
     `rate`: calls a minute per caller, `rate_total`: from all callers together (0: no limit; nothing
     in front of a public server throttles for it, and a caller who can rotate its address is still
-    held by the total)."""
+    held by the total). `answers_file` (--public): answers written ahead for this release (--write-answers),
+    served without running the command; a line another harness version wrote is not read."""
     hooks = hooks or Hooks()
     recent: dict[str, list[float]] = {}
     everyone: list[float] = []
@@ -438,6 +499,23 @@ def build_server(
     from mcp.server import Server  # noqa: PLC0415
 
     parsers = {c: parser_of(c) for c in tools_for(public)}
+    if public and answers_file is not None:
+        for line in answers_file.read_text(encoding="utf-8").splitlines():
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue  # a torn line: that tool is run when called
+            if (
+                not isinstance(rec, dict)
+                or rec.get("harness") != __version__
+                or rec.get("tool") not in parsers
+            ):
+                continue
+            res = _answer(types, rec["tool"], str(rec.get("out") or ""), public)
+            # Written for this release, which never changes under the server: kept for as long as it runs,
+            # never past ANSWERS_TTL (its time is infinitely recent).
+            answers[(rec["tool"], tuple(rec.get("argv") or []))] = (math.inf, res)
+            answers_size[0] += len(res.content[0].text)
     for c, flags in TOOL_HIDDEN.items():
         if c in parsers:
             parsers[c]._actions = [a for a in parsers[c]._actions if not set(a.option_strings) & flags]
@@ -575,22 +653,11 @@ def build_server(
                 ],
                 is_error=True,
             )
-        structured = None
-        if name in JSON:
-            try:
-                structured = json.loads(out)
-            except ValueError:
-                structured = None
-        if public and name == "dataset-items" and isinstance(structured, dict):
-            # L2: a profile written --with-text carries item text; a public server serves none.
-            for r in (structured.get("result") or {}).get("rows") or []:
-                r.pop("text", None)
-            out = json.dumps(structured, indent=1)
-        res = types.CallToolResult(content=[types.TextContent(text=out)], structured_content=structured)
+        res = _answer(types, name, out, public)
         if public:
             if (name, tuple(argv)) not in answers:
                 answers[(name, tuple(argv))] = (time.monotonic(), res)
-                answers_size[0] += len(out)
+                answers_size[0] += len(res.content[0].text)
             while answers and answers_size[0] > ANSWERS_BYTES:
                 _, (_t, old) = answers.popitem(last=False)
                 answers_size[0] -= len(old.content[0].text)
@@ -681,7 +748,25 @@ def main(argv: list[str] | None = None) -> int:
         "--hooks",
         help="a deployment's observability: path/to/file.py[:NAME] or module[:NAME] (start, request, error, routes)",
     )
+    ap.add_argument(
+        "--write-answers",
+        type=Path,
+        metavar="FILE",
+        help="write ahead the answer of every tool that takes no argument and does not depend on the date, then "
+        "exit: for a release that never changes, served with --answers",
+    )
+    ap.add_argument(
+        "--answers",
+        type=Path,
+        metavar="FILE",
+        help="--public: serve the answers --write-answers wrote for this release without running the command "
+        "(a line another harness version wrote is not read)",
+    )
     args = ap.parse_args(argv)
+    if args.write_answers:
+        return write_answers(args.project.resolve(), args.write_answers, args.public, args.timeout)
+    if args.answers and not args.public:
+        raise SystemExit("--answers serves a release that never changes: it needs --public")
     if args.http and args.port is None:
         from evaluation_harness._common import project_port  # noqa: PLC0415
 
@@ -708,6 +793,7 @@ def main(argv: list[str] | None = None) -> int:
         rate_total=args.rate_total,
         client_header=args.client_header,
         hooks=hooks,
+        answers_file=args.answers,
     )
     from evaluation_harness._version import __version__  # noqa: PLC0415
 

@@ -187,6 +187,10 @@ services:
       - "60"
       - --hooks
       - /srv/evals/current/inspector/mcp_hooks.py
+      # The tools that take no argument, answered ahead by render.sh: at cpus 0.5 a fresh process took
+      # 33 s for goals, the first time after each start and each hour.
+      - --answers
+      - /srv/evals/current/inspector/cache/mcp-answers.jsonl
     ports:
       - "127.0.0.1:${MCP_PORT:-8098}:8080"
     volumes:

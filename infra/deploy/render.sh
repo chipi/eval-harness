@@ -118,6 +118,13 @@ EVH_P_CACHE="$OUT/inspector/cache/evh-p.jsonl" \
   --head "$OUT/catalog-head.html" --about "$ROOT/infra/catalog/about.html" \
   --repo "https://github.com/${GITHUB_REPOSITORY:-chipi/eval-harness}/blob/main/"
 rm -rf "$OUT/inspector/examples" "$OUT/catalog-head.html"
+# The MCP server's answers to the tools that take no argument, written ahead from the release as the box
+# serves it (after the examples are gone, with the box's EVAL_BUILD_REF): each call is a fresh process,
+# several seconds of CPU, and the server's cpus 0.5 made the first goals after each start and each hour
+# take 33 s (`evh mcp --write-answers`; served by --answers in compose.yml).
+EVH_P_CACHE="$OUT/inspector/cache/evh-p.jsonl" EVAL_HOME="$OUT/inspector" EVAL_BUILD_REF=deployed \
+  PYTHONDONTWRITEBYTECODE=1 python3 "$OUT/inspector/pkg/evaluation_harness/mcp_server.py" \
+  --project "$OUT/inspector" --public --write-answers "$OUT/inspector/cache/mcp-answers.jsonl"
 # The build above ran the package's code; its bytecode is not part of the release.
 find "$OUT/inspector/pkg" -name __pycache__ -type d -prune -exec rm -rf {} +
 
@@ -182,4 +189,7 @@ fi
 [ ! -e "$OUT/inspector/data/materialized" ] || { echo "::error::materialized items in the release"; exit 1; }
 # The MCP server's precomputed goals' tests: without them each view takes ~50 s.
 [ -s "$OUT/inspector/cache/evh-p.jsonl" ] || { echo "::error::the p cache (inspector/cache/evh-p.jsonl) is missing or empty"; exit 1; }
+# And its answers written ahead: without them the first call to each tool waits for a fresh process.
+grep -q '"tool": "goals"' "$OUT/inspector/cache/mcp-answers.jsonl" 2>/dev/null \
+  || { echo "::error::the MCP answers (inspector/cache/mcp-answers.jsonl) are missing, or hold no goals"; exit 1; }
 echo "rendered release $SHA into $OUT (nginx $PORT, inspector $IPORT, mcp $MPORT)"
