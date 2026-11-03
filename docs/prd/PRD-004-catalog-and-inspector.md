@@ -136,7 +136,7 @@ adapter file ([ADR-0002](../adr/ADR-0002-catalog-inspector-goals.md),
 
 ### FR2: The inspector (local server)
 
-- **FR2.1**: `evh catalog-serve [--port 8765]` serves the built catalog and the inspector on
+- **FR2.1**: `evh catalog-serve [--port N]` (default: the project's own port, ADR-0024) serves the built catalog and the inspector on
   127.0.0.1, answers only to a 127.0.0.1/localhost Host header, and serves only the catalog and
   the data tree, never a dot-folder in either.
 - **FR2.2**: It refuses arms on different `dataset_id`s, and, on a metric scored against a

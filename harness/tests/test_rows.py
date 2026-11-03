@@ -559,10 +559,10 @@ try:
     by = {x["item_id"]: x for x in rs}
     jr = foot.get("win rate · winner: judge_b", {})
     check(
-        "a pick that went to an arm not shown is nobody's win: no winner on the row, and it still counts in the rate",
+        "a pick that went to an arm not shown is nobody's win, and a shared pick credits each arm its share (t04: half): the judge's own win rate",
         r.returncode == 0
         and by["t06_mobile"]["winner: judge_b"] in ("", None)
-        and abs(jr.get(T["lead1"], 0) - 3 / 6) < 1e-9
+        and abs(jr.get(T["lead1"], 0) - 2.5 / 6) < 1e-9
         and abs(jr.get(T["author"], 0) - 2 / 6) < 1e-9,
         json.dumps(jr) + str(by.get("t06_mobile", {}).get("winner: judge_b")),
     )
@@ -573,7 +573,7 @@ try:
         "the same when the judged runs are the arms (read on judge_won): a row where every shown arm has 0 has no winner",
         r.returncode == 0
         and by["t06_mobile"].get("winner: judge_won") in ("", None)
-        and abs(jr.get(T["lead1"], 0) - 3 / 6) < 1e-9
+        and abs(jr.get(T["lead1"], 0) - 2.5 / 6) < 1e-9
         and abs(jr.get(T["author"], 0) - 2 / 6) < 1e-9,
         json.dumps(jr) + json.dumps(by.get("t06_mobile", {}))[:300],
     )

@@ -9,6 +9,33 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.6.1 — unreleased
+
+Fixes to 0.6.0. One can move a number a project sees: the sheet's win rate on a pick or pairwise verdict (Changed).
+The rest restore what 0.6.0 documented.
+
+### Changed
+
+- **The sheet's win rate on a pick or pairwise verdict is each arm's share of what the judge gave** over the rows it
+  judged (its `judge_won`), so with every arm shown it is the judging pass's own win rate. 0.6.0 gave a shown arm a
+  whole row when it held the largest share among the arms shown, however small: on the CNN pick pass `anthropic_l`
+  read 0.646 in the sheet against the pass's 0.402.
+
+### Fixed
+
+- **The installed `evh` reads the project's `.env`.** 0.6.0's `evh`, as pip installs it, loaded none (`env-check`:
+  "loaded 0 var(s)"), so a key or a cost cap put there was not in force; `python -m evaluation_harness` and a
+  checkout were unaffected. Found by the newcomer scenario.
+- **`reference-promote` adopting a hand-made folder keeps its files' bytes.** It added a newline to each, so the
+  reference digest every run scored against the folder had recorded no longer matched (`rescore` warned the
+  reference had changed), where UPGRADING said no run's reference moves.
+- **Fetching the examples' public data falls back to the Hub's parquet files** when the Hugging Face
+  datasets-server's `/rows` keeps failing (its outage of 2026-11-02 answered HTTP 503 for every dataset): the same
+  rows and row numbers, read with `pyarrow`, now in each example's environment; every item is still checked against
+  the frozen dataset. The installed harness does not depend on it.
+- Docs: tutorial 5 and the RUNBOOK named the old fixed ports (8765, 8766) where 0.6.0 gives each project its own;
+  the home page's MCP section names what 0.6.0 added and that the public server never answers with an item's text.
+
 ## 0.6.0 — 2026-11-02
 
 What you get: datasets made from what production did (capture, scrub, split, `dataset-from-capture`); labels that say

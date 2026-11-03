@@ -165,7 +165,8 @@ try:
     (src / "b.txt").write_text("Where is my parcel?", encoding="utf-8")
     r = evh("dataset-create", "--dataset-id", "toy_v1", "--source-dir", "data/sources/toy")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "toy_v1")
-    (silver / "b.txt").write_text("shipping\n", encoding="utf-8")
+    (silver / "b.txt").write_text("shipping", encoding="utf-8")  # by hand: no newline at the end
+    before = {f.name: f.read_bytes() for f in silver.glob("*.txt")}
     r = (
         r
         if r.returncode
@@ -205,6 +206,12 @@ try:
         and mf.get("n_items") == 2
         and "ok   V16" in evh("validate").stdout,
         (r.stdout + r.stderr)[-500:] + str(mf)[:200],
+    )
+    after = {f.name: f.read_bytes() for f in silver.glob("*.txt")}
+    check(
+        "the adopted folder's files keep their bytes (no newline added), so no run's reference digest moves",
+        after == before,
+        f"{before} -> {after}",
     )
     other = proj / "data" / "references" / "gold" / "toy_v1"
     other.mkdir(parents=True)

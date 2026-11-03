@@ -972,7 +972,7 @@ client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
   starts it with its own `PATH` and working directory, so give the full path to `evh` and
   `--project`.
 - **`--http`**: Streamable HTTP, stateless, JSON answers, at `--path` (default `/mcp`) on `--bind`
-  (default `127.0.0.1`) and `--port` (default `8766`; `catalog-serve` has 8765). `<path>/health` answers `{"ok", "version",
+  (default `127.0.0.1`) and `--port` (default: the project's own, in 19000–19999, the same every time; `catalog-serve` has one in 18000–18999). `<path>/health` answers `{"ok", "version",
   "tools", "public"}`. Beyond the loopback, `--allowed-host` is required: a request for another Host
   is answered 421 (DNS rebinding). `--allowed-origin` names the browser origins it accepts; an
   agent sends no Origin.
@@ -1138,8 +1138,9 @@ evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did pro
   is read on); a column per label set or reference set; the
   winner per item (the best arm on that metric, and a pick or pairwise judge's choice where one covers the run);
   the signals; the fields; and a footer per arm: its mean, its win rate (the share of the shown rows with a winner
-  that it wins, a shared win split; on a pick or pairwise verdict only an arm the judge preferred wins, so a row it gave to an arm
-  not shown is nobody's win) and its verdict (the goal's decision when a goal names the dataset, else the paired test
+  that it wins, a shared win split; on a pick or pairwise verdict, each arm's share of what the judge gave over the
+  rows it judged, so a shared pick counts its share, a row given to an arm not shown is nobody's, and with every arm
+  shown it is the judging pass's own win rate) and its verdict (the goal's decision when a goal names the dataset, else the paired test
   against the leader). The signals: **wrong** (the first run against a label set, `--wrong-against`),
   **disagree**, **split** (the candidates among themselves), **new** (a field value the dataset in `--new-vs` never
   had), **unlabelled**. Each is a filter (`--disagree`, `--split`, `--unlabelled`, beside `--where` and `--by`);

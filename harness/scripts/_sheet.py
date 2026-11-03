@@ -430,7 +430,8 @@ def build(
         if not mine:
             sig["unlabelled"] = ""
         winners: dict[str, list[str]] = {}
-        judged_on: list[str] = []
+        # {pick or pairwise column: {arm: its judge_won on this row}}: the win rate credits each arm its own share.
+        judged_on: dict[str, dict[str, float]] = {}
         for w in winner_cols:
             if "judge" in w:
                 vals = {
@@ -447,7 +448,7 @@ def build(
                 # A pick or pairwise verdict: only an arm the judge preferred wins the row. When the judge picked an
                 # arm not shown, every shown arm has 0, and the row is nobody's win (it still counts in the rate).
                 if vals:
-                    judged_on.append(w["key"])
+                    judged_on[w["key"]] = vals
                 winners[w["key"]] = _best({t: v for t, v in vals.items() if v > 0}, False)
             else:
                 winners[w["key"]] = _best(vals, lower)
@@ -596,16 +597,19 @@ def _verdicts(model: dict[str, Any], sub: dict[str, dict[str, float]]) -> tuple[
 def footer(model: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Per arm, over the rows given: {metric, mean {arm}, n {arm}, win_rate {winner column: {arm}}, verdict {arm},
     decided}. A win rate is the share of the rows with a winner that the arm wins, a shared win split; on a pick or
-    pairwise verdict, of the rows the judge judged, a row it gave to an arm not shown being nobody's."""
+    pairwise verdict, the arm's share of what the judge gave over the rows it judged (its judge_won, the judging
+    pass's own win rate when every arm is shown), a row the judge gave to an arm not shown being nobody's."""
     toks = [a["token"] for a in model["arms"]]
     ref = model["metric"]
     items = {r["item"] for r in rows}
     sub = {t: {i: v for i, v in (model["_series"][t].get(ref) or {}).items() if i in items} for t in toks}
     rates: dict[str, dict[str, float | None]] = {}
     for w in model["winner_cols"]:
-        won = [
-            r["winners"][w["key"]] for r in rows if r["winners"].get(w["key"]) or w["key"] in r["judged_on"]
-        ]
+        judged = [r["judged_on"][w["key"]] for r in rows if w["key"] in r["judged_on"]]
+        if judged:
+            rates[w["key"]] = {t: sum(v.get(t, 0.0) for v in judged) / len(judged) for t in toks}
+            continue
+        won = [r["winners"][w["key"]] for r in rows if r["winners"].get(w["key"])]
         rates[w["key"]] = {
             t: (sum(1 / len(x) for x in won if t in x) / len(won) if won else None) for t in toks
         }

@@ -108,7 +108,9 @@ def main() -> int:
     doc = next((d for d in sets() if d["dataset_id"] == set_ds and d["set"] == set_name), {})
     not_here = doc.get("redistributed") is False
     ref_dir.mkdir(parents=True, exist_ok=True)
-    for iid in chosen:
+    # An adopted folder keeps its files byte for byte: they are the labels already, and the reference digest every run
+    # scored against it recorded is of these bytes (a newline added to each moved it).
+    for iid in [] if hand_made else chosen:
         (ref_dir / f"{iid}.txt").write_text(mine[iid]["text"] + "\n", encoding="utf-8")
     authorship = {}
     if source.get("kind") == "model":

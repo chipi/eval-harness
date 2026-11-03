@@ -210,7 +210,8 @@ browser, the same model.
 - **The select box and the item column stay in place** as the arms scroll across.
 - **The footer**, under each arm's columns: its mean on the chosen metric (and which way is better), its win
   rate per winner column (the share of the shown rows with a winner that it wins, a shared win split; on a pick
-  or pairwise verdict, of the rows the judge judged, a row it gave to an arm not shown being nobody's), and its
+  or pairwise verdict, each arm's share of what the judge gave over the rows it judged, a shared pick counting its
+  share and a row it gave to an arm not shown being nobody's), and its
   verdict (the goal's
   decision when a goal names the dataset, else the paired test against the leader).
 - **Controls**: the arms (chips, as above), "read on" (the metric), "wrong against" (a label set), "new

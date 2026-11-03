@@ -191,7 +191,9 @@ per arm at the bottom. It replaces the rows view and `inspect --items`, which sh
   row where they differ shows.
 - **Signals**: wrong, disagree, split, new, unlabelled, as specified for the rows view above, each a column and a filter.
 - **The last row**, per arm: its mean, its win rate (the share of rows it is the winner of, a shared win split; on a
-  pick or pairwise verdict only an arm the judge preferred wins, so a row it gave to an arm not shown is nobody's), and
+  pick or pairwise verdict each arm's share of what the judge gave, over the rows it judged: its `judge_won`, so a
+  shared pick counts its share and a row the judge gave to an arm not shown is nobody's; with every arm shown it is
+  the judging pass's own win rate), and
   whether it is significantly different from the leader or a contender (the goal's strategy, when a goal names the
   dataset).
 - The item column stays in place as the arms scroll across. The terminal prints the same table; `--csv FILE` writes it,
