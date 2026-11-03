@@ -180,15 +180,20 @@ def config_rows(A, by_ds: dict, rows: list[dict], spend: list[dict]) -> list[dic
         dec = gr["dec"]
         if not dec:
             continue
-        vals = {a: (dec["rows"][a]["quality"]["value"]) for a in dec["rows"]}
+        # One place per config, and no arm a round retired (a re-timing, a second run, a paired side run):
+        # a config run twice took two places, so the catalog read "#8 of 33" where the site reads "5th of 30".
+        retired_in = cb.retired_in_of(A, gr["goal"])
+        vals = {
+            a: dec["rows"][a]["quality"]["value"] for a in dec["rows"] if not cb.retired_round(retired_in, a)
+        }
         ordered = sorted(
             (a for a in vals if vals[a] is not None), key=lambda a: vals[a], reverse=not gr["lower"]
         )
         best: dict = {}
-        for i, a in enumerate(ordered, 1):
-            best.setdefault(arm_cfg.get(a, a.rsplit("/", 1)[-1]), i)
+        for a in ordered:
+            best.setdefault(arm_cfg.get(a, a.rsplit("/", 1)[-1]), len(best) + 1)
         for cid, i in best.items():
-            ranks.setdefault(cid, []).append((gr["goal"], gr["dataset"], i, len(ordered)))
+            ranks.setdefault(cid, []).append((gr["goal"], gr["dataset"], i, len(best)))
     out = []
     for cid, rs in sorted(by_cfg.items()):
         out.append(

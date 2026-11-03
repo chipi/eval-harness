@@ -257,6 +257,28 @@ def drive(cat: Path, base: str) -> None:
             f"recommended {recs}; best {best[:3]}",
         )
 
+        # A config's place in a goal's field is counted as the site counts it: one place per config, no arm a round
+        # retired (a re-timing on Linux, a paired side run).
+        def place(cfg: str) -> str:
+            row = ct[ct.index(f'data-key="c:{cfg}"') :]
+            return ",".join(re.findall(r"#(\d+ of \d+)", row[: row.index("</tr>")])) or "none"
+
+        places = {
+            c: place(c)
+            for c in ("ag_anthropic_l_n200_v1", "se_openai_l_n100_v1", "se_gemma_l_pubtext_n100_v1")
+        }
+        check(
+            "arms page: AG News anthropic_l is 5th of 30 and SummEval openai_l 1st of 33, as on the site; a paired "
+            "side run has no place",
+            places
+            == {
+                "ag_anthropic_l_n200_v1": "5 of 30",
+                "se_openai_l_n100_v1": "1 of 33",
+                "se_gemma_l_pubtext_n100_v1": "none",
+            },
+            str(places),
+        )
+
         # A goal page's rounds count their arms as `evh rounds` does: a re-scored run is the same arm.
         differ = []
         for gp in sorted((cat / "g").glob("*.html")):
