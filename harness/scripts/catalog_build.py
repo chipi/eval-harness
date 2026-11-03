@@ -3177,8 +3177,10 @@ def group_decision(
         dec["shown_only"] = True
         dec["why"] = [
             *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still undecided"))],
-            f"Read on {gm}: the goal decides on {(crit.get('primary') or {}).get('measure')}; this group is shown, "
-            "not recommended.",
+            (
+                f"Read on {gm}: the goal decides on {(crit.get('primary') or {}).get('measure')}; this group is "
+                "shown, not recommended."
+            ),
         ]
     elif gm.endswith("_unvalidated"):
         dec["recommended"] = None
