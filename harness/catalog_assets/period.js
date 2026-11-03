@@ -43,7 +43,8 @@ const evIn=(k,s)=>(R[k]&&R[k].events||[]).filter(x=>within(x[0],s)).sort((a,b)=>
 const usdIn=(k,s)=>(R[k]&&R[k].usd||[]).filter(x=>within(x[0],s)).reduce((a,x)=>a+x[1],0);
 const tokIn=(k,s)=>(R[k]&&R[k].tokens||[]).filter(x=>within(x[0],s)).reduce((a,x)=>a+x[1],0);
 function cell(el,now,before,fmt){const t=before===null?'':short(trend(now,before));
-el.dataset.v=now;if(before===null)delete el.dataset.prev;else el.dataset.prev=before;el.innerHTML='<span class="nowrap">'+esc(fmt(now))+(t&&t!=='none'?` <small class="trend">${esc(t)}</small>`:'')+'</span>';}
+el.dataset.v=now;if(before===null)delete el.dataset.prev;else el.dataset.prev=before;/* the number never splits; its badge may take the next line, so a narrow column still fits */
+el.innerHTML='<span class="nowrap">'+esc(fmt(now))+'</span>'+(t&&t!=='none'?` <small class="trend">${esc(t)}</small>`:'');}
 /* a row's runs per day over the period, in its table's colour; nothing when it had none */
 function line(xs){if(xs.length<2||!xs.some(Boolean))return '';const top=Math.max(...xs),step=100/(xs.length-1);
 const pts=xs.map((v,i)=>`${(i*step).toFixed(1)},${(17-15*v/top).toFixed(1)}`).join(' ');

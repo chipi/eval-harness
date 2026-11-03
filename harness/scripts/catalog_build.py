@@ -2509,7 +2509,9 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
                     metric_link(prim.get("measure", ""))
                     + (f" ({e(prim['direction'])})" if prim.get("direction") else ""),
                     rec or '<span class="muted">none yet</span>',
-                    "<br>".join(dataset_link(d.get("dataset_id", "")) for d in g.get("datasets") or [])
+                    "<br>".join(
+                        dataset_link(d.get("dataset_id", ""), wrap=True) for d in g.get("datasets") or []
+                    )
                     or "—",
                     f'<span data-v="{filed}">{filed}</span>',
                     f'<span data-flow="runs" data-line>{len(period_rows[g["goal_id"]]["runs"])}</span>',
