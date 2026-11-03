@@ -190,7 +190,7 @@ per arm at the bottom. It replaces the rows view and `inspect --items`, which sh
   (`--metric`, else the goal's or the primary), every arm tied for best named. When both exist each has a column, so a
   row where they differ shows.
 - **Signals**: wrong, disagree, split, new, unlabelled, as specified for the rows view above, each a column and a filter.
-- **The last row**, per arm: its mean, its win rate (the share of rows it is the winner of, a shared win split; on a
+- **The last row**, per arm: its mean, its win rate (the share of the rows it was scored on that it is the winner of, a shared win split, "—" for an arm scored on none; on a
   pick or pairwise verdict each arm's share of what the judge gave, over the rows it judged: its `judge_won`, so a
   shared pick counts its share and a row the judge gave to an arm not shown is nobody's; with every arm shown it is
   the judging pass's own win rate), and

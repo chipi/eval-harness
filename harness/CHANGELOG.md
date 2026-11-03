@@ -11,8 +11,8 @@ that can move a result is never a patch release without saying so under **Change
 
 ## 0.6.1 — unreleased
 
-Fixes to 0.6.0. One can move a number a project sees: the sheet's win rate on a pick or pairwise verdict (Changed).
-The rest restore what 0.6.0 documented.
+Fixes to 0.6.0. Two can move a number a project sees, both in the sheet's win rate (Changed). One keeps a hidden
+dataset's labels and notes off public surfaces (Security). The rest restore what 0.6.0 documented.
 
 ### Changed
 
@@ -20,6 +20,16 @@ The rest restore what 0.6.0 documented.
   judged (its `judge_won`), so with every arm shown it is the judging pass's own win rate. 0.6.0 gave a shown arm a
   whole row when it held the largest share among the arms shown, however small: on the CNN pick pass `anthropic_l`
   read 0.646 in the sheet against the pass's 0.402.
+- **The sheet's win rate on a metric is over the rows each arm was scored on**, "—" for an arm scored on none. 0.6.0
+  divided by every row with a winner, so an arm with no value on a row counted as beaten there, and one never scored
+  read 0.000.
+
+### Security
+
+- **A hidden dataset's labels and notes stay off public surfaces** (RFC-019 §4: per-item labels, adjudication notes).
+  0.6.0 showed its label sets' confusion matrices, whose rows and columns are the label values, on the catalog's
+  dataset page and in a public server's `labels`; listed a person's sheet notes on its items in a public server's
+  `labels`; and copied those notes into a deployment's data. The counts, Cohen's kappa and Krippendorff's alpha stay.
 
 ### Fixed
 
@@ -33,6 +43,8 @@ The rest restore what 0.6.0 documented.
   datasets-server's `/rows` keeps failing (its outage of 2026-11-02 answered HTTP 503 for every dataset): the same
   rows and row numbers, read with `pyarrow`, now in each example's environment; every item is still checked against
   the frozen dataset. The installed harness does not depend on it.
+- **`inspect --sheet --wrong-against NAME` refuses a name two datasets' sets share** on this dataset's items (labels
+  follow an item into every dataset holding it), naming each as DATASET/SET; it read whichever it found first.
 - Docs: tutorial 5 and the RUNBOOK named the old fixed ports (8765, 8766) where 0.6.0 gives each project its own;
   the home page's MCP section names what 0.6.0 added and that the public server never answers with an item's text.
 

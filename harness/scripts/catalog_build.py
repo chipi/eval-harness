@@ -1992,7 +1992,9 @@ def render_labels_of(A: Adapter, ds: str, v: dict) -> str:
                     for a in cov["agreement"]
                 ],
             )
-            + "".join(confusion_html(a) for a in cov["agreement"])
+            # A hidden dataset's labels are per-item text (RFC-019 §4): its confusion matrices, which name them, stay off
+            # the pages; the counts and coefficients above are numbers.
+            + ("" if _visibility.hidden(ds) else "".join(confusion_html(a) for a in cov["agreement"]))
         )
     return html_
 

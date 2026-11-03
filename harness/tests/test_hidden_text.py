@@ -233,6 +233,47 @@ try:
         rc != 0 and MARK["h"] not in out + err,
     )
 
+    # ── label agreement: two sets whose labels are short text (a category by its shape, RFC-023) ──────────
+    # On a hidden dataset its label values are per-item labels (§4): a reference's text if a set is promoted.
+    for k in MARK:
+        ds = f"tickets_{k}"
+        ids = sorted(
+            x["item_id"] for x in json.loads((data / "datasets" / f"{ds}.json").read_text())["items"]
+        )
+        for name, extra in (("short_a", ""), ("short_b", " two")):
+            folder = proj / f"{ds}_{name}"
+            folder.mkdir()
+            for n, i in enumerate(ids):
+                (folder / f"{i}.txt").write_text(f"{MARK[k]}{extra if n % 2 else ''}\n")
+            r = evh("label-import", str(folder), "--dataset-id", ds, "--set", name, "--by", "owner")
+            check(f"setup: {ds}'s short label set {name}", r.returncode == 0, said(r)[-300:])
+    cat2 = proj / "cat2"
+    r = evh("catalog", "--out", str(cat2))
+    page_s = (cat2 / "d" / "tickets_s.html").read_text() if r.returncode == 0 else ""
+    page_h = (cat2 / "d" / "tickets_h.html").read_text() if r.returncode == 0 else ""
+    check(
+        "catalog: the shown dataset's label agreement names its labels (the surface shows them)",
+        "how often two sets agree" in page_s and MARK["s"] in page_s,
+        said(r)[-300:],
+    )
+    check(
+        "catalog: the hidden dataset's label agreement is there, its labels' text never",
+        "how often two sets agree" in page_h and MARK["h"] not in page_h,
+        [ln for ln in page_h.splitlines() if MARK["h"] in ln][:2],
+    )
+    rc, out, err = run_command(proj, "labels", ["--dataset-id", "tickets_s", "--confusion"], public=True)
+    check(
+        "MCP public: labels --confusion names the shown dataset's labels",
+        rc == 0 and MARK["s"] in out,
+        out[-300:],
+    )
+    rc, out, err = run_command(proj, "labels", ["--dataset-id", "tickets_h", "--confusion"], public=True)
+    check(
+        "MCP public: labels --confusion on the hidden dataset answers, with none of its labels' text",
+        rc == 0 and "tickets_h" in out and MARK["h"] not in out + err,
+        (out + err)[-400:],
+    )
+
     # ── the deployment's copy of the data ──────────────────────────────────────────────────
     from evaluation_harness._release import copy_data
 
@@ -240,7 +281,25 @@ try:
     lab = data / "labels" / "tickets_h" / "l1"
     lab.mkdir(parents=True)
     (lab / f"{item}.txt").write_text(f"a label quoting {MARK['h']}\n")
-    (lab / "labels.json").write_text(json.dumps({"dataset_id": "tickets_h", "set": "l1", "n_items": 1}))
+    # Its record carries a person's notes from the sheet (free text: RFC-019 §4's adjudication notes).
+    (lab / "labels.json").write_text(
+        json.dumps(
+            {
+                "dataset_id": "tickets_h",
+                "set": "l1",
+                "n_items": 1,
+                "notes": {item: f"a note quoting {MARK['h']}"},
+            }
+        )
+    )
+    rc, out, err = run_command(proj, "labels", [], public=False)
+    check("labels, local: a hidden set's notes are listed on this machine", MARK["h"] in out, out[-300:])
+    rc, out, err = run_command(proj, "labels", [], public=True)
+    check(
+        "MCP public: labels lists the hidden dataset's sets, never their notes",
+        rc == 0 and "tickets_h" in out and MARK["h"] not in out + err,
+        (out + err)[-300:],
+    )
     rel = proj / ".release"
     counts = copy_data(data, rel)
     check(

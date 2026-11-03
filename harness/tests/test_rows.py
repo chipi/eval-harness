@@ -235,6 +235,24 @@ try:
     )
     r, rs = rows("--wrong-against", f"{D}/owner")
     check("--wrong-against DATASET/SET names the same set", sorted(ids(rs)) == want, out(r)[-300:])
+    # Another dataset holding the same tickets has a set of the same name that says otherwise on t02: a bare name
+    # is two sets, and reading the first one found was a guess.
+    with (proj / "gov.csv").open("w", newline="") as f:
+        csv.writer(f).writerows([["item_id", "label"], ["t02_invoice", "A"]])
+    r = evh("label-import", "gov.csv", "--dataset-id", "tickets_gov", "--set", "owner", "--by", "someone")
+    amb = evh("inspect", "--sheet", "--dataset-id", D, "--runs", RUNS, "--wrong-against", "owner")
+    r2, rs = rows("--wrong-against", f"{D}/owner")
+    check(
+        "--wrong-against: a bare name two datasets' sets share is refused, naming both; DATASET/SET still reads one",
+        r.returncode == 0
+        and amb.returncode != 0
+        and f"{D}/owner" in out(amb)
+        and "tickets_gov/owner" in out(amb)
+        and sorted(ids(rs)) == want,
+        out(r)[-200:] + out(amb)[-300:],
+    )
+    shutil.rmtree(data / "labels" / "tickets_gov")
+    (proj / "gov.csv").unlink()
     # A label accepting both answers on t02: production's A is one of them, so not wrong; the rows show both.
     (proj / "two.csv").write_text("item_id,label,also right\nt02_invoice,B,A\n")
     r = evh("label-import", "two.csv", "--dataset-id", D, "--set", "owner_two", "--by", "owner")
@@ -687,6 +705,21 @@ try:
     check("refused: a nested arm id on another dataset", refused(r2, f"not an arm on {D}"), out(r2)[-200:])
     r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", T["lead1"], "--from", "runs-judged/no_such")
     check("refused: a --from that holds no such run", refused(r, "no run of that config"), out(r)[-200:])
+    # A metric an arm has on some rows only: its win rate is over the rows it was scored on, and an arm scored on
+    # none has no win rate (it was never compared, not always beaten).
+    part: dict[str, tuple] = dict.fromkeys(f1, (None, 2.0, None))
+    part["t01_login"], part["t02_invoice"] = (3.0, 1.0, None), (1.0, 3.0, None)
+    judged("judge_p", "judge_score", part)
+    r, rs, foot = sheet_of("--metric", "judge_p/judge_score")
+    pr: dict = next((v for k, v in foot.items() if k.startswith("win rate") and "judge_score" in k), {})
+    check(
+        "win rate on a metric: over the rows each arm was scored on; '—' for one scored on none",
+        r.returncode == 0
+        and abs(pr.get(T["lead1"], 0) - 1 / 2) < 1e-9
+        and abs(pr.get(T["author"], 0) - 5 / 6) < 1e-9
+        and pr.get(T["lead2"]) in (None, "", "—"),
+        json.dumps(pr) + out(r)[-200:],
+    )
     shutil.rmtree(data / "runs-judged")
 
     # ── refusals ─────────────────────────────────────────────────────────────────────────────

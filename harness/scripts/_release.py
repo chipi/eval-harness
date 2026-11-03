@@ -199,7 +199,13 @@ def copy_data(src: Path, dst: Path) -> dict:
             for rec in sorted(d.glob("*/*/labels.json")):
                 out = dst / name / rec.parent.relative_to(d)
                 out.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(rec, out / "labels.json")
+                doc = json.loads(rec.read_text(encoding="utf-8"))
+                if "notes" in doc and hidden(doc.get("dataset_id"), datasets):
+                    # A person's notes on a hidden dataset's items are its text (RFC-019 §4, adjudication notes).
+                    doc.pop("notes")
+                    (out / "labels.json").write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
+                else:
+                    shutil.copy2(rec, out / "labels.json")
         elif name == "captures":
             for cap in sorted(d.glob("*/capture.json")):
                 (dst / name / cap.parent.name).mkdir(parents=True, exist_ok=True)

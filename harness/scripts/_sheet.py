@@ -79,10 +79,24 @@ KEY_SUFFIX = ".key.json"
 LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
-def _set_named(name: str) -> None:
-    """Refuse a label set no dataset has."""
+def _set_named(name: str, dataset_id: str) -> None:
+    """Refuse a label set no dataset has, and a bare name that two datasets' sets on this dataset's items share
+    (labels follow an item by its bytes into every dataset holding it): which one the row read was a guess."""
     if not any(name in (d["set"], f"{d['dataset_id']}/{d['set']}") for d in sets()):
         die(f"--wrong-against {name}: no such label set (evh labels lists them)")
+    if "/" not in name:
+        same = sorted(
+            {
+                f"{r['dataset_id']}/{r['set']}"
+                for rows in labels_for(dataset_id).values()
+                for r in rows
+                if r["set"] == name
+            }
+        )
+        if len(same) > 1:
+            die(
+                f"--wrong-against {name}: {len(same)} label sets are named so ({', '.join(same)}); name one as DATASET/SET"
+            )
 
 
 def _new_values(fields_of, dataset_id: str, new_vs: str) -> dict[str, list[str]]:
@@ -338,7 +352,7 @@ def build(
         return same is not None and not any(same(x, out) for x in answers(label))
 
     if wrong_against:
-        _set_named(wrong_against)
+        _set_named(wrong_against, dataset_id)
     if new_vs:
         load_dataset(new_vs)
     new = _new_values(fields_of, dataset_id, new_vs) if new_vs else {}
@@ -432,6 +446,8 @@ def build(
         winners: dict[str, list[str]] = {}
         # {pick or pairwise column: {arm: its judge_won on this row}}: the win rate credits each arm its own share.
         judged_on: dict[str, dict[str, float]] = {}
+        # {metric column: the arms with a value on this row}: an arm's win rate is over the rows it was scored on.
+        scored_on: dict[str, list[str]] = {}
         for w in winner_cols:
             if "judge" in w:
                 vals = {
@@ -451,6 +467,7 @@ def build(
                     judged_on[w["key"]] = vals
                 winners[w["key"]] = _best({t: v for t, v in vals.items() if v > 0}, False)
             else:
+                scored_on[w["key"]] = sorted(vals)
                 winners[w["key"]] = _best(vals, lower)
         out.append(
             {
@@ -471,6 +488,7 @@ def build(
                 },
                 "winners": winners,
                 "judged_on": judged_on,
+                "scored_on": scored_on,
                 "signals": sig,
             }
         )
@@ -609,10 +627,17 @@ def footer(model: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
         if judged:
             rates[w["key"]] = {t: sum(v.get(t, 0.0) for v in judged) / len(judged) for t in toks}
             continue
-        won = [r["winners"][w["key"]] for r in rows if r["winners"].get(w["key"])]
-        rates[w["key"]] = {
-            t: (sum(1 / len(x) for x in won if t in x) / len(won) if won else None) for t in toks
-        }
+        # Over the rows each arm was scored on: an arm with no value on a row was not compared there, and one scored on
+        # none has no win rate (not 0, which would read as always beaten).
+        won = [
+            (r["winners"][w["key"]], r["scored_on"].get(w["key"], []))
+            for r in rows
+            if r["winners"].get(w["key"])
+        ]
+        rates[w["key"]] = {}
+        for t in toks:
+            mine = [x for x, scored in won if t in scored]
+            rates[w["key"]][t] = sum(1 / len(x) for x in mine if t in x) / len(mine) if mine else None
     verdict, decided = _verdicts(model, sub) if ref and toks else (dict.fromkeys(toks, ""), "")
     return {
         "metric": ref,

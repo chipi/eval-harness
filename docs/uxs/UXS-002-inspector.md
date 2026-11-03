@@ -209,7 +209,7 @@ browser, the same model.
   item's **fields**, last. The best score per row on the chosen metric is marked.
 - **The select box and the item column stay in place** as the arms scroll across.
 - **The footer**, under each arm's columns: its mean on the chosen metric (and which way is better), its win
-  rate per winner column (the share of the shown rows with a winner that it wins, a shared win split; on a pick
+  rate per winner column (the share of the rows it was scored on that it wins, a shared win split, "—" for an arm scored on none; on a pick
   or pairwise verdict, each arm's share of what the judge gave over the rows it judged, a shared pick counting its
   share and a row it gave to an arm not shown being nobody's), and its
   verdict (the goal's

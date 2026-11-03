@@ -26,6 +26,16 @@ import json
 
 from evaluation_harness._common import load_dataset
 from evaluation_harness._label_sets import agreement, coverage, sets, source_line
+from evaluation_harness._visibility import public_env, text_shown
+
+
+def shown_set(d: dict) -> dict:
+    """A set's record as this command may print it: under a public server, a hidden dataset's (RFC-019 §4) without
+    the notes a person wrote on its items (free text, which can quote them)."""
+    out = {k: v for k, v in d.items() if k != "_dir"}
+    if not text_shown(d.get("dataset_id"), public=public_env()):
+        out.pop("notes", None)
+    return out
 
 
 def pair_line(p: dict) -> str:
@@ -72,6 +82,10 @@ def main() -> int:
         n = len(load_dataset(args.dataset_id).get("items") or [])
         cov = coverage(args.dataset_id)
         pairs = agreement(args.dataset_id)
+        if not text_shown(args.dataset_id, public=public_env()):
+            # A hidden dataset's labels are per-item text (RFC-019 §4): a confusion matrix names them. The counts and
+            # the coefficients stay.
+            pairs = [{k: v for k, v in p.items() if k != "confusion"} for p in pairs]
         if args.json:
             print(
                 json.dumps(
@@ -97,11 +111,7 @@ def main() -> int:
         return 0
     found = sets()
     if args.json:
-        print(
-            json.dumps(
-                {"sets": [{k: v for k, v in d.items() if k != "_dir"} for d in found]}, indent=2, default=str
-            )
-        )
+        print(json.dumps({"sets": [shown_set(d) for d in found]}, indent=2, default=str))
         return 0
     if not found:
         print(
