@@ -534,7 +534,10 @@
     const armHead = t => esc(short(t)).replace(/\//g, '/<wbr>');
     arms.forEach((a, i) => {
       heads.push(['outc', armHead(a.token) + '<br><small>' + (i === 0 ? 'first: production' : 'output') + '</small>']);
-      a.scores.forEach(ref => heads.push(['scc', armHead(a.token) + '<br><small>' + esc(ref) + '</small>']));
+      // The arm heads its output column; its score columns, right after, name only the metric (the arm's whole path
+      // over each was the sheet's widest clutter). With the outputs hidden (scores only) the arm heads its scores.
+      a.scores.forEach(ref => heads.push(['scc', (scoresOnly ? armHead(a.token) + '<br>' : '')
+        + `<small title="${esc(a.token)}">${esc(ref)}</small>`]));
     });
     d.label_cols.forEach(c => heads.push(['', `label ${chip(c.kind)} ${esc(c.name)}`]));
     d.ref_cols.forEach(c => heads.push(['', 'reference<br><small>' + esc(c.key) + '</small>']));

@@ -290,15 +290,22 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                         else ""
                     ),
                     cb.dataset_link(r["dataset"]),
-                    (f"<code>{e(r['model'])}</code>" if r["model"] else "—")
-                    + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>'
-                    + (
-                        f"<br>{cm.model_link(r['record'])}"
-                        + (f' <small class="muted">@ {e(r["deployment"])}</small>' if r["deployment"] else "")
-                        + f" {cm.SMOKE_BADGE[r['smoke']]}"
+                    # The model once, linked to its record when it has one (the id, then the record's link, named it
+                    # twice); the smoke chip only when an arm smoke ran: "not smoked" was on 568 of 646 rows.
+                    (
+                        cm.model_link(r["record"], r["model"] or r["record"])
                         if r["record"]
+                        else f"<code>{e(r['model'])}</code>"
+                        if r["model"]
+                        else "—"
+                    )
+                    + (f' <small class="muted">@ {e(r["deployment"])}</small>' if r["deployment"] else "")
+                    + (
+                        f" {cm.SMOKE_BADGE[r['smoke']]}"
+                        if r["record"] and r["smoke"] in ("pass", "check")
                         else ""
-                    ),
+                    )
+                    + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>',
                     (
                         cb.metric_link(r["measure"])
                         + f' <span data-v="{r["value"]}">{cb.fmt(r["value"])}</span>'

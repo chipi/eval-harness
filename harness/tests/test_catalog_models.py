@@ -386,11 +386,11 @@ with tempfile.TemporaryDirectory() as td:
         rows_of(arms_html, f"runs/ds1/{c}") for c in ("cfg_a", "cfg_b", "cfg_c", "cfg_d")
     )
     check(
-        "arms page: the model record under the model column, linked, with smoked / smoke: check / not smoked",
+        "arms page: the model once, linked to its record, with smoked / smoke: check; no chip where no smoke ran",
         'href="models/gem.html"' in a_row
         and '<span class="role">smoked</span>' in a_row
         and '<span class="role">smoke: check</span>' in b_row
-        and '<span class="role">not smoked</span>' in c_row
+        and "not smoked" not in c_row
         and 'href="models/span.html"' in c_row,
     )
     check(
