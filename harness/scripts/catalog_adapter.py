@@ -76,6 +76,25 @@ def _memo(fn):
     return wrapper
 
 
+def scores_once(adapter):
+    """The adapter, its `scores` read once per arm from now on: for a process that answers once and exits (a view,
+    a build). `evh goals` read 1,054 arms' scores for 686 arms (the collect, the goals' groups and the adapter's own
+    `describe` asking again): 79% of its CPU. Set on the instance, so the adapter's own `self.scores` reads it too.
+    Never for catalog-serve's adapter, which runs for days and caches scores itself, bounded: this keeps every arm.
+    Callers only read what `scores` returns (every caller gets the same dict)."""
+    read = adapter.scores
+    kept: dict = {}
+
+    def scores(arm, *args, **kw):
+        k = (arm, args, tuple(sorted(kw.items())))
+        if k not in kept:
+            kept[k] = read(arm, *args, **kw)
+        return kept[k]
+
+    adapter.scores = scores
+    return adapter
+
+
 class Adapter(Protocol):
     """The questions the catalog and the inspector ask. Every method must be cheap to call
     twice. The server caches `scores` for as long as it runs, and the built-in adapter its

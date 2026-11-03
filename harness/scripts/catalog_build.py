@@ -55,7 +55,7 @@ from evaluation_harness.axes import (  # noqa: E402
     strategy_of,
     tie_break_of,
 )
-from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
+from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter, scores_once  # noqa: E402
 from evaluation_harness.stats import fmt_p  # noqa: E402
 
 #: The front-end files every page loads: installed beside the package, or in a checkout.
@@ -4557,6 +4557,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     if out.exists():
         shutil.rmtree(out)
     copy_assets(out)
+    A = scores_once(A)  # one build: each arm's scores read once, not for every page that asks
     by_ds = collect(A)
     write_periods(A, by_ds, out)
     render_home(A, by_ds, out, nav)

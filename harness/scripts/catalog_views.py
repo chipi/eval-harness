@@ -57,7 +57,7 @@ from evaluation_harness.axes import (
     strategy_of,
     tie_break_of,
 )
-from evaluation_harness.catalog_adapter import load_catalog_adapter
+from evaluation_harness.catalog_adapter import load_catalog_adapter, scores_once
 from evaluation_harness.stats import fmt_p
 
 KINDS = {"t-silver": "silver", "t-judged": "judged", "t-author": "wrote its reference"}
@@ -87,7 +87,8 @@ def _kind(a: dict, tiers: dict) -> str:
 
 
 def _adapter(args):
-    A = load_catalog_adapter(getattr(args, "adapter", None))
+    # One view, one process: each arm's scores read once.
+    A = scores_once(load_catalog_adapter(getattr(args, "adapter", None)))
     return A, cb.collect(A)
 
 

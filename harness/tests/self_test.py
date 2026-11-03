@@ -655,6 +655,7 @@ def test_example_scorer_suites_pass() -> None:
         ("test_p_cache.py", "the on-disk p cache: the same p, read back by a fresh process"),
         ("test_mcp_http.py", "evh mcp --http: health, Host check, --public, --rate, hooks"),
         ("test_mcp_answers.py", "evh mcp --write-answers and --answers: a release's answers written ahead"),
+        ("test_scores_once.py", "each arm's scores read once per view and per build"),
         (
             "test_capture.py",
             "importers, importer-check and capture: mapping, the contract, hashes, continuing",
