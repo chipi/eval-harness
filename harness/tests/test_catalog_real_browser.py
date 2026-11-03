@@ -276,6 +276,23 @@ def drive(cat: Path, base: str) -> None:
             f"per-arm hashes {seen.count('rescored 5f2c057c')}, conclusion shown {seen.count(concl)}×",
         )
 
+        # A dataset page opens on the measure its goal decides on, and never inspects two judges' scores as one.
+        firsts = {}
+        for d in ("orrery_triage_v1_labelled", "summeval_100"):
+            dp = (cat / "d" / f"{d}.html").read_text(encoding="utf-8")
+            firsts[d] = (
+                re.search(r'href="\.\./m/([a-z_0-9]+)\.html"', dp[dp.index("<tbody") :]) or [None, ""]
+            )[1]
+        cnn_d = (cat / "d" / "cnn_dailymail_200.html").read_text(encoding="utf-8")
+        check(
+            "dataset pages: the deciding measure's arms first; one inspect button per judging pass",
+            firsts == {"orrery_triage_v1_labelled": "triage_cost", "summeval_100": "tau"}
+            and "Inspect the 58 arms" not in cnn_d
+            and "judged by judge-summ-v1" in cnn_d
+            and "judged by judge-summ-v2" in cnn_d,
+            f"first rows {firsts}",
+        )
+
         # A config's place in a goal's field is counted as the site counts it: one place per config, no arm a round
         # retired (a re-timing on Linux, a paired side run).
         def place(cfg: str) -> str:

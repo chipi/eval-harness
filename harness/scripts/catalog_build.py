@@ -1754,11 +1754,18 @@ def _n_configs(by_ds: dict) -> int:
 def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     """Render a page for one dataset with all its arms."""
     tiers = {r["id"]: r["tier"] for r in v["refs"]}
+    # The measure a goal decides on first: by name, triage's 19 false_dismiss arms came before its 317 on
+    # triage_cost, and SummEval's pair_agreement arms before the τ field.
+    deciding = [
+        ((g.get("success_criteria") or {}).get("primary") or {}).get("measure")
+        for g in _goals_of(A).get(ds, [])
+    ]
     arms = sorted(
         v["arms"],
         key=lambda a: (
             scored_by_rank(a, tiers),
             a.get("reference") or "",
+            a["metric"] not in deciding,
             a["metric"],
             (a["mean"] if a["mean"] is not None else -1e18) * (1 if a["lower"] else -1),
             a["label"],
@@ -1797,14 +1804,17 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     ]
     # One button per group of arms that can be tested together: the same headline metric,
     # scored against the same reference. A silver-scored and a gold-scored run both record
-    # the metric but measure different things, and the inspector sets such arms aside.
+    # the metric but measure different things, and the inspector sets such arms aside. So do two judges' scores:
+    # one button per judging pass, never judge-summ-v1 and v2 as one comparison of 58.
     groups: dict = {}
     for a in arms:
-        groups.setdefault((a["metric"] or "", "" if a["judge"] else a["reference"] or ""), []).append(
-            a["arm"]
-        )
+        groups.setdefault(
+            (a["metric"] or "", ("judge", a["judge"]) if a["judge"] else ("ref", a["reference"] or "")), []
+        ).append(a["arm"])
     btns = []
-    for (metric, ref), members in sorted(groups.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+    for (metric, (kind, by)), members in sorted(
+        groups.items(), key=lambda kv: (kv[0][0] not in deciding, -len(kv[1]), kv[0])
+    ):
         if len(members) < 2:
             continue
         more = (
@@ -1812,11 +1822,8 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
             if len(members) > INSPECT_MAX
             else ""
         )
-        what = ", ".join(
-            x
-            for x in ((f"on {e(metric)}" if metric else ""), (f"scored against {e(ref)}" if ref else ""))
-            if x
-        )
+        whose = f"judged by {e(by)}" if kind == "judge" else f"scored against {e(by)}" if by else ""
+        what = ", ".join(x for x in ((f"on {e(metric)}" if metric else ""), whose) if x)
         btns.append(
             f'<a class="btn" href="{inspect_url(members[:INSPECT_MAX], "../", metric=metric)}">'
             f"Inspect the {len(members)} arms {what}</a>"
