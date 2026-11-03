@@ -333,9 +333,9 @@ def scatter(
 
 
 #: About one character of a tick label, in viewBox units: enough to tell when two names overlap.
-LABEL_W = 6.2
+LABEL_W = 6.6
 #: The height of one label line.
-LABEL_H = 12.0
+LABEL_H = 14.0
 
 
 def label_y(want: float, x0: float, x1: float, placed: list, top: float, bottom: float) -> float:

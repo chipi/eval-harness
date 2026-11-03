@@ -293,6 +293,31 @@ def drive(cat: Path, base: str) -> None:
             f"per-arm hashes {seen.count('rescored 5f2c057c')}, conclusion shown {seen.count(concl)}×",
         )
 
+        # The goal pages' charts: no name drawn over another (33 pairs, the names spaced 12 units on 14-unit boxes),
+        # no "$-1" axis for a cost every arm shares, and a strip without the arm scored against what it wrote.
+        crossed, minus = {}, []
+        for gp in sorted((cat / "g").glob("*.html")):
+            page.goto(base + "g/" + gp.name)
+            page.wait_for_selector("main", timeout=30000)
+            n = page.evaluate(
+                """() => [...document.querySelectorAll('figure.chart svg')].reduce((s, svg) => {
+                  const b = [...svg.querySelectorAll('text.name')].map(t => t.getBBox());
+                  for (let i = 0; i < b.length; i++) for (let j = i + 1; j < b.length; j++)
+                    if (b[i].x + 1 < b[j].x + b[j].width && b[j].x + 1 < b[i].x + b[i].width
+                        && b[i].y + 1 < b[j].y + b[j].height && b[j].y + 1 < b[i].y + b[i].height) s++;
+                  return s; }, 0)"""
+            )
+            if n:
+                crossed[gp.stem] = n
+            if "$-1" in gp.read_text(encoding="utf-8"):
+                minus.append(gp.stem)
+        cov = (cat / "m" / "coverage.html").read_text(encoding="utf-8")
+        check(
+            "goal pages' charts: no name over another, no $-1 axis; the coverage strip leaves out silver's author",
+            not crossed and not minus and "Not drawn: cnn_anthropic_l_n200_v1" in cov,
+            f"overlapping names {crossed}; $-1 on {minus}",
+        )
+
         # How to read a goal's groups and its strategy are said once a page (CNN printed them 3 and 6 times).
         twice = {
             gp.stem: (n1, n2)

@@ -3419,7 +3419,8 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
     # The arms the rule could recommend: not over a limit, not flagged (the reference's author,
     # too few items, a format the goal does not take), not retired.
     eligible = dec["eligible"]
-    charts = []
+    charts: list[str] = []
+    notes: list[str] = []
     for ax in shown_axes(dec):
         pts = [
             (
@@ -3437,6 +3438,12 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
         ]
         stat = "" if ax["stat"] == "mean" else f" {ax['stat']}"
         unit = f" ({ax['unit']})" if ax.get("unit") else ""
+        if len(pts) > 1 and len({p[0] for p in pts}) == 1:
+            # Every arm the same on this axis (all free): no trade-off to draw, and the drawn one had a "$-1" axis.
+            usd = ax["name"] == "cost" and ax["measure"] == "cost_usd"
+            same = f"${pts[0][0]:.6f}".rstrip("0").rstrip(".") if usd else fmt(pts[0][0])
+            notes.append(f"{ax['name']}: {same} for every arm, so no trade-off to draw")
+            continue
         svg = ch.scatter(
             pts,
             f"{ax['name']}{stat}{unit}",
@@ -3451,7 +3458,8 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
         )
         if svg:
             charts.append(f"<div>{svg}</div>")
-    return f'<div class="duo">{"".join(charts)}</div>' if charts else ""
+    note = f'<p class="small muted">{e("; ".join(notes))}.</p>' if notes else ""
+    return (f'<div class="duo">{"".join(charts)}</div>' if charts else "") + note
 
 
 def metric_index(A: Adapter, by_ds: dict) -> dict:
@@ -4094,11 +4102,22 @@ def render_metric(A: Adapter, m: str, where: dict, by_ds: dict, project: dict, o
             for a in arms
         ]
         groups: dict = {}
+        # The arm that wrote a reference scores 1.0 against it: on the strip it ran the silver scale to 1.0 and
+        # squashed every other arm. It stays in the table, marked; the strip says it is left out.
+        authors = [a["label"] for a in arms if a.get("wrote")]
         for a in arms:
+            if a.get("wrote"):
+                continue
             key = f"judge {a['judge']}" if a["judge"] else (a.get("reference") or "no reference")
             groups.setdefault(key, []).append((a["means"][m][0], a["label"]))
         chart = (
             ch.strip(groups, f"{m} per arm on {ds}, by what each is scored against", lower=lower)
+            + (
+                f'<p class="small muted">Not drawn: {e(", ".join(authors))}, scored against the reference it '
+                "wrote (its row is in the table).</p>"
+                if authors
+                else ""
+            )
             if len(arms) > 1
             else ""
         )
