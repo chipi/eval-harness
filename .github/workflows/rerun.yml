@@ -74,14 +74,18 @@ jobs:
       - name: the public data, cached (every item is hash-checked against the frozen dataset when materialized)
         uses: actions/cache@v6
         with:
-          # The fetched slices and corpora only (gitignored): the committed demo items in data/sources stay
-          # out, so a restore never writes over a tracked file.
+          # What a fetch writes (gitignored): the slices, the corpora and the gold texts. The gold texts too: with
+          # the slices restored, fetch.py skips, and a cache without them left every run nothing to score against
+          # (2026-11-03). The committed demo items and the triage sets' committed gold stay out, so a restore never
+          # writes over a tracked file.
           path: |
             harness/data/sources
             !harness/data/sources/item_*.txt
             !harness/data/sources/README.md
             harness/data/corpora
-          key: rerun-data-${{ matrix.exp }}-${{ hashFiles('harness/data/datasets/**', 'examples/*/fetch.py', 'examples/_shared/hf_rows.py') }}
+            harness/data/references/gold/*/*.txt
+            !harness/data/references/gold/orrery_*/*.txt
+          key: rerun-data-${{ matrix.exp }}-${{ hashFiles('harness/data/datasets/**', 'harness/data/references/gold/*/manifest.json', 'examples/*/fetch.py', 'examples/_shared/hf_rows.py') }}
       - name: data (fetch + hash check)
         run: harness/.venv/bin/python examples/reproduce.py data ${{ matrix.exp }} --light
       - name: the parquet fallback reads the same rows as /rows (once; it covers every split the examples fetch)
