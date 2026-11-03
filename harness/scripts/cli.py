@@ -221,14 +221,16 @@ def main(argv: list[str] | None = None) -> int:
     if name not in COMMANDS:
         print(f"evh: unknown command {name!r}\n\n{_usage()}", file=sys.stderr)
         return 2
+    script = HERE / COMMANDS[name][0]
+    # Before anything imports _common: it loads the project's .env at import, only for a harness
+    # command, which it tells by argv[0]. Imported first, under the venv's bin/evh, it loaded none.
+    sys.argv = [str(script), *rest]
+    # The scripts' "next, run this" hints read it: `evh …` here, `make …` in a checkout.
+    os.environ["EVAL_VIA_EVH"] = "1"
     from evaluation_harness._common import stray_home  # noqa: PLC0415
 
     if note := stray_home():
         print(note, file=sys.stderr)
-    script = HERE / COMMANDS[name][0]
-    sys.argv = [str(script), *rest]
-    # The scripts' "next, run this" hints read it: `evh …` here, `make …` in a checkout.
-    os.environ["EVAL_VIA_EVH"] = "1"
     try:
         runpy.run_path(str(script), run_name="__main__")
     except SystemExit as exc:

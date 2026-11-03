@@ -23,7 +23,9 @@ First run: 2026-10-24, on the 0.4.0 branch; it found 39 items. Second run: the s
 0.4.0 candidate `e91ff94c`, through a LiteLLM proxy, for $0.17; its friction log found nothing
 that blocked, 8 items that needed a guess and 22 of noise or polish. Third run: 2026-10-25, on the
 release candidate `80e8f3f5`, through the proxy, for $0.17; nothing blocked, 10 items needed a guess,
-23 of noise or polish. What is still open is listed at the end.
+23 of noise or polish. Fourth run: 2026-11-02, on the 0.6.0 candidate `797c07e5`, through the proxy,
+one CPU model, in 50 minutes, for $0.149; 1 item blocked (fixed before the release), 9 needed a guess,
+about 15 of noise or polish. What is still open is listed at the end.
 
 ## Rules for the run
 
@@ -347,3 +349,23 @@ Still open:
   verdicts (`evh judge-score … --no-calls`, $0).
 - Not exercised by a run: the direct OpenAI, Anthropic and OpenRouter paths (both runs went
   through a LiteLLM proxy).
+
+After the fourth run (candidate `797c07e5`), fixed in code: the installed `evh` read no project
+`.env` (`env-check` said "loaded 0 var(s)"), so a key or a cost cap put there was never in force:
+the command imported the module that loads `.env` before it named the command's script, and that
+module loads it only for a harness command. `tests/test_installed_commands.py` now runs `env-check`
+through an entry script as pip installs it. Still open from it, for a later release:
+
+- The inspector does not say which arm wrote the silver reference a comparison is read against (the
+  leaderboard and the goal page do); against silver its author reads as significantly better.
+- `family-test --round r2` still needs `--against`, where tutorial 4 says the round gives the opponents.
+- `evh inspect --round` heads its table "baseline" for the round's leader; the goal page's "test every
+  arm against its leader" includes retired arms.
+- `silver-calibrate` does not say which `--ref-match` and `--arm-match` values to pass; `judge-score`
+  prints its progress only at the end when its output is not a terminal; `evh run`'s "spent" does
+  not say whether it is the price table or the provider's bill.
+- Polish: a `uv venv` has no pip (step 0); `warmed up in 0ms` for hosted arms; wide leaderboards;
+  a cut-off hint after `rescore`; repeats unnamed in `cost-report`; `runs-list --baselines` shows the
+  run's own score beside the mean everywhere else; cut-off text in `evh rounds` and the conditions
+  table; misaligned `evh goals --goal` headers; home tiles whose numbers wrap at 1400 px; the item
+  view's cards without each arm's score; the dry run's token estimate leaves out the prompt.

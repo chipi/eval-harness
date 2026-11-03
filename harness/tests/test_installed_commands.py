@@ -496,6 +496,33 @@ def main() -> int:
             below.returncode == 0 and "tickets_" in below.stdout and below.stdout == at_root.stdout,
             below.stdout[-300:] + below.stderr[-300:],
         )
+
+        # The project's .env, read by the installed `evh` (pip's entry script in the venv's bin/, not
+        # `python -m`, whose argv[0] is inside the package): cli imported _common before it pointed
+        # argv[0] at the command's script, so .env was never loaded (the 0.6.0 newcomer scenario, B1).
+        launcher = tmp / "bin" / "evh"
+        launcher.parent.mkdir()
+        launcher.write_text("import sys\nfrom evaluation_harness.cli import main\nsys.exit(main())\n")
+        dotenv = proj / ".env"
+        kept = dotenv.read_text() if dotenv.is_file() else None
+        dotenv.write_text("EVAL_MAX_COST_USD=0.37\n")
+        try:
+            r = subprocess.run(
+                [sys.executable, str(launcher), "env-check"],
+                cwd=proj,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+        finally:
+            dotenv.unlink()
+            if kept is not None:
+                dotenv.write_text(kept)
+        check(
+            "the installed evh reads the project's .env (a cost cap set only there is in force)",
+            "loaded 1 var(s)" in r.stdout and "0.37" in r.stdout,
+            (r.stdout + r.stderr)[-400:],
+        )
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     return summary()
