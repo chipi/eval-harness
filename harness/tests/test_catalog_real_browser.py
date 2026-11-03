@@ -262,6 +262,20 @@ def drive(cat: Path, base: str) -> None:
             f"recommended {recs}; best {best[:3]}",
         )
 
+        # The triage goal page names its scorer once, not after each of 80 arms, gives its 51 contenders as a count
+        # (the same list again as "still undecided" was a screen at phone width), and prints the r3 conclusion once.
+        page.goto(base + "g/triage_orrery.html")
+        seen = page.locator("main").inner_text()
+        concl = "Onboarding was the fix round 1 needed"
+        check(
+            "triage goal page: the scorer named once, the contenders counted, round r3's conclusion shown once",
+            "rescored 5f2c057c" not in seen
+            and "re-score by scorer 5f2c057c" in seen
+            and "Still undecided after the tie-break: all " in seen
+            and seen.count(concl) == 1,
+            f"per-arm hashes {seen.count('rescored 5f2c057c')}, conclusion shown {seen.count(concl)}×",
+        )
+
         # A config's place in a goal's field is counted as the site counts it: one place per config, no arm a round
         # retired (a re-timing on Linux, a paired side run).
         def place(cfg: str) -> str:

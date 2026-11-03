@@ -398,6 +398,7 @@ def decide(
         "leader": leader,
         "contenders": contenders,
         "recommended": recommended,
+        "undecided": [] if recommended else pick,
         "why": why,
     }
 

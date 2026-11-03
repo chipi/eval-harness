@@ -2657,11 +2657,14 @@ def _fold(text: str, at: int = 200) -> str:
     return f'<details class="inline"><summary>{e(head)}</summary><small>{e(text)}</small></details>'
 
 
-def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | None = None) -> str:
+def _rounds_block(
+    A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | None = None, above: str = ""
+) -> str:
     """A goal's rounds (ADR-0004), newest first: what each set out to learn, what changed, its arms
     in play and those retired (with why), its best arm and how it compares with the previous
     round's best, its conclusion; for the open round, what the evidence suggests next, each as the
-    command that does it. Empty when the goal has no rounds (they are optional)."""
+    command that does it. Empty when the goal has no rounds (they are optional). `above`: the page's answer
+    so far; a conclusion it already prints is folded here, not printed twice."""
     fn = getattr(A, "rounds", None)
     rounds = [r for r in (fn() if callable(fn) else []) if r.get("goal") == g["goal_id"]]
     if not rounds:
@@ -2723,7 +2726,11 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | 
                     # The conclusion leads, with room to be read: last, in a narrow column, a round's answer ran
                     # thirty lines down the page (owner, 2026-10-31).
                     '<div class="concl">'
-                    + (e(concl) or ("<i>open</i>" if r.get("status") == "open" else "—"))
+                    + (
+                        f"<details><summary>the answer so far, above</summary>{e(concl)}</details>"
+                        if concl and e(concl) in above
+                        else e(concl) or ("<i>open</i>" if r.get("status") == "open" else "—")
+                    )
                     + "</div>",
                     '<div class="hyp">' + e(r.get("hypothesis", "") or "—") + "</div>",
                     # Arms, best and the comparison in one narrow cell: three columns of mostly "—" took the width
@@ -2925,9 +2932,10 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     # What the goal is for, then the answer so far, then how it was reached (its rounds): the page explains the
     # goal before it concludes (owner, 2026-10-31).
     body += block("01", "what it is for", f'<dl class="kv">{dl}</dl>')
-    body += block("02", "the answer so far", _answer(A, g, by_ds, measure))
+    answer = _answer(A, g, by_ds, measure)
+    body += block("02", "the answer so far", answer)
     n = 3
-    rounds_html = _rounds_block(A, g, measure, prim.get("direction") == "lower", by_ds)
+    rounds_html = _rounds_block(A, g, measure, prim.get("direction") == "lower", by_ds, answer)
     if rounds_html:
         body += block(f"{n:02d}", "how we got here: rounds", rounds_html, "rounds")
         n += 1
@@ -2983,6 +2991,14 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                 leader = next((r for r in rows if r["arm"] == dec["leader"]), None)
                 shown = shown_axes(dec)
                 trs = []
+                named, _scorer = shown_labels({r["arm"]: r["label"] for r in rows})
+                renamed = sorted(((r["label"], named[r["arm"]]) for r in rows), key=lambda x: -len(x[0]))
+
+                def as_named(text: str, renamed: list = renamed) -> str:
+                    for lb, nm in renamed:
+                        text = text.replace(lb, nm)
+                    return text
+
                 for r in rows:
                     link = (
                         # One pair picked from a group of many: held to the group's family (every
@@ -3006,7 +3022,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                             # A retired arm stays listed (its numbers are history) but reads as out of play.
                             "cls": (row_kind(r, tiers) + (" t-retired" if gone else "")).strip(),
                             "cells": [
-                                arm_link(r["arm"], r["label"], "../") + tag,
+                                arm_link(r["arm"], named[r["arm"]], "../") + tag,
                                 f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>',
                                 f'<span data-v="{r["n"]}">{r["n"]}</span>',
                                 *(
@@ -3015,7 +3031,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                                     else axis_cell(ax, dec["rows"][r["arm"]][ax["name"]])
                                     for ax in shown
                                 ),
-                                e("; ".join(r["flags"] + dec["out"].get(r["arm"], [])) or "—"),
+                                e(as_named("; ".join(r["flags"] + dec["out"].get(r["arm"], []))) or "—"),
                                 link,
                             ],
                         }
@@ -3043,7 +3059,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                     ],
                     trs,
                 )
-                inner += tradeoff_charts(dec, {r["arm"]: r["label"] for r in rows}, gm)
+                inner += tradeoff_charts(dec, named, gm)
         body += block(f"{n:02d}", f"{ds}{' · ' + ans['role'] if ans['role'] else ''}", inner)
         n += 1
     write(
@@ -3255,6 +3271,62 @@ def axis_cell(ax: dict, cell: dict) -> str:
     return f"<span {attrs}>{e(cell_text(ax, cell))}</span>"
 
 
+LONG_LIST = 8
+RESCORED = re.compile(r" · rescored ([0-9a-f]{8})")
+
+
+def shown_labels(labels: dict) -> tuple[dict, str]:
+    """({arm: label as a page shows it}, the scorer): when most of a group's arms are read through one re-score
+    (RFC-022), the page names that scorer once and its arms without it. "x · rescored 5f2c057c, repeats ×3" reads
+    "x · repeats ×3"; an arm through another scorer keeps its suffix."""
+    hashes = [m.group(1) for lb in labels.values() if (m := RESCORED.search(lb))]
+    common = max(set(hashes), key=hashes.count) if hashes else ""
+    if not common or hashes.count(common) * 2 <= len(labels):
+        return dict(labels), ""
+    drop = f" · rescored {common}"
+    return {a: lb.replace(f"{drop}, ", " · ").replace(drop, "") for a, lb in labels.items()}, common
+
+
+def why_lines(dec: dict, labels: dict) -> list[str]:
+    """The decision's reasons as HTML, for a page: the scorer every arm is read through named once, not after each
+    arm, and a list of more than LONG_LIST arms (the triage goal's 50 contenders, then the same 50 undecided) given
+    as a count with the names folded under it. `evh goals` prints them whole."""
+    shown, common = shown_labels({a: labels[a] for a in dec["rows"] if a in labels})
+    drop = bool(common)
+    # Label by label, longest first, so a list's commas are never touched.
+    short = {
+        labels[a]: shown[a] for a in sorted(shown, key=lambda a: -len(labels[a])) if shown[a] != labels[a]
+    }
+
+    def bare(s: str) -> str:
+        for lb, sh in short.items():
+            s = s.replace(lb, sh)
+        return s
+
+    def listed(arms: list) -> str:
+        return ", ".join(labels[x] for x in arms)
+
+    def folded(arms: list) -> str:
+        return f"{len(arms)} arms<details><summary>which</summary>{e(bare(listed(arms)))}</details>"
+
+    close = [x for x in dec.get("contenders") or [] if x != dec.get("leader")]
+    left = dec.get("undecided") or []
+    out = []
+    for w in dec["why"]:
+        if w.startswith("Strategy ") and len(close) > LONG_LIST and f": {listed(close)}." in w:
+            head, _, rest = w.partition(f": {listed(close)}.")
+            out.append(f"{e(bare(head))}: {folded(close)}{e(bare(rest))}")
+        elif w.startswith("Still undecided") and left and set(left) == set(dec.get("contenders") or []):
+            out.append(e(f"Still undecided after the tie-break: all {len(left)} contenders."))
+        elif w.startswith("Still undecided") and len(left) > LONG_LIST:
+            out.append(f"Still undecided after the tie-break: {folded(left)}")
+        else:
+            out.append(e(bare(w)))
+    if drop:
+        out.insert(0, e(f"Every arm here is read through its re-score by scorer {common} (RFC-022)."))
+    return out
+
+
 def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "") -> str:
     """What the goal's rule concludes for this group, and why, in the goal's own terms; `gap`
     says how it differs from the promoted baseline (baseline_gap)."""
@@ -3263,14 +3335,14 @@ def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "") -> s
         return ""
     rec = dec["recommended"]
     head = (
-        f"Recommended: <b>{arm_link(rec, labels[rec], up)}</b>"
+        f"Recommended: <b>{arm_link(rec, shown_labels(labels)[0][rec], up)}</b>"
         if rec
         else "Shown, not recommended"
         if dec.get("shown_only")
         else "No single arm recommended" + (" yet" if dec["leader"] else ": no arm is eligible")
     )
     weighs = "; ".join(axis_title(a) for a in dec["axes"])
-    why = "".join(f"<li>{e(w)}</li>" for w in dec["why"])
+    why = "".join(f"<li>{w}</li>" for w in why_lines(dec, labels))
     if gap:
         why += f'<li class="gap"><b>{e(gap)}</b></li>'
     return (
