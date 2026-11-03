@@ -35,3 +35,16 @@ The fleet's code is not copied here: `TRIAGE_FLEET_SRC` names the `signal-fleet`
 the commit the runs record. Each run's fingerprint carries the fleet's code hash and prompt hash; set
 `TRIAGE_FLEET_COMMIT=<sha>` (or `fleet_commit` in an arm's params) for it to carry the commit too. What the eval taught about the fleet itself is in
 [TRIAGE_FLEET_LESSONS_0.6.0.md](../../research/internal/TRIAGE_FLEET_LESSONS_0.6.0.md).
+
+**On the X3, a second Ollama shares the GPU.** Since 2026-11-03 the homelab assistant runs there as the systemd user
+unit `ollama-assistant` (100.92.54.65:11435, the same binary and model directory as the arms' Ollama on
+127.0.0.1:11434), and keeps a 21.8 GB model loaded. Beside a large model it skews the numbers (gpt-oss:120b beside it
+ran 37% on the CPU, swap 16 → 41 GB). So for an arm whose model is over about 35 GB:
+
+```bash
+systemctl --user stop ollama-assistant     # before the run; nothing depends on it until the homelab's failover
+evh run --config examples/triage-fleet/configs/local/<arm>.yaml
+systemctl --user start ollama-assistant    # after; its alert x3-assistant-down fires after 15 minutes stopped
+```
+
+The rule is the homelab's: chipi/agentic-ai-homelab `infra/x3/AGENTS.md` and `docs/recipes/x3-deploy.md`.
