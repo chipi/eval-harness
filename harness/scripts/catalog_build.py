@@ -281,14 +281,22 @@ def _label_of(by_ds: dict, ds: str, arm: str) -> str:
 RECORDED: dict[str, str] = {}
 
 
-def arm_link(arm: str, label: str, up: str = "") -> str:
-    """An arm's label, linked to its page; a recorded arm (production's decisions) carries its badge."""
+def breakable(text: str) -> str:
+    """An id, escaped, that may break after each underscore: `triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1` has no
+    other place to break, so a column holding it could not be narrower than all of it. Copying it copies the id."""
+    return e(text).replace("_", "_<wbr>")
+
+
+def arm_link(arm: str, label: str, up: str = "", wrap: bool = False) -> str:
+    """An arm's label, linked to its page; a recorded arm (production's decisions) carries its badge. `wrap`: the
+    label may break after an underscore (breakable), for a table that would otherwise run past its edge."""
     badge = (
         f' <span class="badge recorded" title="production\'s decisions, from the capture {e(RECORDED[arm])}">recorded</span>'
         if arm in RECORDED
         else ""
     )
-    return f'<a class="cell-link" href="{up}{arm_page(arm)}">{e(label)}</a>{badge}'
+    text = breakable(label) if wrap else e(label)
+    return f'<a class="cell-link" href="{up}{arm_page(arm)}">{text}</a>{badge}'
 
 
 def tier_pill(tier: str) -> str:
@@ -1407,15 +1415,9 @@ def _glance(A: Adapter, by_ds: dict) -> str:
                     if r["group"] and not r["gold"]
                     else ""
                 ),
-                (arm_link(r["baseline"], r["baseline_label"]) + f" <small>{fmt(r['baseline_mean'])}</small>")
-                if r["baseline"]
-                else '<span class="muted">none promoted</span>',
-                (arm_link(r["leader"], r["leader_label"]) + f" <small>{fmt(r['leader_mean'])}</small>")
-                if r["leader"]
-                else "—",
-                verdict,
+                # The answer beside the question: last, at 1400 px it was the column cut at the edge.
                 (
-                    arm_link(r["recommended"], r["recommended_label"])
+                    arm_link(r["recommended"], brief(r["recommended_label"]), wrap=True)
                     + (
                         f"<br><small>{e(' · '.join(r['vs_baseline']))} vs baseline</small>"
                         if r["vs_baseline"]
@@ -1424,6 +1426,19 @@ def _glance(A: Adapter, by_ds: dict) -> str:
                 )
                 if r["recommended"]
                 else '<span class="muted">none yet</span>',
+                (
+                    arm_link(r["baseline"], brief(r["baseline_label"]), wrap=True)
+                    + f" <small>{fmt(r['baseline_mean'])}</small>"
+                )
+                if r["baseline"]
+                else '<span class="muted">none promoted</span>',
+                (
+                    arm_link(r["leader"], brief(r["leader_label"]), wrap=True)
+                    + f" <small>{fmt(r['leader_mean'])}</small>"
+                )
+                if r["leader"]
+                else "—",
+                verdict,
             ]
         )
     if not rows:
@@ -1436,7 +1451,7 @@ def _glance(A: Adapter, by_ds: dict) -> str:
         "baseline (0.5× costs half).</p>"
         + table(
             "glance",
-            ["goal", "dataset", "decides", "baseline", "leader", "leader vs baseline", "recommended"],
+            ["goal", "dataset", "decides", "recommended", "baseline", "leader", "leader vs baseline"],
             rows,
         )
     )
@@ -2465,7 +2480,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
         filed = configs_filed(by_ds, g)
         rec = "<br>".join(
             (dataset_link(r["dataset"]) + ": " if len(g.get("datasets") or []) > 1 else "")
-            + arm_link(r["recommended"], r["recommended_label"])
+            + arm_link(r["recommended"], brief(r["recommended_label"]), wrap=True)
             + (
                 f"<br><small>{e(' · '.join(r['vs_baseline']))} vs baseline</small>"
                 if r["vs_baseline"]
@@ -2483,13 +2498,13 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
                     e(g.get("statement", "")),
                     metric_link(prim.get("measure", ""))
                     + (f" ({e(prim['direction'])})" if prim.get("direction") else ""),
+                    rec or '<span class="muted">none yet</span>',
                     "<br>".join(dataset_link(d.get("dataset_id", "")) for d in g.get("datasets") or [])
                     or "—",
                     f'<span data-v="{filed}">{filed}</span>',
                     f'<span data-flow="runs" data-line>{len(period_rows[g["goal_id"]]["runs"])}</span>',
                     '<span data-flow="usd">—</span>',
                     f'<span data-flow="events">{len(period_rows[g["goal_id"]]["events"])}</span>',
-                    rec or '<span class="muted">none yet</span>',
                 ],
             }
         )
@@ -2516,12 +2531,12 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
                 "goal",
                 "statement",
                 "decides",
+                "recommended",
                 "datasets",
                 "configs filed",
                 "runs in period",
                 "spend in period",
                 "changes in period",
-                "recommended",
             ],
             rows,
             period=True,
@@ -3030,7 +3045,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                             # A retired arm stays listed (its numbers are history) but reads as out of play.
                             "cls": (row_kind(r, tiers) + (" t-retired" if gone else "")).strip(),
                             "cells": [
-                                arm_link(r["arm"], named[r["arm"]], "../") + tag,
+                                arm_link(r["arm"], named[r["arm"]], "../", wrap=True) + tag,
                                 f'<span data-v="{r["mean"]}">{fmt(r["mean"])}</span>',
                                 f'<span data-v="{r["n"]}">{r["n"]}</span>',
                                 *(
@@ -3061,7 +3076,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                         "arm",
                         f"mean {e(gm)}",
                         f"{e(A.item_word)}s",
-                        *(e(axis_title(ax)) for ax in shown),
+                        *(axis_head(ax) for ax in shown),
                         "flags",
                         "",
                     ],
@@ -3283,6 +3298,16 @@ LONG_LIST = 8
 RESCORED = re.compile(r" · rescored ([0-9a-f]{8})")
 
 
+def brief(label: str) -> str:
+    """An arm's label in a summary table (goals at a glance, the goals page): without the re-score's scorer, which
+    the goal page names. "x · rescored 5f2c057c, repeats ×3" reads "x · repeats ×3"."""
+    m = RESCORED.search(label)
+    if not m:
+        return label
+    rest = label[m.end() :]
+    return label[: m.start()] + (" · " + rest[2:] if rest.startswith(", ") else rest)
+
+
 def shown_labels(labels: dict) -> tuple[dict, str]:
     """({arm: label as a page shows it}, the scorer): when most of a group's arms are read through one re-score
     (RFC-022), the page names that scorer once and its arms without it. "x · rescored 5f2c057c, repeats ×3" reads
@@ -3333,6 +3358,14 @@ def why_lines(dec: dict, labels: dict) -> list[str]:
     if drop:
         out.insert(0, e(f"Every arm here is read through its re-score by scorer {common} (RFC-022)."))
     return out
+
+
+def axis_head(ax: dict) -> str:
+    """An axis as a column head: its name on the first line, its limit small on the second, the whole in the
+    title. On one line, "false_alarm · no worse than the baseline (paired test)" ran past the table's edge."""
+    full = axis_title(ax)
+    name, _, limit = full.partition(" · ")
+    return f'<span title="{e(full)}">{e(name)}</span>' + (f"<br><small>{e(limit)}</small>" if limit else "")
 
 
 def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "") -> str:

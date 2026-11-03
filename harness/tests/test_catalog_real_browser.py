@@ -127,6 +127,23 @@ def drive(cat: Path, base: str) -> None:
                 str(over),
             )
 
+        # The answer is never the column that scrolls off: goals at a glance, the goals page, and the triage goal's
+        # arms (its 45-character ids and its limit's head) fit at desktop width.
+        for path, sel in (
+            ("index.html", "table#glance"),
+            ("goals.html", "table#goals"),
+            ("g/triage_orrery.html", "table[id^='ans']"),
+        ):
+            page.goto(base + path)
+            page.wait_for_selector("main", timeout=30000)
+            over = page.evaluate(
+                f"""[...document.querySelectorAll("{sel}")]
+                .map(t => [t.id, t.scrollWidth - t.closest('.scroll-x').clientWidth]).filter(x => x[1] > 1)"""
+            )
+            check(
+                f"desktop width: {sel} on {path} fits, nothing behind a sideways scroll", not over, str(over)
+            )
+
         # The arms page at full size: all time, every row shown.
         page.goto(base + "arms.html#pall")
         page.wait_for_selector("table#arms")

@@ -35,6 +35,8 @@ kbd { font: 600 .85em var(--mono); border: 1px solid var(--hair); border-radius:
 .filter input:focus { border-color: var(--accent); }
 .filter b { color: var(--ink); }
 table.sortable th { cursor: pointer; user-select: none; white-space: nowrap; }
+/* A head's second line (an axis's limit) wraps: on one line it ran past the table's edge. */
+table.sortable th small { display: block; white-space: normal; font-weight: 400; text-transform: none; }
 table.sortable th[data-dir="asc"]::after { content: " ↑"; color: var(--accent); }
 table.sortable th[data-dir="desc"]::after { content: " ↓"; color: var(--accent); }
 table.data td { padding: 10px 12px 10px 0; font-size: 14px; }
