@@ -282,14 +282,31 @@ def _flat_conditions(fp: dict) -> dict[str, str]:
     return out
 
 
-def measured(m: dict, dir_name: str) -> tuple[bool, str]:
-    """(re-scored or re-parsed in place, when it was measured). A derivation whose `from` is the run itself replaced
-    it where it lay: it is still the run that was measured (its calls, its bill), dated when it was, which the run id
+def in_place_dirs(every: list[tuple[str, Path, dict, str]]) -> set[Path]:
+    """The derived runs that replaced their run where it lay. Every derivation keeps its run's id, a copy
+    (runs-judged, runs-rescored, runs-silver, runs-adjudicated) as well as a re-score in place, so the id alone
+    cannot tell them apart: of the runs sharing an id, the measured one is the run never derived when it is still
+    there, else the earliest derivation (a copy of the replaced run comes after it)."""
+    by_id: dict[str, list[tuple[Path, dict]]] = {}
+    for _ds, d, m, _arm in every:
+        by_id.setdefault(m.get("run_id") or d.name, []).append((d, m))
+    out = set()
+    for run_id, runs in by_id.items():
+        if any(not m.get("derived") for _d, m in runs):
+            continue
+        same = [(d, m) for d, m in runs if (m.get("derived") or {}).get("from") == run_id]
+        if same:
+            out.add(min(same, key=lambda x: ((x[1]["derived"].get("at") or ""), str(x[0])))[0])
+    return out
+
+
+def measured(m: dict, dir_name: str, in_place: bool) -> tuple[bool, str]:
+    """(re-scored or re-parsed in place, when it was measured). A derivation that replaced its run where it lay
+    (`in_place_dirs`) is still the run that was measured (its calls, its bill), dated when it was, which the run id
     keeps (created_at was rewritten with the re-score's time). Any other run: (False, its created_at)."""
     run_id = m.get("run_id") or dir_name
     made = m.get("created_at") or ""
-    frm = (m.get("derived") or {}).get("from", "")
-    if not frm or frm != run_id:
+    if not in_place:
         return False, made
     stamp = re.search(r"_(\d{8})T(\d{6})Z$", run_id)
     if stamp:
@@ -384,6 +401,7 @@ class HarnessAdapter:
                 out.setdefault(arm, []).append(d)
                 refs[d] = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or ""
                 made[d] = m.get("created_at") or ""
+        self._in_place = in_place_dirs(self._every)
         # ONE REFERENCE PER ARM: the one its latest run was scored against. An arm's runs were
         # averaged whatever they were scored against, so a run on silver and a run on gold read
         # as two repeats of one measurement. Runs on another reference are left out, and said so.
@@ -1035,7 +1053,7 @@ class HarnessAdapter:
             m = _json(d / "metrics.json") or {}
             run_id = m.get("run_id") or d.name
             frm = (m.get("derived") or {}).get("from", "")
-            in_place, made = measured(m, d.name)
+            in_place, made = measured(m, d.name, d in self._in_place)
             out.append(
                 {
                     "run_id": run_id,
@@ -1087,7 +1105,7 @@ class HarnessAdapter:
             sc = m.get("scores") or {}
             usd = _number(sc.get("total_cost_usd"))
             tokens = _tokens(sc.get("total_tokens_in"), sc.get("total_tokens_out"))
-            in_place, at = measured(m, d.name)
+            in_place, at = measured(m, d.name, d in self._in_place)
             if (m.get("derived") and not in_place) or (usd is None and tokens is None):
                 continue
             out.append(

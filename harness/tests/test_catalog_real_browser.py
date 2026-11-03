@@ -233,16 +233,21 @@ def drive(cat: Path, base: str) -> None:
         )
 
         # Runs re-scored or re-parsed in place (Few-NERD's, SciFact's) are the runs that were measured: their runs and
-        # spend count in every period figure, dated when they were measured.
+        # spend count in every period figure, dated when they were measured, once each. A copy (judged, re-scored,
+        # silver, adjudicated) keeps the run's id too and is never counted: counting them tripled the spend.
         rows_js = (cat / "datasets-rows.js").read_text(encoding="utf-8")
         per = json.loads(rows_js[rows_js.index("{") : rows_js.rindex("}") + 1])
         counted = {
-            d: (len(per.get(d, {}).get("runs") or []), sum(x[1] for x in per.get(d, {}).get("usd") or []))
-            for d in ("few_nerd_280", "scifact_200")
+            d: (
+                len(per.get(d, {}).get("runs") or []),
+                round(sum(x[1] for x in per.get(d, {}).get("usd") or []), 2),
+            )
+            for d in ("few_nerd_280", "scifact_200", "ag_news_200")
         }
         check(
-            "datasets: runs re-scored in place count in the period figures (runs and spend)",
-            all(n > 0 and usd > 0 for n, usd in counted.values()),
+            "datasets: runs re-scored in place count once in the period figures, copies never (the run records' "
+            "28 runs $2.61, 26 runs $2.97, 33 runs $0.58)",
+            counted == {"few_nerd_280": (28, 2.61), "scifact_200": (26, 2.97), "ag_news_200": (33, 0.58)},
             str(counted),
         )
 
@@ -277,6 +282,39 @@ def drive(cat: Path, base: str) -> None:
                 "se_gemma_l_pubtext_n100_v1": "none",
             },
             str(places),
+        )
+
+        # A reference set is never younger than the first run scored against its bytes: the 0.4.0 migration dated
+        # every gold set by the migration, so the references page listed sets a month old as new. A run that recorded
+        # other bytes of a set whose texts are committed was scored against an earlier version of it (a set promoted
+        # again under its id), which dates that version, not this one.
+        from evaluation_harness._fingerprint import references_digest  # noqa: PLC0415
+        from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: PLC0415
+
+        A = HarnessAdapter()
+        A.arms()
+        now_sha: dict = {}
+        first: dict = {}
+        for _ds, _d, rec, _arm in A._every:
+            data = (rec.get("fingerprint") or {}).get("data") or {}
+            ref, made = data.get("reference_id"), rec.get("created_at")
+            if not ref or not made:
+                continue
+            if ref not in now_sha:
+                committed = any((HARNESS / "data" / "references" / ref).glob("*.txt"))
+                now_sha[ref] = references_digest(HARNESS, ref, HARNESS / "data") if committed else None
+            if now_sha[ref] and data.get("references_sha256") not in (None, now_sha[ref]):
+                continue
+            first[ref] = min(first.get(ref, "~"), made)
+        young = [
+            f"{r['id']} {r['created_at'][:10]} > {first[r['id']][:10]}"
+            for r in A.references()
+            if r["id"] in first and (r.get("created_at") or "") > first[r["id"]]
+        ]
+        check(
+            "references: each dated no later than the first run scored against it",
+            not young,
+            "; ".join(young[:4]),
         )
 
         # A goal page's rounds count their arms as `evh rounds` does: a re-scored run is the same arm.
