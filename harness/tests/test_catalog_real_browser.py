@@ -106,6 +106,26 @@ def drive(cat: Path, base: str) -> None:
             wide = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
             check(f"phone width: no sideways scroll on {path}", wide <= 1, f"{wide}px too wide")
 
+        # At phone width a dataset id breaks after an underscore, never inside a word ("orrery_tr / iage_v1").
+        phone.goto(base + "datasets.html")
+        phone.wait_for_selector("table#datasets tbody tr", timeout=30000)
+        broken = phone.evaluate(
+            """() => [...document.querySelectorAll('table#datasets tbody tr td:first-child > a.cell-link')].flatMap(a => {
+              const lines = []; let top = null, cur = '';
+              const w = document.createTreeWalker(a, NodeFilter.SHOW_TEXT);
+              while (w.nextNode()) { const n = w.currentNode;
+                for (let i = 0; i < n.length; i++) { const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + 1);
+                  const t = r.getBoundingClientRect().top; if (top !== null && t > top + 2) { lines.push(cur); cur = ''; }
+                  top = t; cur += n.data[i]; } }
+              lines.push(cur);
+              return lines.slice(0, -1).some(l => !l.endsWith('_')) ? [lines.join(' | ')] : []; })"""
+        )
+        check(
+            "phone width: dataset ids break after an underscore, never inside a word",
+            not broken,
+            str(broken[:3]),
+        )
+
         page = browser.new_page(viewport={"width": 1280, "height": 900})
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
         page.on("pageerror", lambda e: errors.append(str(e)))
@@ -464,6 +484,21 @@ def drive(cat: Path, base: str) -> None:
             "goal pages: each round's arms counted as evh rounds counts them",
             not differ,
             "; ".join(differ[:4]),
+        )
+
+        # The triage sheet's rows stay short: an item's fields in two lines, winners and arms named by what sets them
+        # apart (listed whole, a row was 187 px tall).
+        pair = ",".join(
+            f"runs-rescored/5f2c057cdaa5/runs/orrery_triage_v1_labelled/{c}"
+            for c in ("triage_baseline_pro_v1", "triage_local_dgx_gpt_oss_120b_v2")
+        )
+        page.goto(f"{base}inspect.html?dataset=orrery_triage_v1_labelled&sheet=1&runs={pair}")
+        page.wait_for_selector("#sheettable tbody tr", timeout=60000)
+        tallest = page.evaluate(
+            "Math.max(...[...document.querySelectorAll('#sheettable tbody tr')].map(r => r.getBoundingClientRect().height))"
+        )
+        check(
+            "sheet: the triage sheet's rows stay under 100 px", tallest < 100, f"tallest row {tallest:.0f} px"
         )
 
         # The sheet of a judging pass's arms, as a dataset page names them (runs-judged/<scorer>/<dataset>/<config>).

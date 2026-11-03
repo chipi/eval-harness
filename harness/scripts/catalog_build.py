@@ -349,9 +349,10 @@ def dataset_page(ds: str) -> str:
     return f"d/{slug(ds or 'none')}.html"
 
 
-def dataset_link(ds: str, up: str = "") -> str:
-    """A dataset's id, linked to its page."""
-    return f'<a class="cell-link" href="{up}{dataset_page(ds)}">{e(ds or "(no dataset_id)")}</a>'
+def dataset_link(ds: str, up: str = "", wrap: bool = False) -> str:
+    """A dataset's id, linked to its page; `wrap`: it may break after an underscore (breakable)."""
+    text = breakable(ds) if wrap and ds else e(ds or "(no dataset_id)")
+    return f'<a class="cell-link" href="{up}{dataset_page(ds)}">{text}</a>'
 
 
 def goal_page(goal_id: str) -> str:
@@ -986,8 +987,8 @@ def render_datasets(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 "made": period_rows[ds]["made"],
                 "data": {"goal": its_goals, **{f"tag-{k}": tags.get(k) or f"no {k}" for k in tag_keys}},
                 "cells": [
-                    dataset_link(ds)
-                    + (f"<br><small>from {dataset_link(parent)}</small>" if parent else "")
+                    dataset_link(ds, wrap=True)
+                    + (f"<br><small>from {dataset_link(parent, wrap=True)}</small>" if parent else "")
                     + (f"<br><small>{origin_html(v)}</small>" if v.get("origin") and not parent else ""),
                     # A chip per tag: run together as text, five tags and a Hugging Face pin made one tall
                     # unreadable cell (owner, 2026-10-31).

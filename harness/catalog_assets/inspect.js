@@ -530,8 +530,11 @@
     // the labels, the winners, and the fields last.
     const arms = d.arms;
     const heads = [['sel', '<input type="checkbox" id="sall" aria-label="select all shown">'], ['item', ITEM], ['start', 'the start'], ['', 'signals']];
-    // An arm's id has no spaces (runs-judged/<scorer>/<dataset>/<config>): a break is offered after each '/'.
-    const armHead = t => esc(short(t)).replace(/\//g, '/<wbr>');
+    // An arm by what sets it apart from the others shown (shorten: "baseline_pro_v1", not
+    // "runs-rescored/5f2c057cdaa5/runs/orrery_triage_v1_labelled/triage_baseline_pro_v1"), the whole id in its title.
+    // A break is offered after each '/' of what is left.
+    const named = shorten(Object.fromEntries(arms.map(a => [a.token, short(a.token)])));
+    const armHead = t => `<span title="${esc(t)}">${esc(named[t] || short(t)).replace(/\//g, '/<wbr>')}</span>`;
     arms.forEach((a, i) => {
       heads.push(['outc', armHead(a.token) + '<br><small>' + (i === 0 ? 'first: production' : 'output') + '</small>']);
       // The arm heads its output column; its score columns, right after, name only the metric (the arm's whole path
@@ -557,9 +560,9 @@
       }).join('')}
       ${d.label_cols.map(c => `<td class="small">${r.labels[c.key] == null ? '<span class="muted">—</span>' : esc(r.labels[c.key])}</td>`).join('')}
       ${d.ref_cols.map(c => `<td class="small">${r.references[c.key] == null ? '<span class="muted">—</span>' : esc(r.references[c.key])}</td>`).join('')}
-      ${d.winner_cols.map(w => `<td class="small">${esc((r.winners[w.key] || []).map(short).join(' = '))}</td>`).join('')}
+      ${d.winner_cols.map(w => `<td class="small">${esc((r.winners[w.key] || []).map(t => named[t] || short(t)).join(' = '))}</td>`).join('')}
       <td class="small">${esc(r.picked.join(', '))}</td>
-      <td class="small">${esc(fieldsOf(r))}</td></tr>`).join('');
+      <td class="small"><div class="clamp2" title="${esc(fieldsOf(r))}">${esc(fieldsOf(r))}</div></td></tr>`).join('');
     // The footer, per arm: under the arm's columns. Its cells span the arm's columns (the output's too, unless hidden).
     const f = d.footer, before = 4, after = d.label_cols.length + d.ref_cols.length + d.winner_cols.length + 2;
     const line = (label, cell) => `<tr><th colspan="${before}" class="small">${label}</th>${arms.map(a =>

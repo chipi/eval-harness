@@ -459,7 +459,8 @@ small.filed { font: 600 10px/1 var(--mono); letter-spacing: .04em; text-transfor
 .decision { padding: 12px 16px; margin: 6px 0 12px; border: 1px solid var(--hair); border-left: 3px solid var(--s1); border-radius: 10px; background: var(--surface); }
 .decision p { margin: 4px 0; }
 .decision ul { margin: 6px 0; padding-left: 18px; }
-#datasets td, #datasets td a { overflow-wrap: anywhere; white-space: normal; }
+/* An id breaks after an underscore (<wbr>), mid-word only when one part cannot fit: "anywhere" broke "orrery_tr|iage". */
+#datasets td, #datasets td a { overflow-wrap: break-word; white-space: normal; }
 span.tag { display: block; width: fit-content; max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11px/1.5 var(--mono); color: var(--ink); background: var(--surface-2); border: 1px solid var(--hair); border-radius: 10px; padding: 0 7px; margin: 2px 0; }
 span.tag b { font-weight: 400; color: var(--muted); }
 span.tag-rec { font: 600 10px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--accent-ink); background: var(--s1); padding: 2px 5px; border-radius: 4px; }
@@ -578,6 +579,10 @@ ul.labels .outtext { margin-top: 4px; }
 table.sheet th { white-space: normal; min-width: 8ch; vertical-align: bottom; overflow-wrap: break-word; }
 table.sheet th.sel, table.sheet td.sel { position: sticky; left: 0; z-index: 2; width: 2.2rem; min-width: 2.2rem; background: var(--page); }
 table.sheet th.item, table.sheet td.item { position: sticky; left: 2.2rem; z-index: 2; background: var(--page); }
+/* An item's fields in two lines, the rest in the title: listed whole they made a row 187 px tall. */
+table.sheet .clamp2 { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-width: 22em; }
+/* One line, cut with an ellipsis (its title holds the whole id). */
+table.sheet td.item { white-space: nowrap; max-width: 22ch; overflow: hidden; text-overflow: ellipsis; }
 table.sheet tr.eprow:hover td.sel, table.sheet tr.eprow:hover td.item { background: var(--surface); }
 table.sheet tr.eprow.on td.sel, table.sheet tr.eprow.on td.item { background: var(--surface-2); }
 table.sheet .outc { min-width: 16em; max-width: 26em; }
