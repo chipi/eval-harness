@@ -86,6 +86,46 @@ try:
     check("a limit that never lifts ends in one message naming the offset", "offset 300" in gave_up, gave_up)
     check("after the whole 429 schedule", waits == list(hf_rows.RATE_LIMIT_BACKOFF), waits)
 
+    # The Hub's parquet files when /rows stays down (2026-11-02: HTTP 503 for every dataset). The read
+    # itself needs pyarrow (the examples' environments); here the fallback is stubbed, what calls it is tested.
+    asked: list[tuple] = []
+    real = hf_rows.parquet_page
+
+    def stub(*a, **_k):
+        asked.append(a)
+        return [hf_rows.Row({"i": 2})]
+
+    hf_rows.parquet_page = stub
+    try:
+        script[:] = [503] * hf_rows.MAX_ATTEMPTS
+        got = hf_rows.page("d", "c", "test", 40, 5)
+        check(
+            "a 503 that never lifts: the same rows asked of the Hub's parquet files, and those returned",
+            asked == [("d", "c", "test", 40, 5)] and got == [{"i": 2}],
+            (asked, got),
+        )
+        asked.clear()
+        script[:] = [404]
+        try:
+            hf_rows.page("d", "c", "test", 0, 5)
+        except SystemExit:
+            pass
+        check("a 404 is the dataset's own answer: no fallback", asked == [], asked)
+        hf_rows.parquet_page = lambda *a, **k: None
+        script[:] = [503] * hf_rows.MAX_ATTEMPTS
+        try:
+            hf_rows.page("d", "c", "test", 80, 5)
+            said = ""
+        except SystemExit as exc:
+            said = str(exc)
+        check("when the parquet files fail too, one message naming the offset", "offset 80" in said, said)
+    finally:
+        hf_rows.parquet_page = real
+    check(
+        "without pyarrow, the fallback says so and gives up (None), never a traceback",
+        real("d", "c", "t", 0, 1) is None,
+    )
+
     # Where each row came from: its row number, kept beside the row without changing it.
     row = hf_rows.page("d", "c", "test", 0, 1)[0]
     check(

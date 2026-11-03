@@ -18,6 +18,8 @@ dependencies = [
     # The harness core's own needs, because the harness scripts run in THIS environment.
     "pyyaml>=6.0",
     "openai>=1.0",
+    # fetch.py: the Hub's parquet files when the datasets-server's /rows is down (_shared/hf_rows.py).
+    "pyarrow>=15",
     # ROUGE: the implementation the papers use, so our numbers are comparable to theirs.
     # A hand-rolled ROUGE would tokenise and stem differently and quietly stop being
     # comparable to anything published — which is the whole reason for a standard dataset.
