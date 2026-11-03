@@ -11,10 +11,24 @@ that can move a result is never a patch release without saying so under **Change
 
 ## 0.6.1 — unreleased
 
-Fixes to 0.6.0. Two can move a number a project sees, both in the sheet's win rate (Changed). One keeps a hidden
-dataset's labels and notes off public surfaces (Security). The rest restore what 0.6.0 documented.
+Fixes to 0.6.0, from two reviews of what it shows. Six can move a number or a verdict a project sees (Changed): the
+sheet's win rates and verdicts, a goal's recommendation and the places in its field, and the catalog's run and
+spend figures. One keeps a hidden dataset's labels and notes off public surfaces (Security). The rest restore what
+0.6.0 documented or make the catalog say what a number means beside it (Fixed).
 
 ### Changed
+
+- **A goal recommends from the group it decides on, once per dataset.** A judged group (a grade, a pick, a pairwise
+  pass) or another measure of a scorer is shown with its leader, never recommended: 0.6.0's CNN goal page printed
+  four "Recommended:" verdicts, three of them from judging passes the goal does not decide on.
+- **A goal's field places one arm per config, without the arms a round retired** (a re-timing, a second run, a
+  paired side run). A config run twice took two places: AG News `anthropic_l` read "#8 of 33" in the catalog where
+  the site reads 5th of 30, and the Models page put Gemma 4 31B first on SummEval through its paired side run.
+- **Runs re-scored or re-parsed in place count in every period figure**, dated when they were measured: 0.6.0 left
+  Few-NERD's and SciFact's 54 runs and $5.58 out of the activity, the datasets page and the home tiles. A copied
+  re-score (judged, re-scored, silver, adjudicated) keeps its run's id too and is still never counted.
+- **The sheet's verdict compares only the arms scored on the metric**: an arm with no score on it reads "no <metric>
+  in this run", where 0.6.0 named the other arm the leader and recommended.
 
 - **The sheet's win rate on a pick or pairwise verdict is each arm's share of what the judge gave** over the rows it
   judged (its `judge_won`), so with every arm shown it is the judging pass's own win rate. 0.6.0 gave a shown arm a
@@ -45,6 +59,25 @@ dataset's labels and notes off public surfaces (Security). The rest restore what
   the frozen dataset. The installed harness does not depend on it.
 - **`inspect --sheet --wrong-against NAME` refuses a name two datasets' sets share** on this dataset's items (labels
   follow an item into every dataset holding it), naming each as DATASET/SET; it read whichever it found first.
+- **A round's best is read as its goal decides**: on the deciding reference, never the arm that wrote it (CNN round
+  r1's best read `anthropic_l` 1.000, the silver's author scored against itself, beside a conclusion naming `bart_l`).
+- **Gold reference sets are dated by when their labels came to be**: the dataset's freeze, or the adjudication. The
+  0.4.0 migration had stamped every one with its own time, so the references page listed sets a month old as new.
+  No run's reference digest moves (the digest leaves the date out).
+- **`evh deploy-sheet` and the goal page say a key production never recorded "cannot be checked"**, where they read
+  "prompt_sha 0 match; not recorded: 233".
+- **The catalog says each thing once, and what a number means beside it.** A goal page names a re-score's scorer
+  once, counts a long list of contenders, folds a conclusion its answer already shows, and explains its groups and
+  strategy once. Dataset pages open on the deciding measure, give one inspect button per judging pass, name the
+  machine in one form ("served on", "run on"), say how much of a period's spend was judging, and show a rise past
+  doubling as a multiple. The answer column no longer scrolls off at 1280 px; chart names never overlap; a cost every
+  arm shares draws no axis; a metric's strip leaves out the arm scored against what it wrote; ids break between
+  words at phone width; the sheet's rows stay short and name arms by what sets them apart; probes read yes or no.
+  The triage datasets and `fleet_dedup_v1` have their profiles (`evh dataset-profile`).
+- Site: SciFact leads with the compared field (the best reranker +0.025, not significant) and names the extra
+  +0.07 run with its caveats; the method page describes fingerprint v5 with 0.6.0's own `run-compare` output; the
+  use page counts its steps; the XSum control's caveat and the judging spend's passes are carried where they are
+  quoted.
 - Docs: tutorial 5 and the RUNBOOK named the old fixed ports (8765, 8766) where 0.6.0 gives each project its own;
   the home page's MCP section names what 0.6.0 added and that the public server never answers with an item's text.
 
