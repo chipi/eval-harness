@@ -323,9 +323,10 @@ def label_set_html(set_id: str, kind: str, up: str = "") -> str:
     return f'{source_chip(kind)} <a class="cell-link" href="{up}{labels_page_anchor(set_id)}"><code>{e(name)}</code></a>'
 
 
-def promoted_from_html(r: dict, up: str = "") -> str:
+def promoted_from_html(r: dict, up: str = "", arm: str = "") -> str:
     """Where a reference was promoted from: the label set with its source chip (and the arm a model set came from),
-    else the source a reference made before labels existed names."""
+    else the source a reference made before labels existed names. `arm`: that arm already linked, named in its
+    place (the references list named it twice, as code and again as the author's link)."""
     pf = r.get("promoted_from") or {}
     src = pf.get("source") or {}
     kind = str(src.get("kind") or "")
@@ -338,7 +339,8 @@ def promoted_from_html(r: dict, up: str = "") -> str:
     else:
         return "—"
     if kind == "model" and src.get("config_id"):
-        out += f" <small>the arm: <code>{e(src['config_id'])}</code></small>"
+        named = arm or f"<code>{e(src['config_id'])}</code>"
+        out += f" <small>the arm: {named}</small>"
     return out
 
 
@@ -4156,8 +4158,14 @@ def render_reference_index(A: Adapter, by_ds: dict, out: Path, nav: list) -> Non
                         tier_pill(r["tier"]),
                         dataset_link(ds),
                         f'<span data-v="{r.get("items") or ""}">{r.get("items") if r.get("items") is not None else "—"}</span>',
-                        promoted_from_html(r)
-                        + (f" <small>{_author_link(r, v, '')}</small>" if r.get("author") else ""),
+                        (
+                            promoted_from_html(r, arm=_author_link(r, v, ""))
+                            if r.get("author")
+                            and ((r.get("promoted_from") or {}).get("source") or {}).get("config_id")
+                            == r["author"]
+                            else promoted_from_html(r)
+                            + (f" <small>{_author_link(r, v, '')}</small>" if r.get("author") else "")
+                        ),
                         e((r.get("created_at") or "")[:10]) or "—",
                         f'<span data-v="{len(scored)}">{len(scored)}</span>',
                         f'<span data-flow="arms">{len({x[1] for x in period_rows[r["id"]]["runs"]})}</span>',
@@ -4265,12 +4273,18 @@ def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                     for d in c.get("datasets") or []
                 )
                 or "—",
-                ", ".join(
-                    arm_link(a, a.rsplit("/", 1)[-1])
-                    for a, cap in sorted(RECORDED.items())
-                    if cap == c["capture"]
-                )
-                or "—",
+                *(
+                    [
+                        ", ".join(
+                            arm_link(a, a.rsplit("/", 1)[-1])
+                            for a, cap in sorted(RECORDED.items())
+                            if cap == c["capture"]
+                        )
+                        or "—"
+                    ]
+                    if RECORDED
+                    else []
+                ),
             ]
         )
     body = hero(
@@ -4292,7 +4306,8 @@ def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
                 "captured",
                 "records from – to",
                 "datasets made from it",
-                "recorded arm",
+                # Only when a capture has one: a column of "—" on every row says nothing.
+                *(["recorded arm"] if RECORDED else []),
             ],
             rows,
             "filter captures",

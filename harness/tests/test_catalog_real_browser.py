@@ -293,6 +293,28 @@ def drive(cat: Path, base: str) -> None:
             f"per-arm hashes {seen.count('rescored 5f2c057c')}, conclusion shown {seen.count(concl)}×",
         )
 
+        # The datasets table says what a period's spend was when no run was (CNN: "0 runs" beside "$13.09", the
+        # judges' calls), a rise past doubling as a multiple ("▲ 3089%"), and "—" where a row had no runs to draw.
+        page.goto(base + "datasets.html")
+        page.wait_for_selector("table#datasets tbody tr", timeout=30000)
+        seen = page.evaluate(
+            """() => { const rows = [...document.querySelectorAll('table#datasets tbody tr')];
+              const cell = (r, f) => (r.querySelector(`[data-flow=${f}]`) || {}).innerText || '';
+              const cnn = rows.find(r => r.dataset.key === 'cnn_dailymail_200');
+              return {cnn: cell(cnn, 'usd'), pct: rows.map(r => cell(r, 'usd') + ' ' + cell(r, 'runs')).join(' '),
+                      blank: rows.filter(r => { const c = r.querySelector('[data-flow=line]');
+                        return c && !c.querySelector('svg') && !c.innerText.trim(); }).length}; }"""
+        )
+        caps = (cat / "captures.html").read_text(encoding="utf-8")
+        check(
+            "datasets: judging spend said, no ▲ past 100%, no blank runs-per-day cell; captures without an empty column",
+            "judging" in seen["cnn"]
+            and not re.search(r"▲ \d{3,}%", seen["pct"])
+            and seen["blank"] == 0
+            and "recorded arm" not in caps,
+            str(seen)[:300],
+        )
+
         # The goal pages' charts: no name drawn over another (33 pairs, the names spaced 12 units on 14-unit boxes),
         # no "$-1" axis for a cost every arm shares, and a strip without the arm scored against what it wrote.
         crossed, minus = {}, []

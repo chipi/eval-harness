@@ -23,9 +23,12 @@ const last=Date.UTC(y-1,mo,(mo===1&&da===29)?28:da);return {since:iso(Date.UTC(y
 return {since:(first||iso(t)).slice(0,10),until:iso(t),prev:null};}
 const within=(d,s)=>!!d&&s[0]<=d&&d<=s[1];
 function trend(now,before){if(before===null)return '';if(!before)return now?'new: nothing in the previous period':'none in either period';
-const pct=(now-before)/before*100;return (pct>0?'▲':pct<0?'▼':'=')+' '+Math.abs(pct).toFixed(0)+'%';}
-/* short form for a badge: ▲ 12%, ▲ from 0 (nothing the period before), none */
-const short=t=>/%$/.test(t)?t:t.startsWith('new')?'▲ from 0':t?'none':'';
+const pct=(now-before)/before*100;
+/* past doubling, a multiple: "▲ 3089%" says less than "▲ ×32" */
+if(pct>100){const x=now/before;return '▲ ×'+(x<10?x.toFixed(1):x.toFixed(0));}
+return (pct>0?'▲':pct<0?'▼':'=')+' '+Math.abs(pct).toFixed(0)+'%';}
+/* short form for a badge: ▲ 12%, ▲ ×32, ▲ from 0 (nothing the period before), none */
+const short=t=>/%$|×/.test(t)?t:t.startsWith('new')?'▲ from 0':t?'none':'';
 const daysOf=(a,b)=>{const out=[];for(let t=at(a);t<=at(b);t+=DAY)out.push(iso(t));return out;};
 const amount=(v,unit)=>unit==='tokens'?Math.round(v).toLocaleString('en-US')+' tokens':v<1?'$'+v.toFixed(4):'$'+v.toFixed(2);
 const label=Object.fromEntries(P.periods.map(([k,l,c])=>[k,[l,c]]));
@@ -59,8 +62,11 @@ if(f==='runs'){cell(c,rs.length,pv?runsIn(k,pv).length:null,v=>String(v));
 if(c.hasAttribute('data-line'))c.insertAdjacentHTML('beforeend',line(daysOf(b.since,b.until).map(d=>runsIn(k,[d,d]).length)));}
 else if(f==='arms'){cell(c,new Set(rs.map(x=>x[1])).size,pv?new Set(runsIn(k,pv).map(x=>x[1])).size:null,v=>String(v));
 if(c.hasAttribute('data-line'))c.insertAdjacentHTML('beforeend',line(daysOf(b.since,b.until).map(d=>runsIn(k,[d,d]).length)));}
-else if(f==='usd')cell(c,usdIn(k,s),pv?usdIn(k,pv):null,v=>v?amount(v,'usd'):'—');
-else if(f==='line')c.innerHTML=line(daysOf(b.since,b.until).map(d=>runsIn(k,[d,d]).length));
+else if(f==='usd'){cell(c,usdIn(k,s),pv?usdIn(k,pv):null,v=>v?amount(v,'usd'):'—');
+/* a judge's calls are spend but no run of the row's: "0 runs" beside "$13.09" says which */
+const j=(R[k]&&R[k].usd||[]).filter(x=>x[2]&&within(x[0],s)).reduce((a,x)=>a+x[1],0);
+if(j>0)c.insertAdjacentHTML('beforeend',`<br><small class="muted">${j>=usdIn(k,s)-1e-9?'all':esc(amount(j,'usd'))} judging</small>`);}
+else if(f==='line')c.innerHTML=line(daysOf(b.since,b.until).map(d=>runsIn(k,[d,d]).length))||'<span class="muted">—</span>';
 else if(f==='events')cell(c,ev.length,pv?evIn(k,pv).length:null,v=>String(v));
 else if(f==='tokens')cell(c,tokIn(k,s),pv?tokIn(k,pv):null,v=>v?Math.round(v).toLocaleString('en-US'):'—');});
 r.classList.toggle('pout',rowShow==='new'?!isNew:rowShow==='active'?!act:false);});

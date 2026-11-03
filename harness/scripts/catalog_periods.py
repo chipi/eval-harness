@@ -286,9 +286,10 @@ def runs_of(arms: list[dict], idx: dict) -> list[list]:
 
 
 def spend_of(spend: list[dict], keep) -> list[list]:
-    """[[day, usd]] for the spend events `keep(event)` accepts."""
+    """[[day, usd, judging]] for the spend events `keep(event)` accepts; judging is 1 for a judge's calls (no run of
+    the dataset's: "0 runs" beside "$13.09" needs saying), else 0."""
     return sorted(
-        [(x.get("at") or "")[:10], round(float(x["usd"]), 6)]
+        [(x.get("at") or "")[:10], round(float(x["usd"]), 6), 0 if x.get("kind") == "arm" else 1]
         for x in spend
         if x.get("at") and isinstance(x.get("usd"), (int, float)) and keep(x)
     )
