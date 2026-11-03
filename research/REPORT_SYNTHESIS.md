@@ -2,7 +2,10 @@
 
 **Six tasks · five metric shapes · 173 measured arms · $19.12 billed · one harness**
 
-*$19.12 is the 173 arms under `harness/data/runs/`. Including the six paired runs (four
+*$19.12 is the 173 arms under `harness/data/runs/`: the 167 arms the evals compare ($19.07, the
+count and bill on the site) and, apart from them, the six 2026-11-02 mode-validation runs on
+`summeval_100` (`se_*_n100_pick_v1` and `se_*_n100_pairwise_v1`; $0.05 billed, for the two pick
+runs: the two pairwise runs have a recorded cost of $0.13 and no provider bill). Including the six paired runs (four
 behind the registered prediction, $0.60; two on SummEval's text, $0.13) and the three hosted
 repeat runs ($0.43), the repo has spent $20.28.*
 

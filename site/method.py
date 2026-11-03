@@ -126,7 +126,7 @@ NODES = [
         "outputs + fingerprint",
         (
             "One pass of an arm over the dataset: every output, every per-item score, billed cost, "
-            "latency, and a fingerprint of data, code, model and build. Repeat it to measure noise."
+            "latency, and a fingerprint of instrument, data, deployment and settings. Repeat it to measure noise."
         ),
         "data/runs/&lt;run_id&gt;/",
         "evh run --config … --repeat 3",
@@ -260,16 +260,18 @@ def chapters(H, f: dict) -> list:
                 "a stand-in, qwen37max) — so when a model's score differs "
                 "between two tasks, the task is what changed, apart from what each report states: on "
                 "SummEval a stand-in model, prices a month later and a different calling machine.</p>"
-                "<p>Every run carries a <strong>fingerprint</strong>: hashes of the data, the "
-                "prompt and the scoring code, the model behind the alias, library versions, "
-                "the commit. Before the harness shows a single delta between two runs, it "
-                "lists the fields that moved.</p>"
+                "<p>Every run carries a <strong>fingerprint</strong> of four hashed parts: the "
+                "instrument (the harness and the adapter's code), the data, the deployment "
+                "(the system as it executed) and the settings (how it was asked). The machine "
+                "that ran the harness is recorded beside them, outside the hash. Before the "
+                "harness shows a single delta between two runs, it names the part that moved "
+                "and what in it.</p>"
             ),
             "habit": "Change one thing per arm, and record everything else — so “we only changed "
             "the prompt” is checkable rather than claimed.",
             "tool": (
                 "evh run-compare --baseline … --candidate …",
-                "Fingerprints DIFFER. Fields that moved: arm.params.sentences",
+                "Fingerprints DIFFER. Parts that moved:\n      settings differ: stub_disposition (dismiss vs escalate)",
             ),
             "yours": "Your arms are your candidates — prompts, models, retrieval settings, "
             "thresholds — one YAML file each.",
@@ -761,7 +763,7 @@ STEPS = [
         "2-onboard-it",
     ),
     (
-        "Run the best arm; its outputs become the reference set",
+        "Run the best arm; optionally its outputs become the reference set",
         "Your best system answers first; its answers become a model's labels, promoted to silver, and the others are measured by how close they come.",
         "evh run --config data/configs/tickets_author.yaml\nevh label-from-run --run … --set author_v1\nevh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason … --by me",
         "data/references/silver/tickets_v1: 6 of 6 item(s), silver, promoted from tickets_v1/author_v1",
@@ -793,7 +795,7 @@ STEPS = [
         "8-choose",
     ),
     (
-        "Then: the next round",
+        "Optional: the next round",
         "Carry what stays, retire what lost with why, close with a conclusion. The goal goes on, before deploy and after.",
         (
             "evh round-retire --goal tickets_summary --round r1 --arm tickets_lead1_v1 --reason …\n"
@@ -804,7 +806,7 @@ STEPS = [
         "3-drop-an-arm-and-close-the-round",
     ),
     (
-        "When the scoring changes",
+        "Optional: when the scoring changes",
         "Preview what a new rule moves; then re-score the round at $0, or adopt the rule from the next round.",
         "evh score-preview --goal tickets_summary",
         "recommended  tickets_lead2_v1",
@@ -812,7 +814,7 @@ STEPS = [
         "7-when-the-scoring-changes",
     ),
     (
-        "Then: make it golden",
+        "Optional: make it golden",
         "A person's answers, imported as labels and promoted at gold; re-score every run against them for $0.",
         (
             "evh label-import tutorial/gold --dataset-id tickets_v1 --set owner_gold --by owner\n"
@@ -887,7 +889,7 @@ def use_page(H, f: dict) -> str:
 
 <section class="block" id="steps"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Step by step</div>
-  <h2>Eight steps and four optional ones, on a real example.</h2>
+  <h2>Seven steps and five optional ones, on a real example.</h2>
   <p class="lede">The tutorial kit ships six support tickets and summaries a person wrote. Every output below is what the command printed.</p>
   <ol class="findings steps">{steps}</ol>
 </div></section>
@@ -905,7 +907,7 @@ def use_page(H, f: dict) -> str:
     </ul></div>
     <div class="byo-col"><h3>The harness gives you</h3><ul>
       <li>Datasets frozen by content hash, re-checked on every use.</li>
-      <li>A fingerprint per run: data, prompt, code, model, build.</li>
+      <li>A fingerprint per run: instrument, data, deployment, settings.</li>
       <li>Each arm's own noise, measured.</li>
       <li>Paired and Holm-corrected tests — significant or not.</li>
       <li>Billed cost and latency beside quality.</li>
@@ -946,7 +948,7 @@ show('dataset');}})();
     return H.page(
         "Use it on your problem — eval-harness",
         "Apply the method to your own system: the evaluation lifecycle, patterns for "
-        "common questions, seven steps and an optional judging step on a real example, "
+        "common questions, seven steps and five optional ones on a real example, "
         "and what you write vs. what "
         "the harness gives you.",
         body + H.author("use"),

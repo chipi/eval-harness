@@ -44,10 +44,11 @@
 <article class="chapter reveal" id="experiment" data-nodes="arms runs">
   <div class="eyebrow"><span class="num">01</span>Experiment</div>
   <h2>An eval is an experiment.</h2>
-  <div class="story prose"><p>The same 24 hosted models (the cheapest twelve on SciFact) ran on six tasks with one prompt per task, at temperature 0 with reasoning off (on SummEval, Qwen's large slot is a stand-in, qwen37max) — so when a model's score differs between two tasks, the task is what changed, apart from what each report states: on SummEval a stand-in model, prices a month later and a different calling machine.</p><p>Every run carries a <strong>fingerprint</strong>: hashes of the data, the prompt and the scoring code, the model behind the alias, library versions, the commit. Before the harness shows a single delta between two runs, it lists the fields that moved.</p></div>
+  <div class="story prose"><p>The same 24 hosted models (the cheapest twelve on SciFact) ran on six tasks with one prompt per task, at temperature 0 with reasoning off (on SummEval, Qwen's large slot is a stand-in, qwen37max) — so when a model's score differs between two tasks, the task is what changed, apart from what each report states: on SummEval a stand-in model, prices a month later and a different calling machine.</p><p>Every run carries a <strong>fingerprint</strong> of four hashed parts: the instrument (the harness and the adapter's code), the data, the deployment (the system as it executed) and the settings (how it was asked). The machine that ran the harness is recorded beside them, outside the hash. Before the harness shows a single delta between two runs, it names the part that moved and what in it.</p></div>
   <div class="habit"><b>The habit</b>Change one thing per arm, and record everything else — so “we only changed the prompt” is checkable rather than claimed.</div>
   <div class="tool"><span class="k">In the harness</span><pre class="term"><span class="p">$ </span>evh run-compare --baseline … --candidate …
-<span class="c">Fingerprints DIFFER. Fields that moved: arm.params.sentences</span></pre></div>
+<span class="c">Fingerprints DIFFER. Parts that moved:
+      settings differ: stub_disposition (dismiss vs escalate)</span></pre></div>
   <p class="yours"><b>In ours</b> <a href="https://evals.humancopilot.eu/catalog/goals.html">each goal&#x27;s arms, side by side →</a>, in the catalog.</p>
   <p class="yours"><b>In your project</b> Your arms are your candidates — prompts, models, retrieval settings, thresholds — one YAML file each.</p>
 </article>

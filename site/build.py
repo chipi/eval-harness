@@ -1221,7 +1221,7 @@ def landing(f: dict) -> str:
         "<h3>Re-measured</h3><p>Three evals scored again without re-running a model: validated LLM "
         "judges re-ranked summarisation, a person corrected AG News and DBpedia labels. Why a judge "
         "beat the metric on SummEval, and why one reader's check kept coverage primary.</p>"
-        f'<div class="meta"><span>3 evals · {money(f["remeasure"]["summ"]["billed_usd"] + f["remeasure"]["summ_v2"]["billed_usd"])} of judging, '
+        f'<div class="meta"><span>3 evals · {money(f["remeasure"]["summ"]["billed_usd"] + f["remeasure"]["summ_v2"]["billed_usd"])} of grading in two passes, '
         f"{money(f['remeasure']['validation_usd'])} checking the judges</span>"
         "<span>primaries <b>unchanged</b></span></div></a>"
     )
@@ -1296,7 +1296,7 @@ def landing(f: dict) -> str:
   <h2>Train a small model on your data. <em style="font-style:normal;color:var(--accent)">Yours.</em></h2>
   <ol class="findings reveal">
     <li><div><h3>A free local model was first, or not significantly different from first, in {f["local_first_or_contender"]} of {len(exps)}.</h3><p>Against hosted LLMs run with one prompt, no examples and no reasoning. {q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
-    <li><div><h3>The clearest wins were on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")}</p></div></li>
+    <li><div><h3>The clearest wins were on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")} The XSum control also decodes shorter, so it does not isolate style.</p></div></li>
     <li><div><h3>On one task, even a free model trained for it lost to LLM judges — and the dearest judge was not needed.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out); UniEval, the best free scorer and an evaluator trained for the task, reaches 64%.", JUDGE)} {q("The judges rank all 16 summaries in one call while UniEval scores one at a time, and a pointwise LLM judge was not run; a no-model lookup of which system wrote each summary reaches 63%.", JUDGE)} {q("The cheapest judge the leader is not significantly different from, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task and one trained evaluator, and why it lost is not tested: the direction, not the size.</p></div></li>
     <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, the lead of the three fine-tunes is concentrated in 17 items the hosted field mostly gets wrong.", "research/REPORT_CLASSIFICATION.md")} Adjudicated by topic by one reader shown the hosted answer, the gold was wrong on all 17, and on that gold every hosted LLM scores above every fine-tune. {q("On Few-NERD, 57% of the winner's margin over openai_m is one entity type the prompt never defined (30–57% across the hosted arms).", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
@@ -1378,11 +1378,11 @@ def landing(f: dict) -> str:
 
 
 CARD = {
-    "summarization": "Summarise a news article in two or three sentences. A 1.6 GB fine-tune is not significantly different from the best paid model (0.0001 apart) — on CNN's articles.",
+    "summarization": "Summarise a news article in two or three sentences. A 1.6 GB fine-tune is not significantly different from the best paid model (0.00008 apart) — on CNN's articles.",
     "ag-news": "Four-way topic labels. Three small fine-tunes lead on the point estimate, LLMs as run here; the lead is concentrated in 17 items the hosted field mostly gets wrong.",
     "dbpedia": "Fourteen-way ontology labels on a saturated benchmark: the leader is not significantly different from nineteen others (1 to 8 items behind), and the gold label is sometimes in dispute.",
     "few-nerd": "Find and type entities in a sentence. The only clean winner in the repo: a fine-tuned tagger, significantly different from every rival.",
-    "scifact": "Retrieve the abstracts that support a scientific claim. The free e5_base retriever is not significantly different from the twelve LLM rerankers; reranking its top 20 adds about +0.07. The pick: build e5_base first.",
+    "scifact": "Retrieve the abstracts that support a scientific claim. The free e5_base retriever is not significantly different from the twelve LLM rerankers; the best of them, glm_s (0.7437), is 0.0246 ahead of e5_base (0.7191), p 0.27. One further run, glm_s reranking e5_base's top 20, scored 0.7891 (+0.0700 over e5_base, p 0.0001 uncorrected; one run, under a different adapter). The pick: build e5_base first.",
     "summeval": "Grade machine summaries the way experts do. The best LLM judges reach 93% of a human expert's agreement (best of 24, same articles), far ahead of the free evaluator trained for the task (64%), which scores one summary at a time while the judges rank all 16 at once; and an open-weight judge is not significantly different from the leader.",
 }
 
@@ -1466,7 +1466,7 @@ def findings_for(x: dict, f: dict) -> list:
             (
                 "A 1.6 GB model fine-tuned on this corpus is not significantly different from the best paid model.",
                 f"bart_l scores {t['score']:.4f} on coverage, {b['arm']} {b['score']:.4f} — "
-                + q("a gap of 0.0001.", rep)
+                + q("a gap of 0.00008.", rep)
                 + f" It is not significantly different from {x['n_contenders']} of the other {x['n_arms'] - 1} arms.",
             ),
             *common,
@@ -1552,7 +1552,7 @@ def findings_for(x: dict, f: dict) -> list:
     if x["slug"] == "scifact":
         return [
             (
-                "LLM rerankers lead — and is not significantly different from eleven or twelve others.",
+                "LLM rerankers lead, and the leader is not significantly different from twelve others.",
                 f"{t['arm']} reranking BM25's top 20 scores {t['score']:.4f} nDCG@10; {x['n_contenders']} arms are not significantly different from it, including the free retrievers e5_base and bge_small.",
             ),
             *common,
@@ -1964,7 +1964,7 @@ PICK = {
         "research/REPORT_NER.md",
     ),
     "scifact": q(
-        "Build e5_base retrieval first (0.7191, $0 per query); add an LLM reranker on its top 20 only if about +0.07 nDCG@10 is worth about $732 per 1M queries. Only the twelve cheapest hosted LLMs were tried.",
+        "Build e5_base retrieval first (0.7191, $0 per query); among the compared field the best reranker, glm_s (0.7437), is 0.0246 ahead of it, p 0.27, not significant. One further run, glm_s on e5_base's top 20, scored 0.7891 (+0.0700 over e5_base, p 0.0001 uncorrected; one run, under a different adapter from the main table) at about $732 per 1M queries. Only the twelve cheapest hosted LLMs were tried.",
         "research/REPORT_RETRIEVAL.md",
     ),
     "summeval": q(
@@ -1977,7 +1977,7 @@ HEADLINE = {
     "ag-news": "Small models lead, largely on disputed labels.",
     "dbpedia": "The leader is not significantly different from 19 others.",
     "few-nerd": "The one clean win.",
-    "scifact": "Free retrieval first; a reranker adds about +0.07.",
+    "scifact": "Free retrieval first; the best reranker's +0.0246 is not significant.",
     "summeval": "On mean τ, 23 of 24 LLM judges score above a trained free evaluator.",
 }
 
