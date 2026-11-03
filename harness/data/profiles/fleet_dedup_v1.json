@@ -1,0 +1,573 @@
+{
+  "dataset_id": "fleet_dedup_v1",
+  "harness": "0.6.0",
+  "items": {
+    "kind": "json",
+    "n": 100,
+    "words": {
+      "histogram": [
+        [
+          17,
+          21,
+          14
+        ],
+        [
+          22,
+          26,
+          0
+        ],
+        [
+          27,
+          31,
+          7
+        ],
+        [
+          32,
+          36,
+          56
+        ],
+        [
+          37,
+          41,
+          9
+        ],
+        [
+          42,
+          46,
+          5
+        ],
+        [
+          47,
+          51,
+          0
+        ],
+        [
+          52,
+          56,
+          0
+        ],
+        [
+          57,
+          61,
+          0
+        ],
+        [
+          62,
+          66,
+          9
+        ]
+      ],
+      "max": 65,
+      "median": 33,
+      "min": 17,
+      "p25": 33,
+      "p75": 35
+    }
+  },
+  "items_sha256": "b751fc5f940e7ad27f2470029ce7a87409a6b9b832d2da9eaa961eb9363e6a92",
+  "made_at": "2026-11-03T15:18:49Z",
+  "references": [],
+  "rows": [
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3L",
+      "reference": {},
+      "words": 27
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-42",
+      "reference": {},
+      "words": 45
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-41",
+      "reference": {},
+      "words": 35
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3N",
+      "reference": {},
+      "words": 41
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-40",
+      "reference": {},
+      "words": 39
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-8",
+      "reference": {},
+      "words": 65
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3V",
+      "reference": {},
+      "words": 65
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1B",
+      "reference": {},
+      "words": 65
+    },
+    {
+      "item_id": "glitchtip:PLAYER-8",
+      "reference": {},
+      "words": 31
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3U",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:ORRERY-9",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3T",
+      "reference": {},
+      "words": 45
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3S",
+      "reference": {},
+      "words": 35
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3R",
+      "reference": {},
+      "words": 39
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-5",
+      "reference": {},
+      "words": 65
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3Q",
+      "reference": {},
+      "words": 65
+    },
+    {
+      "item_id": "glitchtip:PLAYER-7",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PLAYER-6",
+      "reference": {},
+      "words": 31
+    },
+    {
+      "item_id": "glitchtip:PLAYER-5",
+      "reference": {},
+      "words": 29
+    },
+    {
+      "item_id": "glitchtip:PLAYER-4",
+      "reference": {},
+      "words": 29
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3P",
+      "reference": {},
+      "words": 45
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3O",
+      "reference": {},
+      "words": 35
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3M",
+      "reference": {},
+      "words": 39
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-31",
+      "reference": {},
+      "words": 65
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3K",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3J",
+      "reference": {},
+      "words": 43
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3I",
+      "reference": {},
+      "words": 35
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3H",
+      "reference": {},
+      "words": 39
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3G",
+      "reference": {},
+      "words": 41
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1C",
+      "reference": {},
+      "words": 65
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3F",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3E",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3D",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3C",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3B",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-3A",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-39",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-38",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-37",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-36",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-35",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-34",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-33",
+      "reference": {},
+      "words": 39
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-32",
+      "reference": {},
+      "words": 65
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-30",
+      "reference": {},
+      "words": 17
+    },
+    {
+      "item_id": "glitchtip:PODCAST-API-2",
+      "reference": {},
+      "words": 32
+    },
+    {
+      "item_id": "glitchtip:ORRERY-C",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:ORRERY-B",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:ORRERY-A",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:ORRERY-8",
+      "reference": {},
+      "words": 27
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2V",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2U",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2T",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2S",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2R",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2Q",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2P",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-19",
+      "reference": {},
+      "words": 31
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2O",
+      "reference": {},
+      "words": 35
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2N",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2M",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2L",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2K",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2J",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2I",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2H",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2G",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2F",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2E",
+      "reference": {},
+      "words": 65
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2D",
+      "reference": {},
+      "words": 35
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2C",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2B",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-2A",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-29",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-28",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-27",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-26",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-25",
+      "reference": {},
+      "words": 35
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-24",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-23",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-22",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-20",
+      "reference": {},
+      "words": 39
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1V",
+      "reference": {},
+      "words": 39
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1U",
+      "reference": {},
+      "words": 45
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-21",
+      "reference": {},
+      "words": 35
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1T",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1S",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1R",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1Q",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1P",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1O",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1N",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1M",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1L",
+      "reference": {},
+      "words": 35
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1K",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1J",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1I",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1H",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1G",
+      "reference": {},
+      "words": 33
+    },
+    {
+      "item_id": "glitchtip:PODCAST-PIPELINE-1F",
+      "reference": {},
+      "words": 33
+    }
+  ],
+  "source": null
+}

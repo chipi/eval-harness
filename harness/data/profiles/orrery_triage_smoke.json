@@ -1,0 +1,107 @@
+{
+  "dataset_id": "orrery_triage_smoke",
+  "harness": "0.6.0",
+  "items": {
+    "kind": "json",
+    "n": 2,
+    "words": {
+      "histogram": [
+        [
+          167,
+          169,
+          1
+        ],
+        [
+          170,
+          172,
+          0
+        ],
+        [
+          173,
+          175,
+          0
+        ],
+        [
+          176,
+          178,
+          0
+        ],
+        [
+          179,
+          181,
+          0
+        ],
+        [
+          182,
+          184,
+          0
+        ],
+        [
+          185,
+          187,
+          0
+        ],
+        [
+          188,
+          190,
+          0
+        ],
+        [
+          191,
+          193,
+          0
+        ],
+        [
+          194,
+          196,
+          1
+        ]
+      ],
+      "max": 195,
+      "median": 195,
+      "min": 167,
+      "p25": 167,
+      "p75": 195
+    }
+  },
+  "items_sha256": "f9eff73aa783690ead2122f4d5a6742fd99228e89fb4b59e77a1d1348e040e97",
+  "made_at": "2026-11-03T15:18:49Z",
+  "references": [
+    {
+      "id": "gold/orrery_triage_smoke",
+      "items": 2,
+      "shape": "text",
+      "words": {
+        "histogram": [
+          [
+            1,
+            1,
+            2
+          ]
+        ],
+        "max": 1,
+        "median": 1,
+        "min": 1,
+        "p25": 1,
+        "p75": 1
+      }
+    }
+  ],
+  "rows": [
+    {
+      "item_id": "orrery-ORRERY-PROD-18-2026-10-16T16:03:49Z",
+      "reference": {
+        "gold/orrery_triage_smoke": "1 words"
+      },
+      "words": 195
+    },
+    {
+      "item_id": "orrery-ORRERY-DEV-2-2026-10-17T08:32:48Z",
+      "reference": {
+        "gold/orrery_triage_smoke": "1 words"
+      },
+      "words": 167
+    }
+  ],
+  "source": null
+}

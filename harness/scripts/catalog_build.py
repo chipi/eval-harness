@@ -2005,6 +2005,11 @@ def render_labels_of(A: Adapter, ds: str, v: dict) -> str:
         html_ += (
             '<h3 class="sub">how often two sets agree <small>on the items both label: the same answers, sharing '
             "one, and chance-corrected (Cohen's κ, Krippendorff's α)</small></h3>"
+            # "α −0.25 MASI" was a number and a word with nothing to read them by.
+            '<p class="small muted">κ and α are 1 when two sets always agree, 0 when they agree only as often as '
+            "chance would, and below 0 when they agree less often than that. <b>MASI</b>: where a label may name "
+            "several answers, α counts a partial overlap as partial agreement (Passonneau's MASI distance), not as "
+            "a miss.</p>"
             + table(
                 f"agree-{slug(ds)}",
                 # In <small>: a header is uppercased, and Κ and Α read as K and A.
@@ -2043,7 +2048,9 @@ def agreement_cells(a: dict) -> list[str]:
         return "—" if a.get(k) is None else f"{a[k]:.2f}"
 
     alpha = coef("alpha") + (
-        " <small>MASI</small>" if a.get("alpha_distance") == "MASI" and a.get("alpha") is not None else ""
+        ' <small title="a partial overlap of answers counts as partial agreement (MASI distance)">MASI</small>'
+        if a.get("alpha_distance") == "MASI" and a.get("alpha") is not None
+        else ""
     )
     return [str(both), share("same"), share("share"), coef("kappa"), alpha]
 
@@ -3984,10 +3991,13 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         if a["arm"] in (r.get("arms") or []) or {a["arm"], cid} & _retired_arms(r)
     ]
     if rnds:
+        # A sentence, not "r1 of … · in play · closed": what the round was and what it did with this arm.
         lis = "".join(
-            f"<li>{e(r['round_id'])} of {goal_link(goals[r['goal']], '../') if r.get('goal') in goals else e(r.get('goal', ''))}"
-            + (" · <b>retired</b>" if {a["arm"], cid} & _retired_arms(r) else " · in play")
-            + f" · {e(r.get('status', ''))}</li>"
+            f"<li>Round <b>{e(r['round_id'])}</b> of "
+            f"{goal_link(goals[r['goal']], '../') if r.get('goal') in goals else e(r.get('goal', ''))}"
+            + (f", {e(r['status'])}" if r.get("status") else "")
+            + (": <b>retired</b> in it" if {a["arm"], cid} & _retired_arms(r) else ": one of its arms")
+            + ".</li>"
             for r in rnds
         )
         body += block(f"{n:02d}", "rounds", f"<ul>{lis}</ul>")

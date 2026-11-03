@@ -473,10 +473,19 @@ def smoke_text(s: dict) -> str:
 
 
 def kv(d: dict) -> str:
-    """A mapping on one line: "s 8.98 · tokens out 146", a nested mapping in brackets."""
+    """A mapping on one line: "s 8.98 · tokens out 146 · reasoned: no", a nested mapping in brackets; a yes or no
+    reads as one, never "reasons False"."""
     return " · ".join(
-        f"{k.replace('_', ' ')} {f'({kv(v)})' if isinstance(v, dict) else v}" for k, v in d.items()
+        f"{k.replace('_', ' ')}: {yes_no(v)}"
+        if isinstance(v, bool)
+        else f"{k.replace('_', ' ')} {f'({kv(v)})' if isinstance(v, dict) else v}"
+        for k, v in d.items()
     )
+
+
+def yes_no(v: bool) -> str:
+    """A probe's yes or no."""
+    return "yes" if v else "no"
 
 
 def render_model(A, r: dict, out, nav: list) -> None:
@@ -530,7 +539,7 @@ def render_model(A, r: dict, out, nav: list) -> None:
         for k, v in rep.items():
             mine = [f for f in flags if k.replace("_", " ") in f.lower() or k in f.lower()]
             used.update(mine)
-            text = kv(v) if isinstance(v, dict) else str(v)
+            text = kv(v) if isinstance(v, dict) else yes_no(v) if isinstance(v, bool) else str(v)
             probes.append(
                 [
                     e(k.replace("_", " ")),

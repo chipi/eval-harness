@@ -313,6 +313,25 @@ def drive(cat: Path, base: str) -> None:
             f"per-arm hashes {seen.count('rescored 5f2c057c')}, conclusion shown {seen.count(concl)}×",
         )
 
+        # Small things read as words: an arm's rounds as sentences, a probe's yes or no (never "reasons False"),
+        # what α and MASI mean beside them, and the showcase dataset's "what's inside" filled.
+        arm_p = (cat / "a" / "runs-cnn_dailymail_200-cnn_bart_l_n200_v1.html").read_text(encoding="utf-8")
+        raw = sorted(
+            f.name
+            for f in (cat / "models").glob("*.html")
+            if re.search(r"<code>[^<]*\b(True|False)\b", f.read_text(encoding="utf-8"))
+        )
+        tri = (cat / "d" / "orrery_triage_v1_labelled.html").read_text(encoding="utf-8")
+        check(
+            "words: rounds as sentences, no raw booleans on model pages, α and MASI explained, triage profiled",
+            "Round <b>r1</b> of" in arm_p
+            and "in play" not in arm_p
+            and not raw
+            and "MASI distance" in tri
+            and "No profile yet" not in tri,
+            f"raw booleans on {raw[:3]}",
+        )
+
         # The datasets table says what a period's spend was when no run was (CNN: "0 runs" beside "$13.09", the
         # judges' calls), a rise past doubling as a multiple ("▲ 3089%"), and "—" where a row had no runs to draw.
         page.goto(base + "datasets.html")
