@@ -47,7 +47,9 @@ set is not evidence that they are equally good.
   - `quality_first`: the same quality only;
   - `frugal`: anything the paired test finds not significantly different.
   Identical per-item scores are contenders in every strategy. A judge's group decides on the judge's
-  score, so the goal's quality limit and margin (written for its own measure) do not apply there.
+  score, so the goal's quality limit and margin (written for its own measure) do not apply there; it
+  shows its leader beside the group the goal decides on and recommends nothing (0.6.1: one recommendation per
+  goal and dataset, from the goal's own measure).
 - **A tie-break picks among the contenders** (`success_criteria.tie_break`, default cost then speed,
   any axis the goal weighs, quality included: `frugal` with `[cost, quality]` is "the cheapest,
   then the best of the equally cheap"; validate's V14 refuses an axis it does not weigh).

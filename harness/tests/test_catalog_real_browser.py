@@ -231,6 +231,17 @@ def drive(cat: Path, base: str) -> None:
             ", ".join(undated[:5]),
         )
 
+        # One recommendation per goal and dataset, from the goal's own measure (judged groups are shown, never
+        # recommend), and a round's best read as the goal decides: on gold, never the arm that wrote silver.
+        cnn = (cat / "g" / "news_summary_cnn.html").read_text(encoding="utf-8")
+        recs = sorted(set(re.findall(r"Recommended: <b><a [^>]*>([^<]+)</a>", cnn)))
+        best = re.findall(r"best</small> <a class=\"cell-link\"[^>]*>([a-z0-9_]+)</a>", cnn)
+        check(
+            "CNN goal page: one recommendation (gold's), and round r1's best is gold's leader, not silver's author",
+            recs == ["cnn_bart_l_n200_v1"] and best[:1] == ["cnn_bart_l_n200_v1"],
+            f"recommended {recs}; best {best[:3]}",
+        )
+
         # A goal page's rounds count their arms as `evh rounds` does: a re-scored run is the same arm.
         differ = []
         for gp in sorted((cat / "g").glob("*.html")):

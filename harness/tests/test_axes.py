@@ -394,6 +394,11 @@ check(
     "y" not in d["contenders"] and any("2% of the leader" in w for w in d["why"]),
     d["why"],
 )
+check(
+    "judge group: shown, not recommended (the goal decides on its own measure, q)",
+    d["recommended"] is None and d.get("shown_only") and any("the goal decides on q" in w for w in d["why"]),
+    d["why"],
+)
 
 # A silver group beside a gold one shows its leader and never recommends: gold decides.
 from evaluation_harness.catalog_build import gold_beside  # noqa: E402

@@ -2673,9 +2673,22 @@ def _rounds_block(A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | 
     for r in rounds:
         r["arms"] = [instead.get(a, a) for a in r.get("arms") or []]
 
+    info = {a["arm"]: a for v in (by_ds if by_ds is not None else collect(A)).values() for a in v["arms"]}
+
+    def comparable(r) -> list:
+        """The round's arms its best is read from: as the goal decides, on gold where the dataset has a gold
+        group, never a judged copy, never the arm that wrote the reference it is scored against (it scores 1.0)."""
+        arms = [
+            a
+            for a in r.get("arms") or []
+            if not (info.get(a) or {}).get("judge") and not (info.get(a) or {}).get("wrote")
+        ]
+        gold = [a for a in arms if str((info.get(a) or {}).get("reference") or "").startswith("gold/")]
+        return gold or arms
+
     def best(r):
         means = {}
-        for a in r.get("arms") or []:
+        for a in comparable(r):
             vals = (A.scores(a).get(measure) or {}).get("values") or {}
             if vals:
                 means[a] = statistics.fmean(vals.values())
@@ -3152,6 +3165,16 @@ def group_decision(
                 "recommended. Silver is not what the goal decides on: a model's opinion (its author's "
                 "family ranks higher on it) or what production recorded afterwards; its caveat says which."
             ),
+        ]
+    elif gm != (crit.get("primary") or {}).get("measure") and not gm.endswith("_unvalidated"):
+        # A re-measurement (a judge's grade, pick or pairwise, or a scorer's other metric): the goal recommends from
+        # the group it decides on, its own measure; this one shows its leader beside it (owner, 2026-11-03).
+        dec["recommended"] = None
+        dec["shown_only"] = True
+        dec["why"] = [
+            *[w for w in dec["why"] if not w.startswith(("Recommended:", "Still undecided"))],
+            f"Read on {gm}: the goal decides on {(crit.get('primary') or {}).get('measure')}; this group is shown, "
+            "not recommended.",
         ]
     elif gm.endswith("_unvalidated"):
         dec["recommended"] = None
