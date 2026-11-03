@@ -293,6 +293,21 @@ def drive(cat: Path, base: str) -> None:
             f"per-arm hashes {seen.count('rescored 5f2c057c')}, conclusion shown {seen.count(concl)}×",
         )
 
+        # How to read a goal's groups and its strategy are said once a page (CNN printed them 3 and 6 times).
+        twice = {
+            gp.stem: (n1, n2)
+            for gp in sorted((cat / "g").glob("*.html"))
+            for t in [gp.read_text(encoding="utf-8")]
+            for n1, n2 in [
+                (
+                    t.count("over each arm&#x27;s") + t.count("over each arm's"),
+                    t.count("The rule recommends;"),
+                )
+            ]
+            if n1 > 1 or n2 > 1
+        }
+        check("goal pages: the groups' explanation and the strategy said once each", not twice, str(twice))
+
         # A dataset page opens on the measure its goal decides on, and never inspects two judges' scores as one.
         firsts = {}
         for d in ("orrery_triage_v1_labelled", "summeval_100"):

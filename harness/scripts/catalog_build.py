@@ -2963,6 +2963,10 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
         body += block(f"{n:02d}", "how we got here: rounds", rounds_html, "rounds")
         n += 1
     retired_in = retired_in_of(A, g)
+    explained = (
+        False  # how to read the groups, said once on the page, not under each dataset (CNN: three times)
+    )
+    said: set = set()  # the strategy paragraphs the page's decisions have printed
     for ans in goal_answers(g, by_ds):
         ds, v = ans["dataset"], by_ds.get(ans["dataset"]) or {}
         tiers = {r["id"]: r["tier"] for r in v.get("refs", [])}
@@ -2996,7 +3000,10 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                 "verdict: the inspector tests each arm against its group's leader (Holm across them). "
                 "Flagged arms are never the leader. <b>filed</b>: the arm's config names this goal "
                 "(<code>goal:</code>); an arm without it is listed because it records the measure.</p>"
+                if not explained
+                else ""
             )
+            explained = True
             for gi, grp in enumerate(ans["groups"]):
                 rows = grp["rows"]
                 gm = rows[0].get("measure", measure) if rows else measure  # a judge's group: its score
@@ -3068,7 +3075,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                         "Test every arm in this group against its leader</a></p>"
                     )
                 inner += decision_html(
-                    dec, {r["arm"]: r["label"] for r in rows}, g, "../", baseline_gap(A, dec, rows, gm)
+                    dec, {r["arm"]: r["label"] for r in rows}, g, "../", baseline_gap(A, dec, rows, gm), said
                 )
                 inner += table(
                     f"ans{n}_{gi}",
@@ -3368,9 +3375,10 @@ def axis_head(ax: dict) -> str:
     return f'<span title="{e(full)}">{e(name)}</span>' + (f"<br><small>{e(limit)}</small>" if limit else "")
 
 
-def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "") -> str:
+def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "", said: set | None = None) -> str:
     """What the goal's rule concludes for this group, and why, in the goal's own terms; `gap`
-    says how it differs from the promoted baseline (baseline_gap)."""
+    says how it differs from the promoted baseline (baseline_gap). `said`: the page's strategy paragraphs so far;
+    one already printed is not printed again (the CNN goal page printed the same one six times)."""
 
     if not dec["rows"]:
         return ""
@@ -3386,13 +3394,20 @@ def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "") -> s
     why = "".join(f"<li>{w}</li>" for w in why_lines(dec, labels))
     if gap:
         why += f'<li class="gap"><b>{e(gap)}</b></li>'
-    return (
-        f'<div class="decision"><p class="lead">{head}</p><ul class="small">{why}</ul>'
+    rule = (
         f'<p class="small muted">Strategy <b>{e(strategy_of(dec["goal"]))}</b> '
         f"({e(STRATEGIES[strategy_of(dec['goal'])])}). Weighs {e(weighs)}. Among the contenders on quality, "
         f"the tie-break is {e(', '.join(tie_break_of(dec['goal'])))}. The rule recommends; promoting "
-        "is <code>evh run-promote</code>; the goal chooses its strategy (<code>strategy:</code>).</p></div>"
+        "is <code>evh run-promote</code>; the goal chooses its strategy (<code>strategy:</code>).</p>"
     )
+    # The strategy and tie-break are the goal's: once per page. A judged group's own quality measure is in its
+    # reasons ("Read on judge_score: the goal decides on coverage").
+    key = (strategy_of(dec["goal"]), tuple(tie_break_of(dec["goal"])))
+    if said is not None and key in said:
+        rule = ""
+    elif said is not None:
+        said.add(key)
+    return f'<div class="decision"><p class="lead">{head}</p><ul class="small">{why}</ul>{rule}</div>'
 
 
 def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
