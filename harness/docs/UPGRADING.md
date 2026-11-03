@@ -5,6 +5,11 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.6.1 to 0.6.2
+
+Change the pin to `@v0.6.2`. No format changes, nothing to migrate, and no answer changes: views and the catalog build
+read each arm's scores once, and `evh mcp` can serve answers written ahead (`--write-answers`, `--answers`).
+
 ## From 0.6.0 to 0.6.1
 
 Change the pin to `@v0.6.1`. No format changes and nothing to migrate: no run's score or fingerprint moves.

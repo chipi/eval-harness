@@ -62,7 +62,7 @@ a walkthrough in the user's own project, not inside a checkout of this repositor
 
 ### FR1: The package
 
-- **FR1.1**: `pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.1#subdirectory=harness"`
+- **FR1.1**: `pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.2#subdirectory=harness"`
   installs the package and the `evh` command; Python 3.10 or later (from 0.5.0, the MCP SDK's floor; 3.9 before).
 - **FR1.2**: Its dependencies are `pyyaml`, `jsonschema`, `openai`, `anthropic` and (from 0.5.0) `mcp`; there is no
   optional extra for any user feature (the `test` extra serves the self-test's corpus checks).
