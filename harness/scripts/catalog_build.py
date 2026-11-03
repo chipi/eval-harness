@@ -3696,6 +3696,10 @@ def deploy_verdicts(sh: dict) -> str:
             continue
         bits = []
         for k, row in c["keys"].items():
+            if row["missing"] == c["records"] and not row["match"] and not row["differ"]:
+                # "0 match; not recorded: 233" read as a failure: nothing was compared.
+                bits.append(f"<code>{e(k)}</code>: production recorded none, so it cannot be checked")
+                continue
             b = f"<code>{e(k)}</code> {row['match']} match"
             if row["differ"]:
                 b += "; differ: " + ", ".join(f"{e(v)} ({n})" for v, n in list(row["differ"].items())[:5])

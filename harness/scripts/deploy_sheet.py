@@ -233,6 +233,9 @@ def main() -> int:
     if c is not None:
         print(f"\ncapture {c['capture']}: {c['records']} record(s)")
         for k, row in c["keys"].items():
+            if row["missing"] == c["records"] and not row["match"] and not row["differ"]:
+                print(f"  {k:<12} production recorded none, so it cannot be checked")
+                continue
             line = f"  {k:<12} {row['match']} match"
             if row["differ"]:
                 line += "; differ: " + ", ".join(f"{v} ({n})" for v, n in row["differ"].most_common(5))

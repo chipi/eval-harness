@@ -361,6 +361,22 @@ try:
         and "not recorded: 2" in deploy_verdicts(bad),
         deploy_verdicts(bad),
     )
+    unknown = {
+        "captures": [
+            {
+                "capture": "c3",
+                "records": 4,
+                "ok": False,
+                "keys": {"prompt_sha": {"match": 0, "differ": {}, "missing": 4}},
+            }
+        ]
+    }
+    check(
+        'the capture verdicts: a key production recorded on no decision cannot be checked, never "0 match"',
+        "prompt_sha</code>: production recorded none, so it cannot be checked" in deploy_verdicts(unknown)
+        and "0 match" not in deploy_verdicts(unknown),
+        deploy_verdicts(unknown),
+    )
 
     # ── the inspector's sheet and item view (the server's functions, as /api/sheet and /api/item answer) ──
     def serve_call(code):
