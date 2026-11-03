@@ -720,6 +720,20 @@ try:
         and pr.get(T["lead2"]) in (None, "", "—"),
         json.dumps(pr) + out(r)[-200:],
     )
+    vr: dict = next((v for k, v in foot.items() if k.startswith("verdict")), {})
+    check(
+        "verdict: an arm with no score on the metric gets none, and takes no part in the decision",
+        "no judge_p/judge_score in this run" in str(vr.get(T["lead2"], ""))
+        and "leader" in str(vr.get(T["author"], "")),
+        json.dumps(vr),
+    )
+    r, rs, foot = sheet_of("--metric", "judge_p/judge_score", runs=f"{T['lead1']},{T['lead2']}")
+    vr = next((v for k, v in foot.items() if k.startswith("verdict")), {})
+    check(
+        "verdict: one scored arm beside an unscored one is compared with nothing, never 'leader, recommended'",
+        "nothing to compare" in str(vr.get(T["lead1"], "")) and "recommended" not in json.dumps(vr),
+        json.dumps(vr),
+    )
     shutil.rmtree(data / "runs-judged")
 
     # ── refusals ─────────────────────────────────────────────────────────────────────────────

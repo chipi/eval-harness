@@ -281,7 +281,7 @@ def runs_of(arms: list[dict], idx: dict) -> list[list]:
         [(r.get("created_at") or "")[:10], idx[a["arm"]]]
         for a in arms
         for r in a["run_list"]
-        if r.get("created_at") and not r.get("derived")
+        if r.get("created_at") and (not r.get("derived") or r.get("in_place"))
     )
 
 

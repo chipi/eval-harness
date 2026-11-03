@@ -25,6 +25,7 @@ With the inspector on a free port, over a built catalog:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import signal
@@ -229,6 +230,20 @@ def drive(cat: Path, base: str) -> None:
             "arms page: every config row is dated (its first run, any kind)",
             not undated,
             ", ".join(undated[:5]),
+        )
+
+        # Runs re-scored or re-parsed in place (Few-NERD's, SciFact's) are the runs that were measured: their runs and
+        # spend count in every period figure, dated when they were measured.
+        rows_js = (cat / "datasets-rows.js").read_text(encoding="utf-8")
+        per = json.loads(rows_js[rows_js.index("{") : rows_js.rindex("}") + 1])
+        counted = {
+            d: (len(per.get(d, {}).get("runs") or []), sum(x[1] for x in per.get(d, {}).get("usd") or []))
+            for d in ("few_nerd_280", "scifact_200")
+        }
+        check(
+            "datasets: runs re-scored in place count in the period figures (runs and spend)",
+            all(n > 0 and usd > 0 for n, usd in counted.values()),
+            str(counted),
         )
 
         # One recommendation per goal and dataset, from the goal's own measure (judged groups are shown, never

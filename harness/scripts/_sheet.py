@@ -560,6 +560,12 @@ def _verdicts(model: dict[str, Any], sub: dict[str, dict[str, float]]) -> tuple[
     if not toks:
         return dict.fromkeys(sub, ""), ""
     ref, lower = model["metric"], model["lower"]
+    # An arm with no score on the metric was not measured on it: no verdict, and it takes no part in the decision
+    # (a goal's decision over one scored arm crowned it "leader, recommended" for the other's want of a score).
+    unscored = {t: f"no {ref} in this run" for t, s in sub.items() if not s}
+    if len(toks) < 2:
+        return {**dict.fromkeys(toks, f"the only arm shown with {ref}: nothing to compare"), **unscored}, ""
+    sub = {t: sub[t] for t in toks}
     goal = model["_goal"]
     if goal is not None:
         crit = goal.get("success_criteria") or {}
@@ -601,7 +607,7 @@ def _verdicts(model: dict[str, Any], sub: dict[str, dict[str, float]]) -> tuple[
                     out[t] = "contender"
                 else:
                     out[t] = f"not a contender: {test}" if test else "not a contender"
-            return out, f"the goal {model['goal']}'s decision"
+            return {**out, **unscored}, f"the goal {model['goal']}'s decision"
     means = {t: statistics.fmean(sub[t].values()) for t in toks}
     leader = _best(means, lower)[0]
     cmp = stats.compare({t: sub[t] for t in toks}, leader, higher_is_better=not lower)
@@ -609,7 +615,7 @@ def _verdicts(model: dict[str, Any], sub: dict[str, dict[str, float]]) -> tuple[
     out[leader] = "leader"
     for r in cmp["rows"]:
         out[r["arm"]] = r["verdict"] + (f" (p {stats.fmt_p(r['p'])})" if r.get("p") is not None else "")
-    return out, "the paired test against the leader"
+    return {**out, **unscored}, "the paired test against the leader"
 
 
 def footer(model: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:

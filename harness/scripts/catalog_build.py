@@ -1139,7 +1139,7 @@ def activity_counts(by_ds: dict, since: str) -> dict:
         for a in v["arms"]:
             for r in a["run_list"]:
                 day = (r.get("created_at") or "")[:10]
-                if day and day >= since and not r.get("derived"):
+                if day and day >= since and (not r.get("derived") or r.get("in_place")):
                     counts.setdefault(ds, {}).setdefault(day, 0)
                     counts[ds][day] += 1
     return counts
@@ -1502,7 +1502,11 @@ def home_counts(A: Adapter, by_ds: dict, spend: list[dict]) -> list[tuple]:
         "references": sum(len(v["refs"]) for v in by_ds.values()),
         "metrics": len(metric_index(A, by_ds)),
         "measured runs": sum(
-            1 for v in by_ds.values() for a in v["arms"] for r in a["run_list"] if not r.get("derived")
+            1
+            for v in by_ds.values()
+            for a in v["arms"]
+            for r in a["run_list"]
+            if not r.get("derived") or r.get("in_place")
         ),
         "billed": fmt_amount(billed, "usd"),
         "tokens": f"{tokens:,}",

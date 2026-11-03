@@ -36,6 +36,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import hashlib
 import importlib.util
 import json
+import re
 import statistics
 import sys
 from functools import wraps
@@ -279,6 +280,22 @@ def _flat_conditions(fp: dict) -> dict[str, str]:
     if fp.get("version") is not None:
         out["fingerprint.version"] = str(fp["version"])
     return out
+
+
+def measured(m: dict, dir_name: str) -> tuple[bool, str]:
+    """(re-scored or re-parsed in place, when it was measured). A derivation whose `from` is the run itself replaced
+    it where it lay: it is still the run that was measured (its calls, its bill), dated when it was, which the run id
+    keeps (created_at was rewritten with the re-score's time). Any other run: (False, its created_at)."""
+    run_id = m.get("run_id") or dir_name
+    made = m.get("created_at") or ""
+    frm = (m.get("derived") or {}).get("from", "")
+    if not frm or frm != run_id:
+        return False, made
+    stamp = re.search(r"_(\d{8})T(\d{6})Z$", run_id)
+    if stamp:
+        day, hms = stamp.groups()
+        made = f"{day[:4]}-{day[4:6]}-{day[6:]}T{hms[:2]}:{hms[2:4]}:{hms[4:]}Z"
+    return True, made
 
 
 def _number(v) -> float | None:
@@ -1016,14 +1033,18 @@ class HarnessAdapter:
         out = []
         for d in self._dirs(arm):
             m = _json(d / "metrics.json") or {}
+            run_id = m.get("run_id") or d.name
+            frm = (m.get("derived") or {}).get("from", "")
+            in_place, made = measured(m, d.name)
             out.append(
                 {
-                    "run_id": m.get("run_id") or d.name,
-                    "created_at": m.get("created_at") or "",
+                    "run_id": run_id,
+                    "created_at": made,
                     "items": m.get("n_items"),
                     "cost_usd": (m.get("scores") or {}).get("total_cost_usd"),
                     "derived": (m.get("derived") or {}).get("kind", ""),
-                    "from": (m.get("derived") or {}).get("from", ""),
+                    "from": frm,
+                    "in_place": in_place,
                 }
             )
         return sorted(out, key=lambda r: (r["created_at"], r["run_id"]))
@@ -1066,11 +1087,12 @@ class HarnessAdapter:
             sc = m.get("scores") or {}
             usd = _number(sc.get("total_cost_usd"))
             tokens = _tokens(sc.get("total_tokens_in"), sc.get("total_tokens_out"))
-            if m.get("derived") or (usd is None and tokens is None):
+            in_place, at = measured(m, d.name)
+            if (m.get("derived") and not in_place) or (usd is None and tokens is None):
                 continue
             out.append(
                 {
-                    "at": m.get("created_at") or "",
+                    "at": at,
                     "usd": usd,
                     "tokens": tokens,
                     "kind": "arm",
