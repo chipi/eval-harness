@@ -9,7 +9,7 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
-## 0.6.1 — unreleased
+## 0.6.1 — 2026-11-03
 
 Fixes to 0.6.0, from two reviews of what it shows. Six can move a number or a verdict a project sees (Changed): the
 sheet's win rates and verdicts, a goal's recommendation and the places in its field, and the catalog's run and

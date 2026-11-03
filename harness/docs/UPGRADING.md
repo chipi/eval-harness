@@ -5,6 +5,15 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.6.0 to 0.6.1
+
+Change the pin to `@v0.6.1`. No format changes and nothing to migrate: no run's score or fingerprint moves.
+
+What can read differently (the [changelog](https://github.com/chipi/eval-harness/blob/main/harness/CHANGELOG.md),
+**Changed**): the sheet's win rates and verdict; a goal recommends only from the group it decides on; a config's place
+in a goal's field counts one place per config, without the arms a round retired; and the catalog's run and spend
+figures count runs re-scored in place, once each.
+
 ## From 0.5.0 to 0.6.0
 
 Change the pin to `@v0.6.0`. Two formats change, and both are migrated by a script, never read in the old shape:
