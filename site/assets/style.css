@@ -318,6 +318,29 @@ body:has(.onpage) section[id], body:has(.onpage) .chapter { scroll-margin-top: 1
 .byo-col li b { color: var(--ink); }
 .byo-col.check li { padding-left: 28px; position: relative; }
 .byo-col.check li::before { content: ""; position: absolute; left: 0; top: 13px; width: 14px; height: 14px; border: 1.5px solid var(--accent); border-radius: 3px; }
+/* Bring your own, three shapes for three kinds of thing: what you write is files (a tree), what the harness
+   gives is a set of capabilities (tiles), and Monday is an order (a numbered line). */
+.byo-sub { font-size: 14px; color: var(--muted); margin: -8px 0 18px; }
+.byo-tree { font-size: 14px; }
+.byo-tree .t-row { position: relative; padding: 8px 0 8px 22px; border-left: 1px solid var(--hair); margin-left: 6px; }
+.byo-tree .t-row::before { content: ""; position: absolute; left: 0; top: 19px; width: 14px; border-top: 1px solid var(--hair); }
+.byo-tree .t-root { border-left: 0; padding-left: 0; margin-left: 0; }
+.byo-tree .t-root::before { display: none; }
+.byo-tree .t-last { border-left-color: transparent; }
+.byo-tree .t-last::after { content: ""; position: absolute; left: -1px; top: 0; height: 19px; border-left: 1px solid var(--hair); }
+.byo-tree .t-path { display: block; font: 600 13px/1.4 var(--mono); color: var(--ink); }
+.byo-tree .t-what { display: block; color: var(--ink-2); line-height: 1.45; margin-top: 2px; }
+.byo-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.byo-tiles .tile { border: 1px solid var(--hair); border-radius: 10px; padding: 10px 12px; background: var(--surface); }
+.byo-tiles .tile b { display: block; font-size: 14px; color: var(--ink); }
+.byo-tiles .tile span { display: block; font-size: 13px; color: var(--muted); line-height: 1.4; margin-top: 3px; }
+.byo-steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+.byo-steps li { counter-increment: step; position: relative; padding: 0 0 18px 40px; border-top: 0; color: var(--ink-2); font-size: 15px; line-height: 1.45; }
+.byo-steps li::before { content: counter(step); position: absolute; left: 0; top: -2px; width: 26px; height: 26px; border-radius: 50%;
+  border: 1.5px solid var(--accent); color: var(--ink); font: 600 12px/1 var(--mono); background: var(--page);
+  display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.byo-steps li::after { content: ""; position: absolute; left: 13px; top: 26px; bottom: 2px; border-left: 1.5px dashed var(--hair); }
+.byo-steps li:last-child::after { display: none; }
 @media (max-width: 900px) { .byo { grid-template-columns: 1fr; } .byo-col + .byo-col { padding-left: 0; border-left: 0; border-top: 1px solid var(--hair); } }
 .doors .card { min-height: 240px; }
 

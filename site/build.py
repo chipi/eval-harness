@@ -619,7 +619,9 @@ def author(place: str) -> str:
 
 
 #: A section of a page, its id and what it is called: its eyebrow when it has one, else its first heading.
-_SECTION = re.compile(r'<(section|article)[^>]*\bid="([^"]+)"[^>]*>(.*?)</\1>', re.S)  # a page's sections, the method's chapters
+_SECTION = re.compile(
+    r'<(section|article)[^>]*\bid="([^"]+)"[^>]*>(.*?)</\1>', re.S
+)  # a page's sections, the method's chapters
 _EYEBROW = re.compile(r'<div class="eyebrow">(?:<span class="num">[^<]*</span>)?(.*?)</div>', re.S)
 _HEADING = re.compile(r"<h[23][^>]*>(.*?)</h[23]>", re.S)
 

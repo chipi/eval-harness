@@ -653,15 +653,11 @@ def patterns(H, f: dict) -> list:
             "Use an LLM as a judge",
             "arms = judges, scored against people",
             H.q(
-                "Score a few dozen outputs yourself, then measure how well each judge orders them "
-                "the way you do. On SummEval the best judges reached 93% of an expert's agreement "
-                "(the best of 24, chosen on the same articles; 92% held out), and an open-weight one at 1/23 of the "
-                "leader's price was not significantly different from it.",
+                "Score a few dozen outputs yourself, then measure how well each judge orders them the way you do. "
+                "On SummEval the best reached 93% of an expert's agreement.",
                 JUDGE,
             )
-            + " Pin the provider: one judge, run once on each of two providers, scored 0.0113 apart and billed 3.7× apart."
-            " Once validated, a judge can re-measure your arms' stored outputs (evh judge-score), "
-            "on any text task you declare; validate it on outputs like the ones it will judge.",
+            + " Validated, a judge re-measures your arms' stored outputs (evh judge-score).",
             "summeval-judging",
             "Kendall τ · human ceiling",
         ),
@@ -898,34 +894,44 @@ def use_page(H, f: dict) -> str:
   <div class="eyebrow"><span class="num">04</span>Bring your own</div>
   <h2>What you write. What you get.</h2>
   <div class="byo">
-    <div class="byo-col"><h3>You write</h3><ul>
-      <li><b>An adapter</b> — <code>call_system()</code> sends one input to your system; <code>score()</code> compares an output with a reference.</li>
-      <li><b>Your inputs</b> — real ones, sampled on purpose.</li>
-      <li><b>The answers</b> — gold, for a slice you can check; silver from a model you trust for the rest.</li>
-      <li><b>One YAML per candidate</b> — model, prompt, settings, price.</li>
-      <li><b>A goal</b> — what the evaluation is for: the measure that decides, limits on cost and speed, how a tie is broken.</li>
-    </ul></div>
-    <div class="byo-col"><h3>The harness gives you</h3><ul>
-      <li>Datasets frozen by content hash, re-checked on every use.</li>
-      <li>A fingerprint per run: instrument, data, deployment, settings.</li>
-      <li>Each arm's own noise, measured.</li>
-      <li>Paired and Holm-corrected tests — significant or not.</li>
-      <li>Billed cost and latency beside quality.</li>
-      <li>Re-scoring from stored outputs for $0; validation for CI; baselines with reasons.</li>
-      <li>A recommendation per goal, with its reasons, beside the baseline a person promoted.</li>
-      <li>A catalog of every goal, dataset (and what is inside it), arm and run, and an inspector that tests arms against a baseline and shows one item's outputs (<a href="{H.CATALOG}">ours</a>).</li>
-      <li>The same read commands as MCP tools for an agent: <code>evh mcp</code> on your machine or for a team (<a href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">how</a>).</li>
-      <li>Optional LLM judges that re-measure stored outputs, refused until validated against people.</li>
-    </ul></div>
-    <div class="byo-col check"><h3>Start on Monday</h3><ul>
-      <li>Write the question as a goal: <i>can ticket routing move to the cheaper model?</i></li>
-      <li>Collect real inputs; freeze them.</li>
-      <li>Write gold answers for a slice yourself.</li>
-      <li>Write the adapter; one config per candidate.</li>
-      <li>Dry-run; set a cost cap.</li>
-      <li>Run each arm three times; note its noise.</li>
-      <li>Test the comparison you named; promote with a reason; put <code>evh validate</code> in CI.</li>
-    </ul></div>
+    <div class="byo-col"><h3>You write</h3>
+      <p class="byo-sub">Five things in your project. Nothing else is yours to write.</p>
+      <div class="byo-tree" role="list">
+        <div class="t-row t-root" role="listitem"><span class="t-path">your-project/</span></div>
+        <div class="t-row" role="listitem"><span class="t-path">scripts/adapter.py</span><span class="t-what"><code>call_system()</code> sends one input to your system; <code>score()</code> compares an output with a reference</span></div>
+        <div class="t-row" role="listitem"><span class="t-path">data/sources/</span><span class="t-what">your inputs: real ones, sampled on purpose</span></div>
+        <div class="t-row" role="listitem"><span class="t-path">data/labels/</span><span class="t-what">the answers: gold for a slice you can check, silver from a model you trust</span></div>
+        <div class="t-row" role="listitem"><span class="t-path">data/configs/*.yaml</span><span class="t-what">one per candidate: model, prompt, settings, price</span></div>
+        <div class="t-row t-last" role="listitem"><span class="t-path">data/goals/*.yaml</span><span class="t-what">what it is for: the measure that decides, limits, how a tie is broken</span></div>
+      </div>
+    </div>
+    <div class="byo-col"><h3>The harness gives you</h3>
+      <p class="byo-sub">Ten things you would otherwise build, or skip.</p>
+      <div class="byo-tiles">
+        <div class="tile"><b>Frozen datasets</b><span>by content hash, re-checked on every use</span></div>
+        <div class="tile"><b>A fingerprint per run</b><span>instrument, data, deployment, settings</span></div>
+        <div class="tile"><b>Each arm's noise</b><span>measured, not assumed</span></div>
+        <div class="tile"><b>Paired tests</b><span>Holm-corrected: significant or not</span></div>
+        <div class="tile"><b>Cost and latency</b><span>billed, beside quality</span></div>
+        <div class="tile"><b>Re-scoring for $0</b><span>from stored outputs; validation for CI</span></div>
+        <div class="tile"><b>A recommendation</b><span>per goal, with its reasons, beside the baseline</span></div>
+        <div class="tile"><b>A catalog</b><span>every goal, dataset, arm and run, and an inspector (<a href="{H.CATALOG}">ours</a>)</span></div>
+        <div class="tile"><b>MCP tools</b><span><code>evh mcp</code> for an agent (<a href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">how</a>)</span></div>
+        <div class="tile"><b>Validated judges</b><span>optional, refused until checked against people</span></div>
+      </div>
+    </div>
+    <div class="byo-col"><h3>Start on Monday</h3>
+      <p class="byo-sub">Seven steps, in this order.</p>
+      <ol class="byo-steps">
+        <li>Write the question as a goal: <i>can ticket routing move to the cheaper model?</i></li>
+        <li>Collect real inputs; freeze them.</li>
+        <li>Write gold answers for a slice yourself.</li>
+        <li>Write the adapter; one config per candidate.</li>
+        <li>Dry-run; set a cost cap.</li>
+        <li>Run each arm three times; note its noise.</li>
+        <li>Test the comparison you named; promote with a reason; put <code>evh validate</code> in CI.</li>
+      </ol>
+    </div>
   </div>
 </div></section>
 
