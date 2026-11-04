@@ -1,6 +1,6 @@
-# ADR-0025 — A hypothesis is written in the arm's config, and committed before the run (0.6.2)
+# ADR-0025 — A hypothesis is written in the arm's config, and committed before the run (0.7.0)
 
-**Status:** Accepted (owner, 2026-11-04); built in 0.6.2.
+**Status:** Accepted (owner, 2026-11-04); built in 0.7.0.
 **Date:** 2026-11-04
 **Detail:** [RUNBOOK §4](../../harness/docs/RUNBOOK.md#4-point-the-harness-at-your-system) (the config block),
 [CONCEPTS](../../harness/docs/CONCEPTS.md#a-comparison-is-named-before-the-results-are-read) (why)

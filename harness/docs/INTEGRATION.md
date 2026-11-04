@@ -18,7 +18,7 @@ Pin it into your project, and start the project's folders:
 
 ```bash
 cd /path/to/your-project
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.2#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.0#subdirectory=harness"
 evh init         # data/sources, data/configs, data/goals, data/fields, a .gitignore
 ```
 
@@ -427,7 +427,7 @@ them answers in seconds after the first.
 
 ```bash
 cd your-project && python3 -m venv .venv && . .venv/bin/activate
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.2#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.0#subdirectory=harness"
 evh init                                      # folders, .gitignore, AGENTS.md for an agent
 export EVAL_MAX_COST_USD=2                    # a run stops when it has spent this; with none, no cap
 

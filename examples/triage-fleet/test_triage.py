@@ -201,7 +201,10 @@ with tempfile.TemporaryDirectory() as td:
         r["id"].split("-")[2]: r
         for r in importer.Importer({}).records({"path": str(p), "test_signals": True})
     }
-    rows[0].setdefault("provenance", {})["v2"] = {"evidence_rebuilt": "partial", "last_seen_source": "server-received"}
+    rows[0].setdefault("provenance", {})["v2"] = {
+        "evidence_rebuilt": "partial",
+        "last_seen_source": "server-received",
+    }
     p.write_text("".join(json.dumps(r) + "\n" for r in rows))
     v2 = {
         r["id"].split("-")[2]: r

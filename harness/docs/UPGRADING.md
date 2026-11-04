@@ -5,6 +5,30 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.6.2 to 0.7.0
+
+Change the pin to `@v0.7.0`. No format changes and nothing to migrate: no committed run's scores or fingerprint
+move.
+
+What can read differently (the [changelog](https://github.com/chipi/eval-harness/blob/main/harness/CHANGELOG.md),
+**Changed**):
+
+- **`pair-test --round` and a round's promotion gate correct for the pick**, so a leader that was significant can
+  read not significant. A round whose leader is tied, or whose arms were scored differently, now holds instead of
+  promoting; its baseline is read re-scored. Re-read an open round's status (`evh rounds --goal G`).
+- **A new run never reuses a directory.** A script that passes `--run-id` for a run that exists is refused; name a
+  new id.
+- **`dataset-from-capture --from` and `--fieldset`** make a version that differs from what 0.6.2 made from the same
+  inputs (the capture's bodies, the declared fields). Versions already made are not changed.
+- **`evh run --dry-run --json`** keeps its fields and adds `estimate_is_upper_bound` (false), `calls_per_item` and
+  `measured_usd_per_item`. A script that read the estimate as a ceiling should read the measured cost, or cap the
+  spend with `EVAL_MAX_COST_USD`.
+
+New, nothing to do unless you want them: a project made before 0.7.0 has no `AGENTS.md`. `evh init` in the
+project adds `AGENTS.md` and `CLAUDE.md` and overwrites nothing that exists; `evh skills-install` adds the skills. An arm config may
+now carry a `hypothesis:` block (V20 checks it). A captured project's own importer should add new record fields
+only behind a query key, so its past captures restore as recorded (`evh capture-restore` checks it).
+
 ## From 0.6.1 to 0.6.2
 
 Change the pin to `@v0.6.2`. No format changes, nothing to migrate, and no answer changes: views and the catalog build

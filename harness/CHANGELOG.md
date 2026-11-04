@@ -9,6 +9,92 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.7.0 — 2026-11-04
+
+Agents as users. `evh init` writes an `AGENTS.md`, three skills teach the loop, and the ranking and the tests answer
+in `--json`, so an agent with a shell needs neither the catalog nor MCP. The features and fixes the first beta
+agents asked for are in, among them crosstabs of per-item scores, a hypothesis recorded before a run, `pair-test`
+across two versions of a dataset, and `capture-restore`. Upgrading can change a verdict: a leader the tool picked
+is now corrected for the pick, and a round no longer promotes on a tie (**Changed**). No committed run's scores or
+fingerprint move.
+
+### Changed
+
+- **A leader the tool picked is corrected for the pick.** `pair-test --round` takes A from the table, so its p is
+  Bonferroni-corrected for the comparisons A could have been (every arm in play but B); a round's promotion gate
+  corrects the same way (p × K over the round's arms). A verdict that was significant uncorrected can read
+  not significant. A pair you name yourself is unchanged, and still uncorrected.
+- **A round promotes nothing when its leader is tied, or its arms were scored differently.** Before, it promoted
+  the first of the tied arms. The hold names the arms and says how to break the tie (the goal's tie-break picks
+  among them; `evh goals --goal` names the arm it recommends). A closed round suggests nothing.
+- **A round's baseline is read re-scored.** It was read as first scored, so the rule "a leader must beat the
+  baseline" did not run on re-scored rounds; it does now, and can hold a promotion it let through.
+- **The leaderboard's JSON lists no distinguishable pairs without an arm effect.** Pairs are read only after the
+  global (Friedman) test finds one: without it, `pairwise_valid` is false and `distinguishable_pairs` is empty.
+- **`dataset-from-capture --from` replaces an item with the capture's record of the same id**, counted as changed
+  in the lineage. Before, the earlier version's body was kept and the lineage read "0 changed". **`--fieldset`
+  alone keeps every field it declares**; before, it kept none without `--field`.
+- **A run is never written into another run's directory.** A run id is the config and the start time to the
+  second, so two runs of one config started in the same second shared a directory and the second wrote over the
+  first, a committed run included. The second now takes the next second's id; `--run-id` naming an existing run
+  is refused.
+- **`evh run --dry-run` no longer calls its estimate an upper bound.** It counts one call per item, or an adapter's
+  `CALLS_PER_ITEM`, and says more calls or a growing conversation cost more. Where the model record has an
+  arm-smoke of the config, it shows the measured cost per item projected over the run. `--json` adds
+  `estimate_is_upper_bound: false`, `calls_per_item` and `measured_usd_per_item`.
+
+### Added
+
+- **`AGENTS.md` (and `CLAUDE.md` importing it) in every new project** from `evh init`: the rules an agent must not
+  break, the loop from nothing to a decision, the `--json` command for each question, and what an agent may do
+  (run arms, label and promote when its operator asked, under `EVAL_MAX_COST_USD`; closing a round stays the
+  operator's).
+- **Three skills, and `evh skills-install`**: `evh-evaluate-a-system`, `evh-compare-and-read` and
+  `evh-promote-with-evidence`, shipped with the package and copied into `.claude/skills/` (or `--target`). Every
+  `evh` block in them runs as written in the tests.
+- **`--json` on `leaderboard`, `pair-test`, `family-test`, `run-compare`, `rank-stability`, `runs-list` and
+  `rounds`**: one envelope, `{"command", "version", "result": {"blocks", "values"}}`, with raw numbers. The text
+  output is unchanged. `evh run` prints each run id it wrote (`values.runs` under `--json`), and its progress as
+  one `[n/N] item outcome seconds` line per item while it runs (on stderr under `--json`).
+- **Five more MCP tools**: `leaderboard`, `pair-test`, `family-test`, `rank-stability` and `run-compare` (23 tools,
+  22 with `--public`).
+- **A hypothesis recorded before the run** ([ADR-0025](https://github.com/chipi/eval-harness/blob/main/docs/adr/ADR-0025-a-hypothesis-lives-in-the-arm-config.md)):
+  a `hypothesis:` block in an arm config (which way, against which arm, on which measure) is recorded in each run
+  with whether it was committed before the run. `pair-test` and `evh goals --goal` show it; an arm with runs made
+  before it reads "not named in advance". `evh validate` V20 checks it. Not in the fingerprint.
+- **`evh inspect --runs … --crosstab A,B [--group FIELD [--group-match RE]]`**: two per-item scores crossed, per
+  value of a field of the run's prediction rows, the items off the diagonal named. **`--items-out`**: each run's
+  whole output and scores beside the reference and labels (`--disagree`: only the items the runs decided
+  differently).
+- **`evh goals --goal G --arms PATTERNS --top N`**: the rows shown filtered; the decision is still made over every
+  arm, and the baseline, the leader and the recommended arm are always shown. Each row has its paired test
+  against the leader.
+- **`pair-test --b-dataset D2`**: one arm on two versions of a dataset, paired by item id. Refused unless the
+  reference is the same text for each shared item; it says it is cross-version, what that establishes and what
+  not, and names the runs of each side (`run_ids_a`, `run_ids_b`).
+- **`evh capture-restore --capture C [--query KEY=VALUE]`**: a capture's records, and the item files of every
+  dataset made from it, read again from the recorded importer and query (a key replaced, e.g. the same files in a
+  download folder), a recorded scrubber run again; every record and item must match its recorded sha256, or
+  nothing is written.
+
+- **The triage example's v2** (`orrery_triage_v1_labelled_v2`): the same 65 owner-labelled decisions with the
+  rebuild's hindsight taken out (probe answers that stated an outcome, release and last-seen times after the
+  decision), as revision `v2` of the dataset on Hugging Face; `examples/triage-fleet/fetch.py --revision v2`
+  restores it. Round r4 of `triage_orrery` runs on it.
+
+### Fixed
+
+- **An importer path in a capture works from the project root** as well as from the directory it was given in.
+- **The triage example's fetch restores its capture again**: the importer's newer fields come only when the query
+  asks (`prompt_fields`, `v2_fields`), so a past capture's records hash as recorded.
+- **`evh inspect --items` is no longer read as `--items-out`**, and `--crosstab` refuses a name that is not a
+  per-item score, pointing at `--group`.
+- **A label set is written whole or not at all**: to a temporary folder renamed into place.
+- **`pair-test --b-dataset`** refuses a measure stored only in re-scored runs as a missing metric (naming
+  `evh rescore`), not as "no shared items".
+- `family-test --against` takes a list; `--family` below 1 is refused; a mixed family's `n` is its range; a goal's
+  `--goal` cannot name a file outside `data/rounds`; `round-open --keep`'s help says it accepts any arm already run.
+
 ## 0.6.2 — 2026-11-03
 
 Faster answers from `evh` and its MCP server. No result moves.

@@ -321,7 +321,12 @@ def test_goal_decisions() -> None:
     lines = [re.split(r"\s{2,}", ln.strip()) for ln in g.stdout.splitlines()]
     head = next((c for c in lines if c[:1] == ["goal"]), [])
     col = head.index("recommended") if "recommended" in head else -1
-    cli = {c[0]: c[col] for c in lines if col >= 0 and len(c) == len(head) and c[0] in goals}
+    # An arm run more than once is labelled with its pass count (" ×3", catalog_adapter's label); the arm is the same.
+    cli = {
+        c[0]: re.sub(r" ×\d+$", "", c[col])
+        for c in lines
+        if col >= 0 and len(c) == len(head) and c[0] in goals
+    }
     by_goal: dict = {}
     for x in rows:
         by_goal.setdefault(x["goal_id"], set()).add((x.get("recommended") or "none yet").rsplit("/", 1)[-1])
