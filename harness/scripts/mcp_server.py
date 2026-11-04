@@ -8,7 +8,7 @@ An MCP client (Claude Code, Claude Desktop, any agent) starts this as a stdio se
 the commands a person reads the project with: the catalog's views, the inspector in the terminal,
 the rounds, the runs, validate. Each call runs the command as a child process (`evh <command> …`,
 with `--json` where the command has it), so a tool answers exactly what the command prints. No tool
-writes the project, spends or runs a model: those stay commands a person runs (0.7.0 adds them, with
+writes the project, spends or runs a model: those stay commands a person runs (0.8.0 adds them, with
 consent). Two keep an answer they computed in the project's ignored .cache/ (family-test its whole
 answer, the views their p-values) and nothing else.
 
@@ -331,6 +331,11 @@ PUBLIC_HIDDEN = {
         "--new-vs",
         "--split",
         "--unlabelled",
+        # --items-out serves outputs and references; --group names a recorded field, which can hold text.
+        "--items-out",
+        "--max-chars",
+        "--group",
+        "--group-match",
     },
     "dataset-items": {"--item"},
     # The statistics answer with numbers and ids only; what a public caller must not set is how long they run.

@@ -6,7 +6,7 @@
 - **Authors**: Marko Dragoljevic
 - **Related**: [PRD-015](../prd/PRD-015-models-onboarded-once.md), [ADR-0021](../adr/ADR-0021-a-deployment-is-vetted.md); [RFC-020](RFC-020-onboarding-a-model.md) (model records; their builds become deployments here);
   [RFC-002](RFC-002-run-records-and-derived-runs.md) (the run record that carries the fingerprint);
-  0.7.0's plan to run evals on other machines (the runner)
+  0.8.0's plan to run evals on other machines (the runner)
 
 ## Abstract
 
@@ -96,7 +96,7 @@ reported, and a call served by another host is flagged by `evh arm-smoke`.
 ### The runner
 
 v4's `host` becomes `runner`, outside the hash. Latency is the deployment's, measured from the runner: a run
-records both, and a comparison of speed across runners says so. 0.7.0 runs evals on other machines; the
+records both, and a comparison of speed across runners says so. 0.8.0 runs evals on other machines; the
 runner is then simply the machine that ran them, with nothing else to change.
 
 ### Migration: every committed run to v5
@@ -153,4 +153,4 @@ Everything under "What changes" is built. Found during the build, and changed:
 
 - Measuring a remote machine's hardware from the runner beyond what its server reports (Ollama reports the digest;
   the backend is recorded from the deployment record).
-- Running `evh` on other machines (0.7.0); v5 only makes the record ready for it.
+- Running `evh` on other machines (0.8.0); v5 only makes the record ready for it.

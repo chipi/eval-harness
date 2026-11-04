@@ -30,7 +30,7 @@ Each layer freezes what it produces, so the next one can be redone without redoi
 | **5. Goals** | what an evaluation is for and the measure that decides | `goal:` on configs, validate V14 | a config or run naming a goal that does not exist |
 | **6. Looking** | the catalog (static pages), the run inspector (a local server), and the same read commands as MCP tools for an agent | `catalog`, `catalog-serve`, `mcp` | item text in the static pages or a public server's answers; mixed datasets in one comparison |
 
-Under all of them, `validate` (V1–V19) checks the tree in CI and exits non-zero, and
+Under all of them, `validate` (V1–V20) checks the tree in CI and exits non-zero, and
 `self-test` checks the harness itself. The tests that run `evh` install the package from its
 real wheel, the GUIDE is run in a fresh project on every change (`guide-check`), and the
 catalog and the inspector are driven in headless Chromium (`browser-check`).

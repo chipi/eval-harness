@@ -360,9 +360,12 @@ def significance(
         "nemenyi_cd": cd,
         "rank_span": span,
         "pairs_total": k * (k - 1) // 2,
-        "pairs_distinguishable": len(pairs) if cd is not None else None,
+        # Pairs are read only after the global test finds an arm effect (Nemenyi follows Friedman);
+        # without one the text says "do not report an ordering", and the data carries no pairs.
+        "pairwise_valid": p < 0.05 and cd is not None,
+        "pairs_distinguishable": (len(pairs) if p < 0.05 else 0) if cd is not None else None,
         # [better, worse]: the first has the lower average rank by more than the critical difference
-        "distinguishable_pairs": [list(x) for x in pairs],
+        "distinguishable_pairs": [list(x) for x in pairs] if p < 0.05 else [],
         "top_n": top_n,
         "avg_rank": {a: avg_rank[a] for a in sorted(arms, key=lambda x: avg_rank[x])},
         "resamples": R,

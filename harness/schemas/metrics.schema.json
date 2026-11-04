@@ -89,6 +89,18 @@
     "model_record": {"type": "string", "description": "The model record its config named (RFC-020, optional): data/models/<id>.yaml, whose settings it ran with."},
     "deployment_id": {"type": "string", "description": "The deployment of that record its config named (RFC-021, optional): an id in the record's `deployments`."},
     "format": {"type": "string", "description": "The output format the config asked for; must be one the goal's output_contract accepts (validate V14)."},
+    "hypothesis": {"type": "object", "description": "The hypothesis block of the run's config (ADR-0025): what the arm was expected to do against which config on which measure. Outside the fingerprint."},
+    "hypothesis_in_advance": {
+      "type": "object",
+      "description": "Whether that hypothesis was committed before the run: named is true, false, or null (not determinable: not in git, a build that is not a commit, a dirty tree); commit and committed_at are the commit that last changed it.",
+      "required": ["named", "why"],
+      "properties": {
+        "named": {"type": ["boolean", "null"]},
+        "commit": {"type": ["string", "null"]},
+        "committed_at": {"type": ["string", "null"]},
+        "why": {"type": "string"}
+      }
+    },
     "repeat_index": {"type": "integer", "description": "Which repetition this is, when measuring an arm's own variance."}
   }
 }

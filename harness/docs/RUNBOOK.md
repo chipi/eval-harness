@@ -31,7 +31,7 @@ further. This page is the reference for each step.
 | list runs | `evh runs-list` |
 | rank, with the test | `evh leaderboard --dataset-id …` |
 | two runs | `evh run-compare --baseline … --candidate … --noise …` |
-| a pre-named pair | `evh pair-test --dataset-id … --a … --b …` (or `--round rN`: A its leader, B the baseline it started from) |
+| a pre-named pair | `evh pair-test --dataset-id … --a … --b …` (or `--round rN`: A its leader, B the baseline it started from; a leader chosen from the table is corrected for the arms in play). A `hypothesis:` committed in A's config before the run is what makes the pair "named in advance" (§4) |
 | a winner claim | `evh family-test --dataset-id … --a … --against …` |
 | re-score, $0 | `evh rescore --dataset-id … [--reference-id gold/…] --out …` |
 | re-measure with a judge (optional) | `evh judge-score --dataset-id … --scorer … [--dry-run]` |
@@ -46,7 +46,7 @@ further. This page is the reference for each step.
 | rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh rounds --goal …` |
 | browse and inspect | `evh catalog` · `evh catalog-serve` · `evh dataset-profile` · `evh dataset-items` |
 | ask from an agent | `evh mcp` |
-| the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--configs`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh search …` · `evh inspect --runs …` (`--analysis`, `--item …`) · `evh inspect --sheet --dataset-id … --runs …`; every list takes `--period P` |
+| the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--configs`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh goals --goal G [--arms PATTERN] [--top N]` (a goal with many arms: only the arms matching, or the first N, always with the baseline, the leader and the recommended arm; each arm's paired test against the leader) · `evh search …` · `evh inspect --runs …` (`--analysis`, `--item …`) · `evh inspect --sheet --dataset-id … --runs …`; every list takes `--period P` |
 | consistency | `evh validate` |
 | does the installed harness work here | `evh self-test` |
 | keep a production system's records | `evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture c1` · `evh captures` ([§15](#15-datasets-from-production-the-capture-lane)) |
@@ -58,6 +58,9 @@ further. This page is the reference for each step.
 | production's own decisions as an arm | `evh arm-from-capture --dataset-id … --capture c1 --as production_v1 [--like CONFIG]` ([§15b](#15b-evaluating-what-production-did)) |
 | where arms decided differently | `evh inspect --runs A,B --disagree` |
 | the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh inspect --sheet --dataset-id … --runs A,B [--wrong-against SET] [--new-vs V] [--csv FILE [--fill label\|pick\|scores]]` |
+| how two per-item scores relate, by a recorded field (a gate that saved a false dismissal, one that cost a false alarm) | `evh inspect --runs A --crosstab M1,M2 [--group _meta.gates [--group-match REGEX]] [--where F:V]` ([§14](#14-browse-the-catalog-and-the-inspector)) |
+| why items flipped: each run's whole output beside the reference, many items at once | `evh inspect --runs A,B --items-out [--disagree] [--where F:V] [--max-chars N] --json` ([§14](#14-browse-the-catalog-and-the-inspector)) |
+| a result with and without a set of items | `evh pair-test … --items FILE` (only the ids in the file, one per line; the rest is a second file, or `--exclude-dataset D` when the set is a dataset) · `evh inspect --runs A,B --where F:V` (the items with that field value; a boolean or choice field marking the set) |
 | a sheet filled elsewhere, read back | `evh sheet-import sheet.csv --dataset-id … --by WHO [--set S \| --scorer S]` |
 | pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
 | the next version of a dataset | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) |
@@ -201,6 +204,32 @@ params:
 OpenAI-compatible endpoint, OpenRouter and a LiteLLM proxy, each with your own key in `.env`.
 Which variable each reads: [tutorial 2](../../docs/tutorials/2-hosted-llm.md#1-choose-a-provider).
 Full detail in [INTEGRATION.md](INTEGRATION.md).
+
+**A hypothesis, written before the run (optional).** A paired test is valid uncorrected only for a
+comparison named before the results were read. When an arm is a change you expect to matter, write the
+prediction into its config, beside the change, and commit it before `evh run`:
+
+```yaml
+hypothesis:
+  against: my_config_v1          # the config_id it is compared with (must exist)
+  measure: false_alarm           # one of the arm's metrics
+  direction: better              # better | worse | no-worse (not significantly worse)
+  statement: "the shorter prompt lowers false alarms"
+  items: data/expected_flips.txt # optional: a file of item ids expected to flip
+```
+
+`evh validate` (V20) and `evh run` refuse a block with a missing key, an unknown direction, an `against`
+that is no config of the project or a `measure` that is none of the arm's metrics, in words, before
+anything is spent. The run copies the block into `metrics.json` (`hypothesis`) with
+`hypothesis_in_advance`: `named: true` when the commit that last changed the block is an ancestor of the
+run's build commit and was made before the run started, `false` when it is in no such commit, `null` (not
+determinable) outside git, for a build that is not a git commit (`EVAL_BUILD_REF`) and on a dirty tree.
+It is not part of the fingerprint: a hypothesis does not change what was measured. `evh pair-test --a A
+--b B` prints it when A's run carries a hypothesis against B on the tested metric: `named in advance: yes
+(committed <sha> before the run)`, `no` or `not determinable`, and whether the result agrees with the
+stated direction (`yes`, `no`, `not shown`); a hypothesis found in A's config that its run does not carry
+reads `no` (added after the run). `evh goals --goal G` shows it in a `hypothesis` column beside the arm.
+[ADR-0025](../../docs/adr/ADR-0025-a-hypothesis-lives-in-the-arm-config.md).
 
 **What a run records as its cost.** Each call's `cost_usd` is the provider's bill when the
 response carries one (`usage.cost`), and otherwise the config's price table, tokens ×
@@ -516,7 +545,7 @@ into a *finding* is a separate verb: these are the tools behind the numbers in `
 |---|---|
 | `evh leaderboard --dataset-id …` | how do all the arms rank, on every metric at once |
 | `evh family-test --dataset-id … --a … --against …` | does arm A differ significantly from a **pre-declared family**, Holm step-down. This is what every significance claim in the reports rests on |
-| `evh pair-test --dataset-id … --a … --b …` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance |
+| `evh pair-test --dataset-id … --a … --b …` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance: the arm's `hypothesis:` records that it was (§4). With `--round` and no `--a`, A is the round's leader, chosen from the table, so the test is Bonferroni-corrected for the arms in play (`--family N` overrides; below 1 is refused) |
 | `evh holdout --dataset-id … --exclude-dataset …` | does the result survive on the items the pilot slice never contained |
 | `evh rank-stability --dataset-id …` | how many items before the ordering stops moving — measured, not assumed from a power table |
 | `evh bootstrap-test --dataset-id … --a … --against …` | a percentile interval for a corpus-level metric that has no per-item value |
@@ -601,7 +630,7 @@ evh runs-list --baselines
 evh validate
 ```
 
-Nineteen checks (V1–V19): schema conformance (datasets, runs, baselines, configs, judge
+Twenty checks (V1–V20): schema conformance (datasets, runs, baselines, configs, judge
 scorers, judging sets, verdicts, dataset profiles), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results (two arms with different outputs
@@ -613,7 +642,7 @@ every judge scorer yaml loading and well-formed, every goal and round well-forme
 every run that must name one, every item field declared, typed and matching its hash, and every
 reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
 records matching the hashes it recorded, every model record and the configs naming it consistent, and every label set
-matching its hashes and its dataset. V4
+matching its hashes and its dataset, and every `hypothesis:` in an arm config sound (V20). V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters).
 
@@ -922,8 +951,12 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
   started from, nor, when the round is read against that arm's own silver, the arm that wrote
   it: there it is the yardstick, not an arm under test (against gold it is an arm like any other). The
   close suggestion carries `--promote` only for a leader significantly better than the baseline it
-  started from and not behind the previous round's best; otherwise it says why it promotes
-  nothing. It decides nothing.
+  started from (read, like the round's arms, from its re-score where it has one), with the test
+  corrected for the leader having been chosen from the round's arms (Bonferroni over them: every
+  arm could have been the best mean); not behind the previous round's best; separated from the
+  round's other arms (none `not significant` against it after Holm); and with the round's arms
+  measured by the same scorer. Otherwise it says why it promotes nothing. A closed round suggests
+  nothing, in its text and in `--json`. It decides nothing.
 - **`round-close --promote <run_id>`** promotes that run to the dataset's baseline, with the
   conclusion as its reason. A closed round refuses new runs; one round per goal is open at a
   time.
@@ -997,7 +1030,8 @@ each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
   is answered 421 (DNS rebinding). `--allowed-origin` names the browser origins it accepts; an
   agent sends no Origin.
 - **`--public`**, for a server anyone can reach: no option that answers with an item's text or a label
-  (`inspect --item` and the sheet's options, `dataset-items --item`), and no `validate`.
+  (`inspect --item`, `--items-out` and the sheet's options, `dataset-items --item`), no `inspect --group`
+  (a recorded field can hold text; `--crosstab` of two scores stays), and no `validate`.
 - **Load:** `--concurrent N` commands at once (default 4; a call that waits 30 s for a slot is
   refused, "busy"), `--timeout S` per call (default 300; the command is stopped, exit 124),
   `--rate N` calls a minute per caller and `--rate-total N` for everyone together (default: no
@@ -1024,6 +1058,39 @@ baseline with the same paired test as the command line, and shows outputs beside
 Its "re-score" box (shown when the adapter can re-score) scores what is not on record; `evh
 inspect --no-rescore` is the box unticked.
 
+**A crosstab of two per-item scores** (terminal only): `evh inspect --runs A --crosstab M1,M2
+[--group FIELD [--group-match REGEX]] [--where F:V] [--max-ids N] [--json]`. For each group, the run's
+items counted by their value of `M1` (down) and `M2` (across), with totals, and the item ids of every cell
+off the diagonal (`M1` value differing from `M2` value; text lists up to `--max-ids`, default 8, then
+"and N more"; `--json` carries every id, and the diagonal cells' too). `M1` and `M2` are any per-item
+scores in the run's `predictions.jsonl`; an item with no value counts as `none`. `FIELD` is a dotted path
+into a prediction row (`_meta.gates`), not a dataset field: the group is its whole value. A recorded
+field that packs several facts in one string (`i:n/a/c:n/a/d:downgraded (no corroboration)/e:n/a`) is
+cut with `--group-match`: the group is the regex's first `(…)` found in the value (the whole match
+without one), `none` when it does not match. `--where` is the usual dataset-field filter. Several runs
+give each its own groups. Example, the triage baseline's dismiss gate:
+
+```
+evh inspect --runs triage_baseline_pro_v1 --crosstab model_false_dismiss,false_dismiss \
+    --group _meta.gates --group-match 'd:(n/a|[^/]+)'
+```
+
+For `downgraded (no corroboration)` the cell `model_false_dismiss=1, false_dismiss=0` holds 12 items (the
+gate saved a false dismissal); the same group under `model_false_alarm,false_alarm` holds 8 in
+`model_false_alarm=0, false_alarm=1` (a right dismissal turned into a false alarm). The 12 and the 8 are
+different items, so a gate's net effect is read from both.
+
+**Each item's outputs and reference together** (terminal only): `evh inspect --runs A,B --items-out
+[--disagree] [--where F:V] [--baseline A] [--max-chars N] [--json]`. `--sheet` carries each run's
+decision, scores and the labels but cuts them for a cell (`--json` too) and has no run's whole output;
+`--items-out` is the record per item: `item_id`, the item's start, its fields, the signals, and per run its
+`decision`, whole `output` text, `scores` and the `_meta` the adapter recorded, then the `references` and
+`labels`. Text prints each as a block with an output cut at `--max-chars` (default 300, 0 = whole), a
+JSON-object output without its `_`-keys (a probe trace; the `_` keys are counted), and how long a cut
+output was. `--json` carries everything whole under `result.values.items_out`. `--disagree` keeps the
+items the other runs decided differently on from the first (`--baseline A` puts `A` first). All runs
+must be on one dataset. Not served by `--public`.
+
 **Public deployments** (`--public HOST`): the server answers only the named hosts, each client
 gets `--rate` requests per minute, and at most `--max-arms` arms per comparison. `--publish`
 names what text to serve besides numbers: `outputs`, `references`, or both. The item itself is
@@ -1046,7 +1113,7 @@ dataset-items --dataset-id D [--item ID] [--json]` prints the profile.
 
 **`--json` on the views** (`overview`, `datasets`, `arms`, `goals`, `references`, `metrics`,
 `activity`, `search`, `inspect`): one object, `{"command", "version", "result": {"blocks": [...]}}`,
-each table as columns and rows. 0.7.0 gives each command its own result and retires `blocks`: do not
+each table as columns and rows. 0.8.0 gives each command its own result and retires `blocks`: do not
 build on it. `captures`, `labels`, `picks` and `deploy-sheet` already answer `--json` with an object of their
 own (`{"captures": …}`, `{"sets": …}`, `{"picks": …}`, the sheet).
 
@@ -1067,6 +1134,7 @@ opening line as the description); `--card URL` adds the image a shared link show
 `evh goals --goal …` for the others, `evh inspect --runs …` (`--analysis` for the charts, `--item <id>`
 for one item) for the inspector, `evh labels` and `evh captures` for the Labels and Captures pages,
 `evh inspect --sheet --dataset-id … --runs …` for a dataset's sheet (the inspector's per-item scores too),
+`evh inspect --runs … --crosstab M1,M2` and `--items-out` for the two per-item reads above,
 `evh picks` for the picks waiting and `evh deploy-sheet --config …` for a goal's deploy sheet.
 
 ---
@@ -1118,8 +1186,13 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   on it into a new set: the dataset stays as frozen, only the labels move (tutorial 6 §5).
 - **The catalog's Captures page** lists every capture (records, importer, the time its records span,
   what it continues) with the datasets made from each; a dataset's origin links to it.
-- **Only the body becomes the item.** Fields are typed by a field set (`--fieldset … --field …`); the
-  outcome stays in the capture, for labels.
+- **Only the body becomes the item.** Fields are typed by a field set: `--fieldset S` keeps every field
+  it declares, `--field F` (repeatable) only the ones named. The outcome stays in the capture, for labels.
+- **A version from a capture** (`--from D_prev`): the earlier version's items stay, the capture's new
+  records are added, and a record of an item the earlier version has replaces it, so a corrected body
+  is counted as changed in the lineage (`derived_from`: added, removed, changed).
+- **An importer named by path** (`path/to/importer.py:Class`) is found from the current directory,
+  else from the project root: the path a capture records works from either.
 - **Labels from outcomes are a `rule` set**: what production recorded afterwards, mapped by a rule set
   you commit. It can repeat what production decided (an item nothing happened to reads as right), so
   read it beside a person's labels; promoted, it is a reference like any (ADR-0022).

@@ -388,8 +388,35 @@ check(
     ).startswith("behind r1's best (significant: worse"),
 )
 check(
-    "promote: a round with no baseline and no previous round promotes its leader",
+    "promote: a round with no baseline and no previous round, its leader separated from the others, promotes it",
     _promote_hold([], None) == "",
+)
+# Review 2026-11-04 (M3): with no baseline row, a leader tied with other arms, or a round whose own note
+# says its arms were scored differently, was still handed a --promote command.
+check(
+    "promote: a leader not separated from other arms after Holm is not promoted; the reason names them",
+    _promote_hold([], None, ["mini", "fy"]).startswith("not separated from mini, fy"),
+)
+check(
+    "promote: arms measured by different scorers are not promoted from, whatever the test says",
+    _promote_hold([row(BASE, "significant: better", p=0.01)], None, [], True).startswith(
+        "measured by different scorers"
+    ),
+)
+check(
+    "promote: the reason carries the family the baseline test was corrected for",
+    "Bonferroni over 4 arms: 0.8000"
+    in _promote_hold([{**row(BASE, "not significant", 0.01, 0.2), "family": 4, "p_adjusted": 0.8}], None),
+)
+
+# Review 2026-11-04 (L2): --goal reached files outside data/rounds through `..` and glob characters.
+from evaluation_harness import _rounds  # noqa: E402
+
+check(
+    "rounds: a goal that is not a plain name has no rounds (no `..`, separator or glob reaches outside)",
+    all(_rounds.load_rounds(g) == [] for g in ("../x", "a/b", "*", "x?", "[a]", ".hidden", ".."))
+    # and the check is not vacuous: a real goal of this repository still has its rounds
+    and bool(_rounds.load_rounds("news_topic_ag")),
 )
 
 sys.exit(summary())

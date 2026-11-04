@@ -37,6 +37,10 @@ def load_rounds(goal: str | None = None) -> list[dict[str, Any]]:
     base = _common.ROUNDS
     if not base.is_dir() or yaml is None:
         return []
+    # A goal is a plain name: `..`, a path separator or a glob character would reach (or probe for)
+    # files outside data/rounds, and an agent can pass any string as --goal.
+    if goal is not None and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", goal):
+        return []
     out = []
     for f in sorted(base.glob(f"{goal or '*'}/r*.yaml"), key=lambda p: (p.parent.name, _num(p.stem))):
         doc = yaml.safe_load(f.read_text(encoding="utf-8")) or {}

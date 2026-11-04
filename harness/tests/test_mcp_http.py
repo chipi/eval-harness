@@ -105,7 +105,7 @@ try:
             tools = {t.name: t for t in (await s.list_tools()).tools}
             check(
                 "--public: no option answers with an item's text, an output or a label (--item, --sheet)",
-                not {"item", "sheet", "dataset-id", "wrong-against", "scores-only"}
+                not {"item", "sheet", "dataset-id", "wrong-against", "scores-only", "items-out", "group"}
                 & set(tools["inspect"].input_schema["properties"])
                 and "item" not in tools["dataset-items"].input_schema["properties"],
             )

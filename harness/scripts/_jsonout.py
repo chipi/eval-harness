@@ -8,7 +8,7 @@
 
 A table's values are kept as they were before being turned into text, every other printed line as
 a string, in the order printed. Because the JSON is collected from the same calls that print the
-text, the two cannot disagree. 0.7.0 (RFC-013) gives each command its own result and schema and
+text, the two cannot disagree. 0.8.0 (RFC-013) gives each command its own result and schema and
 retires this generic form.
 
 A command that has key results (a p-value, a verdict, the run ids it wrote) hands them over by name
@@ -50,7 +50,7 @@ class _Collector:
     def table(self, heads: list, rows: list) -> None:
         self.flush()
         cols = [str(h) for h in heads]
-        self.blocks.append({"columns": cols, "rows": [dict(zip(cols, map(_plain, r))) for r in rows]})
+        self.blocks.append({"columns": cols, "rows": [dict(zip(cols, map(_clean, r))) for r in rows]})
 
 
 def _plain(v):

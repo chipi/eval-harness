@@ -55,6 +55,42 @@ the arms decided differently; `--by FIELD` breaks it down by an item's field.
 evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --json
 ```
 
+## Why the items flipped: the outputs together
+
+`evh inspect --item ID` shows one item. For many, `--items-out` gives per item each arm's decision,
+whole output, per-item scores and the facts the adapter recorded (`_meta`), beside the reference and
+the labels; `--disagree` keeps the items the arms decided differently from the first, `--where F:V`
+narrows by an item's field. In `--json` the texts are whole (`result.values.items_out.items`); in
+text an output is cut at `--max-chars` (default 300). The sheet (`--sheet`) has the decisions and
+labels too, but cut to a cell.
+
+```evh
+evh inspect --runs tickets_lead1_v1,tickets_lead2_v1 --items-out --disagree --json
+```
+
+## How two scores relate, by a recorded fact
+
+`--crosstab M1,M2` counts a run's items by their value of two per-item scores (`M1` down, `M2`
+across), with totals, and names the items off the diagonal. `--group FIELD` does it per value of a
+field of the run's prediction rows (a dotted path such as `_meta.gates`; a part of a packed string
+with `--group-match REGEX`, the first `(...)` of it). That answers "how many gate downgrades saved a
+false dismissal, and how many cost a false alarm": cross the model's own score with the final one
+(`model_false_dismiss,false_dismiss`; `model_false_alarm,false_alarm`) per gate, and read the cell
+counts and ids. Items with no value count as `none`. Run both crosses before reporting a net effect:
+a save and a cost are different items.
+
+```evh
+evh inspect --runs tickets_lead2_v1 --crosstab overlap_f1,overlap_f1 --json
+```
+
+## A result with and without a set of items
+
+`evh pair-test --dataset-id D --a A --b B --items FILE` tests only the item ids in FILE (one per
+line); give the rest as a second file, or drop a dataset's items with `--exclude-dataset D2`. The
+inspector filters by an item's field, so a set marked by a field is `evh inspect --runs A,B --where
+FIELD:VALUE` (and the other half with the other value). Report both halves and the whole, and say
+how the set was chosen: a set picked after reading results is a finding to confirm, not a test.
+
 ## Reporting
 
 - Say what the test says: "A is significantly better than B on M (p = 0.01, n = 200)", or "A and

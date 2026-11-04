@@ -265,7 +265,7 @@ The triage experiment is the harness's whole loop on one real system, in this or
 
 1. **Compare** (0.6.0): the 10 arms on the owner-labelled decisions; cost, quality, speed; the podium. Both scores are
    kept: as the fleet decided (after its gates) and as the model decided (before them).
-2. **Tune** (0.7.0, the harness's tuning part): the podium arms, and the fleet's brief and gates
+2. **Tune** (0.8.0, the harness's tuning part): the podium arms, and the fleet's brief and gates
    ([the fleet's lessons](https://github.com/chipi/agentic-ai-homelab/blob/main/signal-fleet/EVAL-LESSONS-0.6.0.md), moved to agentic-ai-homelab 2026-11-04), to separate them and improve on them.
 3. **Ship and monitor**: deploy the new fleet version, then check from production that it keeps doing what the
    evaluation measured; the probe capture (live since 2026-10-29) makes each month an exact version.

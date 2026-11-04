@@ -27,6 +27,7 @@ import statistics
 import subprocess
 import sys
 import textwrap
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -68,7 +69,8 @@ def open_round(argv: list[str]) -> int:
     ap.add_argument("--change", action="append", default=[], help="what changed and why (repeatable)")
     ap.add_argument(
         "--keep",
-        help="config ids from earlier rounds carried in unchanged, not run again; `all`: every arm of --from",
+        help="config ids already run (in an earlier round or in none) carried in unchanged, not run again; "
+        "`all`: every arm of --from",
     )
     ap.add_argument(
         "--adopt",
@@ -336,21 +338,52 @@ def _against(A, label: str, other: str, leader: str, metric: str) -> dict | None
     return {"label": label, "other": other, "verdict": row["verdict"], "p": row["p"], "delta": row["delta"]}
 
 
-def _promote_hold(against: list[dict], prev_id: str | None) -> str:
+def _against_family(A, label: str, other: str, leader: str, arms: list[str], metric: str) -> dict | None:
+    """The leader against `other`, corrected for having been chosen from the round's arms. The leader
+    is the best mean of the round, so testing it alone, uncorrected, would count the luck of the choice
+    as evidence (a selection effect). Bonferroni over the round's arms (every one could have been the
+    leader): significant only when p x K <= 0.05. Conservative, and it needs no more than the one
+    paired test, read as the inspector reads it (re-scored where the arms are)."""
+    row = _against(A, label, other, leader, metric)
+    if not row:
+        return None
+    k = max(1, len([a for a in arms if a != other]))
+    p_adj = min(1.0, row["p"] * k) if row.get("p") is not None else None
+    verdict = row["verdict"]
+    if verdict.startswith("significant") and (p_adj is None or p_adj > 0.05):
+        verdict = "not significant"
+    return {**row, "verdict": verdict, "p_adjusted": p_adj, "family": k}
+
+
+def _promote_hold(
+    against: list[dict], prev_id: str | None, tied: Sequence[str] = (), scorers_differ: bool = False
+) -> str:
     """Why a round's leader is not to be promoted, from its `against` rows, or "" to promote it: it
-    must be significantly better than the baseline the round started from, and not significantly
-    worse than the previous round's best. A mean that leads by chance is no reason to promote."""
+    must be significantly better than the baseline the round started from (corrected for the round's
+    arms, as it was chosen from them), not significantly worse than the previous round's best, and
+    separated from the other arms of the round. A mean that leads by chance is no reason to promote,
+    and neither is a test the round's own notes say not to read."""
     row_of = {r["label"]: r for r in against}
     vs_base = row_of.get("the baseline it started from")
     vs_prev = next((r for k, r in row_of.items() if k.endswith("'s best")), None)
 
     def said(r: dict) -> str:
-        return f"{r['verdict']}, Δ {r['delta']:+.4f}, p {fmt_p(r['p'])}"
+        fam = (
+            f", Bonferroni over {r['family']} arms: {fmt_p(r['p_adjusted'])}"
+            if r.get("family", 1) > 1 and r.get("p_adjusted") is not None
+            else ""
+        )
+        return f"{r['verdict']}, Δ {r['delta']:+.4f}, p {fmt_p(r['p'])}{fam}"
 
+    if scorers_differ:
+        return "measured by different scorers: re-score the arms before reading the test"
     if vs_base is not None and vs_base["verdict"] != "significant: better":
         return f"not ahead of the baseline it started from ({said(vs_base)})"
     if prev_id and vs_prev is not None and vs_prev["verdict"] == "significant: worse":
         return f"behind {prev_id}'s best ({said(vs_prev)})"
+    if tied:
+        shown = ", ".join(tied[:5]) + (f" and {len(tied) - 5} more" if len(tied) > 5 else "")
+        return f"not separated from {shown} (not significantly different after Holm): the goal's tie-break decides"
     return ""
 
 
@@ -431,6 +464,12 @@ def evidence(goal: str, rnd: dict) -> dict:
         if base_run
         else None
     )
+    # Read the baseline as the round reads its arms: its latest re-score where it has one. Its original
+    # arm is scored differently from the re-scored arms beside it, so the paired test had no rows and the
+    # rule "a leader must beat the baseline" never ran.
+    if barm:
+        barm = read(ds, barm.rsplit("/", 1)[-1])
+    level: list[str] = []  # the arms the leader is not separated from, after Holm
     if len(arms) > 1:
         from evaluation_harness import stats  # noqa: PLC0415
 
@@ -492,7 +531,7 @@ def evidence(goal: str, rnd: dict) -> dict:
                         )
                     )
     if barm and barm != leader:
-        row = _against(A, "the baseline it started from", barm, leader, metric)
+        row = _against_family(A, "the baseline it started from", barm, leader, arms, metric)
         if row:
             out["against"].append(row)
     # The frontier arm whose outputs became a silver reference: how close the leader comes to it,
@@ -514,7 +553,8 @@ def evidence(goal: str, rnd: dict) -> dict:
     already = lead_run == rnd.get("baseline") or any(d.name == rnd.get("baseline") for d in _dirs(A, leader))
     # And only a leader the evidence puts ahead: significantly better than the baseline it started from,
     # and not behind the previous round's best. A mean that leads by chance is no reason to promote.
-    hold = _promote_hold(out["against"], prev["round_id"] if prev else None)
+    scorers_differ = any("different scorers" in n for n in out["notes"])
+    hold = _promote_hold(out["against"], prev["round_id"] if prev else None, level, scorers_differ)
     promote = not already and not hold
     out["suggest"].append(
         (
@@ -637,7 +677,10 @@ def _status(args: argparse.Namespace) -> int:
             "spent_usd": ev.get("spent"),
             "cost_per_item": ev.get("cost_per_item") or {},
             "notes": ev["notes"],
-            "suggest": [{"what": what, "command": cmd or None} for what, cmd in ev["suggest"]],
+            # A closed round takes no more decisions: the text prints none, and neither does the data.
+            "suggest": [{"what": what, "command": cmd or None} for what, cmd in ev["suggest"]]
+            if rnd["status"] == "open"
+            else [],
         }
     )
     for n in ev["notes"]:

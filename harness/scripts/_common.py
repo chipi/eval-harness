@@ -421,6 +421,19 @@ def build_info() -> dict[str, Any]:
     }
 
 
+def arm_config_files() -> list[Path]:
+    """Every arm config of the project: data/configs, and the globs `configs` in <data>/validate.json names
+    (relative to the project root), for a project that keeps its arms elsewhere (this repository's are in
+    examples/). Here, not in validate_tree, because measuring code reads it (a hypothesis's `against`) and
+    the validator is not part of what a run's code hash covers."""
+    p = _paths()
+    found = set(p["CONFIGS"].glob("*.yaml"))
+    policy_file = p["DATA"] / "validate.json"
+    for pattern in (read_json(policy_file).get("configs") or []) if policy_file.is_file() else []:
+        found |= {f for f in p["ROOT"].glob(pattern) if f.is_file()}
+    return sorted(found)
+
+
 def load_goals(goals_dir: Path | None = None) -> dict[str, dict[str, Any]]:
     """{goal_id: goal} from <data>/goals/*.yaml (policy.yaml is the policy, not a goal), keyed
     by the goal's `goal_id`, the file stem when it names none. The catalog keyed them that way

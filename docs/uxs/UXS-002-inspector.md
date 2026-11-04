@@ -269,11 +269,14 @@ browser, the same model.
 | the sheet (0.6.0) | `evh inspect --sheet --dataset-id D --runs A,B [--metric M\|SCORER/M] [--wrong-against SET] [--new-vs V] [--disagree] [--split] [--unlabelled] [--where field:value] [--by field] [--scores-only]` |
 | the sheet's download (0.6.0) | `--csv FILE`; `--fill label [--choices a,b]` adds the columns to fill; `--fill pick\|scores [--seed N] [--rubric FILE] [--scale LO..HI]` writes blind columns and a key, read back by `evh sheet-import` |
 | selecting rows: the pick and sheet commands (0.6.0) | `evh pick --dataset-id D --item …`; `evh label-sheet --dataset-id D --item …` |
+| two per-item scores against each other (terminal only) | `--runs A --crosstab M1,M2 [--group FIELD [--group-match REGEX]] [--where F:V] [--max-ids N]`: per group of a field of the run's prediction rows (a dotted path, `_meta.gates`; a part of a packed string with `--group-match`, its first `(…)`), the items counted by `M1` (down) and `M2` (across) with totals, and the ids of each cell off the diagonal; a missing value is `none`; `--json` carries every id |
+| each item's outputs and reference together (terminal only) | `--runs A,B --items-out [--disagree] [--where F:V] [--baseline A] [--max-chars N]`: per item each run's decision, whole output, scores and recorded `_meta`, the references and labels; text cuts an output at `--max-chars` (300) and leaves a JSON output's `_` keys out, `--json` is whole |
 | the analysis charts | `--analysis`: the spread per arm and the difference from the baseline, per item, as numbers; `--x <metric>` adds each arm's mean on a second metric (the scatter) |
 
 For an agent, `evh inspect` is the MCP tool `inspect`, with the same options (`runs`, `baseline`,
 `metric`, `where`, `by`, `disagree`, `analysis`, `x`, `round`, `goal`, `from`, `no-rescore`, `item`, and the
 sheet's `sheet`, `dataset-id`, `scores-only`, `wrong-against`, `new-vs`, `split`, `unlabelled`); the options that
-write a file (`csv`, `fill`, `choices`, `seed`, `rubric`, `scale`) are not offered. A public server (`evh mcp
---public`, and this repository's at `/mcp`) leaves out `item` and the sheet, as the public inspector serves no item
-text, output or label.
+write a file (`csv`, `fill`, `choices`, `seed`, `rubric`, `scale`) are not offered. The crosstab's `crosstab`, `group`,
+`group-match`, `max-ids` and `items-out`, `max-chars` are. A public server (`evh mcp
+--public`, and this repository's at `/mcp`) leaves out `item`, the sheet, `items-out` and `group` (a recorded field can
+hold text), as the public inspector serves no item text, output or label; `crosstab` of two scores stays.

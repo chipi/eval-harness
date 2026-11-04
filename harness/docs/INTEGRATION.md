@@ -164,10 +164,12 @@ its bill (`usage.cost`), the run records the bill. Which provider does:
 
 A config holds `config_id`, `dataset_id`, `params`, and optionally `adapter` (a project with
 several tasks names one per arm, `adapter: adapters/ner.py`), `goal` (what the evaluation is
-for, `data/goals/<goal_id>.yaml`), `round` (an eval round of that goal, `rN`) and
+for, `data/goals/<goal_id>.yaml`), `round` (an eval round of that goal, `rN`),
 `format` (the output's shape, one of its goal's `output_contract` formats:
-[RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)). Any other key is refused by
-`evh validate` (V1).
+[RUNBOOK §4c](RUNBOOK.md#4c-the-goal-file-field-by-field)) and `hypothesis` (what the change
+should do against which arm, committed before the run so a test of it counts as named in advance:
+[RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system); checked by V20). Any other key is
+refused by `evh validate` (V1).
 
 ---
 

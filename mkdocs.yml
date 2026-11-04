@@ -97,6 +97,7 @@ nav:
           - "ADR-0022: A reference set is labels you promote; the tier is chosen then (accepted, 0.6.0)": adr/ADR-0022-references-are-promoted-labels.md
           - "ADR-0023: Picks in one list per project; governed versions made on purpose (accepted, 0.6.0)": adr/ADR-0023-picks-and-governed-versions.md
           - "ADR-0024: Several projects on one machine share nothing (accepted, 0.6.0)": adr/ADR-0024-several-projects-on-one-machine.md
+          - "ADR-0025: A hypothesis is written in the arm's config, committed before the run (accepted, 0.6.2)": adr/ADR-0025-a-hypothesis-lives-in-the-arm-config.md
   - The evals:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md

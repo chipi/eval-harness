@@ -103,7 +103,7 @@ Suggestions, each a sentence and a command:
 | an arm is `significant: worse` against the leader after Holm, and did not write a silver reference | retire it, with the test as the reason | `evh round-retire … --reason "significantly worse than <leader> on <measure> after Holm (p …)"` |
 | arms are `not significant` against the leader | more items may tell them apart | `evh rank-stability --dataset-id D` |
 | the round's best is not significantly better than the previous round's | change course, or close | (none) |
-| always | close the round with what it showed | `evh round-close … --conclusion "..." --promote <leader's run>` |
+| always | close the round with what it showed | `evh round-close … --conclusion "..."`, with `--promote <leader's run>` only for a leader significantly better than the baseline (corrected for its selection from the round's arms), separated from the other arms and measured by the same scorer (amended 2026-11-04) |
 
 ### Pages
 

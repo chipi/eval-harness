@@ -184,7 +184,8 @@ Same conditions: all ... recorded fields match (machine, libraries, harness, sco
 `inspect --round` reads the round on the goal's measure, against the round's leader; `--metric` and
 `--baseline` choose otherwise. One pair you named before reading the table is a `pair-test` within
 the round: A defaults to its leader and B to the baseline the round started from. Here they are the
-same arm, so name B:
+same arm, so name B. A leader the tool picked was chosen from the table, so the test corrects for the
+choice (Bonferroni over the other candidates); with two arms there is nothing to correct:
 
 ```bash
 evh pair-test --dataset-id tickets_v1 --round r2 --b tickets_lead2_noisy_v2
@@ -197,7 +198,7 @@ evh pair-test --dataset-id tickets_v1 --round r2 --b tickets_lead2_noisy_v2
     items A wins       6/6
     sign-flip p        0.0312  (exact, all 2^6 sign patterns)
     verdict            SIGNIFICANT at 0.05
-    (uncorrected: valid only if this pair was named before the table was read)
+    (A was chosen from the table: 2 candidates, one comparison: nothing to correct)
 ```
 
 The metric defaults to the goal's measure, and an arm that is not in play in the round is

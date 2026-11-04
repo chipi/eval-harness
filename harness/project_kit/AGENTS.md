@@ -44,6 +44,10 @@ The procedures are skills: `evh skills-install` copies them into `.claude/skills
 7. **Validate, then report with evidence.** `evh validate` checks the whole tree. A claim that
    one arm is better cites the paired test that says so (`evh pair-test`, `evh goals`), not a
    mean.
+8. **Name the comparison before the run.** Write a `hypothesis:` into the new arm's config
+   (`against`, `measure`, `direction`, `statement`) and commit it before `evh run`. `evh pair-test`
+   then reports "named in advance: yes"; a pair you chose after reading the table is a search, and
+   `evh family-test` is its test.
 
 ## From nothing to a decision
 
@@ -72,6 +76,12 @@ A goal (`data/goals/<goal_id>.yaml`) says what the evaluation is for and which m
 with one, `evh goals --goal <goal_id> --json` gives the leader, the baseline, the paired test
 and what the goal recommends, in one answer.
 
+Rounds are optional: a round is one line of investigation of a goal, with its hypothesis, its arms,
+the ones retired and a conclusion (`evh round-open`, `evh round-retire`, `evh rounds --goal G --json`
+for what the evidence suggests next). Open the round **before** its arms run: a new arm names it in
+its config (`round: rN`); an arm already run joins only through `round-open --keep CONFIG_ID`.
+Closing it is your operator's (rule 5).
+
 ## Reading results
 
 | question | command |
@@ -79,7 +89,7 @@ and what the goal recommends, in one answer.
 | what is in the project | `evh overview --json`, `evh datasets --json`, `evh arms --json` |
 | which arm leads, and is it significant | `evh goals --goal G --json`; `evh leaderboard --dataset-id D --json` |
 | is A better than B | `evh pair-test --dataset-id D --a A --b B --json` |
-| one arm against several, corrected | `evh family-test --dataset-id D --a A --against B,C --json` |
+| one arm against several, corrected | `evh family-test --dataset-id D --a A --against B,C --json` (`--against`: a comma list of config ids, or one substring) |
 | where two arms differ, item by item | `evh inspect --runs A,B --json` |
 | what two runs did differently | `evh run-compare --baseline RUN_A --candidate RUN_B --json` |
 | is the tree consistent | `evh validate` |

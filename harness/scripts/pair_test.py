@@ -13,7 +13,10 @@ WHY A SECOND TEST, WHEN leaderboard.py ALREADY HAS ONE
 
   The honesty condition is that the pair is named in advance. Six pairs picked after
   reading the table are a search, not a test; EVAL_REPORT.md section 3.1b says so about its
-  own six and Holm-corrects them. --family N applies BONFERRONI (alpha/N) here, which is
+  own six and Holm-corrects them. A `hypothesis:` in A's config (ADR-0025) is the record: when A's run
+  carries one against B on this metric, the output says whether it was committed before the run and
+  whether the result agrees with it. With --round and no --a, A is the table's leader, chosen after
+  reading: the test is corrected for the arms in play. --family N applies BONFERRONI (alpha/N) here, which is
   Holm's strictest step applied to every member: conservative, never the reverse. Holm's
   step-down needs every p-value in the family at once, which one pair does not have.
 
@@ -41,7 +44,7 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _jsonout  # noqa: E402
+from evaluation_harness import _hypothesis, _jsonout  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     RUNS,
     dataset_item_ids,
@@ -69,9 +72,10 @@ def _round_values(dataset_id: str) -> Any:
     return values
 
 
-def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> None:
+def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[bool, int]:
     """--round: the round's goal measure, its leader as A and the baseline it started from as B,
-    and a refusal for an arm that is not in play in it."""
+    and a refusal for an arm that is not in play in it. Returns (whether A was chosen here from the
+    table, how many arms were in play: the candidates it was chosen from)."""
     from evaluation_harness import _common  # noqa: PLC0415
     from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
 
@@ -101,6 +105,44 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> None:
         if not args.b or args.b == args.a:
             die(f"round {args.round} records no other baseline run: name --b")
     print(f"  round {args.round}: {args.a}{' (its leader)' if chose else ''} against {args.b}")
+    return chose, len(in_play)
+
+
+def _hypothesis_of(args: argparse.Namespace, runs: list) -> dict | None:
+    """A's hypothesis against B on the tested metric, as its runs recorded it, with whether it was named in
+    advance; or, when the config now carries one its runs do not, that it was added after the run."""
+    import yaml  # noqa: PLC0415
+    from evaluation_harness import _hypothesis  # noqa: PLC0415
+
+    a_runs = [m for _d, m in runs if m["config_id"] == args.a]
+
+    def same(h: Any) -> bool:
+        return isinstance(h, dict) and h.get("against") == args.b and h.get("measure") == args.metric
+
+    recorded = [m for m in a_runs if same(m.get("hypothesis"))]
+    if recorded:
+        advs = [m.get("hypothesis_in_advance") or {"named": None, "why": "not recorded"} for m in recorded]
+        # One run made after the fact spoils the arm: no before any, then not determinable, else yes.
+        named = False if any(x.get("named") is False for x in advs) else None
+        if named is None and all(x.get("named") is True for x in advs):
+            named = True
+        adv = next((x for x in advs if x.get("named") is named), advs[0])
+        return {
+            **recorded[0]["hypothesis"],
+            "named": named,
+            "commit": adv.get("commit"),
+            "why": adv.get("why"),
+        }
+    path = _hypothesis.config_ids().get(args.a) if a_runs else None
+    cfg = yaml.safe_load(path.read_text(encoding="utf-8")) if path else None
+    if same((cfg or {}).get("hypothesis")):
+        return {
+            **(cfg or {})["hypothesis"],
+            "named": False,
+            "commit": None,
+            "why": "the config's hypothesis is not on the run: added after it",
+        }
+    return None
 
 
 def main() -> int:
@@ -126,7 +168,11 @@ def main() -> int:
     )
     ap.add_argument("--permutations", type=int, default=20000)
     ap.add_argument(
-        "--family", type=int, default=1, help="how many pairs were tested together (Bonferroni: alpha/family)"
+        "--family",
+        type=int,
+        default=None,
+        help="how many pairs were tested together (Bonferroni: alpha/family); default 1, or with --round "
+        "when A was chosen as the round's leader, the arms in play minus 1",
     )
     ap.add_argument("--seed", type=int, default=20260926)
     ap.add_argument(
@@ -143,6 +189,8 @@ def main() -> int:
         "under result.values (a, b, metric, n, delta, wins, ties, p, method, verdict, threshold, ...)",
     )
     args = ap.parse_args()
+    if args.family is not None and args.family < 1:
+        ap.error(f"--family must be at least 1 (the number of pairs tested together), not {args.family}")
     with _jsonout.collect("pair-test", args.json):
         return _run(args, ap)
 
@@ -155,10 +203,15 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     warn_on_ambiguous_runs(runs_dir, args.dataset_id, label=runs_dir.name)
     runs = runs_on(args.dataset_id, runs_dir=runs_dir)
     values = _round_values(args.dataset_id) if args.round else None
+    chose, candidates = False, None
     if args.round:
-        _round_defaults(args, runs, values)
+        chose, candidates = _round_defaults(args, runs, values)
+        if args.family is None and chose:
+            args.family = max(candidates - 1, 1)
     elif not (args.a and args.b):
         ap.error("--a and --b are required (or --round, which defaults them)")
+    if args.family is None:
+        args.family = 1
     args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
     lower = direction(runs, args.metric, args.asc, args.desc)
     if values is not None:
@@ -208,16 +261,45 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     exact = len(items) <= EXACT_UP_TO
     how = f"exact, all 2^{len(items)} sign patterns" if exact else f"{args.permutations} permutations"
     print(f"    sign-flip p        {fmt_p(p)}  ({how})")
+    hyp = _hypothesis_of(args, runs)
+    in_advance = bool(hyp and hyp["named"] is True)
+    chosen_note = (
+        f"    (A was chosen from the table: corrected for {candidates} candidates)"
+        if chose and args.family > 1
+        else f"    (A was chosen from the table: {candidates} candidates, one comparison: nothing to correct)"
+        if chose
+        else None
+    )
     if args.family > 1:
         # The same rule as Holm and the inspector: p at or below the threshold is significant.
         verdict = "SIGNIFICANT" if p <= thresh else "NOT-SIGNIFICANT"
         print(f"    Bonferroni/{args.family}     threshold {thresh:.4f} -> {verdict}")
+        if chosen_note:
+            print(chosen_note)
         if p > thresh:
             print("    (conservative: Holm's later steps are looser — check the family)")
     else:
         verdict = "SIGNIFICANT" if p <= 0.05 else "NOT-SIGNIFICANT"
         print(f"    verdict            {verdict} at 0.05")
-        print("    (uncorrected: valid only if this pair was named before the table was read)")
+        print(
+            chosen_note
+            or (
+                "    (uncorrected: valid because the hypothesis was committed before the run)"
+                if in_advance
+                else "    (uncorrected: valid only if this pair was named before the table was read)"
+            )
+        )
+    if hyp:
+        agrees = _hypothesis.agreement(hyp["direction"], obs, lower, p <= thresh)
+        shown = {"better": "better than", "worse": "worse than", "no-worse": "no worse than"}[
+            hyp["direction"]
+        ]
+        print(f"    hypothesis         {args.a} {shown} {args.b} on {args.metric}: {hyp['statement']}")
+        print(f"    named in advance   {_hypothesis.said(hyp)}")
+        print(
+            f"    result agrees      {agrees}"
+            + (" (no proof of equivalence)" if hyp["direction"] == "no-worse" else "")
+        )
     _jsonout.values(
         {
             "a": args.a,
@@ -238,6 +320,24 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             "alpha": 0.05,
             "threshold": thresh,
             "verdict": verdict,
+            "selection": "leader" if chose else "named",
+            "candidates": candidates if chose else None,
+            "hypothesis": {
+                "against": hyp["against"],
+                "measure": hyp["measure"],
+                "direction": hyp["direction"],
+                "statement": hyp["statement"],
+                "named_in_advance": _hypothesis.YES
+                if hyp["named"]
+                else _hypothesis.NO
+                if hyp["named"] is False
+                else _hypothesis.UNDETERMINED,
+                "commit": hyp["commit"],
+                "why": hyp["why"],
+                "agrees": agrees,
+            }
+            if hyp
+            else None,
         }
     )
     return 0

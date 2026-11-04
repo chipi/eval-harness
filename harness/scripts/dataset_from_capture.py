@@ -7,13 +7,15 @@
 Only a record's BODY becomes the item: it is written to data/sources/<dataset>/<id>.txt (text) or
 .json (anything else, as canonical JSON), so its sha256 is the capture's `body_sha256`. Fields,
 outcome and source never enter an item's bytes; a record's fields become item fields only through a
-declared field set (--fieldset, --field). The dataset is written by dataset-create's own code and
+declared field set (--fieldset keeps every field it declares; --field narrows that to the ones named).
+The dataset is written by dataset-create's own code and
 records how its items were chosen (`made_from`).
 
 Selection, in this order: --where FIELD:VALUE (a record field; a dotted path reaches inside one),
 --one-per FIELD (the newest record per value), --dedup exact|text (the same body, or the same text with case and
 whitespace folded: the first is kept). Sampling is the capture's: `evh capture --sample-rate R --seed S`.
---from D_prev makes a new version: the earlier version's items stay, the new records are added, and
+--from D_prev makes a new version: the earlier version's items stay, the new records are added, a
+record of an item the earlier version has replaces it (a corrected body is counted as changed), and
 the lineage (added, removed, changed) is recorded as dataset-create --from records it.
 """
 
@@ -145,7 +147,10 @@ def main() -> int:
     ap.add_argument("--dedup", choices=("exact", "text"), help="drop records whose body repeats")
     ap.add_argument("--fieldset", help="the field set (data/fields/<id>.yaml) declaring the item fields")
     ap.add_argument(
-        "--field", action="append", default=[], help="a record field to keep as an item field (repeatable)"
+        "--field",
+        action="append",
+        default=[],
+        help="a record field to keep as an item field (repeatable; default: every field the --fieldset declares)",
     )
     ap.add_argument(
         "--hide-text", action="store_true", help="text: hidden: none of its text on any public surface"
@@ -191,22 +196,36 @@ def main() -> int:
                 )
             shutil.copyfile(p, src / it["source_path"])
             items.append(dict(it))
-    have = {it["item_id"] for it in items}
+    # A field set keeps the fields it declares; --field narrows that to the ones named.
+    keep_fields = list(args.field) or (list(_fields.declared(fieldset)) if fieldset else [])
+    # A record in this capture replaces the earlier version's item of the same id: the capture is what
+    # the item is now (a corrected body is a change, counted as one), and the earlier items it does not
+    # hold stay as they were.
+    at = {it["item_id"]: i for i, it in enumerate(items)}
+    seen: set = set()
     for r in kept:
-        if r["id"] in have:
+        if r["id"] in seen:
             continue
+        seen.add(r["id"])
         body = r["body"] if r.get("body") is not None else r["fields"]
         name = f"{r['id']}.{'txt' if isinstance(body, str) else 'json'}"
+        if r["id"] in at:
+            old = items[at[r["id"]]].get("source_path")
+            if old and old != name and (src / old).is_file():
+                (src / old).unlink()
         (src / name).write_bytes(_importers.canonical(body))
         item = {"item_id": r["id"], "source_path": name, "source_sha256": sha256(src / name)}
-        if fieldset and args.field:
-            row = {f: dig(r.get("fields") or {}, f) for f in args.field}
+        if keep_fields:
+            row = {f: dig(r.get("fields") or {}, f) for f in keep_fields}
             vals, errs = _fields.values_from(fieldset, {k: str(v) for k, v in row.items() if v is not None})
             bad += [f"{r['id']}: {e}" for e in errs]
             if vals:
                 item["fields"] = vals
-        items.append(item)
-        have.add(r["id"])
+        if r["id"] in at:
+            items[at[r["id"]]] = item
+        else:
+            at[r["id"]] = len(items)
+            items.append(item)
     if bad:
         die(f"{len(bad)} field problem(s)\n  " + "\n  ".join(bad[:15]))
     lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None

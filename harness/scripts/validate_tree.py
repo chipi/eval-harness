@@ -38,6 +38,9 @@ Each check exists because its absence let a real defect through somewhere:
                      twice, or a config naming a record or deployment that does not exist (RFC-020)
   V19 label sets     a label set whose labels differ from the sha256 it recorded, whose label files are
                      missing, whose dataset does not exist, or whose count is not its labels' (RFC-023)
+  V20 hypotheses     a config whose `hypothesis:` names no config that exists, a measure that is not one
+                     of the arm's metrics, a direction that is not better, worse or no-worse, or a key
+                     it lacks (ADR-0025)
 
 Exit 1 on any failure, so it can gate.
 
@@ -1272,13 +1275,39 @@ def v19_label_sets() -> None:
     )
 
 
+def v20_hypotheses() -> None:
+    """V20: every `hypothesis:` in an arm config (ADR-0025) has its keys, a direction that is better, worse or
+    no-worse, an `against` that is another config of the project, and a measure that is one of the arm's metrics.
+    The configs are config_files(); evh run refuses the same mistakes before it spends anything."""
+    import yaml  # noqa: PLC0415
+    from evaluation_harness import _hypothesis  # noqa: PLC0415
+
+    found, bad = 0, []
+    ids = None
+    for c in config_files():
+        try:
+            cfg = yaml.safe_load(c.read_text(encoding="utf-8")) or {}
+        except yaml.YAMLError:
+            continue  # V1 names a config that does not parse
+        if not isinstance(cfg, dict) or cfg.get("hypothesis") is None:
+            continue
+        found += 1
+        ids = ids if ids is not None else _hypothesis.config_ids()
+        bad += [f"{c.name}: {p}" for p in _hypothesis.problems(cfg, c, ids)]
+    if not found:
+        print("  --   V20 hypotheses (none)")
+        return
+    for b in bad[:10]:
+        print(f"       {b}")
+    check(f"V20 hypotheses — {found} config(s) with one, every one sound", not bad, f"{len(bad)} problem(s)")
+
+
 def config_files() -> list[Path]:
     """The arm configs V18 reads: data/configs, and the globs `configs` in validate.json names (relative to
     the project root), for a project that keeps its arms elsewhere (this repository's are in examples/)."""
-    found = set(CONFIGS.glob("*.yaml"))
-    for pattern in policy().get("configs") or []:
-        found |= {f for f in ROOT.glob(pattern) if f.is_file()}
-    return sorted(found)
+    from evaluation_harness._common import arm_config_files  # noqa: PLC0415
+
+    return arm_config_files()
 
 
 def v18_model_records() -> None:
@@ -1400,6 +1429,7 @@ def main() -> int:
         v17_captures,
         v18_model_records,
         v19_label_sets,
+        v20_hypotheses,
         note_uncommitted_runs,
         note_round_scorers,
     ):

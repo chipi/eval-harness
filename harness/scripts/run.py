@@ -717,6 +717,12 @@ def _run(args: argparse.Namespace) -> int:
     from evaluation_harness._rounds import config_round  # noqa: PLC0415
 
     config_round(cfg, args.config)
+    # A hypothesis (ADR-0025, optional) is refused with the same words validate V20 uses.
+    from evaluation_harness import _hypothesis  # noqa: PLC0415
+
+    bad_hypothesis = _hypothesis.problems(cfg, args.config)
+    if bad_hypothesis:
+        die(f"{args.config}: " + "; ".join(bad_hypothesis))
     ds = load_dataset(cfg["dataset_id"])
     stamp = now().replace(":", "").replace("-", "")
     base_id = args.run_id or f"{cfg['config_id']}_{stamp}"
@@ -872,6 +878,10 @@ def _run(args: argparse.Namespace) -> int:
                 f"runs at temperature 0: expect its {args.repeat} passes to be identical. The spread comes from "
                 "other deployments (machines, builds) or a temperature above 0."
             )
+    # Read once, before the first call: what the config says now and whether it was committed already.
+    hypothesis = _hypothesis.record_for(cfg, args.config, build, now())
+    if hypothesis:
+        print(f"  hypothesis  named in advance: {_hypothesis.said(hypothesis['hypothesis_in_advance'])}")
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
         run_dir = runs / run_id
@@ -965,6 +975,7 @@ def _run(args: argparse.Namespace) -> int:
             model_record=cfg.get("model_record") or None,
             deployment_id=cfg.get("deployment") or None,
             format=cfg.get("format") or None,
+            **hypothesis,
             reference_tier=result["reference_tier"] or None,
             reference_coverage=coverage
             if coverage and coverage["items_with_reference"] < coverage["items"]

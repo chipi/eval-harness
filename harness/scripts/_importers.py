@@ -49,7 +49,10 @@ def resolve(name: str) -> tuple[type, Path]:
         file, _, cls_name = name.rpartition(":")
         path = Path(file).expanduser()
         if not path.is_absolute():
-            path = (Path.cwd() / path).resolve()
+            # From where the command runs, else from the project root (data/'s parent): a capture records
+            # the path as given, and running from another directory must still find the same file.
+            here, project = (Path.cwd() / path).resolve(), (DATA.parent / path).resolve()
+            path = here if here.is_file() or not project.is_file() else project
     else:
         if not IMPORTER_NAME.fullmatch(name):
             die(f"--importer {name!r}: lowercase letters, digits and _, or path/to/importer.py:Class")

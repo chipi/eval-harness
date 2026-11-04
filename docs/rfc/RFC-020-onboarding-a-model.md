@@ -178,7 +178,7 @@ will be identical there, and points at other machines or builds for spread.
 
 - Choosing settings for a project: onboarding and the smoke measure and flag; a person decides.
 - Pulling models or managing servers.
-- Tuning prompts (the triage goal's 0.7.0 work).
+- Tuning prompts (the triage goal's 0.8.0 work).
 
 ## The first records
 

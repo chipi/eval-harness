@@ -12,7 +12,7 @@
   [PRD-002](../prd/PRD-002-references.md) (references)
 - **Related ADRs**: [ADR-0019](../adr/ADR-0019-capture-lane.md), [ADR-0020](../adr/ADR-0020-second-references-are-silver.md)
 - **Related RFCs**: [RFC-006](RFC-006-item-fields-and-url-items.md) (field sets),
-  [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP server); on branch `070`: 0.7.0's RFC-013 (declarations,
+  [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP server); on branch `070`: 0.8.0's RFC-013 (declarations,
   consent), RFC-015 (validation and test, test looks), RFC-016 (MCP tools)
 
 ## Abstract
@@ -154,7 +154,7 @@ any public surface.
 - **The datasets page** groups and filters on tags, says where a dataset came from, and puts a version's profile
   beside its parent's.
 - **`evh captures`**, and the read-only MCP tool of the same name.
-- **The writing commands are not MCP tools** until 0.7.0's declarations and consent.
+- **The writing commands are not MCP tools** until 0.8.0's declarations and consent.
 
 ### 8. The triage fleet, end to end (the acceptance case)
 
@@ -193,7 +193,7 @@ gold to the owner's 93 labelled decisions and runs the onboarded models.
 ## Not in scope
 
 A schedule, a server, state outside the project's files, a labelling interface, holding a project's private data,
-write tools for agents (0.7.0).
+write tools for agents (0.8.0).
 
 ## Alternatives considered
 

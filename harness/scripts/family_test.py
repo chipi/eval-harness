@@ -67,6 +67,13 @@ from evaluation_harness.stats import EXACT_UP_TO, fmt_p, holm, sign_flip_p  # no
 
 
 def _opponents(runs: list, against: str, exclude: str) -> list[str]:
+    """The family: a comma-separated list names its config ids exactly; one value is a substring of
+    every opponent's config id (`--against ag_` for every ag_ arm)."""
+    names = [x.strip() for x in against.split(",") if x.strip()]
+    if len(names) > 1:
+        return sorted(
+            {m["config_id"] for _d, m in runs if m["config_id"] != exclude and m["config_id"] in names}
+        )
     return sorted(
         {m["config_id"] for _d, m in runs if m["config_id"] != exclude and against in m["config_id"]}
     )
@@ -147,7 +154,9 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--a", required=True, help="config_id of the arm under test")
     ap.add_argument(
-        "--against", required=True, help="substring selecting the opponent family, declared in advance"
+        "--against",
+        required=True,
+        help="the opponent family, declared in advance: a substring of their config ids, or a comma-separated list of config ids",
     )
     ap.add_argument("--metric", help="default: the primary metric the runs recorded")
     ap.add_argument("--runs-dir", type=Path, default=None, help="default: EVAL_RUNS_DIR, else data/runs")
@@ -225,8 +234,12 @@ def _run(args) -> int:
     for r in rows:
         r["thresh"], r["sep"] = verdicts[r["opp"]]
 
-    n_items = rows[0]["n"]
-    stratum = f"{n_items} items"
+    # Opponents can share different numbers of items with A; then no one n is the family's.
+    ns = sorted({r["n"] for r in rows})
+    n_items = ns[0] if len(ns) == 1 else None
+    stratum = (
+        f"{n_items} items" if n_items is not None else f"{ns[0]}-{ns[-1]} items (each opponent's n below)"
+    )
     if args.items:
         stratum += f" (from {args.items.name})"
     elif args.exclude_dataset:
@@ -244,8 +257,12 @@ def _run(args) -> int:
             f"  p: exact up to {EXACT_UP_TO} shared items, a seeded estimate above ({args.permutations} "
             "permutations, one random stream for the family) -- marked ~\n"
         )
-    elif n_items <= EXACT_UP_TO:
-        print(f"  p: exact, over all 2^{n_items} sign patterns\n")
+    elif not any(est):
+        print(
+            f"  p: exact, over all 2^{n_items} sign patterns\n"
+            if n_items is not None
+            else "  p: exact, over all sign patterns of each opponent's shared items\n"
+        )
     else:
         print(
             f"  p: a seeded estimate ({args.permutations} permutations, one random stream for the family);\n"
@@ -291,7 +308,8 @@ def _run(args) -> int:
             "dataset_id": args.dataset_id,
             "metric": args.metric,
             "direction": "lower" if lower else "higher",
-            "n": n_items,
+            "n": n_items,  # None when the opponents share different numbers of items
+            "n_range": [ns[0], ns[-1]],
             "family_size": m,
             "alpha": args.alpha,
             "correction": "holm",

@@ -12,6 +12,7 @@ gets a page per goal that ranks only arms on the goal's datasets.
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -34,6 +35,11 @@ def evh(*args):
     return subprocess.run(
         [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True
     )
+
+
+def arm_rows(text):
+    """The arm rows of `evh goals --goal` (a name, then the six items): not the wrapped reasons beneath."""
+    return [ln for ln in text.splitlines() if re.match(r"^  tickets_\S+.* {2,}6 {2,}", ln)]
 
 
 def validate():
@@ -292,6 +298,100 @@ try:
         "speed: how long an item took" in r.stdout and "weighed by   tickets_summary" in r.stdout,
         r.stdout[-400:] + r.stderr[-300:],
     )
+
+    # A goal with many arms (evh goals --goal G --arms/--top): the table can be cut down, never the decision.
+    lead1 = (KIT / "configs" / "tickets_lead1.yaml").read_text()
+    for i in range(1, 7):
+        (data / "configs" / f"x{i:02d}.yaml").write_text(
+            lead1.replace("tickets_lead1_v1", f"tickets_x{i:02d}_v1").replace(
+                "sentences: 1", f"sentences: {1 + i % 3}"
+            )
+            + "goal: tickets_summary\n"
+        )
+        evh("run", "--config", f"data/configs/x{i:02d}.yaml")
+    full = evh("goals", "--goal", "tickets_summary")
+    rows_full = arm_rows(full.stdout)
+    check(
+        "evh goals --goal: every arm listed, a 'vs leader' column with the paired test against the leader",
+        len(rows_full) == 7
+        and "vs leader (paired test)" in full.stdout
+        and ("not significant" in full.stdout or "significant" in full.stdout or "identical" in full.stdout)
+        and "left out" not in full.stdout,
+        full.stdout[-1500:],
+    )
+    r = evh("goals", "--goal", "tickets_summary", "--top", "2")
+    shown = arm_rows(r.stdout)
+    check(
+        "evh goals --goal --top 2: at most two arms and what must stay (the baseline), kept, the count left out said",
+        r.returncode == 0
+        and len(shown) < len(rows_full)
+        and any("[baseline]" in ln for ln in shown)
+        and f"{len(shown)} of 7 arms shown, {7 - len(shown)} left out by --top 2" in r.stdout,
+        r.stdout[-1500:] + r.stderr[-300:],
+    )
+    r = evh("goals", "--goal", "tickets_summary", "--arms", "x01,x02", "--arms", "tickets_x0[56]*")
+    shown = arm_rows(r.stdout)
+    check(
+        "evh goals --goal --arms: substring and glob, repeatable and comma-separated; the baseline stays",
+        r.returncode == 0
+        and any("[baseline]" in ln for ln in shown)
+        and all(f"x0{n}" in "\n".join(shown) for n in (1, 2, 5, 6))
+        and "x03" not in "\n".join(shown)
+        and "left out by --arms x01 --arms x02 --arms tickets_x0[56]*" in r.stdout,
+        r.stdout[-1500:] + r.stderr[-300:],
+    )
+    r = evh("goals", "--goal", "tickets_summary", "--arms", "zzz_no_such_arm")
+    shown = arm_rows(r.stdout)
+    check(
+        "evh goals --goal --arms with no match: the baseline is still there, marked",
+        # Shown whatever the filter: the baseline, the leader and the recommended arm. Which arm the goal
+        # recommends turns on these offline arms' speeds, a few ms that vary run to run, so it is sometimes
+        # not the leader: its row is marked [recommended].
+        r.returncode == 0
+        and shown
+        and any("[baseline]" in ln for ln in shown)
+        and all("[baseline]" in ln or "leader" in ln or "[recommended]" in ln for ln in shown),
+        r.stdout[-900:],
+    )
+    r = evh("goals", "--goal", "tickets_summary", "--top", "1", "--json")
+    v = json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {}
+    g0 = (v.get("groups") or [{}])[0]
+    check(
+        "evh goals --goal --json: leader, baseline, contenders, recommended and each arm's test against the leader",
+        v.get("goal") == "tickets_summary"
+        and v.get("baseline", "").endswith("tickets_lead2_v1")
+        and v.get("leader")
+        and isinstance(v.get("contenders"), list)
+        and "recommended" in v
+        and len(v.get("vs_leader") or {}) == 7
+        and all(set(x) == {"delta", "p", "verdict"} for x in v["vs_leader"].values() if x),
+        {k: v.get(k) for k in ("goal", "leader", "baseline", "contenders", "recommended")},
+    )
+    check(
+        "evh goals --goal --top 1 --json: the arms shown with raw numbers, and how many were left out",
+        g0.get("arms_total") == 7
+        and g0.get("arms_left_out") == 7 - g0.get("arms_shown", 0) > 0
+        and g0["filter"] == {"arms": [], "top": 1}
+        and all(isinstance(a["mean"], float) and isinstance(a["n"], int) for a in g0["arms"])
+        and any(a["baseline"] for a in g0["arms"])
+        and any(a["leader"] for a in g0["arms"]),
+        {k: g0.get(k) for k in ("arms_total", "arms_shown", "arms_left_out", "filter")},
+    )
+    r = evh("goals", "--top", "3")
+    check(
+        "evh goals --top without --goal: refused, saying why",
+        r.returncode != 0 and "need --goal" in r.stderr,
+        r.stderr[-300:],
+    )
+    r = evh("goals", "--goal", "tickets_summary", "--top", "0")
+    check(
+        "evh goals --goal --top 0: refused",
+        r.returncode != 0 and "--top must be at least 1" in r.stderr,
+        r.stderr[-300:],
+    )
+    for i in range(1, 7):
+        (data / "configs" / f"x{i:02d}.yaml").unlink()
+        shutil.rmtree(next((data / "runs").glob(f"tickets_x{i:02d}_v1_*")))
 
     goal_path = data / "goals" / "tickets_summary.yaml"
     original = goal_path.read_text()

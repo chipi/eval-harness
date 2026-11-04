@@ -50,8 +50,8 @@ fingerprint that names where a model really ran.
 
 - Choosing settings for a project: the harness measures and flags; a person decides and writes why.
 - Pulling models, managing servers, or switching a shared machine's mode.
-- Tuning prompts (the triage goal's 0.7.0 work).
-- Running `evh` on other machines (0.7.0); the runner is recorded so that it can.
+- Tuning prompts (the triage goal's 0.8.0 work).
+- Running `evh` on other machines (0.8.0); the runner is recorded so that it can.
 
 ## Personas
 

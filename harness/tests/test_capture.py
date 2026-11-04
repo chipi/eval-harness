@@ -445,6 +445,38 @@ check(
     and lin.get("removed") == [],
     out(r)[-300:],
 )
+# 2026-11-04, the triage v2 (a beta agent): a version made --from the last one, from a capture whose records
+# correct an item's body, kept the old body and reported "0 changed".
+(proj / "fix.jsonl").write_text(json.dumps({"id": "a1", "body": "The corrected body of a1."}) + "\n")
+evh("capture", "--importer", "jsonl", "--query", json.dumps({"path": "fix.jsonl"}), "--capture", "c_fix")
+r = evh("dataset-from-capture", "c_fix", "--dataset-id", "cap_fixed", "--from", "cap_v1")
+lin = ds("cap_fixed").get("derived_from", {}) if r.returncode == 0 else {}
+a1: dict = (
+    next(
+        (it for it in ds("cap_fixed")["items"] if it["item_id"] == "a1"),
+        {},
+    )
+    if r.returncode == 0
+    else {}
+)
+check(
+    "from-capture --from: a captured record replaces the earlier version's item of its id, counted changed",
+    lin.get("changed") == ["a1"]
+    and lin.get("added") == []
+    and "corrected body" in (proj / "data" / "sources" / "cap_fixed" / a1.get("source_path", "-")).read_text()
+    if a1
+    else False,
+    out(r)[-300:],
+)
+# and a field set alone keeps the fields it declares (it kept none, silently)
+r = evh("dataset-from-capture", "m", "--dataset-id", "m_fs", "--fieldset", "kinds", "--where", "kind:b")
+check(
+    "from-capture --fieldset alone: every field the set declares is kept",
+    r.returncode == 0
+    and ds("m_fs")["items"]
+    and all(it.get("fields") == {"kind": "b"} for it in ds("m_fs")["items"]),
+    out(r)[-300:],
+)
 r = evh("dataset-from-capture", "c1", "--dataset-id", "cap_v1")
 check(
     "from-capture: a dataset is never overwritten without --force", r.returncode != 0 and "frozen" in out(r)
@@ -540,9 +572,10 @@ r = evh("captures", "--json")
 caps = {c["capture"]: c for c in json.loads(r.stdout)["captures"]} if r.returncode == 0 else {}
 check(
     "captures: each capture, its importer, scrubbed or not, and the datasets made from it",
-    set(caps) == {"c1", "c2", "m"}
+    set(caps) == {"c1", "c2", "m", "c_fix"}
     and caps["m"]["scrubbed"]
     and sorted(caps["c1"]["datasets"]) == ["cap_v1"]
+    and sorted(caps["c_fix"]["datasets"]) == ["cap_fixed"]
     and caps["c2"]["continues"] == "c1",
     r.stdout[-400:],
 )
@@ -609,6 +642,29 @@ check(
     and 'capture <a href="captures.html#capture-c1">c1</a>' in cb.origin_html(meta)
     and cb.origin_html({"origin": "version of x"}) == "version of x",
     str(meta),
+)
+
+# 2026-11-04 (a beta agent): an importer named by a path relative to the project was not found when the
+# command ran from another directory, though a capture records the path as given.
+(proj / "tools").mkdir(exist_ok=True)
+(proj / "tools" / "imp.py").write_text(
+    "class Importer:\n"
+    "    def __init__(self, options=None):\n        pass\n"
+    "    def records(self, query):\n"
+    "        yield {'id': 'x1', 'body': 'one', 'fields': {}, 'created_at': '2026-10-01T00:00:00Z',\n"
+    "               'source': {'system': 's'}, 'outcome': {}}\n"
+)
+r = subprocess.run(
+    [sys.executable, str(HERE / "cli.py"), "importer-check", "tools/imp.py:Importer", "--query", "{}"],
+    cwd=proj / "data",
+    env=env,
+    capture_output=True,
+    text=True,
+)
+check(
+    "importer: a path relative to the project is found from a subdirectory too",
+    "no file" not in out(r) and r.returncode == 0,
+    out(r)[-300:],
 )
 
 sys.exit(summary())

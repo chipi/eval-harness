@@ -315,7 +315,7 @@ names it.
 
 - **The datasets page**: tags as groups and filters, origin, and a version's profile beside its parent's.
 - **MCP**: `captures` joins the read tools. The writing commands join NOT_TOOLS, with the reason: MCP write
-  tools are 0.7.0.
+  tools are 0.8.0.
 - **`test_installed_commands.py`**: one case per new command (M8).
 - **`check_commands`** knows every new command and flag. The browser checks cover the datasets page.
 
@@ -488,6 +488,6 @@ Nothing for the engineering. The application's decisions are in [PLAN_0.6.0_FLEE
 
 ## 9. Not in scope
 
-A schedule, a server, write tools for agents (0.7.0), runners on another machine (0.7.0), a labelling interface
+A schedule, a server, write tools for agents (0.8.0), runners on another machine (0.8.0), a labelling interface
 (P8's sheet is a file), holding a project's private data, concurrency in `experiment-run`, a paired test at a
 cluster level (the `--one-per` version is the answer to dependence).

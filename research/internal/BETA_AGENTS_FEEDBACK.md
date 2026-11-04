@@ -13,7 +13,34 @@ what the harness has today (checked), and what was done or what is open.
   the rules, the loop from nothing, how to read results; the owner's rule on what an agent may do.
 - **No catalog, no MCP needed with a shell.** Said in `AGENTS.md`, README and INTEGRATION.
 
+- **A clean clone could not rebuild the triage data** (fleet, 2026-11-04; reproduced in a fresh clone).
+  `examples/triage-fleet/fetch.py` refused capture `orrery_2026_10`: "233 record(s) differ from what it
+  recorded", so no dataset items were restored. The importer had gained two fields (the prompt's
+  version and hash, for the deploy sheet) after the capture, and a record's hash covers its fields.
+  Fixed: the fields come only when a query asks (`prompt_fields`); a fresh clone restores 233 records
+  and the 65 labelled items, hashes ok, and materializes. Why no check caught it before is not yet
+  established.
+
+- **`dataset-from-capture --from` kept the earlier version's bodies** (fleet, building the triage v2;
+  reproduced in test_capture). A captured record whose id the earlier version had was skipped, so v2's
+  corrected bodies never replaced v1's and the lineage read "0 changed". Fixed: the record replaces the
+  item and is counted as changed.
+- **`--fieldset` alone kept no item fields** (fleet). Fields were kept only with `--field`. Fixed: a
+  field set keeps every field it declares; `--field` narrows it.
+- **An importer path only worked from one directory** (fleet). Fixed: from the current directory, else
+  from the project root, so the path a capture recorded works from either.
+
+- **A round must exist before its arms run, and nothing said so in time** (fleet). It ran the v2
+  baseline before opening r4. Fixed in the docs: AGENTS.md and the skill's step 4 say to open the round
+  first, and that an arm already run joins through `round-open --keep` (whose help claimed "from earlier
+  rounds" only; it accepts any config already run, and now says so).
+
 ## Open (owner to decide)
+
+7. **Lineage for a dataset version already cited** (fleet). v2 was made without `--from` (bug above) and
+   runs cite it now, so it cannot be re-made to gain its `derived_from` link to v1; its lineage lives in
+   its description and commit. Wanted, if the owner wants the link: a command that adds lineage to a cited
+   dataset without touching its items.
 
 1. **A crosstab of two per-item scores by a field of the output** (fleet, 2026-11-04). The question:
    how many dismiss-gate downgrades saved a model false dismissal, and how many turned a right

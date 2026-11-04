@@ -242,6 +242,11 @@ try:
                 and not {"csv", "fill", "choices", "seed", "rubric", "scale", "rows", "items"} & props,
                 str(sorted(props)),
             )
+            check(
+                "inspect: the crosstab and the items' outputs are in the local schema",
+                {"crosstab", "group", "group-match", "max-ids", "items-out", "max-chars"} <= props,
+                str(sorted(props)),
+            )
             res = await s.call_tool("labels", {"dataset-id": "tickets_v1"})
             want = evh("labels", "--dataset-id", "tickets_v1", "--json").stdout
             check(
@@ -442,6 +447,13 @@ try:
                 and "validate" not in by
                 and sorted(by) == sorted(tools_for(True)),
                 sorted(by),
+            )
+            pub = set(by["inspect"].input_schema["properties"])
+            check(
+                "--public inspect: the crosstab of two scores is offered; --items-out and --group (recorded texts) are not",
+                {"crosstab", "max-ids"} <= pub
+                and not {"items-out", "max-chars", "group", "group-match"} & pub,
+                sorted(pub),
             )
             held = {
                 "pair-test": {"permutations", "runs-dir", "items"},

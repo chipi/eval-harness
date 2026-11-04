@@ -179,6 +179,24 @@ baseline scored against silver cannot pass for one scored against gold.
 
 ---
 
+## A comparison is named before the results are read
+
+A paired test answers one question, and its p-value means that only if the question was asked
+before the answer was seen. Pick the best of eighty arms after reading the table and the same test
+is a search: some pair will look different. So the harness corrects what it chose itself
+(`pair-test --round` tests the round's leader corrected for the arms in play), and leaves the
+uncorrected test to the comparison that was named in advance. Nothing used to record the naming;
+the `hypothesis:` block in an arm's config does. It sits beside the change it predicts (against
+which config, on which measure, in which direction, and why), and a run copies it into its record
+together with whether the commit that last changed it came before the run. `pair-test` then says
+"named in advance: yes (committed 1a2b3c4d before the run)", `no`, or `not determinable` (outside
+git, or on a dirty tree, where the config on disk may not be the committed one), and whether the
+result agrees with the stated direction. A hypothesis does not change what was measured, so it is
+not in the fingerprint. It is a record, not a proof: it shows the prediction was committed before
+the run, not what its author had already read when they wrote it.
+
+---
+
 ## A goal says what the evaluation is for
 
 A number answers a question only if someone wrote the question down. A goal names who uses the
@@ -263,8 +281,9 @@ gives every project): run arms, make labels and references, and promote a baseli
 operator asked for that task**, and only under a spending cap (`EVAL_MAX_COST_USD`). A
 promotion's reason says who asked and why, so the record shows whose decision it was. Closing a
 round fixes its evidence, and anything past the cap spends what was not agreed: those stay the
-operator's, and the agent hands over the exact command. `evh mcp` writes nothing: its tools read.
-Consent recorded by the harness itself, rather than by the operator's instruction, is 0.7.0's to
+operator's, and the agent hands over the exact command. `evh mcp` writes no project data: its tools read. (What a call does write is
+computed answers in the project's ignored `.cache/`: the paired tests' p values and `family-test`'s results.)
+Consent recorded by the harness itself, rather than by the operator's instruction, is 0.8.0's to
 design.
 
 A shared server answers anyone who can reach it, so `--public` holds back what a project may not

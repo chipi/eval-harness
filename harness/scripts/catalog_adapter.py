@@ -1110,6 +1110,8 @@ class HarnessAdapter:
             "deployment": m.get("deployment_id") or "",
             # A recorded arm (RFC-023): its outputs are the capture's records, read this way; no model was called.
             "recorded_by": read_by,
+            # Only an arm whose config carried one (ADR-0025): the block, and whether it was committed before the run.
+            **{k: m[k] for k in ("hypothesis", "hypothesis_in_advance") if m.get(k)},
         }
 
     @_memo

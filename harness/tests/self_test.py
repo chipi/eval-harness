@@ -649,7 +649,14 @@ def test_example_scorer_suites_pass() -> None:
         ("test_stat_commands.py", "compare-runs, bootstrap-test, holdout: their numbers and refusals"),
         ("test_catalog.py", "catalog and run inspector"),
         ("test_serve_hooks.py", "catalog-serve --hooks: called, never breaking a request, off by default"),
-        ("test_goals.py", "goals: config, run, baseline, V14, pages"),
+        (
+            "test_goals.py",
+            "goals: config, run, baseline, V14, pages, --arms/--top, the test against the leader",
+        ),
+        (
+            "test_hypothesis.py",
+            "a hypothesis in the arm config: recorded and named in advance (yes/no/not determinable), outside the fingerprint, V20, pair-test and goals say it; pair-test --round corrects for its own selection",
+        ),
         ("test_dataset_profile.py", "dataset profiles: what is inside, the gold's shape, links, the page"),
         ("test_mcp_server.py", "evh mcp: the read commands as tools, through the SDK's own client"),
         ("test_p_cache.py", "the on-disk p cache: the same p, read back by a fresh process"),
@@ -657,6 +664,10 @@ def test_example_scorer_suites_pass() -> None:
         ("test_mcp_answers.py", "evh mcp --write-answers and --answers: a release's answers written ahead"),
         ("test_scores_once.py", "each arm's scores read once per view and per build"),
         ("test_skills.py", "the agent skills: valid, installed, every evh block runs as written"),
+        (
+            "test_selection_and_json_guards.py",
+            "a family as a list, a mixed family, no pairs without an effect, strict JSON, a chosen leader corrected",
+        ),
         (
             "test_capture.py",
             "importers, importer-check and capture: mapping, the contract, hashes, continuing",
@@ -706,6 +717,10 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_rows.py",
             "the sheet: every item's decisions, scores, labels and signals; each signal a filter; winners (ties, direction), win rate, verdicts, the CSV",
+        ),
+        (
+            "test_inspect_crosstab.py",
+            "evh inspect --crosstab (two per-item scores by a recorded field, the off-diagonal items named) and --items-out (each run's whole output beside the reference), on the triage runs",
         ),
         (
             "test_sheet_import.py",

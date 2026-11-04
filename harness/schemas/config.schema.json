@@ -14,6 +14,17 @@
     "round": {"type": "string", "pattern": "^r[0-9]+$", "description": "The round of its goal this arm belongs to (ADR-0004, optional): data/rounds/<goal>/<round>.yaml. Needs `goal`."},
     "model_record": {"type": "string", "description": "The model record this arm runs (RFC-020, optional): data/models/<id>.yaml. Its settings go under the config's params (the config wins); `model` comes from its first alias when params give none."},
     "deployment": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$", "description": "Which of the model record's deployments this arm runs (RFC-021, optional; needs `model_record`): the id of an entry in the record's `deployments`. The run's fingerprint takes the deployment's weights, server and hardware from it."},
-    "format": {"type": "string", "minLength": 1, "description": "The output shape, matched against the goal's output_contract."}
+    "format": {"type": "string", "minLength": 1, "description": "The output shape, matched against the goal's output_contract."},
+    "hypothesis": {
+      "type": "object",
+      "description": "What this arm is expected to do, written before its run (ADR-0025, optional). A run records it and whether it was committed before the run; pair-test says so. Not part of the fingerprint. Its keys (against, measure, direction better|worse|no-worse, statement, optional items) are checked by validate V20 and by evh run, which say what is wrong in words.",
+      "properties": {
+        "against": {"description": "The config_id this arm is compared with."},
+        "measure": {"description": "The metric the prediction is about."},
+        "direction": {"description": "better, worse or no-worse (not significantly worse) than `against` on `measure`."},
+        "statement": {"description": "The prediction in words."},
+        "items": {"description": "Optional: a file of item ids expected to flip."}
+      }
+    }
   }
 }
