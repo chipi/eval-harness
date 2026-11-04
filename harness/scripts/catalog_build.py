@@ -2528,7 +2528,7 @@ def render_goals(A: Adapter, by_ds: dict, out: Path, nav: list) -> int:
         prim = (g.get("success_criteria") or {}).get("primary") or {}
         filed = configs_filed(by_ds, g)
         rec = "<br>".join(
-            (dataset_link(r["dataset"]) + ": " if len(g.get("datasets") or []) > 1 else "")
+            (dataset_link(r["dataset"], wrap=True) + ": " if len(g.get("datasets") or []) > 1 else "")
             + arm_link(r["recommended"], brief(r["recommended_label"]), wrap=True)
             + (
                 f"<br><small>{e(' · '.join(r['vs_baseline']))} vs baseline</small>"
