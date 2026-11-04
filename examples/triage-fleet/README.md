@@ -34,7 +34,7 @@ evh goals --goal triage_orrery
 The fleet's code is not copied here: `TRIAGE_FLEET_SRC` names the `signal-fleet` folder of its repository, at
 the commit the runs record. Each run's fingerprint carries the fleet's code hash and prompt hash; set
 `TRIAGE_FLEET_COMMIT=<sha>` (or `fleet_commit` in an arm's params) for it to carry the commit too. What the eval taught about the fleet itself is in
-[TRIAGE_FLEET_LESSONS_0.6.0.md](../../research/internal/TRIAGE_FLEET_LESSONS_0.6.0.md).
+the fleet's own repository, [signal-fleet/EVAL-LESSONS-0.6.0.md](https://github.com/chipi/agentic-ai-homelab/blob/main/signal-fleet/EVAL-LESSONS-0.6.0.md).
 
 **On the X3, a second Ollama shares the GPU.** Since 2026-11-03 the homelab assistant runs there as the systemd user
 unit `ollama-assistant` (100.92.54.65:11435, the same binary and model directory as the arms' Ollama on
