@@ -134,7 +134,7 @@ def release_html(H, rel: dict, blob: str, repo: str) -> str:
         else ""
     )
     return (
-        f'<article class="release" id="v{v}" style="margin-bottom:72px"><div class="eyebrow"><span class="num">release</span>{H.e(date)}</div><h2>v{v}</h2>'
+        f'<article class="release" id="v{v}" data-nav="v{v}" style="margin-bottom:72px"><div class="eyebrow"><span class="num">release</span>{H.e(date)}</div><h2>v{v}</h2>'
         f'<div class="prose">{"".join(parts)}</div>{tag}</article>'
     )
 

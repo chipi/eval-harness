@@ -329,7 +329,7 @@ def judging_page(H, f: dict) -> str:
   <div class="btns"><a class="btn primary" href="#value">Why judge</a><a class="btn" href="#checklist">Judging, done right</a><a class="btn" href="../docs/tutorials/3-frontier-reference-and-judging/#5-re-measure-with-an-llm-judge-optional">Try it, offline</a></div>
 </div></section>
 
-<section class="block" id="value"><div class="wrap">
+<section class="block" id="value" data-nav="Why"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>Why judge at all</div>
   <h2>The metric was the weak link.</h2>
   <div class="figside"><div class="prose">
@@ -339,7 +339,7 @@ def judging_page(H, f: dict) -> str:
   <figure class="chart">{H.both(tau_bars(H, bars), tau_bars(H, bars, compact=True))}<figcaption>Mean Kendall τ against SummEval's expert annotators, 100 articles × 16 summaries. 0 is no agreement. Coloured by kind, as elsewhere on this site.</figcaption></figure></div>
 </div></section>
 
-<section class="block" id="judged"><div class="wrap">
+<section class="block" id="judged" data-nav="Summaries"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>A judge re-measures summarisation</div>
   <h2>First on coverage. {H.ordinal(bart["r2"]).capitalize()} on the judges.</h2>
   <div class="figside"><div class="prose">
@@ -350,7 +350,7 @@ def judging_page(H, f: dict) -> str:
   <figure class="chart">{legend_html(H)}{sm_chart}<figcaption>Each line is one arm: its rank on coverage (left) and on the judges' mean score (right). Tap a dot for both scores.</figcaption></figure></div>
 </div></section>
 
-<section class="block" id="person"><div class="wrap">
+<section class="block" id="person" data-nav="A person"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Then a person read them</div>
   <h2>{hc["human_prefers_bart_l"]} to {hc["human_prefers_deepseek_m"]} the other way.</h2>
   <ol class="findings">
@@ -362,7 +362,7 @@ def judging_page(H, f: dict) -> str:
 
 {frontier_html}
 {zhang_section(H, f)}
-<section class="block" id="labels"><div class="wrap">
+<section class="block" id="labels" data-nav="Labels"><div class="wrap">
   <div class="eyebrow"><span class="num">06</span>A person re-measures the labels</div>
   <h2>How much of the fine-tunes' lead was {ag["changed"]} labels?</h2>
   <div class="figside"><div class="prose">
@@ -373,7 +373,7 @@ def judging_page(H, f: dict) -> str:
   <figure class="chart">{legend_html(H)}{ag_chart}<figcaption>AG News, {ag["n_arms"]} arms: rank on the dataset's gold (left) and on the adjudicated gold (right).</figcaption></figure></div>
 </div></section>
 
-<section class="block" id="decided"><div class="wrap">
+<section class="block" id="decided" data-nav="Decided"><div class="wrap">
   <div class="eyebrow"><span class="num">07</span>What we did with it</div>
   <h2>Both stay beside the primary. Neither replaces it.</h2>
   <div class="cols"><div class="prose">
@@ -385,13 +385,13 @@ def judging_page(H, f: dict) -> str:
   <div class="note"><b>What would settle it.</b> Not a larger, dearer judge: that was tried (§04). Judges checked on human ratings of LLM-written summaries: that was done too (§05); they track people better than one rater does on coherence and relevance, trail on faithfulness, and deviate from them system by system in both directions. What is left is people on this eval's own outputs: several readers comparing full articles, not one reader on truncated ones. That is a re-measurement of the same frozen outputs.</div></div>
 </div></section>
 
-<section class="block" id="checklist"><div class="wrap">
+<section class="block" id="checklist" data-nav="Checklist"><div class="wrap">
   <div class="eyebrow"><span class="num">08</span>Judging, done right</div>
   <h2>Five rules the harness enforces, or asks you to.</h2>
   <ol class="findings">{check_html}</ol>
 </div></section>
 
-<section class="block" id="yours"><div class="wrap">
+<section class="block" id="yours" data-nav="Yours"><div class="wrap">
   <div class="eyebrow"><span class="num">09</span>On your outputs</div>
   <h2>Re-measure what you already have.</h2>
   <div class="cols"><div class="prose">
@@ -484,7 +484,7 @@ def frontier_section(H, f: dict, v1: dict) -> str:
         min(se_tau[j1], se_tau[j2]) < max(se_tau[j] for j in v1j) < max(se_tau[j1], se_tau[j2]),
         "frontier judges: a first-pair judge scores between them on SummEval",
     )
-    return f"""<section class="block" id="frontier"><div class="wrap">
+    return f"""<section class="block" id="frontier" data-nav="Frontier"><div class="wrap">
   <div class="eyebrow"><span class="num">04</span>Frontier judges</div>
   <h2>Same validation score, {H.times(ratio)} the price, the same verdict.</h2>
   <div class="figside"><div class="prose">
@@ -538,7 +538,7 @@ def zhang_section(H, f: dict) -> str:
     ]
     cost1 = sum(r["billed_usd"] for r in v1["judges"].values())
     cost2 = sum(r["billed_usd"] for r in v2["judges"].values())
-    return f"""<section class="block" id="zhang"><div class="wrap">
+    return f"""<section class="block" id="zhang" data-nav="Ratings"><div class="wrap">
   <div class="eyebrow"><span class="num">05</span>People, on LLM summaries</div>
   <h2>Checked against people, on LLM-era summaries.</h2>
   <div class="figside"><div class="prose">

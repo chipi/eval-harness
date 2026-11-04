@@ -279,6 +279,8 @@ section[id] { scroll-margin-top: 72px; }
 .onpage a { color: var(--muted); text-decoration: none; white-space: nowrap; padding: 9px 0; border-bottom: 2px solid transparent; }
 .onpage a:hover { color: var(--ink); }
 .onpage a[aria-current="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+/* a phone: the home page's six one-word links fit a 390 px screen without a sideways scroll */
+@media (max-width: 480px) { .bar .onpage nav.wrap { gap: 16px; } }
 body:has(.onpage) section[id], body:has(.onpage) .chapter { scroll-margin-top: 106px; }
 .chapter:first-child { border-top: 0; padding-top: 8px; }
 .chapter h2 { font-size: clamp(34px, 4.6vw, 60px); line-height: 1; font-weight: 800; margin: 18px 0 26px; max-width: 18ch; }

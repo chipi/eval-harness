@@ -605,7 +605,7 @@ def out(url: str, place: str, label: str, cls: str = "") -> str:
 def author(place: str) -> str:
     """Who built this, and where to find them: the closing section of the main pages."""
     return f"""
-<section class="block author" id="author"><div class="wrap">
+<section class="block author" id="author" data-nav=""><div class="wrap">
   <div class="eyebrow">Who built this</div>
   <h2>Built by Marko Dragoljevic.</h2>
   <p class="lede">I have led engineering teams for twenty years — at ServiceNow, EclecticIQ and Backbase — and through <b>Human Copilot</b> I now advise technology leaders. Which model, build or buy, own or rent: the questions this harness answers are the ones I help teams answer, on their own data.</p>
@@ -618,10 +618,12 @@ def author(place: str) -> str:
 # The same file in both themes -- lime tile, black marks -- exactly as designed.
 
 
-#: A section of a page, its id and what it is called: its eyebrow when it has one, else its first heading.
+#: A section of a page, its id and what it is called in the on-this-page nav: its short `data-nav` label (empty:
+#: left out of the nav), else its eyebrow, else its first heading.
 _SECTION = re.compile(
-    r'<(section|article)[^>]*\bid="([^"]+)"[^>]*>(.*?)</\1>', re.S
+    r'<(section|article)([^>]*\bid="([^"]+)"[^>]*)>(.*?)</\1>', re.S
 )  # a page's sections, the method's chapters
+_NAV = re.compile(r'\bdata-nav="([^"]*)"')
 _EYEBROW = re.compile(r'<div class="eyebrow">(?:<span class="num">[^<]*</span>)?(.*?)</div>', re.S)
 _HEADING = re.compile(r"<h[23][^>]*>(.*?)</h[23]>", re.S)
 
@@ -630,9 +632,10 @@ def onpage_nav(body: str) -> str:
     """The page's own sections as one thin line under the header, for a page long enough to need it (three
     sections or more): a link to each, the one in view marked as the reader scrolls (JS)."""
     items = []
-    for _tag, sid, inner in _SECTION.findall(body):
-        m = _EYEBROW.search(inner) or _HEADING.search(inner)
-        label = re.sub(r"<[^>]+>", "", m.group(1)).strip() if m else ""
+    for _tag, attrs, sid, inner in _SECTION.findall(body):
+        short = _NAV.search(attrs)
+        m = None if short else (_EYEBROW.search(inner) or _HEADING.search(inner))
+        label = short.group(1) if short else re.sub(r"<[^>]+>", "", m.group(1)).strip() if m else ""
         if label:
             items.append(f'<a href="#{e(sid)}">{e(label[:40])}</a>')
     if len(items) < 3:
@@ -1112,14 +1115,14 @@ def home(f: dict) -> str:
   {hero_sketch(exps)}
 </div></section>
 
-<section class="block" id="why"><div class="wrap">
+<section class="block" id="why" data-nav="Why"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>Why the harness exists</div>
   <h2>Four questions anyone building with AI ends up asking.</h2>
   <p class="lede">There are dozens of models, a leaderboard for each, and none of them measured on your problem. <a href="docs/GUIDE/">The harness</a> exists to answer these on your own data; below, what it answered when pointed at 24 LLMs. How it does that is in <a href="method.html">the method</a>.</p>
   <div class="why">{why_html}</div>
 </div></section>
 
-<section class="block" id="what"><div class="wrap">
+<section class="block" id="what" data-nav="What"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>What the harness does</div>
   <h2>Six ideas, one adapter file.</h2>
   <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. <a href="docs/GUIDE/">The harness</a> imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
@@ -1143,7 +1146,7 @@ def home(f: dict) -> str:
   </div>
 </div></section>
 
-<section class="block" id="lasting"><div class="wrap">
+<section class="block" id="lasting" data-nav="Rounds"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Rounds, before deploy and after</div>
   <h2>Evaluation that doesn\u2019t stop at deploy.</h2>
   <p class="lede">A goal is answered in rounds. Before deploy they narrow a field: run twenty models, keep ten, fix a scoring rule, try a new prompt, choose. After deploy the same goal goes on, on what the deployed system actually decides, one version or A and B side by side: captured, scored against labels, and the rows worth keeping picked for the next version of the datasets you govern. The harness does no online A/B test and no drift detection: it measures what was captured, offline. Every part is optional, layered on the same method.</p>
@@ -1151,7 +1154,7 @@ def home(f: dict) -> str:
   <div class="habits two" style="margin-top:48px">{lasting_html}</div>
 </div></section>
 
-<section class="block" id="proof"><div class="wrap">
+<section class="block" id="proof" data-nav="Examples"><div class="wrap">
   <div class="eyebrow"><span class="num">04</span>Worked examples · {hosted_n} LLMs</div>
   <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
   <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)} Each is also a goal in <a href="{CATALOG}">the catalog</a>, with every run, dataset and reference set behind it.</p>
@@ -1166,7 +1169,7 @@ def home(f: dict) -> str:
   <div class="btns"><a class="btn primary" href="evals.html">All the findings</a><a class="btn" href="{CATALOG}">Browse them in the catalog</a><a class="btn" href="evals.html#reproduce">Reproduce them</a></div>
 </div></section>
 
-<section class="block" id="mcp"><div class="wrap">
+<section class="block" id="mcp" data-nav="Agentic"><div class="wrap">
   <div class="eyebrow">For agents</div>
   <h2>Ask it from your agent.</h2>
   <div class="cols">
@@ -1279,7 +1282,7 @@ def landing(f: dict) -> str:
   </div>
 </div></section>
 
-<section class="block" id="findings"><div class="wrap">
+<section class="block" id="findings" data-nav="Price"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>Price</div>
   <h2>The dearest model was never the best.</h2>
   <p class="lede">Each row is one benchmark; each dot is one system, placed by its score. The ringed dot is the most expensive hosted model. <strong>In {in_all} it finished behind something cheaper</strong> — and in {word(behind_free)}, behind something free. On SciFact only the twelve cheapest hosted models ran, so there it is the dearest of those; no Anthropic or OpenAI arm was run.</p>
@@ -1287,7 +1290,7 @@ def landing(f: dict) -> str:
   <figcaption>Baselines (lead-3, keyword rules, empty output) are left off the axis to keep the field readable; they are in each eval's page. A dot left of the ⫽ break sits far below the rest, off the scale. Hover or tap any dot for its score, rank and bill.</figcaption></div>
 </div></section>
 
-<section class="block" id="ties"><div class="wrap">
+<section class="block" id="ties" data-nav="Contenders"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>Contenders</div>
   <h2>The top is a crowd, not a podium.</h2>
   <div>
@@ -1303,7 +1306,7 @@ def landing(f: dict) -> str:
   </div>
 </div></section>
 
-<section class="block" id="fine-tuning"><div class="wrap">
+<section class="block" id="fine-tuning" data-nav="Fine-tuning"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Fine-tuning</div>
   <h2>Train a small model on your data. <em style="font-style:normal;color:var(--accent)">Yours.</em></h2>
   <ol class="findings reveal">
@@ -1314,7 +1317,7 @@ def landing(f: dict) -> str:
   </ol>
 </div></section>
 
-<section class="block" id="trust"><div class="wrap">
+<section class="block" id="trust" data-nav="Trust"><div class="wrap">
   <div class="eyebrow"><span class="num">04</span>Trust</div>
   <h2>Can you trust any of this?</h2>
   <p class="lede">Five evals score a sample of 200–280 items, not a full test set, and SummEval scores the whole of its 100. So each one also runs a <strong>calibration</strong>: one well-known model or metric, through this repo's own code, on the benchmark's full test set (or a large seeded sample), compared with the number its authors published.</p>
@@ -1332,7 +1335,7 @@ def landing(f: dict) -> str:
   <p class="note"><b>Or test it yourself, in your browser.</b> Every run behind these charts is in <a href="{CATALOG}">the catalog</a>, and its inspector re-runs any comparison on this site, item by item, with the same paired test. Each eval's page opens it on every arm against its leader. <b>Or ask your agent:</b> the same views answer over MCP at <code>https://evals.humancopilot.eu/mcp</code>, read-only, no sign-in (<a href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">how to connect</a>).</p>
 </div></section>
 
-<section class="block" id="evals"><div class="wrap">
+<section class="block" id="evals" data-nav="Evals"><div class="wrap">
   <div class="eyebrow"><span class="num">05</span>The evals</div>
   <h2>{n_exp.capitalize()} benchmarks, one harness.</h2>
   <p class="lede">The same {hosted_n} hosted models — eight vendors, three price tiers each — on every task (the cheapest twelve on SciFact), beside the strongest free models each task allows.</p>
@@ -1340,7 +1343,7 @@ def landing(f: dict) -> str:
   <p class="dek-note">Each is a goal in the catalog, with every run behind it: {goal_links}.</p>
 </div></section>
 
-<section class="block" id="reproduce"><div class="wrap">
+<section class="block" id="reproduce" data-nav="Reproduce"><div class="wrap">
   <div class="eyebrow"><span class="num">06</span>Reproduce it</div>
   <h2>Built to be checked — by you.</h2>
   <p class="lede">The harness, every run, every model output and every analysis script are in the repository. Before any of it, <a href="{CATALOG}">the catalog</a> shows every run and its inspector re-tests any comparison, with nothing installed. Then five levels of checking, each optional, each a few commands.</p>
@@ -1370,7 +1373,7 @@ def landing(f: dict) -> str:
     </div>
   </div>
 </div></section>
-<section class="block" id="hardware"><div class="wrap">
+<section class="block" id="hardware" data-nav="Hardware"><div class="wrap">
   <div class="eyebrow"><span class="num">07</span>The hardware</div>
   <h2>Where the runs were made.</h2>
   <p class="lede">Every run on this site records the machine it ran on; the counts below are read from those records, and each machine's description from the machine itself. Most of it is a 2018 Mac mini. No open-weight LLM was run on any of these machines for these results: the "own it" figures elsewhere are provider-served scores, set against what would fit a given memory budget.</p>
@@ -1779,7 +1782,7 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
     if not head:
         return ""
     return (
-        f'<section class="block" id="remeasured"><div class="wrap"><div class="eyebrow">'
+        f'<section class="block" id="remeasured" data-nav="Re-measured"><div class="wrap"><div class="eyebrow">'
         f'<span class="num">{num:02d}</span>Re-measured</div><h2>{e(head)}</h2>'
         f'<div class="prose"><p>{e(text)}</p></div><div class="btns">'
         f'<a class="btn" href="judging.html">What re-measuring changed, and what it teaches →</a>'
@@ -1888,7 +1891,7 @@ def eval_page(x: dict, f: dict) -> str:
     n = 4
     extra = ""
     if x["slug"] == "summarization":
-        extra = f"""<section class="block" id="dailymail"><div class="wrap"><div class="eyebrow"><span class="num">{n:02d}</span>Outside CNN</div>
+        extra = f"""<section class="block" id="dailymail" data-nav="Daily Mail"><div class="wrap"><div class="eyebrow"><span class="num">{n:02d}</span>Outside CNN</div>
 <h2>Does it hold on DailyMail?</h2><div class="cols"><div class="prose"><p>The committed sample is all CNN. On 200 DailyMail articles drawn at random, the five local summarisers keep every verdict among themselves. The hosted models were not re-run there.</p></div>
 <figure class="chart">{both(slope(f["dailymail"]), slope(f["dailymail"], compact=True))}</figure></div></div></section>"""
         n += 1
@@ -1905,23 +1908,23 @@ def eval_page(x: dict, f: dict) -> str:
   <div class="facts">{facts_html}</div>
   <div class="btns"><a class="btn primary" href="{BLOB}/research/{x["report"]}">Read the full report</a><a class="btn" href="{CATALOG}{x["goal"]["goal_page"]}">In the catalog</a><a class="btn" href="{BLOB}/docs/PROTOCOL.md">Protocol</a><a class="btn" href="../evals.html#evals">All evals</a></div>
 </div></section>
-<section class="block" id="field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
+<section class="block" id="field" data-nav="Field"><div class="wrap"><div class="eyebrow"><span class="num">01</span>The field</div>
   <h2>Every system, one axis.</h2>
   <div class="chart">{legend(reading="higher score: further right →", baseline=False)}{both(strip(x, title=False, height=80), strip(x, title=False, compact=True))}<figcaption>Each dot is one system, by {e(x["metric_label"])}. The ringed dot is the most expensive hosted model{" (of the twelve cheapest hosted models, the only ones run here)" if x["slug"] == "scifact" else ""}; the shaded band is the group the leader is not significantly different from.{OFF_NOTE if off_scale([a for a in x["arms"] if a["kind"] != "baseline"])[1] else ""} Every system has its own page in <a href="{CATALOG}{catalog_dataset(x)}">the catalog</a>: its run, cost, speed and fingerprint.</figcaption></div>
 </div></section>
-<section class="block" id="cost"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
+<section class="block" id="cost" data-nav="Cost"><div class="wrap"><div class="eyebrow"><span class="num">02</span>Cost</div>
   <h2>What the money bought.</h2>
   <div class="chart">{legend(band=False, reading="better: up · cheaper: left", baseline=False)}{both(scatter(x), scatter(x, compact=True))}<figcaption>Billed cost per 1,000 items, read from the provider's response, against {e(x["metric_label"])}. Free models sit in the left lane.{OFF_NOTE_Y if off_scale([a for a in x["arms"] if a["kind"] != "baseline"])[1] else ""}</figcaption></div>
 </div></section>
-<section class="block" id="findings"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
+<section class="block" id="findings" data-nav="Findings"><div class="wrap"><div class="eyebrow"><span class="num">03</span>Findings</div>
   <h2>What this eval found.</h2>
   <ol class="findings">{finds}</ol>
 </div></section>
 {extra}
-<section class="block" id="habit"><div class="wrap"><div class="eyebrow"><span class="num">{n:02d}</span>The method, here</div>
+<section class="block" id="habit" data-nav="Method"><div class="wrap"><div class="eyebrow"><span class="num">{n:02d}</span>The method, here</div>
   <div class="lesson"><h2>{e(lesson[1])}</h2><p>{lesson[2]}</p><a class="btn" href="../method.html#{lesson[0]}">This habit, in the method →</a></div>
 </div></section>
-<section class="block" id="reproduce"><div class="wrap"><div class="eyebrow"><span class="num">{n + 1:02d}</span>Reproduce it</div>
+<section class="block" id="reproduce" data-nav="Reproduce"><div class="wrap"><div class="eyebrow"><span class="num">{n + 1:02d}</span>Reproduce it</div>
   <h2>Check it yourself.</h2>
   <div class="cols">
     <div class="prose">

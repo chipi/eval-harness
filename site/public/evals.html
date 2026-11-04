@@ -29,7 +29,7 @@
   <nav class="sections" aria-label="Harness, catalog and docs"><a href="./" aria-current="page">Harness</a><a href="https://evals.humancopilot.eu/catalog/">Catalog</a><a href="https://evals.humancopilot.eu/docs/">Docs</a><a href="./#mcp">MCP</a></nav>
   <details class="menu"><summary class="hbtn" aria-label="Menu"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary><nav class="menu-links"><a href="./">Overview</a><a href="use.html">Use it</a><a href="method.html">Method</a><a href="evals.html" aria-current="page">Evals</a><a href="evals/judging.html">Re-measured</a><a class="menu-mcp" href="./#mcp">Ask it from your agent (MCP)</a><a href="https://github.com/chipi/eval-harness">GitHub ↗</a></nav></details>
   <nav class="nav"><a href="./">Overview</a><a href="use.html">Use it</a><a href="method.html">Method</a><a href="evals.html" aria-current="page">Evals</a><a href="evals/judging.html">Re-measured</a><a class="hbtn" href="https://github.com/chipi/eval-harness" aria-label="eval-harness on GitHub" title="GitHub"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a><a class="hbtn search-btn" href="https://evals.humancopilot.eu/docs/?q=" aria-label="Search the docs"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></a><button id="theme" class="theme hbtn" aria-label="Toggle light and dark"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button></nav>
-</div><div class="onpage"><nav class="wrap" aria-label="On this page"><a href="#findings">Price</a><a href="#ties">Contenders</a><a href="#fine-tuning">Fine-tuning</a><a href="#trust">Trust</a><a href="#evals">The evals</a><a href="#reproduce">Reproduce it</a><a href="#hardware">The hardware</a><a href="#author">Who built this</a></nav></div></header>
+</div><div class="onpage"><nav class="wrap" aria-label="On this page"><a href="#findings">Price</a><a href="#ties">Contenders</a><a href="#fine-tuning">Fine-tuning</a><a href="#trust">Trust</a><a href="#evals">Evals</a><a href="#reproduce">Reproduce</a><a href="#hardware">Hardware</a></nav></div></header>
 <main>
 
 <section class="hero"><div class="wrap">
@@ -44,7 +44,7 @@
   </div>
 </div></section>
 
-<section class="block" id="findings"><div class="wrap">
+<section class="block" id="findings" data-nav="Price"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>Price</div>
   <h2>The dearest model was never the best.</h2>
   <p class="lede">Each row is one benchmark; each dot is one system, placed by its score. The ringed dot is the most expensive hosted model. <strong>In all six it finished behind something cheaper</strong> — and in three, behind something free. On SciFact only the twelve cheapest hosted models ran, so there it is the dearest of those; no Anthropic or OpenAI arm was run.</p>
@@ -1280,7 +1280,7 @@ billed $2.01 for 100 items"/><circle cx="352.6" cy="74" r="11" class="ring"/><te
   <figcaption>Baselines (lead-3, keyword rules, empty output) are left off the axis to keep the field readable; they are in each eval's page. A dot left of the ⫽ break sits far below the rest, off the scale. Hover or tap any dot for its score, rank and bill.</figcaption></div>
 </div></section>
 
-<section class="block" id="ties"><div class="wrap">
+<section class="block" id="ties" data-nav="Contenders"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>Contenders</div>
   <h2>The top is a crowd, not a podium.</h2>
   <div>
@@ -1296,7 +1296,7 @@ billed $2.01 for 100 items"/><circle cx="352.6" cy="74" r="11" class="ring"/><te
   </div>
 </div></section>
 
-<section class="block" id="fine-tuning"><div class="wrap">
+<section class="block" id="fine-tuning" data-nav="Fine-tuning"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Fine-tuning</div>
   <h2>Train a small model on your data. <em class="s-649e9edf">Yours.</em></h2>
   <ol class="findings reveal">
@@ -1307,7 +1307,7 @@ billed $2.01 for 100 items"/><circle cx="352.6" cy="74" r="11" class="ring"/><te
   </ol>
 </div></section>
 
-<section class="block" id="trust"><div class="wrap">
+<section class="block" id="trust" data-nav="Trust"><div class="wrap">
   <div class="eyebrow"><span class="num">04</span>Trust</div>
   <h2>Can you trust any of this?</h2>
   <p class="lede">Five evals score a sample of 200–280 items, not a full test set, and SummEval scores the whole of its 100. So each one also runs a <strong>calibration</strong>: one well-known model or metric, through this repo's own code, on the benchmark's full test set (or a large seeded sample), compared with the number its authors published.</p>
@@ -1497,7 +1497,7 @@ coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><figc
   <p class="note"><b>Or test it yourself, in your browser.</b> Every run behind these charts is in <a href="https://evals.humancopilot.eu/catalog/">the catalog</a>, and its inspector re-runs any comparison on this site, item by item, with the same paired test. Each eval's page opens it on every arm against its leader. <b>Or ask your agent:</b> the same views answer over MCP at <code>https://evals.humancopilot.eu/mcp</code>, read-only, no sign-in (<a href="https://evals.humancopilot.eu/docs/harness/INTEGRATION/#for-an-agent-evh-mcp">how to connect</a>).</p>
 </div></section>
 
-<section class="block" id="evals"><div class="wrap">
+<section class="block" id="evals" data-nav="Evals"><div class="wrap">
   <div class="eyebrow"><span class="num">05</span>The evals</div>
   <h2>Six benchmarks, one harness.</h2>
   <p class="lede">The same 24 hosted models — eight vendors, three price tiers each — on every task (the cheapest twelve on SciFact), beside the strongest free models each task allows.</p>
@@ -1505,7 +1505,7 @@ coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><figc
   <p class="dek-note">Each is a goal in the catalog, with every run behind it: <a href="https://evals.humancopilot.eu/catalog/g/news_summary_cnn.html">CNN/DailyMail</a> · <a href="https://evals.humancopilot.eu/catalog/g/news_topic_ag.html">AG News</a> · <a href="https://evals.humancopilot.eu/catalog/g/entity_topic_dbpedia.html">DBpedia-14</a> · <a href="https://evals.humancopilot.eu/catalog/g/entities_few_nerd.html">Few-NERD</a> · <a href="https://evals.humancopilot.eu/catalog/g/scientific_retrieval_scifact.html">SciFact</a> · <a href="https://evals.humancopilot.eu/catalog/g/summary_judge_summeval.html">SummEval</a>.</p>
 </div></section>
 
-<section class="block" id="reproduce"><div class="wrap">
+<section class="block" id="reproduce" data-nav="Reproduce"><div class="wrap">
   <div class="eyebrow"><span class="num">06</span>Reproduce it</div>
   <h2>Built to be checked — by you.</h2>
   <p class="lede">The harness, every run, every model output and every analysis script are in the repository. Before any of it, <a href="https://evals.humancopilot.eu/catalog/">the catalog</a> shows every run and its inspector re-tests any comparison, with nothing installed. Then five levels of checking, each optional, each a few commands.</p>
@@ -1535,7 +1535,7 @@ coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><figc
     </div>
   </div>
 </div></section>
-<section class="block" id="hardware"><div class="wrap">
+<section class="block" id="hardware" data-nav="Hardware"><div class="wrap">
   <div class="eyebrow"><span class="num">07</span>The hardware</div>
   <h2>Where the runs were made.</h2>
   <p class="lede">Every run on this site records the machine it ran on; the counts below are read from those records, and each machine's description from the machine itself. Most of it is a 2018 Mac mini. No open-weight LLM was run on any of these machines for these results: the "own it" figures elsewhere are provider-served scores, set against what would fit a given memory budget.</p>
@@ -1545,7 +1545,7 @@ coverage 0.2071 on CNN → 0.1522 on DailyMail</title></circle></svg></div><figc
     <figcaption>Hosted runs are API calls made from that machine; the model ran at the provider. Local runs ran on the machine's own CPU. The DGX Spark and the MacBook are the workhorses for the runs of the operator's other projects; none of these runs was measured on them. Captured 2026-10-18: <a href="https://github.com/chipi/eval-harness/blob/main/docs/evidence/hardware.json">docs/evidence/hardware.json</a>.</figcaption></div>
 </div></section>
 
-<section class="block author" id="author"><div class="wrap">
+<section class="block author" id="author" data-nav=""><div class="wrap">
   <div class="eyebrow">Who built this</div>
   <h2>Built by Marko Dragoljevic.</h2>
   <p class="lede">I have led engineering teams for twenty years — at ServiceNow, EclecticIQ and Backbase — and through <b>Human Copilot</b> I now advise technology leaders. Which model, build or buy, own or rent: the questions this harness answers are the ones I help teams answer, on their own data.</p>

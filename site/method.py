@@ -626,14 +626,14 @@ def method_page(H, f: dict) -> str:
   <div class="chapters">{"".join(body_ch)}</div>
 </div></section>
 
-<section class="block" id="lasting"><div class="wrap">
+<section class="block" id="lasting" data-nav="And on"><div class="wrap">
   <div class="eyebrow"><span class="num">07</span>And on</div>
   <h2>Four more, for an evaluation that goes on.</h2>
   <p class="lede">The six habits make one comparison trustworthy. These four keep an evaluation trustworthy as it goes on, round after round, before deploy and after it. Each is optional, and each is a step in the harness.</p>
   <div class="habits two">{lasting}</div>
 </div></section>
 
-<section class="block" id="influences"><div class="wrap">
+<section class="block" id="influences" data-nav="Influences"><div class="wrap">
   <div class="eyebrow"><span class="num">08</span>Standing on</div>
   <h2>Built on Chip Huyen's framing.</h2>
   <div class="cols">
@@ -933,7 +933,7 @@ def use_page(H, f: dict) -> str:
   <div class="btns"><a class="btn primary" href="docs/GUIDE/">Start the guide</a><a class="btn" href="#lifecycle">How it fits together</a><a class="btn" href="method.html">Why it works this way</a></div>
 </div></section>
 
-<section class="block" id="lifecycle"><div class="wrap">
+<section class="block" id="lifecycle" data-nav="Lifecycle"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>The lifecycle</div>
   <h2>Eight things, one direction, and two optional passes.</h2>
   <p class="lede">Every evaluation here — ours and yours — moves through the same eight artifacts; re-measuring the stored outputs later, and the next round, are optional. Pick one to see what it is, where it lives and the command that makes it.</p>
@@ -943,21 +943,21 @@ def use_page(H, f: dict) -> str:
   </div>
 </div></section>
 
-<section class="block" id="patterns"><div class="wrap">
+<section class="block" id="patterns" data-nav="Patterns"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>Patterns</div>
   <h2>Your question is probably one of these.</h2>
   <p class="lede">Each maps to an eval in this repository you can copy — its adapter, its configs, its scorer — and change the data. The idea underneath all of them — build a private leaderboard for your own application instead of trusting a public one — is Chip Huyen's, from <i>AI Engineering</i> (<a href="docs/INFLUENCES/">influences</a>).</p>
   <div class="patterns">{cards}</div>
 </div></section>
 
-<section class="block" id="steps"><div class="wrap">
+<section class="block" id="steps" data-nav="Steps"><div class="wrap">
   <div class="eyebrow"><span class="num">03</span>Step by step</div>
   <h2>Seven steps and five optional ones, on a real example.</h2>
   <p class="lede">The tutorial kit ships six support tickets and summaries a person wrote. Every output below is what the command printed.</p>
   <ol class="findings steps">{steps}</ol>
 </div></section>
 
-<section class="block" id="byo"><div class="wrap">
+<section class="block" id="byo" data-nav="Your own"><div class="wrap">
   <div class="eyebrow"><span class="num">04</span>Bring your own</div>
   <h2>What you write. What you get.</h2>
   <div class="byo">
@@ -1002,7 +1002,7 @@ def use_page(H, f: dict) -> str:
   </div>
 </div></section>
 
-<section class="block" id="doors"><div class="wrap">
+<section class="block" id="doors" data-nav="Doors"><div class="wrap">
   <div class="eyebrow"><span class="num">05</span>Three doors</div>
   <h2>Look at ours, rerun ours, or build yours.</h2>
   <div class="cards doors">
@@ -1038,7 +1038,7 @@ def landing_teaser(H, f: dict, num: str = "03") -> str:
         for i, c in enumerate(chs, 1)
     )
     return f"""
-<section class="block" id="method"><div class="wrap">
+<section class="block" id="method" data-nav="Method"><div class="wrap">
   <div class="eyebrow"><span class="num">{num}</span>The method</div>
   <h2>The harness enforces a method.</h2>
   <p class="lede">Nothing here needed special access or a big budget. It took six habits — each learned by getting something wrong first — and a harness that enforces them. They work on any problem you can put into a dataset. The framing builds on Chip Huyen's <i>AI Engineering</i> and <i>Designing Machine Learning Systems</i>.</p>
