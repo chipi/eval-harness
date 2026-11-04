@@ -332,22 +332,22 @@ def judging_page(H, f: dict) -> str:
 <section class="block" id="value"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>Why judge at all</div>
   <h2>The metric was the weak link.</h2>
-  <div class="prose">
+  <div class="figside"><div class="prose">
     <p>The summarisation eval ranks by <strong>coverage</strong>, an overlap score against reference summaries. SummEval measures how well a scorer agrees with expert annotators, as Kendall τ: 1 when the scorer orders an article's summaries as the experts do, 0 when unrelated. Coverage agrees with them at τ {se["coverage"]:.2f}. The two LLM judges used below agree at τ {se["gemma_l"]:.2f} and {se["qwen_s"]:.2f}, against {se["coverage"]:.2f} for the metric the leaderboard was sorted by.</p>
     <p>{qv("The best judges agree with the experts about 93% as well as an expert does", JUDGE)}, {q("the best of 24 chosen on the same articles, and 92% held out.", JUDGE)} That is the case for judging: when the cheap metric barely tracks what people think, a validated judge is the better instrument on that data, and it can re-score outputs you already have. Two caveats from the same report: the judges rank all 16 summaries of an article in one call, which this measure rewards, and a {qv("no-model lookup of which system wrote each summary already reaches 63% of an expert", JUDGE)}, so part of a judge's score may be recognising which system wrote a summary; how much is not measured.</p>
   </div>
-  <figure class="chart" style="margin-top:32px;max-width:900px">{H.both(tau_bars(H, bars), tau_bars(H, bars, compact=True))}<figcaption>Mean Kendall τ against SummEval's expert annotators, 100 articles × 16 summaries. 0 is no agreement. Coloured by kind, as elsewhere on this site.</figcaption></figure>
+  <figure class="chart">{H.both(tau_bars(H, bars), tau_bars(H, bars, compact=True))}<figcaption>Mean Kendall τ against SummEval's expert annotators, 100 articles × 16 summaries. 0 is no agreement. Coloured by kind, as elsewhere on this site.</figcaption></figure></div>
 </div></section>
 
 <section class="block" id="judged"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>A judge re-measures summarisation</div>
   <h2>First on coverage. {H.ordinal(bart["r2"]).capitalize()} on the judges.</h2>
-  <div class="prose">
+  <div class="figside"><div class="prose">
     <p>The two judges read every article with all {sm["n_arms"]} arms' summaries, names hidden and order shuffled: {fig["calls"]} calls, {H.money(fig["billed_usd"])}, {sm["items_scored"]} of {fig["items_total"]} articles scored. On their score <strong>every hosted LLM ranks above every BART model</strong>. <code>bart_l</code>, first on coverage, scores {bart["v2"]:.2f} of 5 and ranks {H.ordinal(bart["r2"])} of {sm["n_arms"]}, {qv("significantly below all 24 hosted LLMs", SUMM)}. The hosted LLMs score {lo:.2f}–{hi:.2f}, bunched near the top of a 5-point scale, so the order among them, <code>{ldr["arm"]}</code> first ({H.ordinal(ldr["r1"])} on coverage), is not a finding.</p>
     <p>The judges agree closely with each other: Spearman {fig["agreement_arm_mean_spearman"]:.2f} over arm means. Re-ordering the summaries moved per-article scores by {pos_lo:.2f}–{pos_hi:.2f}, a repeat call by {noi_lo:.2f}–{noi_hi:.2f}. {sm["unparsed"]} of {sm["calls"]} replies did not parse; an article counts only when every block of every judge parsed, and {sm["items_scored"]} of {sm["items_total"]} did.</p>
     <p>{H.q("Asked instead to pick the best of all 29 summaries in one call (judge-summ-pick-v1, 198 of 200 articles, $0.17), the two judges named the same winner on 0.36 of the articles; on 20 articles shown again in a new order, each judge kept its pick on 0.55 and 0.45 of them, and on a repeat call 0.75 and 0.95. A pick among 29 depends on their order about half the time: it ranks what the judges prefer, beside the grades, not instead of them.", SE)}</p>
   </div>
-  <figure class="chart" style="margin-top:32px">{legend_html(H)}{sm_chart}<figcaption>Each line is one arm: its rank on coverage (left) and on the judges' mean score (right). Tap a dot for both scores.</figcaption></figure>
+  <figure class="chart">{legend_html(H)}{sm_chart}<figcaption>Each line is one arm: its rank on coverage (left) and on the judges' mean score (right). Tap a dot for both scores.</figcaption></figure></div>
 </div></section>
 
 <section class="block" id="person"><div class="wrap">
@@ -365,12 +365,12 @@ def judging_page(H, f: dict) -> str:
 <section class="block" id="labels"><div class="wrap">
   <div class="eyebrow"><span class="num">06</span>A person re-measures the labels</div>
   <h2>How much of the fine-tunes' lead was {ag["changed"]} labels?</h2>
-  <div class="prose">
+  <div class="figside"><div class="prose">
     <p>On AG News three small fine-tunes led every hosted LLM, concentrated in {ag["changed"]} items that at least 80% of the hosted field got wrong. One reader, the author, adjudicated by topic those items and every item a fine-tune missed, {ag["n_items"]} in all, shown each item's text, its gold label and the hosted majority's answer. The reader judged the gold wrong on all {ag["changed"]}, and right on every item the fine-tunes missed. The reader's reason: the labels follow the source feed's section, so company news from a technology desk is Sci/Tech and non-US news, sport included, is World.</p>
     <p>Re-scored against those labels for $0, every hosted LLM has a higher accuracy than every fine-tune. The fine-tunes fall from {", ".join(str(a["r1"]) for a in fts)} to {"–".join(str(x) for x in (min(a["r2"] for a in fts), max(a["r2"] for a in fts)))} of {ag["n_arms"]}, and <code>{g["ag_leader"]["arm"]}</code> rises from {H.ordinal(g["ag_leader"]["r1"])} to first at {g["ag_leader"]["v2"]:.4f}; it {qv("differs significantly from 9, including all three fine-tunes", CLASS)} (which tie at {fts[0]["v2"]:.4f}), and {qv("is not significantly different from 20 hosted arms", CLASS)}: most of the new order is not significant. On DBpedia {db["changed"]} labels were judged wrong; {qv("the top stays a crowd: gemma_m and qwen_m lead at 0.9964, gemma_m differs significantly from only 5 of 27", CLASS)}, and <code>bert_base_fy</code> moves from {H.ordinal(db_fy["r1"])} to {H.ordinal(db_fy["r2"])} at an unchanged {db_fy["v1"]:.4f}.</p>
     <p>The instrument here was a person, with two limits. The reader saw the hosted answer, and every item the hosted field missed was resolved the hosted field's way, which is also what anchoring on that answer would produce. And only items some arm disagreed on were read, so an error the gold and every arm share would not be seen. What it shows for certain is how much the ranking depends on those labels: a fine-tune trained on a dataset learns its conventions. If your labels follow a house convention, that is what you want. If they mean what the words say, it is not.</p>
   </div>
-  <figure class="chart" style="margin-top:32px">{legend_html(H)}{ag_chart}<figcaption>AG News, {ag["n_arms"]} arms: rank on the dataset's gold (left) and on the adjudicated gold (right).</figcaption></figure>
+  <figure class="chart">{legend_html(H)}{ag_chart}<figcaption>AG News, {ag["n_arms"]} arms: rank on the dataset's gold (left) and on the adjudicated gold (right).</figcaption></figure></div>
 </div></section>
 
 <section class="block" id="decided"><div class="wrap">
@@ -487,12 +487,12 @@ def frontier_section(H, f: dict, v1: dict) -> str:
     return f"""<section class="block" id="frontier"><div class="wrap">
   <div class="eyebrow"><span class="num">04</span>Frontier judges</div>
   <h2>Same validation score, {H.times(ratio)} the price, the same verdict.</h2>
-  <div class="prose">
+  <div class="figside"><div class="prose">
     <p>Were the first judges simply too small? The two highest-scoring SummEval judges from vendors not in the first pair, <code>{j1}</code> (τ {se_tau[j1]:.2f}) and <code>{j2}</code> ({se_tau[j2]:.2f}; the first pair's <code>{max(v1j, key=lambda j: se_tau[j])}</code> scored {max(se_tau[j] for j in v1j):.2f}), validated by their committed SummEval runs, judged the same judging set with the same prompt, reasoning off: {v2["calls"]} calls, {H.money(v2["billed_usd"])}, {v2["items_scored"]} of {v2["items_total"]} articles, {"no reply unparsed" if not v2["unparsed"] else f"{v2['unparsed']} replies unparsed"}. They are larger and dearer judges, not clearly better ones.</p>
     <p>They reach the same verdict. Every hosted LLM again ranks above every BART model; <code>bart_l</code> scores {bart["v2"]:.2f} of 5 and ranks {H.ordinal(bart["r2"])} of {v2["n_arms"]}, {H.qv("significantly below all 24 hosted LLMs", SUMM)} on their score too. The two scorers order the arms alike (Spearman {rho:.2f} over arm means), and on the {v2["human_pairs"]} human-check pairs the frontier judges also prefer <code>deepseek_m</code>, {v2["prefers_deepseek_m"]} to {v2["prefers_bart_l"]}. {goyal}</p>
     <p>So the disagreement with the reader is not a small-judge problem: judges of very different size and price agree with each other, and not with the one reader. Either LLM judges share a preference that reader does not, or the reader's check is too small to tell; §05 tests the first. One thing grows with the frontier judges: own-family scores. <code>{j1}</code> rated its own vendor's arms {gap[j1]:+.2f} above the others and <code>{j2}</code> {gap[j2]:+.2f}, against {"/".join(f"{v:+.2f}" for v in v1["self_family_gap"].values())} for the first pair: raw gaps, not bias estimates, but the judged leader, <code>{ldr["arm"]}</code>, is one judge's own family. Paying {H.times(ratio)} as much did not settle it; only people can.</p>
   </div>
-  <figure class="chart" style="margin-top:32px">{legend_html(H)}{chart}<figcaption>Each line is one arm: its rank on the first judges' score (left) and on the frontier judges' (right).</figcaption></figure>
+  <figure class="chart">{legend_html(H)}{chart}<figcaption>Each line is one arm: its rank on the first judges' score (left) and on the frontier judges' (right).</figcaption></figure></div>
 </div></section>"""
 
 
@@ -541,13 +541,13 @@ def zhang_section(H, f: dict) -> str:
     return f"""<section class="block" id="zhang"><div class="wrap">
   <div class="eyebrow"><span class="num">05</span>People, on LLM summaries</div>
   <h2>Checked against people, on LLM-era summaries.</h2>
-  <div class="prose">
+  <div class="figside"><div class="prose">
     <p>SummEval's summaries are from 2019. <a href="https://aclanthology.org/2024.tacl-1.3/">Zhang et al. (2024)</a> released crowd ratings of {v1["systems"]} summarisers on {v1["articles"]} CNN/DailyMail articles: GPT-3-era LLMs, base and instruction-tuned; the fine-tunes BRIO and Pegasus; and the reference highlights, three ratings each. All four judges scored them. Each is measured against the mean of two ratings with the third held out, and so is one rater against the other two; the ratings themselves are not stored here, only the judges' scores. Agreement is Kendall τ per article: 1 when an instrument orders the summaries as the raters do, 0 when it is unrelated, −1 when reversed.</p>
     <p>Every judge agrees with the raters' consensus better than one rater does, ahead on {min(ahead_r)}–{max(ahead_r)} of the articles, and better than <code>coverage</code>, ahead on {min(ahead_c)}–{max(ahead_c)}; every comparison p &lt; 0.001. The cheap pair does as well as the frontier pair, for ${cost1:.2f} against ${cost2:.2f}. On faithfulness alone they trail one rater ({min(faith):.2f}–{max(faith):.2f} against {hum["faithfulness"]:.2f}).</p>
     <p>And on the question this page keeps returning to: ranking the systems by mean coherence and relevance, the raters put BRIO, a BART-based fine-tune, {H.ordinal(raters["brio"])} of {v1["systems"]}, after four instruction-tuned LLMs; the judges rank it {H.ordinal(brio_j[0])} or {H.ordinal(brio_j[-1])} (Spearman {min(sp):.2f}–{max(sp):.2f} between the judges' and the raters' rankings of the systems; 1 is the same order). So these judges show no blanket preference for LLM-written summaries over a BART-style one. They deviate from the raters system by system in both directions: the raters rank the reference highlights {H.ordinal(raters["reference"])}, the judges {H.ordinal(ref_j[0])} to {H.ordinal(ref_j[-1])}.</p>
     <p>The limits. One crowd rating is a noisy baseline, and these τ are against crowd raters on another set, so they do not compare with SummEval's experts. The {v1["systems"]} systems span a wide range of quality, which makes a high Spearman easier. The articles and ratings have been public since 2023, so a judge may have seen them. And these are 2022's systems, not this eval's arms: this is evidence about the judges, not a check of the ranking in §02.</p>
   </div>
-  <figure class="chart" style="margin-top:32px;max-width:900px">{H.both(tau_bars(H, bars), tau_bars(H, bars, compact=True))}<figcaption>Mean Kendall τ per article against the mean of two crowd ratings, over coherence, relevance and faithfulness, on the {v1["systems"] - 1} non-reference summaries.</figcaption></figure>
+  <figure class="chart">{H.both(tau_bars(H, bars), tau_bars(H, bars, compact=True))}<figcaption>Mean Kendall τ per article against the mean of two crowd ratings, over coherence, relevance and faithfulness, on the {v1["systems"] - 1} non-reference summaries.</figcaption></figure></div>
 </div></section>"""
 
 

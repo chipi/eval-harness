@@ -255,6 +255,12 @@ svg.lc { width: 100%; max-width: 320px; height: auto; display: block; overflow: 
 section.method { padding-top: 64px; }
 .method-grid { display: grid; grid-template-columns: 300px 1fr; gap: 72px; align-items: start; }
 .method-aside .sticky { position: sticky; top: 88px; }
+/* Each method chapter with its own drawing beside it, kept in view while the chapter is read. */
+.chapters .chapter { display: grid; grid-template-columns: 300px 1fr; gap: 72px; align-items: start; }
+.chapters .chapter > * { min-width: 0; }
+.ch-art .sticky { position: sticky; top: 124px; }
+.ch-art svg.lc { max-width: 280px; }
+@media (max-width: 900px) { .chapters .chapter { grid-template-columns: 1fr; gap: 0; } .ch-art { display: none; } }
 .aside-note { font-size: 13px; color: var(--muted); margin-top: 14px; max-width: 30ch; }
 .chapter { padding: 56px 0 72px; border-top: 1px solid var(--hair); scroll-margin-top: 72px; }
 /* Sections are linked to directly (posts, articles); keep the heading clear of the 56px sticky bar. */
@@ -399,6 +405,19 @@ body:has(.onpage) section[id], body:has(.onpage) .chapter { scroll-margin-top: 1
 /* charts: a phone layout of each, swapped in under 700px */
 .vn { display: none; }
 @media (max-width: 700px) { .vw { display: none; } .vn { display: block; } .chart { padding: 16px 14px 12px; } }
+
+/* short prose with its chart beside it; the chart's phone layout fits the side column */
+.figside { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 56px; align-items: start; }
+.figside > figure.chart { position: sticky; top: 124px; margin: 0; }
+.figside .vw { display: none; }
+.figside .vn { display: block; }
+@media (max-width: 1040px) {
+  .figside { grid-template-columns: 1fr; gap: 32px; }
+  .figside > figure.chart { position: static; }
+  .figside .vw { display: block; }
+  .figside .vn { display: none; }
+}
+@media (max-width: 700px) { .figside .vw { display: none; } .figside .vn { display: block; } }
 
 /* phones: tighter rhythm, so a screen holds a finding rather than whitespace */
 @media (max-width: 640px) {

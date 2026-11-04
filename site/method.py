@@ -221,6 +221,64 @@ def lifecycle(interactive: bool = False) -> str:
     )
 
 
+#: Each habit after the first, as its own short flow beside its chapter (the first has the whole lifecycle): what
+#: the habit puts between a number and a conclusion. (label, sub) per step; the last step is the one it protects.
+FLOWS = {
+    "data": [
+        ("Sources", "your inputs"),
+        ("Dataset", "sha256 per item"),
+        ("Materialized", "re-checked each use"),
+        ("Calibration row", "against a published value"),
+    ],
+    "gold": [
+        ("Labels", "person · model · rule"),
+        ("Promoted", "a tier and a reason"),
+        ("Silver", "ranks, with its caveat"),
+        ("Gold", "decides"),
+    ],
+    "noise": [
+        ("One arm", "one config"),
+        ("Three runs", "the same items"),
+        ("Its spread", "the noise floor"),
+        ("A difference", "only past it"),
+    ],
+    "tested": [
+        ("Two arms", "paired, item by item"),
+        ("Sign-flip test", "exact up to 30 items"),
+        ("Holm", "across the family"),
+        ("Significant", "or not"),
+    ],
+    "record": [
+        ("A goal", "its rule"),
+        ("Recommended", "with its reasons"),
+        ("Baseline", "a person, a reason"),
+        ("Next round", "measured against it"),
+    ],
+}
+
+
+def flow(steps: list, label: str) -> str:
+    """A habit's short flow, in the lifecycle's own drawing: cards joined by arrows, the last one lit."""
+    w, bh, gap, x = 300, 54, 76, 20
+    parts = []
+    for i, (name, sub) in enumerate(steps):
+        y = 12 + i * gap
+        if i:
+            parts.append(
+                f'<path class="lc-edge" d="M{w / 2} {y - gap + bh + 4} V{y - 6}"/>'
+                f'<path class="lc-head" d="M{w / 2 - 5} {y - 11} L{w / 2} {y - 5} L{w / 2 + 5} {y - 11}"/>'
+            )
+        on = " on" if i == len(steps) - 1 else ""
+        parts.append(
+            f'<g class="lc-node{on}"><rect x="{x}" y="{y}" width="{w - 2 * x}" height="{bh}" rx="10"/>'
+            f'<text class="lc-label" x="{x + 18}" y="{y + 24}">{name}</text>'
+            f'<text class="lc-sub" x="{x + 18}" y="{y + 42}">{sub}</text>'
+            f'<text class="lc-num" x="{w - x - 16}" y="{y + 24}" text-anchor="end">{i + 1:02d}</text></g>'
+        )
+    h = 12 + len(steps) * gap
+    return f'<svg class="lc" viewBox="0 0 {w} {h}" role="img" aria-label="{label}">{"".join(parts)}</svg>'
+
+
 def lifecycle_panels(H) -> str:
     out = []
     for nid, label, sub, what, where, cmd, anchor in NODES:
@@ -529,8 +587,23 @@ def method_page(H, f: dict) -> str:
         cmd, out = c["tool"]
         page, text = CATALOG_HABIT[c["id"]]
         href = H.CATALOG + (page or H.catalog_inspect(by["summarization"]))
+        # Beside each chapter its own drawing, where the reader is: the first the whole lifecycle with the steps it
+        # protects lit, each later one its habit as a short flow. One lifecycle for all six was taller than a
+        # screen, so from the second chapter on the column beside the text was empty.
+        if c["id"] in FLOWS:
+            art = flow(FLOWS[c["id"]], f"{c['kicker']}, step by step")
+            note = f"{H.e(c['kicker'])}, step by step: the last is what the habit protects."
+        else:
+            art = lifecycle()
+            for nid in c["nodes"].split():
+                art = art.replace(
+                    f'class="lc-node" data-node="{nid}"', f'class="lc-node on" data-node="{nid}"'
+                )
+            note = "The lifecycle every eval here followed, the steps this habit protects lit."
         body_ch.append(f"""
 <article class="chapter reveal" id="{c["id"]}" data-nodes="{c["nodes"]}">
+  <aside class="ch-art"><div class="sticky">{art}<p class="aside-note">{note}</p></div></aside>
+  <div class="ch-body">
   <div class="eyebrow"><span class="num">{i:02d}</span>{H.e(c["kicker"])}</div>
   <h2>{H.e(c["title"])}</h2>
   <div class="story prose">{c["story"]}</div>
@@ -539,6 +612,7 @@ def method_page(H, f: dict) -> str:
 <span class="c">{H.e(out)}</span></pre></div>
   <p class="yours"><b>In ours</b> <a href="{href}">{H.e(text)} →</a>, in the catalog.</p>
   <p class="yours"><b>In your project</b> {H.e(c["yours"])}</p>
+  </div>
 </article>""")
     body = f"""
 <section class="hero"><div class="wrap">
@@ -548,8 +622,7 @@ def method_page(H, f: dict) -> str:
   <nav class="toc">{toc}</nav>
 </div></section>
 
-<section class="block method"><div class="wrap method-grid">
-  <aside class="method-aside"><div class="sticky">{lifecycle()}<p class="aside-note">The lifecycle every eval here followed. Each habit lights the step it protects.</p></div></aside>
+<section class="block method"><div class="wrap">
   <div class="chapters">{"".join(body_ch)}</div>
 </div></section>
 
@@ -579,13 +652,7 @@ def method_page(H, f: dict) -> str:
   </div>
   <p>The habits hold when an agent does the work, too: it can read every number they rest on, the goals and their tests, from the catalog over MCP, and the decisions stay a person's (<a href="./#mcp">ask it from your agent</a>).</p>
   <div class="btns"><a class="btn primary" href="use.html">Use it on your problem →</a><a class="btn" href="docs/GUIDE/">The step-by-step guide</a><a class="btn" href="evals.html">The evals</a></div>
-</div></section>
-<script>
-(function(){{const nodes=document.querySelectorAll('.method-aside .lc-node');
-const io=new IntersectionObserver(es=>es.forEach(x=>{{if(!x.isIntersecting)return;
-const on=x.target.dataset.nodes.split(' ');nodes.forEach(n=>n.classList.toggle('on',on.includes(n.dataset.node)));}}),{{rootMargin:'-40% 0px -50% 0px'}});
-document.querySelectorAll('.chapter').forEach(c=>io.observe(c));}})();
-</script>"""
+</div></section>"""
     return H.page(
         "The method — eval-harness",
         "Six habits for measuring AI systems, as six evals taught them: "
