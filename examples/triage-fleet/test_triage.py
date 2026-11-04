@@ -201,6 +201,16 @@ with tempfile.TemporaryDirectory() as td:
         r["id"].split("-")[2]: r
         for r in importer.Importer({}).records({"path": str(p), "test_signals": True})
     }
+    rows[0].setdefault("provenance", {})["v2"] = {"evidence_rebuilt": "partial", "last_seen_source": "server-received"}
+    p.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    v2 = {
+        r["id"].split("-")[2]: r
+        for r in importer.Importer({}).records({"path": str(p), "test_signals": True, "v2_fields": True})
+    }
+    v2_unasked = {
+        r["id"].split("-")[2]: r
+        for r in importer.Importer({}).records({"path": str(p), "test_signals": True})
+    }
     rows[4]["fleet_decision"]["ts"] = "2026-10-05T00:00:00Z"
     p.write_text("".join(json.dumps(r) + "\n" for r in rows))
     plain = [r["id"].split("-")[2] for r in importer.Importer({}).records({"path": str(p)})]
@@ -237,6 +247,13 @@ check(
     and {k: v for k, v in r1["fields"].items() if not k.startswith("fleet_prompt_")}
     == unasked["1"]["fields"],
     str(unasked["1"]["fields"]),
+)
+check(
+    "importer: v2_fields adds a v2 export's evidence_rebuilt and last_seen_source; unasked, the record is v1's",
+    v2["1"]["fields"]["evidence_rebuilt"] == "partial"
+    and v2["1"]["fields"]["last_seen_source"] == "server-received"
+    and v2_unasked["1"]["fields"] == unasked["1"]["fields"],
+    str(v2["1"]["fields"]),
 )
 recorded = adapter.recorded_output(r1)
 check(

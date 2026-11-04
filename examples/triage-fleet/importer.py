@@ -24,8 +24,10 @@ one filed later on its fingerprint. Title-only matches never carry a verdict: on
 
 Query keys: `path` (the export), `verdicts` (optional), `since`/`until` (ISO times on the decision,
 [since, until): `evh capture --since-capture` sets `since`), `test_signals` (true keeps the fleet's own
-test signals, which the builder flags `is_test_signal` and the published export leaves out), and
-`prompt_fields` (true adds the prompt's version and hash).
+test signals, which the builder flags `is_test_signal` and the published export leaves out),
+`prompt_fields` (true adds the prompt's version and hash), and `v2_fields` (true adds, from a v2 export's
+provenance.v2, `evidence_rebuilt` (none / partial / all of the probe answers rebuilt rather than the ones
+the model read) and `last_seen_source` (server-received / none / unknown)).
 
 What a query recorded must come back the same: a capture stores each record's hash, and fetch.py
 restores a capture by running this importer on the same query. A new field is therefore added behind
@@ -209,6 +211,14 @@ class Importer:
                     **(
                         {"fleet_prompt_ver": fd.get("prompt_ver"), "fleet_prompt_sha": fd.get("prompt_sha")}
                         if query.get("prompt_fields")
+                        else {}
+                    ),
+                    **(
+                        {
+                            "evidence_rebuilt": (prov.get("v2") or {}).get("evidence_rebuilt"),
+                            "last_seen_source": (prov.get("v2") or {}).get("last_seen_source"),
+                        }
+                        if query.get("v2_fields")
                         else {}
                     ),
                     "stage": fd.get("stage") or "",
