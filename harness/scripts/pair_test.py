@@ -41,6 +41,7 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 
+from evaluation_harness import _jsonout  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     RUNS,
     dataset_item_ids,
@@ -135,7 +136,18 @@ def main() -> int:
         "(default: inferred from the metric and the runs)",
     )
     ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="the same answer as one JSON object: the printed lines as blocks, and the result by name "
+        "under result.values (a, b, metric, n, delta, wins, ties, p, method, verdict, threshold, ...)",
+    )
     args = ap.parse_args()
+    with _jsonout.collect("pair-test", args.json):
+        return _run(args, ap)
+
+
+def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     # The directory read is the directory warned about: --runs-dir, else EVAL_RUNS_DIR.
     runs_dir = args.runs_dir or RUNS
     # Two runs sharing a config_id are averaged together below without
@@ -193,11 +205,8 @@ def main() -> int:
         + (" (lower is better)" if lower else "")
         + (f" ({ties} exact tie(s))" if ties else "")
     )
-    how = (
-        f"exact, all 2^{len(items)} sign patterns"
-        if len(items) <= EXACT_UP_TO
-        else f"{args.permutations} permutations"
-    )
+    exact = len(items) <= EXACT_UP_TO
+    how = f"exact, all 2^{len(items)} sign patterns" if exact else f"{args.permutations} permutations"
     print(f"    sign-flip p        {fmt_p(p)}  ({how})")
     if args.family > 1:
         # The same rule as Holm and the inspector: p at or below the threshold is significant.
@@ -206,8 +215,31 @@ def main() -> int:
         if p > thresh:
             print("    (conservative: Holm's later steps are looser — check the family)")
     else:
-        print(f"    verdict            {'SIGNIFICANT' if p <= 0.05 else 'NOT-SIGNIFICANT'} at 0.05")
+        verdict = "SIGNIFICANT" if p <= 0.05 else "NOT-SIGNIFICANT"
+        print(f"    verdict            {verdict} at 0.05")
         print("    (uncorrected: valid only if this pair was named before the table was read)")
+    _jsonout.values(
+        {
+            "a": args.a,
+            "b": args.b,
+            "metric": args.metric,
+            "dataset_id": args.dataset_id,
+            "n": len(items),
+            "direction": "lower" if lower else "higher",
+            "delta": obs,
+            "wins": wins,
+            "ties": ties,
+            "p": p,
+            "method": "exact" if exact else "sampled",
+            "permutations": None if exact else args.permutations,
+            "seed": args.seed,
+            "correction": "bonferroni" if args.family > 1 else "none",
+            "family": args.family,
+            "alpha": 0.05,
+            "threshold": thresh,
+            "verdict": verdict,
+        }
+    )
     return 0
 
 

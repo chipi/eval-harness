@@ -39,6 +39,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _jsonout
 from evaluation_harness._adapter import (
     load_adapter,
     metric_descriptions,
@@ -524,6 +525,7 @@ def _dry_run(ds: dict[str, Any], cfg: dict[str, Any], repeat: int) -> int:
     print(f"  output      <= {est_out / 1000:.1f}k tokens/pass (max_tokens x items)")
 
     pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
+    est = None
     if pin is None or pout is None:
         print("\n  No price in the config, so no estimate. Add usd_per_mtok_in /")
         print("  usd_per_mtok_out and the run will record what it actually cost.")
@@ -532,6 +534,22 @@ def _dry_run(ds: dict[str, Any], cfg: dict[str, Any], repeat: int) -> int:
         print(f"\n  ESTIMATE    ~${est:.4f}  (upper bound: assumes max_tokens every time)")
     cap = env_float("EVAL_MAX_COST_USD")
     print("  cap         " + (f"${cap:.2f} (EVAL_MAX_COST_USD)" if cap else "NONE — set EVAL_MAX_COST_USD"))
+    _jsonout.value(
+        "dry_run",
+        {
+            "config_id": cfg["config_id"],
+            "dataset_id": ds["dataset_id"],
+            "provider": params.get("provider", "echo"),
+            "model": params.get("model"),
+            "items": len(items),
+            "repeats": repeat,
+            "api_calls": calls,
+            "input_tokens_per_pass": est_in,
+            "output_tokens_per_pass_max": est_out,
+            "estimate_usd": est,
+            "cap_usd": cap or None,
+        },
+    )
     return 0
 
 
@@ -641,8 +659,19 @@ def main() -> int:
         metavar="RUN_ID",
         help="reuse outputs already produced by RUN_ID; only pay for what is missing",
     )
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="progress on stderr, and one JSON object on stdout when done: result.values.runs, one entry per "
+        "run written (run_id, config_id, dataset_id, dir, n_items, total_cost_usd, capped_at); with "
+        "--dry-run, result.values.dry_run. Exit codes as without it (1: nothing measured, 2: cost cap)",
+    )
     args = ap.parse_args()
+    with _jsonout.collect("run", args.json, live=sys.stderr):
+        return _run(args)
 
+
+def _run(args: argparse.Namespace) -> int:
     if not args.config.is_file():
         die(f"no config at {args.config}")
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
@@ -827,6 +856,7 @@ def main() -> int:
     warn_if_ignored(runs)
 
     made: list[Path] = []
+    written: list[dict[str, Any]] = []
 
     capped = False
     per_repeat: list[dict[str, float]] = []
@@ -947,6 +977,17 @@ def main() -> int:
         )
         write_json(run_dir / "metrics.json", metrics)
         made.append(run_dir)
+        written.append(
+            {
+                "run_id": run_id,
+                "config_id": cfg["config_id"],
+                "dataset_id": cfg["dataset_id"],
+                "dir": str(run_dir),
+                "n_items": metrics["n_items"],
+                "total_cost_usd": result["scores"].get("total_cost_usd"),
+                "capped_at": result["capped_at"] or None,
+            }
+        )
         per_repeat.append(result["scores"])
         print(
             f"  {run_id}  "
@@ -987,6 +1028,9 @@ def main() -> int:
             print(f"    {k:{w}} spread={spread:.6f}   {verdict}")
 
     print(f"\nwrote {len(made)} run(s) to {runs}")
+    for d in made:
+        print(f"  run {d.name}")
+    _jsonout.value("runs", written)
     # What this command spent, so nobody adds up total_cost_usd by hand across repeats.
     spent = sum(
         float((read_json(d / "metrics.json").get("scores") or {}).get("total_cost_usd") or 0) for d in made

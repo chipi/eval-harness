@@ -29,6 +29,7 @@ import math
 import random
 import statistics
 
+from evaluation_harness import _jsonout
 from evaluation_harness._adapter import recorded_metric_kinds
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -157,8 +158,8 @@ def significance(
     seed: int = 20260925,
     asc: bool = False,
     raw_values: list[float] | None = None,
-) -> None:
-    """Print the global test, the critical difference, and per-arm rank intervals.
+) -> dict:
+    """Print the global test, the critical difference, and per-arm rank intervals; return them as numbers.
 
     `raw_values` are the per-item values as they came off disk, before any averaging
     (`_runs.per_item(raw=...)` collects them). Stored precision has to be measured on those:
@@ -172,7 +173,7 @@ def significance(
             f"\n  Not enough paired data for a significance test "
             f"({k} arm(s), {N} shared item(s)). Ordering above is a mean, nothing more."
         )
-        return
+        return {"enough_data": False, "metric": metric, "arms": k, "items": N}
     V = {a: [matrix[a][i] for i in items] for a in arms}
 
     # Within-item ranks: 1 = best on THAT item. Ranking inside the item is what removes
@@ -310,21 +311,33 @@ def significance(
     width = max(len(a) for a in arms) + 2
     # With few arms the top is one place, and "top 1" would be P(1st) printed twice.
     top_col = top_n > 1
-    print(
-        f"\n    {'arm':{width}} {'avg rank':>9} {'P(1st)':>8}"
-        + (f" {f'P(top {top_n})':>10}" if top_col else "")
-        + f" {f'P(bot {top_n})':>10}"
-    )
+    by_rank = []
     for a in sorted(arms, key=lambda x: avg_rank[x]):
         t = tally[a]
-        p1 = sum(1 for x in t if x == 1) / R
-        pt = sum(1 for x in t if x <= top_n) / R
-        pb = sum(1 for x in t if x > k - top_n) / R
-        print(
-            f"    {a:{width}} {avg_rank[a]:9.2f} {p1:8.2f}"
-            + (f" {pt:10.2f}" if top_col else "")
-            + f" {pb:10.2f}"
+        by_rank.append(
+            (
+                a,
+                avg_rank[a],
+                sum(1 for x in t if x == 1) / R,
+                sum(1 for x in t if x <= top_n) / R,
+                sum(1 for x in t if x > k - top_n) / R,
+            )
         )
+    if not _jsonout.table(
+        ["arm", "avg_rank", "p_first", f"p_top_{top_n}", f"p_bottom_{top_n}"],
+        by_rank,
+    ):
+        print(
+            f"\n    {'arm':{width}} {'avg rank':>9} {'P(1st)':>8}"
+            + (f" {f'P(top {top_n})':>10}" if top_col else "")
+            + f" {f'P(bot {top_n})':>10}"
+        )
+        for a, rank, p1, pt, pb in by_rank:
+            print(
+                f"    {a:{width}} {rank:9.2f} {p1:8.2f}"
+                + (f" {pt:10.2f}" if top_col else "")
+                + f" {pb:10.2f}"
+            )
     print(
         "    Probabilities over resampled items: how often this arm lands 1st"
         + (f", in the top {top_n}" if top_col else "")
@@ -337,9 +350,26 @@ def significance(
         "    P(1st) means UNIQUELY first: tied arms share a midrank, so a draw counts\n"
         "    for nobody and the column can sum to less than 1."
     )
+    return {
+        "enough_data": True,
+        "metric": metric,
+        "arms": k,
+        "items": N,
+        "global_p": p,
+        "arm_effect": p < 0.05,
+        "nemenyi_cd": cd,
+        "rank_span": span,
+        "pairs_total": k * (k - 1) // 2,
+        "pairs_distinguishable": len(pairs) if cd is not None else None,
+        # [better, worse]: the first has the lower average rank by more than the critical difference
+        "distinguishable_pairs": [list(x) for x in pairs],
+        "top_n": top_n,
+        "avg_rank": {a: avg_rank[a] for a in sorted(arms, key=lambda x: avg_rank[x])},
+        "resamples": R,
+    }
 
 
-def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool = False) -> None:
+def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool = False) -> dict | None:
     """Which arms are on the menu at all, across quality, cost and speed together.
 
     An arm is DOMINATED when some other arm is at least as good on quality AND costs no
@@ -350,9 +380,11 @@ def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool =
     length-sensitive facet it ranks verbosity, and swapping that facet for its opposite
     produced a completely different frontier once -- with the same runs. So the facet is
     named in the output, every time.
+
+    Returns what it printed as numbers, or None when it printed no frontier.
     """
     if not rows:
-        return
+        return None
     # Every row's keys, not the first row's: an arm with no latency (a rule) heads the table at times.
     seen = {k for r in rows for k in r}
     cost = next((k for k in sorted(seen) if kinds.get(k) == "cost" and k.startswith("total_")), None)
@@ -360,11 +392,11 @@ def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool =
     speed = next((k for k in sorted(seen) if kinds.get(k) == "speed"), None)
     if not (cost and speed):
         print("\n  No frontier: needs a cost and a speed metric alongside quality.")
-        return
+        return None
     pts: dict[str, tuple] = {r["config_id"]: (r.get(quality), r.get(cost), r.get(speed)) for r in rows}
     pts = {a: v for a, v in pts.items() if None not in v}
     if len(pts) < 2:
-        return
+        return None
 
     def dominated(a: str) -> bool:
         qa, ca, la = pts[a]
@@ -378,12 +410,21 @@ def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool =
     beaten = sorted(a for a in pts if dominated(a))
     w = max(len(a) for a in pts) + 2
     print(f"\n  FRONTIER on {quality} / {cost} / {speed} — {len(front)} of {len(pts)} arms")
-    print(f"    {'arm':{w}} {quality:>12} {cost:>12} {speed:>12}")
-    for a in front:
-        q, c, lat = pts[a]
-        print(f"    {a:{w}} {q:12.6f} {c:12.6f} {lat:12.1f}")
+    if not _jsonout.table(["arm", "quality", "cost", "speed"], [[a, *pts[a]] for a in front]):
+        print(f"    {'arm':{w}} {quality:>12} {cost:>12} {speed:>12}")
+        for a in front:
+            q, c, lat = pts[a]
+            print(f"    {a:{w}} {q:12.6f} {c:12.6f} {lat:12.1f}")
     if beaten:
         print(f"    dominated (worse on all three than some other arm): {', '.join(beaten)}")
+    return {
+        "quality": quality,
+        "cost": cost,
+        "speed": speed,
+        "arms": len(pts),
+        "frontier": front,
+        "dominated": beaten,
+    }
 
 
 def _own_reference(by_config: dict[str, list[dict]]) -> dict[str, str]:
@@ -468,8 +509,18 @@ def main() -> int:
     ap.add_argument("--match", help="only arms whose config_id contains this substring")
     ap.add_argument("--round", help="only the arms in play in this round of a goal (rN; ADR-0004)")
     ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="the same answer as one JSON object: the printed lines as blocks, each table as data, and "
+        "result.values.groups: per reference scored against, its ranking, ordering test and frontier",
+    )
     args = ap.parse_args()
+    with _jsonout.collect("leaderboard", args.json):
+        return _run(args)
 
+
+def _run(args: argparse.Namespace) -> int:
     # Each run with its directory, so the significance test can reach its predictions.jsonl.
     # Per-item scores are what make a PAIRED comparison possible, and a comparison that is
     # not paired throws away the fact that every arm was graded on the same items.
@@ -496,10 +547,12 @@ def main() -> int:
             f"  NOTE: these runs are scored {len(order)} different ways ({what});\n"
             "        one table for each, never averaged across them.\n"
         )
+    out = []
     for n, ref in enumerate(order):
         if len(order) > 1:
             print(("\n" if n else "") + f"=== {_heading(ref)} ===")
-        _table(args, groups[ref])
+        out.append({"reference": ref, "heading": _heading(ref), **_table(args, groups[ref])})
+    _jsonout.values({"dataset_id": args.dataset_id, "groups": out})
     return 0
 
 
@@ -552,8 +605,8 @@ def _heading(ref: str | None) -> str:
     return f"scored against {ref or 'no reference'}"
 
 
-def _table(args: argparse.Namespace, found: list) -> None:
-    """The leaderboard over runs scored against one reference."""
+def _table(args: argparse.Namespace, found: list) -> dict:
+    """The leaderboard over runs scored against one reference; what it printed, as numbers."""
     arm_runs = by_arm(found)
     by_config: dict[str, list[dict]] = {cid: [m for _d, m in rs] for cid, rs in arm_runs.items()}
 
@@ -650,13 +703,17 @@ def _table(args: argparse.Namespace, found: list) -> None:
     own = _own_reference(by_config)
     w = max(len(r["config_id"]) + (2 if r["config_id"] in own else 0) for r in rows) + 2
     print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({'lower' if asc else 'higher'} is better)\n")
-    header = f"  {'arm':{w}} {'runs':>4}  " + "  ".join(f"{k:>16}" for k in show)
-    print(header)
-    print("  " + "-" * (len(header) - 2))
-    for _i, r in enumerate(rows, 1):
-        cells = "  ".join((f"{r[k]:16.6f}" if k in r else f"{'—':>16}") for k in show)
-        name = r["config_id"] + (" *" if r["config_id"] in own else "")
-        print(f"  {name:{w}} {r['n_runs']:>4}  {cells}")
+    if not _jsonout.table(
+        ["config_id", "n_runs", "tier", *show],
+        [[r["config_id"], r["n_runs"], r["tier"], *[r.get(k) for k in show]] for r in rows],
+    ):
+        header = f"  {'arm':{w}} {'runs':>4}  " + "  ".join(f"{k:>16}" for k in show)
+        print(header)
+        print("  " + "-" * (len(header) - 2))
+        for _i, r in enumerate(rows, 1):
+            cells = "  ".join((f"{r[k]:16.6f}" if k in r else f"{'—':>16}") for k in show)
+            name = r["config_id"] + (" *" if r["config_id"] in own else "")
+            print(f"  {name:{w}} {r['n_runs']:>4}  {cells}")
     # A run scored against references for only some of its items: its quality mean is over those.
     partial = {
         cid: (r["reference_coverage"]["items_with_reference"], r["reference_coverage"]["items"])
@@ -691,9 +748,8 @@ def _table(args: argparse.Namespace, found: list) -> None:
         )
     raw: list[float] = []
     matrix = matrix_of(contenders, sort_key, raw=raw)
-    if matrix:
-        significance(matrix, sort_key, asc=asc, raw_values=raw)
-    _frontier([r for r in rows if r["config_id"] not in own], sort_key, kinds, asc=asc)
+    ordering = significance(matrix, sort_key, asc=asc, raw_values=raw) if matrix else None
+    frontier = _frontier([r for r in rows if r["config_id"] not in own], sort_key, kinds, asc=asc)
     judged = sorted(
         {
             f"{derived_with(r, 'judge').get('scorer_id')}, {derived_with(r, 'judge').get('label')}"
@@ -719,6 +775,33 @@ def _table(args: argparse.Namespace, found: list) -> None:
             "\n  No cost recorded. Add usd_per_mtok_in / usd_per_mtok_out to the configs\n"
             "  so the ranking can weigh quality against price."
         )
+    return {
+        "sort_by": sort_key,
+        "direction": "lower" if asc else "higher",
+        "ranked_on_descriptive": ranking_on_descriptive,
+        "metrics": show,
+        "kinds": {k: kinds.get(k) for k in show},
+        "arms": [
+            {
+                "rank": i,
+                "config_id": r["config_id"],
+                "n_runs": r["n_runs"],
+                "tier": r["tier"],
+                "wrote_reference": own.get(r["config_id"]),
+                "metrics": {k: r[k] for k in show if k in r},
+                "spread": {k: r[f"__spread_{k}"] for k in show if f"__spread_{k}" in r},
+            }
+            for i, r in enumerate(rows, 1)
+        ],
+        "ordering": ordering,
+        "frontier": frontier,
+        "mixed_versions": mixed,
+        "partial_reference": {
+            cid: {"with_reference": k, "items": n} for cid, (k, n) in sorted(partial.items())
+        },
+        "silver": any("silver" in r["tiers"] for r in rows),
+        "judged": judged,
+    }
 
 
 if __name__ == "__main__":

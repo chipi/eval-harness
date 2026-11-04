@@ -8,7 +8,9 @@ An MCP client (Claude Code, Claude Desktop, any agent) starts this as a stdio se
 the commands a person reads the project with: the catalog's views, the inspector in the terminal,
 the rounds, the runs, validate. Each call runs the command as a child process (`evh <command> …`,
 with `--json` where the command has it), so a tool answers exactly what the command prints. No tool
-writes, spends or runs a model: those stay commands a person runs (0.7.0 adds them, with consent).
+writes the project, spends or runs a model: those stay commands a person runs (0.7.0 adds them, with
+consent). Two keep an answer they computed in the project's ignored .cache/ (family-test its whole
+answer, the views their p-values) and nothing else.
 
 For Claude Code, in the project:  claude mcp add evh -- evh mcp
 """
@@ -52,6 +54,11 @@ READ_TOOLS = (
     "inspect",
     "rounds",
     "runs-list",
+    "leaderboard",
+    "pair-test",
+    "family-test",
+    "rank-stability",
+    "run-compare",
     "validate",
     "captures",
     "labels",
@@ -60,6 +67,7 @@ READ_TOOLS = (
 )
 NOT_TOOLS = {
     "init": "writes a project",
+    "skills-install": "writes the skills into a project",
     "env-check": "reads the environment and keys, not the project",
     "dataset-create": "writes",
     "dataset-materialize": "writes",
@@ -76,12 +84,8 @@ NOT_TOOLS = {
     "judge-score": "calls models and spends",
     "silver-calibrate": "writes",
     "cost-report": "a report tool; not yet a tool",
-    "leaderboard": "a report tool; not yet a tool",
-    "pair-test": "a statistics command; not yet a tool",
-    "family-test": "a statistics command; not yet a tool",
     "bootstrap-test": "a statistics command; not yet a tool",
     "holdout": "a statistics command; not yet a tool",
-    "rank-stability": "a statistics command; not yet a tool",
     "import-run": "writes runs",
     "importer-check": "reads a production system, not the project",
     "capture": "reads a production system and writes",
@@ -97,7 +101,6 @@ NOT_TOOLS = {
     "dataset-extend": "writes a dataset",
     "dataset-split": "writes",
     "capture-scrub": "runs a project's command and writes",
-    "run-compare": "a statistics command; not yet a tool",
     "run-promote": "a decision: a person's",
     "round-open": "a decision: a person's",
     "round-retire": "a decision: a person's",
@@ -107,7 +110,8 @@ NOT_TOOLS = {
     "self-test": "runs the test suite",
     "mcp": "this server",
 }
-#: The views that take --json (catalog_views via _jsonout; dataset-items its profile).
+#: The commands that take --json (catalog_views via _jsonout; dataset-items its profile; the statistics
+#: commands, runs-list and rounds hand their key results over by name, under result.values).
 JSON = {
     "overview",
     "datasets",
@@ -121,6 +125,7 @@ JSON = {
     "inspect",
 }
 JSON |= {"dataset-items", "captures", "labels", "picks", "deploy-sheet"}
+JSON |= {"runs-list", "rounds", "leaderboard", "pair-test", "family-test", "rank-stability", "run-compare"}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
 HIDDEN = {"--adapter", "--json", "--help"}
@@ -309,6 +314,9 @@ def run_command(
 #: Options no tool offers: they write a file (the sheet's CSV and its key), and a tool writes nothing.
 TOOL_HIDDEN = {
     "inspect": {"--csv", "--fill", "--choices", "--seed", "--rubric", "--scale"},
+    # Both name a path of the server's: another runs folder, a file of item ids.
+    "pair-test": {"--runs-dir", "--items"},
+    "family-test": {"--runs-dir", "--items"},
 }
 #: In --public mode, the options that would answer with an item's text, an arm's output or a label (the
 #: sheet): a public server answers with numbers and ids only, as catalog-serve --public does without
@@ -325,6 +333,10 @@ PUBLIC_HIDDEN = {
         "--unlabelled",
     },
     "dataset-items": {"--item"},
+    # The statistics answer with numbers and ids only; what a public caller must not set is how long they run.
+    "pair-test": {"--permutations"},
+    "family-test": {"--permutations"},
+    "rank-stability": {"--draws"},
 }
 #: In --public mode, the tools left out, and why: a public server serves a copy of the data, not a
 #: whole project (no corpora, no example code), so validate would only ever report what is not there.

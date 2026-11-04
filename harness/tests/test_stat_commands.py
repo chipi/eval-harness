@@ -20,6 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 from evaluation_harness._check import check, summary
+from evaluation_harness.stats import EXACT_UP_TO, fmt_p
 
 ROOT = Path(__file__).resolve().parents[1]
 PY = sys.executable
@@ -656,6 +657,447 @@ def mutation_test_holdout() -> int:
     return 1
 
 
+def json_tree() -> tuple[Path, dict, dict]:
+    """40 items and four arms that win on 40, 30, 20 and 10 of them (acc), so every p is known; arm_d is also the
+    dearest and slowest, so it is off the frontier. Returns (tmp, meta, env)."""
+    tmp = Path(tempfile.mkdtemp(prefix="evh-json-"))
+    meta = setup_runs_tree(tmp)
+    ids = [f"i{i:02d}" for i in range(40)]
+    for arm, wins, cost, latency in (
+        ("arm_a", 40, 4.0, 400.0),
+        ("arm_b", 30, 3.0, 300.0),
+        ("arm_c", 20, 2.0, 200.0),
+        ("arm_d", 10, 5.0, 500.0),
+    ):
+        rows = {i: {"acc": 1.0 if n < wins else 0.0} for n, i in enumerate(ids)}
+        scores = {"acc": wins / 40, "total_cost_usd": cost, "latency_ms": latency}
+        write_run(meta, f"run_{arm}", "dsj", arm, scores, outputs=rows)
+        mj = meta["runs"] / f"run_{arm}" / "metrics.json"
+        m = json.loads(mj.read_text())
+        m["metric_kinds"] = {"acc": "quality", "total_cost_usd": "cost", "latency_ms": "speed"}
+        m["created_at"] = "2026-11-01T10:00:00Z"
+        mj.write_text(json.dumps(m))
+    return tmp, meta, {"EVAL_HOME": str(tmp), "EVAL_NO_CACHE": "1"}
+
+
+def parsed(result: subprocess.CompletedProcess) -> dict:
+    """The one JSON object on stdout; raises (failing the group) when stdout holds anything else."""
+    assert result.stdout.endswith("\n") and result.stdout.count("\n") == 1, result.stdout[:300]
+    return json.loads(result.stdout)
+
+
+def printed_lines(env_: dict) -> list[str]:
+    return [ln for b in env_["result"]["blocks"] for ln in b.get("lines", [])]
+
+
+def table_rows(env_: dict, first_column: str) -> list[dict]:
+    return next(b["rows"] for b in env_["result"]["blocks"] if b.get("columns", [""])[0] == first_column)
+
+
+def test_json_pair_test() -> int:
+    """pair-test --json: the text's numbers by name; the text itself is unchanged."""
+    tmp, _meta, env = json_tree()
+    base = ["scripts/pair_test.py", "--dataset-id", "dsj", "--a", "arm_a", "--b", "arm_b"]
+    text = run_script(*base, env=env, cwd=tmp)
+    js = run_script(*base, "--json", env=env, cwd=tmp)
+    e = parsed(js)
+    v = e["result"]["values"]
+    check(
+        "pair-test --json: one envelope on stdout, exit 0", js.returncode == 0 and e["command"] == "pair-test"
+    )
+    check(
+        "pair-test --json: a, b, metric, n, wins, ties",
+        (v["a"], v["b"], v["metric"], v["n"], v["wins"], v["ties"], v["direction"])
+        == ("arm_a", "arm_b", "acc", 40, 10, 30, "higher"),
+        v,
+    )
+    check(
+        "pair-test --json: delta, p and verdict are the text's",
+        abs(v["delta"] - 0.25) < 1e-12
+        and f"{v['delta']:+.4f}" in text.stdout
+        and fmt_p(v["p"]) in text.stdout
+        and v["verdict"] == "SIGNIFICANT"
+        and f"{v['verdict']} at 0.05" in text.stdout,
+        (v, text.stdout),
+    )
+    check(
+        "pair-test --json: 40 items are sampled (permutations named), uncorrected at 0.05",
+        v["method"] == "sampled"
+        and v["permutations"] == 20000
+        and f"({v['permutations']} permutations)" in text.stdout
+        and (v["correction"], v["family"], v["threshold"]) == ("none", 1, 0.05),
+        v,
+    )
+    check(
+        "pair-test --json: its blocks are the text, line for line",
+        printed_lines(e) == [ln for ln in text.stdout.splitlines() if ln.strip()],
+    )
+    fam = parsed(run_script(*base, "--family", "3", "--json", env=env, cwd=tmp))["result"]["values"]
+    check(
+        "pair-test --json --family 3: Bonferroni, threshold alpha/3, the verdict against it",
+        fam["correction"] == "bonferroni"
+        and fam["family"] == 3
+        and abs(fam["threshold"] - 0.05 / 3) < 1e-12
+        and fam["verdict"] == ("SIGNIFICANT" if fam["p"] <= fam["threshold"] else "NOT-SIGNIFICANT"),
+        fam,
+    )
+    # The last 20 items: ten of them differ by 1, ten tie. 11 sign patterns' worth of nothing: p = 2 / 2^10, exact.
+    (tmp / "last20.txt").write_text("\n".join(f"i{i:02d}" for i in range(20, 40)) + "\n")
+    ex_args = [*base, "--items", str(tmp / "last20.txt")]
+    ex = parsed(run_script(*ex_args, "--json", env=env, cwd=tmp))["result"]["values"]
+    ex_text = run_script(*ex_args, env=env, cwd=tmp).stdout
+    check(
+        "pair-test --json: 20 items are exact, p = 2/2^10, no permutations",
+        EXACT_UP_TO >= 20
+        and ex["method"] == "exact"
+        and ex["permutations"] is None
+        and ex["n"] == 20
+        and abs(ex["p"] - 2 / 1024) < 1e-12
+        and "exact, all 2^20 sign patterns" in ex_text,
+        ex,
+    )
+    bad = run_script(*base[:-1], "no_such_arm", "--json", env=env, cwd=tmp)
+    check(
+        "pair-test --json: a refusal is on stderr, nothing on stdout, exit non-zero",
+        bad.returncode != 0 and bad.stdout == "" and "shared item" in bad.stderr,
+        (bad.stdout, bad.stderr),
+    )
+    return 8
+
+
+def test_json_family_test() -> int:
+    """family-test --json: the opponents as a table, Holm's adjusted p beside the text's threshold."""
+    tmp, _meta, env = json_tree()
+    base = ["scripts/family_test.py", "--dataset-id", "dsj", "--a", "arm_a", "--against", "arm_"]
+    text = run_script(*base, env=env, cwd=tmp)
+    js = run_script(*base, "--json", env=env, cwd=tmp)
+    e = parsed(js)
+    v = e["result"]["values"]
+    rows = table_rows(e, "opponent")
+    check("family-test --json: one envelope, exit 0", js.returncode == 0 and e["command"] == "family-test")
+    check(
+        "family-test --json: the family, alpha, metric, n and the counts the text ends with",
+        (v["a"], v["against"], v["metric"], v["n"], v["family_size"], v["alpha"], v["correction"])
+        == ("arm_a", "arm_", "acc", 40, 3, 0.05, "holm")
+        and f"significantly different from {v['significant']} of 3 opponents" in text.stdout
+        and f"ahead on the point estimate against {v['ahead']} of 3" in text.stdout,
+        v,
+    )
+    check(
+        "family-test --json: one row per opponent, smallest p first, every number the text prints",
+        {r["opponent"] for r in rows[:2]} == {"arm_c", "arm_d"}  # tied on p; arm_b, the closest, is last
+        and rows[2]["opponent"] == "arm_b"
+        and all(
+            fmt_p(r["p"]) in text.stdout
+            and f"{r['threshold']:8.4f}" in text.stdout
+            and f"{r['delta']:+9.4f}" in text.stdout
+            for r in rows
+        )
+        and {r["opponent"]: r["wins"] for r in rows} == {"arm_b": 10, "arm_c": 20, "arm_d": 30},
+        rows,
+    )
+    check(
+        "family-test --json: significant is Holm's rule, and equals 'adjusted p at or under alpha'",
+        all(r["significant"] == (r["p_holm"] <= v["alpha"]) for r in rows)
+        and all(r["significant"] == (r["p"] <= r["threshold"]) or not r["significant"] for r in rows)
+        and all(a["p_holm"] <= b["p_holm"] for a, b in zip(rows, rows[1:], strict=False))
+        and all(r["p_holm"] >= r["p"] for r in rows),
+        rows,
+    )
+    check(
+        "family-test --json: sampled at 40 items, said so",
+        v["method"] == "sampled" and v["permutations"] == 20000 and not any(r["p_exact"] for r in rows),
+        v,
+    )
+    # The cache replays the answer, in whichever form it was asked for.
+    cached_env = {"EVAL_HOME": str(tmp)}
+    first = run_script(*base, "--json", env=cached_env, cwd=tmp)
+    again = run_script(*base, "--json", env=cached_env, cwd=tmp)
+    check(
+        "family-test --json: the cache replays the same envelope, apart from the text's",
+        first.stdout == again.stdout == js.stdout and any((tmp / ".cache" / "family_test").glob("*.json")),
+        again.stderr[-200:],
+    )
+    cached_text = run_script(*base, env=cached_env, cwd=tmp)
+    check("family-test: the text after the JSON is still the text", cached_text.stdout == text.stdout)
+    bad = run_script(*[*base[:4], "no_such_arm", *base[5:]], "--json", env=env, cwd=tmp)
+    check(
+        "family-test --json: a refusal is on stderr, nothing on stdout, exit non-zero",
+        bad.returncode != 0 and bad.stdout == "" and "no runs for no_such_arm" in bad.stderr,
+        (bad.stdout, bad.stderr),
+    )
+    return 8
+
+
+def test_json_leaderboard() -> int:
+    """leaderboard --json: the ranking, the ordering test and the frontier as numbers."""
+    tmp, _meta, env = json_tree()
+    base = ["scripts/leaderboard.py", "--dataset-id", "dsj"]
+    text = run_script(*base, env=env, cwd=tmp)
+    js = run_script(*base, "--json", env=env, cwd=tmp)
+    e = parsed(js)
+    g = e["result"]["values"]["groups"]
+    check(
+        "leaderboard --json: one envelope, exit 0, one group",
+        js.returncode == 0 and len(g) == 1,
+        js.stderr[-300:],
+    )
+    g = g[0]
+    arms = g["arms"]
+    check(
+        "leaderboard --json: arms in rank order, with runs and acc as numbers",
+        [a["config_id"] for a in arms] == ["arm_a", "arm_b", "arm_c", "arm_d"]
+        and [a["metrics"]["acc"] for a in arms] == [1.0, 0.75, 0.5, 0.25]
+        and [a["n_runs"] for a in arms] == [1, 1, 1, 1]
+        and (g["sort_by"], g["direction"]) == ("acc", "higher"),
+        arms,
+    )
+    rows = table_rows(e, "config_id")
+    check(
+        "leaderboard --json: the table's rows are the text's, raw (a number, not 16 characters of it)",
+        [r["config_id"] for r in rows] == [a["config_id"] for a in arms]
+        and all(f"{r['acc']:16.6f}" in text.stdout for r in rows)
+        and all(isinstance(r["acc"], float) for r in rows),
+        rows,
+    )
+    o = g["ordering"]
+    check(
+        "leaderboard --json: the ordering test is the text's (Friedman p, Nemenyi CD, pairs)",
+        o["enough_data"]
+        and (o["arms"], o["items"]) == (4, 40)
+        and f"p = {o['global_p']:.4f}" in text.stdout
+        and f"Nemenyi critical difference = {o['nemenyi_cd']:.2f}" in text.stdout
+        and f"pairs distinguishable: {o['pairs_distinguishable']} of {o['pairs_total']}" in text.stdout
+        and len(o["distinguishable_pairs"]) == o["pairs_distinguishable"]
+        and all(o["avg_rank"][b] - o["avg_rank"][a] > o["nemenyi_cd"] for a, b in o["distinguishable_pairs"]),
+        o,
+    )
+    pr = table_rows(e, "arm")
+    check(
+        "leaderboard --json: P(1st) per arm as numbers, best rank first",
+        [r["arm"] for r in pr] == ["arm_a", "arm_b", "arm_c", "arm_d"]
+        and pr[0]["avg_rank"] == o["avg_rank"]["arm_a"],
+        pr,
+    )
+    fr = g["frontier"]
+    check(
+        "leaderboard --json: the frontier names its three metrics, the arms on it and the dominated",
+        fr is not None
+        and (fr["quality"], fr["cost"], fr["speed"]) == ("acc", "total_cost_usd", "latency_ms")
+        and fr["frontier"] == ["arm_a", "arm_b", "arm_c"]
+        and fr["dominated"] == ["arm_d"]
+        and "dominated (worse on all three than some other arm): arm_d" in text.stdout,
+        fr,
+    )
+    check(
+        "leaderboard --json: the printed lines are the text's lines (the tables aside)",
+        all(ln in text.stdout for ln in printed_lines(e)),
+    )
+    bad = run_script("scripts/leaderboard.py", "--dataset-id", "no_such_ds", "--json", env=env, cwd=tmp)
+    check(
+        "leaderboard --json: a refusal is on stderr, nothing on stdout, exit non-zero",
+        bad.returncode != 0 and bad.stdout == "" and "no runs on dataset" in bad.stderr,
+        (bad.stdout, bad.stderr),
+    )
+    return 8
+
+
+def test_json_run_compare() -> int:
+    """run-compare --json: the fingerprint result, the metric rows and the noise verdict."""
+    tmp, meta, env = json_tree()
+    base = ["scripts/compare_runs.py", "--baseline", "run_arm_a", "--candidate", "run_arm_b"]
+    text = run_script(*base, "--noise", "0.1", env=env, cwd=tmp)
+    js = run_script(*base, "--noise", "0.1", "--json", env=env, cwd=tmp)
+    e = parsed(js)
+    v = e["result"]["values"]
+    rows = {r["metric"]: r for r in table_rows(e, "metric")}
+    check("run-compare --json: one envelope, exit 0", js.returncode == 0 and e["command"] == "run-compare")
+    check(
+        "run-compare --json: acc baseline, candidate, delta and verdict are the text's",
+        rows["acc"]["baseline"] == 1.0
+        and rows["acc"]["candidate"] == 0.75
+        and rows["acc"]["delta"] == -0.25
+        and rows["acc"]["verdict"] == "worse"
+        and f"{-0.25:+12.6f}   worse" in text.stdout,
+        rows["acc"],
+    )
+    check(
+        "run-compare --json: the noise floor, what moved past it, the builds",
+        (v["noise"], v["moved_beyond_noise"], v["same_build"], v["dataset_id"]) == (0.1, 3, True, "dsj")
+        and "3 metric(s) moved beyond the stated noise floor" in text.stdout,
+        v,
+    )
+    check(
+        "run-compare --json: identical fingerprints are comparable and match",
+        v["fingerprint"]["comparable"] is True
+        and v["fingerprint"]["match"] is True
+        and v["fingerprint"]["moved"] == []
+        and "Fingerprints MATCH" in text.stdout,
+        v["fingerprint"],
+    )
+    wide = parsed(run_script(*base, "--noise", "1000", "--json", env=env, cwd=tmp))
+    check(
+        "run-compare --json: a delta under the floor is NOISE, and counts for nothing",
+        {r["verdict"] for r in table_rows(wide, "metric")} == {"NOISE (<= 1000.0)"}
+        and wide["result"]["values"]["moved_beyond_noise"] == 0,
+        wide["result"]["values"],
+    )
+    mj = meta["runs"] / "run_arm_b" / "metrics.json"
+    m = json.loads(mj.read_text())
+    del m["fingerprint"]
+    mj.write_text(json.dumps(m))
+    old = parsed(run_script(*base, "--json", env=env, cwd=tmp))["result"]["values"]
+    check(
+        "run-compare --json: a run that predates fingerprinting is not comparable, and says why",
+        old["fingerprint"]["comparable"] is False
+        and old["fingerprint"]["match"] is None
+        and "predates fingerprinting" in old["fingerprint"]["reason"]
+        and old["noise"] is None,
+        old,
+    )
+    write_run(meta, "run_other", "other_ds", "arm_a", {"acc": 0.5})
+    bad = run_script(*base[:3], "--candidate", "run_other", "--json", env=env, cwd=tmp)
+    check(
+        "run-compare --json: different datasets are REFUSED on stderr, nothing on stdout",
+        bad.returncode != 0 and bad.stdout == "" and "REFUSED" in bad.stderr,
+        (bad.stdout, bad.stderr),
+    )
+    trav = run_script(*base[:3], "--candidate", "../data/runs/run_arm_b", "--json", env=env, cwd=tmp)
+    check(
+        "run-compare: a run id that is a path is refused, not read",
+        trav.returncode != 0 and trav.stdout == "" and "not a path" in trav.stderr,
+        trav.stderr,
+    )
+    return 8
+
+
+def test_json_rank_stability() -> int:
+    """rank-stability --json: its table and conclusion; too few items is a refusal under --json."""
+    tmp, meta, env = json_tree()
+    base = ["scripts/rank_stability.py", "--dataset-id", "dsj", "--draws", "30"]
+    text = run_script(*base, env=env, cwd=tmp)
+    js = run_script(*base, "--json", env=env, cwd=tmp)
+    e = parsed(js)
+    v = e["result"]["values"]
+    rows = table_rows(e, "n_per_half")
+    check(
+        "rank-stability --json: one envelope, exit 0",
+        js.returncode == 0 and e["command"] == "rank-stability",
+        js.stderr,
+    )
+    check(
+        "rank-stability --json: arms, items, draws, the sizes measured and the leader",
+        (v["arms"], v["items"], v["draws"], v["sizes"], v["leader"]) == (4, 40, 30, [10, 20], "arm_a")
+        and "4 arms, 40 items, metric=acc, 30 draws per size" in text.stdout
+        and f"full-40 ordering's leader: {v['leader']}" in text.stdout,
+        v,
+    )
+    check(
+        "rank-stability --json: one row per size, rho and the tie count as the text prints them",
+        [r["n_per_half"] for r in rows] == [10, 20]
+        and all(
+            f"{r['n_per_half']:>11} {r['rho_mean']:>21.3f} {r['rho_5th_pct']:>9.3f}" in text.stdout
+            for r in rows
+        )
+        and all(f"{r['arms_tied_first']:>14.1f}" in text.stdout for r in rows),
+        rows,
+    )
+    check(
+        "rank-stability --json: saturated is the text's WARNING",
+        v["saturated"] == ("WARNING: up to" in text.stdout) and v["saturated"] == (v["worst_ties"] >= 2.0),
+        v,
+    )
+    ids = [f"j{i:02d}" for i in range(12)]
+    for arm in ("s_a", "s_b", "s_c"):
+        write_run(meta, f"run_{arm}", "dss", arm, {"acc": 0.5}, outputs={i: {"acc": 1.0} for i in ids})
+    small = ["scripts/rank_stability.py", "--dataset-id", "dss"]
+    t = run_script(*small, env=env, cwd=tmp)
+    j = run_script(*small, "--json", env=env, cwd=tmp)
+    check(
+        "rank-stability: too few items prints its message on stdout and exits 1, as ever",
+        t.returncode == 1 and "too few for two disjoint halves of 10" in t.stdout,
+        t.stdout,
+    )
+    check(
+        "rank-stability --json: too few items is a refusal: stderr, nothing on stdout, exit 1",
+        j.returncode == 1 and j.stdout == "" and "too few for two disjoint halves of 10" in j.stderr,
+        (j.stdout, j.stderr),
+    )
+    return 7
+
+
+def test_json_runs_list() -> int:
+    """runs-list --json: a row per run, a row per baseline."""
+    tmp, meta, env = json_tree()
+    text = run_script("scripts/list_runs.py", env=env, cwd=tmp)
+    js = run_script("scripts/list_runs.py", "--json", env=env, cwd=tmp)
+    e = parsed(js)
+    rows = table_rows(e, "run_id")
+    check(
+        "runs-list --json: one envelope, a row per run, count in values",
+        js.returncode == 0
+        and len(rows) == 4
+        and e["result"]["values"] == {"kind": "runs", "count": 4}
+        and e["command"] == "runs-list",
+        e["result"]["values"],
+    )
+    a = next(r for r in rows if r["run_id"] == "run_arm_a")
+    check(
+        "runs-list --json: run_id, config_id, dataset_id, created_at, build, directory and the scores as numbers",
+        (a["config_id"], a["dataset_id"], a["created_at"], a["build_ref"], a["dirty"])
+        == ("arm_a", "dsj", "2026-11-01T10:00:00Z", "abc123def456", False)
+        and a["directory"] == "data/runs/run_arm_a"
+        and a["scores"] == {"acc": 1.0, "latency_ms": 400.0, "total_cost_usd": 4.0},
+        a,
+    )
+    check(
+        "runs-list --json: every run the text lists is a row",
+        all(r["run_id"] in text.stdout for r in rows) and len(rows) == len(rows_of_text(text.stdout)),
+        text.stdout,
+    )
+    none = parsed(run_script("scripts/list_runs.py", "--baselines", "--json", env=env, cwd=tmp))
+    check(
+        "runs-list --baselines --json: no baselines is an empty table and a count of 0",
+        none["result"]["values"] == {"kind": "baselines", "count": 0}
+        and table_rows(none, "baseline_id") == [],
+        none,
+    )
+    (meta["data"] / "baselines").mkdir()
+    (meta["data"] / "baselines" / "dsj_baseline.json").write_text(
+        json.dumps(
+            {
+                "baseline_id": "dsj_baseline",
+                "dataset_id": "dsj",
+                "promoted_from": "run_arm_a",
+                "build": {"ref": "abc123def456"},
+                "reference_tier": "gold",
+                "adapter": "x/adapter.py",
+                "reason": "the best of four",
+                "scores": {"acc": 1.0, "n_items": 40},
+            }
+        )
+    )
+    bl = parsed(run_script("scripts/list_runs.py", "--baselines", "--json", env=env, cwd=tmp))
+    brow = table_rows(bl, "baseline_id")
+    bl_text = run_script("scripts/list_runs.py", "--baselines", env=env, cwd=tmp).stdout
+    check(
+        "runs-list --baselines --json: a row per baseline, its scores as numbers, the text unchanged",
+        bl["result"]["values"] == {"kind": "baselines", "count": 1}
+        and (brow[0]["promoted_from"], brow[0]["reason"], brow[0]["scores"]["acc"])
+        == ("run_arm_a", "the best of four", 1.0)
+        and "why      the best of four" in bl_text
+        and "scores   acc=1.0" in bl_text,
+        (brow, bl_text),
+    )
+    return 5
+
+
+def rows_of_text(text: str) -> list[str]:
+    """The run rows of runs-list's text: after the header, before the blank line and the footnote."""
+    lines = text.splitlines()
+    return [ln for ln in lines[1 : lines.index("")] if ln.strip()]
+
+
 def main() -> int:
     """Run all test functions."""
     tests = [
@@ -665,6 +1107,12 @@ def main() -> int:
         ("bootstrap_test basic", test_bootstrap_test_basic),
         ("bootstrap_test refuses non-classification", test_bootstrap_test_refuses_non_classification),
         ("holdout_significance basic", test_holdout_significance_basic),
+        ("pair-test --json", test_json_pair_test),
+        ("family-test --json", test_json_family_test),
+        ("leaderboard --json", test_json_leaderboard),
+        ("run-compare --json", test_json_run_compare),
+        ("rank-stability --json", test_json_rank_stability),
+        ("runs-list --json", test_json_runs_list),
         ("compare_runs missing run", test_compare_runs_missing_run),
         ("bootstrap_test missing opponent", test_bootstrap_test_missing_opponent),
         ("mutation: compare_runs delta", mutation_test_compare_runs),

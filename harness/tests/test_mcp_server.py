@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 KIT = HERE.parent / "tutorial"
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
-from evaluation_harness.mcp_server import NOT_TOOLS, READ_TOOLS  # noqa: E402
+from evaluation_harness.mcp_server import NOT_TOOLS, READ_TOOLS, tools_for  # noqa: E402
 
 try:
     import anyio
@@ -108,6 +108,47 @@ try:
     (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\n")
     r = evh("run", "--config", str(data / "configs" / "lead2.yaml"))
     check("setup: one run", r.returncode == 0, r.stderr[-300:])
+    said = r.stdout.splitlines()
+    wrote = next((n for n, ln in enumerate(said) if ln.startswith("wrote 1 run(s) to ")), -1)
+    check(
+        "run: prints the id of each run it wrote, on the lines after 'wrote N run(s)'",
+        wrote >= 0 and said[wrote + 1].startswith("  run tickets_lead2_v1_"),
+        r.stdout[-300:],
+    )
+    # The second arm, through --json: progress on stderr, one envelope on stdout.
+    (data / "configs" / "lead1.yaml").write_text(
+        (KIT / "configs" / "tickets_lead1.yaml").read_text() + "goal: tickets_summary\n"
+    )
+    dry = evh("run", "--config", str(data / "configs" / "lead1.yaml"), "--dry-run", "--json")
+    dry_values = json.loads(dry.stdout)["result"]["values"] if dry.returncode == 0 else {}
+    check(
+        "run --dry-run --json: the projection as values, nothing written",
+        (dry_values.get("dry_run") or {}).get("items") == 6
+        and dry_values["dry_run"]["api_calls"] == 6
+        and dry_values["dry_run"]["config_id"] == "tickets_lead1_v1"
+        and "runs" not in dry_values
+        and len(list((data / "runs").glob("tickets_lead1_v1_*"))) == 0,
+        dry.stdout[-300:] + dry.stderr[-300:],
+    )
+    r = evh("run", "--config", str(data / "configs" / "lead1.yaml"), "--json")
+    made = (
+        json.loads(r.stdout)["result"]["values"]["runs"]
+        if r.returncode == 0 and r.stdout.count("\n") == 1
+        else []
+    )
+    check(
+        "run --json: stdout is one envelope with the run (id, config, dataset, dir, items, cost, cap); progress is on stderr",
+        len(made) == 1
+        and made[0]["run_id"].startswith("tickets_lead1_v1_")
+        and (made[0]["config_id"], made[0]["dataset_id"], made[0]["n_items"])
+        == ("tickets_lead1_v1", "tickets_v1", 6)
+        and made[0]["total_cost_usd"] in (0, 0.0, None)
+        and made[0]["capped_at"] is None
+        and Path(made[0]["dir"]).is_dir()
+        and "wrote 1 run(s) to" in r.stderr
+        and f"  run {made[0]['run_id']}" in r.stderr,
+        r.stdout[-300:] + r.stderr[-300:],
+    )
 
     # A PUBLIC SERVER'S inspect SEES ONLY PUBLIC FIELDS. It runs in its own process, where the
     # inspector's public rules were never set, so --where/--by on a field not marked public answered
@@ -211,6 +252,98 @@ try:
                 and res.structured_content == json.loads(want),
                 res.content[0].text[:300],
             )
+            # The statistics and the runs: tools that answer with the command's own --json.
+            ids = {
+                row["config_id"]: row["run_id"]
+                for b in json.loads(evh("runs-list", "--json").stdout)["result"]["blocks"]
+                for row in b.get("rows", [])
+            }
+            asked = {
+                "runs-list": ({}, ["runs-list"]),
+                "leaderboard": ({"dataset-id": "tickets_v1"}, ["leaderboard", "--dataset-id", "tickets_v1"]),
+                "pair-test": (
+                    {"dataset-id": "tickets_v1", "a": "tickets_lead2_v1", "b": "tickets_lead1_v1"},
+                    [
+                        "pair-test",
+                        "--dataset-id",
+                        "tickets_v1",
+                        "--a",
+                        "tickets_lead2_v1",
+                        "--b",
+                        "tickets_lead1_v1",
+                    ],
+                ),
+                "family-test": (
+                    {"dataset-id": "tickets_v1", "a": "tickets_lead2_v1", "against": "tickets_lead"},
+                    [
+                        "family-test",
+                        "--dataset-id",
+                        "tickets_v1",
+                        "--a",
+                        "tickets_lead2_v1",
+                        "--against",
+                        "tickets_lead",
+                    ],
+                ),
+                "run-compare": (
+                    {"baseline": ids["tickets_lead1_v1"], "candidate": ids["tickets_lead2_v1"]},
+                    [
+                        "run-compare",
+                        "--baseline",
+                        ids["tickets_lead1_v1"],
+                        "--candidate",
+                        ids["tickets_lead2_v1"],
+                    ],
+                ),
+                "rounds": ({"goal": "tickets_summary"}, ["rounds", "--goal", "tickets_summary"]),
+            }
+            for tool, (arguments, argv) in asked.items():
+                res = await s.call_tool(tool, arguments)
+                want = json.loads(evh(*argv, "--json").stdout)
+                got = json.loads(res.content[0].text) if not res.is_error else {}
+                check(
+                    f"{tool}: a read tool whose answer is the command's --json, as structured content",
+                    not res.is_error
+                    and got == want
+                    and res.structured_content == want
+                    and want["command"] == tool
+                    and "values" in want["result"],
+                    res.content[0].text[:300],
+                )
+            pv = json.loads((await s.call_tool("pair-test", asked["pair-test"][0])).content[0].text)[
+                "result"
+            ]["values"]
+            check(
+                "pair-test: the pair's numbers by name (exact over 6 items, 3 differ in lead2's favour)",
+                (pv["a"], pv["b"], pv["n"], pv["method"])
+                == ("tickets_lead2_v1", "tickets_lead1_v1", 6, "exact")
+                and abs(pv["p"] - 3 / 32) < 1e-9
+                and pv["verdict"] == "NOT-SIGNIFICANT",
+                pv,
+            )
+            for tool in ("pair-test", "family-test"):
+                props = set(by[tool].input_schema["properties"])
+                check(
+                    f"{tool}: its schema has no option naming a path of the server's (--runs-dir, --items)",
+                    {"dataset-id", "a", "permutations"} <= props and not {"runs-dir", "items"} & props,
+                    sorted(props),
+                )
+            res = await s.call_tool("rank-stability", {"dataset-id": "tickets_v1"})
+            check(
+                "rank-stability: two arms cannot be ranked: an error with the message, nothing as an answer",
+                res.is_error and "need at least 3 to rank" in res.content[0].text,
+                res.content[0].text[:300],
+            )
+            res = await s.call_tool(
+                "run-compare", {"baseline": "../outside", "candidate": ids["tickets_lead2_v1"]}
+            )
+            check(
+                "run-compare: a run id that is a path is refused, nothing outside the runs folder is read",
+                res.is_error
+                and "TOPSECRET" not in res.content[0].text
+                and "not a path" in res.content[0].text,
+                res.content[0].text[:300],
+            )
             res = await s.call_tool("datasets", {"bogus": 1})
             check(
                 "an unknown argument is refused before anything runs",
@@ -294,6 +427,43 @@ try:
             )
 
     anyio.run(session)
+
+    async def public_session():
+        params = StdioServerParameters(
+            command=sys.executable, args=[str(HERE / "cli.py"), "mcp", "--public"], cwd=str(proj), env=env
+        )
+        async with stdio_client(params) as (rd, wr), ClientSession(rd, wr) as s:
+            await s.initialize()
+            by = {t.name: t for t in (await s.list_tools()).tools}
+            check(
+                "--public: the statistics are tools; validate is not",
+                {"leaderboard", "pair-test", "family-test", "rank-stability", "run-compare", "rounds"}
+                <= set(by)
+                and "validate" not in by
+                and sorted(by) == sorted(tools_for(True)),
+                sorted(by),
+            )
+            held = {
+                "pair-test": {"permutations", "runs-dir", "items"},
+                "family-test": {"permutations", "runs-dir", "items"},
+                "rank-stability": {"draws"},
+            }
+            check(
+                "--public: how long a statistic runs (--permutations, --draws) is not the caller's to set",
+                all(not held[t] & set(by[t].input_schema["properties"]) for t in held),
+                {t: sorted(by[t].input_schema["properties"]) for t in held},
+            )
+            res = await s.call_tool(
+                "pair-test", {"dataset-id": "tickets_v1", "a": "tickets_lead2_v1", "b": "tickets_lead1_v1"}
+            )
+            check(
+                "--public pair-test: numbers and ids only (no item text, no output)",
+                not res.is_error
+                and not any(k in res.content[0].text for k in ("t01_login", "area", "deadline", "TOPSECRET")),
+                res.content[0].text[:300],
+            )
+
+    anyio.run(public_session)
     from evaluation_harness.mcp_server import public_error
 
     tb = "Traceback (most recent call last):\n  File \"/srv/evals/releases/abc/pkg/x.py\", line 1\nKeyError: 'x'"

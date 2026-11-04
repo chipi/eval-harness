@@ -51,6 +51,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
+from evaluation_harness import _jsonout  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     GOALS,
     ROOT,
@@ -119,17 +120,25 @@ def main() -> int:
             sys.stderr.write(c["stderr"])
             return c["rc"]
     out, err = io.StringIO(), io.StringIO()
-    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+    with (
+        contextlib.redirect_stdout(out),
+        contextlib.redirect_stderr(err),
+        _jsonout.collect("family-test", args.json),
+    ):
         rc = _run(args)
     sys.stdout.write(out.getvalue())
     sys.stderr.write(err.getvalue())
     if use_cache:
-        CACHE.mkdir(parents=True, exist_ok=True)
-        tmp = hit.with_suffix(".tmp")
-        tmp.write_text(
-            json.dumps({"stdout": out.getvalue(), "stderr": err.getvalue(), "rc": rc}), encoding="utf-8"
-        )
-        tmp.replace(hit)  # atomic: a concurrent reader never sees half a file
+        # Best effort: the answer is in hand, and a read-only project (a server's copy) only loses the speed-up.
+        try:
+            CACHE.mkdir(parents=True, exist_ok=True)
+            tmp = hit.with_suffix(".tmp")
+            tmp.write_text(
+                json.dumps({"stdout": out.getvalue(), "stderr": err.getvalue(), "rc": rc}), encoding="utf-8"
+            )
+            tmp.replace(hit)  # atomic: a concurrent reader never sees half a file
+        except OSError:
+            pass
     return rc
 
 
@@ -156,6 +165,12 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--seed", type=int, default=20260926)
     ap.add_argument("--round", help="only opponents in play in this round of a goal (rN; ADR-0004)")
     ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="the same answer as one JSON object: the printed lines as blocks, the opponents table as "
+        "data, and the result by name under result.values",
+    )
     return ap
 
 
@@ -236,16 +251,57 @@ def _run(args) -> int:
             f"  p: a seeded estimate ({args.permutations} permutations, one random stream for the family);\n"
             "     pair-test and the inspector estimate one pair at a time and can differ in the third decimal\n"
         )
+    # The adjusted p of Holm's step-down: p x (m - i) for the i-th smallest, never below an earlier one.
+    # It is at or under alpha exactly when the step-down rejects that opponent.
+    running = 0.0
+    for i, r in enumerate(rows):
+        running = max(running, min(1.0, r["p"] * (m - i)))
+        r["p_holm"] = running
     width = max(len(r["opp"]) for r in rows) + 2
-    print(f"    {'opponent':{width}} {'delta':>9} {'A wins':>9} {'p':>8} {'thresh':>8}   verdict")
-    for r in rows:
-        pv = ("~" if any(est) and not all(est) and r["n"] > EXACT_UP_TO else "") + fmt_p(r["p"])
-        print(
-            f"    {r['opp']:{width}} {r['delta']:+9.4f} {r['wins']:>4}/{r['n']:<4} "
-            f"{pv:>8} {r['thresh']:8.4f}   {'SIGNIFICANT' if r['sep'] else '--'}"
-        )
+    if not _jsonout.table(
+        ["opponent", "n", "delta", "wins", "p", "p_exact", "p_holm", "threshold", "significant"],
+        [
+            [
+                r["opp"],
+                r["n"],
+                r["delta"],
+                r["wins"],
+                r["p"],
+                r["n"] <= EXACT_UP_TO,
+                r["p_holm"],
+                r["thresh"],
+                bool(r["sep"]),
+            ]
+            for r in rows
+        ],
+    ):
+        print(f"    {'opponent':{width}} {'delta':>9} {'A wins':>9} {'p':>8} {'thresh':>8}   verdict")
+        for r in rows:
+            pv = ("~" if any(est) and not all(est) and r["n"] > EXACT_UP_TO else "") + fmt_p(r["p"])
+            print(
+                f"    {r['opp']:{width}} {r['delta']:+9.4f} {r['wins']:>4}/{r['n']:<4} "
+                f"{pv:>8} {r['thresh']:8.4f}   {'SIGNIFICANT' if r['sep'] else '--'}"
+            )
     sep = sum(1 for r in rows if r["sep"])
     ahead = sum(1 for r in rows if (r["delta"] < 0 if lower else r["delta"] > 0))
+    _jsonout.values(
+        {
+            "a": args.a,
+            "against": args.against,
+            "dataset_id": args.dataset_id,
+            "metric": args.metric,
+            "direction": "lower" if lower else "higher",
+            "n": n_items,
+            "family_size": m,
+            "alpha": args.alpha,
+            "correction": "holm",
+            "method": "exact" if not any(est) else ("sampled" if all(est) else "mixed"),
+            "permutations": args.permutations if any(est) else None,
+            "seed": args.seed,
+            "significant": sep,
+            "ahead": ahead,
+        }
+    )
     print(
         f"\n    significantly different from {sep} of {m} opponents; ahead on the point estimate against {ahead} of {m}"
     )

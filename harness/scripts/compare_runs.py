@@ -25,7 +25,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+from pathlib import Path
 
+from evaluation_harness import _jsonout
 from evaluation_harness._adapter import recorded_metric_kinds
 from evaluation_harness._common import (
     RUNS,
@@ -83,12 +85,24 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
     """
     fa, fb = a.get("fingerprint"), b.get("fingerprint")
     if not (fa and fb):
+        _jsonout.value(
+            "fingerprint",
+            {"comparable": False, "reason": "at least one run predates fingerprinting", "match": None},
+        )
         print(
             "\n  NOTE: at least one run predates fingerprinting, so what else changed"
             "\n  between them cannot be checked — only asserted."
         )
         return
     if fa.get("version") != fb.get("version"):
+        _jsonout.value(
+            "fingerprint",
+            {
+                "comparable": False,
+                "reason": f"fingerprint versions differ (v{fa.get('version')} vs v{fb.get('version')})",
+                "match": None,
+            },
+        )
         print(
             f"\n  NOTE: fingerprint versions differ (v{fa.get('version')} vs v{fb.get('version')}):"
             "\n  they hash different things, so no part can be compared. Re-run the older arm to put"
@@ -99,6 +113,18 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
     from evaluation_harness._fingerprint import PARTS, moved_parts  # noqa: PLC0415
 
     moved = moved_parts(fa, fb)
+    ra, rb = fa.get("runner") or {}, fb.get("runner") or {}
+    _jsonout.value(
+        "fingerprint",
+        {
+            "comparable": True,
+            "match": not moved,
+            "moved": [p for p in PARTS if p in moved],
+            "detail": [_what_moved(p, fa, fb) for p in PARTS if p in moved],
+            "confounds": [p for p in PARTS if p in moved and p in ("instrument", "data")],
+            "runner_differs": ra != rb,
+        },
+    )
     if not moved:
         print(
             "\n  Fingerprints MATCH: instrument, data, deployment and settings are identical,"
@@ -121,7 +147,6 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
                 "\n  The deployment and the settings both moved: two things were varied, so a delta"
                 "\n  cannot be put on either alone."
             )
-    ra, rb = fa.get("runner") or {}, fb.get("runner") or {}
     if ra != rb:
         diff = [k for k in sorted(set(ra) | set(rb)) if k != "libraries" and ra.get(k) != rb.get(k)]
         libs = sorted(
@@ -140,6 +165,10 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
 
 def load(run_id: str) -> dict:
     """Load metrics.json for a run; die if not found."""
+    # A run is a directory of the runs folder: an id that names a path ("../x") is not one (the MCP tool
+    # takes ids from an agent).
+    if run_id in ("", ".", "..") or run_id != Path(run_id).name:
+        die(f"no run {run_id!r}: a run id names a directory of {RUNS.name}, not a path")
     p = RUNS / run_id / "metrics.json"
     if not p.is_file():
         die(f"no run {run_id!r} (looked for {p})")
@@ -159,8 +188,18 @@ def main() -> int:
         "0 is a real answer — it means the arm is deterministic — so it is not "
         "the same as omitting the flag.",
     )
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="the same answer as one JSON object: the printed lines as blocks, the metric table as data, "
+        "and the result by name under result.values (fingerprint, worth, ...)",
+    )
     args = ap.parse_args()
+    with _jsonout.collect("run-compare", args.json):
+        return _run(args)
 
+
+def _run(args: argparse.Namespace) -> int:
     a, b = load(args.baseline), load(args.candidate)
 
     if a["dataset_id"] != b["dataset_id"]:
@@ -185,7 +224,6 @@ def main() -> int:
 
     keys = sorted(set(a["scores"]) | set(b["scores"]))
     w = max([len(k) for k in keys] + [6])
-    print(f"\n  {'metric':{w}} {'baseline':>12} {'candidate':>12} {'delta':>12}   verdict")
     # THE KINDS THE RUNS THEMSELVES RECORDED. `verdict_for` otherwise consults only the
     # built-in table, which knows the bundled adapter's metrics and nothing else -- so
     # every example's own metrics were judged "better"/"worse" by sign alone. An arm
@@ -199,9 +237,10 @@ def main() -> int:
         kinds.update(recorded_metric_kinds(run.get("adapter")) or {})
 
     worth = 0
+    shown: list[tuple] = []  # (metric, baseline, candidate, delta, verdict); None where a side has none
     for k in keys:
         if k not in a["scores"] or k not in b["scores"]:
-            print(f"  {k:{w}} {'—':>12} {'—':>12} {'—':>12}   only on one side")
+            shown.append((k, a["scores"].get(k), b["scores"].get(k), None, "only on one side"))
             continue
         av, bv = a["scores"][k], b["scores"][k]
         d = bv - av
@@ -220,7 +259,28 @@ def main() -> int:
             # it inflated the number a reader uses to decide whether to care.
             if verdict in ("better", "worse"):
                 worth += 1
-        print(f"  {k:{w}} {av:12.6f} {bv:12.6f} {d:+12.6f}   {verdict}")
+        shown.append((k, av, bv, d, verdict))
+
+    if not _jsonout.table(["metric", "baseline", "candidate", "delta", "verdict"], shown):
+        print(f"\n  {'metric':{w}} {'baseline':>12} {'candidate':>12} {'delta':>12}   verdict")
+        for k, av, bv, d, verdict in shown:
+            if d is None:
+                print(f"  {k:{w}} {'—':>12} {'—':>12} {'—':>12}   {verdict}")
+            else:
+                print(f"  {k:{w}} {av:12.6f} {bv:12.6f} {d:+12.6f}   {verdict}")
+    _jsonout.values(
+        {
+            "dataset_id": a["dataset_id"],
+            "baseline": args.baseline,
+            "candidate": args.candidate,
+            "baseline_build": a["build"]["ref"],
+            "candidate_build": b["build"]["ref"],
+            "same_build": a["build"]["ref"] == b["build"]["ref"],
+            "dirty_build": bool(a["build"].get("dirty") or b["build"].get("dirty")),
+            "noise": args.noise,
+            "moved_beyond_noise": worth,
+        }
+    )
 
     if args.noise is None:
         print(

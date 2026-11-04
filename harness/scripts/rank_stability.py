@@ -37,6 +37,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
+from evaluation_harness import _jsonout  # noqa: E402
 from evaluation_harness._common import RUNS, die  # noqa: E402
 from evaluation_harness._runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
 from evaluation_harness.stats import spearman  # noqa: E402 - midranks of midranks are the midranks: same rho
@@ -108,7 +109,18 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=20260926)
     ap.add_argument("--asc", action="store_true", help="lower is better (default: inferred)")
     ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="the same answer as one JSON object: the printed lines as blocks, the table as data, and the "
+        "result by name under result.values",
+    )
     args = ap.parse_args()
+    with _jsonout.collect("rank-stability", args.json):
+        return _run(args)
+
+
+def _run(args: argparse.Namespace) -> int:
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
@@ -124,10 +136,13 @@ def main() -> int:
         die(f"{len(arms)} arm(s) with per-item '{args.metric}' on {args.dataset_id}: need at least 3 to rank")
     items = sorted(set.intersection(*(set(M[a]) for a in arms)))
     if 2 * SIZES[0] > len(items):
-        print(
+        too_few = (
             f"  {len(items)} items shared by the {len(arms)} arms: too few for two disjoint halves of "
             f"{SIZES[0]}, the smallest size measured. Rank stability needs at least {2 * SIZES[0]}."
         )
+        if args.json:  # a refusal: its message on stderr, nothing on stdout
+            die(too_few.strip())
+        print(too_few)
         return 1
     print(f"  {len(arms)} arms, {len(items)} items, metric={args.metric}, {args.draws} draws per size\n")
 
@@ -135,10 +150,13 @@ def main() -> int:
     winner = min(arms, key=lambda a: full[a])
     rng = random.Random(args.seed)
 
-    print(
-        f"  {'n per half':>11} {'rho(half A, half B)':>21} {'5th pct':>9} "
-        f"{'P(same winner)':>15} {'median |rank move|':>19} {'arms tied 1st':>14}"
-    )
+    # Under --json the rows are kept and handed over as one table after the loop; the lines are for text.
+    if not args.json:
+        print(
+            f"  {'n per half':>11} {'rho(half A, half B)':>21} {'5th pct':>9} "
+            f"{'P(same winner)':>15} {'median |rank move|':>19} {'arms tied 1st':>14}"
+        )
+    table_rows: list[list] = []
     worst_ties = 0.0
     for n in SIZES:
         if 2 * n > len(items):
@@ -176,13 +194,45 @@ def main() -> int:
         # unique best arm, how often was it the same one". Dividing by all draws would
         # mix "they disagreed" with "neither half had an answer".
         pw = (same / decided) if decided else float("nan")
-        print(
-            f"  {n:>11} {rho_m:>21.3f} {rho_5:>9.3f} "
-            f"{pw:>15.2f} {statistics.fmean(moves):>19.2f} "
-            f"{mean_ties:>14.1f}{flag}"
-            + (f"   [{undecided}/{args.draws} draws undecided]" if undecided else "")
-        )
+        if args.json:
+            table_rows.append(
+                [n, rho_m, rho_5, pw, statistics.fmean(moves), mean_ties, mean_ties >= 2.0, undecided]
+            )
+        else:
+            print(
+                f"  {n:>11} {rho_m:>21.3f} {rho_5:>9.3f} "
+                f"{pw:>15.2f} {statistics.fmean(moves):>19.2f} "
+                f"{mean_ties:>14.1f}{flag}"
+                + (f"   [{undecided}/{args.draws} draws undecided]" if undecided else "")
+            )
         worst_ties = max(worst_ties, mean_ties)
+    _jsonout.table(
+        [
+            "n_per_half",
+            "rho_mean",
+            "rho_5th_pct",
+            "p_same_winner",
+            "median_rank_move",
+            "arms_tied_first",
+            "ties_decide",
+            "undecided_draws",
+        ],
+        table_rows,
+    )
+    _jsonout.values(
+        {
+            "dataset_id": args.dataset_id,
+            "metric": args.metric,
+            "arms": len(arms),
+            "items": len(items),
+            "draws": args.draws,
+            "seed": args.seed,
+            "sizes": [n for n in SIZES if 2 * n <= len(items)],
+            "leader": winner,
+            "worst_ties": worst_ties,
+            "saturated": worst_ties >= 2.0,
+        }
+    )
     print(f"\n  full-{len(items)} ordering's leader: {winner}")
     print("  'P(same winner)' = of the draws where BOTH halves had a UNIQUE best arm, how")
     print("  often it was the same one. Draws where either half's top was tied are counted")

@@ -30,7 +30,7 @@ import textwrap
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _rounds
+from evaluation_harness import _common, _jsonout, _rounds
 from evaluation_harness import catalog_serve as cs
 from evaluation_harness._common import die, load_goals, now, read_json
 from evaluation_harness.catalog_adapter import load_catalog_adapter
@@ -535,19 +535,45 @@ def status(argv: list[str]) -> int:
     )
     ap.add_argument("--goal", required=True)
     ap.add_argument("--round", help="one round in full (default: the open one, else the last)")
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="the same answer as one JSON object: the printed lines as blocks, the tables as data, and "
+        "the shown round, its evidence and suggestions under result.values",
+    )
     args = ap.parse_args(argv)
+    with _jsonout.collect("rounds", args.json):
+        return _status(args)
+
+
+def _status(args: argparse.Namespace) -> int:
     _goal(args.goal)
     rounds = _rounds.load_rounds(args.goal)
     if not rounds:
         print(
             f"{args.goal} has no rounds (they are optional). Open one: evh round-open --goal {args.goal} --dataset <dataset>"
         )
+        _jsonout.values({"goal": args.goal, "rounds": []})
         return 0
-    for r in rounds:
-        c = (r.get("conclusion") or {}).get("text", "")
-        print(
-            f"  {r['round_id']:4} {r['status']:7} {r.get('dataset_id', '')}  {len(_rounds.arms_of(r))} arm(s), {len(r.get('retired') or [])} retired  {c[:70]}"
-        )
+    if not _jsonout.table(
+        ["round_id", "status", "dataset_id", "arms", "retired", "conclusion"],
+        [
+            [
+                r["round_id"],
+                r["status"],
+                r.get("dataset_id", ""),
+                len(_rounds.arms_of(r)),
+                len(r.get("retired") or []),
+                (r.get("conclusion") or {}).get("text", ""),
+            ]
+            for r in rounds
+        ],
+    ):
+        for r in rounds:
+            c = (r.get("conclusion") or {}).get("text", "")
+            print(
+                f"  {r['round_id']:4} {r['status']:7} {r.get('dataset_id', '')}  {len(_rounds.arms_of(r))} arm(s), {len(r.get('retired') or [])} retired  {c[:70]}"
+            )
     rnd = (
         _round(args.goal, args.round)
         if args.round
@@ -576,14 +602,44 @@ def status(argv: list[str]) -> int:
         f"\n  on {ev['metric']}: {len(ev['arms'])} arm(s) in play"
         + (f", leader {ev['leader'].rsplit('/', 1)[-1]}" if ev.get("leader") else "")
     )
-    for r in ev["rows"]:
-        print(
-            f"    {r['arm'].rsplit('/', 1)[-1]:32} {r['verdict']:18} Δ {r['delta']:+.4f}  p {fmt_p(r['p'])}"
-        )
-    for v in ev["against"]:
-        print(
-            f"  against {v['label']} ({v['other'].rsplit('/', 1)[-1]}): {v['verdict']}, Δ {v['delta']:+.4f}, p {fmt_p(v['p'])}"
-        )
+    if not _jsonout.table(
+        ["arm", "verdict", "delta", "p"], [[r["arm"], r["verdict"], r["delta"], r["p"]] for r in ev["rows"]]
+    ):
+        for r in ev["rows"]:
+            print(
+                f"    {r['arm'].rsplit('/', 1)[-1]:32} {r['verdict']:18} Δ {r['delta']:+.4f}  p {fmt_p(r['p'])}"
+            )
+    if not _jsonout.table(
+        ["label", "other", "verdict", "delta", "p"],
+        [[v["label"], v["other"], v["verdict"], v["delta"], v["p"]] for v in ev["against"]],
+    ):
+        for v in ev["against"]:
+            print(
+                f"  against {v['label']} ({v['other'].rsplit('/', 1)[-1]}): {v['verdict']}, Δ {v['delta']:+.4f}, p {fmt_p(v['p'])}"
+            )
+    _jsonout.values(
+        {
+            "goal": args.goal,
+            "round": {
+                k: rnd.get(k)
+                for k in ("round_id", "status", "dataset_id", "from", "hypothesis", "scorer", "baseline")
+            }
+            | {
+                "changes": rnd.get("changes") or [],
+                "retired": rnd.get("retired") or [],
+                "scoring": rnd.get("scoring") or [],
+                "conclusion": (rnd.get("conclusion") or {}).get("text"),
+            },
+            "metric": ev["metric"],
+            "arms": ev["arms"],
+            "leader": ev.get("leader"),
+            "reference": ev.get("reference"),
+            "spent_usd": ev.get("spent"),
+            "cost_per_item": ev.get("cost_per_item") or {},
+            "notes": ev["notes"],
+            "suggest": [{"what": what, "command": cmd or None} for what, cmd in ev["suggest"]],
+        }
+    )
     for n in ev["notes"]:
         print(f"  NOTE: {n}")
     if rnd["status"] == "open" and ev["suggest"]:
