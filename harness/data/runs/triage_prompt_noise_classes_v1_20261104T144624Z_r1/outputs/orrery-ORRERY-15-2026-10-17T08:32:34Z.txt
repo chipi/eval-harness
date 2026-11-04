@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "orrery-staging-isolation-probe 2026-10-17", "model_disposition": "cleanup", "reason": "The error message 'orrery-staging-isolation-probe 2026-10-17' is a clear synthetic marker \u2014 a deliberate probe to verify staging isolation, not a real application error."}
