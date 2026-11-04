@@ -13,7 +13,7 @@ Pin a release tag:
 
 ```toml
 # pyproject.toml
-"evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.1#subdirectory=harness",
+"evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.2#subdirectory=harness",
 ```
 
 - **Pin a tag, never a branch.** A branch moves; a run recorded against it cannot be

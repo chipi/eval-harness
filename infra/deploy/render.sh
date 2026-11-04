@@ -189,7 +189,19 @@ fi
 [ ! -e "$OUT/inspector/data/materialized" ] || { echo "::error::materialized items in the release"; exit 1; }
 # The MCP server's precomputed goals' tests: without them each view takes ~50 s.
 [ -s "$OUT/inspector/cache/evh-p.jsonl" ] || { echo "::error::the p cache (inspector/cache/evh-p.jsonl) is missing or empty"; exit 1; }
-# And its answers written ahead: without them the first call to each tool waits for a fresh process.
-grep -q '"tool": "goals"' "$OUT/inspector/cache/mcp-answers.jsonl" 2>/dev/null \
-  || { echo "::error::the MCP answers (inspector/cache/mcp-answers.jsonl) are missing, or hold no goals"; exit 1; }
+# And its answers written ahead: without them the first call to each tool waits for a fresh process. Not only
+# present but answered from the release's data: from 0.6.2 to 0.7.1 they were written from an empty project (a
+# relative EVAL_HOME read from inside it), and the public server said there were no goals.
+python3 - "$OUT/inspector/cache/mcp-answers.jsonl" "$OUT/inspector/data/goals" <<'PY' || exit 1
+import json, pathlib, sys
+recs = [json.loads(x) for x in open(sys.argv[1], encoding="utf-8")] if pathlib.Path(sys.argv[1]).is_file() else []
+goals = next((r for r in recs if r.get("tool") == "goals" and not r.get("argv")), None)
+rows = sum(len(b.get("rows") or []) for b in json.loads(goals["out"])["result"]["blocks"]) if goals else 0
+want = len(list(pathlib.Path(sys.argv[2]).glob("*.yaml")))
+boards = sum(r.get("tool") == "leaderboard" for r in recs)
+if rows != want or not boards:
+    print(f"::error::the MCP answers (inspector/cache/mcp-answers.jsonl): goals answers {rows} of the release's {want}, "
+          f"{boards} leaderboard(s) written ahead")
+    sys.exit(1)
+PY
 echo "rendered release $SHA into $OUT (nginx $PORT, inspector $IPORT, mcp $MPORT)"

@@ -9,6 +9,24 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.7.2 — 2026-11-04
+
+The public MCP server's answers written ahead were empty. From 0.6.2 to 0.7.1 its `goals`, `datasets`, `arms`,
+`models`, `references` and `runs-list` answered as if the project held nothing, and 0.7.1's leaderboards written
+ahead were never written. A project's own server (`evh mcp` without `--answers`) and every command were not
+affected. No result moves.
+
+### Fixed
+
+- **Answers written ahead are answered from the project's data.** `evh mcp --write-answers` runs each command
+  inside the project; the deployment passed `EVAL_HOME` as a relative path (`_release/inspector`), which each
+  command read from inside the project, where there is no such folder. A relative `EVAL_HOME` or `EVH_P_CACHE` is
+  now made absolute from where the caller stands before the command runs.
+- **A broken write is no longer silent.** `--write-answers` names what it could not write (a dataset with no runs,
+  an answer too large, or a call that failed with its error) and exits non-zero when a call failed; the
+  deployment's render also refuses answers whose `goals` do not list the release's goals, or that hold no
+  leaderboard.
+
 ## 0.7.1 — 2026-11-04
 
 Fixes from the fifth newcomer scenario (the first on a release, 0.7.0) and from releasing 0.7.0. A judge that

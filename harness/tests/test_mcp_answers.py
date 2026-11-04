@@ -49,6 +49,44 @@ def evh(*args):
 
 srv = None
 try:
+    # A relative EVAL_HOME, as render.sh passed it (`EVAL_HOME=_release/inspector`, run from the checkout): the
+    # commands run inside the project, and from 0.6.2 to 0.7.1 they resolved it there and answered from nothing.
+    (tmp / "data" / "goals").mkdir(parents=True)
+    shutil.copy(
+        Path(__file__).resolve().parents[1] / "tutorial" / "goals" / "tickets_summary.yaml",
+        tmp / "data" / "goals",
+    )
+    rel_env = dict(env, EVAL_HOME=tmp.name)
+    r = subprocess.run(
+        [
+            sys.executable,
+            str(HERE / "cli.py"),
+            "mcp",
+            "--project",
+            tmp.name,
+            "--public",
+            "--write-answers",
+            str(tmp / "rel.jsonl"),
+        ],
+        cwd=tmp.parent,
+        env=rel_env,
+        capture_output=True,
+        text=True,
+    )
+    rel = (
+        {x["tool"]: x for x in map(json.loads, (tmp / "rel.jsonl").read_text().splitlines())}
+        if r.returncode == 0
+        else {}
+    )
+    goal_rows = json.loads(rel["goals"]["out"])["result"]["blocks"][0]["rows"] if "goals" in rel else []
+    check(
+        "--write-answers with a relative EVAL_HOME (from outside the project) answers from the project's data",
+        [row.get("goal") for row in goal_rows] == ["tickets_summary"],
+        (r.stderr[-300:], goal_rows),
+    )
+    (tmp / "rel.jsonl").unlink(missing_ok=True)
+    shutil.rmtree(tmp / "data" / "goals")
+
     r = evh("mcp", "--public", "--write-answers", str(answers))
     lines = [json.loads(x) for x in answers.read_text().splitlines()] if answers.exists() else []
     tools = {x["tool"] for x in lines}

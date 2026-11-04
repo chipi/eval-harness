@@ -5,6 +5,12 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.7.1 to 0.7.2
+
+Change the pin to `@v0.7.2`. Nothing to migrate and no result moves. A deployment that serves `evh mcp --public
+--answers` should write its answers again (`evh mcp --write-answers`): files written by 0.6.2 to 0.7.1 from a
+relative `EVAL_HOME` hold empty answers. `--write-answers` now exits non-zero when a call fails.
+
 ## From 0.7.0 to 0.7.1
 
 Change the pin to `@v0.7.1`. No format changes; no committed run's scores or fingerprint move.

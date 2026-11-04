@@ -278,6 +278,11 @@ def public_error(text: str, project: Path) -> str:
     return re.sub(r"/(?:[\w.-]+/)+", "", msg)[:2000]
 
 
+#: The environment variables that name a path from where a command stands (EVAL_DATA_DIR and EVAL_RUNS_DIR are
+#: relative to the project root, _common._paths, so they stay as they are).
+PATH_VARS = ("EVAL_HOME", "EVH_P_CACHE")
+
+
 def run_command(
     project: Path, command: str, argv: list[str], timeout: float = TIMEOUT_S, public: bool = False
 ) -> tuple[int, str, str]:
@@ -289,6 +294,12 @@ def run_command(
     # fresh process, so they are kept on disk (stats.EVH_P_CACHE), in the project's ignored .cache/
     # unless the deployment names its own precomputed file.
     env = dict(os.environ)
+    # The command runs in the project, so a relative path the caller set is made absolute from where the
+    # caller stands: render.sh ran `EVAL_HOME=_release/inspector`, the commands resolved it inside the project
+    # and read an empty one, and every answer written ahead for 0.6.2 to 0.7.1 said there were no goals.
+    for k in PATH_VARS:
+        if env.get(k) and not os.path.isabs(env[k]):
+            env[k] = os.path.abspath(env[k])
     env.setdefault("EVH_P_CACHE", str(project / ".cache" / "evh-p.jsonl"))
     env.pop("EVH_PUBLIC", None)
     if public:
@@ -388,14 +399,20 @@ def write_answers(project: Path, path: Path, public: bool, timeout: float = TIME
     tools = tools_for(public)
     for c in (t for t in BY_DATASET if t in tools):
         calls += [(c, argv_of(parser_of(c), {"dataset-id": ds})) for ds in dataset_ids(project)]
-    skipped = 0
+    no_runs, failed, large = 0, [], 0
     for c, argv in calls:
-        code, out, _err = run_command(project, c, argv, timeout, public)
+        code, out, err = run_command(project, c, argv, timeout, public)
         if code != 0 or len(out) > MAX_OUT:
-            if argv:  # a dataset the tool has nothing to say about (no runs): a call answers that itself
-                skipped += 1
-            else:
+            if not argv:
                 left.append(f"{c} (exit {code})" if code else f"{c} ({len(out):,} bytes)")
+            elif code == 0:
+                large += 1
+            elif "no runs on dataset" in err:  # nothing to say about it: a call answers that itself
+                no_runs += 1
+            else:  # named, so a broken render says why (every one failed from 0.6.2 to 0.7.1, unnoticed)
+                failed.append(
+                    f"{c} {' '.join(argv)} (exit {code}: {(err.strip().splitlines() or [''])[-1][:120]})"
+                )
             continue
         lines.append(json.dumps({"tool": c, "argv": argv, "out": out, "harness": __version__}))
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -403,9 +420,11 @@ def write_answers(project: Path, path: Path, public: bool, timeout: float = TIME
     print(
         f"{path}: {len(lines)} answer(s) written ahead"
         + (f"; left out: {', '.join(left)}" if left else "")
-        + (f"; {skipped} per-dataset call(s) not answerable ahead (no runs, or too large)" if skipped else "")
+        + (f"; {no_runs} per-dataset call(s) on a dataset with no runs" if no_runs else "")
+        + (f"; {large} too large to keep" if large else "")
+        + (f"; {len(failed)} FAILED: {'; '.join(failed[:3])}" if failed else "")
     )
-    return 0
+    return 1 if failed else 0
 
 
 #: The tools written ahead once per dataset (--write-answers), with `dataset-id` their only argument.

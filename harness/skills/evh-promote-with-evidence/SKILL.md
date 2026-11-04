@@ -2,7 +2,7 @@
 name: evh-promote-with-evidence
 description: Record a decision in eval-harness (evh) — promote a run to the dataset's baseline with the test that supports it and who asked for it — and check the project tree before reporting. Use when asked to "pick", "choose", "promote", "ship" or "make it the baseline", after a comparison, or before telling anyone an arm won.
 metadata:
-  harness-version: "0.7.1"
+  harness-version: "0.7.2"
 ---
 
 # Promote a baseline, with its evidence
