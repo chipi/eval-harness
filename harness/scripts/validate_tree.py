@@ -868,11 +868,12 @@ def verdict_problems(verdicts_dir: Path, sets_dir: Path) -> list[str]:
             bad.append(f"{label}: n is {v.get('n')!r}, the block has {len(blocks[b])}")
         if f.name != f"{v['item_id']}.{p}.b{b}.json" or f.parent.name != v.get("judge"):
             bad.append(f"{label}: file location does not match its judge/item/pass/block")
-        bad.extend(f"{label}: {p_}" for p_ in reply_problems(v))
+        redo = f"evh judge-score --dataset-id {m.get('dataset_id')} --scorer {scorer_dir} --retry-unparsed"
+        bad.extend(f"{label}: {p_}" for p_ in reply_problems(v, fix=redo))
     return bad
 
 
-def reply_problems(rec: dict) -> list[str]:
+def reply_problems(rec: dict, fix: str = "") -> list[str]:
     """A committed judge reply is bare JSON scores, or withheld (no text, its hash kept).
     A reply that reasons aloud can copy the article or the outputs it scored; the writers
     withhold those (judging.withheld_reason), and this catches one that slipped through."""
@@ -884,7 +885,8 @@ def reply_problems(rec: dict) -> list[str]:
             return ["no reply text and not marked withheld with its sha256"]
         return []
     if not json_only(out):
-        return [f"reply is not bare JSON ({len(out)} chars): withhold it, keep its hash"]
+        how = f"; rewrite it with `{fix}`" if fix else ""
+        return [f"reply is not bare JSON ({len(out)} chars): withhold it, keep its hash{how}"]
     return []
 
 

@@ -40,6 +40,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -68,6 +69,22 @@ def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
     return billed, recorded, with_bill, total
 
 
+def _repeat_names(runs: list) -> dict[Path, str]:
+    """{run dir: the name its row carries}: the config id, and for a config that ran more than once the repeat
+    (r1, r2, r3: the run directory's own _rN, else its place in run order), so no two rows read alike."""
+    seen: dict[str, int] = {}
+    for _d, m in runs:
+        seen[m["config_id"]] = seen.get(m["config_id"], 0) + 1
+    nth: dict[str, int] = {}
+    out = {}
+    for d, m in runs:
+        cid = m["config_id"]
+        nth[cid] = nth.get(cid, 0) + 1
+        own = re.search(r"_(r\d+)$", d.name)
+        out[d] = f"{cid} {own.group(1) if own else f'r{nth[cid]}'}" if seen[cid] > 1 else cid
+    return out
+
+
 def main() -> int:
     """Report cost metrics for runs."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -77,8 +94,10 @@ def main() -> int:
 
     rows = []
     no_bill = []
-    for d, m in runs_on(args.dataset_id or None, match=args.match):
-        cid = m["config_id"]
+    runs = runs_on(args.dataset_id or None, match=args.match)
+    names = _repeat_names(runs)
+    for d, m in runs:
+        cid = names[d]
         billed, recorded, with_bill, total = billed_and_recorded(d)
         if total == 0:
             continue

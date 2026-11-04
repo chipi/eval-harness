@@ -47,6 +47,20 @@ def aggregate_scores(rows: list[dict[str, Any]], digits: int = 10) -> dict[str, 
     return scores
 
 
+def cut_off_items(predictions: list[dict[str, Any]], cap: Any) -> list[str]:
+    """The items whose output stopped at max_tokens: the provider's finish_reason says so when the adapter records
+    it; tokens_out reaching the cap says so otherwise. A row replayed on a resume is not counted (it was not called)."""
+    return [
+        p["item_id"]
+        for p in predictions
+        if not p.get("resumed")
+        and (
+            (p.get("_meta") or {}).get("finish_reason") == "length"
+            or (isinstance(cap, (int, float)) and cap > 0 and (p.get("tokens_out") or 0) >= cap)
+        )
+    ]
+
+
 def run_record(
     *,
     run_id: str,

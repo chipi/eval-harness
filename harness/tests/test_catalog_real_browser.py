@@ -85,6 +85,37 @@ def visible_rows(page, tid: str) -> int:
     )
 
 
+def check_home_tiles(browser, base: str) -> None:
+    """At 1400 px the ten period tiles share one row, each about 104 px wide: a number must stay on one line there,
+    the ones the catalog shows and the widest a small project has (a bill of $0.1992, 190,334 tokens)."""
+    page = browser.new_page(viewport={"width": 1400, "height": 900})
+    page.goto(base + "index.html")
+    page.wait_for_selector("#period .tile b", timeout=30000)
+    page.wait_for_timeout(500)
+    lines = """() => [...document.querySelectorAll('#period .tile b')].map(b => {
+      const r = document.createRange(); r.selectNodeContents(b);
+      const visible = [...r.getClientRects()].filter(x => x.width > 0);
+      return {text: b.innerText, lines: new Set(visible.map(x => Math.round(x.top))).size,
+              over: b.scrollWidth > b.parentElement.clientWidth}; })"""
+    built = page.evaluate(lines)
+    check(
+        "1400 px: every period tile's number is on one line",
+        bool(built) and all(t["lines"] <= 1 for t in built),
+        str([t for t in built if t["lines"] > 1]),
+    )
+    page.evaluate(
+        """() => { const w = ['$0.1992', '190,334', '$1.2345', '999,999'];
+          [...document.querySelectorAll('#period .tile b')].forEach((b, i) => { b.textContent = w[i % w.length]; }); }"""
+    )
+    wide = page.evaluate(lines)
+    check(
+        "1400 px: and so are the widest numbers a small project has ($0.1992, 190,334, $1.2345, 999,999)",
+        all(t["lines"] <= 1 for t in wide),
+        str([t for t in wide if t["lines"] > 1]),
+    )
+    page.close()
+
+
 def drive(cat: Path, base: str) -> None:
     from playwright.sync_api import sync_playwright  # noqa: PLC0415
 
@@ -126,6 +157,8 @@ def drive(cat: Path, base: str) -> None:
             str(broken[:3]),
         )
 
+        check_home_tiles(browser, base)
+
         page = browser.new_page(viewport={"width": 1280, "height": 900})
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
         page.on("pageerror", lambda e: errors.append(str(e)))
@@ -163,6 +196,29 @@ def drive(cat: Path, base: str) -> None:
             check(
                 f"desktop width: {sel} on {path} fits, nothing behind a sideways scroll", not over, str(over)
             )
+            # Fitting is not enough: another machine's fonts widen the text (CI's goals table was 26 px over where
+            # this one had none to spare). At its narrowest, every cell wrapped as far as it goes, the table must
+            # leave 8% of its box free.
+            tight = page.evaluate(
+                f"""[...document.querySelectorAll("{sel}")].map(t => {{
+                  const box = t.closest('.scroll-x').clientWidth; t.style.width = 'min-content';
+                  const least = t.getBoundingClientRect().width; t.style.width = '';
+                  return [t.id, Math.round(least), box]; }}).filter(x => x[1] > x[2] * 0.92)"""
+            )
+            check(
+                f"desktop width: {sel} on {path} keeps 8% slack at its narrowest (fonts differ between machines)",
+                not tight,
+                f"[id, narrowest, box]: {tight}",
+            )
+            narrow = browser.new_page(viewport={"width": 1100, "height": 900})
+            narrow.goto(base + path)
+            narrow.wait_for_selector("main", timeout=30000)
+            over = narrow.evaluate(
+                f"""[...document.querySelectorAll("{sel}")]
+                .map(t => [t.id, t.scrollWidth - t.closest('.scroll-x').clientWidth]).filter(x => x[1] > 1)"""
+            )
+            narrow.close()
+            check(f"1100 px width: {sel} on {path} fits", not over, str(over))
 
         # The arms page at full size: all time, every row shown.
         page.goto(base + "arms.html#pall")
@@ -398,6 +454,36 @@ def drive(cat: Path, base: str) -> None:
         }
         check("goal pages: the groups' explanation and the strategy said once each", not twice, str(twice))
 
+        # "Test every arm in this group against its leader" leaves out the arms a round retired, and says how many; a
+        # group whose arms all have too few items says so on its heading (it stays listed, never recommended).
+        from evaluation_harness.catalog_build import slug  # noqa: PLC0415
+
+        retired_in_link, unmarked = [], []
+        for gp in sorted((cat / "g").glob("*.html")):
+            for grp in gp.read_text(encoding="utf-8").split('<h3 class="sub">')[1:]:
+                head, _, rest = grp.partition("</h3>")
+                grp_html = rest.split('<h3 class="sub">')[0]
+                gone = {
+                    m
+                    for row in re.findall(r'<tr class="[^"]*t-retired[^"]*".*?</tr>', grp_html, re.S)
+                    for m in re.findall(r'href="\.\./a/([^"]+)\.html"', row)
+                }
+                btn = re.search(
+                    r'<a class="btn" href="\.\./inspect\.html\?runs=([^&"]+)[^"]*">Test every arm', grp_html
+                )
+                if btn:
+                    ids = [slug(x) for x in btn.group(1).split(",")]
+                    retired_in_link += [f"{gp.stem}: {x}" for x in ids if x in gone]
+                    if gone and " left out)" not in grp_html.split("</p>")[0]:
+                        unmarked.append(f"{gp.stem}: link does not say retired arms are left out")
+                if "No arm is eligible: n " in grp_html and "below the goal" not in head:
+                    unmarked.append(f"{gp.stem}: {re.sub('<[^>]+>', '', head)[:60]}")
+        check(
+            "goal pages: the leader link leaves out retired arms (and says so); a group below min_items says so",
+            not retired_in_link and not unmarked,
+            f"retired arms in a link {retired_in_link[:4]}; unmarked short groups {unmarked[:4]}",
+        )
+
         # A dataset page opens on the measure its goal decides on, and never inspects two judges' scores as one.
         firsts = {}
         for d in ("orrery_triage_v1_labelled", "summeval_100"):
@@ -541,6 +627,37 @@ def drive(cat: Path, base: str) -> None:
                 "column header runs over the next",
                 page.locator("#sheettable").count() == 1 and not over,
                 f"headers over their cells: {over[:3]}" if over else page.locator("main").inner_text()[-300:],
+            )
+        # Against a silver reference the inspector names its author and marks that arm's row, so a "better 1.000" is
+        # read as the author scored against its own output; an item's cards lead with the item's score.
+        silver = sorted(
+            (q for q in links if "runs=runs-silver/" in q and "baseline=" in q), key=lambda x: -x.count(",")
+        )
+        for q in silver:
+            page.goto(base + "inspect.html?" + q)
+            page.wait_for_selector(
+                "span.chip.v-better, span.chip.v-worse, span.chip.v-none, .callout", timeout=120000
+            )
+            if page.locator("tr.t-author").count():
+                break
+        if silver and page.locator("tr.t-author").count():
+            app_text = page.locator("#app").inner_text()
+            page.locator("tr.eprow").first.click()
+            page.wait_for_selector(".outgrid", timeout=60000)
+            cards = page.locator(".outcol .itemscore").all_inner_texts()
+            check(
+                "inspector: against silver it names the arm that wrote it, marks its row, and the cards show scores",
+                "written by" in app_text
+                and "wrote the reference" in page.locator("tr.t-author").first.inner_text()
+                and cards
+                and all(c.strip()[:1].isdigit() for c in cards),
+                f"{app_text[:200]!r} {cards[:2]}",
+            )
+        else:
+            check(
+                "inspector: a silver-scored comparison with its author in it exists in the catalog",
+                False,
+                str(silver[:1]),
             )
         check("no console errors", not errors, " | ".join(errors[:5]))
         browser.close()

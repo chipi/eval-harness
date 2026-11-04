@@ -615,8 +615,10 @@ def _status(args: argparse.Namespace) -> int:
         for r in rounds:
             c = (r.get("conclusion") or {}).get("text", "")
             print(
-                f"  {r['round_id']:4} {r['status']:7} {r.get('dataset_id', '')}  {len(_rounds.arms_of(r))} arm(s), {len(r.get('retired') or [])} retired  {c[:70]}"
+                f"  {r['round_id']:4} {r['status']:7} {r.get('dataset_id', '')}  {len(_rounds.arms_of(r))} arm(s), {len(r.get('retired') or [])} retired"
             )
+            if c:
+                print(textwrap.fill(c, 96, initial_indent="       ", subsequent_indent="       "))
     rnd = (
         _round(args.goal, args.round)
         if args.round

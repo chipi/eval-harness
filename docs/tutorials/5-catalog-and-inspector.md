@@ -315,6 +315,19 @@ page's "Open its sheet".
   scored against a reference, no arm scored against another reference than the baseline's (a
   silver-scored run against a gold-scored one).
 
+**The inspector's URL is the `evh inspect` command.** The page keeps what you pick in its query string, so
+a comparison can be bookmarked or sent, and its footer prints the same view as the command (and as the MCP
+tool call). Each parameter is the command's flag of the same name; `evh inspect --help` says what each does
+and what it defaults to:
+
+- `runs=A,B,…` (`--runs`), `baseline=` (`--baseline`), `metric=` (`--metric`), `by=` (`--by`).
+- `where=FIELD:VALUE` (`--where`), once per filter: `?runs=…&where=area:account&where=deadline:true`.
+- `item=ITEM_ID` (`--item`): one item, each arm's output beside the reference.
+- `rescore=0` (`--no-rescore`): only what is on record, the page's re-score box unticked.
+- The sheet: `sheet=1&dataset=DATASET_ID` (`--sheet --dataset-id`) with `runs=`; `only=` once per signal
+  (`disagree`, `split`, `unlabelled`, `wrong`, `new`), `wrong=SET` (`--wrong-against`), `new=DATASET`
+  (`--new-vs`) and `scores=only` (`--scores-only`).
+
 **No code needed here**, because this project keeps its data in the harness's layout
 (`data/datasets/`, `data/runs*/`, `data/references/`, `data/goals/`). If your runs live in
 another layout, write one adapter that answers the catalog's questions (which arms exist, what

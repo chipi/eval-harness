@@ -686,6 +686,14 @@ def test_example_scorer_suites_pass() -> None:
         ("test_models.py", "model records: the weights facts, and what V18 catches"),
         ("test_arm_smoke.py", "evh arm-smoke: the calls it reads, the projection, every flag"),
         (
+            "test_arm_smoke_report.py",
+            "evh arm-smoke and run: spend and its basis, replies, call time, warm-up, dry-run input",
+        ),
+        (
+            "test_newcomer_cli_views.py",
+            "newcomer CLI views: rescore's ending, silver-calibrate's sets, family-test --round, leaderboard width and ties, cost-report repeats, overview smokes",
+        ),
+        (
             "test_scoring_evolves.py",
             "scoring that evolves: --adopt, score-preview writes nothing, rescore --round, round-open --scoring",
         ),
@@ -779,6 +787,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         ("test_installed_commands.py", "every evh command in a project that pins the package"),
         ("test_judge_score.py", "judging pass"),
+        ("test_judge_replies.py", "an empty or cut-off judge reply: withheld for V12, said why, hinted"),
         ("test_code_hashes.py", "scoring-code hashes"),
         ("test_codeid.py", "code identity: documentation never moves a hash"),
         ("test_providers.py", "hosted providers: one layer for arms and judges, keys by role"),
@@ -1614,7 +1623,8 @@ def test_adapter_declaration_beats_a_stale_run() -> None:
     (dst / "metrics.json").write_text(_json.dumps(m))
 
     env = {"EVAL_RUNS_DIR": str(runs.relative_to(HERE.parent))}
-    r = run("scripts/leaderboard.py", "--dataset-id", str(m.get("dataset_id")), env=env)
+    # --wide: every metric column, so the order of the kinds is what is read, not the terminal's width.
+    r = run("scripts/leaderboard.py", "--dataset-id", str(m.get("dataset_id")), "--wide", env=env)
     # The COLUMN header, not the "ranked by: ndcg_10" caption above it -- both contain
     # the metric name, and matching the caption made this fail for the wrong reason.
     header = next(

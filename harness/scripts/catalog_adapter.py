@@ -516,6 +516,7 @@ class HarnessAdapter:
             "judge": judged or "",
             # Graded against its own outputs: the arm whose run (or config) wrote the reference.
             "wrote_reference": bool(author) and not judged and author == m.get("config_id"),
+            "reference_author": author or "",
             # Scored against a label set (RFC-023): its source (person, model, rule), for the chip.
             "labels_source": labels_source,
             # Production's recorded decisions (RFC-023): the capture they came from; no model was called.
@@ -1164,6 +1165,7 @@ class HarnessAdapter:
                     "what": scorer,
                 }
             )
+        out += smoke_spend(self.models())
         return sorted(out, key=lambda x: x["at"])
 
     # -- item fields (ADR-0003) -----------------------------------------------------------
@@ -1178,6 +1180,25 @@ class HarnessAdapter:
             "fieldset": fs if fs and not fieldset_problems(str(fid), fs) else None,
             "values": {it["item_id"]: it.get("fields") or {} for it in ds.get("items") or []},
         }
+
+
+def smoke_spend(models: list[dict]) -> list[dict]:
+    """The arm smokes' spend entries (kind "smoke"), from the model records' smoke reports: paid calls no run
+    record holds. A report's `spent_usd` counts the determinism check's repeat call; an older report has only its
+    items' cost_usd, summed. A smoke belongs to no dataset's spend."""
+    out = []
+    for x in models:
+        for config_id, sm in ((x.get("record") or {}).get("smokes") or {}).items():
+            rep = (sm or {}).get("report") or {}
+            usd = _number(rep.get("spent_usd"))
+            if usd is None:
+                usd = sum(_number(i.get("cost_usd")) or 0.0 for i in rep.get("items") or [])
+            if usd:
+                at = str((sm or {}).get("at") or "")[:10]
+                out.append(
+                    {"at": at, "usd": usd, "tokens": None, "kind": "smoke", "dataset": "", "what": config_id}
+                )
+    return out
 
 
 def load_catalog_adapter(spec: str | None = None) -> Adapter:

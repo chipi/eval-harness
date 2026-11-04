@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Smoke an arm before its full run (RFC-020): a few items, the way evh run would run them.
 
-    evh arm-smoke --config configs/<arm>.yaml [--items 3]
+    evh arm-smoke --config configs/<arm>.yaml [--items 3] [--replies] [--json]
 
 Writes no run. For any arm (an LLM, an ML model, a baseline) it checks, from what every run already
 produces: that each item runs and its output is valid for the scorer; the time per item and a projection
 of the full run; that the build is pinned; whether the same item twice gives the same output; and the
-cost. For an arm that calls an LLM it reads each call (a built-in provider's `_meta`, or the calls an
+cost (what it spent, and whether that is the provider's bill or the config's price table), and each item's
+reply (its first 300 characters, all with --replies). For an arm that calls an LLM it reads each call (a built-in provider's `_meta`, or the calls an
 adapter reports as `meta["calls"]`) and flags reasoning, slow calls, long replies, cut-off replies and
 calls with no answer. An ML adapter's facts (`meta`: device, precision, load time) are printed beside.
 
@@ -26,11 +27,12 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import statistics
+import sys
 import time
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _models
+from evaluation_harness import _jsonout, _models
 from evaluation_harness._adapter import load_adapter, score_wants_source
 from evaluation_harness._common import DATA, MATERIALIZED, die, load_dataset, now
 
@@ -39,11 +41,15 @@ from evaluation_harness._common import DATA, MATERIALIZED, die, load_dataset, no
 #: triage reply's length: a summarising arm would have flagged every item.
 LONG_FACTOR, LONG_FLOOR, LONG_MIN_CALLS = 3, 64, 3
 ML_FACTS = ("device", "precision", "load_ms", "batch_size", "dtype")
+#: How much of a reply is printed (`--replies` prints all of it).
+REPLY_EXCERPT = 300
 
 
-def calls_of(res: Any) -> list[dict[str, Any]]:
+def calls_of(res: Any, wall_s: float | None = None) -> list[dict[str, Any]]:
     """The model calls an item made, as one shape: an adapter's `meta["calls"]`, else a built-in provider's
-    single call from its `_meta` (usage, finish_reason, reasoning tokens), else none."""
+    single call from its `_meta` (usage, finish_reason, reasoning tokens), else none. The single call's time is the
+    result's `latency_ms`, else `wall_s`, the wall-clock the caller measured: an adapter that does not time itself
+    (the bundled hosted provider, called from a project's adapter) leaves `latency_ms` unset, and the call read 0.0 s."""
     meta = getattr(res, "meta", None) or {}
     if isinstance(meta.get("calls"), list):
         return [c for c in meta["calls"] if isinstance(c, dict)]
@@ -52,7 +58,7 @@ def calls_of(res: Any) -> list[dict[str, Any]]:
         details = usage.get("completion_tokens_details") or {}
         return [
             {
-                "s": (getattr(res, "latency_ms", None) or 0) / 1000,
+                "s": (getattr(res, "latency_ms", None) or 0) / 1000 or wall_s or 0,
                 "tokens_out": usage.get("completion_tokens") or getattr(res, "tokens_out", None),
                 "reasoning_tokens": details.get("reasoning_tokens")
                 or meta.get("reasoning_tokens_reported")
@@ -145,6 +151,37 @@ def flags_for(items: list[dict[str, Any]], calls: list[dict[str, Any]], params: 
     return out
 
 
+def bill_of(res: Any) -> float | None:
+    """What the provider billed for this result (its `meta["usage"]["cost"]`, as the bundled provider keeps it), or None."""
+    usage = (getattr(res, "meta", None) or {}).get("usage")
+    cost = usage.get("cost") if isinstance(usage, dict) else None
+    return float(cost) if isinstance(cost, (int, float)) else None
+
+
+def reply_text(output: str, full: bool) -> str:
+    """One reply as printed: its first REPLY_EXCERPT characters (all with `--replies`), indented under its item."""
+    shown = output if full or len(output) <= REPLY_EXCERPT else output[:REPLY_EXCERPT]
+    more = "" if shown == output else f" ... (+{len(output) - len(shown)} ch; --replies for all)"
+    return "      reply: " + (shown + more).replace("\n", "\n             ")
+
+
+def spend_line(spent: float, billed: float, calls: int, unpriced: int) -> str:
+    """What the smoke spent and on what basis: the same words `evh run` uses for its own spend."""
+    from evaluation_harness.run import spend_basis  # noqa: PLC0415
+
+    if unpriced == calls:
+        return (
+            "spent: unknown (the adapter reported no cost: no bill from the provider and no "
+            "usd_per_mtok_in / usd_per_mtok_out in the config)"
+        )
+    base = f"spent ${spent:.6f} on {calls} call(s)"
+    if spent <= 0:
+        return base + " (the arm reports no cost: nothing paid)"
+    return f"{base} ({spend_basis(billed, spent - billed)})" + (
+        f"; {unpriced} call(s) reported no cost" if unpriced else ""
+    )
+
+
 def projection(items: list[dict[str, Any]], n_items: int) -> dict[str, Any]:
     """The full run from the smoke: about how long and how much, from the mean and the slowest item."""
     secs = [i["s"] for i in items if i.get("s") is not None]
@@ -165,7 +202,23 @@ def main() -> int:
     ap.add_argument("--config", type=Path, required=True)
     ap.add_argument("--items", type=int, default=3, help="how many of the dataset's first items (default 3)")
     ap.add_argument("--no-record", action="store_true", help="do not write the report into the model record")
+    ap.add_argument(
+        "--replies",
+        action="store_true",
+        help=f"print each reply whole (default: its first {REPLY_EXCERPT} characters)",
+    )
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr): result.values has status, flags, "
+        "spent_usd, cost_basis (bill, price, mixed or none), calls, projection and items (with each reply)",
+    )
     args = ap.parse_args()
+    with _jsonout.collect("arm-smoke", args.json, live=sys.stderr):
+        return _smoke(args)
+
+
+def _smoke(args: argparse.Namespace) -> int:
     if not args.config.is_file():
         die(f"no config at {args.config}")
     import yaml  # noqa: PLC0415
@@ -209,7 +262,23 @@ def main() -> int:
     print(f"  settings: {shown or '(none set)'}" + (f"  · model record {cfg['model_record']}" if rec else ""))
     items: list[dict[str, Any]] = []
     calls: list[dict[str, Any]] = []
+    replies: dict[str, str] = {}
     first_output = None
+    spent = billed = 0.0
+    n_calls = unpriced = 0
+
+    def pay(res: Any) -> None:
+        """Count one call's cost: what it reports, and how much of that the provider billed."""
+        nonlocal spent, billed, n_calls, unpriced
+        n_calls += 1
+        cost = getattr(res, "cost_usd", None)
+        if cost is None:
+            unpriced += 1
+            return
+        spent += cost
+        bill = bill_of(res)
+        billed += min(bill, cost) if bill is not None else 0.0
+
     for n, item in enumerate(ds["items"][: args.items]):
         text = (mat / (item.get("source_path") or item["item_id"])).read_text(
             encoding="utf-8", errors="replace"
@@ -218,12 +287,15 @@ def main() -> int:
         t0 = time.perf_counter()
         try:
             res = call_system(text, params)
+            wall = time.perf_counter() - t0
         except Exception as exc:  # noqa: BLE001  (a smoke reports a failure, it does not stop on it)
             row.update(s=round(time.perf_counter() - t0, 2), error=f"{type(exc).__name__}: {exc}")
             items.append(row)
             print(f"  {item['item_id'][:48]:<48} FAILED {row['error'][:80]}")
             continue
-        row["s"] = round((getattr(res, "latency_ms", None) or (time.perf_counter() - t0) * 1000) / 1000, 2)
+        row["s"] = round((getattr(res, "latency_ms", None) or wall * 1000) / 1000, 2)
+        pay(res)
+        replies[item["item_id"]] = res.output or ""
         row["output_chars"] = len(res.output or "")
         row["cost_usd"] = getattr(res, "cost_usd", None)
         ref = None
@@ -234,13 +306,14 @@ def main() -> int:
             row["scored"] = bool(scored)
         except Exception as exc:  # noqa: BLE001
             row.update(scored=False, score_error=f"{type(exc).__name__}: {exc}")
-        item_calls = calls_of(res)
+        item_calls = calls_of(res, wall)
         calls += item_calls
         facts = {k: v for k, v in (getattr(res, "meta", None) or {}).items() if k in ML_FACTS}
         if n == 0:
             first_output = res.output
             try:
                 again = call_system(text, params)
+                pay(again)
                 row["deterministic"] = again.output == res.output
             except Exception:  # noqa: BLE001
                 row["deterministic"] = None
@@ -251,9 +324,10 @@ def main() -> int:
             + (f"  {facts}" if facts else "")
             + ("" if row.get("scored", True) else "  NOT SCORABLE")
         )
+        print(reply_text(res.output or "", args.replies))
         for c in item_calls:
             print(
-                f"      call {c.get('s') or 0:>6.1f} s  out {c.get('tokens_out')!s:>5} tok  reasoning "
+                f"      call {c.get('s') or 0:>6.2f} s  out {c.get('tokens_out')!s:>5} tok  reasoning "
                 f"{c.get('reasoning_tokens') or c.get('reasoning_chars') or 0:>6}  end {c.get('finish_reason') or c.get('error')}"
             )
     del first_output
@@ -263,12 +337,15 @@ def main() -> int:
             f"  full run: {proj['items']} items, about {proj['minutes']} min (slowest item x all: "
             f"{proj['worst_minutes']} min), about ${proj['usd']}"
         )
+    print(f"  {spend_line(spent, billed, n_calls, unpriced)}")
     if items and items[0].get("deterministic") is True:
         print("  determinism: item 1 twice gave the same output: repeats on this machine will be identical")
     flags, accepted = _models.split_accepted(
         rec, flags_for(items, calls, params_for_flags), cfg.get("deployment")
     )
     status = "pass" if not flags else "check"
+    basis = "none" if spent <= 0 else "bill" if billed >= spent else "price" if billed <= 0 else "mixed"
+    cost = {"spent_usd": round(spent, 8), "cost_basis": basis, "calls": n_calls, "calls_unpriced": unpriced}
     print("SMOKE PASS" if not flags else "SMOKE CHECK")
     for f in flags:
         print(f"  - {f}")
@@ -282,7 +359,7 @@ def main() -> int:
             "status": status,
             "at": now(),
             "flags": flags,
-            "report": {"items": items, "calls": calls, "projection": proj, "settings": shown},
+            "report": {"items": items, "calls": calls, "projection": proj, "settings": shown, **cost},
         }
         if accepted:
             smoke["accepted"] = accepted
@@ -293,6 +370,23 @@ def main() -> int:
         )
         path = _models.records_dir(DATA) / f"{cfg['model_record']}.yaml"
         print(f"  written into {path.relative_to(DATA.parent) if DATA.parent in path.parents else path}")
+    _jsonout.values(
+        {
+            "status": status,
+            "flags": flags,
+            **cost,
+            "projection": proj,
+            "items": [
+                {
+                    **r,
+                    "reply": replies.get(r["item"], "")
+                    if args.replies
+                    else replies.get(r["item"], "")[:REPLY_EXCERPT],
+                }
+                for r in items
+            ],
+        }
+    )
     return 0 if not flags else 1
 
 

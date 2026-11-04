@@ -25,7 +25,10 @@ that blocked, 8 items that needed a guess and 22 of noise or polish. Third run: 
 release candidate `80e8f3f5`, through the proxy, for $0.17; nothing blocked, 10 items needed a guess,
 23 of noise or polish. Fourth run: 2026-11-02, on the 0.6.0 candidate `797c07e5`, through the proxy,
 one CPU model, in 50 minutes, for $0.149; 1 item blocked (fixed before the release), 9 needed a guess,
-about 15 of noise or polish. What is still open is listed at the end.
+about 15 of noise or polish. Fifth run: 2026-11-04, on the 0.7.0 release, through the LiteLLM proxy,
+one CPU model, in 26 minutes 38 seconds, for $0.1992 printed by the commands plus about $0.03 from arm-smoke
+calls; 1 item blocked (judge replies cut off mid-reasoning: a reasoning judge spent max_tokens thinking
+and returned nothing, fixed in 0.7.1), 10 needed a guess, about 15 of noise or polish. What is still open is listed at the end.
 
 ## Rules for the run
 
@@ -41,13 +44,16 @@ about 15 of noise or polish. What is still open is listed at the end.
   `spent $…`; `judge-score`: `spent this run $…`). What that figure is, the provider's bill
   or the config's price table, depends on the provider
   ([RUNBOOK §4](RUNBOOK.md#4-point-the-harness-at-your-system)).
+- **Screenshots and logs outside the project folder.** Keep screenshots and the pip install log outside
+  the project's `evh-scenario/` folder (e.g. `~/screenshots/` or `/tmp/`) so they do not end up as
+  untracked files in the scenario's git tree when you share it.
 - **Screenshots of every catalog and inspector page** listed under step 11, at 1400 px wide.
 
 ## 0 · A project
 
 ```bash
 mkdir evh-scenario && cd evh-scenario && git init -q
-python3 -m venv .venv && . .venv/bin/activate        # or: uv venv --python 3.11
+python3 -m venv .venv && . .venv/bin/activate        # or: uv venv --seed --python 3.11 (--seed adds pip)
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@<candidate sha>#subdirectory=harness"
 evh init
 pip install torch --index-url https://download.pytorch.org/whl/cpu    # the small models' runtime
@@ -115,13 +121,14 @@ warnings in the adapter as tutorial 1's does, so the run's output is the harness
 ```bash
 git add -A && git commit -qm "datasets, gold, goals, adapters, arms"
 evh run --config data/configs/briefs_mistral_small.yaml --dry-run    # price it first
+evh arm-smoke --config data/configs/briefs_mistral_small.yaml        # a few items, before the full run; prints "spent $…"
 evh run --config data/configs/<arm>.yaml                              # every arm
 evh run --config data/configs/<hosted arm>.yaml --repeat 3            # the noise floor; prints "spent $…"
 evh leaderboard --dataset-id briefs_v1
 evh family-test --dataset-id briefs_v1 --a briefs_mistral_small_v1 --against briefs_ --metric rouge_l
 ```
 
-The same for `intents_v1` (`--metric accuracy`).
+The same for `intents_v1` (`--metric accuracy`). The smoke runs and the hosted arm's repeats both print what they spent (a few calls per arm in arm-smoke's case).
 
 ## 5 · The frontier arm's outputs become the silver reference
 
@@ -136,6 +143,16 @@ evh rescore --dataset-id intents_v1 --reference-id silver/intents_v1 --out data/
 EVAL_RUNS_DIR=data/runs-silver evh leaderboard --dataset-id briefs_v1    # the author's row is marked
 evh silver-calibrate --dataset-id briefs_v1                              # silver authors vs your gold
 ```
+
+**What each step writes; commit all of it** (AGENTS.md rule 3: commit `data/` as the harness writes it; the
+`.gitignore` from `evh init` leaves out only `data/materialized/`, caches, `.env` and the smoke and tune passes):
+
+- Step 4: `evh run` writes `data/runs/`; `arm-smoke` records its report in the model record, `data/models/`.
+- This step: `label-from-run` and `reference-promote` write `data/labels/` and `data/references/`; `rescore`
+  writes the re-scored set, `data/runs-silver/`.
+- Step 6: `judge-score` writes `data/judging-sets/`, `data/judge-verdicts/` and `data/runs-judged/<scorer_id>/`.
+- Step 7: `run-promote` writes `data/baselines/`.
+- Steps 8 and 9: `round-open`, `round-retire` and `round-close` write `data/rounds/`.
 
 Commit each reference before the next run: an uncommitted reference makes every later run dirty,
 and `--from-run` refuses a dirty run. Gold outranks silver, so new runs keep scoring against
@@ -354,18 +371,30 @@ After the fourth run (candidate `797c07e5`), fixed in code: the installed `evh` 
 `.env` (`env-check` said "loaded 0 var(s)"), so a key or a cost cap put there was never in force:
 the command imported the module that loads `.env` before it named the command's script, and that
 module loads it only for a harness command. `tests/test_installed_commands.py` now runs `env-check`
-through an entry script as pip installs it. Still open from it, for a later release:
+through an entry script as pip installs it. What was still open from it, and what the fifth run found, is
+fixed in 0.7.1:
 
-- The inspector does not say which arm wrote the silver reference a comparison is read against (the
-  leaderboard and the goal page do); against silver its author reads as significantly better.
-- `family-test --round r2` still needs `--against`, where tutorial 4 says the round gives the opponents.
-- `evh inspect --round` heads its table "baseline" for the round's leader; the goal page's "test every
-  arm against its leader" includes retired arms.
-- `silver-calibrate` does not say which `--ref-match` and `--arm-match` values to pass; `judge-score`
-  prints its progress only at the end when its output is not a terminal; `evh run`'s "spent" does
-  not say whether it is the price table or the provider's bill.
-- Polish: a `uv venv` has no pip (step 0); `warmed up in 0ms` for hosted arms; wide leaderboards;
-  a cut-off hint after `rescore`; repeats unnamed in `cost-report`; `runs-list --baselines` shows the
-  run's own score beside the mean everywhere else; cut-off text in `evh rounds` and the conditions
-  table; misaligned `evh goals --goal` headers; home tiles whose numbers wrap at 1400 px; the item
-  view's cards without each arm's score; the dry run's token estimate leaves out the prompt.
+- Judging: a reply that came back empty is withheld like any other unparsed reply, so V12 passes, and V12
+  names the command that rewrites older ones; each unparsed reply says why; a pass whose replies were cut off
+  at the token limit ends with a `HINT` (a reasoning judge's `max_tokens`); progress lines arrive as they
+  happen through a pipe.
+- The inspector names the silver reference's author and marks its row; item cards show each arm's score;
+  the goal page's "test every arm against its leader" leaves out retired arms; a judged group below the goal's
+  `min_items` says so; home tiles keep their number on one line at 1400 px.
+- `family-test --round` takes the round's leader and every other arm in play; `inspect --round` names the
+  round's leader as such; `silver-calibrate` says what `--ref-match` and `--arm-match` take, with an example
+  from your runs; `rescore` ends with a whole sentence and warns about outputs cut off at `max_tokens`;
+  `score-preview` says when a goal holds no measured run to re-score.
+- `evh run`'s "spent" says whether it is the provider's bill or the config's price table; no "warmed up in
+  0ms" for arms with nothing to load; the dry run counts the config's prompt; `arm-smoke` prints each reply
+  and what it spent, and the overview and the catalog count smoke spend.
+- Leaderboards fit the terminal (`--wide` for every column), and "dominated" says what it means;
+  `cost-report` names each repeat; `runs-list --baselines` shows the repeats' mean; `evh rounds` prints a
+  round's conclusion whole; the `inspect` conditions table and `evh goals --goal` headers no longer cut or
+  misalign.
+- Step 0: `uv venv` makes a venv with no pip; `--seed` adds it.
+
+Not exercised by a run yet: the direct OpenAI, Anthropic and OpenRouter paths (every run went through a
+LiteLLM proxy).
+
+The fifth run (the 0.7.0 release) confirmed that fix: `env-check` said "loaded 4 var(s)".

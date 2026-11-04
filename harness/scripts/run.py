@@ -73,7 +73,7 @@ from evaluation_harness._common import (
 )
 from evaluation_harness._fingerprint import build_fingerprint
 from evaluation_harness._providers import secret_params
-from evaluation_harness._record import aggregate_scores, run_record
+from evaluation_harness._record import aggregate_scores, cut_off_items, run_record
 from evaluation_harness._retry import call_with_retries
 
 try:
@@ -168,6 +168,9 @@ def _timed(call_system: Any) -> Any:
 
     return call
 
+
+#: A warm-up that returns faster than this loaded nothing (a no-op warmup(), a hosted arm): it is not reported as work.
+WARMUP_NOTHING_MS = 5.0
 
 UNREACHABLE = (
     "Connection refused",
@@ -298,6 +301,18 @@ def _outcome(res: Any, scored: dict[str, Any], primary: str | None, resumed: boo
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return f"{primary}={value:.4g}"
     return "ok"
+
+
+def spend_basis(billed_usd: float, priced_usd: float) -> str:
+    """Where a spend came from, in the words `evh run` and `evh arm-smoke` share: a Result's cost_usd is the
+    provider's bill when its meta carries one (usage.cost), else tokens x the config's usd_per_mtok_in / _out."""
+    if billed_usd > 0 and priced_usd <= 1e-12:
+        return "the provider's bill"
+    if billed_usd <= 0:
+        return (
+            "the config's price table: tokens x usd_per_mtok_in / usd_per_mtok_out, the provider sent no bill"
+        )
+    return f"${billed_usd:.6f} the provider's bill, ${priced_usd:.6f} the config's price table"
 
 
 def progress_line(n: int, total: int, item_id: str, outcome: str, seconds: float, spent: float) -> str:
@@ -510,15 +525,7 @@ def one_pass(
     # the run said nothing. The provider's finish_reason says so when the adapter records it;
     # tokens_out reaching the cap says so otherwise.
     cap = params.get("max_tokens")
-    cut = [
-        p["item_id"]
-        for p in predictions
-        if not p.get("resumed")
-        and (
-            (p.get("_meta") or {}).get("finish_reason") == "length"
-            or (isinstance(cap, (int, float)) and cap > 0 and (p.get("tokens_out") or 0) >= cap)
-        )
-    ]
+    cut = cut_off_items(predictions, cap)
     if cut:
         print(
             f"  WARNING: {len(cut)} of {len(predictions)} output(s) stopped at max_tokens={cap} "
@@ -580,11 +587,16 @@ def _dry_run(
     params = dict(cfg.get("params") or {})
     items = ds["items"]
     mat = MATERIALIZED / ds["dataset_id"]
-    chars = sum(
+    item_chars = sum(
         len((mat / (i.get("source_path") or i["item_id"])).read_text(errors="replace"))
         for i in items
         if (mat / (i.get("source_path") or i["item_id"])).is_file()
     )
+    # The prompt the config gives is sent with every item (the bundled adapter sends `prompt`, a blank line, the
+    # item). An adapter that builds its own prompt elsewhere cannot be asked for it, so that part is not counted.
+    prompt = params.get("prompt")
+    prompt_chars = (len(prompt) + 2) * len(items) if isinstance(prompt, str) else 0
+    chars = item_chars + prompt_chars
     # ~4 chars per token is the usual English rule of thumb; it is a rule of
     # thumb, and the number below inherits that.
     est_in = chars / 4
@@ -607,7 +619,12 @@ def _dry_run(
         if declared
         else "              one per item: an adapter that calls the system several times per item makes more"
     )
-    print(f"  input       ~{est_in / 1000:.1f}k tokens/pass (from {chars / 1000:.0f}k chars)")
+    counted = (
+        "item text + the config's prompt; a prompt the adapter adds itself is not counted"
+        if prompt_chars
+        else "item text only; a prompt the adapter adds is not counted"
+    )
+    print(f"  input       ~{est_in / 1000:.1f}k tokens/pass (from {chars / 1000:.0f}k chars: {counted})")
     print(f"  output      <= {est_out / 1000:.1f}k tokens/pass (max_tokens x items)")
 
     pin, pout = params.get("usd_per_mtok_in"), params.get("usd_per_mtok_out")
@@ -655,6 +672,7 @@ def _dry_run(
             "repeats": repeat,
             "api_calls": calls,
             "input_tokens_per_pass": est_in,
+            "input_tokens_counts": counted,
             "output_tokens_per_pass_max": est_out,
             "estimate_usd": est,
             "estimate_is_upper_bound": False,
@@ -944,7 +962,10 @@ def _run(args: argparse.Namespace) -> int:
                 "  nothing was run and nothing was spent."
             )
         warmup_ms = round((time.perf_counter() - started) * 1000, 3)
-        print(f"  warmed up in {warmup_ms:.0f}ms — timing below excludes it")
+        if warmup_ms < WARMUP_NOTHING_MS:
+            print("  warm-up: nothing to load for this arm (a hosted or no-model arm); timing is unaffected")
+        else:
+            print(f"  warmed up in {warmup_ms:.0f}ms — timing below excludes it")
 
     fingerprint = build_fingerprint(
         root=ROOT,
@@ -1198,7 +1219,10 @@ def _run(args: argparse.Namespace) -> int:
         float((read_json(d / "metrics.json").get("scores") or {}).get("total_cost_usd") or 0) for d in made
     )
     if spent:
-        print(f"spent ${spent:.6f} (price table x tokens, or the provider's bill where it sends one)")
+        from evaluation_harness.cost_report import billed_and_recorded  # noqa: PLC0415
+
+        billed = sum(billed_and_recorded(d)[0] for d in made)
+        print(f"spent ${spent:.6f} ({spend_basis(billed, max(spent - billed, 0.0))})")
 
     # A CAPPED RUN IS NOT A SUCCESSFUL RUN, AND AN EMPTY ONE CERTAINLY IS NOT.
     #

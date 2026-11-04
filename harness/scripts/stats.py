@@ -33,7 +33,9 @@ import os
 import random
 import statistics
 from collections import OrderedDict
+from collections.abc import Callable
 from itertools import chain, compress
+from typing import Any
 
 PERMUTATIONS = 20000
 SEED = 20260926
@@ -204,7 +206,7 @@ def _disk() -> dict:
                     for line in fh:
                         try:
                             rec = json.loads(line)
-                            _DISK[rec["k"]] = float.fromhex(rec["p"])
+                            _DISK[rec["k"]] = rec["v"] if "v" in rec else float.fromhex(rec["p"])
                         except (ValueError, KeyError, TypeError):
                             continue  # a torn line from an interrupted writer
             except (OSError, ValueError):  # unreadable, or not UTF-8: computed, not read
@@ -219,17 +221,34 @@ def _stored_p(key: tuple) -> float | None:
 
 
 def _store_p(key: tuple, p: float) -> None:
+    _keep(_disk_key(key), p)
+
+
+def kept(algo: str, data: str, compute: Callable[[], Any]) -> Any:
+    """Another test's result (JSON: its p, and what a later draw needs from it), kept in the same EVH_P_CACHE
+    file: read back exactly when it is there, else computed and appended. `algo` names the test and every
+    setting that changes its result (permutations, seed), `data` is its input exactly (floats as float.hex);
+    a change to either is a new key."""
+    k = hashlib.sha256(f"{algo}:".encode() + data.encode()).hexdigest()
+    if os.environ.get("EVH_P_CACHE") and (v := _disk().get(k)) is not None:
+        return v
+    v = compute()
+    _keep(k, v)
+    return v
+
+
+def _keep(k: str, v: Any) -> None:
     path = os.environ.get("EVH_P_CACHE")
     if not path:
         return
-    k = _disk_key(key)
-    _disk()[k] = p
+    _disk()[k] = v
+    line = {"k": k, "p": v.hex()} if isinstance(v, float) else {"k": k, "v": v}
     try:
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-        with open(path, "a+b") as fh:  # one short line: an atomic append
+        with open(path, "a+b") as fh:  # one line, one write: an append
             # after a torn last line (a writer killed mid-line), start a new one
             torn = fh.tell() > 0 and (fh.seek(-1, os.SEEK_END) or fh.read(1) != b"\n")
-            fh.write((b"\n" if torn else b"") + (json.dumps({"k": k, "p": p.hex()}) + "\n").encode())
+            fh.write((b"\n" if torn else b"") + (json.dumps(line) + "\n").encode())
     except OSError:
         pass  # read-only (a deployment's precomputed file): the p is still right, only not kept
 

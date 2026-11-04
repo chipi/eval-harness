@@ -178,7 +178,7 @@ overlap_f1 (higher is better) · baseline tickets_lead2_v1 ×3: mean 0.900 · Ho
   ...
 Same conditions: all ... recorded fields match (machine, libraries, harness, scorer, items, reference bytes).
   ...
-  tickets_lead2_v1            3          0.900088         28.500000
+  tickets_lead2_v1            3      0.9001       28.5000  0.000000         0.0        0.000000
 ```
 
 `inspect --round` reads the round on the goal's measure, against the round's leader; `--metric` and
@@ -225,8 +225,8 @@ evh run --config data/configs/tickets_lead2_noisy_v2.yaml
 ERROR: data/configs/tickets_lead2_noisy_v2.yaml: round r2 of tickets_summary is closed; open the next one (evh round-open --from r2)
 ```
 
-`evh validate` (V14) checks the round files; `evh family-test --round r2` takes the opponents in
-play in a round, as `leaderboard --round` does. The catalog's goal page shows the rounds, newest
+`evh validate` (V14) checks the round files; `evh family-test --round r2` tests the round's leader
+against every other arm in play, as `pair-test --round` picks its pair. The catalog's goal page shows the rounds, newest
 first, with the open round's suggestions ([tutorial 5](5-catalog-and-inspector.md)); `evh goals
 --goal tickets_summary` lists them too, one line each, and marks the arms they retired.
 

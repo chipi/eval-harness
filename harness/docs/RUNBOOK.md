@@ -363,6 +363,25 @@ Required: `goal_id`, `title`, `statement`, `decision`, `success_criteria` (with 
 `datasets`. Where the schema gives a field no fixed values it is free text, and the table says
 what reads it. A project may add fields of its own; the harness ignores them.
 
+A small complete example: the required fields, plus the `output_contract` and `references` most goals
+set:
+
+```yaml
+# data/goals/summary_quality.yaml
+goal_id: summary_quality
+title: One-line ticket summaries
+statement: Summarise a ticket in a line so the queue triage does not open each one.
+decision: Which summariser to run in production.
+output_contract:
+  - {format: paragraph, length: one or two sentences}
+success_criteria:
+  primary: {measure: overlap_f1, direction: higher}
+datasets:
+  - {dataset_id: tickets_v1}
+references:
+  - {reference_id: gold/tickets_v1, tier: gold}
+```
+
 | field | allowed values | what reads it |
 |---|---|---|
 | `goal_id` | lowercase letters, digits and `_`, starting with a letter or digit; **equals the file name** | V14 fails a file whose `goal_id` is not its name. Permanent: a materially different purpose is a new goal |
@@ -557,7 +576,7 @@ into a *finding* is a separate verb: these are the tools behind the numbers in `
 
 | verb | answers |
 |---|---|
-| `evh leaderboard --dataset-id …` | how do all the arms rank, on every metric at once |
+| `evh leaderboard --dataset-id …` | how do all the arms rank, on every metric at once (the columns that fit the terminal, the ranking metric first, and a line naming the rest; `--wide` or `--json` for all) |
 | `evh family-test --dataset-id … --a … --against …` | does arm A differ significantly from a **pre-declared family**, Holm step-down. This is what every significance claim in the reports rests on |
 | `evh pair-test --dataset-id … --a … --b …` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance: the arm's `hypothesis:` records that it was (§4). With `--round` and no `--a`, A is the round's leader, chosen from the table, so the test is Bonferroni-corrected for the comparisons it could have been, every arm in play but B (`--family N` overrides; below 1 is refused) |
 | `evh pair-test --dataset-id D1 --a … --b … --b-dataset D2` | **two versions of one dataset**: A's runs on D1 against B's on D2, paired by item id (the same arm on both is "what did the change do to it"). Refused, on stderr and non-zero, unless the items it uses are in both datasets by id (at least 3), the reference each arm was scored against has the same text for each of them (compared item by item by checksum; the first differing ids are named), and both arms are scored on one metric in one direction. The output says it is a cross-version comparison and names both datasets: the difference is the effect of the dataset change plus the arms' run-to-run noise, and the test cannot tell the two apart; repeats are averaged per item as in any pair-test. It names the runs of each side and the folder they were read from (`--runs-dir` for another set, e.g. the re-scored runs; JSON `run_ids_a`, `run_ids_b`). A metric one side's runs do not store per item is refused as a missing metric, with what they do store (a measure computed at re-score is only in the re-scored runs). Not with `--round`; `run-compare` still refuses across datasets |
@@ -585,7 +604,9 @@ Without `--metric` they read the primary metric the runs recorded. Which way is 
 inferred once for every command: a flag (`--asc`, `--desc`), else the goal the runs name, else
 the adapter's `METRIC_DIRECTIONS`, else the name (cost, latency and token metrics go down).
 `leaderboard`, `family-test`, `pair-test` and `inspect` take `--round rN` for the arms in play in
-a round (`pair-test --round` and `inspect --round` also default the metric to the goal's measure).
+a round (`pair-test --round`, `family-test --round` and `inspect --round` also default the metric to the
+goal's measure; `family-test --round` tests the round's leader against every other arm in play unless
+`--a`/`--against` say otherwise).
 When a dataset's runs were scored more than one way, `leaderboard` prints one table for each
 (`=== scored against <ref> ===`, gold first; `=== scored by judge <scorer_id> ===` for judged
 runs; runs scored against none get one too), each with its own tests, under a NOTE naming them
@@ -1316,7 +1337,10 @@ evh models                                       # what is onboarded, vetted (an
    no run: each item's time and output, whether the scorer can read it, a projection of the full run, and
    whether the same item twice gives the same output. For an LLM arm it measures every model call: tokens
    out, whether it reasoned, whether an answer came back, why it ended. An adapter that makes several calls
-   per item reports them as `meta["calls"]` (the triage example does). SMOKE CHECK lists what to revisit.
+   per item reports them as `meta["calls"]` (the triage example does). It prints each reply (its first 300
+   characters; `--replies` for all), so you read what the model wrote, and what the smoke spent, saying whether
+   that is the provider's bill or the config's price table; `--json` gives the same as values. SMOKE CHECK
+   lists what to revisit.
 3. **Choose the settings on purpose.**
    - *Reasoning*: off (`reasoning_effort: none`) unless the task needs it; some models only offer low,
      medium or high. Left to the default, one model reasons at length and the next not at all, and a

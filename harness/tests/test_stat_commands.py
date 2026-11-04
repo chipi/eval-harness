@@ -856,7 +856,7 @@ def test_json_leaderboard() -> int:
     check(
         "leaderboard --json: the table's rows are the text's, raw (a number, not 16 characters of it)",
         [r["config_id"] for r in rows] == [a["config_id"] for a in arms]
-        and all(f"{r['acc']:16.6f}" in text.stdout for r in rows)
+        and all(f"{r['acc']:.4f}" in text.stdout for r in rows)
         and all(isinstance(r["acc"], float) for r in rows),
         rows,
     )
@@ -886,7 +886,9 @@ def test_json_leaderboard() -> int:
         and (fr["quality"], fr["cost"], fr["speed"]) == ("acc", "total_cost_usd", "latency_ms")
         and fr["frontier"] == ["arm_a", "arm_b", "arm_c"]
         and fr["dominated"] == ["arm_d"]
-        and "dominated (worse on all three than some other arm): arm_d" in text.stdout,
+        and fr["dominated_by"] == {"arm_d": "arm_a"}
+        and "dominated (another arm is as good on all three and better on at least one): arm_d (by arm_a)"
+        in " ".join(text.stdout.split()),
         fr,
     )
     check(

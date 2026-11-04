@@ -50,7 +50,7 @@ everything: the hosted-model clients, the judges, the catalog. Nothing else to a
 ```bash
 mkdir my-evals && cd my-evals
 python3 -m venv .venv && . .venv/bin/activate
-pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.0#subdirectory=harness"
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.7.1#subdirectory=harness"
 ```
 
 Then the project's folders and the tutorial kit, under version control from the start:
@@ -248,10 +248,10 @@ evh leaderboard --dataset-id tickets_v1
         one table for each, never averaged across them.
 
 === scored against silver/tickets_v1 ===
-  arm                      runs        overlap_f1      output_words
-  tickets_lead2_v1            3          0.900088         28.500000
-  tickets_lead2_noisy_v1      3          0.798988         22.611111
-  tickets_lead1_v1            3          0.640916         16.000000
+  arm                      runs  overlap_f1  output_words  cost_usd  latency_ms  total_cost_usd
+  tickets_lead2_v1            3      0.9001       28.5000  0.000000         0.0        0.000000
+  tickets_lead2_noisy_v1      3      0.7909       22.2222  0.000000         0.0        0.000000
+  tickets_lead1_v1            3      0.6409       16.0000  0.000000         0.0        0.000000
   ...
   IS THE ORDERING REAL?   metric=overlap_f1  k=3 arms  N=6 items
     global test (permutation on within-item ranks): p = 0.0002  ->  an arm effect exists
@@ -263,8 +263,8 @@ evh leaderboard --dataset-id tickets_v1
 
 === scored against no reference ===
   ...
-  arm                 runs      output_words
-  tickets_author_v1      1         35.166667
+  arm                 runs  output_words  cost_usd  latency_ms  total_cost_usd
+  tickets_author_v1      1       35.1667  0.000000         0.0        0.000000
   ...
 ```
 

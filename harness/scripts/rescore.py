@@ -61,7 +61,7 @@ from evaluation_harness._common import (
     write_json,
 )
 from evaluation_harness._fingerprint import references_digest, seal
-from evaluation_harness._record import aggregate_scores, derived_record
+from evaluation_harness._record import aggregate_scores, cut_off_items, derived_record
 from evaluation_harness._runs import runs_on
 
 #: Carried across from the original run rather than recomputed: these describe the CALL,
@@ -606,11 +606,66 @@ def main() -> int:
         )
         _rounds.save(rnd)
         print(f"  round {rnd['round_id']} of {rnd['goal']} records the scoring: {args.why}")
+    for line in cut_off_lines(todo, done):
+        print(line)
+    next_cmd = f"evh goals --goal {rnd['goal']}" if rnd else "evh goals"
+    src_ref = {d.name: _reference_of(m) for d, m in todo}
     print(
-        "  the goals, the rounds and the catalog read a re-score in place of the run it re-read; "
-        + how(f"evh goals --goal {rnd['goal']}" if rnd else "evh goals", "make catalog")
+        closing_line([(src_ref.get(d.name), _reference_of(m)) for d, m in done])
+        + how(next_cmd, "make catalog")
     )
     return 0
+
+
+def cut_off_lines(todo: list[tuple[Path, dict]], done: list[tuple[Path, dict]]) -> list[str]:
+    """A warning for each re-scored run whose stored outputs stopped at max_tokens, as `evh run` gives it: a re-score
+    reads those outputs again and scores them as if complete."""
+    rescored = {d.name for d, _ in done}
+    lines = []
+    for d, m in sorted(todo, key=lambda t: t[0].name):
+        if d.name not in rescored:
+            continue
+        rows = [
+            json.loads(x)
+            for x in (d / "predictions.jsonl").read_text(encoding="utf-8").splitlines()
+            if x.strip()
+        ]
+        cap = (m.get("params") or {}).get("max_tokens")
+        cut = cut_off_items(rows, cap)
+        if cut:
+            lines.append(
+                f"  WARNING: {d.name}: {len(cut)} of {len(rows)} output(s) stopped at max_tokens"
+                f"{'' if cap is None else f'={cap}'} ({', '.join(cut[:6])}{' ...' if len(cut) > 6 else ''}).\n"
+                "    A re-score reads them as they are and scores them as if complete. Raise max_tokens "
+                "(a new config_id) and run again."
+            )
+    return lines
+
+
+def _reference_of(m: dict[str, Any]) -> str:
+    return ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or "no reference"
+
+
+def closing_line(pairs: list[tuple[str | None, str]]) -> str:
+    """What the goals, the rounds and the catalog do with the re-scores just written, from each one's
+    (reference its run was scored on, reference it was scored on now). The goals read a re-score in place of the run
+    it re-read only when both are the same reference (catalog_build._mark_superseded); a re-score on another
+    reference is a table of its own beside the run's, and the run's table is as it was."""
+    apart = sorted({(old, new) for old, new in pairs if old != new}, key=str)
+    text = (
+        "  the goals, the rounds and the catalog read an arm's re-score in place of its runs when every run of the "
+        "arm was re-scored against the reference it was measured on."
+    )
+    if not apart:
+        return text + " See it with: "
+    moved = "; ".join(
+        f"{sum(1 for p in pairs if p == (old, new))} run(s) against {new}, measured against {old}"
+        for old, new in apart
+    )
+    return (
+        f"{text}\n  Not in place: {moved}. The goals show those as a table of their own, scored against "
+        "the new reference;\n  the table scored against the old one stays as it was. See them with: "
+    )
 
 
 def _kinds(path):

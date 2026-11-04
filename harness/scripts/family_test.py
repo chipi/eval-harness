@@ -48,11 +48,13 @@ import random
 import statistics
 import sys
 from pathlib import Path
+from typing import Any
 
 HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import _jsonout  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
+    DATA,
     GOALS,
     ROOT,
     ROUNDS,
@@ -103,6 +105,9 @@ def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
     # A round's record decides which arms --round keeps (its retirements, its carried arms).
     for r in sorted(ROUNDS.glob("*/*.yaml")) if ROUNDS.is_dir() else []:
         h.update(r.as_posix().encode() + b"\0" + r.read_bytes())
+    if args.round:  # a re-score stands in for its run in the round's reading, and picks its leader
+        for f in sorted((DATA / "runs-rescored").glob("*/*/*/metrics.json")):
+            h.update(f.as_posix().encode() + b"\0" + f.read_bytes())
     if args.items:
         h.update(args.items.read_bytes())
     if args.exclude_dataset:
@@ -116,7 +121,10 @@ def main() -> int:
     Each run is ~20,000 seeded permutations per opponent in pure Python (~18 s for a family
     of 29), and the report checker, the self-test and the site build ask the same questions
     dozens of times per `make ci`. EVAL_NO_CACHE=1 forces a recomputation."""
-    args = _parser().parse_args()
+    ap = _parser()
+    args = ap.parse_args()
+    if not args.round and not (args.a and args.against):
+        ap.error("--a and --against are required (or --round, which defaults them)")
     runs_dir = args.runs_dir or RUNS
     use_cache = not os.environ.get("EVAL_NO_CACHE") and runs_dir.is_dir()
     if use_cache:
@@ -152,11 +160,11 @@ def main() -> int:
 def _parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--a", required=True, help="config_id of the arm under test")
+    ap.add_argument("--a", help="config_id of the arm under test (with --round: default its leader)")
     ap.add_argument(
         "--against",
-        required=True,
-        help="the opponent family, declared in advance: a substring of their config ids, or a comma-separated list of config ids",
+        help="the opponent family, declared in advance: a substring of their config ids, or a comma-separated "
+        "list of config ids (with --round: default every other arm in play in it)",
     )
     ap.add_argument("--metric", help="default: the primary metric the runs recorded")
     ap.add_argument("--runs-dir", type=Path, default=None, help="default: EVAL_RUNS_DIR, else data/runs")
@@ -183,6 +191,43 @@ def _parser() -> argparse.ArgumentParser:
     return ap
 
 
+def _round_defaults(args, runs: list) -> Any:
+    """--round: the round's goal measure, its leader as A and every other arm in play as the family, each as the
+    round reads the arm (a re-score stands in for its run, as pair-test --round reads it). Returns values(config_id,
+    metric) -> {item_id: value}. The family is the round's own list of arms, fixed before any p-value is computed."""
+    from evaluation_harness import _common  # noqa: PLC0415
+    from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
+    from evaluation_harness.pair_test import _round_values  # noqa: PLC0415
+
+    rnd = resolve(args.round, args.goal)
+    if rnd["dataset_id"] != args.dataset_id:
+        die(f"round {args.round} is on {rnd['dataset_id']}, not {args.dataset_id}")
+    in_play = arms_of(rnd)
+    prim = ((_common.load_goals().get(rnd["goal"]) or {}).get("success_criteria") or {}).get("primary") or {}
+    args.metric = args.metric or prim.get("measure")
+    if args.a and args.a not in in_play:
+        die(f"{args.a} is not in play in round {args.round} ({', '.join(in_play)})")
+    values = _round_values(args.dataset_id)
+    chose = not args.a
+    if chose:
+        means = {c: statistics.fmean(v.values()) for c in in_play if (v := values(c, args.metric))}
+        if not means:
+            die(f"no arm in round {args.round} records {args.metric} yet")
+        args.a = (min if prim.get("direction") == "lower" else max)(means, key=lambda c: means[c])
+    declared = bool(args.against)
+    if not declared:
+        rest = [c for c in in_play if c != args.a]
+        if not rest:
+            die(f"round {args.round} has no other arm in play to test {args.a} against: name --against")
+        args.against = ",".join(rest)
+    print(
+        f"  round {args.round}: {args.a}{' (its leader)' if chose else ''} against "
+        + ("the family named" if declared else f"every other arm in play ({len(args.against.split(','))})")
+    )
+    args.family_label = None if declared else f"the {len(args.against.split(','))} other arms in play"
+    return values
+
+
 def _run(args) -> int:
     # The directory read is the directory warned about: --runs-dir, else EVAL_RUNS_DIR.
     runs_dir = args.runs_dir or RUNS
@@ -191,13 +236,18 @@ def _run(args) -> int:
     warn_on_ambiguous_runs(runs_dir, args.dataset_id, label=runs_dir.name)
     args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
     runs = runs_on(args.dataset_id, runs_dir=runs_dir)
+    values = None
     if args.round:
         from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
 
+        values = _round_defaults(args, runs)
         keep_arms = set(arms_of(resolve(args.round, args.goal))) | {args.a}
         runs = [(d, m) for d, m in runs if m["config_id"] in keep_arms]
     lower = direction(runs, args.metric, args.asc, args.desc)
-    A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
+    if values is not None:
+        A = values(args.a, args.metric)
+    else:
+        A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
     if not A:
         die(f"no runs for {args.a} on {args.dataset_id}")
 
@@ -206,7 +256,11 @@ def _run(args) -> int:
     rng = random.Random(args.seed)
     rows: list[dict] = []
     for opp in _opponents(runs, args.against, args.a):
-        B = per_item([r for r in runs if r[1]["config_id"] == opp], args.metric)
+        B = (
+            values(opp, args.metric)
+            if values is not None
+            else per_item([r for r in runs if r[1]["config_id"] == opp], args.metric)
+        )
         items = sorted(set(A) & set(B) - drop)
         if keep is not None:
             items = [i for i in items if i in keep]
@@ -244,7 +298,9 @@ def _run(args) -> int:
         stratum += f" (from {args.items.name})"
     elif args.exclude_dataset:
         stratum += f" (excluding {args.exclude_dataset})"
-    print(f"  {args.a}  vs family '{args.against}'   metric={args.metric}  {stratum}")
+    print(
+        f"  {args.a}  vs family '{getattr(args, 'family_label', None) or args.against}'   metric={args.metric}  {stratum}"
+    )
     print(f"  family size m={m}, declared before the p-values were read")
     print(f"  Holm step-down at alpha={args.alpha}" + ("  (lower is better)" if lower else ""))
     # SAY WHICH p. Up to EXACT_UP_TO items it is exact, and every command prints the same number.

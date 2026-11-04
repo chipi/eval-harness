@@ -5,6 +5,20 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.7.0 to 0.7.1
+
+Change the pin to `@v0.7.1`. No format changes; no committed run's scores or fingerprint move.
+
+- **A tree with empty judge replies from 0.7.0 or before** fails `evh validate`'s V12; the message names the
+  command that rewrites them (`evh judge-score --dataset-id … --scorer … --retry-unparsed`). A retry calls the
+  judge again for those blocks only; if the same scorer returns nothing again, save a new scorer version with a
+  higher `max_tokens` or `reasoning: {enabled: false}`.
+- **What can read differently** ([changelog](https://github.com/chipi/eval-harness/blob/main/harness/CHANGELOG.md),
+  **Changed**): `family-test --round`'s p (it now reads re-scores in place, as the round does), the billed
+  figure (arm smokes counted), and `runs-list --baselines` (the repeats' mean).
+- **Scripts reading `--json`:** the leaderboard's text table shows the columns that fit the terminal (the JSON
+  keeps all); `evh goals --goal`'s last table column is `decision`, not `""`.
+
 ## From 0.6.2 to 0.7.0
 
 Change the pin to `@v0.7.0`. No format changes and nothing to migrate: no committed run's scores or fingerprint

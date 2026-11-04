@@ -39,6 +39,15 @@ def _shown(scores: dict) -> dict:
     return {k: v for k, v in sorted(scores.items()) if not k.startswith(BOOKKEEPING_PREFIXES)}
 
 
+def _baseline_scores(b: dict) -> tuple[dict, int]:
+    """(the scores to show, the repeats behind them): a baseline promoted from a run with repeats shows the mean over
+    the repeats, as every other view of its arm does, not the one run it points at (its own `scores`)."""
+    rep = b.get("repeats") or {}
+    if rep.get("mean_scores"):
+        return _shown(rep["mean_scores"]), len(rep.get("runs") or [])
+    return _shown(b["scores"]), 0
+
+
 def _baselines() -> int:
     files = sorted(BASELINES.glob("*.json"))
     if not files:
@@ -61,7 +70,8 @@ def _baselines() -> int:
                 b.get("reference_tier"),
                 b.get("adapter"),
                 b.get("reason"),
-                _shown(b["scores"]),
+                _baseline_scores(b)[0],
+                _baseline_scores(b)[1] or None,
             ]
         )
     _jsonout.values({"kind": "baselines", "count": len(rows)})
@@ -74,7 +84,9 @@ def _baselines() -> int:
         print(f"    from     {b['promoted_from']}   build={b['build'].get('ref', '?')[:12]}")
         print(f"    scored   {b.get('reference_tier', '?')} references, adapter {b.get('adapter', '?')}")
         print(f"    why      {b.get('reason', '(none recorded)')}")
-        print("    scores   " + "  ".join(f"{k}={v}" for k, v in _shown(b["scores"]).items()))
+        scores, repeats = _baseline_scores(b)
+        label = f"scores (mean of {repeats} repeats)" if repeats else "scores"
+        print(f"    {label}   " + "  ".join(f"{k}={v}" for k, v in scores.items()))
     return 0
 
 
@@ -87,6 +99,7 @@ _BASELINE_COLUMNS = [
     "adapter",
     "reason",
     "scores",
+    "repeats",
 ]
 _RUN_COLUMNS = [
     "run_id",

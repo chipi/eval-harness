@@ -27,7 +27,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import math
 import random
+import shutil
 import statistics
+import textwrap
 
 from evaluation_harness import _jsonout
 from evaluation_harness._adapter import recorded_metric_kinds
@@ -43,6 +45,7 @@ from evaluation_harness._common import (
 from evaluation_harness._record import derived_with
 from evaluation_harness._runs import by_arm, direction, mixed_versions, runs_on, warn_on_ambiguous_runs
 from evaluation_harness._runs import matrix as matrix_of
+from evaluation_harness.stats import kept
 
 # COST_KEYS / SPEED_KEYS / DESCRIPTIVE_KEYS now live in _common, so that
 # compare_runs.py judges direction the same way this ranks it.
@@ -216,21 +219,36 @@ def significance(
     # Friedman, as a permutation test: shuffle which arm got which rank WITHIN each item
     # -- exactly the world where arms do not matter -- and see how often chance beats the
     # observed spread. No distributional assumption, no scipy.
-    rng = random.Random(seed)
     stat = lambda rk: sum(statistics.fmean(rk[a]) ** 2 for a in arms)  # noqa: E731
     observed = stat(ranks)
     by_item = [[ranks[a][j] for a in arms] for j in range(N)]
-    B, hits = 5000, 0
-    for _ in range(B):
-        perm: dict[str, list[float]] = {a: [] for a in arms}
-        for j in range(N):
-            row = by_item[j][:]
-            rng.shuffle(row)
-            for a, v in zip(arms, row):
-                perm[a].append(v)
-        if stat(perm) >= observed:
-            hits += 1
-    p = (hits + 1) / (B + 1)
+    B = 5000
+
+    def friedman() -> dict:
+        rng, hits = random.Random(seed), 0
+        for _ in range(B):
+            perm: dict[str, list[float]] = {a: [] for a in arms}
+            for j in range(N):
+                row = by_item[j][:]
+                rng.shuffle(row)
+                for a, v in zip(arms, row):
+                    perm[a].append(v)
+            if stat(perm) >= observed:
+                hits += 1
+        version, words, gauss = rng.getstate()
+        return {"p": ((hits + 1) / (B + 1)).hex(), "state": [version, list(words), gauss]}
+
+    # Kept with the paired tests' p's (stats.EVH_P_CACHE), read back exactly: 1.4 million shuffles for 28 arms
+    # on 280 items took 5 s of CPU here and 47-60 s for the public MCP server's first call (2026-11-04). The
+    # generator's state after them is kept too: the rank intervals below draw on from it, so they are the same.
+    got = kept(
+        f"friedman-perm-1:{B}:{seed}",
+        ";".join(",".join(float(v).hex() for v in row) for row in by_item),
+        friedman,
+    )
+    p = float.fromhex(got["p"])
+    rng = random.Random()
+    rng.setstate((got["state"][0], tuple(got["state"][1]), got["state"][2]))
 
     # ABOVE THE TABLE, SAY SO. This used to default to the k=25 value for any larger
     # k, which is too SMALL -- so the critical difference was too small and more pairs
@@ -372,6 +390,61 @@ def significance(
     }
 
 
+def _terminal_width() -> int:
+    return shutil.get_terminal_size((100, 24)).columns
+
+
+def _wrap(text: str, indent: int) -> str:
+    """`text` wrapped to the terminal, every line indented, the continuation lines two further."""
+    return textwrap.fill(
+        text,
+        width=_terminal_width(),
+        initial_indent=" " * indent,
+        subsequent_indent=" " * (indent + 2),
+        break_long_words=False,
+        break_on_hyphens=False,
+    )
+
+
+def _cell(v: float | None, kind: str | None) -> str:
+    """A number as the text table shows it (the JSON table keeps the stored value): money to the millionth of a
+    dollar, time to a tenth, large counts whole, a score to four places."""
+    if v is None:
+        return "—"
+    if kind == "cost":
+        return f"{v:.6f}"
+    if kind == "speed":
+        return f"{v:.1f}"
+    return f"{v:.0f}" if abs(v) >= 1000 else f"{v:.4f}"
+
+
+def _fit_columns(
+    show: list[str], rows: list[dict], kinds: dict[str, str], sort_key: str, wide: bool
+) -> list[str]:
+    """The metric columns the text table has room for, in the order they matter: the ranking metric, the cost and
+    the speed the frontier reads, the other quality metrics, then the rest. The first always stays."""
+    if wide:
+        return show
+    first = [k for k in show if k == sort_key]
+    frontier = [
+        next((k for k in show if kinds.get(k) == "cost" and k.startswith("total_")), None)
+        or next((k for k in show if kinds.get(k) == "cost"), None),
+        next((k for k in show if kinds.get(k) == "speed"), None),
+    ]
+    order = first + [k for k in frontier if k and k not in first]
+    order += [k for k in show if kinds.get(k, "quality") == "quality" and k not in order]
+    order += [k for k in show if k not in order]
+    arm_w = max(len(r["config_id"]) + 2 for r in rows) + 2
+    used = 2 + arm_w + 1 + 4 + 2
+    keep: set[str] = set()
+    for k in order:
+        cw = max(len(k), *(len(_cell(r.get(k), kinds.get(k))) for r in rows)) + 2
+        if used + cw > _terminal_width() and keep:
+            break
+        used, keep = used + cw, keep | {k}
+    return [k for k in show if k in keep]
+
+
 def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool = False) -> dict | None:
     """Which arms are on the menu at all, across quality, cost and speed together.
 
@@ -401,16 +474,24 @@ def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool =
     if len(pts) < 2:
         return None
 
-    def dominated(a: str) -> bool:
+    def dominators(a: str) -> list[str]:
+        """The arms at least as good as `a` on all three and different from it: so better on at least one. A tie
+        on an axis is not worse; two arms identical on all three dominate neither."""
         qa, ca, la = pts[a]
-        return any(
-            (qb <= qa if asc else qb >= qa) and cb <= ca and lb <= la and (qb, -cb, -lb) != (qa, -ca, -la)
+        return [
+            b
             for b, (qb, cb, lb) in pts.items()
             if b != a
-        )
+            and (qb <= qa if asc else qb >= qa)
+            and cb <= ca
+            and lb <= la
+            and (qb, -cb, -lb) != (qa, -ca, -la)
+        ]
 
-    front = sorted((a for a in pts if not dominated(a)), key=lambda a: pts[a][0] if asc else -pts[a][0])
-    beaten = sorted(a for a in pts if dominated(a))
+    front = sorted((a for a in pts if not dominators(a)), key=lambda a: pts[a][0] if asc else -pts[a][0])
+    beaten = sorted(a for a in pts if dominators(a))
+    # Dominance is transitive, so every dominated arm has a dominator on the frontier: name the best of them.
+    by = {a: next(b for b in front if b in dominators(a)) for a in beaten}
     w = max(len(a) for a in pts) + 2
     print(f"\n  FRONTIER on {quality} / {cost} / {speed} — {len(front)} of {len(pts)} arms")
     if not _jsonout.table(["arm", "quality", "cost", "speed"], [[a, *pts[a]] for a in front]):
@@ -419,7 +500,13 @@ def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool =
             q, c, lat = pts[a]
             print(f"    {a:{w}} {q:12.6f} {c:12.6f} {lat:12.1f}")
     if beaten:
-        print(f"    dominated (worse on all three than some other arm): {', '.join(beaten)}")
+        print(
+            _wrap(
+                "dominated (another arm is as good on all three and better on at least one): "
+                + ", ".join(f"{a} (by {by[a]})" for a in beaten),
+                4,
+            )
+        )
     return {
         "quality": quality,
         "cost": cost,
@@ -427,6 +514,7 @@ def _frontier(rows: list[dict], quality: str, kinds: dict[str, str], asc: bool =
         "arms": len(pts),
         "frontier": front,
         "dominated": beaten,
+        "dominated_by": by,
     }
 
 
@@ -512,6 +600,11 @@ def main() -> int:
     ap.add_argument("--match", help="only arms whose config_id contains this substring")
     ap.add_argument("--round", help="only the arms in play in this round of a goal (rN; ADR-0004)")
     ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
+    ap.add_argument(
+        "--wide",
+        action="store_true",
+        help="print every metric column, however wide (default: as many as fit the terminal, the ranking metric first)",
+    )
     ap.add_argument(
         "--json",
         action="store_true",
@@ -703,6 +796,8 @@ def _table(args: argparse.Namespace, found: list) -> dict:
 
     show = quality + descriptive + [k for k in all_keys if kinds.get(k) in ("cost", "speed")]
     show = [k for k in show if k in all_keys]
+    # The text table fits the terminal; the JSON table carries every column in `show`.
+    text_cols = _fit_columns(show, rows, kinds, sort_key, args.wide)
     own = _own_reference(by_config)
     w = max(len(r["config_id"]) + (2 if r["config_id"] in own else 0) for r in rows) + 2
     print(f"dataset: {args.dataset_id}   ranked by: {sort_key} ({'lower' if asc else 'higher'} is better)\n")
@@ -710,13 +805,25 @@ def _table(args: argparse.Namespace, found: list) -> dict:
         ["config_id", "n_runs", "tier", *show],
         [[r["config_id"], r["n_runs"], r["tier"], *[r.get(k) for k in show]] for r in rows],
     ):
-        header = f"  {'arm':{w}} {'runs':>4}  " + "  ".join(f"{k:>16}" for k in show)
+        cells = {k: [_cell(r.get(k), kinds.get(k)) for r in rows] for k in text_cols}
+        cw = {k: max(len(k), *(len(c) for c in cells[k])) for k in text_cols}
+        header = f"  {'arm':{w}} {'runs':>4}  " + "  ".join(f"{k:>{cw[k]}}" for k in text_cols)
         print(header)
         print("  " + "-" * (len(header) - 2))
-        for _i, r in enumerate(rows, 1):
-            cells = "  ".join((f"{r[k]:16.6f}" if k in r else f"{'—':>16}") for k in show)
+        for i, r in enumerate(rows):
+            line = "  ".join(f"{cells[k][i]:>{cw[k]}}" for k in text_cols)
             name = r["config_id"] + (" *" if r["config_id"] in own else "")
-            print(f"  {name:{w}} {r['n_runs']:>4}  {cells}")
+            print(f"  {name:{w}} {r['n_runs']:>4}  {line}")
+        if len(text_cols) < len(show):
+            left = [k for k in show if k not in text_cols]
+            print(
+                "\n"
+                + _wrap(
+                    f"Not shown ({len(left)}, the terminal is {_terminal_width()} wide): {', '.join(left)}.",
+                    2,
+                )
+                + "\n  All of them: --wide, or --json."
+            )
     # A run scored against references for only some of its items: its quality mean is over those.
     partial = {
         cid: (r["reference_coverage"]["items_with_reference"], r["reference_coverage"]["items"])

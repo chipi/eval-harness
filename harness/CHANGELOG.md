@@ -9,6 +9,58 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.7.1 — 2026-11-04
+
+Fixes from the fifth newcomer scenario (the first on a release, 0.7.0) and from releasing 0.7.0. A judge that
+returns empty replies no longer leaves a tree that fails `evh validate`; the commands say more about what they
+did and what they spent; the public MCP server answers a leaderboard at once. No committed run's scores move;
+three figures read differently (**Changed**).
+
+### Changed
+
+- **`family-test --round` tests the round's leader against every other arm in play**, without `--a` and
+  `--against` (as `pair-test --round` picks its pair), and reads a re-score in place of the run it re-read, as the
+  round does. A family test of a round can give a different p than 0.7.0's runs-only read.
+- **The billed figure counts arm smokes.** `evh overview`'s billed tile and the catalog's include what
+  `evh arm-smoke` spent (recorded in the model records), and the spend lists name it as "arm smokes".
+- **`runs-list --baselines` shows the baseline's mean over its repeats**, as every other view does; `--json`
+  `scores` is that mean and a `repeats` column says over how many.
+- **`--json` fields:** the leaderboard's frontier gains `dominated_by`; `evh goals --goal`'s last column is named
+  `decision` (it was `""`); the dry run gains `input_tokens_counts`; `arm-smoke` has `--json`.
+
+### Fixed
+
+- **An empty judge reply is withheld like any other unparsed reply.** A reasoning judge that spent its whole
+  `max_tokens` thinking returned nothing; `judge-score` stored it as text and `evh validate`'s V12 then failed on
+  the harness's own record. Now it is withheld (its hash kept), V12 names the command that rewrites one stored
+  before 0.7.1 (`evh judge-score … --retry-unparsed`), each unparsed reply says why (empty, cut off at the token
+  limit, not JSON, not the expected shape), a pass whose replies were cut off ends with a `HINT` (raise
+  `max_tokens`, or `reasoning: {enabled: false}`), and its progress lines arrive as they happen through a pipe.
+- **`evh arm-smoke`** prints each reply (its first 300 characters; `--replies` for all) and what it spent, and
+  times a call that the adapter did not time.
+- **`evh run`** says whether "spent" is the provider's bill or the config's price table, prints no "warmed up in
+  0ms" for an arm with nothing to load, and counts the config's prompt in the dry run's input estimate.
+- **`rescore`** ends with a whole sentence that says when a re-score stands in for a run, and warns about outputs
+  cut off at `max_tokens`. **`score-preview`** says when a goal holds no measured run to re-score.
+- **`silver-calibrate`** says what `--ref-match` and `--arm-match` take, with an example from your runs.
+- **Leaderboards fit the terminal** (the ranking metric first, the rest named; `--wide` for every column), and
+  "dominated" says what it means (as good on all three, better on at least one) and by which arm.
+- **`inspect`** shows a model name whole in its conditions, and `--round` names the round's leader as such;
+  **`evh goals --goal`**'s headers line up; **`cost-report`** names each repeat; **`evh rounds`** prints a round's
+  conclusion whole.
+- **The catalog and the inspector:** the inspector names the silver reference's author and marks its row; an
+  item's cards show each arm's score; a goal page's "test every arm against its leader" leaves out retired arms;
+  a judged group below the goal's `min_items` says so; a recommended dataset id may break, so the goals table
+  fits; home tiles keep their number on one line at 1400 px.
+- **The public MCP server answers `leaderboard` for each dataset at once:** `evh mcp --write-answers` writes it
+  ahead per dataset, and the leaderboard's permutation test is kept in the p cache (`EVH_P_CACHE`) with the
+  generator state the rank intervals draw on, so every number is the same. A first call took 47-60 s.
+- **The website's on-this-page line** names each section in a word or two and leaves out "Who built this".
+- **Deploys and CI:** the release renders while CI runs, and the site's build check runs beside `verify`.
+- **Docs:** tutorial 3 shows the whole judge scorer and what to do when a reasoning judge returns nothing;
+  tutorial 5 lists the inspector's URL parameters; the RUNBOOK has a complete goal file; the newcomer scenario
+  smokes each arm first, says what each step writes (all committed), and seeds pip in a `uv venv`.
+
 ## 0.7.0 — 2026-11-04
 
 Agents as users. `evh init` writes an `AGENTS.md`, three skills teach the loop, and the ranking and the tests answer

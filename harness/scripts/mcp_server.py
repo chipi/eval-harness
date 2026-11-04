@@ -382,18 +382,39 @@ def write_answers(project: Path, path: Path, public: bool, timeout: float = TIME
     from evaluation_harness._version import __version__  # noqa: PLC0415
 
     lines, left = [], []
-    for c in answerable_ahead(public):
-        code, out, _err = run_command(project, c, [], timeout, public)
+    calls: list[tuple[str, list[str]]] = [(c, []) for c in answerable_ahead(public)]
+    # A tool whose one argument is a dataset is answerable ahead for each dataset: a finite set. The first public
+    # `leaderboard --dataset-id` took 47-60 s on 2026-11-04 (a seeded permutation test, 5 s of CPU here).
+    tools = tools_for(public)
+    for c in (t for t in BY_DATASET if t in tools):
+        calls += [(c, argv_of(parser_of(c), {"dataset-id": ds})) for ds in dataset_ids(project)]
+    skipped = 0
+    for c, argv in calls:
+        code, out, _err = run_command(project, c, argv, timeout, public)
         if code != 0 or len(out) > MAX_OUT:
-            left.append(f"{c} (exit {code})" if code else f"{c} ({len(out):,} bytes)")
+            if argv:  # a dataset the tool has nothing to say about (no runs): a call answers that itself
+                skipped += 1
+            else:
+                left.append(f"{c} (exit {code})" if code else f"{c} ({len(out):,} bytes)")
             continue
-        lines.append(json.dumps({"tool": c, "argv": [], "out": out, "harness": __version__}))
+        lines.append(json.dumps({"tool": c, "argv": argv, "out": out, "harness": __version__}))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(x + "\n" for x in lines), encoding="utf-8")
     print(
-        f"{path}: {len(lines)} answer(s) written ahead" + (f"; left out: {', '.join(left)}" if left else "")
+        f"{path}: {len(lines)} answer(s) written ahead"
+        + (f"; left out: {', '.join(left)}" if left else "")
+        + (f"; {skipped} per-dataset call(s) not answerable ahead (no runs, or too large)" if skipped else "")
     )
     return 0
+
+
+#: The tools written ahead once per dataset (--write-answers), with `dataset-id` their only argument.
+BY_DATASET = ("leaderboard",)
+
+
+def dataset_ids(project: Path) -> list[str]:
+    """The project's dataset ids (data/datasets/*.json), sorted."""
+    return sorted(p.stem for p in (project / "data" / "datasets").glob("*.json"))
 
 
 def _answer(types, name: str, out: str, public: bool):

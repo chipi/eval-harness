@@ -242,7 +242,8 @@
     const kind = id => { const a = (d.arms || []).find(x => x.id === id) || {};
       return a.wrote_reference ? 't-author' : a.judge ? 't-judged' : (a.reference || '').startsWith('silver/') ? 't-silver' : ''; };
     // The verdict is the second column, so a phone sees it without scrolling.
-    const vt = rows.map(r => `<tr class="${kind(r.arm)}"><td class="mono">${armName(r.arm, label[r.arm] || r.arm)}</td>
+    const author = id => ((d.arms || []).find(x => x.id === id) || {}).wrote_reference ? ' <small class="muted">wrote the reference</small>' : '';
+    const vt = rows.map(r => `<tr class="${kind(r.arm)}"><td class="mono">${armName(r.arm, label[r.arm] || r.arm)}${author(r.arm)}</td>
       <td>${verdictChip(r.verdict)}${r.n && r.min_p > 0.05 ? ' <small class="muted">' + r.n + ' ' + ITEMS + ' cannot reach 0.05</small>' : ''}</td>
       <td class="num">${r.n}</td><td class="num">${fmt(r.mean)}</td><td class="num">${fmt(r.delta)}</td>
       <td class="num">${r.ci ? (r.ci[0] >= 0 ? '+' : '') + r.ci[0].toFixed(3) + ' to ' + (r.ci[1] >= 0 ? '+' : '') + r.ci[1].toFixed(3) : '—'}</td>
@@ -290,7 +291,7 @@
     // The reference the metric names ("<metric> vs <reference>"), else the one the baseline was scored against.
     const ref = (d.metric.split(' vs ')[1] || '').trim() || ((d.arms || []).find(a => a.id === d.baseline) || {}).reference || '';
     app.querySelectorAll('tr.eprow').forEach(tr => {
-      tr.onclick = () => drill(tr.dataset.ep, arms, d.baseline, label, ref, tr);
+      tr.onclick = () => drill(tr.dataset.ep, arms, d.baseline, label, ref, tr, {metric: d.metric, series: d.series});
       tr.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); tr.onclick(); } };
     });
     // ?item=<id>: a dataset page's "inspect" link opens that item (when the arms share it).
@@ -308,8 +309,9 @@
   function against(a) {
     const r = a.reference || '';
     if (a.judge) return `judge <code>${esc(a.judge)}</code>`;
-    if (r.startsWith('labels/')) return `${chip(a.labels_source)} <code>${esc(r.slice(7).split('/').pop())}</code>`;
-    return r ? `<code>${esc(r)}</code> ${pill(r.split('/')[0])}` : 'nothing';
+    const by = a.reference_author ? ` <span class="muted">written by <code>${esc(a.reference_author)}</code>; that arm is graded against its own output</span>` : '';
+    if (r.startsWith('labels/')) return `${chip(a.labels_source)} <code>${esc(r.slice(7).split('/').pop())}</code>${by}`;
+    return r ? `<code>${esc(r)}</code> ${pill(r.split('/')[0])}${by}` : 'nothing';
   }
   function scoredAgainst(d) {
     const seen = [...new Map((d.arms || []).map(a => [a.judge || a.reference || '', a])).values()];
@@ -578,7 +580,7 @@
   }
 
   let DIFF = false;
-  async function drill(ep, arms, baseline, label, ref, tr) {
+  async function drill(ep, arms, baseline, label, ref, tr, scores) {
     document.querySelectorAll('tr.eprow.on').forEach(x => x.classList.remove('on')); tr.classList.add('on');
     const box = document.getElementById('drill');
     box.innerHTML = '<p class="muted">Loading outputs…</p>';
@@ -589,7 +591,9 @@
     if (d.error) { box.innerHTML = `<p class="note">${esc(d.error)}</p>`; return; }
     const base = d.views[baseline];
     const rec = d.recorded || {};
-    const cols = Object.entries(d.views).map(([a, v]) => `<div class="outcol"><h3>${rec[a] ? 'production, recorded <small class="muted">capture ' + esc(rec[a]) + '</small> · ' : ''}${esc(label[a] || a)}${a === baseline ? ' <small class="muted">baseline</small>' : ''}</h3>${view(v, a === baseline ? null : base)}</div>`).join('');
+    const score = (a, v) => { const s = scores && scores.series[a] && scores.series[a][ep];
+      return s == null ? "" : `<p class="itemscore"><b class="num">${fmt(s)}</b> <small class="muted">${esc(scores.metric)} on this ${ITEM}</small></p>`; };
+    const cols = Object.entries(d.views).map(([a, v]) => `<div class="outcol"><h3>${rec[a] ? 'production, recorded <small class="muted">capture ' + esc(rec[a]) + '</small> · ' : ''}${esc(label[a] || a)}${a === baseline ? ' <small class="muted">baseline</small>' : ''}</h3>${score(a, v)}${view(v, a === baseline ? null : base)}</div>`).join('');
     const labs = (d.labels || []).length ? `<h3 class="sub">labels · ${d.labels.length}</h3><ul class="labels">${d.labels.map(l =>
       `<li>${chip(l.kind)} <code>${esc(l.set.split('/').pop())}</code>${l.by ? ' <small class="muted">' + esc(l.by) + '</small>' : ''}${l.note ? ' <small>' + esc(l.note) + '</small>' : ''}<div class="outtext">${l.text == null ? '<span class="muted">(its text is not here)</span>' : esc(l.text)}</div></li>`).join('')}</ul>`
       : (d.labels ? `<p class="small muted">No label for this ${ITEM} yet.</p>` : '');
@@ -601,7 +605,7 @@
       ? `<details class="srcbox"${d.source.text.length <= 1500 ? ' open' : ''}><summary>the ${ITEM} itself <small class="muted">${d.source.text.length.toLocaleString()} characters, what every arm read</small></summary><div class="outtext">${esc(d.source.text)}</div></details>` : '';
     box.innerHTML = `<p class="eyebrow gap"><span class="num">04</span>${ITEM} · ${esc(ep)}</p>${fieldsTable(d.fields)}${src}${labs}${toggle}<div class="outgrid">${refcol}${cols}</div>`;
     const t = document.getElementById('difft');
-    if (t) t.onchange = () => { DIFF = t.checked; drill(ep, arms, baseline, label, ref, tr); };
+    if (t) t.onchange = () => { DIFF = t.checked; drill(ep, arms, baseline, label, ref, tr, scores); };
     box.scrollIntoView({behavior: 'smooth', block: 'start'});
   }
 

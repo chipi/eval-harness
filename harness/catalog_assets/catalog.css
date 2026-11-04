@@ -185,6 +185,8 @@ tr.eprow { cursor: pointer; } tr.eprow:hover td { background: var(--surface); } 
 .outcol { border: 1px solid var(--hair); border-radius: 14px; padding: 18px; background: var(--surface); min-width: 0; }
 .outcol h3 { font-size: 15px; font-family: var(--mono); letter-spacing: 0; margin-bottom: 10px; overflow-wrap: anywhere; }
 .refcol { border-style: dashed; }
+.itemscore { margin: 0 0 8px; font-size: 14px; }
+.itemscore b { font-size: 18px; }
 .outtext { font-size: 14px; line-height: 1.6; color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
 .outtext ins, .small ins { text-decoration: none; background: color-mix(in srgb, var(--open) 22%, transparent); color: var(--ink); }
 .outtext del, .small del { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--local); }
@@ -419,6 +421,8 @@ small.retired { color: var(--local); font: 600 10px/1 var(--mono); letter-spacin
 /* a long count in short form wherever its tile is narrow, not only on phones */
 .tile { container-type: inline-size; }
 @container (max-width: 150px) { .tile .full { display: none; } .tile .short { display: inline; } }
+/* the ten home tiles share one row at 1400 px (about 104 px each): the number shrinks to fit its tile, never wraps */
+.tile b { font-size: clamp(14px, 22cqi, 22px); white-space: nowrap; }
 /* the period: chips, then one line saying what the trends compare with (its title has the dates) */
 .period-switch { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 22px 0 0; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }

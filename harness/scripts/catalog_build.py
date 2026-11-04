@@ -1162,7 +1162,7 @@ def activity_counts(by_ds: dict, since: str) -> dict:
 
 
 #: The spend chart's series: what kind of call was billed, and its name on the page.
-SPEND_KINDS = (("arm", "systems under test"), ("judge", "judges"))
+SPEND_KINDS = (("arm", "systems under test"), ("judge", "judges"), ("smoke", "arm smokes"))
 
 
 #: What spend is counted in: money, or tokens (what a free local model still uses).
@@ -3117,13 +3117,30 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                             ],
                         }
                     )
-                arms = [r["arm"] for r in rows][:INSPECT_MAX]
+                # Retired arms stay in the table (history) but are not tested again: the link names the leader's
+                # live rivals, and says how many it leaves out.
+                live = [r["arm"] for r in rows if not retired_round(retired_in, r["arm"]) or r is leader]
+                arms = live[:INSPECT_MAX]
+                left_out = len(rows) - len(live)
                 what = grp["key"]
-                inner += f'<h3 class="sub">{group_heading(what, rows)}</h3>'
+                need = (g.get("success_criteria") or {}).get("min_items")
+                short = (
+                    f' <small class="retired" title="the goal asks for at least {need} {e(A.item_word)}s per arm '
+                    f"before an arm may lead\">below the goal's min_items ({need}): shown, never recommended</small>"
+                    if need and rows and all(any("min_items" in f for f in r["flags"]) for r in rows)
+                    else ""
+                )
+                inner += f'<h3 class="sub">{group_heading(what, rows)}{short}</h3>'
                 if leader and len(arms) > 1:
                     inner += (
                         f'<p><a class="btn" href="{inspect_url(arms, "../", baseline=leader["arm"], metric=gm)}">'
-                        "Test every arm in this group against its leader</a></p>"
+                        "Test every arm in this group against its leader</a>"
+                        + (
+                            f' <small class="muted">({left_out} retired arm{"s" if left_out != 1 else ""} left out)</small>'
+                            if left_out
+                            else ""
+                        )
+                        + "</p>"
                     )
                 inner += decision_html(
                     dec, {r["arm"]: r["label"] for r in rows}, g, "../", baseline_gap(A, dec, rows, gm), said

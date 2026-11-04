@@ -87,10 +87,10 @@ EVAL_RUNS_DIR=data/runs-gold evh leaderboard --dataset-id tickets_v1
 ```
 <!-- guide-check: varies lead2_noisy author global distinguishable sorted ordering -->
 ```text
-  tickets_lead2_v1            3          0.243426
-  tickets_author_v1           1          0.231219
-  tickets_lead2_noisy_v1      3          0.228799
-  tickets_lead1_v1            3          0.201010
+  tickets_lead2_v1            3      0.2434       28.5000  0.000000         0.0        0.000000
+  tickets_author_v1           1      0.2312       35.1667  0.000000         0.0        0.000000
+  tickets_lead2_noisy_v1      3      0.2269       22.2222  0.000000         0.0        0.000000
+  tickets_lead1_v1            3      0.2010       16.0000  0.000000         0.0        0.000000
   ...
     global test (permutation on within-item ranks): p = 0.1262  ->  NO detectable arm effect
     pairs distinguishable: 0 of 6
@@ -183,22 +183,46 @@ A judge is a **judge scorer**, one file. The kit has one whose two judges are `p
 a deterministic stand-in that calls nothing, so this step stays offline and $0:
 
 ```yaml
-# data/scorers/tickets-judge-v1.yaml (abridged)
+# data/scorers/tickets-judge-v1.yaml
+# A judge scorer for the tutorial (docs/tutorials/3-frontier-reference-and-judging.md). It re-measures the tickets_v1
+# arms' frozen outputs with two judges, for $0 and offline: both are `provider: fake`, a
+# deterministic stand-in that calls nothing. A fake judge can never be validated, so the
+# harness refuses this scorer unless --unvalidated is given, and labels every number it makes.
+#
+# For real judges, replace each `params` with a model you can call (see RUNBOOK §12) and add
+# a `validation` block naming the runs that measured each judge against human ratings.
 scorer_id: tickets-judge-v1
 kind: judge
 dataset_id: tickets_v1
-task:                          # what is judged; omit it for SummEval's news-summary task
+
+# What is judged. Without this block a scorer judges news summaries the way SummEval did
+# (ARTICLE, SUMMARIES, coherence/consistency/fluency/relevance, 1-5).
+task:
   source_label: TICKET
   output_label: SUMMARIES
   dimensions: [accuracy, usefulness]
   scale: [1, 5]
-judges:                        # at least two, from different vendor families
-  - {id: judge_a, params: {provider: fake, model: fake-a, family: vendor_a, ...}}
-  - {id: judge_b, params: {provider: fake, model: fake-b, family: vendor_b, ...}}
+
+# At least two judges, from different vendor families (ADR-0001).
+judges:
+  - id: judge_a
+    params: {provider: fake, model: fake-a, family: vendor_a, temperature: 0.0,
+             usd_per_mtok_in: 0.0, usd_per_mtok_out: 0.0}
+  - id: judge_b
+    params: {provider: fake, model: fake-b, family: vendor_b, temperature: 0.0,
+             usd_per_mtok_in: 0.0, usd_per_mtok_out: 0.0}
+
+# `{n}` in the prompt is replaced by the number of summaries in each call.
 prompt:
-  file: tutorial/judge_prompt.txt   # "{n}" in it becomes the number of summaries per call
-protocol: {outputs_per_call: 16, blinding: true, order_seed: 0,
-           position_check_fraction: 0.5, noise_check_fraction: 0.5}   # both required
+  file: tutorial/judge_prompt.txt
+
+protocol:
+  outputs_per_call: 16
+  blinding: true
+  order_seed: 0
+  position_check_fraction: 0.5
+  noise_check_fraction: 0.5
+
 cost_cap_usd: 0.01
 ```
 
@@ -245,7 +269,7 @@ verdict?) and a repeat on half (the **noise** check: does the judge agree with i
 
 ```bash
 evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1 --unvalidated
-EVAL_RUNS_DIR=data/runs-judged/tickets-judge-v1 evh leaderboard --dataset-id tickets_v1
+EVAL_RUNS_DIR=data/runs-judged/tickets-judge-v1 evh leaderboard --dataset-id tickets_v1 --wide
 ```
 <!-- guide-check: varies tickets_ global FRONTIER agree reshuffled -->
 ```text
@@ -332,6 +356,16 @@ a `json` code fence allowed), or that repeats the item, is committed only as its
 an item's text never reaches git by accident. Its text is kept beside its record, git-ignored,
 in `data/judge-verdicts/<scorer>/<judging set>/<judge>/.withheld/<item>.<pass>.b<block>.txt`, and
 the log line names that file: read it before you retry, to see why the reply failed.
+
+**A reasoning model can spend all of `max_tokens` thinking and reply with nothing.** That is why the
+judges above set `reasoning: {enabled: false}`. In the fifth newcomer run, a judge without it at
+`max_tokens: 400` returned empty replies, and 1 item of 20 parsed. Each unparsed line says why
+("empty, cut off at the token limit (finish_reason length)"), and the pass ends with a `HINT` line when
+it happens. Fix it in a new scorer version (a new `scorer_id`): turn the judge's reasoning off, or raise
+its `max_tokens`. Either changes the judge, so the old verdicts are not mixed with the new. The
+`reasoning` key is sent for `provider: openai`, `openrouter` and `litellm`; `provider: anthropic`
+refuses it. A tree with such verdicts from before 0.7.1 fails `evh validate`'s V12, and the message
+names the command that rewrites them: `evh judge-score … --retry-unparsed`.
 
 Retry until a pass recovers nothing new (in the scenario, two passes took the intents from 26 of
 32 items to 31). An item still failing after that stays out of the judged table, which counts the

@@ -392,6 +392,13 @@ def drive(base: str, overview: str = "") -> None:
             page.locator(".refcol").count() == 1 and page.locator(".outcol").count() == 4,
             page.locator(".outcol").count(),
         )
+        metric = page.locator("#metric").input_value()
+        cards = page.locator(".outcol .itemscore").all_inner_texts()
+        check(
+            "inspector: each arm's card on an item leads with the item's score for the metric in view",
+            len(cards) >= 3 and all(metric in c and c.strip()[:1].isdigit() for c in cards),
+            str(cards),
+        )
         check(
             "inspector: an item shows the item itself, what every arm read",
             page.locator("details.srcbox").count() == 1

@@ -106,8 +106,10 @@ def main() -> int:
         root = Path(tmp)
         adapters: dict = {}
         n = 0
+        per_ds: dict[str, int] = {}
         with contextlib.redirect_stdout(io.StringIO()):
             for ds in datasets:
+                per_ds[ds] = 0
                 for d, m in rs.measured_runs(ds, configs):
                     try:
                         rel = d.parent.resolve().relative_to(_common.DATA.resolve()).as_posix()
@@ -115,23 +117,46 @@ def main() -> int:
                         rel = d.parent.name
                     if rs.rescore_one(d, m, out_dir=root / rel, adapters=adapters, quiet=True):
                         n += 1
+                        per_ds[ds] += 1
         after = decisions(HarnessAdapter(runs_root=root), goal)
         scorer = next((rs.current_scorer({"adapter": k}, adapters) for k in adapters), "")
     if as_json:
         with _jsonout.collect("score-preview"):
-            _print(args.goal, scorer, n, before, after)
+            _print(args.goal, scorer, n, before, after, per_ds)
         return 0
-    _print(args.goal, scorer, n, before, after)
+    _print(args.goal, scorer, n, before, after, per_ds)
     return 0
 
 
-def _print(goal: str, scorer: str, n: int, before: dict, after: dict) -> None:
+def _derived_on(dataset_id: str) -> int:
+    """How many re-scored (derived) runs on the dataset the goal can read: what score-preview leaves alone."""
+    n = 0
+    bases = [b for b in sorted(_common.DATA.glob("runs*")) if b.name != rs.RESCORED]
+    bases += sorted((_common.DATA / rs.RESCORED).glob("*/*"))
+    for base in bases:
+        if base.is_dir() and not _common.ignored_by_git(base):
+            n += sum(1 for _d, m in rs.runs_on(dataset_id, runs_dir=base) if m.get("derived"))
+    return n
+
+
+def _print(goal: str, scorer: str, n: int, before: dict, after: dict, per_ds: dict[str, int]) -> None:
     from evaluation_harness.catalog_views import _fmt, _table  # noqa: PLC0415
 
     print(
-        f"score-preview: {goal}, {n} run(s) re-scored in a temporary directory by {scorer or '?'}; nothing written\n"
+        f"score-preview: {goal}, {n} run(s) re-scored in a temporary directory by {scorer}; nothing written\n"
+        if n
+        else f"score-preview: {goal}, no measured run to re-score; nothing written\n"
     )
     for ds in sorted(set(before) | set(after)):
+        if per_ds.get(ds) == 0:
+            print(
+                f"{ds}: no measured runs to re-score here, so nothing was compared. The {_derived_on(ds)} run(s) "
+                "this goal reads are themselves re-scores, and a re-score is not re-scored again by a preview.\n"
+                f"  To check them against the scorer in this tree: evh rescore --dataset-id {ds} --out <a directory of "
+                "your own>, then evh leaderboard --dataset-id "
+                f"{ds} with EVAL_RUNS_DIR=<that directory>.\n"
+            )
+            continue
         b, a = before.get(ds) or {"rows": {}}, after.get(ds) or {"rows": {}}
         measure = a.get("measure") or b.get("measure") or ""
         print(f"{ds}  ({measure}, now -> with this scorer)")
@@ -156,6 +181,8 @@ def _print(goal: str, scorer: str, n: int, before: dict, after: dict) -> None:
             + ("" if tb == ta else f" -> {ta}")
         )
         print()
+    if not n:
+        return
     print(
         'Apply it: evh rescore --goal G --round rN --why "..." (re-score a round), or evh round-open --from rN '
         '--scoring "..." (adopt it from the next round).'

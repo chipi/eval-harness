@@ -102,6 +102,7 @@ from evaluation_harness.judging import (
     build_pairwise_message,
     build_pick_message,
     call_judge,
+    json_only,
     kendall_tau_b,
     parse_block,
     parse_pairwise,
@@ -166,6 +167,39 @@ def _keep_withheld(record: Path, text: str) -> Path:
     out = d / f"{record.stem}.txt"
     out.write_text(text, encoding="utf-8")
     return out
+
+
+def unparsed_cause(output: str | None, finish_reason: Any, mode: str) -> str:
+    """Why a reply gave no verdict, for the line judge-score prints: empty, cut off at the
+    token limit, not JSON, or JSON of the wrong shape, with its character count."""
+    n = len(output or "")
+    cut = finish_reason == "length"
+    if not output:
+        return (
+            "empty, cut off at the token limit (finish_reason length), 0 chars"
+            if cut
+            else f"empty (finish_reason {finish_reason}), 0 chars"
+        )
+    if cut:
+        return f"cut off at the token limit (finish_reason length), {n} chars"
+    if not json_only(output):
+        return f"not JSON, {n} chars"
+    return f"JSON, but not the expected {VERDICT_KEY[mode]} (the shape the prompt asks for), {n} chars"
+
+
+def cutoff_hint(cut_empty: int, calls: int, sc: dict[str, Any]) -> str:
+    """One line for a run whose replies came back empty at the token limit: a reasoning model
+    spent its max_tokens thinking. Empty when none did."""
+    if not cut_empty:
+        return ""
+    limits = ", ".join(sorted({str(j["params"].get("max_tokens", "default")) for j in sc["judges"]}))
+    return (
+        f"  HINT: {cut_empty} of {calls} replies this run ({100 * cut_empty // max(calls, 1)}%) came back empty, "
+        f"cut off at the token limit (finish_reason length): a reasoning model spent its max_tokens "
+        f"({limits}) thinking. Raise max_tokens in the scorer, or turn the model's reasoning off with "
+        "`reasoning: {enabled: false}` in the judge's params (not for provider anthropic). Either "
+        "changes the judge, so save it as a new scorer version (a new scorer_id) and run again."
+    )
 
 
 def _sha(text: str) -> str:
@@ -713,6 +747,7 @@ def run_judging(
         "cap_usd": cap,
         "billed_this_run": 0.0,
     }
+    cut_empty = 0
     work = tasks(manifest)
     try:
         for item, pass_name, block in work:
@@ -769,6 +804,9 @@ def run_judging(
                     res.output,
                     shingles([articles[item["item_id"]], *(outputs[a][item["item_id"]] for a in arms)]),
                 )
+                # Nothing to quote is still not bare JSON: V12 refuses a committed `""`.
+                if not why and not res.output:
+                    why = "empty reply"
                 # A retried block replaces the stored reply; the earlier calls were paid for
                 # too, so their cost stays in the record (and in every bill read from it).
                 prior = read_json(path) if path.is_file() else {}
@@ -817,7 +855,7 @@ def run_judging(
                         f"{j['id']} returned no cost and no token counts: "
                         "the spend is unknown, so the cap cannot be enforced"
                     )
-                if why:
+                if why and res.output:
                     # Kept out of git (V12: a committed reply is bare JSON and never repeats the
                     # source), but readable here, so an unparsed reply's cause is not a guess.
                     local = _keep_withheld(path, res.output or "")
@@ -827,7 +865,12 @@ def run_judging(
                         f"{j['id']} {item['item_id'][:8]} {pass_name} b{block}"
                     )
                 if all(v is None for v in answer.values()):
-                    log(f"    unparsed reply: {j['id']} {item['item_id'][:8]} {pass_name} b{block}")
+                    fr = meta.get("finish_reason")
+                    cut_empty += 1 if (not res.output and fr == "length") else 0
+                    log(
+                        f"    unparsed reply: {j['id']} {item['item_id'][:8]} {pass_name} b{block}: "
+                        f"{unparsed_cause(res.output, fr, mode_of(manifest))}"
+                    )
                 elif stats["calls"] % 25 == 0:
                     log(f"    {stats['calls']} calls, ${spent:.4f}")
     except CostCapExceeded as exc:
@@ -841,6 +884,8 @@ def run_judging(
             "Fix the cause and run the same command again: it resumes where it stopped."
         )
     stats["spent_usd"] = spent
+    if cut_empty:
+        log(cutoff_hint(cut_empty, stats["calls"], sc))
     return stats
 
 
@@ -1509,6 +1554,11 @@ def main() -> int:
     )
     ap.add_argument("--out", type=Path, default=JUDGED)
     args = ap.parse_args()
+    # Piped or redirected to a log, stdout is block-buffered and the progress lines came all at once at the end
+    # (as in `evh run`): a line is written when it is printed.
+    for stream in (sys.stdout, sys.stderr):
+        if not stream.isatty() and hasattr(stream, "reconfigure"):
+            stream.reconfigure(line_buffering=True)
 
     sc = load_scorer(SCORERS / f"{args.scorer}.yaml")
     if sc["dataset_id"] != args.dataset_id:

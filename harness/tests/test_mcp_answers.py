@@ -61,8 +61,33 @@ try:
     )
     version = next((x["harness"] for x in lines), "")
 
+    # Per dataset: the writer asks leaderboard once for each dataset, with the argv a call builds.
+    from evaluation_harness import mcp_server as ms
+
+    (tmp / "data" / "datasets" / "toy_v1.json").write_text("{}")
+    asked: list = []
+
+    def fake_run(project, c, argv, timeout, public):
+        asked.append((c, list(argv)))
+        return (0, json.dumps({"command": c, "argv": argv}), "") if c == "leaderboard" else (1, "", "")
+
+    real_run = ms.run_command
+    ms.run_command = fake_run  # type: ignore[assignment]  # a stand-in for the test
+    try:
+        ms.write_answers(tmp, tmp / "ahead.jsonl", True)
+    finally:
+        ms.run_command = real_run
+    want = ms.argv_of(ms.parser_of("leaderboard"), {"dataset-id": "toy_v1"})
+    ahead = [json.loads(x) for x in (tmp / "ahead.jsonl").read_text().splitlines()]
+    check(
+        "--write-answers: leaderboard written ahead for each dataset, with the argv a call builds",
+        ("leaderboard", want) in asked
+        and any(x["tool"] == "leaderboard" and x["argv"] == want for x in ahead),
+        (asked[-3:], ahead[-1:] if ahead else None),
+    )
+
     # Markers: a written answer the command would never print, and a line from another harness version.
-    out = []
+    out = [json.dumps({"tool": "leaderboard", "argv": want, "out": "LEADERBOARD-AHEAD", "harness": version})]
     for x in lines:
         if x["tool"] == "datasets":
             x = {**x, "out": json.dumps({"command": "datasets", "result": "WRITTEN-AHEAD"})}
@@ -102,9 +127,15 @@ try:
             await s.initialize()
             ds = await s.call_tool("datasets", {})
             goals = await s.call_tool("goals", {})
-            return ds.content[0].text, goals.content[0].text, goals.is_error
+            lb = await s.call_tool("leaderboard", {"dataset-id": "toy_v1"})
+            return ds.content[0].text, goals.content[0].text, goals.is_error, lb.content[0].text
 
-    ds_text, goals_text, goals_error = anyio.run(calls)
+    ds_text, goals_text, goals_error, lb_text = anyio.run(calls)
+    check(
+        "--answers: a leaderboard written ahead for a dataset is served for that dataset's call",
+        "LEADERBOARD-AHEAD" in lb_text,
+        lb_text[:200],
+    )
     check(
         "--answers: a written answer is served without running the command",
         "WRITTEN-AHEAD" in ds_text,

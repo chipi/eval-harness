@@ -76,6 +76,12 @@ def _table(heads: list, rows: list) -> None:
         print("  " + "  ".join(c.ljust(w[i]) for i, c in enumerate(r)).rstrip())
 
 
+def _condition_value(v) -> str:
+    """A field's value in the conditions table: whole, except a digest, whose first 16 characters tell it apart."""
+    text = str(v)
+    return text[:16] if re.fullmatch(r"[0-9a-f]{24,}", text) else text
+
+
 def _fmt(v) -> str:
     return "—" if v is None else cb.fmt(v)
 
@@ -1124,6 +1130,9 @@ def goals(argv) -> int:
             hyps = {r["arm"]: _goal_view.hypothesis_of(A, r["arm"]) for r in on_show}
             hyps = {a: h for a, h in hyps.items() if h}
             print(f"\n  {'scored by ' + what if what.startswith('judge ') else 'scored against ' + what}")
+            # The row kind (silver, judged, wrote its reference) is a column only when some row has one: a header
+            # over a column of blanks reads as a misaligned table.
+            with_kind = any(_kind(r, tiers) for r in on_show)
             _table(
                 [
                     "arm",
@@ -1131,9 +1140,9 @@ def goals(argv) -> int:
                     f"{A.item_word}s",
                     "vs leader (paired test)",
                     *(axis_title(ax) for ax in shown),
-                    "row",
+                    *(["row"] if with_kind else []),
                     "flags",
-                    "",
+                    "decision",
                     *(["hypothesis"] if hyps else []),
                 ],
                 [
@@ -1150,7 +1159,7 @@ def goals(argv) -> int:
                         r["n"],
                         _goal_view.vs_text((dec["rows"][r["arm"]]["quality"]).get("vs_leader")),
                         *(cell_text(ax, dec["rows"][r["arm"]][ax["name"]]) for ax in shown),
-                        _kind(r, tiers),
+                        *([_kind(r, tiers)] if with_kind else []),
                         "; ".join(r["flags"] + dec["out"].get(r["arm"], [])) or "—",
                         "leader" if r["arm"] == leader else "",
                         *([_goal_view.hypothesis_text(hyps.get(r["arm"]))] if hyps else []),
@@ -1506,8 +1515,15 @@ def inspect(argv) -> int:
     label = {a["id"]: a["label"] for a in d.get("arms") or []} | label
     vals = list((d.get("series") or {}).get(d["baseline"], {}).values())
     better = "higher" if d.get("higher_is_better") else "lower"
+    # The round's leader stands in as the baseline unless the round started from a promoted one.
+    what = ""
+    if round_leader and not args.baseline and d["baseline"] == round_leader:
+        from evaluation_harness.rounds import _dirs  # noqa: PLC0415
+
+        if not any(x.name == rnd.get("baseline") for x in _dirs(A, round_leader)):
+            what = " (the round's leader)"
     print(
-        f"{d['metric']} ({better} is better) · baseline {label.get(d['baseline'], d['baseline'])}: mean {_fmt(statistics.fmean(vals) if vals else None)} · Holm across {d['family_size']}\n"
+        f"{d['metric']} ({better} is better) · baseline {label.get(d['baseline'], d['baseline'])}{what}: mean {_fmt(statistics.fmean(vals) if vals else None)} · Holm across {d['family_size']}\n"
     )
     _table(
         ["run vs baseline", "verdict", "n", "mean", "Δ", "95% CI of Δ", "wins–losses", "p", "Holm threshold"],
@@ -1553,7 +1569,10 @@ def inspect(argv) -> int:
             order = list(d["series"])
             _table(
                 ["field", *[label.get(a, a) for a in order]],
-                [[f["name"], *[str(f["values"].get(a, "—"))[:16] for a in order]] for f in c["differ"]],
+                [
+                    [f["name"], *[_condition_value(f["values"].get(a, "—")) for a in order]]
+                    for f in c["differ"]
+                ],
             )
     if args.analysis:
         _analysis(d, label, args.xmetric)
