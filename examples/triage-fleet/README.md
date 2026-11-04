@@ -11,6 +11,28 @@ what the operator later said it was.
 (2026-07-25 to 2026-10-29) and `verdicts.jsonl`, the labels with who gave each. Git holds the ids and hashes;
 `fetch.py` downloads the pinned revision and restores the rest.
 
+**v2: the same decisions without the rebuild's hindsight** (revision `v2`, 2026-11-04). Most of v1's evidence
+was rebuilt from the stores after the fact, and some of what the rebuild wrote describes that day instead of the
+decision's. A replay found it: 7 of the baseline's 18 false dismissals cite a probe answer production never saw,
+"GlitchTip issue X no longer exists". v2 is built from v1 by the fleet's
+`signal-fleet/datasets/build_orrery_items_v2.py`, which changes only that:
+
+- an answer the rebuild could not recover states no outcome: `<UNAVAILABLE: not captured>` (it was "issue X no
+  longer exists", "short id X now belongs to a newer issue", "<store> holds nothing before <date>", or a trace
+  lookup that failed only today);
+- `lastSeen` is GlitchTip's server receive time, not the browser-set event timestamp (2023-11-14 on four items,
+  midnight on ten);
+- `firstRelease`/`lastRelease` are the releases of the events at or before the decision, never one created after
+  it (two items);
+- issue fields the decision could not have had (stats, comment counts, assignment) are dropped.
+
+The answers the model actually read, the ids, the fleet's decisions, the outcomes and the labels are unchanged; each
+item lists its changes in `provenance.v2`. The capture is `orrery_2026_10_v2` (query `v2_fields: true`), the
+dataset `orrery_triage_v1_labelled_v2` (the same 65 decisions as `orrery_triage_v1_labelled`, field set
+`triage_v2`, which adds `evidence_rebuilt` and `last_seen_source` to split them), and its gold is the owner's v1
+labels carried over by item id. Round r4 of the goal runs on it, and its arms are changes to the fleet on one model,
+not other models.
+
 | file | what it is |
 |---|---|
 | `fetch.py` | downloads `v1` (each file sha256-pinned) and restores the capture's records and the datasets' items |
