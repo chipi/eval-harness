@@ -1,0 +1,15 @@
+# A fleet change, not a model: production's model on the fleet at agentic-ai-homelab 01226ca, which adds to the
+# shipped own-code-loads brief (a7dfcd2) the client noise classes the operator closes, and lets the dismiss gate take
+# a deterministic marker of them as corroboration (prompt e6a6fab5). Hypothesis in that commit's message, recorded
+# before this run; it is compared with triage_prompt_own_code_loads_v1 (what ships) and with the baseline.
+config_id: triage_noise_gate_v1
+dataset_id: orrery_triage_v1_labelled_v2
+adapter: ../adapter.py
+goal: triage_orrery
+round: r4
+params:
+  provider: gateway
+  model: eval-fleet-triage-pro
+  usd_per_mtok_in: 0.816
+  usd_per_mtok_out: 1.632
+  fleet_commit: 01226ca
