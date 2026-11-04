@@ -1,0 +1,209 @@
+{
+  "adapter": "examples/triage-fleet/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "1af39abef3761214205c5f2e573ffa1fd26c24e0",
+    "source": "git"
+  },
+  "config_id": "triage_noise_gate_v1",
+  "created_at": "2026-11-04T16:58:31Z",
+  "dataset_id": "orrery_triage_v1_labelled_v2",
+  "fingerprint": {
+    "arm": {
+      "config_id": "triage_noise_gate_v1",
+      "labels": {
+        "usd_per_mtok_in": 0.816,
+        "usd_per_mtok_out": 1.632
+      }
+    },
+    "data": {
+      "dataset_id": "orrery_triage_v1_labelled_v2",
+      "items_sha256": "2104636f181693dbcef28657449f651f58861a28ad1ca70736ed7dee8a01d5e9",
+      "n_items": 65,
+      "reference_id": "gold/orrery_triage_v1_labelled_v2",
+      "reference_tier": "gold",
+      "references_sha256": "f828e63bb2ddf0fe43d0223112530e4ab02d2871eed992c5ef66a75f47931582"
+    },
+    "data_sha256": "33d2875c64791cac7c8c21b4bbb5834770a0765edbabd475711f2311ac243269",
+    "deployment": {
+      "declared": {
+        "fleet_code_sha256": "28c409c070e94fda53ed48838ae7a474c65c95f1d774bf45e334525570cd13eb",
+        "fleet_commit": "01226ca"
+      },
+      "hosted": {
+        "provider": "gateway",
+        "provider_id": null,
+        "route": null
+      },
+      "id": "eval-fleet-triage-pro",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-fleet-triage-pro",
+      "provider": "gateway",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "967d74d3ff1be50f39d717cc8026985037c4ee92f5a751afbf6c9c9cfad9c576",
+    "hash": "97f142564ded00e93e6debcc22ba03e68d6e1fbdff92c00ed65d716015774956",
+    "instrument": {
+      "adapter": {
+        "id": "examples/triage-fleet/adapter.py",
+        "sha256": "eff7e86addd6a9916edbef8ae80c3e70738657d9130799e3b8c3ec3760927d26"
+      },
+      "harness": {
+        "code_sha256": "658ac2f7c94adca7370e72dca1192745a8f9d7c7fa1cb74cda61802f52024213",
+        "commit": "1af39abef376",
+        "dirty": false,
+        "installed": false,
+        "version": "0.6.2"
+      }
+    },
+    "instrument_sha256": "8ca110b44084bc0fe2d4f7b02e8bfcabd07c7712c77745b7aa71a8b33a9d2ae4",
+    "runner": {
+      "cpu_count": 32,
+      "label": null,
+      "libraries": {
+        "anthropic": "2.4.0",
+        "openai": "3.45.0"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.12.14",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "declared": {
+        "prompt_sha256": "c4f8af3d0951900b9fc5aca2f44040d78e3cb34ae995a089257ada0d305fad79"
+      },
+      "fleet_commit": "01226ca"
+    },
+    "settings_sha256": "1ebef449ad199dc7647a4f05b626ba1dc46e7cc59e93e831c297e731139f3c36",
+    "version": 5
+  },
+  "goal": "triage_orrery",
+  "metric_descriptions": {
+    "correct": {
+      "summary": "1 when the decision is one the label accepts (file, dismiss, escalate or cleanup), else 0."
+    },
+    "deferred": {
+      "summary": "1 when the fleet deferred the decision twice for the same reason, so none was reached."
+    },
+    "escalated": {
+      "summary": "1 when the decision hands the signal to a person (escalate), labelled or not."
+    },
+    "false_alarm": {
+      "summary": "1 when noise (the label: dismiss or cleanup) was filed or escalated."
+    },
+    "false_dismiss": {
+      "summary": "1 when a real problem (the label: file or escalate) was dismissed or cleaned up: a miss."
+    },
+    "model_correct": {
+      "summary": "correct, for the model's own decision before the fleet's gates."
+    },
+    "model_escalated": {
+      "summary": "escalated, for the model's own decision before the fleet's gates."
+    },
+    "model_false_alarm": {
+      "summary": "false_alarm of the model's own decision, before the fleet's gates."
+    },
+    "model_false_dismiss": {
+      "summary": "false_dismiss of the model's own decision, before the fleet's gates."
+    },
+    "model_triage_cost": {
+      "summary": "triage_cost of the model's own decision, before the fleet's gates changed it."
+    },
+    "n_probes": {
+      "summary": "How many probes the model asked for before it decided."
+    },
+    "no_decision": {
+      "summary": "1 when the fleet reached no decision (an empty last reply, or the same deferral twice); scored as wrong both ways."
+    },
+    "silent_drop": {
+      "summary": "1 when a signal the label says needs a person (correct_autonomous: escalate) was dismissed."
+    },
+    "table_miss": {
+      "summary": "1 when the model asked for a probe the item's frozen probe table does not hold."
+    },
+    "triage_cost": {
+      "summary": "One decision's cost: 5 for a missed real problem, 1 for a false alarm, 0 when right; lower is better."
+    },
+    "triage_cost_p10": {
+      "summary": "triage_cost with a missed real problem priced at 10 false alarms instead of 5."
+    },
+    "triage_cost_p3": {
+      "summary": "triage_cost with a missed real problem priced at 3 false alarms instead of 5."
+    }
+  },
+  "metric_directions": {
+    "deferred": "lower",
+    "escalated": "lower",
+    "false_alarm": "lower",
+    "false_dismiss": "lower",
+    "model_escalated": "lower",
+    "model_false_alarm": "lower",
+    "model_false_dismiss": "lower",
+    "model_triage_cost": "lower",
+    "no_decision": "lower",
+    "silent_drop": "lower",
+    "table_miss": "lower",
+    "triage_cost": "lower",
+    "triage_cost_p10": "lower",
+    "triage_cost_p3": "lower"
+  },
+  "metric_kinds": {
+    "resumed": "descriptive"
+  },
+  "n_items": 65,
+  "params": {
+    "fleet_commit": "01226ca",
+    "model": "eval-fleet-triage-pro",
+    "provider": "gateway",
+    "usd_per_mtok_in": 0.816,
+    "usd_per_mtok_out": 1.632
+  },
+  "primary_metric": "triage_cost",
+  "providers_seen": {},
+  "reference_tier": "gold",
+  "repeat_index": 2,
+  "round": "r4",
+  "run_id": "triage_noise_gate_v1_20261104T161615Z_r2",
+  "scores": {
+    "correct": 0.661538,
+    "cost_usd": 0.005643,
+    "deferred": 0.0,
+    "escalated": 0.2,
+    "false_alarm": 0.580645,
+    "false_dismiss": 0.117647,
+    "latency_ms": 20554.663033,
+    "model_correct": 0.723077,
+    "model_escalated": 0.015385,
+    "model_false_alarm": 0.258065,
+    "model_false_dismiss": 0.176471,
+    "model_triage_cost": 0.584615,
+    "n_probes": 1.523077,
+    "no_decision": 0.0,
+    "resumed": 0.0,
+    "table_miss": 0.0,
+    "tokens_in": 4056.446154,
+    "tokens_out": 1429.569231,
+    "total_cost_usd": 0.36680261,
+    "total_tokens_in": 263669.0,
+    "total_tokens_out": 92922.0,
+    "triage_cost": 0.584615,
+    "triage_cost_p10": 0.892308,
+    "triage_cost_p3": 0.461538
+  }
+}

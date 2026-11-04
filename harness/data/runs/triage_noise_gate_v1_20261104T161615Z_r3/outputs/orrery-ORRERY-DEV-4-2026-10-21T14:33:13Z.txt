@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "zz-probe-dev-reject-in-script", "model_disposition": "cleanup", "reason": "The issue name contains an obvious synthetic probe marker 'zz-probe-dev-reject-in-script', indicating this is intentional test noise in the dev project, not a user-facing defect."}
