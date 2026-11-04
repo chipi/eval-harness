@@ -223,10 +223,14 @@ show the same period, and the home tiles open those pages at the period picked.
 
 The whole project at a glance, for the period picked ([the period](#the-period-every-listing-page)).
 
-- Hero: kicker `catalog`, title "Every evaluation, at a glance", a dek saying every name is a
-  link; under it, the deployment's own paragraph when `evh catalog --about FILE` gives one
-  (this repository's says which project the catalog shows, where its findings are, and that an
-  agent can ask it over MCP at `https://evals.humancopilot.eu/mcp`); then the period bar and the **tiles**, in four subjects, one colour each (a band on
+- Hero, the catalog's home: kicker `catalog`, title "The eval catalog", a one-line dek; under it,
+  the deployment's own paragraph when `evh catalog --about FILE` gives one (this repository's
+  says which project the catalog shows, where its findings are, and that an agent can ask it
+  over MCP at `https://evals.humancopilot.eu/mcp`); then a **large search** over the same index
+  as the header's (which this page hides; `/` focuses the large one), and the **ways in**: five
+  entry tiles, Goals, Datasets, Arms, Models and Inspector, each with its count (the inspector
+  none) and one line on what its page holds, in the subject colours below.
+- `01 at a glance`: the period bar and the **tiles**, in four subjects, one colour each (a band on
   top, its trend badge, its line), named in a legend under them: **goals** (goals); **data**
   (datasets, references); **arms** (configs, arms, models, metrics); **work and spend**
   (measured runs, billed in USD, tokens). The colour says what a tile is about and nothing
@@ -241,7 +245,7 @@ The whole project at a glance, for the period picked ([the period](#the-period-e
     badge is in the tile's colour whichever way it goes, never red or green: up is neither good
     nor bad. The tile's title says it in full ("▲ 173% vs the 30 days before").
   - A long number is shortened (13.7M) wherever its tile is narrow; the title keeps it exact.
-- `01 goals at a glance`: one row per goal and dataset it decides on (a dataset marked `decides: false` is left out): **goal**, **dataset**, **decides** (the
+- `02 goals at a glance`: one row per goal and dataset it decides on (a dataset marked `decides: false` is left out): **goal**, **dataset**, **decides** (the
   measure, ↓ when lower is better), **baseline** (the promoted arm and its mean, or "none
   promoted"), **leader** (the best arm the goal's decision may recommend, scored against the gold group's
   reference: not flagged, over a limit or retired; and its mean; with no gold reference, the first group scored against a reference, and **decides**
@@ -250,17 +254,17 @@ The whole project at a glance, for the period picked ([the period](#the-period-e
   **recommended** (the arm the goal's strategy picks once limits and the tie-break are applied;
   shown with cost and speed ratios against the baseline, e.g. "cost 212× · speed p95 1× vs
   baseline"). A note says the goal page tests every arm, Holm across them.
-- `02 activity and spend`, side by side (one above the other on a phone): **activity**, measured
+- `03 activity and spend`, side by side (one above the other on a phone): **activity**, measured
   runs per day as bars stacked by dataset (repeats counted one by one); **spend**, cumulative,
   one line for the systems under test and one for the judges, with a **USD / tokens** switch.
   Tokens are tokens in plus out as each call reported them, so a local model's use counts when
   its adapter or server reports usage. The charts span the period (all time starts at the first
   day anything was recorded); a period with nothing in it says so. A button under them opens the
   activity page.
-- `03 coverage`: one row per dataset: **dataset**, **items**, **arms scored against** (gold,
+- `04 coverage`: one row per dataset: **dataset**, **items**, **arms scored against** (gold,
   silver and judged counts), **references**, **metrics** (a count that opens to the list),
   **goals**, **last run**.
-- `04 recorded`: everything recorded, newest first: **when**, **what** (ran or rescored or judged
+- `05 recorded`: everything recorded, newest first: **when**, **what** (ran or rescored or judged
   an arm on a dataset, one line per arm and day; a reference made, with its author; a baseline
   promoted; a round opened or closed; every name linked), **kind**. Paged. Only the period's.
 - Command: `evh overview [--period 14d|7d|30d|90d|week|lastweek|month|lastmonth|year|all]`: the

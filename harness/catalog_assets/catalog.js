@@ -5,6 +5,9 @@ r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('theme',r.dataset.t
 (function(){const q=document.getElementById('q'),box=document.getElementById('hits'),up=document.body.dataset.up;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c]);
 if(!q||!window.CATALOG)return;
+/* every search box on the page (the header's; the home page's large one) searches the same index */
+const pairs=[...document.querySelectorAll('.search')].map(s=>[s.querySelector('input'),s.querySelector('.hits')]).filter(p=>p[0]&&p[1]);
+function attach([q,box]){
 function show(){const t=q.value.trim().toLowerCase();if(t.length<2){box.hidden=true;return;}
 const words=t.split(/\s+/);
 /* ranked: a word in the title counts more than one in the description; goals lead ties */
@@ -13,12 +16,17 @@ const hits=window.CATALOG.filter(x=>words.every(w=>x.s.includes(w))).map(x=>[sco
 box.innerHTML=hits.length?hits.map(x=>`<a href="${up}${x.u}"><span class="k">${x.k}</span>${esc(x.t)}<small>${esc(x.d)}</small></a>`).join(''):'<p>No match.</p>';box.hidden=false;}
 q.addEventListener('input',show);q.addEventListener('focus',show);
 /* arrow keys move through the results; Enter follows the focused one */
-document.addEventListener('keydown',ev=>{if(box.hidden||!['ArrowDown','ArrowUp'].includes(ev.key))return;
+q.closest('.search').addEventListener('keydown',ev=>{if(box.hidden||!['ArrowDown','ArrowUp'].includes(ev.key))return;
 const ls=[...box.querySelectorAll('a')];if(!ls.length)return;ev.preventDefault();
 const i=ls.indexOf(document.activeElement);const n=ev.key==='ArrowDown'?Math.min(i+1,ls.length-1):i-1;
-(n<0?q:ls[n]).focus();});
-document.addEventListener('keydown',ev=>{if(ev.key==='/'&&document.activeElement!==q){ev.preventDefault();document.querySelector('.bar').classList.add('searching');q.focus();}if(ev.key==='Escape'){box.hidden=true;q.blur();}});
-document.addEventListener('click',ev=>{if(!ev.target.closest('.search'))box.hidden=true;});
+(n<0?q:ls[n]).focus();});}
+pairs.forEach(attach);
+/* "/" goes to the page's own large search where there is one, else the header's */
+const big=document.getElementById('home-q');
+document.addEventListener('keydown',ev=>{if(ev.key==='/'&&!pairs.some(p=>p[0]===document.activeElement)){ev.preventDefault();
+if(big)big.focus();else{document.querySelector('.bar').classList.add('searching');q.focus();}}
+if(ev.key==='Escape')pairs.forEach(([i,b])=>{b.hidden=true;i.blur();});});
+document.addEventListener('click',ev=>{const s=ev.target.closest('.search');pairs.forEach(([i,b])=>{if(i.closest('.search')!==s)b.hidden=true;});});
 /* phones: the search is a button in the bar; it opens the search row under it and focuses it */
 const sb=document.querySelector('.search-btn'),bar=document.querySelector('.bar');
 if(sb)sb.addEventListener('click',()=>{const on=bar.classList.toggle('searching');sb.setAttribute('aria-expanded',on);

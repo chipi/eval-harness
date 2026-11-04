@@ -512,7 +512,7 @@ def page(
   <a class="brand" href="{logo_href}" aria-label="{e(parts[0][0] if parts else brand)}"><img class="mark"
     src="{up}assets/icon.svg" alt="" width="28" height="28">{brand_text}</a>{sections}
   <div class="search"><input id="q" type="search" placeholder="Search  ( / )"
-    autocomplete="off" aria-label="Search the catalog"><div id="hits" hidden></div></div>
+    autocomplete="off" aria-label="Search the catalog"><div id="hits" class="hits" hidden></div></div>
   <nav class="nav">{links}</nav>
   <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{flat}</nav></details>
   <button class="hbtn search-btn" type="button" aria-label="Search" aria-expanded="false" aria-controls="q">{ICON["search"]}</button>
@@ -1551,6 +1551,42 @@ def tile_value(n) -> str:
     return f'<span class="full">{e(s)}</span><span class="short">{short}</span>'
 
 
+#: The home page's ways in: (key in home_counts, page, title, subject colour, one line).
+ENTRIES = (
+    (
+        "goals",
+        "goals.html",
+        "Goals",
+        "goals",
+        "What each evaluation decides, its leader and what it recommends.",
+    ),
+    (
+        "datasets",
+        "datasets.html",
+        "Datasets",
+        "data",
+        "Every run by dataset, with its references and coverage.",
+    ),
+    ("arms", "arms.html", "Arms", "arms", "Every config on every dataset, scored each way it was."),
+    ("models", "models.html", "Models", "arms", "Each model: where it is deployed, onboarded and vetted."),
+    (None, "inspect.html", "Inspector", "work", "Any arms against a baseline, item by item."),
+)
+
+
+def _entries(counts: list[tuple]) -> str:
+    """The home page's entry tiles: each subject's page, its count and one line on what is there."""
+    n = {k: v for k, v, _ in counts}
+    return (
+        '<nav class="entries" aria-label="The catalog">'
+        + "".join(
+            f'<a class="entry" href="{href}" data-group="{g}"><span class="n">{"→" if k is None else tile_value(n[k])}</span>'
+            f"<b>{e(title)}</b><small>{e(line)}</small></a>"
+            for k, href, title, g, line in ENTRIES
+        )
+        + "</nav>"
+    )
+
+
 def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     """The home page: the whole catalog at a glance. Counts with their trends, then what each goal
     concludes, when work happened and what it cost, what each dataset covers, and everything
@@ -1601,16 +1637,19 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         + "</p>"
     )
     switch = cp.bar(first, until)
-    body = hero(
-        "catalog",
-        "Every evaluation, at a glance",
-        "Pages the harness builds from this project's committed runs: what each goal concludes so far, "
-        "when the work happened and what it cost, what each dataset covers, and everything recorded. "
-        "Every name is a link: goals, datasets, arms, models, reference sets and metrics each have a page, and the "
-        "inspector tests any arms against a baseline, item by item.",
-        (f'<div class="about">{ABOUT}</div>' if ABOUT else "") + switch + tile_html,
+    body = (
+        '<section class="hero slim home"><div class="wrap"><p class="kicker">catalog</p>'
+        "<h1>The eval catalog</h1>"
+        '<p class="dek">Every goal, dataset, arm and model in this project\'s committed runs.</p>'
+        + (f'<div class="about">{ABOUT}</div>' if ABOUT else "")
+        + '<div class="search home-search"><input id="home-q" type="search" autocomplete="off" '
+        'placeholder="Search goals, datasets, arms…  ( / )" aria-label="Search the catalog">'
+        '<div class="hits" hidden></div></div>'
+        + _entries(home_counts(A, by_ds, w["spend"]))
+        + "</div></section>"
     )
-    body += block("01", "goals at a glance", _glance(A, by_ds), "glance")
+    body += block("01", "at a glance", switch + tile_html, "period")
+    body += block("02", "goals at a glance", _glance(A, by_ds), "glance")
     activity = _activity_chart(by_ds, first, until) if first else '<p class="muted">No runs yet.</p>'
     spending = (
         _spend_panel(w["spend"], first, until)
@@ -1618,15 +1657,15 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         else '<p class="muted">Nothing spent is recorded.</p>'
     )
     body += block(
-        "02",
+        "03",
         "activity and spend",
         f'<div class="duo"><div id="activity"><h3 class="sub">activity</h3><div data-chart="activity">{activity}</div></div>'
         f'<div id="spend"><h3 class="sub">spend</h3><div data-chart="spend">{spending}</div></div></div>'
         '<p><a class="btn small" href="activity.html" data-period-link>every dataset, arm and kind of spend in the period</a></p>',
     )
-    body += block("03", "coverage", _coverage(A, by_ds), "coverage")
+    body += block("04", "coverage", _coverage(A, by_ds), "coverage")
     body += block(
-        "04",
+        "05",
         "recorded",
         f'<p class="muted" data-feed-empty hidden>Nothing recorded in this period.</p>{_feed(w["events"], "")}'
         if w["events"]
