@@ -100,8 +100,10 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.035em; margin: 0; }
 .chart svg.sketch .ring { stroke-width: 2; }
 .sketch-key .lead-i { background: var(--ink); }
 .sketch-key .ring-i { background: transparent; border: 2px solid var(--ink); width: 12px; height: 12px; }
-.dek { font-size: clamp(18px, 2vw, 22px); line-height: 1.5; color: var(--ink-2); max-width: 60ch; margin: 0; }
-.dek-note { font-size: 15px; line-height: 1.5; color: var(--muted); max-width: 66ch; margin: 14px 0 0; }
+.dek { font-size: clamp(18px, 2vw, 22px); line-height: 1.5; color: var(--ink-2); max-width: 44rem; margin: 0; }
+/* The notes under a lede share its width: at 66ch of their smaller type they ran a narrow, tall column. */
+.dek-note { font-size: 15px; line-height: 1.5; color: var(--muted); max-width: 44rem; margin: 14px 0 0; }
+.dek + .dek, .dek-note + .dek { margin-top: 14px; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 72px; border-top: 1px solid var(--hair); }
 .stat { padding: 22px 20px 0 0; border-right: 1px solid var(--hair); margin-right: 20px; }
 .stat:last-child { border-right: 0; }
@@ -257,6 +259,16 @@ section.method { padding-top: 64px; }
 .chapter { padding: 56px 0 72px; border-top: 1px solid var(--hair); scroll-margin-top: 72px; }
 /* Sections are linked to directly (posts, articles); keep the heading clear of the 56px sticky bar. */
 section[id] { scroll-margin-top: 72px; }
+/* The page's own sections, a thin second line of the sticky header: small, quiet, the one in view marked.
+   A section jumped to lands below both lines. */
+.onpage { border-top: 1px solid var(--hair); }
+.bar .onpage nav.wrap { display: flex; justify-content: flex-start; gap: 22px; height: 34px; align-items: center; overflow-x: auto; scrollbar-width: none;
+  font: 500 12px/1 var(--mono); letter-spacing: .03em; }
+.onpage nav::-webkit-scrollbar { display: none; }
+.onpage a { color: var(--muted); text-decoration: none; white-space: nowrap; padding: 9px 0; border-bottom: 2px solid transparent; }
+.onpage a:hover { color: var(--ink); }
+.onpage a[aria-current="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+body:has(.onpage) section[id], body:has(.onpage) .chapter { scroll-margin-top: 106px; }
 .chapter:first-child { border-top: 0; padding-top: 8px; }
 .chapter h2 { font-size: clamp(34px, 4.6vw, 60px); line-height: 1; font-weight: 800; margin: 18px 0 26px; max-width: 18ch; }
 .habit { margin: 28px 0 22px; padding: 18px 22px; border-left: 3px solid var(--accent); background: var(--surface); font-size: 18px; line-height: 1.5; max-width: 66ch; }

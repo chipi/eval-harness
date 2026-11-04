@@ -500,6 +500,15 @@ JS = """<script>
 document.getElementById('theme').addEventListener('click',()=>{const r=document.documentElement;
 const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
 r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}});
+/* the on-this-page line: the section in view marked, its link kept in sight on a narrow screen */
+(()=>{const links=[...document.querySelectorAll('.onpage a')];if(!links.length)return;
+const secs=links.map(a=>[a,document.getElementById(decodeURIComponent(a.hash.slice(1)))]).filter(x=>x[1]);
+let cur=null,queued=false;
+/* the last section whose top has passed under the header */
+const mark=()=>{queued=false;let on=null;for(const[a,s]of secs){if(s.getBoundingClientRect().top<=120)on=a;}
+if(on===cur)return;if(cur)cur.removeAttribute('aria-current');cur=on;
+if(on){on.setAttribute('aria-current','true');const n=on.parentElement;n.scrollLeft=Math.max(0,on.offsetLeft-n.clientWidth/3);}};
+addEventListener('scroll',()=>{if(!queued){queued=true;requestAnimationFrame(mark);}},{passive:true});mark();})();
 const tip=document.getElementById('tip');
 function place(x,y){const w=tip.offsetWidth,h=tip.offsetHeight;tip.style.left=Math.max(8,Math.min(x+14,innerWidth-w-8))+'px';tip.style.top=(y+14+h>innerHeight?y-h-14:y+14)+'px';}
 document.addEventListener('pointerover',ev=>{if(ev.pointerType==='touch')return;const t=ev.target.closest('[data-tip]');if(!t)return;tip.textContent=t.dataset.tip;tip.classList.add('on');place(ev.clientX,ev.clientY);});
@@ -609,6 +618,26 @@ def author(place: str) -> str:
 # The same file in both themes -- lime tile, black marks -- exactly as designed.
 
 
+#: A section of a page, its id and what it is called: its eyebrow when it has one, else its first heading.
+_SECTION = re.compile(r'<(section|article)[^>]*\bid="([^"]+)"[^>]*>(.*?)</\1>', re.S)  # a page's sections, the method's chapters
+_EYEBROW = re.compile(r'<div class="eyebrow">(?:<span class="num">[^<]*</span>)?(.*?)</div>', re.S)
+_HEADING = re.compile(r"<h[23][^>]*>(.*?)</h[23]>", re.S)
+
+
+def onpage_nav(body: str) -> str:
+    """The page's own sections as one thin line under the header, for a page long enough to need it (three
+    sections or more): a link to each, the one in view marked as the reader scrolls (JS)."""
+    items = []
+    for _tag, sid, inner in _SECTION.findall(body):
+        m = _EYEBROW.search(inner) or _HEADING.search(inner)
+        label = re.sub(r"<[^>]+>", "", m.group(1)).strip() if m else ""
+        if label:
+            items.append(f'<a href="#{e(sid)}">{e(label[:40])}</a>')
+    if len(items) < 3:
+        return ""
+    return f'<div class="onpage"><nav class="wrap" aria-label="On this page">{"".join(items)}</nav></div>'
+
+
 def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card: str = "social.png") -> str:
     up = "../" * depth
 
@@ -636,6 +665,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
         f'<a href="{up or "./"}" aria-current="page">Harness</a>'
         f'<a href="{CATALOG}">Catalog</a><a href="{up}docs/">Docs</a><a href="{up or "./"}#mcp">MCP</a>'
     )
+    onpage = onpage_nav(body)
 
     return f"""<!doctype html>
 <html lang="en">
@@ -665,7 +695,7 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
   <nav class="sections" aria-label="Harness, catalog and docs">{sections}</nav>
   <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}{mcp_menu}{github_menu}</nav></details>
   <nav class="nav">{links}{github_btn}<a class="hbtn search-btn" href="{up}docs/?q=" aria-label="Search the docs">{ICON["search"]}</a><button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button></nav>
-</div></header>
+</div>{onpage}</header>
 <main>
 {body}
 </main>
@@ -1009,15 +1039,13 @@ def home(f: dict) -> str:
     # Why it exists: the questions it was built to answer, each with what the evals
     # found -- numbers computed, quoted prose checked by q(). How the harness answers them
     # is the method page's job.
-    rc = remeasured_counts(f)
     why = [
         (
             "Agentic AI can do months of work in days. How do I trust what it builds?",
             (
                 f"This project was built that way, with AI agents. A checker re-verifies "
-                f"{f['claims_checked']} claims against the runs on every commit, the lab notebook "
-                "records the findings that had to be retracted along the way, and git keeps every "
-                "earlier version of the reports."
+                f"{f['claims_checked']} claims against the runs on every commit, and the lab notebook "
+                "records what had to be retracted."
             ),
             f"{REPO}/tree/main/research/internal",
             "The lab notebook",
@@ -1025,36 +1053,20 @@ def home(f: dict) -> str:
         (
             "Which model is best for what I need — not for someone else's benchmark?",
             (
-                f"On each eval's primary metric the most expensive model was not the best in any of "
-                f"the {f['frontier_exps']} evals where frontier models ran (the same model each time; "
-                f"SciFact ran only the twelve cheapest hosted models); re-measured, against corrected labels "
-                f"and by LLM judges, it is first on the point estimate in {word(rc['dearest_first'])}, "
-                f"neither re-measurement confirmed. In {ties} of {len(exps)} "
-                "the leader was not significantly different from other arms (an arm is one system under test: "
-                "a model with its prompt and settings) — at 100–280 items, which is not the same as equal."
+                f"The most expensive model was not the best in any of the {f['frontier_exps']} evals where "
+                f"frontier models ran. In {ties} of {len(exps)}, the leader was not significantly different "
+                "from other systems: at 100–280 items, not the same as equal."
             ),
             "evals.html",
             "The evals",
         ),
         (
             "Do I need an LLM — or a GPU — at all?",
-            f"A free model that needs no GPU was first, or not significantly different from first, in "
-            f"{f['local_first_or_contender']} of {len(exps)} on the primary metrics "
-            f"({f['local_first_or_contender'] - rc['local_lost']} of {len(exps)} on the re-measured scores, "
-            "unconfirmed), against LLMs run with one prompt and no "
-            "examples; the clearest wins were on text like the text it was trained on. On judging "
-            "summaries even a free model trained for the task lost, and an LLM judge scored above every "
-            "free scorer measured: "
+            f"A free model with no GPU was first, or not significantly different from first, in "
+            f"{f['local_first_or_contender']} of {len(exps)}, against LLMs given one prompt and no examples. "
+            "Judging summaries was the exception: "
             + q(
-                "judging summaries, the best LLM judges reach 93% of a human expert's agreement "
-                "(the best of 24, chosen on the same articles; 92% held out), and UniEval, the best "
-                "free scorer, 64%.",
-                JUDGE,
-            )
-            + " "
-            + q(
-                "A no-model lookup of which system wrote each summary reaches 63%; the "
-                "summaries are 2019-era and the judges ran with reasoning off.",
+                "the best LLM judges reach 93% of a human expert's agreement, the best free scorer 64%.",
                 JUDGE,
             )
             + " One task, so the direction, not the size.",
@@ -1068,10 +1080,8 @@ def home(f: dict) -> str:
                 "six evals",
                 SYN,
             )
-            + ". At native precision the best model that fits a 64 GB machine matched the "
-            "unlimited-hardware answer on two of the six tasks, was not significantly different from it on two "
-            "more, and was significantly below it on summarisation and SummEval — as the providers "
-            "served them: nothing was run on a 64 GB machine.",
+            + ". The best model that fits a 64 GB machine fell significantly short only on summarisation and "
+            "SummEval, as providers served it; none was run on such a machine.",
             f"{BLOB}/research/REPORT_SYNTHESIS.md",
             "The synthesis",
         ),
@@ -1093,9 +1103,9 @@ def home(f: dict) -> str:
 <section class="hero hero-grid"><div class="wrap">
   <div class="kicker"><b>eval-harness</b> · open source · MIT · by {out(HUMAN, "hero", "Marko Dragoljevic", "byline")}</div>
   <h1>Is the ranking real, or <em>a lucky sample?</em></h1>
-  <p class="dek">A small, drop-in harness for evaluating AI systems on your own data. Freeze a dataset, run your system against it, and get the answer most leaderboards skip: whether one system is actually better than another, or only ahead on this sample.</p>
+  <p class="dek">A small, <a href="{REPO}">open source drop-in harness</a> for evaluating AI systems on your own data. Freeze a dataset, run your system against it, and get the answer most leaderboards skip: whether one system is actually better than another, or only ahead on this sample.</p>
   <p class="dek-note">This is ongoing work: the harness and its method are the point, and the six evals are worked examples of them, not a benchmark.</p>
-  <p class="dek-note">Three parts: this site, why the harness exists and what it found; <a href="{CATALOG}">the catalog</a>, the harness's own pages over every run behind it, with an inspector that re-tests any comparison; and <a href="docs/">the docs</a>, how to do the same on your own system. An agent can ask the catalog too, over MCP (<a href="#mcp">how</a>).</p>
+  <p class="dek">Three parts: this site, why the harness exists and what it found; <a href="{CATALOG}">the catalog</a>, the harness's own pages over every run behind it, with an inspector that re-tests any comparison; and <a href="docs/">the docs</a>, how to do the same on your own system. An agent can ask the catalog too, over MCP (<a href="#mcp">how</a>).</p>
   <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="evals.html">See it on {hosted_n} LLMs</a><a class="btn" href="{CATALOG}">Browse every run</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
   {hero_sketch(exps)}
 </div></section>
