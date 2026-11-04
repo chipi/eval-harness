@@ -409,15 +409,18 @@ measurements of one config, which `evh validate` refuses (V8); explore in a scra
 directory instead (`EVAL_RUNS_DIR=data/runs-smoke`).
 
 **Where runs go.** Measured runs go in `data/runs`: leave `EVAL_RUNS_DIR` unset, on every
-machine, so a run made on a laptop and one made on a GPU box land in the same place. Git
-ignores every other `data/runs-*` directory unless `.gitignore` re-allows it by name, and an
+machine, so a run made on a laptop and one made on a GPU box land in the same place. An
 ignored run is not committed, so a fresh clone, CI and the published catalog never see it.
 Two kinds of directory sit beside `data/runs` on purpose:
 
 - **throwaway** (`data/runs-smoke*`, `data/runs-tune*`): smoke passes and sweeps, never committed;
 - **derived sets** (`data/runs-repeats`, `data/runs-rescored/<scorer>/<source>`, `data/runs-judged/<scorer>` …):
   re-scored or repeated runs that keep the measured runs' `config_id`s, so they cannot share
-  `data/runs` (V8). Each one has its own re-allow block in `.gitignore`.
+  `data/runs` (V8).
+
+The `.gitignore` `evh init` writes ignores only the throwaway directories, so a project commits
+its derived sets like its measured runs. This repository's own `.gitignore` is stricter: it
+ignores every `data/runs-*` directory and re-allows each derived set by name.
 
 `evh run` and `rescore` print a `WARNING` when they write to a directory git ignores
 that is neither, or to one outside the project's data, and `evh validate` notes any ignored
@@ -955,16 +958,33 @@ page shows what is inside it once `evh dataset-profile` has written its profile 
 dataset is materialized: the items' lengths, the gold's labels or shape, and each item's link to
 its source when one is recorded; commit `data/profiles/` and a catalog built anywhere shows it.
 
-**For an agent**, `evh mcp` serves the same read commands as MCP tools; how to connect each
-client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
+**For an agent with a shell**, these read commands take `--json`: the views, `inspect`,
+`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`, `rounds` and `runs-list`
+(not yet `bootstrap-test`, `holdout` or `cost-report`)
+(and `evh run`, below). Stdout is then exactly one object,
+`{"command", "version", "result": {"blocks": [...], "values": {...}}}`: `blocks` is what the
+command prints, each table as `columns` and `rows` with its raw numbers (NaN as null), and
+`values` its key results by name (`pair-test`'s `delta`, `p`, `method`, `verdict`;
+`leaderboard`'s `groups` with each arm's rank and metrics and the `ordering` test;
+`family-test`'s rows with `p_holm`, the Holm-adjusted p; `runs-list`'s `count`). A refusal prints its
+message on stderr, nothing on stdout, and exits non-zero. `evh run` prints `  run <run_id>` for each
+run it wrote; with `--json` its progress goes to stderr and `values.runs` lists each run's
+`run_id`, `config_id`, `dataset_id`, `dir`, `n_items`, `total_cost_usd` and `capped_at` (`--dry-run
+--json`: `values.dry_run`, the projection). The text output without `--json` is unchanged.
 
-- **The tools** are `overview`, `datasets`, `dataset-items`, `arms`, `models`, `goals`, `references`,
-  `metrics`, `activity`, `search`, `inspect`, `rounds`, `runs-list`, `validate`, `captures`, `labels`,
+**For an agent without one**, `evh mcp` serves the same read commands as MCP tools; how to connect
+each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
+
+- **The tools** (23) are `overview`, `datasets`, `dataset-items`, `arms`, `models`, `goals`, `references`,
+  `metrics`, `activity`, `search`, `inspect`, `leaderboard`, `pair-test`, `family-test`,
+  `rank-stability`, `run-compare`, `rounds`, `runs-list`, `validate`, `captures`, `labels`,
   `picks` and `deploy-sheet`. Each takes the
-  command's own options, named as on the command line (`dataset-id`, `period`). Each call runs
-  the command as a child process, with `--json` where it has one, so the answer is what you would
-  see. No tool writes project data, spends or runs a model. The one file a call writes is the p
-  cache, `<project>/.cache/evh-p.jsonl` (below, `EVH_P_CACHE`).
+  command's own options, named as on the command line (`dataset-id`, `period`), except those
+  that name a server path (`--runs-dir`, `--items` on `pair-test` and `family-test`). Each call runs
+  the command as a child process, with `--json`, so the answer is what you would
+  see. No tool writes project data, spends or runs a model. What a call writes is computed
+  answers in `<project>/.cache/`: the p cache, `evh-p.jsonl` (below, `EVH_P_CACHE`), and
+  `family-test`'s results.
 - **Refused before anything runs:** an argument the tool does not have, a missing required one,
   a value of the wrong kind (a list for a one-value option, a flag that is not `true`/`false`),
   any value that starts with `-`, and a dataset id that is not a plain name.
@@ -1077,6 +1097,14 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   outcome}`. The built-in ones read JSON lines, TSV, GitHub issues (with the comment beside each close)
   and Langfuse traces. `evh importer-check` runs a new one against the contract, including that it keeps
   to a query's `since` and `until`.
+- **The JSON-lines and TSV query** maps your columns; every key but `path` is optional: `path` (the
+  file, relative to the current directory); `id` (the id column, default `id`); `body` (the content
+  column, default `body` when the rows have it, `"row"` for the whole row); `fields` (the columns kept
+  as fields, default every column but id, body, created_at and outcome); `created_at` (default
+  `created_at`); `outcome` (what happened afterwards, default `outcome`); `url` (a link, with
+  `{column}` placeholders); `system` (default the file's name); `where` (`{column: value or [values]}`,
+  compared as text); `since`/`until` (ISO times, `[since, until)` on created_at). TSV also takes
+  `delimiter` (`","` for a comma-separated file).
 - **A sample is the capture's.** `evh capture … --sample-rate 0.001 --seed 7` keeps one record in a
   thousand, by a hash of each id, as the records are read: the same rule draws the same records again,
   and a source far larger than the sample is never held at once. The importer receives the rule as its

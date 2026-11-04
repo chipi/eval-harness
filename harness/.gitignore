@@ -320,7 +320,7 @@ data/external/
 # A gold reference not redistributed keeps its manifest (checksums, how to rebuild it): validate V16.
 !data/references/gold/*/manifest.json
 # A silver reference made from a committed run keeps its manifest the same way: its texts are
-# that run's outputs, rebuilt with `evh reference-create --from-run <run_id>` (the manifest
+# that run's outputs, rebuilt with `evh label-from-run --run <run_id>` and `evh reference-promote` (the manifest
 # names the run).
 !data/references/silver/*/manifest.json
 

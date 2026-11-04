@@ -240,6 +240,9 @@ evh arm-smoke --config data/configs/my_arm.yaml  # a few items with the arm's ow
 evh models                                       # which models are onboarded, vetted, and where they run
 ```
 
+`model-onboard` and `arm-smoke` call the model (a few calls each, billed like any other); `models`
+reads.
+
 An arm names the record and deployment (`model_record:`, `deployment:`), and its run's fingerprint takes the
 weights, server and machine from it. Walkthrough: [tutorial 7](../docs/tutorials/7-set-up-a-model.md); reference:
 [RUNBOOK §16](docs/RUNBOOK.md#16-set-up-a-model-before-you-test-it); design:
@@ -369,7 +372,7 @@ bundled adapter a pinned project has is `evaluation_harness/adapter.py`.
 | `scripts/adapter.py` | the bundled adapter (token overlap, the worked example's), used when a project has no `adapter.py`; start yours from a copy |
 | `scripts/dataset_create.py` | freeze a selection into a `dataset_id` |
 | `scripts/materialize.py` | build run inputs, verifying every hash |
-| `scripts/reference_create.py` | ground truth: a run's outputs as silver (`--from-run`), or authored with a config |
+| `scripts/label_from_run.py`, `scripts/reference_promote.py` | ground truth: a run's outputs as a model's label set, then labels promoted to a reference set at a tier, with a reason |
 | `scripts/run.py` | run an arm → scores, cost, speed, provenance |
 | `scripts/compare_runs.py` | compare two runs, or refuse |
 | `scripts/promote_baseline.py` | run → baseline, or refuse |

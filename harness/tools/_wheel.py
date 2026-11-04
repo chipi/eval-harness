@@ -25,7 +25,16 @@ from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parent.parent
 #: What pyproject.toml builds the package from.
-INPUTS = ("pyproject.toml", "README.md", "scripts", "schemas", "catalog_assets", "tutorial")
+INPUTS = (
+    "pyproject.toml",
+    "README.md",
+    "scripts",
+    "schemas",
+    "catalog_assets",
+    "tutorial",
+    "project_kit",
+    "skills",
+)
 _BUILT: dict = {}
 
 

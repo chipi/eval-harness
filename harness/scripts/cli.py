@@ -30,7 +30,11 @@ HERE = Path(__file__).resolve().parent
 COMMANDS = {
     "init": (
         "init_project.py",
-        "start a project: data folders, a .gitignore; --tutorial adds the GUIDE's kit",
+        "start a project: data folders, a .gitignore, AGENTS.md; --tutorial adds the GUIDE's kit",
+    ),
+    "skills-install": (
+        "skills_install.py",
+        "copy the agent skills (evaluate, compare, promote) into .claude/skills/ or --target",
     ),
     "env-check": ("env_check.py", "check the Python environment and keys"),
     "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),

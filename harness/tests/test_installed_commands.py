@@ -156,6 +156,7 @@ def main() -> int:
         # string = a refusal (non-zero exit) whose output contains it.
         cases: list[tuple[str, list, str]] = [
             ("init", ["--help"], "ok"),
+            ("skills-install", ["--target", "installed-skills"], "ok:evh-evaluate-a-system"),
             ("env-check", [], "ok"),
             (
                 "dataset-create",
@@ -487,6 +488,122 @@ def main() -> int:
                     r.returncode != 0 and clean and expect in out,
                     f"exit {r.returncode}: {out.strip()[-300:]}",
                 )
+
+        # --json on the commands an agent reads the ranking and the tests with: one envelope on stdout,
+        # the key results by name under result.values (the numbers are pinned in test_stat_commands.py).
+        def as_json(*args: str) -> tuple[subprocess.CompletedProcess, dict]:
+            r = evh(*args, "--json")
+            ok = r.returncode == 0 and r.stdout.count("\n") == 1
+            return r, (json.loads(r.stdout) if ok else {})
+
+        def values_of(env_: dict) -> dict:
+            return (env_.get("result") or {}).get("values") or {}
+
+        r, e = as_json(
+            "pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--b", "tickets_lead1_v1"
+        )
+        v = values_of(e)
+        check(
+            "pair-test --json: lead2 against lead1, the tutorial's p = 3/32, exact over 6 items",
+            (v.get("a"), v.get("b"), v.get("metric"), v.get("n"), v.get("method"))
+            == ("tickets_lead2_v1", "tickets_lead1_v1", "overlap_f1", 6, "exact")
+            and abs(v.get("p", 0) - 3 / 32) < 1e-9,
+            r.stdout[-300:] + r.stderr[-300:],
+        )
+        r, e = as_json(
+            "family-test", "--dataset-id", "tickets_v1", "--a", "tickets_lead2_v1", "--against", "tickets_"
+        )
+        rows: list = next(
+            (b["rows"] for b in e.get("result", {}).get("blocks", []) if "opponent" in b.get("columns", [])),
+            [],
+        )
+        check(
+            "family-test --json: the family, and a Holm-adjusted p per opponent",
+            values_of(e).get("family_size") == len(rows) >= 2 and all("p_holm" in x for x in rows),
+            r.stdout[-300:] + r.stderr[-300:],
+        )
+        r, e = as_json("leaderboard", "--dataset-id", "tickets_v1")
+        groups = values_of(e).get("groups") or [{}]
+        check(
+            "leaderboard --json: a ranking with a row per arm, and the ordering test",
+            {"tickets_lead1_v1", "tickets_lead2_v1"} <= {a["config_id"] for a in groups[0].get("arms", [])}
+            and (groups[0].get("ordering") or {}).get("global_p") is not None,
+            r.stdout[-300:] + r.stderr[-300:],
+        )
+        r, e = as_json("run-compare", "--baseline", base_id, "--candidate", run_id)
+        check(
+            "run-compare --json: the fingerprint result, and the metrics as rows",
+            values_of(e).get("fingerprint", {}).get("comparable") is True
+            and any(
+                "overlap_f1" in [x.get("metric") for x in b.get("rows", [])] for b in e["result"]["blocks"]
+            ),
+            r.stdout[-300:] + r.stderr[-300:],
+        )
+        r, e = as_json("runs-list")
+        listed = [x["run_id"] for b in e.get("result", {}).get("blocks", []) for x in b.get("rows", [])]
+        check(
+            "runs-list --json: a row per run",
+            values_of(e).get("count") == len(listed) and run_id in listed and base_id in listed,
+            r.stdout[-300:] + r.stderr[-300:],
+        )
+        for cmd, args, said in (
+            ("rank-stability", ["--dataset-id", "tickets_v1"], "too few"),
+            ("rounds", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
+        ):
+            r = evh(cmd, *args, "--json")
+            check(
+                f"{cmd} --json: a refusal is on stderr, nothing on stdout",
+                r.returncode != 0 and r.stdout == "" and said in r.stderr,
+                (r.stdout, r.stderr[-300:]),
+            )
+        # `evh run` names the runs it wrote, and with --json says so as data, its progress on stderr.
+        env_ids = {**env, "EVAL_RUNS_DIR": str(proj / "data" / "runs-smoke-ids")}
+        cfg1 = str(proj / "data/configs/tickets_lead1.yaml")
+        r = subprocess.run(
+            [sys.executable, "-m", "evaluation_harness", "run", "--config", cfg1, "--run-id", "ids_probe"],
+            cwd=proj,
+            env=env_ids,
+            capture_output=True,
+            text=True,
+        )
+        lines = r.stdout.splitlines()
+        check(
+            "run: prints '  run <id>' for each run it wrote, after the 'wrote N run(s)' line",
+            r.returncode == 0
+            and any(
+                a.startswith("wrote 1 run(s) to") and b == "  run ids_probe"
+                for a, b in zip(lines, lines[1:], strict=False)
+            ),
+            r.stdout[-300:] + r.stderr[-300:],
+        )
+        r = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "evaluation_harness",
+                "run",
+                "--config",
+                cfg1,
+                "--run-id",
+                "ids_json",
+                "--json",
+            ],
+            cwd=proj,
+            env=env_ids,
+            capture_output=True,
+            text=True,
+        )
+        made = json.loads(r.stdout)["result"]["values"]["runs"] if r.returncode == 0 else []
+        check(
+            "run --json: the run as data on stdout (one object), the progress on stderr",
+            r.stdout.count("\n") == 1
+            and len(made) == 1
+            and (made[0]["run_id"], made[0]["config_id"], made[0]["n_items"])
+            == ("ids_json", "tickets_lead1_v1", 6)
+            and "fingerprint" in r.stderr,
+            r.stdout[-300:] + r.stderr[-300:],
+        )
+        shutil.rmtree(proj / "data" / "runs-smoke-ids", ignore_errors=True)
 
         # From a subfolder of the project, a command finds the project (the nearest directory
         # up with data/): from the current directory it read an empty project.

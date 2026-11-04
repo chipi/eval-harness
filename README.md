@@ -66,6 +66,7 @@ It was built to answer four questions anyone building with AI ends up asking:
 | **read what it found** | [**The evals**](https://evals.humancopilot.eu/evals.html): 24 LLMs, fine-tunes and baselines on six benchmarks, generated from the runs in this repository, so every number on it is checked |
 | **check it yourself** | [**Reproduce it**](docs/REPRODUCE.md): five levels, from recomputing every number ($0, one command) to rerunning every model with one OpenRouter key |
 | **browse the runs, test any two** | [**The catalog**](https://evals.humancopilot.eu/catalog/): every run of the six evals, with the run inspector; `evh catalog-serve` gives you the same over your own runs |
+| **hand it to an agent** | `evh init` writes [`AGENTS.md`](harness/project_kit/AGENTS.md) into the project: the rules an agent must not break, the loop from nothing to a decision, and the `--json` command for each question. An agent with a shell needs neither the catalog nor MCP |
 | **ask it from your agent** | `https://evals.humancopilot.eu/mcp`: the catalog's views as read-only MCP tools, for Claude, ChatGPT, the OpenAI API, Gemini or any MCP client, no sign-in; `evh mcp` serves your own project ([how to connect](harness/docs/INTEGRATION.md#for-an-agent-evh-mcp)) |
 | **read the full documentation** | [evals.humancopilot.eu/docs](https://evals.humancopilot.eu/docs/): guide, concepts, runbook, integration, architecture, protocol, reference |
 | **review or contribute** | [KNOWN_ISSUES](research/internal/KNOWN_ISSUES.md) (what is open), [CONTRIBUTING](CONTRIBUTING.md) |
@@ -77,11 +78,13 @@ model provider you use is your choice, with your own key.
 
 ```bash
 cd your-project
+python3 -m venv .venv && . .venv/bin/activate
 pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.2#subdirectory=harness"
-evh init
+evh init                                                # folders, .gitignore, AGENTS.md
 evh dataset-create --dataset-id my_v1 --source-dir data/sources/my_v1
 evh dataset-materialize --dataset-id my_v1
 # write adapter.py at the project root -> call_system() talks to YOUR system
+git add -A && git commit -m "dataset and arms"           # a run records the commit it ran from
 evh run --config data/configs/best_model.yaml           # the best system you have
 evh label-from-run --run <its run_id> --set best_v1                  # optional: its outputs as a model's labels
 evh reference-promote --dataset-id my_v1 --labels best_v1 --tier silver \
@@ -118,7 +121,10 @@ offline, with the real output of every command. The tutorials take it further:
 | `evh inspect --sheet --dataset-id my_v1 --runs …` | one sheet: every item, what each arm wrote and its scores, the labels, the winner and a footer per arm; `--csv FILE --fill label\|pick\|scores` for a person or a tool to fill, `evh sheet-import` to read it back |
 | `evh catalog-serve` | browse every run and test any arms against a baseline, item by item; every view is also a command ([tutorial 5](docs/tutorials/5-catalog-and-inspector.md)) |
 
-`evh --help` lists every verb.
+`evh --help` lists every verb. **The catalog and MCP are optional.** `evh catalog` and
+`evh catalog-serve` build pages for a person to browse; `evh mcp` serves the read commands to an
+agent that cannot run them itself, or to a team. Every view and every tool is also a command,
+and the views, the ranking and the paired tests take `--json` (`leaderboard`, `pair-test`, `family-test`).
 
 ## What it is
 
@@ -291,7 +297,8 @@ the statistics it also stands on: [docs/INFLUENCES.md](docs/INFLUENCES.md).
 ```
 harness/     the harness, installed into a project as the `evaluation-harness` package
              (pip install, then evh init; harness/README.md)
-examples/    the six evals, each with its own uv environment
+examples/    the six evals, each with its own uv environment; triage-fleet and
+             signal-fleet-dedup: the harness on a production agent
 research/    the eval reports and the synthesis; research/internal/ is the lab
              notebook: handovers, review rounds and an append-only journal
 site/        the public site, generated from the runs (make site; checked by make ci)

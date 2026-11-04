@@ -251,16 +251,21 @@ records gives their newer outcomes, for a new label set; a frozen dataset never 
 
 ---
 
-## An agent reads; a person decides
+## An agent works when asked; a person owns the decision
 
-An agent can look at what the catalog shows: `evh mcp` serves its views as tools (the ranking
-and the statistics commands, `leaderboard`, `pair-test` and the like, are not tools yet)
-([INTEGRATION](INTEGRATION.md#for-an-agent-evh-mcp)), and each call runs the command itself, so
-the agent's numbers are yours, refusals included. It cannot act on them. Running an arm spends
-money, promoting a baseline is a decision with a reason, closing a round fixes its evidence:
-each of those has a consequence someone must own, so they stay commands a person runs. An agent
-can prepare one and hand you the exact command. What an agent may also do, with whose consent,
-is 0.7.0's to design.
+An agent with a shell runs the same commands you do and reads them with `--json`; one without
+a shell, or a team's, reads them through `evh mcp`
+([INTEGRATION](INTEGRATION.md#for-an-agent-evh-mcp)). Either way each answer comes from the
+command itself, so the agent's numbers are yours, refusals included.
+
+What an agent may do (the owner's rule, 2026-11-04, written into the `AGENTS.md` `evh init`
+gives every project): run arms, make labels and references, and promote a baseline, **when its
+operator asked for that task**, and only under a spending cap (`EVAL_MAX_COST_USD`). A
+promotion's reason says who asked and why, so the record shows whose decision it was. Closing a
+round fixes its evidence, and anything past the cap spends what was not agreed: those stay the
+operator's, and the agent hands over the exact command. `evh mcp` writes nothing: its tools read.
+Consent recorded by the harness itself, rather than by the operator's instruction, is 0.7.0's to
+design.
 
 A shared server answers anyone who can reach it, so `--public` holds back what a project may not
 redistribute (an item's text), and the rates bound what a script can cost the machine.

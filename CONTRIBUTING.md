@@ -4,7 +4,15 @@
 
 An example is a directory under `examples/` with its own dependency chain — uv:
 `pyproject.toml` + `uv.lock` + `.python-version` — so it provisions its own interpreter and
-cannot bleed into a sibling.
+cannot bleed into a sibling. An example that only replays another system's own code
+(`triage-fleet`, `signal-fleet-dedup`, which import the fleet from a checkout it names) has
+none: it runs in the harness's environment.
+
+**Working in this checkout** (an agent included): `evh` here keeps its data in `harness/data/`,
+whichever directory you run it from, because a checkout's own `data/` wins over the working
+directory (`EVAL_HOME` overrides it). Never edit or delete anything already committed under
+`harness/data/` (datasets, runs, labels, references, baselines), the published reports in
+`research/`, or the journal (`research/internal/NOTES.md`: append only).
 
 It needs:
 
@@ -39,10 +47,16 @@ to the catalog or the inspector gets its `evh` command in the same change.
 ## Before you open a PR
 
 ```bash
-cd harness && make ci      # validate the tree + self-tests, no network, no keys
+cd harness && make ci      # validate, self-tests, the GUIDE as written, the site; no network, no keys
 make budget-check          # from the root: the inspector's memory and answer times (harness/docs/TESTING.md)
 make quality               # from the root: lint, types, security, dead code, spelling, shell
 ```
+
+CI runs more, all from the root: `make quality` (quality.yml), `make guard-check` (guards.yml),
+and `make verify`, `make budget-check`, `make browser-real-check`, `make commands-check` and
+`make browser-check` (reproduce.yml). `make verify` is the first level of
+[REPRODUCE](docs/REPRODUCE.md): every number recomputed from the committed runs. A PR is ready
+when all of them pass.
 
 `make quality-install` installs the tools once (`harness/requirements-dev.txt`); `make format`
 applies ruff's formatting. The scorers whose source is hashed into every run

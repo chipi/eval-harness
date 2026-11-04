@@ -111,7 +111,10 @@ Beside `score()`, say what your metrics are: `PRIMARY_METRIC` (the one that deci
 measure different things, as a judge validated in several modes, may define `primary_metric(params)` instead:
 given an arm's `params` it names that arm's primary, which `run` and `rescore` record, and `PRIMARY_METRIC` is
 the fallback; the SummEval adapter's is `tau`, `top1` or `pair_agreement` by `params["mode"]`),
-`METRIC_DIRECTIONS` (a quality metric that improves going down, `{"wer": "lower"}`) and
+`METRIC_DIRECTIONS` (a quality metric that improves going down, `{"wer": "lower"}`),
+`METRIC_KINDS` (what each metric is: `quality`, the default, ranked; `descriptive`, shown but
+not ranked as quality, as a parse rate or a length; `cost` and `speed`, the leaderboard's cost and
+speed columns and its frontier; `{"parse_ok": "descriptive", "cost_usd": "cost"}`) and
 `METRIC_DESCRIPTIONS` (one sentence each, `{"rouge_l": "ROUGE-L F1 against the reference"}`,
 or `{"summary": "one line", "details": "how it is computed and read"}`). Every run records
 them; the metrics page shows the summary and each metric's own page the details. A description
@@ -210,8 +213,9 @@ Most projects do not have it. The sequence that works:
    ranking arms against each other; they are not a claim about correctness, and
    publishing them as one is how eval loses credibility internally.
 
-Cost control: `--limit 10`. Ten references is enough to rank four arms, and you
-can extend later without re-authoring what you have.
+Cost control: make the dataset small first (`evh dataset-create --limit 10`; `run` has no
+`--limit`). Ten references is enough to rank four arms, and you can extend later without
+re-authoring what you have.
 
 4. **Or score without references at all**, with LLM judges that read each item and rate
    every arm's output (`evh judge-score`, optional). A judge is a model's opinion too, so
@@ -343,14 +347,22 @@ which references exist, what one arm wrote for one item.
 
 ## For an agent: `evh mcp`
 
+**An agent with a shell does not need it.** It runs `evh` as you do, reads every view, the
+ranking and the paired tests with `--json`, and follows the `AGENTS.md` that `evh init` writes into the
+project (the rules, the loop, what it may do: [CONCEPTS](CONCEPTS.md#an-agent-works-when-asked-a-person-owns-the-decision)).
+`evh mcp` is for an agent that cannot run commands (a chat client, a hosted assistant) and for
+a team sharing one project.
+
 `evh mcp` serves the project's read commands to an agent over MCP (the official SDK): the
 catalog's views (`overview`, `datasets`, `dataset-items`, `arms`, `models`, `goals`, `references`, `metrics`,
 `activity`, `search`, `captures`, `labels`, `picks`, `deploy-sheet`), the inspector in the terminal (`inspect`, its
-sheet included, without the options that write a file: `--csv`, `--fill` and theirs), `rounds`, `runs-list` and
-`validate`. Each call runs the command as a person would, with `--json` where the command has it,
+sheet included, without the options that write a file: `--csv`, `--fill` and theirs), the ranking
+and the tests (`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`), `rounds`,
+`runs-list` and `validate`: 23 tools. Each call runs the command as a person would, with `--json`,
 so the agent sees the same numbers you do. No tool writes project data, spends or runs a model:
-running arms, promoting a baseline and closing a round stay your commands. (The one file a call
-writes is the goals' p cache in the project's ignored `.cache/`.) The design is
+running arms, promoting a baseline and closing a round stay commands. (What a call does write is
+computed answers in the project's ignored `.cache/`: the paired tests' p values and
+`family-test`'s results.) The design is
 [RFC-018](https://github.com/chipi/eval-harness/blob/main/docs/rfc/RFC-018-read-only-mcp-server.md).
 
 **On your machine, against your project** (stdio: the agent starts it):
@@ -392,7 +404,7 @@ evh mcp --http --bind 0.0.0.0 --port 8766 --allowed-host evals.team.example [--p
 
 `--allowed-host` is required beyond the loopback (the server checks the Host against DNS
 rebinding); `--public` leaves out the options that answer with an item's text (an item, the sheet), and the
-`validate` tool (17 tools); `--rate` (per
+`validate` tool (22 tools), and the options that set how long a test runs (`--permutations`, `--draws`); `--rate` (per
 caller), `--rate-total` (everyone together), `--concurrent` and `--timeout` bound the load, and a
 caller has one call running at a time; `--client-header` names the header your proxy sets for the
 caller's address (trust it only if nothing else can reach the port); `--hooks FILE` adds your error reporting, tracing
@@ -405,8 +417,10 @@ them answers in seconds after the first.
 ## The first hour, concretely
 
 ```bash
-cd your-project && pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.2#subdirectory=harness"
-evh init
+cd your-project && python3 -m venv .venv && . .venv/bin/activate
+pip install "evaluation-harness @ git+https://github.com/chipi/eval-harness@v0.6.2#subdirectory=harness"
+evh init                                      # folders, .gitignore, AGENTS.md for an agent
+export EVAL_MAX_COST_USD=2                    # a run stops when it has spent this; with none, no cap
 
 cp some/real/items/* data/sources/            # your data
 evh dataset-create --dataset-id pilot_v1 --limit 10

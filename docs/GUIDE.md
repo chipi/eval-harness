@@ -61,12 +61,14 @@ git init -q && git add -A && git commit -qm "Start: the tutorial kit"
 ```
 ```text
   folders  data/sources, data/configs, data/goals, data/fields
-  wrote    26 file(s), the tutorial kit under tutorial/
+  wrote    28 file(s), the tutorial kit under tutorial/
 ```
 
 `data/` is where everything the harness freezes and records will live; `tutorial/` is the
 kit; `.gitignore` already keeps out what the harness derives (materialized copies, the
-catalog build, caches, your `.env`). Every command from here runs from this folder.
+catalog build, caches, your `.env`). `AGENTS.md` (and `CLAUDE.md`, which imports it) tells an
+agent working in the project its rules, the loop and how to read results; edit it to add what is
+particular to yours. Every command from here runs from this folder.
 
 ## 1 · Create a dataset
 
@@ -380,8 +382,10 @@ it returns, a catalog of your own layout), [RUNBOOK](../harness/docs/RUNBOOK.md)
 command, flag, environment variable and exit code), [CONCEPTS](../harness/docs/CONCEPTS.md)
 (why each refusal exists).
 
-And for an agent: the catalog's views you ran here (`evh runs-list`, `validate`, `goals`,
-`inspect`) are also tools; the ranking and the tests (`leaderboard`, `pair-test`, `family-test`)
-are not tools yet. `evh mcp` serves them to Claude, ChatGPT, the OpenAI API, Gemini or any MCP client, on your project or for a team; this repository's own
-evals answer at `https://evals.humancopilot.eu/mcp`, without sign-in
+And for an agent: `evh init` wrote `AGENTS.md`, its rules and this loop in brief. An agent with a
+shell runs the commands above itself and reads them with `--json` (`evh runs-list --json`,
+`evh leaderboard --json`, `evh pair-test --json`, `evh goals --json`); it needs neither the
+catalog nor MCP. `evh mcp` serves the same read commands as tools to an agent that cannot run
+them, Claude, ChatGPT, the OpenAI API, Gemini or any MCP client, on your project or for a team;
+this repository's own evals answer at `https://evals.humancopilot.eu/mcp`, without sign-in
 ([INTEGRATION](../harness/docs/INTEGRATION.md#for-an-agent-evh-mcp)).

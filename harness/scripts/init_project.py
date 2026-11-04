@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Start a project that uses the harness: the data folders, a .gitignore, and with
---tutorial the GUIDE's kit.
+"""Start a project that uses the harness: its folders, a .gitignore, AGENTS.md, and the GUIDE's kit with --tutorial.
 
     evh init [DIR] [--tutorial]
 
@@ -11,6 +10,8 @@ is safe.
   data/sources/  data/configs/  data/goals/  data/fields/   your inputs, arms, goals and item fields
   .gitignore     the harness's derived and private paths (materialized copies, the
                  catalog build, caches, .env, the venv)
+  AGENTS.md      how an agent works in the project: the rules, the loop, how to read results
+                 (CLAUDE.md beside it imports it, for Claude Code)
   tutorial/      with --tutorial: six support tickets, their gold summaries, four arms, a
                  goal and a judge scorer, as docs/GUIDE.md uses them
 """
@@ -32,6 +33,11 @@ HERE = Path(__file__).resolve().parent
 #: The kit is package data in an install (evaluation_harness/tutorial) and a sibling of
 #: scripts/ in a checkout (harness/tutorial).
 KIT = next((p for p in (HERE / "tutorial", HERE.parent / "tutorial") if (p / "tickets").is_dir()), None)
+#: AGENTS.md for a new project: package data in an install (evaluation_harness/project_kit), a
+#: sibling of scripts/ in a checkout (harness/project_kit).
+AGENTS = next(
+    (p for p in (HERE / "project_kit", HERE.parent / "project_kit") if (p / "AGENTS.md").is_file()), None
+)
 FOLDERS = ("data/sources", "data/configs", "data/goals", "data/fields")
 IGNORE = """\
 # evaluation-harness: derived or private, never committed
@@ -64,6 +70,19 @@ def main() -> int:
     else:
         gi.write_text(IGNORE, encoding="utf-8")
         made.append(".gitignore")
+    if AGENTS is None:
+        print("ERROR: AGENTS.md is not in this installation", file=sys.stderr)
+        return 1
+    for name, text in (
+        ("AGENTS.md", (AGENTS / "AGENTS.md").read_text(encoding="utf-8")),
+        ("CLAUDE.md", "@AGENTS.md\n"),
+    ):
+        dst = root / name
+        if dst.exists():
+            kept.append(name)
+        else:
+            dst.write_text(text, encoding="utf-8")
+            made.append(name)
     if args.tutorial:
         if KIT is None:
             print("ERROR: the tutorial kit is not in this installation", file=sys.stderr)
@@ -94,6 +113,7 @@ def main() -> int:
         if args.tutorial
         else "Next: put your inputs in data/sources/<name>/ and freeze them with `evh dataset-create`."
     )
+    print("An agent working here: read AGENTS.md first.")
     return 0
 
 

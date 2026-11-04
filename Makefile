@@ -116,7 +116,7 @@ type:
 
 # Medium severity and up. Each accepted finding carries `# nosec <id>` and its reason on the line.
 security:
-	$(BIN)/bandit -q -r harness examples site docs infra -ll -x '*/.venv/*,*/node_modules/*'
+	$(BIN)/bandit -q -r harness examples site docs infra -ll -x '*/.venv/*,*/node_modules/*,*/.build/*'
 	$(BIN)/pip-audit --progress-spinner off -r harness/requirements.txt \
 		-r harness/requirements-browser.txt -r harness/requirements-dev.txt -r site/requirements-docs.txt
 

@@ -42,6 +42,7 @@ DOCS = [
     *sorted((HARNESS / "docs").glob("*.md")),
     *sorted(p for p in (REPO / "docs").rglob("*.md") if "papers" not in p.parts),
     *sorted((REPO / "examples").glob("*/README.md")),
+    HARNESS / "project_kit" / "AGENTS.md",
 ]
 SKIP = {HARNESS / "CHANGELOG.md"}
 FENCE = re.compile(r"^```(\w*)")

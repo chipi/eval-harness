@@ -37,6 +37,14 @@ gitignored.
 | [`retrieval-scifact`](retrieval-scifact) | find the abstract supporting a claim | **a ranked list** over a 5,183-doc corpus | the corpus is not the items, so nothing in the fingerprint identified it | [METHOD](retrieval-scifact/METHOD.md) | [report](../research/REPORT_RETRIEVAL.md) |
 | [`summeval-judging`](summeval-judging) | grade 16 summaries of an article like an expert would | **a vector of judgements**, scored by **rank correlation** with experts | the first eval whose answer is a judgement of other systems' outputs, and whose arms include this repository's own metrics | [METHOD](summeval-judging/METHOD.md) | [report](../research/REPORT_SUMMEVAL.md) |
 
+Two more examples are not benchmarks: the harness on a production system of its author's, the
+homelab's triage fleet (an agent that triages production error signals with an LLM).
+
+| Example | What it measures |
+|---|---|
+| [`triage-fleet`](triage-fleet) | the fleet's real decisions replayed through its own code with other models, scored against what the operator later said each signal was; its goal, baseline and runs are committed |
+| [`signal-fleet-dedup`](signal-fleet-dedup) | a regression guard for the fleet's de-duplication: 100 real signals through its filing-stage functions, against a pinned commit; no model, no cost |
+
 Shared scoring code lives in [`_shared/`](_shared): `classification.py`, `extraction.py`,
 `retrieval.py`, plus `hf_identity.py` for pinning local model weights.
 

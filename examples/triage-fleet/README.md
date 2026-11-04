@@ -47,4 +47,6 @@ evh run --config examples/triage-fleet/configs/local/<arm>.yaml
 systemctl --user start ollama-assistant    # after; its alert x3-assistant-down fires after 15 minutes stopped
 ```
 
-The rule is the homelab's: chipi/agentic-ai-homelab `infra/x3/AGENTS.md` and `docs/recipes/x3-deploy.md`.
+The rule is the homelab's: chipi/agentic-ai-homelab `infra/x3/AGENTS.md` and `docs/recipes/x3-deploy.md`. While
+the unit is stopped the homelab assistant has no model: anything using it, an agent running on it included, stops
+answering until it is started again.

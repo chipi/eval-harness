@@ -4,8 +4,9 @@ Tables answer the questions you thought to ask. To look around, the harness buil
 **catalog** (static pages over your runs) and serves an **inspector** beside it (a local server
 that tests any arms against a baseline, item by item, and shows one item's outputs side by side).
 **Everything they show is also an `evh` command**, computed by the same code, so the numbers
-match: the pages are a comfort, not the only way in. And every one of those commands is also a
-tool an agent can call ([below the table in §3](#3-every-page-and-its-command)).
+match: the pages are a comfort, not the only way in, and you need not build them at all. Each
+of those commands that only reads takes `--json`, for an agent with a shell, and is also a tool
+`evh mcp` serves to one without ([below the table in §3](#3-every-page-and-its-command)).
 
 This tutorial starts from the project [getting started](../GUIDE.md) leaves, offline, and
 `make guide-check` runs it as written. It first gives the tickets some **fields**, so the
