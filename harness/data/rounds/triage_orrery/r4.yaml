@@ -17,6 +17,17 @@ changes:
 budget_usd: 4.0
 carried:
 - triage_baseline_pro_v2data_v1
-status: open
+status: closed
 opened_at: '2026-11-04T14:46:12Z'
+closed_at: '2026-11-04T19:20:27Z'
+conclusion:
+  text: 'Closed by the owner 2026-11-04. On v2 (v1''s decisions without the rebuild''s hindsight), filing
+    the app''s failures to load its own code (triage_prompt_own_code_loads_v1) cut triage_cost from 0.872
+    to 0.446 against production''s baseline (p 0.0014) and leads the round; naming client noise alone
+    (noise_classes) did not (worse than the leader, p 0.0119); the noise gate on top (noise_gate) is not
+    separated from the leader (p 0.4425) and its no-new-miss prediction failed on four real problems in
+    one of three passes. Nothing promoted: the leader is not separated from noise_gate. The fleet ran
+    arms for $4.27 with the carried-in baseline, $3.18 in the round, against its $4 budget; the owner
+    accepted it.'
+  promoted_run: null
 baseline: null
