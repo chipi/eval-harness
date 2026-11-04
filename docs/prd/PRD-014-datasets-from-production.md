@@ -107,6 +107,9 @@ comment that says what it was.
 - **FR2.4**: `evh capture-scrub` runs the project's own scrubber and records it.
 - **FR2.5**: `evh captures` and the catalog's Captures page list them; `evh validate` V17 checks every record
   against its hash. Newer outcomes of records already held are a fresh capture of the same query.
+- **FR2.6**: `evh capture-restore` rebuilds a capture's records (and the item files of the datasets made from
+  it) from the recorded importer and query, a key replaceable with `--query KEY=VALUE`, re-running a recorded
+  scrubber; every hash must match or nothing is written (0.7.0, from the fleet's beta use).
 
 ### FR3: Datasets from a capture
 

@@ -276,6 +276,7 @@ def main() -> int:
             ("dataset-split", ["tickets_v1", "--test", "0.5", "--seed", "3"], "ok:tickets_v1_test"),
             ("captures", ["--capture", "c1"], "ok:c1:"),
             ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
+            ("capture-restore", ["--capture", "c1"], "ok:records restored"),
             # Labels (RFC-023): installed and reading their arguments; the flow is tests/test_label_sets.py.
             ("labels", [], "ok:tickets_v1/installed_from_run: model"),
             (

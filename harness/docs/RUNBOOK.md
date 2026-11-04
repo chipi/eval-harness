@@ -52,6 +52,7 @@ further. This page is the reference for each step.
 | keep a production system's records | `evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture c1` · `evh captures` ([§15](#15-datasets-from-production-the-capture-lane)) |
 | test an importer | `evh importer-check path/to/importer.py:Importer --query …` |
 | scrub a capture | `evh capture-scrub c1 --command "python scrub.py {records}"` |
+| a capture's records again (a fresh clone) | `evh capture-restore --capture c1 [--query path=…]` |
 | a dataset from a capture | `evh dataset-from-capture c1 --dataset-id … [--where F:V] [--one-per F] [--tag K=V]` |
 | labels from what happened afterwards | `evh label-from-capture --dataset-id … --capture c1 --map rules.yaml --set …` |
 | validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
@@ -1176,6 +1177,10 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
 - **A capture** is `data/captures/<id>/capture.json` (each record's id and hashes) and `records/` (the
   records). V17 checks them. A project may keep `records/` out of git and fetch them from where it
   publishes them; a capture without its records is then named "not fetched", not failed.
+  `evh capture-restore --capture <id>` reads them again from the source the recorded query names
+  (`--query KEY=VALUE` replaces one key, e.g. the same files in a download folder), runs a recorded
+  scrubber again, and writes the item files of every dataset made from the capture. Every record and
+  item is checked against its recorded sha256 first: one that differs is named and nothing is written.
 - **An importer** is a class with `records(query)` yielding `{id, body, fields, created_at, source,
   outcome}`. The built-in ones read JSON lines, TSV, GitHub issues (with the comment beside each close)
   and Langfuse traces. `evh importer-check` runs a new one against the contract, including that it keeps

@@ -101,6 +101,7 @@ NOT_TOOLS = {
     "dataset-extend": "writes a dataset",
     "dataset-split": "writes",
     "capture-scrub": "runs a project's command and writes",
+    "capture-restore": "reads a source and writes records and item files",
     "run-promote": "a decision: a person's",
     "round-open": "a decision: a person's",
     "round-retire": "a decision: a person's",

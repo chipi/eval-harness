@@ -101,6 +101,10 @@ COMMANDS = {
         "dataset_split.py",
         "split a dataset into <id>_validation and <id>_test, stable across versions",
     ),
+    "capture-restore": (
+        "capture_restore.py",
+        "read a capture's records again from its source, and the items of the datasets made from it, every hash checked",
+    ),
     "capture-scrub": (
         "capture_scrub.py",
         "run the project's own scrubber over a capture's records, and record it",

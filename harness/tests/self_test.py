@@ -673,6 +673,10 @@ def test_example_scorer_suites_pass() -> None:
             "importers, importer-check and capture: mapping, the contract, hashes, continuing",
         ),
         (
+            "test_capture_restore.py",
+            "capture-restore: records and dataset items read again, every hash checked, a scrubber re-run",
+        ),
+        (
             "test_outcome_rules.py",
             "outcomes as labels: the rules, a rule set promoted like any, a dataset's tags",
         ),
