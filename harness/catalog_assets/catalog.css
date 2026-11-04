@@ -614,3 +614,52 @@ table#goals td:last-child, table#glance td:last-child { overflow-wrap: anywhere;
 /* on the home page its own search replaces the header's */
 body:has(#home-q) .bar .search { visibility: hidden; }
 body:has(#home-q) .bar .search-btn { display: none; }
+
+/* the inspector's picker (inspect.js): 1 a goal or a dataset, 2 its arms, then Inspect */
+.pk { border: 1px solid var(--hair); border-radius: 14px; background: var(--surface); }
+.pk > summary { cursor: pointer; padding: 14px 18px; list-style: none; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.pk > summary::-webkit-details-marker { display: none; }
+.pk > summary::before { content: "▸"; color: var(--muted); margin-right: 4px; }
+.pk[open] > summary::before { content: "▾"; }
+.pk-body { padding: 4px 18px 18px; display: grid; gap: 22px; }
+.pk-step { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; align-items: start; }
+.pk-n { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font: 600 12px/1 var(--mono); color: var(--page); background: var(--accent); }
+.pk-main { min-width: 0; }
+.pk-main h3 { margin: 2px 0 10px; font-size: 16px; }
+.pk-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.pk-row select, .pk-row input { font: 500 13px/1 var(--mono); color: var(--ink); background: var(--page); border: 1px solid var(--hair);
+  border-radius: 999px; padding: 9px 14px; min-width: 0; }
+.pk-row input { flex: 1 1 220px; }
+.pk-row select { flex: 0 1 320px; max-width: 100%; }
+.pk-ds { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; margin-top: 12px; max-height: 260px; overflow-y: auto; }
+.pk-dsb { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 9px 12px; border: 1px solid var(--hair); border-radius: 10px;
+  background: var(--page); color: var(--ink); cursor: pointer; min-width: 0; }
+.pk-dsb b { font: 600 13px/1.3 var(--mono); overflow-wrap: anywhere; }
+.pk-dsb small { color: var(--muted); font-size: 12px; }
+.pk-dsb:hover:not(:disabled) { border-color: var(--accent); }
+.pk-dsb:disabled { cursor: default; opacity: .55; }
+.pk-dsb[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.pk-facets, .pk-sug { display: flex; gap: 8px 16px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+.pk-facet { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.pk-sug { gap: 8px; }
+.pk-add { cursor: pointer; white-space: normal; text-align: left; overflow-wrap: anywhere; max-width: 100%; }
+.pk-list { margin-top: 12px; max-height: 360px; overflow-y: auto; border-top: 1px solid var(--hair); }
+.pk-arm { display: grid; grid-template-columns: 22px minmax(0, 2fr) minmax(0, 1.3fr) minmax(0, 1.2fr) minmax(0, .8fr); gap: 4px 12px;
+  align-items: baseline; padding: 8px 4px; border-bottom: 1px solid var(--hair); cursor: pointer; font-size: 13.5px; }
+.pk-arm:hover { background: var(--surface-2); }
+.pk-arm input { width: 16px; height: 16px; accent-color: var(--accent); align-self: center; }
+.pk-c { font-family: var(--mono); overflow-wrap: anywhere; }
+.pk-c em { display: block; font-style: normal; font-size: 11.5px; color: var(--accent); }
+.pk-m, .pk-h { color: var(--ink-2); overflow-wrap: anywhere; }
+.pk-v { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); text-align: right; }
+.pk-go { display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; border-top: 1px solid var(--hair); padding-top: 14px; }
+.pk-go #pk-count { margin-right: auto; color: var(--muted); font-size: 13px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-width: 0; }
+.pk-go #pk-count b { color: var(--ink); }
+.pk-go .btn[disabled] { opacity: .5; cursor: not-allowed; }
+@media (max-width: 700px) {
+  .pk-step { grid-template-columns: 1fr; gap: 6px; }
+  .pk-arm { grid-template-columns: 22px minmax(0, 1fr); }
+  .pk-arm > span:not(.pk-c) { grid-column: 2; }
+  .pk-v { text-align: left; }
+}

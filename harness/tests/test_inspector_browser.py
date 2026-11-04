@@ -35,6 +35,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
@@ -323,6 +324,36 @@ def drive(base: str, overview: str = "") -> None:
             "goal page: a suggested command's copy button puts the command on the clipboard",
             bool(cmd) and got == cmd,
             f"{cmd!r} -> {got!r}",
+        )
+
+        # The picker: a goal with one dataset picks it; its arms are listed, filtered and ticked together.
+        page.goto(base + "inspect.html")
+        page.wait_for_selector("details.pk[open] #pk-goal", timeout=15000)
+        page.select_option("#pk-goal", "tickets_summary")
+        listed = page.locator(".pk-arm").count()
+        check(
+            "inspector picker: a goal with one dataset picks it and lists its arms",
+            page.locator('.pk-dsb[aria-pressed="true"]').get_attribute("data-ds") == "tickets_v1"
+            and listed == 3,
+            listed,
+        )
+        page.fill("#pk-q", "lead")
+        check("inspector picker: the filter narrows the arms", page.locator(".pk-arm").count() == 2)
+        page.fill("#pk-q", "")
+        page.click("#pk-all")
+        check(
+            "inspector picker: every arm shown is ticked, and named while ticked",
+            page.locator(".pk-arm input:checked").count() == 3
+            and page.locator("#pk-count [data-untick]").count() == 3,
+        )
+        with page.expect_navigation():
+            page.click("#pk-open")
+        got = sorted(parse_qs(urlparse(page.url).query).get("runs", [""])[0].split(","))
+        check(
+            "inspector picker: Inspect opens the ticked arms, the picker folded",
+            got == sorted(f"runs/tickets_v1/tickets_{a}_v1" for a in ("lead1", "lead2", "author"))
+            and page.locator("details.pk:not([open])").count() == 1,
+            got,
         )
 
         arms = ",".join(f"runs/tickets_v1/tickets_{a}_v1" for a in ("lead1", "lead2", "author"))

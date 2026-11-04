@@ -42,7 +42,120 @@
     if (m) m.innerHTML = '<code>inspect</code>' + (opts.length ? ` with <code>${esc(JSON.stringify(args))}</code>` : '');
   })();
 
-  function picker() {
+  // The picker. With pick.js (catalog_build.write_pick): a goal narrows the datasets, a dataset
+  // lists its arms with filters and suggestions, and ticked arms open together. Without it, the
+  // plain list of arm names below.
+  const PK = window.PICK;
+  const pk = { goal: '', ds: '', q: '', dsq: '', f: {}, ticked: new Set(runs()) };
+  const armOf = r => PK.arms[r] || PK.arms[r.split('#')[0]];
+  // what an arm is beside its config's others, without the particulars: "judged by X" is judged
+  const howKind = h => /^judged/.test(h) ? 'judged' : /^rescored/.test(h) ? 'rescored' : String(h).split(' (')[0];
+  const FACETS = [['w', 'where', a => a.w], ['h', 'how', a => howKind(a.h)], ['s', 'scored against', a => a.s]];
+  function picker() { return PK ? pickerFull() : pickerPlain(); }
+
+  function pickerFull() {
+    if (!pk.ds) { const d = new Set(runs().map(r => (armOf(r) || {}).d).filter(Boolean)); if (d.size === 1) pk.ds = [...d][0]; }
+    const open = !runs().length || pick.dataset.open === '1';
+    const nOn = runs().length, onDs = nOn ? [...new Set(runs().map(r => (armOf(r) || {}).d || ARMS[r] || '?'))].join(', ') : '';
+    pick.innerHTML = `<details class="pk"${open ? ' open' : ''}><summary>${nOn
+      ? `<b>${nOn} arm${nOn > 1 ? 's' : ''}</b> on <code>${esc(onDs)}</code><span class="muted"> · change</span>`
+      : '<b>Choose the arms to compare</b>'}</summary><div class="pk-body">
+      <div class="pk-step"><span class="pk-n">1</span><div class="pk-main"><h3>A goal or a dataset</h3>
+        <div class="pk-row"><select id="pk-goal" aria-label="goal"><option value="">every goal</option>${PK.goals.map(g =>
+          `<option value="${esc(g.id)}"${g.id === pk.goal ? ' selected' : ''}>${esc(g.t)}</option>`).join('')}</select>
+        <input id="pk-dsq" type="search" autocomplete="off" placeholder="filter datasets" value="${esc(pk.dsq)}" aria-label="filter datasets"></div>
+        <div class="pk-ds" id="pk-ds"></div></div></div>
+      <div class="pk-step" id="pk-arms"></div>
+      <div class="pk-go"><span id="pk-count"></span><button class="btn" type="button" id="pk-clear">Clear</button>
+        <button class="btn primary" type="button" id="pk-open">Inspect</button></div></div></details>`;
+    const det = pick.querySelector('details');
+    det.addEventListener('toggle', () => { pick.dataset.open = det.open ? '1' : ''; });
+    document.getElementById('pk-goal').onchange = ev => { pk.goal = ev.target.value;
+      const g = PK.goals.find(x => x.id === pk.goal); if (g && g.ds.length === 1) setDs(g.ds[0]); else drawDs(); };
+    document.getElementById('pk-dsq').oninput = ev => { pk.dsq = ev.target.value; drawDs(); };
+    document.getElementById('pk-clear').onclick = () => { pk.ticked.clear(); drawArms(); };
+    document.getElementById('pk-open').onclick = () => {
+      const t = [...pk.ticked]; if (!t.length) return;
+      P.set('runs', t.join(','));
+      // the baseline: kept when still ticked, else the dataset's promoted baseline when ticked
+      const base = t.find(r => ((armOf(r) || {}).ro || []).includes('baseline'));
+      if (!t.includes(P.get('baseline'))) { if (base) P.set('baseline', base); else P.delete('baseline'); }
+      P.delete('sheet'); go(); };
+    drawDs(); drawArms();
+  }
+
+  function setDs(ds) {
+    if (ds !== pk.ds) { pk.ticked = new Set([...pk.ticked].filter(r => (armOf(r) || {}).d === ds)); pk.f = {}; pk.q = ''; }
+    pk.ds = ds; drawDs(); drawArms();
+  }
+
+  function drawDs() {
+    const box = document.getElementById('pk-ds'); if (!box) return;
+    const g = PK.goals.find(x => x.id === pk.goal), words = pk.dsq.toLowerCase().split(/\s+/).filter(Boolean);
+    const gt = id => (PK.goals.find(x => x.id === id) || {}).t || id;
+    const all = Object.entries(PK.datasets).filter(([d, v]) => (!g || g.ds.includes(d))
+      && words.every(w => (d + ' ' + v.g.map(gt).join(' ')).toLowerCase().includes(w)));
+    const shown = all.slice(0, 60);
+    box.innerHTML = shown.map(([d, v]) => `<button type="button" class="pk-dsb" data-ds="${esc(d)}" aria-pressed="${d === pk.ds}"${v.n ? '' : ' disabled'}>
+      <b>${esc(d)}</b><small>${v.n} arm${v.n === 1 ? '' : 's'}${v.g.length ? ' · ' + esc(v.g.map(gt).join(', ')) : ''}</small></button>`).join('')
+      + (all.length > shown.length ? `<p class="muted small">${all.length - shown.length} more: type to narrow.</p>` : '')
+      + (!all.length ? '<p class="muted small">No dataset matches.</p>' : '');
+    box.querySelectorAll('[data-ds]').forEach(b => b.onclick = () => setDs(b.dataset.ds));
+  }
+
+  function drawArms() {
+    const box = document.getElementById('pk-arms'); if (!box) return;
+    const cnt = document.getElementById('pk-count'), openb = document.getElementById('pk-open');
+    const n = pk.ticked.size, over = n > PK.max;
+    // what is ticked, by name, so a filter that hides a ticked arm never hides that it is ticked
+    const named = [...pk.ticked].slice(0, 8).map(r => { const a = armOf(r);
+      return `<span class="chip pickchip" title="${esc(r)}">${esc(a ? a.c + (a.h === 'measured' ? '' : ' · ' + howKind(a.h)) : short(r))}<button type="button" data-untick="${esc(r)}" aria-label="untick">×</button></span>`; }).join('');
+    cnt.innerHTML = n ? `<b>${n} ticked</b>${over ? ` <span class="muted">(the inspector opens at most ${PK.max})</span>` : ''} ${named}${n > 8 ? ` <span class="muted">+${n - 8}</span>` : ''}` : 'nothing ticked';
+    cnt.querySelectorAll('[data-untick]').forEach(b => b.onclick = () => { pk.ticked.delete(b.dataset.untick); drawArms(); });
+    openb.textContent = n ? `Inspect ${n} arm${n > 1 ? 's' : ''}` : 'Inspect';
+    openb.disabled = !n || over;
+    if (!pk.ds) { box.innerHTML = '<span class="pk-n">2</span><div class="pk-main"><h3>Its arms</h3><p class="muted">Pick a dataset above: the inspector compares arms on one dataset.</p></div>'; return; }
+    const mine = Object.entries(PK.arms).filter(([, a]) => a.d === pk.ds);
+    const words = pk.q.toLowerCase().split(/\s+/).filter(Boolean);
+    const pass = ([r, a]) => words.every(w => [r, a.c, a.m, a.r, a.h].join(' ').toLowerCase().includes(w))
+      && FACETS.every(([k, , get]) => !(pk.f[k] && pk.f[k].size) || pk.f[k].has(get(a)));
+    const shown = mine.filter(pass);
+    const chips = FACETS.map(([k, name, get]) => { const vs = [...new Set(mine.map(([, a]) => get(a)))].filter(Boolean).sort();
+      return vs.length < 2 ? '' : `<span class="pk-facet"><span class="muted small">${name}</span>${vs.map(v =>
+        `<button type="button" class="chip" data-f="${k}" data-v="${esc(v)}" aria-pressed="${!!(pk.f[k] && pk.f[k].has(v))}">${esc(v)}</button>`).join('')}</span>`; }).join('');
+    // Suggestions: the dataset's roles, then what the ticked arms point to.
+    const sug = [];
+    for (const role of ['baseline', 'leader', 'recommended']) {
+      const hit = mine.filter(([r, a]) => a.ro.includes(role) && !pk.ticked.has(r));
+      if (hit.length) sug.push([`the ${role}${hit.length > 1 ? 's' : ''}: ${hit.map(([, a]) => a.c).join(', ')}`, hit.map(([r]) => r)]);
+    }
+    const t = [...pk.ticked].map(r => armOf(r)).filter(Boolean);
+    const cfgs = new Set(t.map(a => a.c)), models = new Set(t.map(a => a.m).filter(Boolean));
+    const same = mine.filter(([r, a]) => !pk.ticked.has(r) && cfgs.has(a.c));
+    if (same.length) sug.push([`the same config${cfgs.size > 1 ? 's' : ''}, scored other ways (${same.length})`, same.map(([r]) => r)]);
+    const sib = mine.filter(([r, a]) => !pk.ticked.has(r) && a.m && models.has(a.m) && !cfgs.has(a.c));
+    if (sib.length) sug.push([`the same model${models.size > 1 ? 's' : ''} in other configs (${sib.length})`, sib.map(([r]) => r)]);
+    const cap = shown.slice(0, 400), was = box.querySelector('.pk-list'), top = was ? was.scrollTop : 0;
+    box.innerHTML =`<span class="pk-n">2</span><div class="pk-main"><h3>Its arms <span class="muted">on <code>${esc(pk.ds)}</code>, ${mine.length}</span></h3>
+      <div class="pk-row"><input id="pk-q" type="search" autocomplete="off" placeholder="filter: config, model, how" value="${esc(pk.q)}" aria-label="filter arms">
+      <button class="btn small" type="button" id="pk-all">Tick the ${shown.length > PK.max ? 'first ' + PK.max + ' ' : ''}${shown.length} shown</button></div>
+      ${chips ? `<div class="pk-facets">${chips}</div>` : ''}
+      ${sug.length ? `<div class="pk-sug"><span class="muted small">add</span>${sug.map(([l], i) => `<button type="button" class="chip pk-add" data-sug="${i}">+ ${esc(l)}</button>`).join('')}</div>` : ''}
+      <div class="pk-list" role="group" aria-label="arms">${cap.map(([r, a]) => `<label class="pk-arm"><input type="checkbox" value="${esc(r)}"${pk.ticked.has(r) ? ' checked' : ''}>
+        <span class="pk-c">${esc(a.c)}${a.ro.length ? `<em>${esc(a.ro.join(', '))}</em>` : ''}</span><span class="pk-m">${esc(a.m || '—')} · ${esc(a.w)}</span>
+        <span class="pk-h">${esc(a.h)}</span><span class="pk-v">${a.v == null ? '' : esc(a.ms) + ' ' + fmt(a.v)}</span></label>`).join('')
+        || '<p class="muted small">No arm matches.</p>'}${shown.length > cap.length ? `<p class="muted small">${shown.length - cap.length} more: filter to narrow.</p>` : ''}</div></div>`;
+    box.querySelector('.pk-list').scrollTop = top;
+    const q = document.getElementById('pk-q');
+    q.oninput = ev => { pk.q = ev.target.value; drawArms(); const i = document.getElementById('pk-q'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); };
+    document.getElementById('pk-all').onclick = () => { shown.slice(0, PK.max).forEach(([r]) => pk.ticked.add(r)); drawArms(); };
+    box.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { const s = pk.f[b.dataset.f] = pk.f[b.dataset.f] || new Set();
+      s.has(b.dataset.v) ? s.delete(b.dataset.v) : s.add(b.dataset.v); drawArms(); });
+    box.querySelectorAll('[data-sug]').forEach(b => b.onclick = () => { sug[+b.dataset.sug][1].forEach(r => pk.ticked.add(r)); drawArms(); });
+    box.querySelectorAll('.pk-list input').forEach(c => c.onchange = () => { c.checked ? pk.ticked.add(c.value) : pk.ticked.delete(c.value); drawArms(); });
+  }
+
+  function pickerPlain() {
     const chips = runs().map(r => `<span class="chip pickchip">${esc(short(r))}<button data-rm="${esc(r)}" aria-label="remove">×</button></span>`).join('');
     // Only offer runs that can be compared with what is selected: same dataset_id, or none recorded.
     const all = ARMS, ds = new Set(runs().map(r => all[r] || all[r.split('#')[0]]).filter(Boolean));
@@ -94,7 +207,7 @@
   async function load() {
     if (P.get('sheet') && P.get('dataset')) return sheetView();
     picker();
-    if (!runs().length) { app.innerHTML = '<p class="muted">Pick runs from a goal, dataset or arm page in the catalog ("Inspect it", "test vs leader"), or add them above.</p>'; return; }
+    if (!runs().length) { app.innerHTML = '<p class="muted">' + (PK ? 'Choose arms above, ' : 'Add runs above, ') + 'or open them from a goal, dataset or arm page in the catalog ("Inspect it", "test vs leader").</p>'; return; }
     let d;
     try {
       const r = await fetch(API + 'compare?' + P.toString());

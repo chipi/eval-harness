@@ -4444,12 +4444,64 @@ def render_labels(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     )
 
 
+def write_pick(A: Adapter, by_ds: dict, out: Path, rows: list[dict]) -> None:
+    """What the inspector's picker chooses from (assets/inspect.js): each goal with its datasets,
+    each dataset with its arm count and goals, and each arm as the arms page describes it
+    (catalog_arms.arm_rows): config, model, model record, hosted or local, how it was scored,
+    what against, its roles and its value on the deciding measure. Without this file the
+    picker is a plain list of arm names."""
+    goals = [
+        {
+            "id": g["goal_id"],
+            "t": g.get("title") or g["goal_id"],
+            "ds": [d["dataset_id"] for d in g.get("datasets") or [] if d.get("dataset_id") in by_ds],
+        }
+        for g in A.goals()
+    ]
+    datasets = {
+        ds: {"n": len(v["arms"]), "g": [g["id"] for g in goals if ds in g["ds"]]}
+        for ds, v in sorted(by_ds.items())
+    }
+    arms = {
+        r["arm"]: {
+            "d": r["dataset"],
+            "c": r["config"],
+            "m": r["model"],
+            "r": r["record"],
+            "w": "local" if r["local"] else "hosted",
+            "h": r["how"],
+            "s": r["scored"],
+            "ro": r["roles"],
+            "v": r["value"],
+            "ms": r["measure"],
+        }
+        for r in rows
+    }
+    write(
+        out,
+        "pick.js",
+        "window.PICK="
+        + json.dumps(
+            {"goals": goals, "datasets": datasets, "arms": arms, "max": INSPECT_MAX}, separators=(",", ":")
+        )
+        + ";\n",
+    )
+
+
 def render_inspect(
-    A: Adapter, out: Path, page_fn=page, serve: str = "evh catalog-serve", *, pages: bool = False, **page_kw
+    A: Adapter,
+    out: Path,
+    page_fn=page,
+    serve: str = "evh catalog-serve",
+    *,
+    pages: bool = False,
+    pick: bool = False,
+    **page_kw,
 ) -> None:
     """The inspector shell; assets/inspect.js fills it from the local server's /api/. `pages`: the
     catalog beside it has a page per arm and per metric (the harness's own build), so the
-    inspector links to them; a project's own builder without them leaves it False."""
+    inspector links to them; a project's own builder without them leaves it False. `pick`: the
+    build wrote pick.js (write_pick), so the picker chooses by goal, dataset and facets."""
     arms = {a: A.describe(a)["dataset"] for a in sorted(A.arms())}
     write(
         out,
@@ -4475,7 +4527,7 @@ def render_inspect(
             body,
             0,
             "inspect",
-            ("runs.js", "assets/inspect.js"),
+            ("runs.js", *(("pick.js",) if pick else ()), "assets/inspect.js"),
             item=item,
             serve=serve,
             elsewhere=(("inspect", {}),),
@@ -4624,7 +4676,8 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     render_labels(A, by_ds, out, nav)
     render_reference_index(A, by_ds, out, nav)
     write_search(A, by_ds, out)
-    render_inspect(A, out, nav=nav, pages=True)
+    write_pick(A, by_ds, out, arms_rows)
+    render_inspect(A, out, nav=nav, pages=True, pick=True)
     return {
         "goals": n_goals,
         "datasets": len(by_ds),

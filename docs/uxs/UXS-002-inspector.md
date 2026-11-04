@@ -50,11 +50,31 @@ link); an item the arms do not share says so instead.
 
 ## Choosing arms
 
-- **Chips:** each chosen arm as a chip with × to remove it.
-- **Add:** a text box with a list of every arm, narrowed to arms on the chosen arms' dataset
-  ("add a run on <dataset>"), and an **Add** button.
-- **Nothing chosen:** "Pick runs from an eval or dataset page in the catalog ("Inspect
-  runs"), or add them above."
+A folding panel, open when nothing is chosen; folded, it says "N arms on <dataset> · change".
+In the catalog `evh catalog` builds (it writes `pick.js`), it has two steps:
+
+1. **A goal or a dataset.** A goal select ("every goal") narrows the datasets; a filter box
+   narrows them by name or goal title. Each dataset is a button with its arm count and goals
+   (one with no arms is disabled); at most 60 are shown, then "N more: type to narrow". A goal
+   with one dataset picks it.
+2. **Its arms** on the dataset picked (the inspector compares arms on one dataset): a filter box
+   (config, model, how); facet chips, shown where they divide the arms, for **where** (hosted,
+   local), **how** (measured, rescored, judged, run again, re-parsed) and **scored against**
+   (the reference's tier, or judge); chips within a facet are alternatives, facets combine.
+   **Tick the N shown** ticks every arm shown, the first 40 when more. **add** suggestions: the
+   dataset's baseline, leader and recommended arm, then, from what is ticked, the same config
+   scored other ways and the same model in other configs. Each arm is a row with a checkbox:
+   config (and its roles), model and where, how, its value on the deciding measure.
+
+Under them: what is ticked, by name, each chip with × (the first 8, then "+N"), **Clear**, and
+**Inspect N arms** (disabled with nothing ticked or over 40). Inspect opens the ticked arms,
+with the promoted baseline as baseline when it is ticked and the one chosen before is not.
+
+A project's own builder without `pick.js` keeps the plain picker: each chosen arm as a chip with
+×, and a text box listing every arm, narrowed to the chosen arms' dataset, with **Add**.
+
+- **Nothing chosen:** "Choose arms above, or open them from a goal, dataset or arm page in the
+  catalog ("Inspect it", "test vs leader")." ("Add runs above" with the plain picker.)
 - **No server** (the file opened from disk, or the server stopped): "No inspector server. Start
   it with `evh catalog-serve` and open this page from the address it prints."
 - At most 40 arms in one comparison (`--max-arms`); the catalog's group links stop at 40.
