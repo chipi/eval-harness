@@ -195,6 +195,20 @@ with tempfile.TemporaryDirectory() as td:
     p.write_text("".join(json.dumps(r) + "\n" for r in rows))
     recs = {
         r["id"].split("-")[2]: r
+        for r in importer.Importer({}).records({"path": str(p), "test_signals": True, "prompt_fields": True})
+    }
+    unasked = {
+        r["id"].split("-")[2]: r
+        for r in importer.Importer({}).records({"path": str(p), "test_signals": True})
+    }
+    rows[0].setdefault("provenance", {})["v2"] = {"evidence_rebuilt": "partial", "last_seen_source": "server-received"}
+    p.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    v2 = {
+        r["id"].split("-")[2]: r
+        for r in importer.Importer({}).records({"path": str(p), "test_signals": True, "v2_fields": True})
+    }
+    v2_unasked = {
+        r["id"].split("-")[2]: r
         for r in importer.Importer({}).records({"path": str(p), "test_signals": True})
     }
     rows[4]["fleet_decision"]["ts"] = "2026-10-05T00:00:00Z"
@@ -223,6 +237,23 @@ check(
     and adapter.production_ran(r1) == {"model": "m", "prompt_sha": "c2ece738"}
     and adapter.production_ran({"fields": {}}) == {"model": None, "prompt_sha": None},
     str(r1["fields"]),
+)
+# 2026-11-04: the prompt fields were added to every record, and orrery_2026_10 (captured before them) could no
+# longer be restored by fetch.py: all 233 records differed from their recorded hashes.
+check(
+    "importer: a query that did not ask for the prompt fields gets the record it got before they existed",
+    "fleet_prompt_ver" not in unasked["1"]["fields"]
+    and "fleet_prompt_sha" not in unasked["1"]["fields"]
+    and {k: v for k, v in r1["fields"].items() if not k.startswith("fleet_prompt_")}
+    == unasked["1"]["fields"],
+    str(unasked["1"]["fields"]),
+)
+check(
+    "importer: v2_fields adds a v2 export's evidence_rebuilt and last_seen_source; unasked, the record is v1's",
+    v2["1"]["fields"]["evidence_rebuilt"] == "partial"
+    and v2["1"]["fields"]["last_seen_source"] == "server-received"
+    and v2_unasked["1"]["fields"] == unasked["1"]["fields"],
+    str(v2["1"]["fields"]),
 )
 recorded = adapter.recorded_output(r1)
 check(

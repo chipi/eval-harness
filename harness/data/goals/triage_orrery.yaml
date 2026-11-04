@@ -20,7 +20,11 @@ success_criteria:
   strategy: frugal
 datasets:
   - {dataset_id: orrery_triage_v1_labelled, role: validation, notes: "65 decisions the owner labelled, one per fingerprint, 2026-07-25 to 2026-10-29; mostly rebuilt evidence"}
+  # v2 (2026-11-04): the same 65 decisions, the rebuild's hindsight taken out (signal-fleet/datasets/build_orrery_items_v2.py):
+  # outcome-stating UNAVAILABLE answers neutral, lastSeen from GlitchTip's receive time, nothing dated after the decision.
+  - {dataset_id: orrery_triage_v1_labelled_v2, role: validation, notes: "v1's 65 owner-labelled decisions without the rebuild's hindsight; fields evidence_rebuilt and last_seen_source split them"}
 references:
   - {reference_id: gold/orrery_triage_v1_labelled, tier: gold, format: label}
+  - {reference_id: gold/orrery_triage_v1_labelled_v2, tier: gold, format: label}
 measures:
   - {id: triage_cost, kind: metric, validity: unvalidated}

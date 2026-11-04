@@ -7,9 +7,10 @@ is chipi-nbgd/orrery-triage on Hugging Face. This importer turns a line into a r
 
   id          the occurrence id
   body        {signal, probes}: exactly what the agent can see, nothing about what happened next
-  fields      evidence_level, decision_kind, fleet_disposition, fleet_model, fleet_prompt_ver,
-              fleet_prompt_sha (what the ledger says production ran), stage, fingerprint,
-              decision_date, and `labelled` (yes/no: the owner labelled it, in the query's `verdicts` file)
+  fields      evidence_level, decision_kind, fleet_disposition, fleet_model, stage, fingerprint,
+              decision_date, `labelled` (yes/no: the owner labelled it, in the query's `verdicts` file),
+              and with `prompt_fields` fleet_prompt_ver and fleet_prompt_sha (what the ledger says
+              production ran, for `evh deploy-sheet --capture`)
   created_at  when the fleet decided
   outcome     FLAT fields the reference rules read (RFC-019 §5: the project computes them):
                 issue_number, issue_relation, issue_verdict (fixed / noise / duplicate / open /
@@ -22,8 +23,15 @@ one filed later on its fingerprint. Title-only matches never carry a verdict: on
 37 fingerprints.
 
 Query keys: `path` (the export), `verdicts` (optional), `since`/`until` (ISO times on the decision,
-[since, until): `evh capture --since-capture` sets `since`), and `test_signals` (true keeps the fleet's own
-test signals, which the builder flags `is_test_signal` and the published export leaves out).
+[since, until): `evh capture --since-capture` sets `since`), `test_signals` (true keeps the fleet's own
+test signals, which the builder flags `is_test_signal` and the published export leaves out),
+`prompt_fields` (true adds the prompt's version and hash), and `v2_fields` (true adds, from a v2 export's
+provenance.v2, `evidence_rebuilt` (none / partial / all of the probe answers rebuilt rather than the ones
+the model read) and `last_seen_source` (server-received / none / unknown)).
+
+What a query recorded must come back the same: a capture stores each record's hash, and fetch.py
+restores a capture by running this importer on the same query. A new field is therefore added behind
+a query key, never to every record.
 
     evh capture --importer examples/triage-fleet/importer.py:Importer \\
         --query '{"path": "decisions.jsonl", "verdicts": "verdicts.jsonl"}' --capture orrery_2026_10
@@ -197,8 +205,22 @@ class Importer:
                     "decision_kind": row.get("decision_kind"),
                     "fleet_disposition": fd.get("disposition"),
                     "fleet_model": fd.get("model"),
-                    "fleet_prompt_ver": fd.get("prompt_ver"),
-                    "fleet_prompt_sha": fd.get("prompt_sha"),
+                    # Only when the query asks: orrery_2026_10 was captured before these fields existed,
+                    # and a record's hash covers its fields, so adding them unasked made all 233 of its
+                    # records differ from what it recorded (fetch.py could not restore it).
+                    **(
+                        {"fleet_prompt_ver": fd.get("prompt_ver"), "fleet_prompt_sha": fd.get("prompt_sha")}
+                        if query.get("prompt_fields")
+                        else {}
+                    ),
+                    **(
+                        {
+                            "evidence_rebuilt": (prov.get("v2") or {}).get("evidence_rebuilt"),
+                            "last_seen_source": (prov.get("v2") or {}).get("last_seen_source"),
+                        }
+                        if query.get("v2_fields")
+                        else {}
+                    ),
                     "stage": fd.get("stage") or "",
                     "fingerprint": fd.get("fingerprint"),
                     "decision_date": str(ts)[:10] if ts else None,
