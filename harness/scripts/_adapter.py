@@ -157,6 +157,15 @@ def transient_markers(adapter_path: Path | None) -> tuple:
     return tuple(str(m) for m in markers) if isinstance(markers, (list, tuple)) else ()
 
 
+def calls_per_item(adapter_path: Path | None, params: dict[str, Any] | None = None) -> int | None:
+    """How many system calls the adapter makes for one item: its `calls_per_item(params)` when it has one, else its
+    `CALLS_PER_ITEM`, else None (not declared; the dry run then counts one). Only the dry run reads it."""
+    module = _module_or_none(adapter_path)
+    fn = getattr(module, "calls_per_item", None)
+    got = fn(dict(params or {})) if callable(fn) else getattr(module, "CALLS_PER_ITEM", None)
+    return got if isinstance(got, int) and not isinstance(got, bool) and got >= 1 else None
+
+
 def metric_directions(adapter_path: Path | None) -> dict[str, str]:
     """`METRIC_DIRECTIONS` from the adapter, {metric: "lower" | "higher"}: how an adapter says
     a quality metric goes down (WER, error rate), which METRIC_KINDS cannot. {} when absent."""

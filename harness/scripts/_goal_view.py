@@ -46,19 +46,44 @@ def vs_text(v: dict | None) -> str:
 
 
 def hypothesis_of(A, arm: str) -> dict | None:
-    """The hypothesis the arm's latest run recorded, with whether it was named in advance; None without one."""
-    fn = getattr(A, "arm_config", None)
-    cfg = fn(arm) if callable(fn) else None
-    h = (cfg or {}).get("hypothesis")
-    if not isinstance(h, dict):
+    """The arm's hypothesis with whether it was named in advance, read across ALL its runs (the goal averages
+    them; one run made before the hypothesis makes it "no", whichever run is newest); None without one. An adapter
+    that cannot list an arm's runs answers from `arm_config`, its latest run."""
+    from evaluation_harness import _hypothesis  # noqa: PLC0415
+
+    dirs_fn = getattr(A, "_dirs", None)
+    runs = [m for d in (dirs_fn(arm) if callable(dirs_fn) else []) if (m := _metrics_json(d)) is not None]
+    if runs:
+        found = _hypothesis.across_runs(runs)
+    else:
+        fn = getattr(A, "arm_config", None)
+        cfg = (fn(arm) if callable(fn) else None) or {}
+        h = cfg.get("hypothesis")
+        found = (
+            {**h, **{k: (cfg.get("hypothesis_in_advance") or {}).get(k) for k in ("named", "commit")}}
+            if isinstance(h, dict)
+            else None
+        )
+    if not found:
         return None
-    adv = (cfg or {}).get("hypothesis_in_advance") or {}
-    named = adv.get("named")
+    named = found.get("named")
     return {
-        **h,
+        **{k: v for k, v in found.items() if k not in ("named", "why")},
         "named_in_advance": "yes" if named is True else "no" if named is False else "not determinable",
-        "commit": adv.get("commit"),
+        "commit": found.get("commit"),
     }
+
+
+def _metrics_json(run_dir) -> dict | None:
+    """A run directory's metrics.json, or None when it has none or it does not parse."""
+    import json  # noqa: PLC0415
+    from pathlib import Path  # noqa: PLC0415
+
+    f = Path(run_dir) / "metrics.json"
+    try:
+        return json.loads(f.read_text(encoding="utf-8")) if f.is_file() else None
+    except (OSError, ValueError):
+        return None
 
 
 def hypothesis_text(h: dict | None) -> str:

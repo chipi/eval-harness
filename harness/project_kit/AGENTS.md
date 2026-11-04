@@ -28,9 +28,10 @@ The procedures are skills: `evh skills-install` copies them into `.claude/skills
    is refused later (`label-from-run`, `run-promote`). Commit `data/` as the harness writes it,
    runs included: they are the evidence. `.gitignore` already keeps out what is derived.
 4. **Spending is capped, and checked first.** Before any run that calls a paid model, set
-   `EVAL_MAX_COST_USD` (with none, a run has no cap) and run `evh run --config C --dry-run` to see
-   what it will cost. Then `evh arm-smoke --config C` (a few items) and read the replies before
-   the full run.
+   `EVAL_MAX_COST_USD` (with none, a run has no cap). `evh run --config C --dry-run` estimates one
+   call per item and is not an upper bound: an arm that makes several calls per item costs more.
+   Run `evh arm-smoke --config C` (a few items), read the replies, and set the cap from the
+   measured cost it records (the dry run then shows it as `MEASURED`) before the full run.
 5. **What you may do** (the owner's rule for agents, 2026-11-04): run arms, make labels and
    references, and promote a baseline **when your operator asked for that task**, within the
    cap. A promotion's `--reason` says who asked and why. Closing a round, and anything past the

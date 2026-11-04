@@ -243,6 +243,31 @@ try:
         and "uncorrected: valid because" not in r.stdout,
         out(r)[-600:],
     )  # fmt: skip
+    # Final review 2026-11-04 (medium): the arm run again AFTER the hypothesis was committed read "yes ... valid
+    # because the hypothesis was committed before the run", while the test averaged in the run made before it.
+    evh("run", "--config", "data/configs/late.yaml")
+    r = evh("pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_late_v1", "--b", "tickets_lead1_v1")
+    check(
+        "pair-test: an arm with a run from before its hypothesis is not named in advance, though a later run is",
+        r.returncode == 0 and "named in advance   no (" in r.stdout and "predate the hypothesis" in r.stdout
+        and "uncorrected: valid because" not in r.stdout,
+        out(r)[-2500:],
+    )  # fmt: skip
+    r = evh("goals", "--goal", "tickets_summary", "--json")
+    late = [
+        a
+        for g in (json.loads(r.stdout)["result"]["values"].get("groups") or [] if r.returncode == 0 else [])
+        for a in g.get("arms", [])
+        if "tickets_late_v1" in str(a.get("arm"))
+    ]
+    check(
+        "goals: the same arm's hypothesis reads 'no' there too, whichever run is newest",
+        bool(late) and all((a.get("hypothesis") or {}).get("named_in_advance") == "no" for a in late),
+        late[:1] or out(r)[-400:],
+    )
+    # The run added here, not committed: removed, so the tree is clean again for the checks below (the first run is
+    # committed and stays).
+    shutil.rmtree(sorted((proj / "data" / "runs").glob("tickets_late_v1_*"))[-1])
 
     # ── the commit's time against the run's start ──────────────────────────────────────────────────────
     named = _hypothesis.named_before(
@@ -356,14 +381,14 @@ try:
     check(
         "pair-test --round: A chosen as the leader is corrected for the arms in play, and the output says so",
         r.returncode == 0
-        and "A was chosen from the table: corrected for 3 candidates" in r.stdout
+        and "A was chosen from the table: corrected for the 2 comparisons it could have been" in r.stdout
         and "Bonferroni/2" in r.stdout
         and "valid only if this pair was named" not in r.stdout,
         out(r)[-600:],
     )  # fmt: skip
     check(
         "pair-test --round --json: selection leader, family 2, threshold alpha/2",
-        (v.get("selection"), v.get("family"), v.get("candidates")) == ("leader", 2, 3)
+        (v.get("selection"), v.get("family"), v.get("candidates")) == ("leader", 2, 2)
         and abs(v.get("threshold", 0) - 0.025) < 1e-12,
         v,
     )

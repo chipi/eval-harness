@@ -208,7 +208,9 @@ def _run(args: argparse.Namespace) -> int:
             f"    {args.baseline:32} {a['dataset_id']}\n"
             f"    {args.candidate:32} {b['dataset_id']}\n"
             "  A metric compared across two datasets is not a comparison, it is a\n"
-            "  coincidence. Re-run one arm on the other's dataset_id."
+            "  coincidence. Re-run one arm on the other's dataset_id. For two versions of one\n"
+            "  dataset (same item ids, same reference), `evh pair-test --dataset-id D1 --a A --b B\n"
+            "  --b-dataset D2` is the comparison."
         )
 
     print(f"dataset_id : {a['dataset_id']}")

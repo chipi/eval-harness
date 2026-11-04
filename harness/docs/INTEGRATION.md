@@ -123,6 +123,13 @@ so describing a metric later needs no new run and moves no fingerprint (`evh res
 the record too, for $0). One metric name is described once across a project, so adapters that
 share a name share its sentence.
 
+An adapter that calls the system several times for one item (a probing conversation, a retry loop, a
+judge after the answer) may say how many: `CALLS_PER_ITEM = 4`, or `calls_per_item(params)` returning the
+number for an arm's `params`. Only `evh run --dry-run` reads it, to count the calls and multiply its
+estimate; without it the dry run counts one per item, and says so. It does not make the estimate a bound
+(a conversation that grows costs more than four first calls), so set a cost cap from what `evh arm-smoke`
+measured. The adapter file is hashed into a run's fingerprint: adding the line is an edit like any other.
+
 **Optional, for evaluating what production did** (RFC-023, [RUNBOOK §15b](RUNBOOK.md#15b-evaluating-what-production-did)),
 in the same file:
 

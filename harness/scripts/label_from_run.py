@@ -170,7 +170,11 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--run", required=True, help="the run whose outputs become the labels")
     ap.add_argument("--set", required=True, dest="name", help="the label set's name (lowercase, _ . -)")
-    ap.add_argument("--guideline", type=Path, help="the prompt or instructions the model labelled by")
+    ap.add_argument(
+        "--guideline",
+        type=Path,
+        help="a file: the prompt or instructions the model labelled by (its path and sha256 are recorded)",
+    )
     ap.add_argument("--allow-cut-off", action="store_true", help="keep outputs that stopped at max_tokens")
     ap.add_argument("--allow-dirty", action="store_true", help="a run from a dirty tree")
     ap.add_argument("--allow-unknown-build", action="store_true", help="a run whose build is unknown")

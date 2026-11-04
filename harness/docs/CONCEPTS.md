@@ -32,7 +32,9 @@ you will lose a day attributing that to your change.
 
 `evh run-compare` refuses outright when the two runs disagree. Not a warning —
 a refusal, because a warning above a number that looks authoritative gets
-scrolled past.
+scrolled past. The one comparison across datasets is `evh pair-test … --b-dataset`
+between two versions of one dataset, and it checks that they pair (same item ids,
+same reference text for each, one metric) and says it is a cross-version comparison.
 
 This is also why `sources/` is immutable and why a dataset records a sha256 per
 item. If an input changes under a frozen dataset, every number already reported

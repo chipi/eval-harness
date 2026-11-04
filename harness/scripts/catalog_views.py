@@ -1787,6 +1787,11 @@ def _run_of(A, arm: str):
     return ds, run_dir(arm, ds)
 
 
+def _is_score(v) -> bool:
+    """A per-item score's value: a number, true/false, or none (an item it was not scored on)."""
+    return v is None or isinstance(v, (bool, int, float))
+
+
 def _label(v) -> str:
     """A value as a table names it: whole numbers without the .0, a gap `none`."""
     if v is None:
@@ -1846,6 +1851,16 @@ def _crosstab(A, args) -> None:
             if not any(m in r for r in rows):
                 have = sorted({k for r in rows for k in r if k != "item_id"})
                 die(f"{arm}: no per-item {m!r} on record (recorded: {', '.join(have)})")
+        # Two per-item SCORES: numbers, true/false or nothing. A `_`-field or one holding text or a record (`_meta`
+        # holds the arm's output) would label rows with that content and name each item: the outputs, readable,
+        # on a public server too. Such a field is a --group (refused publicly), never a score.
+        scores = sorted({k for r in rows for k, v in r.items() if not k.startswith("_") and _is_score(v)})
+        for m in (ma, mb):
+            if m.startswith("_") or not all(_is_score(r.get(m)) for r in rows):
+                die(
+                    f"--crosstab {m}: not a per-item score (numbers or true/false); "
+                    f"a recorded field belongs in --group. Scores on record: {', '.join(scores)}"
+                )
         keep = None
         if args.where:
             decl, values = cs._fields_of(ds)

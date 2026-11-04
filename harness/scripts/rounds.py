@@ -383,7 +383,10 @@ def _promote_hold(
         return f"behind {prev_id}'s best ({said(vs_prev)})"
     if tied:
         shown = ", ".join(tied[:5]) + (f" and {len(tied) - 5} more" if len(tied) > 5 else "")
-        return f"not separated from {shown} (not significantly different after Holm): the goal's tie-break decides"
+        return (
+            f"not separated from {shown} (not significantly different after Holm): the goal's tie-break picks among "
+            "them, and `evh goals --goal` names the arm it recommends"
+        )
     return ""
 
 

@@ -25,7 +25,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import hashlib
 import json
+import os
 import re
+import shutil
+import tempfile
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -203,18 +206,21 @@ def write_set(
             f'{len(bad)} label(s) start {{"accept" but are not a list of answers: {", ".join(bad[:8])}. '
             'Several right answers are written {"accept": ["escalate", "file"]}.'
         )
-    out.mkdir(parents=True, exist_ok=True)
-    rows: dict[str, dict[str, str]] = {}
-    for iid in sorted(labels):
-        text = label_text(answers(str(labels[iid]))) + "\n"
-        (out / f"{iid}.txt").write_text(text, encoding="utf-8")
-        rows[iid] = {"sha256": _sha(text), "item_sha256": str(items[iid].get("source_sha256") or "")}
+    # Everything that can refuse is checked before anything is written (a missing --guideline used to be
+    # found after the texts were on disk, and the half set then blocked its own name), and the set is
+    # written into a hidden folder beside it, then renamed into place: never a half set.
+    guide = guideline_of(guideline)
+    texts = {iid: label_text(answers(str(labels[iid]))) + "\n" for iid in sorted(labels)}
+    rows: dict[str, dict[str, str]] = {
+        iid: {"sha256": _sha(t), "item_sha256": str(items[iid].get("source_sha256") or "")}
+        for iid, t in texts.items()
+    }
     doc: dict[str, Any] = {
         "dataset_id": dataset_id,
         "set": name,
         "source": source,
         "created_at": now(),
-        "guideline": guideline_of(guideline),
+        "guideline": guide,
         "n_items": len(rows),
         "items": rows,
     }
@@ -224,10 +230,25 @@ def write_set(
     if rebuild:
         doc["redistributed"] = False
         doc["rebuild"] = rebuild
-        (out / ".gitignore").write_text(
-            "# the label texts are not redistributed (labels.json says how to rebuild them)\n*.txt\n"
-        )
-    write_json(out / "labels.json", doc)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = Path(tempfile.mkdtemp(prefix=f".{name}.partial-", dir=out.parent))
+    umask = os.umask(0)
+    os.umask(umask)
+    tmp.chmod(0o777 & ~umask)  # a plain mkdir's mode, not mkdtemp's private 0700
+    try:
+        for iid, text in texts.items():
+            (tmp / f"{iid}.txt").write_text(text, encoding="utf-8")
+        if rebuild:
+            (tmp / ".gitignore").write_text(
+                "# the label texts are not redistributed (labels.json says how to rebuild them)\n*.txt\n"
+            )
+        write_json(tmp / "labels.json", doc)
+        if out.exists():
+            out.rmdir()  # empty (checked above): the rename needs the name free
+        tmp.rename(out)
+    except BaseException:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise
     return doc
 
 

@@ -758,8 +758,16 @@ def test_example_scorer_suites_pass() -> None:
             "eval rounds: open, run, suggest, retire, close, the next, validate, the page",
         ),
         (
+            "test_pair_versions.py",
+            "pair-test --b-dataset: one arm on two versions of a dataset; the refusals (reference, ids, direction)",
+        ),
+        (
             "test_run_reports.py",
             "a run with a project adapter: latency, cut-off outputs, a crash and its resume",
+        ),
+        (
+            "test_run_progress.py",
+            "evh run: the dry run's wording and measured cost, one progress line per item on a pipe",
         ),
         (
             "test_label_from_run.py",

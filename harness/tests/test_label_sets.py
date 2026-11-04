@@ -187,6 +187,32 @@ try:
         == "Rate limit lower than documented.\n",
         out(r)[-300:],
     )
+    # 2026-11-04 (a beta agent): a refusal found late (a --guideline file that does not exist) left the set's
+    # .txt files written and no labels.json, and the half set then blocked its own name.
+    r = evh(
+        "label-import", "answers", "--dataset-id", "tickets_v1", "--set", "half_set", "--by", "owner",
+        "--guideline", "no_such_guideline.md",
+    )  # fmt: skip
+    half = LABELS / "tickets_v1" / "half_set"
+    check(
+        "label-import: a refusal writes nothing, so the name stays free",
+        r.returncode != 0
+        and "--guideline" in out(r)
+        and not (half.exists() and any(half.iterdir()))
+        and not any(p.name.startswith(".half_set") for p in (LABELS / "tickets_v1").iterdir()),
+        out(r)[-300:],
+    )
+    (proj / "guide.md").write_text("Summarise the ticket's problem in one sentence.\n")
+    r = evh(
+        "label-import", "answers", "--dataset-id", "tickets_v1", "--set", "half_set", "--by", "owner",
+        "--guideline", "guide.md",
+    )  # fmt: skip
+    check(
+        "label-import: after a refusal, the same name imports",
+        r.returncode == 0 and (half / "labels.json").is_file() and (half / "t01_login.txt").is_file(),
+        out(r)[-300:],
+    )
+    shutil.rmtree(half)  # this throwaway set is not one the checks below count
     (proj / "empty").mkdir()
     r = evh("label-import", "empty", "--dataset-id", "tickets_v1", "--set", "none_v1", "--by", "owner")
     check("label-import: an empty folder is refused", refused(r, "no <item_id>.txt"), out(r)[-200:])

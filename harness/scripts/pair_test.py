@@ -27,6 +27,15 @@ THE TEST
   over every sign pattern up to 30 items, estimated above that: stats.py). No
   distributional assumption, and it keeps the pairing -- which matters here, where ~74% of
   the variance is between articles.
+
+TWO VERSIONS OF ONE DATASET (--b-dataset)
+  `--dataset-id D1 --a A --b B --b-dataset D2` tests A's runs on D1 against B's runs on D2, paired by
+  item id. It is allowed only when the two datasets pair by item: every item the test uses is in both,
+  the reference each arm was scored against says the same thing for each of them (compared item by item,
+  by checksum), and both arms are scored on one metric in one direction. Otherwise it refuses and names
+  why. What it establishes: the difference is the effect of the dataset change plus the arm's run-to-run
+  noise (A and B the same arm: what the change did to it). What it does not: that the change caused it
+  (no repeats, no way to separate the two), or anything about items only one version has.
 """
 
 from __future__ import annotations
@@ -38,6 +47,8 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import hashlib
+import json
 import statistics
 from pathlib import Path
 from typing import Any
@@ -47,9 +58,11 @@ HERE = Path(__file__).resolve().parent
 from evaluation_harness import _hypothesis, _jsonout  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     RUNS,
+    data_rel,
     dataset_item_ids,
     die,
     read_item_ids,
+    scored_against_dir,
 )
 from evaluation_harness._runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
 from evaluation_harness.stats import EXACT_UP_TO, fmt_p, sign_flip_p  # noqa: E402
@@ -105,7 +118,8 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
         if not args.b or args.b == args.a:
             die(f"round {args.round} records no other baseline run: name --b")
     print(f"  round {args.round}: {args.a}{' (its leader)' if chose else ''} against {args.b}")
-    return chose, len(in_play)
+    # The comparisons the leader could have been: every arm in play but B, whether or not B is in play.
+    return chose, len([c for c in in_play if c != args.b])
 
 
 def _hypothesis_of(args: argparse.Namespace, runs: list) -> dict | None:
@@ -119,20 +133,10 @@ def _hypothesis_of(args: argparse.Namespace, runs: list) -> dict | None:
     def same(h: Any) -> bool:
         return isinstance(h, dict) and h.get("against") == args.b and h.get("measure") == args.metric
 
-    recorded = [m for m in a_runs if same(m.get("hypothesis"))]
-    if recorded:
-        advs = [m.get("hypothesis_in_advance") or {"named": None, "why": "not recorded"} for m in recorded]
-        # One run made after the fact spoils the arm: no before any, then not determinable, else yes.
-        named = False if any(x.get("named") is False for x in advs) else None
-        if named is None and all(x.get("named") is True for x in advs):
-            named = True
-        adv = next((x for x in advs if x.get("named") is named), advs[0])
-        return {
-            **recorded[0]["hypothesis"],
-            "named": named,
-            "commit": adv.get("commit"),
-            "why": adv.get("why"),
-        }
+    # Every run of A averaged into the test must carry it (see _hypothesis.across_runs).
+    found = _hypothesis.across_runs(a_runs, against=args.b, measure=args.metric)
+    if found:
+        return found
     path = _hypothesis.config_ids().get(args.a) if a_runs else None
     cfg = yaml.safe_load(path.read_text(encoding="utf-8")) if path else None
     if same((cfg or {}).get("hypothesis")):
@@ -145,6 +149,82 @@ def _hypothesis_of(args: argparse.Namespace, runs: list) -> dict | None:
     return None
 
 
+_ESTABLISHES = "the effect of the dataset change plus the arms' run-to-run noise"
+_DOES_NOT = "tell the two apart, or speak for items only one version has"
+
+#: How many items a refusal names: enough to find them, not a page.
+_NAMED = 5
+
+
+def _reference_ids(runs: list, config_id: str) -> set[str]:
+    """The reference ids an arm's runs were scored against (the fingerprint's data.reference_id)."""
+    return {
+        str(((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or "")
+        for _d, m in runs
+        if m["config_id"] == config_id
+    }
+
+
+def _reference_hashes(reference_id: str, items: list[str]) -> dict[str, str]:
+    """{item_id: sha256 of its reference text} for `items`: from the text where it is on this machine, else from
+    the checksum the reference's manifest.json or label set's labels.json records. An item with neither is left
+    out."""
+    root = scored_against_dir(reference_id)
+    if root is None:
+        return {}
+    recorded: dict = {}
+    for name, key in (("manifest.json", "items_sha256"), ("labels.json", "items")):
+        f = root / name
+        if f.is_file():
+            try:
+                recorded = json.loads(f.read_text(encoding="utf-8")).get(key) or {}
+            except ValueError:
+                recorded = {}
+            break
+    out: dict[str, str] = {}
+    for i in items:
+        t = root / f"{i}.txt"
+        if t.is_file():
+            out[i] = hashlib.sha256(t.read_bytes()).hexdigest()
+            continue
+        got = recorded.get(i)
+        got = got.get("sha256") if isinstance(got, dict) else got
+        if isinstance(got, str) and got:
+            out[i] = got
+    return out
+
+
+def _check_same_reference(args: argparse.Namespace, runs_a: list, runs_b: list, items: list[str]) -> str:
+    """Refuse unless both arms were scored against one reference each, and those give the same answer for every
+    item the test uses. Returns the two reference ids, as one line for the output."""
+    ids = []
+    for arm, ds, runs in ((args.a, args.dataset_id, runs_a), (args.b, args.b_dataset, runs_b)):
+        got = _reference_ids(runs, arm) - {""}
+        if len(got) != 1 or ".." in next(iter(got), ""):
+            die(
+                f"{arm} on {ds} records "
+                + (f"{len(got)} different references ({', '.join(sorted(got))})" if got else "no reference")
+                + ": a cross-version comparison needs the one reference each arm was scored against, to check "
+                "that it says the same on both sides"
+            )
+        ids.append(next(iter(got)))
+    ha, hb = (_reference_hashes(r, items) for r in ids)
+    unread = sorted(i for i in items if i not in ha or i not in hb)
+    if unread:
+        die(
+            f"cannot compare the references item by item: {len(unread)} item(s) have no reference text or "
+            f"checksum in {ids[0]} or {ids[1]} (e.g. {', '.join(unread[:_NAMED])})"
+        )
+    differ = [i for i in items if ha[i] != hb[i]]
+    if differ:
+        die(
+            f"the reference differs between {args.dataset_id} ({ids[0]}) and {args.b_dataset} ({ids[1]}) on "
+            f"{len(differ)} of {len(items)} item(s), e.g. {', '.join(differ[:_NAMED])}: the score does not "
+            "mean the same on both sides, so this is not a paired comparison"
+        )
+    return f"{ids[0]} / {ids[1]}"
+
+
 def main() -> int:
     """Test a pre-registered pair with sign-flip permutation."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -152,6 +232,12 @@ def main() -> int:
     ap.add_argument("--a", help="config_id of the arm under test (with --round: default its leader)")
     ap.add_argument(
         "--b", help="config_id it is compared against (with --round: default the baseline it started from)"
+    )
+    ap.add_argument(
+        "--b-dataset",
+        help="a second version of --dataset-id: B's runs are read on it, A's on --dataset-id, paired by item id. "
+        "Refused unless the items, the reference they are scored against and the metric agree (a cross-version "
+        "comparison: the effect of the dataset change plus run-to-run noise)",
     )
     ap.add_argument("--round", help="test within this round of a goal (rN): arms must be in play in it")
     ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
@@ -189,6 +275,10 @@ def main() -> int:
         "under result.values (a, b, metric, n, delta, wins, ties, p, method, verdict, threshold, ...)",
     )
     args = ap.parse_args()
+    if args.b_dataset and args.round:
+        ap.error("--b-dataset and --round cannot be combined: a round is on one dataset")
+    if args.b_dataset and not (args.a and args.b):
+        ap.error("--b-dataset needs --a and --b")
     if args.family is not None and args.family < 1:
         ap.error(f"--family must be at least 1 (the number of pairs tested together), not {args.family}")
     with _jsonout.collect("pair-test", args.json):
@@ -202,23 +292,62 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     # saying so. See _runs.warn_on_ambiguous_runs.
     warn_on_ambiguous_runs(runs_dir, args.dataset_id, label=runs_dir.name)
     runs = runs_on(args.dataset_id, runs_dir=runs_dir)
+    cross = bool(args.b_dataset)
+    runs_b = []
+    if cross:
+        if args.b_dataset == args.dataset_id:
+            die(f"--b-dataset is {args.dataset_id} itself: drop it, both arms are on one dataset")
+        ids_a, ids_b = dataset_item_ids(args.dataset_id), dataset_item_ids(args.b_dataset)
+        warn_on_ambiguous_runs(runs_dir, args.b_dataset, label=runs_dir.name)
+        runs_b = runs_on(args.b_dataset, runs_dir=runs_dir)
     values = _round_values(args.dataset_id) if args.round else None
     chose, candidates = False, None
     if args.round:
         chose, candidates = _round_defaults(args, runs, values)
         if args.family is None and chose:
-            args.family = max(candidates - 1, 1)
+            args.family = max(candidates, 1)
     elif not (args.a and args.b):
         ap.error("--a and --b are required (or --round, which defaults them)")
     if args.family is None:
         args.family = 1
+    _named_metric = bool(args.metric)
     args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
-    lower = direction(runs, args.metric, args.asc, args.desc)
-    if values is not None:
-        A, B = values(args.a, args.metric), values(args.b, args.metric)
+    if cross and not _named_metric:
+        other = default_metric(args.b_dataset, runs_dir=runs_dir)
+        if other != args.metric:
+            die(
+                f"the two datasets' runs record different primary metrics ({args.dataset_id}: {args.metric}, "
+                f"{args.b_dataset}: {other}): name the one to test with --metric"
+            )
+    if cross:
+        arm_a = [r for r in runs if r[1]["config_id"] == args.a]
+        arm_b = [r for r in runs_b if r[1]["config_id"] == args.b]
+        lower = direction(arm_a, args.metric, args.asc, args.desc)
+        lower_b = direction(arm_b, args.metric, args.asc, args.desc)
+        if lower != lower_b:
+            die(
+                f"{args.metric} is {'lower' if lower else 'higher'}-is-better for {args.a} on {args.dataset_id} "
+                f"but {'lower' if lower_b else 'higher'}-is-better for {args.b} on {args.b_dataset}: not one "
+                "metric (pass --asc or --desc to decide)"
+            )
+        A, B = per_item(arm_a, args.metric), per_item(arm_b, args.metric)
+        # A measure that is not stored per item (the goal computes it at re-score) is a missing metric, not an
+        # item mismatch: say which side, what is stored, and how to get it (2026-11-04, the first real use).
+        for arm, ds, got, rs in ((args.a, args.dataset_id, A, arm_a), (args.b, args.b_dataset, B, arm_b)):
+            if rs and not got:
+                stored = sorted({k for _d, m in rs for k in (m.get("scores") or {})})
+                die(
+                    f"{args.metric} is not stored per item in {arm}'s runs on {ds} (stored: {', '.join(stored)}). "
+                    "A measure computed at re-score is stored only in the re-scored runs (`evh rescore`): "
+                    "point --runs-dir at them."
+                )
     else:
-        A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
-        B = per_item([r for r in runs if r[1]["config_id"] == args.b], args.metric)
+        lower = direction(runs, args.metric, args.asc, args.desc)
+        if values is not None:
+            A, B = values(args.a, args.metric), values(args.b, args.metric)
+        else:
+            A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
+            B = per_item([r for r in runs if r[1]["config_id"] == args.b], args.metric)
     items = sorted(set(A) & set(B))
     if args.exclude_dataset:
         prior = dataset_item_ids(args.exclude_dataset)
@@ -234,7 +363,38 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     if args.items:
         keep = read_item_ids(args.items)
         items = [i for i in items if i in keep]
-    if len(items) < 3:
+    cross_note: list[str] = []
+    if cross:
+        shared = ids_a & ids_b
+        if not shared:
+            die(f"{args.dataset_id} and {args.b_dataset} share no item id: they do not pair by item")
+        items = [i for i in items if i in shared]
+        if len(items) < 3:
+            die(
+                f"only {len(items)} item(s) exist in both {args.dataset_id} ({len(ids_a)} items) and "
+                f"{args.b_dataset} ({len(ids_b)} items; {len(shared)} ids shared) and are scored for both arms: "
+                "nothing to test"
+            )
+        refs = _check_same_reference(args, arm_a, arm_b, items)
+        ids_run_a = sorted({d.name for d, _m in arm_a})
+        ids_run_b = sorted({d.name for d, _m in arm_b})
+        n_a, n_b = len(ids_run_a), len(ids_run_b)
+        cross_note = [
+            f"  CROSS-VERSION comparison: {args.a} on {args.dataset_id}  vs  {args.b} on {args.b_dataset}",
+            f"    item ids shared    {len(shared)} of {len(ids_a)} / {len(ids_b)}; {len(items)} used",
+            f"    same reference     {refs}: the same text for each of the {len(items)} items",
+            f"    runs averaged      {args.a}: {n_a}, {args.b}: {n_b}; an arm's repeats are averaged per item",
+            # Which runs stand for an arm decides the verdict: name them, and where they were read from.
+            f"    runs of A          {', '.join(ids_run_a)}",
+            f"    runs of B          {', '.join(ids_run_b)}",
+            (
+                f"    read from          {data_rel(Path(runs_dir))} (another set of an arm's runs, e.g. a repeat set: "
+                "--runs-dir)"
+            ),
+            f"    establishes        {_ESTABLISHES}",
+            f"    does not           {_DOES_NOT}",
+        ]
+    elif len(items) < 3:
         die(f"only {len(items)} shared item(s): nothing to test")
 
     deltas = [A[i] - B[i] for i in items]
@@ -251,6 +411,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     # still clear Holm; run the family's p-values through the step-down to find out.
     thresh = 0.05 / args.family
 
+    for ln in cross_note:
+        print(ln)
     print(f"  {args.a}  vs  {args.b}    metric={args.metric}  N={len(items)}")
     print(f"    delta (A - B)      {obs:+.4f}")
     print(
@@ -261,12 +423,12 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     exact = len(items) <= EXACT_UP_TO
     how = f"exact, all 2^{len(items)} sign patterns" if exact else f"{args.permutations} permutations"
     print(f"    sign-flip p        {fmt_p(p)}  ({how})")
-    hyp = _hypothesis_of(args, runs)
+    hyp = None if cross else _hypothesis_of(args, runs)
     in_advance = bool(hyp and hyp["named"] is True)
     chosen_note = (
-        f"    (A was chosen from the table: corrected for {candidates} candidates)"
+        f"    (A was chosen from the table: corrected for the {candidates} comparisons it could have been)"
         if chose and args.family > 1
-        else f"    (A was chosen from the table: {candidates} candidates, one comparison: nothing to correct)"
+        else "    (A was chosen from the table: one comparison it could have been: nothing to correct)"
         if chose
         else None
     )
@@ -302,6 +464,25 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
         )
     _jsonout.values(
         {
+            **(
+                {
+                    "cross_version": True,
+                    "b_dataset_id": args.b_dataset,
+                    "items_shared": len(shared),
+                    "items_in_a_dataset": len(ids_a),
+                    "items_in_b_dataset": len(ids_b),
+                    "reference_checked": True,
+                    "runs_a": n_a,
+                    "run_ids_a": ids_run_a,
+                    "run_ids_b": ids_run_b,
+                    "runs_b": n_b,
+                    "averaged": "per item over each arm's repeats",
+                    "establishes": _ESTABLISHES,
+                    "does_not_establish": _DOES_NOT,
+                }
+                if cross
+                else {}
+            ),
             "a": args.a,
             "b": args.b,
             "metric": args.metric,

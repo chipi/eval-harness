@@ -81,7 +81,11 @@ def main() -> int:
         "--scorer", help="the name of the judged runs (data/runs-judged/<scorer>/), for `pick`/`score:`"
     )
     ap.add_argument("--key", type=Path, help="the sheet's key (default: sheet.key.json beside it)")
-    ap.add_argument("--guideline", type=Path, help="with --set: the instructions the labeller followed")
+    ap.add_argument(
+        "--guideline",
+        type=Path,
+        help="with --set, a file: the instructions the labeller followed (its path and sha256 are recorded)",
+    )
     args = ap.parse_args()
 
     if not args.sheet.is_file():

@@ -91,6 +91,14 @@ inspector filters by an item's field, so a set marked by a field is `evh inspect
 FIELD:VALUE` (and the other half with the other value). Report both halves and the whole, and say
 how the set was chosen: a set picked after reading results is a finding to confirm, not a test.
 
+## What a new version of a dataset changed
+
+`evh pair-test --dataset-id D1 --a ARM_v1 --b ARM_v2 --b-dataset D2` tests one arm's runs on D1
+against its runs on D2, paired by item id. It refuses unless the items are in both versions and the
+reference gives the same text for each, and says it is a cross-version comparison: the difference is
+the dataset change plus the arm's run-to-run noise, so one run each cannot separate them. Repeats are
+averaged per item. `run-compare` still refuses across datasets.
+
 ## Reporting
 
 - Say what the test says: "A is significantly better than B on M (p = 0.01, n = 200)", or "A and

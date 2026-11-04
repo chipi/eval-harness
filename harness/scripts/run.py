@@ -41,6 +41,7 @@ from typing import Any
 
 from evaluation_harness import _jsonout
 from evaluation_harness._adapter import (
+    calls_per_item,
     load_adapter,
     metric_descriptions,
     metric_directions,
@@ -274,6 +275,37 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
     return out
 
 
+#: Above this many items a pass prints a progress line for every k-th item, not every one.
+PROGRESS_ALL_UP_TO = 2000
+
+
+def progress_every(n_items: int) -> int:
+    """k: a progress line for every item up to PROGRESS_ALL_UP_TO items, else about 200 lines per pass."""
+    return 1 if n_items <= PROGRESS_ALL_UP_TO else -(-n_items // 200)
+
+
+def _outcome(res: Any, scored: dict[str, Any], primary: str | None, resumed: bool) -> str:
+    """One word for an item's progress line: resumed, error (a call the adapter reports failed), empty, the primary
+    metric's value when the item has one, else ok."""
+    if resumed:
+        return "resumed"
+    calls = (getattr(res, "meta", None) or {}).get("calls") or []
+    if any(isinstance(c, dict) and c.get("error") for c in calls):
+        return "error"
+    if not (res.output or "").strip():
+        return "empty"
+    value = scored.get(primary) if primary else None
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return f"{primary}={value:.4g}"
+    return "ok"
+
+
+def progress_line(n: int, total: int, item_id: str, outcome: str, seconds: float, spent: float) -> str:
+    """`[n/N] <item_id> <outcome> <seconds>s`, plus the running cost once there is one."""
+    line = f"  [{n}/{total}] {item_id} {outcome} {seconds:.1f}s"
+    return line + (f"  ${spent:.4f} so far" if spent else "")
+
+
 def one_pass(
     ds: dict[str, Any],
     cfg: dict[str, Any],
@@ -287,11 +319,13 @@ def one_pass(
     extra_transient: tuple = (),
     scored_against: tuple[Path | None, str | None] | None = None,
     recorded: dict[str, str] | None = None,
+    primary: str | None = None,
 ) -> dict[str, Any]:
     """One pass over the dataset. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
     --labels; by default the dataset's gold, else its silver. ``recorded`` ({item_id: output}) is a recorded arm's
     outputs, read from a capture: no system is called for them (RFC-023). ``call_system``/``score`` are INJECTED rather than
-    imported at module scope, because which adapter runs is a property of the arm now."""
+    imported at module scope, because which adapter runs is a property of the arm now. ``primary`` names the metric
+    each item's progress line shows."""
     mat = MATERIALIZED / ds["dataset_id"]
     if not mat.is_dir():
         die(
@@ -327,7 +361,13 @@ def one_pass(
     if live_dir is not None:
         live_dir.mkdir(parents=True, exist_ok=True)
 
-    for item in ds["items"]:
+    n_items = len(ds["items"])
+    every = progress_every(n_items)
+    if every > 1 and idx == 0:
+        print(f"  {n_items} items: a progress line for every {every}th item and the last")
+
+    for n, item in enumerate(ds["items"], 1):
+        item_started = time.perf_counter()
         # Resume: an item already produced is not PAID for twice -- but it is still
         # SCORED, which is the whole point of the pass.
         #
@@ -441,6 +481,19 @@ def one_pass(
                 fh.flush()
                 os.fsync(fh.fileno())
 
+        if n % every == 0 or n == n_items:
+            print(
+                progress_line(
+                    n,
+                    n_items,
+                    item["item_id"],
+                    _outcome(res, scored, primary, resumed),
+                    time.perf_counter() - item_started,
+                    spent,
+                ),
+                flush=True,
+            )
+
     scores = aggregate_scores(predictions, digits=6)
     # WAS THIS ARM ONE SYSTEM? A gateway can serve the same model from several hosts and
     # switch between calls. If it did, the arm's 20 items were not produced by one system
@@ -490,13 +543,39 @@ def one_pass(
     }
 
 
-def _dry_run(ds: dict[str, Any], cfg: dict[str, Any], repeat: int) -> int:
+def _smoke_cost(cfg: dict[str, Any]) -> dict[str, Any] | None:
+    """What the last `evh arm-smoke` of this config measured, from its model record: {per_item_usd, items, at,
+    model_record}; None when the config names no record, the record holds no smoke of it, or it priced nothing."""
+    from evaluation_harness import _models  # noqa: PLC0415
+
+    if not cfg.get("model_record"):
+        return None
+    smoke = ((_models.find(DATA, cfg["model_record"]) or {}).get("smokes") or {}).get(cfg["config_id"]) or {}
+    report = smoke.get("report") or {}
+    costs = [i["cost_usd"] for i in report.get("items") or [] if i.get("cost_usd") is not None]
+    if not costs:
+        return None
+    return {
+        "per_item_usd": sum(costs) / len(costs),
+        "items": len(costs),
+        "at": smoke.get("at"),
+        "model_record": cfg["model_record"],
+    }
+
+
+def _dry_run(
+    ds: dict[str, Any],
+    cfg: dict[str, Any],
+    repeat: int,
+    adapter_path: Path | None = None,
+    config_path: Path | None = None,
+) -> int:
     """Shape and cost the sweep without calling anything.
 
-    A pre-flight estimate is not a substitute for the mid-run cap — token
-    counts vary and cache hits change pricing, so this is an order of
-    magnitude, not a quote. Its job is to stop you discovering that an arm
-    is 40x another one's price AFTER the invoice.
+    The estimate counts what the config alone shows: one call per item (or the adapter's declared
+    `CALLS_PER_ITEM`), the prompt in and max_tokens out, each call as large as the first. It is NOT an upper
+    bound: an adapter that calls the system several times per item, or whose conversation grows, costs more.
+    What an arm-smoke of this config measured is shown beside it, and is the number to set a cap from.
     """
     params = dict(cfg.get("params") or {})
     items = ds["items"]
@@ -510,7 +589,9 @@ def _dry_run(ds: dict[str, Any], cfg: dict[str, Any], repeat: int) -> int:
     # thumb, and the number below inherits that.
     est_in = chars / 4
     est_out = int(params.get("max_tokens", 600)) * len(items)
-    calls = len(items) * repeat
+    declared = calls_per_item(adapter_path, params)
+    per_item = declared or 1
+    calls = len(items) * repeat * per_item
 
     print("DRY RUN — nothing was called\n")
     print(
@@ -521,6 +602,11 @@ def _dry_run(ds: dict[str, Any], cfg: dict[str, Any], repeat: int) -> int:
     print(f"  dataset     {ds['dataset_id']}  ({len(items)} items)")
     print(f"  repeats     {repeat}")
     print(f"  API calls   {calls}")
+    print(
+        f"              {per_item} per item, declared by the adapter (CALLS_PER_ITEM)"
+        if declared
+        else "              one per item: an adapter that calls the system several times per item makes more"
+    )
     print(f"  input       ~{est_in / 1000:.1f}k tokens/pass (from {chars / 1000:.0f}k chars)")
     print(f"  output      <= {est_out / 1000:.1f}k tokens/pass (max_tokens x items)")
 
@@ -530,8 +616,32 @@ def _dry_run(ds: dict[str, Any], cfg: dict[str, Any], repeat: int) -> int:
         print("\n  No price in the config, so no estimate. Add usd_per_mtok_in /")
         print("  usd_per_mtok_out and the run will record what it actually cost.")
     else:
-        est = (est_in / 1e6 * float(pin) + est_out / 1e6 * float(pout)) * repeat
-        print(f"\n  ESTIMATE    ~${est:.4f}  (upper bound: assumes max_tokens every time)")
+        est = (est_in / 1e6 * float(pin) + est_out / 1e6 * float(pout)) * repeat * per_item
+        print(
+            f"\n  ESTIMATE    ~${est:.4f}  ({per_item} call(s) per item, each the prompt in and max_tokens out;"
+            " NOT an upper bound:"
+        )
+        print("              a conversation that grows, or an adapter that calls more than that, costs more)")
+    measured = _smoke_cost(cfg)
+    projected = None
+    if measured:
+        pass_usd = measured["per_item_usd"] * len(items)
+        projected = pass_usd * repeat
+        print(
+            f"  MEASURED    ${measured['per_item_usd']:.5f}/item = ${pass_usd:.4f} per pass of {len(items)} items,"
+            f" ${projected:.4f} at {repeat} repeat(s)"
+        )
+        print(
+            f"              from the arm-smoke of {measured['items']} item(s) at {measured['at']}"
+            f" (model record {measured['model_record']}); set a cap from this"
+        )
+    else:
+        where = f" --config {config_path}" if config_path else " --config <this config>"
+        print(f"  MEASURED    none for {cfg['config_id']}: no arm-smoke of it is recorded")
+        print(
+            f"              run `evh arm-smoke{where}` and set a cap from what it measures"
+            + ("" if cfg.get("model_record") else " (it records into a model record; this config names none)")
+        )
     cap = env_float("EVAL_MAX_COST_USD")
     print("  cap         " + (f"${cap:.2f} (EVAL_MAX_COST_USD)" if cap else "NONE — set EVAL_MAX_COST_USD"))
     _jsonout.value(
@@ -547,6 +657,21 @@ def _dry_run(ds: dict[str, Any], cfg: dict[str, Any], repeat: int) -> int:
             "input_tokens_per_pass": est_in,
             "output_tokens_per_pass_max": est_out,
             "estimate_usd": est,
+            "estimate_is_upper_bound": False,
+            "estimate_basis": f"{per_item} call(s) per item, prompt in and max_tokens out",
+            "calls_per_item": per_item,
+            "calls_per_item_declared": declared is not None,
+            "measured_usd_per_item": measured["per_item_usd"] if measured else None,
+            "measured_projected_usd": projected,
+            "measured_from": (
+                {
+                    "arm_smoke_at": measured["at"],
+                    "items": measured["items"],
+                    "model_record": measured["model_record"],
+                }
+                if measured
+                else None
+            ),
             "cap_usd": cap or None,
         },
     )
@@ -667,6 +792,11 @@ def main() -> int:
         "--dry-run, result.values.dry_run. Exit codes as without it (1: nothing measured, 2: cost cap)",
     )
     args = ap.parse_args()
+    # Redirected to a log, stdout is block-buffered and a watcher saw nothing for minutes (stderr, where --json sends
+    # the progress, can be as well): a line is written when it is printed, whatever the stream is.
+    for stream in (sys.stdout, sys.stderr):
+        if not stream.isatty() and hasattr(stream, "reconfigure"):
+            stream.reconfigure(line_buffering=True)
     with _jsonout.collect("run", args.json, live=sys.stderr):
         return _run(args)
 
@@ -781,7 +911,7 @@ def _run(args: argparse.Namespace) -> int:
         print("  WARNING: could not identify the build — this run is not attributable")
 
     if args.dry_run:
-        return _dry_run(ds, cfg, args.repeat)
+        return _dry_run(ds, cfg, args.repeat, adapter_path, args.config)
 
     # WARM UP once per arm, before anything is timed. Two jobs in one:
     #
@@ -882,6 +1012,26 @@ def _run(args: argparse.Namespace) -> int:
     hypothesis = _hypothesis.record_for(cfg, args.config, build, now())
     if hypothesis:
         print(f"  hypothesis  named in advance: {_hypothesis.said(hypothesis['hypothesis_in_advance'])}")
+
+    # A run is never written into another run's directory. The id is the config and the start to the second, so two
+    # runs of one config started in the same second shared a directory, and the second wrote over the first, a
+    # committed run included (2026-11-04). An id already taken: the next second's stamp; a --run-id taken: refused.
+    def taken(base: str) -> bool:
+        return (runs / base).exists() or any((runs / f"{base}_r{i + 1}").exists() for i in range(args.repeat))
+
+    if args.run_id:
+        if taken(base_id):
+            die(
+                f"--run-id {base_id}: {runs / base_id} exists: a run is never written into another; name a new id"
+            )
+    else:
+        for _ in range(30):
+            if not taken(base_id):
+                break
+            time.sleep(1.0)
+            base_id = f"{cfg['config_id']}_{now().replace(':', '').replace('-', '')}"
+        else:
+            die(f"{runs}: every run id for {cfg['config_id']} in the last 30 seconds is taken; run again")
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
         run_dir = runs / run_id
@@ -917,6 +1067,7 @@ def _run(args: argparse.Namespace) -> int:
                 extra_transient=transient_markers(adapter_path),
                 scored_against=(ref_dir, ref_tier),
                 recorded=recorded,
+                primary=primary_metric(adapter_path, cfg.get("params") or {}),
             )
         except BaseException as exc:
             _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)

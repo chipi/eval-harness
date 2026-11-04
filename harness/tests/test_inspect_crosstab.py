@@ -157,6 +157,17 @@ check(
         "not served publicly",
     ),
 )
+# Final review 2026-11-04 (high): --crosstab _meta,correct labelled each row with the whole `_meta` dict, the arm's
+# output included, with each item's id: every prediction, readable, on a public server. A crosstab is of two
+# per-item SCORES: a `_`-field, or one holding anything but numbers and true/false, is refused, everywhere.
+for name in ("_meta", "_extra"):
+    for pub_ in (False, True):
+        r = evh("--runs", BASE, "--crosstab", f"{name},correct", public=pub_)
+        check(
+            f"crosstab refuses {name} as a score{' (public)' if pub_ else ''}: it is a record, not a per-item score",
+            refused(r, "not a per-item score") and "predicted" not in r.stdout,
+            (r.stdout + r.stderr)[-300:],
+        )
 
 # ── the items, with their outputs ────────────────────────────────────────────────────────────────
 r, v = js("--runs", f"{BASE},{OTHER}", "--items-out")

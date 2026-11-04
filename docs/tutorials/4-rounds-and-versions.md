@@ -198,7 +198,7 @@ evh pair-test --dataset-id tickets_v1 --round r2 --b tickets_lead2_noisy_v2
     items A wins       6/6
     sign-flip p        0.0312  (exact, all 2^6 sign patterns)
     verdict            SIGNIFICANT at 0.05
-    (A was chosen from the table: 2 candidates, one comparison: nothing to correct)
+    (A was chosen from the table: one comparison it could have been: nothing to correct)
 ```
 
 The metric defaults to the goal's measure, and an arm that is not in play in the round is

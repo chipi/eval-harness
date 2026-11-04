@@ -31,7 +31,7 @@ further. This page is the reference for each step.
 | list runs | `evh runs-list` |
 | rank, with the test | `evh leaderboard --dataset-id …` |
 | two runs | `evh run-compare --baseline … --candidate … --noise …` |
-| a pre-named pair | `evh pair-test --dataset-id … --a … --b …` (or `--round rN`: A its leader, B the baseline it started from; a leader chosen from the table is corrected for the arms in play). A `hypothesis:` committed in A's config before the run is what makes the pair "named in advance" (§4) |
+| a pre-named pair | `evh pair-test --dataset-id … --a … --b …` (or `--round rN`: A its leader, B the baseline it started from; a leader chosen from the table is corrected for the comparisons it could have been, every arm in play but B). A `hypothesis:` committed in A's config before the run is what makes the pair "named in advance" (§4) |
 | a winner claim | `evh family-test --dataset-id … --a … --against …` |
 | re-score, $0 | `evh rescore --dataset-id … [--reference-id gold/…] --out …` |
 | re-measure with a judge (optional) | `evh judge-score --dataset-id … --scorer … [--dry-run]` |
@@ -112,7 +112,9 @@ The `dataset_id` is the comparison contract. Every run records it, and
 **A new version** of a dataset names the one it came from: `--from my_v1` on `my_v2` records
 its parent and the item ids it adds, removes and changes (`derived_from` in the dataset file).
 `evh datasets --dataset-id my_v2` prints the lineage, the catalog links the versions both ways,
-and `validate` V2 fails a version whose parent is gone.
+and `validate` V2 fails a version whose parent is gone. "What did the new version change for this
+arm?" is `evh pair-test --dataset-id my_v1 --a ARM_v1 --b ARM_v2 --b-dataset my_v2`: the arm's runs
+on each version, paired by item id (below, under `pair-test`).
 
 **What you know about each item goes in fields** (ADR-0003). Declare them once in a
 field set, `data/fields/<fieldset_id>.yaml` (`schemas/fieldset.schema.json`): a name and
@@ -474,6 +476,17 @@ the arms page and in `evh arms` that the goals read its re-score. A round record
 `evh rounds` shows it with each scoring change. A goal whose first round was run as plain runs gets one with
 `evh round-open --goal G --dataset D --adopt`.
 
+**The dry run and the run's output.** `evh run --config C --dry-run` calls nothing. Its `ESTIMATE` counts one
+call per item (or the adapter's declared `CALLS_PER_ITEM`), each the prompt in and `max_tokens` out; it is
+**not** an upper bound, because an adapter that makes several calls per item, or a conversation that grows
+(each probe turn re-sends it), costs more. Beside it, `MEASURED` shows what the last `evh arm-smoke` of this
+config recorded in its model record (the cost per item, projected over the items and repeats, and when it was
+measured); with none it says so and names the command. Set `EVAL_MAX_COST_USD` from `MEASURED`, not from the
+estimate. While a run goes it prints one line per finished item,
+`[3/65] <item_id> <ok | error | empty | resumed | the primary metric's value> 4.2s`, with the running cost
+once there is one, flushed as it is written even when stdout is a log file or a pipe (a detached job is watched
+through its log). Above 2,000 items it prints every k-th item and the last, and says so once.
+
 `evh run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness
 times every call (`latency_ms`) unless the adapter reports its own.
@@ -488,7 +501,7 @@ A sweep that is interrupted — a crash, a 429 that outlasts the retries, or the
 evh run --config data/configs/arm_a.yaml --resume arm_a_v1_20260929T101500Z
 ```
 
-The run id is the directory under `data/runs/`. A run that stops, whatever the cause, prints
+The run id is the directory under `data/runs/`. It is the config id and the start time to the second; a run never writes into an existing run's directory, so a second run started in the same second takes the next second's id, and a `--run-id` that exists is refused. A run that stops, whatever the cause, prints
 which run it was, after how many items, and the exact `--resume` command; or delete the
 directory (until one or the other, `validate` fails V7 on it). A resumed pass **re-reads every finished output and scores
 it again**, rather than skipping it — so the new run is complete, not a fragment — and
@@ -545,7 +558,8 @@ into a *finding* is a separate verb: these are the tools behind the numbers in `
 |---|---|
 | `evh leaderboard --dataset-id …` | how do all the arms rank, on every metric at once |
 | `evh family-test --dataset-id … --a … --against …` | does arm A differ significantly from a **pre-declared family**, Holm step-down. This is what every significance claim in the reports rests on |
-| `evh pair-test --dataset-id … --a … --b …` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance: the arm's `hypothesis:` records that it was (§4). With `--round` and no `--a`, A is the round's leader, chosen from the table, so the test is Bonferroni-corrected for the arms in play (`--family N` overrides; below 1 is refused) |
+| `evh pair-test --dataset-id … --a … --b …` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance: the arm's `hypothesis:` records that it was (§4). With `--round` and no `--a`, A is the round's leader, chosen from the table, so the test is Bonferroni-corrected for the comparisons it could have been, every arm in play but B (`--family N` overrides; below 1 is refused) |
+| `evh pair-test --dataset-id D1 --a … --b … --b-dataset D2` | **two versions of one dataset**: A's runs on D1 against B's on D2, paired by item id (the same arm on both is "what did the change do to it"). Refused, on stderr and non-zero, unless the items it uses are in both datasets by id (at least 3), the reference each arm was scored against has the same text for each of them (compared item by item by checksum; the first differing ids are named), and both arms are scored on one metric in one direction. The output says it is a cross-version comparison and names both datasets: the difference is the effect of the dataset change plus the arms' run-to-run noise, and the test cannot tell the two apart; repeats are averaged per item as in any pair-test. It names the runs of each side and the folder they were read from (`--runs-dir` for another set, e.g. the re-scored runs; JSON `run_ids_a`, `run_ids_b`). A metric one side's runs do not store per item is refused as a missing metric, with what they do store (a measure computed at re-score is only in the re-scored runs). Not with `--round`; `run-compare` still refuses across datasets |
 | `evh holdout --dataset-id … --exclude-dataset …` | does the result survive on the items the pilot slice never contained |
 | `evh rank-stability --dataset-id …` | how many items before the ordering stops moving — measured, not assumed from a power table |
 | `evh bootstrap-test --dataset-id … --a … --against …` | a percentile interval for a corpus-level metric that has no per-item value |
@@ -1020,7 +1034,8 @@ each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
   `family-test`'s results.
 - **Refused before anything runs:** an argument the tool does not have, a missing required one,
   a value of the wrong kind (a list for a one-value option, a flag that is not `true`/`false`),
-  any value that starts with `-`, and a dataset id that is not a plain name.
+  and any value that starts with `-`. A dataset id that is not a plain name is refused by the
+  command itself when it runs, as on the command line.
 - **Stdio** (the default): the agent starts `evh mcp --project /path/to/project`. A desktop client
   starts it with its own `PATH` and working directory, so give the full path to `evh` and
   `--project`.

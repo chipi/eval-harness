@@ -92,7 +92,8 @@ git add -A && git commit -qm "silver/tickets_v1"
 
 ## 4. Run each arm
 
-Cost first (`--dry-run`), a few items next (`evh arm-smoke --config C`, and read the replies), then
+Cost first (`--dry-run`: one call per item, not an upper bound), a few items next (`evh arm-smoke --config C`,
+and read the replies; the dry run then shows its `MEASURED` cost, the number to cap from), then
 the full run. `--repeat 3` measures an arm's own noise.
 
 Working in rounds (one line of investigation each: `evh round-open --goal G --dataset D --hypothesis

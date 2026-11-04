@@ -35,43 +35,36 @@ what the harness has today (checked), and what was done or what is open.
   first, and that an arm already run joins through `round-open --keep` (whose help claimed "from earlier
   rounds" only; it accepts any config already run, and now says so).
 
+- **A crosstab of two per-item scores by a field of the output** (fleet, 2026-11-04). How many
+  dismiss-gate downgrades saved a model false dismissal, and how many cost a right dismissal (12 saved,
+  8 cost, by the fleet's own script). Fixed: `evh inspect --runs … --crosstab A,B --group FIELD`
+  (`--group-match` to narrow it) gives the same 12 and 8. A name that is not a per-item score (a recorded
+  field) is refused and pointed at `--group`.
+- **Per-item output and reference together** (fleet). Fixed: `evh inspect --runs … --items-out` shows
+  each item's whole output and scores beside the reference and labels (`--disagree`: only where runs differ).
+- **`evh goals --goal` on a goal with 80+ arms** (fleet). Fixed: `--arms` (globs or substrings,
+  comma-separated) and `--top N` choose the rows shown. The decision is still made over every arm, and
+  the baseline, the leader and the recommended arm are always shown.
+- **A hypothesis recorded before the run** (fleet). Fixed (ADR-0025): a `hypothesis:` block in the arm
+  config, recorded in each run with whether it was committed before the run. `pair-test` and
+  `evh goals --goal` show it. An arm with runs that predate the block reads "not named in advance", since
+  those runs are averaged in.
+- **`pair-test` across two versions of a dataset** (fleet, for v2). `--b-dataset` pairs one arm on two
+  versions by item id, refuses a reference that differs, and names the runs of each side and where they
+  were read. A measure stored only in re-scored runs is refused as a missing metric that names
+  `evh rescore`, not as "no shared items".
+- **Two runs started in the same second shared one directory** (found in the final review,
+  2026-11-04). A run id is the config plus the start to the second, so the second run wrote over the
+  first, a committed run included. Fixed: a run never writes into an existing run directory; it takes
+  the next second's id, and an explicit `--run-id` that exists is refused.
+- **Rebuilt answers that leak hindsight** (fleet, 2026-11-04). Some probe answers said
+  `<UNAVAILABLE: GlitchTip issue X no longer exists …>`: 12 of 65 items, and 7 of the baseline's 18
+  model false dismissals. Some `lastRelease`/`lastSeen` values were later than the decision or wrong.
+  The fleet is building a v2 of the dataset from what it had at decision time; later rounds use it.
+
 ## Open (owner to decide)
 
-7. **Lineage for a dataset version already cited** (fleet). v2 was made without `--from` (bug above) and
-   runs cite it now, so it cannot be re-made to gain its `derived_from` link to v1; its lineage lives in
-   its description and commit. Wanted, if the owner wants the link: a command that adds lineage to a cited
-   dataset without touching its items.
-
-1. **A crosstab of two per-item scores by a field of the output** (fleet, 2026-11-04). The question:
-   how many dismiss-gate downgrades saved a model false dismissal, and how many turned a right
-   dismissal into a false alarm (baseline: 12 saved, 8 cost, by the fleet's own script). No command
-   crosstabs `model_false_dismiss` against `false_dismiss` grouped by the gate that fired;
-   `inspect --by` groups by an item's field, not an output's.
-2. **Per-item output and reference together** (fleet). `predictions.jsonl` has no reason text or
-   gold label; reading why an item flipped means joining `outputs/*.txt` and the reference by
-   hand. `inspect --item` shows one item at a time.
-4. **Rebuilt probe answers leak hindsight** (fleet, 2026-11-04; checked in this checkout). In
-   `orrery_triage_v1_labelled`, 12 of 65 materialized items have a frozen probe answer
-   `<UNAVAILABLE: GlitchTip issue X no longer exists …>`, which production never saw (the issue
-   existed when it decided); 39 of 65 have some UNAVAILABLE answer. In the baseline run, 7 of its 18
-   model false dismissals cite exactly that as the reason (ORRERY-DEV-7/8, STAGING-13/14/1H/1I/1V, all
-   real problems in the gold); the dismiss gate turned all 7 into escalations, so the after-gate
-   scores on them are unaffected, but `model_false_dismiss` is inflated and any arm that changes the
-   gate or the dismiss rules is measured on them. Suggested: a neutral sentinel for a probe the
-   rebuild could not answer (`<UNAVAILABLE: not captured>`), an item field flagging rebuilt hindsight
-   so a goal or `inspect --by` can split them, and a check of other rebuilt answers that describe the
-   present rather than the decision's time. A fix is a new dataset version (`_v2`), the owner's call.
-5. **More rebuilt fields that are not as of the decision** (fleet, 2026-11-04; recounted here). In
-   `orrery_triage_v1_labelled` (49 items carry `signal.raw.lastSeen`): `lastRelease.dateCreated` is
-   later than the decision itself on 2 items, ORRERY-9 (release 2026-08-27, decided 08-22) and
-   ORRERY-PROD-8 (release 09-16, decided 09-04): hindsight, as the issue was re-fetched after the
-   decision. (The fleet counted 7 by comparing with `lastSeen`; the others are explained by the next
-   point, not by a late release.) `lastSeen` is wrong on others: 10 items have it at day precision
-   (`T00:00:00`), and ORRERY-L/M/O/P have 2023-11-14, before the project existed. Same remedy as
-   item 4: a `_v2` built from what the fleet had at decision time.
-6. **A hypothesis recorded before the run** (fleet). `pair-test` is valid only for a comparison
-   named in advance, and nothing records the naming. Wanted: a `hypothesis:` in the arm config
-   (which items should flip, and which way), committed before the run, so the claim can be checked.
-3. **`evh goals --goal` on a goal with 80+ arms** (fleet). The table is about 300 columns wide and
-   the baseline row falls far below; no filter or limit. Wanted: `--only`/`--top N`, the baseline
-   row always shown.
+1. **Lineage for a dataset version already cited** (fleet). v2 was made without `--from` (bug above)
+   and runs cite it now, so it cannot be re-made to gain its `derived_from` link to v1. Its lineage
+   lives in its description and commit. Wanted, if the owner wants the link: a command that adds
+   lineage to a cited dataset without touching its items.

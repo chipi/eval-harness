@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 DIRECTIONS = ("better", "worse", "no-worse")
 KEYS = ("against", "measure", "direction", "statement", "items")
@@ -216,3 +217,36 @@ def agreement(direction: str, delta: float, lower: bool, significant: bool) -> s
         return "no" if worse and significant else "yes"
     want, other = (better, worse) if direction == "better" else (worse, better)
     return "yes" if want and significant else "no" if other and significant else "not shown"
+
+
+def across_runs(runs: list[dict], against: str | None = None, measure: str | None = None) -> dict | None:
+    """An arm's hypothesis as all its runs (their metrics.json) give it, or None when none carries one. Named
+    in advance only when EVERY run carries it and each was named in advance: a test averages all of an arm's runs,
+    so one run made before the hypothesis (or carrying another) means part of the evidence predates the
+    prediction, whatever a later run records. `against`/`measure` keep only the hypothesis a comparison tests."""
+
+    def matches(h: Any) -> bool:
+        return (
+            isinstance(h, dict)
+            and (against is None or h.get("against") == against)
+            and (measure is None or h.get("measure") == measure)
+        )
+
+    carrying = [m for m in runs if matches(m.get("hypothesis"))]
+    if not carrying:
+        return None
+    advs = [m.get("hypothesis_in_advance") or {"named": None, "why": "not recorded"} for m in carrying]
+    without = len(runs) - len(carrying)
+    if without:
+        return {
+            **carrying[0]["hypothesis"],
+            "named": False,
+            "commit": None,
+            "why": f"{without} run(s) of this arm predate the hypothesis (or carry another), and are averaged in",
+        }
+    # One run made after the fact spoils the arm: no before any, then not determinable, else yes.
+    named = False if any(x.get("named") is False for x in advs) else None
+    if named is None and all(x.get("named") is True for x in advs):
+        named = True
+    adv = next((x for x in advs if x.get("named") is named), advs[0])
+    return {**carrying[0]["hypothesis"], "named": named, "commit": adv.get("commit"), "why": adv.get("why")}

@@ -7,7 +7,7 @@ statement: Decide for each error signal whether to file an issue, dismiss it, es
 status: active
 context:
   audience: the operator of the triage fleet
-decision: Which model the triage agent runs.
+decision: Which model, prompt and gates the triage agent runs (rounds up to r3 compared models; from r4, changes to the fleet on one model).
 success_criteria:
   # The combined cost (owner, 2026-10-30): a missed real problem costs 5 false alarms; triage_cost_p3 and
   # triage_cost_p10 show whether the ranking depends on the 5.

@@ -333,6 +333,19 @@ try:
                     {"dataset-id", "a", "permutations"} <= props and not {"runs-dir", "items"} & props,
                     sorted(props),
                 )
+            check(
+                "pair-test: --b-dataset (a dataset id) is offered, for two versions of one dataset",
+                "b-dataset" in by["pair-test"].input_schema["properties"]
+                and "b-dataset" not in by["family-test"].input_schema["properties"],
+                sorted(by["pair-test"].input_schema["properties"]),
+            )
+            for bad, want in (("../outside", "not a dataset id"), ("tickets_v1", "itself")):
+                res = await s.call_tool("pair-test", {**asked["pair-test"][0], "b-dataset": bad})
+                check(
+                    f"pair-test b-dataset={bad}: refused with the command's message, nothing as an answer",
+                    res.is_error and want in res.content[0].text,
+                    res.content[0].text[:300],
+                )
             res = await s.call_tool("rank-stability", {"dataset-id": "tickets_v1"})
             check(
                 "rank-stability: two arms cannot be ranked: an error with the message, nothing as an answer",

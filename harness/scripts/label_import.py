@@ -77,7 +77,11 @@ def main() -> int:
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--set", required=True, dest="name", help="the label set's name (lowercase, _ . -)")
     ap.add_argument("--by", required=True, help="who labelled")
-    ap.add_argument("--guideline", type=Path, help="the instructions the labeller followed")
+    ap.add_argument(
+        "--guideline",
+        type=Path,
+        help="a file: the instructions the labeller followed (its path and sha256 are recorded)",
+    )
     args = ap.parse_args()
 
     if args.sheet.is_dir():
