@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
-"""Fetch the triage decisions from Hugging Face, pinned to a revision, and restore what git does not hold.
+"""Fetch the triage decisions from Hugging Face, pinned to each revision, and restore what git does not hold.
 
-    python examples/triage-fleet/fetch.py
+    python examples/triage-fleet/fetch.py                  # both revisions
+    python examples/triage-fleet/fetch.py --revision v2    # one
 
-Downloads `data/decisions.jsonl` and `data/verdicts.jsonl` of `chipi-nbgd/orrery-triage` at revision
-`v1` into data/sources/orrery_triage_v1.hf/ (gitignored) and stops unless each file's sha256 is the one
-pinned here. Then it restores, from those files, everything the repository commits only the hashes of:
+`chipi-nbgd/orrery-triage` has two revisions, each with `data/decisions.jsonl` and `data/verdicts.jsonl`:
 
-  - each capture's record files (data/captures/<id>/records/), rebuilt through importer.py and checked
-    against the sha256 the committed capture.json recorded;
+  v1  233 decisions as the fleet's builder rebuilt them on 2026-10-29: capture orrery_2026_10 and the datasets
+      orrery_triage_v1, orrery_triage_v1_labelled, orrery_triage_smoke;
+  v2  the same 233 decisions without the rebuild's hindsight (2026-11-04, signal-fleet's
+      build_orrery_items_v2.py): capture orrery_2026_10_v2 and the dataset orrery_triage_v1_labelled_v2.
+
+Each revision's files go to their own data/sources/orrery_triage_<rev>.hf/ (gitignored), and the fetch stops
+unless each file's sha256 is the one pinned here (a moved tag fails). Then it restores, from those files,
+everything the repository commits only the hashes of:
+
+  - each capture's record files (data/captures/<id>/records/), rebuilt through importer.py with the query that
+    capture recorded (so a field a past capture did not ask for stays out) and checked against the sha256 its
+    committed capture.json recorded;
   - each dataset's item files (data/sources/<dataset>/), checked against the dataset file's sha256s.
 
 Nothing it writes is committed: the decisions are published on Hugging Face (CC-BY-4.0), and git holds
@@ -18,6 +27,7 @@ HF_TOKEN, or the file `huggingface-cli login` writes (~/.cache/huggingface/token
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import os
@@ -33,16 +43,27 @@ from evaluation_harness import _importers  # noqa: E402
 from importer import Importer  # noqa: E402
 
 REPO = "chipi-nbgd/orrery-triage"
-REVISION = "v1"
-#: The bytes of each file at the revision (checked on every fetch: a moved tag fails here).
-FILES = {
-    "data/decisions.jsonl": "48a935cec543d0cf90cb0623208b4745ae573725a40c1ebe6616241b645cc8f6",
-    "data/verdicts.jsonl": "144c955dff750bcd58f70b9ddb2e483a7a520770b3e58191e3deed359c8e55c3",
+#: Per revision: the bytes of each file (checked on every fetch), where they go, and what is restored from them.
+REVISIONS = {
+    "v1": {
+        "files": {
+            "data/decisions.jsonl": "48a935cec543d0cf90cb0623208b4745ae573725a40c1ebe6616241b645cc8f6",
+            "data/verdicts.jsonl": "144c955dff750bcd58f70b9ddb2e483a7a520770b3e58191e3deed359c8e55c3",
+        },
+        "out": ROOT / "data" / "sources" / "orrery_triage_v1.hf",
+        "captures": ("orrery_2026_10",),
+        "datasets": ("orrery_triage_v1", "orrery_triage_v1_labelled", "orrery_triage_smoke"),
+    },
+    "v2": {
+        "files": {
+            "data/decisions.jsonl": "d2b158e0d30669cc00aa699f8b831f46e885a1afa0c455f4396e2b69b31755ae",
+            "data/verdicts.jsonl": "144c955dff750bcd58f70b9ddb2e483a7a520770b3e58191e3deed359c8e55c3",
+        },
+        "out": ROOT / "data" / "sources" / "orrery_triage_v2.hf",
+        "captures": ("orrery_2026_10_v2",),
+        "datasets": ("orrery_triage_v1_labelled_v2",),
+    },
 }
-OUT = ROOT / "data" / "sources" / "orrery_triage_v1.hf"
-#: The captures made from these files, and the datasets made from them.
-CAPTURES = ("orrery_2026_10",)
-DATASETS = ("orrery_triage_v1", "orrery_triage_v1_labelled", "orrery_triage_smoke")
 
 
 def _token() -> str | None:
@@ -51,28 +72,30 @@ def _token() -> str | None:
     return tok or (f.read_text(encoding="utf-8").strip() if f.is_file() else None)
 
 
-def download(path: str) -> Path:
+def download(rev: str, path: str) -> Path:
     """One file of the revision, checked against its pinned sha256."""
-    url = f"https://huggingface.co/datasets/{REPO}/resolve/{REVISION}/{path}"
+    spec = REVISIONS[rev]
+    url = f"https://huggingface.co/datasets/{REPO}/resolve/{rev}/{path}"
     tok = _token()
     req = urllib.request.Request(url, headers={"Authorization": f"Bearer {tok}"} if tok else {})
     with urllib.request.urlopen(req, timeout=120) as r:  # noqa: S310  # nosec B310 (a fixed https URL)
         data = r.read()
     got = hashlib.sha256(data).hexdigest()
-    if got != FILES[path]:
-        raise SystemExit(f"{REPO}@{REVISION}/{path}: sha256 {got}, pinned {FILES[path]}: refusing it")
-    OUT.mkdir(parents=True, exist_ok=True)
-    dest = OUT / Path(path).name
+    if got != spec["files"][path]:
+        raise SystemExit(f"{REPO}@{rev}/{path}: sha256 {got}, pinned {spec['files'][path]}: refusing it")
+    spec["out"].mkdir(parents=True, exist_ok=True)
+    dest = spec["out"] / Path(path).name
     dest.write_bytes(data)
     print(f"  {path}: {len(data):,} bytes, sha256 ok")
     return dest
 
 
 def restore_capture(capture_id: str, decisions: Path, verdicts: Path) -> dict:
-    """The capture's record files, rebuilt and checked against its capture.json. {id: record}."""
+    """The capture's record files, rebuilt with its recorded query and checked against its capture.json."""
     base = ROOT / "data" / "captures" / capture_id
     doc = json.loads((base / "capture.json").read_text(encoding="utf-8"))
-    query = {"path": str(decisions), "verdicts": str(verdicts)}
+    # the recorded query's own keys (v2_fields, prompt_fields, ...), the files where this fetch put them
+    query = dict(doc.get("query") or {}, path=str(decisions), verdicts=str(verdicts))
     recs = {r["id"]: _importers.normalise(r) for r in Importer({}).records(query)}
     (base / "records").mkdir(exist_ok=True)
     bad = []
@@ -110,18 +133,28 @@ def restore_dataset(dataset_id: str, recs: dict) -> None:
     print(f"  {dataset_id}: {len(doc['items'])} items restored, hashes ok")
 
 
-def main() -> int:
-    """Fetch, check, restore."""
-    print(f"{REPO} @ {REVISION}")
-    decisions = download("data/decisions.jsonl")
-    verdicts = download("data/verdicts.jsonl")
+def fetch(rev: str) -> None:
+    """One revision: fetch, check, restore."""
+    spec = REVISIONS[rev]
+    print(f"{REPO} @ {rev}")
+    decisions = download(rev, "data/decisions.jsonl")
+    verdicts = download(rev, "data/verdicts.jsonl")
     recs: dict = {}
-    for c in CAPTURES:
+    for c in spec["captures"]:
         if (ROOT / "data" / "captures" / c / "capture.json").is_file():
             recs.update(restore_capture(c, decisions, verdicts))
-    for d in DATASETS:
+    for d in spec["datasets"]:
         if (ROOT / "data" / "datasets" / f"{d}.json").is_file():
             restore_dataset(d, recs)
+
+
+def main() -> int:
+    """Fetch each revision asked for (default: all)."""
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--revision", choices=sorted(REVISIONS), help="one revision (default: every one)")
+    a = ap.parse_args()
+    for rev in [a.revision] if a.revision else list(REVISIONS):
+        fetch(rev)
     print("next: evh dataset-materialize --dataset-id <each>")
     return 0
 
