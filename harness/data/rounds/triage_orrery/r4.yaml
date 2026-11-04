@@ -1,0 +1,17 @@
+round_id: r4
+goal: triage_orrery
+dataset_id: orrery_triage_v1_labelled_v2
+from: r3
+hypothesis: 'On v2 (v1''s decisions without the rebuild''s hindsight): how much of v1''s baseline score
+  was the hindsight, and do fleet changes (not models) move the combined cost; first, filing the app''s
+  failures to load its own code instead of dismissing them'
+changes:
+- 'dataset v2: outcome-stating UNAVAILABLE answers neutral, lastSeen from GlitchTip''s receive time, nothing
+  dated after the decision (signal-fleet/datasets/build_orrery_items_v2.py)'
+- 'baseline: production''s model and fleet (f07efa9, prompt c2ece738) re-run on v2, k=3'
+- 'candidate: prompt 219b34bf (agentic-ai-homelab 8f4c4ee), failed dynamic imports and service-worker
+  failures are filed, not dismissed'
+budget_usd: 2.0
+status: open
+opened_at: '2026-11-04T13:40:49Z'
+baseline: null

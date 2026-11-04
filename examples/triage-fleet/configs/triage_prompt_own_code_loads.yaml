@@ -1,0 +1,15 @@
+# A fleet change, not a model: the baseline arm (production's model and settings) on the fleet at
+# agentic-ai-homelab 8f4c4ee, whose brief files the app's failures to load its own code (a failed dynamic
+# import or module script, a service-worker failure) instead of dismissing them as network transients
+# (prompt 219b34bf). Hypothesis in that commit's message, recorded before this run.
+config_id: triage_prompt_own_code_loads_v1
+dataset_id: orrery_triage_v1_labelled_v2
+adapter: ../adapter.py
+goal: triage_orrery
+round: r4
+params:
+  provider: gateway
+  model: eval-fleet-triage-pro
+  usd_per_mtok_in: 0.816
+  usd_per_mtok_out: 1.632
+  fleet_commit: 8f4c4ee
