@@ -1,0 +1,1 @@
+{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "zz-probe-dev-reject-in-script", "model_disposition": "cleanup", "reason": "The alert name 'zz-probe-dev-reject-in-script' indicates an intentional dev/test probe error, not a production issue. Count=1, dev project, empty culprit support synthetic origin."}
