@@ -138,7 +138,7 @@
     const cap = shown.slice(0, 400), was = box.querySelector('.pk-list'), top = was ? was.scrollTop : 0;
     box.innerHTML =`<span class="pk-n">2</span><div class="pk-main"><h3>Its arms <span class="muted">on <code>${esc(pk.ds)}</code>, ${mine.length}</span></h3>
       <div class="pk-row"><input id="pk-q" type="search" autocomplete="off" placeholder="filter: config, model, how" value="${esc(pk.q)}" aria-label="filter arms">
-      <button class="btn small" type="button" id="pk-all">Tick the ${shown.length > PK.max ? 'first ' + PK.max + ' ' : ''}${shown.length} shown</button></div>
+      <button class="btn small" type="button" id="pk-all">${shown.length > PK.max ? `Tick the first ${PK.max} of ${shown.length} shown` : `Tick the ${shown.length} shown`}</button></div>
       ${chips ? `<div class="pk-facets">${chips}</div>` : ''}
       ${sug.length ? `<div class="pk-sug"><span class="muted small">add</span>${sug.map(([l], i) => `<button type="button" class="chip pk-add" data-sug="${i}">+ ${esc(l)}</button>`).join('')}</div>` : ''}
       <div class="pk-list" role="group" aria-label="arms">${cap.map(([r, a]) => `<label class="pk-arm"><input type="checkbox" value="${esc(r)}"${pk.ticked.has(r) ? ' checked' : ''}>

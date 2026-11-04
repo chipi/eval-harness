@@ -248,7 +248,11 @@ def drive(cat: Path, base: str) -> None:
         page.wait_for_selector("span.chip.v-better, span.chip.v-worse, span.chip.v-none", timeout=120000)
         page.wait_for_load_state("networkidle")
         ids = [r.rsplit("/", 1)[-1] for r in largest.split("runs=", 1)[-1].split("&", 1)[0].split(",")]
-        text = page.locator("main").inner_text()
+        # A verdict row shows an arm by what it does not share with the others; its full name is the
+        # row's tooltip. The picker above, folded, names none of them.
+        text = page.locator("#app").inner_text() + " ".join(
+            page.eval_on_selector_all("#app [title]", "els => els.map(e => e.title)")
+        )
         unnamed = [i for i in ids if i not in text]
         rows = page.locator("table.data").first.locator("tbody tr").count()
         check(

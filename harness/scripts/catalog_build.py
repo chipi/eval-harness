@@ -1643,7 +1643,7 @@ def render_home(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
         '<p class="dek">Every goal, dataset, arm and model in this project\'s committed runs.</p>'
         + (f'<div class="about">{ABOUT}</div>' if ABOUT else "")
         + '<div class="search home-search"><input id="home-q" type="search" autocomplete="off" '
-        'placeholder="Search goals, datasets, arms…  ( / )" aria-label="Search the catalog">'
+        'placeholder="Search goals, datasets, arms…" aria-label="Search the catalog">'
         '<div class="hits" hidden></div></div>'
         + _entries(home_counts(A, by_ds, w["spend"]))
         + "</div></section>"

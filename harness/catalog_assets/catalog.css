@@ -663,3 +663,5 @@ body:has(#home-q) .bar .search-btn { display: none; }
   .pk-arm > span:not(.pk-c) { grid-column: 2; }
   .pk-v { text-align: left; }
 }
+/* the home page's ten period tiles: two to a row on a phone, so none is left alone in the last row */
+@media (max-width: 560px) { #period .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

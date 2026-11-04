@@ -260,7 +260,12 @@ section.method { padding-top: 64px; }
 .chapters .chapter > * { min-width: 0; }
 .ch-art .sticky { position: sticky; top: 124px; }
 .ch-art svg.lc { max-width: 280px; }
-@media (max-width: 900px) { .chapters .chapter { grid-template-columns: 1fr; gap: 0; } .ch-art { display: none; } }
+/* one column: the chapter's graphic follows its text, as its summary */
+@media (max-width: 900px) {
+  .chapters .chapter { grid-template-columns: 1fr; gap: 28px; }
+  .ch-art { order: 2; }
+  .ch-art .sticky { position: static; max-width: 320px; margin: 0 auto; }
+}
 .aside-note { font-size: 13px; color: var(--muted); margin-top: 14px; max-width: 30ch; }
 .chapter { padding: 56px 0 72px; border-top: 1px solid var(--hair); scroll-margin-top: 72px; }
 /* Sections are linked to directly (posts, articles); keep the heading clear of the 56px sticky bar. */
