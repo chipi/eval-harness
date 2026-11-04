@@ -34,6 +34,17 @@ what the harness has today (checked), and what was done or what is open.
    rebuild could not answer (`<UNAVAILABLE: not captured>`), an item field flagging rebuilt hindsight
    so a goal or `inspect --by` can split them, and a check of other rebuilt answers that describe the
    present rather than the decision's time. A fix is a new dataset version (`_v2`), the owner's call.
+5. **More rebuilt fields that are not as of the decision** (fleet, 2026-11-04; recounted here). In
+   `orrery_triage_v1_labelled` (49 items carry `signal.raw.lastSeen`): `lastRelease.dateCreated` is
+   later than the decision itself on 2 items, ORRERY-9 (release 2026-08-27, decided 08-22) and
+   ORRERY-PROD-8 (release 09-16, decided 09-04): hindsight, as the issue was re-fetched after the
+   decision. (The fleet counted 7 by comparing with `lastSeen`; the others are explained by the next
+   point, not by a late release.) `lastSeen` is wrong on others: 10 items have it at day precision
+   (`T00:00:00`), and ORRERY-L/M/O/P have 2023-11-14, before the project existed. Same remedy as
+   item 4: a `_v2` built from what the fleet had at decision time.
+6. **A hypothesis recorded before the run** (fleet). `pair-test` is valid only for a comparison
+   named in advance, and nothing records the naming. Wanted: a `hypothesis:` in the arm config
+   (which items should flip, and which way), committed before the run, so the claim can be checked.
 3. **`evh goals --goal` on a goal with 80+ arms** (fleet). The table is about 300 columns wide and
    the baseline row falls far below; no filter or limit. Wanted: `--only`/`--top N`, the baseline
    row always shown.
