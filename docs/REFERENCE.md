@@ -406,6 +406,10 @@ What other tools call the same things. A cell is a name read in that tool's own 
 | **significant** | — | — | — | — | — | — | — | — |
 | **capture** | — | — | — | — | production traces added to a dataset | traces turned into examples | traces added to a dataset | — |
 | **validation / test** | — | `validation_split` / `test_split` | `VALID_SPLIT` / `TEST_SPLIT` | — | — | — | — | `validation` / `test` splits |
+| **repeat** (`--repeat`, a goal's `reduce`) | `epochs`, reduced by `mean`, `median`, `mode`, `majority`, `max`, `pass_at_{k}`, `pass_k_{k}`, `at_least_{k}` | — | — | — | — | — | — | — |
+| **several right answers** (`{"accept": […]}`) | a `target` that is a `list[str]` | — | — | — | — | — | — | — |
+| **card** (`dataset-card`) | — | — | — | — | — | — | — | dataset card |
+| **cluster** (`cluster: FIELD`) | — | — | — | — | — | — | — | — |
 
 Where the same word means something else:
 
@@ -416,12 +420,19 @@ Where the same word means something else:
   as in `load_dataset("PolyAI/minds14", "fr-FR")`).
 - **governed vs production** data is offline vs online evaluation in LangSmith, Langfuse and
   Braintrust: offline scores a fixed dataset before shipping, online scores live production traces.
+- **cluster** is the statistician's word (clustered standard errors), as Miller (2024) uses it for
+  evals: items that share a source count as one when a difference is tested.
+- **derived_from** (a dataset made from another) is PROV-O's `prov:wasDerivedFrom`, the word Croissant 1.1
+  uses for provenance; `dataset-card --format croissant` writes it so. The **card**'s keys are Croissant
+  RAI 1.0's property names, without the `rai:` prefix.
 
 Read in: [inspect_ai](https://inspect.aisi.org.uk/), [lm-evaluation-harness task guide](https://github.com/EleutherAI/lm-evaluation-harness/blob/main/docs/task_guide.md),
 [HELM](https://crfm-helm.readthedocs.io/en/latest/code/), [OpenAI evals](https://developers.openai.com/api/docs/guides/evals),
 [Braintrust](https://docs.braintrust.dev/core/experiments), [LangSmith](https://docs.langchain.com/langsmith/evaluation-concepts),
 [Langfuse](https://langfuse.com/docs/evaluation/overview), [Hugging Face datasets](https://huggingface.co/docs/datasets/load_hub),
-[evaluate](https://huggingface.co/docs/evaluate/a_quick_tour) and [lighteval](https://huggingface.co/docs/lighteval/index).
+[evaluate](https://huggingface.co/docs/evaluate/a_quick_tour) and [lighteval](https://huggingface.co/docs/lighteval/index);
+inspect_ai's `epochs` and reducers in its [scoring metrics](https://inspect.aisi.org.uk/metrics.html) page, its
+`target` type in [datasets](https://inspect.aisi.org.uk/datasets.html) (both read 2026-11-05).
 
 ### Spelling
 

@@ -104,6 +104,11 @@ the modes of a hidden dataset's tags, never their notes. The design is in `_tags
 | E8 | Field sets proposed from a source's features, shown for a person to accept |
 | E9 | The committed datasets migrated (no shim), the profile reads `source`, a validate rule for the new blocks |
 
+Built 2026-11-05, a commit each: E3 `f2512999b`, E2 `37803dd4e`, E1+E9 `a59cf283c`, E4 `eebe2596a`, E5
+`f083eff09`, E6 `de7c80ec9`, E7 `2f92dffae` + `bc77a8613` (pyarrow, owner yes), E8 `d502f3aec`. Not covered: E6's
+export is not run through mlcroissant; E7 does not read a FileSet, so Hugging Face's own descriptions wait for P;
+E7 does not read E6's own export back (E6 writes jsonPath sources, E7 reads columns).
+
 **E3, accepted by the owner (2026-11-05), and as revised after the review (accepted the same day).** The id stays the
 identity. `version` is the content version MAJOR.MINOR, two integers (1.10 follows 1.9; "+0.1" on a decimal would
 make 1.9 + 0.1 = 2.0, a major bump): a first dataset is 1.0; one made from another that only adds items is the
