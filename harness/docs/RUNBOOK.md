@@ -172,6 +172,12 @@ CSV, JSON or JSON-lines file of a record, checked against the md5 Zenodo lists; 
 are not checked against the source; each item is still frozen by its sha256), with its version and its features'
 types. `ZENODO_ENDPOINT` and `OPENML_ENDPOINT` name other servers.
 
+**From Kaggle**: `--source kaggle --query '{"ref": "uciml/iris", "version": 2, "file": "Iris.csv", "text":
+"Species"}'` reads a table file of a dataset's zip at a version (the current one when none is named; recorded as
+`source.revision`), through Kaggle's own API: no kagglehub, and no credentials for a public dataset (a private one
+takes them in `EVAL_FETCH_HEADERS`). Kaggle lists no checksum; each item is frozen by its sha256. Its licence name
+is mapped to SPDX when it is one of Kaggle's picker's.
+
 **Publishing to the Hub**: `evh dataset-publish --dataset-id D --to huggingface --query '{"repo": "owner/name"}'`
 writes a new repo, private unless `"public": true`: the items as `data/test.parquet` (item_id, text,
 source_sha256, each field), the record as `evh/D.json` and the card as README.md, in one commit; it reads every

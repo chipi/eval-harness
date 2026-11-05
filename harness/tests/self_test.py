@@ -796,6 +796,10 @@ def test_example_scorer_suites_pass() -> None:
             "the zenodo and openml sources on local APIs: a record's CSV (md5 checked), a dataset's parquet copy",
         ),
         (
+            "test_kaggle.py",
+            "the kaggle source on a local API: a version's zip, its one table, the licence name mapped; no kagglehub",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),

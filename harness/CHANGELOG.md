@@ -98,6 +98,9 @@ that can move a result is never a patch release without saying so under **Change
 - **Datasets from Zenodo and OpenML.** `--source zenodo` reads a record's table file (md5 checked, the record id as
   revision); `--source openml` reads a dataset's parquet copy with its version and typed features.
 
+- **Datasets from Kaggle, without kagglehub.** `--source kaggle` reads a table file of a dataset's zip at a version
+  through Kaggle's own API (public datasets need no credentials), with its licence mapped from Kaggle's name.
+
 ### Changed
 
 - **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from
