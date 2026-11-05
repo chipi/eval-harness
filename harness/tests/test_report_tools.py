@@ -321,18 +321,24 @@ def test_goal_decisions() -> None:
     lines = [re.split(r"\s{2,}", ln.strip()) for ln in g.stdout.splitlines()]
     head = next((c for c in lines if c[:1] == ["goal"]), [])
     col = head.index("recommended") if "recommended" in head else -1
-    # An arm run more than once is labelled with its pass count (" ×3", catalog_adapter's label); the arm is the same.
-    cli = {
-        c[0]: re.sub(r" ×\d+$", "", c[col])
-        for c in lines
-        if col >= 0 and len(c) == len(head) and c[0] in goals
-    }
+
+    # A cell names one recommendation per deciding dataset ("A; B"), each as its label: the pass count of an arm run
+    # more than once (" ×3"), a re-score (" · rescored 5f2c057c") and how it compares with the baseline ("(cost same ·
+    # speed p95 9.6× vs baseline)") are said beside the arm, which is the same arm.
+    def names(cell: str) -> list:
+        out = []
+        for part in cell.split("; "):
+            part = re.sub(r" \([^()]* vs baseline\)$", "", part.strip())
+            part = re.sub(r" · rescored [0-9a-f]+$", "", part)
+            out.append(re.sub(r" ×\d+$", "", part))
+        return out
+
+    cli = {c[0]: names(c[col]) for c in lines if col >= 0 and len(c) == len(head) and c[0] in goals}
     by_goal: dict = {}
     for x in rows:
         by_goal.setdefault(x["goal_id"], set()).add((x.get("recommended") or "none yet").rsplit("/", 1)[-1])
-    # The CLI names one recommendation per goal (its deciding dataset's); it must be one of the
-    # goal's rows here.
-    differ = [gid for gid, rec in cli.items() if rec not in by_goal.get(gid, set())]
+    # Every recommendation the CLI names must be one of the goal's rows here.
+    differ = [gid for gid, recs in cli.items() if any(r not in by_goal.get(gid, set()) for r in recs)]
     check(
         "goal_decisions: each goal's recommendation is the one `evh goals` prints",
         bool(cli) and not differ,

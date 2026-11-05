@@ -1098,6 +1098,21 @@ def v14_goals() -> None:
                 )
     for x in bad:
         print(f"       {x}")
+    # The margin decides who is a contender: on the strategy's default it is a choice nobody made for this goal.
+    from evaluation_harness.axes import STRATEGY_MARGINS, strategy_of  # noqa: PLC0415
+
+    for gid, g in goals.items():
+        crit = g.get("success_criteria") or {}
+        strategy = strategy_of(g)
+        if (
+            strategy != "quality_first"
+            and ((crit.get("axes") or {}).get("quality") or {}).get("margin") is None
+        ):
+            notes.append(
+                f"V14 goal {gid}: contenders are decided on {strategy}'s default margin, "
+                f"{STRATEGY_MARGINS.get(strategy, 0):.0%} of the leader: set success_criteria.axes.quality.margin "
+                "(in the measure's units) to choose it"
+            )
     # min_items: a note, not a failure. A dataset smaller than the goal's minimum can still
     # be measured; it cannot pick a winner, and the goal page says so.
     sizes = {p.stem: len((parsed(p) or {}).get("items") or []) for p in DATASETS.glob("*.json")}

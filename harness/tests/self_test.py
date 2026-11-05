@@ -677,6 +677,10 @@ def test_example_scorer_suites_pass() -> None:
             "test_cluster_commands.py",
             "--cluster and a goal's cluster: through pair-test, family-test, goals, the inspector, validate",
         ),
+        (
+            "test_noninferiority.py",
+            "non-inferiority: Tango for 0/1, the bootstrap-t from 100 units, its level at the margin",
+        ),
         ("test_scores_once.py", "each arm's scores read once per view and per build"),
         ("test_skills.py", "the agent skills: valid, installed, every evh block runs as written"),
         (

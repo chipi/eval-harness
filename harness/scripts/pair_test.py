@@ -68,6 +68,7 @@ from evaluation_harness._common import (  # noqa: E402
 )
 from evaluation_harness._runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
 from evaluation_harness.stats import EXACT_UP_TO, clustered, fmt_p, sign_flip_p  # noqa: E402
+from evaluation_harness.stats import noninferior as stats_noninferior  # noqa: E402
 
 
 def _round_values(dataset_id: str) -> Any:
@@ -265,6 +266,12 @@ def main() -> int:
         help="an item field whose items are not independent (one thread's comments): flip one sign per value of "
         "it, so related items count once (with --round: default the goal's `cluster:`)",
     )
+    ap.add_argument(
+        "--margin",
+        type=float,
+        help="also test whether A is no worse than B by more than this, in the metric's units: the contender test "
+        "goals use (one-sided non-inferiority; ADR-0026), for this one pair, uncorrected",
+    )
     ap.add_argument("--permutations", type=int, default=20000)
     ap.add_argument(
         "--family",
@@ -459,6 +466,22 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     if args.cluster:
         print(f"    clusters           {n_units} by {args.cluster}: items that share a value count as one")
     print(f"    sign-flip p        {fmt_p(p)}  ({how})")
+    ni = None
+    if args.margin is not None:
+        ni = stats_noninferior(
+            {i: A[i] for i in items},
+            {i: B[i] for i in items},
+            args.margin,
+            higher_is_better=not lower,
+            clusters=item_clusters(args.dataset_id, args.cluster) if args.cluster else None,
+        )
+        said = (
+            f"p {fmt_p(ni['p'])} at one-sided {ni['level']:g} ({ni['method']})"
+            if ni.get("p") is not None
+            else ni["method"] or ""
+        )
+        label = f"within {args.margin:g} of B"
+        print(f"    {label:<19}{ni['verdict']}" + (f", {said}" if said else ""))
     hyp = None if cross else _hypothesis_of(args, runs)
     in_advance = bool(hyp and hyp["named"] is True)
     chosen_note = (
@@ -540,6 +563,7 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             "threshold": thresh,
             "verdict": verdict,
             "selection": "leader" if chose else "named",
+            "noninferior": ni,
             "candidates": candidates if chose else None,
             "hypothesis": {
                 "against": hyp["against"],

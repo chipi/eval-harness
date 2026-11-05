@@ -20,9 +20,21 @@ that can move a result is never a patch release without saying so under **Change
   the bootstrap draws whole clusters. Tested items one by one, related items made p too small: in a simulation
   of 12 clusters of 5 with no real difference, the item test called 45% of them significant, the cluster test
   4%. `validate` (V14) refuses a goal whose cluster field no item carries.
+- **The contender test is shown.** `evh goals` has a column "contender test (within the margin)" (p, its Holm
+  threshold, shown or not, or "too few"), `--json` carries it per arm (`noninferior`), the goal page's cell says it,
+  and `evh pair-test --margin M` runs it for any one pair.
 
 ### Changed
 
+- **A contender is shown no worse than the leader** ([ADR-0026](../docs/adr/ADR-0026-contenders-by-non-inferiority.md)).
+  It had to be "not significantly different", which more arms are the fewer items there are, and `frugal` then
+  recommended the cheapest. Now a one-sided non-inferiority test against the leader decides, Holm across the
+  candidates: Tango's score test for 0/1 scores at any size, the bootstrap-t from 100 items or clusters for other
+  scores, "too few items to call a tie" below. A strategy is a default margin: `balanced` 5% of the leader (was 2%,
+  with the old test), `frugal` 10% (had none), `quality_first` the same quality; a goal's `axes.quality.margin`
+  wins, and `validate` notes each goal on a default. **Recommendations move** on goals whose contenders the old
+  rule over- or under-counted: on this repository's 7 goals, scifact recommends deepseek_s (was the free e5_base, not
+  shown within 10% once 18 arms are corrected for), ag_news bert_base_ta and triage its leader (both were undecided).
 - **Each exit code has one meaning** ([RUNBOOK, Exit codes](docs/RUNBOOK.md#exit-codes)). The cost cap that stops
   `evh run` or `judge-score` early exits `4` (was `2`, which is also a usage error); a run that measured nothing
   exits `7` (was `1`, which is also a refusal); a server that could not be reached exits `75` (was `1`); a check

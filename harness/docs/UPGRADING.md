@@ -7,6 +7,12 @@ correctness bugs, not just missing features.
 
 ## From 0.7.2 to 0.8.0 (unreleased)
 
+- **A goal's recommendation can move.** Contenders are now the arms shown no worse than the leader by more than
+  the margin (ADR-0026), and the default margins are 5% (`balanced`) and 10% (`frugal`) of the leader. Read
+  `evh goals --goal G` after upgrading. A goal that wants its old breadth back sets `axes.quality.margin` in the
+  measure's units; one on fewer than 100 items with a continuous measure now recommends its leader and says
+  "too few items to call a tie". `evh validate` notes every goal on a default margin. No run, score or
+  fingerprint changes.
 - **Scripts and CI that branch on exit codes:** the cost cap is `4` (was `2`), nothing measured `7` (was `1`), an
   unreachable server `75` (was `1`), and a check that found problems `6` (was `1`) for `validate`, `self-test`,
   `env-check`, `importer-check`, `arm-smoke`, `model-onboard` and `deploy-sheet --capture`; a partly failed

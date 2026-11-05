@@ -45,6 +45,30 @@ def vs_text(v: dict | None) -> str:
     return f"{delta}{p}, {v.get('verdict') or '—'}"
 
 
+def ni_text(t: dict | None) -> str:
+    """The contender test in a cell (ADR-0026): 'within 0.074: p 0.0105, Holm 0.0016, not shown' or 'too few (65)'."""
+    if not t:
+        return "—"
+    if t.get("verdict") == "too few":
+        need = t.get("floor")
+        unit = (
+            "effective units"
+            if t.get("effective") is not None and t.get("units") != t.get("effective")
+            else "units"
+        )
+        return f"too few ({t.get('effective') or t.get('units')} {unit}" + (
+            f", needs {need})" if need else ")"
+        )
+    if t.get("verdict") == "untestable":
+        return "untestable"
+    head = f"within {t['margin']:.4g}"
+    if t.get("p") is None:
+        return f"{head}: {t.get('verdict')}"
+    thr = t.get("holm_threshold")
+    shown = "shown" if t.get("holm") else "not shown"
+    return f"{head}: p {fmt_p(t['p'])}" + (f", Holm {fmt_p(thr)}" if thr is not None else "") + f", {shown}"
+
+
 def hypothesis_of(A, arm: str) -> dict | None:
     """The arm's hypothesis with whether it was named in advance, read across ALL its runs (the goal averages
     them; one run made before the hypothesis makes it "no", whichever run is newest); None without one. An adapter
@@ -147,6 +171,8 @@ def group_values(
                 "retired_in": retired.get(r["arm"]) or None,
                 "flags": list(r["flags"]) + dec["out"].get(r["arm"], []),
                 "vs_leader": vs[r["arm"]],
+                # The contender test (ADR-0026): verdict, method, p, its level and Holm threshold, the margin.
+                "noninferior": (dec["rows"][r["arm"]].get("quality") or {}).get("noninferior"),
                 "axes": {ax["name"]: dec["rows"][r["arm"]][ax["name"]] for ax in axes},
                 "hypothesis": hypotheses.get(r["arm"]),
             }

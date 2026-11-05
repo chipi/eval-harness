@@ -38,7 +38,7 @@
               "description": "The primary measure as an axis: it takes a limit and a margin only (its measure and direction are success_criteria.primary's).",
               "properties": {
                 "limit": {"oneOf": [{"type": "number"}, {"const": "baseline"}], "description": "An arm past it is out, with the reason. `baseline` (RFC-022): out when the paired test finds it worse than the group's baseline arm."},
-                "margin": {"type": "number", "minimum": 0, "description": "How far from the leader an arm not significantly different from it may be and still count as a contender under balanced (default: 2% of the leader's mean; 2% of the group's range when the leader is 0)."},
+                "margin": {"type": "number", "minimum": 0, "description": "How much worse than the leader an arm may be, in the measure's units, and still be a contender: it must be shown no worse by more than this (a one-sided non-inferiority test). Default: the strategy's share of the leader's mean, balanced 5%, frugal 10% (of the group's range when the leader is 0)."},
                 "note": {"type": "string"}
               }
             }

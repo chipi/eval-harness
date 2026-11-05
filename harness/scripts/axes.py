@@ -48,15 +48,17 @@ DEFAULT_TIE_BREAK = ("cost", "speed")
 #: How a goal turns its axes into a recommendation: who counts as a contender beside the quality leader,
 #: so that cost, speed or a project's axis may pick among them (limits always apply first).
 STRATEGIES = {
-    "balanced": "contenders: not significantly different from the leader by the paired test AND within the quality margin (default)",
+    "balanced": "contenders: shown no worse than the leader by more than the margin, 5% of the leader unless the goal sets one (default)",
     "quality_first": "contenders: only the same quality; cost and speed break exact ties only",
-    "frugal": "contenders: anything not significantly different from the leader by the paired test; the cheaper wins",
+    "frugal": "contenders: shown no worse than the leader by more than the margin, 10% of the leader unless the goal sets one; the cheaper wins",
 }
 DEFAULT_STRATEGY = "balanced"
-#: How close to the leader's quality an arm not significantly different from it must be to count as a
-#: contender, when the goal sets
-#: no margin: a share of the leader's mean, so it means the same on a 0-1 rate and a 1-5 score.
-DEFAULT_MARGIN = 0.02
+#: A strategy is a default margin (owner, 2026-11-05): how much worse than the leader's quality an arm may be
+#: and still be a contender, as a share of the leader's mean (so it means the same on a 0-1 rate and a 1-5
+#: score), when the goal sets no `axes.quality.margin`. 2% admitted only the leader on every committed goal; the
+#: before/after table is in research/internal/PLAN_0.8.0.md (A2).
+STRATEGY_MARGINS = {"quality_first": 0.0, "balanced": 0.05, "frugal": 0.10}
+DEFAULT_MARGIN = STRATEGY_MARGINS[DEFAULT_STRATEGY]
 #: Shown beside cost: what a free local model still uses.
 TOKENS = ("tokens_in", "tokens_out")
 
@@ -323,29 +325,67 @@ def decide(
     strategy = strategy_of(goal)
     top = rows[leader]["quality"]["value"]
     values = [rows[x]["quality"]["value"] for x in eligible]
+    share = STRATEGY_MARGINS.get(strategy, DEFAULT_MARGIN)
     if quality.get("margin") is not None:
         margin, margin_from = float(quality["margin"]), " (the goal's margin)"
     elif top != 0:
-        margin, margin_from = abs(top) * DEFAULT_MARGIN, f" ({DEFAULT_MARGIN:.0%} of the leader)"
+        margin = abs(top) * share
+        margin_from = f" ({share:.0%} of the leader, {strategy}'s default: set axes.quality.margin to choose)"
     else:
-        # A perfect 0 on a lower-is-better measure: 2% of 0 admits nothing, so the share is of the
+        # A perfect 0 on a lower-is-better measure: a share of 0 admits nothing, so the share is of the
         # spread between the best and the worst eligible arm.
-        margin = (max(values) - min(values)) * DEFAULT_MARGIN
-        margin_from = f" ({DEFAULT_MARGIN:.0%} of the group's range, the leader being 0)"
+        margin = (max(values) - min(values)) * share
+        margin_from = f" ({share:.0%} of the group's range, the leader being 0)"
         if len(eligible) == 2:
             # With one other arm the range is the gap itself, so a share of it never admits it: say how.
             margin_from += "; with one other arm that admits nothing, so set axes.quality.margin"
-    # Identical per-item scores are contenders in every strategy: there is nothing to test.
-    not_significant = [
-        x
-        for x in eligible
-        if x != leader
-        and (rows[x]["quality"].get("vs_leader") or {}).get("verdict") in ("not significant", "identical")
-    ]
-    if strategy == "frugal":
-        close = not_significant
-        rule = "not significantly different by the paired test"
-    elif strategy == "quality_first":
+    if strategy != "quality_first":
+        # A contender is SHOWN no worse than the leader by more than the margin: a one-sided non-inferiority test
+        # (stats.noninferior), Holm across the candidates (owner, 2026-11-05): the tie-break then picks the cheapest
+        # arm that passed, so the recommendation is wrong when ANY candidate passes wrongly. Each arm on its own let a
+        # too-weak arm be recommended 17% of the time with 8 candidates, 40% with 20 (research/internal/PLAN_0.8.0.md,
+        # A2). A bootstrap-t's p is tested at half the level, so it is doubled into the family's one level. "Not
+        # significantly different" is not a contender either: it also
+        # happens when there are too few items to see a difference (Lakens 2017), so the smaller the dataset the
+        # more arms tied, and frugal then picked the cheapest. Identical per-item scores are contenders anyway.
+        lead_vals = (arms[leader]["scores"].get(quality["measure"]) or {}).get("values") or {}
+        tests = {}
+        for x in eligible:
+            if x == leader:
+                continue
+            vals = (arms[x]["scores"].get(quality["measure"]) or {}).get("values") or {}
+            tests[x] = stats.noninferior(vals, lead_vals, margin, quality["direction"] == "higher", clusters)
+            rows[x]["quality"]["noninferior"] = tests[x]
+        # One family at one level: a p tested at half the level (the bootstrap-t) counts twice.
+        ni_p = {
+            x: min(1.0, t["p"] * stats.NONINF_LEVEL / t["level"])
+            for x, t in tests.items()
+            if t["p"] is not None
+        }
+        held = stats.holm(ni_p, alpha=stats.NONINF_LEVEL) if ni_p else {}
+        for x, t in tests.items():
+            if x in held:
+                t["holm_threshold"] = held[x][0] * t["level"] / stats.NONINF_LEVEL
+                t["holm"] = bool(held[x][1])
+        close = [
+            x
+            for x, t in tests.items()
+            if t.get("holm")
+            or (t["p"] is None and t["verdict"] == "non-inferior")
+            or (rows[x]["quality"].get("vs_leader") or {}).get("verdict") == "identical"
+        ]
+        few = [x for x, t in tests.items() if t["verdict"] == "too few"]
+        rule = (
+            f"shown no worse than the leader by more than {_num(margin)}{margin_from}: non-inferiority, one-sided "
+            f"{stats.NONINF_LEVEL:g}, Holm across {len(ni_p)}"
+        )
+        if few:
+            why.append(
+                f"Too few {'clusters' if clusters is not None else 'items'} to call a tie for {len(few)} arm(s): a "
+                f"continuous measure needs {max(tests[x].get('floor', stats.NONINF_MIN_UNITS) for x in few)} "
+                f"({'effective ' if clusters is not None else ''}units) before a non-inferiority test can be trusted."
+            )
+    else:
         close = [
             x
             for x in eligible
@@ -356,20 +396,12 @@ def decide(
             )
         ]
         rule = "the same quality"
-    else:
-        close = [x for x in not_significant if abs(top - rows[x]["quality"]["value"]) <= margin]
-        rule = f"not significantly different by the paired test and within {_num(margin)}{margin_from}"
     contenders = [leader, *close]
     why.append(
         f"Strategy {strategy}. Quality leader: {arms[leader]['label']} ({quality['measure']} {_num(top)}). "
         f"Contenders beside it ({rule}): "
         + (", ".join(arms[x]["label"] for x in close) if close else "none")
         + "."
-        + (
-            f" Not significantly different but further off, so not contenders: {', '.join(arms[x]['label'] for x in not_significant if x not in close)}."
-            if strategy == "balanced" and len(close) < len(not_significant)
-            else ""
-        )
     )
     pick = list(contenders)
     for name in tie_break_of(goal):

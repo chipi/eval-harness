@@ -1967,7 +1967,7 @@ PICK = {
         "research/REPORT_SUMMARIZATION.md",
     ),
     "ag-news": q(
-        "If your labels follow a house convention, fine-tune on them, starting with bert_mini; if they mean what the words say, use a hosted LLM. If you rent, start with gemma_m ($8 per 1M items).",
+        "The goal recommends the fine-tuned bert_base_ta (0.960): with 29 arms compared on 200 items, none can be shown within 5% of it. If your labels follow a house convention, fine-tune on them (bert_base_ta, or the smaller bert_mini at 0.945); if they mean what the words say, use a hosted LLM. If you rent, start with gemma_m ($8 per 1M items).",
         "research/REPORT_CLASSIFICATION.md",
     ),
     "dbpedia": q(
@@ -1979,7 +1979,7 @@ PICK = {
         "research/REPORT_NER.md",
     ),
     "scifact": q(
-        "Build e5_base retrieval first (0.7191, $0 per query); among the compared field the best reranker, glm_s (0.7437), is 0.0246 ahead of it, p 0.27, not significant. One further run, glm_s on e5_base's top 20, scored 0.7891 (+0.0700 over e5_base, p 0.0001 uncorrected; one run, under a different adapter from the main table) at about $732 per 1M queries. Only the twelve cheapest hosted LLMs were tried.",
+        "The goal recommends deepseek_s (0.7378, about $300 per 1M queries), the cheapest arm shown within 10% of the best reranker, glm_s (0.7437). e5_base retrieval alone (0.7191, $0, the promoted baseline) is within that margin on its own test (p 0.0105) but not once the 18 compared arms are corrected for. One further run, glm_s on e5_base's top 20, scored 0.7891 (+0.0700 over e5_base, p 0.0001 uncorrected; one run, under a different adapter from the main table) at about $732 per 1M queries. Only the twelve cheapest hosted LLMs were tried.",
         "research/REPORT_RETRIEVAL.md",
     ),
     "summeval": q(

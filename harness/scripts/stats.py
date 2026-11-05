@@ -26,6 +26,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import bisect
+import copy
 import hashlib
 import json
 import math
@@ -230,11 +231,27 @@ def kept(algo: str, data: str, compute: Callable[[], Any]) -> Any:
     setting that changes its result (permutations, seed), `data` is its input exactly (floats as float.hex);
     a change to either is a new key."""
     k = hashlib.sha256(f"{algo}:".encode() + data.encode()).hexdigest()
+    # Kept in the process too, as the sign-flip p's are (_P): a catalog build decides each goal twice (the glance
+    # and its page), and without EVH_P_CACHE every bootstrap-t was drawn again, 9,999 resamples each time.
+    if k in _KEPT:
+        _KEPT.move_to_end(k)
+        return copy.deepcopy(_KEPT[k])
     if os.environ.get("EVH_P_CACHE") and (v := _disk().get(k)) is not None:
-        return v
+        _remember(k, v)
+        return copy.deepcopy(v)
     v = compute()
     _keep(k, v)
-    return v
+    _remember(k, v)
+    return copy.deepcopy(v)
+
+
+_KEPT: OrderedDict = OrderedDict()
+
+
+def _remember(k: str, v: Any) -> None:
+    _KEPT[k] = copy.deepcopy(v)
+    while len(_KEPT) > _P_MAX:
+        _KEPT.popitem(last=False)
 
 
 def _keep(k: str, v: Any) -> None:
@@ -354,7 +371,7 @@ def cluster_ci(totals: list, sizes: list, alpha: float = ALPHA):
     EXACT_UP_TO clusters it inverts the cluster sign-flip test: the shifts d for which the test on
     (total - d * size) does not reject at alpha. Above that it is the cluster-robust t interval (CR1:
     the clusters' residuals, G/(G-1), G-1 degrees of freedom). With one item per cluster both are the
-    item-level interval exactly. None below 2 clusters, or when no shift can be rejected (6 clusters
+    item-level interval exactly. None below 2 clusters, or when no shift can be rejected (5 clusters
     and fewer, where the smallest attainable p is over alpha)."""
     g, n = len(totals), sum(sizes)
     if g < 2 or min_attainable_p(g) > alpha:
@@ -383,6 +400,142 @@ def cluster_ci(totals: list, sizes: list, alpha: float = ALPHA):
         return inner
 
     return [bound(lo_start), bound(hi_start)]
+
+
+#: The one-sided level of a non-inferiority test, and the fewest items (or clusters) a continuous measure needs
+#: before one is run (RFC-015, research/internal/stats-0.8.0: below 100 the bootstrap-t did not hold its level).
+NONINF_LEVEL = 0.025
+NONINF_MIN_UNITS = 100
+#: The floor when clusters differ in size, on their effective number: sizes 1-20 with a heavy tail of cluster losses
+#: erred 0.033 at 147 effective clusters and 0.026 at 236 (1500 and 1000 simulations, nominal 0.025).
+NONINF_MIN_UNEQUAL = 250
+NONINF_DRAWS = 9999
+_Z975 = 1.959963984540054
+
+
+def is_binary(*series: dict) -> bool:
+    """Every value of every series is 0 or 1 (right/wrong per item)."""
+    return all(v in (0, 1, 0.0, 1.0, True, False) for x in series for v in x.values())
+
+
+def tango_p(x12: int, x21: int, n: int, margin: float) -> float:
+    """One-sided p of Tango's score test (1998) for paired 0/1 outcomes, H0: difference <= -margin.
+
+    x12: items the arm got right and the reference wrong; x21: the reverse; n: all paired items. Valid with
+    zero discordant items, where McNemar-type tests are not; at or below its level on every grid simulated
+    (research/internal/stats-0.8.0/tango_binary.py)."""
+    if n == 0:
+        return 1.0
+    d0 = -margin
+    a = 2 * n
+    b = -x12 - x21 + (2 * n - x12 + x21) * d0
+    c = -x21 * d0 * (1 - d0)
+    q21 = (math.sqrt(max(b * b - 4 * a * c, 0.0)) - b) / (2 * a)
+    var = n * (2 * q21 + d0 * (1 - d0))
+    num = x12 - x21 - n * d0
+    if var <= 0:
+        return 0.0 if num > 0 else 1.0
+    return 0.5 * math.erfc(num / math.sqrt(var) / math.sqrt(2))
+
+
+def _mean_se(totals: list, sizes: list) -> tuple[float, float]:
+    """The mean per item and its (cluster-robust, CR1) standard error; with one item per cluster s/sqrt(n)."""
+    g, n = len(totals), sum(sizes)
+    m = math.fsum(totals) / n
+    ss = math.fsum((t - k * m) ** 2 for t, k in zip(totals, sizes, strict=True))
+    return m, math.sqrt(g / (g - 1) * ss) / n
+
+
+def bootstrap_t_p(totals: list, sizes: list, margin: float, draws: int = NONINF_DRAWS) -> float | None:
+    """One-sided p of the studentized bootstrap for H0: mean difference <= -margin (RFC-015's specification,
+    resampling clusters when there are clusters). T = (m + margin)/se; t* = (m* - m)/se* over resamples, those
+    with se* = 0 dropped; p = (1 + #{t* >= T})/(kept + 1). None when every unit's difference is the same (no
+    test is possible). Seeded by the data, so the same comparison always gives the same p."""
+    g = len(totals)
+    m, se = _mean_se(totals, sizes)
+    if se == 0:
+        return None
+    t_obs = (m + margin) / se
+    data = ",".join(f"{t.hex()}/{k}" for t, k in zip(totals, sizes, strict=True)) + f"|{float(margin).hex()}"
+
+    def compute() -> float:
+        rng = random.Random(int(hashlib.sha256(data.encode()).hexdigest()[:16], 16))
+        kept = beyond = 0
+        for _ in range(draws):
+            pick = [rng.randrange(g) for _ in range(g)]
+            ms, ses = _mean_se([totals[i] for i in pick], [sizes[i] for i in pick])
+            if ses == 0:
+                continue
+            kept += 1
+            beyond += (ms - m) / ses >= t_obs
+        return (1 + beyond) / (kept + 1)
+
+    return kept(f"bootstrap-t-1:{draws}", data, compute)
+
+
+def noninferior(
+    arm: dict,
+    reference: dict,
+    margin: float,
+    higher_is_better: bool = True,
+    clusters: dict | None = None,
+    level: float = NONINF_LEVEL,
+) -> dict:
+    """Is `arm` no worse than `reference` by more than `margin` (in the measure's units)? A one-sided test
+    of H0: difference <= -margin, the difference taken in the measure's better direction.
+
+    0/1 per item and no clusters: Tango's score test at `level`, at any size. Anything else (a continuous
+    measure, repeats averaged, or clusters): the bootstrap-t at half the level, from NONINF_MIN_UNITS items or
+    clusters; below that the answer is "too few", never a guess. Returns {"verdict": "non-inferior" |
+    "not shown" | "too few" | "untestable", "method", "p", "level", "n", "units", "delta"}."""
+    shared = sorted(set(arm) & set(reference))
+    sign = 1 if higher_is_better else -1
+    d = {i: (arm[i] - reference[i]) * sign for i in shared}
+    out: dict = {"n": len(shared), "delta": math.fsum(d.values()) / len(d) if d else None, "margin": margin}
+    if len(shared) < 2:
+        return {
+            **out,
+            "verdict": "untestable",
+            "method": None,
+            "p": None,
+            "level": level,
+            "units": len(shared),
+        }
+    if clusters is None and is_binary({i: arm[i] for i in shared}, {i: reference[i] for i in shared}):
+        x12 = sum(1 for v in d.values() if v > 0)
+        x21 = sum(1 for v in d.values() if v < 0)
+        p = tango_p(x12, x21, len(shared), margin)
+        return {
+            **out,
+            "verdict": "non-inferior" if p <= level else "not shown",
+            "method": "tango",
+            "p": p,
+            "level": level,
+            "units": len(shared),
+        }
+    totals, sizes = clustered(d, clusters) if clusters is not None else (list(d.values()), [1] * len(d))
+    if clusters is not None and all(k == 1 for k in sizes):
+        # Every cluster one item: the item-level test exactly, Tango included, as compare() promises.
+        return noninferior(arm, reference, margin, higher_is_better, None, level)
+    # The units a bootstrap counts: clusters of very unequal size carry less information than their number, so the
+    # floor is on the effective number (sum k)^2 / sum k^2, equal to the count only when sizes are equal. With sizes
+    # 1-20 and a heavy tail of cluster losses, 100 clusters (about 60 effective) erred 0.043 at a nominal 0.025.
+    effective = sum(sizes) ** 2 / sum(k * k for k in sizes)
+    base = {
+        **out,
+        "method": "bootstrap-t",
+        "level": level / 2,
+        "units": len(totals),
+        "effective": round(effective, 1),
+    }
+    floor = NONINF_MIN_UNITS if len(set(sizes)) == 1 else NONINF_MIN_UNEQUAL
+    base["floor"] = floor
+    if effective < floor:
+        return {**base, "verdict": "too few", "p": None}
+    bp = bootstrap_t_p(totals, sizes, margin)
+    if bp is None:  # every unit differs by the same amount: decided by that amount alone
+        return {**base, "verdict": "non-inferior" if out["delta"] > -margin else "not shown", "p": None}
+    return {**base, "verdict": "non-inferior" if bp <= level / 2 else "not shown", "p": bp}
 
 
 def compare(

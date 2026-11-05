@@ -15,6 +15,9 @@ from evaluation_harness import axes
 from evaluation_harness._check import check, summary
 
 ITEMS = [f"i{k:02d}" for k in range(12)]
+#: Each list stands for REPEAT copies of itself (item ids `<id>~<copy>`): the same means and percentiles, and past the
+#: 100 items a continuous measure needs before a contender can be shown (stats.NONINF_MIN_UNITS, ADR-0026).
+REPEAT = 1
 
 
 def arm(label, quality, cost=None, latency=None, tokens=None, flags=(), **extra):
@@ -24,7 +27,7 @@ def arm(label, quality, cost=None, latency=None, tokens=None, flags=(), **extra)
         if v is None:
             return None
         vals = v if isinstance(v, list) else [v] * len(ITEMS)
-        return {"values": dict(zip(ITEMS, vals))}
+        return {"values": {f"{i}~{r}": x for r in range(REPEAT) for i, x in zip(ITEMS, vals)}}
 
     sc = {"q": series(quality), "cost_usd": series(cost), "latency_ms": series(latency)}
     if tokens is not None:
@@ -56,7 +59,9 @@ check(
     d["why"],
 )
 
-# A quality tie: the cheaper one wins; equal cost goes to speed.
+# A quality tie: the cheaper one wins; equal cost goes to speed. Ties need 100 items of a continuous measure
+# before they can be shown (ADR-0026), so the tie-break's cases below stand for 120 (REPEAT 10).
+REPEAT = 10
 near = [0.9 + 0.001 * k + (0.0005 if k % 2 else -0.0005) for k in range(12)]
 d = axes.decide(GOAL, {"a": arm("A", strong, 0.01, 100), "b": arm("B", near, 0.001, 300)})
 check(
@@ -119,6 +124,7 @@ for strategy in ("balanced", "quality_first", "frugal"):
         )
 
 # An arm measured on part of the set is out, with the counts: it cannot lead on 4 items of 20.
+REPEAT = 1
 ITEMS[:] = [f"p{k:02d}" for k in range(20)]
 full = arm("A", [0.8] * 20, 0.0, 100)
 part = arm("B", [0.95] * 4 + [None] * 16, 0.0, 100)
@@ -143,6 +149,7 @@ check(
 )
 
 # A perfect 0 on a lower-is-better measure: the margin is a share of the group's range.
+REPEAT = 10
 ITEMS[:] = [f"w{k:02d}" for k in range(12)]
 lower = {"success_criteria": {"primary": {"measure": "q", "direction": "lower"}}}
 d = axes.decide(
@@ -226,8 +233,10 @@ check(
 d = axes.decide(GOAL, {"a": arm("A", strong, 0.0, 100, tokens=500), "b": arm("B", weak, 0.0, 50, tokens=100)})
 check("cost: tokens per item shown beside the dollars", d["rows"]["a"]["cost"]["tokens"]["mean"] == 500)
 
-# The strategies, on the case that made them: 32 items, a 1.000 leader and a free 0.875 arm the
-# paired test finds not significantly different from it (4 items differ).
+# The strategies, on the case that made them: 32 items, a 1.000 leader and a free 0.875 arm the paired test
+# finds not significantly different from it (4 items differ). "Not significantly different" no longer makes a
+# contender (ADR-0026): on 32 right/wrong items, 4 behind cannot be shown within any margin up to 0.25 (Tango).
+REPEAT = 1
 ITEMS[:] = [f"m{k:02d}" for k in range(32)]
 top = [1.0] * 32
 cheap = [1.0] * 28 + [0.0] * 4
@@ -239,26 +248,35 @@ def with_criteria(**extra):
 
 
 d = axes.decide(GOAL, pair)
+ni = d["rows"]["k"]["quality"].get("noninferior") or {}
 check(
-    "balanced (default): not significantly different but 0.125 off is not a contender; the leader is recommended",
-    d["rows"]["k"]["quality"]["vs_leader"]["verdict"] == "not significant" and d["recommended"] == "a",
+    "balanced (default): not significantly different, yet not shown within 5% on 32 items: not a contender",
+    d["rows"]["k"]["quality"]["vs_leader"]["verdict"] == "not significant"
+    and ni.get("method") == "tango"
+    and ni.get("verdict") == "not shown"
+    and d["recommended"] == "a",
     d["why"],
 )
 check(
-    "balanced: the reason says it was too far off to tie", any("further off" in w for w in d["why"]), d["why"]
+    "balanced: the reason names the rule and its default margin",
+    any("shown no worse than the leader by more than 0.05 (5% of the leader" in w for w in d["why"]),
+    d["why"],
 )
 d = axes.decide(with_criteria(strategy="frugal"), pair)
 check(
-    "frugal: anything not significantly different is a contender, and the cheaper wins",
-    d["recommended"] == "k",
+    "frugal: 10% of the leader by default; 0.125 behind is still not shown within it",
+    d["recommended"] == "a" and any("0.1 (10% of the leader, frugal's default" in w for w in d["why"]),
     d["why"],
 )
-d = axes.decide(with_criteria(axes={"quality": {"margin": 0.15}}), pair)
+REPEAT = 10
+pair = {"a": arm("Opus", top, 0.0025, 3000), "k": arm("keywords", cheap, 0.0, 1)}
+d = axes.decide(with_criteria(axes={"quality": {"margin": 0.2}}), pair)
 check(
-    "balanced with the goal's margin (0.15): the free arm is a contender, and wins on cost",
-    d["recommended"] == "k",
+    "the goal's margin (0.2) on 320 items: the free arm is shown within it, a contender, and wins on cost",
+    d["recommended"] == "k" and "k" in d["contenders"],
     d["why"],
 )
+REPEAT = 1
 d = axes.decide(with_criteria(strategy="quality_first", axes={"quality": {"margin": 0.15}}), pair)
 check(
     "quality_first: the margin does not matter, the best quality is recommended",
@@ -271,7 +289,9 @@ check(
     d["why"],
 )
 
-# frugal + [cost, quality]: the cheapest of what is not significantly different, then the best of those.
+# frugal + [cost, quality]: the cheapest of the contenders, then the best of those (the goal's margin, 0.2, admits
+# both free arms on 120 items).
+REPEAT = 10
 ITEMS[:] = [f"q{k:02d}" for k in range(12)]
 lead = [0.9] * 12
 free_hi = [0.9] * 10 + [0.6] * 2
@@ -282,6 +302,7 @@ d = axes.decide(
             **GOAL["success_criteria"],
             "strategy": "frugal",
             "tie_break": ["cost", "quality"],
+            "axes": {"quality": {"margin": 0.2}},
         }
     },
     {
@@ -297,6 +318,7 @@ check(
 )
 
 # Nobody eligible: the reason is named and counted, not a list of what might have happened.
+REPEAT = 1
 d = axes.decide(
     GOAL,
     {
@@ -391,7 +413,7 @@ jfake: Any = Judged(judged)
 d = group_decision(jfake, goal, "ds", rows_j, "judge_score", {})
 check(
     "judge group: the goal's quality margin (0.5, for its own measure) is not used on the judge's score",
-    "y" not in d["contenders"] and any("2% of the leader" in w for w in d["why"]),
+    "y" not in d["contenders"] and any("5% of the leader" in w for w in d["why"]),
     d["why"],
 )
 check(

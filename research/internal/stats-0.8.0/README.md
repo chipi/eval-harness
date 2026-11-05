@@ -1,6 +1,6 @@
 # The 0.8.0 statistics simulations
 
-The evidence behind RFC-015 (`docs/rfc/RFC-015-noninferiority-looks-power.md` on branch `080-plan`): which
+The evidence behind RFC-015, an 0.8.0 draft whose decisions are now [ADR-0026](../../../docs/adr/ADR-0026-contenders-by-non-inferiority.md) (the drafts' branch was deleted on 2026-11-05): which
 non-inferiority test holds its level for which measure. Every script is seeded and runs from the
 repository root with the harness's Python (it imports `harness/scripts/stats.py`). The true paired
 difference is exactly −margin in every case, so a valid one-sided 2.5% test rejects at most 2.5% of the

@@ -3382,10 +3382,17 @@ def shown_axes(dec: dict) -> list:
 
 def axis_cell(ax: dict, cell: dict) -> str:
     """A table cell for one arm on one axis, sortable by its value, marked when past the limit."""
+    from evaluation_harness import _goal_view  # noqa: PLC0415
+
     v = cell.get("value")
     over = cell.get("within") is False
     vs = (cell.get("vs_leader") or {}).get("verdict")
-    title = (f"vs the quality leader: {vs}" if vs else "") + ("; past the limit" if over else "")
+    ni = cell.get("noninferior")
+    title = (
+        (f"vs the quality leader: {vs}" if vs else "")
+        + (f"; contender test: {_goal_view.ni_text(ni)}" if ni else "")
+        + ("; past the limit" if over else "")
+    )
     attrs = f'data-v="{v if v is not None else ""}"' + (' class="over"' if over else "")
     attrs += f' title="{e(title)}"' if title else ""
     return f"<span {attrs}>{e(cell_text(ax, cell))}</span>"

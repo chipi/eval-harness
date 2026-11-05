@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""`--cluster FIELD` and a goal's `cluster:`, through the commands (A1 of PLAN_0.8.0_FIELD).
+"""`--cluster FIELD` and a goal's `cluster:`, through the commands (A1 of PLAN_0.8.0).
 
     python tests/test_cluster_commands.py
 
@@ -161,6 +161,24 @@ try:
     )
     check(
         "pair-test prints the clusters it tested", "clusters           5 by area" in r.stdout, r.stdout[-400:]
+    )
+    r = evh(
+        "pair-test",
+        "--dataset-id",
+        "tickets_v1",
+        "--a",
+        "tickets_lead2_v1",
+        "--b",
+        "tickets_lead1_v1",
+        "--margin",
+        "0.05",
+        "--json",
+    )
+    ni = (json.loads(r.stdout)["result"]["values"].get("noninferior") or {}) if r.returncode == 0 else {}
+    check(
+        "pair-test --margin runs the goals' contender test: 6 items of a continuous score are too few",
+        ni.get("verdict") == "too few" and ni.get("method") == "bootstrap-t" and ni.get("margin") == 0.05,
+        (r.stdout + r.stderr)[-400:],
     )
 
     r = evh(

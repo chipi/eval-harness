@@ -1,6 +1,6 @@
 # 0.8.0: realignment with the field, and what it brings
 
-**Status:** 2026-11-05, step 2 of the 0.8.0 order in [RECONCILE_0.8.0](RECONCILE_0.8.0.md). Read-only analysis of
+**Status:** 2026-11-05, step 2 of the 0.8.0 order (the plan: [PLAN_0.8.0](PLAN_0.8.0.md)). Read-only analysis of
 branch `080` (code = v0.7.2). Every claim about our code cites the file and line read; every claim about the field
 cites the page read on 2026-11-05. Where something could not be checked it says "not verified". Nothing here is
 decided: each recommendation is for the owner.

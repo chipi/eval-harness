@@ -291,6 +291,15 @@ compute: `bert_mini` 61×–1,078× faster than the hosted field, timed on the s
 bert-base fine-tunes roughly 5×–100×, timed on a Linux machine, a cross-machine ratio good to
 about a factor of two) — with the qualification in §3.4 about *what* they are better at.
 
+#### What the goal recommends under 0.8.0's contender rule (2026-11-05)
+
+From 0.8.0 a contender must be *shown* no worse than the leader by more than the margin, not merely "not
+significantly different" ([ADR-0026](../docs/adr/ADR-0026-contenders-by-non-inferiority.md)). The goal is
+`balanced`: a margin of 5% of bert_base_ta's 0.960. With 29 arms compared on 200 items, none is shown within it
+(bert_mini, at 0.945, has p 0.042 against a Holm threshold of 0.0009), so the goal recommends the leader,
+bert_base_ta, where 0.7 left three arms tied and recommended none. The leader is the best of 29 measured on the same
+items, which makes every arm look a little worse against it than it is; that is why so few can be shown close.
+
 ### 3.2 DBpedia-14 — no winner: the leader is not significantly different from 19 of the 27 others
 
 ```
