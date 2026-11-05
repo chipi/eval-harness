@@ -134,7 +134,10 @@ try:
     r = evh("dataset-create", "--dataset-id", "n_v1", "--source", "nosuch")
     check(
         "a name that is no source is refused, naming the built-in ones",
-        r.returncode == 1 and "folder, manifest" in r.stderr,
+        r.returncode == 1
+        and "not a built-in source (" in r.stderr
+        and "folder" in r.stderr
+        and "manifest" in r.stderr,
         r.stderr[-300:],
     )
     (proj / "data" / "dataset_sources" / "escape.py").write_text(MINE.replace('f"note_{n}"', '"../../etc/x"'))

@@ -78,7 +78,9 @@ def main() -> int:
     try:
         got = cls({}).publish(record, items, query)
     except Exception as e:  # noqa: BLE001 — every failure of the publish (the Hub's own errors too) is the same refusal
-        die(f"--to {args.to}: {e}", "would-overwrite" if "exists" in str(e) else "failed")
+        if "exists" in str(e):
+            die(f"--to {args.to}: {e}", "would-overwrite")
+        die(f"--to {args.to}: {e}", "failed")
     record.setdefault("published", []).append({**got, "at": now()})
     write_json(f, record)
     print(
