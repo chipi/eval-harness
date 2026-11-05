@@ -247,7 +247,7 @@ try:
         (one, none),
     )
 
-    line = rs.closing_line([("gold/x", "gold/x")]) + "evh goals"
+    line = " ".join((rs.closing_line([("gold/x", "gold/x")]) + "evh goals").split())
     check(
         "rescore: the closing line is a whole sentence ending with the command, for a re-score on the run's reference",
         "in place of its runs when every run of the arm was re-scored against the reference it was measured on."
@@ -256,13 +256,22 @@ try:
         and "Not in place" not in line,
         line,
     )
-    line = rs.closing_line([("gold/x", "silver/x"), ("gold/x", "silver/x")]) + "evh goals"
+    line = " ".join((rs.closing_line([("gold/x", "silver/x"), ("gold/x", "silver/x")]) + "evh goals").split())
     check(
         "rescore: a re-score on another reference says it is a table of its own and the old table is unchanged",
         "Not in place: 2 run(s) against silver/x, measured against gold/x." in line
         and "the table scored against the old one stays as it was" in line
         and line.endswith("evh goals"),
         line,
+    )
+    many: list[tuple[str | None, str]] = [
+        (f"gold/set_{i}_with_a_long_name", f"silver/set_{i}_with_a_long_name") for i in range(4)
+    ]
+    widths = [len(x) for x in rs.closing_line(many).splitlines()]
+    check(
+        "rescore: the closing lines are wrapped to 100 columns, however many references they name",
+        max(widths) <= 100 and len(widths) > 3,
+        widths,
     )
 
     check(
@@ -513,7 +522,7 @@ try:
         "rescore: ends with a whole sentence and the command, for the reference the runs were measured on",
         rsr.returncode == 0
         and "in place of its runs when every run of the arm was re-scored against the reference it was measured on."
-        in rsr.stdout
+        in " ".join(rsr.stdout.split())
         and rsr.stdout.rstrip().endswith(("See it with: evh goals", "See it with: make catalog")),
         rsr.stdout[-500:],
     )
@@ -605,5 +614,27 @@ try:
 finally:
     shutil.rmtree(syn, ignore_errors=True)
     shutil.rmtree(tutorial_proj, ignore_errors=True)
+
+# A judged table at 120 columns: each judge's own score stays beside the panel's, ahead of cost and speed (0.7.1
+# printed the panel's score, latency and cost, and named the judges "Not shown").
+from evaluation_harness import leaderboard as lbm  # noqa: E402
+
+os.environ["COLUMNS"] = "120"
+show = [
+    "judge_judge_a_unvalidated",
+    "judge_judge_b_unvalidated",
+    "judge_score_unvalidated",
+    "cost_usd",
+    "latency_ms",
+    "total_cost_usd",
+]
+kinds = {"cost_usd": "cost", "total_cost_usd": "cost", "latency_ms": "speed"}
+judged_rows = [{"config_id": f"tickets_arm{i}_v1", **dict.fromkeys(show, 3.25)} for i in range(4)]
+kept = lbm._fit_columns(show, judged_rows, kinds, "judge_score_unvalidated", False)
+check(
+    "leaderboard: a judged table keeps each judge's score beside the panel's, ahead of cost and speed",
+    {"judge_judge_a_unvalidated", "judge_judge_b_unvalidated", "judge_score_unvalidated"} <= set(kept),
+    kept,
+)
 
 sys.exit(summary())

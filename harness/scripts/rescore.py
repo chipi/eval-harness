@@ -36,6 +36,7 @@ import inspect
 import json
 import shutil
 import sys
+import textwrap
 from pathlib import Path
 from typing import Any
 
@@ -653,19 +654,30 @@ def closing_line(pairs: list[tuple[str | None, str]]) -> str:
     reference is a table of its own beside the run's, and the run's table is as it was."""
     apart = sorted({(old, new) for old, new in pairs if old != new}, key=str)
     text = (
-        "  the goals, the rounds and the catalog read an arm's re-score in place of its runs when every run of the "
+        "the goals, the rounds and the catalog read an arm's re-score in place of its runs when every run of the "
         "arm was re-scored against the reference it was measured on."
     )
     if not apart:
-        return text + " See it with: "
+        return _wrap(text + " See it with:") + " "
     moved = "; ".join(
         f"{sum(1 for p in pairs if p == (old, new))} run(s) against {new}, measured against {old}"
         for old, new in apart
     )
     return (
-        f"{text}\n  Not in place: {moved}. The goals show those as a table of their own, scored against "
-        "the new reference;\n  the table scored against the old one stays as it was. See them with: "
+        _wrap(text)
+        + "\n"
+        + _wrap(
+            f"Not in place: {moved}. The goals show those as a table of their own, scored against the new reference; "
+            "the table scored against the old one stays as it was. See them with:"
+        )
+        + " "
     )
+
+
+def _wrap(text: str) -> str:
+    """A paragraph of the closing lines, wrapped to 100 columns and indented (one run's list of references ran past
+    230 on one line)."""
+    return textwrap.fill(text, 100, initial_indent="  ", subsequent_indent="  ")
 
 
 def _kinds(path):

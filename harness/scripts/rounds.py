@@ -632,7 +632,7 @@ def _status(args: argparse.Namespace) -> int:
         if rnd.get(k):
             print(textwrap.fill(rnd[k], 96, initial_indent="  hypothesis: ", subsequent_indent="    "))
     for ch in rnd.get("changes") or []:
-        print(f"  changed: {ch}")
+        print(textwrap.fill(str(ch), 100, initial_indent="  changed: ", subsequent_indent="           "))
     for x in rnd.get("retired") or []:
         print(f"  retired: {x['config_id']} ({x['reason']})")
     if rnd.get("scorer"):
@@ -695,7 +695,10 @@ def _status(args: argparse.Namespace) -> int:
         for what, cmd in ev["suggest"]:
             print(f"    - {what}" + (f"\n        {cmd}" if cmd else ""))
     if rnd["status"] == "closed":
-        print(f"\n  concluded: {(rnd.get('conclusion') or {}).get('text', '')}")
+        text = str((rnd.get("conclusion") or {}).get("text", ""))
+        print(
+            "\n" + textwrap.fill(text, 100, initial_indent="  concluded: ", subsequent_indent="             ")
+        )
     return 0
 
 

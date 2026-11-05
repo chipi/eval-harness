@@ -421,11 +421,16 @@ def _cell(v: float | None, kind: str | None) -> str:
 def _fit_columns(
     show: list[str], rows: list[dict], kinds: dict[str, str], sort_key: str, wide: bool
 ) -> list[str]:
-    """The metric columns the text table has room for, in the order they matter: the ranking metric, the cost and
-    the speed the frontier reads, the other quality metrics, then the rest. The first always stays."""
+    """The metric columns the text table has room for, in the order they matter: the ranking metric and the quality
+    metrics of its family (its first word: a judged table's `judge_score_…` and each judge's `judge_<id>_…`), the
+    cost and the speed the frontier reads, the other quality metrics, then the rest. The first always stays."""
     if wide:
         return show
+    family = sort_key.split("_", 1)[0] + "_"
     first = [k for k in show if k == sort_key]
+    first += [
+        k for k in show if k != sort_key and k.startswith(family) and kinds.get(k, "quality") == "quality"
+    ]
     frontier = [
         next((k for k in show if kinds.get(k) == "cost" and k.startswith("total_")), None)
         or next((k for k in show if kinds.get(k) == "cost"), None),

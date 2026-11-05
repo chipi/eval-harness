@@ -368,14 +368,18 @@ def tools_for(public: bool) -> tuple:
 #: The tools whose answer with no argument depends on today's date (a period counted from today, by default):
 #: never written ahead, since an answer kept past the day would read the wrong period.
 DATED = {"overview", "activity"}
+#: The tools with no required option that still need one of several to answer (inspect: --runs, --round or
+#: --sheet): asked with none, they refuse, so there is nothing to write ahead.
+NEEDS_ONE_OF = {"inspect"}
 
 
 def answerable_ahead(public: bool) -> list[str]:
     """The tools whose answer can be written ahead for a release that never changes (--write-answers): each one
-    that takes no required argument, but those whose default depends on the date (DATED)."""
+    that takes no required argument, but those whose default depends on the date (DATED) and those that need one
+    of several options (NEEDS_ONE_OF)."""
     out = []
     for c in tools_for(public):
-        if c in DATED:
+        if c in DATED or c in NEEDS_ONE_OF:
             continue
         try:
             argv_of(parser_of(c), {})
