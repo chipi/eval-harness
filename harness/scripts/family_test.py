@@ -173,6 +173,12 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument("--items", type=Path, help="file of item_ids; restrict to exactly these")
     ap.add_argument(
+        "--reduce",
+        default=None,
+        help="how an arm's repeats make one score per item: mean (the default), majority or at_least_K, for 0/1 "
+        "scores (with --round: default the goal's primary.reduce)",
+    )
+    ap.add_argument(
         "--cluster",
         metavar="FIELD",
         help="an item field whose items are not independent: flip one sign per value of it, so related items "
@@ -215,9 +221,10 @@ def _round_defaults(args, runs: list) -> Any:
     prim = (goal.get("success_criteria") or {}).get("primary") or {}
     args.metric = args.metric or prim.get("measure")
     args.cluster = args.cluster or _common.goal_cluster(goal, args.dataset_id)
+    args.reduce = args.reduce or (prim.get("reduce") if isinstance(prim, dict) else None)
     if args.a and args.a not in in_play:
         die(f"{args.a} is not in play in round {args.round} ({', '.join(in_play)})", "not-found")
-    values = _round_values(args.dataset_id)
+    values = _round_values(args.dataset_id, args)
     chose = not args.a
     if chose:
         means = {c: statistics.fmean(v.values()) for c in in_play if (v := values(c, args.metric))}
@@ -260,7 +267,9 @@ def _run(args) -> int:
     if values is not None:
         A = values(args.a, args.metric)
     else:
-        A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
+        A = per_item(
+            [r for r in runs if r[1]["config_id"] == args.a], args.metric, reduce=args.reduce or "mean"
+        )
     if not A:
         die(f"no runs for {args.a} on {args.dataset_id}", "not-found")
 
@@ -273,7 +282,9 @@ def _run(args) -> int:
         B = (
             values(opp, args.metric)
             if values is not None
-            else per_item([r for r in runs if r[1]["config_id"] == opp], args.metric)
+            else per_item(
+                [r for r in runs if r[1]["config_id"] == opp], args.metric, reduce=args.reduce or "mean"
+            )
         )
         items = sorted(set(A) & set(B) - drop)
         if keep is not None:

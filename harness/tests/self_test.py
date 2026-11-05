@@ -681,6 +681,10 @@ def test_example_scorer_suites_pass() -> None:
             "test_noninferiority.py",
             "non-inferiority: Tango for 0/1, the bootstrap-t from 100 units, its level at the margin",
         ),
+        (
+            "test_reducers.py",
+            "repeats made one score per item: mean, majority, at_least_K; a goal's primary.reduce",
+        ),
         ("test_scores_once.py", "each arm's scores read once per view and per build"),
         ("test_skills.py", "the agent skills: valid, installed, every evh block runs as written"),
         (

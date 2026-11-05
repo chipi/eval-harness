@@ -42,7 +42,9 @@ first runs) showed the shifted sign-flip test rejecting up to 30% at a nominal 2
   best-looking one is ahead by chance, so every candidate looks worse against it: simulated (0/1, 200 items), the
   gap was about −0.03 to −0.045 for 3 to 20 equal arms, the size of a 5% margin. This is conservative (no false
   contender comes from it) but costs power: on ag_news, 29 candidates on 200 items, nobody but the leader can be
-  shown within 5%. A declared reference (the promoted baseline) instead of the leader would remove it; it is open.
+  shown within 5%. A goal can test against its promoted baseline instead (`axes.quality.reference: baseline`,
+  owner: an opt-in), which removes it and asks the deployment question; and every decision says which margin its
+  group can detect at all (A3).
 - A goal on fewer than 100 items with a continuous measure recommends its leader and says why; adding items is
   the way to a tie.
 - A non-inferiority p is a bootstrap estimate for continuous scores: seeded by the data, the same comparison

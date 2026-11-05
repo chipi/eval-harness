@@ -534,8 +534,14 @@ class HarnessAdapter:
                     acc.setdefault(k, {}).setdefault(r["item_id"], []).append(v)
         n = len(self._dirs(arm))
         src = "predictions.jsonl" + (f" (mean of {n} repeats)" if n > 1 else "")
+        # With repeats, each item's values are kept beside their mean, so a goal can combine them another way
+        # (`primary.reduce`, stats.reduce_repeats).
         return {
-            k: {"source": src, "values": {i: statistics.fmean(v) for i, v in items.items()}}
+            k: {
+                "source": src,
+                "values": {i: statistics.fmean(v) for i, v in items.items()},
+                **({"repeats": items} if n > 1 else {}),
+            }
             for k, items in acc.items()
         }
 

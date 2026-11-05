@@ -23,6 +23,13 @@ that can move a result is never a patch release without saying so under **Change
 - **The contender test is shown.** `evh goals` has a column "contender test (within the margin)" (p, its Holm
   threshold, shown or not, or "too few"), `--json` carries it per arm (`noninferior`), the goal page's cell says it,
   and `evh pair-test --margin M` runs it for any one pair.
+- **What a goal can detect.** Its decision says the smallest margin a contender could be shown within, with its
+  number of candidates and items or clusters (80% power): on ag_news, 29 candidates on 200 items need about 0.10,
+  so its 5% (0.048) admits nobody. `axes.quality.reference: baseline` tests contenders against the promoted
+  baseline ("no worse than what runs now") instead of the leader.
+- **How repeats combine, named.** `success_criteria.primary.reduce` on a goal, and `--reduce` on `pair-test` and
+  `family-test`: `mean` (the default, as before), `majority` or `at_least_K` for 0/1 scores (`at_least_1` is
+  pass@k's question). The catalog keeps each item's repeats beside their mean.
 
 ### Changed
 

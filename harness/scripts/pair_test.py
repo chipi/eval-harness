@@ -71,7 +71,7 @@ from evaluation_harness.stats import EXACT_UP_TO, clustered, fmt_p, sign_flip_p 
 from evaluation_harness.stats import noninferior as stats_noninferior  # noqa: E402
 
 
-def _round_values(dataset_id: str) -> Any:
+def _round_values(dataset_id: str, args: Any = None) -> Any:
     """values(config_id, metric) -> {item_id: value} as the round reads the arm (RFC-022): its latest re-score when
     one stands in for its runs. Read from data/runs alone, an arm scored before a measure existed had none, and a
     test the round itself had run (production's run on triage_cost) found 0 shared items."""
@@ -83,7 +83,14 @@ def _round_values(dataset_id: str) -> Any:
 
     def values(config_id: str, metric: str) -> dict:
         arm = read(dataset_id, config_id)
-        return dict((ca.scores(arm).get(metric) or {}).get("values") or {}) if arm else {}
+        sc = (ca.scores(arm).get(metric) or {}) if arm else {}
+        reduce = getattr(args, "reduce", None)
+        if reduce and reduce != "mean":
+            from evaluation_harness.stats import reduce_repeats  # noqa: PLC0415
+
+            per = sc.get("repeats") or {i: [v] for i, v in (sc.get("values") or {}).items()}
+            return {i: reduce_repeats(v, reduce) for i, v in per.items()}
+        return dict(sc.get("values") or {})
 
     return values
 
@@ -102,6 +109,7 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
     goal = _common.load_goals().get(rnd["goal"]) or {}
     # The goal's tests flip one sign per cluster: so does this one, unless --cluster names another field.
     args.cluster = args.cluster or _common.goal_cluster(goal, args.dataset_id)
+    args.reduce = args.reduce or ((goal.get("success_criteria") or {}).get("primary") or {}).get("reduce")
     prim = (goal.get("success_criteria") or {}).get("primary") or {}
     args.metric = args.metric or prim.get("measure")
     for x in (args.a, args.b):
@@ -267,6 +275,12 @@ def main() -> int:
         "it, so related items count once (with --round: default the goal's `cluster:`)",
     )
     ap.add_argument(
+        "--reduce",
+        default=None,
+        help="how an arm's repeats make one score per item: mean (the default), majority or at_least_K, for 0/1 "
+        "scores (with --round: default the goal's primary.reduce)",
+    )
+    ap.add_argument(
         "--margin",
         type=float,
         help="also test whether A is no worse than B by more than this, in the metric's units: the contender test "
@@ -323,7 +337,7 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
         ids_a, ids_b = dataset_item_ids(args.dataset_id), dataset_item_ids(args.b_dataset)
         warn_on_ambiguous_runs(runs_dir, args.b_dataset, label=runs_dir.name)
         runs_b = runs_on(args.b_dataset, runs_dir=runs_dir)
-    values = _round_values(args.dataset_id) if args.round else None
+    values = _round_values(args.dataset_id, args) if args.round else None
     chose, candidates = False, None
     if args.round:
         chose, candidates = _round_defaults(args, runs, values)
@@ -355,7 +369,10 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
                 "metric (pass --asc or --desc to decide)",
                 "mismatch",
             )
-        A, B = per_item(arm_a, args.metric), per_item(arm_b, args.metric)
+        A, B = (
+            per_item(arm_a, args.metric, reduce=args.reduce or "mean"),
+            per_item(arm_b, args.metric, reduce=args.reduce or "mean"),
+        )
         # A measure that is not stored per item (the goal computes it at re-score) is a missing metric, not an
         # item mismatch: say which side, what is stored, and how to get it (2026-11-04, the first real use).
         for arm, ds, got, rs in ((args.a, args.dataset_id, A, arm_a), (args.b, args.b_dataset, B, arm_b)):
@@ -372,8 +389,12 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
         if values is not None:
             A, B = values(args.a, args.metric), values(args.b, args.metric)
         else:
-            A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
-            B = per_item([r for r in runs if r[1]["config_id"] == args.b], args.metric)
+            A = per_item(
+                [r for r in runs if r[1]["config_id"] == args.a], args.metric, reduce=args.reduce or "mean"
+            )
+            B = per_item(
+                [r for r in runs if r[1]["config_id"] == args.b], args.metric, reduce=args.reduce or "mean"
+            )
     items = sorted(set(A) & set(B))
     if args.exclude_dataset:
         prior = dataset_item_ids(args.exclude_dataset)

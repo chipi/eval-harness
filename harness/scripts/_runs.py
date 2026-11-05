@@ -114,9 +114,10 @@ def per_item(
     keep: set[str] | None = None,
     raw: list[float] | None = None,
     strict: bool = True,
+    reduce: str = "mean",
 ) -> dict[str, float]:
-    """item_id -> the mean of `metric` over the given runs (an arm's repeats). `keep`
-    restricts the items; `raw` collects every value as stored, before averaging (the
+    """item_id -> `metric` over the given runs (an arm's repeats), combined by `reduce` (stats.reduce_repeats: the
+    mean by default). `keep` restricts the items; `raw` collects every value as stored, before averaging (the
     leaderboard measures stored precision on it)."""
     acc: dict[str, list[float]] = {}
     for d, _m in runs:
@@ -127,6 +128,10 @@ def per_item(
             acc.setdefault(row["item_id"], []).append(v)
             if raw is not None:
                 raw.append(v)
+    if reduce not in ("", "mean"):
+        from evaluation_harness.stats import reduce_repeats  # noqa: PLC0415
+
+        return {i: reduce_repeats(v, reduce) for i, v in acc.items() if v}
     return {i: statistics.fmean(v) for i, v in acc.items() if v}
 
 

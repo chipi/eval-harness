@@ -147,4 +147,83 @@ check(
     f"bootstrap-t at the margin, 100 clusters of 3: error {e3:.3f} <= 0.025 (+ Monte Carlo 0.009)",
     e3 <= 0.034,
 )
+# A3: the margin a truly equal arm can be shown within, 80% of the time: (z_(1-0.025/k) + z_0.8) * se.
+z = __import__("statistics").NormalDist()
+check(
+    "detectable_margin: one candidate is (1.96 + 0.84) se; more candidates need more",
+    abs(stats.detectable_margin(0.01, 1) - (z.inv_cdf(0.975) + z.inv_cdf(0.8)) * 0.01) < 1e-12
+    and stats.detectable_margin(0.01, 29)
+    > stats.detectable_margin(0.01, 3)
+    > stats.detectable_margin(0.01, 1),
+)
+check(
+    "decide says what margin this group can detect, beside the goal's",
+    d["detectable"] is not None
+    and any(w.startswith("Detectable: with 2 candidate(s) on 150 items") for w in d["why"]),
+    d["why"],
+)
+
+# A6: `axes.quality.reference: baseline` tests contenders against the promoted baseline, "no worse than what runs
+# now". A leader at 0.95, the baseline at 0.80, a cheap arm at 0.80: far from the leader, the same as the baseline.
+ids6 = [f"r{k:03d}" for k in range(400)]
+top6 = {i: float(k % 20 != 0) for k, i in enumerate(ids6)}  # 0.95
+base6 = {i: float(k % 5 != 0) for k, i in enumerate(ids6)}  # 0.80
+cheap6 = {
+    i: (1.0 - v if k in (3, 7, 10, 15) else v) for k, (i, v) in enumerate(base6.items())
+}  # 0.80, 4 items differ
+
+
+def arm6(label, vals, cost):
+    return {
+        "label": label,
+        "flags": [],
+        "scores": {"q": {"values": vals}, "cost_usd": {"values": dict.fromkeys(vals, cost)}},
+    }
+
+
+arms6 = {
+    "top": arm6("Top", top6, 0.01),
+    "base": arm6("Base", base6, 0.005),
+    "cheap": arm6("Cheap", cheap6, 0.0),
+}
+by_leader = axes.decide(
+    {"success_criteria": {"primary": {"measure": "q", "direction": "higher"}}}, arms6, baseline="base"
+)
+by_base = axes.decide(
+    {
+        "success_criteria": {
+            "primary": {"measure": "q", "direction": "higher"},
+            "axes": {"quality": {"reference": "baseline"}},
+        }
+    },
+    arms6,
+    baseline="base",
+)
+check(
+    "reference: leader (default): the cheap arm, 0.15 behind the leader, is no contender",
+    "cheap" not in by_leader["contenders"] and by_leader["recommended"] == "top",
+    by_leader["why"],
+)
+check(
+    "reference: baseline: the cheap arm is no worse than the baseline, a contender, and wins on cost; the reasons say so",
+    "cheap" in by_base["contenders"]
+    and by_base["recommended"] == "cheap"
+    and any("tested against the promoted baseline Base" in w for w in by_base["why"]),
+    by_base["why"],
+)
+no_base = axes.decide(
+    {
+        "success_criteria": {
+            "primary": {"measure": "q", "direction": "higher"},
+            "axes": {"quality": {"reference": "baseline"}},
+        }
+    },
+    arms6,
+)
+check(
+    "reference: baseline with none promoted: the leader is used, and said",
+    "cheap" not in no_base["contenders"]
+    and any("no eligible promoted baseline" in w for w in no_base["why"]),
+    no_base["why"],
+)
 sys.exit(summary())

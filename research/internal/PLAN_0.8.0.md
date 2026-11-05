@@ -41,7 +41,7 @@ common ground comes first; every dataset home we can think of is in scope; error
 | A3 | Can this dataset show a difference of X: the minimum detectable effect for a goal's dataset and margin, clustered when declared | to do |
 | A4 | Named reducers for repeats: `mean`, `majority`, `at_least_k` | to do |
 | A5 | What a failed item scores (moved here from 4.3: it is a statistics decision, the advisor's review): a failure as 0 and counted (Miller, inspect_ai), not missing, so the paired tests and `n k of m items` are not changed by it; an unreachable server still stops the pass | to do |
-| A6 | Test contenders against a declared reference (the promoted baseline) instead of the data-chosen leader, which makes every arm look worse than it is (with 29 arms on 200 items nobody can be shown within 5%): **open for the owner** | design |
+| A6 | Test contenders against a declared reference (the promoted baseline) instead of the data-chosen leader, which makes every arm look worse than it is (with 29 arms on 200 items nobody can be shown within 5%). Owner 2026-11-05: an opt-in, `axes.quality.reference: baseline`, for goals about replacing what runs now; the default stays the leader; the page says which | to do |
 
 A2's before and after on the 7 committed goals (contenders, leader included · recommended), Holm across the
 candidates (owner, 2026-11-05, after first choosing each arm on its own on my wrong recommendation: the tie-break
@@ -96,7 +96,7 @@ design note comes first.
 | E8 | Field sets proposed from a source's features, shown for a person to accept |
 | E9 | The committed datasets migrated (no shim), the profile reads `source`, a validate rule for the new blocks |
 
-**E3, accepted by the owner (2026-11-05), revised after the review (to show the owner again).** The id stays the
+**E3, accepted by the owner (2026-11-05), and as revised after the review (accepted the same day).** The id stays the
 identity. `version` is the content version MAJOR.MINOR, two integers (1.10 follows 1.9; "+0.1" on a decimal would
 make 1.9 + 0.1 = 2.0, a major bump): a first dataset is 1.0; one made from another that only adds items is the
 parent's MAJOR and MINOR + 1; one that removes or changes any item is MAJOR + 1, MINOR 0. A split is a new dataset
@@ -168,11 +168,9 @@ R3 to R5 start as example code; R1 and R2 are the core.
 
 ## Open for the owner
 
-1. A6: test contenders against the promoted baseline instead of the data-chosen leader?
-2. E3 as revised after the review (above).
-3. D1's shape (after its design note).
-4. Where step 4 goes against P and S.
-5. Keep or drop the drafts' ssh runner and phases, stages and OTLP import, the process adapter: nothing asks for
+1. D1's shape (after its design note).
+2. Where step 4 goes against P and S.
+3. Keep or drop the drafts' ssh runner and phases, stages and OTLP import, the process adapter: nothing asks for
    them.
 
 ## NOT done or NOT verified

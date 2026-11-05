@@ -26,6 +26,7 @@
       "properties": {
         "primary": {"type": "object", "required": ["measure", "direction"], "properties": {
           "measure": {"type": "string", "description": "The per-item metric that decides, as runs record it."},
+          "reduce": {"type": "string", "pattern": "^(mean|majority|at_least_[1-9][0-9]*)$", "description": "How an arm's repeats make one score per item: mean (the default), majority or at_least_K (0/1 scores: 1 when more than half, or at least K, of the repeats are 1; at_least_1 is pass@k's question)."},
           "direction": {"enum": ["higher", "lower", "non_inferior"], "description": "higher or lower ranks the arms; non_inferior is a guard (no significant drop against a baseline) and ranks nothing."},
           "threshold": {}}},
         "axes": {
@@ -39,6 +40,7 @@
               "properties": {
                 "limit": {"oneOf": [{"type": "number"}, {"const": "baseline"}], "description": "An arm past it is out, with the reason. `baseline` (RFC-022): out when the paired test finds it worse than the group's baseline arm."},
                 "margin": {"type": "number", "minimum": 0, "description": "How much worse than the leader an arm may be, in the measure's units, and still be a contender: it must be shown no worse by more than this (a one-sided non-inferiority test). Default: the strategy's share of the leader's mean, balanced 5%, frugal 10% (of the group's range when the leader is 0)."},
+                "reference": {"enum": ["leader", "baseline"], "description": "What a contender is tested against (ADR-0026): the quality leader (the default), or `baseline`, the group's promoted baseline: 'no worse than what runs now', for a goal about replacing it. The leader is chosen from the same data, which makes every arm look a little worse than it is; a baseline is not. With no baseline promoted the leader is used, and the decision says so."},
                 "note": {"type": "string"}
               }
             }

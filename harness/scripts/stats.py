@@ -473,6 +473,46 @@ def bootstrap_t_p(totals: list, sizes: list, margin: float, draws: int = NONINF_
     return kept(f"bootstrap-t-1:{draws}", data, compute)
 
 
+REDUCERS = ("mean", "majority", "at_least_K")
+
+
+def reduce_repeats(values: list, how: str = "mean") -> float:
+    """One item's score from its repeats (inspect_ai's epochs reducers, under our word "repeat"): `mean` (the
+    default), `majority` (1 when more than half of 0/1 repeats are 1, else 0) or `at_least_K` (1 when at least K
+    of them are 1: pass@k's question, "did any of K tries work", is at_least_1). The last two are for 0/1 scores and
+    refuse others."""
+    if how in ("", "mean"):
+        return statistics.fmean(values)
+    if any(v not in (0, 1, 0.0, 1.0, True, False) for v in values):
+        raise ValueError(f"reduce {how!r} is for 0/1 scores; these repeats are not")
+    ones = sum(1 for v in values if v)
+    if how == "majority":
+        return 1.0 if ones * 2 > len(values) else 0.0
+    if how.startswith("at_least_") and how[len("at_least_") :].isdigit():
+        return 1.0 if ones >= int(how[len("at_least_") :]) else 0.0
+    raise ValueError(f"reduce {how!r}: one of mean, majority, at_least_K (e.g. at_least_2)")
+
+
+def paired_se(arm: dict, reference: dict, clusters: dict | None = None) -> float | None:
+    """The standard error of the mean paired difference arm - reference over their shared items (cluster-robust
+    with clusters); None below 2 units."""
+    shared = sorted(set(arm) & set(reference))
+    d = {i: arm[i] - reference[i] for i in shared}
+    totals, sizes = clustered(d, clusters) if clusters is not None else (list(d.values()), [1] * len(d))
+    if len(totals) < 2:
+        return None
+    return _mean_se(totals, sizes)[1]
+
+
+def detectable_margin(se: float, candidates: int, power: float = 0.8, level: float = NONINF_LEVEL) -> float:
+    """The smallest margin a truly equal arm can be shown within, with probability `power`, when `candidates` arms are
+    tested together (Holm's first step, level / candidates, one-sided): (z_(1 - level/k) + z_power) * se. Miller 2024's
+    recommendation 5 (power before running), for the contender test. A margin under it will rarely admit anyone, so
+    a goal with many arms on few items says so."""
+    z = statistics.NormalDist()
+    return (z.inv_cdf(1 - level / max(candidates, 1)) + z.inv_cdf(power)) * se
+
+
 def noninferior(
     arm: dict,
     reference: dict,

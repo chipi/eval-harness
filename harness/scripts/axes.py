@@ -79,6 +79,7 @@ def axes_of(goal: dict, direction_of: Callable[[str], str | None] | None = None)
             "stat": "mean",
             "limit": q.get("limit"),
             "margin": q.get("margin"),
+            "reference": q.get("reference") or "leader",
             "role": "decides",
             "note": q.get("note", ""),
             "unit": "",
@@ -187,6 +188,15 @@ def within(axis: dict, value: float | None) -> bool | None:
     return value <= float(axis["limit"]) if axis["direction"] == "lower" else value >= float(axis["limit"])
 
 
+def _reduced(arm: dict, measure: str, how: str) -> dict:
+    """The arm with `measure`'s per-item values made from its repeats by `how` (stats.reduce_repeats); an arm with
+    one run per item keeps its values, reduced the same way (majority of one is the value)."""
+    sc = (arm.get("scores") or {}).get(measure) or {}
+    per_item = sc.get("repeats") or {i: [v] for i, v in (sc.get("values") or {}).items()}
+    values = {i: stats.reduce_repeats(v, how) for i, v in per_item.items()}
+    return {**arm, "scores": {**(arm.get("scores") or {}), measure: {**sc, "values": values}}}
+
+
 def decide(
     goal: dict,
     arms: dict[str, dict],
@@ -209,6 +219,11 @@ def decide(
     "tokens"?, "vs_leader"?}}}, "out": {arm: [reason]}, "leader", "contenders", "recommended", "why"}."""
     axes = [a for a in axes_of(goal, direction_of) if a["role"] != "ignore"]
     quality = axes[0]
+    # How an arm's repeats make one score per item (A4): the mean, or majority / at_least_K for 0/1 scores. Applied to
+    # the quality measure where the scores keep their repeats; an arm with one run per item is unchanged.
+    how = ((goal.get("success_criteria") or {}).get("primary") or {}).get("reduce") or "mean"
+    if how != "mean":
+        arms = {x: _reduced(a, quality["measure"], how) for x, a in arms.items()}
     distinct_machines = {m for m in (machines or {}).values() if m}
     one_machine = len(distinct_machines) <= 1
     rows: dict[str, dict] = {}
@@ -339,6 +354,27 @@ def decide(
         if len(eligible) == 2:
             # With one other arm the range is the gap itself, so a share of it never admits it: say how.
             margin_from += "; with one other arm that admits nothing, so set axes.quality.margin"
+    detectable = None
+    # What contenders are tested against (A6, owner 2026-11-05: opt-in): the leader, or the promoted baseline.
+    reference = leader
+    if quality.get("reference") == "baseline":
+        if baseline and baseline in eligible and baseline != leader:
+            reference = baseline
+            ref_top = rows[baseline]["quality"]["value"]
+            if quality.get("margin") is None and ref_top:
+                margin = abs(ref_top) * share
+                margin_from = (
+                    f" ({share:.0%} of the baseline, {strategy}'s default: set axes.quality.margin to choose)"
+                )
+            why.append(
+                f"Contenders are tested against the promoted baseline {arms[baseline]['label']} "
+                "(axes.quality.reference: baseline): no worse than what runs now."
+            )
+        else:
+            why.append(
+                "axes.quality.reference is baseline, but this group has no eligible promoted baseline other than the "
+                "leader: contenders are tested against the leader."
+            )
     if strategy != "quality_first":
         # A contender is SHOWN no worse than the leader by more than the margin: a one-sided non-inferiority test
         # (stats.noninferior), Holm across the candidates (owner, 2026-11-05): the tie-break then picks the cheapest
@@ -348,10 +384,10 @@ def decide(
         # significantly different" is not a contender either: it also
         # happens when there are too few items to see a difference (Lakens 2017), so the smaller the dataset the
         # more arms tied, and frugal then picked the cheapest. Identical per-item scores are contenders anyway.
-        lead_vals = (arms[leader]["scores"].get(quality["measure"]) or {}).get("values") or {}
+        lead_vals = (arms[reference]["scores"].get(quality["measure"]) or {}).get("values") or {}
         tests = {}
         for x in eligible:
-            if x == leader:
+            if x in (leader, reference):
                 continue
             vals = (arms[x]["scores"].get(quality["measure"]) or {}).get("values") or {}
             tests[x] = stats.noninferior(vals, lead_vals, margin, quality["direction"] == "higher", clusters)
@@ -375,8 +411,30 @@ def decide(
             or (rows[x]["quality"].get("vs_leader") or {}).get("verdict") == "identical"
         ]
         few = [x for x, t in tests.items() if t["verdict"] == "too few"]
+        # Can this group show a contender at all (A3)? The margin a truly equal arm would be shown within, 80% of the
+        # time, with this many items (or clusters) and this many candidates, from the candidates' own paired spread.
+        ses = [
+            se
+            for x in tests
+            if (
+                se := stats.paired_se(
+                    (arms[x]["scores"].get(quality["measure"]) or {}).get("values") or {}, lead_vals, clusters
+                )
+            )
+        ]
+        if ses and tests:
+            detectable = stats.detectable_margin(statistics.median(ses), len(tests))
+            unit = "clusters" if clusters is not None else "items"
+            n_units = max((t.get("units") or 0) for t in tests.values())
+            why.append(
+                f"Detectable: with {len(tests)} candidate(s) on {n_units} {unit}, a contender can be shown (80% of the "
+                f"time, if it is truly as good) only within a margin of about {_num(detectable)} or more; this goal's "
+                f"is {_num(margin)}"
+                + (": raise the margin, compare fewer arms, or add items." if detectable > margin else ".")
+            )
+        against = "the leader" if reference == leader else f"the baseline {arms[reference]['label']}"
         rule = (
-            f"shown no worse than the leader by more than {_num(margin)}{margin_from}: non-inferiority, one-sided "
+            f"shown no worse than {against} by more than {_num(margin)}{margin_from}: non-inferiority, one-sided "
             f"{stats.NONINF_LEVEL:g}, Holm across {len(ni_p)}"
         )
         if few:
@@ -396,7 +454,11 @@ def decide(
             )
         ]
         rule = "the same quality"
-    contenders = [leader, *close]
+    contenders = [
+        leader,
+        *([reference] if reference != leader else []),
+        *[x for x in close if x != reference],
+    ]
     why.append(
         f"Strategy {strategy}. Quality leader: {arms[leader]['label']} ({quality['measure']} {_num(top)}). "
         f"Contenders beside it ({rule}): "
@@ -448,6 +510,7 @@ def decide(
         "contenders": contenders,
         "recommended": recommended,
         "cluster": cluster_by if clusters is not None else None,
+        "detectable": detectable,
         "undecided": [] if recommended else pick,
         "why": why,
     }
