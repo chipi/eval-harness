@@ -30,6 +30,16 @@ that can move a result is never a patch release without saying so under **Change
 - **How repeats combine, named.** `success_criteria.primary.reduce` on a goal, and `--reduce` on `pair-test` and
   `family-test`: `mean` (the default, as before), `majority` or `at_least_K` for 0/1 scores (`at_least_1` is
   pass@k's question). The catalog keeps each item's repeats beside their mean.
+- **Agreement over every label set, and where people disagree with the reference.** `evh labels --dataset-id D`
+  gives Krippendorff's alpha over all the sets together (three or more), with a 95% bootstrap interval (it is
+  Krippendorff's 0.743 on his 2011 example); `--contested` lists, per item, how many people's sets agree with the
+  gold reference. The pairwise alpha now counts labels in one pass (it compared every pair of labels, 4 × 10^8 at
+  10,000 items).
+- **Judges: length bias, a 0/1 start, and why a rubric changed.** A judging's `summary.json` gives each judge's
+  `length_bias`, Spearman's rho of its score with the output's length in words (the committed judge-summ-v1: 0.23
+  and 0.29; judge-summ-v2: 0.02 and 0.21; both summaries re-summarised from their verdicts, $0, nothing else
+  changed). The RUNBOOK recommends `scale: [0, 1]` to start a project's own judge. A scorer that replaces another
+  says so: `supersedes:` and `why:`, checked by `validate` (V13) and printed by `judge-score`.
 
 ### Changed
 

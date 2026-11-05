@@ -38,10 +38,10 @@ common ground comes first; every dataset home we can think of is in scope; error
 | --- | --- | --- |
 | A1 | Clusters: `--cluster FIELD`, a goal's `cluster:`; one sign per cluster, a cluster-robust interval, the bootstrap draws clusters | built, committed `3a17d7943` |
 | A2 | Contenders shown no worse than the leader, Holm across the candidates (owner) (non-inferiority: Tango for 0/1 at any size, the bootstrap-t from 100 items or clusters, else "too few items to call a tie"); a strategy is a default margin: `quality_first` 0, `balanced` 5%, `frugal` 10% of the leader; a goal's margin wins; [ADR-0026](../../docs/adr/ADR-0026-contenders-by-non-inferiority.md) | built: Holm at one level, the unequal-cluster floor, the test shown on the page, `evh goals` and `pair-test --margin` |
-| A3 | Can this dataset show a difference of X: the minimum detectable effect for a goal's dataset and margin, clustered when declared | to do |
-| A4 | Named reducers for repeats: `mean`, `majority`, `at_least_k` | to do |
+| A3 | Can this dataset show a difference of X: the minimum detectable effect for a goal's dataset and margin, clustered when declared | built |
+| A4 | Named reducers for repeats: `mean`, `majority`, `at_least_k` | built |
 | A5 | What a failed item scores (moved here from 4.3: it is a statistics decision, the advisor's review): a failure as 0 and counted (Miller, inspect_ai), not missing, so the paired tests and `n k of m items` are not changed by it; an unreachable server still stops the pass | to do |
-| A6 | Test contenders against a declared reference (the promoted baseline) instead of the data-chosen leader, which makes every arm look worse than it is (with 29 arms on 200 items nobody can be shown within 5%). Owner 2026-11-05: an opt-in, `axes.quality.reference: baseline`, for goals about replacing what runs now; the default stays the leader; the page says which | to do |
+| A6 | Test contenders against a declared reference (the promoted baseline) instead of the data-chosen leader, which makes every arm look worse than it is (with 29 arms on 200 items nobody can be shown within 5%). Owner 2026-11-05: an opt-in, `axes.quality.reference: baseline`, for goals about replacing what runs now; the default stays the leader; the page says which | built |
 
 A2's before and after on the 7 committed goals (contenders, leader included · recommended), Holm across the
 candidates (owner, 2026-11-05, after first choosing each arm on its own on my wrong recommendation: the tie-break
@@ -65,16 +65,16 @@ and ag_news undecided. The statistics simulations, re-run on 0.8.0's code, gave 
 
 | # | what | status |
 | --- | --- | --- |
-| B1 | Krippendorff's alpha over more than two label sets at once, with a bootstrap interval | to do |
-| B2 | Per item, how many person label sets agree with the reference (an `inspect` column) | to do |
+| B1 | Krippendorff's alpha over more than two label sets at once, with a bootstrap interval | built |
+| B2 | Per item, how many person label sets agree with the reference (an `inspect` column) | built |
 
 ### C. Judging
 
 | # | what | status |
 | --- | --- | --- |
-| C1 | `scale: [0, 1]` documented as the start for a project's own judge | to do |
-| C2 | Per judge, the correlation of its score with output length, in the judging summary | to do |
-| C3 | A `note` when a rubric changes | to do |
+| C1 | `scale: [0, 1]` documented as the start for a project's own judge | built |
+| C2 | Per judge, the correlation of its score with output length, in the judging summary | built |
+| C3 | A `note` when a rubric changes | built |
 
 ### D. Error tagging
 
@@ -168,7 +168,7 @@ R3 to R5 start as example code; R1 and R2 are the core.
 
 ## Open for the owner
 
-1. D1's shape (after its design note).
+1. (none for A-D: A5 (a) and D1 approved by the owner, 2026-11-05)
 2. Where step 4 goes against P and S.
 3. Keep or drop the drafts' ssh runner and phases, stages and OTLP import, the process adapter: nothing asks for
    them.

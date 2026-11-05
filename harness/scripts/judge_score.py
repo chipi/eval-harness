@@ -1170,8 +1170,10 @@ def summarise(
     label: str,
     validated: bool,
     vdir: Path,
+    lengths: dict[str, dict[str, int]] | None = None,
 ) -> dict[str, Any]:
-    """Summarize the judging: per-arm scores, judge agreement, controls, and cost. For pick and
+    """Summarize the judging: per-arm scores, judge agreement, controls, and cost. `lengths` ({config_id: {item:
+    words}}) gives each judge's length bias: how far its score follows how long an output is. For pick and
     pairwise the per-arm number is the win rate (mean `won`), with Bradley-Terry strengths beside
     it, and the controls are how often the position and noise checks kept the verdict."""
     mode = mode_of(manifest)
@@ -1243,6 +1245,24 @@ def summarise(
             if own and oth
             else None,
         }
+    # Length bias (C2): Spearman's rho of each judge's score with the output's length in words, over every (item,
+    # arm) judged. Judges are known to favour longer answers; a rho well above 0 says this one may.
+    length_bias: dict[str, Any] = {}
+    for j in jids:
+        pairs = [
+            (lengths[c][i], proj[i][c][j])
+            for i in proj
+            for c in proj[i]
+            if lengths and c in lengths and i in lengths[c] and proj[i][c].get(j) is not None
+        ]
+        length_bias[j] = (
+            {
+                "n": len(pairs),
+                "spearman_length": round(spearman([a for a, _ in pairs], [b for _, b in pairs]), 4),
+            }
+            if len(pairs) > 2
+            else None
+        )
     ctrl = {}
     for j in jids if graded else []:
         p = scores[j]
@@ -1309,6 +1329,7 @@ def summarise(
         "per_arm": per_arm,
         "judge_agreement": agreement,
         "self_family_gap": self_gap,
+        "length_bias": length_bias,
         "controls": ctrl,
         **({} if graded else {"mode": mode, **bt_meta}),
         "notes": [
@@ -1708,9 +1729,17 @@ def main() -> int:
     if not proj:
         print("no item has a complete verdict from every judge; nothing to project")
         return EXIT_STOPPED if stats["aborted"] else EXIT_NOTHING
-    summ = summarise(manifest, sc, arms, scores, proj, stats, label, validated, vdir)
+    if sc.get("supersedes"):
+        print(f"  {sc['scorer_id']} supersedes {sc['supersedes']}: {sc.get('why')}")
+    words = {c: {i: len(str(t).split()) for i, t in o.items()} for c, o in outputs.items()}
+    summ = summarise(manifest, sc, arms, scores, proj, stats, label, validated, vdir, lengths=words)
     written = write_scored_runs(manifest, sc, arms, proj, out_root, label, validated)
     write_json(out_root / "summary.json", summ)
+    for j, lb in (summ.get("length_bias") or {}).items():
+        if lb:
+            print(
+                f"  judge {j}: its score against the output's length in words, Spearman {lb['spearman_length']:+.2f} over {lb['n']}"
+            )
     print(f"\n{len(written)} scored run(s) -> {out_root}  ({len(proj)}/{len(item_ids)} items, {label})")
     if mode != DEFAULT_MODE:
         print_win_summary(summ)

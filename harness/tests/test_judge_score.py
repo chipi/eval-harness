@@ -3043,8 +3043,24 @@ for sid_ in ("judge-summ-v1", "judge-summ-v2"):
         str(st_),
     )
     arms_ = [{"config_id": c, "family": a["family"]} for c, a in old_summ["per_arm"].items()]
+    # The outputs' lengths, as judge-score reads them, for each judge's length bias.
+    found_ = {a["config_id"]: a for a in js.discover_arms(sc_["dataset_id"], sc_.get("arms_match", ""))}
+    ids_ = [it["item_id"] for it in man_["items"]]
+    words_ = {
+        c: {i: len(t.split()) for i, t in js.read_outputs(found_[c], ids_).items()}
+        for c in old_summ["per_arm"]
+    }
     new_summ = js.summarise(
-        man_, sc_, arms_, got_, proj_, old_summ["cost"], old_summ["label"], old_summ["validated"], sdir_
+        man_,
+        sc_,
+        arms_,
+        got_,
+        proj_,
+        old_summ["cost"],
+        old_summ["label"],
+        old_summ["validated"],
+        sdir_,
+        lengths=words_,
     )
     check(
         f"{sid_}: re-summarising the committed verdicts gives the committed summary.json, key for key",

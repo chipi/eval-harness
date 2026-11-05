@@ -230,6 +230,28 @@ try:
         r.stderr[-200:],
     )
 
+    # B2: a second person labels the tickets, disagreeing with the gold on two of them.
+    second = proj / "second_labels"
+    second.mkdir()
+    for f in sorted((KIT / "gold").glob("*.txt")):
+        text = f.read_text()
+        if f.stem in ("t02_invoice", "t04_api"):
+            text = "something else entirely."
+        (second / f.name).write_text(text)
+    ok(
+        evh("label-import", str(second), "--dataset-id", "tickets_v1", "--set", "second", "--by", "reviewer"),
+        "a second person's labels",
+    )
+    r = evh("labels", "--dataset-id", "tickets_v1", "--contested", "--json")
+    cont = (json.loads(r.stdout).get("contested") or {}) if r.returncode == 0 else {}
+    worst = {x["item_id"]: (x["agree"], x["people"]) for x in cont.get("rows") or []}
+    check(
+        "labels --contested: the two items the second person labelled otherwise, the gold's own set left out",
+        cont.get("contested") == 2
+        and worst.get("t02_invoice") == (0, 1)
+        and worst.get("t01_login") == (1, 1),
+        (r.stdout + r.stderr)[-500:],
+    )
     (data / "goals" / "tickets_summary.yaml").write_text(goal.replace("cluster: area", "cluster: araa"))
     r = evh("validate")
     check(

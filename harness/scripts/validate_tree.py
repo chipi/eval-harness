@@ -959,6 +959,17 @@ def scorer_problems(scorers_dir: Path) -> list[str]:
             # Size 2 exercises the rewrite: at 16 a SummEval prompt is returned unchanged, so a
             # prompt with neither `{n}` nor its phrases would pass and fail only at run time.
             js.render_prompt(js.prompt_text(sc), 2)
+            # A rubric that changed says what it replaced and why (C3): the scorer it supersedes exists, the reason
+            # is a sentence, and a reason names what it supersedes.
+            if sc.get("supersedes"):
+                if not (scorers_dir / f"{sc['supersedes']}.yaml").is_file():
+                    bad.append(f"{f.name}: supersedes {sc['supersedes']!r}, which is not a scorer here")
+                if len(str(sc.get("why") or "").split()) < 4:
+                    bad.append(
+                        f"{f.name}: supersedes {sc['supersedes']}: `why` must be a sentence, what changed and why"
+                    )
+            elif sc.get("why"):
+                bad.append(f"{f.name}: `why` without `supersedes`: name the scorer this one replaces")
         except SystemExit as exc:
             bad.append(f"{f.name}: does not load ({exc})")
         except (KeyError, TypeError, AttributeError, ValueError, yaml_error) as exc:

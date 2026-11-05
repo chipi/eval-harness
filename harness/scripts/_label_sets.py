@@ -104,6 +104,77 @@ def _masi(a: frozenset[str], b: frozenset[str]) -> float:
     return 1 - shared / len(a | b) * monotonicity
 
 
+def _expected(values: list, dist: Any) -> float:
+    """The mean distance between two different pairable values (Krippendorff's D_e), from how often each distinct
+    label occurs: one pass, not every pair of values (at 10,000 items that was 4 x 10^8 comparisons)."""
+    counts = Counter(values)
+    m = sum(counts.values())
+    if m < 2:
+        return 0.0
+    kinds = list(counts)
+    total = sum(counts[a] * counts[b] * dist(a, b) for a in kinds for b in kinds if a != b)
+    return total / (m * (m - 1))
+
+
+def _alpha(units: list[list], dist: Any) -> float | None:
+    """Krippendorff's alpha over units of any number of labels each (missing ones simply absent): 1 - D_o / D_e,
+    D_o the mean within-unit distance (each unit weighted by its pairable values, 1/(m_u - 1)), D_e `_expected`."""
+    pairable = [u for u in units if len(u) >= 2]
+    n = sum(len(u) for u in pairable)
+    if n < 2:
+        return None
+    observed = (
+        sum(
+            sum(dist(a, b) for i, a in enumerate(u) for j, b in enumerate(u) if i != j) / (len(u) - 1)
+            for u in pairable
+        )
+        / n
+    )
+    expected = _expected([v for u in pairable for v in u], dist)
+    return None if not expected else 1 - observed / expected
+
+
+def alpha_all(units: list[list[str]], draws: int = 1000) -> dict[str, Any] | None:
+    """Krippendorff's alpha over every label set at once (any number of sets per item, each item's labels a unit),
+    with a 95% percentile bootstrap interval over the items (seeded by the labels, so the same sets give the same
+    interval). Nominal, or MASI when a label accepts several answers. None for free text or fewer than 2 items
+    labelled twice. The pairwise `compare` says which two sets disagree; this says how far the whole group agrees."""
+    sets_ = [[frozenset(answers(t)) for t in u] for u in units]
+    every = {x for u in sets_ for s in u for x in s}
+    if len(every) > CATEGORY_MAX or any(
+        len(x) > CATEGORY_CHARS or "\n" in x or len(x.split()) > CATEGORY_WORDS for x in every
+    ):
+        return None
+    pairable = [u for u in sets_ if len(u) >= 2]
+    if len(pairable) < 2:
+        return None
+    several = any(len(s) > 1 for u in pairable for s in u)
+    dist = _masi if several else lambda a, b: 0.0 if a == b else 1.0
+    point = _alpha(pairable, dist)
+    if point is None:
+        return None
+    import hashlib  # noqa: PLC0415
+    import random  # noqa: PLC0415
+
+    seed = hashlib.sha256(repr(sorted(repr(sorted(map(sorted, u))) for u in pairable)).encode()).hexdigest()
+    rng = random.Random(int(seed[:16], 16))
+    boot = sorted(
+        a
+        for a in (
+            _alpha([pairable[rng.randrange(len(pairable))] for _ in pairable], dist) for _ in range(draws)
+        )
+        if a is not None
+    )
+    ci = [boot[int(0.025 * len(boot))], boot[min(int(0.975 * len(boot)), len(boot) - 1)]] if boot else None
+    return {
+        "items": len(pairable),
+        "labels": sum(len(u) for u in pairable),
+        "alpha": round(point, 4),
+        "ci": [round(x, 4) for x in ci] if ci else None,
+        "alpha_distance": "MASI" if several else "nominal",
+    }
+
+
 def compare(pairs: list[tuple[str, str]]) -> dict[str, Any]:
     """How two label sets compare on the items both label, `pairs` their two labels per item.
 
@@ -130,14 +201,8 @@ def compare(pairs: list[tuple[str, str]]) -> dict[str, Any]:
     pe = sum(pa[k] * pb[k] for k in pa) / (n * n) if n else 0.0
     several = any(len(a) > 1 or len(b) > 1 for a, b in sets_)
     dist = _masi if several else lambda a, b: 0.0 if a == b else 1.0
-    values = [v for pair in sets_ for v in pair]
-    m = len(values)
     observed = sum(dist(a, b) for a, b in sets_) / n if n else 0.0
-    expected = (
-        sum(dist(values[i], values[j]) for i in range(m) for j in range(m) if i != j) / (m * (m - 1))
-        if m > 1
-        else 0.0
-    )
+    expected = _expected([v for pair in sets_ for v in pair], dist)
     return {
         **out,
         "kind": "categories",
@@ -344,6 +409,58 @@ def agreement(dataset_id: str) -> list[dict[str, Any]]:
             if pairs:
                 out.append({"a": "/".join(a), "b": "/".join(b), **compare(pairs)})
     return out
+
+
+def agreement_all(dataset_id: str) -> dict[str, Any] | None:
+    """`alpha_all` over every label set covering this dataset, with how many sets: None with fewer than 3 sets
+    (two are `agreement`'s pair)."""
+    per_item = labels_for(dataset_id)
+    names = {(r["dataset_id"], r["set"]) for rows in per_item.values() for r in rows}
+    if len(names) < 3:
+        return None
+    got = alpha_all([[r["text"] for r in rows] for rows in per_item.values()])
+    return {"sets": len(names), **got} if got else None
+
+
+def contested(dataset_id: str, tier: str = "gold") -> dict[str, Any] | None:
+    """Per item, how many people's label sets agree with the reference (B2; human label variation, Plank 2022): the
+    goal scores one reference, and this shows where people disagree with it. A label agrees when it shares an answer
+    with the reference's. The set the reference was promoted from is left out (it agrees by construction).
+    None when the dataset has no reference of this tier or no person set labels its items."""
+    from evaluation_harness import _common  # noqa: PLC0415
+
+    root = _common.REFERENCES / tier / dataset_id
+    if not root.is_dir():
+        return None
+    manifest = root / "manifest.json"
+    origin: dict[str, Any] = {}
+    if manifest.is_file():
+        origin = (json.loads(manifest.read_text(encoding="utf-8")).get("promoted_from") or {}) or {}
+    own = (origin.get("dataset_id"), origin.get("labels"))
+    rows: list[dict[str, Any]] = []
+    for item, labels in sorted(labels_for(dataset_id).items()):
+        ref_file = root / f"{item}.txt"
+        if not ref_file.is_file():
+            continue
+        ref = frozenset(answers(ref_file.read_text(encoding="utf-8")))
+        people = [
+            r
+            for r in labels
+            if (r.get("source") or {}).get("kind") == "person" and (r["dataset_id"], r["set"]) != own
+        ]
+        if not people:
+            continue
+        agree = sum(1 for r in people if frozenset(answers(r["text"])) & ref)
+        rows.append({"item_id": item, "people": len(people), "agree": agree})
+    if not rows:
+        return None
+    rows.sort(key=lambda r: (r["agree"] / r["people"], r["item_id"]))
+    return {
+        "tier": tier,
+        "items": len(rows),
+        "contested": sum(1 for r in rows if r["agree"] < r["people"]),
+        "rows": rows,
+    }
 
 
 def source_line(source: dict[str, Any]) -> str:

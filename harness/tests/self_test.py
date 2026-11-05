@@ -685,6 +685,8 @@ def test_example_scorer_suites_pass() -> None:
             "test_reducers.py",
             "repeats made one score per item: mean, majority, at_least_K; a goal's primary.reduce",
         ),
+        ("test_alpha_all.py", "Krippendorff's alpha over any number of label sets, with its interval"),
+        ("test_scorer_supersedes.py", "a changed rubric names the scorer it supersedes, and why"),
         ("test_scores_once.py", "each arm's scores read once per view and per build"),
         ("test_skills.py", "the agent skills: valid, installed, every evh block runs as written"),
         (

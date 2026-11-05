@@ -883,7 +883,7 @@ and to the news-summary judge, so neither is an `evh` command.
 What a judge is asked is the scorer's `mode` ([RFC-005](../../docs/rfc/RFC-005-judge-scorers.md), "Judging
 modes"), and a judge is validated in the mode it is used (`validation.mode` must equal `mode`):
 
-- **`grade`** (the default, everything above): each output scored per dimension on the scale.
+- **`grade`** (the default, everything above): each output scored per dimension on the scale. For a project's own judge, start with `scale: [0, 1]`, a pass/fail per dimension with the rubric saying what passes: two values are easier to judge consistently and to check against people than five (Husain's advice from practice); keep 1-5 where people already scored on it, as SummEval's experts did. `summary.json` gives each judge's `length_bias`: Spearman's rho of its score with the output's length in words; a rho well above 0 says the judge may favour longer answers (judge-summ-v1's two judges: 0.23 and 0.29). A changed rubric, prompt or set of judges is a new scorer (a frozen judging set is never rewritten): give it `supersedes: <the old scorer_id>` and `why:`, a sentence on what changed and which outputs led to it (criteria drift, Shankar et al. 2024); `validate` (V13) checks both, and `judge-score` prints them.
 - **`pick`**: one call per item with every arm's output, blind and shuffled; the judge names the best
   (`{"best": [3]}`, several when they are equally best). `protocol.outputs_per_call` must be at least the number of
   arms: a pick made in blocks would name each block's winner, so it is refused.
@@ -1277,7 +1277,7 @@ evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did pro
 - **Agreement between label sets** (`evh labels --dataset-id D [--confusion]`, the dataset page): on the items
   both label, how many accept the same answers, how many share one (apart: a label accepting more agrees more
   easily), Cohen's kappa and Krippendorff's alpha (MASI distance for several answers), which correct for the
-  agreement chance alone gives when one class dominates. Free-text labels are not compared as text. An adapter's `score` reads such a reference with `answers(reference)` from `evaluation_harness.adapter`.
+  agreement chance alone gives when one class dominates. With three sets or more, also all of them together: one Krippendorff's alpha over every item labelled twice or more, with a 95% bootstrap interval (JSON `agreement_all`). `--contested`: per item, how many people's sets agree with the gold reference (sharing an answer with it), the most contested first, the set the reference was promoted from left out (JSON `contested`). Free-text labels are not compared as text. An adapter's `score` reads such a reference with `answers(reference)` from `evaluation_harness.adapter`.
 - **The sheet** (`evh inspect --sheet --dataset-id D --runs A,B,…`) shows the dataset's items down (each by the
   first arm's adapter's `title(item)` when it has one, else its start) and a column per arm across: what it wrote (the adapter's `decision(output)`, else its output, shortened; `--scores-only` leaves
   it out) and every score it has on the item: its run's metrics, and a judging pass's where one under
