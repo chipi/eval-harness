@@ -43,6 +43,10 @@ COMMANDS = {
         "dataset_describe.py",
         "change a dataset's licence or description, never its items or version",
     ),
+    "fieldset-propose": (
+        "fieldset_propose.py",
+        "a field set proposed from a dataset source's features, for a person to accept (--write)",
+    ),
     "dataset-card": (
         "dataset_card.py",
         "a dataset's card: what, where from, the datasheet's answers; or it as Croissant 1.1",

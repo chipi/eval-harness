@@ -81,6 +81,10 @@ that can move a result is never a patch release without saying so under **Change
   their parquet in one, whose files only the Hub can list.
 - **pyarrow is a dependency** (owner, 2026-11-05), to read parquet: `pyarrow>=15`, installed with the harness.
 
+- **A field set proposed from a source.** `evh fieldset-propose --source NAME --query JSON --fieldset-id ID` turns
+  the features a source describes into a field set (types mapped, few-valued text proposed as a choice from a
+  sample), printed for a person to read; `--write` writes it, never over one that exists.
+
 ### Changed
 
 - **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from

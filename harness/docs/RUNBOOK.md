@@ -158,6 +158,12 @@ licences` knows it, and the `rai:` properties as the card. A FileSet (many files
 the host's to say, so a Hugging Face description, whose parquet is a FileSet in the dataset's repository, is refused
 (listing those files needs the Hub itself).
 
+**A field set from a source's features**: `evh fieldset-propose --source NAME --query '{…}' --fieldset-id ID`
+prints a field set from what the source describes: each feature's type as the field set's (schema.org's, Hugging
+Face's and Python's spellings), a text feature with at most `--max-choices` distinct values among `--sample` items
+as a choice of them, the items' text and id left out. Read it; `--write` writes `data/fields/ID.yaml` (never over
+one that exists), and `dataset-create --fieldset ID` uses it as it is.
+
 **The card** answers the datasheet questions (what the dataset is for, how it was collected and labelled, its
 biases and limits, who maintains it) under Croissant RAI 1.0's property names, so an export writes them as they
 are: `evh dataset-describe --card-template > card.yaml` prints each key with its question, `evh dataset-describe

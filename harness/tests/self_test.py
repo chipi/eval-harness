@@ -780,6 +780,10 @@ def test_example_scorer_suites_pass() -> None:
             "a dataset read from a Croissant description: rows, source, licence, card; sha256, parquet, fields refused",
         ),
         (
+            "test_fieldset_propose.py",
+            "a field set proposed from a source's features: choices from sampled values, --write, used as it is",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),
