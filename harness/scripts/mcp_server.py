@@ -63,10 +63,12 @@ READ_TOOLS = (
     "captures",
     "labels",
     "tags",
+    "licences",
     "picks",
     "deploy-sheet",
 )
 NOT_TOOLS = {
+    "dataset-describe": "writes a dataset record",
     "dataset-migrate": "writes the dataset records",
     "init": "writes a project",
     "skills-install": "writes the skills into a project",
@@ -127,7 +129,7 @@ JSON = {
     "search",
     "inspect",
 }
-JSON |= {"dataset-items", "captures", "labels", "tags", "picks", "deploy-sheet"}
+JSON |= {"dataset-items", "captures", "labels", "tags", "licences", "picks", "deploy-sheet"}
 JSON |= {"runs-list", "rounds", "leaderboard", "pair-test", "family-test", "rank-stability", "run-compare"}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.

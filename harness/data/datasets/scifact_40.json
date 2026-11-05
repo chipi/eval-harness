@@ -204,6 +204,7 @@
       "source_sha256": "1fa671e24b93592bd9738fd8901dbe68cc3263d393b6aa2cc63c0f96a37c8b92"
     }
   ],
+  "licence": "CC-BY-SA-4.0",
   "source_dir": "data/sources/scifact_40",
   "version": "1.0"
 }

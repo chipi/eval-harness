@@ -1404,6 +1404,7 @@
       "source_sha256": "fff8b7aeeb8b61c1c0cf3f5e32ff63e8b5d7283b1c9b358aa7f46eff522f63be"
     }
   ],
+  "licence": "CC-BY-SA-3.0",
   "source_dir": "data/sources/dbpedia_280",
   "version": "1.0"
 }

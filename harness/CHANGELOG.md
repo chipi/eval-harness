@@ -47,6 +47,12 @@ that can move a result is never a patch release without saying so under **Change
   sheet shows each item's in an `<arm>: failure modes` column. `ok`
   marks an output read and found fine; a blank cell was not read. `validate` V21 checks the lists and the sets.
 
+- **A dataset can name its licence.** Optional: `dataset-create --licence ID`, or `evh dataset-describe
+  --dataset-id D --licence ID` later (a licence or description change is no new version). `evh licences` lists the
+  SPDX ids a line each (`--search`, `--json`, an MCP tool); `unknown` and `LicenseRef-<name>` are allowed;
+  `validate` V22 refuses others. The committed Hub datasets carry the licence their Hub page states (2026-11-05):
+  ag_news unknown, cnn_dailymail Apache-2.0, dbpedia_14 CC-BY-SA-3.0, few-nerd and scifact CC-BY-SA-4.0, summeval MIT.
+
 ### Changed
 
 - **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from

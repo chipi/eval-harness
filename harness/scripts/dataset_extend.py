@@ -144,6 +144,7 @@ def main() -> int:
             **({"tags": v1["tags"]} if v1.get("tags") else {}),
             **({"text": "hidden"} if hidden else {}),
         },
+        licence=v1.get("licence"),
     )
     append(
         [{"action": "used", "item": a["item_id"], "from": a["from"], "into": args.dataset_id} for a in added]

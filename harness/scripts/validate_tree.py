@@ -47,7 +47,8 @@ Each check exists because its absence let a real defect through somewhere:
                      dataset, or whose count is not its tags' (PLAN_0.8.0 D1)
   V22 dataset records a dataset whose stored version is not the one its lineage gives (MAJOR.MINOR:
                      1.0 from nothing or a split, MINOR + 1 for added items, MAJOR + 1 for removed or
-                     changed ones), or a split side naming a parent version that is not its parent's
+                     changed ones), a split side naming a parent version that is not its parent's, or
+                     a licence not on evh licences' list (E2)
                      (PLAN_0.8.0 E3; `evh dataset-migrate` brings old records to the format)
 
 Exit 1 on any failure, so it can gate.
@@ -1474,7 +1475,7 @@ def v21_failure_modes() -> None:
 def v22_dataset_records() -> None:
     """V22: each dataset's stored version is the one its lineage gives (PLAN_0.8.0 E3), so a hand-edited or
     pre-0.8.0 version is caught; `evh dataset-migrate` writes the right ones."""
-    from evaluation_harness import _dataset_version  # noqa: PLC0415
+    from evaluation_harness import _dataset_version, _licences  # noqa: PLC0415
 
     docs = {f.stem: parsed(f) for f in sorted(DATASETS.glob("*.json"))} if DATASETS.is_dir() else {}
     docs = {k: v for k, v in docs.items() if isinstance(v, dict)}  # V1 names one that does not parse
@@ -1490,6 +1491,8 @@ def v22_dataset_records() -> None:
         want = _dataset_version.expected(d, version_of)
         if d.get("version") != want:
             bad.append(f"datasets/{i}.json: version {d.get('version')!r}, its lineage gives {want}")
+        if "licence" in d and _licences.problem(str(d["licence"])):
+            bad.append(f"datasets/{i}.json: licence {d['licence']!r} is not on the list (evh licences)")
         sp = d.get("split") or {}
         if sp and sp.get("from") in docs and sp.get("from_version") != version_of(sp.get("from")):
             bad.append(

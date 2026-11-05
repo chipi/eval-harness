@@ -284,6 +284,7 @@
       "source_sha256": "ffe3879bdb6c2d9d268103726254b945951b16117872d4d875c0327434458f05"
     }
   ],
+  "licence": "CC-BY-SA-3.0",
   "source_dir": "data/sources/dbpedia_56",
   "version": "1.0"
 }

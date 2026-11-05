@@ -280,7 +280,9 @@ def main() -> int:
             # Labels (RFC-023): installed and reading their arguments; the flow is tests/test_label_sets.py.
             ("labels", [], "ok:tickets_v1/installed_from_run: model"),
             ("tags", [], "ok:No tag sets yet"),
+            ("licences", ["--search", "share"], "ok:CC-BY-SA-4.0"),
             ("dataset-migrate", ["--dry-run"], "ok:dataset(s)"),
+            ("dataset-describe", ["--dataset-id", "tickets_v1", "--licence", "nope"], "not on the list"),
             (
                 "label-sheet",
                 ["--dataset-id", "tickets_v1", "--items", "all", "--out", "installed_sheet.csv"],

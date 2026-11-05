@@ -1404,6 +1404,7 @@
       "source_sha256": "fff972f0193f84b3e24d51ee410f3b18d290588592a3bb3e1165c078858d1a26"
     }
   ],
+  "licence": "CC-BY-SA-4.0",
   "source_dir": "data/sources/few_nerd_280",
   "version": "1.0"
 }

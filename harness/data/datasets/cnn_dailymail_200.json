@@ -1004,6 +1004,7 @@
       "source_sha256": "797b8ff54a5dd1c8f5eb6e9873d9869c646e19abdeb3bbc8eec727ca3497e0f3"
     }
   ],
+  "licence": "Apache-2.0",
   "source_dir": "data/sources/cnn_dailymail_200",
   "version": "1.0"
 }

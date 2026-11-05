@@ -15,7 +15,8 @@ further. This page is the reference for each step.
 |---|---|
 | start a project | `evh init [--tutorial]` |
 | what is configured | `evh env-check` |
-| freeze | `evh dataset-create --dataset-id … --source-dir …` |
+| freeze | `evh dataset-create --dataset-id … --source-dir … [--licence ID]` |
+| a licence, a description (no new version) | `evh licences` · `evh dataset-describe --dataset-id … --licence …` |
 | a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
 | fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
 | materialize | `evh dataset-materialize --dataset-id …` |
@@ -125,6 +126,12 @@ changes any item is MAJOR + 1, MINOR 0; the same items under a new id keep the p
 new dataset at 1.0 and names its parent's version (`split.from_version`). A licence or description change is not a
 new version. `validate` (V22) recomputes the number; `evh dataset-migrate` writes it for records made before 0.8.0.
 A source's own version (a Hub revision) is never this number.
+
+**A licence** is optional: `--licence ID` on `dataset-create`, or `evh dataset-describe --dataset-id D --licence ID`
+on a dataset that exists (no new version: the items are the same). `evh licences` lists the ids, SPDX's, a line
+each on what the licence allows (`--search`, `--json`); `unknown` when the source states none, `LicenseRef-<name>`
+for a licence of its own. A split side and an extended version keep their parent's. `validate` (V22) refuses an id
+not on the list. The line is a picker, not legal advice: the licence text is what binds.
 
 **What you know about each item goes in fields** (ADR-0003). Declare them once in a
 field set, `data/fields/<fieldset_id>.yaml` (`schemas/fieldset.schema.json`): a name and

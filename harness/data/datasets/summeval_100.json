@@ -504,6 +504,7 @@
       "source_sha256": "3ad3f2b593e69e11795decbf7084930a4bde71ff4164b9c7e308695b31c44064"
     }
   ],
+  "licence": "MIT",
   "source_dir": "data/sources/summeval_100",
   "version": "1.0"
 }

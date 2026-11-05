@@ -756,6 +756,10 @@ def test_example_scorer_suites_pass() -> None:
             "a dataset's version MAJOR.MINOR from its lineage: 1.10 after 1.9, splits 1.0, V22, dataset-migrate",
         ),
         (
+            "test_licences.py",
+            "a dataset's licence: evh licences, dataset-create --licence, dataset-describe, V22",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),

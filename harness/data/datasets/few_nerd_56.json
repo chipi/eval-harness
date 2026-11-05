@@ -284,6 +284,7 @@
       "source_sha256": "fac5fa7ae1d1b060459581f5084962c317db173ff8c3757e912c94e4e94a4469"
     }
   ],
+  "licence": "CC-BY-SA-4.0",
   "source_dir": "data/sources/few_nerd_56",
   "version": "1.0"
 }

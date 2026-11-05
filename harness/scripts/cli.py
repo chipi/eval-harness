@@ -39,6 +39,11 @@ COMMANDS = {
     ),
     "env-check": ("env_check.py", "check the Python environment and keys"),
     "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),
+    "dataset-describe": (
+        "dataset_describe.py",
+        "change a dataset's licence or description, never its items or version",
+    ),
+    "licences": ("view_licences.py", "the licences a dataset can name (SPDX ids), a line each"),
     "dataset-migrate": (
         "dataset_migrate.py",
         "bring the dataset records to this release's format, once (idempotent)",

@@ -1004,6 +1004,7 @@
       "source_sha256": "f82b4a28bb3628e2965c8f0e0a44e9c71423804f2ab50a20b5bf0f97e1c65959"
     }
   ],
+  "licence": "unknown",
   "source_dir": "data/sources/ag_news_200",
   "version": "1.0"
 }

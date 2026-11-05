@@ -37,7 +37,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _dataset_version, _fetch, _fields
+from evaluation_harness import _dataset_version, _fetch, _fields, _licences
 from evaluation_harness._common import (
     DATASETS,
     ROOT,
@@ -227,6 +227,7 @@ def _write(
     source_dir: str,
     lineage: dict | None = None,
     extra: dict | None = None,
+    licence: str | None = None,
 ) -> None:
     # A re-create that selects the SAME items keeps its original created_at. Without this
     # the documented first command, `make demo`, rewrites a tracked file on every run and
@@ -249,6 +250,8 @@ def _write(
         "description": description,
         "created_at": created_at,
     }
+    if licence:
+        doc["licence"] = licence
     if source_dir:
         doc["source_dir"] = source_dir
     if fieldset:
@@ -282,6 +285,10 @@ def main() -> int:
     ap.add_argument("--tag", action="append", default=[], help="tag every item (repeatable)")
     ap.add_argument("--description", default="")
     ap.add_argument(
+        "--licence",
+        help="the dataset's licence: an id from evh licences, unknown, or LicenseRef-<name> (optional)",
+    )
+    ap.add_argument(
         "--include-docs",
         action="store_true",
         help="also treat README files as items (they are skipped by default)",
@@ -308,6 +315,10 @@ def main() -> int:
         help="replace the field values of an existing dataset; its items must be unchanged",
     )
     args = ap.parse_args()
+    why = _licences.problem(args.licence) if args.licence is not None else None
+    if why:
+        die(why, "bad-argument")
+    licence = _licences.canonical(args.licence) if args.licence else None
 
     out = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
     previous = {}
@@ -340,6 +351,7 @@ def main() -> int:
             previous.get("description", ""),
             previous.get("source_dir", ""),
             previous.get("derived_from"),
+            licence=previous.get("licence"),
         )
         print(
             f"{out.relative_to(DATASETS.parents[1])}  fields updated on {len(items)} item(s); "
@@ -371,6 +383,7 @@ def main() -> int:
             desc,
             _relative_source_dir(args.source_dir) if args.source_dir.is_dir() else "",
             lineage,
+            licence=licence,
         )
         print(f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s))")
         _say_lineage(lineage)
@@ -435,6 +448,7 @@ def main() -> int:
         # selection. The item hashes are what freeze a dataset; this field is a label.
         _relative_source_dir(args.source_dir),
         lineage,
+        licence=licence,
     )
     print(f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s))")
     _say_lineage(lineage)
