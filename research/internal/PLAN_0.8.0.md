@@ -140,6 +140,11 @@ On E5 and E7; no source is a default, none is coupled into the core.
 | P3 | Kaggle: whether its API works without `kagglehub` |
 | P4 | The six example `fetch.py` files become calls to their source |
 
+Built 2026-11-05: P1 `802e65124` (read, pinned) + `c8c24e97b` (README) + `0af013f08` (publish; huggingface_hub a
+dependency, owner yes; checked live, the repo deleted), P2 `f143411d9`, P3 `324e4efe2` (Kaggle needs no kagglehub for a
+public dataset), P4 `42448857f`. Not covered: Zenodo's item read is checked offline only (its describe live); gated
+and private datasets on Kaggle and the Hub are not tried (no Kaggle credentials here); publishing is to the Hub only.
+
 ### S. Scale: 1,000 to 10,000 items
 
 | # | what |
