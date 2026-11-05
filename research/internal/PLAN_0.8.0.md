@@ -20,6 +20,10 @@ on its own; the owner decides scope and the open questions below.
      serves the full local inspector (items, outputs, references), accepts only the named Host headers, no rate
      limit or stripping as `--public` does. For the fleet's private catalog on the tailnet (Caddy in front, no
      published port). They switch the deployment when a release has it.
+   - fleet, 2026-11-05 (feedback entry 27): code under test has no record of its own. A `kind: code` record beside
+     `data/models/`: the commit, the periods it was deployed, its faithfulness result against recorded production,
+     the arms that ran it; listed in the catalog like models. The record side of R1 (an item names the code
+     version its output came from).
 7. Release
 
 ## 1. Agent basics — done
