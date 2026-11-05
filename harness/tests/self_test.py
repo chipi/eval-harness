@@ -768,6 +768,10 @@ def test_example_scorer_suites_pass() -> None:
             "a dataset's card: the datasheet questions in Croissant RAI's words; template, --card, V22",
         ),
         (
+            "test_sources.py",
+            "dataset sources: folder as --source-dir, a project's own with rows, licence, card; manifest; refusals",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),

@@ -65,6 +65,11 @@ that can move a result is never a patch release without saying so under **Change
   `evh dataset-describe --card-template` prints them with their questions, `--card FILE` records the answers. No new
   version; `validate` V22 checks the keys.
 
+- **Dataset sources: one interface for every place items come from.** `evh dataset-create --source NAME --query
+  JSON` reads a source: a class with `describe(query)` (source block, licence, description, card, features) and
+  `items(query)`, found as importers are (built-in `folder` and `manifest`, a project's `data/dataset_sources/NAME.py`,
+  or `path.py:Class`). Its items are written to `data/sources/<id>/`, never over files already there.
+
 ### Changed
 
 - **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from

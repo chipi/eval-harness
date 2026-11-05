@@ -282,6 +282,18 @@ def main() -> int:
             ("tags", [], "ok:No tag sets yet"),
             ("licences", ["--search", "share"], "ok:CC-BY-SA-4.0"),
             ("dataset-migrate", ["--dry-run"], "ok:dataset(s)"),
+            (
+                "dataset-create",
+                [
+                    "--dataset-id",
+                    "installed_src",
+                    "--source",
+                    "folder",
+                    "--query",
+                    '{"path": "tutorial/tickets"}',
+                ],
+                "ok:item(s) from folder",
+            ),
             ("dataset-describe", ["--dataset-id", "tickets_v1", "--licence", "nope"], "not on the list"),
             (
                 "label-sheet",

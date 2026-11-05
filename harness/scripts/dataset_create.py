@@ -37,7 +37,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _dataset_version, _fetch, _fields, _licences, _source
+from evaluation_harness import _card, _dataset_version, _fetch, _fields, _licences, _source, _sources
 from evaluation_harness._common import (
     DATASETS,
     ROOT,
@@ -177,6 +177,79 @@ def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
     if pinned:
         print(f"  pinned {pinned} item(s) now: fetched, and their sha256 recorded")
     return items
+
+
+def _from_source(name: str, query_text: str, dataset_id: str, fieldset, force: bool) -> tuple[list, dict]:
+    """(items, what the source said) from a dataset source (E5): its items written into data/sources/<id>/, a
+    `source_url` one pinned as a manifest's is, its row and fields kept."""
+    import json  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    try:
+        query = json.loads(query_text or "{}")
+    except ValueError as e:
+        die(f"--query is not JSON: {e}", "bad-argument")
+    if not isinstance(query, dict):
+        die("--query is a JSON object", "bad-argument")
+    cls, _path = _sources.resolve(name)
+    src = cls({})
+    try:
+        said = src.describe(query) or {}
+        got = list(src.items(query))
+    except (ValueError, OSError) as e:
+        die(f"--source {name}: {e}", "invalid-file")
+    block = _source.block(said.get("source") or {"provider": name})
+    bad = _source.problems(block) + _card.problems(said.get("card") or {})
+    out = SOURCES / dataset_id
+    if out.exists() and any(out.iterdir()) and not force:
+        die(f"{out} has files: the items of another fetch (--force to replace them)", "would-overwrite")
+    items, ids = [], set()
+    for n, it in enumerate(got, 1):
+        iid = str(it.get("item_id") or "")
+        if not iid or iid.startswith("/") or ".." in iid.split("/") or iid in ids:
+            bad.append(f"item {n}: item_id {iid!r} is empty, a path out of the folder, or repeated")
+            continue
+        ids.add(iid)
+        item: dict = {"item_id": iid}
+        if it.get("text") is not None:
+            dest = out / f"{iid}.txt"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(str(it["text"]), encoding="utf-8")
+            item.update(source_path=f"{iid}.txt", source_sha256=sha256(dest))
+        elif it.get("file"):
+            f = Path(it["file"])
+            dest = out / f"{iid}{f.suffix}"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(f, dest)
+            item.update(source_path=dest.relative_to(out).as_posix(), source_sha256=sha256(dest))
+        elif it.get("source_url"):
+            url, pin = str(it["source_url"]), str(it.get("source_sha256") or "")
+            if not pin:
+                try:
+                    _, pin = _fetch.fetch(url, None)
+                except _fetch.FetchError as exc:
+                    bad.append(f"item {iid}: {exc}")
+                    continue
+            item.update(source_path=f"{iid}{_fetch.suffix_of(url)}", source_url=url, source_sha256=pin)
+        else:
+            bad.append(f"item {iid}: no text, file or source_url")
+            continue
+        if it.get("row") is not None:
+            item["source_row"] = it["row"]
+        if it.get("fields"):
+            if not fieldset:
+                bad.append(f"item {iid}: fields need --fieldset to declare them")
+            else:
+                vals, errs = _fields.values_from(fieldset, it["fields"])
+                bad += [f"item {iid}: {e}" for e in errs]
+                if vals:
+                    item["fields"] = vals
+        items.append(item)
+    if bad:
+        die(f"--source {name}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
+    if not items:
+        die(f"--source {name}: no items", "not-found")
+    return items, {**said, "source": block}
 
 
 def _lineage(parent_id: str, dataset_id: str, items: list) -> dict:
@@ -319,6 +392,16 @@ def main() -> int:
         help="a .csv or .jsonl of items: item_id, source_url [, source_sha256] [, field columns]",
     )
     ap.add_argument(
+        "--source",
+        dest="source_name",
+        metavar="NAME",
+        help="read the items from a dataset source: folder, manifest, the project's own (data/dataset_sources/NAME.py)"
+        " or path/to/source.py:Class",
+    )
+    ap.add_argument(
+        "--query", default="{}", help="with --source: what to read, as JSON (each source says its keys)"
+    )
+    ap.add_argument(
         "--update-fields",
         action="store_true",
         help="replace the field values of an existing dataset; its items must be unchanged",
@@ -377,6 +460,42 @@ def main() -> int:
             "  To correct its fields only, pass --update-fields --fields FILE.",
             "would-overwrite",
         )
+
+    if args.source_name:
+        if args.manifest:
+            die("--source and --manifest: one way to name the items", "bad-argument")
+        items, said = _from_source(args.source_name, args.query, args.dataset_id, fieldset, args.force)
+        lic = licence or (_licences.canonical(said["licence"]) if said.get("licence") else None)
+        if said.get("licence") and not lic:
+            die(f"--source {args.source_name}: {_licences.problem(said['licence'])}", "invalid-file")
+        lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
+        _write(
+            out,
+            args.dataset_id,
+            items,
+            previous,
+            fieldset,
+            args.description
+            or said.get("description")
+            or f"{len(items)} item(s) from source {args.source_name}",
+            _relative_source_dir(SOURCES / args.dataset_id),
+            lineage,
+            {"card": said["card"]} if said.get("card") else None,
+            licence=lic,
+            source=said["source"],
+        )
+        print(
+            f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s) from {said['source']['provider']})"
+        )
+        _say_lineage(lineage)
+        print(
+            "Next: "
+            + how(
+                f"evh dataset-materialize --dataset-id {args.dataset_id}",
+                f"make dataset-materialize DATASET_ID={args.dataset_id}",
+            )
+        )
+        return 0
 
     if args.manifest:
         items = _from_manifest(args.manifest, fieldset, args.source_dir, args.tag)

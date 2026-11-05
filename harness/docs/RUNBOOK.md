@@ -141,6 +141,14 @@ and per item its row and sha256, as `examples/_shared/hf_rows.py` does); `datase
 a row only for an item whose bytes are the ones written, and the profile and catalog link each item from it.
 Splits and extensions keep the parent's block.
 
+**A dataset source** reads items from anywhere through one interface: `evh dataset-create --dataset-id D --source
+NAME --query '{…}'`. A source is a class `Source(options)` with `describe(query)` (its `source` block, and when it
+knows them `licence`, `description`, `card`, `features`) and `items(query)` (per item its `item_id` and `text`,
+`file` or `source_url`, with `row` and `fields`); the items are written to `data/sources/D/`, which is refused when
+it already has files (`--force` replaces them). It is found by name as an importer is: a built-in (`folder`,
+`manifest`), the project's own `data/dataset_sources/NAME.py`, or `path/to/source.py:Class`. `--source-dir` and
+`--manifest` are the same two built-ins read in place.
+
 **The card** answers the datasheet questions (what the dataset is for, how it was collected and labelled, its
 biases and limits, who maintains it) under Croissant RAI 1.0's property names, so an export writes them as they
 are: `evh dataset-describe --card-template > card.yaml` prints each key with its question, `evh dataset-describe
