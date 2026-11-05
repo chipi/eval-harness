@@ -39,6 +39,10 @@ COMMANDS = {
     ),
     "env-check": ("env_check.py", "check the Python environment and keys"),
     "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),
+    "dataset-migrate": (
+        "dataset_migrate.py",
+        "bring the dataset records to this release's format, once (idempotent)",
+    ),
     "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),
     "dataset-profile": (
         "dataset_profile.py",

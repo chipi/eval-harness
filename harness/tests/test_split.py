@@ -95,8 +95,18 @@ check(
 )
 sp = ds("base_v2_test").get("split", {})
 check(
-    "split: each side records the rule and its lineage to the parent",
-    sp == {"from": "base_v2", "test": 0.3, "by": "hash", "key": None, "seed": 7, "part": "test"}
+    "split: each side records the rule, its parent's version and its lineage; it is 1.0 itself",
+    sp
+    == {
+        "from": "base_v2",
+        "test": 0.3,
+        "by": "hash",
+        "key": None,
+        "seed": 7,
+        "part": "test",
+        "from_version": "1.1",
+    }
+    and ds("base_v2_test")["version"] == ds("base_v2_validation")["version"] == "1.0"
     and ds("base_v2_validation")["derived_from"]["dataset_id"] == "base_v2"
     and sorted(ds("base_v2_validation")["derived_from"]["removed"]) == sorted(held),
     sp,

@@ -49,6 +49,13 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from
+  the lineage when the dataset is made: 1.0 for a first dataset and for each side of a split (which names its
+  parent's version, `split.from_version`); from a parent (`--from`, `dataset-extend`), MINOR + 1 when items were only
+  added, MAJOR + 1 and MINOR 0 when any was removed or changed. A licence or description change is no new version.
+  `validate` (V22) recomputes it; `evh dataset-migrate` writes it for records made before (every committed dataset
+  is 1.0 by the rule, as it was). Neither key is in a run's fingerprint: no run moves.
+
 - **One failed item no longer stops a run** (owner, 2026-11-05). An item whose call fails (not transiently) is
   scored as an empty answer (0 on most measures, or the adapter's `score_failure(reference)`), marked `failed` on its
   row, listed in metrics.json's `failed_items`, and called again by `--resume`; the run goes on. A 429 or a timeout

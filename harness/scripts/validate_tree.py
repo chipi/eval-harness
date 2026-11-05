@@ -45,6 +45,10 @@ Each check exists because its absence let a real defect through somewhere:
                      twice (or `ok`, which a sheet reads as "nothing wrong"); a tag set whose dataset or
                      list does not exist, that names a mode not in its list or an item not in its
                      dataset, or whose count is not its tags' (PLAN_0.8.0 D1)
+  V22 dataset records a dataset whose stored version is not the one its lineage gives (MAJOR.MINOR:
+                     1.0 from nothing or a split, MINOR + 1 for added items, MAJOR + 1 for removed or
+                     changed ones), or a split side naming a parent version that is not its parent's
+                     (PLAN_0.8.0 E3; `evh dataset-migrate` brings old records to the format)
 
 Exit 1 on any failure, so it can gate.
 
@@ -1467,6 +1471,42 @@ def v21_failure_modes() -> None:
     )
 
 
+def v22_dataset_records() -> None:
+    """V22: each dataset's stored version is the one its lineage gives (PLAN_0.8.0 E3), so a hand-edited or
+    pre-0.8.0 version is caught; `evh dataset-migrate` writes the right ones."""
+    from evaluation_harness import _dataset_version  # noqa: PLC0415
+
+    docs = {f.stem: parsed(f) for f in sorted(DATASETS.glob("*.json"))} if DATASETS.is_dir() else {}
+    docs = {k: v for k, v in docs.items() if isinstance(v, dict)}  # V1 names one that does not parse
+    if not docs:
+        print("  --   V22 dataset records (none)")
+        return
+
+    def version_of(i: str | None) -> str | None:
+        return (docs.get(i) or {}).get("version") if i else None
+
+    bad: list[str] = []
+    for i, d in docs.items():
+        want = _dataset_version.expected(d, version_of)
+        if d.get("version") != want:
+            bad.append(f"datasets/{i}.json: version {d.get('version')!r}, its lineage gives {want}")
+        sp = d.get("split") or {}
+        if sp and sp.get("from") in docs and sp.get("from_version") != version_of(sp.get("from")):
+            bad.append(
+                f"datasets/{i}.json: split.from_version {sp.get('from_version')!r}, but {sp['from']} is "
+                f"{version_of(sp['from'])}"
+            )
+    for b in bad[:10]:
+        print(f"       {b}")
+    if bad:
+        print("       evh dataset-migrate writes the versions the lineage gives (--dry-run shows them first)")
+    check(
+        f"V22 dataset records — {len(docs)} dataset(s), each version its lineage's",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
 def config_files() -> list[Path]:
     """The arm configs V18 reads: data/configs, and the globs `configs` in validate.json names (relative to
     the project root), for a project that keeps its arms elsewhere (this repository's are in examples/)."""
@@ -1596,6 +1636,7 @@ def main() -> int:
         v19_label_sets,
         v20_hypotheses,
         v21_failure_modes,
+        v22_dataset_records,
         note_uncommitted_runs,
         note_round_scorers,
     ):

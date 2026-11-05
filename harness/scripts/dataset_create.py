@@ -35,8 +35,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 from pathlib import Path
+from typing import Any
 
-from evaluation_harness import _fetch, _fields
+from evaluation_harness import _dataset_version, _fetch, _fields
 from evaluation_harness._common import (
     DATASETS,
     ROOT,
@@ -210,6 +211,12 @@ def _say_lineage(lin: dict | None) -> None:
     )
 
 
+def parent_version(dataset_id: str | None) -> str | None:
+    """A dataset's stored version (E3), None when there is no such dataset."""
+    path = DATASETS / f"{dataset_id}.json" if dataset_id else None
+    return read_json(path).get("version") if path and path.is_file() else None
+
+
 def _write(
     out: Path,
     dataset_id: str,
@@ -236,7 +243,12 @@ def _write(
         bad = [p for it in items for p in _fields.problems(fieldset, it["item_id"], it.get("fields") or {})]
         if bad:
             die(f"{len(bad)} field problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
-    doc = {"dataset_id": dataset_id, "version": "1.0", "description": description, "created_at": created_at}
+    doc: dict[str, Any] = {
+        "dataset_id": dataset_id,
+        "version": "",
+        "description": description,
+        "created_at": created_at,
+    }
     if source_dir:
         doc["source_dir"] = source_dir
     if fieldset:
@@ -245,6 +257,9 @@ def _write(
     if lineage:
         doc["derived_from"] = lineage
     doc.update(extra or {})  # optional keys another command records (made_from: dataset-from-capture)
+    if doc.get("split"):
+        doc["split"] = {**doc["split"], "from_version": parent_version(doc["split"]["from"])}
+    doc["version"] = _dataset_version.expected(doc, parent_version)
     doc["items"] = items
     write_json(out, doc)
 

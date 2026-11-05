@@ -15,6 +15,11 @@ on its own; the owner decides scope and the open questions below.
    and item failures, studies and test-set looks (their place after S is not confirmed by the owner)
 5. **R** replay and faithfulness for code adapters (owner, 2026-11-05: in scope, at the end of 0.8.0)
 6. The fleet agent's feedback, when it finishes (entries 19-22 and later; 2026-11-05: a regression-guard arm, `expect_identical_to:`, so V5 checks a pair that must agree instead of flagging it)
+   - homelab, 2026-11-05 (relayed as the operator's go; not yet confirmed in this session): a private mode for
+     `catalog-serve` behind a proxy, e.g. `--behind-proxy HOST[,HOST]`: listens on `--bind 0.0.0.0` in a container,
+     serves the full local inspector (items, outputs, references), accepts only the named Host headers, no rate
+     limit or stripping as `--public` does. For the fleet's private catalog on the tailnet (Caddy in front, no
+     published port). They switch the deployment when a release has it.
 7. Release
 
 ## 1. Agent basics — done

@@ -67,6 +67,7 @@ READ_TOOLS = (
     "deploy-sheet",
 )
 NOT_TOOLS = {
+    "dataset-migrate": "writes the dataset records",
     "init": "writes a project",
     "skills-install": "writes the skills into a project",
     "env-check": "reads the environment and keys, not the project",

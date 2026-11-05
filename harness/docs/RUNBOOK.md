@@ -118,6 +118,14 @@ and `validate` V2 fails a version whose parent is gone. "What did the new versio
 arm?" is `evh pair-test --dataset-id my_v1 --a ARM_v1 --b ARM_v2 --b-dataset my_v2`: the arm's runs
 on each version, paired by item id (below, under `pair-test`).
 
+**The version number** in the dataset file says how far the items moved; the id stays the identity. It is
+MAJOR.MINOR, two integers (1.10 follows 1.9), and the harness computes it: a first dataset is 1.0; one made `--from`
+another (or by `dataset-extend`) that only adds items is the parent's MAJOR with MINOR + 1; one that removes or
+changes any item is MAJOR + 1, MINOR 0; the same items under a new id keep the parent's. Each side of a split is a
+new dataset at 1.0 and names its parent's version (`split.from_version`). A licence or description change is not a
+new version. `validate` (V22) recomputes the number; `evh dataset-migrate` writes it for records made before 0.8.0.
+A source's own version (a Hub revision) is never this number.
+
 **What you know about each item goes in fields** (ADR-0003). Declare them once in a
 field set, `data/fields/<fieldset_id>.yaml` (`schemas/fieldset.schema.json`): a name and
 a type for each (`text`, `number`, `integer`, `boolean`, `date`, `duration`, `url`, or
@@ -680,7 +688,7 @@ evh runs-list --baselines
 evh validate
 ```
 
-Twenty-one checks (V1–V21): schema conformance (datasets, runs, baselines, configs, judge
+Twenty-two checks (V1–V22): schema conformance (datasets, runs, baselines, configs, judge
 scorers, judging sets, verdicts, dataset profiles), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results (two arms with different outputs
@@ -692,7 +700,7 @@ every judge scorer yaml loading and well-formed, every goal and round well-forme
 every run that must name one, every item field declared, typed and matching its hash, and every
 reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
 records matching the hashes it recorded, every model record and the configs naming it consistent, and every label set
-matching its hashes and its dataset, every `hypothesis:` in an arm config sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21). V4
+matching its hashes and its dataset, every `hypothesis:` in an arm config sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21), and every dataset's version the one its lineage gives (V22). V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters).
 

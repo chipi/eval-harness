@@ -752,6 +752,10 @@ def test_example_scorer_suites_pass() -> None:
             "label sets: from a run, a sheet and its import, a capture's outcomes; never edited; they follow the item; V19",
         ),
         (
+            "test_dataset_version.py",
+            "a dataset's version MAJOR.MINOR from its lineage: 1.10 after 1.9, splits 1.0, V22, dataset-migrate",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),
