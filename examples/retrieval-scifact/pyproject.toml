@@ -16,7 +16,9 @@ dependencies = [
     "pyyaml>=6.0",
     "openai>=1.0",
     # fetch.py: the Hub's parquet files when the datasets-server's /rows is down (_shared/hf_rows.py).
-    "pyarrow>=15",
+    # Below 26: pyarrow 26 refuses NumPy 1.x at import, and NumPy is pinned below 2 on Intel macOS (and resolved so
+    # by some locks everywhere). 18.1 to 25.0 import and read parquet with NumPy 1.26.4 (checked 2026-11-05).
+    "pyarrow>=15,<26",
     # BM25 is in the BASE dependencies, not the `local` extra, and that is deliberate.
     # It is the first stage the LLM reranking arms are built on, so a `uv sync` without
     # --extra local must still be able to run them. It is a ~200-line pure-Python package

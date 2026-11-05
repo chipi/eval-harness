@@ -885,7 +885,10 @@ def test_example_scorer_suites_pass() -> None:
             "test_no_shadowing.py",
             "a project's stats.py or adapter.py never replaces the harness's, nor the reverse",
         ),
-        ("test_hf_rows.py", "the examples' datasets-server fetcher: pacing, retries, each row's source"),
+        (
+            "test_hf_rows.py",
+            "the examples' Hub reader through the huggingface source: pages, pinned commit, rows map",
+        ),
         ("test_render_data.py", "the deployment copies every part of data/ the catalog reads"),
         ("test_runs_adapter.py", "run reading, direction, adapter loading, the judge panel"),
         ("check_report_claims.py", "report claims vs committed runs"),

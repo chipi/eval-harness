@@ -61,6 +61,11 @@ def _list(v: Any) -> list:
     return v if isinstance(v, list) else [] if v is None else [v]
 
 
+#: A split's parquet files at a revision, and each file's table (per columns read), kept for the process: a fetcher
+#: pages through a split, and each page must not fetch and read its files again.
+_FILES: dict[tuple, list[dict]] = {}
+_TABLES: dict[tuple, Any] = {}
+
 #: The Hub card's metadata keys, and the card question (Croissant RAI) each answers, in the card's words.
 CARD = {
     "task_categories": ("dataUseCases", "tasks"),
@@ -135,51 +140,68 @@ class Source:
         out["features"] = feats
         return out
 
-    def items(self, query: dict) -> Iterator[dict]:
-        """Each row of the split, in the conversion's file and row order: its text, id, row and kept fields."""
+    def rows(self, query: dict, columns: list[str] | None = None) -> Iterator[tuple[int, dict]]:
+        """(row number, row) of the split's rows [offset, offset + limit), every column unless `columns` names some,
+        read from the parquet conversion at the query's revision (or the current one). Each file is fetched once and
+        read once a process."""
         import pyarrow.parquet as pq  # noqa: PLC0415
 
         ref, config, split = self._need(query)
+        rev = self._revision(ref, query)
+        key = (_endpoint(), ref, rev, config, split)
+        if key not in _FILES:
+            tree = _api(f"/api/datasets/{ref}/tree/{quote(rev, safe='')}/{quote(config)}/{quote(split)}")
+            files = sorted(
+                (e for e in tree if str(e.get("path", "")).endswith(".parquet")), key=lambda e: e["path"]
+            )
+            if not files:
+                raise ValueError(f"{ref}: no parquet files for {config}/{split} at {rev}")
+            _FILES[key] = files
+        offset, limit = int(query.get("offset") or 0), int(query.get("limit") or 0)
+        start = 0
+        for e in _FILES[key]:
+            oid = (e.get("lfs") or {}).get("oid")
+            tkey = (oid or e["path"], tuple(sorted(set(columns))) if columns else None)
+            if tkey not in _TABLES:
+                url = f"{_endpoint()}/datasets/{ref}/resolve/{rev}/{e['path']}"
+                try:
+                    path, _sha = _fetch.fetch(url, oid)
+                except _fetch.FetchError as exc:
+                    raise ValueError(str(exc)) from exc
+                try:
+                    # One thread: with its thread pool, pyarrow 26 aborted the process at exit (examples/_shared/hf_rows.py).
+                    _TABLES[tkey] = pq.read_table(
+                        io.BytesIO(Path(path).read_bytes()),
+                        columns=sorted(set(columns)) if columns else None,
+                        use_threads=False,
+                    )
+                except Exception as exc:  # a column the split does not have, or not parquet
+                    raise ValueError(f"{e['path']}: {exc}") from exc
+            table = _TABLES[tkey]
+            lo = max(offset, start)
+            hi = start + table.num_rows if not limit else min(offset + limit, start + table.num_rows)
+            if lo < hi:
+                for i, row in enumerate(table.slice(lo - start, hi - lo).to_pylist()):
+                    yield lo + i, row
+            start += table.num_rows
+            if limit and start >= offset + limit:
+                return
+
+    def items(self, query: dict) -> Iterator[dict]:
+        """Each row of the split, in the conversion's file and row order: its text, id, row and kept fields."""
         if not query.get("text"):
             raise ValueError('name the column that is an item\'s text: "text" in the query')
-        rev = self._revision(ref, query)
-        tree = _api(f"/api/datasets/{ref}/tree/{quote(rev, safe='')}/{quote(config)}/{quote(split)}")
-        files = sorted(
-            (e for e in tree if str(e.get("path", "")).endswith(".parquet")), key=lambda e: e["path"]
-        )
-        if not files:
-            raise ValueError(f"{ref}: no parquet files for {config}/{split} at {rev}")
         cols = [query["text"], *([query["id"]] if query.get("id") else []), *(query.get("fields") or [])]
-        offset, limit = int(query.get("offset") or 0), int(query.get("limit") or 0)
-        n = 0
-        for e in files:
-            url = f"{_endpoint()}/datasets/{ref}/resolve/{rev}/{e['path']}"
-            try:
-                path, _sha = _fetch.fetch(url, (e.get("lfs") or {}).get("oid"))
-            except _fetch.FetchError as exc:
-                raise ValueError(str(exc)) from exc
-            data = Path(path).read_bytes()
-            try:
-                # One thread: with its thread pool, pyarrow 26 aborted the process at exit (examples/_shared/hf_rows.py).
-                table = pq.read_table(io.BytesIO(data), columns=sorted(set(cols)), use_threads=False)
-            except Exception as exc:  # a column the split does not have, or not parquet
-                raise ValueError(f"{e['path']}: {exc}") from exc
-            for row in table.to_pylist():
-                if n < offset:
-                    n += 1
-                    continue
-                if limit and n >= offset + limit:
-                    return
-                item: dict[str, Any] = {
-                    "item_id": str(row[query["id"]]) if query.get("id") else f"row_{n}",
-                    "text": str(row.get(query["text"]) or ""),
-                    "row": n,
-                }
-                kept = {k: row.get(k) for k in query.get("fields") or []}
-                if kept:
-                    item["fields"] = kept
-                yield item
-                n += 1
+        for n, row in self.rows(query, cols):
+            item: dict[str, Any] = {
+                "item_id": str(row[query["id"]]) if query.get("id") else f"row_{n}",
+                "text": str(row.get(query["text"]) or ""),
+                "row": n,
+            }
+            kept = {k: row.get(k) for k in query.get("fields") or []}
+            if kept:
+                item["fields"] = kept
+            yield item
 
     def publish(self, record: dict, items: list[tuple[dict, bytes]], query: dict) -> dict:
         """Write the dataset to a new Hub repo in one commit and read it back; {repo, revision, url, private, files}."""

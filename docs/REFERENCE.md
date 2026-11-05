@@ -531,8 +531,9 @@ Underlying architectures: [BART](https://arxiv.org/abs/1910.13461),
 Hosted inference is routed through [OpenRouter](https://openrouter.ai/), which resells
 capacity from Anthropic, OpenAI, Google, Meta, Mistral, DeepSeek, Alibaba (Qwen), Z.ai and
 their serving partners (Novita, DeepInfra, Nebius, Parasail and others). Dataset slices are
-fetched through the [HuggingFace datasets-server](https://huggingface.co/docs/datasets-server), and from the
-Hub's parquet conversion of the same split when its `/rows` is down (`examples/_shared/hf_rows.py`).
+read from the Hugging Face Hub's parquet conversion of each split at one pinned commit, each file checked against
+the sha256 the Hub lists (the harness's `huggingface` source, through `examples/_shared/hf_rows.py`); the rerun
+workflow checks those rows against the [datasets-server](https://huggingface.co/docs/datasets-server)'s `/rows`.
 
 ### Method
 

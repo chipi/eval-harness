@@ -3,9 +3,8 @@
 
     python examples/classification-ag-news/fetch.py --n 200
 
-STDLIB ONLY, like the summarisation example's fetcher: it reads the HuggingFace
-datasets-server rows API over HTTPS rather than pulling in `datasets`, pyarrow and pandas
-to move a few hundred short strings.
+It reads the split through the harness's `huggingface` source (examples/_shared/hf_rows.py): the Hub's
+parquet conversion at one pinned commit, each file checked against the sha256 the Hub lists.
 
 WHY THIS ONE STRATIFIES AND THE SUMMARISATION ONE DOES NOT
   AG News's test split is not shuffled. Paging from offset 0, as the summarisation fetcher
@@ -82,7 +81,7 @@ LABELS = ["World", "Sports", "Business", "Sci/Tech"]
 
 
 def fetch_rows(limit: int, split: str) -> list[dict]:
-    """Up to `limit` rows from the datasets-server, paged."""
+    """Up to `limit` rows of the split, paged."""
     rows: list[dict] = []
     while len(rows) < limit:
         page = _rows_page(DATASET, CONFIG, split, len(rows), min(PAGE, limit - len(rows)))

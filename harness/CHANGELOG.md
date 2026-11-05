@@ -101,6 +101,13 @@ that can move a result is never a patch release without saying so under **Change
 - **Datasets from Kaggle, without kagglehub.** `--source kaggle` reads a table file of a dataset's zip at a version
   through Kaggle's own API (public datasets need no credentials), with its licence mapped from Kaggle's name.
 
+- **The examples fetch through the huggingface source.** Their shared reader (`examples/_shared/hf_rows.py`) reads
+  each split's parquet conversion at a commit pinned once a fetch, each file sha256-checked, instead of the
+  datasets-server's `/rows` (whose 2026-11-02 outage held back a release); the retry ladder, the parquet fallback
+  and the fetchers' `--delay` are gone. The rows were checked equal to `/rows` at 21 places across the 8 splits the
+  fetchers read, and the 12 committed Hub datasets fetched fresh match every frozen hash and gold checksum. The
+  examples cap pyarrow below 26, which refuses the NumPy 1.x they pin on Intel macOS (18.1 to 25.0 checked).
+
 ### Changed
 
 - **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from
