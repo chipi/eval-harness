@@ -62,11 +62,12 @@ from evaluation_harness._common import (  # noqa: E402
     dataset_item_ids,
     die,
     evh_prog,
+    item_clusters,
     read_item_ids,
     scored_against_dir,
 )
 from evaluation_harness._runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
-from evaluation_harness.stats import EXACT_UP_TO, fmt_p, sign_flip_p  # noqa: E402
+from evaluation_harness.stats import EXACT_UP_TO, clustered, fmt_p, sign_flip_p  # noqa: E402
 
 
 def _round_values(dataset_id: str) -> Any:
@@ -98,6 +99,8 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
         die(f"round {args.round} is on {rnd['dataset_id']}, not {args.dataset_id}", "mismatch")
     in_play = arms_of(rnd)
     goal = _common.load_goals().get(rnd["goal"]) or {}
+    # The goal's tests flip one sign per cluster: so does this one, unless --cluster names another field.
+    args.cluster = args.cluster or _common.goal_cluster(goal, args.dataset_id)
     prim = (goal.get("success_criteria") or {}).get("primary") or {}
     args.metric = args.metric or prim.get("measure")
     for x in (args.a, args.b):
@@ -255,6 +258,12 @@ def main() -> int:
         "--items",
         type=Path,
         help="file of item_ids (one per line); restrict the test to exactly these",
+    )
+    ap.add_argument(
+        "--cluster",
+        metavar="FIELD",
+        help="an item field whose items are not independent (one thread's comments): flip one sign per value of "
+        "it, so related items count once (with --round: default the goal's `cluster:`)",
     )
     ap.add_argument("--permutations", type=int, default=20000)
     ap.add_argument(
@@ -416,7 +425,18 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     wins = sum(1 for d in deltas if (d < 0 if lower else d > 0))
     ties = sum(1 for d in deltas if d == 0)
 
-    p = sign_flip_p(deltas, permutations=args.permutations, seed=args.seed)
+    units, n_units = deltas, len(deltas)
+    if args.cluster:
+        units, _sizes = clustered(
+            dict(zip(items, deltas, strict=True)), item_clusters(args.dataset_id, args.cluster)
+        )
+        n_units = len(units)
+        if n_units < 2:
+            die(
+                f"--cluster {args.cluster}: the {len(items)} items are {n_units} cluster: nothing to test",
+                "not-enough",
+            )
+    p = sign_flip_p(units, permutations=args.permutations, seed=args.seed)
     # BONFERRONI, not Holm. One pair cannot do Holm: the step-down procedure compares the
     # smallest p to alpha/m, the next to alpha/(m-1), and so on, which needs the whole
     # family's p-values at once. alpha/m applied to every member is the strictest step
@@ -434,8 +454,10 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
         + (" (lower is better)" if lower else "")
         + (f" ({ties} exact tie(s))" if ties else "")
     )
-    exact = len(items) <= EXACT_UP_TO
-    how = f"exact, all 2^{len(items)} sign patterns" if exact else f"{args.permutations} permutations"
+    exact = n_units <= EXACT_UP_TO
+    how = f"exact, all 2^{n_units} sign patterns" if exact else f"{args.permutations} permutations"
+    if args.cluster:
+        print(f"    clusters           {n_units} by {args.cluster}: items that share a value count as one")
     print(f"    sign-flip p        {fmt_p(p)}  ({how})")
     hyp = None if cross else _hypothesis_of(args, runs)
     in_advance = bool(hyp and hyp["named"] is True)
@@ -502,6 +524,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             "metric": args.metric,
             "dataset_id": args.dataset_id,
             "n": len(items),
+            "cluster": args.cluster or None,
+            "clusters": n_units if args.cluster else None,
             "direction": "lower" if lower else "higher",
             "delta": obs,
             "wins": wins,

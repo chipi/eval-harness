@@ -421,6 +421,24 @@ def _disagreeing(series: dict, baseline: str) -> dict:
     return {a: {i: v for i, v in vals.items() if i in keep} for a, vals in series.items()}
 
 
+def _goal_cluster_on(dataset: str) -> str | None:
+    """The one field every goal that names `cluster:` for this dataset names, so the inspector tests
+    as the goal pages do (ADR-0002); None when no goal does, or goals disagree (then only `cluster=` does)."""
+    from evaluation_harness._common import goal_cluster, load_goals  # noqa: PLC0415
+
+    named = {goal_cluster(g, dataset) for g in load_goals().values()} - {None}
+    return next(iter(named)) if len(named) == 1 else None
+
+
+def goal_clusters_on(dataset: str) -> tuple[dict | None, str | None]:
+    """({item: cluster key}, field) for the goals' cluster field on `dataset` (_goal_cluster_on), else (None, None)."""
+    field = _goal_cluster_on(dataset) if dataset else None
+    if not field:
+        return None, None
+    every = (item_fields(A, dataset) or {}).get("values") or {}
+    return {i: v[field] for i, v in every.items() if v.get(field) not in (None, "")}, field
+
+
 def compare(params: dict) -> dict:
     """Compare arms: parse query params, get scores, run paired tests, return result."""
     runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
@@ -473,6 +491,17 @@ def compare(params: dict) -> dict:
     disagree = params.get("disagree", [""])[0] == "1"
     if disagree:
         series = _disagreeing(series, baseline)
+    # Items that share a value of the cluster field count as one in every test (stats.clustered). Asked for by
+    # name it must be a field this deployment shows; a goal's own field is used as the goal pages use it.
+    cluster = params.get("cluster", [""])[0]
+    if cluster and cluster not in decl:
+        return {"error": f"cluster by a field of {dataset}, not {cluster!r}"}
+    clusters: dict | None
+    if cluster:
+        every = (item_fields(A, dataset) or {}).get("values") or {}
+        clusters = {i: v[cluster] for i, v in every.items() if v.get(cluster) not in (None, "")}
+    else:
+        clusters, cluster = goal_clusters_on(dataset)
     higher, neutral = not A.lower_is_better(metric, dataset), A.is_neutral(metric, dataset or None)
     # A family and a threshold come from the URL, so they are checked, not trusted: a family
     # smaller than the arms tested here, or a threshold above alpha (or below what the family
@@ -495,13 +524,16 @@ def compare(params: dict) -> dict:
         neutral=neutral,
         family=family,
         threshold=threshold,
+        clusters=clusters,
     )
     by, breakdown, ungrouped = params.get("by", [""])[0], None, 0
     if by:
         if by not in decl or decl[by]["type"] not in _fields.GROUPABLE:
             return {"error": f"break a comparison down by a choice or yes/no field, not {by!r}"}
         groups, ungrouped = _groups(decl[by], by, fvalues, series.get(baseline, {}))
-        breakdown = stats.compare_by(series, baseline, groups, higher_is_better=higher, neutral=neutral)
+        breakdown = stats.compare_by(
+            series, baseline, groups, higher_is_better=higher, neutral=neutral, clusters=clusters
+        )
     averages, repeats = _averages(arms, series, metric)
     swapped = bool(asked) and asked != baseline
     ctx = {
@@ -540,7 +572,20 @@ def compare(params: dict) -> dict:
         "averages": averages,
         "repeats": repeats,
         "state": _state(result["rows"], averages, swapped),
-        "warnings": _warnings(ctx),
+        "warnings": [
+            *(
+                [
+                    (
+                        f"Tested by {cluster}: {A.item_word}s that share a {cluster} count as one in every test "
+                        f"({max((r.get('clusters') or 0 for r in result['rows']), default=0)} clusters)."
+                    )
+                ]
+                if clusters is not None
+                else []
+            ),
+            *_warnings(ctx),
+        ],
+        "cluster": cluster or None,
         "fields": _field_list(decl),
         "where": wheres,
         "disagree": disagree,

@@ -191,6 +191,8 @@ def decide(
     direction_of: Callable[[str], str | None] | None = None,
     machines: dict[str, str] | None = None,
     baseline: str | None = None,
+    clusters: dict | None = None,
+    cluster_by: str | None = None,
 ) -> dict:
     """The goal's decision over one group of arms (one dataset, scored against one thing).
 
@@ -198,6 +200,8 @@ def decide(
     arm (too few items, the wrong format, it wrote the reference) is shown but never recommended.
     machines: {arm: machine label}; with more than one, speed is never compared or tie-broken.
     baseline: the group's baseline arm, for an axis whose limit is `baseline` (RFC-022).
+    clusters: {item: cluster key} from the goal's `cluster:` field (cluster_by names it): every paired test
+    then flips one sign per cluster (stats.clustered).
 
     Returns {"axes", "rows": {arm: {axis: {"value", "mean", "p50", "p95", "n", "within",
     "tokens"?, "vs_leader"?}}}, "out": {arm: [reason]}, "leader", "contenders", "recommended", "why"}."""
@@ -234,7 +238,11 @@ def decide(
         # A limit gates each arm on its own, as a number does (owner, 2026-10-31): p < ALPHA against the baseline,
         # not corrected across the arms. Holm stays where the decision claims one arm beats the others (the contenders).
         cmp = stats.compare(
-            series, baseline, higher_is_better=ax["direction"] == "higher", threshold=stats.ALPHA
+            series,
+            baseline,
+            higher_is_better=ax["direction"] == "higher",
+            threshold=stats.ALPHA,
+            clusters=clusters,
         )
         for r in cmp.get("rows") or []:
             worse = r.get("verdict") == "significant: worse"
@@ -258,6 +266,12 @@ def decide(
         if x not in out and not arms[x].get("flags") and rows[x]["quality"]["value"] is not None
     ]
     why: list[str] = list(why_first)
+    if clusters is not None and cluster_by:
+        why.insert(
+            0,
+            f"Tested by {cluster_by}: items that share a {cluster_by} count as one in every paired test "
+            f"({len(set(clusters.values()))} values).",
+        )
     for arm, reasons in out.items():
         why.append(f"{arms[arm]['label']} is out: {'; '.join(reasons)}.")
     if not eligible:
@@ -270,6 +284,7 @@ def decide(
             "leader": None,
             "contenders": [],
             "recommended": None,
+            "cluster": cluster_by if clusters is not None else None,
             "why": why,
         }
     better_high = quality["direction"] == "higher"
@@ -288,7 +303,9 @@ def decide(
         series = {x: (arms[x]["scores"].get(ax["measure"]) or {}).get("values") or {} for x in among}
         if not series.get(leader):
             continue
-        cmp = stats.compare(series, leader, higher_is_better=ax["direction"] == "higher", family=family)
+        cmp = stats.compare(
+            series, leader, higher_is_better=ax["direction"] == "higher", family=family, clusters=clusters
+        )
         for r in cmp.get("rows") or []:
             note = "" if ax["name"] != "speed" or one_machine else "different machines: not compared"
             rows[r["arm"]][ax["name"]]["vs_leader"] = {
@@ -398,6 +415,7 @@ def decide(
         "leader": leader,
         "contenders": contenders,
         "recommended": recommended,
+        "cluster": cluster_by if clusters is not None else None,
         "undecided": [] if recommended else pick,
         "why": why,
     }

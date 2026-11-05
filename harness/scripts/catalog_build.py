@@ -1256,6 +1256,7 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
                     base,
                     higher_is_better=not lower,
                     family=1,
+                    clusters=goal_clusters(A, g, ds)[0],
                 )
                 test = (cmp.get("rows") or [None])[0]
             rec = dec["recommended"] if dec else None
@@ -3224,6 +3225,16 @@ def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
     return out
 
 
+def goal_clusters(A: Adapter, g: dict, ds: str) -> tuple[dict | None, str | None]:
+    """({item: cluster key}, field) when the goal's entry for `ds` names `cluster: FIELD`, else (None, None).
+    Items with no value for the field are clusters of their own (stats.clustered)."""
+    field = next((d.get("cluster") for d in g.get("datasets") or [] if d.get("dataset_id") == ds), None)
+    if not field:
+        return None, None
+    values = item_fields(A, ds).get("values") or {}
+    return {i: v[field] for i, v in values.items() if v.get(field) not in (None, "")}, field
+
+
 def group_decision(
     A: Adapter,
     g: dict,
@@ -3258,9 +3269,16 @@ def group_decision(
     }
     machines = {r["arm"]: r.get("machine", "") for r in rows}
     baseline = next((r["arm"] for r in rows if r.get("baseline")), None)
+    clusters, cluster_by = goal_clusters(A, g, ds)
     dec = axes.decide(
-        goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines, baseline=baseline
-    ) | {"goal": goal}
+        goal,
+        arms,
+        lambda m: "lower" if A.lower_is_better(m, ds) else None,
+        machines,
+        baseline=baseline,
+        clusters=clusters,
+        cluster_by=cluster_by,
+    ) | {"goal": goal, "dataset": ds}
     if not decides_on(g, ds):
         # The goal never decides here (a pilot slice, a generalization check): the leader stands, the
         # recommendation does not.
@@ -3335,7 +3353,11 @@ def baseline_gap(A: Adapter, dec: dict, rows: list, gm: str) -> str:
     labels = {r["arm"]: r["label"] for r in rows}
     higher = dec["axes"][0]["direction"] == "higher"
     series = {a: (A.scores(a).get(gm) or {}).get("values") or {} for a in (rec, base["arm"])}
-    row = (stats.compare(series, base["arm"], higher_is_better=higher, family=1).get("rows") or [None])[0]
+    clusters = goal_clusters(A, dec.get("goal") or {}, dec.get("dataset") or "")[0]
+    row = (
+        stats.compare(series, base["arm"], higher_is_better=higher, family=1, clusters=clusters).get("rows")
+        or [None]
+    )[0]
     if not row or row.get("p") is None:
         return ""
     return (

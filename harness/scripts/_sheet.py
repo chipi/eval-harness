@@ -598,7 +598,14 @@ def _verdicts(model: dict[str, Any], sub: dict[str, dict[str, float]]) -> tuple[
             }
             for t in sub
         }
-        dec = axes.decide(goal, arms_, lambda m: "lower" if lower_is_better_on(model["_runs"], m) else None)
+        field = _common.goal_cluster(goal, model["dataset_id"])
+        dec = axes.decide(
+            goal,
+            arms_,
+            lambda m: "lower" if lower_is_better_on(model["_runs"], m) else None,
+            clusters=_common.item_clusters(model["dataset_id"], field) if field else None,
+            cluster_by=field,
+        )
         if dec["leader"] is not None:
             out = {}
             for t in sub:

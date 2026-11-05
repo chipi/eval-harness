@@ -1080,6 +1080,22 @@ def v14_goals() -> None:
             bad.append(
                 f"goals/{gid}.yaml: {measure} is a cost, speed or token count; higher-is-better contradicts it"
             )
+    # A goal's `cluster:` names a field the dataset's items carry: a typo would test item by item and say nothing.
+    for gid, g in goals.items():
+        for d in g.get("datasets") or []:
+            field = d.get("cluster")
+            if not field:
+                continue
+            ds = parsed(DATASETS / f"{d.get('dataset_id')}.json")
+            if not isinstance(ds, dict):
+                continue  # V2 or V1 names it
+            have = sum(
+                1 for it in ds.get("items") or [] if (it.get("fields") or {}).get(field) not in (None, "")
+            )
+            if not have:
+                bad.append(
+                    f"goals/{gid}.yaml: cluster {field!r} on {d['dataset_id']}: no item carries that field"
+                )
     for x in bad:
         print(f"       {x}")
     # min_items: a note, not a failure. A dataset smaller than the goal's minimum can still

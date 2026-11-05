@@ -320,6 +320,15 @@ Ranking arms by a mean is not a result until you know which gaps survive noise.
 | `bootstrap_test.py` | Confidence interval for macro-F1, which has no per-item value | Paired percentile [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)). **Documented as anti-conservative** — 11 significant differences against the exact test's 8. |
 | `rescore.py` | What would this look like under a different scorer? | Recomputes from stored outputs. **No API calls, no money.** This is why a scorer bug costs nothing to fix. |
 
+**When items are not independent:** comments of one thread, questions about one document, decisions on
+one incident share a cause, and testing them one by one counts that cause several times: p and the interval
+come out too small ([Miller 2024](https://arxiv.org/abs/2411.00640) measured clustered errors 1.1 to 3 times
+the naive ones). Name the item field that groups them, `--cluster FIELD` on `pair-test`, `family-test` and
+`bootstrap-test`, or `cluster:` on a goal's dataset: the sign-flip test then flips one sign per cluster on the
+cluster's summed difference, the interval is the cluster-robust one above 30 clusters, and the bootstrap
+draws whole clusters. With one item per cluster it is the item test exactly. Fewer clusters mean fewer sign
+patterns: below 6 clusters nothing can be significant at 0.05.
+
 **Why Holm and not Bonferroni:** Holm is uniformly more powerful and controls the same
 family-wise error rate. **Why permutation and not a t-test:** these per-item scores are not
 normal — `correct` is Bernoulli, `ndcg_10` on a single-relevant query takes one of eleven

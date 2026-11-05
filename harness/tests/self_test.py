@@ -669,6 +669,14 @@ def test_example_scorer_suites_pass() -> None:
             "exit codes: the cost cap 4, nothing measured 7, usage 2, refusal 1, validate 6",
         ),
         ("test_refusal_kinds.py", "every refusal names its kind, the kinds as the Runbook lists them"),
+        (
+            "test_clusters.py",
+            "the clustered paired test: the item test with one item per cluster, its level held when items cluster",
+        ),
+        (
+            "test_cluster_commands.py",
+            "--cluster and a goal's cluster: through pair-test, family-test, goals, the inspector, validate",
+        ),
         ("test_scores_once.py", "each arm's scores read once per view and per build"),
         ("test_skills.py", "the agent skills: valid, installed, every evh block runs as written"),
         (

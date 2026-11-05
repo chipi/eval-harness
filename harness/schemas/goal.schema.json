@@ -75,6 +75,7 @@
       "items": {"type": "object", "required": ["dataset_id"], "properties": {
         "dataset_id": {"type": "string"},
         "role": {"type": "string", "description": "validation, test, pilot, smoke, generalization, ...: shown beside the dataset."},
+        "cluster": {"type": "string", "description": "An item field whose items are not independent (one thread's comments, one document's questions): every paired test on this dataset flips one sign per value of it, and its interval is cluster-robust. Items with no value stand alone."},
         "decides": {"type": "boolean", "description": "false: the goal never decides on this dataset (a pilot slice, a generalization check). Its groups are shown with their leader, never a recommendation, and the home page's glance leaves it out. Default true."},
         "notes": {"type": "string"}}}
     },

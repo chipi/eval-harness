@@ -489,6 +489,29 @@ def load_dataset(dataset_id: str) -> dict[str, Any]:
     return read_json(path)
 
 
+def goal_cluster(goal: dict, dataset_id: str) -> str | None:
+    """The item field a goal clusters this dataset's tests by (`datasets[].cluster`), or None."""
+    return next(
+        (d.get("cluster") for d in goal.get("datasets") or [] if d.get("dataset_id") == dataset_id), None
+    )
+
+
+def item_clusters(dataset_id: str, field: str) -> dict:
+    """{item_id: cluster key}: each item's value of `field`, for the clustered paired test
+    (stats.clustered). Refused when no item carries the field: a typo would test item by item."""
+    keys = {
+        it["item_id"]: (it.get("fields") or {}).get(field)
+        for it in load_dataset(dataset_id).get("items") or []
+    }
+    keys = {i: v for i, v in keys.items() if v not in (None, "")}
+    if not keys:
+        die(
+            f"--cluster {field}: no item of {dataset_id} carries that field (evh dataset-profile lists them)",
+            "not-found",
+        )
+    return keys
+
+
 def dataset_item_ids(dataset_id: str) -> set:
     """The item ids a dataset freezes, read from its dataset file.
 

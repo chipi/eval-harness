@@ -318,27 +318,62 @@ def min_attainable_p(n: int) -> float:
 
 
 def exact_ci(deltas: list, alpha: float = ALPHA):
-    """A 95% interval for the mean paired difference.
+    """A 95% interval for the mean paired difference: `cluster_ci` with every item its own cluster.
 
     Up to EXACT_UP_TO items it agrees with the paired test: the set of shifts d for which the
     sign-flip test on (delta - d) does not reject at alpha, found by bisection on each side of
     the mean. Above that it is a t interval, which is close to the test but not derived from it. None when no shift can be rejected at all (n=5 and below:
     the smallest attainable p is over alpha), so there is no interval to draw.
     """
-    n = len(deltas)
-    if n < 2 or min_attainable_p(n) > alpha:
+    return cluster_ci(list(deltas), [1] * len(deltas), alpha)
+
+
+def clustered(deltas: dict, clusters: dict) -> tuple[list[float], list[int]]:
+    """Per cluster, the sum of its items' paired differences and how many items it has, in a fixed order.
+
+    deltas: {item_id: difference}; clusters: {item_id: cluster key}. An item with no key is a cluster of
+    its own. Items that share a source (one thread's comments, one document's questions) are not
+    independent: testing them one by one counts the same evidence several times and makes p and the
+    interval too small (Miller 2024, "Adding error bars to evals"). The test then flips one sign per
+    cluster, which is valid when the clusters, not the items, are independent."""
+    totals: dict = {}
+    sizes: dict = {}
+    for item in sorted(deltas):
+        key = clusters.get(item)
+        key = ("item", item) if key is None or key == "" else ("cluster", str(key))
+        totals[key] = totals.get(key, 0.0) + deltas[item]
+        sizes[key] = sizes.get(key, 0) + 1
+    keys = sorted(totals)
+    return [totals[k] for k in keys], [sizes[k] for k in keys]
+
+
+def cluster_ci(totals: list, sizes: list, alpha: float = ALPHA):
+    """A 95% interval for the mean per-item difference when items come in clusters.
+
+    totals, sizes: per cluster, its summed difference and its number of items (`clustered`). Up to
+    EXACT_UP_TO clusters it inverts the cluster sign-flip test: the shifts d for which the test on
+    (total - d * size) does not reject at alpha. Above that it is the cluster-robust t interval (CR1:
+    the clusters' residuals, G/(G-1), G-1 degrees of freedom). With one item per cluster both are the
+    item-level interval exactly. None below 2 clusters, or when no shift can be rejected (6 clusters
+    and fewer, where the smallest attainable p is over alpha)."""
+    g, n = len(totals), sum(sizes)
+    if g < 2 or min_attainable_p(g) > alpha:
         return None
-    mean = statistics.fmean(deltas)
-    if n > EXACT_UP_TO:
-        sd = statistics.stdev(deltas)
+    mean = math.fsum(totals) / n
+    if g > EXACT_UP_TO:
+        resid = [t - m * mean for t, m in zip(totals, sizes, strict=True)]
+        var = g / (g - 1) * math.fsum(r * r for r in resid) / n**2
         z = 1.959964
-        t = z + (z**3 + z) / (4 * (n - 1))  # Cornish-Fisher: t quantile without scipy
-        half = t * sd / math.sqrt(n)
+        t = z + (z**3 + z) / (4 * (g - 1))  # Cornish-Fisher: t quantile without scipy
+        half = t * math.sqrt(var)
         return [mean - half, mean + half]
-    span = (max(deltas) - min(deltas)) or abs(mean) or 1.0
+    ratios = [t / m for t, m in zip(totals, sizes, strict=True)]
+    span = (max(ratios) - min(ratios)) or abs(mean) or 1.0
 
     def rejected(d):
-        return exact_p([x - d for x in deltas]) <= alpha
+        return exact_p([t - d * m for t, m in zip(totals, sizes, strict=True)]) <= alpha
+
+    lo_start, hi_start = min(ratios) - span, max(ratios) + span
 
     def bound(outer):
         inner = mean  # never rejected: the shifted sum is 0
@@ -347,7 +382,7 @@ def exact_ci(deltas: list, alpha: float = ALPHA):
             inner, outer = (inner, mid) if rejected(mid) else (mid, outer)
         return inner
 
-    return [bound(min(deltas) - span), bound(max(deltas) + span)]
+    return [bound(lo_start), bound(hi_start)]
 
 
 def compare(
@@ -357,12 +392,15 @@ def compare(
     neutral: bool = False,
     family: int | None = None,
     threshold: float | None = None,
+    clusters: dict | None = None,
 ) -> dict:
     """Test every arm against `baseline` on the items both scored; Holm across the family.
 
-    arms: {arm_id: {item_id: float}}. Returns {"items": [...], "rows": [...]} where each row
-    has n (shared items), mean, baseline_mean, delta (arm - baseline), wins/losses/ties
-    (by direction), p, threshold, verdict.
+    arms: {arm_id: {item_id: float}}. clusters: {item_id: cluster key}, when items come in related
+    groups: p and the interval then come from one sign per cluster (`clustered`), and each row says how
+    many clusters it had. Returns {"items": [...], "rows": [...]} where each row has n (shared items),
+    mean, baseline_mean, delta (arm - baseline), wins/losses/ties (by direction), p, ci, threshold,
+    verdict, and with clusters "clusters".
     """
     base = arms.get(baseline) or {}
     rows, pvals = [], {}
@@ -371,6 +409,11 @@ def compare(
             continue
         shared = sorted(set(scores) & set(base))
         deltas = [scores[i] - base[i] for i in shared]
+        # The unit the test counts: an item, or with clusters a cluster's summed difference.
+        if clusters is not None:
+            units, sizes = clustered(dict(zip(shared, deltas, strict=True)), clusters)
+        else:
+            units, sizes = deltas, [1] * len(deltas)
         sign = 1 if higher_is_better else -1
         row = {
             "arm": arm,
@@ -381,11 +424,13 @@ def compare(
             "wins": sum(1 for d in deltas if d * sign > 0),
             "losses": sum(1 for d in deltas if d * sign < 0),
             "ties": sum(1 for d in deltas if d == 0),
-            "min_p": min_attainable_p(len(shared)),
-            "ci": exact_ci(deltas),
+            "min_p": min_attainable_p(len(units)),
+            "ci": cluster_ci(units, sizes),
         }
-        if len(shared) >= 2 and any(deltas):
-            row["p"] = sign_flip_p(deltas)
+        if clusters is not None:
+            row["clusters"] = len(units)
+        if len(units) >= 2 and any(deltas):
+            row["p"] = sign_flip_p(units)
             pvals[arm] = row["p"]
         else:
             row["p"] = None
@@ -405,7 +450,7 @@ def compare(
 def _set_verdict(row: dict, thr, ok: bool, higher_is_better: bool, neutral: bool) -> None:
     row["threshold"] = thr
     if row["p"] is None:
-        row["verdict"] = "untestable" if row["n"] < 2 else "identical"
+        row["verdict"] = "untestable" if row.get("clusters", row["n"]) < 2 else "identical"
     elif ok and neutral:  # a measurement with no better direction (length, counts)
         row["verdict"] = "significant: higher" if row["delta"] > 0 else "significant: lower"
     elif ok:
@@ -422,6 +467,7 @@ def compare_by(
     higher_is_better: bool = True,
     neutral: bool = False,
     family: int | None = None,
+    clusters: dict | None = None,
 ) -> dict:
     """`compare` within each group of items, with ONE Holm correction over every (group, arm)
     test. Breaking a comparison into k groups makes k times the chances of a false
@@ -433,7 +479,7 @@ def compare_by(
     out, pvals = [], {}
     for g, members in groups.items():
         sub = {a: {i: v for i, v in s.items() if i in members} for a, s in arms.items()}
-        res = compare(sub, baseline, higher_is_better, neutral)
+        res = compare(sub, baseline, higher_is_better, neutral, clusters=clusters)
         for row in res["rows"]:
             if row["p"] is not None:
                 pvals[(g, row["arm"])] = row["p"]

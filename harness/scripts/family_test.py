@@ -62,11 +62,12 @@ from evaluation_harness._common import (  # noqa: E402
     dataset_item_ids,
     die,
     evh_prog,
+    item_clusters,
     item_selection,
 )
 from evaluation_harness._fingerprint import measuring_modules  # noqa: E402
 from evaluation_harness._runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402 -- one implementation of "score per item"
-from evaluation_harness.stats import EXACT_UP_TO, fmt_p, holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
+from evaluation_harness.stats import EXACT_UP_TO, clustered, fmt_p, holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
 
 def _opponents(runs: list, against: str, exclude: str) -> list[str]:
@@ -171,6 +172,12 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--runs-dir", type=Path, default=None, help="default: EVAL_RUNS_DIR, else data/runs")
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument("--items", type=Path, help="file of item_ids; restrict to exactly these")
+    ap.add_argument(
+        "--cluster",
+        metavar="FIELD",
+        help="an item field whose items are not independent: flip one sign per value of it, so related items "
+        "count once (with --round: default the goal's `cluster:`)",
+    )
     ap.add_argument("--permutations", type=int, default=20000)
     ap.add_argument("--alpha", type=float, default=0.05)
     ap.add_argument(
@@ -204,8 +211,10 @@ def _round_defaults(args, runs: list) -> Any:
     if rnd["dataset_id"] != args.dataset_id:
         die(f"round {args.round} is on {rnd['dataset_id']}, not {args.dataset_id}", "mismatch")
     in_play = arms_of(rnd)
-    prim = ((_common.load_goals().get(rnd["goal"]) or {}).get("success_criteria") or {}).get("primary") or {}
+    goal = _common.load_goals().get(rnd["goal"]) or {}
+    prim = (goal.get("success_criteria") or {}).get("primary") or {}
     args.metric = args.metric or prim.get("measure")
+    args.cluster = args.cluster or _common.goal_cluster(goal, args.dataset_id)
     if args.a and args.a not in in_play:
         die(f"{args.a} is not in play in round {args.round} ({', '.join(in_play)})", "not-found")
     values = _round_values(args.dataset_id)
@@ -258,6 +267,7 @@ def _run(args) -> int:
     drop, keep = item_selection(args.exclude_dataset, args.items)
 
     rng = random.Random(args.seed)
+    keys = item_clusters(args.dataset_id, args.cluster) if args.cluster else None
     rows: list[dict] = []
     for opp in _opponents(runs, args.against, args.a):
         B = (
@@ -271,13 +281,18 @@ def _run(args) -> int:
         if len(items) < 3:
             continue
         deltas = [A[i] - B[i] for i in items]
+        # The unit the test flips: an item, or with --cluster a cluster's summed difference.
+        units = clustered(dict(zip(items, deltas, strict=True)), keys)[0] if keys is not None else deltas
+        if len(units) < 2:
+            continue
         rows.append(
             {
                 "opp": opp,
                 "n": len(items),
+                "units": len(units),
                 "delta": statistics.fmean(deltas),
                 "wins": sum(1 for d in deltas if (d < 0 if lower else d > 0)),
-                "p": sign_flip_p(deltas, permutations=args.permutations, rng=rng),
+                "p": sign_flip_p(units, permutations=args.permutations, rng=rng),
             }
         )
     if not rows:
@@ -306,12 +321,16 @@ def _run(args) -> int:
         f"  {args.a}  vs family '{getattr(args, 'family_label', None) or args.against}'   metric={args.metric}  {stratum}"
     )
     print(f"  family size m={m}, declared before the p-values were read")
+    if args.cluster:
+        print(
+            f"  clustered by {args.cluster}: items that share a value count as one (n is items, p is per cluster)"
+        )
     print(f"  Holm step-down at alpha={args.alpha}" + ("  (lower is better)" if lower else ""))
     # SAY WHICH p. Up to EXACT_UP_TO items it is exact, and every command prints the same number.
     # Above that it is a seeded estimate drawn from one random stream for the whole family, so
     # pair-test or the inspector, which draw one per pair, can differ in the third decimal.
     # Per row: opponents can share different numbers of items, so one family can hold both.
-    est = [r["n"] > EXACT_UP_TO for r in rows]
+    est = [r["units"] > EXACT_UP_TO for r in rows]
     if any(est) and not all(est):
         print(
             f"  p: exact up to {EXACT_UP_TO} shared items, a seeded estimate above ({args.permutations} "
@@ -344,7 +363,7 @@ def _run(args) -> int:
                 r["delta"],
                 r["wins"],
                 r["p"],
-                r["n"] <= EXACT_UP_TO,
+                r["units"] <= EXACT_UP_TO,
                 r["p_holm"],
                 r["thresh"],
                 bool(r["sep"]),
@@ -354,7 +373,7 @@ def _run(args) -> int:
     ):
         print(f"    {'opponent':{width}} {'delta':>9} {'A wins':>9} {'p':>8} {'thresh':>8}   verdict")
         for r in rows:
-            pv = ("~" if any(est) and not all(est) and r["n"] > EXACT_UP_TO else "") + fmt_p(r["p"])
+            pv = ("~" if any(est) and not all(est) and r["units"] > EXACT_UP_TO else "") + fmt_p(r["p"])
             print(
                 f"    {r['opp']:{width}} {r['delta']:+9.4f} {r['wins']:>4}/{r['n']:<4} "
                 f"{pv:>8} {r['thresh']:8.4f}   {'SIGNIFICANT' if r['sep'] else '--'}"
@@ -370,6 +389,7 @@ def _run(args) -> int:
             "direction": "lower" if lower else "higher",
             "n": n_items,  # None when the opponents share different numbers of items
             "n_range": [ns[0], ns[-1]],
+            "cluster": args.cluster or None,
             "family_size": m,
             "alpha": args.alpha,
             "correction": "holm",

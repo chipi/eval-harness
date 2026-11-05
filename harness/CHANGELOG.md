@@ -11,6 +11,16 @@ that can move a result is never a patch release without saying so under **Change
 
 ## 0.8.0 — unreleased
 
+### Added
+
+- **Tests that know when items are related.** `--cluster FIELD` on `pair-test`, `family-test` and
+  `bootstrap-test`, and `cluster: FIELD` on a goal's dataset (used by the goal page, `evh goals`, the inspector,
+  rounds and `--round`): items that share a value of the field (one thread's comments, one incident's decisions)
+  count as one. The sign-flip test flips one sign per cluster, the interval is cluster-robust above 30 clusters,
+  the bootstrap draws whole clusters. Tested items one by one, related items made p too small: in a simulation
+  of 12 clusters of 5 with no real difference, the item test called 45% of them significant, the cluster test
+  4%. `validate` (V14) refuses a goal whose cluster field no item carries.
+
 ### Changed
 
 - **Each exit code has one meaning** ([RUNBOOK, Exit codes](docs/RUNBOOK.md#exit-codes)). The cost cap that stops

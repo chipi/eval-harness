@@ -80,6 +80,7 @@ from evaluation_harness._common import (  # noqa: E402
     RUNS,
     die,
     evh_prog,
+    item_clusters,
     item_selection,
 )
 from evaluation_harness._labels import per_class, predictions, reference_labels  # noqa: E402
@@ -113,6 +114,11 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=20260927)
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument("--items", type=Path, help="file of item_ids; restrict to exactly these")
+    ap.add_argument(
+        "--cluster",
+        metavar="FIELD",
+        help="an item field whose items are not independent: resample whole clusters (values of it), not items",
+    )
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
@@ -141,6 +147,7 @@ def main() -> int:
         die(f"no opponents matching {args.against!r}", "not-found")
 
     fn = METRICS[args.metric]
+    keys = item_clusters(args.dataset_id, args.cluster) if args.cluster else {}
     rng = random.Random(args.seed)
     rows = []
     for opp in opponents:
@@ -155,10 +162,17 @@ def main() -> int:
 
         deltas = []
         n = len(items)
+        # The unit resampled: an item, or with --cluster every item of a cluster together (an item with
+        # no value for the field is a cluster of its own).
+        groups: dict = {}
+        for i in items:
+            groups.setdefault(keys.get(i, ("item", i)), []).append(i)
+        # Without --cluster the units are the items in their order, so the draws are the ones 0.7 made.
+        units = [groups[k] for k in sorted(groups, key=str)] if keys else [[i] for i in items]
         for _ in range(args.draws):
             # ONE resample, BOTH arms. Drawing separately for each arm would throw away
             # the pairing and inflate the variance of the difference by roughly two.
-            draw = [items[rng.randrange(n)] for _ in range(n)]
+            draw = [i for _ in range(len(units)) for i in units[rng.randrange(len(units))]]
             deltas.append(fn([a_pairs[i] for i in draw], labels) - fn([b_pairs[i] for i in draw], labels))
         deltas.sort()
         lo = deltas[int(0.025 * len(deltas))]
@@ -167,7 +181,7 @@ def main() -> int:
         # Two-sided, and floored at 1/draws: a bootstrap cannot report a p smaller than
         # its own resolution, and printing 0.0000 would claim precision it does not have.
         p = max(2 * min(below, 1 - below), 1.0 / args.draws)
-        rows.append({"opp": opp, "n": n, "delta": observed, "lo": lo, "hi": hi, "p": p})
+        rows.append({"opp": opp, "n": n, "units": len(units), "delta": observed, "lo": lo, "hi": hi, "p": p})
 
     if not rows:
         die(
@@ -184,6 +198,10 @@ def main() -> int:
 
     print(f"  {args.a}  vs family '{args.against}'   metric={args.metric}  {rows[0]['n']} items")
     print(f"  paired bootstrap, {args.draws} draws, seed {args.seed}")
+    if args.cluster:
+        print(
+            f"  resampling clusters by {args.cluster}: {rows[0]['units']} clusters, items of one cluster drawn together"
+        )
     print(f"  family size m={m}, declared before the p-values were read")
     print(f"  Holm step-down at alpha={args.alpha}\n")
     w = max(len(r["opp"]) for r in rows) + 2
