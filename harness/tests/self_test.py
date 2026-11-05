@@ -776,6 +776,10 @@ def test_example_scorer_suites_pass() -> None:
             "a dataset as Croissant 1.1 (licence, card as rai:, files with sha256, typed fields) and its text card",
         ),
         (
+            "test_croissant_in.py",
+            "a dataset read from a Croissant description: rows, source, licence, card; sha256, parquet, fields refused",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),

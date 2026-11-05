@@ -150,6 +150,13 @@ it already has files (`--force` replaces them). It is found by name as an import
 `manifest`), the project's own `data/dataset_sources/NAME.py`, or `path/to/source.py:Class`. `--source-dir` and
 `--manifest` are the same two built-ins read in place.
 
+**From a Croissant description** (Hugging Face, Kaggle and OpenML publish them): `--source croissant --query
+'{"url": "…", "record_set": "default", "text": "text", "id": "id", "fields": ["label"], "limit": 200}'`.
+It reads a record set whose fields are columns of one CSV, JSON or JSON-lines FileObject, checked against its
+sha256, and records the source block (the publisher's version as `source.revision`), the licence when `evh
+licences` knows it, and the `rai:` properties as the card. Parquet is not read: it needs pyarrow, which the harness
+does not depend on, so Hugging Face's own descriptions (a FileSet of parquet files) are refused, naming that.
+
 **The card** answers the datasheet questions (what the dataset is for, how it was collected and labelled, its
 biases and limits, who maintains it) under Croissant RAI 1.0's property names, so an export writes them as they
 are: `evh dataset-describe --card-template > card.yaml` prints each key with its question, `evh dataset-describe

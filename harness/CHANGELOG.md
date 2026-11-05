@@ -75,6 +75,11 @@ that can move a result is never a patch release without saying so under **Change
   sha256, the items as a record set with typed fields); without `--format` it prints the card as text (also an MCP
   tool). A required property the record cannot give is named, never invented. Not run through `mlcroissant`.
 
+- **A dataset from a Croissant description.** `--source croissant` reads any Croissant file or URL whose record set is
+  columns of a CSV, JSON or JSON-lines file (its sha256 checked), with the description's licence, version (as
+  `source.revision`) and `rai:` card. Parquet is not read yet (it needs pyarrow), so Hugging Face's descriptions,
+  whose data is parquet, are refused with that reason.
+
 ### Changed
 
 - **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from
