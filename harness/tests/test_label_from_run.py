@@ -22,7 +22,18 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+
+def _set_output(d, item, text):
+    """Change one output of a run in place (None removes it), as a hand edit of its outputs.jsonl would."""
+    texts = _outputs.outputs(d)
+    texts.pop(item, None)
+    if text is not None:
+        texts[item] = text
+    _outputs.write_all(d, texts, list(texts))
+
 
 proj = Path(tempfile.mkdtemp(prefix="evh-labelrun-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-labelrun")
@@ -113,7 +124,7 @@ try:
         m["build"] = {"ref": "abc", "dirty": True}
 
     def empty(d, m):
-        (d / "outputs" / "t03_export.txt").write_text("   \n")
+        _set_output(d, "t03_export", "   \n")
 
     def cut_off(d, m):
         m["params"]["max_tokens"] = 40
@@ -146,8 +157,9 @@ try:
     src_run = data / "runs" / author
     run_m = json.loads((src_run / "metrics.json").read_text())
     same = all(
-        (LABELS / "author_v1" / f.name).read_text() == f.read_text().strip() + "\n"
-        for f in (src_run / "outputs").glob("t*.txt")
+        (LABELS / "author_v1" / f"{k}.txt").read_text() == v.strip() + "\n"
+        for k, v in _outputs.outputs(src_run).items()
+        if k.startswith("t")
     )
     check(
         "label-from-run: the run's outputs as labels (each stripped, one newline), no calls",
@@ -285,16 +297,16 @@ try:
     one.write_bytes(was)
     for f in nr.glob("*.txt"):
         f.unlink()
-    first = sorted((src_run / "outputs").glob("t*.txt"))[0]
-    kept = first.read_bytes()
-    first.write_text("an output that changed after the set was made")
+    first = sorted(k for k in _outputs.outputs(src_run) if k.startswith("t"))[0]
+    kept = _outputs.output(src_run, first)
+    _set_output(src_run, first, "an output that changed after the set was made")
     r = evh(*rebuild.split()[1:])
     check(
         "a rebuild from a run that changed since is refused, and writes nothing",
         refused(r, "do not match") and not list(nr.glob("*.txt")),
         out(r)[-300:],
     )
-    first.write_bytes(kept)
+    _set_output(src_run, first, kept)
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

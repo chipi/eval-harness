@@ -21,6 +21,7 @@ HARNESS = Path(__file__).resolve().parents[1]
 HERE = HARNESS / "scripts"
 KIT = HARNESS / "tutorial"
 sys.path.insert(0, str(HARNESS))
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-failed-"))
@@ -120,8 +121,8 @@ try:
     check(
         "... and no output is written for it, so --resume calls it again",
         run is not None
-        and not (run / "outputs" / "t02_invoice.txt").exists()
-        and (run / "outputs" / "t01_login.txt").exists(),
+        and _outputs.output(run, "t02_invoice") is None
+        and _outputs.output(run, "t01_login") is not None,
     )
 
     r = evh("run", "--config", str(data / "configs" / "all.yaml"))

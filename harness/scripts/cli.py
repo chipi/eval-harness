@@ -56,6 +56,7 @@ COMMANDS = {
         "a dataset's card: what, where from, the datasheet's answers; or it as Croissant 1.1",
     ),
     "licences": ("view_licences.py", "the licences a dataset can name (SPDX ids), a line each"),
+    "run-migrate": ("run_migrate.py", "bring the runs to one outputs file each (RFC-024), once (idempotent)"),
     "dataset-migrate": (
         "dataset_migrate.py",
         "bring the dataset records to this release's format, once (idempotent)",

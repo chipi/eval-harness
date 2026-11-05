@@ -1,1 +1,0 @@
-[{"text": "GDR", "type": "organization"}, {"text": "West Germany", "type": "location"}, {"text": "GDR", "type": "organization"}, {"text": "social security system", "type": "organization"}]

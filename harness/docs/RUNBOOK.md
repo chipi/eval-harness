@@ -634,8 +634,11 @@ Three things worth knowing:
   `_meta` all carry over from the pass that produced it, and every replayed row is
   flagged `resumed: 1` so you can separate them. It reports what the *results* cost,
   not what this pass cost. The values come from the rows appended to
-  `outputs/_rows.jsonl` as each item completes, so a crashed run, which never wrote
-  `predictions.jsonl`, still carries them.
+  `rows.partial.jsonl` as each item completes, so a crashed run, which never wrote
+  `predictions.jsonl`, still carries them. A run's outputs are one file, `outputs.jsonl`, a line per item appended
+  as it is produced (a torn last line from a kill is not an output, so that item is called again) and rewritten in
+  dataset order when the run completes; a derived run (a re-score, a judging, a sheet import) keeps no outputs of its
+  own and reads its source's (RFC-024).
 - **You cannot resume from a different arm, or from one that cannot be identified.**
   The source's `config_id` and `dataset_id` are checked against the config you are
   launching and a mismatch is refused. Identity comes from `run.json`, written **before
@@ -769,7 +772,7 @@ evh runs-list --baselines
 evh validate
 ```
 
-Twenty-two checks (V1–V22): schema conformance (datasets, runs, baselines, configs, judge
+Twenty-three checks (V1–V23): schema conformance (datasets, runs, baselines, configs, judge
 scorers, judging sets, verdicts, dataset profiles), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results (two arms with different outputs
@@ -782,7 +785,7 @@ every run that must name one, every item field declared, typed and matching its 
 reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
 records matching the hashes it recorded, every model record and the configs naming it consistent, and every label set
 matching its hashes and its dataset, every `hypothesis:` in an arm config sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21), and every dataset's version the one its lineage gives, its licence
-on the list, its source block in form and its card's keys Croissant RAI's (V22). V4
+on the list, its source block in form and its card's keys Croissant RAI's (V22). Every run's outputs are readable: none left in the layout before 0.8.0, and a derived run finds its source's (V23). V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters).
 

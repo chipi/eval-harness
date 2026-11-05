@@ -1,6 +1,6 @@
 # RFC-024: A run's outputs in one file, read through one function
 
-- **Status**: Proposed (2026-11-05), for 0.8.0 S (scale to 1,000–10,000 items). Owner's go to write it: 2026-11-05.
+- **Status**: Accepted and built for 0.8.0 (2026-11-05, the owner's go to build it). See "As built".
 - **Authors**: Marko Dragoljevic
 - **Related**: [RFC-002](RFC-002-run-records-and-derived-runs.md) (the run directory, derived runs);
   [RFC-019](RFC-019-datasets-from-production.md) §4 (hidden text, which a release strips);
@@ -92,7 +92,7 @@ to 0.8.0 runs `evh run-migrate` once, as UPGRADING will say.
 Because every module reads and writes outputs through `_outputs.py`, the layout under it can be swapped without
 touching them: files (`outputs.jsonl`, the default, diffable and committed) or, later, a SQLite database per project
 (`sqlite3` is in Python's standard library: no dependency). A store would be chosen per project (a key in its config),
-and `evh run-migrate --to sqlite|files` would move runs between the two, checked by the same signatures. What SQLite
+and a migration would move runs between the two, checked by the same signatures. What SQLite
 would add: one file for a whole project's runs (no inode count at all), indexed reads by item across runs (the sheet
 and the inspector at 10,000 items × 50 arms), and transactions for concurrent writers. What it costs: the committed
 runs stop being reviewable as text in git, so it fits a project whose runs are not committed (production-scale data,
@@ -123,6 +123,26 @@ the fleet's), not this repository's. Not planned for any release; the reader's i
   the inspector and a release, each on the new layout.
 - A test that fails when a module outside `_outputs.py` builds an `outputs/` path.
 - S1's bench again at 1,000 and 10,000 items × 50 arms: files, and the timings above.
+
+## As built (0.8.0)
+
+- `_outputs.py` (writer, finish, output, outputs, source, signature), `run.py` writing and resuming through it, the
+  row checkpoint renamed `rows.partial.jsonl` at the run's top and deleted by `finish()`; `rescore`, `judge-score` and
+  `sheet-import` no longer copy outputs; label-from-run, label-sheet (the sheet and the inspector), `_labels`,
+  judge-panel, silver-calibrate, the catalog adapter, `_release` and validate read through it.
+- A derived run records its source's directory, `derived.from_dir` (under the data directory), and reads that run's
+  outputs and no other: `derived.from` is only a name, and a sibling of the same name (a re-score of the same source
+  that kept different outputs) was read in the source's place when the source was gone (found by the migration test).
+  A record without it is found by name, a measured run first. The migration wrote `from_dir` for the 431 committed
+  derived runs that read their source's outputs.
+- `evh run-migrate` on this repository: 736 run directories, 305 with an outputs file, 431 derived reading their
+  source's (54 derived runs keep their own: their source is not committed); 94,796 files became 305. Checked
+  independently against a checkout of the commit before: 736 runs, 94,795 outputs, texts and V5 signatures, 0
+  different.
+- `validate` V23: a run left in the old layout (with the command that moves it), and a derived run with no outputs of
+  its own whose source is not here, are named. On this repository: 736 runs, every one's outputs readable.
+- Found on the way: a resume from a run that kept no row checkpoint crashed (`_Resumed` read `_extra` from an empty
+  row); fixed. A run's row checkpoint is now `rows.partial.jsonl` and is deleted when the run completes.
 
 ## Open for the owner
 

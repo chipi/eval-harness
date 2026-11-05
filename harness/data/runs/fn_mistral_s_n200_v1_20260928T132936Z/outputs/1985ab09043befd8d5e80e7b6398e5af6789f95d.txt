@@ -1,7 +1,0 @@
-```json
-[
-  {"text": "Haitian refugee community", "type": "organization"},
-  {"text": "Aristide", "type": "person"},
-  {"text": "military regime", "type": "organization"}
-]
-```

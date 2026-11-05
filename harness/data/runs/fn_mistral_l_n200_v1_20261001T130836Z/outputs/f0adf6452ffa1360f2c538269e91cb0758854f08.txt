@@ -1,8 +1,0 @@
-```json
-[
-    {
-        "text": "Native speakers",
-        "type": "other"
-    }
-]
-```

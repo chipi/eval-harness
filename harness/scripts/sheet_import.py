@@ -40,7 +40,6 @@ import argparse
 import hashlib
 import json
 import re
-import shutil
 from pathlib import Path
 from typing import Any
 
@@ -316,6 +315,7 @@ def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> 
             m,
             kind="judge",
             source_dir=src.name,
+            source_path=src,
             scores=aggregate_scores(recs),
             n_items=len(recs),
             drop=("reference_tier",),
@@ -350,9 +350,7 @@ def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> 
             )
             new["fingerprint"] = fp
         out = root / src.name
-        (out / "outputs").mkdir(parents=True, exist_ok=True)
-        for f in (src / "outputs").glob("*.txt"):
-            shutil.copy2(f, out / "outputs" / f.name)
+        out.mkdir(parents=True, exist_ok=True)  # no outputs of its own: they are its source's (RFC-024)
         write_text_atomic(
             out / "predictions.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in recs)
         )

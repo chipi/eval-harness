@@ -43,6 +43,7 @@ def at(script: str) -> str:
     return f"scripts/{script}"
 
 
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, results  # noqa: E402
 
 
@@ -800,6 +801,14 @@ def test_example_scorer_suites_pass() -> None:
             "the kaggle source on a local API: a version's zip, its one table, the licence name mapped; no kagglehub",
         ),
         (
+            "test_outputs.py",
+            "a run's outputs in one file (RFC-024): append, a torn line, finish, resume, a derived run reads its source's",
+        ),
+        (
+            "test_run_migrate.py",
+            "run-migrate: outputs/ to outputs.jsonl byte for byte, derived copies dropped, idempotent, non-UTF-8 refused",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),
@@ -1075,30 +1084,15 @@ def test_resume_scores_and_persists() -> None:
         shutil.rmtree(runs, ignore_errors=True)
         return
     src = sorted(p.name for p in runs.iterdir() if p.is_dir())[0]
-    outs = sorted((runs / src / "outputs").glob("*.txt"))
+    outs = sorted(_outputs.outputs(runs / src))
     check("resume: outputs are on disk after a pass", len(outs) > 0, str(len(outs)))
 
-    # THE PROPERTY A CRASH ACTUALLY DEPENDS ON: outputs are written AS THEY ARE
-    # PRODUCED, not gathered up at the end. The simulated crash below (deleting files
-    # and resuming) exercises the resume path but would pass just as happily against a
-    # version that wrote everything in one go after the last item -- which is the
-    # version that lost a whole pass of paid outputs.
-    #
-    # Checked by mtime, which is the observable this leaves behind: every output must
-    # predate metrics.json, and the first must predate the last, because they were
-    # written one at a time while the pass ran.
-    mj = runs / src / "metrics.json"
-    if len(outs) > 1 and mj.is_file():
-        t_out = sorted(f.stat().st_mtime for f in outs)
-        check(
-            "resume: outputs are written DURING the pass, not after it",
-            t_out[-1] <= mj.stat().st_mtime and t_out[0] <= t_out[-1],
-            f"last output {t_out[-1]:.3f}, metrics {mj.stat().st_mtime:.3f}",
-        )
+    # Outputs are written AS THEY ARE PRODUCED (one synced line per item, RFC-024), not gathered at the end: proved
+    # on a pass that really stopped, in test_run_reports.py (the stopped run keeps its outputs and rows).
 
     # Simulate a crash: drop all but one output, as if the pass died at item 2.
-    for f in outs[1:]:
-        f.unlink()
+    kept = _outputs.outputs(runs / src)
+    _outputs.write_all(runs / src, {outs[0]: kept[outs[0]]}, outs[:1])
     r2 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", "--resume", src, env=env)
     check("resume: the resumed pass exits 0", r2.returncode == 0, (r2.stderr or "")[-160:])
     newest = max((p for p in runs.iterdir() if p.is_dir()), key=lambda p: p.stat().st_mtime)
@@ -1148,7 +1142,7 @@ def test_resume_scores_and_persists() -> None:
                 f"orig keys {sorted(o['_meta'])} now {sorted(r.get('_meta') or {})}",
             )
 
-    # THE ACTUAL CRASH SHAPE: outputs/ and run.json, no metrics.json, no
+    # THE ACTUAL CRASH SHAPE: outputs.jsonl, the row checkpoint and run.json, no metrics.json, no
     # predictions.jsonl -- because both are written only after the pass returns.
     #
     # Round 2 taught resume to carry each replayed item's cost, tokens and _meta
@@ -1159,17 +1153,15 @@ def test_resume_scores_and_persists() -> None:
     crash = runs / "crashed"
     shutil.rmtree(crash, ignore_errors=True)
     shutil.copytree(runs / src, crash)
+    # What the pass had appended when it died: its rows (a finished run drops the checkpoint; a real stop keeps it,
+    # test_run_reports.py).
+    shutil.copy2(crash / "predictions.jsonl", crash / _outputs.ROWS)
     (crash / "metrics.json").unlink(missing_ok=True)
     (crash / "predictions.jsonl").unlink(missing_ok=True)
     check(
         "resume: a crashed run still carries its identity (run.json)",
         (crash / "run.json").is_file(),
         "run.json must be written before the first item, not after the pass",
-    )
-    check(
-        "resume: and its per-item rows (outputs/_rows.jsonl)",
-        (crash / "outputs" / "_rows.jsonl").is_file(),
-        "rows must be appended during the pass, not written at the end",
     )
 
     r3 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", "--resume", "crashed", env=env)
@@ -1242,9 +1234,11 @@ def test_resume_scores_and_persists() -> None:
             ((rf.stderr or "") + (rf.stdout or ""))[-200:],
         )
     else:
-        fx_outs = sorted((runs / "fx_src" / "outputs").glob("*.txt"))
-        for f in fx_outs[1:]:
-            f.unlink()
+        fx_texts = _outputs.outputs(runs / "fx_src")
+        fx_first = sorted(fx_texts)[0]
+        _outputs.write_all(runs / "fx_src", {fx_first: fx_texts[fx_first]}, [fx_first])
+        # What the pass had appended when it died: its rows (a finished run drops the checkpoint).
+        shutil.copy2(runs / "fx_src" / "predictions.jsonl", runs / "fx_src" / _outputs.ROWS)
         (runs / "fx_src" / "metrics.json").unlink(missing_ok=True)
         (runs / "fx_src" / "predictions.jsonl").unlink(missing_ok=True)
         rr = run(
@@ -1312,8 +1306,7 @@ def test_resume_scores_and_persists() -> None:
     # with arm_b's answers.
     anon = runs / "anonymous"
     shutil.rmtree(anon, ignore_errors=True)
-    (anon / "outputs").mkdir(parents=True)
-    (anon / "outputs" / "item_01.txt").write_text("from who knows where")
+    _outputs.writer(anon).add("item_01", "from who knows where")
     r4 = run("scripts/run.py", "--config", "data/configs/arm_a.yaml", "--resume", "anonymous", env=env)
     m4 = (r4.stderr or "") + (r4.stdout or "")
     check(
@@ -1430,7 +1423,7 @@ def test_rescore_rehashes_the_references_it_actually_read() -> None:
     src = None
     for d in sorted((HERE.parent / "data" / "runs").glob("fn_*")):
         m = d / "metrics.json"
-        if m.is_file() and (d / "outputs").is_dir():
+        if m.is_file() and _outputs.has_outputs(d):
             j = _json.loads(m.read_text())
             if ((j.get("fingerprint") or {}).get("data") or {}).get("reference_id"):
                 src = d
@@ -1445,7 +1438,7 @@ def test_rescore_rehashes_the_references_it_actually_read() -> None:
     dst.mkdir(parents=True)
     for n in ("metrics.json", "predictions.jsonl"):
         shutil.copy2(src / n, dst / n)
-    shutil.copytree(src / "outputs", dst / "outputs")
+    _outputs.write_all(dst, _outputs.outputs(src), list(_outputs.outputs(src)))
     j = _json.loads((dst / "metrics.json").read_text())
     j["fingerprint"]["data"]["references_sha256"] = "0" * 64  # cannot match
     (dst / "metrics.json").write_text(_json.dumps(j))
@@ -1511,7 +1504,7 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
     mat = HERE.parent / "data" / "materialized" / "cnn_dailymail_200"
     src = None
     for d in sorted((HERE.parent / "data" / "runs").glob("cnn_*_n200_v1_*")):
-        if (d / "metrics.json").is_file() and (d / "outputs").is_dir():
+        if (d / "metrics.json").is_file() and _outputs.has_outputs(d):
             src = d
             break
     if src is None or not ds_file.is_file() or not mat.is_dir():
@@ -1529,7 +1522,7 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
     dst.mkdir(parents=True)
     for n in ("metrics.json", "predictions.jsonl"):
         shutil.copy2(src / n, dst / n)
-    shutil.copytree(src / "outputs", dst / "outputs")
+    _outputs.write_all(dst, _outputs.outputs(src), list(_outputs.outputs(src)))
 
     env = {"EVAL_RUNS_DIR": str(tmp.relative_to(HERE.parent))}
     base = run(
@@ -2214,7 +2207,7 @@ def test_rescore_refuses_a_missing_reference_set() -> None:
     src = None
     for d in sorted((HERE.parent / "data" / "runs").glob("*")):
         mj = d / "metrics.json"
-        if not (mj.is_file() and (d / "outputs").is_dir()):
+        if not (mj.is_file() and _outputs.has_outputs(d)):
             continue
         m = _json.loads(mj.read_text())
         if ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id"):
@@ -2230,7 +2223,7 @@ def test_rescore_refuses_a_missing_reference_set() -> None:
     dst.mkdir(parents=True)
     for name in ("metrics.json", "predictions.jsonl"):
         shutil.copy2(src / name, dst / name)
-    shutil.copytree(src / "outputs", dst / "outputs")
+    _outputs.write_all(dst, _outputs.outputs(src), list(_outputs.outputs(src)))
 
     # Point the copy at a reference_id that cannot exist. Equivalent to a fresh clone,
     # where the real one is absent because the corpus is gitignored -- and it does not
@@ -2405,13 +2398,12 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
         for name, text in (("arm_a", "label: billing"), ("arm_b", "label: billing\nreason: a refund")):
             shutil.rmtree(root / name)
             make(name, f"model-{name}", [1, 1, 1, 1])
-            (root / name / "outputs").mkdir()
-            for i in range(4):
-                (root / name / "outputs" / f"i{i}.txt").write_text(text)
+            _outputs.write_all(root / name, {f"i{i}": text for i in range(4)}, [f"i{i}" for i in range(4)])
         dupes = vt._v5_in(root)
         check("V5: all items right, different outputs -> not flagged", not dupes, str(dupes)[:200])
-        for i in range(4):
-            (root / "arm_b" / "outputs" / f"i{i}.txt").write_text("label: billing")
+        _outputs.write_all(
+            root / "arm_b", {f"i{i}": "label: billing" for i in range(4)}, [f"i{i}" for i in range(4)]
+        )
         dupes = vt._v5_in(root)
         check("V5: all items right, the same outputs -> flagged", len(dupes) == 1, str(dupes)[:200])
 
@@ -2440,10 +2432,15 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
         shutil.rmtree(d, ignore_errors=True)
     try:
         shutil.copytree(src, runs / src.name)
-        # the run's outputs, as a person's labels promoted to gold (RFC-023: a reference is only promoted labels)
+        # the run's outputs, as a person's labels promoted to gold (RFC-023: a reference is only promoted labels):
+        # label-import reads a folder of <item_id>.txt, so they are written out as one first
+        as_labels = runs / "_as_labels"
+        as_labels.mkdir(parents=True, exist_ok=True)
+        for item, text in _outputs.outputs(src).items():
+            (as_labels / f"{item}.txt").write_text(text, encoding="utf-8")
         made = run(
             "scripts/label_import.py",
-            str((src / "outputs").relative_to(HERE.parent)),
+            str(as_labels.relative_to(HERE.parent)),
             "--dataset-id",
             "smoke_v1",
             "--set",
@@ -3395,9 +3392,7 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         )
         for arm, fam in (("arm_a", "gemma"), ("arm_b", "qwen")):
             d = data / "runs" / f"{arm}_20260101T000000Z"
-            (d / "outputs").mkdir(parents=True)
-            for i in ids:
-                (d / "outputs" / f"{i}.txt").write_text(f"{arm} summary of {i}\n")
+            _outputs.write_all(d, {i: f"{arm} summary of {i}\n" for i in ids}, list(ids))
             (d / "predictions.jsonl").write_text(
                 "".join(_json.dumps({"item_id": i, "rouge1": 0.3}) + "\n" for i in ids)
             )

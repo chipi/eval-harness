@@ -1,6 +1,0 @@
-[
-  {
-    "text": "The show",
-    "type": "event"
-  }
-]

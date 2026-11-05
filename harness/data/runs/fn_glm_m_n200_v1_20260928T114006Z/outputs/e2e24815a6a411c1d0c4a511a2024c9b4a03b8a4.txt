@@ -1,4 +1,0 @@
-[
-  {"text": "Geraldine Kemper", "type": "person"},
-  {"text": "Jamai Loman", "type": "person"}
-]

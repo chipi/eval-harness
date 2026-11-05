@@ -1,1 +1,0 @@
-[{"text": "On April", "type": "location"}, {"text": "Cartoon Planet", "type": "location"}]

@@ -281,6 +281,7 @@ def main() -> int:
             ("labels", [], "ok:tickets_v1/installed_from_run: model"),
             ("tags", [], "ok:No tag sets yet"),
             ("licences", ["--search", "share"], "ok:CC-BY-SA-4.0"),
+            ("run-migrate", ["--dry-run"], "ok:run(s)"),
             ("dataset-publish", ["--dataset-id", "tickets_v1", "--to", "folder"], "cannot publish"),
             (
                 "fieldset-propose",

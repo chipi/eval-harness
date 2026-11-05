@@ -30,6 +30,7 @@ import yaml
 
 # The harness's own run reading, so the panel finds runs where every command does (the
 # project, EVAL_RUNS_DIR) and picks the metric the same way.
+from evaluation_harness import _outputs
 from evaluation_harness._common import ROOT, RUNS, die, evh_prog
 from evaluation_harness._runs import default_metric, direction, item_rows, runs_on
 from evaluation_harness.panel_judges import ItemScore, build_judge
@@ -374,9 +375,9 @@ def _items_of(finalist: RunCandidate, n: int) -> list[dict[str, Any]]:
     d = Path(finalist.run_dir)
     items: list[dict[str, Any]] = []
     for row in item_rows(d):
-        out = d / "outputs" / f"{row['item_id']}.txt"
-        if out.is_file():
-            items.append({"item_id": row["item_id"], "content": out.read_text(encoding="utf-8")})
+        text = _outputs.output(d, row["item_id"])
+        if text is not None:
+            items.append({"item_id": row["item_id"], "content": text})
         if len(items) == n:
             break
     if not items:

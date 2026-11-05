@@ -30,6 +30,7 @@ from evaluation_harness import judging
 from evaluation_harness._common import load_module
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 
@@ -807,10 +808,10 @@ with tempfile.TemporaryDirectory() as tmp:
     arms = []
     for a in ARMS:
         d = runs / a["run"]
-        (d / "outputs").mkdir(parents=True)
+        d.mkdir(parents=True)
         rows = []
         for i in ITEMS:
-            (d / "outputs" / f"{i}.txt").write_text(OUTPUTS[a["config_id"]][i])
+            _outputs.writer(d).add(i, OUTPUTS[a["config_id"]][i])
             rows.append(
                 {
                     "item_id": i,
@@ -2916,10 +2917,10 @@ with tempfile.TemporaryDirectory() as tmp:
     arms_d = []
     for a in MARMS:
         d = runs / a["run"]
-        (d / "outputs").mkdir(parents=True)
+        d.mkdir(parents=True)
         outs = m_outputs()
         for i in MITEMS:
-            (d / "outputs" / f"{i}.txt").write_text(outs[a["config_id"]][i])
+            _outputs.writer(d).add(i, outs[a["config_id"]][i])
         (d / "predictions.jsonl").write_text(
             "".join(
                 json.dumps({"item_id": i, "coverage": 0.3, "cost_usd": 0.001, "latency_ms": 5.0}) + "\n"

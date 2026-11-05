@@ -1,1 +1,0 @@
-[{"text":"Olivares","type":"person"},{"text":"University of Lima School of Law","type":"organization"}]

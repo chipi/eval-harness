@@ -1,1 +1,0 @@
-[{"text":"Four corps","type":"other"}]

@@ -39,7 +39,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _jsonout
+from evaluation_harness import _jsonout, _outputs
 from evaluation_harness._adapter import (
     calls_per_item,
     load_adapter,
@@ -147,7 +147,7 @@ class _Resumed:
         # extras under `_extra` (empty when it has none), and exactly that is carried.
         self.extra: dict[str, float] = {
             k: float(v)
-            for k, v in prior["_extra"].items()
+            for k, v in (prior.get("_extra") or {}).items()  # none when the run resumed from kept no rows
             if isinstance(v, (int, float)) and not isinstance(v, bool)
         }
         self.meta: dict[str, Any] = dict(prior.get("_meta") or {})
@@ -217,7 +217,7 @@ def _say_stopped(run_dir: Path, n_items: int, config: Any, exc: BaseException) -
     """What a run that stopped mid-pass left, and the two ways on: resume it, or delete it.
     A crash used to end in the adapter's traceback alone, the run directory stayed with no
     metrics.json, and the next `validate` failed V7 with nothing having said why."""
-    done = len(list((run_dir / "outputs").glob("*.txt"))) if (run_dir / "outputs").is_dir() else 0
+    done = _outputs.count(run_dir)
     what = "interrupted" if isinstance(exc, KeyboardInterrupt) else f"{type(exc).__name__}: {str(exc)[:160]}"
     print(
         f"\nSTOPPED: run {run_dir.name} stopped after {done} of {n_items} item(s) ({what}).\n"
@@ -399,10 +399,13 @@ def one_pass(
     # this directory, so the feature meant to rescue you had nothing to read: the two
     # failures compounded into "a crash costs you the entire arm".
     #
-    # The cost of writing incrementally is one small file per item. The cost of not
+    # The cost of writing incrementally is one synced line per item (RFC-024). The cost of not
     # doing it was measured in dollars.
     if live_dir is not None:
         live_dir.mkdir(parents=True, exist_ok=True)
+    live = _outputs.writer(live_dir) if live_dir is not None else None
+    # The previous attempt's outputs (RFC-024: its outputs.jsonl), read once.
+    prior_out = _outputs.outputs(resume_dir) if resume_dir is not None else {}
 
     n_items = len(ds["items"])
     every = progress_every(n_items)
@@ -418,8 +421,7 @@ def one_pass(
         # produced no prediction row and no score. A fully-resumed run therefore emitted
         # an empty `predictions.jsonl` and a metrics file with no scores in it, while
         # reporting success. The outputs were all present and none of them counted.
-        done = resume_dir / f"{item['item_id']}.txt" if resume_dir else None
-        resumed = done is not None and done.is_file()
+        resumed = item["item_id"] in prior_out
 
         if not resumed and cap is not None and spent >= cap:
             # Check BEFORE the call: the cap is a ceiling on spend, not a report of
@@ -432,8 +434,7 @@ def one_pass(
         source_text = src.read_text(encoding="utf-8", errors="replace")
 
         if resumed:
-            assert done is not None  # resumed means it is on disk
-            res: Any = _Resumed(done.read_text(encoding="utf-8"), (prior_rows or {}).get(item["item_id"]))
+            res: Any = _Resumed(prior_out[item["item_id"]], (prior_rows or {}).get(item["item_id"]))
         elif recorded is not None:
             from evaluation_harness.adapter import Result  # noqa: PLC0415
 
@@ -481,10 +482,10 @@ def one_pass(
         failed = bool(failed_items) and failed_items[-1]["item_id"] == item["item_id"]
         outputs[item["item_id"]] = res.output
         # A failed item's output is not written: --resume calls it again.
-        if live_dir is not None and not resumed and not failed:
-            # Atomic: `--resume` treats the presence of this file as proof the item is
-            # done, so a half-written one is replayed as the model's answer and scored.
-            write_text_atomic(live_dir / f"{item['item_id']}.txt", res.output)
+        if live is not None and not resumed and not failed:
+            # One synced line per item: `--resume` treats a complete line as proof the item is done, and a torn
+            # last line (a kill mid-append) as not done, so a half-written output is never replayed and scored.
+            live.add(item["item_id"], res.output)
 
         reference = None
         if ref_dir is not None:
@@ -541,7 +542,7 @@ def one_pass(
         # THE ROW GOES TO DISK NOW, NOT AT THE END OF THE PASS.
         #
         # `predictions.jsonl` is written after one_pass RETURNS, so a crashed run has
-        # outputs/ and nothing else. Round 2 taught the resume path to carry each
+        # its outputs and nothing else. Round 2 taught the resume path to carry each
         # replayed item's cost, tokens and _meta forward -- from predictions.jsonl,
         # which by construction does not exist in the one case resume is for. So the
         # fix worked for a tidy re-run and not for a crash, and RUNBOOK said "a
@@ -551,7 +552,7 @@ def one_pass(
         # Appended per item, so a kill at item k leaves k rows. Not atomic-per-file
         # because it is an append, but a torn final line is discarded on read.
         if live_dir is not None and not resumed:
-            with (live_dir / "_rows.jsonl").open("a", encoding="utf-8") as fh:
+            with (live_dir / _outputs.ROWS).open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(row, sort_keys=True) + "\n")
                 fh.flush()
                 os.fsync(fh.fileno())
@@ -760,17 +761,17 @@ def _dry_run(
 def _resume_source(
     resume: str | None, cfg: dict[str, Any], runs: Path = RUNS
 ) -> tuple[Path | None, dict[str, dict[str, Any]]]:
-    """For `--resume <run_id>`: (its outputs directory, {item_id: its row}); (None, {}) without. The run is looked
+    """For `--resume <run_id>`: (its run directory, {item_id: its row}); (None, {}) without. The run is looked
     for in `runs` (the runs directory, or a label set's). Dies when the run cannot be resumed as this arm."""
     if not resume:
         return None, {}
-    resume_dir = runs / resume / "outputs"
-    if not resume_dir.is_dir():
-        die(f"cannot resume: no outputs under {resume_dir}", "not-found")
+    resume_dir = runs / resume
+    if not (resume_dir / _outputs.FILE).is_file():
+        die(f"cannot resume: no outputs in {resume_dir} ({_outputs.FILE})", "not-found")
 
     # RESUMING FROM ANOTHER ARM'S OUTPUTS WAS ACCEPTED WITHOUT A WORD.
     #
-    # `--resume` took a run id and read its outputs/ directory. Nothing compared that
+    # `--resume` took a run id and read its outputs. Nothing compared that
     # run's arm to the one being launched, so
     #   make run CONFIG=arm_glm_s.yaml ARGS="--resume <a qwen_s run>"
     # replayed qwen_s's answers, scored them, and recorded the whole thing as glm_s --
@@ -818,9 +819,9 @@ def _resume_source(
         )
 
     # THE PRIOR ROWS, so a replayed item keeps the cost, tokens, latency and _meta
-    # measured for it. `outputs/_rows.jsonl` is appended DURING the pass and so
+    # measured for it. The row checkpoint is appended DURING the pass and so
     # survives a crash; predictions.jsonl is the tidy-exit copy of the same thing.
-    for src in (runs / resume / "outputs" / "_rows.jsonl", runs / resume / "predictions.jsonl"):
+    for src in (runs / resume / _outputs.ROWS, runs / resume / "predictions.jsonl"):
         if not src.is_file():
             continue
         for line in src.read_text(encoding="utf-8").splitlines():
@@ -1137,7 +1138,7 @@ def _run(args: argparse.Namespace) -> int:
         # returns, so a crashed run could not say which arm produced its outputs --
         # which made `--resume`'s arm guard unenforceable in the one case resume is
         # for. This is small, written first, and never rewritten.
-        (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
+        run_dir.mkdir(parents=True, exist_ok=True)
         write_json(
             run_dir / "run.json",
             {
@@ -1156,7 +1157,7 @@ def _run(args: argparse.Namespace) -> int:
                 i,
                 resume_dir=resume_dir,
                 prior_rows=prior_rows,
-                live_dir=run_dir / "outputs",
+                live_dir=run_dir,
                 call_system=call_system,
                 score=score,
                 extra_transient=transient_markers(adapter_path),
@@ -1177,17 +1178,15 @@ def _run(args: argparse.Namespace) -> int:
             run_dir / "predictions.jsonl",
             "".join(json.dumps(p, sort_keys=True) + "\n" for p in result["predictions"]),
         )
-        # Outputs are already on disk -- written per item by `one_pass`. Rewriting them
-        # here only matters for a resumed pass, whose outputs came from the PREVIOUS
-        # run's directory and must be copied into this one so the run is self-contained.
-        (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
+        # The outputs were appended as produced; the finished file is every output in dataset order, a resumed
+        # item's included (it came from the PREVIOUS run, and this one must be self-contained), a failed item's
+        # left out (not done: --resume calls it again). The row checkpoint goes: predictions.jsonl has the rows.
         failed_ids = {f["item_id"] for f in result.get("failed_items") or []}
-        for item_id, text in result["outputs"].items():
-            if item_id in failed_ids:
-                continue  # not done: --resume calls it again
-            dest = run_dir / "outputs" / f"{item_id}.txt"
-            if not dest.is_file():
-                write_text_atomic(dest, text)
+        _outputs.finish(
+            run_dir,
+            {k: v for k, v in result["outputs"].items() if k not in failed_ids},
+            [it["item_id"] for it in ds.get("items") or []],
+        )
 
         metrics = run_record(
             run_id=run_id,

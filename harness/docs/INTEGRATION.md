@@ -28,7 +28,7 @@ no extra to add. It needs Python 3.10 or later.
 
 Keep `data/materialized/` out of git (derived; the `.gitignore` `evh init` writes already
 does this) and decide whether to commit runs: keep each run's `metrics.json`,
-`predictions.jsonl` and `outputs/` so scores can be recomputed. A project whose own layout
+`predictions.jsonl` and `outputs.jsonl` so scores can be recomputed. A project whose own layout
 puts the harness's records elsewhere sets `EVAL_DATA_DIR`.
 
 Your project **does not depend on it at runtime**, and it has no dependency on your

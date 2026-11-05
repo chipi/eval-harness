@@ -34,12 +34,12 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import inspect
 import json
-import shutil
 import sys
 import textwrap
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _outputs
 from evaluation_harness._adapter import load_recorded_adapter, score_wants_source
 from evaluation_harness._common import (
     DATA,
@@ -124,10 +124,10 @@ def _rescore_row(
     had_ref = False
     recosted = False
     item_id = old["item_id"]
-    out_f = d / "outputs" / f"{item_id}.txt"
-    if not out_f.is_file():
+    stored = _outputs.output(d, item_id)
+    if stored is None:
         die(f"{d.name}: no stored output for {item_id} — cannot rescore", "not-enough")
-    output = out_f.read_text(encoding="utf-8")
+    output = stored
     reference = None
     if ref_dir:
         rf = ref_dir / f"{item_id}.txt"
@@ -455,9 +455,7 @@ def rescore_one(
     scores = aggregate_scores(rows)
 
     run_dir = out_dir / d.name
-    (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
-    for f in (d / "outputs").glob("*.txt"):
-        shutil.copy2(f, run_dir / "outputs" / f.name)
+    run_dir.mkdir(parents=True, exist_ok=True)  # no outputs of its own: they are its source's (RFC-024)
     (run_dir / "predictions.jsonl").write_text(
         "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), encoding="utf-8"
     )
@@ -476,6 +474,7 @@ def rescore_one(
         m,
         kind="rescore",
         source_dir=d.name,
+        source_path=d,
         with_=provenance,
         scores=scores,
         n_items=len(rows),

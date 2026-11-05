@@ -1,5 +1,0 @@
-```json
-[
-  {"text": "Japanese", "type": "location"}
-]
-```

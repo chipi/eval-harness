@@ -1,7 +1,0 @@
-```
-[
-  {
-    "text": "South Liverpool",
-    "type": "location"
-  }
-```

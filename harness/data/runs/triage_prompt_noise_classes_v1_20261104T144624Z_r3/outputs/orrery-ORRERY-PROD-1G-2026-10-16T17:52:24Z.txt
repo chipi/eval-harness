@@ -1,1 +1,0 @@
-{"_probe_trace": [], "certainty": "high", "disposition": "cleanup", "marker": "delete me", "model_disposition": "cleanup", "reason": "The error message contains the exact phrase 'delete me', which is a clear marker of a test or synthetic probe. This is not a real error; it's noise that should be removed at the source."}

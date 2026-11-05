@@ -21,6 +21,7 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-reports-"))
@@ -105,6 +106,18 @@ try:
         and "or delete" in out,
         out[-600:],
     )
+    check(
+        "the stopped run keeps what its pass appended: the outputs done so far and their rows, no predictions.jsonl",
+        stopped is not None
+        and _outputs.count(stopped) >= 1
+        and (stopped / _outputs.ROWS).is_file()
+        and len((stopped / _outputs.ROWS).read_text().splitlines()) == _outputs.count(stopped)
+        and not (stopped / "predictions.jsonl").exists(),
+        (
+            _outputs.count(stopped) if stopped else None,
+            sorted(p.name for p in stopped.iterdir()) if stopped else None,
+        ),
+    )
     flag.write_text("1")
     r = evh("run", "--config", "data/configs/flaky.yaml", "--resume", stopped.name if stopped else "")
     check("resuming it finishes the run", r.returncode == 0, (r.stdout + r.stderr)[-300:])
@@ -122,7 +135,7 @@ try:
         and "Connection refused" in out
         and "Traceback" not in out
         and not (gone / "metrics.json").exists()
-        and "no decision" not in "".join(p.read_text() for p in (gone / "outputs").glob("*.txt")),
+        and "no decision" not in "".join(_outputs.outputs(gone).values()),
         out[-600:],
     )
     back.write_text("1")
@@ -132,12 +145,12 @@ try:
     resumed = sorted((proj / "data" / "runs").glob("refused_v1_*"))[-1]
     preds = resumed / "predictions.jsonl"
     rows = [json.loads(x) for x in preds.read_text().splitlines()] if preds.is_file() else []
-    answers = list((resumed / "outputs").glob("*.txt"))
+    answers = list(_outputs.outputs(resumed).values())
     check(
         "resumed with the server back, the refused item is called again and every item is an answer",
         r.returncode == 0
         and len(rows) == len(rows_plain)
-        and all(p.read_text() != "no decision" for p in answers)
+        and all(a != "no decision" for a in answers)
         and len(answers) == len(rows_plain),
         ((r.stdout + r.stderr)[-300:], len(rows), len(rows_plain)),
     )

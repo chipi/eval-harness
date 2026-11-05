@@ -1,1 +1,0 @@
-[{"text": "piers", "type": "location"}, {"text": "20 February 1953", "type": "event"}, {"text": "OMS resourcing fund", "type": "organization"}]

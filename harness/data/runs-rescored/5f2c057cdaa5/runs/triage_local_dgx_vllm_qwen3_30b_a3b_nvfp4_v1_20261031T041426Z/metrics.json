@@ -11,6 +11,7 @@
   "derived": {
     "at": "2026-11-02T08:17:50Z",
     "from": "triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1_20261031T041426Z",
+    "from_dir": "runs/triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1_20261031T041426Z",
     "kind": "rescore",
     "with": {
       "adapter": "examples/triage-fleet/adapter.py",

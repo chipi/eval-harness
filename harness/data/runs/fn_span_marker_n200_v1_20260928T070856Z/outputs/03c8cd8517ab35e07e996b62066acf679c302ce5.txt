@@ -1,1 +1,0 @@
-[{"text": "Twitter", "type": "product"}]

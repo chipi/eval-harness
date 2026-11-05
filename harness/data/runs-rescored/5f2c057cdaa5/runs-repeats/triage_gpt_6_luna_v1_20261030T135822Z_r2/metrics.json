@@ -11,6 +11,7 @@
   "derived": {
     "at": "2026-11-02T08:17:50Z",
     "from": "triage_gpt_6_luna_v1_20261030T135822Z_r2",
+    "from_dir": "runs-repeats/triage_gpt_6_luna_v1_20261030T135822Z_r2",
     "kind": "rescore",
     "with": {
       "adapter": "examples/triage-fleet/adapter.py",

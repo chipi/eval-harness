@@ -11,6 +11,7 @@
   "derived": {
     "at": "2026-10-25T15:10:05Z",
     "from": "ag_qwen_m_n200_v1_20260927T104625Z",
+    "from_dir": "runs/ag_qwen_m_n200_v1_20260927T104625Z",
     "kind": "rescore",
     "with": {
       "adapter": "examples/classification-ag-news/adapter.py",

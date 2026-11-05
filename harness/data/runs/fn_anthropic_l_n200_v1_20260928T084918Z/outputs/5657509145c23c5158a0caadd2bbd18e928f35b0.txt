@@ -1,1 +1,0 @@
-[{"text": "Seventeenth Amendment to the United States Constitution", "type": "other"}, {"text": "Progressive-era", "type": "event"}]

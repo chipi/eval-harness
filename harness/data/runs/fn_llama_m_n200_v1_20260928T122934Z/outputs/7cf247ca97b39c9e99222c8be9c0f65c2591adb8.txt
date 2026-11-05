@@ -1,6 +1,0 @@
-[
-  {
-    "text": "The High and Late Middle Ages",
-    "type": "event"
-  }
-]

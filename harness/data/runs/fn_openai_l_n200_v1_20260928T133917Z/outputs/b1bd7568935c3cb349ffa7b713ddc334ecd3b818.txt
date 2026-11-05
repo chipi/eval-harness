@@ -1,1 +1,0 @@
-[{"text":"English Language","type":"other"},{"text":"Calcutta University","type":"organization"}]

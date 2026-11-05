@@ -27,6 +27,7 @@ import hashlib
 import json
 from pathlib import Path
 
+from evaluation_harness import _outputs
 from evaluation_harness._common import RUNS, die, evh_prog, load_dataset, read_json
 from evaluation_harness._label_sets import set_dir, write_set
 
@@ -114,11 +115,11 @@ def _from_run(run_id: str, dataset_id: str, items: list[dict], args: argparse.Na
                 tokens[row.get("item_id")] = row.get("tokens_out")
     rows, missing = [], []
     for item in items:
-        f = run_dir / "outputs" / f"{item['item_id']}.txt"
-        if not f.is_file():
+        text = _outputs.output(run_dir, item["item_id"])
+        if text is None:
             missing.append(item["item_id"])
             continue
-        rows.append((item["item_id"], f.read_text(encoding="utf-8"), tokens.get(item["item_id"])))
+        rows.append((item["item_id"], text, tokens.get(item["item_id"])))
     if missing:
         die(
             f"REFUSED: run {run_id} has no output for {len(missing)} item(s) "

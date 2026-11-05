@@ -80,6 +80,7 @@
       "properties": {
         "kind": {"enum": ["rescore", "judge", "reparse"]},
         "from": {"type": "string", "description": "The source run's directory name."},
+        "from_dir": {"type": "string", "description": "The source run's directory under the data directory (RFC-024): a derived run reads its outputs from there, and from no other run of the same name."},
         "at": {"type": "string"},
         "with": {"type": "object", "description": "What computed it: the adapter and scorer hashes (rescore), the judge scorer (judge), the parser (reparse)."},
         "source": {"type": "object", "description": "The source's own derived block, when it was itself derived."}

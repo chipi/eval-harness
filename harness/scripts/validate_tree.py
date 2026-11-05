@@ -52,6 +52,8 @@ Each check exists because its absence let a real defect through somewhere:
                      outside its form, item rows without an item_url to fill (E1), or a card key
                      that is not one of Croissant RAI's (E4)
                      (PLAN_0.8.0 E3; `evh dataset-migrate` brings old records to the format)
+  V23 run outputs    a run still in the old layout (an outputs/ folder: `evh run-migrate`), or a derived
+                     run with no outputs of its own whose source run is not here (RFC-024)
 
 Exit 1 on any failure, so it can gate.
 
@@ -316,15 +318,11 @@ _V5_RUN_PROPERTIES = (
 
 
 def _outputs_signature(run: Path) -> str:
-    """A digest of what a run wrote (outputs/<item>.txt, by name). Runs without outputs all
+    """A digest of what a run wrote (its outputs, by item: _outputs.signature). Runs without outputs all
     share one value: what they wrote cannot tell them apart, so it excuses nothing."""
-    outs = sorted((run / "outputs").glob("*.txt")) if (run / "outputs").is_dir() else []
-    if not outs:
-        return "<no-outputs>"
-    h = hashlib.sha256()
-    for f in outs:
-        h.update(f.name.encode() + b"\0" + f.read_bytes() + b"\x1e")
-    return h.hexdigest()
+    from evaluation_harness import _outputs  # noqa: PLC0415
+
+    return _outputs.signature(run)
 
 
 def _per_item_signature(run_name: str | Path) -> str:
@@ -1520,6 +1518,44 @@ def v22_dataset_records() -> None:
     )
 
 
+def v23_run_outputs() -> None:
+    """V23: every run's outputs can be read (RFC-024): none is left in the old layout (an outputs/ folder), and a
+    derived run without an outputs file of its own finds its source's."""
+    from evaluation_harness import _outputs  # noqa: PLC0415
+
+    runs = sorted(
+        {
+            d
+            for root in DATA.glob("runs*")
+            if root.is_dir()
+            for depth in ("*", "*/*", "*/*/*")
+            for d in root.glob(depth)
+            if d.is_dir() and (d / "metrics.json").is_file()
+        }
+    )
+    if not runs:
+        print("  --   V23 run outputs (no runs)")
+        return
+    bad: list[str] = []
+    for d in runs:
+        rel = d.relative_to(DATA)
+        if _outputs.old_layout(d):
+            bad.append(f"{rel}: an outputs/ folder (the layout before 0.8.0): evh run-migrate")
+            continue
+        if (d / _outputs.FILE).is_file():
+            continue
+        frm = _outputs._derived_from(d)
+        if frm and _outputs.source(d) is None:
+            bad.append(f"{rel}: a derived run with no outputs of its own, and its source {frm} is not here")
+    for b in bad[:10]:
+        print(f"       {b}")
+    check(
+        f"V23 run outputs — {len(runs)} run(s), every one's outputs readable",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
 def config_files() -> list[Path]:
     """The arm configs V18 reads: data/configs, and the globs `configs` in validate.json names (relative to
     the project root), for a project that keeps its arms elsewhere (this repository's are in examples/)."""
@@ -1650,6 +1686,7 @@ def main() -> int:
         v20_hypotheses,
         v21_failure_modes,
         v22_dataset_records,
+        v23_run_outputs,
         note_uncommitted_runs,
         note_round_scorers,
     ):

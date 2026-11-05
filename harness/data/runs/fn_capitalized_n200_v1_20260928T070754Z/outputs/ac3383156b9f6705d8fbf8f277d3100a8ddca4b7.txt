@@ -1,1 +1,0 @@
-[{"text": "On Gorgon City", "type": "location"}, {"text": "Sirens", "type": "location"}, {"text": "Erik Hassle", "type": "location"}, {"text": "FTPA", "type": "location"}]

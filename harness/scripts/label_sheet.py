@@ -29,7 +29,7 @@ import argparse
 import json
 from pathlib import Path
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _outputs
 from evaluation_harness._common import die, evh_prog, item_path, load_dataset, read_json
 from evaluation_harness._label_sets import labels_for, sets, text_of
 from evaluation_harness._runs import runs_on
@@ -68,8 +68,8 @@ def run_dir(name: str, dataset_id: str) -> Path:
 
 def output(d: Path, item_id: str) -> str | None:
     """A run's output for one item (what it decided), or None when it has none."""
-    f = d / "outputs" / f"{item_id}.txt"
-    return f.read_text(encoding="utf-8").strip() if f.is_file() else None
+    text = _outputs.output(d, item_id)
+    return text.strip() if text is not None else None
 
 
 def view(dataset_id: str, item_id: str, limit: int | None = VIEW) -> str:

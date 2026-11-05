@@ -1,1 +1,0 @@
-[{"text": "Basi", "type": "location"}, {"text": "Basi Revolt", "type": "location"}, {"text": "Spanish", "type": "location"}]

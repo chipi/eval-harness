@@ -1,1 +1,0 @@
-[{"text": "Prime Time Entertainment Network", "type": "organization"}, {"text": "PTEN", "type": "organization"}, {"text": "WB", "type": "organization"}, {"text": "TNT", "type": "organization"}]

@@ -11,6 +11,7 @@
   "derived": {
     "at": "2026-10-25T16:49:21Z",
     "from": "cnn_deepseek_s_n200_v1_20260925T232736Z",
+    "from_dir": "runs/cnn_deepseek_s_n200_v1_20260925T232736Z",
     "kind": "rescore",
     "with": {
       "adapter": "examples/summarization-cnn-dailymail/adapter.py",

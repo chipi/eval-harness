@@ -1,1 +1,0 @@
-[{"text": "The institution", "type": "organization"}, {"text": "the Sanitarium", "type": "organization"}, {"text": "main facility", "type": "building"}]

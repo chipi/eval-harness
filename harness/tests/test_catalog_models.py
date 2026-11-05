@@ -19,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import yaml
+from evaluation_harness import _outputs
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_models as cm
 from evaluation_harness import catalog_views as cv
@@ -30,7 +31,7 @@ COMMITTED = Path(__file__).resolve().parents[1] / "data" / "models"
 
 def run(data, run_id, config, params, record=None, deployment=None):
     d = data / "runs" / run_id
-    (d / "outputs").mkdir(parents=True)
+    d.mkdir(parents=True)
     m = {
         "run_id": run_id,
         "dataset_id": "ds1",
@@ -49,7 +50,7 @@ def run(data, run_id, config, params, record=None, deployment=None):
     (d / "predictions.jsonl").write_text(
         "".join(json.dumps({"item_id": f"i{i}", "acc": 0.5}) + "\n" for i in range(4))
     )
-    (d / "outputs" / "i0.txt").write_text("out")
+    _outputs.writer(d).add("i0", "out")
 
 
 def record(data, doc):

@@ -67,7 +67,6 @@ def write_run(
     """Write a single run with metrics.json and predictions.jsonl."""
     run_dir = meta["runs"] / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "outputs").mkdir(exist_ok=True)
 
     # metrics.json with scores
     metrics = {

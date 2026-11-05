@@ -7,6 +7,12 @@ correctness bugs, not just missing features.
 
 ## From 0.7.2 to 0.8.0 (unreleased)
 
+- **Run `evh run-migrate` once** (RFC-024; `--dry-run` first shows what it will do). A run's outputs become one
+  `outputs.jsonl` instead of an `outputs/` folder of `<item>.txt`, a derived run whose outputs are byte copies of its
+  source's keeps none of its own, and the leftover row checkpoint goes. Each run is checked byte for byte before
+  its folder is removed; nothing in a fingerprint moves. Then let git see the new files: a `.gitignore` that
+  re-admits `outputs/**` in a run directory needs `!…/outputs.jsonl` instead (this repository's
+  `harness/.gitignore` shows the pattern). The old layout is not read after the upgrade.
 - **A goal's recommendation can move.** Contenders are now the arms shown no worse than the leader by more than
   the margin (ADR-0026), and the default margins are 5% (`balanced`) and 10% (`frugal`) of the leader. Read
   `evh goals --goal G` after upgrading. A goal that wants its old breadth back sets `axes.quality.margin` in the

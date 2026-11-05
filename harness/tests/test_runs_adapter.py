@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(0, str(HERE.parent))
 
-from evaluation_harness import _adapter  # noqa: E402
+from evaluation_harness import _adapter, _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness._runs import direction, item_rows, matrix, per_item, runs_on  # noqa: E402
 
@@ -27,8 +27,7 @@ def _run(base: Path, name: str, metrics: dict, rows: list, outputs: dict | None 
     (d / "metrics.json").write_text(json.dumps(metrics), encoding="utf-8")
     (d / "predictions.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     for item, text in (outputs or {}).items():
-        (d / "outputs").mkdir(exist_ok=True)
-        (d / "outputs" / f"{item}.txt").write_text(text, encoding="utf-8")
+        _outputs.writer(d).add(item, text)
     return d
 
 

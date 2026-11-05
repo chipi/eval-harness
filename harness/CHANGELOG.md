@@ -110,6 +110,16 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **A run's outputs are one file** (RFC-024). `outputs.jsonl`, a line per item (`item_id`, `text`, `sha256`),
+  appended as each output is produced and rewritten in dataset order when the run completes, replaces the `outputs/`
+  folder of one file per item. Re-scores, judgings and sheet imports no longer copy their source's outputs: they read
+  them through `derived.from`. Every module reads outputs through one function. `evh run-migrate` moves a project's
+  runs (`--dry-run` first); in this repository it turned 94,796 files into 305 (`harness/data/` from 106,492 files
+  to 12,001), every output and V5 signature checked equal before and after. A derived run records its source's
+  directory (`derived.from_dir`) and reads only that run; `validate` V23 names a run left in the old layout or a
+  derived run whose source is gone. A resume from a run that kept no row checkpoint no longer crashes (`_Resumed`
+  read `_extra` from an empty row).
+
 - **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from
   the lineage when the dataset is made: 1.0 for a first dataset and for each side of a split (which names its
   parent's version, `split.from_version`); from a parent (`--from`, `dataset-extend`), MINOR + 1 when items were only

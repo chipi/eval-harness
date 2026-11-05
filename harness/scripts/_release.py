@@ -29,6 +29,7 @@ import subprocess
 from pathlib import Path
 
 import yaml
+from evaluation_harness import _outputs
 from evaluation_harness._visibility import hidden, public_profile
 
 #: The directories of data/ the catalog and the inspector read (tests/test_render_data.py checks it
@@ -120,7 +121,7 @@ def plan_problems(src: Path) -> list[str]:
     for run in sorted(p for base in src.glob("runs*") if base.is_dir() for p in base.iterdir() if p.is_dir()):
         if hidden(_dataset_of_run(run), src / "datasets"):
             continue
-        for f in sorted((run / "outputs").glob("*")) if (run / "outputs").is_dir() else []:
+        for f in sorted(run.rglob(_outputs.FILE)):
             if str(f.relative_to(src)) not in tracked:
                 bad.append(f"run output git does not track: {f.relative_to(src)}")
                 break  # one per run is enough to name it
@@ -164,7 +165,7 @@ def copy_data(src: Path, dst: Path) -> dict:
             out = dst / base.name / run.name
             if hidden(_dataset_of_run(run), datasets):
                 counts["hidden_runs"] += 1
-                shutil.copytree(run, out, ignore=shutil.ignore_patterns("outputs"))
+                shutil.copytree(run, out, ignore=shutil.ignore_patterns("outputs", _outputs.FILE))
                 pred = out / "predictions.jsonl"
                 if pred.is_file():
                     rows = [json.loads(x) for x in pred.read_text(encoding="utf-8").splitlines() if x.strip()]

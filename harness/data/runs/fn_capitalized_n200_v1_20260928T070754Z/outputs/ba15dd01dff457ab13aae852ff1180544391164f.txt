@@ -1,1 +1,0 @@
-[{"text": "June", "type": "location"}, {"text": "Avianca", "type": "location"}, {"text": "Pan Am", "type": "location"}]

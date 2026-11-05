@@ -47,6 +47,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _outputs
 from evaluation_harness._adapter import load_recorded_adapter, score_wants_source
 from evaluation_harness._common import (
     MATERIALIZED,
@@ -82,8 +83,8 @@ def _collect(dataset_id: str, match: str | None) -> dict[str, dict[str, Any]]:
             },
         )
         entry["runs"].add(d.resolve())
-        for f in sorted((d / "outputs").glob("*.txt")):
-            entry["texts"][f.stem].append(f.read_text(encoding="utf-8").strip())
+        for item, text in sorted(_outputs.outputs(d).items()):
+            entry["texts"][item].append(text.strip())
     return acc
 
 

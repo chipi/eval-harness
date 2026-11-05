@@ -1,7 +1,0 @@
-```
-[
-  {
-    "text": "aircraft",
-    "type": "product"
-  }
-]

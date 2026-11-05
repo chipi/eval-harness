@@ -25,7 +25,18 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+
+def _set_output(d, item, text):
+    """Change one output of a run in place (None removes it), as a hand edit of its outputs.jsonl would."""
+    texts = _outputs.outputs(d)
+    texts.pop(item, None)
+    if text is not None:
+        texts[item] = text
+    _outputs.write_all(d, texts, list(texts))
+
 
 proj = Path(tempfile.mkdtemp(prefix="evh-rows-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-rows")
@@ -165,9 +176,7 @@ try:
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
         run = next(p for p in (data / "runs").glob(f"tickets_{arm}_v1_*"))
         for item, text in by_item.items():
-            (run / "outputs" / f"{item}.txt").unlink(missing_ok=True)
-            if text is not None:
-                (run / "outputs" / f"{item}.txt").write_text(text + "\n")
+            _set_output(run, item, None if text is None else text + "\n")
     RUNS = "tickets_lead1_v1,tickets_author_v1,tickets_lead2_noisy_v1"
     every = sorted(decided["lead1"])
     # A person labels three tickets: production right on t01 and t03, wrong on t02.
@@ -356,8 +365,9 @@ try:
         extra={"PYTHONPATH": str(HERE.parent)},
     )
     jout = {
-        p.stem: json.loads(p.read_text())["disposition"]
-        for p in (data / "runs" / "jsonish" / "outputs").glob("t*.txt")
+        k: json.loads(v)["disposition"]
+        for k, v in _outputs.outputs(data / "runs" / "jsonish").items()
+        if k.startswith("t")
     }
     # Right on two, wrong on one, by construction: the label is the output's disposition, or the other one.
     flip = {"file": "dismiss", "dismiss": "file"}

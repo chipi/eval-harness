@@ -252,7 +252,7 @@
   },
   "reason": "promoted before labels existed (0.6.0): its tier was given when it was made",
   "redistributed": false,
-  "source": "the outputs of run cnn_anthropic_l_n200_v1_20260926T063645Z, byte for byte: copy data/runs/cnn_anthropic_l_n200_v1_20260926T063645Z/outputs/<item_id>.txt here to restore its texts (V16 checks them against items_sha256); made by reference-create before 0.6.0",
+  "source": "the outputs of run cnn_anthropic_l_n200_v1_20260926T063645Z, byte for byte: write each line of data/runs/cnn_anthropic_l_n200_v1_20260926T063645Z/outputs.jsonl here as <item_id>.txt (its text) to restore its texts (V16 checks them against items_sha256); made by reference-create before 0.6.0",
   "system_under_test": {
     "alias": "eval-opus-5",
     "endpoint": "http://127.0.0.1:4001",

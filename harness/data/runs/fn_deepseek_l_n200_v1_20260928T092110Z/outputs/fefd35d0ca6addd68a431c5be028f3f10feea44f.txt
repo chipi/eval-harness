@@ -1,6 +1,0 @@
-[
-  {
-    "text": "Cytochromes",
-    "type": "other"
-  }
-]

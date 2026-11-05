@@ -26,9 +26,9 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 
+from evaluation_harness import _outputs, stats  # noqa: E402
 from evaluation_harness import catalog_build as cb  # noqa: E402
 from evaluation_harness import catalog_serve as cs  # noqa: E402
-from evaluation_harness import stats  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 
@@ -48,7 +48,7 @@ data = tmp / "data"
 
 def run(runs_dir, run_id, dataset, config, scores, text=SECRET, kinds=None, ref=None, root=None):
     d = (root or data) / runs_dir / run_id
-    (d / "outputs").mkdir(parents=True)
+    d.mkdir(parents=True)
     (d / "metrics.json").write_text(
         json.dumps(
             {
@@ -64,7 +64,7 @@ def run(runs_dir, run_id, dataset, config, scores, text=SECRET, kinds=None, ref=
     rows = []
     for i, s in enumerate(scores):
         rows.append(json.dumps({"item_id": f"i{i:02d}", "acc": s, "words": 10.0 + i}))
-        (d / "outputs" / f"i{i:02d}.txt").write_text(f"{text} {config} {i}")
+        _outputs.writer(d).add(f"i{i:02d}", f"{text} {config} {i}")
     (d / "predictions.jsonl").write_text("\n".join(rows) + "\n")
 
 
@@ -1062,7 +1062,7 @@ try:
     data3 = tmp / "data3"
     for arm, accs in (("arm_p", [0.5] * 8), ("arm_q", [0.7] * 8)):
         d = data3 / "runs" / f"{arm}_1"
-        (d / "outputs").mkdir(parents=True)
+        d.mkdir(parents=True)
         (d / "metrics.json").write_text(
             json.dumps(
                 {

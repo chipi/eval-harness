@@ -1,6 +1,0 @@
-[
-  {
-    "text": "The Great Sphinx",
-    "type": "art"
-  }
-]

@@ -45,7 +45,7 @@ from typing import Protocol
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common  # noqa: E402
+from evaluation_harness import _common, _outputs  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     BOOKKEEPING_PREFIXES,
     ModuleNotLoadable,
@@ -877,8 +877,8 @@ class HarnessAdapter:
             return {"kind": "none", "note": "not an item id"}
         dirs = self._dirs(arm)
         for d in reversed(dirs):  # the latest repeat
-            f = d / "outputs" / f"{item}.txt"
-            if f.is_file():
+            text = _outputs.output(d, item)
+            if text is not None:
                 info = {"run": d.name}
                 if len(dirs) > 1:
                     # One output beside a score that is the mean of every repeat: say so.
@@ -893,10 +893,10 @@ class HarnessAdapter:
                             info[k.removeprefix("judge_")] = f"{v['values'][item]:.3g}"
                 return {
                     "kind": "text",
-                    "text": f.read_text(encoding="utf-8", errors="replace"),
+                    "text": text,
                     "info": info,
                 }
-        return {"kind": "none", "note": "No stored output for this item (outputs/<item_id>.txt)."}
+        return {"kind": "none", "note": "No stored output for this item (the run's outputs.jsonl)."}
 
     def reference_view(self, ref: str, item: str) -> dict:
         """Return one reference's text for one item."""

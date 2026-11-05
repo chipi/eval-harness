@@ -60,7 +60,6 @@ import itertools
 import json
 import math
 import random
-import shutil
 import statistics
 import sys
 import time
@@ -68,7 +67,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Callable
 
-from evaluation_harness import _providers
+from evaluation_harness import _outputs, _providers
 from evaluation_harness._codeid import content_sha256, file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -559,14 +558,14 @@ def read_outputs(arm: dict[str, Any], item_ids: Sequence[str]) -> dict[str, str]
     """All outputs of one arm; die if any item's file is missing."""
     out = {}
     for i in item_ids:
-        f = Path(arm["dir"]) / "outputs" / f"{i}.txt"
-        if not f.is_file():
+        text = _outputs.output(Path(arm["dir"]), i)
+        if text is None:
             die(
                 f"{arm['run']}: no stored output for {i} — the judging set needs every "
                 f"arm's output for every item",
                 "not-enough",
             )
-        out[i] = f.read_text(encoding="utf-8")
+        out[i] = text
     return out
 
 
@@ -1420,9 +1419,7 @@ def write_scored_runs(
                 else kinds.get(k) or known.get(k) or ("quality" if k.startswith("judge_") else "descriptive")
             )
         run_dir = out_root / src.name
-        (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
-        for f in (src / "outputs").glob("*.txt"):
-            shutil.copy2(f, run_dir / "outputs" / f.name)
+        run_dir.mkdir(parents=True, exist_ok=True)  # no outputs of its own: they are its source's (RFC-024)
         write_text_atomic(
             run_dir / "predictions.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows)
         )
@@ -1433,6 +1430,7 @@ def write_scored_runs(
             m,
             kind="judge",
             source_dir=src.name,
+            source_path=src,
             scores=scores,
             n_items=len(rows),
             drop=("reference_tier",),
