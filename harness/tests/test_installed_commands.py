@@ -281,6 +281,7 @@ def main() -> int:
             ("labels", [], "ok:tickets_v1/installed_from_run: model"),
             ("tags", [], "ok:No tag sets yet"),
             ("licences", ["--search", "share"], "ok:CC-BY-SA-4.0"),
+            ("dataset-card", ["--dataset-id", "tickets_v1", "--format", "croissant"], "ok:croissant/1.1"),
             ("dataset-migrate", ["--dry-run"], "ok:dataset(s)"),
             (
                 "dataset-create",

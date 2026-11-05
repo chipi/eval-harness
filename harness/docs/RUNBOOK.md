@@ -17,6 +17,7 @@ further. This page is the reference for each step.
 | what is configured | `evh env-check` |
 | freeze | `evh dataset-create --dataset-id … --source-dir … [--licence ID]` |
 | a licence, a description (no new version) | `evh licences` · `evh dataset-describe --dataset-id … --licence …` |
+| the card; as Croissant 1.1 | `evh dataset-card --dataset-id …` · `… --format croissant --creator … --out …` |
 | a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
 | fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
 | materialize | `evh dataset-materialize --dataset-id …` |
@@ -153,7 +154,12 @@ it already has files (`--force` replaces them). It is found by name as an import
 biases and limits, who maintains it) under Croissant RAI 1.0's property names, so an export writes them as they
 are: `evh dataset-describe --card-template > card.yaml` prints each key with its question, `evh dataset-describe
 --dataset-id D --card card.yaml` records the answered ones (it replaces the card; no new version). All optional;
-`validate` (V22) refuses a key that is not one of them. `validate` (V22) refuses an id
+`validate` (V22) refuses a key that is not one of them. `evh dataset-card --dataset-id D` prints the card (what
+the dataset is, where it came from, each answered question); `--format croissant [--creator NAME] [--out F]`
+writes it as Croissant 1.1 JSON-LD: the record (licence as its SPDX page, the card as `rai:` properties, the parent
+as `isBasedOn`), its files with their sha256, one record set of the items with the field set's types. A required
+property the record cannot give (a creator, a url, a licence) is left out and named on stderr. The document is
+checked against the spec's keys; it is not run through `mlcroissant`, which the harness does not depend on. `validate` (V22) refuses an id
 not on the list. The line is a picker, not legal advice: the licence text is what binds.
 
 **What you know about each item goes in fields** (ADR-0003). Declare them once in a

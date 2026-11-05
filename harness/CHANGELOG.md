@@ -70,6 +70,11 @@ that can move a result is never a patch release without saying so under **Change
   `items(query)`, found as importers are (built-in `folder` and `manifest`, a project's `data/dataset_sources/NAME.py`,
   or `path.py:Class`). Its items are written to `data/sources/<id>/`, never over files already there.
 
+- **A dataset as Croissant 1.1.** `evh dataset-card --dataset-id D --format croissant` writes the record as
+  Croissant JSON-LD (licence, version, source url, parent, the card as `rai:` properties, its files with their
+  sha256, the items as a record set with typed fields); without `--format` it prints the card as text (also an MCP
+  tool). A required property the record cannot give is named, never invented. Not run through `mlcroissant`.
+
 ### Changed
 
 - **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from

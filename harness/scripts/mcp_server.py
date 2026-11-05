@@ -64,6 +64,7 @@ READ_TOOLS = (
     "labels",
     "tags",
     "licences",
+    "dataset-card",
     "picks",
     "deploy-sheet",
 )

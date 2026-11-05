@@ -43,6 +43,10 @@ COMMANDS = {
         "dataset_describe.py",
         "change a dataset's licence or description, never its items or version",
     ),
+    "dataset-card": (
+        "dataset_card.py",
+        "a dataset's card: what, where from, the datasheet's answers; or it as Croissant 1.1",
+    ),
     "licences": ("view_licences.py", "the licences a dataset can name (SPDX ids), a line each"),
     "dataset-migrate": (
         "dataset_migrate.py",

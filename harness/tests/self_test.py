@@ -772,6 +772,10 @@ def test_example_scorer_suites_pass() -> None:
             "dataset sources: folder as --source-dir, a project's own with rows, licence, card; manifest; refusals",
         ),
         (
+            "test_croissant.py",
+            "a dataset as Croissant 1.1 (licence, card as rai:, files with sha256, typed fields) and its text card",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),
