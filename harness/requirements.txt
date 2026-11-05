@@ -9,3 +9,6 @@ mcp>=2.3,<3
 # tests. Without it they skip, and the setup note claimed `fetch.py` alone was
 # enough to un-skip them -- it is not. Pure Python, small. Found by review.
 rouge-score
+# Reads parquet record sets in a Croissant description (evh dataset-create --source croissant): Hugging Face's
+# and Kaggle's data is parquet. Owner yes, 2026-11-05.
+pyarrow>=15

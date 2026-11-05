@@ -7,9 +7,9 @@ Query: `url` or `path` (the description); `record_set` (its @id or name; default
 value is an item's text; required); `id` (the field that is an item's id; default its row number); `fields` (fields
 kept as item fields, which need a field set); `limit`. Hugging Face, Kaggle and OpenML publish such descriptions.
 
-What it reads: the record set's fields that take a `column` from a FileObject of CSV, JSON or JSON lines; the
-FileObject is fetched and checked against its sha256 when it has one. Parquet is not read (it needs pyarrow, which
-the harness does not depend on); a record set on it is refused, naming the format. What it records: the source
+What it reads: the record set's fields that take a `column` from one FileObject of parquet, CSV, JSON or JSON lines;
+the FileObject is fetched and checked against its sha256 when it has one. A FileSet (many files) is refused: which files
+it holds is the host's to say, so a Hugging Face description (its parquet in a FileSet) is refused. What it records: the source
 block (provider croissant, ref the dataset's name, url, revision the publisher's version), the licence when it is one
 `evh licences` knows, the `rai:` properties as the card, and the fields with their types as features.
 """
@@ -28,6 +28,8 @@ from evaluation_harness import _fetch, _licences
 from evaluation_harness._card import QUESTIONS
 
 READABLE = {
+    "application/x-parquet": "parquet",
+    "application/vnd.apache.parquet": "parquet",
     "text/csv": "csv",
     "application/json": "json",
     "application/jsonlines": "jsonl",
@@ -147,7 +149,7 @@ class Source:
                 f"the record set has no field {', '.join(missing)} (it has: {', '.join(by_name)})"
             )
         files = {d.get("@id") or d.get("name"): d for d in _list(doc.get("distribution"))}
-        cols, fo = {}, None
+        cols, file_id = {}, None
         for n in wanted:
             src = by_name[n].get("source") or {}
             fid = _ref(src.get("fileObject"))
@@ -157,31 +159,22 @@ class Source:
                 raise ValueError(
                     f"field {n}: only a column of one FileObject is read"
                     + (
-                        f"; this one is a FileSet of {fs.get('encodingFormat')}"
-                        + (
-                            " (parquet needs pyarrow, which the harness does not depend on)"
-                            if "parquet" in str(fs.get("encodingFormat"))
-                            else ""
-                        )
+                        f"; this one is a FileSet of {fs.get('encodingFormat')} (which files it holds is the host's to"
+                        " say, and only the Hub lists a Hugging Face description's files)"
                         if fs
                         else f" (this one is {json.dumps(src)[:120]})"
                     )
                 )
-            if fo not in (None, fid):
+            if file_id not in (None, fid):
                 raise ValueError("the fields come from different files: one file per record set is read")
-            fo, cols[n] = fid, col
-        f = files.get(fo)
+            file_id, cols[n] = fid, col
+        f = files.get(file_id)
         if not f:
-            raise ValueError(f"no FileObject {fo!r} in the distribution")
+            raise ValueError(f"no FileObject {file_id!r} in the distribution")
         kind = READABLE.get(str(f.get("encodingFormat")))
         if not kind:
             raise ValueError(
-                f"{fo} is {f.get('encodingFormat')}: only CSV, JSON and JSON lines are read"
-                + (
-                    " (parquet needs pyarrow, which the harness does not depend on)"
-                    if "parquet" in str(f.get("encodingFormat"))
-                    else ""
-                )
+                f"{file_id} is {f.get('encodingFormat')}: only parquet, CSV, JSON and JSON lines are read"
             )
         url = urljoin(base, str(f.get("contentUrl")))
         if url.startswith("file:"):
@@ -190,17 +183,22 @@ class Source:
                 import hashlib  # noqa: PLC0415
 
                 if hashlib.sha256(data).hexdigest() != f["sha256"]:
-                    raise ValueError(f"{fo}: its bytes are not the sha256 the description gives")
+                    raise ValueError(f"{file_id}: its bytes are not the sha256 the description gives")
         else:
             path, _sha = _fetch.fetch(url, f.get("sha256"))
             data = Path(path).read_bytes()
-        text = data.decode("utf-8")
-        if kind == "csv":
-            rows: list[dict] = list(csv.DictReader(io.StringIO(text)))
+        if kind == "parquet":
+            import pyarrow.parquet as pq  # noqa: PLC0415
+
+            # One thread: with its thread pool, pyarrow 26 aborted the process at exit (examples/_shared/hf_rows.py).
+            table = pq.read_table(io.BytesIO(data), columns=sorted(set(cols.values())), use_threads=False)
+            rows: list[dict] = table.to_pylist()
+        elif kind == "csv":
+            rows = list(csv.DictReader(io.StringIO(data.decode("utf-8"))))
         elif kind == "jsonl":
-            rows = [json.loads(line) for line in text.splitlines() if line.strip()]
+            rows = [json.loads(line) for line in data.decode("utf-8").splitlines() if line.strip()]
         else:
-            loaded = json.loads(text)
+            loaded = json.loads(data.decode("utf-8"))
             rows = loaded if isinstance(loaded, list) else [loaded]
         limit = int(query.get("limit") or 0)
         for n, row in enumerate(rows):

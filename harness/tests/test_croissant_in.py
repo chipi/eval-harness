@@ -5,8 +5,8 @@
 
 A local Croissant 1.1 file over a CSV: `dataset-create --source croissant` freezes the record set's rows (text, id,
 row, a kept field), records the source block (the publisher's version as revision), the licence from its SPDX URL
-and the rai: properties as the card; `limit` holds; a CSV whose bytes are not the sha256 the description gives, a
-parquet file and a field that is not in the record set are refused.
+and the rai: properties as the card; `limit` holds; a parquet FileObject gives the same items; a CSV whose bytes are
+not the sha256 the description gives, a FileSet and a field that is not in the record set are refused.
 """
 
 import hashlib
@@ -168,7 +168,23 @@ try:
         r.returncode == 1 and "not the sha256" in r.stderr,
         r.stderr[-300:],
     )
-    (proj / "croissant.json").write_text(json.dumps(description(sha, "application/x-parquet")))
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    pq.write_table(
+        pa.table(
+            {
+                "id": ["n1", "n2", "n3"],
+                "text": ["first note", "second note", "third note"],
+                "label": ["a", "b", "a"],
+            }
+        ),
+        proj / "notes.parquet",
+    )
+    psha = hashlib.sha256((proj / "notes.parquet").read_bytes()).hexdigest()
+    pdoc = description(psha, "application/x-parquet")
+    pdoc["distribution"][0]["contentUrl"] = "notes.parquet"
+    (proj / "croissant.json").write_text(json.dumps(pdoc))
     r = evh(
         "dataset-create",
         "--dataset-id",
@@ -179,8 +195,36 @@ try:
         json.dumps({**q, "fields": []}),
     )
     check(
-        "a parquet file is refused, naming why",
-        r.returncode == 1 and "parquet needs pyarrow" in r.stderr,
+        "a parquet FileObject is read: the same items as the CSV",
+        r.returncode == 0
+        and [it["item_id"] for it in ds("c_v4")["items"]] == ["n1", "n2", "n3"]
+        and (proj / "data" / "sources" / "c_v4" / "n3.txt").read_text() == "third note",
+        (r.stdout + r.stderr)[-300:],
+    )
+    fsdoc = description(sha)
+    fsdoc["distribution"].append(
+        {
+            "@type": "cr:FileSet",
+            "@id": "parts",
+            "encodingFormat": "application/x-parquet",
+            "includes": "*.parquet",
+        }
+    )
+    for f in fsdoc["recordSet"][0]["field"]:
+        f["source"] = {"fileSet": {"@id": "parts"}, "extract": {"column": f["name"]}}
+    (proj / "croissant.json").write_text(json.dumps(fsdoc))
+    r = evh(
+        "dataset-create",
+        "--dataset-id",
+        "c_v6",
+        "--source",
+        "croissant",
+        "--query",
+        json.dumps({**q, "fields": []}),
+    )
+    check(
+        "a FileSet (many files, which the host lists) is refused, naming its format",
+        r.returncode == 1 and "FileSet of application/x-parquet" in r.stderr,
         r.stderr[-300:],
     )
     (proj / "croissant.json").write_text(json.dumps(description(sha)))

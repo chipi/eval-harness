@@ -76,9 +76,10 @@ that can move a result is never a patch release without saying so under **Change
   tool). A required property the record cannot give is named, never invented. Not run through `mlcroissant`.
 
 - **A dataset from a Croissant description.** `--source croissant` reads any Croissant file or URL whose record set is
-  columns of a CSV, JSON or JSON-lines file (its sha256 checked), with the description's licence, version (as
-  `source.revision`) and `rai:` card. Parquet is not read yet (it needs pyarrow), so Hugging Face's descriptions,
-  whose data is parquet, are refused with that reason.
+  columns of one parquet, CSV, JSON or JSON-lines file (its sha256 checked), with the description's licence, version
+  (as `source.revision`) and `rai:` card. A FileSet is refused, naming its format: Hugging Face's descriptions keep
+  their parquet in one, whose files only the Hub can list.
+- **pyarrow is a dependency** (owner, 2026-11-05), to read parquet: `pyarrow>=15`, installed with the harness.
 
 ### Changed
 
