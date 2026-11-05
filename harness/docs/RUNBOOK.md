@@ -165,6 +165,14 @@ that commit as `source.revision`, so the same query with `"revision"` reads the 
 of each row is its link. The card's licence and its metadata (tasks, annotators, language and source datasets) fill
 the licence and the card. A gated dataset's token goes in `EVAL_FETCH_HEADERS`; `HF_ENDPOINT` names another Hub.
 
+**Publishing to the Hub**: `evh dataset-publish --dataset-id D --to huggingface --query '{"repo": "owner/name"}'`
+writes a new repo, private unless `"public": true`: the items as `data/test.parquet` (item_id, text,
+source_sha256, each field), the record as `evh/D.json` and the card as README.md, in one commit; it reads every
+file back at that commit and checks its sha256, and each item's text against its own, and records the publish on
+the dataset (`published`: repo, revision, url, private, when, each file's sha256; no new version). It refuses a
+repo that exists, items not materialized here, and a dataset whose text is hidden. The token is huggingface_hub's
+(`HF_TOKEN`, or `hf auth login`).
+
 **A field set from a source's features**: `evh fieldset-propose --source NAME --query '{…}' --fieldset-id ID`
 prints a field set from what the source describes: each feature's type as the field set's (schema.org's, Hugging
 Face's and Python's spellings), a text feature with at most `--max-choices` distinct values among `--sample` items

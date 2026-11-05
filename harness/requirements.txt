@@ -12,3 +12,6 @@ rouge-score
 # Reads parquet record sets in a Croissant description (evh dataset-create --source croissant): Hugging Face's
 # and Kaggle's data is parquet. Owner yes, 2026-11-05.
 pyarrow>=15
+# Publishes a dataset to the Hugging Face Hub (evh dataset-publish --to huggingface): repos, LFS uploads, read-back.
+# Owner yes, 2026-11-05.
+huggingface_hub>=0.26

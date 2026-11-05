@@ -14,6 +14,12 @@ same bytes again. What it records: the source block (provider huggingface, the r
 licence when `evh licences` knows the card's, the card's metadata in the card's words, and the features with their
 types. The Hub is `HF_ENDPOINT` (default https://huggingface.co); a gated dataset's token goes in
 `EVAL_FETCH_HEADERS` (`{"huggingface.co": {"Authorization": "Bearer …"}}`), never in the query.
+
+`publish` (`evh dataset-publish --to huggingface --query '{"repo": "owner/name"}'`) writes a dataset to a new repo,
+private unless `"public": true`: its items as `data/test.parquet` (item_id, text, source_sha256, each field), the
+record as `evh/<dataset_id>.json` and the card as README.md, in one commit; then reads each file back at that commit
+and checks its sha256, and each item's text against its own. It refuses a repo that exists. The token is
+huggingface_hub's (HF_TOKEN, or `hf auth login`); it is never printed.
 """
 
 from __future__ import annotations
@@ -174,3 +180,76 @@ class Source:
                     item["fields"] = kept
                 yield item
                 n += 1
+
+    def publish(self, record: dict, items: list[tuple[dict, bytes]], query: dict) -> dict:
+        """Write the dataset to a new Hub repo in one commit and read it back; {repo, revision, url, private, files}."""
+        import pyarrow as pa  # noqa: PLC0415
+        import pyarrow.parquet as pq  # noqa: PLC0415
+        from evaluation_harness import _hf_readme  # noqa: PLC0415
+
+        repo = str(query.get("repo") or "")
+        if repo.count("/") != 1 or not all(repo.split("/")):
+            raise ValueError('name the repo to write: "repo": "owner/name" in the query')
+        private = not query.get("public")
+        api = self.options.get("api")
+        if api is None:
+            from huggingface_hub import HfApi  # noqa: PLC0415
+            from huggingface_hub.utils import disable_progress_bars  # noqa: PLC0415
+
+            disable_progress_bars()  # a command's output is its result lines, not upload bars
+            api = HfApi(endpoint=_endpoint())
+        if api.repo_exists(repo, repo_type="dataset"):
+            raise ValueError(f"{repo} exists on the Hub: a publish writes a new repo, never over one")
+        fields = sorted({k for it, _b in items for k in (it.get("fields") or {})})
+        clash = [f for f in fields if f in ("item_id", "text", "source_sha256")]
+        if clash:
+            raise ValueError(f"field(s) {', '.join(clash)} would overwrite a column of the published table")
+        table = pa.table(
+            {
+                "item_id": [it["item_id"] for it, _b in items],
+                "text": [b.decode("utf-8") for _it, b in items],
+                "source_sha256": [it["source_sha256"] for it, _b in items],
+                **{f: [(it.get("fields") or {}).get(f) for it, _b in items] for f in fields},
+            }
+        )
+        buf = io.BytesIO()
+        pq.write_table(table, buf)
+        files = {
+            "data/test.parquet": buf.getvalue(),
+            f"evh/{record['dataset_id']}.json": (
+                json.dumps(record, indent=1, sort_keys=True) + "\n"
+            ).encode(),
+            "README.md": _hf_readme.readme(record, data_file="data/test.parquet").encode(),
+        }
+        from huggingface_hub import CommitOperationAdd  # noqa: PLC0415
+
+        api.create_repo(repo, repo_type="dataset", private=private, exist_ok=False)
+        info = api.create_commit(
+            repo,
+            [CommitOperationAdd(path_in_repo=k, path_or_fileobj=v) for k, v in files.items()],
+            commit_message=f"{record['dataset_id']} version {record.get('version')}, from the evaluation harness",
+            repo_type="dataset",
+        )
+        rev = info.oid
+        bad = []
+        for path, data in files.items():
+            got = Path(api.hf_hub_download(repo, path, repo_type="dataset", revision=rev)).read_bytes()
+            if hashlib.sha256(got).hexdigest() != hashlib.sha256(data).hexdigest():
+                bad.append(path)
+        back = pq.read_table(
+            api.hf_hub_download(repo, "data/test.parquet", repo_type="dataset", revision=rev),
+            use_threads=False,
+        )
+        for row in back.to_pylist():
+            if hashlib.sha256(row["text"].encode("utf-8")).hexdigest() != row["source_sha256"]:
+                bad.append(f"item {row['item_id']}")
+        if bad:
+            raise ValueError(f"{repo}@{rev}: read back, {', '.join(bad[:5])} not the bytes written")
+        return {
+            "provider": "huggingface",
+            "repo": repo,
+            "revision": rev,
+            "url": f"{_endpoint()}/datasets/{repo}",
+            "private": private,
+            "files": {k: hashlib.sha256(v).hexdigest() for k, v in files.items()},
+        }

@@ -69,6 +69,7 @@ READ_TOOLS = (
     "deploy-sheet",
 )
 NOT_TOOLS = {
+    "dataset-publish": "writes to an outside service (a new Hub repo)",
     "fieldset-propose": "reads a source (it can fetch from the network) and can write a field set",
     "dataset-describe": "writes a dataset record",
     "dataset-migrate": "writes the dataset records",

@@ -788,6 +788,10 @@ def test_example_scorer_suites_pass() -> None:
             "the huggingface source on a local Hub: pinned to the parquet commit, licence, card, rows; sha256 checked",
         ),
         (
+            "test_publish.py",
+            "publishing to the Hub against a fake API: one commit, read back by sha256; hidden and unmaterialized refused",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),

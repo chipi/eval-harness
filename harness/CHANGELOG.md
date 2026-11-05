@@ -90,6 +90,11 @@ that can move a result is never a patch release without saying so under **Change
   the Hub's parquet conversion of a split at one commit (`source.revision`), each file checked against the Hub's
   sha256, with the card's licence and metadata, and each row's viewer page as its link.
 
+- **Publishing a dataset to the Hugging Face Hub.** `evh dataset-publish --to huggingface --query '{"repo": …}'`
+  writes a new repo, private by default (items as parquet, the record, the card as README), reads it back by sha256,
+  and records where it went on the dataset. Hidden datasets are never published. `huggingface_hub>=0.26` is a new
+  dependency (owner, 2026-11-05). Checked live: a private repo published, read back and deleted.
+
 ### Changed
 
 - **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from
