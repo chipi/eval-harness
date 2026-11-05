@@ -41,19 +41,22 @@ def main() -> int:
     ap.add_argument("--out", type=Path, required=True, help="the folder to write, for evh label-import")
     args = ap.parse_args()
     if args.out.exists():
-        die(f"{args.out} exists: write the labels to a new folder")
+        die(f"{args.out} exists: write the labels to a new folder", "would-overwrite")
     ds = load_dataset(args.dataset_id)
     want = SOURCES[args.source]
     label: dict[str, str] = {}
     for r in (json.loads(x) for x in args.verdicts.read_text(encoding="utf-8").splitlines() if x.strip()):
         if r["source"] in want:
             if r["id"] in label and label[r["id"]] != r["label"]:
-                die(f"{r['id']}: two labels from {args.source} ({label[r['id']]}, {r['label']})")
+                die(
+                    f"{r['id']}: two labels from {args.source} ({label[r['id']]}, {r['label']})",
+                    "invalid-file",
+                )
             label[r["id"]] = r["label"]
     items = [it["item_id"] for it in ds["items"]]
     hit = [i for i in items if i in label]
     if not hit:
-        die(f"no item of {args.dataset_id} has a {args.source} label")
+        die(f"no item of {args.dataset_id} has a {args.source} label", "not-enough")
     args.out.mkdir(parents=True)
     for i in hit:
         (args.out / f"{i}.txt").write_text(

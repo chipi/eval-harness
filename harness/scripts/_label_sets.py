@@ -50,7 +50,8 @@ def set_dir(dataset_id: str, name: str) -> Path:
     """Where one set lives; its name is checked first, so it can never leave data/labels/."""
     if not SET_ID.match(name or ""):
         die(
-            f"label set {name!r}: lowercase letters, digits, _ . - (at most 100), starting with a letter or digit"
+            f"label set {name!r}: lowercase letters, digits, _ . - (at most 100), starting with a letter or digit",
+            "bad-argument",
         )
     return labels_root() / dataset_id / name
 
@@ -154,7 +155,7 @@ def guideline_of(path: Path | None) -> dict[str, str] | None:
     if path is None:
         return None
     if not path.is_file():
-        die(f"--guideline: no file {path}")
+        die(f"--guideline: no file {path}", "not-found")
     from evaluation_harness._common import ROOT  # noqa: PLC0415
 
     try:
@@ -177,25 +178,30 @@ def write_set(
     correction is a new set), when an item is not in the dataset, when a label is empty or the source is unknown.
     `rebuild`: the texts are kept out of git (a .gitignore beside them), and this command writes them again."""
     if source.get("kind") not in SOURCES:
-        die(f"a label's source is one of {', '.join(SOURCES)}, not {source.get('kind')!r}")
+        die(f"a label's source is one of {', '.join(SOURCES)}, not {source.get('kind')!r}", "invalid-file")
     out = set_dir(dataset_id, name)
     if out.exists() and any(out.iterdir()):
-        die(f"{out} exists: a label set is never edited. A correction is a new set: name another.")
+        die(
+            f"{out} exists: a label set is never edited. A correction is a new set: name another.",
+            "would-overwrite",
+        )
     ds = load_dataset(dataset_id)
     items = {it["item_id"]: it for it in ds.get("items") or []}
     unknown = sorted(set(labels) - set(items))
     if unknown:
         die(
             f"{len(unknown)} item(s) not in {dataset_id}: {', '.join(unknown[:8])}"
-            + (" ..." if len(unknown) > 8 else "")
+            + (" ..." if len(unknown) > 8 else ""),
+            "not-found",
         )
     empty = sorted(i for i, t in labels.items() if not str(t).strip())
     if empty:
         die(
-            f"{len(empty)} empty label(s): {', '.join(empty[:8])}. An item with no label is left out, not labelled empty."
+            f"{len(empty)} empty label(s): {', '.join(empty[:8])}. An item with no label is left out, not labelled empty.",
+            "invalid-file",
         )
     if not labels:
-        die("no labels: nothing written")
+        die("no labels: nothing written", "not-enough")
     bad = sorted(
         i
         for i, t in labels.items()
@@ -204,7 +210,8 @@ def write_set(
     if bad:
         die(
             f'{len(bad)} label(s) start {{"accept" but are not a list of answers: {", ".join(bad[:8])}. '
-            'Several right answers are written {"accept": ["escalate", "file"]}.'
+            'Several right answers are written {"accept": ["escalate", "file"]}.',
+            "invalid-file",
         )
     # Everything that can refuse is checked before anything is written (a missing --guideline used to be
     # found after the texts were on disk, and the half set then blocked its own name), and the set is

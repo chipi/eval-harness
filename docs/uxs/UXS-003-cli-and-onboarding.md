@@ -68,12 +68,14 @@ models).
 
 ## How a command speaks
 
-- **Refusals:** `ERROR: <why>` on stderr and exit 1, e.g.
-  `ERROR: no goal 'x': one of …` or "round r1 of g is still open: close it first (evh
-  round-close …)". An unknown command or argument prints the usage and exits 2.
-- **Exit codes** ([Runbook: exit codes](../../harness/docs/RUNBOOK.md#exit-codes)): 0 done; 1
-  refused or nothing measured; 2 a usage error, or a run stopped by the cost cap with its partial
-  results kept and resumable; 3 a judge scorer not validated.
+- **Refusals:** `ERROR (<kind>): <why>` on stderr and exit 1, e.g.
+  `ERROR (not-found): no goal 'x': one of …` or "round r1 of g is still open: close it first (evh
+  round-close …)". The kind is one of a fixed list ([Runbook: refusals](../../harness/docs/RUNBOOK.md#refusals)),
+  for a script or an agent to branch on. An unknown command or argument prints the usage and exits 2.
+- **Exit codes** ([Runbook: exit codes](../../harness/docs/RUNBOOK.md#exit-codes)): one meaning
+  each: 0 done; 1 refused; 2 a usage error; 3 a judge scorer not validated; 4 stopped early by the cost
+  cap, the partial results kept and resumable; 5 some runs of a sweep failed; 6 the checks ran and some
+  failed; 7 nothing measured; 70 an error nothing caught; 75 a server not reached; 130 interrupted.
 - **Hints:** a command that creates something ends with `Next: <command>`, e.g. after
   `dataset-create`: `Next: evh dataset-materialize --dataset-id tickets_v1`. Through `evh` the
   hint names an evh command; in a checkout, a make target.

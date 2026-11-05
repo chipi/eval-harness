@@ -79,7 +79,7 @@ def project_port(kind: str, root: Path | None = None) -> int:
             except OSError:
                 continue
             return port
-    raise SystemExit(f"no free port in {base}-{base + 999}: pass --port N")
+    die(f"no free port in {base}-{base + 999}: pass --port N", "failed")
 
 
 def stray_home() -> str:
@@ -150,7 +150,7 @@ def env_float(name: str, default: float | None = None) -> float | None:
     try:
         return float(raw)
     except ValueError:
-        raise SystemExit(f"ERROR: {name}={raw!r} is not a number") from None
+        die(f"{name}={raw!r} is not a number", "not-configured")
 
 
 def env_int(name: str, default: int) -> int:
@@ -468,7 +468,7 @@ DATASET_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 def dataset_id_ok(dataset_id: str) -> str:
     """The id, or SystemExit when it is not a plain name (a path would leave data/)."""
     if not DATASET_ID.fullmatch(dataset_id or "") or ".." in dataset_id:
-        raise SystemExit(f"not a dataset id: {dataset_id[:60]!r} (letters, digits, '.', '_', '-')")
+        die(f"not a dataset id: {dataset_id[:60]!r} (letters, digits, '.', '_', '-')", "bad-argument")
     return dataset_id
 
 
@@ -476,14 +476,15 @@ def load_dataset(dataset_id: str) -> dict[str, Any]:
     """Load a dataset by id from data/datasets, or raise SystemExit."""
     path = _paths()["DATASETS"] / f"{dataset_id_ok(dataset_id)}.json"
     if not path.is_file():
-        raise SystemExit(
+        die(
             f"no such dataset: {dataset_id}\n"
             f"  expected {path}\n"
             f"  create one with: "
             + how(
                 f"evh dataset-create --dataset-id {dataset_id} --source-dir …",
                 f"make dataset-create DATASET_ID={dataset_id}",
-            )
+            ),
+            "not-found",
         )
     return read_json(path)
 
@@ -534,13 +535,15 @@ def labels_reference(spec: str, dataset_id: str) -> str:
     if set_ds != dataset_id:
         die(
             f"--labels {spec}: a set on {set_ds}, not {dataset_id}. Scoring reads labels by this dataset's item ids: "
-            f"promote them (evh reference-promote --dataset-id {dataset_id} --labels {spec} …) or label this dataset"
+            f"promote them (evh reference-promote --dataset-id {dataset_id} --labels {spec} …) or label this dataset",
+            "mismatch",
         )
     rid = f"{LABELS_PREFIX}{dataset_id}/{name}"
     d = scored_against_dir(rid)
     if d is None or not (d / "labels.json").is_file():
         die(
-            f"--labels {spec}: no label set at data/labels/{dataset_id}/{name} (evh labels --dataset-id {dataset_id})"
+            f"--labels {spec}: no label set at data/labels/{dataset_id}/{name} (evh labels --dataset-id {dataset_id})",
+            "not-found",
         )
     return rid
 
@@ -630,10 +633,46 @@ def load_module(path: Path, name: str) -> Any:
     return mod
 
 
-def die(msg: str) -> NoReturn:
-    """Refuse: `ERROR: msg` on stderr, exit 1. Every command refuses this way; four printed
-    their refusal to stdout instead, where a caller reading stderr saw nothing."""
-    raise SystemExit(f"ERROR: {msg}")
+#: Exit codes, one meaning each (RUNBOOK "Exit codes"), so a caller branches on the number and never
+#: has to read the text: 2 was both a usage error and the cost cap, 1 both a refusal and "validate
+#: found problems".
+EXIT_OK = 0
+EXIT_REFUSED = 1  # refused: `ERROR: <why>` on stderr, nothing done
+EXIT_USAGE = 2  # an unknown command or argument; the usage is printed
+EXIT_UNVALIDATED = 3  # a judge scorer that is not validated (--unvalidated runs it, labelled)
+EXIT_STOPPED = 4  # stopped early (the cost cap, a failing judge call): partial results kept, resumable
+EXIT_PARTLY = 5  # some of several runs failed (sweep); the others are kept
+EXIT_PROBLEMS = 6  # the command's checks ran and some failed (validate, importer-check, arm-smoke, ...)
+EXIT_NOTHING = 7  # it ran and measured nothing
+EXIT_INTERNAL = 70  # an error nothing caught, in the harness or the project's code: a traceback on stderr
+EXIT_TRY_LATER = 75  # a server could not be reached: run the same command again later, it resumes
+EXIT_INTERRUPTED = 130  # Ctrl-C
+
+
+#: What kind of refusal it is (RUNBOOK, Refusals): the word in `ERROR (<kind>): ...`, which a script or an
+#: agent reads instead of the message, so a message can be reworded without breaking it.
+REFUSALS = {
+    "not-found": "the dataset, run, arm, goal, file or other thing named does not exist",
+    "bad-argument": "an option is missing, malformed, or not allowed with another",
+    "would-overwrite": "what it would write is already there; it is never overwritten",
+    "mismatch": "two things that must agree do not: datasets, hashes, a run and its config",
+    "invalid-file": "a file the project wrote (a config, a scorer, a sheet, records) is malformed",
+    "not-materialized": "the data is not on this machine: fetch or materialize it first",
+    "not-enough": "too little to work on: too few items, arms or outputs",
+    "not-public": "the text asked for is not shown on a public server or for a hidden dataset",
+    "not-allowed": "a rule refuses it: a dirty build, a closed round, a bind beyond this machine",
+    "not-configured": "a key, a cost cap, a build ref or an endpoint is not set",
+    "failed": "something outside the command failed: an importer, a server, a hook, the warm-up",
+    "missing-dependency": "a package or a part of the installation is missing",
+}
+
+
+def die(msg: str, kind: str) -> NoReturn:
+    """Refuse: `ERROR (<kind>): msg` on stderr, exit 1, `kind` one of REFUSALS. Every command refuses
+    this way; four printed their refusal to stdout instead, where a caller reading stderr saw nothing."""
+    if kind not in REFUSALS:
+        raise ValueError(f"no refusal kind {kind!r}: one of {', '.join(REFUSALS)}")
+    raise SystemExit(f"ERROR ({kind}): {msg}")
 
 
 def reference_texts(root: Path, dataset_id: str, tier: str = "gold") -> list[Path]:
@@ -642,13 +681,14 @@ def reference_texts(root: Path, dataset_id: str, tier: str = "gold") -> list[Pat
     (V16), which come with the public data. Read as empty, every arm matched nothing and the
     report tools printed zeros as if they were results."""
     if not root.is_dir():
-        die(f"no {tier} references at {root}")
+        die(f"no {tier} references at {root}", "not-found")
     files = sorted(root.glob("*.txt"))
     if not files and (root / "manifest.json").is_file():
         die(
             f"the {tier} references for {dataset_id} are not on this machine: {root} holds their "
             "checksums only (manifest.json). Fetch the dataset first, as the eval's README and "
-            "docs/REPRODUCE.md say (`make data EXP=<eval>`, or the example's fetch.py)."
+            "docs/REPRODUCE.md say (`make data EXP=<eval>`, or the example's fetch.py).",
+            "not-materialized",
         )
     return files
 

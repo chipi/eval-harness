@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _fingerprint as fpmod
-from evaluation_harness._common import DATA, write_text_atomic
+from evaluation_harness._common import DATA, evh_prog, write_text_atomic
 
 DEPLOYMENT_PARTS = ("deployment", "settings", "runner")
 
@@ -99,7 +99,7 @@ def run_files(data: Path) -> list[Path]:
 
 def main() -> int:
     """Migrate, print the counts before and after; exit 0."""
-    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.split("\n\n")[0])
     ap.add_argument(
         "--data-dir",
         type=Path,

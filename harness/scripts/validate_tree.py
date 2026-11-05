@@ -61,6 +61,7 @@ import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 
 from evaluation_harness._common import (
     BASELINES,
@@ -68,6 +69,7 @@ from evaluation_harness._common import (
     CONFIGS,
     DATA,
     DATASETS,
+    EXIT_PROBLEMS,
     FIELDS,
     GOALS,
     MATERIALIZED,
@@ -76,6 +78,7 @@ from evaluation_harness._common import (
     SCHEMAS,
     THROWAWAY_RUNS,
     data_rel,
+    die,
     goal_policy,
     ignored_by_git,
     load_goals,
@@ -109,7 +112,15 @@ def policy() -> dict:
     project's own `runs-adjudicated` was never checked while six names it does not have were.
     """
     f = DATA / "validate.json"
-    return dict(read_json(f)) if f.is_file() else {}
+    if not f.is_file():
+        return {}
+    doc = parsed(f)
+    if not isinstance(doc, dict):
+        die(
+            f"{data_rel(f)} does not parse as a JSON object: fix it, it says which checks this project runs",
+            "invalid-file",
+        )
+    return dict(doc)
 
 
 def committed_dirs() -> list[str]:
@@ -145,6 +156,16 @@ def check(label: str, ok: object, detail: str = "") -> None:
     else:
         print(f"  FAIL {label}" + (f" — {detail}" if detail else ""))
         problems.append(label)
+
+
+def parsed(path: Path) -> Any:
+    """The JSON at `path`, or None when it does not parse. V1 names every dataset, run, baseline and capture
+    that does not; the checks after it skip such a file, and a check of any other kind of file reports it
+    itself. Read directly, one broken file ended `validate` in a traceback and none of the later checks ran."""
+    try:
+        return read_json(path)
+    except (OSError, ValueError):
+        return None
 
 
 def v1_schemas() -> None:
@@ -197,8 +218,8 @@ def v2_dataset_ids() -> None:
     dangling = []
     for label, run in all_runs():
         m = run / "metrics.json"
-        if m.is_file():
-            did = read_json(m).get("dataset_id")
+        if m.is_file() and (doc := parsed(m)) is not None:
+            did = doc.get("dataset_id")
             if did not in known:
                 dangling.append(f"{label} -> {did}")
     for p in sorted(DATASETS.glob("*.json")):
@@ -222,8 +243,8 @@ def v3_provenance() -> None:
     missing = []
     for label, run in all_runs():
         m = run / "metrics.json"
-        if m.is_file():
-            b = read_json(m).get("build") or {}
+        if m.is_file() and (doc := parsed(m)) is not None:
+            b = doc.get("build") or {}
             if b.get("ref", "unknown") == "unknown":
                 missing.append(label)
     for r in missing:
@@ -238,7 +259,9 @@ def v4_materialized() -> None:
     files, which is green for something never looked at."""
     drifted, missing, unchecked, checked = [], [], [], 0
     for ds_file in sorted(DATASETS.glob("*.json")):
-        ds = read_json(ds_file)
+        ds = parsed(ds_file)
+        if not isinstance(ds, dict) or "dataset_id" not in ds:
+            continue  # V1 names it
         mat = MATERIALIZED / ds["dataset_id"]
         if not mat.is_dir():
             unchecked.append(ds["dataset_id"])
@@ -343,8 +366,7 @@ def _v5_in(base: Path) -> list[list]:
     by_key = defaultdict(list)
     for run in sorted(base.iterdir()):
         m = run / "metrics.json"
-        if m.is_file():
-            d = read_json(m)
+        if m.is_file() and (d := parsed(m)) is not None:
             # Compare what the arm PRODUCED. A fabricated or copy-pasted result differs in
             # latency like any other, so keying on it let exactly the case this check exists
             # for slip through.
@@ -390,7 +412,9 @@ def v6_baselines() -> None:
 
     broken = []
     for b in sorted(BASELINES.glob("*.json")):
-        d = read_json(b)
+        d = parsed(b)
+        if not isinstance(d, dict):
+            continue  # V1 names it
         src = next(
             (
                 base / d.get("promoted_from", "")
@@ -402,7 +426,7 @@ def v6_baselines() -> None:
         if src is None:
             broken.append(f"{b.name} -> {d.get('promoted_from')}: no such run")
             continue
-        m = read_json(src / "metrics.json") if (src / "metrics.json").is_file() else {}
+        m = (parsed(src / "metrics.json") or {}) if (src / "metrics.json").is_file() else {}
         for k, v in carried(m).items():
             if d.get(k) != v:
                 broken.append(f"{b.name}: {k} is {d.get(k)!r}, its run records {v!r}")
@@ -685,7 +709,10 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
             current = {path[-1]: current[path[-1]]}  # the run names ONE of them
         checked, stale, silent, keys = 0, [], [], set()
         for mj in runs:
-            rec = _dig(read_json(mj), path)
+            doc = parsed(mj)
+            if doc is None:
+                continue  # V1 names it
+            rec = _dig(doc, path)
             if rec is None:
                 silent.append(mj.parent.name)
                 continue
@@ -1023,7 +1050,7 @@ def v14_goals() -> None:
     unnamed, n_runs = [], 0
     filed: dict[str, list] = defaultdict(list)
     for label, run in all_runs():
-        m = read_json(run / "metrics.json") if (run / "metrics.json").is_file() else None
+        m = parsed(run / "metrics.json") if (run / "metrics.json").is_file() else None
         if not isinstance(m, dict):
             continue
         n_runs += 1
@@ -1033,7 +1060,8 @@ def v14_goals() -> None:
         if since and not m.get("goal") and str(m.get("created_at", ""))[:10] >= since:
             unnamed.append(label)
     for b in sorted(BASELINES.glob("*.json")):
-        named(f"baselines/{b.name}", read_json(b))
+        if isinstance(doc := parsed(b), dict):
+            named(f"baselines/{b.name}", doc)
     bad += [f"runs/{r}: created on or after {since} and names no goal" for r in unnamed]
     # THE GOAL DECIDES DIRECTION (_runs.lower_is_better_on), so it must not contradict what its
     # runs record (the adapter's METRIC_DIRECTIONS, import-run --asc) or a metric known to go
@@ -1056,7 +1084,7 @@ def v14_goals() -> None:
         print(f"       {x}")
     # min_items: a note, not a failure. A dataset smaller than the goal's minimum can still
     # be measured; it cannot pick a winner, and the goal page says so.
-    sizes = {p.stem: len((read_json(p) or {}).get("items") or []) for p in DATASETS.glob("*.json")}
+    sizes = {p.stem: len((parsed(p) or {}).get("items") or []) for p in DATASETS.glob("*.json")}
     for gid, g in goals.items():
         need = (g.get("success_criteria") or {}).get("min_items")
         for d in g.get("datasets") or []:
@@ -1089,9 +1117,11 @@ def v15_item_fields() -> None:
     from evaluation_harness import _fields  # noqa: PLC0415
 
     fieldsets = {p.stem: p for p in sorted(FIELDS.glob("*.yaml"))} if FIELDS.is_dir() else {}
-    with_fields = []
+    with_fields: list[Any] = []
     for ds_file in sorted(DATASETS.glob("*.json")):
-        ds = read_json(ds_file)
+        ds = parsed(ds_file)
+        if not isinstance(ds, dict):
+            continue  # V1 names it
         if ds.get("fieldset") or any("fields" in it for it in ds.get("items") or []):
             with_fields.append(ds)
     if not fieldsets and not with_fields:
@@ -1164,7 +1194,10 @@ def v16_references() -> None:
                     f"evh reference-manifest --reference-id {rel} --source <how it is built>"
                 )
             continue
-        mf = read_json(mf_path)
+        mf = parsed(mf_path)
+        if not isinstance(mf, dict):
+            bad.append(f"{rel}: manifest.json does not parse")
+            continue
         if schema is not None:
             bad += [
                 f"{rel}/manifest.json: {e.message[:90]}"
@@ -1206,7 +1239,9 @@ def v17_captures() -> None:
     n = 0
     unfetched = []
     for c in caps:
-        doc = read_json(c)
+        doc = parsed(c)
+        if not isinstance(doc, dict):
+            continue  # V1 names it
         if doc.get("records") and not any((c.parent / "records").glob("*.json")):
             unfetched.append(c.parent.name)
             continue
@@ -1216,7 +1251,10 @@ def v17_captures() -> None:
             if not rf.is_file():
                 bad.append(f"{c.parent.name}/{entry.get('id')}: record file missing")
                 continue
-            rec = read_json(rf)
+            rec = parsed(rf)
+            if not isinstance(rec, dict):
+                bad.append(f"{c.parent.name}/{entry.get('id')}: record file does not parse")
+                continue
             if rec.get("id") != entry.get("id") or record_sha256(rec) != entry.get("sha256"):
                 bad.append(f"{c.parent.name}/{entry.get('id')}: does not match the hash the capture recorded")
         if doc.get("n_records") != len(doc.get("records") or []):
@@ -1249,8 +1287,11 @@ def v19_label_sets() -> None:
     bad: list[str] = []
     n = 0
     for lj in found:
-        doc = read_json(lj)
+        doc = parsed(lj)
         rel = f"{lj.parent.parent.name}/{lj.parent.name}"
+        if not isinstance(doc, dict):
+            bad.append(f"{rel}: labels.json does not parse")
+            continue
         if not (_common.DATASETS / f"{doc.get('dataset_id')}.json").is_file():
             bad.append(f"{rel}: its dataset {doc.get('dataset_id')!r} does not exist")
         items = doc.get("items") or {}
@@ -1440,7 +1481,7 @@ def main() -> int:
         print(f"\n  note: {n}")
     if problems:
         print(f"\nVALIDATION FAILED — {len(problems)} check(s): {', '.join(problems)}")
-        return 1
+        return EXIT_PROBLEMS
     print("\nVALIDATION PASSED")
     return 0
 

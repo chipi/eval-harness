@@ -26,7 +26,17 @@ import argparse
 import shutil
 from pathlib import Path
 
-from evaluation_harness._common import DATASETS, ROOT, SOURCES, dataset_id_ok, die, how, load_dataset, sha256
+from evaluation_harness._common import (
+    DATASETS,
+    ROOT,
+    SOURCES,
+    dataset_id_ok,
+    die,
+    evh_prog,
+    how,
+    load_dataset,
+    sha256,
+)
 from evaluation_harness._picks import append, waiting
 from evaluation_harness.dataset_create import _fieldset, _lineage, _relative_source_dir, _say_lineage, _write
 
@@ -39,7 +49,7 @@ def source_dir(ds: dict) -> Path:
 
 def main() -> int:
     """Make the next version of a dataset from it and chosen picks."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("dataset", help="the governed dataset this version grows from (V1)")
     ap.add_argument("--dataset-id", required=True, help="the new version's id (V2)")
     pick = ap.add_mutually_exclusive_group(required=True)
@@ -51,15 +61,15 @@ def main() -> int:
     v1 = load_dataset(args.dataset)
     out = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
     if out.exists():
-        die(f"{out} exists: a version is a new dataset; name it another way")
+        die(f"{out} exists: a version is a new dataset; name it another way", "would-overwrite")
     src = SOURCES / args.dataset_id
     if src.exists() and any(src.iterdir()):
-        die(f"{src} exists and is not empty")
+        die(f"{src} exists and is not empty", "would-overwrite")
     pool = waiting()
     if args.picks:
         chosen = [p for p in pool if args.dataset in (p.get("for") or [])]
         if not chosen:
-            die(f"no pick is waiting for {args.dataset} (evh picks --for {args.dataset})")
+            die(f"no pick is waiting for {args.dataset} (evh picks --for {args.dataset})", "not-found")
     else:
         chosen = []
         for spec in args.pick:
@@ -71,9 +81,12 @@ def main() -> int:
                 # An item id may itself contain ':' (a fingerprint and a time): try the whole spec as the id.
                 hits = [p for p in pool if p["item"] == spec]
             if not hits:
-                die(f"--pick {spec}: not waiting (evh picks)")
+                die(f"--pick {spec}: not waiting (evh picks)", "not-found")
             if len(hits) > 1:
-                die(f"--pick {spec}: waiting from {len(hits)} datasets; name one: DATASET:ITEM")
+                die(
+                    f"--pick {spec}: waiting from {len(hits)} datasets; name one: DATASET:ITEM",
+                    "bad-argument",
+                )
             chosen.append(hits[0])
     v1_items = {it["item_id"]: it for it in v1.get("items") or []}
     src.mkdir(parents=True, exist_ok=True)
@@ -82,7 +95,10 @@ def main() -> int:
     for it in v1.get("items") or []:
         p = v1_src / it.get("source_path", it["item_id"])
         if not p.is_file():
-            die(f"{args.dataset}: no source file {p} for {it['item_id']}; fetch or materialize it first")
+            die(
+                f"{args.dataset}: no source file {p} for {it['item_id']}; fetch or materialize it first",
+                "not-materialized",
+            )
         shutil.copyfile(p, src / it["source_path"])
         items.append(dict(it))
     added, hidden = [], v1.get("text") == "hidden"
@@ -90,15 +106,18 @@ def main() -> int:
         ds = load_dataset(p["from"])
         it = next((x for x in ds.get("items") or [] if x["item_id"] == p["item"]), None)
         if it is None:
-            die(f"{p['from']} no longer has {p['item']}")
+            die(f"{p['from']} no longer has {p['item']}", "mismatch")
         if p["item"] in v1_items:
             if v1_items[p["item"]].get("source_sha256") == it.get("source_sha256"):
                 print(f"  {p['item']} is already in {args.dataset}: kept once")
                 continue
-            die(f"{p['item']} is in {args.dataset} with other content: an id names one item")
+            die(f"{p['item']} is in {args.dataset} with other content: an id names one item", "mismatch")
         f = source_dir(ds) / it.get("source_path", it["item_id"])
         if not f.is_file() or sha256(f) != p.get("sha256"):
-            die(f"{p['from']}/{p['item']}: its file is not the one picked (missing, or changed since)")
+            die(
+                f"{p['from']}/{p['item']}: its file is not the one picked (missing, or changed since)",
+                "mismatch",
+            )
         shutil.copyfile(f, src / it["source_path"])
         new = {k: it[k] for k in ("item_id", "source_path", "source_sha256") if k in it}
         if it.get("fields") and ds.get("fieldset") == v1.get("fieldset"):
@@ -109,7 +128,7 @@ def main() -> int:
             {"item_id": p["item"], "from": p["from"], "capture": p.get("capture"), "note": p.get("note")}
         )
     if not added:
-        die("no item to add: every chosen pick is already in V1")
+        die("no item to add: every chosen pick is already in V1", "not-enough")
     lineage = _lineage(args.dataset, args.dataset_id, items)
     _write(
         out,

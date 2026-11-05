@@ -54,6 +54,7 @@ from evaluation_harness._common import (
     RUNS,
     adapter_search_dirs,
     die,
+    evh_prog,
 )
 from evaluation_harness._runs import runs_on, warn_on_ambiguous_runs
 from evaluation_harness.stats import spearman
@@ -120,7 +121,7 @@ def _sets_message(dataset_id: str) -> str:
 
 def main() -> int:
     """Calibrate silver reference outputs."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument(
         "--ref-match",
@@ -157,19 +158,21 @@ def main() -> int:
             f"need at least 4 arms present on both sides; found {len(arms)}.\n"
             f"  Each arm authors a silver reference and is scored on how it ranks the "
             f"OTHER {len(arms) - 1 if arms else 0}, so the comparison needs 3 subjects "
-            f"plus the author."
+            f"plus the author.",
+            "not-enough",
         )
 
     spec = arms_side[arms[0]]["adapter"]
     if not spec:
-        die("runs record no adapter — cannot score")
+        die("runs record no adapter — cannot score", "not-found")
     # One lookup for every tool that scores a finished run again (run): this
     # script once joined ROOT.parent unconditionally and could never find the bundled
     # adapter, and later, with its own copy of the lookup, not in a pinned project either.
     found = load_recorded_adapter(spec)
     if found is None:
         die(
-            f"adapter not found: {spec!r} is under none of {', '.join(str(d) for d in adapter_search_dirs())}"
+            f"adapter not found: {spec!r} is under none of {', '.join(str(d) for d in adapter_search_dirs())}",
+            "not-found",
         )
     _call, score, _aid, adapter_path, _w, _fp = found
     wants_source = score_wants_source(score)
@@ -196,7 +199,8 @@ def main() -> int:
     if not ref_id:
         die(
             "no trusted reference found — this measures a proxy AGAINST ground truth, "
-            "so there is nothing to calibrate without one"
+            "so there is nothing to calibrate without one",
+            "not-enough",
         )
     if ref_id.startswith("silver/"):
         print(
@@ -286,7 +290,8 @@ def main() -> int:
         die(
             f"no author had 3+ subject arms in common between the two reference sides; "
             f"{len(arms)} arm(s) were present on both, and the overlap is what decides "
-            f"this, not the total."
+            f"this, not the total.",
+            "not-enough",
         )
     w = max(len(r[2]) for r in rows) + 2
     print(f"\n  {'silver author':{w}}{'rho vs trusted':>16}{'sibling lift':>14}")

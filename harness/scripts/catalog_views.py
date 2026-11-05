@@ -157,7 +157,7 @@ def datasets(argv) -> int:
     for t in args.tag:
         k, sep, val = t.partition("=")
         if not sep or not k:
-            die(f"--tag {t!r}: KEY=VALUE")
+            die(f"--tag {t!r}: KEY=VALUE", "bad-argument")
         want.append((k, val))
     if want:
         by_ds = {
@@ -186,7 +186,7 @@ def datasets(argv) -> int:
         return 0
     v = by_ds.get(args.dataset_id)
     if v is None:
-        die(f"no dataset {args.dataset_id!r} in the catalog: one of {', '.join(sorted(by_ds))}")
+        die(f"no dataset {args.dataset_id!r} in the catalog: one of {', '.join(sorted(by_ds))}", "not-found")
     print(
         f"{args.dataset_id}: {v['items']} {A.item_word}s, {len(v['arms'])} arms from "
         f"{cb._n_configs({args.dataset_id: v})} configs (a config rescored against silver or by a judge is an arm of its own)\n"
@@ -329,7 +329,10 @@ def references(argv) -> int:
         return 0
     hit = next(((ds, r) for ds, r in refs if r["id"] == args.reference_id), None)
     if hit is None:
-        die(f"no reference set {args.reference_id!r}: one of {', '.join(sorted(r['id'] for _, r in refs))}")
+        die(
+            f"no reference set {args.reference_id!r}: one of {', '.join(sorted(r['id'] for _, r in refs))}",
+            "not-found",
+        )
     ds, r = hit
     print(f"{r['id']}\n  {cb.TIER_WORDS.get(r['tier'], '')}\n")
     for k, label in (
@@ -407,7 +410,7 @@ def _metric(A, by_ds: dict, project: dict, idx: dict, m: str, only: str | None) 
     """One metric, as its page shows it."""
     where = idx.get(m)
     if where is None:
-        die(f"no metric {m!r} is recorded: one of {', '.join(sorted(idx))}")
+        die(f"no metric {m!r} is recorded: one of {', '.join(sorted(idx))}", "not-found")
     lower = any(A.lower_is_better(m, ds) for ds in where["datasets"])
     better = "lower" if lower else ("neutral: a description" if A.is_neutral(m) else "higher")
     print(m)
@@ -715,7 +718,7 @@ def arms(argv) -> int:
     want = _arm_ids(A, [args.arm], "runs")[0]
     hit = next(((ds, a) for ds, v in by_ds.items() for a in v["arms"] if a["arm"] == want), None)
     if hit is None:
-        die(f"no arm {args.arm!r}: `evh arms` lists them")
+        die(f"no arm {args.arm!r}: `evh arms` lists them", "not-found")
     ds, a = hit
     v = by_ds[ds]
     goals = {g["goal_id"]: g for g in A.goals()}
@@ -881,7 +884,7 @@ def models(argv) -> int:
         return 0
     r = next((x for x in rows if x["id"] == args.model), None)
     if r is None:
-        die(f"no model {args.model!r}: `evh models` lists them")
+        die(f"no model {args.model!r}: `evh models` lists them", "not-found")
     rec = r["record"]
     print(r["name"] + f"  [{r['kind']}]")
     for k, x in (
@@ -1006,9 +1009,9 @@ def goals(argv) -> int:
     ap.add_argument("--adapter", help="path/to/file.py:Class (default: the catalog's)")
     args = ap.parse_args(argv)
     if (args.arms or args.top is not None) and not args.goal:
-        die("--arms and --top need --goal: they choose among one goal's arms")
+        die("--arms and --top need --goal: they choose among one goal's arms", "bad-argument")
     if args.top is not None and args.top < 1:
-        die(f"--top must be at least 1, not {args.top}")
+        die(f"--top must be at least 1, not {args.top}", "bad-argument")
     arm_pats = _goal_view.patterns(args.arms)
     A, by_ds = _adapter(args)
     gs = A.goals()
@@ -1060,7 +1063,7 @@ def goals(argv) -> int:
         return 0
     g = next((x for x in gs if x["goal_id"] == args.goal), None)
     if g is None:
-        die(f"no goal {args.goal!r}: one of {', '.join(x['goal_id'] for x in gs) or '(none)'}")
+        die(f"no goal {args.goal!r}: one of {', '.join(x['goal_id'] for x in gs) or '(none)'}", "not-found")
     prim = (g.get("success_criteria") or {}).get("primary") or {}
     rfn = getattr(A, "rounds", None)
     rounds = [r for r in (rfn() if callable(rfn) else []) if r.get("goal") == g["goal_id"]]
@@ -1245,7 +1248,8 @@ def _arm_ids(A, tokens: list, from_dir: str) -> list:
                     f"{len(hits)} arms under {from_dir}/ match; name the arm id: {', '.join(near)}"
                     if near
                     else "no arm with that id; `evh datasets --dataset-id <id>` lists them"
-                )
+                ),
+                "not-found",
             )
         out.append(hits[0])
     return out
@@ -1423,13 +1427,19 @@ def inspect(argv) -> int:
         ("--max-chars", args.max_chars != 300),
     ):
         if on:
-            die(f"{flag}: with --crosstab A,B" if flag != "--max-chars" else f"{flag}: with --items-out")
+            die(
+                f"{flag}: with --crosstab A,B" if flag != "--max-chars" else f"{flag}: with --items-out",
+                "bad-argument",
+            )
     if args.sheet:
         return _sheet_view(A, args)
     if only_sheet:
-        die(f"{', '.join(only_sheet)}: with --sheet (evh inspect --sheet --dataset-id D --runs A,B …)")
+        die(
+            f"{', '.join(only_sheet)}: with --sheet (evh inspect --sheet --dataset-id D --runs A,B …)",
+            "bad-argument",
+        )
     if not (args.runs or args.round):
-        die("one of --runs, --round or --sheet (with --dataset-id) is required")
+        die("one of --runs, --round or --sheet (with --dataset-id) is required", "bad-argument")
     round_leader = None
     if args.round:
         from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
@@ -1438,7 +1448,7 @@ def inspect(argv) -> int:
         rnd = resolve(args.round, args.goal)
         tokens = arms_of(rnd)
         if not tokens:
-            die(f"round {args.round} has no arms in play yet")
+            die(f"round {args.round} has no arms in play yet", "not-enough")
         # A round is read on its goal's measure, against its leader (as `evh rounds` reads it):
         # defaulting to the first arm made an arm with no score the baseline and fell back to
         # cost_usd.
@@ -1456,7 +1466,7 @@ def inspect(argv) -> int:
             print(f"NOTE: no {args.metric} recorded for {', '.join(unscored)}: left out of the comparison")
             tokens = [t for t in tokens if t not in unscored]
             if not tokens:
-                die(f"no arm of round {args.round} records {args.metric} yet")
+                die(f"no arm of round {args.round} records {args.metric} yet", "not-enough")
         round_leader = _best(
             A,
             [a for a in in_play if a.rsplit("/", 1)[-1] in tokens],
@@ -1476,7 +1486,7 @@ def inspect(argv) -> int:
         ref = A.describe(base).get("reference", "")
         got = cs.item({"arms": [",".join(arms)], "item": [args.item], "ref": [ref] if ref else [""]})
         if got.get("error"):
-            die(got["error"])
+            die(got["error"], "bad-argument")
         for f in got.get("fields") or []:
             print(f"  {f.get('label') or f['name']}: {f['value']}")
         src = got.get("source") or {}
@@ -1507,7 +1517,7 @@ def inspect(argv) -> int:
     }
     d = cs.compare(params)
     if d.get("error"):
-        die(d["error"])
+        die(d["error"], "bad-argument")
     for w in d.get("warnings") or []:
         print(f"NOTE: {w}")
     if d.get("state") == "not scorable":
@@ -1610,15 +1620,19 @@ def _sheet_view(A, args) -> int:
     from evaluation_harness import _picks  # noqa: PLC0415
 
     if os.environ.get("EVH_PUBLIC"):
-        die("--sheet shows the items' outputs and labels: not served publicly")
+        die("--sheet shows the items' outputs and labels: not served publicly", "not-public")
     if not args.dataset_id:
-        die("--sheet: name the dataset with --dataset-id")
+        die("--sheet: name the dataset with --dataset-id", "bad-argument")
     if args.round:
-        die("--sheet takes --runs (run ids, or config ids: their latest run on the dataset), not --round")
+        die(
+            "--sheet takes --runs (run ids, or config ids: their latest run on the dataset), not --round",
+            "bad-argument",
+        )
     for flag, on in (("--item", args.item), ("--analysis", args.analysis), ("--baseline", args.baseline)):
         if on:
             die(
-                f"{flag}: not with --sheet (the sheet is a view of every item; the first run stands for production)"
+                f"{flag}: not with --sheet (the sheet is a view of every item; the first run stands for production)",
+                "bad-argument",
             )
     runs = [t.strip() for t in (args.runs or "").split(",") if t.strip()]
     for flag, n, on in (
@@ -1627,15 +1641,15 @@ def _sheet_view(A, args) -> int:
         ("--wrong-against", 1, args.wrong_against),
     ):
         if on and len(runs) < n:
-            die(f"{flag} needs {n} run(s) or more in --runs (the first is production's)")
+            die(f"{flag} needs {n} run(s) or more in --runs (the first is production's)", "bad-argument")
     if args.fill and not args.csv:
-        die("--fill: with --csv FILE (the sheet to fill in)")
+        die("--fill: with --csv FILE (the sheet to fill in)", "bad-argument")
     if args.choices and args.fill != "label":
-        die("--choices: with --fill label")
+        die("--choices: with --fill label", "bad-argument")
     if args.fill not in ("pick", "scores") and (args.seed is not None or args.rubric or args.scale):
-        die("--seed, --rubric and --scale: with --fill pick or scores")
+        die("--seed, --rubric and --scale: with --fill pick or scores", "bad-argument")
     if args.scale and args.fill != "scores":
-        die("--scale: with --fill scores")
+        die("--scale: with --fill scores", "bad-argument")
     model = _sheet.build(
         args.dataset_id,
         runs,
@@ -1647,7 +1661,7 @@ def _sheet_view(A, args) -> int:
     )
     found = _sheet.by_where(model, args.where)
     if args.by and args.by not in model["decl"]:
-        die(f"--by {args.by}: no field {args.by!r} on {args.dataset_id}")
+        die(f"--by {args.by}: no field {args.by!r} on {args.dataset_id}", "not-found")
     wanted = [
         s
         for s, on in (
@@ -1720,7 +1734,7 @@ def _sheet_csv(args, model: dict, shown: list) -> int:
     blind = args.fill in ("pick", "scores")
     for f in (args.csv, key_file if blind else None):
         if f is not None and f.exists():
-            die(f"{f} exists: a sheet is not overwritten (you may have filled it)")
+            die(f"{f} exists: a sheet is not overwritten (you may have filled it)", "would-overwrite")
     if not blind:
         choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
         head, body = _sheet.csv_sheet(
@@ -1738,10 +1752,10 @@ def _sheet_csv(args, model: dict, shown: list) -> int:
     if args.scale:
         m = re.fullmatch(r"(-?\d+)\.\.(-?\d+)", args.scale.strip())
         if not m or int(m.group(1)) >= int(m.group(2)):
-            die(f"--scale {args.scale}: LO..HI, two whole numbers, LO below HI (e.g. 1..5)")
+            die(f"--scale {args.scale}: LO..HI, two whole numbers, LO below HI (e.g. 1..5)", "bad-argument")
         scale = (int(m.group(1)), int(m.group(2)))
     if args.rubric and not args.rubric.is_file():
-        die(f"--rubric: no file {args.rubric}")
+        die(f"--rubric: no file {args.rubric}", "not-found")
     rubric = _sheet.rubric_text(
         args.fill, scale, args.rubric.read_text(encoding="utf-8") if args.rubric else None
     )
@@ -1749,7 +1763,10 @@ def _sheet_csv(args, model: dict, shown: list) -> int:
         model, shown, args.fill, seed=args.seed or 0, rubric=rubric, scale=scale
     )
     if len(body) < 2:
-        die(f"--fill {args.fill}: no row has outputs to judge (a pick needs two outputs on a row)")
+        die(
+            f"--fill {args.fill}: no row has outputs to judge (a pick needs two outputs on a row)",
+            "not-enough",
+        )
     write_csv(head, body, args.csv)
     write_json(key_file, key)
     print(
@@ -1768,10 +1785,13 @@ def _crosstab_or_items(A, args, only_sheet: list) -> int:
     """--crosstab A,B / --items-out: the per-item reads of --runs (the prediction rows, the outputs)."""
     mode = "--crosstab" if args.crosstab else "--items-out"
     if args.crosstab and args.items_out:
-        die("--crosstab and --items-out are two views: one at a time")
+        die("--crosstab and --items-out are two views: one at a time", "bad-argument")
     if os.environ.get("EVH_PUBLIC") and (args.items_out or args.group):
         # A recorded field can hold text; the counts of two scores are numbers and ids.
-        die(f"{'--items-out' if args.items_out else '--group'} shows recorded texts: not served publicly")
+        die(
+            f"{'--items-out' if args.items_out else '--group'} shows recorded texts: not served publicly",
+            "not-public",
+        )
     clash = [
         f
         for f, on in (
@@ -1786,11 +1806,14 @@ def _crosstab_or_items(A, args, only_sheet: list) -> int:
         if on
     ]
     if clash:
-        die(f"{', '.join(clash)}: not with {mode} (it reads the --runs given, one item at a time)")
+        die(
+            f"{', '.join(clash)}: not with {mode} (it reads the --runs given, one item at a time)",
+            "bad-argument",
+        )
     if not args.runs:
-        die(f"{mode}: name the runs with --runs")
+        die(f"{mode}: name the runs with --runs", "bad-argument")
     if args.group_match and not args.group:
-        die("--group-match: with --group FIELD")
+        die("--group-match: with --group FIELD", "bad-argument")
     if args.crosstab:
         _crosstab(A, args)
     else:
@@ -1851,25 +1874,28 @@ def _crosstab(A, args) -> None:
 
     names = [m.strip() for m in args.crosstab.split(",") if m.strip()]
     if len(names) != 2:
-        die("--crosstab A,B: two per-item scores, comma-separated (e.g. model_false_dismiss,false_dismiss)")
+        die(
+            "--crosstab A,B: two per-item scores, comma-separated (e.g. model_false_dismiss,false_dismiss)",
+            "bad-argument",
+        )
     ma, mb = names
     rx = None
     if args.group_match:
         try:
             rx = re.compile(args.group_match)
         except re.error as exc:
-            die(f"--group-match {args.group_match!r}: {exc}")
+            die(f"--group-match {args.group_match!r}: {exc}", "bad-argument")
     arms = _arm_ids(A, [t.strip() for t in args.runs.split(",") if t.strip()], args.from_dir)
     out = []
     for arm in arms:
         ds, d = _run_of(A, arm)
         rows = list(item_rows(d, strict=False))
         if not rows:
-            die(f"{arm}: no predictions.jsonl rows to cross")
+            die(f"{arm}: no predictions.jsonl rows to cross", "not-enough")
         for m in (ma, mb, *([args.group.split(".")[0]] if args.group else [])):
             if not any(m in r for r in rows):
                 have = sorted({k for r in rows for k in r if k != "item_id"})
-                die(f"{arm}: no per-item {m!r} on record (recorded: {', '.join(have)})")
+                die(f"{arm}: no per-item {m!r} on record (recorded: {', '.join(have)})", "not-enough")
         # Two per-item SCORES: numbers, true/false or nothing. A `_`-field or one holding text or a record (`_meta`
         # holds the arm's output) would label rows with that content and name each item: the outputs, readable,
         # on a public server too. Such a field is a --group (refused publicly), never a score.
@@ -1878,14 +1904,15 @@ def _crosstab(A, args) -> None:
             if m.startswith("_") or not all(_is_score(r.get(m)) for r in rows):
                 die(
                     f"--crosstab {m}: not a per-item score (numbers or true/false); "
-                    f"a recorded field belongs in --group. Scores on record: {', '.join(scores)}"
+                    f"a recorded field belongs in --group. Scores on record: {', '.join(scores)}",
+                    "bad-argument",
                 )
         keep = None
         if args.where:
             decl, values = cs._fields_of(ds)
             kept, err = cs._filter({"_": {r["item_id"]: 1 for r in rows}}, decl, values, args.where)
             if err:
-                die(err)
+                die(err, "bad-argument")
             keep = set(kept["_"])
         groups: dict[str, list] = {}
         for r in rows:
@@ -1964,17 +1991,21 @@ def _items_out(A, args) -> None:
 
     tokens = [t.strip() for t in args.runs.split(",") if t.strip()]
     if args.disagree and len(tokens) < 2:
-        die("--disagree needs two runs or more in --runs (the first is the one the others are compared to)")
+        die(
+            "--disagree needs two runs or more in --runs (the first is the one the others are compared to)",
+            "bad-argument",
+        )
     arms = _arm_ids(A, tokens, args.from_dir)
     if args.baseline:
         base = _arm_ids(A, [args.baseline], args.from_dir)[0]
         if base not in arms:
-            die(f"--baseline {args.baseline}: not among --runs")
+            die(f"--baseline {args.baseline}: not among --runs", "bad-argument")
         tokens.insert(0, tokens.pop(arms.index(base)))
     dss = {A.describe(a).get("dataset", "") for a in arms}
     if len(dss) != 1:
         die(
-            f"--items-out: the runs are on {len(dss)} datasets ({', '.join(sorted(dss))}); one dataset at a time"
+            f"--items-out: the runs are on {len(dss)} datasets ({', '.join(sorted(dss))}); one dataset at a time",
+            "bad-argument",
         )
     ds = dss.pop()
     model = _sheet.build(ds, tokens, cs._fields_of, metric=args.metric, from_dir=args.from_dir)

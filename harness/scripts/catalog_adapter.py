@@ -1217,7 +1217,9 @@ def load_catalog_adapter(spec: str | None = None) -> Adapter:
         return HarnessAdapter()
     target, _, cls = spec.rpartition(":")
     if not target or not cls:
-        raise SystemExit(f"catalog adapter {spec!r}: expected 'path/to/file.py:Class' or 'module:Class'")
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(f"catalog adapter {spec!r}: expected 'path/to/file.py:Class' or 'module:Class'", "bad-argument")
     # The project's root is importable while its adapter loads (it may import its own helpers).
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
@@ -1229,7 +1231,9 @@ def load_catalog_adapter(spec: str | None = None) -> Adapter:
             digest = hashlib.sha256(str(path).encode()).hexdigest()[:8]
             mod = load_module(path, f"evh_catalog_adapter_{path.stem}_{digest}")
         except ModuleNotLoadable:
-            raise SystemExit(f"catalog adapter: cannot load {path}") from None
+            from evaluation_harness._common import die  # noqa: PLC0415
+
+            die(f"catalog adapter: cannot load {path}", "failed")
     else:
         mod = importlib.import_module(target)
     return getattr(mod, cls)()

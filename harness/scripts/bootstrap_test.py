@@ -79,6 +79,7 @@ HERE = Path(__file__).resolve().parent
 from evaluation_harness._common import (  # noqa: E402
     RUNS,
     die,
+    evh_prog,
     item_selection,
 )
 from evaluation_harness._labels import per_class, predictions, reference_labels  # noqa: E402
@@ -100,7 +101,7 @@ METRICS = {"macro_f1": _macro_f1, "accuracy": _accuracy}
 
 def main() -> int:
     """Run bootstrap resampling test."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--a", required=True, help="config_id of the arm under test")
     ap.add_argument(
@@ -126,17 +127,18 @@ def main() -> int:
         die(
             f"bootstrap-test is for classification: {args.dataset_id}'s gold has {len(labels)} distinct "
             f"labels over {len(gold)} items, so it reads as free text, not labels. For a per-item "
-            "score, pair-test and family-test are the exact tests."
+            "score, pair-test and family-test are the exact tests.",
+            "not-allowed",
         )
     preds = predictions(args.dataset_id, None)
     if args.a not in preds:
-        die(f"no runs for {args.a} on {args.dataset_id}")
+        die(f"no runs for {args.a} on {args.dataset_id}", "not-found")
 
     drop, keep = item_selection(args.exclude_dataset, args.items)
 
     opponents = sorted(c for c in preds if c != args.a and args.against in c and preds[c])
     if not opponents:
-        die(f"no opponents matching {args.against!r}")
+        die(f"no opponents matching {args.against!r}", "not-found")
 
     fn = METRICS[args.metric]
     rng = random.Random(args.seed)
@@ -170,7 +172,8 @@ def main() -> int:
     if not rows:
         die(
             f"no opponent shares at least 10 items with {args.a} (a percentile bootstrap needs them); "
-            f"opponents tried: {', '.join(opponents)}"
+            f"opponents tried: {', '.join(opponents)}",
+            "not-enough",
         )
 
     m = len(rows)

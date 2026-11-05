@@ -39,6 +39,7 @@ from evaluation_harness._common import (
     RUNS,
     classify_metrics,
     die,
+    evh_prog,
     how,
     read_json,
 )
@@ -590,7 +591,7 @@ def _metric_kinds(by_config: dict[str, list[dict]]) -> dict[str, str]:
 
 def main() -> int:
     """Generate a leaderboard from run results."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--sort", help="metric to rank by (default: the first quality metric)")
     ap.add_argument(
@@ -718,7 +719,8 @@ def _table(args: argparse.Namespace, found: list) -> dict:
             + (f" matching {args.match!r}" if args.match else "")
             + ".\n  "
             + how("evh runs-list", "make runs-list")
-            + "   to see what exists"
+            + "   to see what exists",
+            "not-found",
         )
 
     all_keys = sorted(
@@ -774,7 +776,7 @@ def _table(args: argparse.Namespace, found: list) -> dict:
         )
     ranking_on_descriptive = kinds.get(sort_key) == "descriptive"
     if sort_key not in all_keys:
-        die(f"no metric {sort_key!r} on these runs. Available: {', '.join(all_keys)}")
+        die(f"no metric {sort_key!r} on these runs. Available: {', '.join(all_keys)}", "not-found")
 
     rows: list[dict] = []
     for config_id, runs in by_config.items():

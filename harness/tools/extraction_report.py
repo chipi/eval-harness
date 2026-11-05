@@ -65,7 +65,7 @@ from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
 try:
     from extraction import as_members, match_one_to_one, normalize
 except ImportError:  # pragma: no cover
-    die("examples/_shared/extraction.py not importable — run from the harness root")
+    die("examples/_shared/extraction.py not importable — run from the harness root", "missing-dependency")
 
 #: Arms whose job is to be a floor or a ceiling, not to be right. Excluded from the
 #: consensus pass only; they still appear in the ranking, which is what they are for.
@@ -79,7 +79,7 @@ def gold_sets(dataset_id: str) -> dict:
         try:
             out[p.stem] = json.loads(p.read_text(encoding="utf-8"))
         except ValueError:
-            die(f"gold reference {p.name} is not JSON — is this a set-valued dataset?")
+            die(f"gold reference {p.name} is not JSON — is this a set-valued dataset?", "invalid-file")
     return out
 
 
@@ -321,7 +321,10 @@ def main() -> int:
     gold = gold_sets(args.dataset_id)
     preds = predictions(args.dataset_id, args.match)
     if not preds:
-        die(f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""))
+        die(
+            f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""),
+            "not-found",
+        )
 
     n_ent = sum(len(v) for v in gold.values())
     empty = sum(1 for v in gold.values() if not v)
@@ -375,7 +378,7 @@ def main() -> int:
 
     if args.arm:
         if args.arm not in preds:
-            die(f"{args.arm!r} not among {sorted(preds)}")
+            die(f"{args.arm!r} not among {sorted(preds)}", "not-found")
         by_item = preds[args.arm]
         print(f"\n  PER TYPE — {args.arm}")
         print(f"    {'type':<16} {'P':>7} {'R':>7} {'F1':>7} {'support':>8}")

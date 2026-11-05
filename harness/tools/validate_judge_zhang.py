@@ -91,12 +91,12 @@ def load() -> dict[str, dict]:
         try:
             src, _ = _fetch.fetch(URL, PINNED)  # retried, checked against the pin
         except _fetch.FetchError as exc:
-            die(str(exc))
+            die(str(exc), "failed")
         EXT.mkdir(parents=True, exist_ok=True)
         write_bytes_atomic(FILE, src.read_bytes())
     raw = FILE.read_bytes()
     if _sha(raw) != PINNED:
-        die(f"{FILE} has sha256 {_sha(raw)}, not the pinned {PINNED}; refusing to use it")
+        die(f"{FILE} has sha256 {_sha(raw)}, not the pinned {PINNED}; refusing to use it", "mismatch")
     out: dict[str, dict] = {}
     for r in json.loads(raw):
         if r["dataset"] != "cnndm":
@@ -355,7 +355,7 @@ def build_report(
                 s[aid] = merged
         scores[j["id"]] = s
     if problems:
-        die("stored records refused:\n  " + "\n  ".join(problems[:20]))
+        die("stored records refused:\n  " + "\n  ".join(problems[:20]), "invalid-file")
 
     nonref = [m for m in systems if m != REFERENCE]
     hum19, refs19 = human_and_refs(data, systems)
@@ -456,7 +456,7 @@ def main() -> int:
     data = load()
     systems = sorted(next(iter(data.values()))["systems"])
     if any(sorted(a["systems"]) != systems for a in data.values()):
-        die("not every article has the same systems")
+        die("not every article has the same systems", "invalid-file")
     vroot = DATA / "judge-validation" / args.scorer / "zhang2023-cnndm"
     cap = js.effective_cap(sc)
 
@@ -485,9 +485,9 @@ def main() -> int:
         )
         return 0
     if missing and args.no_calls:
-        die(f"--no-calls but {len(missing)} record(s) are missing")
+        die(f"--no-calls but {len(missing)} record(s) are missing", "not-found")
     if missing and cap is None:
-        die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD")
+        die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD", "not-configured")
 
     spent = sum(float(json.loads(f.read_text()).get("cost_usd") or 0.0) for f in vroot.glob("*/*.json"))
     stopped = None

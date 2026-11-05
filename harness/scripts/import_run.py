@@ -54,6 +54,7 @@ from evaluation_harness._common import (
     RUNS,
     dataset_id_ok,
     die,
+    evh_prog,
     now,
     read_json,
     sha256,
@@ -72,16 +73,16 @@ def _rows(path: Path) -> list:
         try:
             row = json.loads(raw)
         except json.JSONDecodeError as exc:
-            die(f"{path}:{n}: not JSON ({exc})")
+            die(f"{path}:{n}: not JSON ({exc})", "invalid-file")
         if not isinstance(row, dict) or "item_id" not in row:
-            die(f"{path}:{n}: each row must be an object with an item_id")
+            die(f"{path}:{n}: each row must be an object with an item_id", "invalid-file")
         rows.append(row)
     return rows
 
 
 def main() -> int:
     """Import external scores as a harness run."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--config-id", required=True, help="the arm's name, as tests will refer to it")
     ap.add_argument("--scores", required=True, type=Path, help="JSONL: item_id + numeric metrics")
@@ -123,7 +124,8 @@ def main() -> int:
     if not ds_file.is_file():
         die(
             f"dataset {args.dataset_id} is not frozen: {ds_file} does not exist. "
-            f"Freeze the items first (evh dataset-create)."
+            f"Freeze the items first (evh dataset-create).",
+            "not-found",
         )
     dataset = read_json(ds_file)
     known = {it["item_id"] for it in dataset["items"]}
@@ -133,30 +135,34 @@ def main() -> int:
     for row in rows:
         iid = row["item_id"]
         if iid in seen:
-            die(f"item {iid!r} is scored twice in {args.scores}")
+            die(f"item {iid!r} is scored twice in {args.scores}", "invalid-file")
         if iid not in known:
-            die(f"item {iid!r} is not in dataset {args.dataset_id}")
+            die(f"item {iid!r} is not in dataset {args.dataset_id}", "not-found")
         seen.add(iid)
         for k, v in row.items():
             if k == "item_id" or k.startswith("_"):
                 continue
             if isinstance(v, bool) or not isinstance(v, (int, float)) or math.isnan(v):
-                die(f"item {iid!r}: {k}={v!r} is not a number")
+                die(f"item {iid!r}: {k}={v!r} is not a number", "invalid-file")
             metrics.add(k)
     if args.primary_metric not in metrics:
-        die(f"--primary-metric {args.primary_metric!r} is not among the scored metrics: {sorted(metrics)}")
+        die(
+            f"--primary-metric {args.primary_metric!r} is not among the scored metrics: {sorted(metrics)}",
+            "bad-argument",
+        )
     missing = sorted(known - seen)
     if missing and not args.allow_subset:
         die(
             f"{len(missing)} of {len(known)} items have no scores (first: {missing[0]}). "
-            f"Pass --allow-subset to import anyway; the coverage is recorded on the run."
+            f"Pass --allow-subset to import anyway; the coverage is recorded on the run.",
+            "not-enough",
         )
 
     kinds = {}
     for spec in args.metric_kind:
         k, _, v = spec.partition("=")
         if v not in ("quality", "descriptive", "cost", "speed"):
-            die(f"--metric-kind {spec!r}: kind must be quality, descriptive, cost or speed")
+            die(f"--metric-kind {spec!r}: kind must be quality, descriptive, cost or speed", "bad-argument")
         kinds[k] = v
 
     scores = {}
@@ -167,7 +173,7 @@ def main() -> int:
     run_id = args.run_id or f"{args.config_id}_{now().replace('-', '').replace(':', '')}"
     run_dir = RUNS / run_id
     if run_dir.exists():
-        die(f"{run_dir} already exists")
+        die(f"{run_dir} already exists", "would-overwrite")
 
     scorer_sha256 = None
     if args.scorer_file:
@@ -177,7 +183,7 @@ def main() -> int:
         for f in args.scorer_file:
             h = file_sha256(f)
             if h is None:
-                die(f"cannot read --scorer-file {f}")
+                die(f"cannot read --scorer-file {f}", "not-found")
             parts.append(h)
         # One file: its own hash. Several: one hash over theirs, in the order given.
         scorer_sha256 = parts[0] if len(parts) == 1 else hashlib.sha256("\n".join(parts).encode()).hexdigest()

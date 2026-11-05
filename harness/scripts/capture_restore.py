@@ -37,7 +37,16 @@ import tempfile
 from pathlib import Path
 
 from evaluation_harness import _importers
-from evaluation_harness._common import CAPTURES, DATASETS, ROOT, dataset_id_ok, die, read_json, write_json
+from evaluation_harness._common import (
+    CAPTURES,
+    DATASETS,
+    ROOT,
+    dataset_id_ok,
+    die,
+    evh_prog,
+    read_json,
+    write_json,
+)
 
 
 def overrides(pairs: list[str]) -> dict:
@@ -46,7 +55,7 @@ def overrides(pairs: list[str]) -> dict:
     for p in pairs:
         key, sep, raw = p.partition("=")
         if not sep or not key.strip():
-            die(f"--query {p!r}: KEY=VALUE, e.g. --query path=exports/decisions.jsonl")
+            die(f"--query {p!r}: KEY=VALUE, e.g. --query path=exports/decisions.jsonl", "bad-argument")
         try:
             value = json.loads(raw)
         except ValueError:
@@ -111,7 +120,7 @@ def dataset_files(capture_id: str, recs: dict) -> tuple[list[tuple[Path, bytes]]
 
 def main() -> int:
     """Read a capture's records again and keep them only if every hash matches."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--capture", required=True, help="the capture's id")
     ap.add_argument(
         "--query",
@@ -125,14 +134,15 @@ def main() -> int:
 
     base = CAPTURES / dataset_id_ok(args.capture)
     if not (base / "capture.json").is_file():
-        die(f"no capture {args.capture!r} at {base}")
+        die(f"no capture {args.capture!r} at {base}", "not-found")
     doc = read_json(base / "capture.json")
     entries = doc.get("records") or []
     records = base / "records"
     if records.is_dir() and any(records.iterdir()) and mismatched(records, entries) and not args.force:
         die(
             f"{records} exists and does not match capture.json ({named(mismatched(records, entries), 'differ')}). "
-            "Pass --force to replace it with the records read again."
+            "Pass --force to replace it with the records read again.",
+            "would-overwrite",
         )
 
     query = {**(doc.get("query") or {}), **overrides(args.query)}
@@ -148,7 +158,10 @@ def main() -> int:
     except SystemExit:
         raise
     except Exception as exc:  # noqa: BLE001 — the importer's own failure, named
-        die(f"--capture {args.capture}: the importer {doc['importer']} failed: {type(exc).__name__}: {exc}")
+        die(
+            f"--capture {args.capture}: the importer {doc['importer']} failed: {type(exc).__name__}: {exc}",
+            "failed",
+        )
     code_note = (
         ""
         if _importers.code_sha256(path) == doc.get("importer_sha256")
@@ -157,26 +170,34 @@ def main() -> int:
 
     missing = sorted(wanted - set(got))
     if missing:
-        die(f"{code_note}{named(missing, 'not returned by the importer for this query')}; nothing written")
+        die(
+            f"{code_note}{named(missing, 'not returned by the importer for this query')}; nothing written",
+            "mismatch",
+        )
     tmp = Path(tempfile.mkdtemp(prefix=".records.partial-", dir=base))
     try:
         for rid, rec in got.items():
             write_json(tmp / f"{rid}.json", rec)
         bad = mismatched(tmp, entries, "sha256_before_scrub")
         if bad:
-            die(f"{code_note}{named(bad, 'differ from what the capture recorded')}; nothing written")
+            die(
+                f"{code_note}{named(bad, 'differ from what the capture recorded')}; nothing written",
+                "mismatch",
+            )
         scrub = (doc.get("scrubbed") or {}).get("command")
         if scrub:
             argv = [a.replace("{records}", str(tmp)) for a in shlex.split(scrub)]
             proc = subprocess.run(argv, capture_output=True, text=True)
             if proc.returncode != 0:
                 die(
-                    f"the recorded scrubber exited {proc.returncode}: {(proc.stderr or proc.stdout).strip()[-300:]}"
+                    f"the recorded scrubber exited {proc.returncode}: {(proc.stderr or proc.stdout).strip()[-300:]}",
+                    "failed",
                 )
             bad = mismatched(tmp, entries)
             if bad:
                 die(
-                    f"{named(bad, 'differ from what the capture recorded after its scrubber ran')}; nothing written"
+                    f"{named(bad, 'differ from what the capture recorded after its scrubber ran')}; nothing written",
+                    "mismatch",
                 )
         # The datasets were cut from the records as kept (scrubbed, when they were): checked from those,
         # every one before anything is written.
@@ -185,7 +206,8 @@ def main() -> int:
         if bad_items:
             die(
                 f"{len(bad_items)} dataset item(s) differ from their dataset's hashes, e.g. "
-                f"{', '.join(bad_items[:5])}; nothing written"
+                f"{', '.join(bad_items[:5])}; nothing written",
+                "mismatch",
             )
         if records.exists():
             shutil.rmtree(records)

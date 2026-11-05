@@ -284,11 +284,17 @@ PATH_VARS = ("EVAL_HOME", "EVH_P_CACHE")
 
 
 def run_command(
-    project: Path, command: str, argv: list[str], timeout: float = TIMEOUT_S, public: bool = False
+    project: Path,
+    command: str,
+    argv: list[str],
+    timeout: float = TIMEOUT_S,
+    public: bool = False,
+    started: list[subprocess.Popen] | None = None,
 ) -> tuple[int, str, str]:
     """`evh <command> <argv>` in the project, in its own process group, stdin closed, with a timeout
     that kills the group. `public`: the command runs as a public server's would (EVH_PUBLIC), so it
-    sees only the fields marked public."""
+    sees only the fields marked public. `started` receives the process, for a caller that may have
+    to stop it (a cancelled call, kill_group)."""
     cmd = [sys.executable, str(HERE / "cli.py"), command, *(["--json"] if command in JSON else []), *argv]
     # The goals' tests are the slow part of a view (~50 s for this repository's runs); each call is a
     # fresh process, so they are kept on disk (stats.EVH_P_CACHE), in the project's ignored .cache/
@@ -314,13 +320,21 @@ def run_command(
         text=True,
         start_new_session=True,
     )
+    if started is not None:
+        started.append(p)
     try:
         out, err = p.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
-        os.killpg(p.pid, signal.SIGKILL)
+        kill_group(p)
         out, err = p.communicate()
         return 124, out, err + f"\n(stopped after {timeout:g} s)"
     return p.returncode, out, err
+
+
+def kill_group(p: subprocess.Popen) -> None:
+    """Stop a command and everything it started (its own process group); one already gone is fine."""
+    with contextlib.suppress(ProcessLookupError, PermissionError):
+        os.killpg(p.pid, signal.SIGKILL)
 
 
 #: Options no tool offers: they write a file (the sheet's CSV and its key), and a tool writes nothing.
@@ -679,10 +693,19 @@ def build_server(
                     await slots.acquire()
                 if waited.cancelled_caught:
                     return refuse("the server is busy: try again in a minute", {**info, "refused": "busy"})
+                started: list[subprocess.Popen] = []
                 try:
+                    # A cancelled call (notifications/cancelled, or the client gone) stops its command:
+                    # waiting on the thread instead kept the process running to its timeout, holding a slot.
                     code, out, err = await anyio.to_thread.run_sync(
-                        run_command, project, name, argv, timeout, public
+                        lambda: run_command(project, name, argv, timeout, public, started),
+                        abandon_on_cancel=True,
                     )
+                except anyio.get_cancelled_exc_class():
+                    for p in started:
+                        kill_group(p)
+                    _log(**{k: v for k, v in info.items() if k not in PRIVATE}, cancelled=True)
+                    raise
                 finally:
                     slots.release()
             finally:
@@ -828,7 +851,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.write_answers:
         return write_answers(args.project.resolve(), args.write_answers, args.public, args.timeout)
     if args.answers and not args.public:
-        raise SystemExit("--answers serves a release that never changes: it needs --public")
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die("--answers serves a release that never changes: it needs --public", "not-allowed")
     if args.http and args.port is None:
         from evaluation_harness._common import project_port  # noqa: PLC0415
 
@@ -837,9 +862,12 @@ def main(argv: list[str] | None = None) -> int:
 
     project = args.project.resolve()
     if args.http and args.bind not in LOOPBACK and not args.allowed_host:
-        raise SystemExit(
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(
             f"--bind {args.bind} reaches beyond this machine: name the Host it answers with --allowed-host "
-            "(the server checks it against DNS rebinding)"
+            "(the server checks it against DNS rebinding)",
+            "not-allowed",
         )
     hooks = Hooks()
     if args.hooks:

@@ -93,13 +93,13 @@ def main() -> int:
     args = ap.parse_args(argv)
     goal = load_goals().get(args.goal)
     if goal is None:
-        die(f"no goal {args.goal!r}")
+        die(f"no goal {args.goal!r}", "not-found")
     datasets = [d["dataset_id"] for d in goal.get("datasets") or [] if d.get("dataset_id")]
     configs = None
     if args.round_id:
         rnd = _rounds.find(args.goal, args.round_id)
         if rnd is None:
-            die(f"no round {args.round_id} of {args.goal}")
+            die(f"no round {args.round_id} of {args.goal}", "not-found")
         datasets, configs = [rnd["dataset_id"]], set(_rounds.arms_of(rnd))
     before = decisions(load_catalog_adapter(None), goal)
     with tempfile.TemporaryDirectory(prefix="evh-score-preview-") as tmp:

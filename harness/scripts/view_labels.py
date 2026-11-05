@@ -24,7 +24,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import json
 
-from evaluation_harness._common import load_dataset
+from evaluation_harness._common import evh_prog, load_dataset
 from evaluation_harness._label_sets import agreement, coverage, sets, source_line
 from evaluation_harness._visibility import public_env, text_shown
 
@@ -70,7 +70,7 @@ def confusion_lines(p: dict) -> str:
 
 def main() -> int:
     """List label sets."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", help="the sets covering this dataset's items")
     ap.add_argument("--json", action="store_true", help="print JSON")
     ap.add_argument(

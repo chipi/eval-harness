@@ -26,7 +26,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 from collections import Counter
 
-from evaluation_harness._common import REFERENCES, die, load_dataset, now, read_json
+from evaluation_harness._common import REFERENCES, die, evh_prog, load_dataset, now, read_json
 from evaluation_harness._label_sets import answers, label_line, label_text, labels_for, sets, source_line
 from evaluation_harness._references import write_manifest
 
@@ -41,7 +41,7 @@ CAVEAT = {
 
 def main() -> int:
     """Promote a label set's labels to a reference set."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True, help="the dataset the reference set is for")
     ap.add_argument("--labels", required=True, help="SET (made on this dataset) or DATASET/SET")
     ap.add_argument("--tier", required=True, choices=("gold", "silver"))
@@ -55,18 +55,22 @@ def main() -> int:
 
     if len(args.reason.split()) < 3:
         die(
-            'REFUSED: --reason must be a sentence, not a word. It answers "why is this the yardstick?" later.'
+            'REFUSED: --reason must be a sentence, not a word. It answers "why is this the yardstick?" later.',
+            "bad-argument",
         )
     set_ds, _, set_name = args.labels.rpartition("/")
     set_ds = set_ds or args.dataset_id
     name = args.name or args.dataset_id
     if "/" in name or name.startswith(".") or not name:
-        die(f"--name {name!r}: one name, no path")
+        die(f"--name {name!r}: one name, no path", "bad-argument")
     ref_dir = REFERENCES / args.tier / name
     kept_out = (ref_dir / "manifest.json").is_file() and not any(ref_dir.glob("*.txt"))
     hand_made = ref_dir.is_dir() and not (ref_dir / "manifest.json").exists() and any(ref_dir.glob("*.txt"))
     if ref_dir.exists() and any(ref_dir.iterdir()) and not kept_out and not hand_made:
-        die(f"{ref_dir} exists: a reference set is never overwritten. Name another with --name.")
+        die(
+            f"{ref_dir} exists: a reference set is never overwritten. Name another with --name.",
+            "would-overwrite",
+        )
     ds = load_dataset(args.dataset_id)
     ids = [it["item_id"] for it in ds.get("items") or []]
     mine = {
@@ -77,15 +81,16 @@ def main() -> int:
     }
     if not mine:
         die(
-            f"no labels of {set_ds}/{set_name} on {args.dataset_id}'s items (evh labels --dataset-id {args.dataset_id})"
+            f"no labels of {set_ds}/{set_name} on {args.dataset_id}'s items (evh labels --dataset-id {args.dataset_id})",
+            "not-found",
         )
     if args.items:
         unknown = sorted(set(args.items) - set(ids))
         if unknown:
-            die(f"--items: not in {args.dataset_id}: {', '.join(unknown[:8])}")
+            die(f"--items: not in {args.dataset_id}: {', '.join(unknown[:8])}", "not-found")
         missing = sorted(set(args.items) - set(mine))
         if missing:
-            die(f"--items: {set_ds}/{set_name} has no label for {', '.join(missing[:8])}")
+            die(f"--items: {set_ds}/{set_name} has no label for {', '.join(missing[:8])}", "not-enough")
         chosen = [i for i in ids if i in set(args.items)]
     else:
         chosen = [i for i in ids if i in mine]
@@ -103,7 +108,8 @@ def main() -> int:
                 f"{ref_dir} exists, made by hand with no manifest, and its texts are not {set_ds}/{set_name}'s: a "
                 f"reference is never overwritten. To keep it, import it as the labels first (evh label-import "
                 f"{ref_dir} --dataset-id {args.dataset_id} --set S --by WHO) and promote those; or name another with "
-                "--name."
+                "--name.",
+                "would-overwrite",
             )
     doc = next((d for d in sets() if d["dataset_id"] == set_ds and d["set"] == set_name), {})
     not_here = doc.get("redistributed") is False
@@ -174,7 +180,8 @@ def _rebuild(ref_dir, mine: dict, set_ds: str, set_name: str) -> int:
     pf = m.get("promoted_from") or {}
     if (pf.get("labels"), pf.get("dataset_id")) != (set_name, set_ds):
         die(
-            f"{ref_dir} exists, promoted from {pf.get('dataset_id')}/{pf.get('labels')}: a reference set is never overwritten"
+            f"{ref_dir} exists, promoted from {pf.get('dataset_id')}/{pf.get('labels')}: a reference set is never overwritten",
+            "would-overwrite",
         )
     want = m.get("items_sha256") or {}
     texts = {iid: mine[iid]["text"] + "\n" for iid in want if iid in mine}
@@ -182,7 +189,8 @@ def _rebuild(ref_dir, mine: dict, set_ds: str, set_name: str) -> int:
     if bad:
         die(
             f"REFUSED: the texts from {set_ds}/{set_name} do not match {ref_dir / 'manifest.json'}'s checksums "
-            f"({len(bad)} of {len(want)} differ). Nothing was written."
+            f"({len(bad)} of {len(want)} differ). Nothing was written.",
+            "mismatch",
         )
     for iid, text in texts.items():
         (ref_dir / f"{iid}.txt").write_text(text, encoding="utf-8")

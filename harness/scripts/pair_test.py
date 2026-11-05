@@ -61,6 +61,7 @@ from evaluation_harness._common import (  # noqa: E402
     data_rel,
     dataset_item_ids,
     die,
+    evh_prog,
     read_item_ids,
     scored_against_dir,
 )
@@ -94,14 +95,14 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
 
     rnd = resolve(args.round, args.goal)
     if rnd["dataset_id"] != args.dataset_id:
-        die(f"round {args.round} is on {rnd['dataset_id']}, not {args.dataset_id}")
+        die(f"round {args.round} is on {rnd['dataset_id']}, not {args.dataset_id}", "mismatch")
     in_play = arms_of(rnd)
     goal = _common.load_goals().get(rnd["goal"]) or {}
     prim = (goal.get("success_criteria") or {}).get("primary") or {}
     args.metric = args.metric or prim.get("measure")
     for x in (args.a, args.b):
         if x and x not in in_play:
-            die(f"{x} is not in play in round {args.round} ({', '.join(in_play)})")
+            die(f"{x} is not in play in round {args.round} ({', '.join(in_play)})", "not-found")
     chose = not args.a
     if not args.a:
         means = {}
@@ -110,13 +111,13 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
             if v:
                 means[c] = statistics.fmean(v.values())
         if not means:
-            die(f"no arm in round {args.round} records {args.metric} yet")
+            die(f"no arm in round {args.round} records {args.metric} yet", "not-enough")
         args.a = (min if prim.get("direction") == "lower" else max)(means, key=lambda c: means[c])
     if not args.b:
         base = rnd.get("baseline")
         args.b = next((m["config_id"] for d, m in runs if d.name == base), None)
         if not args.b or args.b == args.a:
-            die(f"round {args.round} records no other baseline run: name --b")
+            die(f"round {args.round} records no other baseline run: name --b", "not-enough")
     print(f"  round {args.round}: {args.a}{' (its leader)' if chose else ''} against {args.b}")
     # The comparisons the leader could have been: every arm in play but B, whether or not B is in play.
     return chose, len([c for c in in_play if c != args.b])
@@ -205,7 +206,8 @@ def _check_same_reference(args: argparse.Namespace, runs_a: list, runs_b: list, 
                 f"{arm} on {ds} records "
                 + (f"{len(got)} different references ({', '.join(sorted(got))})" if got else "no reference")
                 + ": a cross-version comparison needs the one reference each arm was scored against, to check "
-                "that it says the same on both sides"
+                "that it says the same on both sides",
+                "mismatch",
             )
         ids.append(next(iter(got)))
     ha, hb = (_reference_hashes(r, items) for r in ids)
@@ -213,21 +215,23 @@ def _check_same_reference(args: argparse.Namespace, runs_a: list, runs_b: list, 
     if unread:
         die(
             f"cannot compare the references item by item: {len(unread)} item(s) have no reference text or "
-            f"checksum in {ids[0]} or {ids[1]} (e.g. {', '.join(unread[:_NAMED])})"
+            f"checksum in {ids[0]} or {ids[1]} (e.g. {', '.join(unread[:_NAMED])})",
+            "not-enough",
         )
     differ = [i for i in items if ha[i] != hb[i]]
     if differ:
         die(
             f"the reference differs between {args.dataset_id} ({ids[0]}) and {args.b_dataset} ({ids[1]}) on "
             f"{len(differ)} of {len(items)} item(s), e.g. {', '.join(differ[:_NAMED])}: the score does not "
-            "mean the same on both sides, so this is not a paired comparison"
+            "mean the same on both sides, so this is not a paired comparison",
+            "mismatch",
         )
     return f"{ids[0]} / {ids[1]}"
 
 
 def main() -> int:
     """Test a pre-registered pair with sign-flip permutation."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--a", help="config_id of the arm under test (with --round: default its leader)")
     ap.add_argument(
@@ -296,7 +300,10 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     runs_b = []
     if cross:
         if args.b_dataset == args.dataset_id:
-            die(f"--b-dataset is {args.dataset_id} itself: drop it, both arms are on one dataset")
+            die(
+                f"--b-dataset is {args.dataset_id} itself: drop it, both arms are on one dataset",
+                "bad-argument",
+            )
         ids_a, ids_b = dataset_item_ids(args.dataset_id), dataset_item_ids(args.b_dataset)
         warn_on_ambiguous_runs(runs_dir, args.b_dataset, label=runs_dir.name)
         runs_b = runs_on(args.b_dataset, runs_dir=runs_dir)
@@ -317,7 +324,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
         if other != args.metric:
             die(
                 f"the two datasets' runs record different primary metrics ({args.dataset_id}: {args.metric}, "
-                f"{args.b_dataset}: {other}): name the one to test with --metric"
+                f"{args.b_dataset}: {other}): name the one to test with --metric",
+                "mismatch",
             )
     if cross:
         arm_a = [r for r in runs if r[1]["config_id"] == args.a]
@@ -328,7 +336,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             die(
                 f"{args.metric} is {'lower' if lower else 'higher'}-is-better for {args.a} on {args.dataset_id} "
                 f"but {'lower' if lower_b else 'higher'}-is-better for {args.b} on {args.b_dataset}: not one "
-                "metric (pass --asc or --desc to decide)"
+                "metric (pass --asc or --desc to decide)",
+                "mismatch",
             )
         A, B = per_item(arm_a, args.metric), per_item(arm_b, args.metric)
         # A measure that is not stored per item (the goal computes it at re-score) is a missing metric, not an
@@ -339,7 +348,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
                 die(
                     f"{args.metric} is not stored per item in {arm}'s runs on {ds} (stored: {', '.join(stored)}). "
                     "A measure computed at re-score is stored only in the re-scored runs (`evh rescore`): "
-                    "point --runs-dir at them."
+                    "point --runs-dir at them.",
+                    "not-enough",
                 )
     else:
         lower = direction(runs, args.metric, args.asc, args.desc)
@@ -367,13 +377,17 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     if cross:
         shared = ids_a & ids_b
         if not shared:
-            die(f"{args.dataset_id} and {args.b_dataset} share no item id: they do not pair by item")
+            die(
+                f"{args.dataset_id} and {args.b_dataset} share no item id: they do not pair by item",
+                "mismatch",
+            )
         items = [i for i in items if i in shared]
         if len(items) < 3:
             die(
                 f"only {len(items)} item(s) exist in both {args.dataset_id} ({len(ids_a)} items) and "
                 f"{args.b_dataset} ({len(ids_b)} items; {len(shared)} ids shared) and are scored for both arms: "
-                "nothing to test"
+                "nothing to test",
+                "not-enough",
             )
         refs = _check_same_reference(args, arm_a, arm_b, items)
         ids_run_a = sorted({d.name for d, _m in arm_a})
@@ -395,7 +409,7 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             f"    does not           {_DOES_NOT}",
         ]
     elif len(items) < 3:
-        die(f"only {len(items)} shared item(s): nothing to test")
+        die(f"only {len(items)} shared item(s): nothing to test", "not-enough")
 
     deltas = [A[i] - B[i] for i in items]
     obs = statistics.fmean(deltas)

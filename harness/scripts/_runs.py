@@ -188,7 +188,9 @@ def direction(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool = 
     passed one, else `lower_is_better_on`. Every command that counts wins or ranks arms asks
     this, so "A wins 180/200" on latency means A was faster without anyone remembering --asc."""
     if asc and desc:
-        raise SystemExit("ERROR: --asc and --desc contradict each other")
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die("--asc and --desc contradict each other", "bad-argument")
     if asc or desc:
         return asc
     return lower_is_better_on(runs, metric)
@@ -245,9 +247,12 @@ def default_metric(dataset_id: str, match: str | None = None, runs_dir: Path | N
                 file=sys.stderr,
             )
         return primary.most_common(1)[0][0]
-    raise SystemExit(
-        f"ERROR: no run on {dataset_id} records a primary metric: pass --metric"
-        + (f" (recorded: {', '.join(sorted(seen))})" if seen else "")
+    from evaluation_harness._common import die  # noqa: PLC0415
+
+    die(
+        f"no run on {dataset_id} records a primary metric: pass --metric"
+        + (f" (recorded: {', '.join(sorted(seen))})" if seen else ""),
+        "not-found",
     )
 
 

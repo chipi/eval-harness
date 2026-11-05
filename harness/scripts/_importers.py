@@ -55,19 +55,23 @@ def resolve(name: str) -> tuple[type, Path]:
             path = here if here.is_file() or not project.is_file() else project
     else:
         if not IMPORTER_NAME.fullmatch(name):
-            die(f"--importer {name!r}: lowercase letters, digits and _, or path/to/importer.py:Class")
+            die(
+                f"--importer {name!r}: lowercase letters, digits and _, or path/to/importer.py:Class",
+                "bad-argument",
+            )
         path, cls_name = DATA / "importers" / f"{name}.py", "Importer"
         if not path.is_file():
             die(
                 f"--importer {name}: not a built-in importer ({', '.join(builtin_names())}), and no "
-                f"{path} with a class Importer; or name a file: path/to/importer.py:Class"
+                f"{path} with a class Importer; or name a file: path/to/importer.py:Class",
+                "not-found",
             )
     if not path.is_file():
-        die(f"--importer {name}: no file {path}")
+        die(f"--importer {name}: no file {path}", "not-found")
     mod = load_module(path, f"evh_importer_{hashlib.sha256(str(path).encode()).hexdigest()[:12]}")
     cls = getattr(mod, cls_name, None)
     if cls is None or not callable(getattr(cls, "records", None)):
-        die(f"--importer {name}: {path} has no class {cls_name} with a records(query) method")
+        die(f"--importer {name}: {path} has no class {cls_name} with a records(query) method", "invalid-file")
     return cls, path
 
 

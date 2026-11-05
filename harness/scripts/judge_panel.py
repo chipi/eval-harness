@@ -30,7 +30,7 @@ import yaml
 
 # The harness's own run reading, so the panel finds runs where every command does (the
 # project, EVAL_RUNS_DIR) and picks the metric the same way.
-from evaluation_harness._common import ROOT, RUNS
+from evaluation_harness._common import ROOT, RUNS, die, evh_prog
 from evaluation_harness._runs import default_metric, direction, item_rows, runs_on
 from evaluation_harness.panel_judges import ItemScore, build_judge
 
@@ -380,7 +380,7 @@ def _items_of(finalist: RunCandidate, n: int) -> list[dict[str, Any]]:
         if len(items) == n:
             break
     if not items:
-        raise SystemExit(f"{finalist.run_id}: no stored outputs under {d / 'outputs'} to judge")
+        die(f"{finalist.run_id}: no stored outputs under {d / 'outputs'} to judge", "not-enough")
     return items
 
 
@@ -408,22 +408,24 @@ def _candidates_from(cfg: dict[str, Any]) -> list[RunCandidate]:
     if not root.is_absolute():
         root = ROOT / root
     if not root.is_dir():
-        raise SystemExit(f"runs_from: no such directory: {root}")
+        die(f"runs_from: no such directory: {root}", "not-found")
 
     want_ds: str | None = cfg.get("dataset_id")
     metric: str | None = cfg.get("primary_metric")
     if not metric:
         if not want_ds:
-            raise SystemExit(
-                "runs_from: name dataset_id (its runs' primary metric ranks them) or primary_metric"
+            die(
+                "runs_from: name dataset_id (its runs' primary metric ranks them) or primary_metric",
+                "invalid-file",
             )
         # The metric every command defaults to: the primary metric the runs recorded.
         metric = default_metric(want_ds, runs_dir=root)
     runs = runs_on(want_ds, runs_dir=root)
     if direction(runs, metric):
-        raise SystemExit(
+        die(
             f"{metric!r} is lower-is-better; the panel promotes the HIGHEST scores within a "
-            "floor of the leader, so name a quality metric as primary_metric"
+            "floor of the leader, so name a quality metric as primary_metric",
+            "invalid-file",
         )
     out: list[RunCandidate] = []
     for d, m in runs:
@@ -439,10 +441,11 @@ def _candidates_from(cfg: dict[str, Any]) -> list[RunCandidate]:
             )
         )
     if not out:
-        raise SystemExit(
+        die(
             f"runs_from={root} matched no runs"
             + (f" on dataset {want_ds}" if want_ds else "")
-            + (f" carrying metric {metric!r}" if metric else "")
+            + (f" carrying metric {metric!r}" if metric else ""),
+            "not-found",
         )
     logger.info("Loaded %d candidate run(s) from %s", len(out), root)
     return out
@@ -452,7 +455,7 @@ def main(argv: list[str]) -> int:
     """Promote, judge, aggregate, and report on finalists."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(prog=evh_prog())
     ap.add_argument("--config", required=True)
     ap.add_argument("--use-fake-judge", action="store_true")
     args = ap.parse_args(argv)
@@ -471,7 +474,7 @@ def main(argv: list[str]) -> int:
 
     primary = build_judge(cfg["judging"]["primary_judge"], use_fake=args.use_fake_judge)
     if primary is None:
-        raise SystemExit("judging.primary_judge is required: name the judge that scores every finalist")
+        die("judging.primary_judge is required: name the judge that scores every finalist", "invalid-file")
     cross = build_judge(cfg["judging"].get("cross_judge"), use_fake=args.use_fake_judge)
     dims = cfg["judging"]["dimensions"]
     cost_remaining = float(cfg["judging"]["cost_cap_usd"])

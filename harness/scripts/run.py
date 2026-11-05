@@ -53,6 +53,9 @@ from evaluation_harness._adapter import (
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     DATA,
+    EXIT_NOTHING,
+    EXIT_STOPPED,
+    EXIT_TRY_LATER,
     GOALS,
     MATERIALIZED,
     REFERENCES,
@@ -62,6 +65,7 @@ from evaluation_harness._common import (
     classify_metrics,
     die,
     env_float,
+    evh_prog,
     how,
     load_dataset,
     load_goals,
@@ -79,7 +83,7 @@ from evaluation_harness._retry import call_with_retries
 try:
     import yaml
 except ImportError:  # pragma: no cover
-    die("pyyaml is required — pip install -r requirements.txt")
+    die("pyyaml is required — pip install -r requirements.txt", "missing-dependency")
 
 
 class _Resumed:
@@ -247,7 +251,8 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
     cap = params.get("capture")
     if not cap:
         die(
-            f"{cfg.get('config_id')}: provider recorded needs params.capture, the capture its outputs come from"
+            f"{cfg.get('config_id')}: provider recorded needs params.capture, the capture its outputs come from",
+            "bad-argument",
         )
     _doc, recs = load_capture(cap)
     by_id = {r["id"]: r for r in recs}
@@ -257,7 +262,8 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
     if not callable(hook) and not field:
         die(
             f"{cfg.get('config_id')}: a recorded arm reads each output with the adapter's recorded_output(record), "
-            "or from the record's field named by params.field; it has neither"
+            "or from the record's field named by params.field; it has neither",
+            "invalid-file",
         )
     out: dict[str, str] = {}
     missing = []
@@ -269,7 +275,8 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
         out[it["item_id"]] = str(hook(rec) if callable(hook) else (rec.get("fields") or {}).get(field, ""))
     if missing:
         die(
-            f"capture {cap} has no record for {len(missing)} item(s) of {cfg['dataset_id']}: {', '.join(missing[:8])}"
+            f"capture {cap} has no record for {len(missing)} item(s) of {cfg['dataset_id']}: {', '.join(missing[:8])}",
+            "not-found",
         )
     from evaluation_harness._common import CAPTURES  # noqa: PLC0415
 
@@ -349,7 +356,8 @@ def one_pass(
             + how(
                 f"evh dataset-materialize --dataset-id {ds['dataset_id']}",
                 f"make dataset-materialize DATASET_ID={ds['dataset_id']}",
-            )
+            ),
+            "not-materialized",
         )
     params = dict(cfg.get("params") or {})
     params.setdefault("seed", idx)
@@ -705,7 +713,7 @@ def _resume_source(
         return None, {}
     resume_dir = runs / resume / "outputs"
     if not resume_dir.is_dir():
-        die(f"cannot resume: no outputs under {resume_dir}")
+        die(f"cannot resume: no outputs under {resume_dir}", "not-found")
 
     # RESUMING FROM ANOTHER ARM'S OUTPUTS WAS ACCEPTED WITHOUT A WORD.
     #
@@ -737,20 +745,23 @@ def _resume_source(
             f"cannot resume: {resume} has neither run.json nor metrics.json, so the "
             f"arm that produced those outputs cannot be identified.\n"
             f"  Resuming anyway would replay whatever is in that directory and record it "
-            f"under {cfg.get('config_id')!r}."
+            f"under {cfg.get('config_id')!r}.",
+            "not-found",
         )
     if ident.get("config_id") and ident["config_id"] != cfg.get("config_id"):
         die(
             f"cannot resume: {resume} is arm {ident['config_id']!r}, "
             f"this config is {cfg.get('config_id')!r}.\n"
             f"  Resuming would replay another arm's answers and record them "
-            f"under this one."
+            f"under this one.",
+            "mismatch",
         )
     if ident.get("dataset_id") and ident["dataset_id"] != cfg.get("dataset_id"):
         die(
             f"cannot resume: {resume} ran on dataset "
             f"{ident['dataset_id']!r}, this config is on "
-            f"{cfg.get('dataset_id')!r}."
+            f"{cfg.get('dataset_id')!r}.",
+            "mismatch",
         )
 
     # THE PRIOR ROWS, so a replayed item keeps the cost, tokens, latency and _meta
@@ -770,7 +781,8 @@ def _resume_source(
                 if not isinstance(r.get("_extra"), dict):
                     die(
                         f"cannot resume: {src} has rows without `_extra`; it was not written "
-                        f"by this version of the harness"
+                        f"by this version of the harness",
+                        "invalid-file",
                     )
                 prior_rows.setdefault(r["item_id"], r)
     if not prior_rows:
@@ -783,7 +795,7 @@ def _resume_source(
 
 def main() -> int:
     """Run an arm config against a dataset."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--config", required=True, type=Path)
     ap.add_argument(
         "--labels",
@@ -821,7 +833,7 @@ def main() -> int:
 
 def _run(args: argparse.Namespace) -> int:
     if not args.config.is_file():
-        die(f"no config at {args.config}")
+        die(f"no config at {args.config}", "not-found")
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
     # A config may name a model record (RFC-020, optional): its settings come from the record, under the
     # config's own params, so every arm of that model runs the way it was onboarded. With `deployment:` it
@@ -831,7 +843,7 @@ def _run(args: argparse.Namespace) -> int:
     try:
         cfg = _models.resolve(cfg, DATA)
     except ValueError as exc:
-        die(f"{args.config}: {exc}")
+        die(f"{args.config}: {exc}", "invalid-file")
     call_system, score, adapter_id, adapter_path, warmup, model_fingerprint = load_adapter(
         cfg.get("adapter"), Path(args.config)
     )
@@ -842,7 +854,7 @@ def _run(args: argparse.Namespace) -> int:
     declared_kinds = metric_kinds(adapter_path)
     for required in ("config_id", "dataset_id"):
         if required not in cfg:
-            die(f"{args.config} is missing required key: {required}")
+            die(f"{args.config} is missing required key: {required}", "invalid-file")
     # A key written into the config would be copied into every run record (metrics.json), and
     # from there onto pages: refused, with the way that keeps it out.
     secrets = secret_params(dict(cfg.get("params") or {}))
@@ -850,7 +862,8 @@ def _run(args: argparse.Namespace) -> int:
         die(
             f"{args.config}: params {', '.join(secrets)} look like a credential written into the config. "
             "Put the key in the environment (.env) and name the variable with api_key_env, or let the "
-            "provider read its usual variable; a key in a config is copied into every run record."
+            "provider read its usual variable; a key in a config is copied into every run record.",
+            "not-configured",
         )
 
     # A config names the goal it answers (data/goals/<goal_id>.yaml). Refused before a cent is
@@ -858,7 +871,8 @@ def _run(args: argparse.Namespace) -> int:
     if cfg.get("goal") and GOALS.is_dir() and cfg["goal"] not in load_goals():
         die(
             f"{args.config}: goal {cfg['goal']!r} is not in {GOALS} "
-            f"(known: {', '.join(sorted(load_goals())) or 'none'})"
+            f"(known: {', '.join(sorted(load_goals())) or 'none'})",
+            "not-found",
         )
     # A config may name a round of its goal (ADR-0004, optional): refused before a cent is spent
     # when the round does not exist, is closed, or runs on another dataset.
@@ -870,7 +884,7 @@ def _run(args: argparse.Namespace) -> int:
 
     bad_hypothesis = _hypothesis.problems(cfg, args.config)
     if bad_hypothesis:
-        die(f"{args.config}: " + "; ".join(bad_hypothesis))
+        die(f"{args.config}: " + "; ".join(bad_hypothesis), "invalid-file")
     ds = load_dataset(cfg["dataset_id"])
     stamp = now().replace(":", "").replace("-", "")
     base_id = args.run_id or f"{cfg['config_id']}_{stamp}"
@@ -901,7 +915,8 @@ def _run(args: argparse.Namespace) -> int:
             die(
                 f"{ref_tier} references for {cfg['dataset_id']} are at {ref_dir}, but none of its "
                 f"{len(ids)} items has a file there (<item_id>.txt): nothing would be scored.\n"
-                "  Check the file names against the dataset's item ids."
+                "  Check the file names against the dataset's item ids.",
+                "mismatch",
             )
         if have < len(ids):
             print(
@@ -959,7 +974,8 @@ def _run(args: argparse.Namespace) -> int:
         except Exception as exc:  # noqa: BLE001 - fail before spending, with the reason
             die(
                 f"warm-up failed for {cfg['config_id']}: {type(exc).__name__}: {exc}\n"
-                "  nothing was run and nothing was spent."
+                "  nothing was run and nothing was spent.",
+                "failed",
             )
         warmup_ms = round((time.perf_counter() - started) * 1000, 3)
         if warmup_ms < WARMUP_NOTHING_MS:
@@ -1006,7 +1022,8 @@ def _run(args: argparse.Namespace) -> int:
             "  --repeat N asks for N INDEPENDENT passes; --resume says replay what is\n"
             "  already on disk. Together, every repeat after the first replays the same\n"
             "  outputs and re-counts their cost.\n"
-            "  Resume the interrupted pass with --repeat 1, then run the rest."
+            "  Resume the interrupted pass with --repeat 1, then run the rest.",
+            "bad-argument",
         )
 
     resume_dir, prior_rows = _resume_source(args.resume, cfg, runs)
@@ -1043,7 +1060,8 @@ def _run(args: argparse.Namespace) -> int:
     if args.run_id:
         if taken(base_id):
             die(
-                f"--run-id {base_id}: {runs / base_id} exists: a run is never written into another; name a new id"
+                f"--run-id {base_id}: {runs / base_id} exists: a run is never written into another; name a new id",
+                "would-overwrite",
             )
     else:
         for _ in range(30):
@@ -1052,7 +1070,10 @@ def _run(args: argparse.Namespace) -> int:
             time.sleep(1.0)
             base_id = f"{cfg['config_id']}_{now().replace(':', '').replace('-', '')}"
         else:
-            die(f"{runs}: every run id for {cfg['config_id']} in the last 30 seconds is taken; run again")
+            die(
+                f"{runs}: every run id for {cfg['config_id']} in the last 30 seconds is taken; run again",
+                "failed",
+            )
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
         run_dir = runs / run_id
@@ -1093,7 +1114,7 @@ def _run(args: argparse.Namespace) -> int:
         except BaseException as exc:
             _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)
             if isinstance(exc, ServerUnreachable):
-                sys.exit(1)  # said above in full; a traceback adds nothing
+                sys.exit(EXIT_TRY_LATER)  # said above in full; a traceback adds nothing
             raise
         run_dir.mkdir(parents=True, exist_ok=True)
         write_text_atomic(
@@ -1242,12 +1263,12 @@ def _run(args: argparse.Namespace) -> int:
         for d in empty:
             print(f"    {d.name}")
         print("  Nothing was measured. Raise EVAL_MAX_COST_USD, or check the adapter.")
-        return 1
+        return EXIT_NOTHING
     if capped:
-        # Distinct from 1 (nothing measured) so a caller can tell "stopped early with
-        # usable partial results" from "produced nothing".
-        print("\n  Stopped early by the cost cap — exit 2. Partial results above are kept.")
-        return 2
+        # Distinct from EXIT_NOTHING so a caller can tell "stopped early with usable partial
+        # results" from "produced nothing".
+        print(f"\n  Stopped early by the cost cap — exit {EXIT_STOPPED}. Partial results above are kept.")
+        return EXIT_STOPPED
     warn_if_ignored(runs)
     return 0
 

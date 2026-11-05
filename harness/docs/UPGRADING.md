@@ -5,6 +5,16 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.7.2 to 0.8.0 (unreleased)
+
+- **Scripts and CI that branch on exit codes:** the cost cap is `4` (was `2`), nothing measured `7` (was `1`), an
+  unreachable server `75` (was `1`), and a check that found problems `6` (was `1`) for `validate`, `self-test`,
+  `env-check`, `importer-check`, `arm-smoke`, `model-onboard` and `deploy-sheet --capture`; a partly failed
+  `sweep` is `5`. A check for "non-zero" needs no change. The table: RUNBOOK, Exit codes.
+- **Scripts matching a refusal's text:** the line is `ERROR (<kind>): <why>` (was `ERROR: <why>`). Match the
+  kind (RUNBOOK, Refusals), not the wording. A project's `AGENTS.md` written by `evh init` before 0.8.0 lacks
+  the "When a command stops" section; copy it from a new `evh init` if your agents read the file.
+
 ## From 0.7.1 to 0.7.2
 
 Change the pin to `@v0.7.2`. Nothing to migrate and no result moves. A deployment that serves `evh mcp --public

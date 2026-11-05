@@ -43,6 +43,7 @@ from evaluation_harness._common import (
     SOURCES,
     dataset_id_ok,
     die,
+    evh_prog,
     how,
     now,
     read_json,
@@ -77,18 +78,19 @@ def _fieldset(fieldset_id):
     if fs is None:
         die(
             f"no field set {fieldset_id!r}: expected {_fields.fieldset_path(fieldset_id)}\n"
-            "  Declare the fields there first (schemas/fieldset.schema.json, docs: CONCEPTS, item fields)."
+            "  Declare the fields there first (schemas/fieldset.schema.json, docs: CONCEPTS, item fields).",
+            "not-found",
         )
     problems = _fields.fieldset_problems(fieldset_id, fs)
     if problems:
-        die(f"{_fields.fieldset_path(fieldset_id)}: {problems[0]}")
+        die(f"{_fields.fieldset_path(fieldset_id)}: {problems[0]}", "invalid-file")
     return fs
 
 
 def _attach(items: list, fieldset: dict, path: Path) -> None:
     """Put the values in `path` (rows keyed by item_id) on the matching items, typed."""
     if not path.is_file():
-        die(f"no fields file at {path}")
+        die(f"no fields file at {path}", "not-found")
     by_id = {it["item_id"]: it for it in items}
     bad = []
     for n, row in enumerate(_fields.read_rows(path), 1):
@@ -112,14 +114,14 @@ def _attach(items: list, fieldset: dict, path: Path) -> None:
         else:
             by_id[iid].pop("fields", None)
     if bad:
-        die(f"{path}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]))
+        die(f"{path}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
 
 
 def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
     """Items from a manifest: each row an item_id and its source_url (pinned by source_sha256,
     or fetched and pinned now), or a source_path under --source-dir. Other columns are fields."""
     if not path.is_file():
-        die(f"no manifest at {path}")
+        die(f"no manifest at {path}", "not-found")
     known = ("item_id", "source_url", "source_path", "source_sha256")
     items, bad, pinned = [], [], 0
     for n, row in enumerate(_fields.read_rows(path), 1):
@@ -168,9 +170,9 @@ def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
     if len({it["item_id"] for it in items}) != len(items):
         bad.append("an item_id appears more than once")
     if bad:
-        die(f"{path}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]))
+        die(f"{path}: {len(bad)} problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
     if not items:
-        die(f"{path}: no items")
+        die(f"{path}: no items", "invalid-file")
     if pinned:
         print(f"  pinned {pinned} item(s) now: fetched, and their sha256 recorded")
     return items
@@ -180,10 +182,13 @@ def _lineage(parent_id: str, dataset_id: str, items: list) -> dict:
     """What a new version changes against the dataset it is made from (--from): the item ids
     added, removed, and kept with different bytes."""
     if parent_id == dataset_id:
-        die(f"--from {parent_id}: a dataset cannot be made from itself; name the new version (e.g. _v2)")
+        die(
+            f"--from {parent_id}: a dataset cannot be made from itself; name the new version (e.g. _v2)",
+            "bad-argument",
+        )
     path = DATASETS / f"{parent_id}.json"
     if not path.is_file():
-        die(f"--from {parent_id}: no dataset at {path}")
+        die(f"--from {parent_id}: no dataset at {path}", "not-found")
     old = {it["item_id"]: it["source_sha256"] for it in read_json(path).get("items") or []}
     new = {it["item_id"]: it["source_sha256"] for it in items}
     return {
@@ -230,7 +235,7 @@ def _write(
     if fieldset:
         bad = [p for it in items for p in _fields.problems(fieldset, it["item_id"], it.get("fields") or {})]
         if bad:
-            die(f"{len(bad)} field problem(s)\n  " + "\n  ".join(bad[:15]))
+            die(f"{len(bad)} field problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
     doc = {"dataset_id": dataset_id, "version": "1.0", "description": description, "created_at": created_at}
     if source_dir:
         doc["source_dir"] = source_dir
@@ -246,7 +251,7 @@ def _write(
 
 def main() -> int:
     """Freeze a dataset from source items."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True, help="lowercase_with_underscores")
     ap.add_argument("--source-dir", type=Path, default=SOURCES)
     ap.add_argument("--glob", default="*", help="which files under --source-dir are items")
@@ -298,13 +303,16 @@ def main() -> int:
             previous = {}
     fieldset = _fieldset(args.fieldset or (previous.get("fieldset") if args.update_fields else None))
     if args.fields and not fieldset:
-        die("field values need a field set: pass --fieldset <id> (data/fields/<id>.yaml declares them)")
+        die(
+            "field values need a field set: pass --fieldset <id> (data/fields/<id>.yaml declares them)",
+            "bad-argument",
+        )
 
     if args.update_fields:
         if not previous:
-            die(f"--update-fields: no dataset at {out} to update")
+            die(f"--update-fields: no dataset at {out} to update", "not-found")
         if not args.fields:
-            die("--update-fields needs --fields FILE")
+            die("--update-fields needs --fields FILE", "bad-argument")
         # Merged: a value in the file replaces that value; every other value is kept.
         items = [dict(it) for it in previous["items"]]
         _attach(items, fieldset, args.fields)
@@ -329,7 +337,8 @@ def main() -> int:
             f"{out} already exists.\n"
             "  A dataset is FROZEN — runs cite it by id and were measured on these bytes.\n"
             "  Make a new version (e.g. _v2) instead, or pass --force if nothing cites it yet.\n"
-            "  To correct its fields only, pass --update-fields --fields FILE."
+            "  To correct its fields only, pass --update-fields --fields FILE.",
+            "would-overwrite",
         )
 
     if args.manifest:
@@ -360,7 +369,7 @@ def main() -> int:
         return 0
 
     if not args.source_dir.is_dir():
-        die(f"no source dir at {args.source_dir} — put your raw inputs there first")
+        die(f"no source dir at {args.source_dir} — put your raw inputs there first", "not-found")
 
     # Skip the directory's own documentation and dotfiles. Every data dir here
     # ships a README explaining what belongs in it, and the first cold drop-in
@@ -380,7 +389,8 @@ def main() -> int:
         die(
             f"no items matched {args.glob!r} under {args.source_dir}\n"
             "  Put your inputs in that directory first. READMEs are skipped by\n"
-            "  design — pass --include-docs if documentation really is your data."
+            "  design — pass --include-docs if documentation really is your data.",
+            "not-found",
         )
 
     items = [

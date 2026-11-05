@@ -42,7 +42,7 @@ from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
 try:
     from retrieval import NDCG_AT, dcg
 except ImportError:  # pragma: no cover
-    die("examples/_shared/retrieval.py not importable — run from the harness root")
+    die("examples/_shared/retrieval.py not importable — run from the harness root", "missing-dependency")
 
 
 def qrels(dataset_id: str) -> dict:
@@ -100,7 +100,7 @@ def main() -> int:
     gold = qrels(args.dataset_id)
     R = runs(args.dataset_id, args.match)
     if not R:
-        die(f"no runs on {args.dataset_id!r}")
+        die(f"no runs on {args.dataset_id!r}", "not-found")
 
     print(f"\n  {args.dataset_id}: {len(gold)} queries, {len(R)} arm(s)\n")
     print(f"  {'arm':<26} {'nDCG@10':>8} {'ceiling':>8} {'gap':>7} {'used':>7} {'llm_ok':>7} {'invented':>9}")
@@ -147,7 +147,7 @@ def main() -> int:
 
     if args.arm:
         if args.arm not in R:
-            die(f"{args.arm!r} not among {sorted(R)}")
+            die(f"{args.arm!r} not among {sorted(R)}", "not-found")
         m, rows = R[args.arm]
         moved: Counter = Counter()
         for item, rel in gold.items():

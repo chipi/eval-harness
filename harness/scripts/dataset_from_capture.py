@@ -39,6 +39,7 @@ from evaluation_harness._common import (
     SOURCES,
     dataset_id_ok,
     die,
+    evh_prog,
     how,
     load_dataset,
     read_json,
@@ -62,7 +63,7 @@ def load_capture(capture_id: str, captures_dir: _Path | None = None) -> tuple[di
     captures, or `captures_dir`."""
     base = (captures_dir or CAPTURES) / dataset_id_ok(capture_id)
     if not (base / "capture.json").is_file():
-        die(f"no capture {capture_id!r} at {base}")
+        die(f"no capture {capture_id!r} at {base}", "not-found")
     doc = read_json(base / "capture.json")
     recs, bad = [], []
     for entry in doc.get("records") or []:
@@ -78,7 +79,8 @@ def load_capture(capture_id: str, captures_dir: _Path | None = None) -> tuple[di
     if bad:
         die(
             f"capture {capture_id}: {len(bad)} record(s) changed or missing since it was made\n  "
-            + "\n  ".join(bad[:10])
+            + "\n  ".join(bad[:10]),
+            "mismatch",
         )
     return doc, recs
 
@@ -97,7 +99,7 @@ def select(recs: list, args) -> list:
             continue
         name, sep, want = w.partition(":")
         if not sep:
-            die(f"--where {w!r}: FIELD:VALUE or FIELD!=VALUE")
+            die(f"--where {w!r}: FIELD:VALUE or FIELD!=VALUE", "bad-argument")
         recs = [r for r in recs if _text(dig(r.get("fields") or {}, name)) == want]
     if args.one_per:
         # One record per value of a field, the newest (by created_at, then id): many records on one
@@ -126,7 +128,7 @@ def select(recs: list, args) -> list:
 
 def main() -> int:
     """Freeze a capture's chosen records as a dataset."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("capture", help="the capture's id (data/captures/<id>)")
     ap.add_argument("--dataset-id", required=True, help="lowercase_with_underscores")
     ap.add_argument("--from", dest="from_", metavar="DATASET_ID", help="the version this one grows from")
@@ -162,21 +164,22 @@ def main() -> int:
     out = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
     if out.exists() and not args.force:
         die(
-            f"{out} already exists: a dataset is frozen. Make a new version (e.g. _v2), or --force if nothing cites it."
+            f"{out} already exists: a dataset is frozen. Make a new version (e.g. _v2), or --force if nothing cites it.",
+            "would-overwrite",
         )
     tags = {}
     for t in args.tag:
         k, sep, v = t.partition("=")
         if not sep or not k.strip():
-            die(f"--tag {t!r}: KEY=VALUE")
+            die(f"--tag {t!r}: KEY=VALUE", "bad-argument")
         tags[k.strip()] = v.strip()
     fieldset = _fieldset(args.fieldset)
     if args.field and not fieldset:
-        die("--field needs --fieldset: a field set declares what an item may carry")
+        die("--field needs --fieldset: a field set declares what an item may carry", "bad-argument")
     doc, recs = load_capture(args.capture)
     kept = select(recs, args)
     if not kept and not args.from_:
-        die("no record was kept: nothing to freeze")
+        die("no record was kept: nothing to freeze", "not-enough")
 
     src = SOURCES / args.dataset_id
     if src.exists():
@@ -192,7 +195,8 @@ def main() -> int:
             p = prev_src / it.get("source_path", it["item_id"])
             if not p.is_file():
                 die(
-                    f"--from {args.from_}: no source file {p} for {it['item_id']}; fetch or materialize it first"
+                    f"--from {args.from_}: no source file {p} for {it['item_id']}; fetch or materialize it first",
+                    "not-materialized",
                 )
             shutil.copyfile(p, src / it["source_path"])
             items.append(dict(it))
@@ -227,7 +231,7 @@ def main() -> int:
             at[r["id"]] = len(items)
             items.append(item)
     if bad:
-        die(f"{len(bad)} field problem(s)\n  " + "\n  ".join(bad[:15]))
+        die(f"{len(bad)} field problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
     lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
     made_from = {
         "capture": args.capture,

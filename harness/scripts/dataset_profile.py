@@ -198,11 +198,12 @@ def profile(dataset_id: str, with_text: bool) -> dict:
             die(
                 f"{dataset_id} is not materialized here ({p} is missing): a profile is computed from the items. "
                 f"Fetch and materialize it first (`evh dataset-materialize --dataset-id {dataset_id}`, or in "
-                "this repository `make data EXP=<eval>`)."
+                "this repository `make data EXP=<eval>`).",
+                "not-materialized",
             )
         texts[it["item_id"]] = p.read_text(encoding="utf-8", errors="replace")
     if with_text and ds.get("text") == "hidden":
-        die(f"{dataset_id} is `text: hidden`: its profile carries no text (RFC-019)")
+        die(f"{dataset_id} is `text: hidden`: its profile carries no text (RFC-019)", "not-public")
     if with_text:
         src_dir = _common.ROOT / ds.get("source_dir", "data/sources")
         files = [src_dir / (it.get("source_path") or it["item_id"]) for it in items]
@@ -210,7 +211,8 @@ def profile(dataset_id: str, with_text: bool) -> dict:
         if missing:
             die(
                 f"--with-text publishes item text, and {len(missing)} of {dataset_id}'s source files are not "
-                f"tracked by git (e.g. {missing[0]}): only text the repository already holds may be published."
+                f"tracked by git (e.g. {missing[0]}): only text the repository already holds may be published.",
+                "not-public",
             )
     words = {k: words_of(t) for k, t in texts.items()}
     refs: list[dict] = []
@@ -281,7 +283,7 @@ def render(p: dict, item: str | None) -> str:
         out.append(f"gold {r['id']}: {_shape_line(r)}")
     rows = [r for r in p["rows"] if not item or r["item_id"].startswith(item)]
     if item and not rows:
-        die(f"no item {item!r} in {p['dataset_id']}")
+        die(f"no item {item!r} in {p['dataset_id']}", "not-found")
     out.append("")
     for r in rows:
         ref = "; ".join(f"{v}" for v in r["reference"].values())
@@ -302,7 +304,8 @@ def load_profile(dataset_id: str) -> dict:
     if not f.is_file():
         die(
             f"no profile for {dataset_id} ({f}): write one with `evh dataset-profile --dataset-id {dataset_id}` "
-            "where the dataset is materialized."
+            "where the dataset is materialized.",
+            "not-materialized",
         )
     return read_json(f)
 
@@ -347,13 +350,13 @@ def main_items(argv: list[str] | None = None) -> int:
     hide = _visibility.public_env() and _visibility.hidden(args.dataset_id)
     if hide:  # a public server's command, on a `text: hidden` dataset: ids and lengths only
         if args.item:
-            die(f"{args.dataset_id} is `text: hidden`: no item is shown here")
+            die(f"{args.dataset_id} is `text: hidden`: no item is shown here", "not-public")
         p = _visibility.public_profile(p)
     if args.json:
         if args.item:
             rows = [dict(r) for r in p["rows"] if r["item_id"].startswith(args.item)]
             if not rows:
-                die(f"no item {args.item!r} in {p['dataset_id']}")
+                die(f"no item {args.item!r} in {p['dataset_id']}", "not-found")
             for r in rows:  # its text when it is here, as the printed form shows it
                 local = _common.item_path(p["dataset_id"], r["item_id"])
                 if local:

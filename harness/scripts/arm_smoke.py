@@ -34,7 +34,7 @@ from typing import Any
 
 from evaluation_harness import _jsonout, _models
 from evaluation_harness._adapter import load_adapter, score_wants_source
-from evaluation_harness._common import DATA, MATERIALIZED, die, load_dataset, now
+from evaluation_harness._common import DATA, EXIT_PROBLEMS, MATERIALIZED, die, evh_prog, load_dataset, now
 
 #: A reply is long when it is this many times the arm's median reply (RFC-020: "far longer than the arm's
 #: normal ones"), over at least LONG_FLOOR tokens, among at least LONG_MIN_CALLS calls. A fixed count was a
@@ -198,7 +198,7 @@ def projection(items: list[dict[str, Any]], n_items: int) -> dict[str, Any]:
 
 def main() -> int:
     """Smoke one arm; exit 0 on SMOKE PASS, 1 on SMOKE CHECK."""
-    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.split("\n\n")[0])
     ap.add_argument("--config", type=Path, required=True)
     ap.add_argument("--items", type=int, default=3, help="how many of the dataset's first items (default 3)")
     ap.add_argument("--no-record", action="store_true", help="do not write the report into the model record")
@@ -220,14 +220,14 @@ def main() -> int:
 
 def _smoke(args: argparse.Namespace) -> int:
     if not args.config.is_file():
-        die(f"no config at {args.config}")
+        die(f"no config at {args.config}", "not-found")
     import yaml  # noqa: PLC0415
 
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
     try:
         cfg = _models.resolve(cfg, DATA)
     except ValueError as exc:
-        die(f"{args.config}: {exc}")
+        die(f"{args.config}: {exc}", "invalid-file")
     call_system, score, *_ = load_adapter(cfg.get("adapter"), args.config)
     ds = load_dataset(cfg["dataset_id"])
     mat = MATERIALIZED / ds["dataset_id"]
@@ -387,7 +387,7 @@ def _smoke(args: argparse.Namespace) -> int:
             ],
         }
     )
-    return 0 if not flags else 1
+    return 0 if not flags else EXIT_PROBLEMS
 
 
 if __name__ == "__main__":

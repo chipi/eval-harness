@@ -20,7 +20,15 @@ import argparse
 import os
 
 from evaluation_harness import _providers
-from evaluation_harness._common import DOTENV_LOADED, ROOT, env_float, env_int, in_checkout
+from evaluation_harness._common import (
+    DOTENV_LOADED,
+    EXIT_PROBLEMS,
+    ROOT,
+    env_float,
+    env_int,
+    evh_prog,
+    in_checkout,
+)
 
 
 def _state(raw: str, secret: bool) -> str:
@@ -48,7 +56,7 @@ def _probe(base: str) -> str:
 
 def main() -> int:
     """Report configured environment variables before a sweep."""
-    argparse.ArgumentParser(description=__doc__.splitlines()[0]).parse_args()
+    argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0]).parse_args()
     env_file = ROOT / ".env"
     # DOTENV_LOADED is the count from the FIRST load, at import. Calling
     # load_dotenv() again here would report 0 — everything is already in the
@@ -150,7 +158,7 @@ def main() -> int:
         # failing there would train people to ignore this command.
         print("\n  A provider key is set and EVAL_MAX_COST_USD is NOT.")
         print("  The cap is the only thing between a wrong price and an unbounded bill.")
-        return 1
+        return EXIT_PROBLEMS
     return 0
 
 

@@ -22,6 +22,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import os
 import runpy
 import sys
+import traceback
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -239,6 +240,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if note := stray_home():
         print(note, file=sys.stderr)
+    from evaluation_harness._common import EXIT_INTERNAL, EXIT_INTERRUPTED, EXIT_REFUSED  # noqa: PLC0415
+
     try:
         runpy.run_path(str(script), run_name="__main__")
     except SystemExit as exc:
@@ -248,7 +251,18 @@ def main(argv: list[str] | None = None) -> int:
         if isinstance(code, int):
             return code
         print(code, file=sys.stderr)
-        return 1
+        return EXIT_REFUSED
+    except KeyboardInterrupt:
+        print("\ninterrupted", file=sys.stderr)
+        return EXIT_INTERRUPTED
+    except Exception:  # noqa: BLE001 -- anything uncaught, told apart from a refusal (1) by its number
+        traceback.print_exc()
+        print(
+            f"evh {name}: stopped by an error nothing caught (exit {EXIT_INTERNAL}); the traceback above says "
+            "where: the harness, or the project's own code (an adapter, a scorer)",
+            file=sys.stderr,
+        )
+        return EXIT_INTERNAL
     return 0
 
 

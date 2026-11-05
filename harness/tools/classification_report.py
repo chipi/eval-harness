@@ -118,7 +118,7 @@ def main() -> int:
     labels = sorted(set(gold.values()))
     preds = predictions(args.dataset_id, args.match)
     if not preds:
-        die(f"no runs for {args.dataset_id}" + (f" matching {args.match}" if args.match else ""))
+        die(f"no runs for {args.dataset_id}" + (f" matching {args.match}" if args.match else ""), "not-found")
 
     rows = []
     for cid, by_item in sorted(preds.items()):
@@ -145,7 +145,7 @@ def main() -> int:
             }
         )
     if not rows:
-        die(f"no run on {args.dataset_id} scored an item the gold references have")
+        die(f"no run on {args.dataset_id} scored an item the gold references have", "not-enough")
     rows.sort(key=lambda r: -r[args.sort])
 
     width = max(len(r["arm"]) for r in rows) + 2
@@ -171,7 +171,7 @@ def main() -> int:
     if args.arm:
         row = next((r for r in rows if r["arm"] == args.arm), None)
         if row is None:
-            die(f"no run for arm {args.arm}")
+            die(f"no run for arm {args.arm}", "not-found")
         print(f"\n  CONFUSION MATRIX — {args.arm}   rows = gold, columns = predicted")
         cols = [*labels, UNPARSED]
         cw = max(len(c) for c in cols) + 2

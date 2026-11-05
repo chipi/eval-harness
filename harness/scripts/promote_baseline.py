@@ -31,6 +31,7 @@ from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     RUNS,
     die,
+    evh_prog,
     how,
     now,
     read_json,
@@ -80,7 +81,7 @@ def carried(m: dict) -> dict:
 
 def main() -> int:
     """Promote a run to baseline status."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--run", required=True)
     ap.add_argument("--reason", help="why this run earned promotion")
     # Reading the reason from the environment keeps it away from the shell entirely.
@@ -105,11 +106,14 @@ def main() -> int:
     if args.reason_from_env:
         args.reason = os.environ.get("EVAL_PROMOTE_REASON", "")
     if not (args.reason or "").strip():
-        die('a reason is required: --reason "..." or --reason-from-env with EVAL_PROMOTE_REASON set')
+        die(
+            'a reason is required: --reason "..." or --reason-from-env with EVAL_PROMOTE_REASON set',
+            "bad-argument",
+        )
 
     src = RUNS / args.run / "metrics.json"
     if not src.is_file():
-        die(f"no run {args.run!r} (looked for {src})")
+        die(f"no run {args.run!r} (looked for {src})", "not-found")
     m = read_json(src)
 
     build = m.get("build") or {}
@@ -120,18 +124,21 @@ def main() -> int:
             "  Declare it and re-run:  EVAL_BUILD_REF=<version|digest|sha> "
             + how("evh run ...", "make run ...")
             + "\n"
-            "  (--allow-unknown-build overrides, but then the baseline names no system.)"
+            "  (--allow-unknown-build overrides, but then the baseline names no system.)",
+            "not-configured",
         )
     if build.get("dirty") and not args.allow_dirty:
         die(
             f"REFUSED — run {args.run} was produced by a DIRTY tree.\n"
             f"  build.ref={build.get('ref', '?')[:12]} does not describe what actually ran.\n"
-            "  Commit, re-run, and promote that — or --allow-dirty and say why in --reason."
+            "  Commit, re-run, and promote that — or --allow-dirty and say why in --reason.",
+            "not-allowed",
         )
     if len(args.reason.split()) < 3:
         die(
             "REFUSED — --reason must be a sentence, not a word. It is the answer to "
-            '"why is this the baseline?" in six months.'
+            '"why is this the baseline?" in six months.',
+            "bad-argument",
         )
 
     # AN ARM RUN WITH --repeat: the catalog, the inspector and every test read the mean of its

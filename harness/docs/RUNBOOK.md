@@ -546,8 +546,9 @@ Three things worth knowing:
   A directory with neither file is refused outright, as is one whose rows were not written
   by this version of the harness.
 
-Exit codes: `0` complete, `2` stopped early by the cost cap with usable partial
-results, `1` nothing was measured at all.
+Exit codes: `0` complete, `4` stopped early by the cost cap with usable partial
+results, `7` nothing was measured at all, `75` a server could not be reached (run the same
+command again; it resumes). The full table: [Exit codes](#exit-codes).
 
 ---
 
@@ -1378,13 +1379,42 @@ Every command, `make` target and `evh` subcommand, for scripts and CI that branc
 | Exit | Meaning | From |
 |---|---|---|
 | `0` | done | every command |
-| `1` | refused, or nothing was measured: `ERROR: <why>` on stderr | every command |
+| `1` | refused, nothing done: `ERROR (<kind>): <why>` on stderr ([Refusals](#refusals)) | every command |
 | `2` | a usage error: an unknown command or argument (the usage is printed) | `evh`, every command's argument parser |
-| `2` | stopped early by the cost cap; the partial results are kept and resumable | `evh run`, `judge-score` |
 | `3` | the judge scorer is not validated; `--unvalidated` runs it labelled as such | `judge-score` |
+| `4` | stopped early: the cost cap, or a judge call that kept failing; the partial results are kept and the same command resumes | `run`, `judge-score` |
+| `5` | some of several runs failed; the others are kept | `sweep` |
+| `6` | the command's checks ran and some failed; the output lists them | `validate`, `self-test`, `env-check`, `importer-check`, `arm-smoke`, `model-onboard`, `deploy-sheet --capture` |
+| `7` | it ran and measured nothing | `run`, `judge-score` |
+| `70` | an error nothing caught: a traceback on stderr, from the harness or the project's own code (an adapter, a scorer) | `evh` |
+| `75` | a server could not be reached: nothing is wrong with the command; run it again later and it resumes | `run` |
+| `130` | interrupted (Ctrl-C) | `evh` |
 
-The two meanings of `2` are told apart by stderr: a usage error prints the usage, a stopped
-run prints how many items it measured and how to resume.
+Each number has one meaning, so a script or an agent branches on it without reading the text.
+In a checkout, `make` runs the same scripts but exits `2` for any failed target; the script's
+own code is in make's last line (`make: *** [Makefile:…: run] Error 4`).
+
+## Refusals
+
+A command that refuses exits `1` and prints one line on stderr, `ERROR (<kind>): <why>`, for example
+`ERROR (not-found): no goal 'tickets_summry': one of tickets_summary`. The kind is one of the words below
+and does not change when a message is reworded, so a script or an agent reads the kind and a person reads
+the rest.
+
+| Kind | Meaning |
+|---|---|
+| `not-found` | the dataset, run, arm, goal, file or other thing named does not exist |
+| `bad-argument` | an option is missing, malformed, or not allowed with another |
+| `would-overwrite` | what it would write is already there; it is never overwritten |
+| `mismatch` | two things that must agree do not: datasets, hashes, a run and its config |
+| `invalid-file` | a file the project wrote (a config, a scorer, a sheet, records) is malformed |
+| `not-materialized` | the data is not on this machine: fetch or materialize it first |
+| `not-enough` | too little to work on: too few items, arms or outputs |
+| `not-public` | the text asked for is not shown on a public server or for a hidden dataset |
+| `not-allowed` | a rule refuses it: a dirty build, a closed round, a bind beyond this machine |
+| `not-configured` | a key, a cost cap, a build ref or an endpoint is not set |
+| `failed` | something outside the command failed: an importer, a server, a hook, the warm-up |
+| `missing-dependency` | a package or a part of the installation is missing |
 
 ## Environment variables
 

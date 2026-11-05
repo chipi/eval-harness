@@ -70,7 +70,8 @@ def resolve(round_id: str, goal: str | None = None) -> dict[str, Any]:
                 f"rounds of several goals ({', '.join(goals)}); add --goal"
                 if hits
                 else "no such round" + (f" of {goal}" if goal else "")
-            )
+            ),
+            "not-found",
         )
     return hits[0]
 
@@ -83,7 +84,7 @@ def next_id(goal: str) -> str:
 def save(doc: dict[str, Any]) -> Path:
     """Write a round's record (keys in a stable order, so a diff shows what a command changed)."""
     if yaml is None:  # pragma: no cover
-        die("pyyaml is required")
+        die("pyyaml is required", "missing-dependency")
     p = path_of(doc["goal"], doc["round_id"])
     p.parent.mkdir(parents=True, exist_ok=True)
     order = [
@@ -144,20 +145,23 @@ def config_round(cfg: dict[str, Any], config_path: Any) -> dict[str, Any] | None
     if not rid:
         return None
     if not cfg.get("goal"):
-        die(f"{config_path}: round {rid!r} needs `goal:` too (a round belongs to a goal)")
+        die(f"{config_path}: round {rid!r} needs `goal:` too (a round belongs to a goal)", "invalid-file")
     rnd = find(cfg["goal"], rid)
     if rnd is None:
         die(
             f"{config_path}: no round {rid!r} for goal {cfg['goal']!r} at {path_of(cfg['goal'], rid)}.\n"
-            f"  Open it first:  evh round-open --goal {cfg['goal']} --dataset {cfg.get('dataset_id', '<dataset>')}"
+            f"  Open it first:  evh round-open --goal {cfg['goal']} --dataset {cfg.get('dataset_id', '<dataset>')}",
+            "not-found",
         )
     if rnd.get("status") == "closed":
         die(
-            f"{config_path}: round {rid} of {cfg['goal']} is closed; open the next one (evh round-open --from {rid})"
+            f"{config_path}: round {rid} of {cfg['goal']} is closed; open the next one (evh round-open --from {rid})",
+            "not-allowed",
         )
     if rnd.get("dataset_id") != cfg.get("dataset_id"):
         die(
-            f"{config_path}: round {rid} runs on {rnd.get('dataset_id')!r}, the config on {cfg.get('dataset_id')!r}"
+            f"{config_path}: round {rid} runs on {rnd.get('dataset_id')!r}, the config on {cfg.get('dataset_id')!r}",
+            "mismatch",
         )
     return rnd
 

@@ -61,6 +61,7 @@ from evaluation_harness._common import (  # noqa: E402
     RUNS,
     dataset_item_ids,
     die,
+    evh_prog,
     item_selection,
 )
 from evaluation_harness._fingerprint import measuring_modules  # noqa: E402
@@ -158,7 +159,7 @@ def main() -> int:
 
 
 def _parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--a", help="config_id of the arm under test (with --round: default its leader)")
     ap.add_argument(
@@ -201,24 +202,27 @@ def _round_defaults(args, runs: list) -> Any:
 
     rnd = resolve(args.round, args.goal)
     if rnd["dataset_id"] != args.dataset_id:
-        die(f"round {args.round} is on {rnd['dataset_id']}, not {args.dataset_id}")
+        die(f"round {args.round} is on {rnd['dataset_id']}, not {args.dataset_id}", "mismatch")
     in_play = arms_of(rnd)
     prim = ((_common.load_goals().get(rnd["goal"]) or {}).get("success_criteria") or {}).get("primary") or {}
     args.metric = args.metric or prim.get("measure")
     if args.a and args.a not in in_play:
-        die(f"{args.a} is not in play in round {args.round} ({', '.join(in_play)})")
+        die(f"{args.a} is not in play in round {args.round} ({', '.join(in_play)})", "not-found")
     values = _round_values(args.dataset_id)
     chose = not args.a
     if chose:
         means = {c: statistics.fmean(v.values()) for c in in_play if (v := values(c, args.metric))}
         if not means:
-            die(f"no arm in round {args.round} records {args.metric} yet")
+            die(f"no arm in round {args.round} records {args.metric} yet", "not-enough")
         args.a = (min if prim.get("direction") == "lower" else max)(means, key=lambda c: means[c])
     declared = bool(args.against)
     if not declared:
         rest = [c for c in in_play if c != args.a]
         if not rest:
-            die(f"round {args.round} has no other arm in play to test {args.a} against: name --against")
+            die(
+                f"round {args.round} has no other arm in play to test {args.a} against: name --against",
+                "not-enough",
+            )
         args.against = ",".join(rest)
     print(
         f"  round {args.round}: {args.a}{' (its leader)' if chose else ''} against "
@@ -249,7 +253,7 @@ def _run(args) -> int:
     else:
         A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
     if not A:
-        die(f"no runs for {args.a} on {args.dataset_id}")
+        die(f"no runs for {args.a} on {args.dataset_id}", "not-found")
 
     drop, keep = item_selection(args.exclude_dataset, args.items)
 
@@ -277,7 +281,7 @@ def _run(args) -> int:
             }
         )
     if not rows:
-        die("no opponents with enough shared items")
+        die("no opponents with enough shared items", "not-enough")
 
     # HOLM STEP-DOWN. Sorted ascending, threshold alpha/(m-i), and the moment one fails
     # every larger p-value fails with it -- that carry-forward is the whole procedure, and

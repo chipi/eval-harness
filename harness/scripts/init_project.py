@@ -29,6 +29,8 @@ import shutil
 import sys
 from pathlib import Path
 
+from evaluation_harness._common import die, evh_prog
+
 HERE = Path(__file__).resolve().parent
 #: The kit is package data in an install (evaluation_harness/tutorial) and a sibling of
 #: scripts/ in a checkout (harness/tutorial).
@@ -55,7 +57,7 @@ data/runs-tune*/
 
 def main() -> int:
     """Initialize a new eval project."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("dir", nargs="?", default=".", help="the project directory (default: here)")
     ap.add_argument("--tutorial", action="store_true", help="add the GUIDE's kit under tutorial/")
     args = ap.parse_args()
@@ -71,8 +73,7 @@ def main() -> int:
         gi.write_text(IGNORE, encoding="utf-8")
         made.append(".gitignore")
     if AGENTS is None:
-        print("ERROR: AGENTS.md is not in this installation", file=sys.stderr)
-        return 1
+        die("AGENTS.md is not in this installation", "missing-dependency")
     for name, text in (
         ("AGENTS.md", (AGENTS / "AGENTS.md").read_text(encoding="utf-8")),
         ("CLAUDE.md", "@AGENTS.md\n"),
@@ -85,8 +86,7 @@ def main() -> int:
             made.append(name)
     if args.tutorial:
         if KIT is None:
-            print("ERROR: the tutorial kit is not in this installation", file=sys.stderr)
-            return 1
+            die("the tutorial kit is not in this installation", "missing-dependency")
         for src in sorted(p for p in KIT.rglob("*") if p.is_file() and "__pycache__" not in p.parts):
             rel = Path("tutorial") / src.relative_to(KIT)
             dst = root / rel

@@ -40,7 +40,7 @@ import argparse
 import shutil
 
 from evaluation_harness import _importers
-from evaluation_harness._common import CAPTURES, dataset_id_ok, die, now, read_json, write_json
+from evaluation_harness._common import CAPTURES, dataset_id_ok, die, evh_prog, now, read_json, write_json
 from evaluation_harness.importer_check import query_of
 
 
@@ -59,7 +59,7 @@ def earlier(capture_id: str) -> tuple[str | None, set, dict | None]:
 
 def main() -> int:
     """Read an importer's records and keep them as a capture."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument(
         "--importer", required=True, help="a built-in name, a project importer's name, or path.py:Class"
     )
@@ -84,15 +84,16 @@ def main() -> int:
     sample = None
     if args.sample_rate is not None:
         if not 0 < args.sample_rate <= 1:
-            die("--sample-rate is a share: more than 0, at most 1")
+            die("--sample-rate is a share: more than 0, at most 1", "bad-argument")
         if args.seed is None:
-            die("--sample-rate needs --seed, so the same sample can be drawn again")
+            die("--sample-rate needs --seed, so the same sample can be drawn again", "bad-argument")
         sample = {"rate": args.sample_rate, "seed": args.seed}
     elif args.seed is not None:
-        die("--seed goes with --sample-rate")
+        die("--seed goes with --sample-rate", "bad-argument")
     if (out / "capture.json").exists() and not args.force:
         die(
-            f"{out} exists: a capture is not overwritten. Name a new one, or pass --force if nothing is made from it."
+            f"{out} exists: a capture is not overwritten. Name a new one, or pass --force if nothing is made from it.",
+            "would-overwrite",
         )
     query = query_of(args.query)
     seen: set = set()
@@ -101,7 +102,10 @@ def main() -> int:
         if end:
             query = {**query, "since": end}
         if sample and rule and sample != rule:
-            die(f"{args.since_capture} was captured with the sample {rule}: a continued capture keeps it")
+            die(
+                f"{args.since_capture} was captured with the sample {rule}: a continued capture keeps it",
+                "mismatch",
+            )
         sample = sample or rule
     n_read = 0
     try:
@@ -115,17 +119,18 @@ def main() -> int:
     except SystemExit:
         raise
     except Exception as exc:  # noqa: BLE001 — the importer's own failure, named
-        die(f"--importer {args.importer}: reading failed: {type(exc).__name__}: {exc}")
+        die(f"--importer {args.importer}: reading failed: {type(exc).__name__}: {exc}", "failed")
     bad = [p for r in raw for p in _importers.problems(r)]
     if bad:
         die(
             f"{len(bad)} malformed record(s), nothing written; `evh importer-check` says more:\n  "
-            + "\n  ".join(bad[:10])
+            + "\n  ".join(bad[:10]),
+            "invalid-file",
         )
     norm = [_importers.normalise(r) for r in raw if r["id"] not in seen]
     ids = [r["id"] for r in norm]
     if len(ids) != len(set(ids)):
-        die("the importer yielded the same id twice; nothing written")
+        die("the importer yielded the same id twice; nothing written", "invalid-file")
     window = _importers.window_of(query)
     why = {r["id"]: _importers.outside(window, r["created_at"]) for r in norm}
     late = [i for i, w in why.items() if w == "before since"] if args.late else []
@@ -140,7 +145,8 @@ def main() -> int:
                 else ""
             )
             + ":\n  "
-            + "\n  ".join(f"{i}: {w}" for i, w in list(out_of.items())[:10])
+            + "\n  ".join(f"{i}: {w}" for i, w in list(out_of.items())[:10]),
+            "invalid-file",
         )
 
     if out.exists():

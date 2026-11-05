@@ -23,6 +23,8 @@ import shutil
 import sys
 from pathlib import Path
 
+from evaluation_harness._common import die, evh_prog
+
 HERE = Path(__file__).resolve().parent
 #: The skills are package data in an install (evaluation_harness/skills) and a sibling of
 #: scripts/ in a checkout (harness/skills).
@@ -41,13 +43,12 @@ def _digest(folder: Path) -> str:
 
 def main() -> int:
     """Install the skills; print what was written, updated and kept."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--target", type=Path, default=Path(".claude/skills"), help="default: .claude/skills")
     ap.add_argument("--force", action="store_true", help="overwrite copies you changed")
     args = ap.parse_args()
     if SKILLS is None:
-        print("ERROR: the skills are not in this installation", file=sys.stderr)
-        return 1
+        die("the skills are not in this installation", "missing-dependency")
     args.target.mkdir(parents=True, exist_ok=True)
     wrote, updated, same, kept = [], [], [], []
     for src in sorted(p.parent for p in SKILLS.glob("*/SKILL.md")):

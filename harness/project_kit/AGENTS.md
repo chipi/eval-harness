@@ -95,6 +95,23 @@ Closing it is your operator's (rule 5).
 | what two runs did differently | `evh run-compare --baseline RUN_A --candidate RUN_B --json` |
 | is the tree consistent | `evh validate` |
 
+## When a command stops
+
+Read the exit code and, on a refusal, the kind in `ERROR (<kind>): <why>`, not the wording:
+
+| exit | what to do |
+| --- | --- |
+| `1` `not-found` | check the id: `evh datasets`, `evh arms`, `evh goals`, `evh runs-list` list them |
+| `1` `not-materialized` | `evh dataset-materialize --dataset-id D`, then the same command again |
+| `1` `not-configured` | `evh env-check` says which key, cap or build ref is missing |
+| `1` `not-allowed` | a rule refuses it (a dirty tree: commit first; a closed round): fix that, or hand it to your operator |
+| `2` | a flag is wrong: the command's own `--help` lists them |
+| `4` | the cost cap stopped it; the partial results are kept: ask before raising the cap, then run the same command again |
+| `6` | the checks ran and some failed: the output lists them |
+| `75` | a server could not be reached: run the same command again later, it resumes |
+
+Every kind and code: the Runbook's "Refusals" and "Exit codes".
+
 Every command takes `--help`: it is the reference for every flag. The full documentation:
 https://evals.humancopilot.eu/docs/ (start at "Getting started"; "Integration" for your own
 system; "Runbook" for every command).

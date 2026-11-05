@@ -9,6 +9,32 @@ The version lives in `scripts/_version.py`; a release is the git tag `v<version>
 release workflow refuses a tag that disagrees with that file or has no section here. A change
 that can move a result is never a patch release without saying so under **Changed**.
 
+## 0.8.0 — unreleased
+
+### Changed
+
+- **Each exit code has one meaning** ([RUNBOOK, Exit codes](docs/RUNBOOK.md#exit-codes)). The cost cap that stops
+  `evh run` or `judge-score` early exits `4` (was `2`, which is also a usage error); a run that measured nothing
+  exits `7` (was `1`, which is also a refusal); a server that could not be reached exits `75` (was `1`); a check
+  that ran and found problems exits `6` (was `1`): `validate`, `self-test`, `env-check`, `importer-check`,
+  `arm-smoke`, `model-onboard`, `deploy-sheet --capture`; a `sweep` in which some runs failed exits `5` (was `1`).
+  `evh` exits `70` for an error nothing caught (a traceback) and `130` on Ctrl-C, without a traceback.
+- **Every refusal names its kind:** `ERROR (<kind>): <why>`, the kind one of twelve
+  ([RUNBOOK, Refusals](docs/RUNBOOK.md#refusals)): `not-found`, `bad-argument`, `would-overwrite`, `mismatch`,
+  `invalid-file`, `not-materialized`, `not-enough`, `not-public`, `not-allowed`, `not-configured`, `failed`,
+  `missing-dependency`. A script or an agent reads the kind, which stays when a message is reworded. The
+  project's `AGENTS.md` (`evh init`) says what to do for each exit code and the common kinds.
+
+### Fixed
+
+- **`evh <command> --help` names the command.** 43 of the 67 commands printed the script behind them
+  (`evh run-promote --help` said `usage: promote_baseline.py`).
+- **`evh validate` survives a file that does not parse.** A dataset, run, baseline or capture that is not valid
+  JSON is named by V1, and every later check runs; before, the first check to read it ended `validate` in a
+  traceback. A reference manifest, capture record or label set that does not parse is named by its own check.
+- **A cancelled MCP call stops its command.** The server waited for the command to finish, so a call a client
+  gave up on kept running to its timeout and held one of the server's slots.
+
 ## 0.7.2 — 2026-11-04
 
 The public MCP server's answers written ahead were empty. From 0.6.2 to 0.7.1 its `goals`, `datasets`, `arms`,

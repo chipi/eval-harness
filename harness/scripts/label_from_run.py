@@ -27,7 +27,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from evaluation_harness._common import RUNS, die, load_dataset, read_json
+from evaluation_harness._common import RUNS, die, evh_prog, load_dataset, read_json
 from evaluation_harness._label_sets import set_dir, write_set
 
 
@@ -57,7 +57,8 @@ def _refuse_unusable(
         die(
             f"REFUSED: {len(empty)} empty output(s) ({', '.join(empty[:8])}"
             + (" ..." if len(empty) > 8 else "")
-            + f").\n  An empty reference is never the right answer. {where}"
+            + f").\n  An empty reference is never the right answer. {where}",
+            "not-enough",
         )
     if cut and not allow_cut_off:
         die(
@@ -65,7 +66,8 @@ def _refuse_unusable(
             f"({', '.join(cut[:8])}" + (" ..." if len(cut) > 8 else "") + ").\n"
             "  A reference cut off mid-answer marks every complete answer down. Raise max_tokens\n"
             f"  in the config (a new config_id) and run it again. {where}\n"
-            "  (--allow-cut-off freezes them anyway, for outputs that end at the cap by design.)"
+            "  (--allow-cut-off freezes them anyway, for outputs that end at the cap by design.)",
+            "not-enough",
         )
 
 
@@ -78,27 +80,30 @@ def _from_run(run_id: str, dataset_id: str, items: list[dict], args: argparse.Na
     run_dir = RUNS / run_id
     if not (run_dir / "metrics.json").is_file():
         hint = " (it has no metrics.json: it did not finish)" if run_dir.is_dir() else ""
-        die(f"no finished run {run_id!r} under {RUNS}{hint}")
+        die(f"no finished run {run_id!r} under {RUNS}{hint}", "not-found")
     m = read_json(run_dir / "metrics.json")
     if m.get("dataset_id") != dataset_id:
-        die(f"REFUSED: run {run_id} is on {m.get('dataset_id')!r}, not {dataset_id!r}")
+        die(f"REFUSED: run {run_id} is on {m.get('dataset_id')!r}, not {dataset_id!r}", "mismatch")
     if (m.get("derived") or {}).get("kind"):
         die(
             f"REFUSED: run {run_id} is {m['derived']['kind']}d from {m['derived'].get('from')}; "
-            "make the reference from the run that produced the outputs"
+            "make the reference from the run that produced the outputs",
+            "not-allowed",
         )
     build = m.get("build") or {}
     if build.get("ref", "unknown") == "unknown" and not args.allow_unknown_build:
         die(
             f"REFUSED: run {run_id} does not identify its build, so the reference could not say\n"
             "  which system wrote it. Set EVAL_BUILD_REF and run the arm again\n"
-            "  (--allow-unknown-build overrides)."
+            "  (--allow-unknown-build overrides).",
+            "not-configured",
         )
     if build.get("dirty") and not args.allow_dirty:
         die(
             f"REFUSED: run {run_id} was produced by a dirty tree; build.ref={str(build.get('ref', '?'))[:12]}\n"
             "  does not describe what ran. Commit, run the arm again, and use that run\n"
-            "  (--allow-dirty overrides)."
+            "  (--allow-dirty overrides).",
+            "not-allowed",
         )
     tokens: dict[str, object] = {}
     pred = run_dir / "predictions.jsonl"
@@ -117,7 +122,8 @@ def _from_run(run_id: str, dataset_id: str, items: list[dict], args: argparse.Na
     if missing:
         die(
             f"REFUSED: run {run_id} has no output for {len(missing)} item(s) "
-            f"({', '.join(missing[:8])}" + (" ..." if len(missing) > 8 else "") + ")"
+            f"({', '.join(missing[:8])}" + (" ..." if len(missing) > 8 else "") + ")",
+            "not-enough",
         )
     params = dict(m.get("params") or {})
     _refuse_unusable(rows, params.get("max_tokens"), args.allow_cut_off, f"Run {run_id}.")
@@ -157,7 +163,8 @@ def _rebuild(dataset_id: str, name: str, rows: list) -> bool:
     if bad:
         die(
             f"REFUSED: the texts rebuilt from the run do not match {lj}'s checksums ({len(bad)} of {len(want)} differ):"
-            " the run's outputs changed since the set was made. Nothing was written."
+            " the run's outputs changed since the set was made. Nothing was written.",
+            "mismatch",
         )
     for iid, text in texts.items():
         (d / f"{iid}.txt").write_text(text, encoding="utf-8")
@@ -167,7 +174,7 @@ def _rebuild(dataset_id: str, name: str, rows: list) -> bool:
 
 def main() -> int:
     """Take a finished run's outputs as a model's label set."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--run", required=True, help="the run whose outputs become the labels")
     ap.add_argument("--set", required=True, dest="name", help="the label set's name (lowercase, _ . -)")
     ap.add_argument(
@@ -187,10 +194,10 @@ def main() -> int:
 
     m = RUNS / args.run / "metrics.json"
     if not m.is_file():
-        die(f"no finished run {args.run!r} under {RUNS}")
+        die(f"no finished run {args.run!r} under {RUNS}", "not-found")
     dataset_id = read_json(m).get("dataset_id")
     if not dataset_id:
-        die(f"run {args.run} names no dataset")
+        die(f"run {args.run} names no dataset", "invalid-file")
     rows, meta = _from_run(args.run, dataset_id, load_dataset(dataset_id)["items"], args)
     if _rebuild(dataset_id, args.name, rows):
         return 0

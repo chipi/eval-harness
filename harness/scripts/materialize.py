@@ -28,6 +28,7 @@ from evaluation_harness import _fetch
 from evaluation_harness._common import (
     MATERIALIZED,
     die,
+    evh_prog,
     load_dataset,
     now,
     sha256,
@@ -37,7 +38,7 @@ from evaluation_harness._common import (
 
 def main() -> int:
     """Materialize a dataset from sources and verify hashes."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--force", action="store_true", help="rebuild even if it exists")
     args = ap.parse_args()
@@ -92,7 +93,8 @@ def main() -> int:
             f"{len(missing)} missing, {len(drifted)} changed, {len(unfetched)} not fetched as pinned "
             "since the dataset was frozen.\n"
             "  sources/ is immutable. If an input genuinely changed, that is a NEW\n"
-            "  dataset (_v2) — every number already published was measured on the old bytes."
+            "  dataset (_v2) — every number already published was measured on the old bytes.",
+            "not-materialized",
         )
 
     write_json(

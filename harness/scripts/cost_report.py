@@ -45,7 +45,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness._common import die  # noqa: E402
+from evaluation_harness._common import (  # noqa: E402
+    die,
+    evh_prog,
+)
 from evaluation_harness._runs import runs_on  # noqa: E402
 
 
@@ -87,7 +90,7 @@ def _repeat_names(runs: list) -> dict[Path, str]:
 
 def main() -> int:
     """Report cost metrics for runs."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", help="only this dataset; default every dataset")
     ap.add_argument("--match", help="only runs whose config_id contains this")
     args = ap.parse_args()
@@ -111,7 +114,7 @@ def main() -> int:
         rows.append((billed, recorded, cid, m.get("dataset_id")))
 
     if not rows and not no_bill:
-        die("no runs matched")
+        die("no runs matched", "not-found")
 
     rows.sort(key=lambda r: -r[0])
     w = max((len(r[2]) for r in rows), default=20) + 2

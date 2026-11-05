@@ -46,6 +46,7 @@ from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     classify_metrics,
     die,
+    evh_prog,
     load_dataset,
     read_json,
     write_json,
@@ -69,7 +70,7 @@ SUFFIX = "_unvalidated"
 
 def main() -> int:
     """Read a filled sheet back as a label set, or as judged runs."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("sheet", type=Path, help="the filled sheet (.csv)")
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--by", required=True, help="who filled it: a person, or the tool")
@@ -89,11 +90,14 @@ def main() -> int:
     args = ap.parse_args()
 
     if not args.sheet.is_file():
-        die(f"no sheet {args.sheet}")
+        die(f"no sheet {args.sheet}", "not-found")
     load_dataset(args.dataset_id)
     rows, choices = read_csv(args.sheet)
     if not rows or "item_id" not in rows[0]:
-        die(f"{args.sheet}: a sheet has the column item_id (evh inspect --sheet … --csv writes one)")
+        die(
+            f"{args.sheet}: a sheet has the column item_id (evh inspect --sheet … --csv writes one)",
+            "invalid-file",
+        )
     head = list(rows[0])
     rows = [r for r in rows if not r["item_id"].startswith(NOT_AN_ITEM)]
     sha = hashlib.sha256(args.sheet.read_bytes()).hexdigest()
@@ -106,13 +110,16 @@ def main() -> int:
     has_pick = "pick" in head and filled("pick")
     has_scores = any(filled(h) for h in score_cols)
     if not (has_label or has_pick or has_scores):
-        die(f"{args.sheet}: nothing filled: no `label`, `pick` or `score:` cell has an answer")
+        die(f"{args.sheet}: nothing filled: no `label`, `pick` or `score:` cell has an answer", "not-enough")
     if has_pick and has_scores:
-        die(f"{args.sheet}: both `pick` and `score:` are filled: a sheet is judged one way")
+        die(f"{args.sheet}: both `pick` and `score:` are filled: a sheet is judged one way", "invalid-file")
     if has_label and not args.name:
-        die("the sheet has labels: name the label set with --set")
+        die("the sheet has labels: name the label set with --set", "bad-argument")
     if (has_pick or has_scores) and not args.scorer:
-        die("the sheet has judgements: name the judged runs with --scorer (data/runs-judged/<scorer>/)")
+        die(
+            "the sheet has judgements: name the judged runs with --scorer (data/runs-judged/<scorer>/)",
+            "bad-argument",
+        )
 
     labels: dict[str, str] = {}
     notes: dict[str, str] = {}
@@ -120,16 +127,23 @@ def main() -> int:
         labels, notes = labels_from_rows(rows, choices)
         out = set_dir(args.dataset_id, args.name)
         if out.exists() and any(out.iterdir()):
-            die(f"{out} exists: a label set is never edited. A correction is a new set: name another.")
+            die(
+                f"{out} exists: a label set is never edited. A correction is a new set: name another.",
+                "would-overwrite",
+            )
     judged: dict[str, Any] | None = None
     if has_pick or has_scores:
         if not NAME.match(args.scorer):
             die(
-                f"--scorer {args.scorer!r}: letters, digits, _ . - (at most 100), starting with a letter or digit"
+                f"--scorer {args.scorer!r}: letters, digits, _ . - (at most 100), starting with a letter or digit",
+                "bad-argument",
             )
         target = _common.DATA / "runs-judged" / args.scorer
         if target.exists() and any(target.iterdir()):
-            die(f"{target} exists: judged runs are never overwritten. Name another --scorer.")
+            die(
+                f"{target} exists: judged runs are never overwritten. Name another --scorer.",
+                "would-overwrite",
+            )
         judged = _judgements(args, rows, has_pick)
 
     if has_label:
@@ -148,15 +162,16 @@ def _judgements(args: argparse.Namespace, rows: list[dict[str, str]], pick: bool
     """The key checked against the sheet, and what was judged: {key, metric, values {arm index: {item: value}}}."""
     key = read_key(args.key or key_path(args.sheet))
     if key["dataset_id"] != args.dataset_id:
-        die(f"the key is for {key['dataset_id']}, not {args.dataset_id}")
+        die(f"the key is for {key['dataset_id']}, not {args.dataset_id}", "mismatch")
     if key["fill"] != ("pick" if pick else "scores"):
         die(
-            f"the key is for a sheet made with --fill {key['fill']}, but the sheet has {'picks' if pick else 'scores'}"
+            f"the key is for a sheet made with --fill {key['fill']}, but the sheet has {'picks' if pick else 'scores'}",
+            "mismatch",
         )
     letters: list[str] = key["letters"]
     unknown = [r["item_id"] for r in rows if r["item_id"] not in key["rows"]]
     if unknown:
-        die(f"{len(unknown)} row(s) not in the key (another sheet's): {', '.join(unknown[:8])}")
+        die(f"{len(unknown)} row(s) not in the key (another sheet's): {', '.join(unknown[:8])}", "mismatch")
     changed = [
         r["item_id"]
         for r in rows
@@ -168,7 +183,8 @@ def _judgements(args: argparse.Namespace, rows: list[dict[str, str]], pick: bool
     if changed:
         die(
             f"{len(changed)} row(s) whose outputs are not the key's (an edited sheet, or another key): "
-            f"{', '.join(changed[:8])}"
+            f"{', '.join(changed[:8])}",
+            "mismatch",
         )
     values: dict[int, dict[str, float]] = {}
     bad: list[str] = []
@@ -206,10 +222,11 @@ def _judgements(args: argparse.Namespace, rows: list[dict[str, str]], pick: bool
         die(
             f"{len(bad)} answer(s) refused, nothing written: "
             + "; ".join(bad[:8])
-            + (" ..." if len(bad) > 8 else "")
+            + (" ..." if len(bad) > 8 else ""),
+            "invalid-file",
         )
     if not values:
-        die("nothing filled in the blind columns")
+        die("nothing filled in the blind columns", "not-enough")
     return {
         "key": key,
         "metric": ("judge_won" if pick else "judge_score") + SUFFIX,

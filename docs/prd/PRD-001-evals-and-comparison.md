@@ -114,8 +114,8 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
   down).
 - **FR3.5**: `evh rank-stability`, `evh holdout` and `evh bootstrap-test` answer how many items a
   ranking needs, what holds outside a pilot slice, and intervals for corpus-level metrics.
-- **FR3.6**: Every refusal (two datasets, another reference, a missing run) is an `ERROR: …`
-  line on stderr with exit 1.
+- **FR3.6**: Every refusal (two datasets, another reference, a missing run) is an
+  `ERROR (<kind>): …` line on stderr with exit 1; the kind is one of a fixed list (Runbook: Refusals).
 
 ### FR4: Decisions
 

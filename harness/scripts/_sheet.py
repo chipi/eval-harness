@@ -83,7 +83,7 @@ def _set_named(name: str, dataset_id: str) -> None:
     """Refuse a label set no dataset has, and a bare name that two datasets' sets on this dataset's items share
     (labels follow an item by its bytes into every dataset holding it): which one the row read was a guess."""
     if not any(name in (d["set"], f"{d['dataset_id']}/{d['set']}") for d in sets()):
-        die(f"--wrong-against {name}: no such label set (evh labels lists them)")
+        die(f"--wrong-against {name}: no such label set (evh labels lists them)", "not-found")
     if "/" not in name:
         same = sorted(
             {
@@ -95,7 +95,8 @@ def _set_named(name: str, dataset_id: str) -> None:
         )
         if len(same) > 1:
             die(
-                f"--wrong-against {name}: {len(same)} label sets are named so ({', '.join(same)}); name one as DATASET/SET"
+                f"--wrong-against {name}: {len(same)} label sets are named so ({', '.join(same)}); name one as DATASET/SET",
+                "bad-argument",
             )
 
 
@@ -143,18 +144,18 @@ def _arm_dir(token: str, dataset_id: str, from_dir: str) -> Path:
     runs-judged/<scorer>); `runs` is also where label_sheet.run_dir looks (and in the label sets' runs)."""
     if from_dir and from_dir != "runs":
         if ".." in Path(from_dir).parts:
-            die(f"--from {from_dir}: a folder under data/")
+            die(f"--from {from_dir}: a folder under data/", "bad-argument")
         base = _common.DATA / from_dir
         d = base / token
         m = read_metrics(d) if d.is_dir() else None
         if m is not None:
             if m.get("dataset_id") != dataset_id:
-                die(f"--runs {token}: that run is not on {dataset_id}")
+                die(f"--runs {token}: that run is not on {dataset_id}", "mismatch")
             return d
         found = runs_on(dataset_id, runs_dir=base, config_id=token)
         if found:
             return found[-1][0]
-        die(f"--runs {token}: no run of that config on {dataset_id} under {from_dir}")
+        die(f"--runs {token}: no run of that config on {dataset_id} under {from_dir}", "not-found")
     return run_dir(token, dataset_id)
 
 
@@ -257,9 +258,15 @@ def _resolve_metric(arms: list[dict[str, Any]], spec: str | None, goal: dict | N
         if got:
             return got
         if len(judged.get(spec, ())) > 1:
-            die(f"--metric {spec}: judged by {', '.join(sorted(judged[spec]))}; name one (SCORER/{spec})")
+            die(
+                f"--metric {spec}: judged by {', '.join(sorted(judged[spec]))}; name one (SCORER/{spec})",
+                "bad-argument",
+            )
         known = sorted(own | {f"{s}/{k}" for k, ss in judged.items() for s in ss})
-        die(f"--metric {spec}: no run in --runs records it (recorded: {', '.join(known) or 'none'})")
+        die(
+            f"--metric {spec}: no run in --runs records it (recorded: {', '.join(known) or 'none'})",
+            "not-found",
+        )
     measure = ((goal or {}).get("success_criteria") or {}).get("primary", {}).get("measure")
     if measure and find(measure):
         return find(measure)
@@ -270,7 +277,7 @@ def _resolve_metric(arms: list[dict[str, Any]], spec: str | None, goal: dict | N
     if arms and own:
         return sorted(own)[0]
     if arms:
-        die("no run in --runs records a per-item metric: nothing to read the sheet on")
+        die("no run in --runs records a per-item metric: nothing to read the sheet on", "not-enough")
     return None
 
 
@@ -316,7 +323,7 @@ def build(
 
     ds = load_dataset(dataset_id)
     if len(set(tokens)) != len(tokens):
-        die("--runs names an arm twice")
+        die("--runs names an arm twice", "bad-argument")
     arms = [_arm(t, dataset_id, from_dir) for t in tokens]
     found_goal = _goal_for(dataset_id, arms)
     ref = _resolve_metric(arms, metric, found_goal[1] if found_goal else None)
@@ -527,11 +534,11 @@ def by_where(model: dict[str, Any], where: list[str]) -> list[dict[str, Any]]:
     for w in where:
         name, _, want = w.partition(":")
         if name not in model["decl"]:
-            die(f"--where {w}: no field {name!r} on {model['dataset_id']}")
+            die(f"--where {w}: no field {name!r} on {model['dataset_id']}", "not-found")
         try:
             found = [r for r in found if _fields.matches(model["decl"][name], r["fields"].get(name), want)]
         except ValueError as exc:
-            die(f"--where {w}: {exc}")
+            die(f"--where {w}: {exc}", "bad-argument")
     return found
 
 
@@ -814,9 +821,9 @@ def blind(
         raise ValueError(fill)
     n = len(model["arms"])
     if n > len(LETTERS):
-        die(f"--fill {fill}: at most {len(LETTERS)} arms")
+        die(f"--fill {fill}: at most {len(LETTERS)} arms", "bad-argument")
     if fill == "pick" and n < 2:
-        die("--fill pick needs two runs or more in --runs")
+        die("--fill pick needs two runs or more in --runs", "bad-argument")
     letters = list(LETTERS[:n])
     head = [
         "item_id",
@@ -876,11 +883,11 @@ def key_path(sheet: Path) -> Path:
 def read_key(path: Path) -> dict[str, Any]:
     """A sheet's key; refused when missing or not a key."""
     if not path.is_file():
-        die(f"no key at {path}: `--fill` writes it beside the sheet (name another with --key)")
+        die(f"no key at {path}: `--fill` writes it beside the sheet (name another with --key)", "not-found")
     try:
         key = read_json(path)
     except ValueError:
-        die(f"{path}: not JSON")
+        die(f"{path}: not JSON", "invalid-file")
     if not isinstance(key, dict) or key.get("kind") != "sheet-key" or not key.get("rows"):
-        die(f"{path}: not a sheet key")
+        die(f"{path}: not a sheet key", "invalid-file")
     return key

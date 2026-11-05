@@ -45,7 +45,7 @@ def in_checkout() -> bool:
 
 def main() -> int:
     """Run a self-test of the installed harness."""
-    from evaluation_harness._common import no_options  # noqa: PLC0415
+    from evaluation_harness._common import EXIT_PROBLEMS, no_options  # noqa: PLC0415
 
     no_options(__doc__)
     if in_checkout():
@@ -176,7 +176,7 @@ def main() -> int:
         f"\nself-check: {len(results) - failed}/{len(results)} passed"
         + ("" if not failed else " — the harness does not work as installed here; the lines above say where")
     )
-    return 1 if failed else 0
+    return EXIT_PROBLEMS if failed else 0
 
 
 if __name__ == "__main__":

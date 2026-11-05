@@ -443,7 +443,7 @@ with tempfile.TemporaryDirectory() as proj:
     )
     check(
         "env-check: a real key with no cap still fails, as before",
-        keyed.returncode == 1 and "A provider key is set" in keyed.stdout,
+        keyed.returncode == 6 and "A provider key is set" in keyed.stdout,
         keyed.stdout[-400:],
     )
 sys.exit(summary())

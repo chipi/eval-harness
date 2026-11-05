@@ -72,12 +72,12 @@ def load_local() -> dict | None:
     """The human annotations if already on disk (both pins checked), else None. Never downloads."""
     f = EXT / "human_annotations" / "cnn_human.json"
     if ZIP_PATH.is_file() and _file_sha(ZIP_PATH.read_bytes()) != ZIP_SHA256:
-        die(f"{ZIP_PATH} does not match the pinned sha256 {ZIP_SHA256}; refusing to use it")
+        die(f"{ZIP_PATH} does not match the pinned sha256 {ZIP_SHA256}; refusing to use it", "mismatch")
     if not f.is_file():
         return None
     raw = f.read_bytes()
     if _file_sha(raw) != CNN_JSON_SHA256:
-        die(f"{f} has sha256 {_file_sha(raw)}, not the pinned {CNN_JSON_SHA256}")
+        die(f"{f} has sha256 {_file_sha(raw)}, not the pinned {CNN_JSON_SHA256}", "mismatch")
     return json.loads(raw)
 
 
@@ -91,13 +91,13 @@ def load() -> dict:
             try:
                 src, _ = _fetch.fetch(URL, ZIP_SHA256)
             except _fetch.FetchError as exc:
-                die(f"{exc}; refusing to extract it")
+                die(f"{exc}; refusing to extract it", "failed")
             EXT.mkdir(parents=True, exist_ok=True)
             write_bytes_atomic(ZIP_PATH, src.read_bytes())
         zipfile.ZipFile(io.BytesIO(ZIP_PATH.read_bytes())).extractall(EXT)
         data = load_local()
         if data is None:
-            die(f"{ZIP_PATH} extracted, but it holds no human_annotations/cnn_human.json")
+            die(f"{ZIP_PATH} extracted, but it holds no human_annotations/cnn_human.json", "invalid-file")
     return data
 
 
@@ -402,7 +402,8 @@ def main() -> int:
         die(
             "stored records refused:\n  "
             + "\n  ".join(problems[:20])
-            + (f"\n  ... and {len(problems) - 20} more" if len(problems) > 20 else "")
+            + (f"\n  ... and {len(problems) - 20} more" if len(problems) > 20 else ""),
+            "invalid-file",
         )
     if args.dry_run:
         print(
@@ -412,9 +413,12 @@ def main() -> int:
         return 0
     if missing:
         if args.no_calls:
-            die(f"--no-calls but {len(missing)} record(s) are missing:\n  " + "\n  ".join(missing))
+            die(
+                f"--no-calls but {len(missing)} record(s) are missing:\n  " + "\n  ".join(missing),
+                "not-found",
+            )
         if cap is None:
-            die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD")
+            die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD", "not-configured")
 
     spent = sum(
         float(json.loads(f.read_text()).get("cost_usd") or 0.0)
@@ -487,7 +491,7 @@ def main() -> int:
                 aborted = True
         billed = sum(float(json.loads(f.read_text()).get("cost_usd") or 0.0) for f in vdir.glob("*.json"))
         if aborted:
-            die(f"stopped before every record of {jid} was stored; nothing reported")
+            die(f"stopped before every record of {jid} was stored; nothing reported", "not-enough")
         recs = read_records(vdir, data)
         st = judge_stats(data, recs)
         st["human_gpt3_over_brio"] = sum(human_prefs(v["annotators"])[1] for v in data.values())

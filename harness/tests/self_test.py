@@ -662,6 +662,13 @@ def test_example_scorer_suites_pass() -> None:
         ("test_p_cache.py", "the on-disk p cache: the same p, read back by a fresh process"),
         ("test_mcp_http.py", "evh mcp --http: health, Host check, --public, --rate, hooks"),
         ("test_mcp_answers.py", "evh mcp --write-answers and --answers: a release's answers written ahead"),
+        ("test_mcp_cancel.py", "evh mcp: a cancelled call stops the command it started"),
+        ("test_help_names.py", "every evh <command> --help names the command, not its script"),
+        (
+            "test_exit_codes.py",
+            "exit codes: the cost cap 4, nothing measured 7, usage 2, refusal 1, validate 6",
+        ),
+        ("test_refusal_kinds.py", "every refusal names its kind, the kinds as the Runbook lists them"),
         ("test_scores_once.py", "each arm's scores read once per view and per build"),
         ("test_skills.py", "the agent skills: valid, installed, every evh block runs as written"),
         (
@@ -740,7 +747,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_deploy_sheet.py",
-            "the deploy sheet: what production must match; a capture checked against it, what differs, exit 1",
+            "the deploy sheet: what production must match; a capture checked against it, what differs, exit 6",
         ),
         (
             "test_catalog_labels.py",
@@ -1530,8 +1537,8 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
 
     Partial results are still kept and the resume hint still prints; that was
     deliberate. What changed is the exit code, because "the cap stopped me after 3 of
-    200 items" and "I measured 200 items" must not both be success. 1 = nothing
-    measured, 2 = stopped early with usable partial results, 0 = complete.
+    200 items" and "I measured 200 items" must not both be success. 7 = nothing
+    measured, 4 = stopped early with usable partial results, 0 = complete (RUNBOOK, Exit codes).
     """
     import shutil  # noqa: PLC0415
 
@@ -1570,7 +1577,11 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
         env={**env, "EVAL_MAX_COST_USD": "0"},
     )
     out = (r.stdout or "") + (r.stderr or "")
-    check("cost cap: a run that scored NO items exits non-zero", r.returncode != 0, f"exit {r.returncode}")
+    check(
+        "cost cap: a run that scored NO items exits 7 (nothing measured)",
+        r.returncode == 7,
+        f"exit {r.returncode}",
+    )
     check(
         "cost cap: and says nothing was measured",
         "scored NO items" in out or "Nothing was measured" in out,

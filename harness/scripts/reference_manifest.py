@@ -60,15 +60,16 @@ def main() -> int:
     args = ap.parse_args()
     if len(args.reason.split()) < 3:
         die(
-            'REFUSED: --reason must be a sentence, not a word. It answers "why is this the yardstick?" later.'
+            'REFUSED: --reason must be a sentence, not a word. It answers "why is this the yardstick?" later.',
+            "bad-argument",
         )
     tier, _, name = args.reference_id.partition("/")
     if tier not in ("gold", "silver") or not name:
-        die(f"--reference-id {args.reference_id!r}: expected gold/<name> or silver/<name>")
+        die(f"--reference-id {args.reference_id!r}: expected gold/<name> or silver/<name>", "bad-argument")
     dataset_id = args.dataset_id or name
     ref_dir = _common.DATA / "references" / tier / name
     if not any(ref_dir.glob("*.txt")):
-        die(f"{ref_dir} has no reference texts: build them first ({args.source})")
+        die(f"{ref_dir} has no reference texts: build them first ({args.source})", "not-found")
     source = {"kind": args.kind, "by": args.labelled_by, "via": args.source}
     doc = write_manifest(
         ref_dir,

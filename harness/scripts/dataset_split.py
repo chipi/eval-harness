@@ -27,7 +27,7 @@ import argparse
 import hashlib
 
 from evaluation_harness import _fields
-from evaluation_harness._common import DATASETS, dataset_id_ok, die, load_dataset, read_json
+from evaluation_harness._common import DATASETS, dataset_id_ok, die, evh_prog, load_dataset, read_json
 from evaluation_harness.dataset_create import _lineage, _write
 
 
@@ -39,7 +39,7 @@ def side(seed: int, key: str, share: float) -> str:
 
 def main() -> int:
     """Split a dataset into <D>_validation and <D>_test."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("dataset_id", help="the dataset to split")
     ap.add_argument("--test", type=float, required=True, help="the test share, between 0 and 1")
     ap.add_argument("--by", choices=("hash", "time"), default="hash")
@@ -53,9 +53,9 @@ def main() -> int:
     )
     args = ap.parse_args()
     if not 0 < args.test < 1:
-        die("--test is a share between 0 and 1")
+        die("--test is a share between 0 and 1", "bad-argument")
     if args.by == "time" and not args.key:
-        die("--by time needs --key: the item field holding each item's date or time")
+        die("--by time needs --key: the item field holding each item's date or time", "bad-argument")
     parent = load_dataset(dataset_id_ok(args.dataset_id))
     items = parent["items"]
 
@@ -64,7 +64,7 @@ def main() -> int:
             return it["item_id"]
         v = (it.get("fields") or {}).get(args.key)
         if v is None:
-            die(f"--key {args.key}: item {it['item_id']} has no value for it")
+            die(f"--key {args.key}: item {it['item_id']} has no value for it", "not-found")
         return str(v)
 
     if args.by == "hash":
@@ -84,10 +84,13 @@ def main() -> int:
         out_id = f"{args.dataset_id}_{part}"
         out = DATASETS / f"{dataset_id_ok(out_id)}.json"
         if out.exists() and not args.force:
-            die(f"{out} already exists: a dataset is frozen. --force if nothing cites it yet.")
+            die(
+                f"{out} already exists: a dataset is frozen. --force if nothing cites it yet.",
+                "would-overwrite",
+            )
         mine = [dict(it) for it in items if assign[it["item_id"]] == part]
         if not mine:
-            die(f"the {part} side is empty: a larger dataset or another share")
+            die(f"the {part} side is empty: a larger dataset or another share", "not-enough")
         _write(
             out,
             out_id,

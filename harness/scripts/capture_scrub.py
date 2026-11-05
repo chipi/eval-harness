@@ -31,7 +31,16 @@ import tempfile
 from pathlib import Path
 
 from evaluation_harness import _importers
-from evaluation_harness._common import CAPTURES, ROOT, dataset_id_ok, die, now, read_json, write_json
+from evaluation_harness._common import (
+    CAPTURES,
+    ROOT,
+    dataset_id_ok,
+    die,
+    evh_prog,
+    now,
+    read_json,
+    write_json,
+)
 
 
 def _label(arg: str) -> str:
@@ -45,15 +54,15 @@ def _label(arg: str) -> str:
 
 def main() -> int:
     """Scrub a capture's records with the project's command."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("capture", help="the capture's id")
     ap.add_argument("--command", required=True, help="the scrubber; {records} is the records folder")
     args = ap.parse_args()
     if "{records}" not in args.command:
-        die("--command must name {records}, the folder the scrubber works on")
+        die("--command must name {records}, the folder the scrubber works on", "bad-argument")
     base = CAPTURES / dataset_id_ok(args.capture)
     if not (base / "capture.json").is_file():
-        die(f"no capture {args.capture!r} at {base}")
+        die(f"no capture {args.capture!r} at {base}", "not-found")
     doc = read_json(base / "capture.json")
     records = base / "records"
     argv = [a.replace("{records}", str(records)) for a in shlex.split(args.command)]
@@ -64,7 +73,7 @@ def main() -> int:
         def restore(why: str) -> None:
             shutil.rmtree(records)
             shutil.copytree(backup, records)
-            die(f"{why}; the records are as they were, nothing recorded")
+            die(f"{why}; the records are as they were, nothing recorded", "failed")
 
         r = subprocess.run(argv, capture_output=True, text=True)
         if r.returncode != 0:

@@ -50,7 +50,8 @@ def read_csv(path: Path) -> tuple[list[dict[str, str]], list[str] | None]:
     if path.suffix.lower() in (".xlsx", ".xls", ".ods") or raw[:2] == b"PK":
         die(
             f"{path}: a spreadsheet workbook, not CSV. In Excel: File > Save As > CSV UTF-8 (Comma delimited); "
-            "a `;`-separated CSV is read too."
+            "a `;`-separated CSV is read too.",
+            "invalid-file",
         )
     text = raw.decode("utf-8-sig")
     first = text.split("\n", 1)[0]

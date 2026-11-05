@@ -293,7 +293,7 @@ def _find_adapter(spec: str, config_path: Path | None) -> Path:
     for candidate in candidates:
         if candidate.is_file():
             return candidate
-    die(f"adapter not found: {spec}\n" + "".join(f"  looked in: {c}\n" for c in candidates))
+    die(f"adapter not found: {spec}\n" + "".join(f"  looked in: {c}\n" for c in candidates), "not-found")
 
 
 def load_adapter(
@@ -334,10 +334,10 @@ def load_adapter(
     try:
         module = module_at(path)
     except ModuleNotLoadable:
-        die(f"adapter is not importable: {path}")
+        die(f"adapter is not importable: {path}", "invalid-file")
     for required in ("call_system", "score"):
         if not hasattr(module, required):
-            die(f"adapter {path} defines no {required}()")
+            die(f"adapter {path} defines no {required}()", "invalid-file")
     adapter_id = _portable_id(path)
     return (
         module.call_system,

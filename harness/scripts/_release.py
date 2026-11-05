@@ -146,10 +146,13 @@ def copy_data(src: Path, dst: Path) -> dict:
     """Copy `src` (a project's data/) into `dst`; refuse first if it would publish untracked text."""
     bad = plan_problems(src)
     if bad:
-        raise SystemExit(
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(
             "refusing the release:\n  "
             + "\n  ".join(bad[:10])
-            + (f"\n  (+{len(bad) - 10})" if len(bad) > 10 else "")
+            + (f"\n  (+{len(bad) - 10})" if len(bad) > 10 else ""),
+            "not-allowed",
         )
     dst.mkdir(parents=True, exist_ok=True)
     datasets = src / "datasets"

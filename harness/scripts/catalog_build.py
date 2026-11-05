@@ -44,7 +44,7 @@ from urllib.parse import quote
 HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import _common, _fields, _visibility  # noqa: E402
-from evaluation_harness._common import ROOT  # noqa: E402
+from evaluation_harness._common import ROOT, die  # noqa: E402
 from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
     axes_of,
@@ -4810,35 +4810,37 @@ def main() -> int:
     args = ap.parse_args()
     for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto), ("--card", args.card)):
         if url and not url.startswith(("https://", "http://")):
-            raise SystemExit(f"{flag} {url!r}: expected https://...")
+            die(f"{flag} {url!r}: expected https://...", "bad-argument")
     MCP = args.mcp or ""
     CARD = args.card or ""
     MCP_HOWTO = args.mcp_howto or MCP_HOWTO
     if not args.api.startswith("/") or not args.api.endswith("/"):
-        raise SystemExit(
-            f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/"
+        die(
+            f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/",
+            "bad-argument",
         )
     API = args.api
     BRAND = args.brand
     if args.head:
         if not args.head.is_file():
-            raise SystemExit(f"--head {args.head}: no such file")
+            die(f"--head {args.head}: no such file", "not-found")
         HEAD = args.head.read_text(encoding="utf-8").strip() + "\n"
     if args.repo:
         if not args.repo.startswith(("https://", "http://")):
-            raise SystemExit(
-                f"--repo {args.repo!r}: expected https://..., where the project's files can be read"
+            die(
+                f"--repo {args.repo!r}: expected https://..., where the project's files can be read",
+                "bad-argument",
             )
         REPO = args.repo if args.repo.endswith("/") else args.repo + "/"
     if args.about:
         if not args.about.is_file():
-            raise SystemExit(f"--about {args.about}: no such file")
+            die(f"--about {args.about}: no such file", "not-found")
         ABOUT = args.about.read_text(encoding="utf-8").strip()
     sections = []
     for spec in args.link:
         label, _, url = spec.partition("=")
         if not label or not (url == "." or url.startswith(("https://", "http://"))):
-            raise SystemExit(f"--link {spec!r}: expected LABEL=https://... or LABEL=. for the catalog")
+            die(f"--link {spec!r}: expected LABEL=https://... or LABEL=. for the catalog", "bad-argument")
         sections.append((label, url))
     if sections and not any(u == "." for _, u in sections):
         sections.insert(0, ("Catalog", "."))

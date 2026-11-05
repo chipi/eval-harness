@@ -18,7 +18,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import json
 
-from evaluation_harness._common import CAPTURES, DATASETS, dataset_id_ok, die, read_json
+from evaluation_harness._common import CAPTURES, DATASETS, dataset_id_ok, die, evh_prog, read_json
 
 
 def summary(capture_id: str, made: dict, root: _Path | None = None) -> dict:
@@ -57,7 +57,7 @@ def listing(data_dir: _Path | None = None) -> list[dict]:
 
 def main() -> int:
     """List captures, or show one."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--capture", help="show one capture")
     ap.add_argument("--json", action="store_true", help="print JSON")
     args = ap.parse_args()
@@ -65,7 +65,10 @@ def main() -> int:
     if args.capture:
         ids = [c["capture"] for c in rows]
         if dataset_id_ok(args.capture) not in ids:
-            die(f"no capture {args.capture!r}" + (f"; there are: {', '.join(ids)}" if ids else ""))
+            die(
+                f"no capture {args.capture!r}" + (f"; there are: {', '.join(ids)}" if ids else ""),
+                "not-found",
+            )
         rows = [c for c in rows if c["capture"] == args.capture]
     if args.json:
         print(json.dumps({"captures": rows}, indent=2))

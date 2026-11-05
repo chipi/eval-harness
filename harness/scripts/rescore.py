@@ -52,6 +52,7 @@ from evaluation_harness._common import (
     adapter_search_dirs,
     dataset_id_ok,
     die,
+    evh_prog,
     how,
     ignored_by_git,
     labels_reference,
@@ -124,7 +125,7 @@ def _rescore_row(
     item_id = old["item_id"]
     out_f = d / "outputs" / f"{item_id}.txt"
     if not out_f.is_file():
-        die(f"{d.name}: no stored output for {item_id} — cannot rescore")
+        die(f"{d.name}: no stored output for {item_id} — cannot rescore", "not-enough")
     output = out_f.read_text(encoding="utf-8")
     reference = None
     if ref_dir:
@@ -180,7 +181,8 @@ def _rescore_row(
                 f"{d.name}: the adapter's reparse_meta() raised on item "
                 f"{item_id}: {type(exc).__name__}: {exc}\n"
                 f"  A rescored run must not carry a parse the current parser "
-                f"did not produce, so this is a failure rather than a carry."
+                f"did not produce, so this is a failure rather than a carry.",
+                "failed",
             )
         if isinstance(fresh, dict):
             row["_meta"] = {**row["_meta"], **fresh}
@@ -243,7 +245,8 @@ def _check_references(
                 + how(
                     f"evh dataset-create --dataset-id {m.get('dataset_id')} --source-dir …",
                     f"make dataset-create DATASET_ID={m.get('dataset_id')}",
-                )
+                ),
+                "not-materialized",
             )
         if refs_found < len(rows):
             print(
@@ -404,7 +407,8 @@ def rescore_one(
         if found is None:
             die(
                 f"adapter not found for {d.name}: {spec!r} is under none of "
-                f"{', '.join(str(x) for x in adapter_search_dirs())}"
+                f"{', '.join(str(x) for x in adapter_search_dirs())}",
+                "not-found",
             )
         adapters[spec] = found
     _call, score, adapter_id, adapter_path, _warm, _fp = adapters[spec]
@@ -415,7 +419,8 @@ def rescore_one(
     if out_dir.resolve() == d.parent.resolve():
         die(
             f"--out {out_dir} is where the runs being rescored are read from; a rescore writes "
-            "new records beside them, so give it another directory (or none: the tool designates one)"
+            "new records beside them, so give it another directory (or none: the tool designates one)",
+            "bad-argument",
         )
     ref_dir, tier = _references_for(m, reference_id)
     mat = MATERIALIZED / m["dataset_id"]
@@ -518,7 +523,7 @@ def rescore_runs(
 
 def main() -> int:
     """Re-score finished runs from their stored outputs: no API calls, no money."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", help="the dataset whose runs to re-score (or --goal and --round)")
     ap.add_argument("--match", help="only runs whose config_id contains this substring")
     ap.add_argument(
@@ -551,29 +556,29 @@ def main() -> int:
     args = ap.parse_args()
     if args.labels:
         if args.reference_id or args.round_id:
-            die("--labels is its own target: not with --reference-id or --round")
+            die("--labels is its own target: not with --reference-id or --round", "bad-argument")
         if not args.dataset_id:
-            die("--labels needs --dataset-id")
+            die("--labels needs --dataset-id", "bad-argument")
         args.reference_id = labels_reference(args.labels, args.dataset_id)
         if args.out is None:
             args.out = DATA / f"runs-labels-{args.dataset_id}-{args.reference_id.rsplit('/', 1)[1]}"
     elif args.reference_id and not (REFERENCES / args.reference_id).is_dir():
-        die(f"no reference set at data/references/{args.reference_id}")
+        die(f"no reference set at data/references/{args.reference_id}", "not-found")
     rnd = None
     if args.round_id:
         if not args.goal:
-            die("--round needs --goal")
+            die("--round needs --goal", "bad-argument")
         if len(args.why.split()) < 3:
-            die("--round needs --why, a sentence: what changed in the scoring, and why?")
+            die("--round needs --why, a sentence: what changed in the scoring, and why?", "bad-argument")
         from evaluation_harness import _rounds  # noqa: PLC0415
 
         rnd = _rounds.find(args.goal, args.round_id)
         if rnd is None:
-            die(f"no round {args.round_id} of {args.goal}")
+            die(f"no round {args.round_id} of {args.goal}", "not-found")
         args.dataset_id = rnd["dataset_id"]
         todo = measured_runs(args.dataset_id, set(_rounds.arms_of(rnd)))
     elif not args.dataset_id:
-        die("--dataset-id, or --goal with --round")
+        die("--dataset-id, or --goal with --round", "bad-argument")
     elif args.out is None:
         todo = [
             (d, m)
@@ -583,12 +588,16 @@ def main() -> int:
     else:
         todo = runs_on(args.dataset_id, match=args.match)
     if not todo:
-        die(f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""))
+        die(
+            f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""),
+            "not-found",
+        )
     # Refused before anything is written, whatever the runs record (rescore_one checks each run again).
     if args.out and any(d.parent.resolve() == args.out.resolve() for d, _m in todo):
         die(
             f"--out {args.out} is where the runs being rescored are read from; a rescore writes "
-            "new records beside them, so give it another directory (or none: the tool designates one)"
+            "new records beside them, so give it another directory (or none: the tool designates one)",
+            "bad-argument",
         )
     print(f"rescoring {len(todo)} run(s)" + (f" -> {args.out}" if args.out else ""))
     if args.out:

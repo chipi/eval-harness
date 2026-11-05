@@ -60,7 +60,11 @@ from urllib.parse import parse_qs, unquote, urlparse
 HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import _fields, _visibility, stats  # noqa: E402
-from evaluation_harness._common import ROOT, SPEED_KEYS  # noqa: E402
+from evaluation_harness._common import (  # noqa: E402
+    ROOT,
+    SPEED_KEYS,
+    die,
+)
 from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
 
 #: Every comparison ends in one of these, so a page can always say what it shows and why.
@@ -692,13 +696,13 @@ def _sheet_rows(params: dict) -> tuple[dict, list, list]:
 
     ds = params.get("dataset", [""])[0]
     if not ds or not plain_item(ds) or not (DATASETS / f"{ds}.json").is_file():
-        raise SystemExit("need dataset=<a dataset id>")
+        die("need dataset=<a dataset id>", "bad-argument")
     runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
     if len(runs) > LIMITS["max_arms"]:
-        raise SystemExit(f"{len(runs)} arms asked for; at most {LIMITS['max_arms']}")
+        die(f"{len(runs)} arms asked for; at most {LIMITS['max_arms']}", "bad-argument")
     only = params.get("only", [])
     if bad := [x for x in only if x not in _sheet.SIGNALS]:
-        raise SystemExit(f"no signal {bad[0]!r}: one of {', '.join(_sheet.SIGNALS)}")
+        die(f"no signal {bad[0]!r}: one of {', '.join(_sheet.SIGNALS)}", "not-found")
     items = [i for i in params.get("item", []) if plain_item(i)] if "item" in params else None
     model = _sheet.build(
         ds,
@@ -714,7 +718,7 @@ def _sheet_rows(params: dict) -> tuple[dict, list, list]:
 
 
 def _error(exc: SystemExit) -> dict:
-    return {"error": str(exc).removeprefix("ERROR: ").splitlines()[0]}
+    return {"error": re.sub(r"^ERROR( \([a-z-]+\))?: ", "", str(exc)).splitlines()[0]}
 
 
 def sheet_csv(query: str) -> tuple[int, bytes, str]:
@@ -931,11 +935,12 @@ def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
         except ValueError:
             # The server's document root is the project: it serves the catalog and the data
             # tree from inside it, and nothing outside, so a directory elsewhere has no URL.
-            raise SystemExit(
+            die(
                 f"{p} is not inside the project ({ROOT}): the inspector serves the catalog "
                 "and the data tree from inside the project only. Build the catalog there "
-                "(the default, .build/catalog), or run from the project that holds it."
-            ) from None
+                "(the default, .build/catalog), or run from the project that holds it.",
+                "not-allowed",
+            )
     return tuple(out)
 
 
@@ -991,18 +996,18 @@ def load_hooks(spec: str):
     if target.endswith(".py"):
         path = Path(target).resolve()
         if not path.is_file():
-            raise SystemExit(f"--hooks: no file {target}")
+            die(f"--hooks: no file {target}", "not-found")
         from evaluation_harness._common import ModuleNotLoadable, load_module  # noqa: PLC0415
 
         try:
             mod = load_module(path, f"evh_hooks_{path.stem}")
-        except ModuleNotLoadable as exc:
-            raise SystemExit(f"--hooks: cannot load {target}") from exc
+        except ModuleNotLoadable:
+            die(f"--hooks: cannot load {target}", "failed")
     else:
         try:
             mod = importlib.import_module(target)
         except ImportError as exc:
-            raise SystemExit(f"--hooks: cannot import {target}: {exc}") from exc
+            die(f"--hooks: cannot import {target}: {exc}", "failed")
     obj = getattr(mod, name) if name else mod
     return obj() if isinstance(obj, type) else obj
 
@@ -1228,13 +1233,13 @@ def main() -> int:
         LIMITS["publish"] = tuple(x.strip() for x in args.publish.split(",") if x.strip())
         bad = set(LIMITS["publish"]) - {"outputs", "references"}
         if bad:
-            raise SystemExit(f"--publish takes outputs and/or references, not {', '.join(sorted(bad))}")
+            die(f"--publish takes outputs and/or references, not {', '.join(sorted(bad))}", "bad-argument")
         Handler.prefixes = ()
     else:
         if args.bind != "127.0.0.1":
-            raise SystemExit("--bind other than 127.0.0.1 needs --public (and a proxy in front)")
+            die("--bind other than 127.0.0.1 needs --public (and a proxy in front)", "not-allowed")
         if not (args.build_dir / "index.html").is_file():
-            raise SystemExit(f"no catalog at {args.build_dir}: run `evh catalog` first")
+            die(f"no catalog at {args.build_dir}: run `evh catalog` first", "not-found")
         Handler.prefixes = served(args.build_dir, A.data_dir, tuple(getattr(A, "served_dirs", ())))
     if args.warm:
         threading.Thread(
@@ -1248,7 +1253,7 @@ def main() -> int:
             if exc.errno == errno.EADDRINUSE
             else f"{exc.strerror}. Pass --port N, or check --bind."
         )
-        raise SystemExit(f"cannot listen on {args.bind}:{args.port}: {why}") from exc
+        die(f"cannot listen on {args.bind}:{args.port}: {why}", "failed")
     from evaluation_harness._version import __version__  # noqa: PLC0415
 
     _hook(
