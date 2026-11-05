@@ -49,7 +49,8 @@ Each check exists because its absence let a real defect through somewhere:
                      1.0 from nothing or a split, MINOR + 1 for added items, MAJOR + 1 for removed or
                      changed ones), a split side naming a parent version that is not its parent's, or
                      a licence not on evh licences' list (E2), a source block with a key or value
-                     outside its form, or item rows without an item_url to fill (E1)
+                     outside its form, item rows without an item_url to fill (E1), or a card key
+                     that is not one of Croissant RAI's (E4)
                      (PLAN_0.8.0 E3; `evh dataset-migrate` brings old records to the format)
 
 Exit 1 on any failure, so it can gate.
@@ -1476,7 +1477,7 @@ def v21_failure_modes() -> None:
 def v22_dataset_records() -> None:
     """V22: each dataset's stored version is the one its lineage gives (PLAN_0.8.0 E3), so a hand-edited or
     pre-0.8.0 version is caught; `evh dataset-migrate` writes the right ones."""
-    from evaluation_harness import _dataset_version, _licences, _source  # noqa: PLC0415
+    from evaluation_harness import _card, _dataset_version, _licences, _source  # noqa: PLC0415
 
     docs = {f.stem: parsed(f) for f in sorted(DATASETS.glob("*.json"))} if DATASETS.is_dir() else {}
     docs = {k: v for k, v in docs.items() if isinstance(v, dict)}  # V1 names one that does not parse
@@ -1494,6 +1495,8 @@ def v22_dataset_records() -> None:
             bad.append(f"datasets/{i}.json: version {d.get('version')!r}, its lineage gives {want}")
         if "source" in d:
             bad += [f"datasets/{i}.json: {p}" for p in _source.problems(d["source"])]
+        if "card" in d:
+            bad += [f"datasets/{i}.json: {p}" for p in _card.problems(d["card"])]
         if any("source_row" in it for it in d.get("items") or []) and "{row}" not in str(
             (d.get("source") or {}).get("item_url") or ""
         ):

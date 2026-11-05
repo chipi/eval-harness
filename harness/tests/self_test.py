@@ -764,6 +764,10 @@ def test_example_scorer_suites_pass() -> None:
             "where items came from: a fetcher's rows file as the source block, item links, V22, dataset-migrate",
         ),
         (
+            "test_card.py",
+            "a dataset's card: the datasheet questions in Croissant RAI's words; template, --card, V22",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),

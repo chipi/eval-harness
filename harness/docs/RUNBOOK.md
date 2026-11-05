@@ -139,7 +139,13 @@ for a licence of its own. A split side and an extended version keep their parent
 recorded is null. A fetcher writes `data/sources/<dataset_id>.rows.json` beside the items (the block, the template
 and per item its row and sha256, as `examples/_shared/hf_rows.py` does); `dataset-create` reads it into the record,
 a row only for an item whose bytes are the ones written, and the profile and catalog link each item from it.
-Splits and extensions keep the parent's block. `validate` (V22) refuses an id
+Splits and extensions keep the parent's block.
+
+**The card** answers the datasheet questions (what the dataset is for, how it was collected and labelled, its
+biases and limits, who maintains it) under Croissant RAI 1.0's property names, so an export writes them as they
+are: `evh dataset-describe --card-template > card.yaml` prints each key with its question, `evh dataset-describe
+--dataset-id D --card card.yaml` records the answered ones (it replaces the card; no new version). All optional;
+`validate` (V22) refuses a key that is not one of them. `validate` (V22) refuses an id
 not on the list. The line is a picker, not legal advice: the licence text is what binds.
 
 **What you know about each item goes in fields** (ADR-0003). Declare them once in a
@@ -717,7 +723,7 @@ every run that must name one, every item field declared, typed and matching its 
 reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
 records matching the hashes it recorded, every model record and the configs naming it consistent, and every label set
 matching its hashes and its dataset, every `hypothesis:` in an arm config sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21), and every dataset's version the one its lineage gives, its licence
-on the list and its source block in form (V22). V4
+on the list, its source block in form and its card's keys Croissant RAI's (V22). V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters).
 
