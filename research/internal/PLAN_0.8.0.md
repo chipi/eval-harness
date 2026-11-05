@@ -167,7 +167,8 @@ and private datasets on Kaggle and the Hub are not tried (no Kaggle credentials 
 `config.yaml` (`runs: {store: sqlite}`, or `EVAL_RUNS_STORE`) puts them in `data/runs.sqlite`. Phase 1 is a run's
 outputs (RFC-024 left one module, `_outputs.py`, to swap the store under); phase 2 its rows (`predictions.jsonl`, read
 today by many modules, so first one reader as RFC-024 did for outputs). `metrics.json` and `run.json` stay files.
-`evh run-migrate --to sqlite|files` moves a project either way, checked by the same signatures. An RFC first.
+`evh run-migrate --to sqlite|files` moves a project either way, checked by the same signatures.
+[RFC-025](../../docs/rfc/RFC-025-runs-in-sqlite.md), accepted 2026-11-06: both phases in 0.8.0.
 
 | # | what |
 | --- | --- |

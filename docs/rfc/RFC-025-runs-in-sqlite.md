@@ -1,6 +1,6 @@
 # RFC-025: Runs in SQLite, a project's choice
 
-- **Status**: Proposed (2026-11-06), for 0.8.0 S0. Owner, 2026-11-06: "project has file mode by default but easy to
+- **Status**: Accepted (2026-11-06), both phases in 0.8.0 S0 (owner: "All in 0.8"). Owner, 2026-11-06: "project has file mode by default but easy to
   change to sqlite"; the go to write this RFC the same day.
 - **Authors**: Marko Dragoljevic
 - **Related**: [RFC-024](RFC-024-run-outputs-in-one-file.md) (one file of outputs, one reader, the store this RFC
@@ -107,6 +107,6 @@ their outputs and rows from the copy (what it does today by not copying `outputs
 - Two writers at once (a parallel sweep) and a reader during a run, on the sqlite store.
 - S1's bench at 10,000 items × 50 arms on both stores.
 
-## Open for the owner
+## Decided
 
-1. Phase 2 (rows) in 0.8.0 too, or phase 1 first and phase 2 after S2.
+- Both phases in 0.8.0 (owner, 2026-11-06).
