@@ -24,7 +24,23 @@ on its own; the owner decides scope and the open questions below.
      `data/models/`: the commit, the periods it was deployed, its faithfulness result against recorded production,
      the arms that ran it; listed in the catalog like models. The record side of R1 (an item names the code
      version its output came from).
-7. Release
+7. Release, validated in seven layers (owner, 2026-11-06), cheap first:
+   1. The full local gate once on the final tree: every `make` target CI runs (quality, verify, commands-check, docs,
+      guide-check, budget-check, browser-check, site-check), `validate`, and every example's data step fetched fresh
+      and hash-checked (`examples/reproduce.py data <exp>`).
+   2. The committed results re-derived for $0 (the catalog, every goal's decision, the reports) and compared with
+      0.7.2's: every number that moved has a named cause (A2's contender test, E3's versions, RFC-024's migration).
+   3. The installed package from a clean venv: the built wheel, `evh init`, getting started with one fast CPU model;
+      proves pyarrow and huggingface_hub install from scratch.
+   4. The newcomer scenario (`harness/docs/SCENARIO.md`, RELEASING step 5) on the release candidate, as for every
+      release, extended with what 0.8.0 adds (a dataset from a source, the card, tags, the contender test); an agent
+      playing a newcomer, the published docs only, a friction log; one CPU model, under $1.
+   5. The triage fleet's data repo on 0.8.0: `run-migrate`, `dataset-migrate`, `validate`, its catalog, its decisions
+      equal to 0.7.2's or each change named; its session runs it and reports.
+   6. Scale: S1's bench again at 10,000 items × 50 arms after S2, the table before and after.
+   7. CI on the pushed commit, `ci-watch` to GREEN, the rerun workflow included.
+   Not covered by any layer: publishing to the Hub beyond the one live check, gated or private datasets on Kaggle and
+   the Hub, an Intel-Mac install (this workstation is Linux).
 
 ## 1. Agent basics — done
 
@@ -146,6 +162,12 @@ public dataset), P4 `42448857f`. Not covered: Zenodo's item read is checked offl
 and private datasets on Kaggle and the Hub are not tried (no Kaggle credentials here); publishing is to the Hub only.
 
 ### S. Scale: 1,000 to 10,000 items
+
+**S0, next (owner, 2026-11-06): runs in SQLite, a project's choice.** Files stay the default; one key in the project's
+`config.yaml` (`runs: {store: sqlite}`, or `EVAL_RUNS_STORE`) puts them in `data/runs.sqlite`. Phase 1 is a run's
+outputs (RFC-024 left one module, `_outputs.py`, to swap the store under); phase 2 its rows (`predictions.jsonl`, read
+today by many modules, so first one reader as RFC-024 did for outputs). `metrics.json` and `run.json` stay files.
+`evh run-migrate --to sqlite|files` moves a project either way, checked by the same signatures. An RFC first.
 
 | # | what |
 | --- | --- |
