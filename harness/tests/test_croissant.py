@@ -143,6 +143,18 @@ try:
         and "2 of 20 questions answered" in r.stdout,
         r.stdout[-500:],
     )
+    r = evh("dataset-card", "--dataset-id", "n_v2", "--format", "hf-readme")
+    head = r.stdout.split("---")[1] if r.stdout.startswith("---") else ""
+    check(
+        "the Hugging Face README: the Hub's licence key, the card's answers under the Hub template's headings",
+        r.returncode == 0
+        and "license: cc-by-4.0" in head
+        and "## Uses" in r.stdout
+        and "Testing the export." in r.stdout
+        and "## Bias, Risks, and Limitations" in r.stdout
+        and "## Annotations" not in r.stdout,
+        r.stdout[:600],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

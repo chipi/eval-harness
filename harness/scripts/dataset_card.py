@@ -4,6 +4,7 @@
     evh dataset-card --dataset-id D                         the card, as text
     evh dataset-card --dataset-id D --format croissant      Croissant 1.1 JSON-LD on stdout
     evh dataset-card --dataset-id D --format croissant --creator "Ada L." --out D.croissant.json
+    evh dataset-card --dataset-id D --format hf-readme --out README.md     a Hugging Face dataset README
 
 The Croissant document maps the record (name, description, version, licence, source url, made at, parent, the card as
 `rai:` properties), its files (the record itself and the items, each with its sha256) and one record set of the
@@ -22,7 +23,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import json
 
-from evaluation_harness import _card, _croissant, _fields, _licences
+from evaluation_harness import _card, _croissant, _fields, _hf_readme, _licences
 from evaluation_harness._common import DATASETS, dataset_id_ok, die, evh_prog, read_json, write_text_atomic
 
 
@@ -55,7 +56,7 @@ def main() -> int:
     """Print a dataset's card, or write it as Croissant."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--format", choices=("text", "croissant"), default="text")
+    ap.add_argument("--format", choices=("text", "croissant", "hf-readme"), default="text")
     ap.add_argument(
         "--creator", help="with --format croissant: who made the dataset (a record has no creator)"
     )
@@ -67,6 +68,8 @@ def main() -> int:
     record = read_json(f)
     if args.format == "text":
         out = _text(record)
+    elif args.format == "hf-readme":
+        out = _hf_readme.readme(record)
     else:
         fs = _fields.load_fieldset(record["fieldset"]) if record.get("fieldset") else None
         types = {x["name"]: x["type"] for x in (fs or {}).get("fields") or []}

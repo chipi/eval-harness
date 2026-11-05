@@ -74,6 +74,7 @@ that can move a result is never a patch release without saying so under **Change
   Croissant JSON-LD (licence, version, source url, parent, the card as `rai:` properties, its files with their
   sha256, the items as a record set with typed fields); without `--format` it prints the card as text (also an MCP
   tool). A required property the record cannot give is named, never invented. Not run through `mlcroissant`.
+  `--format hf-readme` writes the card as a Hugging Face dataset README.
 
 - **A dataset from a Croissant description.** `--source croissant` reads any Croissant file or URL whose record set is
   columns of one parquet, CSV, JSON or JSON-lines file (its sha256 checked), with the description's licence, version
