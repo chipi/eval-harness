@@ -153,6 +153,8 @@ BUILTIN_METRICS = {
     "overlap_f1": "Token-overlap F1 against the reference: the bundled adapter's placeholder, "
     "enough to run the loop, not to defend a decision.",
     "output_words": "How many words the output has: a description of the output, not a quality.",
+    "failed": "1 when the item's call failed (not transiently) and it was scored as an empty answer; the run "
+    "listed it in failed_items and went on. Its mean is the share of the run that failed.",
     "resumed": "1 when the item was replayed from a stopped run's stored output (--resume), "
     "else 0: bookkeeping, not a score.",
     "reasoning_tokens": "Tokens a reasoning model spent thinking before it answered, as the provider "
@@ -1339,7 +1341,7 @@ def coverage(A: Adapter, by_ds: dict) -> list[dict]:
                         m
                         for a in v["arms"]
                         for m in a["means"]
-                        if not m.startswith(("self_family_", "resumed", "total_"))
+                        if not m.startswith(("self_family_", "resumed", "failed", "total_"))
                     }
                 ),
                 "goals": goals.get(ds, []),
@@ -3592,7 +3594,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     idx = metric_index(A, by_ds)
     w = window(A, by_ds)
     rows, period_rows = [], period_metrics(A, by_ds)
-    for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed")), k)):
+    for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed", "failed")), k)):
         where = idx[m]
         lower = any(A.lower_is_better(m, ds) for ds in where["datasets"]) if where["datasets"] else False
         # Direction first: cost, tokens and latency are "neutral" to the tests but lower is better.

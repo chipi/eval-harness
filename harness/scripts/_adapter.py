@@ -142,6 +142,7 @@ def _kinds_of(module: Any) -> dict[str, str]:
     # reads higher as better -- and "was not actually run this pass" would sort to the
     # top. Declared here rather than asked of every adapter, because the core owns them.
     out.setdefault("resumed", "descriptive")
+    out.setdefault("failed", "descriptive")
     return out
 
 

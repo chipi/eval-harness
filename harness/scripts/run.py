@@ -78,7 +78,7 @@ from evaluation_harness._common import (
 from evaluation_harness._fingerprint import build_fingerprint
 from evaluation_harness._providers import secret_params
 from evaluation_harness._record import aggregate_scores, cut_off_items, run_record
-from evaluation_harness._retry import call_with_retries
+from evaluation_harness._retry import call_with_retries, is_transient
 
 try:
     import yaml
@@ -190,6 +190,15 @@ class ServerUnreachable(RuntimeError):
     """An item's every model call failed because the server could not be reached."""
 
 
+class SystematicFailure(RuntimeError):
+    """Most items failed: an adapter or configuration error, not unlucky items, so the pass stops."""
+
+
+#: A failed item is scored and the pass goes on (A5, owner 2026-11-05), until failures are this many AND this share
+#: of the items called: then it is the adapter, not the items, and zeros would hide it.
+FAILED_STOP_COUNT, FAILED_STOP_SHARE = 5, 0.2
+
+
 def _unreachable(res: Any) -> str | None:
     """The error, when every call an adapter reports (`meta["calls"]`) failed reaching its server.
 
@@ -235,6 +244,13 @@ def _reference_for(dataset_id: str) -> tuple[Path | None, str | None]:
         if d.is_dir():
             return d, tier
     return None, None
+
+
+def _score_failure_of(adapter_path: Path | None) -> Any:
+    """The adapter's score_failure(reference), when it defines one (A5): what a failed item scores."""
+    from evaluation_harness._adapter import _module_or_none  # noqa: PLC0415
+
+    return getattr(_module_or_none(adapter_path), "score_failure", None)
 
 
 def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[str, str]:
@@ -342,8 +358,10 @@ def one_pass(
     scored_against: tuple[Path | None, str | None] | None = None,
     recorded: dict[str, str] | None = None,
     primary: str | None = None,
+    score_failure: Any = None,
 ) -> dict[str, Any]:
-    """One pass over the dataset. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
+    """One pass over the dataset. ``score_failure`` is the adapter's optional score_failure(reference): what an item
+    whose call failed scores (A5); without it, an empty answer's score. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
     --labels; by default the dataset's gold, else its silver. ``recorded`` ({item_id: output}) is a recorded arm's
     outputs, read from a capture: no system is called for them (RFC-023). ``call_system``/``score`` are INJECTED rather than
     imported at module scope, because which adapter runs is a property of the arm now. ``primary`` names the metric
@@ -369,6 +387,8 @@ def one_pass(
     cap = env_float("EVAL_MAX_COST_USD")
     capped_at: str | None = None
     n_replayed = 0
+    failed_items: list[dict[str, str]] = []
+    n_called = 0
     carried_keys: set = set()
 
     # WRITE EACH OUTPUT THE MOMENT IT EXISTS, not at the end of the pass.
@@ -423,20 +443,45 @@ def one_pass(
             # to be the adapter's business, and one adapter simply had none -- so a
             # single upstream 429 discarded an arm mid-sweep along with the items
             # already paid for.
-            res = call_with_retries(
-                _timed(call_system),
-                (source_text, params),
-                extra_transient=extra_transient,
-                label=f"item {item['item_id'][:8]}",
-            )
+            n_called += 1
+            try:
+                res = call_with_retries(
+                    _timed(call_system),
+                    (source_text, params),
+                    extra_transient=extra_transient,
+                    label=f"item {item['item_id'][:8]}",
+                )
+            except SystemExit:
+                raise
+            except Exception as exc:  # an item's failure is recorded, not raised (A5)
+                if is_transient(exc, extra_transient):
+                    # The provider kept failing past every retry: weather, not this item. Stop, as for an
+                    # unreachable server, so --resume calls it again later.
+                    raise ServerUnreachable(
+                        f"item {item['item_id']}: the provider kept failing after its retries: {type(exc).__name__}: {exc}"
+                    ) from exc
+                failed_items.append(
+                    {"item_id": item["item_id"], "error": f"{type(exc).__name__}: {str(exc)[:300]}"}
+                )
+                print(f"      FAILED item {item['item_id'][:8]}: {type(exc).__name__}: {str(exc)[:160]}")
+                if len(failed_items) > FAILED_STOP_COUNT and len(failed_items) > FAILED_STOP_SHARE * n_called:
+                    raise SystematicFailure(
+                        f"{len(failed_items)} of the {n_called} items called failed (the last: "
+                        f"{failed_items[-1]['error']}): an adapter or configuration error, not the items"
+                    ) from exc
+                from evaluation_harness.adapter import Result  # noqa: PLC0415
+
+                res = Result(output="", cost_usd=None)
             if res.cost_usd:
                 spent += res.cost_usd
             unreachable = _unreachable(res)
             if unreachable:
                 # Before the output is written, so `--resume` calls this item again.
                 raise ServerUnreachable(f"item {item['item_id']}: every model call failed: {unreachable}")
+        failed = bool(failed_items) and failed_items[-1]["item_id"] == item["item_id"]
         outputs[item["item_id"]] = res.output
-        if live_dir is not None and not resumed:
+        # A failed item's output is not written: --resume calls it again.
+        if live_dir is not None and not resumed and not failed:
             # Atomic: `--resume` treats the presence of this file as proof the item is
             # done, so a half-written one is replayed as the model's answer and scored.
             write_text_atomic(live_dir / f"{item['item_id']}.txt", res.output)
@@ -451,12 +496,19 @@ def one_pass(
         # INPUT — grounding, compression — cannot be computed from output+reference alone,
         # and a scorer asking for a third argument used to get None silently: the
         # hallucination check simply never ran and nothing said so.
-        scored = (
-            score(res.output, reference, source_text)
-            if score_wants_source(score)
-            else score(res.output, reference)
-        )
+        # A failed item scores as an empty answer (0 on most measures), or as the adapter's score_failure(reference)
+        # says when it has one: a failure never makes an arm look better.
+        if failed and score_failure is not None:
+            scored = score_failure(reference)
+        else:
+            scored = (
+                score(res.output, reference, source_text)
+                if score_wants_source(score)
+                else score(res.output, reference)
+            )
         row: dict[str, Any] = {"item_id": item["item_id"], **scored}
+        # 0/1 on every row: its mean is the share of the pass that failed.
+        row["failed"] = 1.0 if failed else 0.0
         # On EVERY row, not just the resumed ones: the aggregate averages only the rows
         # that carry a key, so a flag set on resumed items alone would report 1.0
         # whether one item was replayed or all of them. As 0/1 on every row its mean is
@@ -555,6 +607,7 @@ def one_pass(
         "reference_tier": ref_tier,
         "capped_at": capped_at,
         "spent_usd": round(spent, 8),
+        "failed_items": failed_items,
     }
 
 
@@ -1107,12 +1160,15 @@ def _run(args: argparse.Namespace) -> int:
                 call_system=call_system,
                 score=score,
                 extra_transient=transient_markers(adapter_path),
+                score_failure=_score_failure_of(adapter_path),
                 scored_against=(ref_dir, ref_tier),
                 recorded=recorded,
                 primary=primary_metric(adapter_path, cfg.get("params") or {}),
             )
         except BaseException as exc:
             _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)
+            if isinstance(exc, SystematicFailure):
+                die(str(exc), "failed")
             if isinstance(exc, ServerUnreachable):
                 sys.exit(EXIT_TRY_LATER)  # said above in full; a traceback adds nothing
             raise
@@ -1125,7 +1181,10 @@ def _run(args: argparse.Namespace) -> int:
         # here only matters for a resumed pass, whose outputs came from the PREVIOUS
         # run's directory and must be copied into this one so the run is self-contained.
         (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
+        failed_ids = {f["item_id"] for f in result.get("failed_items") or []}
         for item_id, text in result["outputs"].items():
+            if item_id in failed_ids:
+                continue  # not done: --resume calls it again
             dest = run_dir / "outputs" / f"{item_id}.txt"
             if not dest.is_file():
                 write_text_atomic(dest, text)
@@ -1177,6 +1236,7 @@ def _run(args: argparse.Namespace) -> int:
             # than only in the terminal: which extras came forward, and for how many
             # replayed items nothing could.
             resume=result.get("resume") or None,
+            failed_items=result.get("failed_items") or None,
             repeat_index=(i + 1) if args.repeat > 1 else None,
         )
         write_json(run_dir / "metrics.json", metrics)

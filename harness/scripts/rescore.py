@@ -74,8 +74,9 @@ from evaluation_harness._runs import runs_on
 #: new scorer does not produce is carried too — `truncated` and `reasoning_tokens` come
 #: from the adapter's `Result.extra` at call time and are unrecoverable afterwards, and a
 #: fixed list silently dropped them on the first run of this script.
-# `resumed` records whether the item was replayed from a stopped run: a fact about the call.
-CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "resumed")
+# `resumed` records whether the item was replayed from a stopped run, `failed` whether its call failed (A5): facts
+# about the call, not scores.
+CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "resumed", "failed")
 
 
 def _item_sources(dataset_id: str) -> dict[str, str]:

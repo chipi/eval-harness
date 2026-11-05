@@ -687,6 +687,10 @@ def test_example_scorer_suites_pass() -> None:
         ),
         ("test_alpha_all.py", "Krippendorff's alpha over any number of label sets, with its interval"),
         ("test_scorer_supersedes.py", "a changed rubric names the scorer it supersedes, and why"),
+        (
+            "test_failed_items.py",
+            "a failed item is scored 0 and listed, the run goes on; weather and a broken adapter stop it",
+        ),
         ("test_scores_once.py", "each arm's scores read once per view and per build"),
         ("test_skills.py", "the agent skills: valid, installed, every evh block runs as written"),
         (

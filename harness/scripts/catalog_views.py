@@ -381,7 +381,7 @@ def metrics(argv) -> int:
     per, line = _period(A, by_ds, cb.period_metrics(A, by_ds), args.period)
     if line:
         print(line + "\n")
-    for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed")), k)):
+    for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed", "failed")), k)):
         where = idx[m]
         if args.dataset_id and args.dataset_id not in where["datasets"]:
             continue

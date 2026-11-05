@@ -13,6 +13,9 @@ correctness bugs, not just missing features.
   measure's units; one on fewer than 100 items with a continuous measure now recommends its leader and says
   "too few items to call a tie". `evh validate` notes every goal on a default margin. No run, score or
   fingerprint changes.
+- **A run with one failing item now finishes** and scores that item 0 (`failed_items` in metrics.json, `failed`
+  on its row): a script that expected the run to stop reads those instead. A provider error that outlasts its
+  retries exits `75`.
 - **Scripts and CI that branch on exit codes:** the cost cap is `4` (was `2`), nothing measured `7` (was `1`), an
   unreachable server `75` (was `1`), and a check that found problems `6` (was `1`) for `validate`, `self-test`,
   `env-check`, `importer-check`, `arm-smoke`, `model-onboard` and `deploy-sheet --capture`; a partly failed

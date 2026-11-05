@@ -34,7 +34,7 @@ from types import SimpleNamespace
 
 def call_system(text, params):
     if params.get("fail_on") and params["fail_on"] in text and not os.path.exists(params["flag"]):
-        raise RuntimeError("the provider is down")
+        raise RuntimeError("503 Service Unavailable: the provider is down")
     if params.get("refuse_on") and params["refuse_on"] in text and not os.path.exists(params["flag"]):
         # an adapter that turns failed calls into an answer, as the triage fleet's replay does
         refused = {"error": "URLError: <urlopen error [Errno 111] Connection refused>"}

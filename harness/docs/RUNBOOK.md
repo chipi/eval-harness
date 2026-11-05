@@ -518,6 +518,14 @@ A sweep that is interrupted — a crash, a 429 that outlasts the retries, or the
 `EVAL_MAX_COST_USD` cap — leaves its finished items on disk. Outputs are written
 **as each item is produced**, so what you already paid for survives.
 
+**One item that fails does not stop the run.** A call that fails for that item (a refusal, an input the provider
+rejects: an error that is not transient) is recorded in `metrics.json` (`failed_items`, with the error), its row
+carries `failed: 1` (so the mean of `failed` is the share that failed), it is scored as an empty answer (0 on most
+measures; an adapter that knows better defines `score_failure(reference)`), and its output is not written, so
+`--resume` calls it again. Two things still stop the run: a transient error (a 429, a timeout) that outlasts the
+retries, or a server that cannot be reached, exit `75` (resume later); and more than 5 failures that are also over
+20% of the items called, which is the adapter or the configuration, not the items (`ERROR (failed)`).
+
 ```bash
 evh run --config data/configs/arm_a.yaml --resume arm_a_v1_20260929T101500Z
 ```

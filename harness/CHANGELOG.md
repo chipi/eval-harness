@@ -43,6 +43,11 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **One failed item no longer stops a run** (owner, 2026-11-05). An item whose call fails (not transiently) is
+  scored as an empty answer (0 on most measures, or the adapter's `score_failure(reference)`), marked `failed` on its
+  row, listed in metrics.json's `failed_items`, and called again by `--resume`; the run goes on. A 429 or a timeout
+  that outlasts the retries now stops the run with `75` like an unreachable server (it used to end in a traceback),
+  and more than 5 failures that are also over 20% of the items called stop it with `ERROR (failed)`.
 - **A contender is shown no worse than the leader** ([ADR-0026](../docs/adr/ADR-0026-contenders-by-non-inferiority.md)).
   It had to be "not significantly different", which more arms are the fewer items there are, and `frugal` then
   recommended the cheapest. Now a one-sided non-inferiority test against the leader decides, Holm across the

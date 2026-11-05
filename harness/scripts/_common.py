@@ -780,7 +780,7 @@ DESCRIPTIVE_KEYS = ("output_words", "output_chars", "lines", "chars", "n_items",
 #: whether each judge shares the judged arm's model family (`self_family_<judge>`), and
 #: evh run whether an item was replayed by --resume (`resumed`, whose mean is the share
 #: replayed). They stay in the record; no table, menu or spread lists them as metrics.
-BOOKKEEPING_PREFIXES = ("self_family_", "resumed")
+BOOKKEEPING_PREFIXES = ("self_family_", "resumed", "failed")
 
 
 def lower_is_better(metric: str) -> bool:
