@@ -792,6 +792,10 @@ def test_example_scorer_suites_pass() -> None:
             "publishing to the Hub against a fake API: one commit, read back by sha256; hidden and unmaterialized refused",
         ),
         (
+            "test_zenodo_openml.py",
+            "the zenodo and openml sources on local APIs: a record's CSV (md5 checked), a dataset's parquet copy",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),

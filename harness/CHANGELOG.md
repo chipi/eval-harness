@@ -95,6 +95,9 @@ that can move a result is never a patch release without saying so under **Change
   and records where it went on the dataset. Hidden datasets are never published. `huggingface_hub>=0.26` is a new
   dependency (owner, 2026-11-05). Checked live: a private repo published, read back and deleted.
 
+- **Datasets from Zenodo and OpenML.** `--source zenodo` reads a record's table file (md5 checked, the record id as
+  revision); `--source openml` reads a dataset's parquet copy with its version and typed features.
+
 ### Changed
 
 - **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from

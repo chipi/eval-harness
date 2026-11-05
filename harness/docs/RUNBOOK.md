@@ -165,6 +165,13 @@ that commit as `source.revision`, so the same query with `"revision"` reads the 
 of each row is its link. The card's licence and its metadata (tasks, annotators, language and source datasets) fill
 the licence and the card. A gated dataset's token goes in `EVAL_FETCH_HEADERS`; `HF_ENDPOINT` names another Hub.
 
+**From Zenodo**: `--source zenodo --query '{"record": 42, "file": "x.csv", "text": "…"}'` reads one parquet,
+CSV, JSON or JSON-lines file of a record, checked against the md5 Zenodo lists; the record id (a version's own) is
+`source.revision`, the concept record `source.ref`. **From OpenML**: `--source openml --query '{"dataset": 61,
+"text": "class"}'` reads the dataset's parquet copy (OpenML lists an md5 only for its ARFF file, so those bytes
+are not checked against the source; each item is still frozen by its sha256), with its version and its features'
+types. `ZENODO_ENDPOINT` and `OPENML_ENDPOINT` name other servers.
+
 **Publishing to the Hub**: `evh dataset-publish --dataset-id D --to huggingface --query '{"repo": "owner/name"}'`
 writes a new repo, private unless `"public": true`: the items as `data/test.parquet` (item_id, text,
 source_sha256, each field), the record as `evh/D.json` and the card as README.md, in one commit; it reads every

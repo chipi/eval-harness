@@ -16,8 +16,6 @@ block (provider croissant, ref the dataset's name, url, revision the publisher's
 
 from __future__ import annotations
 
-import csv
-import io
 import json
 from collections.abc import Iterator
 from pathlib import Path
@@ -26,15 +24,7 @@ from urllib.parse import urljoin
 
 from evaluation_harness import _fetch, _licences
 from evaluation_harness._card import QUESTIONS
-
-READABLE = {
-    "application/x-parquet": "parquet",
-    "application/vnd.apache.parquet": "parquet",
-    "text/csv": "csv",
-    "application/json": "json",
-    "application/jsonlines": "jsonl",
-    "application/x-ndjson": "jsonl",
-}
+from evaluation_harness.sources import _tables
 
 
 def _key(k: str) -> str:
@@ -171,7 +161,7 @@ class Source:
         f = files.get(file_id)
         if not f:
             raise ValueError(f"no FileObject {file_id!r} in the distribution")
-        kind = READABLE.get(str(f.get("encodingFormat")))
+        kind = _tables.kind_of(str(f.get("encodingFormat")))
         if not kind:
             raise ValueError(
                 f"{file_id} is {f.get('encodingFormat')}: only parquet, CSV, JSON and JSON lines are read"
@@ -187,29 +177,4 @@ class Source:
         else:
             path, _sha = _fetch.fetch(url, f.get("sha256"))
             data = Path(path).read_bytes()
-        if kind == "parquet":
-            import pyarrow.parquet as pq  # noqa: PLC0415
-
-            # One thread: with its thread pool, pyarrow 26 aborted the process at exit (examples/_shared/hf_rows.py).
-            table = pq.read_table(io.BytesIO(data), columns=sorted(set(cols.values())), use_threads=False)
-            rows: list[dict] = table.to_pylist()
-        elif kind == "csv":
-            rows = list(csv.DictReader(io.StringIO(data.decode("utf-8"))))
-        elif kind == "jsonl":
-            rows = [json.loads(line) for line in data.decode("utf-8").splitlines() if line.strip()]
-        else:
-            loaded = json.loads(data.decode("utf-8"))
-            rows = loaded if isinstance(loaded, list) else [loaded]
-        limit = int(query.get("limit") or 0)
-        for n, row in enumerate(rows):
-            if limit and n >= limit:
-                return
-            item: dict[str, Any] = {
-                "item_id": str(row.get(cols[query["id"]])) if query.get("id") else f"row_{n}",
-                "text": str(row.get(cols[query["text"]], "")),
-                "row": n,
-            }
-            kept = {k: row.get(cols[k]) for k in query.get("fields") or []}
-            if kept:
-                item["fields"] = kept
-            yield item
+        yield from _tables.items(_tables.rows(data, kind, list(cols.values())), query, cols)
