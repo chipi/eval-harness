@@ -760,6 +760,10 @@ def test_example_scorer_suites_pass() -> None:
             "a dataset's licence: evh licences, dataset-create --licence, dataset-describe, V22",
         ),
         (
+            "test_source.py",
+            "where items came from: a fetcher's rows file as the source block, item links, V22, dataset-migrate",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),

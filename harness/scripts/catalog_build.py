@@ -2299,7 +2299,7 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
         )
     ]
     if src:
-        name = e(src.get("name") or "the source")
+        name = e(src.get("ref") or src.get("provider") or "the source")
         lines.append(
             (
                 f'Source: <a href="{e(src["url"])}" rel="noopener">{name}</a>'

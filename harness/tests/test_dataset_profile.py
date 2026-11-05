@@ -119,6 +119,9 @@ try:
             }
         )
     )
+    # dataset-create reads a fetcher's rows file into the record (E1): freeze topics again, the same items.
+    r = evh("dataset-create", "--dataset-id", "topics", "--source-dir", "src/topics", "--force")
+    check("setup: topics frozen again with its rows file", r.returncode == 0, (r.stdout + r.stderr)[-300:])
 
     r = evh("dataset-profile", "--dataset-id", "topics")
     p = json.loads((proj / "data" / "profiles" / "topics.json").read_text()) if r.returncode == 0 else {}
@@ -134,8 +137,8 @@ try:
         json.dumps(gold),
     )
     check(
-        "profile: each item links to its row from the rows map, and the source is named",
-        p.get("source", {}).get("name") == "acme/news"
+        "profile: each item links to its row from the record's source block, and the source is named",
+        (p.get("source") or {}).get("ref") == "acme/news"
         and all(
             r_["source_url"] == f"https://example.org/acme/news?row={ids.index(r_['item_id'])}"
             for r_ in p["rows"]

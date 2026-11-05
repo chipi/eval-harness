@@ -103,6 +103,7 @@ def main() -> int:
             _lineage(args.dataset_id, out_id, mine),
             {"split": {**rule, "part": part}},
             licence=parent.get("licence"),
+            source=parent.get("source") or {},
         )
         written.append((out_id, len(mine)))
     for out_id, n in written:

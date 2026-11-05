@@ -10,6 +10,7 @@
     "version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$", "description": "The content version MAJOR.MINOR, two integers (1.10 follows 1.9): 1.0 for a dataset made from nothing or a side of a split; from a parent (derived_from), MINOR + 1 when items were only added, MAJOR + 1 and MINOR 0 when any was removed or changed, the parent's when the items are the same. Not changed by the card, licence or description. Recomputed by validate (V22); a source's own version is source.revision."},
     "description": {"type": "string"},
     "licence": {"type": "string", "description": "Optional: an SPDX id from evh licences, unknown (the source states none), or LicenseRef-<name> for a licence of its own. Changed by evh dataset-describe without a new version (E3); checked by validate (V22)."},
+    "source": {"type": "object", "required": ["provider"], "additionalProperties": false, "description": "Where the items came from (E1), the same keys for every source; a value nobody recorded is null. provider names the source (huggingface, kaggle, openml, croissant, url, folder, a project's own), ref its name for the dataset, revision its own version of it (never this dataset's version), gated whether reading it needs an agreement, description_sha256 the hash of its description as read, item_url a template for one item's page with {row} (the item's source_row) or {item_id}.", "properties": {"provider": {"type": "string"}, "ref": {"type": ["string", "null"]}, "url": {"type": ["string", "null"], "pattern": "^https?://"}, "revision": {"type": ["string", "null"]}, "config": {"type": ["string", "null"]}, "split": {"type": ["string", "null"]}, "gated": {"type": ["boolean", "null"]}, "description_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}, "item_url": {"type": ["string", "null"], "pattern": "^https?://"}}},
     "created_at": {"type": "string"},
     "source_dir": {"type": "string"},
     "fieldset": {"type": "string", "pattern": "^[a-z0-9_]+$",
@@ -72,6 +73,7 @@
                          "description": "where materialize fetches the item from; its bytes must hash to source_sha256"},
           "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
           "tags": {"type": "array", "items": {"type": "string"}},
+          "source_row": {"type": ["integer", "string"], "description": "the item's row (or id) at its source, filled into source.item_url's {row}"},
           "fields": {"type": "object", "description": "values of the dataset's declared fields"}
         }
       }

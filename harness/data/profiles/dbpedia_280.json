@@ -2333,7 +2333,12 @@
   ],
   "source": {
     "config": "dbpedia_14",
-    "name": "fancyzhx/dbpedia_14",
+    "description_sha256": null,
+    "gated": null,
+    "item_url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14/viewer/dbpedia_14/test?row={row}",
+    "provider": "huggingface",
+    "ref": "fancyzhx/dbpedia_14",
+    "revision": null,
     "split": "test",
     "url": "https://huggingface.co/datasets/fancyzhx/dbpedia_14"
   }

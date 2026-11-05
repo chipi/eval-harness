@@ -80,8 +80,10 @@ class Sources:
             if f.is_file():
                 rows[item] = {"row": idx, "sha256": hashlib.sha256(f.read_bytes()).hexdigest()}
         doc = {
+            # The harness's source block (E1); revision, gated and description_sha256 are not read here: null.
             "source": {
-                "name": self.dataset,
+                "provider": "huggingface",
+                "ref": self.dataset,
                 "url": f"https://huggingface.co/datasets/{self.dataset}",
                 "config": self.config,
                 "split": self.split,

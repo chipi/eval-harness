@@ -12,11 +12,10 @@ many of each, the entries per item, or how long a reference is), and per item it
 reference, and where it can be read at its source. It is computed where the items are
 materialized and committed, so a catalog built anywhere shows it.
 
-Where an item can be read comes from the dataset itself, never guessed: an item fetched from a
-`source_url` links there; otherwise a fetcher may write `data/sources/<dataset_id>.rows.json`
-(`{"source": {"name", "url"}, "item_url": "...{row}...", "rows": {item_id: {"row", "sha256"}}}`),
-as this repository's Hugging Face fetchers do; an entry counts only when its sha256 is the item's.
-Only an http(s) address is a link. Without either, an item has no link.
+Where an item can be read comes from the dataset record, never guessed: an item fetched from a
+`source_url` links there; otherwise the record's `source.item_url` filled with the item's `source_row`
+(dataset-create reads both from a fetcher's `data/sources/<dataset_id>.rows.json`, as this repository's
+Hugging Face fetchers write). Only an http(s) address is a link. Without either, an item has no link.
 
 `--with-text` adds each item's text, and refuses unless every item's source file is tracked by
 git: it publishes only what the repository already does (a project's own synthetic data).
@@ -128,30 +127,13 @@ def gold_references(dataset_id: str) -> list[tuple[str, Path]]:
 
 
 def source_links(dataset: dict) -> tuple[dict | None, dict[str, str]]:
-    """The dataset's source and a URL per item: an item's own source_url, else a rows map entry
-    whose sha256 is the item's frozen one (an id alone may recur in another dataset)."""
-    items = dataset.get("items") or []
-    urls = {it["item_id"]: it["source_url"] for it in items if web(it.get("source_url"))}
-    sha = {it["item_id"]: it.get("source_sha256") for it in items}
-    source, best = None, 0
-    for f in sorted(_common.SOURCES.glob("*.rows.json")):
-        doc = read_json(f)
-        rows = {
-            k: v["row"]
-            for k, v in (doc.get("rows") or {}).items()
-            if isinstance(v, dict) and sha.get(k) and v.get("sha256") == sha[k]
-        }
-        if not rows:
-            continue
-        for item, row in rows.items():
-            url = str(doc.get("item_url") or "").replace("{row}", str(row))
-            if web(url):
-                urls.setdefault(item, url)
-        if len(rows) > best:
-            best, source = len(rows), doc.get("source")
-    if source and not web(source.get("url")):
-        source = {k: v for k, v in source.items() if k != "url"}
-    return source, urls
+    """The dataset's source block and a URL per item: its own source_url, else the source's item_url filled with its
+    row or id (E1). Nothing is guessed: an item with neither has no link."""
+    from evaluation_harness import _source  # noqa: PLC0415
+
+    src = dataset.get("source") or None
+    urls = {it["item_id"]: u for it in dataset.get("items") or [] if (u := _source.item_link(src, it))}
+    return src, urls
 
 
 def web(url) -> bool:
@@ -278,7 +260,10 @@ def render(p: dict, item: str | None) -> str:
         )
     ]
     if p.get("source"):
-        out.append(f"source: {p['source']['name']}  {p['source']['url']}")
+        src = p["source"]
+        out.append(
+            "source: " + "  ".join(str(x) for x in (src.get("provider"), src.get("ref"), src.get("url")) if x)
+        )
     for r in p["references"]:
         out.append(f"gold {r['id']}: {_shape_line(r)}")
     rows = [r for r in p["rows"] if not item or r["item_id"].startswith(item)]

@@ -141,7 +141,8 @@ try:
     doc = json.loads((tmp / "data" / "sources" / "ds.rows.json").read_text())
     check(
         "the rows map names the source and each written item's row and bytes",
-        doc["source"]["name"] == "org/set"
+        doc["source"]["ref"] == "org/set"
+        and doc["source"]["provider"] == "huggingface"
         and doc["rows"] == {"x": {"row": 7, "sha256": hashlib.sha256(b"hello").hexdigest()}}
         and doc["item_url"].endswith("/org/set/viewer/c/test?row={row}"),
         doc,

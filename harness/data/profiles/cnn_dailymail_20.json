@@ -296,7 +296,12 @@
   ],
   "source": {
     "config": "1.0.0",
-    "name": "abisee/cnn_dailymail",
+    "description_sha256": null,
+    "gated": null,
+    "item_url": "https://huggingface.co/datasets/abisee/cnn_dailymail/viewer/1.0.0/test?row={row}",
+    "provider": "huggingface",
+    "ref": "abisee/cnn_dailymail",
+    "revision": null,
     "split": "test",
     "url": "https://huggingface.co/datasets/abisee/cnn_dailymail"
   }

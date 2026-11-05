@@ -37,7 +37,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _dataset_version, _fetch, _fields, _licences
+from evaluation_harness import _dataset_version, _fetch, _fields, _licences, _source
 from evaluation_harness._common import (
     DATASETS,
     ROOT,
@@ -228,6 +228,7 @@ def _write(
     lineage: dict | None = None,
     extra: dict | None = None,
     licence: str | None = None,
+    source: dict | None = None,
 ) -> None:
     # A re-create that selects the SAME items keeps its original created_at. Without this
     # the documented first command, `make demo`, rewrites a tracked file on every run and
@@ -252,6 +253,14 @@ def _write(
     }
     if licence:
         doc["licence"] = licence
+    if source is None:
+        # A fetcher's rows file beside the items (data/sources/<id>.rows.json): where each came from.
+        source, rows = _source.from_rows_file(SOURCES / f"{dataset_id}.rows.json", items)
+        for it in items:
+            if it["item_id"] in rows:
+                it["source_row"] = rows[it["item_id"]]
+    if source:
+        doc["source"] = source
     if source_dir:
         doc["source_dir"] = source_dir
     if fieldset:
@@ -352,6 +361,7 @@ def main() -> int:
             previous.get("source_dir", ""),
             previous.get("derived_from"),
             licence=previous.get("licence"),
+            source=previous.get("source") or {},
         )
         print(
             f"{out.relative_to(DATASETS.parents[1])}  fields updated on {len(items)} item(s); "

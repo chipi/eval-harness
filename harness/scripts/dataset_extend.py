@@ -145,6 +145,7 @@ def main() -> int:
             **({"text": "hidden"} if hidden else {}),
         },
         licence=v1.get("licence"),
+        source=v1.get("source") or {},
     )
     append(
         [{"action": "used", "item": a["item_id"], "from": a["from"], "into": args.dataset_id} for a in added]

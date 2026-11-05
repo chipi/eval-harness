@@ -58,11 +58,7 @@ def main() -> int:
     if not said:
         print(f"{args.dataset_id}: already so, nothing written")
         return 0
-    # The licence sits after the description, before the items: the record reads top-down.
-    order = ["dataset_id", "version", "description", "licence"]
-    write_json(
-        f, {**{k: doc[k] for k in order if k in doc}, **{k: v for k, v in doc.items() if k not in order}}
-    )
+    write_json(f, doc)
     print(
         f"data/datasets/{args.dataset_id}.json: {'; '.join(said)}; the items and version {doc.get('version')} unchanged"
     )

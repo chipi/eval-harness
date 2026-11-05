@@ -53,6 +53,13 @@ that can move a result is never a patch release without saying so under **Change
   `validate` V22 refuses others. The committed Hub datasets carry the licence their Hub page states (2026-11-05):
   ag_news unknown, cnn_dailymail Apache-2.0, dbpedia_14 CC-BY-SA-3.0, few-nerd and scifact CC-BY-SA-4.0, summeval MIT.
 
+- **Where the items came from, the same for every source.** A dataset record has a `source` block: `provider`, `ref`,
+  `url`, `revision` (the source's own version), `config`, `split`, `gated`, `description_sha256` and `item_url` (one
+  item's page, with `{row}` or `{item_id}`); each item its `source_row`. `dataset-create` reads it from a fetcher's
+  `data/sources/<id>.rows.json`; the profile and the catalog link items from the record, no longer from that file.
+  `validate` V22 checks it. The committed Hub datasets and their profiles were migrated by `evh dataset-migrate`
+  from what their profiles recorded; `revision` and `gated` were never recorded for them and are null.
+
 ### Changed
 
 - **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from

@@ -130,7 +130,16 @@ A source's own version (a Hub revision) is never this number.
 **A licence** is optional: `--licence ID` on `dataset-create`, or `evh dataset-describe --dataset-id D --licence ID`
 on a dataset that exists (no new version: the items are the same). `evh licences` lists the ids, SPDX's, a line
 each on what the licence allows (`--search`, `--json`); `unknown` when the source states none, `LicenseRef-<name>`
-for a licence of its own. A split side and an extended version keep their parent's. `validate` (V22) refuses an id
+for a licence of its own. A split side and an extended version keep their parent's.
+
+**Where the items came from** is the record's `source` block, the same keys whatever the source: `provider`
+(huggingface, kaggle, openml, croissant, url, folder, or a project's own), `ref` (its name for the dataset),
+`url`, `revision` (its own version of it, never the dataset's `version`), `config`, `split`, `gated`,
+`description_sha256`, and `item_url`, a template for one item's page with `{row}` or `{item_id}`; a value nobody
+recorded is null. A fetcher writes `data/sources/<dataset_id>.rows.json` beside the items (the block, the template
+and per item its row and sha256, as `examples/_shared/hf_rows.py` does); `dataset-create` reads it into the record,
+a row only for an item whose bytes are the ones written, and the profile and catalog link each item from it.
+Splits and extensions keep the parent's block. `validate` (V22) refuses an id
 not on the list. The line is a picker, not legal advice: the licence text is what binds.
 
 **What you know about each item goes in fields** (ADR-0003). Declare them once in a
@@ -707,7 +716,8 @@ every judge scorer yaml loading and well-formed, every goal and round well-forme
 every run that must name one, every item field declared, typed and matching its hash, and every
 reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
 records matching the hashes it recorded, every model record and the configs naming it consistent, and every label set
-matching its hashes and its dataset, every `hypothesis:` in an arm config sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21), and every dataset's version the one its lineage gives (V22). V4
+matching its hashes and its dataset, every `hypothesis:` in an arm config sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21), and every dataset's version the one its lineage gives, its licence
+on the list and its source block in form (V22). V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters).
 
