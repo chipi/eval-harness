@@ -1,7 +1,7 @@
 # 0.8.0: what was planned, against what shipped
 
-**Status:** 2026-11-05, input for planning 0.8.0. Compares the agent-ready drafts on branch `070` (written
-2026-10-26..29 against 0.4.4: PRD-008..013, RFC-007..017, ADR-0007..0017, UXS-004/005, NEXT_STEPS_0.7.0) with
+**Status:** 2026-11-05, input for planning 0.8.0. Compares the agent-ready drafts on branch `080-plan` (was `070`) (written
+2026-10-26..29 against 0.4.4: PRD-008..013, RFC-007..017, ADR-0007..0017, UXS-004/005, NEXT_STEPS_0.8.0) with
 main at v0.7.2 (branch `080`). Three read-only reviews mapped every requirement; each SHIPPED or PARTLY cites
 code on main, each NOT BUILT a repo-wide search that came back empty. Nine of their claims were re-checked by
 hand (listed at the end); none was wrong.
@@ -23,7 +23,7 @@ the actor on records, the record store.
 
 - **Vocabulary 0.6.0 retired:** `experiment-run`, `dev`/`heldout`, `separated`, `tied`.
 - **Paths that are gone:** `experiment_run.py`, `reference_create.py`, `data/models.yaml`.
-- **The target release:** they say "0.7.0".
+- **The target release:** they said "0.7.0" (renamed to 0.8.0 on 2026-11-05).
 - **Taken validate codes:** they reuse V17–V20, which main gave to captures, model records, label sets and
   hypotheses.
 - **Decisions main went against:**
@@ -35,7 +35,7 @@ the actor on records, the record store.
 
 **One finding is a correctness issue, not a missing feature.** Main still decides ties with a 2%-of-the-leader
 margin (`axes.py:59`). The drafts' simulations found that rule invalid for 0/1 measures. Those simulations exist
-only on branch 070 (`research/internal/stats-0.7.0/`).
+only on branch 080-plan (`research/internal/stats-0.8.0/`).
 
 ## What is worth carrying into 0.8.0
 
@@ -62,7 +62,7 @@ Grouped by how ready each is. The owner decides what goes in; this list only sor
 **Real features with a design that needs revisiting first:**
 
 6. **Non-inferiority ties** (PRD-013 FR3, RFC-015 D1–D2). This replaces the 2% rule above.
-   - It needs the simulations brought over from 070 and re-run against main's `stats.py`.
+   - It needs the simulations brought over from 080-plan and re-run against main's `stats.py`.
    - It needs a decision on how existing goals and their contenders change.
 7. **Baselines per goal, with frozen evidence and `evidence-check`** (PRD-011, PRD-013 FR1).
    - Today two goals on one dataset share one baseline, and promotion overwrites it (`promote_baseline.py:141`).
@@ -104,7 +104,7 @@ Grouped by how ready each is. The owner decides what goes in; this list only sor
 - **RFC-008's `arm.system` and RFC-009 D2's prompts in the arm's hash.** In v5 the system is `deployment`, and a
   prompt hash lives under `settings.declared`.
 - **The "prefer MCP" skill rule, and the study and job skills.** Main chose the shell; studies and jobs don't exist.
-- **NEXT_STEPS_0.7.0 as a status record.** Every "where it stands" line predates 0.5.0.
+- **NEXT_STEPS_0.8.0 as a status record.** Every "where it stands" line predates 0.5.0.
 
 ## Shipped since the drafts, with no draft behind it
 
@@ -214,16 +214,16 @@ These shipped without any of the drafts, and the 0.8.0 plan should build on them
 - **Conflicts:** consent (the operator-asked rule against the drafts' refusal), and "prefer MCP" (the shell is
   main's path).
 
-### 070's edits to existing docs
+### 080-plan's edits to existing docs
 
 None is on main:
 
 - PRD-001's non-goals;
 - PRD-005's amendments;
 - RFC-003's `model_facts`;
-- UXS-001's goal links, plus its "0.7.0 changes (draft)" section;
+- UXS-001's goal links, plus its "0.8.0 changes (draft)" section;
 - UXS-002/003's draft sections;
-- INFLUENCES' "The standards 0.7.0 follows" (~105 lines).
+- INFLUENCES' "The standards 0.8.0 follows" (~105 lines).
 
 Worth porting now: the four doc items in "Small" above. The rest ports only with its feature, and only after the
 vocabulary is rewritten.
@@ -237,11 +237,11 @@ vocabulary is rewritten.
   - help examples (38 of 67 missing): by a pattern, `evh <word>` or `make <word>` in the help text.
 - **`harness/data` and most of `harness/tests` were left out** of the "not built" searches.
 - **Unverified:**
-  - whether the docs build still rewrites broken links to GitHub URLs (NEXT_STEPS 0.7.0 noted it);
+  - whether the docs build still rewrites broken links to GitHub URLs (NEXT_STEPS_0.8.0 noted it);
   - NEXT_STEPS' four infra items (GlitchTip token, Umami probe rows, the podcast pin, `VLLM_API_KEY`);
   - whether 0.6.0's `HF_DATASETS_0.6.0.md` already maps Datasheets or Croissant. That is for phase 3 (datasets),
     and was not read here.
-- **Not mapped:** the mockups and UXS screenshots in `research/internal/mockups-0.7.0/`.
+- **Not mapped:** the mockups and UXS screenshots in `research/internal/mockups-0.8.0/`.
 
 **Re-checked by hand** (2026-11-05), each against main's code:
 
