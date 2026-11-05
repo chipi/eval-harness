@@ -48,6 +48,8 @@ COPIED_DIRS = (
     "captures",
     "models",
     "labels",
+    "tags",
+    "failure-modes",
 )
 COPIED_FILES: tuple[str, ...] = ()
 #: What a hidden dataset's prediction rows keep of `_meta`: what describes the call (its cost, model,
@@ -209,6 +211,19 @@ def copy_data(src: Path, dst: Path) -> dict:
                     (out / "labels.json").write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
                 else:
                     shutil.copy2(rec, out / "labels.json")
+        elif name == "tags":
+            # The modes counted on the goal page; a person's note on a hidden dataset's output is its text: dropped.
+            for rec in sorted(d.glob("*/*/tags.json")):
+                out = dst / name / rec.parent.relative_to(d)
+                out.mkdir(parents=True, exist_ok=True)
+                doc = json.loads(rec.read_text(encoding="utf-8"))
+                if hidden(doc.get("dataset_id"), datasets):
+                    for by_item in (doc.get("runs") or {}).values():
+                        for t in by_item.values():
+                            t.pop("note", None)
+                    (out / "tags.json").write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
+                else:
+                    shutil.copy2(rec, out / "tags.json")
         elif name == "captures":
             for cap in sorted(d.glob("*/capture.json")):
                 (dst / name / cap.parent.name).mkdir(parents=True, exist_ok=True)

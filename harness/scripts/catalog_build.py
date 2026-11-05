@@ -3161,6 +3161,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                     trs,
                 )
                 inner += tradeoff_charts(dec, named, gm)
+        inner += _failure_modes_html(A, ds, v.get("arms") or [])
         body += block(f"{n:02d}", f"{ds}{' · ' + ans['role'] if ans['role'] else ''}", inner)
         n += 1
     write(
@@ -3175,6 +3176,28 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             item=A.item_word,
             elsewhere=(("goals", {"goal": g["goal_id"]}),),
         ),
+    )
+
+
+def _failure_modes_html(A: Adapter, ds: str, rows: list) -> str:
+    """How the dataset's arms fail, from the tags on their outputs (PLAN_0.8.0 D1): per tagged arm the outputs read, how
+    many had a failure and each mode's count. A tag needs no measure, so every arm of the dataset is listed, not only
+    those of a group. Empty when none was tagged (or the adapter has no tags)."""
+    fn = getattr(A, "tag_counts", None)
+    got = [(r, fn(ds, r["arm"])) for r in rows] if callable(fn) else []
+    got = [(r, c) for r, c in got if c]
+    if not got:
+        return ""
+    named, _scorer = shown_labels({r["arm"]: r["label"] for r, _ in got})
+    lis = "".join(
+        f"<li>{arm_link(r['arm'], named[r['arm']], '../')}: {c['tagged']} of {c['outputs']} output(s) read have a failure"
+        + (": " + ", ".join(f"{e(m)} {n}" for m, n in c["modes"].items()) if c["modes"] else "")
+        + "</li>"
+        for r, c in got
+    )
+    return (
+        '<p class="small"><b>failure modes</b> <small class="muted">(tagged by hand on outputs read; '
+        f'<code>evh tags --dataset-id {e(ds)}</code>)</small></p><ul class="small">{lis}</ul>'
     )
 
 

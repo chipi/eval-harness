@@ -292,6 +292,27 @@ try:
             }
         )
     )
+    # A tag set on the hidden dataset (PLAN_0.8.0 D1): its modes are counted, a person's note on an output is its text.
+    tag = data / "tags" / "tickets_h" / "t1"
+    tag.mkdir(parents=True)
+    (tag / "tags.json").write_text(
+        json.dumps(
+            {
+                "kind": "tag-set",
+                "dataset_id": "tickets_h",
+                "set": "t1",
+                "failure_modes": "m",
+                "n_tagged": 1,
+                "runs": {"r1": {item: {"modes": ["too-long"], "note": f"it repeats {MARK['h']}"}}},
+            }
+        )
+    )
+    rc, out, err = run_command(proj, "tags", ["--dataset-id", "tickets_h", "--json"], public=True)
+    check(
+        "MCP public: tags counts the hidden dataset's modes, never a note",
+        rc == 0 and "too-long" in out and MARK["h"] not in out + err,
+        (out + err)[-300:],
+    )
     rc, out, err = run_command(proj, "labels", [], public=False)
     check("labels, local: a hidden set's notes are listed on this machine", MARK["h"] in out, out[-300:])
     rc, out, err = run_command(proj, "labels", [], public=True)
@@ -309,6 +330,12 @@ try:
         str(sorted(str(p.relative_to(rel)) for p in (rel / "labels").rglob("*")))
         if (rel / "labels").exists()
         else "no labels/",
+    )
+    t1 = rel / "tags" / "tickets_h" / "t1" / "tags.json"
+    check(
+        "release: a hidden dataset's tag set is copied with its modes, without its notes",
+        t1.is_file() and '"too-long"' in t1.read_text() and MARK["h"] not in t1.read_text(),
+        t1.read_text()[:300] if t1.is_file() else "no tags.json",
     )
     check("release: the shown dataset's outputs and gold texts are copied", bool(found(rel, MARK["s"])))
     check("release: nothing of the hidden dataset's text", not found(rel, MARK["h"]), found(rel, MARK["h"]))

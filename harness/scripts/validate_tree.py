@@ -41,6 +41,10 @@ Each check exists because its absence let a real defect through somewhere:
   V20 hypotheses     a config whose `hypothesis:` names no config that exists, a measure that is not one
                      of the arm's metrics, a direction that is not better, worse or no-worse, or a key
                      it lacks (ADR-0025)
+  V21 failure modes  a failure-mode list that breaks its schema, is not named by its id or names a mode
+                     twice (or `ok`, which a sheet reads as "nothing wrong"); a tag set whose dataset or
+                     list does not exist, that names a mode not in its list or an item not in its
+                     dataset, or whose count is not its tags' (PLAN_0.8.0 D1)
 
 Exit 1 on any failure, so it can gate.
 
@@ -1387,6 +1391,82 @@ def v20_hypotheses() -> None:
     check(f"V20 hypotheses — {found} config(s) with one, every one sound", not bad, f"{len(bad)} problem(s)")
 
 
+def v21_failure_modes() -> None:
+    """V21: the failure-mode lists are well formed, and every tag set names its dataset's items and its list's modes
+    (PLAN_0.8.0 D1). A tag set is never edited, so a mode removed from its list later shows here."""
+    import yaml  # noqa: PLC0415
+    from evaluation_harness import _tags  # noqa: PLC0415
+
+    lists = sorted(_tags.modes_root().glob("*.yaml")) if _tags.modes_root().is_dir() else []
+    sets = sorted(_tags.tags_root().glob("*/*/tags.json")) if _tags.tags_root().is_dir() else []
+    if not lists and not sets:
+        print("  --   V21 failure modes (none)")
+        return
+    schema = json.loads((SCHEMAS / "failure-modes.schema.json").read_text()) if jsonschema else None
+    bad: list[str] = []
+    known: dict[str, set[str]] = {}
+    for f in lists:
+        rel = f"failure-modes/{f.name}"
+        try:
+            doc = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        except yaml.YAMLError as e:
+            bad.append(f"{rel}: does not parse ({str(e).splitlines()[0]})")
+            continue
+        if schema is not None:
+            errs = sorted(
+                jsonschema.Draft202012Validator(schema).iter_errors(doc), key=lambda e: list(e.path)
+            )
+            if errs:
+                bad.append(f"{rel}: {errs[0].message[:90]}")
+                continue
+        if not isinstance(doc, dict):
+            bad.append(f"{rel}: not a mapping")
+            continue
+        if doc.get("failure_modes_id") != f.stem:
+            bad.append(f"{rel}: failure_modes_id {doc.get('failure_modes_id')!r} is not its file name")
+        ids = [str(m.get("id")) for m in doc.get("modes") or [] if isinstance(m, dict)]
+        if len(set(ids)) != len(ids):
+            bad.append(f"{rel}: a mode is named twice")
+        if _tags.OK in ids:
+            bad.append(f"{rel}: a mode named `{_tags.OK}`, which a sheet reads as nothing wrong")
+        known[f.stem] = set(ids)
+    n = 0
+    for tj in sets:
+        doc = parsed(tj)
+        rel = f"tags/{tj.parent.parent.name}/{tj.parent.name}"
+        if not isinstance(doc, dict):
+            bad.append(f"{rel}: tags.json does not parse")
+            continue
+        ds = parsed(DATASETS / f"{doc.get('dataset_id')}.json")
+        if not isinstance(ds, dict):
+            bad.append(f"{rel}: its dataset {doc.get('dataset_id')!r} does not exist")
+            continue
+        modes = known.get(doc.get("failure_modes") or "")
+        if modes is None:
+            bad.append(f"{rel}: its failure modes {doc.get('failure_modes')!r} do not exist")
+            continue
+        items = {it.get("item_id") for it in ds.get("items") or []}
+        runs = doc.get("runs") or {}
+        tagged = sum(len(v) for v in runs.values())
+        n += tagged
+        if doc.get("n_tagged") != tagged:
+            bad.append(f"{rel}: n_tagged {doc.get('n_tagged')} but {tagged} listed")
+        for run, by_item in runs.items():
+            for iid, t in by_item.items():
+                if iid not in items:
+                    bad.append(f"{rel}/{run}/{iid}: not an item of {doc['dataset_id']}")
+                off = [m for m in t.get("modes") or [] if m not in modes]
+                if off:
+                    bad.append(f"{rel}/{run}/{iid}: {', '.join(off)} not a mode of {doc['failure_modes']}")
+    for b in bad[:10]:
+        print(f"       {b}")
+    check(
+        f"V21 failure modes — {len(lists)} list(s), {len(sets)} tag set(s), {n} tag(s) name known modes and items",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
 def config_files() -> list[Path]:
     """The arm configs V18 reads: data/configs, and the globs `configs` in validate.json names (relative to
     the project root), for a project that keeps its arms elsewhere (this repository's are in examples/)."""
@@ -1515,6 +1595,7 @@ def main() -> int:
         v18_model_records,
         v19_label_sets,
         v20_hypotheses,
+        v21_failure_modes,
         note_uncommitted_runs,
         note_round_scorers,
     ):

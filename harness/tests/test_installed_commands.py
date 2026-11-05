@@ -279,6 +279,7 @@ def main() -> int:
             ("capture-restore", ["--capture", "c1"], "ok:records restored"),
             # Labels (RFC-023): installed and reading their arguments; the flow is tests/test_label_sets.py.
             ("labels", [], "ok:tickets_v1/installed_from_run: model"),
+            ("tags", [], "ok:No tag sets yet"),
             (
                 "label-sheet",
                 ["--dataset-id", "tickets_v1", "--items", "all", "--out", "installed_sheet.csv"],

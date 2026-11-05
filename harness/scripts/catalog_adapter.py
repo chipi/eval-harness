@@ -717,6 +717,25 @@ class HarnessAdapter:
                     checks.append(got)
         return {**{k: v for k, v in sh.items() if not k.startswith("_")}, "captures": checks}
 
+    def tag_counts(self, dataset: str, arm: str) -> dict | None:
+        """The failure modes tagged on this arm's outputs on `dataset` (PLAN_0.8.0 D1), every tag set summed:
+        {"outputs": read, "tagged": with a failure, "modes": {mode: n}}; None when nothing of it was tagged."""
+        from collections import Counter  # noqa: PLC0415
+
+        runs = {d.name for d in self._dirs(arm)}
+        outputs = tagged = 0
+        modes: Counter = Counter()
+        for tf in sorted((self.data_dir / "tags" / dataset).glob("*/tags.json")):
+            doc = _json(tf)
+            for run, by_item in ((doc or {}).get("runs") or {}).items() if isinstance(doc, dict) else []:
+                if run not in runs:
+                    continue
+                for t in by_item.values():
+                    outputs += 1
+                    tagged += bool(t.get("modes"))
+                    modes.update(t.get("modes") or [])
+        return {"outputs": outputs, "tagged": tagged, "modes": dict(modes.most_common())} if outputs else None
+
     def label_sets(self) -> list[dict]:
         """Every label set (RFC-023): {dataset, set, id ("<dataset>/<set>"), source, n_items, guideline, created_at,
         items {item: {"item_sha256"}}}, from data/labels/<dataset>/<set>/labels.json; [] when there are none."""

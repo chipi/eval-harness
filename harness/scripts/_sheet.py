@@ -72,7 +72,7 @@ VIEW_TITLE = 160
 #: unvalidated judging pass names them with a `_unvalidated` ending (judge_score.write_scored_runs).
 WON = ("judge_won", "judge_won_unvalidated")
 GRADE = ("judge_score", "judge_score_unvalidated")
-FILLS = ("label", "pick", "scores")
+FILLS = ("label", "pick", "scores", "tags")
 #: The marker of a row that is not an item (the rubric, a footer): sheet-import leaves out every item_id starting so.
 NOT_AN_ITEM = "#"
 KEY_SUFFIX = ".key.json"
@@ -421,6 +421,10 @@ def build(
     if ref and not chosen_is_won:
         winner_cols.append({"key": f"winner: {ref}", "header": f"winner: {ref}", "metric": ref})
 
+    from evaluation_harness import _tags  # noqa: PLC0415
+
+    tagged = _tags.by_run(dataset_id)
+    tag_arms = [a["token"] for a in arms if a["dir"].name in tagged]
     wanted = set(items) if items is not None else None
     out = []
     for it in ds.get("items") or []:
@@ -497,10 +501,15 @@ def build(
                 "judged_on": judged_on,
                 "scored_on": scored_on,
                 "signals": sig,
+                # The failure modes tagged on each arm's output (PLAN_0.8.0 D1): [] read and fine; absent not read.
+                "tags": {
+                    a["token"]: tagged[a["dir"].name][i] for a in arms if i in tagged.get(a["dir"].name, {})
+                },
             }
         )
     return {
         "dataset_id": dataset_id,
+        "tag_arms": tag_arms,
         "arms": [
             {
                 "token": a["token"],
@@ -719,6 +728,9 @@ def flat(
     def winner_of(key: str) -> Callable[[dict], Any]:
         return lambda r: " = ".join(r["winners"].get(key) or [])
 
+    def tags_of(t: str) -> Callable[[dict], Any]:
+        return lambda r: "" if t not in r.get("tags", {}) else "|".join(r["tags"][t]) or "ok"
+
     def field_of(name: str) -> Callable[[dict], Any]:
         return lambda r: _blank(r["fields"].get(name))
 
@@ -737,6 +749,8 @@ def flat(
             if k == model["metric"]:
                 at = len(cols)
             cols.append((f"{t}: {k}", score_of(t, k)))
+        if t in model.get("tag_arms", []):
+            cols.append((f"{t}: failure modes", tags_of(t)))
         if len(cols) > first:
             anchors[t] = {"first": first, "metric": at}
     cols += [(c["header"], label_of(c["key"])) for c in model["label_cols"]]

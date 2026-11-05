@@ -112,6 +112,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | reference set pages | `evh references [--reference-id <id>]` | `make references` |
 | the Captures page | `evh captures [--capture ID] [--json]` | |
 | the Labels page; a dataset page's labels (0.6.0) | `evh labels [--dataset-id D]` | |
+| a goal page's failure modes (0.8.0) | `evh tags [--dataset-id D]` | |
 | (no page action) labelling: a sheet to fill, then its import (0.6.0) | `evh label-sheet --dataset-id D --out sheet.csv [--items …] [--item ID …]`, `evh label-import sheet.csv --dataset-id D --set S --by NAME` | |
 | (no page action) a run's outputs, or outcome rules, as labels (0.6.0) | `evh label-from-run --run R --set S`, `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | |
 | a reference's "promoted from" (0.6.0) | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |

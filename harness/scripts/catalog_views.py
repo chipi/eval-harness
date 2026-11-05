@@ -1344,7 +1344,11 @@ def inspect(argv) -> int:
     ap.add_argument(
         "--fill",
         choices=_sheet.FILLS,
-        help="with --csv: add the columns to fill. label: label, also right, note. pick, scores: the outputs as blind columns A, B, C… shuffled per row, a key beside the sheet (sheet.key.json), the rubric as its first row; evh sheet-import reads it back",
+        help="with --csv: add the columns to fill. label: label, also right, note. pick, scores: the outputs as blind columns A, B, C… shuffled per row, a key beside the sheet (sheet.key.json), the rubric as its first row; tags: a failure_modes column beside each arm's output (with --modes), a key beside the sheet; evh sheet-import reads it back",
+    )
+    ap.add_argument(
+        "--modes",
+        help="with --fill tags: the failure-mode list the tags name (data/failure-modes/<id>.yaml)",
     )
     ap.add_argument(
         "--choices",
@@ -1414,6 +1418,7 @@ def inspect(argv) -> int:
             ("--csv", args.csv),
             ("--fill", args.fill),
             ("--choices", args.choices),
+            ("--modes", args.modes),
             ("--seed", args.seed is not None),
             ("--rubric", args.rubric),
             ("--scale", args.scale),
@@ -1648,6 +1653,8 @@ def _sheet_view(A, args) -> int:
         die("--fill: with --csv FILE (the sheet to fill in)", "bad-argument")
     if args.choices and args.fill != "label":
         die("--choices: with --fill label", "bad-argument")
+    if (args.fill == "tags") != bool(args.modes):
+        die("--fill tags and --modes go together: name the failure-mode list the tags use", "bad-argument")
     if args.fill not in ("pick", "scores") and (args.seed is not None or args.rubric or args.scale):
         die("--seed, --rubric and --scale: with --fill pick or scores", "bad-argument")
     if args.scale and args.fill != "scores":
@@ -1734,9 +1741,26 @@ def _sheet_csv(args, model: dict, shown: list) -> int:
 
     key_file = _sheet.key_path(args.csv)
     blind = args.fill in ("pick", "scores")
-    for f in (args.csv, key_file if blind else None):
+    for f in (args.csv, key_file if blind or args.fill == "tags" else None):
         if f is not None and f.exists():
             die(f"{f} exists: a sheet is not overwritten (you may have filled it)", "would-overwrite")
+    if args.fill == "tags":
+        from evaluation_harness import _tags  # noqa: PLC0415
+
+        modes = _tags.load_modes(args.modes)
+        head, body, key = _tags.tag_sheet(model, shown, modes)
+        write_csv(head, body, args.csv)
+        write_json(key_file, key)
+        print(
+            f"{args.csv}: {len(body) - 1} row(s), a failure_modes column beside each of {len(model['arms'])} arm(s)' "
+            f"outputs; the key is {key_file}"
+        )
+        print(
+            f"  fill each failure_modes cell with modes of {args.modes} ({', '.join(_tags.mode_ids(modes))}; mode|mode "
+            "for several), `ok` when the output is fine, blank when not read; then: "
+            f"evh sheet-import {args.csv} --dataset-id {args.dataset_id} --by <who> --tags <name> --modes {args.modes}"
+        )
+        return 0
     if not blind:
         choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
         head, body = _sheet.csv_sheet(

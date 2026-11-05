@@ -62,6 +62,7 @@ READ_TOOLS = (
     "validate",
     "captures",
     "labels",
+    "tags",
     "picks",
     "deploy-sheet",
 )
@@ -125,7 +126,7 @@ JSON = {
     "search",
     "inspect",
 }
-JSON |= {"dataset-items", "captures", "labels", "picks", "deploy-sheet"}
+JSON |= {"dataset-items", "captures", "labels", "tags", "picks", "deploy-sheet"}
 JSON |= {"runs-list", "rounds", "leaderboard", "pair-test", "family-test", "rank-stability", "run-compare"}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.

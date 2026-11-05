@@ -4,6 +4,7 @@
     evh sheet-import sheet.csv --dataset-id tickets_v1 --by owner --set owner_2026_11
     evh sheet-import sheet.csv --dataset-id tickets_v1 --by claude --kind model --set claude_labels
     evh sheet-import sheet.csv --dataset-id tickets_v1 --by owner --scorer owner_picks
+    evh sheet-import sheet.csv --dataset-id tickets_v1 --by owner --tags first --modes summaries
 
 A person, or any AI tool, fills the empty columns of a sheet `evh inspect --sheet … --csv sheet.csv --fill …` wrote,
 and one command reads back whatever was filled. The records stay two kinds, because they mean different things: a
@@ -16,7 +17,10 @@ best and cannot score an arm added next week.
   (a number on the rubric's scale) become judged runs under data/runs-judged/<scorer>/, `--scorer`: one run per arm,
   `judge_won_unvalidated` (1 for the pick, 0 for the others, split on a tie) or `judge_score_unvalidated` per item,
   mapped back through the key (`sheet.key.json`, beside the sheet; `--key` names another). Such runs are
-  unvalidated, labelled so as judge-score's `--unvalidated` runs are, until the same judge is validated as any is.
+  unvalidated, labelled so as judge-score's `--unvalidated` runs are, until the same judge is validated as any is;
+- filled `failure_modes: X` columns (modes of a failure-mode list, `mode|mode` for several, `ok` for an output read
+  and found fine; a blank cell was not read) become a tag set under data/tags/<dataset>/<name>/, `--tags`, checked
+  against its key and the list `--modes` names. A tag says what went wrong in that arm's output; it scores nothing.
 
 The sheet's blind columns are checked against the key first: a row the key does not have, a column whose text is not
 the one the key recorded (another sheet, or an edited output), a pick naming a letter that is not on its row, a score
@@ -40,7 +44,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _tags
 from evaluation_harness._codeid import file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -81,6 +85,12 @@ def main() -> int:
     ap.add_argument(
         "--scorer", help="the name of the judged runs (data/runs-judged/<scorer>/), for `pick`/`score:`"
     )
+    ap.add_argument(
+        "--tags", help="the tag set's name, for filled `failure_modes:` columns (data/tags/<dataset>/<name>/)"
+    )
+    ap.add_argument(
+        "--modes", help="with --tags: the failure-mode list the tags name (data/failure-modes/<id>.yaml)"
+    )
     ap.add_argument("--key", type=Path, help="the sheet's key (default: sheet.key.json beside it)")
     ap.add_argument(
         "--guideline",
@@ -109,6 +119,13 @@ def main() -> int:
     has_label = "label" in head and filled("label")
     has_pick = "pick" in head and filled("pick")
     has_scores = any(filled(h) for h in score_cols)
+    if any(h.startswith(_tags.COLUMN) for h in head):
+        return _import_tags(args, rows, sha, any(filled(h) for h in head if h.startswith(_tags.COLUMN)))
+    if args.tags or args.modes:
+        die(
+            f"{args.sheet}: --tags and --modes read `failure_modes:` columns, and the sheet has none",
+            "bad-argument",
+        )
     if not (has_label or has_pick or has_scores):
         die(f"{args.sheet}: nothing filled: no `label`, `pick` or `score:` cell has an answer", "not-enough")
     if has_pick and has_scores:
@@ -155,6 +172,39 @@ def main() -> int:
         )
     if judged is not None:
         _write(args, judged, sha)
+    return 0
+
+
+def _import_tags(
+    args: argparse.Namespace, rows: list[dict[str, str]], sheet_sha: str, any_filled: bool
+) -> int:
+    """A filled tag sheet read back as a tag set, after its key and the failure-mode list are checked."""
+    if not (args.tags and args.modes):
+        die(
+            "the sheet has `failure_modes:` columns: name the tag set with --tags and its list with --modes",
+            "bad-argument",
+        )
+    if not any_filled:
+        die(f"{args.sheet}: nothing filled: no `failure_modes:` cell has an answer", "not-enough")
+    key = read_key(args.key or key_path(args.sheet))
+    if key["dataset_id"] != args.dataset_id:
+        die(f"the key is for {key['dataset_id']}, not {args.dataset_id}", "mismatch")
+    if key["fill"] != "tags":
+        die(f"the key is for a sheet made with --fill {key['fill']}, not --fill tags", "mismatch")
+    if key.get("failure_modes") != args.modes:
+        die(
+            f"the sheet was written for the modes of {key.get('failure_modes')}, not {args.modes}", "mismatch"
+        )
+    tags = _tags.tags_from_sheet(rows, key)
+    if not tags:
+        die("nothing filled in the failure_modes columns", "not-enough")
+    source = {"kind": args.kind, "by": args.by, "sheet": args.sheet.name, "sheet_sha256": sheet_sha}
+    doc = _tags.write_tags(args.dataset_id, args.tags, args.modes, tags, source)
+    print(
+        f"data/tags/{args.dataset_id}/{args.tags}: {doc['n_tagged']} output(s) read in {len(tags)} run(s), "
+        f"modes of {args.modes} · {args.kind} {args.by}"
+    )
+    print(f"  the counts: evh tags --dataset-id {args.dataset_id}")
     return 0
 
 

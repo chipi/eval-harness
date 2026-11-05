@@ -22,6 +22,7 @@ further. This page is the reference for each step.
 | a model's labels (a run's outputs) | `evh label-from-run --run <run_id> --set … [--not-redistributed]` |
 | a person's labels | `evh label-sheet --dataset-id … --out sheet.csv` · `evh label-import sheet.csv --dataset-id … --set … --by …` (or a folder of `<item_id>.txt`) |
 | the label sets | `evh labels [--dataset-id …]` |
+| how arms fail (failure modes) | `evh inspect --sheet --dataset-id … --runs A,B --csv tags.csv --fill tags --modes …` · `evh sheet-import tags.csv --dataset-id … --by … --tags … --modes …` · `evh tags [--dataset-id …]` |
 | a reference (labels you promote) | `evh reference-promote --dataset-id … --labels … --tier gold\|silver --reason "…" --by …` |
 | gold a script builds, promoted | `evh reference-manifest --reference-id gold/… --source … --labelled-by … --reason "…" --by …` |
 | score against labels | `evh rescore --dataset-id … --labels …` · `evh run --config … --labels …` |
@@ -679,7 +680,7 @@ evh runs-list --baselines
 evh validate
 ```
 
-Twenty checks (V1–V20): schema conformance (datasets, runs, baselines, configs, judge
+Twenty-one checks (V1–V21): schema conformance (datasets, runs, baselines, configs, judge
 scorers, judging sets, verdicts, dataset profiles), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results (two arms with different outputs
@@ -691,7 +692,7 @@ every judge scorer yaml loading and well-formed, every goal and round well-forme
 every run that must name one, every item field declared, typed and matching its hash, and every
 reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
 records matching the hashes it recorded, every model record and the configs naming it consistent, and every label set
-matching its hashes and its dataset, and every `hypothesis:` in an arm config sound (V20). V4
+matching its hashes and its dataset, every `hypothesis:` in an arm config sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21). V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters).
 
@@ -1286,6 +1287,19 @@ evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did pro
   both label, how many accept the same answers, how many share one (apart: a label accepting more agrees more
   easily), Cohen's kappa and Krippendorff's alpha (MASI distance for several answers), which correct for the
   agreement chance alone gives when one class dominates. With three sets or more, also all of them together: one Krippendorff's alpha over every item labelled twice or more, with a 95% bootstrap interval (JSON `agreement_all`). `--contested`: per item, how many people's sets agree with the gold reference (sharing an answer with it), the most contested first, the set the reference was promoted from left out (JSON `contested`). Free-text labels are not compared as text. An adapter's `score` reads such a reference with `answers(reference)` from `evaluation_harness.adapter`.
+- **Failure modes: how an arm fails, not only how often** (`evh tags`). A mean says an arm is wrong on 12% of the
+  items; the tags say how. Name the ways once, `data/failure-modes/<id>.yaml` (`failure_modes_id`, then `modes`:
+  each an `id`, and a `description` a tagger reads first; write it after reading some outputs with open notes, so
+  the modes are the ones that happen). `evh inspect --sheet … --csv tags.csv --fill tags --modes <id>` writes a
+  sheet with each arm's output and a `failure_modes: <arm>` cell beside it (not blind: a tag is about whose output
+  it is), its first row listing the modes, and a key beside it. Fill a cell with modes (`too-long|misses-ask` for
+  several), `ok` for an output read and found fine, or leave it blank (not read, so an unfinished sheet never reads
+  as fine). `evh sheet-import tags.csv --dataset-id D --by <who> --tags <name> --modes <id>` checks the key (an
+  edited output, a mode not in the list, a name already used are refused) and writes the tag set,
+  `data/tags/<dataset>/<name>/tags.json`, never edited after. `evh tags --dataset-id D` and the goal page count per
+  arm the outputs read, how many had a failure and each mode; the sheet (`evh inspect --sheet`, its CSV) shows each
+  item's modes in an `<arm>: failure modes` column (`ok` read and fine, blank not read); `validate` (V21) checks the lists and the sets. A tag
+  scores nothing: it explains a score.
 - **The sheet** (`evh inspect --sheet --dataset-id D --runs A,B,…`) shows the dataset's items down (each by the
   first arm's adapter's `title(item)` when it has one, else its start) and a column per arm across: what it wrote (the adapter's `decision(output)`, else its output, shortened; `--scores-only` leaves
   it out) and every score it has on the item: its run's metrics, and a judging pass's where one under

@@ -40,6 +40,12 @@ that can move a result is never a patch release without saying so under **Change
   and 0.29; judge-summ-v2: 0.02 and 0.21; both summaries re-summarised from their verdicts, $0, nothing else
   changed). The RUNBOOK recommends `scale: [0, 1]` to start a project's own judge. A scorer that replaces another
   says so: `supersedes:` and `why:`, checked by `validate` (V13) and printed by `judge-score`.
+- **How an arm fails: failure modes and tags.** A project names its failure modes once
+  (`data/failure-modes/<id>.yaml`); `evh inspect --sheet … --fill tags --modes <id>` writes a sheet with a
+  `failure_modes:` cell beside each arm's output, `evh sheet-import … --tags <name> --modes <id>` reads it back as a
+  tag set (checked against its key, never edited); `evh tags` and the goal page count each arm's modes, and the
+  sheet shows each item's in an `<arm>: failure modes` column. `ok`
+  marks an output read and found fine; a blank cell was not read. `validate` V21 checks the lists and the sets.
 
 ### Changed
 

@@ -115,6 +115,10 @@ COMMANDS = {
         "view_labels.py",
         "every label set, or a dataset's: source, coverage, guideline, how often two agree",
     ),
+    "tags": (
+        "view_tags.py",
+        "the failure modes tagged on outputs: every tag set, or per arm on a dataset how often each mode was",
+    ),
     "label-sheet": (
         "label_sheet.py",
         "a sheet of a dataset's items to label, with what production or an arm decided",

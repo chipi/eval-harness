@@ -834,6 +834,7 @@ def sheet(params: dict) -> dict:
                 "winners": r["winners"],
                 "picked": (p.get("for") or ["no target yet"]) if p.get("action") == "pick" else [],
                 "signals": r["signals"],
+                "tags": r.get("tags", {}),
             }
         )
     return {

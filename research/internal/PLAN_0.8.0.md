@@ -14,7 +14,7 @@ on its own; the owner decides scope and the open questions below.
 4. Then the agent-ready pieces from the drafts: who acted and per-goal baselines, background runs, prompt versions
    and item failures, studies and test-set looks (their place after S is not confirmed by the owner)
 5. **R** replay and faithfulness for code adapters (owner, 2026-11-05: in scope, at the end of 0.8.0)
-6. The fleet agent's feedback, when it finishes (entries 19-22 and later)
+6. The fleet agent's feedback, when it finishes (entries 19-22 and later; 2026-11-05: a regression-guard arm, `expect_identical_to:`, so V5 checks a pair that must agree instead of flagging it)
 7. Release
 
 ## 1. Agent basics — done
@@ -79,8 +79,11 @@ and ag_news undecided. The statistics simulations, re-run on 0.8.0's code, gave 
 ### D. Error tagging
 
 D1: a project declares its failure modes (like a field set); outputs are tagged in the sheet by a person or an
-agent; tags are a record (who, when, which run's output), counted per arm in `inspect` and on the goal. A short
-design note comes first.
+agent; tags are a record (who, when, which run's output), counted per arm in `inspect` and on the goal. Built:
+`data/failure-modes/<id>.yaml`; `inspect --sheet --fill tags --modes`, `sheet-import --tags --modes`; `evh tags`
+(an MCP tool), the goal page's counts per arm, an `<arm>: failure modes` column in the sheet; V21; a release keeps
+the modes of a hidden dataset's tags, never their notes. The design is in `_tags.py`'s docstring and the RUNBOOK
+(no separate note was written).
 
 ### E. Datasets: the common ground every source uses
 
@@ -153,8 +156,12 @@ at the code version its production record names; a faithfulness gate requires th
 production recorded, or each disagreement named with its cause, before the replay is scored against gold; mutants
 check that the gate fails when the code is broken. The fleet's numbers: a first naive replay agreed 86/92 and all 6
 misses were bugs in its adapter or data, none in the system; with each decision on the version the host had checked
-out, 133/135. Its `examples/signal-fleet-filing/replay.py` and `faithfulness.py` are the reference implementation,
-handed over when its full run agrees.
+out, 133/135. Its `examples/signal-fleet-filing/replay.py` and `faithfulness.py` are the reference implementation.
+Handed over 2026-11-05 after its full run agreed (324/324 over 10-02..11-05, 6 mutants killed, 1 survivor explained by
+coverage): /work/eval-harness-v072, branch fleet/signal-fleet-filing, commit 9a318e61 (local), the two files and a
+README of what they assume; the owner mapping and host time zone are settings (REPLAY_SCRUBBED_OWNER, REPLAY_REAL_OWNER,
+REPLAY_HOST_TZ). Its fixes (reads as of the cycle, keys from the code that ran, the scrubber's host renaming, a create
+scored by its repo) are test cases R2 must catch by itself.
 
 | # | what |
 | --- | --- |
@@ -175,10 +182,10 @@ R3 to R5 start as example code; R1 and R2 are the core.
 
 ## NOT done or NOT verified
 
-- A2 is not committed: its gate passed quality's code checks, `verify`'s tests, `budget-check` and `browser-check`,
-  and failed only `site-check` (the two picks above); the spelling fix after `quality` failed is not re-run yet.
-- A3, A4, B to F, P, S and step 4 are not started.
+- Pushed: up to `01dea13f2` (A2). Committed, not pushed: A3/A4/A6, B and C, A5, D1. A push needs the owner's yes.
+- E, F, P, S, step 4, R, the fleet's feedback (6) and the release (7) are not built.
 - Sizes of every package are estimates, not measured.
 - The clustered bootstrap-t was simulated at 100 clusters of 3 only; other cluster sizes and shapes are not.
-- D1 and E3 are not designed.
+- D1: modes are tagged by hand in a sheet; no agent was asked to tag, and no committed dataset has tags.
+- `dataset-extend` (picks) is not run through E3's version rule end to end; its lineage is the same `derived_from`.
 - Nothing here has been checked against the fleet's feedback still to come.
