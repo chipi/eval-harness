@@ -171,7 +171,7 @@ are: `evh dataset-describe --card-template > card.yaml` prints each key with its
 `validate` (V22) refuses a key that is not one of them. `evh dataset-card --dataset-id D` prints the card (what
 the dataset is, where it came from, each answered question); `--format croissant [--creator NAME] [--out F]`
 writes it as Croissant 1.1 JSON-LD: the record (licence as its SPDX page, the card as `rai:` properties, the parent
-as `isBasedOn`), its files with their sha256, one record set of the items with the field set's types. A required
+as PROV-O's `prov:wasDerivedFrom`), its files with their sha256, one record set of the items with the field set's types. A required
 property the record cannot give (a creator, a url, a licence) is left out and named on stderr. The document is
 checked against the spec's keys; it is not run through `mlcroissant`, which the harness does not depend on. `validate` (V22) refuses an id
 not on the list. The line is a picker, not legal advice: the licence text is what binds.

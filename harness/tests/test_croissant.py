@@ -4,7 +4,7 @@
     python tests/test_croissant.py
 
 A dataset with a licence, a card and fields, made from a parent: `dataset-card --format croissant` gives the 1.1
-document (conformsTo, the licence's SPDX page, the card as rai: properties, the parent as isBasedOn, the record file
+document (conformsTo, the licence's SPDX page, the card as rai: properties, the parent as prov:wasDerivedFrom, the record file
 with its real sha256, a record set whose fields carry the field set's types); without --creator it names creator as
 missing on stderr and invents none; the text card lists the answered questions.
 """
@@ -87,7 +87,8 @@ try:
         and doc.get("@type") == "sc:Dataset"
         and doc.get("license") == "https://spdx.org/licenses/CC-BY-4.0.html"
         and doc.get("version") == "1.1"
-        and doc.get("isBasedOn") == "n_v1"
+        and doc.get("prov:wasDerivedFrom") == {"@id": "n_v1"}
+        and doc["@context"].get("prov") == "http://www.w3.org/ns/prov#"
         and doc.get("rai:dataUseCases") == "Testing the export."
         and doc.get("rai:dataBiases") == "Four short notes.",
         (r.stdout + r.stderr)[:600],

@@ -2,7 +2,7 @@
 
 What maps where:
   - the record: name (the id), description, version, license (an SPDX page), url (the source's), datePublished (made
-    at), creator (given: a record has none), isBasedOn (the parent it was made from), the card as `rai:` properties;
+    at), creator (given: a record has none), prov:wasDerivedFrom (the parent it was made from: Croissant 1.1 keeps provenance in PROV-O), the card as `rai:` properties;
   - distribution: the record file itself (a FileObject with its sha256) and the items' files (a FileSet of the items
     folder, or a FileObject per item fetched from an address, each with its sha256);
   - one RecordSet, `items`: per item its id and fields read from the record by jsonPath, its text from its file.
@@ -103,7 +103,8 @@ def export(
         doc["creator"] = {"@type": "sc:Person", "name": creator}
     parent = (record.get("derived_from") or {}).get("dataset_id") or (record.get("split") or {}).get("from")
     if parent:
-        doc["isBasedOn"] = parent
+        doc["@context"] = {**CONTEXT, "prov": "http://www.w3.org/ns/prov#"}
+        doc["prov:wasDerivedFrom"] = {"@id": parent}
     for k, v in (record.get("card") or {}).items():
         doc[f"rai:{k}"] = v
     rec_id = f"{did}.json"
