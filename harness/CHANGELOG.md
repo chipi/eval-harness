@@ -85,6 +85,10 @@ that can move a result is never a patch release without saying so under **Change
   the features a source describes into a field set (types mapped, few-valued text proposed as a choice from a
   sample), printed for a person to read; `--write` writes it, never over one that exists.
 
+- **A dataset from the Hugging Face Hub, pinned.** `--source huggingface --query '{"ref", "split", "text", …}'` reads
+  the Hub's parquet conversion of a split at one commit (`source.revision`), each file checked against the Hub's
+  sha256, with the card's licence and metadata, and each row's viewer page as its link.
+
 ### Changed
 
 - **A dataset's version means something.** `version` is MAJOR.MINOR, two integers (1.10 follows 1.9), computed from

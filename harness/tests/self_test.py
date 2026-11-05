@@ -784,6 +784,10 @@ def test_example_scorer_suites_pass() -> None:
             "a field set proposed from a source's features: choices from sampled values, --write, used as it is",
         ),
         (
+            "test_hf_source.py",
+            "the huggingface source on a local Hub: pinned to the parquet commit, licence, card, rows; sha256 checked",
+        ),
+        (
             "test_tags.py",
             "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
         ),

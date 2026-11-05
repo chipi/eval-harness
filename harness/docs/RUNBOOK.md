@@ -156,7 +156,14 @@ It reads a record set whose fields are columns of one parquet, CSV, JSON or JSON
 its sha256, and records the source block (the publisher's version as `source.revision`), the licence when `evh
 licences` knows it, and the `rai:` properties as the card. A FileSet (many files) is refused: which files it holds is
 the host's to say, so a Hugging Face description, whose parquet is a FileSet in the dataset's repository, is refused
-(listing those files needs the Hub itself).
+(listing those files needs the Hub itself): read it with the `huggingface` source instead.
+
+**From the Hugging Face Hub**: `--source huggingface --query '{"ref": "fancyzhx/ag_news", "split": "test",
+"text": "text", "fields": ["label"], "limit": 200}'` (`config`, `id`, `offset` and `revision` too). It reads the
+Hub's parquet conversion of the split at one commit, each file checked against the sha256 the Hub lists, and records
+that commit as `source.revision`, so the same query with `"revision"` reads the same bytes again; the viewer page
+of each row is its link. The card's licence and its metadata (tasks, annotators, language and source datasets) fill
+the licence and the card. A gated dataset's token goes in `EVAL_FETCH_HEADERS`; `HF_ENDPOINT` names another Hub.
 
 **A field set from a source's features**: `evh fieldset-propose --source NAME --query '{…}' --fieldset-id ID`
 prints a field set from what the source describes: each feature's type as the field set's (schema.org's, Hugging
