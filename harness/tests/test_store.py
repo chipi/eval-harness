@@ -66,6 +66,7 @@ def setting(value=None, config=None):
     os.environ.pop("EVAL_STORE", None)
     if value is not None:
         os.environ["EVAL_STORE"] = value
+    _outputs.reset()  # the setting is kept for the process: read again
     try:
         return _common.store()
     except SystemExit as e:

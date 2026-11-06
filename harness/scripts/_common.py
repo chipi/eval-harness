@@ -453,21 +453,37 @@ def arm_config_files() -> list[Path]:
     return sorted(found)
 
 
+#: {goals dir: (each goal file's (name, mtime_ns, size), the goals)}: the inspector asks for the goals on every
+#: comparison (a goal's cluster field, ADR-0002), and parsing every goal's YAML each time was 32 ms of each answer
+#: (budget-check, 2026-11-06). Read again when a goal file is added, removed or changed.
+_GOALS_READ: dict[str, tuple[tuple, dict[str, dict[str, Any]]]] = {}
+
+
 def load_goals(goals_dir: Path | None = None) -> dict[str, dict[str, Any]]:
     """{goal_id: goal} from <data>/goals/*.yaml (policy.yaml is the policy, not a goal), keyed
     by the goal's `goal_id`, the file stem when it names none. The catalog keyed them that way
     and this by stem alone; V14 requires the two to agree."""
+    import copy  # noqa: PLC0415
+
     import yaml  # noqa: PLC0415
     from evaluation_harness import _store  # noqa: PLC0415
 
-    out: dict[str, dict[str, Any]] = {}
     base = goals_dir or _paths()["GOALS"]
-    for f in sorted(_store.glob(base, "*.yaml")) if _store.is_dir(base) else []:
-        if f.name != "policy.yaml":
+    files = (
+        [f for f in sorted(_store.glob(base, "*.yaml")) if f.name != "policy.yaml"]
+        if _store.is_dir(base)
+        else []
+    )
+    stamps = tuple((f.name, _store.stat(f).st_mtime_ns, _store.stat(f).st_size) for f in files)
+    hit = _GOALS_READ.get(str(base))
+    if hit is None or hit[0] != stamps:
+        out: dict[str, dict[str, Any]] = {}
+        for f in files:
             doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
             doc = doc if isinstance(doc, dict) else {}
             out[str(doc.get("goal_id") or f.stem)] = doc
-    return out
+        hit = _GOALS_READ[str(base)] = (stamps, out)
+    return copy.deepcopy(hit[1])
 
 
 def goal_policy() -> dict[str, Any]:
@@ -761,14 +777,17 @@ def store() -> str:
     """The project's store: `EVAL_STORE`, else `store` in its config.yaml, else `files`."""
     env = os.environ.get("EVAL_STORE", "").strip()
     cfg = _paths()["ROOT"] / "config.yaml"
-    try:
-        st = cfg.stat() if not env else None
-        mtime = (st.st_mtime_ns, st.st_size) if st else None
-    except OSError:
-        mtime = None
-    key = (env, str(cfg), mtime)
+    # Asked for every path a reader touches (25,000 times a comparison), so the answer is kept for the process: a
+    # stat of config.yaml on each call was 8 ms of every inspector answer (budget-check, 2026-11-06). A project
+    # changes its store with data-migrate, between processes; a test that rewrites config.yaml calls
+    # _outputs.reset(), which forgets it.
+    key = (env, str(cfg))
     if _STORE_SEEN and _STORE_SEEN[0] == key:
         return _STORE_SEEN[1]
+    try:
+        mtime = cfg.stat().st_mtime_ns if not env else None
+    except OSError:
+        mtime = None
     if env:
         chosen, where = env, "EVAL_STORE"
     else:

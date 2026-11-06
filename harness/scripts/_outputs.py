@@ -28,6 +28,7 @@ import hashlib
 import json
 import os
 import sqlite3
+from collections import OrderedDict
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Protocol
@@ -44,9 +45,64 @@ PREDICTIONS = "predictions.jsonl"
 SCHEMA_VERSION = "1"
 _CACHE: dict[str, tuple[float, dict[str, str]]] = {}
 _NAMES: dict[str, list[Path]] = {}
-_ROWS_CACHE: dict[tuple[str, str], tuple[tuple[int, int], str]] = {}
+#: How much rows text a process keeps read, per cache: the runs read last, by the size of their rows (one run's are
+#: a few kilobytes or a few megabytes). Unbounded, a warm catalog-serve kept every committed run's rows (94,650 of
+#: them) after reading each once, 48 MB more under --warm; bounded at 128 runs, still 29 MB (budget-check,
+#: 2026-11-06). At 8 MB its RSS and cached answers are the base's again.
+ROWS_KEPT_BYTES = 8_000_000
+
+
+def _text_size(value: Any) -> int:
+    """The rows text an entry holds: (stamp, text), (text, index), or text."""
+    if isinstance(value, tuple):
+        value = next((x for x in value if isinstance(x, str)), "")
+    return len(value) if isinstance(value, str) else 0
+
+
+class _Kept(OrderedDict):
+    """A dict that keeps the entries read or written last, up to `ROWS_KEPT_BYTES` of rows text."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.bytes = 0
+
+    def get(self, key: Any, default: Any = None) -> Any:
+        if key in self:
+            self.move_to_end(key)
+            return self[key]
+        return default
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        if key in self:
+            self.bytes -= _text_size(self[key])
+        super().__setitem__(key, value)
+        self.bytes += _text_size(value)
+        self.move_to_end(key)
+        while self.bytes > ROWS_KEPT_BYTES and len(self) > 1:
+            _k, old = self.popitem(last=False)
+            self.bytes -= _text_size(old)
+
+    def __delitem__(self, key: Any) -> None:
+        self.bytes -= _text_size(self[key])
+        super().__delitem__(key)
+
+    def pop(self, key: Any, *default: Any) -> Any:
+        if key in self:
+            value = self[key]
+            del self[key]
+            return value
+        if default:
+            return default[0]
+        raise KeyError(key)
+
+    def clear(self) -> None:
+        super().clear()
+        self.bytes = 0
+
+
+_ROWS_CACHE: _Kept = _Kept()  # {(rows path, errors): ((mtime_ns, size), its text)}
 #: {run dir: (its rows text, {item_id: its first row line})}, valid while rows_text returns that same text.
-_ROWS_INDEX: dict[str, tuple[str, dict[str, str]]] = {}
+_ROWS_INDEX: _Kept = _Kept()
 
 
 def sha256(text: str) -> str:
@@ -242,7 +298,7 @@ class SqliteStore:
     def __init__(self) -> None:
         self._lock = _store._LOCK  # the one connection's lock (_store)
         self._cache: dict[str, dict[str, str]] = {}
-        self._rows: dict[tuple[str, bool], str | None] = {}
+        self._rows: _Kept = _Kept()  # {(run key, partial): its rows text}
         self._version: int | None = None
         self._ready: set[int] = set()
 
@@ -505,6 +561,7 @@ def reset() -> None:
     _CACHE.clear()
     _ROWS_CACHE.clear()
     _ROWS_INDEX.clear()
+    _common._STORE_SEEN.clear()  # the store setting is read again (a test that rewrites config.yaml)
     _NAMES.clear()
     _SQLITE.close()
     _store.close()
