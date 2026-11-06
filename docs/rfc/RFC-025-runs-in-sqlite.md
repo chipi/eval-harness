@@ -53,3 +53,30 @@ Anything else: no settings screen, no history, no export or import, no extra com
 
 A run's outputs and rows behind `_outputs.py` in either store (kept); a database per runs folder, a `.store-id` token
 per run directory, `runs.store`/`EVAL_RUNS_STORE` and `run-migrate --to` (replaced by the above).
+
+## As built (0.8.0)
+
+- **`_store.py`** does every read, write, listing and delete of a path. A path under `data/` in the sqlite store is a
+  row of `data/project.sqlite` (table `files`: path, bytes, sha256, mtime); every other path, and every path in the
+  files store, is the disk, as pathlib would do it, so moving the about 950 calls in `scripts/`, `harness/tools/`,
+  `site/` and `examples/` onto it changed nothing in files mode. The move was an AST-located rewrite (formatting and
+  comments kept); `tests/test_store.py` fails on path I/O in any module but `_store`, `_outputs` (its files store is
+  the disk by definition), `data_migrate`, `run_migrate` (the layout before 0.8.0 on disk), `_common` (finding the
+  project before any store exists), `stats` (standard library only; its cache is outside `data/`) and
+  `skills_install` (the harness's own files).
+- **A run** is its key under `data/`; its outputs and rows are the per-item tables built in the first version.
+  `_store.rmtree` of a run removes its outputs and rows with its files, so a run made again at the same path starts
+  empty. A run outside `data/` (a scratch folder) is the disk's, as every path outside `data/` is.
+- **Never both**: V23 names a `data/project.sqlite` beside files, and files under `data/` beside the database. V7 and
+  V9 read git and say why they do not apply; their floors (each committed runs folder holds at least N runs) have no
+  counterpart in SQLite mode.
+- **The release** reads the store and writes the same files layout from either store, a hidden dataset's text left
+  out; the deployment is unchanged. (The design above said the release copies the database: a deployment that reads
+  a database needs the prod deploy changed, which is not this RFC's.)
+- **`catalog-serve`** serves the data tree from the database.
+- **Verified on this repository's data**: `data-migrate` there and back, 12,001 files byte-identical; on the
+  database, `validate` passes, `check_report_claims` verifies 200/200 claims, the site check is green, and the
+  catalog's 928 pages equal the files catalog's but for the build time (one JSON file's keys in another order, equal
+  content).
+- **Not covered**: the full suite on the sqlite store (its fixtures need the way in RFC-026 brings); the examples'
+  `fetch.py` scripts write sources as files under `data/`, which in SQLite mode `data-migrate` then moves in.
