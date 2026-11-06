@@ -62,10 +62,15 @@ per run directory, `runs.store`/`EVAL_RUNS_STORE` and `run-migrate --to` (replac
   row of `data/project.sqlite` (table `files`: path, bytes, sha256, mtime); every other path, and every path in the
   files store, is the disk, as pathlib would do it, so moving the about 950 calls in `scripts/`, `harness/tools/`,
   `site/` and `examples/` onto it changed nothing in files mode. The move was an AST-located rewrite (formatting and
-  comments kept); `tests/test_store.py` fails on path I/O in any module but `_store`, `_outputs` (its files store is
-  the disk by definition), `data_migrate`, `run_migrate` (the layout before 0.8.0 on disk), `_common` (finding the
-  project before any store exists), `stats` (standard library only; its cache is outside `data/`) and
-  `skills_install` (the harness's own files).
+  comments kept). `tests/test_store.py` reads every file of `scripts/` (with `sources/` and `importers/`),
+  `harness/tools/`, `site/` and `examples/` and fails on path I/O (the pathlib and `os` calls, `shutil`, `glob`, a
+  temporary file made in a given directory) in any file but the store and the ones it names with why: `_store`,
+  `_outputs` (its files store is the disk by definition), `data_migrate`, `run_migrate`, `_common` (finding the
+  project before any store exists), and files that never touch a project's `data/` (the site's own build,
+  packaging, the file a person names to a source or an importer, a prompt beside its code). Until the review of
+  2026-11-06 it read `scripts/` alone and missed `rename`, `rmdir` and `tempfile(dir=)`: label sets and capture
+  restore wrote through a temporary folder on disk under `data/` and failed in SQLite mode; they build in
+  `_store.staging` and put it in place with `_store.adopt`.
 - **A run** is its key under `data/`; its outputs and rows are the per-item tables built in the first version.
   `_store.rmtree` of a run removes its outputs and rows with its files, so a run made again at the same path starts
   empty. A run outside `data/` (a scratch folder) is the disk's, as every path outside `data/` is.

@@ -1232,6 +1232,14 @@ def _route(path: str) -> str:
     return "/api/other" if path.startswith("/api/") else "static"
 
 
+def _data_url_prefix() -> str | None:
+    """The URL path the project's data tree is served under (/data/), None when it is outside the project."""
+    try:
+        return "/" + _common.DATA.resolve().relative_to(ROOT.resolve()).as_posix().strip("/") + "/"
+    except ValueError:  # a data directory outside the project has no URL (served() says so at start)
+        return None
+
+
 class Handler(SimpleHTTPRequestHandler):
     """HTTP request handler for catalog serving and API endpoints."""
 
@@ -1391,11 +1399,8 @@ class Handler(SimpleHTTPRequestHandler):
         if _common.store() != "sqlite":
             return False
         data = _common.DATA
-        try:
-            data_prefix = "/" + data.resolve().relative_to(ROOT.resolve()).as_posix().strip("/") + "/"
-        except ValueError:  # a data directory outside the project has no URL (served() says so at start)
-            return False
-        if not url_path.startswith(data_prefix):
+        data_prefix = _data_url_prefix()
+        if not data_prefix or not url_path.startswith(data_prefix):
             return False
         rel = Path(unquote(url_path[len(data_prefix) :]))
         if ".." in rel.parts or rel.is_absolute():
@@ -1412,6 +1417,16 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
         return True
+
+    def end_headers(self) -> None:
+        """A file of the project's data is shown, never run as one of this server's pages: an .html or .svg under
+        data/ (a fetched source page, a capture record) could otherwise call the Configure page's write API from this
+        origin (advisor review, 2026-11-06). sandbox gives it an origin of its own; nosniff keeps its type."""
+        prefix = _data_url_prefix()
+        if prefix and urlparse(self.path).path.startswith(prefix):
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Security-Policy", "sandbox")
+        super().end_headers()
 
     def _json(self, code: int, body, cache: bool = True) -> None:
         data = body if isinstance(body, bytes) else json.dumps(body).encode()

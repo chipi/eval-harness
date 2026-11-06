@@ -170,6 +170,49 @@ try:
             and not _store.is_file(run / "metrics.json"),
             (was, _outputs.outputs(run), _outputs.rows_text(run)),
         )
+        if store == "sqlite":
+            # A COMMIT that fails (a full disk): the shared connection is not left in a transaction that every later
+            # write in the process would join and never commit (advisor review, 2026-11-06).
+            import sqlite3
+
+            real = _store.connect()
+            assert real is not None
+
+            class FailsCommitOnce:
+                failed = False
+                inner = real  # bound now: the loop moves on
+
+                def execute(self, sql, *a):
+                    if sql == "COMMIT" and not FailsCommitOnce.failed:
+                        FailsCommitOnce.failed = True
+                        raise sqlite3.OperationalError("database or disk is full")
+                    return self.inner.execute(sql, *a)
+
+                def __getattr__(self, name):
+                    return getattr(self.inner, name)
+
+            key = next(k for k, v in _store._CONN.items() if v is real)
+            _store.write_text(data / "gone" / "a.txt", "a")
+            _store._CONN[key] = FailsCommitOnce()  # type: ignore[assignment]
+            try:
+                _store.rmtree(data / "gone")
+                raised = False
+            except sqlite3.OperationalError:
+                raised = True
+            finally:
+                _store._CONN[key] = real
+            left_open = real.in_transaction
+            _store.write_text(data / "after.txt", "kept")
+            other = sqlite3.connect(str(data / _store.DB))
+            seen = other.execute("SELECT data FROM files WHERE path = 'after.txt'").fetchone()
+            other.close()
+            check(
+                "sqlite: a COMMIT that fails rolls back; the connection is not left in a transaction, later writes commit",
+                raised and not left_open and seen is not None and bytes(seen[0]) == b"kept",
+                (raised, left_open, seen),
+            )
+            _store.unlink(data / "after.txt")
+            _store.rmtree(data / "gone", ignore_errors=True)
         missing = None
         try:
             _store.read_text(data / "nope.txt")
@@ -239,6 +282,9 @@ try:
     (data / "references" / "gold" / "ds").mkdir(parents=True)
     (data / "references" / "gold" / "ds" / "i1.txt").write_bytes("gold\r\nline\xa0".encode() + b"\x00\xff")
     before = {f: (data / f).read_bytes() for f in disk_files()}
+    # a file's time goes with it, both ways (advisor review, 2026-11-06: every file showed the migration's)
+    old_ns = 1_600_000_000 * 10**9
+    os.utime(data / "datasets" / "ds.json", ns=(old_ns, old_ns))
 
     r = evh("data-migrate", "--to", "sqlite", store="files")
     check(
@@ -272,7 +318,7 @@ try:
     r = evh("data-migrate", "--to", "sqlite", store="sqlite")
     use("sqlite")
     check(
-        "--to sqlite: nothing under data/ on disk but the database; every file, output and row read back the same",
+        "--to sqlite: nothing under data/ on disk but the database; every file, output and row read back the same, a file's time kept",
         r.returncode == 0
         and all(f.startswith(_store.DB) for f in disk_files())
         and _store.read_bytes(data / "references" / "gold" / "ds" / "i1.txt")
@@ -281,8 +327,9 @@ try:
         and _outputs.rows_text(run) == before["runs/arm_v1_x/predictions.jsonl"].decode()
         and _outputs.rows_text(stopped, partial=True)
         == before["runs/arm_v1_stopped/rows.partial.jsonl"].decode()
-        and _store.is_file(run / "metrics.json"),
-        ((r.stdout + r.stderr)[-300:], disk_files()),
+        and _store.is_file(run / "metrics.json")
+        and _store.stat(data / "datasets" / "ds.json").st_mtime_ns == old_ns,
+        ((r.stdout + r.stderr)[-300:], disk_files(), _store.stat(data / "datasets" / "ds.json").st_mtime_ns),
     )
     problems, out = v23()
     check("V23 passes on the database", not problems, out)
@@ -291,8 +338,11 @@ try:
     use("files")
     after = {f: (data / f).read_bytes() for f in disk_files()}
     check(
-        "--to files: every file byte-identical, the database gone",
-        r.returncode == 0 and after == before and not (data / _store.DB).exists(),
+        "--to files: every file byte-identical, its time kept, the database gone",
+        r.returncode == 0
+        and after == before
+        and not (data / _store.DB).exists()
+        and (data / "datasets" / "ds.json").stat().st_mtime_ns == old_ns,
         ((r.stdout + r.stderr)[-300:], sorted(set(before) ^ set(after))),
     )
 

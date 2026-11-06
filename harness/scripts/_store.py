@@ -315,26 +315,29 @@ def rglob(path: Any, pattern: str) -> Iterator[Path]:
 
 # ── writing ──────────────────────────────────────────────────────────────────────────────────────────────────────
 @_locked
-def _put(key: str, data: bytes) -> None:
+def _put(key: str, data: bytes, mtime_ns: int | None = None) -> None:
     conn = connect()
     assert conn is not None
     conn.execute(
         "INSERT OR REPLACE INTO files VALUES (?, ?, ?, ?)",
-        (key, sqlite3.Binary(data), hashlib.sha256(data).hexdigest(), time.time_ns()),
+        (key, sqlite3.Binary(data), hashlib.sha256(data).hexdigest(), mtime_ns or time.time_ns()),
     )
 
 
-def write_bytes(path: Any, data: bytes) -> None:
-    """The file written whole (atomically in the database: one committed statement)."""
+def write_bytes(path: Any, data: bytes, mtime_ns: int | None = None) -> None:
+    """The file written whole (atomically in the database: one committed statement); `mtime_ns` keeps a moved file's
+    time (data-migrate), else it is now."""
     if not _pathlike(path):
         path.write_bytes(data)
         return
     key = rel(path)
     if key is None:
         Path(path).write_bytes(data)
+        if mtime_ns:
+            os.utime(path, ns=(mtime_ns, mtime_ns))
         return
     with _LOCK:
-        _put(key, bytes(data))
+        _put(key, bytes(data), mtime_ns)
 
 
 def write_text(path: Any, text: str, encoding: str = "utf-8", newline: str | None = None) -> None:
@@ -399,10 +402,11 @@ def rmtree(path: Any, ignore_errors: bool = False) -> None:
             n = conn.execute("DELETE FROM files WHERE path LIKE ? ESCAPE '\\'", (_like(key),)).rowcount
             for table in _per_item_tables(conn):
                 conn.execute(table[0], (key, _like(key)))
+            conn.execute("COMMIT")
         except BaseException:
-            conn.execute("ROLLBACK")
+            if conn.in_transaction:  # a failed COMMIT too: never leave the shared connection in a transaction
+                conn.execute("ROLLBACK")
             raise
-        conn.execute("COMMIT")
     for hook in ON_REMOVE:
         hook(key)
     if not n and not ignore_errors:
@@ -449,7 +453,8 @@ def adopt(src: Path, dst: Any) -> None:
                 _put(f"{key}/{f.relative_to(src).as_posix()}", f.read_bytes())
             conn.execute("COMMIT")
         except BaseException:
-            conn.execute("ROLLBACK")
+            if conn.in_transaction:
+                conn.execute("ROLLBACK")
             raise
     shutil.rmtree(src)
 

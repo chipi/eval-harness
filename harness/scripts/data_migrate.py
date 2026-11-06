@@ -115,7 +115,7 @@ def to_sqlite(dry_run: bool) -> dict[str, int]:
                 "would-overwrite",
             )
         if there is None:
-            _store.write_bytes(p, b)
+            _store.write_bytes(p, b, p.stat().st_mtime_ns)  # the file's own time, not the migration's
         if _sha(_store.read_bytes(p)) != _sha(b):
             die(f"{p.relative_to(data)}: read back from the database differs; it stays a file", "mismatch")
         p.unlink()
@@ -171,7 +171,9 @@ def to_files(dry_run: bool) -> dict[str, int]:
     conn = sqlite3.connect(str(path), timeout=60)
     have = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
     disk = _outputs.store_named("files")
-    for key, blob, sha in conn.execute("SELECT path, data, sha256 FROM files ORDER BY path").fetchall():
+    for key, blob, sha, mtime_ns in conn.execute(
+        "SELECT path, data, sha256, mtime_ns FROM files ORDER BY path"
+    ).fetchall():
         b = bytes(blob)
         if _sha(b) != sha:
             die(f"{key}: its bytes in the database do not match their sha256", "mismatch")
@@ -185,6 +187,7 @@ def to_files(dry_run: bool) -> dict[str, int]:
         f.parent.mkdir(parents=True, exist_ok=True)
         tmp = f.with_name(f".{f.name}.migrating")
         tmp.write_bytes(b)
+        os.utime(tmp, ns=(mtime_ns, mtime_ns))  # the file's time as the database kept it
         os.replace(tmp, f)
         if f.read_bytes() != b:
             die(f"{key}: written back, the file differs", "mismatch")

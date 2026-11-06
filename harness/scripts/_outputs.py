@@ -436,10 +436,13 @@ class SqliteStore:
             try:
                 conn.execute("DELETE FROM outputs WHERE run = ?", (k,))
                 conn.executemany("INSERT INTO outputs VALUES (?, ?, ?, ?)", rows)
+                conn.execute("COMMIT")
             except BaseException:
-                conn.execute("ROLLBACK")
+                if (
+                    conn.in_transaction
+                ):  # a failed COMMIT too: never leave the shared connection in a transaction
+                    conn.execute("ROLLBACK")
                 raise
-            conn.execute("COMMIT")
             self._cache.pop(k, None)
 
     def delete(self, run_dir: Path) -> None:
@@ -487,10 +490,13 @@ class SqliteStore:
             try:
                 conn.execute("DELETE FROM rows WHERE run = ? AND partial = ?", (k, int(partial)))
                 conn.executemany("INSERT INTO rows VALUES (?, ?, ?, ?, ?)", vals)
+                conn.execute("COMMIT")
             except BaseException:
-                conn.execute("ROLLBACK")
+                if (
+                    conn.in_transaction
+                ):  # a failed COMMIT too: never leave the shared connection in a transaction
+                    conn.execute("ROLLBACK")
                 raise
-            conn.execute("COMMIT")
             self._rows.pop((k, partial), None)
 
     def append_row(self, run_dir: Path, line: str, partial: bool = True) -> None:
@@ -508,10 +514,13 @@ class SqliteStore:
                     "INSERT INTO rows SELECT ?, ?, MAX(n) + 1, ?, ? FROM rows WHERE run = ? AND partial = ?",
                     (k, int(partial), _item_of(line), line, k, int(partial)),
                 )
+                conn.execute("COMMIT")
             except BaseException:
-                conn.execute("ROLLBACK")
+                if (
+                    conn.in_transaction
+                ):  # a failed COMMIT too: never leave the shared connection in a transaction
+                    conn.execute("ROLLBACK")
                 raise
-            conn.execute("COMMIT")
             self._rows.pop((k, partial), None)
 
     def drop_rows(self, run_dir: Path, partial: bool = False) -> None:

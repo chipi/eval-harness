@@ -16,7 +16,8 @@ person can edit; the owner asked for a small page to manage settings and data.
 - **The data page is the one page that writes.** It writes a project's settings (configs, goals, fieldsets, judge
   scorers, model records, failure-mode lists, the validate policy) and deletes runs. Everything the harness writes
   stays read-only, there as everywhere.
-- **Only on this machine.** Its write calls (`PUT` and `DELETE` on `/api/data/file`) are served by `catalog-serve` in
+- **Only on this machine.** Its write calls (`PUT /api/data/form`, a setting's values; `DELETE /api/data/file`, a
+  setting or a run; `POST /api/data/rebuild`, the catalog rebuilt) are served by `catalog-serve` in
   its local mode only (127.0.0.1, a Host naming this machine), and each must carry `X-EVH-Data: 1`, a header a page
   from another origin cannot send without a CORS preflight the server never grants. A public server (`--public`)
   answers no `/api/data` call at all.

@@ -14,8 +14,9 @@
 
 A person can see everything a project keeps under `data/`, and create, change and delete its settings (arm
 configs, goals, fieldsets, judge scorers, model records, failure-mode lists, the validate policy), from a page beside
-the catalog and from `evh` commands that do the same. It works the same whichever store the project uses, and it is
-how a project in its database (RFC-025) is managed at all: there are no files to open in an editor.
+the catalog and from `evh` commands that do the same. The page is the Configure menu of a project whose data is in
+its database (RFC-025) and that deploys it (`configure: true`): there it is how the project is managed at all, with
+no files to open in an editor. A files project is edited in its files; its catalog has no Configure part.
 
 ## Background & Context
 

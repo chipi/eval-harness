@@ -79,6 +79,9 @@ def setup(store: str) -> tuple[Path, dict]:
     for arm in ("lead1", "lead2"):
         evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
     shutil.copy(proj / "tutorial/goals/tickets_summary.yaml", proj / "data/goals/")
+    # a page that landed under data/ (a fetched source, a capture record): served, never as this server's own page
+    (proj / "data/sources").mkdir(parents=True, exist_ok=True)
+    (proj / "data/sources/page.html").write_text("<script>fetch('/api/data/store')</script>")
     if store == "sqlite":
         (proj / "config.yaml").write_text("store: sqlite\nconfigure: true\n")
         env["EVAL_STORE"] = "sqlite"
@@ -322,6 +325,14 @@ def run_case(store: str) -> None:
                     code == 200 and body["text"].startswith(GOOD_GOAL_EDIT),
                     code,
                 )
+                page_url = f"http://127.0.0.1:{port}/data/sources/page.html"
+                with urllib.request.urlopen(page_url, timeout=30) as resp:  # nosec B310 - the test's own server
+                    csp, sniff = (
+                        resp.headers.get("Content-Security-Policy"),
+                        resp.headers.get("X-Content-Type-Options"),
+                    )
+                check(f"{store}: an .html under data/ is served sandboxed (an origin of its own) and nosniff",
+                      csp == "sandbox" and sniff == "nosniff", (csp, sniff))  # fmt: skip
                 code, form = http(port, "GET", "/api/data/form?path=" + goal)
                 check(f"{store}: GET form: the goal's schema, its values, the project's datasets",
                       code == 200 and form["schema"]["properties"]["goal_id"] and form["values"]["goal_id"] == "tickets_summary"
