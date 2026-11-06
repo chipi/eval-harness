@@ -163,7 +163,8 @@ and private datasets on Kaggle and the Hub are not tried (no Kaggle credentials 
 
 ### S. Scale: 1,000 to 10,000 items
 
-**S0, next (owner, 2026-11-06): runs in SQLite, a project's choice.** Files stay the default; one key in the project's
+**S0, built 2026-11-06 (f28f050e4, 6e8ed1842; RFC-025 "As built"): runs in SQLite, a project's choice.** Not
+measured yet: S1's bench on the sqlite store (to run with S2's re-measure, layer 6 of step 7). Files stay the default; one key in the project's
 `config.yaml` (`runs: {store: sqlite}`, or `EVAL_RUNS_STORE`) puts them in `data/runs.sqlite`. Phase 1 is a run's
 outputs (RFC-024 left one module, `_outputs.py`, to swap the store under); phase 2 its rows (`predictions.jsonl`, read
 today by many modules, so first one reader as RFC-024 did for outputs). `metrics.json` and `run.json` stay files.
