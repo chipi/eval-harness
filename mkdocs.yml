@@ -64,6 +64,7 @@ nav:
           - "PRD-014: Datasets from production (built, 0.6.0)": prd/PRD-014-datasets-from-production.md
           - "PRD-015: Models, onboarded once, for every eval (built, 0.6.0)": prd/PRD-015-models-onboarded-once.md
           - "PRD-016: Managing a project's data from the catalog (draft, 0.8.0)": prd/PRD-016-managing-project-data.md
+          - "PRD-017: The Workbench (draft, 0.8.0)": prd/PRD-017-workbench.md
       - Experience (UXS):
           - Index: uxs/index.md
           - "UXS-001: The catalog": uxs/UXS-001-catalog.md
