@@ -25,6 +25,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "examples" / "triage-fleet"))
 import adapter  # noqa: E402
 from evaluation_harness import _fingerprint as fpmod  # noqa: E402
+from evaluation_harness._runs import item_rows  # noqa: E402
 
 DATA = HERE / "data"
 DIRS = ("runs", "runs-repeats", "runs-rescored/cd35dc1ffccc/runs", "runs-rescored/cd35dc1ffccc/runs-repeats")
@@ -34,8 +35,8 @@ COMMIT, PROMPT_SHA = "f07efa9", "c2ece738"
 def item_prompt_shas(run: Path) -> set:
     """The fleet's prompt hashes the run's decided items recorded."""
     shas = set()
-    for line in (run / "predictions.jsonl").read_text(encoding="utf-8").splitlines():
-        sha = (json.loads(line).get("_meta") or {}).get("prompt_sha")
+    for row in item_rows(run):
+        sha = (row.get("_meta") or {}).get("prompt_sha")
         if sha:
             shas.add(sha)
     return shas

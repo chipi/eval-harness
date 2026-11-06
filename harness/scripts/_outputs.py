@@ -248,8 +248,7 @@ class SqliteStore:
 
     def key(self, run_dir: Path) -> str | None:
         """The run's directory under the database's data directory (what `derived.from_dir` names); None for a run
-        directory anywhere else (EVAL_RUNS_DIR outside data/, a test's temporary one): that run keeps its files, so the
-        project's database never holds a run that is not the project's."""
+        directory anywhere else, which this database does not hold (db_for sends it to its own)."""
         try:
             return Path(run_dir).resolve().relative_to(self.path.parent.resolve()).as_posix()
         except ValueError:
@@ -556,16 +555,106 @@ def db_copy(
     return len(gone)
 
 
+def db_for(run_dir: Path) -> Path | None:
+    """The database that holds a run in the sqlite store, decided by where the run is, whichever process asks: the
+    project's `data/runs.sqlite` for a run under its data directory; for a run elsewhere, `runs.sqlite` beside the
+    topmost `runs*` folder it is under (another project's data, a test's temporary one); None for a run under no
+    `runs*` folder, which keeps its files."""
+    d = Path(run_dir).resolve()
+    data = _common.DATA.resolve()
+    if data in d.parents:
+        return data / DB
+    tops = [a for a in d.parents if a.name.startswith("runs")]
+    return tops[-1].parent / DB if tops else None
+
+
+class SqliteRouter:
+    """The sqlite store: each run in the database `db_for` names (else its files), one SqliteStore per database."""
+
+    name = "sqlite"
+
+    def __init__(self) -> None:
+        self._dbs: dict[str, SqliteStore] = {}
+
+    def db(self, path: Path) -> SqliteStore:
+        """The store of one database file."""
+        return self._dbs.setdefault(str(Path(path).resolve()), SqliteStore(Path(path)))
+
+    def main(self) -> SqliteStore:
+        """The project's database, data/runs.sqlite."""
+        return self.db(_common.DATA / DB)
+
+    def of(self, run_dir: Path) -> Store:
+        """The store that holds this run."""
+        path = db_for(run_dir)
+        return self.db(path) if path is not None else _FILES
+
+    def holds(self, run_dir: Path) -> bool:
+        """Whether a database (not files) holds this run."""
+        return db_for(run_dir) is not None
+
+    def has(self, run_dir: Path) -> bool:
+        """Whether the run itself holds outputs here."""
+        return self.of(run_dir).has(run_dir)
+
+    def read(self, run_dir: Path) -> dict[str, str]:
+        """{item_id: text} of the run's own outputs; {} when it has none."""
+        return self.of(run_dir).read(run_dir)
+
+    def lines(self, run_dir: Path) -> list[dict[str, Any]]:
+        """The run's own outputs as stored (item_id, text, sha256), in order."""
+        return self.of(run_dir).lines(run_dir)
+
+    def add(self, run_dir: Path, item_id: str, text: str) -> None:
+        """One item's output, on disk before this returns."""
+        self.of(run_dir).add(run_dir, item_id, text)
+
+    def write_all(self, run_dir: Path, texts: dict[str, str], order: Iterable[str]) -> None:
+        """The run's whole outputs at once, in `order`, atomically; items not in `texts` left out."""
+        self.of(run_dir).write_all(run_dir, texts, order)
+
+    def delete(self, run_dir: Path) -> None:
+        """The run's outputs gone from here."""
+        self.of(run_dir).delete(run_dir)
+
+    def rows_text(self, run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
+        """The run's rows exactly as written (the checkpoint's with `partial`); None when it has none."""
+        return self.of(run_dir).rows_text(run_dir, partial, errors)
+
+    def put_rows(self, run_dir: Path, text: str, partial: bool = False) -> None:
+        """The run's rows replaced by `text` at once, atomically."""
+        self.of(run_dir).put_rows(run_dir, text, partial)
+
+    def append_row(self, run_dir: Path, line: str, partial: bool = True) -> None:
+        """One row line (its newline included) added, on disk before this returns."""
+        self.of(run_dir).append_row(run_dir, line, partial)
+
+    def drop_rows(self, run_dir: Path, partial: bool = False) -> None:
+        """The run's rows (or its checkpoint) gone from here."""
+        self.of(run_dir).drop_rows(run_dir, partial)
+
+    def runs(self) -> list[str]:
+        """Every run (its key) the project's database holds outputs for."""
+        return self.main().runs()
+
+    def row_runs(self) -> list[tuple[str, bool]]:
+        """Every (run, partial) the project's database holds rows for."""
+        return self.main().row_runs()
+
+    def close(self) -> None:
+        """Every database closed."""
+        for st in self._dbs.values():
+            st.close()
+        self._dbs.clear()
+
+
 _FILES = FileStore()
-_SQLITE: dict[str, SqliteStore] = {}
+_SQLITE = SqliteRouter()
 
 
 def store_named(name: str) -> Store:
-    """The files store, or the sqlite store of the current data directory."""
-    if name == "files":
-        return _FILES
-    path = _common.DATA / DB
-    return _SQLITE.setdefault(str(path.resolve()), SqliteStore(path))
+    """The files store, or the sqlite store (each run in the database its place names)."""
+    return _FILES if name == "files" else _SQLITE
 
 
 def store() -> Store:
@@ -579,9 +668,7 @@ def reset() -> None:
     _ROWS_CACHE.clear()
     _ROWS_INDEX.clear()
     _NAMES.clear()
-    for s in _SQLITE.values():
-        s.close()
-    _SQLITE.clear()
+    _SQLITE.close()
 
 
 def _runs_named(name: str) -> list[Path]:
@@ -770,9 +857,15 @@ def item_across(run_dirs: Iterable[Path], item_id: str) -> dict[Path, dict[str, 
     dirs = [Path(d) for d in run_dirs]
     st = store()
     lines: dict[Path, str] = {}
-    if isinstance(st, SqliteStore):
-        lines = st.item_across([d for d in dirs if st.holds(d)], item_id)
-        dirs = [d for d in dirs if not st.holds(d)]
+    if isinstance(st, SqliteRouter):
+        by_db: dict[Path, list[Path]] = {}
+        for d in dirs:
+            path = db_for(d)
+            if path is not None:
+                by_db.setdefault(path, []).append(d)
+        for path, group in by_db.items():
+            lines.update(st.db(path).item_across(group, item_id))
+        dirs = [d for d in dirs if db_for(d) is None]
     if dirs:
         for d in dirs:
             text = _FILES.rows_text(d) or ""

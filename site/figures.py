@@ -263,9 +263,12 @@ def adjudicated(slug: str, exps: list) -> dict:
     x = next(e for e in exps if e["slug"] == slug)
     adj = json.loads((ROOT / "examples" / x["example"] / "adjudication.json").read_text())
     verdict = {i["item_id"]: i["adjudicated"] for i in adj["items"]}
+    sys.path.insert(0, str(HARNESS))  # the evaluation_harness package
+    from evaluation_harness._runs import item_rows  # noqa: PLC0415
+
     v1, v2 = {}, {}
     for arm, d in _runs(x["base"], x["dataset"], x["prefix"], x["suffix"]).items():
-        rows = [json.loads(line) for line in (d / "predictions.jsonl").open() if line.strip()]
+        rows = list(item_rows(d))
         v1[arm] = sum(r["correct"] for r in rows) / len(rows)
         v2[arm] = sum(
             (r["_meta"].get("predicted") == verdict[r["item_id"]])

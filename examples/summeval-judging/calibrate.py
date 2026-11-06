@@ -40,6 +40,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE.parent / "_shared"))
+sys.path.insert(0, str(ROOT / "harness"))  # the evaluation_harness package (a link to scripts/)
 from modules import load_module  # noqa: E402
 
 RUNS = ROOT / "harness" / "data" / "runs"
@@ -64,15 +65,18 @@ def _shared():
 
 
 def run_dir(arm: str) -> Path:
-    hits = sorted(RUNS.glob(f"se_{arm}_n100_v1_*/predictions.jsonl"))
+    from evaluation_harness import _outputs  # noqa: PLC0415
+
+    hits = sorted(d for d in RUNS.glob(f"se_{arm}_n100_v1_*") if _outputs.has_rows(d))
     if len(hits) != 1:
         raise SystemExit(f"expected one committed run for se_{arm}_n100_v1, found {len(hits)}")
-    return hits[0].parent
+    return hits[0]
 
 
 def per_article(arm: str, key: str = "tau") -> list:
-    pj = run_dir(arm) / "predictions.jsonl"
-    return [json.loads(ln)[key] for ln in pj.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    from evaluation_harness._runs import item_rows  # noqa: PLC0415
+
+    return [r[key] for r in item_rows(run_dir(arm))]
 
 
 def _adapter():

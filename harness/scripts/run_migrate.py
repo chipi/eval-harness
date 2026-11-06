@@ -218,9 +218,14 @@ def _checkpoint_needed(rows: Path, predictions: Path) -> bool:
 
 def _run_dirs_of(st: _outputs.Store) -> list[Path]:
     """Every run directory a store holds outputs, rows or a row checkpoint for."""
-    if isinstance(st, _outputs.SqliteStore):
-        keys = {*st.runs(), *(k for k, _ in st.row_runs())}
-        return sorted(Path(k) if Path(k).is_absolute() else _common.DATA / k for k in keys)
+    if isinstance(st, _outputs.SqliteRouter):
+        # The project's database, and the runs directory's when EVAL_RUNS_DIR puts it under another runs* folder.
+        found: set[Path] = set()
+        for path in {_common.DATA / _outputs.DB, _outputs.db_for(_common.RUNS / "_")} - {None}:
+            assert path is not None
+            db = st.db(path)
+            found |= {path.parent / k for k in {*db.runs(), *(k for k, _ in db.row_runs())}}
+        return sorted(found)
     roots = {*(p for p in _common.DATA.glob("runs*") if p.is_dir()), _common.RUNS}
     return sorted(
         {
@@ -302,11 +307,11 @@ def move(to: str, dry_run: bool) -> dict[str, int]:
         )
     src = _outputs.store_named("files" if to == "sqlite" else "sqlite")
     dst = _outputs.store_named(to)
-    db = src if isinstance(src, _outputs.SqliteStore) else dst
-    assert isinstance(db, _outputs.SqliteStore)
+    db = src if isinstance(src, _outputs.SqliteRouter) else dst
+    assert isinstance(db, _outputs.SqliteRouter)
     n = {"runs": 0, "outputs": 0, "rows": 0, "finished": 0, "outside": 0}
     for d in _run_dirs_of(src):
-        if not db.holds(d):  # a run outside data/ keeps its files in either store: nothing to move
+        if not db.holds(d):  # a run under no runs* folder keeps its files in either store: nothing to move
             n["outside"] += 1
             continue
         outs, done_o = _move_outputs(d, src, dst, to, dry_run)
@@ -352,7 +357,7 @@ def main() -> int:
             f" {'would move' if args.dry_run else 'moved'} into the {args.to}"
             f" store"
             + (f" ({m['finished']} a stopped move had already written)" if m["finished"] else "")
-            + (f"; {m['outside']} run(s) outside data/ keep their files" if m["outside"] else "")
+            + (f"; {m['outside']} run(s) under no runs* folder keep their files" if m["outside"] else "")
         )
     return 0
 

@@ -1552,7 +1552,7 @@ def v23_run_outputs() -> None:
         held = _outputs.store_named("sqlite")
         left = (
             {*held.runs(), *(k for k, _ in held.row_runs())}
-            if isinstance(held, _outputs.SqliteStore)
+            if isinstance(held, _outputs.SqliteRouter)
             else set()
         )
         if left:

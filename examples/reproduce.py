@@ -109,8 +109,9 @@ def committed(exp: dict) -> dict:
             m = json.loads(f.read_text())
             if m.get("dataset_id") != exp["dataset"]:
                 continue
-            pj = f.parent / "predictions.jsonl"
-            rows = [json.loads(x) for x in pj.read_text().splitlines() if x.strip()] if pj.is_file() else []
+            from evaluation_harness._runs import item_rows  # noqa: PLC0415 - harness/ is on sys.path above
+
+            rows = list(item_rows(f.parent))
             a["cost"] = sum(float(((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0) for r in rows)
             lat = (m.get("scores") or {}).get("latency_ms")
             if lat is not None:
@@ -334,13 +335,9 @@ def _run_new_arm(exp: dict, arms: dict, path: Path, venv: Path, out: Path) -> No
 
 # ── compare ─────────────────────────────────────────────────────────────────────────────
 def _items(run_dir: Path, metric: str) -> dict:
-    out = {}
-    for line in (run_dir / "predictions.jsonl").read_text().splitlines():
-        if line.strip():
-            r = json.loads(line)
-            if metric in r:
-                out[r["item_id"]] = float(r[metric])
-    return out
+    from evaluation_harness._runs import item_rows  # noqa: PLC0415 - harness/ is on sys.path above
+
+    return {r["item_id"]: float(r[metric]) for r in item_rows(run_dir) if metric in r}
 
 
 def _latest_repro(exp: dict) -> dict:

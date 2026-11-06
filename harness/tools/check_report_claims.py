@@ -22,11 +22,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
+from evaluation_harness import _outputs
 from evaluation_harness import stats as _stats
 from evaluation_harness._common import (
     no_options,
 )
-from evaluation_harness._runs import AmbiguousRuns, runs_by_arm
+from evaluation_harness._runs import AmbiguousRuns, item_rows, runs_by_arm
 from evaluation_harness.cost_report import billed_and_recorded
 
 _ARGS = no_options(__doc__, "--print-judge-figures")  # --help prints this; anything else is refused
@@ -273,7 +274,7 @@ def _billed_and_recorded(prefix, dataset_id):
     out = {}
     for f in sorted(_glob.glob(str(DATA / f"{prefix}*" / "metrics.json"))):
         m = json.loads(Path(f).read_text(encoding="utf-8"))
-        if m.get("dataset_id") != dataset_id or not (Path(f).parent / "predictions.jsonl").is_file():
+        if m.get("dataset_id") != dataset_id or not _outputs.has_rows(Path(f).parent):
             continue
         bil, rec, _, _ = billed_and_recorded(Path(f).parent)
         out[_arm_name(m["config_id"], prefix)] = (bil, rec)
@@ -681,7 +682,7 @@ def _arm_costs(prefix, dataset_id):
         if "20260929" in Path(f).parent.name:
             continue
         m = json.loads(Path(f).read_text(encoding="utf-8"))
-        if m.get("dataset_id") != dataset_id or not (Path(f).parent / "predictions.jsonl").is_file():
+        if m.get("dataset_id") != dataset_id or not _outputs.has_rows(Path(f).parent):
             continue
         bil, rec, _, _ = billed_and_recorded(Path(f).parent)
         out[_arm_name(m["config_id"], prefix)] = bil or rec
@@ -879,11 +880,7 @@ def _cls_correct(prefix, ds_glob_suffix="_n200_v1"):
     out = {}
     for _d in sorted(DATA.glob(f"{prefix}_*{ds_glob_suffix}_2*")):
         _arm = _d.name.rsplit("_2026", 1)[0][len(prefix) + 1 : -len(ds_glob_suffix)]
-        out[_arm] = {
-            (_r := json.loads(_l))["item_id"]: _r
-            for _l in (_d / "predictions.jsonl").read_text().splitlines()
-            if _l.strip()
-        }
+        out[_arm] = {_r["item_id"]: _r for _r in item_rows(_d)}
     return out
 
 
@@ -1090,7 +1087,7 @@ def _adjudicated_acc(exp, dataset_id, prefix):
     verdict = {i["item_id"]: i["adjudicated"] for i in adj["items"]}
     v1, v2 = {}, {}
     for arm, dirs in _runs_for(DATA, dataset_id, prefix).items():
-        rows = [json.loads(line) for line in (dirs[0] / "predictions.jsonl").open()]
+        rows = list(item_rows(dirs[0]))
         v1[arm] = sum(r["correct"] for r in rows) / len(rows)
         v2[arm] = sum(
             (r["_meta"].get("predicted") == verdict[r["item_id"]])
@@ -1168,22 +1165,19 @@ def _v2_family(exp, dataset_id, prefix, leader, metric="correct"):
             (out / "metrics.json").write_text(
                 json.dumps({"config_id": m["config_id"], "dataset_id": dataset_id})
             )
-            rows = [json.loads(line) for line in (d / "predictions.jsonl").open()]
-            (out / "predictions.jsonl").write_text(
-                "".join(
-                    json.dumps(
-                        {
-                            "item_id": r["item_id"],
-                            "correct": float(
-                                (r["_meta"].get("predicted") == verdict[r["item_id"]])
-                                if r["item_id"] in verdict
-                                else r["correct"]
-                            ),
-                        }
-                    )
-                    + "\n"
-                    for r in rows
-                )
+            _outputs.write_rows(
+                out,
+                [
+                    {
+                        "item_id": r["item_id"],
+                        "correct": float(
+                            (r["_meta"].get("predicted") == verdict[r["item_id"]])
+                            if r["item_id"] in verdict
+                            else r["correct"]
+                        ),
+                    }
+                    for r in item_rows(d)
+                ],
             )
         r = _clsp.run(
             [
@@ -1481,12 +1475,9 @@ def _judged_family(scorer, a):
             (out / "metrics.json").write_text(
                 json.dumps({"config_id": arm["config_id"], "dataset_id": "cnn_dailymail_200"})
             )
-            (out / "predictions.jsonl").write_text(
-                "".join(
-                    json.dumps({"item_id": i, "judge_score": _pj[i][arm["config_id"]]["_mean"]}) + "\n"
-                    for i in _ids
-                    if i in _pj
-                )
+            _outputs.write_rows(
+                out,
+                [{"item_id": i, "judge_score": _pj[i][arm["config_id"]]["_mean"]} for i in _ids if i in _pj],
             )
         r = _clsp.run(
             [
@@ -1857,11 +1848,7 @@ if len(_hq) == 24 and all(CNN.get(_a) for _a in _hq):
         _pi = {}
         for _a, _dirs in _runs_for(DATA, "cnn_dailymail_200", "cnn_").items():
             if _a in _hq:
-                _pi[_a] = {
-                    (_row := json.loads(_l))["item_id"]: float(_row["coverage"])
-                    for _l in (_dirs[0] / "predictions.jsonl").read_text().splitlines()
-                    if _l.strip()
-                }
+                _pi[_a] = {_row["item_id"]: float(_row["coverage"]) for _row in item_rows(_dirs[0])}
         _m20 = [statistics.fmean(_pi[_a][_i] for _i in _ids20) for _a in _pn]
         _m180 = [statistics.fmean(v for _i, v in _pi[_a].items() if _i not in _ids20) for _a in _pn]
         _m200 = [statistics.fmean(_pi[_a].values()) for _a in _pn]
@@ -1922,9 +1909,9 @@ else:
     # refuse. V8 now also covers `runs-linux`, and this refuses independently, because
     # a checker that silently picks one of two measurements is the thing being fixed.
     _medians, _dupes = {}, []
-    for _d in sorted(_LINUX.glob("*/predictions.jsonl")):
-        _cid = json.loads(Path(_d.parent / "metrics.json").read_text(encoding="utf-8")).get("config_id")
-        _lat = [json.loads(_l)["latency_ms"] for _l in _d.read_text().splitlines() if _l.strip()]
+    for _d in sorted(p for p in _LINUX.glob("*") if (p / "metrics.json").is_file() and _outputs.has_rows(p)):
+        _cid = json.loads(Path(_d / "metrics.json").read_text(encoding="utf-8")).get("config_id")
+        _lat = [_r["latency_ms"] for _r in item_rows(_d)]
         if not _lat:
             continue
         if _cid in _medians:
@@ -1976,9 +1963,11 @@ else:
     # They compare `data/runs` (the 12-core Mac) to `runs-linux` (the 4-core Linux
     # box), so they are derived from BOTH trees. Found by external review, round 5.
     _mac = {}
-    for _d in sorted(DATA.glob("cnn_bart_*/predictions.jsonl")):
-        _cid = json.loads(Path(_d.parent / "metrics.json").read_text(encoding="utf-8")).get("config_id")
-        _lat = [json.loads(_l)["latency_ms"] for _l in _d.read_text().splitlines() if _l.strip()]
+    for _d in sorted(
+        p for p in DATA.glob("cnn_bart_*") if (p / "metrics.json").is_file() and _outputs.has_rows(p)
+    ):
+        _cid = json.loads(Path(_d / "metrics.json").read_text(encoding="utf-8")).get("config_id")
+        _lat = [_r["latency_ms"] for _r in item_rows(_d)]
         if _lat:
             _mac[_cid] = (statistics.fmean(_lat), statistics.median(_lat))
     if "cnn_bart_l_n200_v1" in _mac and "cnn_bart_l_n200_v1" in _medians:
@@ -2759,9 +2748,8 @@ for _a in ("gliner", "openai_m", "anthropic_l", "span_marker"):
     _oth[_a] = (
         sum(
             1
-            for _ln in (Path(_found[0]) / "predictions.jsonl").read_text(encoding="utf-8").splitlines()
-            if _ln.strip()
-            for _e in (json.loads(_ln).get("_meta", {}).get("predicted") or [])
+            for _row in item_rows(Path(_found[0]))
+            for _e in (_row.get("_meta", {}).get("predicted") or [])
             if (_e.get("type") or "").lower() == "other"
         )
         if _found

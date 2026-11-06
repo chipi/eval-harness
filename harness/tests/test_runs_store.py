@@ -267,31 +267,42 @@ try:
         hid,
     )
 
-    # A run directory outside data/ (EVAL_RUNS_DIR elsewhere, a test's temporary one) keeps its files with the sqlite
-    # store: the project's database holds only the project's runs, and a move leaves that run as it is.
+    # Where a run's data lives depends only on where the run is, never on which project's process asks: a run in
+    # another project's runs folder is in THAT project's runs.sqlite (the stray-database bug of 2026-11-06: test runs
+    # in temporary folders landed in this repository's data/runs.sqlite); a run under no runs* folder keeps its files.
     use("sqlite")
     far = proj / "elsewhere" / "runs" / "far_v1_x"
     _outputs.writer(far).add("f1", "far away")
     _outputs.write_rows(far, [{"item_id": "f1", "score": 1}])
     keys = _outputs.db_runs(data / _outputs.DB) + _outputs.db_runs(data / _outputs.DB, "rows")
+    far_db = proj / "elsewhere" / _outputs.DB
     check(
-        "sqlite store: a run outside data/ keeps its files; the database never names it",
-        (far / _outputs.FILE).is_file()
-        and (far / _outputs.PREDICTIONS).is_file()
+        "sqlite store: a run in another runs folder is in that folder's database, never the project's",
+        not (far / _outputs.FILE).exists()
         and _outputs.output(far, "f1") == "far away"
+        and _outputs.db_runs(far_db) == ["runs/far_v1_x"]
         and not any("far_v1_x" in k for k in keys),
-        keys,
+        (keys, _outputs.db_runs(far_db)),
+    )
+    loose = proj / "loose" / "lone_v1_x"
+    _outputs.writer(loose).add("l1", "alone")
+    _outputs.write_rows(loose, [{"item_id": "l1", "score": 1}])
+    check(
+        "sqlite store: a run under no runs* folder keeps its files",
+        (loose / _outputs.FILE).is_file()
+        and (loose / _outputs.PREDICTIONS).is_file()
+        and _outputs.output(loose, "l1") == "alone",
     )
     _outputs.reset()
-    env["EVAL_RUNS_DIR"] = str(far.parent)
+    env["EVAL_RUNS_DIR"] = str(loose.parent)
     r = evh("run-migrate", "--to", "sqlite", store="sqlite")
     env.pop("EVAL_RUNS_DIR")
     check(
-        "--to sqlite leaves a run outside data/ in its files (none deleted) and says so",
+        "--to sqlite leaves a run under no runs* folder in its files (none deleted) and says so",
         r.returncode == 0
-        and "1 run(s) outside data/ keep their files" in r.stdout
-        and (far / _outputs.FILE).read_text().count("far away") == 1
-        and (far / _outputs.PREDICTIONS).is_file(),
+        and "1 run(s) under no runs* folder keep their files" in r.stdout
+        and (loose / _outputs.FILE).read_text().count("alone") == 1
+        and (loose / _outputs.PREDICTIONS).is_file(),
         (r.stdout + r.stderr)[-300:],
     )
 

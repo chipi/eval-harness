@@ -59,8 +59,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._common import REFERENCES, RUNS, die, item_path, read_json, reference_texts  # noqa: E402
-from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
+from evaluation_harness._runs import item_rows, warn_on_ambiguous_runs  # noqa: E402
 
 try:
     from extraction import as_members, match_one_to_one, normalize
@@ -91,8 +92,8 @@ def predictions(dataset_id: str, match: str | None) -> dict:
     """
     out: dict = defaultdict(dict)
     for d in sorted(RUNS.glob("*")):
-        mj, pj = d / "metrics.json", d / "predictions.jsonl"
-        if not (mj.is_file() and pj.is_file()):
+        mj = d / "metrics.json"
+        if not (mj.is_file() and _outputs.has_rows(d)):
             continue
         m = read_json(mj)
         cid = m.get("config_id")
@@ -100,12 +101,8 @@ def predictions(dataset_id: str, match: str | None) -> dict:
             continue
         if match and match not in cid:
             continue
-        for line in pj.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            if row.get("item_id"):
-                out[cid][row["item_id"]] = (row.get("_meta") or {}).get("predicted")
+        for row in item_rows(d):
+            out[cid][row["item_id"]] = (row.get("_meta") or {}).get("predicted")
     return out
 
 

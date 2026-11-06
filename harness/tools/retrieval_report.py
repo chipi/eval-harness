@@ -36,8 +36,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._common import REFERENCES, RUNS, die, read_json, reference_texts  # noqa: E402
-from evaluation_harness._runs import warn_on_ambiguous_runs  # noqa: E402
+from evaluation_harness._runs import item_rows, warn_on_ambiguous_runs  # noqa: E402
 
 try:
     from retrieval import NDCG_AT, dcg
@@ -58,8 +59,8 @@ def runs(dataset_id: str, match: str | None) -> dict:
     """All runs on this dataset; optionally filtered by config_id substring."""
     out: dict = {}
     for d in sorted(RUNS.glob("*")):
-        mj, pj = d / "metrics.json", d / "predictions.jsonl"
-        if not (mj.is_file() and pj.is_file()):
+        mj = d / "metrics.json"
+        if not (mj.is_file() and _outputs.has_rows(d)):
             continue
         m = read_json(mj)
         cid = m.get("config_id")
@@ -67,11 +68,7 @@ def runs(dataset_id: str, match: str | None) -> dict:
             continue
         if match and match not in cid:
             continue
-        rows = {}
-        for line in pj.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                r = json.loads(line)
-                rows[r["item_id"]] = r
+        rows = {r["item_id"]: r for r in item_rows(d)}
         out[cid] = (m, rows)
     return out
 

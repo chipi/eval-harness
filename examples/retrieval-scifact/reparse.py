@@ -58,8 +58,10 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "examples" / "_shared"))
 sys.path.insert(0, str(ROOT / "harness"))  # the evaluation_harness package (a link to scripts/)
 
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._fingerprint import seal  # noqa: E402
 from evaluation_harness._record import derived_record  # noqa: E402
+from evaluation_harness._runs import item_rows  # noqa: E402
 from retrieval import parse_ranking, score_ranking, scorer_sha256  # noqa: E402
 
 
@@ -93,14 +95,13 @@ def main() -> int:
     changed_arms = 0
     for d in sorted(args.runs.glob("*")):
         mj = d / "metrics.json"
-        pj = d / "predictions.jsonl"
-        if not (mj.is_file() and pj.is_file()):
+        if not (mj.is_file() and _outputs.has_rows(d)):
             continue
         m = json.loads(mj.read_text(encoding="utf-8"))
         if m.get("dataset_id") != args.dataset_id:
             continue
 
-        rows = [json.loads(ln) for ln in pj.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        rows = list(item_rows(d))
         if not rows:
             continue
         has_llm = (rows[0].get("_meta") or {}).get("first_stage") is not None
@@ -157,9 +158,7 @@ def main() -> int:
 
         run_dir = args.out / d.name
         run_dir.mkdir(parents=True, exist_ok=True)
-        (run_dir / "predictions.jsonl").write_text(
-            "".join(json.dumps(r, sort_keys=True) + "\n" for r in new_rows), encoding="utf-8"
-        )
+        _outputs.write_rows(run_dir, new_rows)
         new = derived_record(
             m,
             kind="reparse",
