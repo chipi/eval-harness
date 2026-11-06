@@ -24,7 +24,10 @@ SQLite is in Python's standard library: no dependency.
   moves onto it, and a test fails on a path under `data/` built anywhere else.
 - **The database**: `data/project.sqlite`, write-ahead logged. A table of files (path, bytes, sha256), and a run's
   outputs and rows in the per-item tables already built (one committed insert per output and row).
-- **Python code** (`*.py`) under `data/` stays a file in both stores.
+- **Either files or the database, never both** (owner, 2026-11-06): in SQLite mode nothing under `data/` is a file.
+  Python code is not data and is never in the database: a project in SQLite mode keeps its code outside `data/`, in
+  git, and names it by path (`path.py:Class`, as dataset sources already allow). `data-migrate --to sqlite` refuses
+  while `data/` holds a `.py` file, naming each.
 - **Moving**: `evh data-migrate --to sqlite|files`; every file read back and compared by sha256 before the old copy
   is removed.
 - **Getting data in**: in SQLite mode `data-migrate --to sqlite` is the only way a file a person writes (a goal, a
