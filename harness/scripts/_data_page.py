@@ -12,7 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, NoReturn
 
 from evaluation_harness import _common, _outputs, _store
 
@@ -49,14 +49,6 @@ WRITERS: dict[str, tuple[str, str]] = {
     "tags": ("tag sets", "evh sheet-import"),
     "corpora": ("corpora", "the example's fetch.py"),
 }
-TEMPLATES: dict[str, str] = {
-    "configs": "config_id: {id}\ndataset_id: \nparams:\n  provider: \n",
-    "goals": ("goal_id: {id}\ntitle: \nstatement: \ndecision: \nsuccess_criteria: \ndatasets:\n  - \n"),
-    "fields": "fieldset_id: {id}\nfields: []\n",
-    "scorers": "scorer_id: {id}\nkind: judge\ndataset_id: \njudges: []\nprompt: \nprotocol: \n",
-    "models": "model_id: {id}\nkind: llm\naliases: []\n",
-    "failure-modes": "failure_modes_id: {id}\nmodes: []\n",
-}
 PAGE = 500
 LIMIT = 200
 
@@ -67,6 +59,22 @@ class Refused(Exception):
     def __init__(self, message: str, kind: str) -> None:
         super().__init__(message)
         self.kind = kind
+
+
+def refuse(exc: Refused) -> NoReturn:
+    """The commands' exit on a refusal: `die` with its kind, each kind named as it is (test_refusal_kinds)."""
+    from evaluation_harness._common import die  # noqa: PLC0415
+
+    msg = str(exc)
+    if exc.kind == "not-found":
+        die(msg, "not-found")
+    if exc.kind == "not-allowed":
+        die(msg, "not-allowed")
+    if exc.kind == "would-overwrite":
+        die(msg, "would-overwrite")
+    if exc.kind == "invalid-file":
+        die(msg, "invalid-file")
+    die(msg, "bad-argument")
 
 
 def _data() -> Path:
@@ -259,8 +267,16 @@ def show(rel: str) -> dict[str, Any]:
     if k == "run-file":
         run_dir = norm.rsplit("/", 1)[0]
         out["run"] = run_dir
-    if k == "setting" and norm.startswith("configs/"):
-        out["runs_made"] = runs_of_config(PurePosixPath(norm).stem)
+    if k == "setting":
+        out["setting_kind"] = "validate policy" if norm == POLICY else SETTINGS[norm.split("/", 1)[0]][0]
+    if k == "setting" and norm.startswith("configs/") and text is not None:
+        import yaml  # noqa: PLC0415
+
+        try:
+            cid = (yaml.safe_load(text) or {}).get("config_id")
+        except (yaml.YAMLError, AttributeError):
+            cid = None
+        out["runs_made"] = runs_of_config(str(cid)) if cid else 0
     return out
 
 
@@ -320,13 +336,6 @@ def _not_edited(norm: str) -> str:
     if k == "code":
         return f"{norm} is code: code is never edited here."
     return f"{norm} is written by {writer_of(norm)}; it is not edited here."
-
-
-def template(folder: str, setting_id: str) -> str:
-    """A new setting's starting text."""
-    if folder not in TEMPLATES:
-        raise Refused(f"{folder} is not a folder of settings.", "bad-argument")
-    return TEMPLATES[folder].format(id=setting_id)
 
 
 def put(rel: str, text: str, new: bool = False) -> dict[str, Any]:

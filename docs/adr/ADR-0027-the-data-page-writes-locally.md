@@ -20,7 +20,7 @@ person can edit; the owner asked for a small page to manage settings and data.
   its local mode only (127.0.0.1, a Host naming this machine), and each must carry `X-EVH-Data: 1`, a header a page
   from another origin cannot send without a CORS preflight the server never grants. A public server (`--public`)
   answers no `/api/data` call at all.
-- **One implementation.** The page and `evh data-ls/data-show/data-put/data-rm` call the same module (`_data_page`),
+- **One implementation.** The page and `evh data-ls`, `data-show`, `data-put`, `data-rm` call the same module (`_data_page`),
   which reads and writes through `_store`, so the page and the command line refuse the same things with the same
   words, in either store.
 

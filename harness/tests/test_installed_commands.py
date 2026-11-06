@@ -283,6 +283,14 @@ def main() -> int:
             ("licences", ["--search", "share"], "ok:CC-BY-SA-4.0"),
             ("run-migrate", ["--dry-run"], "ok:run(s)"),
             ("data-migrate", ["--to", "files", "--dry-run"], "ok:would move into the files store"),
+            ("data-ls", [], "ok:store: files"),
+            ("data-show", ["datasets/tickets_v1.json"], "ok:written by the dataset-* commands"),
+            (
+                "data-put",
+                ["datasets/tickets_v1.json", "--set", "x=1"],
+                "is written by the dataset-* commands",
+            ),
+            ("data-rm", ["datasets/tickets_v1.json", "--dry-run"], "is written by the dataset-* commands"),
             ("dataset-publish", ["--dataset-id", "tickets_v1", "--to", "folder"], "cannot publish"),
             (
                 "fieldset-propose",

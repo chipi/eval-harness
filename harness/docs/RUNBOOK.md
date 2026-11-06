@@ -594,8 +594,10 @@ as a files project, a hidden dataset's text left out.
 **The data page** (UXS-004). `evh catalog-serve` serves `data.html`, linked from the header's Data
 menu as **Manage**: everything under `data/`, in either store, and the project's settings (arm
 configs, goals, fieldsets, judge scorers, model records, failure-mode lists, `validate.json`), which
-it creates, edits and deletes. A setting is saved only after it passes the check: it parses, matches
-its schema, and (all but an arm config) its id is its file name. Harness-written data is shown
+it creates, edits and deletes in a form built from each kind's schema: a field per key, no YAML to
+type. A setting is saved only after it passes the check: it matches its schema, and (all but an arm
+config) its id is its file name; each problem is shown at its field. A save keeps the file's comments
+and every line it does not change (ruamel.yaml). Harness-written data is shown
 read-only with the command that writes it; a run is the one kind of data it deletes, whole. It writes
 on this machine only: a public server answers no `/api/data` call (ADR-0027). Each view and action is
 a command:
@@ -603,8 +605,10 @@ a command:
 ```bash
 evh data-ls [PATH] [--find TEXT]          # the overview, a folder, or every file whose path holds TEXT
 evh data-show goals/x.yaml                # one file: its text, size, sha256, and who writes it
-evh data-put goals/x.yaml x.yaml --check  # the check alone
-evh data-put goals/x.yaml x.yaml [--new]  # save it (- reads stdin); --new refuses a name already taken
+evh data-show configs/x.yaml --fields     # a setting's fields, one dotted key a line
+evh data-put configs/x.yaml --set params.sentences=2 --unset goal   # the form's Save, a field at a time
+evh data-put goals/x.yaml x.yaml --check  # a whole file: the check alone
+evh data-put goals/x.yaml x.yaml [--new]  # a whole file saved (- reads stdin); --new refuses a name taken
 evh data-rm runs/<run> --dry-run          # what would go; without --dry-run, a setting or a whole run
 ```
 

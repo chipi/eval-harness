@@ -1,6 +1,7 @@
 /* eval catalog: the data page (UXS-004). What the project keeps under data/, in either store, from the local
    server's /api/data/; a project's settings created, changed and deleted there. State in the URL:
-   ?path=<folder or file>, &edit=1 (the editor), &new=1 (a new setting in a settings folder). Writes carry the
+   ?path=<folder or file>, &edit=1 (the setting's form), &new=1 (a new setting in a settings folder). A setting is
+   shown and entered as a form (data_form.js), never as YAML text. Writes carry the
    X-EVH-Data header (ADR-0027); the server takes them on this machine only. */
 (function () {
   const API = document.body.dataset.api || '/api/';
@@ -19,10 +20,10 @@
     if (!r.ok) throw Object.assign(new Error(body.error || r.status), {status: r.status, kind: body.kind});
     return body;
   }
-  async function write(method, route, q, text) {
+  async function write(method, route, q, json) {
     const r = await fetch(API + 'data/' + route + '?' + new URLSearchParams(q), {
-      method, body: text, cache: 'no-store',
-      headers: {'X-EVH-Data': '1', 'Content-Type': 'text/plain; charset=utf-8'},
+      method, body: json === undefined ? undefined : JSON.stringify(json), cache: 'no-store',
+      headers: {'X-EVH-Data': '1', 'Content-Type': 'application/json; charset=utf-8'},
     });
     const body = await r.json().catch(() => ({error: `the server answered ${r.status}`}));
     if (!r.ok) throw Object.assign(new Error(body.error || r.status), {status: r.status, kind: body.kind});
@@ -102,88 +103,92 @@
   }
 
   // ── 03 a file ────────────────────────────────────────────────────────────────────────────────────────────────
+  const runsNote = (n, more) => n ? `<p class="dm-warn small">${count(n, 'run')} ${n === 1 ? 'was' : 'were'} made with this config; they keep the settings they recorded.${more ? ' A change applies to the next run.' : ''}</p>` : '';
   async function file(path) {
     const f = await get('file', {path});
     const head = `<div class="dm-head">${crumbs(path)}`
       + (f.editable ? `<span class="btns"><a class="btn" href="${href({path, edit: '1'})}">Edit</a>`
         + `<button type="button" class="btn dm-del-file">Delete</button></span>` : '') + '</div>';
     const meta = `<p class="dm-meta small"><span>${size(f.size)}</span> · <span>${esc(f.modified)}</span> · `
-      + `<span title="${esc(f.sha256)}">sha256 ${esc(f.sha256.slice(0, 12))}</span> · <span class="badge">${f.editable ? 'setting' : esc(f.kind)}</span></p>`;
-    const who = f.editable ? (f.runs_made ? `<p class="muted small">${count(f.runs_made, 'run')} ${f.runs_made === 1 ? 'was' : 'were'} made with this config; they keep the settings they recorded.</p>` : '')
-      : `<p class="dm-ro small">${f.kind === 'code' ? 'Code is never edited here.' : `Written by <code>${esc(f.written_by)}</code>; it is not edited here.`}`
-        + (f.run ? ` <a href="inspect.html?runs=${encodeURIComponent(f.run)}">inspect this run</a>` : '') + '</p>';
-    const body = f.text == null ? `<p class="muted">binary, ${f.size.toLocaleString()} bytes</p>` : `<pre class="dm-text" tabindex="0">${esc(f.text)}</pre>`;
-    app.innerHTML = head + note() + meta + who + body + '<div id="dm-panel"></div>';
+      + `<span title="${esc(f.sha256)}">sha256 ${esc(f.sha256.slice(0, 12))}</span> · <span class="badge">${f.editable ? esc(f.setting_kind || 'setting') : esc(f.kind)}</span></p>`;
+    let body;
+    if (f.editable) {
+      let fields;
+      try {
+        const spec = await get('form', {path});
+        fields = runsNote(spec.runs_made, false) + `<div class="df-show">${window.EVHForm.view(spec)}</div>`;
+      } catch (e) { fields = fail(e); }
+      body = fields + `<details class="dm-stored"><summary>the file as stored</summary><pre class="dm-text" tabindex="0">${esc(f.text)}</pre></details>`;
+    } else {
+      body = `<p class="dm-ro small">${f.kind === 'code' ? 'Code is never edited here.' : `Written by <code>${esc(f.written_by)}</code>; it is not edited here.`}`
+        + (f.run ? ` <a href="inspect.html?runs=${encodeURIComponent(f.run)}">inspect this run</a>` : '') + '</p>'
+        + (f.text == null ? `<p class="muted">binary, ${f.size.toLocaleString()} bytes</p>` : `<pre class="dm-text" tabindex="0">${esc(f.text)}</pre>`);
+    }
+    app.innerHTML = head + note() + meta + body + '<div id="dm-panel"></div>';
     const del = app.querySelector('.dm-del-file');
     if (del) del.addEventListener('click', () => confirmFile(path));
   }
 
-  // ── 04 editing, 05 a new setting ─────────────────────────────────────────────────────────────────────────────
+  // ── 04 the form, 05 a new setting ────────────────────────────────────────────────────────────────────────────
   async function editor(path, isNew) {
-    let text = '', runs = 0, folderName = path, name = '';
-    if (isNew) {
-      folderName = P.get('folder') || path;
-      if (folderName === 'validate.json') { text = '{\n}\n'; }
-    } else {
-      const f = await get('file', {path});
-      if (!f.editable) { location.replace(href({path})); return; }
-      text = f.text; runs = f.runs_made || 0;
-    }
-    const isPolicy = folderName === 'validate.json';
-    const nameRow = isNew && !isPolicy ? `<p class="dm-name"><label for="dm-name">Name</label> <input id="dm-name" placeholder="the setting's id" `
-      + `pattern="[A-Za-z0-9_.-]+" autocomplete="off"> <span class="muted small">.yaml, its id</span></p>` : '';
-    app.innerHTML = `<div class="dm-head">${crumbs(isNew ? (isPolicy ? '' : folderName) : path, isNew ? 'new' : 'editing')}</div>`
-      + (runs ? `<p class="dm-warn small">${count(runs, 'run')} ${runs === 1 ? 'was' : 'were'} made with this config; they keep the settings they recorded. A change applies to the next run.</p>` : '')
-      + nameRow + `<label class="sr" for="dm-edit">The setting's text</label><textarea id="dm-edit" class="dm-edit" spellcheck="false">${esc(text)}</textarea>`
-      + `<p class="btns"><button type="button" class="btn" id="dm-check">Check</button>`
-      + `<button type="button" class="btn primary" id="dm-save" disabled>${isNew ? 'Create' : 'Save'}</button>`
-      + `<button type="button" class="btn" id="dm-cancel">Cancel</button></p><div id="dm-result" role="status"></div><div id="dm-panel"></div>`;
-    const ta = document.getElementById('dm-edit'), save = document.getElementById('dm-save');
+    const folderName = isNew ? (P.get('folder') || path) : null;
+    const spec = isNew ? await get('form', {new: folderName}) : await get('form', {path});
+    const isPolicy = spec.folder === 'validate.json';
+    const isConfig = spec.folder === 'configs';
+    const nameRow = isNew && isConfig
+      ? `<div class="df-row dm-filename" data-at="(file)"><label class="df-label" for="dm-name">file name <span class="df-req">*</span></label><div class="df-ctl">`
+        + `<span class="dm-name"><span class="muted">configs/</span><input id="dm-name" type="text" pattern="[A-Za-z0-9_.-]+" autocomplete="off"><span class="muted">.yaml</span></span>`
+        + `<p class="df-help">The arm's file; its config_id below is its identity, and can carry a version (tickets_lead1_v1).</p><p class="df-err" hidden></p></div></div>` : '';
+    app.innerHTML = `<div class="dm-head">${crumbs(isNew ? (isPolicy ? '' : spec.folder) : path, isNew ? 'new ' + spec.kind : 'editing')}</div>`
+      + runsNote(spec.runs_made, true) + nameRow + '<div id="dm-form"></div>'
+      + `<div id="dm-result" role="status"></div><p class="btns"><button type="button" class="btn primary" id="dm-save">${isNew ? 'Create' : 'Save'}</button>`
+      + `<button type="button" class="btn" id="dm-cancel">Cancel</button></p><div id="dm-panel"></div>`;
+    const form = window.EVHForm.edit(document.getElementById('dm-form'), spec);
     const result = document.getElementById('dm-result'), nm = document.getElementById('dm-name');
-    const original = text;
-    let checked = null;
-    const target = () => isPolicy ? 'validate.json' : (isNew ? `${folderName}/${(nm.value || '').trim()}.yaml` : path);
-    if (isNew && nm) {
-      nm.addEventListener('input', async () => {
-        checked = null; save.disabled = true;
-        const id = nm.value.trim();
-        if (id && (ta.value === '' || ta.dataset.templated === '1')) {
-          try { ta.value = (await get('template', {folder: folderName, id})).text; ta.dataset.templated = '1'; } catch (e) { result.innerHTML = fail(e); }
-        }
-      });
-      nm.focus();
-    }
-    ta.addEventListener('input', () => { checked = null; save.disabled = true; ta.dataset.templated = '0'; result.innerHTML = ''; });
-    document.getElementById('dm-check').addEventListener('click', async () => {
-      if (isNew && !isPolicy && !(nm.value || '').trim()) { result.innerHTML = '<p class="dm-bad">Give it a name first: its id.</p>'; return; }
+    // the list of problems is the last save's: an edit makes it stale, so it goes (each field's own message too)
+    ['input', 'change'].forEach(ev => app.addEventListener(ev, e => { if (e.target.closest('#dm-form, .dm-filename')) result.innerHTML = ''; }));
+    const target = () => {
+      if (isPolicy) return 'validate.json';
+      if (!isNew) return path;
+      const stem = isConfig ? (nm.value || '').trim() : String(form.values()[spec.id_key] || '').trim();
+      return stem ? `${spec.folder}/${stem}.yaml` : '';
+    };
+    const showProblems = list => {
+      const shown = form.problems(list);
+      result.innerHTML = `<div class="dm-bad"><p>Not saved: ${count(list.length, 'problem')} to fix.</p><ul>`
+        + shown.map((x, i) => `<li><a href="#" data-i="${i}">${esc(x.where)}</a>: ${esc(x.message)}</li>`).join('') + '</ul></div>';
+      result.querySelectorAll('a[data-i]').forEach(a => a.addEventListener('click', ev => {
+        ev.preventDefault();
+        const t = shown[Number(a.dataset.i)].target;
+        if (t) { t.scrollIntoView({block: 'center'}); t.querySelector('input, select, textarea, button')?.focus(); }
+      }));
+      result.scrollIntoView({block: 'nearest'});
+    };
+    document.getElementById('dm-save').addEventListener('click', async () => {
+      const to = target();
+      if (!to) {
+        const field = isConfig ? 'the file name' : spec.id_key;
+        result.innerHTML = `<div class="dm-bad"><p>Not saved: give it ${esc(field)} first; it names the file.</p></div>`;
+        return;
+      }
       try {
-        const r = await write('POST', 'check', {path: target()}, ta.value);
-        if (r.problems.length) {
-          result.innerHTML = `<ul class="dm-bad">${r.problems.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
-          checked = null; save.disabled = true;
-        } else {
-          result.innerHTML = `<p class="dm-good">✓ It passes the check: ${esc(r.checked)}.</p>`;
-          checked = ta.value; save.disabled = false;
-        }
-      } catch (e) { result.innerHTML = fail(e); }
-    });
-    save.addEventListener('click', async () => {
-      if (checked !== ta.value) { save.disabled = true; return; }
-      try {
-        const q = {path: target()};
+        const q = {path: to};
         if (isNew) q.new = '1';
-        const f = await write('PUT', 'file', q, ta.value);
-        location.href = href({path: f.path, note: `${isNew ? 'Created' : 'Saved'}. sha256 ${f.sha256.slice(0, 12)}`});
+        const r = await write('PUT', 'form', q, form.values());
+        if (!r.saved) { showProblems(r.problems); return; }
+        const said = isNew ? 'Created' : r.unchanged ? 'Nothing changed' : 'Saved';
+        location.href = href({path: r.path, note: `${said}. sha256 ${r.sha256.slice(0, 12)}`});
       } catch (e) { result.innerHTML = fail(e); }
     });
     document.getElementById('dm-cancel').addEventListener('click', () => {
-      const back = isNew ? href({path: isPolicy ? '' : folderName}) : href({path});
-      if (ta.value === original) { location.href = back; return; }
+      const back = isNew ? href({path: isPolicy ? '' : spec.folder}) : href({path});
+      if (!form.changed() && !(nm && nm.value)) { location.href = back; return; }
       const panel = document.getElementById('dm-panel');
       panel.innerHTML = `<div class="dm-confirm"><p>Discard your changes?</p><p class="btns"><a class="btn danger" href="${back}">Discard</a>`
         + `<button type="button" class="btn" id="dm-keep">Keep editing</button></p></div>`;
-      document.getElementById('dm-keep').addEventListener('click', () => { panel.innerHTML = ''; ta.focus(); });
+      document.getElementById('dm-keep').addEventListener('click', () => { panel.innerHTML = ''; });
     });
+    (nm || document.querySelector('#dm-form input, #dm-form select, #dm-form textarea'))?.focus();
   }
 
   // ── 06 deleting ──────────────────────────────────────────────────────────────────────────────────────────────

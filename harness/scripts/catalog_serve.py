@@ -1006,9 +1006,8 @@ DATA_ROUTES = (
     "/api/data/list",
     "/api/data/file",
     "/api/data/find",
-    "/api/data/template",
     "/api/data/run",
-    "/api/data/check",
+    "/api/data/form",
 )
 #: The header every data write must carry: a page from another origin cannot send it without a CORS preflight,
 #: which this server never grants (ADR-0027).
@@ -1026,9 +1025,10 @@ DATA_STATUS = {
 
 
 def data_answer(method: str, path: str, query: str, body: bytes | None = None) -> tuple:
-    """The data page's API (UXS-004): (status, JSON body). Reads: GET store, list, file, find, template, run. Writes:
-    POST check (saves nothing), PUT file (create or change a setting), DELETE file (a setting, or a whole run)."""
-    from evaluation_harness import _data_page  # noqa: PLC0415
+    """The data page's API (UXS-004): (status, JSON body). Reads: GET store, list, file, find, run, form (a setting's
+    form: its schema, values and suggestions). Writes: PUT form (a setting's values, checked first: the problems come
+    back and nothing is written, or it is saved), DELETE file (a setting, or a whole run)."""
+    from evaluation_harness import _data_page, _settings_form  # noqa: PLC0415
 
     q = parse_qs(query)
 
@@ -1048,21 +1048,17 @@ def data_answer(method: str, path: str, query: str, body: bytes | None = None) -
                 return 200, _data_page.show(arg("path"))
             if path == "/api/data/find":
                 return 200, _data_page.search(arg("q"))
-            if path == "/api/data/template":
-                return 200, {"text": _data_page.template(arg("folder"), arg("id"))}
+            if path == "/api/data/form":
+                return 200, _settings_form.form(arg("path"), new_in=arg("new") or None)
             if path == "/api/data/run":
                 return 200, _data_page.run_summary(arg("path"))
             return 405, {"error": "use POST, PUT or DELETE for this"}
-        text = (body or b"").decode("utf-8")
-        if method == "POST" and path == "/api/data/check":
-            problems = _data_page.check(arg("path"), text)
-            return 200, {
-                "path": arg("path"),
-                "problems": problems,
-                "checked": _data_page.checked(arg("path")),
-            }
-        if method == "PUT" and path == "/api/data/file":
-            return 200, _data_page.put(arg("path"), text, new=arg("new") == "1")
+        if method == "PUT" and path == "/api/data/form":
+            values = json.loads((body or b"").decode("utf-8") or "null")
+            found = _settings_form.problems(arg("path"), values)
+            if found:
+                return 200, {"saved": False, "problems": found}
+            return 200, {"saved": True, **_settings_form.save(arg("path"), values, new=arg("new") == "1")}
         if method == "DELETE" and path == "/api/data/file":
             return 200, _data_page.remove(arg("path"))
         return 405, {"error": f"{method} is not served at {path}"}

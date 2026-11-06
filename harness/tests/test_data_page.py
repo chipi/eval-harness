@@ -10,10 +10,14 @@ In a tutorial project with a dataset, two runs, a goal, kept as files and then m
   - evh data-put --check: a YAML error with its line, a schema error, an id that is not the file name; nothing saved.
   - evh data-put: a valid change saved and read back; --new refuses a name taken; a harness-written file, a path
     outside data/ and Python are refused.
+  - evh data-put --set / --unset and data-show --fields: one field changed, the file's comments and every other line
+    kept; a field the schema requires, unset, is refused and nothing is saved.
   - evh data-rm: --dry-run names what a run takes; a setting, then a run, deleted (its outputs and rows with it);
     a dataset refused.
-  - The API on a local catalog-serve answers the same; a write without the X-EVH-Data header, or from another
-    origin, is refused; a public server answers no /api/data call, a write least of all.
+  - The API on a local catalog-serve answers the same: GET form (schema, values, the project's datasets, the runs
+    made with a config), PUT form (problems at their fields and nothing written; a save that keeps comments; an
+    unchanged save that writes nothing; a new goal, then --new refusing it again); a write without the X-EVH-Data
+    header, or from another origin, is refused; a public server answers no /api/data call, a write least of all.
 """
 
 from __future__ import annotations
@@ -115,7 +119,7 @@ def http(
             return e.code, raw
 
 
-W = {"X-EVH-Data": "1", "Content-Type": "text/plain; charset=utf-8"}
+W = {"X-EVH-Data": "1", "Content-Type": "application/json; charset=utf-8"}
 
 
 def run_case(store: str) -> None:
@@ -224,6 +228,29 @@ def run_case(store: str) -> None:
         )
         r = cli(proj, env, "data-put", "configs/tickets_lead3.yaml", "-", "--new", stdin=new_cfg)
         check(f"{store}: a new arm config is created", r.returncode == 0, (r.stdout + r.stderr)[-300:])
+        # One field at a time, as the form saves: the comments and every other line kept.
+        lead1 = "configs/tickets_lead1.yaml"
+        cfg_before = cli(proj, env, "data-show", lead1, "--text").stdout
+        r = cli(proj, env, "data-put", lead1, "--set", "params.sentences=2")
+        cfg_after = cli(proj, env, "data-show", lead1, "--text").stdout
+        changed = [(a, b) for a, b in zip(cfg_before.splitlines(), cfg_after.splitlines()) if a != b]
+        check(f"{store}: data-put --set changes one line, the comments kept",
+              r.returncode == 0 and changed == [("  sentences: 1", "  sentences: 2")]
+              and len(cfg_before.splitlines()) == len(cfg_after.splitlines()) and cfg_after.startswith("# Arm"),
+              (changed, (r.stdout + r.stderr)[-300:]))  # fmt: skip
+        r = cli(proj, env, "data-show", lead1, "--fields")
+        check(f"{store}: data-show --fields prints the dotted keys --set takes",
+              r.returncode == 0 and "params.sentences: 2" in r.stdout and "config_id: tickets_lead1_v1" in r.stdout, r.stdout[-300:])  # fmt: skip
+        r = cli(proj, env, "data-put", lead1, "--unset", "dataset_id")
+        check(f"{store}: --unset of a required field is refused at its field; nothing saved",
+              r.returncode == 1 and "dataset_id: required" in r.stdout
+              and cli(proj, env, "data-show", lead1, "--text").stdout == cfg_after, r.stdout[-300:])  # fmt: skip
+        r = cli(proj, env, "data-put", lead1, "--set", "params.sentences=2")
+        check(
+            f"{store}: a --set that changes nothing writes nothing",
+            r.returncode == 0 and "nothing changed" in r.stdout,
+            r.stdout,
+        )
         for target, why in ((f"{run}/metrics.json", "written by evh run"), ("datasets/tickets_v1.json", "written by the dataset-* commands"),
                             ("../config.yaml", "outside the project's data"), ("configs/x.py", "code")):  # fmt: skip
             r = cli(proj, env, "data-put", target, "-", stdin="x: 1\n")
@@ -248,8 +275,23 @@ def run_case(store: str) -> None:
                 code == 200 and body["text"].startswith(GOOD_GOAL_EDIT),
                 code,
             )
+            code, form = http(port, "GET", "/api/data/form?path=" + goal)
+            check(f"{store}: GET form: the goal's schema, its values, the project's datasets",
+                  code == 200 and form["schema"]["properties"]["goal_id"] and form["values"]["goal_id"] == "tickets_summary"
+                  and "tickets_v1" in form["options"]["datasets"] and form["refs"]["datasets.*.dataset_id"] == "datasets",
+                  (code, str(form)[:300]))  # fmt: skip
+            code, cform = http(port, "GET", "/api/data/form?path=configs/tickets_lead1.yaml")
+            check(f"{store}: GET form of an arm config counts the runs made with its config_id",
+                  code == 200 and cform.get("runs_made") == 1, (code, cform.get("runs_made")))  # fmt: skip
+            values = form["values"]
+            changed = json.loads(json.dumps(values))
+            changed["title"] = "Ticket summaries, edited on the form"
             code, body = http(
-                port, "PUT", "/api/data/file?path=" + goal, before, {"Content-Type": "text/plain"}
+                port,
+                "PUT",
+                "/api/data/form?path=" + goal,
+                json.dumps(changed),
+                {"Content-Type": "application/json"},
             )
             check(
                 f"{store}: a write without the X-EVH-Data header is refused",
@@ -257,16 +299,60 @@ def run_case(store: str) -> None:
                 (code, body),
             )
             code, body = http(
-                port, "PUT", "/api/data/file?path=" + goal, before, {**W, "Origin": "http://evil.example"}
+                port,
+                "PUT",
+                "/api/data/form?path=" + goal,
+                json.dumps(changed),
+                {**W, "Origin": "http://evil.example"},
             )
             check(f"{store}: a write from another origin is refused", code == 403, (code, body))
-            code, body = http(port, "POST", "/api/data/check?path=" + goal, "goal_id: other\n", W)
-            check(f"{store}: POST check lists the problems", code == 200 and body["problems"], (code, body))
-            code, body = http(port, "PUT", "/api/data/file?path=" + goal, before, W)
-            check(f"{store}: PUT saves a valid setting", code == 200 and body["text"] == before, (code, body))
-            code, body = http(port, "PUT", "/api/data/file?path=datasets/tickets_v1.json", "{}", W)
+            bad = json.loads(json.dumps(values))
+            del bad["decision"]
+            bad["datasets"][0]["notes"] = 3
+            code, body = http(port, "PUT", "/api/data/form?path=" + goal, json.dumps(bad), W)
+            where = sorted(".".join(map(str, p["path"])) for p in body.get("problems", []))
+            check(f"{store}: PUT form with problems: each at its field, nothing written",
+                  code == 200 and body.get("saved") is False and where == ["datasets.0.notes", "decision"]
+                  and http(port, "GET", "/api/data/file?path=" + goal)[1]["text"].startswith(GOOD_GOAL_EDIT), (code, body))  # fmt: skip
+            code, body = http(port, "PUT", "/api/data/form?path=" + goal, json.dumps(changed), W)
+            text = http(port, "GET", "/api/data/file?path=" + goal)[1]["text"]
+            check(f"{store}: PUT form saves the value and keeps the file's comment",
+                  code == 200 and body.get("saved") and text.startswith(GOOD_GOAL_EDIT)
+                  and "title: Ticket summaries, edited on the form" in text, (code, str(body)[:300]))  # fmt: skip
+            sha = body.get("sha256")
+            code, body = http(port, "PUT", "/api/data/form?path=" + goal, json.dumps(changed), W)
             check(
-                f"{store}: PUT refuses a harness-written file",
+                f"{store}: an unchanged save writes nothing",
+                code == 200 and body.get("unchanged") and body.get("sha256") == sha,
+                (code, body),
+            )
+            code, nform = http(port, "GET", "/api/data/form?new=goals")
+            draft = nform["values"] if code == 200 else {}
+            draft.update(
+                goal_id="draft_goal",
+                title="A draft",
+                statement="Drafts for people so that they decide.",
+                decision="Which draft.",
+            )
+            draft["success_criteria"]["primary"]["measure"] = "overlap_f1"
+            draft["datasets"][0]["dataset_id"] = "tickets_v1"
+            code, body = http(
+                port, "PUT", "/api/data/form?path=goals/draft_goal.yaml&new=1", json.dumps(draft), W
+            )
+            check(
+                f"{store}: a new goal from GET form?new=goals is created",
+                code == 200 and body.get("saved"),
+                (code, body),
+            )
+            code, body = http(
+                port, "PUT", "/api/data/form?path=goals/draft_goal.yaml&new=1", json.dumps(draft), W
+            )
+            check(f"{store}: new=1 refuses a name already taken", code == 409, (code, body))
+            code, body = http(port, "DELETE", "/api/data/file?path=goals/draft_goal.yaml", None, W)
+            check(f"{store}: the new goal is deleted", code == 200, (code, body))
+            code, body = http(port, "PUT", "/api/data/form?path=datasets/tickets_v1.json", "{}", W)
+            check(
+                f"{store}: PUT form refuses a harness-written file",
                 code == 403 and body.get("kind") == "not-allowed",
                 (code, body),
             )
@@ -354,8 +440,8 @@ def public_case() -> None:
                 time.sleep(0.1)
             code, _b = http(port, "GET", "/api/data/store")
             check("public: GET /api/data/store is 404", code == 404, code)
-            code, _b = http(port, "PUT", "/api/data/file?path=goals/tickets_summary.yaml", "x: 1\n", W)
-            check("public: PUT is 404", code == 404, code)
+            code, _b = http(port, "PUT", "/api/data/form?path=goals/tickets_summary.yaml", "{}", W)
+            check("public: PUT form is 404", code == 404, code)
             code, _b = http(port, "DELETE", "/api/data/file?path=goals/tickets_summary.yaml", None, W)
             check("public: DELETE is 404, the goal untouched",
                   code == 404 and (proj / "data/goals/tickets_summary.yaml").is_file(), code)  # fmt: skip

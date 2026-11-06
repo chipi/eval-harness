@@ -9,9 +9,13 @@ In a tutorial project served by a local catalog-serve, kept as files and then mo
   - the header's Data menu has Manage on the local server; a page opened from disk does not show it;
   - the overview: the store badge, the settings tiles, the data folders; finding a file by name;
   - a folder of settings, and its "+ New";
-  - a setting: its text and sha256, Edit and Delete; a run's file read-only, with what writes it;
-  - editing: a failing check lists the problems and Save stays disabled; a passing one enables it; Save saves;
-  - a new goal from its template: Create, then Delete through the page's own confirmation;
+  - a setting: its fields (not its YAML), the runs made with it, its sha256, Edit and Delete; the file as stored
+    behind a disclosure; a run's file read-only, with what writes it;
+  - the form: a field per key, required ones marked, the project's datasets suggested; an emptied required field is
+    refused at its field and in the list, nothing saved; a number changed, an optional field set from "more fields",
+    a parameter added (its key, its type, its value), saved: the file keeps its comments;
+  - a new goal in its form: fields filled, a dataset card added and removed, Create, then Delete through the page's
+    own confirmation;
   - deleting a run, after the panel says what goes;
   - at phone width no page scrolls sideways; no page logs a console error.
 
@@ -41,6 +45,7 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
     def shot(page, name: str) -> None:
         if shots is not None:
             n[0] += 1
+            page.evaluate("window.scrollTo(0, 0)")
             page.screenshot(path=str(shots / f"{store}-{n[0]:02d}-{name}.png"), full_page=True)
 
     with sync_playwright() as pw:
@@ -88,61 +93,82 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
             shot(page, "folder")
 
             page.goto(base + "data.html?path=configs/tickets_lead1.yaml")
-            page.wait_for_selector(".dm-text")
-            check(f"{store}: a setting shows its text, sha256, Edit and Delete",
-                  "config_id: tickets_lead1_v1" in page.locator(".dm-text").inner_text()
+            page.wait_for_selector(".df-show dl.df-view")
+            shown = page.locator(".df-show").inner_text()
+            check(f"{store}: a setting shows its fields, not its YAML, and the runs made with it",
+                  "config id" in shown and "tickets_lead1_v1" in shown and "sentences" in shown
+                  and not page.locator(".dm-stored").evaluate("d => d.open")
+                  and "1 run was made with this config" in page.locator(".dm-warn").inner_text()
                   and "sha256" in page.locator(".dm-meta").inner_text()
-                  and page.get_by_role("link", name="Edit").is_visible() and page.get_by_role("button", name="Delete").is_visible())  # fmt: skip
+                  and page.get_by_role("link", name="Edit").is_visible() and page.get_by_role("button", name="Delete").is_visible(),
+                  shown[:300])  # fmt: skip
             shot(page, "setting")
 
-            # Edit: a failing check, then a passing one, then save.
+            # The form: a refused save, then a save of three changes.
             page.get_by_role("link", name="Edit").click()
-            page.wait_for_selector("#dm-edit")
-            text = page.input_value("#dm-edit")
-            page.fill("#dm-edit", text.replace("dataset_id:", "dataset:"))
-            page.click("#dm-check")
-            page.wait_for_selector("#dm-result ul.dm-bad")
-            check(f"{store}: a failing check lists the problems and Save stays disabled",
-                  "'dataset_id' is a required property" in page.locator("#dm-result").inner_text() and page.is_disabled("#dm-save"))  # fmt: skip
-            shot(page, "edit-check-fails")
-            page.fill("#dm-edit", "# edited on the data page\n" + text)
-            check(
-                f"{store}: editing again keeps Save disabled until the next check",
-                page.is_disabled("#dm-save"),
-            )
-            page.click("#dm-check")
-            page.wait_for_selector("#dm-result .dm-good")
-            check(f"{store}: a passing check enables Save", page.is_enabled("#dm-save"))
-            shot(page, "edit-check-passes")
+            page.wait_for_selector(".df-row[data-at='config_id']")
+            req = page.locator(".df-row[data-at='config_id'] .df-label").inner_text()
+            dl = page.locator("#dl-datasets option").evaluate_all("os => os.map(o => o.value)")
+            check(f"{store}: the form has a field per key, required ones marked, the project's datasets suggested",
+                  req.endswith("*") and page.locator("[data-p='dataset_id']").get_attribute("list") == "dl-datasets"
+                  and "tickets_v1" in dl and page.locator("[data-p='params.sentences']").input_value() == "1"
+                  and page.locator("details.df-more").count() == 1 and page.locator("textarea, .dm-edit").count() == 0,
+                  (req, dl))  # fmt: skip
+            shot(page, "form")
+            page.fill("[data-p='dataset_id']", "")
+            page.click("#dm-save")
+            page.wait_for_selector("#dm-result .dm-bad")
+            err = page.locator(".df-row[data-at='dataset_id'] .df-err")
+            check(f"{store}: an emptied required field is refused at its field and in the list; nothing saved",
+                  err.is_visible() and "dataset id" in page.locator("#dm-result").inner_text()
+                  and "edit=1" in page.url, (err.inner_text() if err.count() else "", page.locator("#dm-result").inner_text()))  # fmt: skip
+            shot(page, "form-refused")
+            page.fill("[data-p='dataset_id']", "tickets_v1")
+            page.fill("[data-p='params.sentences']", "2")
+            page.locator("details.df-more summary").click()
+            page.fill("[data-p='goal']", "tickets_summary")
+            page.locator(".df-row[data-at='params'] .df-addkey").click()
+            page.fill("[data-rename='params.key1']", "temperature")
+            page.locator("[data-rename='params.key1']").press("Tab")
+            page.select_option("[data-retype='params.temperature']", "number")
+            page.fill("[data-p='params.temperature']", "0.2")
+            shot(page, "form-filled")
             page.click("#dm-save")
             page.wait_for_function(
                 "(document.querySelector('.dm-note') || {}).textContent?.includes('Saved.')"
             )
-            check(f"{store}: Save saves, and the file view says so",
-                  "Saved." in page.locator(".dm-note").inner_text()
-                  and page.locator(".dm-text").inner_text().startswith("# edited on the data page"))  # fmt: skip
+            stored = page.locator(".dm-stored pre").text_content() or ""
+            check(f"{store}: Save writes the three changes and keeps the file's comments",
+                  stored.startswith('# Arm "lead1"') and "  sentences: 2" in stored and "goal: tickets_summary" in stored
+                  and "  temperature: 0.2" in stored and "tickets_summary" in page.locator(".df-show").inner_text(), stored)  # fmt: skip
             shot(page, "saved")
 
-            # A new goal from its template, created, then deleted.
+            # A new goal in its form, created, then deleted.
             page.goto(base + "data.html?path=goals")
             page.wait_for_selector(".dm-new")
             page.click(".dm-new")
-            page.wait_for_selector("#dm-name")
-            page.fill("#dm-name", "draft_goal")
-            page.wait_for_function("document.getElementById('dm-edit').value.includes('goal_id: draft_goal')")
-            shot(page, "new-from-template")
-            # the tutorial's own goal under a new id: a goal the schema accepts
-            goal = (proj / "tutorial" / "goals" / "tickets_summary.yaml").read_text()
-            page.fill("#dm-edit", goal.replace("goal_id: tickets_summary", "goal_id: draft_goal"))
-            page.click("#dm-check")
-            page.wait_for_selector("#dm-result .dm-good, #dm-result .dm-bad")
-            ok = page.locator("#dm-result .dm-good").count() == 1
-            check(f"{store}: a valid new goal passes its check", ok, page.locator("#dm-result").inner_text())
+            page.wait_for_selector(".df-row[data-at='goal_id']")
+            page.fill("[data-p='goal_id']", "draft_goal")
+            page.fill("[data-p='title']", "A draft goal")
+            page.fill("[data-p='statement']", "Drafts for people so that they decide.")
+            page.fill("[data-p='decision']", "Which draft to keep.")
+            page.fill("[data-p='success_criteria.primary.measure']", "overlap_f1")
+            page.fill("[data-p='datasets.0.dataset_id']", "tickets_v1")
+            page.locator(".df-row[data-at='datasets'] .df-add").click()
+            two = page.locator(".df-card").count()
+            page.locator(".df-card[data-at='datasets.1'] .df-del").click()
+            check(
+                f"{store}: a dataset card is added, then removed",
+                two == 2 and page.locator(".df-card").count() == 1,
+                two,
+            )
+            shot(page, "new-goal")
             page.click("#dm-save")
             page.wait_for_function(
                 "(document.querySelector('.dm-note') || {}).textContent?.includes('Created.')"
             )
-            check(f"{store}: Create creates it", "Created." in page.locator(".dm-note").inner_text())
+            check(f"{store}: Create creates it, its fields shown",
+                  "Created." in page.locator(".dm-note").inner_text() and "A draft goal" in page.locator(".df-show").inner_text())  # fmt: skip
             page.get_by_role("button", name="Delete").click()
             page.wait_for_selector(".dm-confirm")
             check(
@@ -193,15 +219,15 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
             page.set_viewport_size({"width": 390, "height": 800})
             wide = []
             for url in ("data.html", "data.html?path=configs", "data.html?path=configs/tickets_lead1.yaml",
-                        "data.html?path=configs/tickets_lead1.yaml&edit=1"):  # fmt: skip
+                        "data.html?path=configs/tickets_lead1.yaml&edit=1", "data.html?path=goals&new=1"):  # fmt: skip
                 page.goto(base + url)
                 page.wait_for_timeout(400)
                 if page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1"):
                     wide.append(url)
             check(f"{store}: at phone width no page scrolls sideways", not wide, wide)
-            page.goto(base + "data.html")
-            page.wait_for_selector(".dm-tile")
-            shot(page, "phone")
+            page.goto(base + "data.html?path=configs/tickets_lead1.yaml&edit=1")
+            page.wait_for_selector(".df-row")
+            shot(page, "phone-form")
             check(
                 f"{store}: no console errors",
                 not errors,

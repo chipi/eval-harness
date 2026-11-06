@@ -112,8 +112,8 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | reference set pages | `evh references [--reference-id <id>]` | `make references` |
 | the Captures page | `evh captures [--capture ID] [--json]` | |
 | the data page (Manage, local only, 0.8.0, UXS-004): the overview, a folder, find | `evh data-ls [PATH] [--find TEXT]` | |
-| the data page: a file | `evh data-show PATH` | |
-| the data page: Check, Save, Create | `evh data-put PATH FILE [--check] [--new]` | |
+| the data page: a file; a setting's fields | `evh data-show PATH [--fields]` | |
+| the data page: the form's Save, Create | `evh data-put PATH --set KEY=VALUE … [--unset KEY …] [--new] [--check]`, or a whole file: `evh data-put PATH FILE` | |
 | the data page: Delete (a setting, or a whole run) | `evh data-rm PATH [--dry-run]` | |
 | the Labels page; a dataset page's labels (0.6.0) | `evh labels [--dataset-id D]` | |
 | a goal page's failure modes (0.8.0) | `evh tags [--dataset-id D]` | |

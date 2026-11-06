@@ -7,10 +7,13 @@
 - **Related RFC**: [RFC-025](../rfc/RFC-025-runs-in-sqlite.md) (files or one database, `_store`)
 - **Related UX specs**: [UXS-001](UXS-001-catalog.md) (shell, tokens), [UXS-002](UXS-002-inspector.md) (a live page
   served by `catalog-serve`), [UXS-003](UXS-003-cli-and-onboarding.md) (how commands speak)
-- **Implementation paths**: `harness/catalog_assets/data.js` (the page), `harness/scripts/catalog_build.py`
+- **Implementation paths**: `harness/catalog_assets/data.js` (the page), `harness/catalog_assets/data_form.js` (the
+  form and a setting's fields), `harness/scripts/_settings_form.py` (schema, values, suggestions, the save that keeps
+  comments), `harness/scripts/catalog_build.py`
   (`render_data`: the shell), `harness/scripts/catalog_serve.py` (`/api/data/*`), `harness/scripts/_data_page.py`
-  (listing, checking, writing, deleting), `harness/scripts/data_ls.py`, `data_show.py`, `data_put.py`, `data_rm.py` (`evh data-ls/data-show/data-put/data-rm`);
-  tests `harness/tests/test_data_page.py` (server and commands) and `test_data_page_browser.py` (the page)
+  (listing, checking, writing, deleting), `harness/scripts/data_ls.py`, `data_show.py`, `data_put.py`, `data_rm.py` (`evh data-ls`, `data-show`, `data-put`, `data-rm`);
+  tests `harness/tests/test_data_page.py` (server and commands), `test_settings_form.py` (every setting of this
+  repository through the form's save) and `test_data_page_browser.py` (the page)
 
 ## Summary
 
@@ -24,19 +27,24 @@ server on this machine. Its state is in the URL, so a file or a folder can be li
 - **Settings are edited; data is shown.** A setting is what a person decides (an arm config, a goal). Data is what
   the harness wrote (a run, a dataset, a reference set): the page shows it and names the command that writes it.
   Runs are the one kind of data the page deletes, whole.
-- **Check before save.** A setting is saved only when it parses and matches its schema, and, for every kind but an
-  arm config, its id is its file name: the same check `evh data-put --check` prints. An arm config is exempt because
+- **A form, not a text editor.** A setting is entered in a form built from its kind's schema: one labelled field
+  per key, the right control for its type, the schema's description as its help. Nobody types YAML on this page.
+- **Check before save.** A setting is saved only when it matches its schema, and, for every kind but an arm config,
+  its id is its file name: the same check `evh data-put --check` prints. An arm config is exempt because
   its `config_id` is versioned (`data/configs/tickets_lead1.yaml` holds `tickets_lead1_v1`); the other kinds are found
   by their id (validate checks goals, scorers, models and failure-mode lists; a fieldset is read as `<id>.yaml`).
-  `validate.json` has no schema: it must be a JSON object.
+  `validate.json` is checked against `schemas/validate.schema.json`, written from what `validate` reads.
+- **The file stays the person's.** Saving from the form changes only the values that changed: the file's comments
+  and the order of its keys are kept (ruamel.yaml, owner yes 2026-11-06).
 - **The same in both stores.** The page does not change with the store; a badge says which one the project uses.
-- **Parity.** Every view and every action is an `evh data-*` command (below).
+- **Parity.** Every view and every action is a command: `evh data-ls`, `data-show`, `data-put` or `data-rm` (below).
 
 ## Scope
 
 **In scope:** the overview, a folder, a file, editing and creating a setting, deleting a setting or a run.
 
-**Non-goals:** editing harness-written data; history or undo; renaming or moving; uploads of binary files; any
+**Non-goals:** editing harness-written data, or the fields of a setting a command writes (a model record's
+onboarding and smokes); a text editor for YAML; history or undo; renaming or moving; uploads of binary files; any
 write on a public server; Python code.
 
 ## Where it is
@@ -48,7 +56,7 @@ hidden.
 ## State in the URL
 
 `data.html` (the overview), `data.html?path=<folder>` (a folder), `data.html?path=<file>` (a file),
-`&edit=1` (the file's editor), `data.html?path=<folder>&new=1` (a new setting in that folder). `path` is relative to
+`&edit=1` (the file's form), `data.html?path=<folder>&new=1` (a new setting in that folder). `path` is relative to
 `data/`; one that leaves `data/` (`..`, an absolute path) is refused with **That path is outside the project's
 data.**
 
@@ -102,36 +110,71 @@ data.**
 ## 03 A file
 
 - The breadcrumb, then the file's size, date and sha256 (the first 12 characters, the whole on hover), and its kind.
-- Its text, as written, in a monospace block that scrolls; a file that is not text says **binary, N bytes** instead.
-- A setting has **Edit** and **Delete**. Anything else says what writes it: **Written by `evh run`** (a run's
-  files), **Written by `evh dataset-create`** (a dataset), and so on, and for a run's file links **inspect this run**.
+- **A setting** is shown as its fields, the way the form lays them out, read-only: each key's label and value, a
+  group's fields under its heading, a list's items one per row. A key the file does not set is not shown. **Edit**
+  opens the form, **Delete** the delete panel. Below the fields, **the file as stored** (closed) shows its text.
+- **Anything else** is its text, as written, in a monospace block that scrolls (a file that is not text says
+  **binary, N bytes**), and what writes it: **Written by `evh run`** (a run's files), **Written by
+  `evh dataset-create`** (a dataset), and so on; a run's file links **inspect this run**.
 
-## 04 Editing a setting
+## 04 Editing a setting: the form
 
 ```text
- data / goals / support_triage.yaml   editing
- ┌──────────────────────────────────────────────────────────────────────────┐
- │ goal_id: support_triage                                                  │
- │ ...                                                                      │
- └──────────────────────────────────────────────────────────────────────────┘
- [ Check ]  [ Save ]  [ Cancel ]
- ✓ It passes the check: it parses, matches goal.schema.json, and its goal_id is its file name.
+ data / configs / tickets_lead1.yaml   editing
+ config_id *        [ tickets_lead1_v1            ]  The arm's identity; runs are named after it.
+ dataset_id *       [ tickets_v1               ▾ ]  (the project's datasets)
+ goal               [ tickets_summary          ▾ ]  The goal_id this arm is measured for.
+ params *           provider   text    [ echo   ]  ×
+                    sentences  number  [ 1      ]  ×
+                    [ + add a parameter ]
+ hypothesis         [ + add hypothesis ]
+ [ Save ]  [ Cancel ]
 ```
 
-- A monospace text area with the file's text. **Check** runs the check and lists what it found, each problem on its
-  own line with where it is (`datasets[0].dataset_id: 'x' is not of type 'object'`). **Save** is enabled once the
-  text in the box has passed a check; editing again disables it until the next check. **Cancel** leaves without
-  saving (if the text changed, it asks first, on the page: **Discard your changes? [Discard] [Keep editing]**).
-- After a save the file view opens with **Saved. sha256 <first 12>**.
-- An arm config whose runs exist: the editor says **N runs were made with this config; they keep the settings they
+- **Fields come from the schema.** Each key of the kind's schema is a row: its name as the label (`*` when
+  required), the control, and the schema's description as help. Required keys come first in the schema's order,
+  then the optional ones a file sets, then **more fields** (closed) with the optional ones it does not.
+- **Controls by type.** A string is one line; a long-text key (`statement`, `decision`, `description`, `notes`,
+  `why`, `rule`, `usage`, `what`, `differs_from_this_use`) is a box of a few lines. A number or integer is a number
+  field. A boolean is a choice of **not set / yes / no**. An `enum` is a menu; a `const` is shown, fixed. A key that
+  takes one of several types (a number or `baseline`, a backend name or any text, a string or `null`) is a line with
+  its allowed words as suggestions; what is typed is read as a number when a number is allowed, `null` when null is.
+- **Groups and lists.** An object with named keys is a group of fields under its key; an optional group the file
+  does not set is a **+ add <key>** button. A list of strings or numbers is one field per item, each with **×**,
+  and **+ add**. A list of objects is one card per item, each with **×**, and **+ add <item>** (a goal's datasets:
+  **+ add a dataset**).
+- **Free keys.** An object whose keys are the person's (an arm's `params`, a deployment's `server_settings`, a
+  model's `settings_why`, validate's `floors`) is a table of rows: the key, the value's type (**text**, **number**,
+  **yes/no**, **list**, **group**) and the value; a list or group value opens the same controls nested. **+ add**
+  adds a row. An existing value keeps its type.
+- **Suggestions from the project.** A field that names other data offers what exists: a `dataset_id` the project's
+  datasets; `goal`, `superseded_by` its goals; `model_record` its model records; `deployment` the deployments of the
+  chosen model record; `hypothesis.against` its arm configs' `config_id`; `supersedes` its scorers; a
+  `reference_id` its reference sets; validate's `committed` its runs folders. A suggestion is not a limit: any value
+  may be typed, and the check says if it is wrong.
+- **Written by a command.** A field a command writes is shown read-only with **written by `evh model-onboard`**
+  (a model record's `capabilities`, a deployment's `onboarding` and `checked_at`) or **written by `evh arm-smoke`**
+  (`smokes`); saving keeps it as it is.
+- **The id.** For every kind but an arm config the id is the file name, so an existing setting's id is shown, fixed
+  (renaming is not supported). An arm config's `config_id` is a field like the others.
+- **Save** checks first. A problem is shown at its field, in red, and all of them are listed above the buttons, each
+  a link to its field (**datasets › 1 › dataset id: required**); nothing is written until the check passes. Editing
+  any field clears the list (it was the last save's). After a save the file view opens with **Saved. sha256 <first
+  12>**, or **Nothing changed.** when the values are the file's.
+- **Saving keeps the file.** Only changed values are written; comments, blank lines and key order stay. A long list
+  written inline over several lines may come back on one line when its item changes. `validate.json` is JSON: it
+  is written with two-space indents.
+- **Cancel** leaves without saving; if anything changed it asks first, on the page: **Discard your changes?
+  [Discard] [Keep editing]**.
+- An arm config whose runs exist: the form says **N runs were made with this config; they keep the settings they
   recorded. A change applies to the next run.** (the file view says the first sentence).
 
 ## 05 A new setting
 
-- In a settings folder, a name field (the file name without its suffix, the setting's id) and the text area,
-  started from the kind's template with the id filled in. **Create** is enabled once the text has passed a
-  check, like Save; a name already taken is refused: **configs/x.yaml exists: open it to edit it.** After it, the
-  file view opens with **Created.**
+- **+ New <kind>** in a settings folder opens the same form, filled from the kind's template. The id field names the
+  file (`goals/<goal_id>.yaml`); an arm config has a **file name** field of its own above `config_id`. **Create**
+  checks and saves like Save; a name already taken is refused: **configs/x.yaml exists: open it to edit it.** After
+  it, the file view opens with **Created.**
 
 ## 06 Deleting
 
@@ -146,8 +189,8 @@ data.**
 | --- | --- |
 | Opened from disk, or the server is not local | **Managing data needs `evh catalog-serve` on this machine.** |
 | A public server | the link is hidden; a direct visit says the above |
-| A check fails | the problems, Save stays disabled |
-| A write to a harness-written file | **`<path>` is written by `evh <command>`; it is not edited here.** |
+| A check fails | each problem at its field and in the list above the buttons; nothing is written |
+| A write to a harness-written file | **`<path>` is written by `<the command that writes it>`; it is not edited here.** (for a dataset, `the dataset-* commands`) |
 | A path outside data/ | **That path is outside the project's data.** |
 | Python under data/ | shown read-only: **Code is never edited here.** |
 
@@ -156,14 +199,16 @@ data.**
 | The page | The command |
 | --- | --- |
 | the overview, a folder | `evh data-ls [PATH]` |
-| a file | `evh data-show PATH` |
-| Check | `evh data-put PATH FILE --check` |
-| Save, Create | `evh data-put PATH FILE` (`--new` refuses a name already taken) |
+| a file; a setting's fields | `evh data-show PATH [--fields]` |
+| the form's Save, a field at a time | `evh data-put PATH --set KEY=VALUE … [--unset KEY …] [--check]` (KEY a dotted path, `datasets.0.role`; VALUE read as YAML: `3`, `true`, `null`, text) |
+| Create, a whole file | `evh data-put PATH FILE [--new] [--check]` (`-` reads stdin) |
 | Delete | `evh data-rm PATH` (a setting, or a whole run) |
 
 ## Checklist for a change to the data page
 
-- Each view rendered by the browser test, with a setting edited, created and deleted, and a run deleted, on both
-  stores.
+- Each view rendered by the browser test, with a setting edited in its form, created and deleted, and a run
+  deleted, on both stores.
+- Every settings file in the repository and the examples opens in its form, and saving it unchanged writes nothing.
+- A save from the form keeps the file's comments: a test edits one value of a commented file and compares the rest.
 - Every refusal above has a test, on the page and on the command.
 - The public server answers no `/api/data` call.

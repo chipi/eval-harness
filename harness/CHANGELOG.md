@@ -22,12 +22,19 @@ that can move a result is never a patch release without saying so under **Change
   project in both. Python code is never in the database.
 - **The data page** (PRD-016, UXS-004, ADR-0027). `evh catalog-serve` serves `data.html` (the header's Data menu,
   **Manage**): everything a project keeps under `data/`, in either store, and its settings (arm configs, goals,
-  fieldsets, judge scorers, model records, failure-mode lists, `validate.json`) created, edited and deleted there.
-  A setting is saved only after it passes the check (it parses, matches its schema, its id is its file name but for
-  an arm config); harness-written data is shown read-only with the command that writes it; a run is deleted whole.
+  fieldsets, judge scorers, model records, failure-mode lists, `validate.json`) created, edited and deleted there,
+  in a form built from each kind's schema: a field per key, the right control for its type, the project's datasets,
+  goals and model records suggested; no YAML to type. A setting is saved only after it passes the check (it matches
+  its schema, its id is its file name but for an arm config), each problem shown at its field; a save keeps the
+  file's comments and every line it does not change (every setting in this repository written back unchanged is the
+  same file, and 5,159 one-value edits kept every comment). Harness-written data is shown read-only with the
+  command that writes it; a run is deleted whole.
   It is the one catalog page that writes, on this machine only: a public server answers no `/api/data` call. The
-  same in the terminal: `evh data-ls`, `data-show`, `data-put`, `data-rm`. In SQLite mode it is how a person's
-  settings get into the database without `data-migrate`.
+  same in the terminal: `evh data-ls`, `data-show [--fields]`, `data-put [--set KEY=VALUE] [--unset KEY]`, `data-rm`.
+  In SQLite mode it is how a person's settings get into the database without `data-migrate`. New dependency:
+  `ruamel.yaml` (owner yes, 2026-11-06), which writes a setting back with its comments.
+- **`schemas/validate.schema.json`**: the validate policy's keys, written from what `validate` reads; the data page
+  builds its form from it and checks it with it.
 - **Tests that know when items are related.** `--cluster FIELD` on `pair-test`, `family-test` and
   `bootstrap-test`, and `cluster: FIELD` on a goal's dataset (used by the goal page, `evh goals`, the inspector,
   rounds and `--round`): items that share a value of the field (one thread's comments, one incident's decisions)
@@ -170,6 +177,10 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A goal's dataset notes with a comma were cut short.** `notes: first 200 test rows, all CNN; ...` inside a
+  `{...}` entry is YAML for `notes: first 200 test rows` and a stray key; seven goals (the tutorial's among them)
+  showed half a note on their pages. The notes are quoted, and the goal schema now refuses a key a dataset entry
+  does not have (`validate` V14 names it). Found by the data page's round trip.
 - **A release cuts a hidden dataset's judged and re-scored runs too.** The deployment's copy decided "hidden" for
   each folder directly under `data/runs*`, so a run a level deeper (`runs-judged/<scorer>/<run>`,
   `runs-rescored/<scorer>/<source>/<run>`) on a hidden dataset was copied whole, its rows' `_meta` (which a judging

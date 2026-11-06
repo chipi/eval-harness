@@ -49,15 +49,18 @@ for a small CRUD page next to the catalog for users to manage their settings and
   margin, see the check pass, save it, and `evh goals` uses the new margin.
 - As an owner, I add an arm config from the page, and `evh run --config data/configs/<new>.yaml` runs it.
 - As an owner, I delete a mistaken run from the page, and it is gone from the catalog's next build.
-- As an agent, I do each of these with `evh data-*` and read the same answers.
+- As an agent, I do each of these with `evh data-ls`, `data-show`, `data-put` and `data-rm`, and read the same answers.
 
 ## Functional Requirements
 
 1. The page lists the store, every top-level folder of `data/` with its file count, and every file of a folder with
    its size and modification time; a filter finds files by name.
-2. A file opens to its text (JSON and YAML as written) and its size, date and sha256.
-3. A setting can be edited, created from a template, and deleted. Saving runs the same check as `evh data-put
-   --check`: it parses, matches its schema, and its id is its file name; a failing check saves nothing.
+2. A file opens to its size, date and sha256; a setting to its fields, anything else to its text as written.
+3. A setting is entered in a form built from its kind's schema (owner, 2026-11-06: "I don't want this to be a YAML
+   editor"): a field per key with the right control, the project's datasets, goals and models suggested where a field
+   names them. It can be edited, created and deleted. Saving runs the same check as `evh data-put --check` (it matches
+   its schema, and its id is its file name), shows each problem at its field, and saves nothing on a problem; a save
+   keeps the file's comments and changes only the values that changed.
 4. A run can be deleted whole, after the page shows what goes (its files, outputs and rows).
 5. Everything else is read-only on the page, which says which command writes it.
 6. The page writes only through a local `catalog-serve` (127.0.0.1, this machine's Host), with a header no other web

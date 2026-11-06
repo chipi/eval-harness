@@ -19,7 +19,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 
 from evaluation_harness import _data_page, _jsonout
-from evaluation_harness._common import die, evh_prog
+from evaluation_harness._common import evh_prog
 
 
 def main() -> int:
@@ -55,7 +55,7 @@ def main() -> int:
                 print(f"deleted {norm}")
             _jsonout.value("deleted", gone)
     except _data_page.Refused as exc:
-        die(str(exc), exc.kind)
+        _data_page.refuse(exc)
     return 0
 
 

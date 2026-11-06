@@ -1,5 +1,8 @@
 anthropic>=0.40
 pyyaml>=6.0
+# Writes a setting saved from the data page's form with its comments and key order kept (UXS-004).
+# Owner yes, 2026-11-06.
+ruamel.yaml>=0.18
 jsonschema>=4.0
 # `litellm`, `openrouter` and `openai` providers all go through this client.
 openai>=1.0

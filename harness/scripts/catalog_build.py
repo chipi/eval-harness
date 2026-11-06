@@ -71,6 +71,7 @@ ASSETS = (
     "overview.js",
     "arms.js",
     "group.js",
+    "data_form.js",
     "data.js",
     "icon.svg",
 )
@@ -4585,7 +4586,7 @@ def render_data(A: Adapter, out: Path, page_fn=page, serve: str = "evh catalog-s
             body,
             0,
             "manage",
-            ("assets/data.js",),
+            ("assets/data_form.js", "assets/data.js"),
             item=A.item_word,
             serve=serve,
             elsewhere=(("data-ls", {}),),
