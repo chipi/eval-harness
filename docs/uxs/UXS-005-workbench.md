@@ -9,7 +9,7 @@
 
 Low-fidelity sketches, in the order a person works (owner, round 1's review: "start from the beginning: you set a
 goal, you have a dataset for it, you do something with the dataset, and then you go into the experiment"): an empty
-project, the goal, its dataset, preparing the dataset, then models and the experiment. How often a step happens
+project, the goal, its dataset, preparing the dataset, then models and the eval. How often a step happens
 decides how much thought it gets, never its place in the order. One example runs through it: this repository's
 real CNN summaries goal (`news_summary_cnn`: its title, statement, decision and measure) and its dataset from Hugging
 Face (`abisee/cnn_dailymail`, the 3.0.0 test split's 11,490 rows, the first 200 the committed runs measured). Values
@@ -47,7 +47,7 @@ screen.
 
 ```text
  New goal                                                                       step 1 of 5
- ①Goal ─ ②Dataset ─ ③Prepare ─ ④Models ─ ⑤Experiment
+ ①Goal ─ ②Dataset ─ ③Prepare ─ ④Models ─ ⑤Eval
 
  What is it?  ?     [ Short news summaries (CNN)                                             ]
  What is it for? ?  [ Pick a model that writes a short summary of a CNN-style news article, at ]
@@ -72,7 +72,7 @@ After saving, the goal's page is the hub of the journey: the same five steps, ea
  Short news summaries (CNN)                                                  news_summary_cnn
  decides coverage (higher is better) · balanced                                        [edit]
 
- ①Goal ✓   ②Dataset ○   ③Prepare ○   ④Models ○   ⑤Experiment ○
+ ①Goal ✓   ②Dataset ○   ③Prepare ○   ④Models ○   ⑤Eval ○
 
  ② Dataset   the items the goal is measured on                       [ Add a dataset → ]
 ```
@@ -133,19 +133,20 @@ Making one is four short screens, one decision each:
   Ready when: fetched ✓  looked at ✓  a reference set ✓      [ Next: the models → ]
 ```
 
-- One screen with the three things a dataset needs before an experiment; each is a job or a small choice, done in
+- One screen with the three things a dataset needs before an eval; each is a job or a small choice, done in
   order, each showing its result.
 - **Labelling here** opens the in-app labelling screen (W2, to sketch); a CSV round trip stays the other way in.
 - A reference set's promotion records who and why (governance).
 
 ## 4 Models (to sketch next)
 
-Bring in a model the experiment will use: what it is, where it runs, onboarded (the probes), approved. A project with
+Bring in a model the eval will use: what it is, where it runs, onboarded (the probes), approved. A project with
 models already onboarded picks from them and skips this step.
 
-## 5 The experiment: a round
+## 5 The eval: its rounds
 
-The experiment is a round on the goal and its dataset: its arms, their runs and scores, and the decision. This is
+The eval is the goal measured on its dataset, in rounds: each round compares arms (their runs and scores) and ends in a
+decision. This is
 where people spend most of their time, so it gets the most thought; round 1's sketch of its board stays as the
 starting point:
 
@@ -297,7 +298,7 @@ erDiagram
 
 ## To review in this round
 
-1. The order: an empty project, the goal (step 1), its dataset (2), preparing it (3), models (4), the experiment (5),
+1. The order: an empty project, the goal (step 1), its dataset (2), preparing it (3), models (4), the eval (5),
    with the goal's page as the hub that shows the five steps and their state.
 2. The goal in five inputs, the rest advanced or owned by later steps.
 3. The dataset in four short screens (where from, what's in it, its fields, its name), preview before writing.
@@ -305,8 +306,7 @@ erDiagram
 5. The data model (unchanged from round 1).
 6. The help layer: three layers (the step's sentence, each field's hint, a `?` panel), the words taught with a
    glossary, the command shown folded for someone who knows, and the first draft of the texts for steps 0 to 3.
-7. **A word to decide:** step 5 is called "Experiment" here, but the harness's word, agreed 2026-11-02, is **eval**
-   (task × dataset), with **round** for one comparison of arms on a goal. Proposed: call step 5 **Round**; keep
-   "Experiment" only if you want it.
+7. Step 5 is **Eval** (owner, round 3: "Eval"), the harness's word since 2026-11-02; a round is one comparison of
+   arms inside it.
 
-Not sketched yet: step 4 (models), the experiment in detail, the labelling screen, production (W3).
+Not sketched yet: step 4 (models), the eval in detail, the labelling screen, production (W3).
