@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Workbench mockup</title>
+<link rel="stylesheet" href="workbench.css">
+</head>
+<body>
+<div class="mockbar" role="note">
+  <span><b>Mockup, round 1</b> · static: the data is read from this project, nothing is saved to it</span>
+  <span class="grow"></span>
+  <label class="toggle"><input type="checkbox" id="mocknotes" checked> mockup notes</label>
+  <button type="button" id="reset">start over</button>
+</div>
+<header class="bar">
+  <a class="brand" href="#start"><i></i>evh <span>workbench</span></a>
+  <span class="project">project: harness</span>
+  <span class="grow"></span>
+  <nav>
+    <a href="#glossary" class="hide-sm">Words</a>
+    <a href="#catalog" class="hide-sm">Catalog ↗</a>
+    <label class="toggle"><input type="checkbox" id="hints" checked> hints</label>
+    <button type="button" class="round" id="theme" aria-label="Switch light or dark">◐</button>
+  </nav>
+</header>
+<div class="layout" id="layout">
+  <aside class="rail" id="rail" aria-label="The goal's steps"></aside>
+  <main id="main"></main>
+  <aside class="help" id="help" hidden aria-live="polite"></aside>
+</div>
+<script src="mock.js"></script>
+<script src="help.js"></script>
+<script src="workbench.js"></script>
+</body>
+</html>

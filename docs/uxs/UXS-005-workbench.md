@@ -12,7 +12,7 @@ goal, you have a dataset for it, you do something with the dataset, and then you
 project, the goal, its dataset, preparing the dataset, then models and the eval. How often a step happens
 decides how much thought it gets, never its place in the order. One example runs through it: this repository's
 real CNN summaries goal (`news_summary_cnn`: its title, statement, decision and measure) and its dataset from Hugging
-Face (`abisee/cnn_dailymail`, the 3.0.0 test split's 11,490 rows, the first 200 the committed runs measured). Values
+Face (`abisee/cnn_dailymail`, the 1.0.0 test split's 11,490 rows, the first 200 the committed runs measured). Values
 not read from the project are left out rather than invented; the round sketched at the end is made up to show the
 screen.
 
@@ -91,8 +91,8 @@ After saving, the goal's page is the hub of the journey: the same five steps, ea
 Making one is four short screens, one decision each:
 
 ```text
- a Where from     Hugging Face   repo [ abisee/cnn_dailymail ]  config [ 3.0.0 ]  split [ test ]
-                  pinned to the commit it reads (shown once read) · licence apache-2.0   [ Read it → ]
+ a Where from     Hugging Face   repo [ abisee/cnn_dailymail ]  config [ 1.0.0 ]  split [ test ]
+                  pinned to 690bb95 · licence apache-2.0                          [ Read it → ]
 
  b What's in it   11,490 rows · columns: article (text), highlights (text), id (text)
                   the item is   [ article ▾ ]   its reference is   [ highlights ▾ ]
