@@ -22,6 +22,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import os
 import runpy
 import sys
+import traceback
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -38,6 +39,36 @@ COMMANDS = {
     ),
     "env-check": ("env_check.py", "check the Python environment and keys"),
     "dataset-create": ("dataset_create.py", "freeze a dataset: item list + per-item sha256"),
+    "dataset-describe": (
+        "dataset_describe.py",
+        "change a dataset's licence or description, never its items or version",
+    ),
+    "fieldset-propose": (
+        "fieldset_propose.py",
+        "a field set proposed from a dataset source's features, for a person to accept (--write)",
+    ),
+    "dataset-publish": (
+        "dataset_publish.py",
+        "publish a dataset to a new repo (Hugging Face), private first, read back and checked by sha256",
+    ),
+    "dataset-card": (
+        "dataset_card.py",
+        "a dataset's card: what, where from, the datasheet's answers; or it as Croissant 1.1",
+    ),
+    "licences": ("view_licences.py", "the licences a dataset can name (SPDX ids), a line each"),
+    "run-migrate": ("run_migrate.py", "bring the runs to one outputs file each (RFC-024), once (idempotent)"),
+    "data-migrate": (
+        "data_migrate.py",
+        "move the project's data/ into its SQLite database or back (RFC-025)",
+    ),
+    "data-ls": ("data_ls.py", "list what the project keeps under data/, in either store (UXS-004)"),
+    "data-show": ("data_show.py", "show one file of the project's data"),
+    "data-put": ("data_put.py", "create or change a setting (config, goal, fieldset, ...), checked first"),
+    "data-rm": ("data_rm.py", "delete a setting, or a whole run"),
+    "dataset-migrate": (
+        "dataset_migrate.py",
+        "bring the dataset records to this release's format, once (idempotent)",
+    ),
     "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),
     "dataset-profile": (
         "dataset_profile.py",
@@ -113,6 +144,10 @@ COMMANDS = {
     "labels": (
         "view_labels.py",
         "every label set, or a dataset's: source, coverage, guideline, how often two agree",
+    ),
+    "tags": (
+        "view_tags.py",
+        "the failure modes tagged on outputs: every tag set, or per arm on a dataset how often each mode was",
     ),
     "label-sheet": (
         "label_sheet.py",
@@ -239,6 +274,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if note := stray_home():
         print(note, file=sys.stderr)
+    from evaluation_harness._common import EXIT_INTERNAL, EXIT_INTERRUPTED, EXIT_REFUSED  # noqa: PLC0415
+
     try:
         runpy.run_path(str(script), run_name="__main__")
     except SystemExit as exc:
@@ -248,7 +285,18 @@ def main(argv: list[str] | None = None) -> int:
         if isinstance(code, int):
             return code
         print(code, file=sys.stderr)
-        return 1
+        return EXIT_REFUSED
+    except KeyboardInterrupt:
+        print("\ninterrupted", file=sys.stderr)
+        return EXIT_INTERRUPTED
+    except Exception:  # noqa: BLE001 -- anything uncaught, told apart from a refusal (1) by its number
+        traceback.print_exc()
+        print(
+            f"evh {name}: stopped by an error nothing caught (exit {EXIT_INTERNAL}); the traceback above says "
+            "where: the harness, or the project's own code (an adapter, a scorer)",
+            file=sys.stderr,
+        )
+        return EXIT_INTERNAL
     return 0
 
 

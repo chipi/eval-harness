@@ -1,8 +1,0 @@
-```json
-[
-  {
-    "text": "Senator Strom Thurmond",
-    "type": "person"
-  }
-]
-```

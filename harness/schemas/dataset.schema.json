@@ -7,8 +7,12 @@
   "additionalProperties": false,
   "properties": {
     "dataset_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
-    "version": {"type": "string"},
+    "version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$", "description": "The content version MAJOR.MINOR, two integers (1.10 follows 1.9): 1.0 for a dataset made from nothing or a side of a split; from a parent (derived_from), MINOR + 1 when items were only added, MAJOR + 1 and MINOR 0 when any was removed or changed, the parent's when the items are the same. Not changed by the card, licence or description. Recomputed by validate (V22); a source's own version is source.revision."},
     "description": {"type": "string"},
+    "licence": {"type": "string", "description": "Optional: an SPDX id from evh licences, unknown (the source states none), or LicenseRef-<name> for a licence of its own. Changed by evh dataset-describe without a new version (E3); checked by validate (V22)."},
+    "source": {"type": "object", "required": ["provider"], "additionalProperties": false, "description": "Where the items came from (E1), the same keys for every source; a value nobody recorded is null. provider names the source (huggingface, kaggle, openml, croissant, url, folder, a project's own), ref its name for the dataset, revision its own version of it (never this dataset's version), gated whether reading it needs an agreement, description_sha256 the hash of its description as read, item_url a template for one item's page with {row} (the item's source_row) or {item_id}.", "properties": {"provider": {"type": "string"}, "ref": {"type": ["string", "null"]}, "url": {"type": ["string", "null"], "pattern": "^https?://"}, "revision": {"type": ["string", "null"]}, "config": {"type": ["string", "null"]}, "split": {"type": ["string", "null"]}, "gated": {"type": ["boolean", "null"]}, "description_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}, "item_url": {"type": ["string", "null"], "pattern": "^https?://"}}},
+    "card": {"type": "object", "additionalProperties": false, "description": "The datasheet questions answered (E4), under Croissant RAI 1.0's property names without the rai: prefix; all optional. Changed by evh dataset-describe --card without a new version.", "properties": {"dataUseCases": {"type": "string"}, "dataCollection": {"type": "string"}, "dataCollectionType": {"type": "string"}, "dataCollectionRawData": {"type": "string"}, "dataCollectionTimeframe": {"type": "string"}, "dataCollectionMissingData": {"type": "string"}, "dataPreprocessingProtocol": {"type": "string"}, "dataManipulationProtocol": {"type": "string"}, "dataImputationProtocol": {"type": "string"}, "dataAnnotationProtocol": {"type": "string"}, "dataAnnotationPlatform": {"type": "string"}, "dataAnnotationAnalysis": {"type": "string"}, "annotationsPerItem": {"type": "string"}, "annotatorDemographics": {"type": "string"}, "machineAnnotationTools": {"type": "string"}, "personalSensitiveInformation": {"type": "string"}, "dataBiases": {"type": "string"}, "dataLimitations": {"type": "string"}, "dataSocialImpact": {"type": "string"}, "dataReleaseMaintenancePlan": {"type": "string"}}},
+    "published": {"type": "array", "description": "Where the dataset was published (evh dataset-publish, P1), each read back and matching: no new version.", "items": {"type": "object", "required": ["provider", "repo", "revision", "at"], "properties": {"provider": {"type": "string"}, "repo": {"type": "string"}, "revision": {"type": "string"}, "url": {"type": "string"}, "private": {"type": "boolean"}, "at": {"type": "string"}, "files": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}}}},
     "created_at": {"type": "string"},
     "source_dir": {"type": "string"},
     "fieldset": {"type": "string", "pattern": "^[a-z0-9_]+$",
@@ -28,7 +32,7 @@
       }
     },
     "tags": {"type": "object", "additionalProperties": {"type": "string"}, "description": "What the dataset is, as key=value pairs a project chooses (source, environment, purpose, owner): shown and filtered on, never part of its identity. Items carry their own tags (a list) below."},
-    "split": {"type": "object", "description": "This dataset is one side of a split (evh dataset-split, RFC-019): the parent, the share, the rule.", "required": ["from", "test", "by", "part"], "properties": {"from": {"type": "string"}, "test": {"type": "number"}, "by": {"enum": ["hash", "time"]}, "key": {"type": ["string", "null"]}, "seed": {"type": "integer"}, "part": {"enum": ["validation", "test"]}}},
+    "split": {"type": "object", "description": "This dataset is one side of a split (evh dataset-split, RFC-019): the parent, the share, the rule.", "required": ["from", "test", "by", "part"], "properties": {"from": {"type": "string"}, "test": {"type": "number"}, "by": {"enum": ["hash", "time"]}, "key": {"type": ["string", "null"]}, "seed": {"type": "integer"}, "part": {"enum": ["validation", "test"]}, "from_version": {"type": ["string", "null"], "description": "the parent's version when the split was made"}}},
     "text": {"enum": ["shown", "hidden"], "description": "hidden: no text that comes from this dataset (items, outputs, reference texts and labels, judge reasons, source links, text and URL field values) appears on any public surface (RFC-019 §4). Default shown."},
     "extended_from": {
       "type": "object",
@@ -71,6 +75,7 @@
                          "description": "where materialize fetches the item from; its bytes must hash to source_sha256"},
           "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
           "tags": {"type": "array", "items": {"type": "string"}},
+          "source_row": {"type": ["integer", "string"], "description": "the item's row (or id) at its source, filled into source.item_url's {row}"},
           "fields": {"type": "object", "description": "values of the dataset's declared fields"}
         }
       }

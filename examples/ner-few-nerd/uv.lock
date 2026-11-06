@@ -585,7 +585,7 @@ requires-dist = [
     { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin' and extra == 'local'", specifier = "<2" },
     { name = "openai", specifier = ">=1.0" },
     { name = "protobuf", marker = "extra == 'local'", specifier = ">=4.0" },
-    { name = "pyarrow", specifier = ">=15" },
+    { name = "pyarrow", specifier = ">=15,<26" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "sentencepiece", marker = "extra == 'local'", specifier = ">=0.1.99" },
     { name = "span-marker", marker = "extra == 'local'", specifier = ">=1.5" },

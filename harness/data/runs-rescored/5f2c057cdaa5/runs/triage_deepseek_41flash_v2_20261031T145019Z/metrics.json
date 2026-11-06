@@ -12,6 +12,7 @@
   "derived": {
     "at": "2026-11-02T08:17:39Z",
     "from": "triage_deepseek_41flash_v2_20261031T145019Z",
+    "from_dir": "runs/triage_deepseek_41flash_v2_20261031T145019Z",
     "kind": "rescore",
     "with": {
       "adapter": "examples/triage-fleet/adapter.py",

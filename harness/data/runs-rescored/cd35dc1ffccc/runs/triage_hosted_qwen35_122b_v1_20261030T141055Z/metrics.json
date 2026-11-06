@@ -11,6 +11,7 @@
   "derived": {
     "at": "2026-10-31T11:08:49Z",
     "from": "triage_hosted_qwen35_122b_v1_20261030T141055Z",
+    "from_dir": "runs/triage_hosted_qwen35_122b_v1_20261030T141055Z",
     "kind": "rescore",
     "with": {
       "adapter": "examples/triage-fleet/adapter.py",

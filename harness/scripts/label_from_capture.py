@@ -23,7 +23,8 @@ import hashlib
 from collections import Counter
 from pathlib import Path
 
-from evaluation_harness._common import CAPTURES, die, load_dataset
+from evaluation_harness import _store
+from evaluation_harness._common import CAPTURES, die, evh_prog, load_dataset
 from evaluation_harness._importers import parse_time
 from evaluation_harness._label_sets import label_text, write_set
 from evaluation_harness._outcome_rules import load_rules, matches
@@ -32,7 +33,7 @@ from evaluation_harness.dataset_from_capture import load_capture
 
 def main() -> int:
     """Label a dataset's items from a capture's outcomes, by rules."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--capture", required=True, help="the capture whose records hold the outcomes")
     ap.add_argument("--map", required=True, type=Path, help="the mapping: YAML rules")
@@ -67,14 +68,16 @@ def main() -> int:
                 else str(rule["label"])
             )
     if not labels:
-        die(f"no item got a label ({dict(counts)}): nothing written")
+        die(f"no item got a label ({dict(counts)}): nothing written", "not-enough")
     source = {
         "kind": "rule",
         "capture": args.capture,
-        "capture_sha256": hashlib.sha256((CAPTURES / args.capture / "capture.json").read_bytes()).hexdigest(),
+        "capture_sha256": hashlib.sha256(
+            _store.read_bytes(CAPTURES / args.capture / "capture.json")
+        ).hexdigest(),
         "captured_at": doc.get("captured_at"),
         "mapping": args.map.as_posix(),
-        "mapping_sha256": hashlib.sha256(args.map.read_bytes()).hexdigest(),
+        "mapping_sha256": hashlib.sha256(_store.read_bytes(args.map)).hexdigest(),
         **{k: counts[k] for k in ("matched", "skipped", "unmatched", "no_record")},
     }
     out = write_set(args.dataset_id, args.name, labels, source, args.map)

@@ -206,6 +206,17 @@ monotonically 0.409 → 0.748, so the *ordering* is real, while **P(same winner)
 close to a coin toss. Both statements are true at once, and reading either alone would
 mislead.
 
+#### What the goal recommends under 0.8.0's contender rule (2026-11-05)
+
+From 0.8.0 a contender must be *shown* no worse than the leader by more than the margin, a one-sided
+non-inferiority test with Holm across the candidates, not merely "not significantly different"
+([ADR-0026](../docs/adr/ADR-0026-contenders-by-non-inferiority.md)). The goal is `frugal`: a margin of 10% of the
+leader's 0.7437, so 0.0744. Of the 18 arms tested against glm_s, 8 are shown within it, and the cheapest of those,
+deepseek_s (0.7378, about $300 per 1M queries), is what the goal recommends. e5_base retrieval alone (0.7191, $0,
+the promoted baseline) is within the margin on its own test (p 0.0105 at a one-sided 0.0125) but not once the 18
+compared arms are corrected for (its Holm threshold is 0.0016). Testing each arm on its own would recommend it,
+and would recommend a too-weak arm far more often than the 2.5% the test stands for when many arms are compared.
+
 ### 3.3 Adding a reranker and swapping the retriever are comparable; together they stack
 
 Each line is a paired sign-flip on 200 queries, uncorrected (20,000 permutations):

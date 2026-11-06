@@ -112,7 +112,7 @@ for label, lines, says in (
     ("no body and no fields", [{"id": "e", "body": None}], "every record is well-formed"),
 ):
     r = bad_file("bad.jsonl", lines)
-    check(f"importer-check: red on {label}", r.returncode == 1 and f"FAIL {says}" in out(r), out(r)[-300:])
+    check(f"importer-check: red on {label}", r.returncode == 6 and f"FAIL {says}" in out(r), out(r)[-300:])
 
 (proj / "flaky.py").write_text(
     "import random\n"
@@ -124,7 +124,7 @@ for label, lines, says in (
 r = evh("importer-check", "flaky.py:Importer", "--query", "{}")
 check(
     "importer-check: red when two reads differ",
-    r.returncode == 1 and "FAIL two reads" in out(r),
+    r.returncode == 6 and "FAIL two reads" in out(r),
     out(r)[-300:],
 )
 r = evh("importer-check", "../escape", "--query", "{}")
@@ -202,13 +202,13 @@ check(
 r = evh("importer-check", "deaf.py:Importer", "--query", "{}")
 check(
     "importer-check: red on an importer that ignores since",
-    r.returncode == 1 and "FAIL it keeps to since" in out(r),
+    r.returncode == 6 and "FAIL it keeps to since" in out(r),
     out(r)[-300:],
 )
 r = evh("importer-check", "deaf.py:Importer", "--query", json.dumps({"since": "2026-10-04"}))
 check(
     "importer-check: red when a record falls outside the query's own window",
-    r.returncode == 1 and "FAIL every record is inside the window" in out(r) and "a0" in out(r),
+    r.returncode == 6 and "FAIL every record is inside the window" in out(r) and "a0" in out(r),
     out(r)[-300:],
 )
 r = evh(

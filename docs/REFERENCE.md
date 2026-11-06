@@ -320,6 +320,15 @@ Ranking arms by a mean is not a result until you know which gaps survive noise.
 | `bootstrap_test.py` | Confidence interval for macro-F1, which has no per-item value | Paired percentile [bootstrap](https://en.wikipedia.org/wiki/Bootstrapping_(statistics)). **Documented as anti-conservative** — 11 significant differences against the exact test's 8. |
 | `rescore.py` | What would this look like under a different scorer? | Recomputes from stored outputs. **No API calls, no money.** This is why a scorer bug costs nothing to fix. |
 
+**When items are not independent:** comments of one thread, questions about one document, decisions on
+one incident share a cause, and testing them one by one counts that cause several times: p and the interval
+come out too small ([Miller 2024](https://arxiv.org/abs/2411.00640) measured clustered errors 1.1 to 3 times
+the naive ones). Name the item field that groups them, `--cluster FIELD` on `pair-test`, `family-test` and
+`bootstrap-test`, or `cluster:` on a goal's dataset: the sign-flip test then flips one sign per cluster on the
+cluster's summed difference, the interval is the cluster-robust one above 30 clusters, and the bootstrap
+draws whole clusters. With one item per cluster it is the item test exactly. Fewer clusters mean fewer sign
+patterns: below 6 clusters nothing can be significant at 0.05.
+
 **Why Holm and not Bonferroni:** Holm is uniformly more powerful and controls the same
 family-wise error rate. **Why permutation and not a t-test:** these per-item scores are not
 normal — `correct` is Bernoulli, `ndcg_10` on a single-relevant query takes one of eleven
@@ -366,7 +375,7 @@ the dataset is never optional in these labels.
 | **validation / test** | a goal's dataset roles: the set an arm is tuned on, and the set it is reported on (`evh dataset-split` writes `<D>_validation` and `<D>_test`) | "dev / heldout" |
 | **floor** | a non-model arm (rule, constant or random: `lead3`, `keyword`, `constant`, `nothing`, `capitalized`, `random`, `first_k`); those with a score predictable in advance double as scorer calibration checks | "baseline" — the predictable ones are scorer checks first |
 | **significant** | the difference survives Holm step-down at α = 0.05 (the verdicts: significant: better / worse, not significant) | "separated"; "better", which only needs a point estimate |
-| **contenders** | the arms a goal's strategy lets the tie-break choose among: the leader, and those not significantly different from it (`frugal`), also within the quality margin (`balanced`, the default), or of the same quality (`quality_first`) | "tied" — a tie is per item, in a paired test (wins, losses, ties) |
+| **contenders** | the arms a goal's strategy lets the tie-break choose among: the leader, and those shown no worse than it by more than the margin, a non-inferiority test (`balanced` 5% of the leader by default, `frugal` 10%), or of the same quality (`quality_first`); ADR-0026 | "tied" — a tie is per item, in a paired test (wins, losses, ties) |
 | **reference / reference set** | the expected answer a scorer reads for one item / the governed collection of them under `data/references/<tier>/<name>/`, promoted from a label set | "reference" for the set |
 | **billed** | what the provider charged (`usage.cost`) | "cost", which used to mean a price-table estimate |
 | **local ML** / **open-weight** / **proprietary** | the three tiers in [REPORT_SYNTHESIS §0](../research/REPORT_SYNTHESIS.md) | "free vs paid", which conflates tiers 1 and 2 |
@@ -397,6 +406,10 @@ What other tools call the same things. A cell is a name read in that tool's own 
 | **significant** | — | — | — | — | — | — | — | — |
 | **capture** | — | — | — | — | production traces added to a dataset | traces turned into examples | traces added to a dataset | — |
 | **validation / test** | — | `validation_split` / `test_split` | `VALID_SPLIT` / `TEST_SPLIT` | — | — | — | — | `validation` / `test` splits |
+| **repeat** (`--repeat`, a goal's `reduce`) | `epochs`, reduced by `mean`, `median`, `mode`, `majority`, `max`, `pass_at_{k}`, `pass_k_{k}`, `at_least_{k}` | — | — | — | — | — | — | — |
+| **several right answers** (`{"accept": […]}`) | a `target` that is a `list[str]` | — | — | — | — | — | — | — |
+| **card** (`dataset-card`) | — | — | — | — | — | — | — | dataset card |
+| **cluster** (`cluster: FIELD`) | — | — | — | — | — | — | — | — |
 
 Where the same word means something else:
 
@@ -407,12 +420,19 @@ Where the same word means something else:
   as in `load_dataset("PolyAI/minds14", "fr-FR")`).
 - **governed vs production** data is offline vs online evaluation in LangSmith, Langfuse and
   Braintrust: offline scores a fixed dataset before shipping, online scores live production traces.
+- **cluster** is the statistician's word (clustered standard errors), as Miller (2024) uses it for
+  evals: items that share a source count as one when a difference is tested.
+- **derived_from** (a dataset made from another) is PROV-O's `prov:wasDerivedFrom`, the word Croissant 1.1
+  uses for provenance; `dataset-card --format croissant` writes it so. The **card**'s keys are Croissant
+  RAI 1.0's property names, without the `rai:` prefix.
 
 Read in: [inspect_ai](https://inspect.aisi.org.uk/), [lm-evaluation-harness task guide](https://github.com/EleutherAI/lm-evaluation-harness/blob/main/docs/task_guide.md),
 [HELM](https://crfm-helm.readthedocs.io/en/latest/code/), [OpenAI evals](https://developers.openai.com/api/docs/guides/evals),
 [Braintrust](https://docs.braintrust.dev/core/experiments), [LangSmith](https://docs.langchain.com/langsmith/evaluation-concepts),
 [Langfuse](https://langfuse.com/docs/evaluation/overview), [Hugging Face datasets](https://huggingface.co/docs/datasets/load_hub),
-[evaluate](https://huggingface.co/docs/evaluate/a_quick_tour) and [lighteval](https://huggingface.co/docs/lighteval/index).
+[evaluate](https://huggingface.co/docs/evaluate/a_quick_tour) and [lighteval](https://huggingface.co/docs/lighteval/index);
+inspect_ai's `epochs` and reducers in its [scoring metrics](https://inspect.aisi.org.uk/metrics.html) page, its
+`target` type in [datasets](https://inspect.aisi.org.uk/datasets.html) (both read 2026-11-05).
 
 ### Spelling
 
@@ -511,8 +531,9 @@ Underlying architectures: [BART](https://arxiv.org/abs/1910.13461),
 Hosted inference is routed through [OpenRouter](https://openrouter.ai/), which resells
 capacity from Anthropic, OpenAI, Google, Meta, Mistral, DeepSeek, Alibaba (Qwen), Z.ai and
 their serving partners (Novita, DeepInfra, Nebius, Parasail and others). Dataset slices are
-fetched through the [HuggingFace datasets-server](https://huggingface.co/docs/datasets-server), and from the
-Hub's parquet conversion of the same split when its `/rows` is down (`examples/_shared/hf_rows.py`).
+read from the Hugging Face Hub's parquet conversion of each split at one pinned commit, each file checked against
+the sha256 the Hub lists (the harness's `huggingface` source, through `examples/_shared/hf_rows.py`); the rerun
+workflow checks those rows against the [datasets-server](https://huggingface.co/docs/datasets-server)'s `/rows`.
 
 ### Method
 

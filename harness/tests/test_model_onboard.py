@@ -132,7 +132,7 @@ with tempfile.TemporaryDirectory() as td:
     out = run.stdout + run.stderr
     check(
         "onboard: a reasoning model with no reasoning setting is flagged",
-        run.returncode == 1
+        run.returncode == 6
         and "reasoning: it reasons by default and the record sets no reasoning_effort" in out,
         out[-600:],
     )
@@ -167,7 +167,7 @@ with tempfile.TemporaryDirectory() as td:
     )
     check(
         "onboard: a build the server serves differently is flagged",
-        run.returncode == 1 and "build: here serves abc123def456" in run.stdout,
+        run.returncode == 6 and "build: here serves abc123def456" in run.stdout,
         run.stdout[-600:],
     )
     got3 = yaml.safe_load(f.read_text())

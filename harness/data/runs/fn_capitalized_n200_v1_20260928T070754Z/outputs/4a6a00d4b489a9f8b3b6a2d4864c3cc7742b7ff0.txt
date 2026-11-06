@@ -1,1 +1,0 @@
-[{"text": "These", "type": "location"}, {"text": "Calvinist Church", "type": "location"}, {"text": "United States", "type": "location"}]

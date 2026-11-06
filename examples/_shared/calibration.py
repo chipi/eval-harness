@@ -20,11 +20,10 @@ from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = ROOT / "docs" / "evidence" / "calibration"
-ROWS_API = "https://datasets-server.huggingface.co/rows"
 
 
 def page(dataset: str, config: str, split: str, offset: int, length: int = 100) -> list:
-    """One page of rows from the HF datasets-server (hf_rows: paced, retried, 429-aware)."""
+    """One page of rows of a Hub split, through the harness's huggingface source (hf_rows: pinned, sha256-checked)."""
     from hf_rows import page as _rows_page  # noqa: PLC0415
 
     return _rows_page(dataset, config, split, offset, length)

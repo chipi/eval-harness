@@ -45,7 +45,11 @@ from typing import Protocol
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _common,
+    _outputs,
+    _store,
+)
 from evaluation_harness._common import (  # noqa: E402
     BOOKKEEPING_PREFIXES,
     ModuleNotLoadable,
@@ -346,7 +350,7 @@ def _tokens(tin, tout) -> int | None:
 
 def _json(p: Path):
     try:
-        return json.loads(p.read_text(encoding="utf-8"))
+        return json.loads(_store.read_text(p, encoding="utf-8"))
     except (OSError, ValueError):
         return None
 
@@ -402,9 +406,13 @@ class HarnessAdapter:
         one show, never runs that exist on this disk only. Outside a git checkout every directory is read."""
         out: dict[str, list[Path]] = {}
         nested = ("runs-judged", "runs-rescored")
-        bases = [p for p in sorted(self.runs_root.glob("runs*")) if p.is_dir() and p.name not in nested]
-        bases += sorted(p for p in (self.runs_root / "runs-judged").glob("*") if p.is_dir())
-        bases += sorted(p for p in (self.runs_root / "runs-rescored").glob("*/*") if p.is_dir())
+        bases = [
+            p
+            for p in sorted(_store.glob(self.runs_root, "runs*"))
+            if _store.is_dir(p) and p.name not in nested
+        ]
+        bases += sorted(p for p in _store.glob(self.runs_root / "runs-judged", "*") if _store.is_dir(p))
+        bases += sorted(p for p in _store.glob(self.runs_root / "runs-rescored", "*/*") if _store.is_dir(p))
         bases = [p for p in bases if not _common.ignored_by_git(p)]
         refs: dict[Path, str] = {}
         made: dict[Path, str] = {}
@@ -534,8 +542,14 @@ class HarnessAdapter:
                     acc.setdefault(k, {}).setdefault(r["item_id"], []).append(v)
         n = len(self._dirs(arm))
         src = "predictions.jsonl" + (f" (mean of {n} repeats)" if n > 1 else "")
+        # With repeats, each item's values are kept beside their mean, so a goal can combine them another way
+        # (`primary.reduce`, stats.reduce_repeats).
         return {
-            k: {"source": src, "values": {i: statistics.fmean(v) for i, v in items.items()}}
+            k: {
+                "source": src,
+                "values": {i: statistics.fmean(v) for i, v in items.items()},
+                **({"repeats": items} if n > 1 else {}),
+            }
             for k, items in acc.items()
         }
 
@@ -551,7 +565,7 @@ class HarnessAdapter:
 
     def recorded_means(self, arm: str) -> dict[str, float]:
         """Return run-level averages for arms with no per-item scores."""
-        if any((d / "predictions.jsonl").is_file() for d in self._dirs(arm)):
+        if any(_outputs.has_rows(d) for d in self._dirs(arm)):
             return {}
         return _numeric(self._metrics(arm).get("scores") or {})
 
@@ -648,9 +662,9 @@ class HarnessAdapter:
         reference the project does not redistribute, listed from its manifest)."""
         out = []
         for tier in ("gold", "silver"):
-            for d in sorted((self.data_dir / "references" / tier).glob("*")):
-                texts = d.is_dir() and any(d.glob("*.txt"))
-                if d.is_dir() and (texts or (d / "manifest.json").is_file()):
+            for d in sorted(_store.glob(self.data_dir / "references" / tier, "*")):
+                texts = _store.is_dir(d) and any(_store.glob(d, "*.txt"))
+                if _store.is_dir(d) and (texts or _store.is_file(d / "manifest.json")):
                     mf = _json(d / "manifest.json") or {}
                     out.append(
                         {
@@ -663,7 +677,7 @@ class HarnessAdapter:
                             "archived": False,
                             "format": "",
                             "dir": d,
-                            "items": len(list(d.glob("*.txt"))) if texts else mf.get("n_items"),
+                            "items": len(list(_store.glob(d, "*.txt"))) if texts else mf.get("n_items"),
                             "fetched": not texts,
                             "source": mf.get("source"),
                             "author": mf.get("authored_by"),
@@ -699,7 +713,7 @@ class HarnessAdapter:
         checks = []
         caps = self.data_dir / "captures"
         if callable(getattr(adapter_module(sh["_adapter_spec"]), "production_ran", None)):
-            for c in sorted(caps.glob("*/capture.json")) if caps.is_dir() else []:
+            for c in sorted(_store.glob(caps, "*/capture.json")) if _store.is_dir(caps) else []:
                 try:
                     got = dsh.check(sh, c.parent.name, caps)
                 except SystemExit:  # a record changed since it was captured: that capture says nothing here
@@ -711,11 +725,30 @@ class HarnessAdapter:
                     checks.append(got)
         return {**{k: v for k, v in sh.items() if not k.startswith("_")}, "captures": checks}
 
+    def tag_counts(self, dataset: str, arm: str) -> dict | None:
+        """The failure modes tagged on this arm's outputs on `dataset` (PLAN_0.8.0 D1), every tag set summed:
+        {"outputs": read, "tagged": with a failure, "modes": {mode: n}}; None when nothing of it was tagged."""
+        from collections import Counter  # noqa: PLC0415
+
+        runs = {d.name for d in self._dirs(arm)}
+        outputs = tagged = 0
+        modes: Counter = Counter()
+        for tf in sorted(_store.glob(self.data_dir / "tags" / dataset, "*/tags.json")):
+            doc = _json(tf)
+            for run, by_item in ((doc or {}).get("runs") or {}).items() if isinstance(doc, dict) else []:
+                if run not in runs:
+                    continue
+                for t in by_item.values():
+                    outputs += 1
+                    tagged += bool(t.get("modes"))
+                    modes.update(t.get("modes") or [])
+        return {"outputs": outputs, "tagged": tagged, "modes": dict(modes.most_common())} if outputs else None
+
     def label_sets(self) -> list[dict]:
         """Every label set (RFC-023): {dataset, set, id ("<dataset>/<set>"), source, n_items, guideline, created_at,
         items {item: {"item_sha256"}}}, from data/labels/<dataset>/<set>/labels.json; [] when there are none."""
         out = []
-        for lf in sorted((self.data_dir / "labels").glob("*/*/labels.json")):
+        for lf in sorted(_store.glob(self.data_dir / "labels", "*/*/labels.json")):
             doc = _json(lf)
             if isinstance(doc, dict):
                 out.append(
@@ -748,7 +781,9 @@ class HarnessAdapter:
             for iid, row in ls["items"].items():
                 for mine in by_sha.get((row or {}).get("item_sha256") or "", []):
                     t = ls["dir"] / f"{iid}.txt"
-                    covers[mine] = t.read_text(encoding="utf-8").strip() if t.is_file() else None
+                    covers[mine] = (
+                        _store.read_text(t, encoding="utf-8").strip() if _store.is_file(t) else None
+                    )
             if covers:
                 sets.append(
                     {**{k: v for k, v in ls.items() if k not in ("items", "dir")}, "covers": sorted(covers)}
@@ -789,7 +824,9 @@ class HarnessAdapter:
                             "set": ls["id"],
                             "kind": src.get("kind", ""),
                             "by": src.get("by") or src.get("config_id") or src.get("capture") or "",
-                            "text": label_line(t.read_text(encoding="utf-8")) if t.is_file() else None,
+                            "text": label_line(_store.read_text(t, encoding="utf-8"))
+                            if _store.is_file(t)
+                            else None,
                             "note": (row or {}).get("note") or "",
                         }
                     )
@@ -800,7 +837,7 @@ class HarnessAdapter:
         naming it as a target. A release does not carry the pick list, so a published catalog shows none."""
         f = self.data_dir / "picks.jsonl"
         latest: dict = {}
-        for line in f.read_text(encoding="utf-8").splitlines() if f.is_file() else []:
+        for line in _store.read_text(f, encoding="utf-8").splitlines() if _store.is_file(f) else []:
             try:
                 r = json.loads(line) if line.strip() else None
             except ValueError:
@@ -852,8 +889,8 @@ class HarnessAdapter:
             return {"kind": "none", "note": "not an item id"}
         dirs = self._dirs(arm)
         for d in reversed(dirs):  # the latest repeat
-            f = d / "outputs" / f"{item}.txt"
-            if f.is_file():
+            text = _outputs.output(d, item)
+            if text is not None:
                 info = {"run": d.name}
                 if len(dirs) > 1:
                     # One output beside a score that is the mean of every repeat: say so.
@@ -868,17 +905,17 @@ class HarnessAdapter:
                             info[k.removeprefix("judge_")] = f"{v['values'][item]:.3g}"
                 return {
                     "kind": "text",
-                    "text": f.read_text(encoding="utf-8", errors="replace"),
+                    "text": text,
                     "info": info,
                 }
-        return {"kind": "none", "note": "No stored output for this item (outputs/<item_id>.txt)."}
+        return {"kind": "none", "note": "No stored output for this item (the run's outputs.jsonl)."}
 
     def reference_view(self, ref: str, item: str) -> dict:
         """Return one reference's text for one item."""
         r = next((x for x in self.references() if x["id"] == ref), None)
         f = r["dir"] / f"{item}.txt" if r and _plain_name(item) else None
-        if f and f.is_file():
-            return {"kind": "text", "text": f.read_text(encoding="utf-8", errors="replace")}
+        if f and _store.is_file(f):
+            return {"kind": "text", "text": _store.read_text(f, encoding="utf-8", errors="replace")}
         return {"kind": "none"}
 
     def item_text(self, dataset: str, item: str) -> dict:
@@ -890,8 +927,8 @@ class HarnessAdapter:
             None,
         )
         f = self.data_dir / "materialized" / dataset / rel if rel else None
-        if f and f.is_file():
-            return {"kind": "text", "text": f.read_text(encoding="utf-8", errors="replace")}
+        if f and _store.is_file(f):
+            return {"kind": "text", "text": _store.read_text(f, encoding="utf-8", errors="replace")}
         return {
             "kind": "none",
             "note": f"Not on this machine: evh dataset-materialize --dataset-id {dataset}",
@@ -961,8 +998,8 @@ class HarnessAdapter:
 
         out = []
         base = self.data_dir / "rounds"
-        for f in sorted(base.glob("*/r*.yaml"), key=lambda p: (p.parent.name, int(p.stem[1:] or 0))):
-            doc = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        for f in sorted(_store.glob(base, "*/r*.yaml"), key=lambda p: (p.parent.name, int(p.stem[1:] or 0))):
+            doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {}
             if not isinstance(doc, dict) or not doc.get("round_id"):
                 continue
             ds = doc.get("dataset_id", "")
@@ -989,7 +1026,7 @@ class HarnessAdapter:
     def baselines(self) -> list[dict]:
         """The promoted baselines (data/baselines/*.json), each with the arm its run belongs to."""
         out = []
-        for f in sorted((self.data_dir / "baselines").glob("*.json")):
+        for f in sorted(_store.glob(self.data_dir / "baselines", "*.json")):
             b = _json(f) or {}
             run = b.get("promoted_from")
             if not run or not b.get("dataset_id"):
@@ -1013,7 +1050,7 @@ class HarnessAdapter:
 
     def datasets(self) -> list[str]:
         """Every frozen dataset, run or not: a new version has a page before its first run."""
-        return sorted(p.stem for p in (self.data_dir / "datasets").glob("*.json"))
+        return sorted(p.stem for p in _store.glob(self.data_dir / "datasets", "*.json"))
 
     def dataset_lineage(self, dataset: str) -> dict | None:
         """The version this dataset was made from (`derived_from`), or None."""
@@ -1143,7 +1180,7 @@ class HarnessAdapter:
             )
         sets = self.data_dir / "judging-sets"
         days: dict[tuple, list] = {}
-        for f in sorted((self.data_dir / "judge-verdicts").glob("*/*/*/*.json")):
+        for f in sorted(_store.glob(self.data_dir / "judge-verdicts", "*/*/*/*.json")):
             v = _json(f) or {}
             usd = _number(v.get("cost_usd"))
             tokens = _tokens(v.get("tokens_in"), v.get("tokens_out"))
@@ -1207,17 +1244,19 @@ def load_catalog_adapter(spec: str | None = None) -> Adapter:
     root = _common.ROOT
     if not spec:
         cfg = root / "config.yaml"
-        if cfg.is_file():
+        if _store.is_file(cfg):
             import yaml  # noqa: PLC0415
 
-            spec = ((yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}).get("catalog") or {}).get(
+            spec = ((yaml.safe_load(_store.read_text(cfg, encoding="utf-8")) or {}).get("catalog") or {}).get(
                 "adapter"
             )
     if not spec:
         return HarnessAdapter()
     target, _, cls = spec.rpartition(":")
     if not target or not cls:
-        raise SystemExit(f"catalog adapter {spec!r}: expected 'path/to/file.py:Class' or 'module:Class'")
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(f"catalog adapter {spec!r}: expected 'path/to/file.py:Class' or 'module:Class'", "bad-argument")
     # The project's root is importable while its adapter loads (it may import its own helpers).
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
@@ -1229,7 +1268,9 @@ def load_catalog_adapter(spec: str | None = None) -> Adapter:
             digest = hashlib.sha256(str(path).encode()).hexdigest()[:8]
             mod = load_module(path, f"evh_catalog_adapter_{path.stem}_{digest}")
         except ModuleNotLoadable:
-            raise SystemExit(f"catalog adapter: cannot load {path}") from None
+            from evaluation_harness._common import die  # noqa: PLC0415
+
+            die(f"catalog adapter: cannot load {path}", "failed")
     else:
         mod = importlib.import_module(target)
     return getattr(mod, cls)()

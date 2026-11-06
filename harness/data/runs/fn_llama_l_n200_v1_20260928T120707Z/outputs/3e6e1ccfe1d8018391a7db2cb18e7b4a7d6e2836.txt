@@ -1,5 +1,0 @@
-[
-  {"text": "Berry Plastics", "type": "organization"},
-  {"text": "Rexam SBC", "type": "organization"},
-  {"text": "September 2011", "type": "event"}
-]

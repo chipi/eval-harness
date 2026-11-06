@@ -15,13 +15,16 @@ further. This page is the reference for each step.
 |---|---|
 | start a project | `evh init [--tutorial]` |
 | what is configured | `evh env-check` |
-| freeze | `evh dataset-create --dataset-id … --source-dir …` |
+| freeze | `evh dataset-create --dataset-id … --source-dir … [--licence ID]` |
+| a licence, a description (no new version) | `evh licences` · `evh dataset-describe --dataset-id … --licence …` |
+| the card; as Croissant 1.1 | `evh dataset-card --dataset-id …` · `… --format croissant --creator … --out …` |
 | a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
 | fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
 | materialize | `evh dataset-materialize --dataset-id …` |
 | a model's labels (a run's outputs) | `evh label-from-run --run <run_id> --set … [--not-redistributed]` |
 | a person's labels | `evh label-sheet --dataset-id … --out sheet.csv` · `evh label-import sheet.csv --dataset-id … --set … --by …` (or a folder of `<item_id>.txt`) |
 | the label sets | `evh labels [--dataset-id …]` |
+| how arms fail (failure modes) | `evh inspect --sheet --dataset-id … --runs A,B --csv tags.csv --fill tags --modes …` · `evh sheet-import tags.csv --dataset-id … --by … --tags … --modes …` · `evh tags [--dataset-id …]` |
 | a reference (labels you promote) | `evh reference-promote --dataset-id … --labels … --tier gold\|silver --reason "…" --by …` |
 | gold a script builds, promoted | `evh reference-manifest --reference-id gold/… --source … --labelled-by … --reason "…" --by …` |
 | score against labels | `evh rescore --dataset-id … --labels …` · `evh run --config … --labels …` |
@@ -116,6 +119,93 @@ its parent and the item ids it adds, removes and changes (`derived_from` in the 
 and `validate` V2 fails a version whose parent is gone. "What did the new version change for this
 arm?" is `evh pair-test --dataset-id my_v1 --a ARM_v1 --b ARM_v2 --b-dataset my_v2`: the arm's runs
 on each version, paired by item id (below, under `pair-test`).
+
+**The version number** in the dataset file says how far the items moved; the id stays the identity. It is
+MAJOR.MINOR, two integers (1.10 follows 1.9), and the harness computes it: a first dataset is 1.0; one made `--from`
+another (or by `dataset-extend`) that only adds items is the parent's MAJOR with MINOR + 1; one that removes or
+changes any item is MAJOR + 1, MINOR 0; the same items under a new id keep the parent's. Each side of a split is a
+new dataset at 1.0 and names its parent's version (`split.from_version`). A licence or description change is not a
+new version. `validate` (V22) recomputes the number; `evh dataset-migrate` writes it for records made before 0.8.0.
+A source's own version (a Hub revision) is never this number.
+
+**A licence** is optional: `--licence ID` on `dataset-create`, or `evh dataset-describe --dataset-id D --licence ID`
+on a dataset that exists (no new version: the items are the same). `evh licences` lists the ids, SPDX's, a line
+each on what the licence allows (`--search`, `--json`); `unknown` when the source states none, `LicenseRef-<name>`
+for a licence of its own. A split side and an extended version keep their parent's.
+
+**Where the items came from** is the record's `source` block, the same keys whatever the source: `provider`
+(huggingface, kaggle, openml, croissant, url, folder, or a project's own), `ref` (its name for the dataset),
+`url`, `revision` (its own version of it, never the dataset's `version`), `config`, `split`, `gated`,
+`description_sha256`, and `item_url`, a template for one item's page with `{row}` or `{item_id}`; a value nobody
+recorded is null. A fetcher writes `data/sources/<dataset_id>.rows.json` beside the items (the block, the template
+and per item its row and sha256, as `examples/_shared/hf_rows.py` does); `dataset-create` reads it into the record,
+a row only for an item whose bytes are the ones written, and the profile and catalog link each item from it.
+Splits and extensions keep the parent's block.
+
+**A dataset source** reads items from anywhere through one interface: `evh dataset-create --dataset-id D --source
+NAME --query '{…}'`. A source is a class `Source(options)` with `describe(query)` (its `source` block, and when it
+knows them `licence`, `description`, `card`, `features`) and `items(query)` (per item its `item_id` and `text`,
+`file` or `source_url`, with `row` and `fields`); the items are written to `data/sources/D/`, which is refused when
+it already has files (`--force` replaces them). It is found by name as an importer is: a built-in (`folder`,
+`manifest`), the project's own `data/dataset_sources/NAME.py`, or `path/to/source.py:Class`. `--source-dir` and
+`--manifest` are the same two built-ins read in place.
+
+**From a Croissant description** (Hugging Face, Kaggle and OpenML publish them): `--source croissant --query
+'{"url": "…", "record_set": "default", "text": "text", "id": "id", "fields": ["label"], "limit": 200}'`.
+It reads a record set whose fields are columns of one parquet, CSV, JSON or JSON-lines FileObject, checked against
+its sha256, and records the source block (the publisher's version as `source.revision`), the licence when `evh
+licences` knows it, and the `rai:` properties as the card. A FileSet (many files) is refused: which files it holds is
+the host's to say, so a Hugging Face description, whose parquet is a FileSet in the dataset's repository, is refused
+(listing those files needs the Hub itself): read it with the `huggingface` source instead.
+
+**From the Hugging Face Hub**: `--source huggingface --query '{"ref": "fancyzhx/ag_news", "split": "test",
+"text": "text", "fields": ["label"], "limit": 200}'` (`config`, `id`, `offset` and `revision` too). It reads the
+Hub's parquet conversion of the split at one commit, each file checked against the sha256 the Hub lists, and records
+that commit as `source.revision`, so the same query with `"revision"` reads the same bytes again; the viewer page
+of each row is its link. The card's licence and its metadata (tasks, annotators, language and source datasets) fill
+the licence and the card. A gated dataset's token goes in `EVAL_FETCH_HEADERS`; `HF_ENDPOINT` names another Hub.
+
+**From Zenodo**: `--source zenodo --query '{"record": 42, "file": "x.csv", "text": "…"}'` reads one parquet,
+CSV, JSON or JSON-lines file of a record, checked against the md5 Zenodo lists; the record id (a version's own) is
+`source.revision`, the concept record `source.ref`. **From OpenML**: `--source openml --query '{"dataset": 61,
+"text": "class"}'` reads the dataset's parquet copy (OpenML lists an md5 only for its ARFF file, so those bytes
+are not checked against the source; each item is still frozen by its sha256), with its version and its features'
+types. `ZENODO_ENDPOINT` and `OPENML_ENDPOINT` name other servers.
+
+**From Kaggle**: `--source kaggle --query '{"ref": "uciml/iris", "version": 2, "file": "Iris.csv", "text":
+"Species"}'` reads a table file of a dataset's zip at a version (the current one when none is named; recorded as
+`source.revision`), through Kaggle's own API: no kagglehub, and no credentials for a public dataset (a private one
+takes them in `EVAL_FETCH_HEADERS`). Kaggle lists no checksum; each item is frozen by its sha256. Its licence name
+is mapped to SPDX when it is one of Kaggle's picker's.
+
+**Publishing to the Hub**: `evh dataset-publish --dataset-id D --to huggingface --query '{"repo": "owner/name"}'`
+writes a new repo, private unless `"public": true`: the items as `data/test.parquet` (item_id, text,
+source_sha256, each field), the record as `evh/D.json` and the card as README.md, in one commit; it reads every
+file back at that commit and checks its sha256, and each item's text against its own, and records the publish on
+the dataset (`published`: repo, revision, url, private, when, each file's sha256; no new version). It refuses a
+repo that exists, items not materialized here, and a dataset whose text is hidden. The token is huggingface_hub's
+(`HF_TOKEN`, or `hf auth login`).
+
+**A field set from a source's features**: `evh fieldset-propose --source NAME --query '{…}' --fieldset-id ID`
+prints a field set from what the source describes: each feature's type as the field set's (schema.org's, Hugging
+Face's and Python's spellings), a text feature with at most `--max-choices` distinct values among `--sample` items
+as a choice of them, the items' text and id left out. Read it; `--write` writes `data/fields/ID.yaml` (never over
+one that exists), and `dataset-create --fieldset ID` uses it as it is.
+
+**The card** answers the datasheet questions (what the dataset is for, how it was collected and labelled, its
+biases and limits, who maintains it) under Croissant RAI 1.0's property names, so an export writes them as they
+are: `evh dataset-describe --card-template > card.yaml` prints each key with its question, `evh dataset-describe
+--dataset-id D --card card.yaml` records the answered ones (it replaces the card; no new version). All optional;
+`validate` (V22) refuses a key that is not one of them. `evh dataset-card --dataset-id D` prints the card (what
+the dataset is, where it came from, each answered question); `--format croissant [--creator NAME] [--out F]`
+writes it as Croissant 1.1 JSON-LD: the record (licence as its SPDX page, the card as `rai:` properties, the parent
+as PROV-O's `prov:wasDerivedFrom`), its files with their sha256, one record set of the items with the field set's types. A required
+property the record cannot give (a creator, a url, a licence) is left out and named on stderr. The document is
+checked against the spec's keys; it is not run through `mlcroissant`, which the harness does not depend on.
+`--format hf-readme` writes a Hugging Face dataset README: the Hub's metadata keys (`license` as the Hub spells
+it, `pretty_name`) and the card's answers under the Hub template's headings (Uses, Dataset Creation, Annotations,
+Bias, Risks, and Limitations, …); an unanswered question and an `unknown` licence are left out. `validate` (V22) refuses an id
+not on the list. The line is a picker, not legal advice: the licence text is what binds.
 
 **What you know about each item goes in fields** (ADR-0003). Declare them once in a
 field set, `data/fields/<fieldset_id>.yaml` (`schemas/fieldset.schema.json`): a name and
@@ -396,13 +486,14 @@ references:
 | `success_criteria.primary.measure` | a per-item metric as the runs record it (`rouge_l`, `accuracy`, `overlap_f1`) | the goal page, `evh goals --goal`, `evh rounds` and `inspect --round` read the arms on it; an arm that does not record it is not listed (a judged arm is shown in its judge's group, on the judge's score) |
 | `success_criteria.primary.direction` | `higher`, `lower` or `non_inferior` | `higher`/`lower` rank the arms. `non_inferior` is a guard (no significant drop against a baseline) and ranks nothing. V14 fails a direction that contradicts what the runs record, or `higher` on a cost, latency or token count |
 | `success_criteria.primary.threshold` | any value | shown beside the measure on the goal page |
+| `success_criteria.primary.reduce` | `mean` (the default), `majority` or `at_least_K` | how an arm's repeats make one score per item on the goal's measure: the mean, or for 0/1 scores right when more than half (or at least K) of the repeats are right |
 | `success_criteria.min_items` | an integer, at least 1 | The fewest items a winner-picking comparison may rest on: an arm with fewer is flagged "n k < min_items m" on the goal page and is never a group's leader; `evh validate` notes a goal dataset smaller than it (a note, not a failure) |
-| `success_criteria.axes` | a map of name → `{measure, direction, stat, limit, margin, role, unit, note}`, all optional. `cost` (`cost_usd`, mean, tokens shown beside it) and `speed` (`latency_ms`, p95) are built in and need no entry; `quality` takes only a `limit`, a `margin` and a `note` (its measure and direction are the primary's), and `margin` belongs to quality alone; any other name is the project's own axis, a per-item metric its runs record (`measure` defaults to the name, `direction` to the adapter's `METRIC_DIRECTIONS`, else `higher`, `stat` to `mean`). `role: ignore` drops an axis. `limit: baseline` in place of a number: an arm is out when the paired test finds it worse than the group's promoted baseline on that axis (p < 0.05, each arm on its own, not corrected across the arms; RFC-022); with no baseline promoted, no limit applies and the decision says so | The goal's decision ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)): an arm past a `limit` is out, with the reason; `margin` (default 2% of the leader's mean) is how close an arm not significantly different from the leader must be to count as a contender under `balanced`. The goal page and `evh goals --goal` show a column per axis; V14 refuses an unknown key in an entry |
-| `success_criteria.strategy` | `balanced` (the default), `quality_first` or `frugal` | Who the contenders are beside the quality leader: `balanced` not significantly different by the paired test AND within the margin; `quality_first` the same quality only; `frugal` anything not significantly different |
+| `success_criteria.axes` | a map of name → `{measure, direction, stat, limit, margin, role, unit, note}`, all optional. `cost` (`cost_usd`, mean, tokens shown beside it) and `speed` (`latency_ms`, p95) are built in and need no entry; `quality` takes only a `limit`, a `margin`, a `reference` and a `note` (its measure and direction are the primary's), and `margin` belongs to quality alone; any other name is the project's own axis, a per-item metric its runs record (`measure` defaults to the name, `direction` to the adapter's `METRIC_DIRECTIONS`, else `higher`, `stat` to `mean`). `role: ignore` drops an axis. `limit: baseline` in place of a number: an arm is out when the paired test finds it worse than the group's promoted baseline on that axis (p < 0.05, each arm on its own, not corrected across the arms; RFC-022); with no baseline promoted, no limit applies and the decision says so | The goal's decision ([ADR-0006](../../docs/adr/ADR-0006-goal-axes-and-strategies.md)): an arm past a `limit` is out, with the reason; `margin`, in the measure's units, is how much worse than the leader an arm may be and still be a contender: the arm must be *shown* no worse by more than it (a one-sided non-inferiority test against the leader, Holm across the candidates: Tango's score test for 0/1 scores at any size, the bootstrap-t from 100 items or equal clusters, 250 effective clusters when they differ in size, for other scores, "too few items to call a tie" below). With no margin set, the strategy's default: `balanced` 5% of the leader's mean, `frugal` 10%; `evh validate` notes each goal on a default. `quality: {reference: baseline}` tests contenders against the group's promoted baseline instead ("no worse than what runs now", for a goal about replacing it; the margin is then a share of the baseline's mean; with none promoted the leader is used, and said). The decision also says which margin the group can detect at all: with k candidates on n items (or clusters), a truly equal arm is shown within about (z(1 − 0.025/k) + z(0.8)) × the paired standard error, 80% of the time; a goal margin under it rarely admits anyone. It does not count the leader being chosen from the same data, which raises the bar further. The goal page and `evh goals --goal` show a column per axis; V14 refuses an unknown key in an entry |
+| `success_criteria.strategy` | `balanced` (the default), `quality_first` or `frugal` | Who the contenders are beside the quality leader: `balanced` shown no worse than the leader by more than the margin (default 5% of the leader); `quality_first` the same quality only; `frugal` the same test with a wider default margin (10%), so the cheaper arm wins more often. Before 0.8.0 a contender only had to be "not significantly different", which more arms are the fewer items there are |
 | `success_criteria.tie_break` | a list of axis names, default `[cost, speed]`; `quality` may be one | Among the contenders, the axes that pick, in order (`[cost, quality]`: the cheapest, then the best of the equally cheap). V14 fails a name the goal does not weigh |
 | `success_criteria.guardrails[]` | `{name, rule}` (required), `source` | Rules in words that no number checks: a "guardrails" row on the goal page, a line each in `evh goals --goal`; never computed |
 | `success_criteria.secondary` | removed in 0.4.0 | V14 fails a goal that still has it: move its entries to `axes` (UPGRADING) |
-| `datasets[]` | `{dataset_id}` (required), `role`, `decides` (false: the goal never decides on it), `notes`. An empty list is a goal checked by a gate rather than measured on a dataset | Each dataset gets a section on the goal page and in `evh goals --goal`. `role` is free text (`validation`, `test`, `pilot`, `smoke`, `generalization`), shown beside the dataset. `decides: false` makes a dataset one the goal never decides on: its groups keep their leader but recommend nothing, and the home page's glance leaves it out. `notes` is shown under it |
+| `datasets[]` | `{dataset_id}` (required), `role`, `cluster` (an item field: related items count once in every test), `decides` (false: the goal never decides on it), `notes`. An empty list is a goal checked by a gate rather than measured on a dataset | Each dataset gets a section on the goal page and in `evh goals --goal`. `role` is free text (`validation`, `test`, `pilot`, `smoke`, `generalization`), shown beside the dataset. `cluster: FIELD` names an item field whose items are not independent (one thread's comments, one document's questions): every paired test on that dataset, on the goal page, in `evh goals`, the inspector and `pair-test`/`family-test --round`, flips one sign per value of it, and says so. `decides: false` makes a dataset one the goal never decides on: its groups keep their leader but recommend nothing, and the home page's glance leaves it out. `notes` is shown under it |
 | `references[]` | `{reference_id, tier, format}`, all strings; `tier` is `gold` or `silver` by convention, `format` your word for the reference text's shape (`label` for a bare-label gold) | nothing: which reference an arm is scored against comes from its run, not from the goal |
 | `measures[]` | `{id, kind, validity}`, all strings; `validity` says how far the measure is trusted (`unvalidated`, or what it was validated against) | nothing (for the reader) |
 | `links[]` | `{url, note}` | nothing (for the reader) |
@@ -473,6 +564,61 @@ The `.gitignore` `evh init` writes ignores only the throwaway directories, so a 
 its derived sets like its measured runs. This repository's own `.gitignore` is stricter: it
 ignores every `data/runs-*` directory and re-allows each derived set by name.
 
+**Files or SQLite** (RFC-025). A project keeps its data as files under `data/` by default: git can
+diff and review them. One key in its `config.yaml` puts everything under `data/` in one SQLite
+database instead, `data/project.sqlite`:
+
+```yaml
+store: sqlite        # files (the default) or sqlite
+```
+
+or `EVAL_STORE=sqlite`, which wins over the file. A project is either files or its database, never
+both: every command, the catalog and the inspector read and write the database, nothing under
+`data/` is a file but it, and a run's outputs and rows are committed as they are produced, so a crash
+keeps everything committed before it. Python code is never in the database: keep it outside `data/`
+and name it by path. Move a project after setting the key, either way:
+
+```bash
+evh data-migrate --to sqlite --dry-run   # what would move
+evh data-migrate --to sqlite             # every file read back by its sha256, then removed from disk
+evh data-migrate --to files              # back, byte for byte, after setting store: files
+```
+
+`data-migrate` refuses while the project's store is not the target, while `data/` holds Python, and
+while a run is still in the layout before 0.8.0 (`evh run-migrate` first); a move a crash stopped is
+finished by the next one. In SQLite mode a setting you write (a goal, a config) gets in through the
+data page or `evh data-put` (below), and a folder of files through `data-migrate`. `validate` V23 names a database beside files, or files beside the database; V7 and V9, which
+read git, say why they do not apply. A release reads the database and writes the same files layout
+as a files project, a hidden dataset's text left out.
+
+**The Configure page** (UXS-004). A SQLite project that sets `configure: true` in its
+`config.yaml` (or `EVAL_CONFIGURE=1`) gets a **Configure** item in the catalog's header, after
+Inspector; `evh catalog-serve` on this machine serves it. Without it the catalog is built and served
+with no Configure part; with `store: files` it is refused (a files project is edited in its files).
+`make serve STORE=sqlite CONFIGURE=1` tries it on a SQLite copy of this repository's data. The page
+shows everything under `data/` and the project's settings (arm
+configs, goals, fieldsets, judge scorers, model records, failure-mode lists, `validate.json`), which
+it creates, edits and deletes in a form built from each kind's schema: a field per key, no YAML to
+type. A setting is saved only after it passes the check: it matches its schema, and (all but an arm
+config) its id is its file name; each problem is shown at its field. A save keeps the file's comments
+and every line it does not change (ruamel.yaml), and only when `evh validate` passes on the project
+with it (a change validate refuses is put back, its reasons shown). **Rebuild the catalog** on the page
+runs `evh catalog` into a folder beside the served one and swaps it in, so the other pages show a
+change without a terminal. Harness-written data is shown
+read-only with the command that writes it; a run is the one kind of data it deletes, whole. It writes
+on this machine only: a public server answers no `/api/data` call (ADR-0027). Each view and action is
+a command:
+
+```bash
+evh data-ls [PATH] [--find TEXT]          # the overview, a folder, or every file whose path holds TEXT
+evh data-show goals/x.yaml                # one file: its text, size, sha256, and who writes it
+evh data-show configs/x.yaml --fields     # a setting's fields, one dotted key a line
+evh data-put configs/x.yaml --set params.sentences=2 --unset goal   # the form's Save, a field at a time
+evh data-put goals/x.yaml x.yaml --check  # a whole file: the check alone
+evh data-put goals/x.yaml x.yaml [--new]  # a whole file saved (- reads stdin); --new refuses a name taken
+evh data-rm runs/<run> --dry-run          # what would go; without --dry-run, a setting or a whole run
+```
+
 `evh run` and `rescore` print a `WARNING` when they write to a directory git ignores
 that is neither, or to one outside the project's data, and `evh validate` notes any ignored
 directory that already holds finished runs. The catalog, `evh goals` and `evh arms` read only
@@ -517,6 +663,14 @@ A sweep that is interrupted — a crash, a 429 that outlasts the retries, or the
 `EVAL_MAX_COST_USD` cap — leaves its finished items on disk. Outputs are written
 **as each item is produced**, so what you already paid for survives.
 
+**One item that fails does not stop the run.** A call that fails for that item (a refusal, an input the provider
+rejects: an error that is not transient) is recorded in `metrics.json` (`failed_items`, with the error), its row
+carries `failed: 1` (so the mean of `failed` is the share that failed), it is scored as an empty answer (0 on most
+measures; an adapter that knows better defines `score_failure(reference)`), and its output is not written, so
+`--resume` calls it again. Two things still stop the run: a transient error (a 429, a timeout) that outlasts the
+retries, or a server that cannot be reached, exit `75` (resume later); and more than 5 failures that are also over
+20% of the items called, which is the adapter or the configuration, not the items (`ERROR (failed)`).
+
 ```bash
 evh run --config data/configs/arm_a.yaml --resume arm_a_v1_20260929T101500Z
 ```
@@ -535,8 +689,12 @@ Three things worth knowing:
   `_meta` all carry over from the pass that produced it, and every replayed row is
   flagged `resumed: 1` so you can separate them. It reports what the *results* cost,
   not what this pass cost. The values come from the rows appended to
-  `outputs/_rows.jsonl` as each item completes, so a crashed run, which never wrote
-  `predictions.jsonl`, still carries them.
+  `rows.partial.jsonl` as each item completes, so a crashed run, which never wrote
+  `predictions.jsonl`, still carries them. A run's outputs are one file, `outputs.jsonl`, a line per item appended
+  as it is produced (a torn last line from a kill is not an output, so that item is called again) and rewritten in
+  dataset order when the run completes; a derived run (a re-score, a judging, a sheet import) keeps no outputs of its
+  own and reads its source's (RFC-024). With the sqlite store the same outputs and rows are rows of
+  `data/project.sqlite`, each committed as it is produced (RFC-025).
 - **You cannot resume from a different arm, or from one that cannot be identified.**
   The source's `config_id` and `dataset_id` are checked against the config you are
   launching and a mismatch is refused. Identity comes from `run.json`, written **before
@@ -546,8 +704,9 @@ Three things worth knowing:
   A directory with neither file is refused outright, as is one whose rows were not written
   by this version of the harness.
 
-Exit codes: `0` complete, `2` stopped early by the cost cap with usable partial
-results, `1` nothing was measured at all.
+Exit codes: `0` complete, `4` stopped early by the cost cap with usable partial
+results, `7` nothing was measured at all, `75` a server could not be reached (run the same
+command again; it resumes). The full table: [Exit codes](#exit-codes).
 
 ---
 
@@ -580,6 +739,9 @@ into a *finding* is a separate verb: these are the tools behind the numbers in `
 | `evh family-test --dataset-id … --a … --against …` | does arm A differ significantly from a **pre-declared family**, Holm step-down. This is what every significance claim in the reports rests on |
 | `evh pair-test --dataset-id … --a … --b …` | are these two arms different — paired, per item. Uncorrected, so only legitimate for a pair named in advance: the arm's `hypothesis:` records that it was (§4). With `--round` and no `--a`, A is the round's leader, chosen from the table, so the test is Bonferroni-corrected for the comparisons it could have been, every arm in play but B (`--family N` overrides; below 1 is refused) |
 | `evh pair-test --dataset-id D1 --a … --b … --b-dataset D2` | **two versions of one dataset**: A's runs on D1 against B's on D2, paired by item id (the same arm on both is "what did the change do to it"). Refused, on stderr and non-zero, unless the items it uses are in both datasets by id (at least 3), the reference each arm was scored against has the same text for each of them (compared item by item by checksum; the first differing ids are named), and both arms are scored on one metric in one direction. The output says it is a cross-version comparison and names both datasets: the difference is the effect of the dataset change plus the arms' run-to-run noise, and the test cannot tell the two apart; repeats are averaged per item as in any pair-test. It names the runs of each side and the folder they were read from (`--runs-dir` for another set, e.g. the re-scored runs; JSON `run_ids_a`, `run_ids_b`). A metric one side's runs do not store per item is refused as a missing metric, with what they do store (a measure computed at re-score is only in the re-scored runs). Not with `--round`; `run-compare` still refuses across datasets |
+| `evh pair-test --dataset-id … --a … --b … --margin M` | **is A no worse than B by more than M** (in the metric's units): the contender test goals use ([ADR-0026](../../docs/adr/ADR-0026-contenders-by-non-inferiority.md)), for one pair and uncorrected: Tango for 0/1 scores, the bootstrap-t from 100 items or equal clusters (250 effective when they differ), "too few" below; with `--cluster` by clusters. JSON `noninferior` (verdict, method, p, level, units) |
+| `evh pair-test … --reduce majority` | how an arm's repeats make one score per item: `mean` (the default), `majority` or `at_least_K` for 0/1 scores (`at_least_1`: did any of the repeats get it right). With `--round`, the goal's `primary.reduce` is the default; `family-test` takes it too |
+| `evh pair-test … --cluster FIELD` | items that share a value of FIELD count as one: one sign per cluster (and `--margin` by clusters). With `--round`, the goal's `cluster:` is the default |
 | `evh holdout --dataset-id … --exclude-dataset …` | does the result survive on the items the pilot slice never contained |
 | `evh rank-stability --dataset-id …` | how many items before the ordering stops moving — measured, not assumed from a power table |
 | `evh bootstrap-test --dataset-id … --a … --against …` | a percentile interval for a corpus-level metric that has no per-item value |
@@ -666,7 +828,7 @@ evh runs-list --baselines
 evh validate
 ```
 
-Twenty checks (V1–V20): schema conformance (datasets, runs, baselines, configs, judge
+Twenty-three checks (V1–V23): schema conformance (datasets, runs, baselines, configs, judge
 scorers, judging sets, verdicts, dataset profiles), every run's `dataset_id` resolves, every run
 identifies its build, materialized copies still match their hashes, no two
 configs reporting byte-identical scores and per-item results (two arms with different outputs
@@ -678,7 +840,8 @@ every judge scorer yaml loading and well-formed, every goal and round well-forme
 every run that must name one, every item field declared, typed and matching its hash, and every
 reference made by promotion (a manifest saying where it came from) with texts matching its checksums, every capture's
 records matching the hashes it recorded, every model record and the configs naming it consistent, and every label set
-matching its hashes and its dataset, and every `hypothesis:` in an arm config sound (V20). V4
+matching its hashes and its dataset, every `hypothesis:` in an arm config sound (V20), and every failure-mode list well formed with every tag set naming its modes and its dataset's items (V21), and every dataset's version the one its lineage gives, its licence
+on the list, its source block in form and its card's keys Croissant RAI's (V22). Every run's outputs are readable: none left in the layout before 0.8.0, and a derived run finds its source's (V23). V4
 checks only datasets materialized on this machine, and names each one it could not check (a CI
 job without the sources checks none: materialize first where the copy matters).
 
@@ -878,7 +1041,7 @@ and to the news-summary judge, so neither is an `evh` command.
 What a judge is asked is the scorer's `mode` ([RFC-005](../../docs/rfc/RFC-005-judge-scorers.md), "Judging
 modes"), and a judge is validated in the mode it is used (`validation.mode` must equal `mode`):
 
-- **`grade`** (the default, everything above): each output scored per dimension on the scale.
+- **`grade`** (the default, everything above): each output scored per dimension on the scale. For a project's own judge, start with `scale: [0, 1]`, a pass/fail per dimension with the rubric saying what passes: two values are easier to judge consistently and to check against people than five (Husain's advice from practice); keep 1-5 where people already scored on it, as SummEval's experts did. `summary.json` gives each judge's `length_bias`: Spearman's rho of its score with the output's length in words; a rho well above 0 says the judge may favour longer answers (judge-summ-v1's two judges: 0.23 and 0.29). A changed rubric, prompt or set of judges is a new scorer (a frozen judging set is never rewritten): give it `supersedes: <the old scorer_id>` and `why:`, a sentence on what changed and which outputs led to it (criteria drift, Shankar et al. 2024); `validate` (V13) checks both, and `judge-score` prints them.
 - **`pick`**: one call per item with every arm's output, blind and shuffled; the judge names the best
   (`{"best": [3]}`, several when they are equally best). `protocol.outputs_per_call` must be at least the number of
   arms: a pick made in blocks would name each block's winner, so it is refused.
@@ -1272,7 +1435,20 @@ evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did pro
 - **Agreement between label sets** (`evh labels --dataset-id D [--confusion]`, the dataset page): on the items
   both label, how many accept the same answers, how many share one (apart: a label accepting more agrees more
   easily), Cohen's kappa and Krippendorff's alpha (MASI distance for several answers), which correct for the
-  agreement chance alone gives when one class dominates. Free-text labels are not compared as text. An adapter's `score` reads such a reference with `answers(reference)` from `evaluation_harness.adapter`.
+  agreement chance alone gives when one class dominates. With three sets or more, also all of them together: one Krippendorff's alpha over every item labelled twice or more, with a 95% bootstrap interval (JSON `agreement_all`). `--contested`: per item, how many people's sets agree with the gold reference (sharing an answer with it), the most contested first, the set the reference was promoted from left out (JSON `contested`). Free-text labels are not compared as text. An adapter's `score` reads such a reference with `answers(reference)` from `evaluation_harness.adapter`.
+- **Failure modes: how an arm fails, not only how often** (`evh tags`). A mean says an arm is wrong on 12% of the
+  items; the tags say how. Name the ways once, `data/failure-modes/<id>.yaml` (`failure_modes_id`, then `modes`:
+  each an `id`, and a `description` a tagger reads first; write it after reading some outputs with open notes, so
+  the modes are the ones that happen). `evh inspect --sheet … --csv tags.csv --fill tags --modes <id>` writes a
+  sheet with each arm's output and a `failure_modes: <arm>` cell beside it (not blind: a tag is about whose output
+  it is), its first row listing the modes, and a key beside it. Fill a cell with modes (`too-long|misses-ask` for
+  several), `ok` for an output read and found fine, or leave it blank (not read, so an unfinished sheet never reads
+  as fine). `evh sheet-import tags.csv --dataset-id D --by <who> --tags <name> --modes <id>` checks the key (an
+  edited output, a mode not in the list, a name already used are refused) and writes the tag set,
+  `data/tags/<dataset>/<name>/tags.json`, never edited after. `evh tags --dataset-id D` and the goal page count per
+  arm the outputs read, how many had a failure and each mode; the sheet (`evh inspect --sheet`, its CSV) shows each
+  item's modes in an `<arm>: failure modes` column (`ok` read and fine, blank not read); `validate` (V21) checks the lists and the sets. A tag
+  scores nothing: it explains a score.
 - **The sheet** (`evh inspect --sheet --dataset-id D --runs A,B,…`) shows the dataset's items down (each by the
   first arm's adapter's `title(item)` when it has one, else its start) and a column per arm across: what it wrote (the adapter's `decision(output)`, else its output, shortened; `--scores-only` leaves
   it out) and every score it has on the item: its run's metrics, and a judging pass's where one under
@@ -1378,13 +1554,42 @@ Every command, `make` target and `evh` subcommand, for scripts and CI that branc
 | Exit | Meaning | From |
 |---|---|---|
 | `0` | done | every command |
-| `1` | refused, or nothing was measured: `ERROR: <why>` on stderr | every command |
+| `1` | refused, nothing done: `ERROR (<kind>): <why>` on stderr ([Refusals](#refusals)) | every command |
 | `2` | a usage error: an unknown command or argument (the usage is printed) | `evh`, every command's argument parser |
-| `2` | stopped early by the cost cap; the partial results are kept and resumable | `evh run`, `judge-score` |
 | `3` | the judge scorer is not validated; `--unvalidated` runs it labelled as such | `judge-score` |
+| `4` | stopped early: the cost cap, or a judge call that kept failing; the partial results are kept and the same command resumes | `run`, `judge-score` |
+| `5` | some of several runs failed; the others are kept | `sweep` |
+| `6` | the command's checks ran and some failed; the output lists them | `validate`, `self-test`, `env-check`, `importer-check`, `arm-smoke`, `model-onboard`, `deploy-sheet --capture` |
+| `7` | it ran and measured nothing | `run`, `judge-score` |
+| `70` | an error nothing caught: a traceback on stderr, from the harness or the project's own code (an adapter, a scorer) | `evh` |
+| `75` | a server could not be reached: nothing is wrong with the command; run it again later and it resumes | `run` |
+| `130` | interrupted (Ctrl-C) | `evh` |
 
-The two meanings of `2` are told apart by stderr: a usage error prints the usage, a stopped
-run prints how many items it measured and how to resume.
+Each number has one meaning, so a script or an agent branches on it without reading the text.
+In a checkout, `make` runs the same scripts but exits `2` for any failed target; the script's
+own code is in make's last line (`make: *** [Makefile:…: run] Error 4`).
+
+## Refusals
+
+A command that refuses exits `1` and prints one line on stderr, `ERROR (<kind>): <why>`, for example
+`ERROR (not-found): no goal 'tickets_summry': one of tickets_summary`. The kind is one of the words below
+and does not change when a message is reworded, so a script or an agent reads the kind and a person reads
+the rest.
+
+| Kind | Meaning |
+|---|---|
+| `not-found` | the dataset, run, arm, goal, file or other thing named does not exist |
+| `bad-argument` | an option is missing, malformed, or not allowed with another |
+| `would-overwrite` | what it would write is already there; it is never overwritten |
+| `mismatch` | two things that must agree do not: datasets, hashes, a run and its config |
+| `invalid-file` | a file the project wrote (a config, a scorer, a sheet, records) is malformed |
+| `not-materialized` | the data is not on this machine: fetch or materialize it first |
+| `not-enough` | too little to work on: too few items, arms or outputs |
+| `not-public` | the text asked for is not shown on a public server or for a hidden dataset |
+| `not-allowed` | a rule refuses it: a dirty build, a closed round, a bind beyond this machine |
+| `not-configured` | a key, a cost cap, a build ref or an endpoint is not set |
+| `failed` | something outside the command failed: an importer, a server, a hook, the warm-up |
+| `missing-dependency` | a package or a part of the installation is missing |
 
 ## Environment variables
 

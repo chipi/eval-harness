@@ -12,7 +12,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 from collections import defaultdict
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _outputs, _store
 from evaluation_harness._adapter import adapter_module
 from evaluation_harness._runs import item_rows, runs_on
 
@@ -26,7 +26,8 @@ def reference_labels(dataset_id: str, tier: str) -> dict:
     """item_id -> label, from the reference files of one tier (`gold`, `silver`)."""
     root = _common.REFERENCES / tier / dataset_id
     return {
-        p.stem: p.read_text(encoding="utf-8").strip() for p in _common.reference_texts(root, dataset_id, tier)
+        p.stem: _store.read_text(p, encoding="utf-8").strip()
+        for p in _common.reference_texts(root, dataset_id, tier)
     }
 
 
@@ -61,9 +62,9 @@ def predictions(dataset_id: str, match: str | None) -> dict:
             # possible field to freeze. Found by external review.
             pred = None
             if parse is not None:
-                out_f = d / "outputs" / f"{item}.txt"
-                if out_f.is_file():
-                    pred = parse(out_f.read_text(encoding="utf-8"))
+                text = _outputs.output(d, item)
+                if text is not None:
+                    pred = parse(text)
             if pred is None:
                 pred = (row.get("_meta") or {}).get("predicted")
             out[cid][item] = pred if pred else UNPARSED

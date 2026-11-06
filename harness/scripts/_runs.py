@@ -27,7 +27,7 @@ import sys
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _outputs, _store
 from evaluation_harness._common import lower_is_better
 
 Run = tuple[Path, dict]
@@ -37,7 +37,7 @@ def read_metrics(run_dir: Path) -> dict | None:
     """A run's metrics.json, or None when it is missing, unreadable or not an object."""
     mj = run_dir / "metrics.json"
     try:
-        m = json.loads(mj.read_text(encoding="utf-8"))
+        m = json.loads(_store.read_text(mj, encoding="utf-8"))
     except (OSError, ValueError):
         return None
     return m if isinstance(m, dict) else None
@@ -55,8 +55,8 @@ def runs_on(
     `match`, or exactly `config_id`."""
     base = runs_dir or _common.RUNS
     out: list[Run] = []
-    for d in sorted(base.iterdir()) if base.is_dir() else []:
-        m = read_metrics(d) if d.is_dir() else None
+    for d in sorted(_store.iterdir(base)) if _store.is_dir(base) else []:
+        m = read_metrics(d) if _store.is_dir(d) else None
         if m is None or not m.get("config_id"):
             continue
         if dataset_id is not None and m.get("dataset_id") != dataset_id:
@@ -78,15 +78,14 @@ def by_arm(runs: Iterable[Run]) -> dict[str, list[Run]]:
 
 
 def item_rows(run_dir: Path, strict: bool = True) -> Iterator[dict]:
-    """The rows of a run's predictions.jsonl that name an item. A malformed line raises
-    (naming the file and line) unless `strict` is False, when it is skipped: a statistical
+    """The rows of a run (its predictions.jsonl, or the sqlite store's) that name an item. A malformed line raises
+    (naming the run and line) unless `strict` is False, when it is skipped: a statistical
     test must not quietly drop an item, a page that shows a run may."""
-    pj = run_dir / "predictions.jsonl"
-    if not pj.is_file():
+    text = _outputs.rows_text(run_dir, errors="strict" if strict else "replace")
+    if text is None:
         return
-    for n, line in enumerate(
-        pj.read_text(encoding="utf-8", errors="strict" if strict else "replace").splitlines(), 1
-    ):
+    pj = Path(run_dir) / _outputs.PREDICTIONS
+    for n, line in enumerate(text.splitlines(), 1):
         if not line.strip():
             continue
         try:
@@ -114,9 +113,10 @@ def per_item(
     keep: set[str] | None = None,
     raw: list[float] | None = None,
     strict: bool = True,
+    reduce: str = "mean",
 ) -> dict[str, float]:
-    """item_id -> the mean of `metric` over the given runs (an arm's repeats). `keep`
-    restricts the items; `raw` collects every value as stored, before averaging (the
+    """item_id -> `metric` over the given runs (an arm's repeats), combined by `reduce` (stats.reduce_repeats: the
+    mean by default). `keep` restricts the items; `raw` collects every value as stored, before averaging (the
     leaderboard measures stored precision on it)."""
     acc: dict[str, list[float]] = {}
     for d, _m in runs:
@@ -127,6 +127,10 @@ def per_item(
             acc.setdefault(row["item_id"], []).append(v)
             if raw is not None:
                 raw.append(v)
+    if reduce not in ("", "mean"):
+        from evaluation_harness.stats import reduce_repeats  # noqa: PLC0415
+
+        return {i: reduce_repeats(v, reduce) for i, v in acc.items() if v}
     return {i: statistics.fmean(v) for i, v in acc.items() if v}
 
 
@@ -188,7 +192,9 @@ def direction(runs: Iterable[Run], metric: str, asc: bool = False, desc: bool = 
     passed one, else `lower_is_better_on`. Every command that counts wins or ranks arms asks
     this, so "A wins 180/200" on latency means A was faster without anyone remembering --asc."""
     if asc and desc:
-        raise SystemExit("ERROR: --asc and --desc contradict each other")
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die("--asc and --desc contradict each other", "bad-argument")
     if asc or desc:
         return asc
     return lower_is_better_on(runs, metric)
@@ -245,9 +251,12 @@ def default_metric(dataset_id: str, match: str | None = None, runs_dir: Path | N
                 file=sys.stderr,
             )
         return primary.most_common(1)[0][0]
-    raise SystemExit(
-        f"ERROR: no run on {dataset_id} records a primary metric: pass --metric"
-        + (f" (recorded: {', '.join(sorted(seen))})" if seen else "")
+    from evaluation_harness._common import die  # noqa: PLC0415
+
+    die(
+        f"no run on {dataset_id} records a primary metric: pass --metric"
+        + (f" (recorded: {', '.join(sorted(seen))})" if seen else ""),
+        "not-found",
     )
 
 

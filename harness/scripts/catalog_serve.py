@@ -59,8 +59,18 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _fields, _visibility, stats  # noqa: E402
-from evaluation_harness._common import ROOT, SPEED_KEYS  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _common,
+    _fields,
+    _store,
+    _visibility,
+    stats,
+)
+from evaluation_harness._common import (  # noqa: E402
+    ROOT,
+    SPEED_KEYS,
+    die,
+)
 from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalog_adapter  # noqa: E402
 
 #: Every comparison ends in one of these, so a page can always say what it shows and why.
@@ -417,6 +427,24 @@ def _disagreeing(series: dict, baseline: str) -> dict:
     return {a: {i: v for i, v in vals.items() if i in keep} for a, vals in series.items()}
 
 
+def _goal_cluster_on(dataset: str) -> str | None:
+    """The one field every goal that names `cluster:` for this dataset names, so the inspector tests
+    as the goal pages do (ADR-0002); None when no goal does, or goals disagree (then only `cluster=` does)."""
+    from evaluation_harness._common import goal_cluster, load_goals  # noqa: PLC0415
+
+    named = {goal_cluster(g, dataset) for g in load_goals().values()} - {None}
+    return next(iter(named)) if len(named) == 1 else None
+
+
+def goal_clusters_on(dataset: str) -> tuple[dict | None, str | None]:
+    """({item: cluster key}, field) for the goals' cluster field on `dataset` (_goal_cluster_on), else (None, None)."""
+    field = _goal_cluster_on(dataset) if dataset else None
+    if not field:
+        return None, None
+    every = (item_fields(A, dataset) or {}).get("values") or {}
+    return {i: v[field] for i, v in every.items() if v.get(field) not in (None, "")}, field
+
+
 def compare(params: dict) -> dict:
     """Compare arms: parse query params, get scores, run paired tests, return result."""
     runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
@@ -469,6 +497,17 @@ def compare(params: dict) -> dict:
     disagree = params.get("disagree", [""])[0] == "1"
     if disagree:
         series = _disagreeing(series, baseline)
+    # Items that share a value of the cluster field count as one in every test (stats.clustered). Asked for by
+    # name it must be a field this deployment shows; a goal's own field is used as the goal pages use it.
+    cluster = params.get("cluster", [""])[0]
+    if cluster and cluster not in decl:
+        return {"error": f"cluster by a field of {dataset}, not {cluster!r}"}
+    clusters: dict | None
+    if cluster:
+        every = (item_fields(A, dataset) or {}).get("values") or {}
+        clusters = {i: v[cluster] for i, v in every.items() if v.get(cluster) not in (None, "")}
+    else:
+        clusters, cluster = goal_clusters_on(dataset)
     higher, neutral = not A.lower_is_better(metric, dataset), A.is_neutral(metric, dataset or None)
     # A family and a threshold come from the URL, so they are checked, not trusted: a family
     # smaller than the arms tested here, or a threshold above alpha (or below what the family
@@ -491,13 +530,16 @@ def compare(params: dict) -> dict:
         neutral=neutral,
         family=family,
         threshold=threshold,
+        clusters=clusters,
     )
     by, breakdown, ungrouped = params.get("by", [""])[0], None, 0
     if by:
         if by not in decl or decl[by]["type"] not in _fields.GROUPABLE:
             return {"error": f"break a comparison down by a choice or yes/no field, not {by!r}"}
         groups, ungrouped = _groups(decl[by], by, fvalues, series.get(baseline, {}))
-        breakdown = stats.compare_by(series, baseline, groups, higher_is_better=higher, neutral=neutral)
+        breakdown = stats.compare_by(
+            series, baseline, groups, higher_is_better=higher, neutral=neutral, clusters=clusters
+        )
     averages, repeats = _averages(arms, series, metric)
     swapped = bool(asked) and asked != baseline
     ctx = {
@@ -536,7 +578,20 @@ def compare(params: dict) -> dict:
         "averages": averages,
         "repeats": repeats,
         "state": _state(result["rows"], averages, swapped),
-        "warnings": _warnings(ctx),
+        "warnings": [
+            *(
+                [
+                    (
+                        f"Tested by {cluster}: {A.item_word}s that share a {cluster} count as one in every test "
+                        f"({max((r.get('clusters') or 0 for r in result['rows']), default=0)} clusters)."
+                    )
+                ]
+                if clusters is not None
+                else []
+            ),
+            *_warnings(ctx),
+        ],
+        "cluster": cluster or None,
         "fields": _field_list(decl),
         "where": wheres,
         "disagree": disagree,
@@ -624,7 +679,7 @@ def item(params: dict) -> dict:
     if alone:
         from evaluation_harness._common import DATASETS  # noqa: PLC0415
 
-        if not plain_item(alone) or not (DATASETS / f"{alone}.json").is_file():
+        if not plain_item(alone) or not _store.is_file(DATASETS / f"{alone}.json"):
             return {"error": "need dataset=<a dataset id>"}
     if not it or (not arms and not alone) or any(not _arms_known(a) for a in arms):
         return {"error": "need arms=<arm>,... known to the catalog and item=<item_id>"}
@@ -691,14 +746,14 @@ def _sheet_rows(params: dict) -> tuple[dict, list, list]:
     from evaluation_harness._common import DATASETS  # noqa: PLC0415
 
     ds = params.get("dataset", [""])[0]
-    if not ds or not plain_item(ds) or not (DATASETS / f"{ds}.json").is_file():
-        raise SystemExit("need dataset=<a dataset id>")
+    if not ds or not plain_item(ds) or not _store.is_file(DATASETS / f"{ds}.json"):
+        die("need dataset=<a dataset id>", "bad-argument")
     runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
     if len(runs) > LIMITS["max_arms"]:
-        raise SystemExit(f"{len(runs)} arms asked for; at most {LIMITS['max_arms']}")
+        die(f"{len(runs)} arms asked for; at most {LIMITS['max_arms']}", "bad-argument")
     only = params.get("only", [])
     if bad := [x for x in only if x not in _sheet.SIGNALS]:
-        raise SystemExit(f"no signal {bad[0]!r}: one of {', '.join(_sheet.SIGNALS)}")
+        die(f"no signal {bad[0]!r}: one of {', '.join(_sheet.SIGNALS)}", "not-found")
     items = [i for i in params.get("item", []) if plain_item(i)] if "item" in params else None
     model = _sheet.build(
         ds,
@@ -714,7 +769,7 @@ def _sheet_rows(params: dict) -> tuple[dict, list, list]:
 
 
 def _error(exc: SystemExit) -> dict:
-    return {"error": str(exc).removeprefix("ERROR: ").splitlines()[0]}
+    return {"error": re.sub(r"^ERROR( \([a-z-]+\))?: ", "", str(exc)).splitlines()[0]}
 
 
 def sheet_csv(query: str) -> tuple[int, bytes, str]:
@@ -785,6 +840,7 @@ def sheet(params: dict) -> dict:
                 "winners": r["winners"],
                 "picked": (p.get("for") or ["no target yet"]) if p.get("action") == "pick" else [],
                 "signals": r["signals"],
+                "tags": r.get("tags", {}),
             }
         )
     return {
@@ -805,7 +861,7 @@ def sheet(params: dict) -> dict:
         "total": len(found),
         "counts": _sheet.counts(found),
         "sets": [c["key"] for c in model["label_cols"]],
-        "datasets": sorted(p.stem for p in DATASETS.glob("*.json") if p.stem != ds),
+        "datasets": sorted(p.stem for p in _store.glob(DATASETS, "*.json") if p.stem != ds),
         "fields": _field_list(model["decl"]),
         "wrong": params.get("wrong", [""])[0],
         "new": params.get("new", [""])[0],
@@ -906,8 +962,10 @@ def warm(build_dir: Path) -> int:
     """Answer, once, every comparison the built catalog links to: the pages' own links then
     come from the cache. Returns how many."""
     links = set()
-    for page in sorted(build_dir.rglob("*.html")):
-        for href in re.findall(r'href="(?:\.\./)*inspect\.html\?([^"]+)"', page.read_text(encoding="utf-8")):
+    for page in sorted(_store.rglob(build_dir, "*.html")):
+        for href in re.findall(
+            r'href="(?:\.\./)*inspect\.html\?([^"]+)"', _store.read_text(page, encoding="utf-8")
+        ):
             links.add(href.replace("&amp;", "&"))
     done = 0
     for q in sorted(links):
@@ -931,16 +989,156 @@ def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
         except ValueError:
             # The server's document root is the project: it serves the catalog and the data
             # tree from inside it, and nothing outside, so a directory elsewhere has no URL.
-            raise SystemExit(
+            die(
                 f"{p} is not inside the project ({ROOT}): the inspector serves the catalog "
                 "and the data tree from inside the project only. Build the catalog there "
-                "(the default, .build/catalog), or run from the project that holds it."
-            ) from None
+                "(the default, .build/catalog), or run from the project that holds it.",
+                "not-allowed",
+            )
     return tuple(out)
 
 
 #: The API's endpoints. Anything else under /api/ is 404: it is not a way into the files.
 API_ROUTES = ("/api/health", "/api/compare", "/api/item", "/api/sheet")
+#: The data page's endpoints (UXS-004, ADR-0027): this machine's only; a public server answers none of them.
+DATA_ROUTES = (
+    "/api/data/store",
+    "/api/data/list",
+    "/api/data/file",
+    "/api/data/find",
+    "/api/data/run",
+    "/api/data/form",
+    "/api/data/rebuild",
+)
+#: Whether this server answers the Configure pages' routes (main sets it): a local server of a project that deploys
+#: them (`configure: true`, SQLite only). Off, they are 404, as on a public server.
+CONFIGURE_ON: list[bool] = [False]
+#: The catalog this server serves (main sets it), which the data page can rebuild after a setting changes.
+CATALOG_DIR: list[Path] = []
+#: The one rebuild at a time: its state, when it started and ended, and the end of its output when it failed.
+REBUILD: dict = {"state": "idle"}
+_REBUILD_LOCK = threading.Lock()
+
+
+def _rebuild(out: Path) -> None:
+    """`evh catalog` into a folder beside the served one, in a child process (a build is CPU work: in this process
+    it would starve the server's answers), then the new folder swapped in, so the pages are served throughout."""
+    import subprocess  # noqa: PLC0415  # nosec B404 - our own command, no shell
+
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    nxt, old = out.with_name(out.name + ".next"), out.with_name(out.name + ".old")
+    for d in (nxt, old):
+        _store.rmtree(d, ignore_errors=True)
+    t0 = time.time()
+    r = subprocess.run(  # nosec B603 - this interpreter and the package's own command
+        [sys.executable, "-m", "evaluation_harness", "catalog", "--out", str(nxt)],
+        cwd=ROOT, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
+    )  # fmt: skip
+    if r.returncode == 0 and _store.is_file(nxt / "index.html"):
+        if _store.exists(out):
+            _store.replace(out, old)
+        _store.replace(nxt, out)
+        _store.rmtree(old, ignore_errors=True)
+        state = {"state": "done"}
+    else:
+        _store.rmtree(nxt, ignore_errors=True)
+        state = {"state": "failed", "tail": ((r.stdout or "") + (r.stderr or ""))[-1500:]}
+    with _REBUILD_LOCK:
+        REBUILD.clear()
+        REBUILD.update(state, started=t0, seconds=round(time.time() - t0, 1))
+
+
+def rebuild_state() -> dict:
+    """The rebuild's state, and when the served catalog was built."""
+    with _REBUILD_LOCK:
+        out = dict(REBUILD)
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    index = CATALOG_DIR[0] / "index.html" if CATALOG_DIR else None
+    built = _store.stat(index).st_mtime if index is not None and _store.is_file(index) else None
+    out["built"] = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(built)) if built else None
+    return out
+
+
+def start_rebuild() -> dict:
+    """Start a rebuild unless one is running; the state either way."""
+    if not CATALOG_DIR:
+        return {"state": "failed", "tail": "this server serves no catalog it can rebuild"}
+    with _REBUILD_LOCK:
+        if REBUILD.get("state") != "running":
+            REBUILD.clear()
+            REBUILD.update(state="running", started=time.time())
+            threading.Thread(target=_rebuild, args=(CATALOG_DIR[0],), daemon=True).start()
+    return rebuild_state()
+
+
+#: The header every data write must carry: a page from another origin cannot send it without a CORS preflight,
+#: which this server never grants (ADR-0027).
+DATA_HEADER = "X-EVH-Data"
+#: The largest setting a write takes, in bytes.
+DATA_MAX_BODY = 2_000_000
+#: A refusal's kind (`_data_page.Refused`) as its HTTP status.
+DATA_STATUS = {
+    "not-found": 404,
+    "not-allowed": 403,
+    "bad-argument": 400,
+    "would-overwrite": 409,
+    "invalid-file": 422,
+}
+
+
+def data_answer(method: str, path: str, query: str, body: bytes | None = None) -> tuple:
+    """The data page's API (UXS-004): (status, JSON body). Reads: GET store, list, file, find, run, form (a setting's
+    form: its schema, values and suggestions). Writes: PUT form (a setting's values, checked first: the problems come
+    back and nothing is written, or it is saved), DELETE file (a setting, or a whole run)."""
+    from evaluation_harness import _data_page, _settings_form  # noqa: PLC0415
+
+    q = parse_qs(query)
+
+    def arg(name: str, default: str = "") -> str:
+        return q.get(name, [default])[0]
+
+    try:
+        if method == "GET":
+            if path == "/api/data/store":
+                return 200, _data_page.overview()
+            if path == "/api/data/list":
+                norm = _data_page.resolve(arg("path"))[0]
+                if _data_page.is_file(norm):  # a file, not a folder: the page opens it (no failed request)
+                    return 200, {"path": norm, "file": True}
+                return 200, _data_page.listing(norm, int(arg("offset", "0") or 0))
+            if path == "/api/data/file":
+                return 200, _data_page.show(arg("path"))
+            if path == "/api/data/find":
+                return 200, _data_page.search(arg("q"))
+            if path == "/api/data/form":
+                return 200, _settings_form.form(arg("path"), new_in=arg("new") or None)
+            if path == "/api/data/rebuild":
+                return 200, rebuild_state()
+            if path == "/api/data/run":
+                return 200, _data_page.run_summary(arg("path"))
+            return 405, {"error": "use POST, PUT or DELETE for this"}
+        if method == "POST" and path == "/api/data/rebuild":
+            return 200, start_rebuild()
+        if method == "PUT" and path == "/api/data/form":
+            values = json.loads((body or b"").decode("utf-8") or "null")
+            found = _settings_form.problems(arg("path"), values)
+            if found:
+                return 200, {"saved": False, "problems": found}
+            try:
+                return 200, {"saved": True, **_settings_form.save(arg("path"), values, new=arg("new") == "1")}
+            except _settings_form.ProjectRefused as exc:
+                return 200, {"saved": False, "problems": exc.problems}
+        if method == "DELETE" and path == "/api/data/file":
+            return 200, _data_page.remove(arg("path"))
+        return 405, {"error": f"{method} is not served at {path}"}
+    except _data_page.Refused as exc:
+        return DATA_STATUS.get(exc.kind, 400), {"error": str(exc), "kind": exc.kind}
+    except UnicodeDecodeError:
+        return 400, {"error": "a setting is UTF-8 text"}
+    except ValueError as exc:
+        return 400, {"error": str(exc)}
 
 
 def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
@@ -959,6 +1157,8 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     if ".." in p.split("/"):
         return 404
     if p.startswith("/api/"):
+        if p in DATA_ROUTES:  # this machine's only (ADR-0027), and only for a project that deploys them
+            return 404 if LIMITS["hosts"] or not CONFIGURE_ON[0] else 0
         return 0 if p in API_ROUTES else 404
     prefix = next((x for x in prefixes if p.startswith(x)), None)
     if prefix is None:
@@ -990,19 +1190,19 @@ def load_hooks(spec: str):
     target, _, name = spec.partition(":")
     if target.endswith(".py"):
         path = Path(target).resolve()
-        if not path.is_file():
-            raise SystemExit(f"--hooks: no file {target}")
+        if not _store.is_file(path):
+            die(f"--hooks: no file {target}", "not-found")
         from evaluation_harness._common import ModuleNotLoadable, load_module  # noqa: PLC0415
 
         try:
             mod = load_module(path, f"evh_hooks_{path.stem}")
-        except ModuleNotLoadable as exc:
-            raise SystemExit(f"--hooks: cannot load {target}") from exc
+        except ModuleNotLoadable:
+            die(f"--hooks: cannot load {target}", "failed")
     else:
         try:
             mod = importlib.import_module(target)
         except ImportError as exc:
-            raise SystemExit(f"--hooks: cannot import {target}: {exc}") from exc
+            die(f"--hooks: cannot import {target}: {exc}", "failed")
     obj = getattr(mod, name) if name else mod
     return obj() if isinstance(obj, type) else obj
 
@@ -1087,6 +1287,44 @@ class Handler(SimpleHTTPRequestHandler):
             return True
         return False
 
+    def do_POST(self):
+        """The data page's check (UXS-004), observed by the hooks."""
+        self._observed(lambda: self._write("POST"))
+
+    def do_PUT(self):
+        """The data page's save (UXS-004), observed by the hooks."""
+        self._observed(lambda: self._write("PUT"))
+
+    def do_DELETE(self):
+        """The data page's delete (UXS-004), observed by the hooks."""
+        self._observed(lambda: self._write("DELETE"))
+
+    def _write(self, method: str) -> None:
+        """A data write: only to a data route, on this machine (`_refuse`), with the data header, and from no other
+        origin (ADR-0027)."""
+        url = urlparse(self.path)
+        if self._refuse():
+            return
+        if url.path not in DATA_ROUTES or LIMITS["hosts"] or not CONFIGURE_ON[0]:
+            self.send_error(404)
+            return
+        if self.headers.get(DATA_HEADER) != "1":
+            return self._json(
+                403,
+                {"error": f"a write needs the {DATA_HEADER}: 1 header (the data page sends it)"},
+                cache=False,
+            )
+        origin = self.headers.get("Origin")
+        port = int(self.server.server_address[1])  # type: ignore[index]  # an AF_INET (host, port)
+        if origin is not None and origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"):
+            return self._json(403, {"error": "a write from another origin is refused"}, cache=False)
+        n = int(self.headers.get("Content-Length") or 0)
+        if n > DATA_MAX_BODY:
+            return self._json(413, {"error": f"a setting is at most {DATA_MAX_BODY:,} bytes"}, cache=False)
+        body = self.rfile.read(n) if n else b""
+        code, answer_body = data_answer(method, url.path, url.query, body)
+        self._json(code, answer_body, cache=False)
+
     def do_HEAD(self):
         """Handle HEAD requests with access checks."""
         if not self._refuse():
@@ -1124,6 +1362,9 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
+        if url.path in DATA_ROUTES:
+            code, body = data_answer("GET", url.path, url.query)
+            return self._json(code, body, cache=False)
         if url.path in ("/api/compare", "/api/item", "/api/sheet"):
             # A client-supplied header is trusted only when named (--client-header): behind a
             # proxy that sets it, with the origin reachable only through that proxy. Otherwise
@@ -1139,14 +1380,44 @@ class Handler(SimpleHTTPRequestHandler):
         if not self.prefixes:  # public mode: the API only, never a file
             self.send_error(404)
             return
+        if self._from_store(url.path):
+            return
         super().do_GET()
 
-    def _json(self, code: int, body) -> None:
+    def _from_store(self, url_path: str) -> bool:
+        """With the sqlite store (RFC-025) a file of the data tree is a row of the project's database: served from
+        it, through the same prefix and path checks as a file on disk. False for anything else."""
+        if _common.store() != "sqlite":
+            return False
+        data = _common.DATA
+        try:
+            data_prefix = "/" + data.resolve().relative_to(ROOT.resolve()).as_posix().strip("/") + "/"
+        except ValueError:  # a data directory outside the project has no URL (served() says so at start)
+            return False
+        if not url_path.startswith(data_prefix):
+            return False
+        rel = Path(unquote(url_path[len(data_prefix) :]))
+        if ".." in rel.parts or rel.is_absolute():
+            self.send_error(404)
+            return True
+        f = data / rel
+        if not _store.is_file(f):
+            self.send_error(404)
+            return True
+        body = _store.read_bytes(f)
+        self.send_response(200)
+        self.send_header("Content-Type", self.guess_type(str(f)))
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+        return True
+
+    def _json(self, code: int, body, cache: bool = True) -> None:
         data = body if isinstance(body, bytes) else json.dumps(body).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "no-store" if code >= 400 else "public, max-age=300")
+        self.send_header("Cache-Control", "no-store" if code >= 400 or not cache else "public, max-age=300")
         self.end_headers()
         self.wfile.write(data)
 
@@ -1228,14 +1499,16 @@ def main() -> int:
         LIMITS["publish"] = tuple(x.strip() for x in args.publish.split(",") if x.strip())
         bad = set(LIMITS["publish"]) - {"outputs", "references"}
         if bad:
-            raise SystemExit(f"--publish takes outputs and/or references, not {', '.join(sorted(bad))}")
+            die(f"--publish takes outputs and/or references, not {', '.join(sorted(bad))}", "bad-argument")
         Handler.prefixes = ()
     else:
         if args.bind != "127.0.0.1":
-            raise SystemExit("--bind other than 127.0.0.1 needs --public (and a proxy in front)")
-        if not (args.build_dir / "index.html").is_file():
-            raise SystemExit(f"no catalog at {args.build_dir}: run `evh catalog` first")
+            die("--bind other than 127.0.0.1 needs --public (and a proxy in front)", "not-allowed")
+        if not _store.is_file(args.build_dir / "index.html"):
+            die(f"no catalog at {args.build_dir}: run `evh catalog` first", "not-found")
         Handler.prefixes = served(args.build_dir, A.data_dir, tuple(getattr(A, "served_dirs", ())))
+        CATALOG_DIR[:] = [args.build_dir.resolve()]
+        CONFIGURE_ON[:] = [_common.configure()]
     if args.warm:
         threading.Thread(
             target=lambda: print(f"warm: {warm(args.warm)} comparison(s) cached", flush=True), daemon=True
@@ -1248,7 +1521,7 @@ def main() -> int:
             if exc.errno == errno.EADDRINUSE
             else f"{exc.strerror}. Pass --port N, or check --bind."
         )
-        raise SystemExit(f"cannot listen on {args.bind}:{args.port}: {why}") from exc
+        die(f"cannot listen on {args.bind}:{args.port}: {why}", "failed")
     from evaluation_harness._version import __version__  # noqa: PLC0415
 
     _hook(

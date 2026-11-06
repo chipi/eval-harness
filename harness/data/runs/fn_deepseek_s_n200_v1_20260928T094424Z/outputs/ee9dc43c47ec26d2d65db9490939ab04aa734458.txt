@@ -1,9 +1,0 @@
-```json
-[
-  {"text": "Super Snipe", "type": "product"},
-  {"text": "4086cc", "type": "other"},
-  {"text": "Humber Pullman", "type": "product"},
-  {"text": "1936", "type": "event"},
-  {"text": "1952", "type": "event"}
-]
-```

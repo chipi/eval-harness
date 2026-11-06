@@ -17,7 +17,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _store
 from evaluation_harness._common import die
 from evaluation_harness._runs import runs_on
 
@@ -35,15 +35,15 @@ def path_of(goal: str, round_id: str) -> Path:
 def load_rounds(goal: str | None = None) -> list[dict[str, Any]]:
     """Every round (of one goal, when named), in goal then round order."""
     base = _common.ROUNDS
-    if not base.is_dir() or yaml is None:
+    if not _store.is_dir(base) or yaml is None:
         return []
     # A goal is a plain name: `..`, a path separator or a glob character would reach (or probe for)
     # files outside data/rounds, and an agent can pass any string as --goal.
     if goal is not None and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", goal):
         return []
     out = []
-    for f in sorted(base.glob(f"{goal or '*'}/r*.yaml"), key=lambda p: (p.parent.name, _num(p.stem))):
-        doc = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+    for f in sorted(_store.glob(base, f"{goal or '*'}/r*.yaml"), key=lambda p: (p.parent.name, _num(p.stem))):
+        doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {}
         if isinstance(doc, dict):
             out.append(doc)
     return out
@@ -70,7 +70,8 @@ def resolve(round_id: str, goal: str | None = None) -> dict[str, Any]:
                 f"rounds of several goals ({', '.join(goals)}); add --goal"
                 if hits
                 else "no such round" + (f" of {goal}" if goal else "")
-            )
+            ),
+            "not-found",
         )
     return hits[0]
 
@@ -83,9 +84,9 @@ def next_id(goal: str) -> str:
 def save(doc: dict[str, Any]) -> Path:
     """Write a round's record (keys in a stable order, so a diff shows what a command changed)."""
     if yaml is None:  # pragma: no cover
-        die("pyyaml is required")
+        die("pyyaml is required", "missing-dependency")
     p = path_of(doc["goal"], doc["round_id"])
-    p.parent.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(p.parent, parents=True, exist_ok=True)
     order = [
         "round_id",
         "goal",
@@ -103,7 +104,9 @@ def save(doc: dict[str, Any]) -> Path:
     body = {k: doc[k] for k in order if k in doc and doc[k] not in (None, [], "")}
     if doc.get("baseline") is None and "baseline" in doc:
         body["baseline"] = None
-    p.write_text(yaml.safe_dump(body, sort_keys=False, allow_unicode=True, width=100), encoding="utf-8")
+    _store.write_text(
+        p, yaml.safe_dump(body, sort_keys=False, allow_unicode=True, width=100), encoding="utf-8"
+    )
     return p
 
 
@@ -144,20 +147,23 @@ def config_round(cfg: dict[str, Any], config_path: Any) -> dict[str, Any] | None
     if not rid:
         return None
     if not cfg.get("goal"):
-        die(f"{config_path}: round {rid!r} needs `goal:` too (a round belongs to a goal)")
+        die(f"{config_path}: round {rid!r} needs `goal:` too (a round belongs to a goal)", "invalid-file")
     rnd = find(cfg["goal"], rid)
     if rnd is None:
         die(
             f"{config_path}: no round {rid!r} for goal {cfg['goal']!r} at {path_of(cfg['goal'], rid)}.\n"
-            f"  Open it first:  evh round-open --goal {cfg['goal']} --dataset {cfg.get('dataset_id', '<dataset>')}"
+            f"  Open it first:  evh round-open --goal {cfg['goal']} --dataset {cfg.get('dataset_id', '<dataset>')}",
+            "not-found",
         )
     if rnd.get("status") == "closed":
         die(
-            f"{config_path}: round {rid} of {cfg['goal']} is closed; open the next one (evh round-open --from {rid})"
+            f"{config_path}: round {rid} of {cfg['goal']} is closed; open the next one (evh round-open --from {rid})",
+            "not-allowed",
         )
     if rnd.get("dataset_id") != cfg.get("dataset_id"):
         die(
-            f"{config_path}: round {rid} runs on {rnd.get('dataset_id')!r}, the config on {cfg.get('dataset_id')!r}"
+            f"{config_path}: round {rid} runs on {rnd.get('dataset_id')!r}, the config on {cfg.get('dataset_id')!r}",
+            "mismatch",
         )
     return rnd
 
@@ -168,17 +174,17 @@ def problems() -> list[str]:
     naming a round that does not exist."""
     out: list[str] = []
     base = _common.ROUNDS
-    if not base.is_dir():
+    if not _store.is_dir(base):
         return out
     from evaluation_harness._common import load_goals  # noqa: PLC0415
 
     goals = set(load_goals())
-    datasets = {p.stem for p in _common.DATASETS.glob("*.json")}
+    datasets = {p.stem for p in _store.glob(_common.DATASETS, "*.json")}
     known = set()
-    for f in sorted(base.glob("*/*.yaml")):
+    for f in sorted(_store.glob(base, "*/*.yaml")):
         rel = f.relative_to(base).as_posix()
         try:
-            doc = yaml.safe_load(f.read_text(encoding="utf-8")) or {} if yaml else {}
+            doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {} if yaml else {}
         except Exception as exc:  # noqa: BLE001 - reported, not raised
             out.append(f"rounds/{rel}: does not parse ({type(exc).__name__})")
             continue
@@ -187,7 +193,7 @@ def problems() -> list[str]:
 
             import jsonschema  # noqa: PLC0415
 
-            schema = json.loads((_common.SCHEMAS / "round.schema.json").read_text(encoding="utf-8"))
+            schema = json.loads(_store.read_text(_common.SCHEMAS / "round.schema.json", encoding="utf-8"))
             for err in jsonschema.Draft202012Validator(schema).iter_errors(doc):
                 out.append(f"rounds/{rel}: {err.message[:90]}")
         except ImportError:  # pragma: no cover - V1 says jsonschema is missing
@@ -201,8 +207,8 @@ def problems() -> list[str]:
         if doc.get("status") == "closed" and not (doc.get("conclusion") or {}).get("text"):
             out.append(f"rounds/{rel}: closed without a conclusion")
         known.add((doc.get("goal"), doc.get("round_id")))
-    for f in sorted(base.glob("*/*.yaml")):
-        doc = yaml.safe_load(f.read_text(encoding="utf-8")) or {} if yaml else {}
+    for f in sorted(_store.glob(base, "*/*.yaml")):
+        doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {} if yaml else {}
         if doc.get("from") and (doc.get("goal"), doc["from"]) not in known:
             out.append(f"rounds/{f.relative_to(base).as_posix()}: from {doc['from']!r}, which does not exist")
     for d, m in runs_on():

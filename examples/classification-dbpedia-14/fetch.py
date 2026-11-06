@@ -3,8 +3,8 @@
 
     python examples/classification-dbpedia-14/fetch.py --n 280
 
-STDLIB ONLY, like the other two fetchers: the HuggingFace datasets-server rows API over
-HTTPS, no `datasets`, no pyarrow, no pandas.
+It reads the split through the harness's `huggingface` source (examples/_shared/hf_rows.py): the Hub's
+parquet conversion at one pinned commit, each file checked against the sha256 the Hub lists.
 
 WHY THE DRAW IS SEEDED-RANDOM AND NOT FIRST-K
   The AG News example took the FIRST k items of each class. That guarantees the small
@@ -73,7 +73,7 @@ ROOT = Path(__file__).resolve().parents[2] / "harness"
 DATASET = "fancyzhx/dbpedia_14"
 CONFIG = "dbpedia_14"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_shared"))
-from hf_rows import DEFAULT_DELAY, Sources  # noqa: E402
+from hf_rows import Sources  # noqa: E402
 from hf_rows import page as _rows_page  # noqa: E402 - the one retry/pacing schedule
 
 #: The dataset's own label order. Index IS the stored integer; do not reorder.
@@ -101,11 +101,11 @@ PER_CLASS_IN_SPLIT = 5000
 PAGE = 100
 
 
-def _get(offset: int, length: int, delay: float = DEFAULT_DELAY) -> list[dict]:
-    return _rows_page(DATASET, CONFIG, "test", offset, length, delay=delay)
+def _get(offset: int, length: int) -> list[dict]:
+    return _rows_page(DATASET, CONFIG, "test", offset, length)
 
 
-def fetch_class(label_index: int, wanted: list[int], delay: float = DEFAULT_DELAY) -> list[dict]:
+def fetch_class(label_index: int, wanted: list[int]) -> list[dict]:
     """Rows at the given WITHIN-CLASS offsets, verifying each one's label.
 
     Fetched in contiguous runs where the chosen offsets happen to be adjacent, single
@@ -116,7 +116,7 @@ def fetch_class(label_index: int, wanted: list[int], delay: float = DEFAULT_DELA
     out: list[dict] = []
     for start in range(0, len(wanted), PAGE):
         for off in wanted[start : start + PAGE]:
-            rows = _get(base + off, 1, delay)
+            rows = _get(base + off, 1)
             if not rows:
                 sys.exit(f"no row at offset {base + off} — the split is smaller than expected")
             row = rows[0]
@@ -153,12 +153,6 @@ def main() -> int:
         default=20260927,
         help="draw seed; the same --n and --seed reproduce the same items",
     )
-    ap.add_argument(
-        "--delay",
-        type=float,
-        default=DEFAULT_DELAY,
-        help=f"seconds between requests (default: {DEFAULT_DELAY}); raise it if 429s persist",
-    )
     ap.add_argument("--force", action="store_true", help="overwrite an existing slice")
     args = ap.parse_args()
 
@@ -187,7 +181,7 @@ def main() -> int:
         rng.shuffle(permutation)
         chosen = sorted(permutation[:per_class])
         print(f"  {label:<24} fetching {per_class} of {PER_CLASS_IN_SPLIT}", flush=True)
-        rows.extend(fetch_class(index, chosen, args.delay))
+        rows.extend(fetch_class(index, chosen))
 
     sources.mkdir(parents=True, exist_ok=True)
     golds.mkdir(parents=True, exist_ok=True)

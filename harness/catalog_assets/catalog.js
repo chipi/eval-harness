@@ -83,3 +83,8 @@ const all=box.querySelector('input.cmdall');
 if(all)all.addEventListener('change',()=>{box.querySelectorAll('input.cmdsel').forEach(i=>{const tr=i.closest('tr');
 if(!tr||!tr.hidden&&tr.style.display!=='none')i.checked=all.checked;});upd();});
 box.addEventListener('change',ev=>{if(ev.target.classList.contains('cmdsel'))upd();});upd();});
+/* the data page's link (UXS-004): shown only when a local catalog-serve answers its API (never on a deployment or
+   a page opened from disk) */
+{const api=document.body.dataset.api||'/api/';
+if(location.protocol.startsWith('http')&&document.querySelector('.local-only'))fetch(api+'data/store',{cache:'no-store'})
+.then(r=>{if(r.ok)document.body.classList.add('local-data');}).catch(()=>{});}

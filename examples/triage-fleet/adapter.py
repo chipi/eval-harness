@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "harness"))
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness.adapter import Result, answers  # noqa: E402
 
 PRIMARY_METRIC = "triage_cost"
@@ -112,7 +113,7 @@ def _fleet() -> Any:
         return _FLEET["triage"]
     src = os.environ.get("TRIAGE_FLEET_SRC", "")
     mvp = Path(src) / "mvp" if src else None
-    if mvp is None or not (mvp / "triage.py").is_file():
+    if mvp is None or not _store.is_file(mvp / "triage.py"):
         raise RuntimeError(
             f"TRIAGE_FLEET_SRC must name the fleet's signal-fleet folder (with mvp/triage.py); got {src!r}"
         )
@@ -202,7 +203,7 @@ def fingerprint(params: dict[str, Any]) -> dict[str, Any]:
     code = hashlib.sha256()
     for name in FLEET_MODULES:
         f = mvp / name
-        code.update(name.encode() + b"\0" + (f.read_bytes() if f.is_file() else b""))
+        code.update(name.encode() + b"\0" + (_store.read_bytes(f) if _store.is_file(f) else b""))
     commit = os.environ.get("TRIAGE_FLEET_COMMIT") or params.get("fleet_commit")
     return {
         "id": params.get("model") or params.get("provider"),

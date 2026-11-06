@@ -1,6 +1,0 @@
-[
-  {
-    "text": "post office",
-    "type": "organization"
-  }
-]

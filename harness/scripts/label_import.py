@@ -27,7 +27,8 @@ import argparse
 import hashlib
 from pathlib import Path
 
-from evaluation_harness._common import die
+from evaluation_harness import _store
+from evaluation_harness._common import die, evh_prog
 from evaluation_harness._label_sets import answers, label_text, write_set
 from evaluation_harness._sheets import ALSO, read_csv
 
@@ -53,7 +54,10 @@ def labels_from_rows(
         if (r.get("note") or "").strip():
             notes[r["item_id"]] = r["note"].strip()
     if no_proposal:
-        die(f"`yes` with no proposal on {len(no_proposal)} row(s): {', '.join(no_proposal[:8])}")
+        die(
+            f"`yes` with no proposal on {len(no_proposal)} row(s): {', '.join(no_proposal[:8])}",
+            "invalid-file",
+        )
     if choices:
         off = [(i, a) for i, t in labels.items() for a in answers(t) if a not in choices]
         if off:
@@ -61,14 +65,15 @@ def labels_from_rows(
                 f"{len(off)} answer(s) not among the sheet's choices ({', '.join(choices)}): "
                 + "; ".join(f"{i}: {a!r}" for i, a in off[:8])
                 + (" ..." if len(off) > 8 else "")
-                + ". Correct them in the sheet and import it again; nothing was written."
+                + ". Correct them in the sheet and import it again; nothing was written.",
+                "invalid-file",
             )
     return labels, notes
 
 
 def main() -> int:
     """Import a filled sheet as a person's label set."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument(
         "sheet",
         type=Path,
@@ -84,19 +89,22 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    if args.sheet.is_dir():
+    if _store.is_dir(args.sheet):
         return _folder(args)
-    if not args.sheet.is_file():
-        die(f"no sheet {args.sheet}")
+    if not _store.is_file(args.sheet):
+        die(f"no sheet {args.sheet}", "not-found")
     rows, choices = read_csv(args.sheet)
     if not rows or "item_id" not in rows[0] or "label" not in rows[0]:
-        die(f"{args.sheet}: a sheet has the columns item_id and label (evh label-sheet writes one)")
+        die(
+            f"{args.sheet}: a sheet has the columns item_id and label (evh label-sheet writes one)",
+            "invalid-file",
+        )
     labels, notes = labels_from_rows(rows, choices)
     source = {
         "kind": "person",
         "by": args.by,
         "sheet": args.sheet.name,
-        "sheet_sha256": hashlib.sha256(args.sheet.read_bytes()).hexdigest(),
+        "sheet_sha256": hashlib.sha256(_store.read_bytes(args.sheet)).hexdigest(),
     }
     doc = write_set(args.dataset_id, args.name, labels, source, args.guideline, notes)
     print(
@@ -107,13 +115,13 @@ def main() -> int:
 
 def _folder(args: argparse.Namespace) -> int:
     """A folder of answers a person wrote, one <item_id>.txt per item, as a person's label set."""
-    files = sorted(args.sheet.glob("*.txt"))
+    files = sorted(_store.glob(args.sheet, "*.txt"))
     if not files:
-        die(f"{args.sheet}: no <item_id>.txt in it")
-    labels = {p.stem: p.read_text(encoding="utf-8") for p in files}
+        die(f"{args.sheet}: no <item_id>.txt in it", "invalid-file")
+    labels = {p.stem: _store.read_text(p, encoding="utf-8") for p in files}
     digest = hashlib.sha256()
     for p in files:
-        digest.update(p.name.encode() + b"\0" + p.read_bytes())
+        digest.update(p.name.encode() + b"\0" + _store.read_bytes(p))
     source = {"kind": "person", "by": args.by, "folder": args.sheet.name, "folder_sha256": digest.hexdigest()}
     doc = write_set(args.dataset_id, args.name, labels, source, args.guideline)
     print(

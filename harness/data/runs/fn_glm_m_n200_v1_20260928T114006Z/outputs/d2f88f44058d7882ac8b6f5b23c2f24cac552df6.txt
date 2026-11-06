@@ -1,4 +1,0 @@
-[
-  {"text": "cubic boron nitride", "type": "product"},
-  {"text": "Borazon", "type": "product"}
-]

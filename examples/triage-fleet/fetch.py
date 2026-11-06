@@ -39,7 +39,10 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1] / "harness"
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT.parent / "harness"))
-from evaluation_harness import _importers  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _importers,
+    _store,
+)
 from importer import Importer  # noqa: E402
 
 REPO = "chipi-nbgd/orrery-triage"
@@ -69,7 +72,7 @@ REVISIONS = {
 def _token() -> str | None:
     tok = os.environ.get("HF_TOKEN", "").strip()
     f = Path.home() / ".cache" / "huggingface" / "token"
-    return tok or (f.read_text(encoding="utf-8").strip() if f.is_file() else None)
+    return tok or (_store.read_text(f, encoding="utf-8").strip() if _store.is_file(f) else None)
 
 
 def download(rev: str, path: str) -> Path:
@@ -83,9 +86,9 @@ def download(rev: str, path: str) -> Path:
     got = hashlib.sha256(data).hexdigest()
     if got != spec["files"][path]:
         raise SystemExit(f"{REPO}@{rev}/{path}: sha256 {got}, pinned {spec['files'][path]}: refusing it")
-    spec["out"].mkdir(parents=True, exist_ok=True)
+    _store.mkdir(spec["out"], parents=True, exist_ok=True)
     dest = spec["out"] / Path(path).name
-    dest.write_bytes(data)
+    _store.write_bytes(dest, data)
     print(f"  {path}: {len(data):,} bytes, sha256 ok")
     return dest
 
@@ -93,19 +96,21 @@ def download(rev: str, path: str) -> Path:
 def restore_capture(capture_id: str, decisions: Path, verdicts: Path) -> dict:
     """The capture's record files, rebuilt with its recorded query and checked against its capture.json."""
     base = ROOT / "data" / "captures" / capture_id
-    doc = json.loads((base / "capture.json").read_text(encoding="utf-8"))
+    doc = json.loads(_store.read_text(base / "capture.json", encoding="utf-8"))
     # the recorded query's own keys (v2_fields, prompt_fields, ...), the files where this fetch put them
     query = dict(doc.get("query") or {}, path=str(decisions), verdicts=str(verdicts))
     recs = {r["id"]: _importers.normalise(r) for r in Importer({}).records(query)}
-    (base / "records").mkdir(exist_ok=True)
+    _store.mkdir(base / "records", exist_ok=True)
     bad = []
     for entry in doc["records"]:
         rec = recs.get(entry["id"])
         if rec is None or _importers.record_sha256(rec) != entry["sha256"]:
             bad.append(entry["id"])
             continue
-        (base / "records" / f"{entry['id']}.json").write_text(
-            json.dumps(rec, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8"
+        _store.write_text(
+            base / "records" / f"{entry['id']}.json",
+            json.dumps(rec, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+            encoding="utf-8",
         )
     if bad:
         raise SystemExit(
@@ -117,9 +122,9 @@ def restore_capture(capture_id: str, decisions: Path, verdicts: Path) -> dict:
 
 def restore_dataset(dataset_id: str, recs: dict) -> None:
     """The dataset's item files, from the records' bodies, checked against its sha256s."""
-    doc = json.loads((ROOT / "data" / "datasets" / f"{dataset_id}.json").read_text(encoding="utf-8"))
+    doc = json.loads(_store.read_text(ROOT / "data" / "datasets" / f"{dataset_id}.json", encoding="utf-8"))
     src = ROOT / doc["source_dir"]
-    src.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(src, parents=True, exist_ok=True)
     bad = []
     for it in doc["items"]:
         rec = recs.get(it["item_id"])
@@ -127,7 +132,7 @@ def restore_dataset(dataset_id: str, recs: dict) -> None:
         if hashlib.sha256(data).hexdigest() != it["source_sha256"]:
             bad.append(it["item_id"])
             continue
-        (src / it["source_path"]).write_bytes(data)
+        _store.write_bytes(src / it["source_path"], data)
     if bad:
         raise SystemExit(f"{dataset_id}: {len(bad)} item(s) differ from the dataset's hashes, e.g. {bad[:3]}")
     print(f"  {dataset_id}: {len(doc['items'])} items restored, hashes ok")
@@ -141,10 +146,10 @@ def fetch(rev: str) -> None:
     verdicts = download(rev, "data/verdicts.jsonl")
     recs: dict = {}
     for c in spec["captures"]:
-        if (ROOT / "data" / "captures" / c / "capture.json").is_file():
+        if _store.is_file(ROOT / "data" / "captures" / c / "capture.json"):
             recs.update(restore_capture(c, decisions, verdicts))
     for d in spec["datasets"]:
-        if (ROOT / "data" / "datasets" / f"{d}.json").is_file():
+        if _store.is_file(ROOT / "data" / "datasets" / f"{d}.json"):
             restore_dataset(d, recs)
 
 

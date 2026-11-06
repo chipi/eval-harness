@@ -27,7 +27,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _jsonout, _rounds
+from evaluation_harness import _common, _jsonout, _rounds, _store
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import rescore as rs
 from evaluation_harness._common import die, load_goals
@@ -93,13 +93,13 @@ def main() -> int:
     args = ap.parse_args(argv)
     goal = load_goals().get(args.goal)
     if goal is None:
-        die(f"no goal {args.goal!r}")
+        die(f"no goal {args.goal!r}", "not-found")
     datasets = [d["dataset_id"] for d in goal.get("datasets") or [] if d.get("dataset_id")]
     configs = None
     if args.round_id:
         rnd = _rounds.find(args.goal, args.round_id)
         if rnd is None:
-            die(f"no round {args.round_id} of {args.goal}")
+            die(f"no round {args.round_id} of {args.goal}", "not-found")
         datasets, configs = [rnd["dataset_id"]], set(_rounds.arms_of(rnd))
     before = decisions(load_catalog_adapter(None), goal)
     with tempfile.TemporaryDirectory(prefix="evh-score-preview-") as tmp:
@@ -131,10 +131,10 @@ def main() -> int:
 def _derived_on(dataset_id: str) -> int:
     """How many re-scored (derived) runs on the dataset the goal can read: what score-preview leaves alone."""
     n = 0
-    bases = [b for b in sorted(_common.DATA.glob("runs*")) if b.name != rs.RESCORED]
-    bases += sorted((_common.DATA / rs.RESCORED).glob("*/*"))
+    bases = [b for b in sorted(_store.glob(_common.DATA, "runs*")) if b.name != rs.RESCORED]
+    bases += sorted(_store.glob(_common.DATA / rs.RESCORED, "*/*"))
     for base in bases:
-        if base.is_dir() and not _common.ignored_by_git(base):
+        if _store.is_dir(base) and not _common.ignored_by_git(base):
             n += sum(1 for _d, m in rs.runs_on(dataset_id, runs_dir=base) if m.get("derived"))
     return n
 

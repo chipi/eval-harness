@@ -24,8 +24,8 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import json
 
-from evaluation_harness._common import load_dataset
-from evaluation_harness._label_sets import agreement, coverage, sets, source_line
+from evaluation_harness._common import evh_prog, load_dataset
+from evaluation_harness._label_sets import agreement, agreement_all, contested, coverage, sets, source_line
 from evaluation_harness._visibility import public_env, text_shown
 
 
@@ -70,11 +70,17 @@ def confusion_lines(p: dict) -> str:
 
 def main() -> int:
     """List label sets."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", help="the sets covering this dataset's items")
     ap.add_argument("--json", action="store_true", help="print JSON")
     ap.add_argument(
         "--confusion", action="store_true", help="with --dataset-id: each pair's confusion matrix too"
+    )
+    ap.add_argument(
+        "--contested",
+        action="store_true",
+        help="with --dataset-id: per item, how many people's label sets agree with the gold reference, the most "
+        "contested first",
     )
     args = ap.parse_args()
 
@@ -82,6 +88,8 @@ def main() -> int:
         n = len(load_dataset(args.dataset_id).get("items") or [])
         cov = coverage(args.dataset_id)
         pairs = agreement(args.dataset_id)
+        together = agreement_all(args.dataset_id)
+        disputed = contested(args.dataset_id) if args.contested else None
         if not text_shown(args.dataset_id, public=public_env()):
             # A hidden dataset's labels are per-item text (RFC-019 §4): a confusion matrix names them. The counts and
             # the coefficients stay.
@@ -89,7 +97,14 @@ def main() -> int:
         if args.json:
             print(
                 json.dumps(
-                    {"dataset_id": args.dataset_id, "items": n, "sets": cov, "agreement": pairs},
+                    {
+                        "dataset_id": args.dataset_id,
+                        "items": n,
+                        "sets": cov,
+                        "agreement": pairs,
+                        "agreement_all": together,
+                        **({"contested": disputed} if args.contested else {}),
+                    },
                     indent=2,
                     default=str,
                 )
@@ -104,10 +119,27 @@ def main() -> int:
             print(
                 f"  {c['dataset_id']}/{c['set']}: {source_line(c['source'])}, {len(c['items'])} of {n} item(s), {g}"
             )
+        if together:
+            ci = together.get("ci")
+            print(
+                f"  all {together['sets']} sets together: Krippendorff's alpha {together['alpha']}"
+                + (f" (95% interval {ci[0]} to {ci[1]})" if ci else "")
+                + f" over {together['items']} item(s) labelled twice or more, {together['alpha_distance']}"
+            )
         for p in pairs:
             print(f"  {p['a']} and {p['b']}: {pair_line(p)}")
             if args.confusion and p.get("confusion"):
                 print(confusion_lines(p))
+        if args.contested:
+            if not disputed:
+                print("  contested: no gold reference, or no person set labels its items beside it")
+            else:
+                print(
+                    f"  contested: {disputed['contested']} of {disputed['items']} item(s) have a person who disagrees "
+                    f"with the {disputed['tier']} reference"
+                )
+                for r in [r for r in disputed["rows"] if r["agree"] < r["people"]][:40]:
+                    print(f"    {r['item_id']}: {r['agree']} of {r['people']} agree")
         return 0
     found = sets()
     if args.json:

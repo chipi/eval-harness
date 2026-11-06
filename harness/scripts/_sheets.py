@@ -19,6 +19,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _store
 from evaluation_harness._common import die
 
 LABEL, ALSO, NOTE = "label", "also right", "note"
@@ -38,19 +39,20 @@ def write_csv(header: list[str], rows: list[list[Any]], path: Path | None = None
     w.writerows(rows)
     text = "\ufeff" + buf.getvalue()
     if path is not None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text, encoding="utf-8", newline="")
+        _store.mkdir(path.parent, parents=True, exist_ok=True)
+        _store.write_text(path, text, encoding="utf-8", newline="")
     return text
 
 
 def read_csv(path: Path) -> tuple[list[dict[str, str]], list[str] | None]:
     """A filled sheet's rows, each keyed by column (the label column as `label` whatever its header), and the
     allowed answers its header names (None when it names none)."""
-    raw = path.read_bytes()
+    raw = _store.read_bytes(path)
     if path.suffix.lower() in (".xlsx", ".xls", ".ods") or raw[:2] == b"PK":
         die(
             f"{path}: a spreadsheet workbook, not CSV. In Excel: File > Save As > CSV UTF-8 (Comma delimited); "
-            "a `;`-separated CSV is read too."
+            "a `;`-separated CSV is read too.",
+            "invalid-file",
         )
     text = raw.decode("utf-8-sig")
     first = text.split("\n", 1)[0]

@@ -35,6 +35,9 @@ os.environ.update(env)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 MARK = {"s": "Shownmarkerword", "h": "Hiddenmarkerword"}
 FIELDSET = """fieldset_id: notes
 description: test fields
@@ -292,6 +295,27 @@ try:
             }
         )
     )
+    # A tag set on the hidden dataset (PLAN_0.8.0 D1): its modes are counted, a person's note on an output is its text.
+    tag = data / "tags" / "tickets_h" / "t1"
+    tag.mkdir(parents=True)
+    (tag / "tags.json").write_text(
+        json.dumps(
+            {
+                "kind": "tag-set",
+                "dataset_id": "tickets_h",
+                "set": "t1",
+                "failure_modes": "m",
+                "n_tagged": 1,
+                "runs": {"r1": {item: {"modes": ["too-long"], "note": f"it repeats {MARK['h']}"}}},
+            }
+        )
+    )
+    rc, out, err = run_command(proj, "tags", ["--dataset-id", "tickets_h", "--json"], public=True)
+    check(
+        "MCP public: tags counts the hidden dataset's modes, never a note",
+        rc == 0 and "too-long" in out and MARK["h"] not in out + err,
+        (out + err)[-300:],
+    )
     rc, out, err = run_command(proj, "labels", [], public=False)
     check("labels, local: a hidden set's notes are listed on this machine", MARK["h"] in out, out[-300:])
     rc, out, err = run_command(proj, "labels", [], public=True)
@@ -299,6 +323,28 @@ try:
         "MCP public: labels lists the hidden dataset's sets, never their notes",
         rc == 0 and "tickets_h" in out and MARK["h"] not in out + err,
         (out + err)[-300:],
+    )
+    # A judging of a hidden run sits a level deeper (data/runs-judged/<scorer>/<run>) and its rows carry the source
+    # row's `_meta`, which can quote the item: the release cuts them to the call too.
+    hrun = next(
+        d
+        for d in sorted((data / "runs").iterdir())
+        if (d / "metrics.json").is_file()
+        and json.loads((d / "metrics.json").read_text()).get("dataset_id") == "tickets_h"
+    )
+    jdir = data / "runs-judged" / "j1" / hrun.name
+    jdir.mkdir(parents=True)
+    (jdir / "metrics.json").write_text(
+        json.dumps(
+            {"run_id": hrun.name, "dataset_id": "tickets_h", "derived": {"kind": "judge", "from": hrun.name}}
+        )
+    )
+    _runstore.put_rows_text(
+        jdir,
+        json.dumps(
+            {"item_id": item, "judge_x": 1.0, "_meta": {"usage": {"t": 1}, "prompt": f"quoting {MARK['h']}"}}
+        )
+        + "\n",
     )
     rel = proj / ".release"
     counts = copy_data(data, rel)
@@ -310,11 +356,17 @@ try:
         if (rel / "labels").exists()
         else "no labels/",
     )
+    t1 = rel / "tags" / "tickets_h" / "t1" / "tags.json"
+    check(
+        "release: a hidden dataset's tag set is copied with its modes, without its notes",
+        t1.is_file() and '"too-long"' in t1.read_text() and MARK["h"] not in t1.read_text(),
+        t1.read_text()[:300] if t1.is_file() else "no tags.json",
+    )
     check("release: the shown dataset's outputs and gold texts are copied", bool(found(rel, MARK["s"])))
     check("release: nothing of the hidden dataset's text", not found(rel, MARK["h"]), found(rel, MARK["h"]))
     check(
         "release: the hidden dataset's runs, reference (manifest only) and profile are there, numbers only",
-        counts["hidden_runs"] == 2
+        counts["hidden_runs"] == 3
         and counts["hidden_refs"] == 1
         and (rel / "references" / "gold" / "tickets_h").is_dir()
         and not [

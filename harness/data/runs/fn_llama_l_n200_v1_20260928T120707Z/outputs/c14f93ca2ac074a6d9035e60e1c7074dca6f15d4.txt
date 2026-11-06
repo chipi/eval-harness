@@ -1,7 +1,0 @@
-[
-  {
-    "text": "Rho Aquilae",
-    "type": "other"
-  },
-  "Bayer"
-]

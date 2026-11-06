@@ -1,5 +1,0 @@
-[
-    {"text": "Jericho 941", "type": "product"},
-    {"text": "Israeli", "type": "other"},
-    {"text": "José Morales", "type": "person"}
-]

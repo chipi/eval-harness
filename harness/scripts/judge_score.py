@@ -60,7 +60,6 @@ import itertools
 import json
 import math
 import random
-import shutil
 import statistics
 import sys
 import time
@@ -68,11 +67,14 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Callable
 
-from evaluation_harness import _providers
+from evaluation_harness import _outputs, _providers, _runs, _store
 from evaluation_harness._codeid import content_sha256, file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     DATA,
+    EXIT_NOTHING,
+    EXIT_STOPPED,
+    EXIT_UNVALIDATED,
     MATERIALIZED,
     ROOT,
     RUNS,
@@ -81,12 +83,12 @@ from evaluation_harness._common import (
     dataset_id_ok,
     die,
     env_float,
+    evh_prog,
     how,
     in_checkout,
     now,
     read_json,
     write_json,
-    write_text_atomic,
 )
 from evaluation_harness._fingerprint import seal
 from evaluation_harness._providers import identity_params
@@ -117,7 +119,7 @@ from evaluation_harness.judging import (
 try:
     import yaml
 except ImportError:  # pragma: no cover
-    die("pyyaml is required — pip install -r requirements.txt")
+    die("pyyaml is required — pip install -r requirements.txt", "missing-dependency")
 
 SCORERS = DATA / "scorers"
 SETS = DATA / "judging-sets"
@@ -147,7 +149,16 @@ class JudgeCallFailed(Exception):
 
 #: Describe the CALL that made an arm's output, not how it was measured: carried across as
 #: rescore.py carries them.
-CARRY = ("latency_ms", "tokens_in", "tokens_out", "cost_usd", "truncated", "reasoning_tokens", "resumed")
+CARRY = (
+    "latency_ms",
+    "tokens_in",
+    "tokens_out",
+    "cost_usd",
+    "truncated",
+    "reasoning_tokens",
+    "resumed",
+    "failed",
+)
 #: Reply size per summary for the dry-run estimate: SummEval's gemma_l returned 217.5 tokens
 #: for 16 summaries x 4 dimensions (committed run se_gemma_l_n100_v1, scores.tokens_out).
 #: A task with other dimensions scales it by their number.
@@ -162,10 +173,10 @@ def _keep_withheld(record: Path, text: str) -> Path:
     """A withheld reply's text in `<record dir>/.withheld/<record>.txt`, a directory that
     ignores itself in git: the record keeps only the hash, the text stays on this machine."""
     d = record.parent / ".withheld"
-    d.mkdir(parents=True, exist_ok=True)
-    (d / ".gitignore").write_text("*\n", encoding="utf-8")
+    _store.mkdir(d, parents=True, exist_ok=True)
+    _store.write_text(d / ".gitignore", "*\n", encoding="utf-8")
     out = d / f"{record.stem}.txt"
-    out.write_text(text, encoding="utf-8")
+    _store.write_text(out, text, encoding="utf-8")
     return out
 
 
@@ -210,8 +221,8 @@ def records_sha256(vdir: Path) -> str:
     """One hash over a judge's stored validation records (names and bytes, sorted), so a
     report built from them can be checked against them where the human data is absent."""
     h = hashlib.sha256()
-    for f in sorted(p for p in vdir.glob("*.json") if p.name != "report.json"):
-        h.update(f.name.encode() + b"\0" + f.read_bytes() + b"\0")
+    for f in sorted(p for p in _store.glob(vdir, "*.json") if p.name != "report.json"):
+        h.update(f.name.encode() + b"\0" + _store.read_bytes(f) + b"\0")
     return h.hexdigest()
 
 
@@ -222,22 +233,23 @@ def _canon(obj: Any) -> str:
 # ── the scorer artifact and the validation gate ──────────────────────────────
 def load_scorer(path: Path) -> dict[str, Any]:
     """Load and validate a judge scorer YAML file; die on schema or missing judges."""
-    if not path.is_file():
-        die(f"no such scorer: {path}")
-    sc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not _store.is_file(path):
+        die(f"no such scorer: {path}", "not-found")
+    sc = yaml.safe_load(_store.read_text(path, encoding="utf-8")) or {}
     # Its content, not its bytes: a comment in the YAML is documentation and changes no judgement.
     sc["_sha256"] = content_sha256(sc)
     sc["_dir"] = str(path.resolve().parent)
     if sc.get("kind") != "judge":
-        die(f"{path.name}: kind must be 'judge', got {sc.get('kind')!r}")
+        die(f"{path.name}: kind must be 'judge', got {sc.get('kind')!r}", "invalid-file")
     for k in ("scorer_id", "dataset_id", "judges", "prompt", "protocol"):
         if not sc.get(k):
-            die(f"{path.name}: missing {k!r}")
+            die(f"{path.name}: missing {k!r}", "invalid-file")
     fams = {j["params"].get("family") for j in sc["judges"]}
     if len(sc["judges"]) < 2 or len(fams) < 2:
         die(
             f"{path.name}: needs at least two judges from different vendor families "
-            f"(ADR-0001 §4); got {sorted(map(str, fams))}"
+            f"(ADR-0001 §4); got {sorted(map(str, fams))}",
+            "invalid-file",
         )
     # The controls are part of the pass, not optional (ADR-0001 §4): a scorer states both, so a
     # forgotten field cannot switch them off. Position needs an order, so it may be 0 only when
@@ -245,21 +257,28 @@ def load_scorer(path: Path) -> dict[str, Any]:
     pr = sc["protocol"]
     for k in ("position_check_fraction", "noise_check_fraction"):
         if k not in pr:
-            die(f"{path.name}: protocol.{k} is required (ADR-0001 §4: the controls are not optional)")
+            die(
+                f"{path.name}: protocol.{k} is required (ADR-0001 §4: the controls are not optional)",
+                "invalid-file",
+            )
     if not pr["noise_check_fraction"] > 0:
-        die(f"{path.name}: protocol.noise_check_fraction must be above 0: the judge's own noise is measured")
+        die(
+            f"{path.name}: protocol.noise_check_fraction must be above 0: the judge's own noise is measured",
+            "invalid-file",
+        )
     if int(pr.get("outputs_per_call", 1)) > 1 and not pr["position_check_fraction"] > 0:
         die(
             f"{path.name}: protocol.position_check_fraction must be above 0 when a call sees "
-            f"{pr['outputs_per_call']} outputs: their order can move a verdict"
+            f"{pr['outputs_per_call']} outputs: their order can move a verdict",
+            "invalid-file",
         )
     bad = mode_problems(sc)
     if bad:
-        die(f"{path.name}: {bad[0]}")
+        die(f"{path.name}: {bad[0]}", "invalid-file")
     try:
         sc["_task"] = task_of(sc)
     except ValueError as exc:
-        die(f"{path.name}: {exc}")
+        die(f"{path.name}: {exc}", "invalid-file")
     return sc
 
 
@@ -301,7 +320,7 @@ def task_for(sc: dict[str, Any]) -> dict[str, Any]:
         try:
             sc["_task"] = task_of(sc)
         except ValueError as exc:
-            die(f"scorer {sc.get('scorer_id')}: {exc}")
+            die(f"scorer {sc.get('scorer_id')}: {exc}", "invalid-file")
     return sc["_task"]
 
 
@@ -339,10 +358,13 @@ def prompt_candidates(sc: dict[str, Any], root: Path | None = None) -> list[Path
 def prompt_text(sc: dict[str, Any], root: Path | None = None) -> str:
     """Read the scorer's prompt file; die if it is not found."""
     cands = prompt_candidates(sc, root)
-    p = next((c for c in cands if c.is_file()), None)
+    p = next((c for c in cands if _store.is_file(c)), None)
     if p is None:
-        die(f"prompt file not found: {sc['prompt']['file']} (looked in {', '.join(str(c) for c in cands)})")
-    return p.read_text(encoding="utf-8").strip()
+        die(
+            f"prompt file not found: {sc['prompt']['file']} (looked in {', '.join(str(c) for c in cands)})",
+            "not-found",
+        )
+    return _store.read_text(p, encoding="utf-8").strip()
 
 
 #: Params that change what a judge says. The validation run recorded them; the scorer must
@@ -378,7 +400,7 @@ def validation_problems(
             out.append(f"judge {j['id']!r}: no validation run names it")
             continue
         d = runs_dir / str(r.get("run", ""))
-        if not (d / "metrics.json").is_file():
+        if not _store.is_file(d / "metrics.json"):
             out.append(f"judge {j['id']!r}: validation run {r.get('run')!r} is not in {runs_dir}")
             continue
         m = read_json(d / "metrics.json")
@@ -526,7 +548,7 @@ def select_arms(arms: Sequence[dict[str, Any]], spec: str) -> list[dict[str, Any
         exact = [a for a in arms if a["config_id"] == tok]
         hit = exact or [a for a in arms if tok in a["config_id"]]
         if not hit:
-            die(f"--arms {tok!r} matches none of the {len(arms)} discovered arms")
+            die(f"--arms {tok!r} matches none of the {len(arms)} discovered arms", "not-found")
         keep += [a for a in hit if a not in keep]
     return sorted(keep, key=lambda a: a["config_id"])
 
@@ -535,13 +557,14 @@ def read_outputs(arm: dict[str, Any], item_ids: Sequence[str]) -> dict[str, str]
     """All outputs of one arm; die if any item's file is missing."""
     out = {}
     for i in item_ids:
-        f = Path(arm["dir"]) / "outputs" / f"{i}.txt"
-        if not f.is_file():
+        text = _outputs.output(Path(arm["dir"]), i)
+        if text is None:
             die(
                 f"{arm['run']}: no stored output for {i} — the judging set needs every "
-                f"arm's output for every item"
+                f"arm's output for every item",
+                "not-enough",
             )
-        out[i] = f.read_text(encoding="utf-8")
+        out[i] = text
     return out
 
 
@@ -560,15 +583,16 @@ def build_manifest(
     seed, per_call = pr.get("order_seed", 0), int(pr["outputs_per_call"])
     arm_ids = [a["config_id"] for a in arms]
     if len(arm_ids) < 2:
-        die("a judging set needs at least two arms")
+        die("a judging set needs at least two arms", "not-enough")
     mode = mode_of(sc)
     if mode not in MODES:
-        die(f"mode must be one of {', '.join(MODES)}, got {mode!r}")
+        die(f"mode must be one of {', '.join(MODES)}, got {mode!r}", "invalid-file")
     if mode == "pick" and per_call < len(arm_ids):
         die(
             f"a pick scorer needs protocol.outputs_per_call of at least the number of arms "
             f"({len(arm_ids)}), got {per_call}: a pick made in blocks would name each block's winner, "
-            f"not the item's. Raise outputs_per_call, or judge fewer arms (--match, --arms)"
+            f"not the item's. Raise outputs_per_call, or judge fewer arms (--match, --arms)",
+            "not-enough",
         )
     items = []
     for i in item_ids:
@@ -648,9 +672,12 @@ def message_for(
 def freeze(manifest: dict[str, Any], sets_dir: Path = SETS) -> Path:
     """Write the manifest once; an existing one with the same id must match byte for byte."""
     path = sets_dir / f"{manifest['judging_set_id']}.json"
-    if path.is_file():
+    if _store.is_file(path):
         if read_json(path).get("judging_set_sha256") != manifest["judging_set_sha256"]:
-            die(f"{path.name} exists with a different hash: a frozen judging set is never rewritten")
+            die(
+                f"{path.name} exists with a different hash: a frozen judging set is never rewritten",
+                "would-overwrite",
+            )
     else:
         write_json(path, manifest)
     return path
@@ -700,7 +727,7 @@ def tasks(manifest: dict[str, Any]) -> list[tuple[dict[str, Any], str, int]]:
 def stored_cost(vdir: Path) -> float:
     """Sum cost_usd over all verdicts in the judge directory."""
     total = 0.0
-    for f in vdir.glob("*/*.json"):
+    for f in _store.glob(vdir, "*/*.json"):
         try:
             total += float(read_json(f).get("cost_usd") or 0.0)
         except (OSError, ValueError):
@@ -754,15 +781,16 @@ def run_judging(
             msg = None
             for j in sc["judges"]:
                 path = verdict_path(vdir, j["id"], item["item_id"], pass_name, block)
-                if path.is_file():
+                if _store.is_file(path):
                     old = read_json(path)
                     if old.get("judge_fp") != judge_fingerprint(j):
                         die(
                             f"{path}: stored by a different judge definition than "
-                            f"{j['id']!r} in the scorer now; refusing to mix them"
+                            f"{j['id']!r} in the scorer now; refusing to mix them",
+                            "not-allowed",
                         )
                     if old.get("set_id") != manifest["judging_set_id"]:
-                        die(f"{path}: belongs to judging set {old.get('set_id')}")
+                        die(f"{path}: belongs to judging set {old.get('set_id')}", "mismatch")
                     if old.get(VERDICT_KEY[mode_of(manifest)]) is not None or not retry_unparsed:
                         stats["skipped"] += 1
                         continue
@@ -809,7 +837,7 @@ def run_judging(
                     why = "empty reply"
                 # A retried block replaces the stored reply; the earlier calls were paid for
                 # too, so their cost stays in the record (and in every bill read from it).
-                prior = read_json(path) if path.is_file() else {}
+                prior = read_json(path) if _store.is_file(path) else {}
                 earlier = float(prior.get("cost_usd") or 0.0)
                 write_json(
                     path,
@@ -912,7 +940,7 @@ def load_readings(
                 blocks = it["position" if p == "position" else "primary"]
                 for b, arm_ids in enumerate(blocks):
                     f = verdict_path(vdir, j["id"], it["item_id"], p, b)
-                    v = read_json(f).get(VERDICT_KEY[mode]) if f.is_file() else None
+                    v = read_json(f).get(VERDICT_KEY[mode]) if _store.is_file(f) else None
                     if v is not None:
                         out[j["id"]][p].setdefault(it["item_id"], {})[b] = block_outcome(mode, arm_ids, v)
     return out
@@ -965,7 +993,7 @@ def load_scores(
                 ok = True
                 for b, arm_ids in enumerate(it[key]):
                     f = verdict_path(vdir, j["id"], it["item_id"], p, b)
-                    s = read_json(f).get("scores") if f.is_file() else None
+                    s = read_json(f).get("scores") if _store.is_file(f) else None
                     if s is None:
                         ok = False
                         break
@@ -1149,8 +1177,10 @@ def summarise(
     label: str,
     validated: bool,
     vdir: Path,
+    lengths: dict[str, dict[str, int]] | None = None,
 ) -> dict[str, Any]:
-    """Summarize the judging: per-arm scores, judge agreement, controls, and cost. For pick and
+    """Summarize the judging: per-arm scores, judge agreement, controls, and cost. `lengths` ({config_id: {item:
+    words}}) gives each judge's length bias: how far its score follows how long an output is. For pick and
     pairwise the per-arm number is the win rate (mean `won`), with Bradley-Terry strengths beside
     it, and the controls are how often the position and noise checks kept the verdict."""
     mode = mode_of(manifest)
@@ -1222,6 +1252,24 @@ def summarise(
             if own and oth
             else None,
         }
+    # Length bias (C2): Spearman's rho of each judge's score with the output's length in words, over every (item,
+    # arm) judged. Judges are known to favour longer answers; a rho well above 0 says this one may.
+    length_bias: dict[str, Any] = {}
+    for j in jids:
+        pairs = [
+            (lengths[c][i], proj[i][c][j])
+            for i in proj
+            for c in proj[i]
+            if lengths and c in lengths and i in lengths[c] and proj[i][c].get(j) is not None
+        ]
+        length_bias[j] = (
+            {
+                "n": len(pairs),
+                "spearman_length": round(spearman([a for a, _ in pairs], [b for _, b in pairs]), 4),
+            }
+            if len(pairs) > 2
+            else None
+        )
     ctrl = {}
     for j in jids if graded else []:
         p = scores[j]
@@ -1263,7 +1311,7 @@ def summarise(
         }
     calls = {}
     for j in jids:
-        files = sorted((vdir / j).glob("*.json")) if (vdir / j).is_dir() else []
+        files = sorted(_store.glob(vdir / j, "*.json")) if _store.is_dir(vdir / j) else []
         vs = [read_json(f) for f in files]
         calls[j] = {
             "verdicts": len(vs),
@@ -1288,6 +1336,7 @@ def summarise(
         "per_arm": per_arm,
         "judge_agreement": agreement,
         "self_family_gap": self_gap,
+        "length_bias": length_bias,
         "controls": ctrl,
         **({} if graded else {"mode": mode, **bt_meta}),
         "notes": [
@@ -1335,11 +1384,7 @@ def write_scored_runs(
     for a in arms:
         cid, src = a["config_id"], Path(a["dir"])
         m = read_json(src / "metrics.json")
-        old_rows = {}
-        for line in (src / "predictions.jsonl").read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                r = json.loads(line)
-                old_rows[r["item_id"]] = r
+        old_rows = {r["item_id"]: r for r in _runs.item_rows(src)}
         rows = []
         for i in manifest["items"]:
             iid = i["item_id"]
@@ -1369,12 +1414,10 @@ def write_scored_runs(
                 else kinds.get(k) or known.get(k) or ("quality" if k.startswith("judge_") else "descriptive")
             )
         run_dir = out_root / src.name
-        (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
-        for f in (src / "outputs").glob("*.txt"):
-            shutil.copy2(f, run_dir / "outputs" / f.name)
-        write_text_atomic(
-            run_dir / "predictions.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows)
-        )
+        _store.mkdir(
+            run_dir, parents=True, exist_ok=True
+        )  # no outputs of its own: they are its source's (RFC-024)
+        _outputs.write_rows(run_dir, rows)
         # A judge reads no reference, so the source run's tier does not describe these scores;
         # it is kept, as the source's, in derived.with.
         source_tier = m.get("reference_tier")
@@ -1382,6 +1425,7 @@ def write_scored_runs(
             m,
             kind="judge",
             source_dir=src.name,
+            source_path=src,
             scores=scores,
             n_items=len(rows),
             drop=("reference_tier",),
@@ -1447,7 +1491,7 @@ def estimate(
         n = len(item["position" if p == "position" else "primary"][b])
         for j in sc["judges"]:
             e = per_judge[j["id"]]
-            if verdict_path(vdir, j["id"], item["item_id"], p, b).is_file():
+            if _store.is_file(verdict_path(vdir, j["id"], item["item_id"], p, b)):
                 e["stored"] += 1
                 continue
             e["calls"] += 1
@@ -1522,7 +1566,7 @@ def real_call(message: str, params: dict[str, Any]) -> Any:
 
 def main() -> int:
     """Re-measure a frozen eval with a validated LLM judge."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--scorer", required=True, help="scorer id (data/scorers/<id>.yaml)")
     ap.add_argument(
@@ -1562,7 +1606,10 @@ def main() -> int:
 
     sc = load_scorer(SCORERS / f"{args.scorer}.yaml")
     if sc["dataset_id"] != args.dataset_id:
-        die(f"scorer {sc['scorer_id']} is for dataset {sc['dataset_id']!r}, not {args.dataset_id!r}")
+        die(
+            f"scorer {sc['scorer_id']} is for dataset {sc['dataset_id']!r}, not {args.dataset_id!r}",
+            "mismatch",
+        )
     problems = validation_problems(sc)
     validated = not problems
     if problems and not args.unvalidated:
@@ -1573,7 +1620,7 @@ def main() -> int:
             "  Fix the `validation` block, or pass --unvalidated to run it labelled 'unvalidated judge'.",
             file=sys.stderr,
         )
-        return 3
+        return EXIT_UNVALIDATED
     label = validated_label(sc) if validated else "unvalidated judge"
     if not validated:
         print(f"WARNING: UNVALIDATED JUDGE. Every number is labelled; {len(problems)} problem(s):")
@@ -1581,8 +1628,8 @@ def main() -> int:
             print(f"  - {p}")
 
     ds_file = DATA / "datasets" / f"{dataset_id_ok(args.dataset_id)}.json"
-    if not ds_file.is_file():
-        die(f"no dataset {args.dataset_id}")
+    if not _store.is_file(ds_file):
+        die(f"no dataset {args.dataset_id}", "not-found")
     ds = read_json(ds_file)
     items = ds["items"]
     item_ids = [it["item_id"] for it in items]
@@ -1590,17 +1637,18 @@ def main() -> int:
     articles = {}
     for it in items:
         f = mat / (it.get("source_path") or f"{it['item_id']}.txt")
-        if not f.is_file():
+        if not _store.is_file(f):
             die(
                 f"{f} is missing: materialize the dataset first "
-                f"({how(f'evh dataset-materialize --dataset-id {args.dataset_id}', f'make dataset-materialize DATASET_ID={args.dataset_id}')})"
+                f"({how(f'evh dataset-materialize --dataset-id {args.dataset_id}', f'make dataset-materialize DATASET_ID={args.dataset_id}')})",
+                "not-materialized",
             )
-        articles[it["item_id"]] = f.read_text(encoding="utf-8", errors="replace")
+        articles[it["item_id"]] = _store.read_text(f, encoding="utf-8", errors="replace")
     arms = discover_arms(args.dataset_id, args.match or sc.get("arms_match", ""))
     if args.arms:
         arms = select_arms(arms, args.arms)
     if len(arms) < 2:
-        die(f"found {len(arms)} arm run(s) on {args.dataset_id} in {RUNS}")
+        die(f"found {len(arms)} arm run(s) on {args.dataset_id} in {RUNS}", "not-enough")
     vers = config_versions(arms)
     if len(vers) > 1:
         print(
@@ -1668,11 +1716,12 @@ def main() -> int:
     call = None if args.no_calls else real_call
     if call and blocked:
         die(
-            "a judge cannot be called (MISSING above): nothing was sent. `evh env-check` shows what each role reads."
+            "a judge cannot be called (MISSING above): nothing was sent. `evh env-check` shows what each role reads.",
+            "not-configured",
         )
     freeze(manifest)
     if call and cap is None:
-        die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD")
+        die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD", "not-configured")
     stats = run_judging(
         manifest, sc, base, articles, outputs, vdir, call, cap, retry_unparsed=args.retry_unparsed
     )
@@ -1681,10 +1730,18 @@ def main() -> int:
     out_root = args.out / sc["scorer_id"]
     if not proj:
         print("no item has a complete verdict from every judge; nothing to project")
-        return 2 if stats["aborted"] else 1
-    summ = summarise(manifest, sc, arms, scores, proj, stats, label, validated, vdir)
+        return EXIT_STOPPED if stats["aborted"] else EXIT_NOTHING
+    if sc.get("supersedes"):
+        print(f"  {sc['scorer_id']} supersedes {sc['supersedes']}: {sc.get('why')}")
+    words = {c: {i: len(str(t).split()) for i, t in o.items()} for c, o in outputs.items()}
+    summ = summarise(manifest, sc, arms, scores, proj, stats, label, validated, vdir, lengths=words)
     written = write_scored_runs(manifest, sc, arms, proj, out_root, label, validated)
     write_json(out_root / "summary.json", summ)
+    for j, lb in (summ.get("length_bias") or {}).items():
+        if lb:
+            print(
+                f"  judge {j}: its score against the output's length in words, Spearman {lb['spearman_length']:+.2f} over {lb['n']}"
+            )
     print(f"\n{len(written)} scored run(s) -> {out_root}  ({len(proj)}/{len(item_ids)} items, {label})")
     if mode != DEFAULT_MODE:
         print_win_summary(summ)
@@ -1700,7 +1757,7 @@ def main() -> int:
         )
     )
     if stats["aborted"]:
-        return 2
+        return EXIT_STOPPED
     return 0
 
 

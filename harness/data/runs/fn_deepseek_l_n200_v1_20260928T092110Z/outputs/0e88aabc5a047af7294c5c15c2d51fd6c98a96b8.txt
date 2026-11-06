@@ -1,5 +1,0 @@
-```json
-[
-  {"text": "Epsilon Centauri", "type": "location"}
-]
-```

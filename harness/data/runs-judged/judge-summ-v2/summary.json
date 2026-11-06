@@ -47,6 +47,16 @@
   "judging_set_id": "cnn_dailymail_200-29arms-a079833ca3c9",
   "judging_set_sha256": "a079833ca3c95369c648601dc9432f7fccb3e251ef86ebafcaeba0a541c8f9db",
   "label": "validated on summeval_100 (provenance)",
+  "length_bias": {
+    "anthropic_l": {
+      "n": 5800,
+      "spearman_length": 0.2084
+    },
+    "openai_l": {
+      "n": 5800,
+      "spearman_length": 0.0203
+    }
+  },
   "notes": [
     "Each judge scored each item's arms in blocks; scores are absolute 1-5 per dimension and block scores are pooled. The position control re-forms the blocks.",
     "self_family: the arm and the judge are the same vendor family. own_minus_others is a raw gap, not a bias estimate: families differ in real quality.",

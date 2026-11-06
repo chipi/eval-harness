@@ -1,6 +1,0 @@
-[
-  {
-    "text": "mRNA",
-    "type": "other"
-  }
-]

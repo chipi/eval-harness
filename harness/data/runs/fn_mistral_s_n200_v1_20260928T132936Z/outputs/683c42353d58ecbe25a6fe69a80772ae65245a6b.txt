@@ -1,7 +1,0 @@
-```json
-[
-  {"text": "The Great Sphinx", "type": "art"},
-  {"text": "a man", "type": "person"},
-  {"text": "a lion", "type": "other"}
-]
-```

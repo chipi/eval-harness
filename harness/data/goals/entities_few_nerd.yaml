@@ -13,7 +13,7 @@ success_criteria:
   guardrails:
     - {"name": "what was not measured", "rule": "Labelling and training cost, an LLM given definitions or examples, and contamination of the hosted models were not measured.", "source": "research/REPORT_NER.md, executive summary"}
 datasets:
-  - {dataset_id: few_nerd_280, role: test, notes: 280 sentences, seeded; at least 3 tokens}
+  - {dataset_id: few_nerd_280, role: test, notes: "280 sentences, seeded; at least 3 tokens"}
   - {dataset_id: few_nerd_56, decides: false, role: pilot, notes: the pilot slice; all 56 of its items are in few_nerd_280}
 measures:
   - {id: f1, kind: metric, validity: partial}

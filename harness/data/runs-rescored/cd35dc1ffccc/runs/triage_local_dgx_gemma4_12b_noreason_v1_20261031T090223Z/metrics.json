@@ -11,6 +11,7 @@
   "derived": {
     "at": "2026-10-31T11:08:49Z",
     "from": "triage_local_dgx_gemma4_12b_noreason_v1_20261031T090223Z",
+    "from_dir": "runs/triage_local_dgx_gemma4_12b_noreason_v1_20261031T090223Z",
     "kind": "rescore",
     "with": {
       "adapter": "examples/triage-fleet/adapter.py",

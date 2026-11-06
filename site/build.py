@@ -27,11 +27,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent / "harness"))  # the evaluation_harness package: its store reads data/
 import csp  # noqa: E402
 import figures  # noqa: E402
 import method  # noqa: E402
 import releases  # noqa: E402
 import remeasured  # noqa: E402
+from evaluation_harness import _store  # noqa: E402
 
 ROOT = HERE.parent
 REPO = "https://github.com/chipi/eval-harness"
@@ -61,7 +63,7 @@ ICON = {
 OUT = HERE / "public"
 #: The harness version the site describes, from the one place it is set.
 VERSION = re.search(
-    r'__version__ = "([^"]+)"', (ROOT / "harness" / "scripts" / "_version.py").read_text()
+    r'__version__ = "([^"]+)"', _store.read_text(ROOT / "harness" / "scripts" / "_version.py")
 ).group(1)
 #: Replaced at deploy (pages.yml) with the commit being served; a local build says so.
 BUILD_MARK = "build: local"
@@ -76,7 +78,7 @@ def q(template: str, report: str, **vals) -> str:
     """Render prose that quotes `report`. Every number typed into `template` (outside
     {placeholders}) must appear in the report, or the build stops."""
     if report not in _REPORT_TEXT:
-        _REPORT_TEXT[report] = (ROOT / report).read_text(encoding="utf-8").replace(",", "")
+        _REPORT_TEXT[report] = _store.read_text(ROOT / report, encoding="utf-8").replace(",", "")
     literal = re.sub(r"\{[a-z_0-9]+\}", "", template)
     for n in _NUM.findall(literal):
         if n.replace(",", "") not in _REPORT_TEXT[report]:
@@ -96,7 +98,7 @@ def qv(sentence: str, report: str) -> str:
     q(sentence, report)
     key = f"plain:{report}"
     if key not in _REPORT_TEXT:
-        _REPORT_TEXT[key] = _plain((ROOT / report).read_text(encoding="utf-8"))
+        _REPORT_TEXT[key] = _plain(_store.read_text(ROOT / report, encoding="utf-8"))
     if _plain(sentence) not in _REPORT_TEXT[key]:
         raise SystemExit(
             f"site copy quotes, as {report}'s own words, a sentence it does not contain:\n  {sentence[:160]}"
@@ -525,7 +527,7 @@ setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>el.classList.add
 
 def analytics_tag() -> str:
     """The Umami script tag from site/analytics.json, or nothing when it is not configured."""
-    cfg = json.loads((HERE / "analytics.json").read_text())
+    cfg = json.loads(_store.read_text(HERE / "analytics.json"))
     if not (cfg.get("umami_src") and cfg.get("website_id")):
         return ""
     domains = f' data-domains="{e(cfg["domains"])}"' if cfg.get("domains") else ""
@@ -1252,7 +1254,7 @@ def landing(f: dict) -> str:
         + f'</td><td class="prose" data-label="role">{e(m["role"])}</td></tr>'
         for m in f["hardware"]
     )
-    hw_date = json.loads((ROOT / "docs" / "evidence" / "hardware.json").read_text())["captured"]
+    hw_date = json.loads(_store.read_text(ROOT / "docs" / "evidence" / "hardware.json"))["captured"]
     require(
         sum(m["local"] + m["hosted"] for m in f["hardware"]) == f["total_arms"],
         "every measured run is attributed to a documented machine",
@@ -1793,7 +1795,7 @@ def remeasured_block(x: dict, f: dict, num: int) -> str:
 def catalog_dataset(x: dict) -> str:
     """The catalog's page for the eval's dataset (every arm on it, with its own page)."""
     require(
-        (figures.DATA / "datasets" / f"{x['dataset']}.json").is_file(),
+        _store.is_file(figures.DATA / "datasets" / f"{x['dataset']}.json"),
         f"{x['slug']}: the catalog has a page for dataset {x['dataset']}",
     )
     return f"d/{x['dataset']}.html"
@@ -1808,9 +1810,9 @@ def catalog_inspect(x: dict) -> str:
         cid = f"{x['prefix']}{a['arm']}{x['suffix']}"
         require(
             any(
-                (m := json.loads(p.read_text())).get("config_id") == cid
+                (m := json.loads(_store.read_text(p))).get("config_id") == cid
                 and m.get("dataset_id") == x["dataset"]
-                for p in (figures.DATA / x["base"]).glob(f"{cid}*/metrics.json")
+                for p in _store.glob(figures.DATA / x["base"], f"{cid}*/metrics.json")
             ),
             f"{x['slug']}: a committed run of {cid} on {x['dataset']} for the inspector link",
         )
@@ -1967,7 +1969,7 @@ PICK = {
         "research/REPORT_SUMMARIZATION.md",
     ),
     "ag-news": q(
-        "If your labels follow a house convention, fine-tune on them, starting with bert_mini; if they mean what the words say, use a hosted LLM. If you rent, start with gemma_m ($8 per 1M items).",
+        "The goal recommends the fine-tuned bert_base_ta (0.960): with 29 arms compared on 200 items, none can be shown within 5% of it. If your labels follow a house convention, fine-tune on them (bert_base_ta, or the smaller bert_mini at 0.945); if they mean what the words say, use a hosted LLM. If you rent, start with gemma_m ($8 per 1M items).",
         "research/REPORT_CLASSIFICATION.md",
     ),
     "dbpedia": q(
@@ -1979,7 +1981,7 @@ PICK = {
         "research/REPORT_NER.md",
     ),
     "scifact": q(
-        "Build e5_base retrieval first (0.7191, $0 per query); among the compared field the best reranker, glm_s (0.7437), is 0.0246 ahead of it, p 0.27, not significant. One further run, glm_s on e5_base's top 20, scored 0.7891 (+0.0700 over e5_base, p 0.0001 uncorrected; one run, under a different adapter from the main table) at about $732 per 1M queries. Only the twelve cheapest hosted LLMs were tried.",
+        "The goal recommends deepseek_s (0.7378, about $300 per 1M queries), the cheapest arm shown within 10% of the best reranker, glm_s (0.7437). e5_base retrieval alone (0.7191, $0, the promoted baseline) is within that margin on its own test (p 0.0105) but not once the 18 compared arms are corrected for. One further run, glm_s on e5_base's top 20, scored 0.7891 (+0.0700 over e5_base, p 0.0001 uncorrected; one run, under a different adapter from the main table) at about $732 per 1M queries. Only the twelve cheapest hosted LLMs were tried.",
         "research/REPORT_RETRIEVAL.md",
     ),
     "summeval": q(
@@ -2055,8 +2057,8 @@ def sitemap_urls(out: Path) -> list:
     pages = sorted(
         (
             p.relative_to(out).as_posix()
-            for p in out.rglob("*.html")
-            if p.name != "404.html" and NOINDEX not in p.read_text(encoding="utf-8")
+            for p in _store.rglob(out, "*.html")
+            if p.name != "404.html" and NOINDEX not in _store.read_text(p, encoding="utf-8")
         ),
         key=lambda p: (p != "index.html", p),
     )
@@ -2076,10 +2078,12 @@ def add_canonicals(out: Path) -> None:
     then sees one address per page (the home page as `/`, never /index.html)."""
     for url in sitemap_urls(out):
         f = page_file(out, url)
-        html = f.read_text(encoding="utf-8")
+        html = _store.read_text(f, encoding="utf-8")
         tags = f'<link rel="canonical" href="{e(url)}">\n<meta property="og:url" content="{e(url)}">\n'
-        f.write_text(
-            html.replace('<meta name="description"', tags + '<meta name="description"', 1), encoding="utf-8"
+        _store.write_text(
+            f,
+            html.replace('<meta name="description"', tags + '<meta name="description"', 1),
+            encoding="utf-8",
         )
 
 
@@ -2098,24 +2102,24 @@ def check_crawl_files(out: Path) -> list:
     live domain for a 200 on each URL.)"""
     problems = []
     robots, smap = out / "robots.txt", out / "sitemap.xml"
-    if not robots.is_file():
+    if not _store.is_file(robots):
         problems.append("robots.txt is missing")
-    elif f"Sitemap: {SITE}/sitemap.xml" not in robots.read_text(encoding="utf-8"):
+    elif f"Sitemap: {SITE}/sitemap.xml" not in _store.read_text(robots, encoding="utf-8"):
         problems.append("robots.txt does not point to the sitemap")
-    if not smap.is_file():
+    if not _store.is_file(smap):
         problems.append("sitemap.xml is missing")
         return problems
     import re  # noqa: PLC0415
 
-    urls = re.findall(r"<loc>([^<]+)</loc>", smap.read_text(encoding="utf-8"))
+    urls = re.findall(r"<loc>([^<]+)</loc>", _store.read_text(smap, encoding="utf-8"))
     if not urls:
         problems.append("sitemap.xml lists no URLs")
     for u in urls:
         f = page_file(out, u)
-        if f is None or not f.is_file():
+        if f is None or not _store.is_file(f):
             problems.append(f"sitemap URL with no page behind it: {u}")
             continue
-        canon = re.findall(r'<link rel="canonical" href="([^"]+)">', f.read_text(encoding="utf-8"))
+        canon = re.findall(r'<link rel="canonical" href="([^"]+)">', _store.read_text(f, encoding="utf-8"))
         if canon != [u]:
             problems.append(f"{u}: canonical should be itself, once (found {canon or 'none'})")
     return problems
@@ -2132,14 +2136,14 @@ PIN = re.compile(r"eval-harness@v(\d+\.\d+\.\d+)#subdirectory=harness")
 
 def check_pins() -> list:
     """Every install pin a reader can copy names the latest dated release in the changelog."""
-    latest = next(r["version"] for r in releases.releases(releases.CHANGELOG.read_text()) if r["date"])
+    latest = next(r["version"] for r in releases.releases(_store.read_text(releases.CHANGELOG)) if r["date"])
     problems = []
     for pattern in PIN_FILES:
-        for p in sorted(ROOT.glob(pattern)):
+        for p in sorted(_store.glob(ROOT, pattern)):
             rel = p.relative_to(ROOT).as_posix()
             if rel in PIN_EXEMPT:
                 continue
-            for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+            for n, line in enumerate(_store.read_text(p, encoding="utf-8").splitlines(), 1):
                 for v in PIN.findall(line):
                     if v != latest:
                         problems.append(f"{rel}:{n} pins v{v}; the latest release is v{latest}")
@@ -2153,11 +2157,11 @@ def check_links(out: Path, catalog_pages: set) -> list:
     inspector links). The docs check their own (mkdocs build --strict)."""
     problems = []
     ids: dict = {}
-    for page in sorted(out.rglob("*.html")):
-        text = page.read_text(encoding="utf-8")
+    for page in sorted(_store.rglob(out, "*.html")):
+        text = _store.read_text(page, encoding="utf-8")
         ids[page] = set(re.findall(r'\sid="([^"]+)"', text))
     for page, _ in ids.items():
-        text = page.read_text(encoding="utf-8")
+        text = _store.read_text(page, encoding="utf-8")
         base = out if page.name == "404.html" else page.parent  # 404 resolves from the root (<base>)
         for link in re.findall(r'(?:href|src)="([^"]+)"', text):
             if link.startswith(CATALOG):
@@ -2172,9 +2176,9 @@ def check_links(out: Path, catalog_pages: set) -> list:
             target = (
                 (out / path.lstrip("/") if path.startswith("/") else base / path).resolve() if path else page
             )
-            if path and target.is_dir():
+            if path and _store.is_dir(target):
                 target = target / "index.html"
-            if not target.is_file():
+            if not _store.is_file(target):
                 problems.append(f"{page.relative_to(out)}: {link} names no built file")
             elif anchor and target in ids and anchor not in ids[target]:
                 problems.append(f"{page.relative_to(out)}: {link} has no #{anchor} there")
@@ -2186,41 +2190,41 @@ def point_docs(out: Path) -> None:
     under /docs/ on this host. They now live at DOCS: rewrite every such link there, in one
     place. Old /docs/... URLs elsewhere on the web are redirected by the server (infra/nginx)."""
     pat = re.compile(r'href="(?:\.\./)*docs/')
-    for page in out.rglob("*.html"):
-        text = page.read_text(encoding="utf-8")
+    for page in _store.rglob(out, "*.html"):
+        text = _store.read_text(page, encoding="utf-8")
         new = pat.sub(f'href="{DOCS}', text)
         if new != text:
-            page.write_text(new, encoding="utf-8")
+            _store.write_text(page, new, encoding="utf-8")
 
 
 # ── build ───────────────────────────────────────────────────────────────────
 def build(out: Path) -> dict:
     """Write the site into `out`; return the figures it was built from."""
     f = figures.compute()
-    if out.exists():
-        shutil.rmtree(out)
-    (out / "evals").mkdir(parents=True)
+    if _store.exists(out):
+        _store.rmtree(out)
+    _store.mkdir(out / "evals", parents=True)
     shutil.copytree(HERE / "assets", out / "assets")
-    (out / "index.html").write_text(home(f), encoding="utf-8")
-    (out / "evals.html").write_text(landing(f), encoding="utf-8")
+    _store.write_text(out / "index.html", home(f), encoding="utf-8")
+    _store.write_text(out / "evals.html", landing(f), encoding="utf-8")
     for old, new in redirects(f).items():
-        (out / old).parent.mkdir(parents=True, exist_ok=True)
-        (out / old).write_text(redirect_page(new), encoding="utf-8")
-    (out / "method.html").write_text(method.method_page(H, f), encoding="utf-8")
-    (out / "use.html").write_text(method.use_page(H, f), encoding="utf-8")
-    (out / "privacy.html").write_text(privacy_page(), encoding="utf-8")
+        _store.mkdir((out / old).parent, parents=True, exist_ok=True)
+        _store.write_text(out / old, redirect_page(new), encoding="utf-8")
+    _store.write_text(out / "method.html", method.method_page(H, f), encoding="utf-8")
+    _store.write_text(out / "use.html", method.use_page(H, f), encoding="utf-8")
+    _store.write_text(out / "privacy.html", privacy_page(), encoding="utf-8")
     # Served for any missing path at any depth, so its relative links resolve from the root.
-    (out / "404.html").write_text(
-        not_found_page().replace("<head>", '<head>\n<base href="/">', 1), encoding="utf-8"
+    _store.write_text(
+        out / "404.html", not_found_page().replace("<head>", '<head>\n<base href="/">', 1), encoding="utf-8"
     )
-    (out / "releases.html").write_text(releases.releases_page(H), encoding="utf-8")
-    (out / "evals" / "judging.html").write_text(remeasured.judging_page(H, f), encoding="utf-8")
+    _store.write_text(out / "releases.html", releases.releases_page(H), encoding="utf-8")
+    _store.write_text(out / "evals" / "judging.html", remeasured.judging_page(H, f), encoding="utf-8")
     for x in f["evals"]:
-        (out / "evals" / f"{x['slug']}.html").write_text(eval_page(x, f), encoding="utf-8")
-    (out / ".nojekyll").write_text("")
+        _store.write_text(out / "evals" / f"{x['slug']}.html", eval_page(x, f), encoding="utf-8")
+    _store.write_text(out / ".nojekyll", "")
     add_canonicals(out)
-    (out / "sitemap.xml").write_text(sitemap_xml(sitemap_urls(out)), encoding="utf-8")
-    (out / "robots.txt").write_text(ROBOTS, encoding="utf-8")
+    _store.write_text(out / "sitemap.xml", sitemap_xml(sitemap_urls(out)), encoding="utf-8")
+    _store.write_text(out / "robots.txt", ROBOTS, encoding="utf-8")
     point_docs(out)
     # Last: no inline script or style survives, so the prod CSP needs no 'unsafe-inline'.
     csp.externalize(out)

@@ -1,8 +1,0 @@
-```json
-[
-  {"text": "Feeling", "type": "art"},
-  {"text": "Pharrell Williams", "type": "person"},
-  {"text": "Happy", "type": "art"},
-  {"text": "April 2014", "type": "event"}
-]
-```

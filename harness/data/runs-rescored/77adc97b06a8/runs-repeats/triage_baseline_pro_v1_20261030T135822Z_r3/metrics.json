@@ -11,6 +11,7 @@
   "derived": {
     "at": "2026-10-31T13:23:23Z",
     "from": "triage_baseline_pro_v1_20261030T135822Z_r3",
+    "from_dir": "runs-repeats/triage_baseline_pro_v1_20261030T135822Z_r3",
     "kind": "rescore",
     "with": {
       "adapter": "examples/triage-fleet/adapter.py",

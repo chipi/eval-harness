@@ -41,6 +41,7 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     RUNS,
     die,
@@ -92,7 +93,7 @@ def _report_consensus_misses(rows: list, gold: dict, dataset_id: str, threshold:
         print(f"      gold {gold[item]}   predicted {tally}")
         f = item_path(dataset_id, item)
         if f is not None:
-            snippet = " ".join(f.read_text(encoding="utf-8").split())[:150]
+            snippet = " ".join(_store.read_text(f, encoding="utf-8").split())[:150]
             print(f"      {snippet}")
 
 
@@ -118,7 +119,7 @@ def main() -> int:
     labels = sorted(set(gold.values()))
     preds = predictions(args.dataset_id, args.match)
     if not preds:
-        die(f"no runs for {args.dataset_id}" + (f" matching {args.match}" if args.match else ""))
+        die(f"no runs for {args.dataset_id}" + (f" matching {args.match}" if args.match else ""), "not-found")
 
     rows = []
     for cid, by_item in sorted(preds.items()):
@@ -145,7 +146,7 @@ def main() -> int:
             }
         )
     if not rows:
-        die(f"no run on {args.dataset_id} scored an item the gold references have")
+        die(f"no run on {args.dataset_id} scored an item the gold references have", "not-enough")
     rows.sort(key=lambda r: -r[args.sort])
 
     width = max(len(r["arm"]) for r in rows) + 2
@@ -171,7 +172,7 @@ def main() -> int:
     if args.arm:
         row = next((r for r in rows if r["arm"] == args.arm), None)
         if row is None:
-            die(f"no run for arm {args.arm}")
+            die(f"no run for arm {args.arm}", "not-found")
         print(f"\n  CONFUSION MATRIX — {args.arm}   rows = gold, columns = predicted")
         cols = [*labels, UNPARSED]
         cw = max(len(c) for c in cols) + 2

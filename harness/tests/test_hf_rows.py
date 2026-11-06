@@ -1,153 +1,122 @@
-"""examples/_shared/hf_rows.py against a local server that answers the way the datasets-server
-does when it is unhappy: 429s, 502s and a 404. No network; sleeps are recorded, not slept."""
+#!/usr/bin/env python3
+"""The examples' shared Hub reader (examples/_shared/hf_rows.py) through the harness's huggingface source (P4).
+
+    python tests/test_hf_rows.py
+
+Against a Hub served locally (HF_ENDPOINT), with a split in two parquet files: `page` returns the rows of any
+[offset, offset + length) across the two files with their split row numbers, [] past the end; the conversion's
+commit is resolved once a process and every page reads at it; `Sources` writes the rows map with the sha256 of each
+written file and the commit as the source's revision; a dataset the Hub has not converted ends in one message
+naming it. Offline.
+"""
 
 from __future__ import annotations
 
 import hashlib
-import http.server
+import io
 import json
-import shutil
+import os
 import sys
 import tempfile
 import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
-sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "examples" / "_shared"))
-import hf_rows
-from evaluation_harness._check import check, summary
+import pyarrow as pa
+import pyarrow.parquet as pq
 
-script: list[int] = []  # status codes to answer with, in order; 200 when empty
-seen: list[str] = []
+HARNESS = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(HARNESS))
+from evaluation_harness._check import check, summary  # noqa: E402
+
+REF, REV = "acme/rows", "b" * 40
 
 
-class Server(http.server.BaseHTTPRequestHandler):
-    """Answers each request with the next scripted status."""
+def part(lo: int, hi: int) -> bytes:
+    buf = io.BytesIO()
+    pq.write_table(
+        pa.table({"text": [f"row {n}" for n in range(lo, hi)], "label": [n % 3 for n in range(lo, hi)]}), buf
+    )
+    return buf.getvalue()
 
-    def do_GET(self):
-        seen.append(self.path)
-        code = script.pop(0) if script else 200
-        body = json.dumps(
-            {"rows": [{"row_idx": 7, "row": {"i": 1}}]} if code == 200 else {"error": code}
-        ).encode()
-        self.send_response(code)
+
+FILES = {"default/test/0000.parquet": part(0, 4), "default/test/0001.parquet": part(4, 7)}
+STATE = {"refs": 0, "converts": True}
+
+
+class Hub(BaseHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
+
+    def _send(self, body, ctype="application/json"):
+        body = body if isinstance(body, bytes) else json.dumps(body).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
 
-    def log_message(self, *_args):
-        pass
+    def do_GET(self):
+        if self.path == f"/api/datasets/{REF}/refs":
+            STATE["refs"] += 1
+            conv = [{"name": "parquet", "targetCommit": REV}] if STATE["converts"] else []
+            return self._send({"converts": conv})
+        if self.path == f"/api/datasets/{REF}/tree/{REV}/default/test":
+            return self._send(
+                [{"path": p, "lfs": {"oid": hashlib.sha256(b).hexdigest()}} for p, b in FILES.items()]
+            )
+        for p, b in FILES.items():
+            if self.path == f"/datasets/{REF}/resolve/{REV}/{p}":
+                return self._send(b, "application/octet-stream")
+        self.send_response(404)
+        self.end_headers()
 
 
-srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Server)
+srv = ThreadingHTTPServer(("127.0.0.1", 0), Hub)
 threading.Thread(target=srv.serve_forever, daemon=True).start()
-hf_rows.ROWS_API = f"http://127.0.0.1:{srv.server_address[1]}/rows"
-waits: list[float] = []
-hf_rows.time.sleep = waits.append  # recorded, not slept
+os.environ["HF_ENDPOINT"] = f"http://127.0.0.1:{srv.server_address[1]}"
+os.environ["EVAL_HOME"] = tempfile.mkdtemp(prefix="evh-hf-rows-")  # the item cache lives under it
+sys.path.insert(0, str(HARNESS.parent / "examples" / "_shared"))
+import hf_rows  # noqa: E402
 
 try:
-    rows = hf_rows.page("d", "c", "test", 0, 5)
-    check("a clean answer is the page's rows", rows == [{"i": 1}], rows)
-    check("and it paces the next request", waits == [hf_rows.DEFAULT_DELAY], waits)
+    rows = hf_rows.page(REF, "default", "test", 2, 4)
     check(
-        "the query names dataset, config, split, offset and length",
-        all(k in seen[-1] for k in ("dataset=d", "config=c", "split=test", "offset=0", "length=5")),
-        seen[-1],
+        "a page across the two files: its rows and their split row numbers",
+        [(r.row_idx, r["text"]) for r in rows] == [(2, "row 2"), (3, "row 3"), (4, "row 4"), (5, "row 5")],
+        [(r.row_idx, dict(r)) for r in rows],
     )
-
-    waits.clear()
-    script[:] = [429, 429, 200]
-    check("429s are waited out, then the page comes back", hf_rows.page("d", "c", "test", 0, 5) == [{"i": 1}])
-    check("on the slow schedule: 5 s, then 15 s", waits[:2] == [5, 15], waits)
-
-    waits.clear()
-    script[:] = [502, 200]
-    hf_rows.page("d", "c", "test", 0, 5)
-    check("a 502 retries on the short ladder (2 s)", waits[:1] == [2], waits)
-
-    waits.clear()
-    script[:] = [404]
-    before = len(seen)
-    try:
-        hf_rows.page("d", "c", "test", 0, 5)
-        stopped = False
-    except SystemExit as exc:
-        stopped = "HTTP 404" in str(exc)
-    check("a 404 stops at once, with one message naming it", stopped and len(seen) - before == 1)
-
-    waits.clear()
-    script[:] = [429] * hf_rows.MAX_ATTEMPTS
-    try:
-        hf_rows.page("d", "c", "test", 300, 5)
-        gave_up = ""
-    except SystemExit as exc:
-        gave_up = str(exc)
-    check("a limit that never lifts ends in one message naming the offset", "offset 300" in gave_up, gave_up)
-    check("after the whole 429 schedule", waits == list(hf_rows.RATE_LIMIT_BACKOFF), waits)
-
-    # The Hub's parquet files when /rows stays down (2026-11-02: HTTP 503 for every dataset). The read
-    # itself needs pyarrow (the examples' environments); here the fallback is stubbed, what calls it is tested.
-    asked: list[tuple] = []
-    real = hf_rows.parquet_page
-
-    def stub(*a, **_k):
-        asked.append(a)
-        return [hf_rows.Row({"i": 2})]
-
-    hf_rows.parquet_page = stub
-    try:
-        script[:] = [503] * hf_rows.MAX_ATTEMPTS
-        got = hf_rows.page("d", "c", "test", 40, 5)
-        check(
-            "a 503 that never lifts: the same rows asked of the Hub's parquet files, and those returned",
-            asked == [("d", "c", "test", 40, 5)] and got == [{"i": 2}],
-            (asked, got),
-        )
-        asked.clear()
-        script[:] = [404]
-        try:
-            hf_rows.page("d", "c", "test", 0, 5)
-        except SystemExit:
-            pass
-        check("a 404 is the dataset's own answer: no fallback", asked == [], asked)
-        hf_rows.parquet_page = lambda *a, **k: None
-        script[:] = [503] * hf_rows.MAX_ATTEMPTS
-        try:
-            hf_rows.page("d", "c", "test", 80, 5)
-            said = ""
-        except SystemExit as exc:
-            said = str(exc)
-        check("when the parquet files fail too, one message naming the offset", "offset 80" in said, said)
-    finally:
-        hf_rows.parquet_page = real
+    check("past the end: []", hf_rows.page(REF, "default", "test", 7, 5) == [])
+    hf_rows.page(REF, "default", "test", 0, 1)
+    check("the conversion's commit is resolved once a process", STATE["refs"] == 1, STATE)
+    root = Path(tempfile.mkdtemp(prefix="evh-hf-rows-out-"))
+    (root / "data" / "sources" / "ds").mkdir(parents=True)
+    (root / "data" / "sources" / "ds" / "x.txt").write_bytes(b"hello")
+    where = hf_rows.Sources(REF, "default", "test")
+    where.record("x", rows[0])
+    where.record("gone", rows[1])  # no file written for it: not in the map
+    where.write(root, "ds")
+    doc = json.loads((root / "data" / "sources" / "ds.rows.json").read_text())
     check(
-        "without pyarrow, the fallback says so and gives up (None), never a traceback",
-        real("d", "c", "t", 0, 1) is None,
-    )
-
-    # Where each row came from: its row number, kept beside the row without changing it.
-    row = hf_rows.page("d", "c", "test", 0, 1)[0]
-    check(
-        "a row keeps its row number", row.row_idx == 7 and json.dumps(row) == '{"i": 1}', (row.row_idx, row)
-    )
-    tmp = Path(tempfile.mkdtemp(prefix="hf-rows-"))
-    (tmp / "data" / "sources" / "ds").mkdir(parents=True)
-    (tmp / "data" / "sources" / "ds" / "x.txt").write_bytes(b"hello")
-    where = hf_rows.Sources("org/set", "c", "test")
-    where.record("x", row)
-    where.record("gone", row)  # no file written for it: not in the map
-    where.write(tmp, "ds")
-    doc = json.loads((tmp / "data" / "sources" / "ds.rows.json").read_text())
-    check(
-        "the rows map names the source and each written item's row and bytes",
-        doc["source"]["name"] == "org/set"
-        and doc["rows"] == {"x": {"row": 7, "sha256": hashlib.sha256(b"hello").hexdigest()}}
-        and doc["item_url"].endswith("/org/set/viewer/c/test?row={row}"),
+        "the rows map: each written item's row and bytes, the commit as the source's revision",
+        doc["rows"] == {"x": {"row": 2, "sha256": hashlib.sha256(b"hello").hexdigest()}}
+        and doc["source"]["revision"] == REV
+        and doc["source"]["provider"] == "huggingface"
+        and doc["item_url"].endswith("/acme/rows/viewer/default/test?row={row}"),
         doc,
     )
-    shutil.rmtree(tmp, ignore_errors=True)
+    STATE["converts"] = False
+    hf_rows._REVISIONS.clear()  # a new process starts with none
+    try:
+        hf_rows.page(REF, "default", "test", 0, 1)
+        said = ""
+    except SystemExit as e:
+        said = str(e)
+    check(
+        "a dataset without a parquet conversion ends in one message naming it",
+        "no parquet conversion" in said,
+        said,
+    )
 finally:
     srv.shutdown()
-
 sys.exit(summary())

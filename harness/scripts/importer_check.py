@@ -27,18 +27,18 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from evaluation_harness import _importers
-from evaluation_harness._common import die
+from evaluation_harness import _importers, _store
+from evaluation_harness._common import EXIT_PROBLEMS, die, evh_prog
 
 
 def query_of(text: str) -> dict:
     """A query given as JSON, or as @path to a JSON file."""
     try:
-        q = json.loads(Path(text[1:]).read_text(encoding="utf-8") if text.startswith("@") else text)
+        q = json.loads(_store.read_text(Path(text[1:]), encoding="utf-8") if text.startswith("@") else text)
     except (OSError, json.JSONDecodeError) as exc:
-        die(f"--query: {exc}")
+        die(f"--query: {exc}", "bad-argument")
     if not isinstance(q, dict):
-        die("--query is a JSON object")
+        die("--query is a JSON object", "bad-argument")
     return q
 
 
@@ -50,12 +50,12 @@ def read_all(name: str, query: dict, limit: int | None) -> list:
     except SystemExit:
         raise
     except Exception as exc:  # noqa: BLE001 — an importer's own failure is the check's answer
-        die(f"--importer {name}: reading failed: {type(exc).__name__}: {exc}")
+        die(f"--importer {name}: reading failed: {type(exc).__name__}: {exc}", "failed")
 
 
 def main() -> int:
     """Check an importer; exit 1 on any failure."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("importer", help="a built-in name, a project importer's name, or path.py:Class")
     ap.add_argument("--query", required=True, help="the query: JSON, or @file.json")
     ap.add_argument("--limit", type=int, help="check only the first N records")
@@ -111,7 +111,7 @@ def main() -> int:
                 f"{len(old)} older than {mid}: {', '.join(old[:5])}",
             )
     print("PASS" if not failed else f"FAIL: {failed} check(s)")
-    return 1 if failed else 0
+    return EXIT_PROBLEMS if failed else 0
 
 
 if __name__ == "__main__":

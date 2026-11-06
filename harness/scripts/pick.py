@@ -22,13 +22,14 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 
-from evaluation_harness._common import DATASETS, dataset_id_ok, die, load_dataset
+from evaluation_harness import _store
+from evaluation_harness._common import DATASETS, dataset_id_ok, die, evh_prog, load_dataset
 from evaluation_harness._picks import append, state
 
 
 def main() -> int:
     """Pick items, or drop picks."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument(
         "--dataset-id", required=True, help="the dataset the items are in (usually a production one)"
     )
@@ -46,14 +47,14 @@ def main() -> int:
     items = {it["item_id"]: it for it in ds.get("items") or []}
     unknown = sorted(set(args.item) - set(items))
     if unknown:
-        die(f"not in {args.dataset_id}: {', '.join(unknown[:8])}")
+        die(f"not in {args.dataset_id}: {', '.join(unknown[:8])}", "not-found")
     if args.drop:
         now_state = state()
         missing = [
             i for i in args.item if (now_state.get((args.dataset_id, i)) or {}).get("action") != "pick"
         ]
         if missing:
-            die(f"not waiting, so nothing to drop: {', '.join(missing[:8])} (evh picks)")
+            die(f"not waiting, so nothing to drop: {', '.join(missing[:8])} (evh picks)", "not-found")
         append(
             [{"action": "drop", "item": i, "from": args.dataset_id, "by": args.by or None} for i in args.item]
         )
@@ -63,11 +64,11 @@ def main() -> int:
     for t in args.tag:
         k, sep, v = t.partition("=")
         if not sep or not k:
-            die(f"--tag {t!r}: KEY=VALUE")
+            die(f"--tag {t!r}: KEY=VALUE", "bad-argument")
         tags[k] = v
     for t in args.targets:
-        if not (DATASETS / f"{dataset_id_ok(t)}.json").is_file():
-            die(f"--for {t}: no such dataset")
+        if not _store.is_file(DATASETS / f"{dataset_id_ok(t)}.json"):
+            die(f"--for {t}: no such dataset", "not-found")
     capture = (ds.get("made_from") or {}).get("capture")
     append(
         [

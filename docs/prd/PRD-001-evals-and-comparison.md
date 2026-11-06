@@ -114,8 +114,8 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
   down).
 - **FR3.5**: `evh rank-stability`, `evh holdout` and `evh bootstrap-test` answer how many items a
   ranking needs, what holds outside a pilot slice, and intervals for corpus-level metrics.
-- **FR3.6**: Every refusal (two datasets, another reference, a missing run) is an `ERROR: …`
-  line on stderr with exit 1.
+- **FR3.6**: Every refusal (two datasets, another reference, a missing run) is an
+  `ERROR (<kind>): …` line on stderr with exit 1; the kind is one of a fixed list (Runbook: Refusals).
 
 ### FR4: Decisions
 
@@ -124,7 +124,7 @@ the [Runbook](../../harness/docs/RUNBOOK.md); the first evaluation, step by step
   (`--allow-dirty`, `--allow-unknown-build`).
 - **FR4.2**: The baseline records the run's reference tier, adapter and fingerprint hash, and
   `evh validate` (V6) fails a baseline that no longer matches its run.
-- **FR4.3**: `evh validate` checks the whole data tree (V1–V20) and exits non-zero, so CI can
+- **FR4.3**: `evh validate` checks the whole data tree (V1–V23) and exits non-zero, so CI can
   hold it.
 
 ## Success Criteria

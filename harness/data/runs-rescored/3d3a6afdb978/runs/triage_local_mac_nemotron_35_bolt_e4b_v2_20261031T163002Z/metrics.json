@@ -12,6 +12,7 @@
   "derived": {
     "at": "2026-11-01T08:14:08Z",
     "from": "triage_local_mac_nemotron_35_bolt_e4b_v2_20261031T163002Z",
+    "from_dir": "runs/triage_local_mac_nemotron_35_bolt_e4b_v2_20261031T163002Z",
     "kind": "rescore",
     "with": {
       "adapter": "examples/triage-fleet/adapter.py",

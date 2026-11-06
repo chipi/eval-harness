@@ -222,7 +222,7 @@ grow after its conclusion:
 evh run --config data/configs/tickets_lead2_noisy_v2.yaml
 ```
 ```text
-ERROR: data/configs/tickets_lead2_noisy_v2.yaml: round r2 of tickets_summary is closed; open the next one (evh round-open --from r2)
+ERROR (not-allowed): data/configs/tickets_lead2_noisy_v2.yaml: round r2 of tickets_summary is closed; open the next one (evh round-open --from r2)
 ```
 
 `evh validate` (V14) checks the round files; `evh family-test --round r2` tests the round's leader

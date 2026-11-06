@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 import validate_judge_goyal as vg  # noqa: E402
 import validate_judge_zhang as vz  # noqa: E402
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness import judge_score as js  # noqa: E402
 
 REPO = HERE.parents[1]
@@ -43,7 +44,7 @@ def goyal(scorer: str = SCORER) -> dict[str, Any]:
     jids = [j["id"] for j in js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")["judges"]]
     human = vg.load_local()
     if human is None:
-        rep = json.loads((vroot / "report.json").read_text())
+        rep = json.loads(_store.read_text(vroot / "report.json"))
         _check_report(rep, scorer, vroot, jids)
         return {
             "source": "report.json (data/external/goyal2022 absent: checked against the records only)",
@@ -78,7 +79,7 @@ _ZHANG: dict[str, dict[str, Any]] = {}
 
 def _zhang(scorer: str) -> dict[str, Any]:
     vroot = DATA / "judge-validation" / scorer / "zhang2023-cnndm"
-    if vz.FILE.is_file():
+    if _store.is_file(vz.FILE):
         sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
         data = vz.load()
         systems = sorted(next(iter(data.values()))["systems"])
@@ -87,7 +88,7 @@ def _zhang(scorer: str) -> dict[str, Any]:
         )
         rep["recomputed"] = "from the stored records and the ratings"
         return rep
-    rep = json.loads((vroot / "report.json").read_text())
+    rep = json.loads(_store.read_text(vroot / "report.json"))
     _check_report(
         rep, scorer, vroot, [j["id"] for j in js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")["judges"]]
     )
@@ -107,8 +108,8 @@ def _check_report(rep: dict[str, Any], scorer: str, vroot: Path, jids: list) -> 
     if sorted(rep["judges"]) != sorted(jids):
         bad.append(f"its judges {sorted(rep['judges'])} are not the scorer's {sorted(jids)}")
     for jid, r in rep["judges"].items():
-        files = list((vroot / jid).glob("*.json"))
-        recs = [json.loads(f.read_text()) for f in files]
+        files = list(_store.glob(vroot / jid, "*.json"))
+        recs = [json.loads(_store.read_text(f)) for f in files]
         got = {
             "records_sha256": js.records_sha256(vroot / jid),
             "billed_usd": round(sum(float(x.get("cost_usd") or 0) for x in recs), 4),
@@ -133,12 +134,14 @@ def _check_report(rep: dict[str, Any], scorer: str, vroot: Path, jids: list) -> 
 
 def pointwise() -> dict[str, int]:
     """Pointwise (non-listwise) judge preference counts."""
-    man = sorted((DATA / "judging-sets").glob("cnn_dailymail_200-2arms-*.json"))
+    man = sorted(_store.glob(DATA / "judging-sets", "cnn_dailymail_200-2arms-*.json"))
     assert len(man) == 1, man
-    m = json.loads(man[0].read_text())
+    m = json.loads(_store.read_text(man[0]))
     per: dict[str, dict[str, list]] = {}
-    for f in (DATA / "judge-verdicts" / "judge-summ-pointwise-v1" / m["judging_set_id"]).glob("*/*.json"):
-        v = json.loads(f.read_text())
+    for f in _store.glob(
+        DATA / "judge-verdicts" / "judge-summ-pointwise-v1" / m["judging_set_id"], "*/*.json"
+    ):
+        v = json.loads(_store.read_text(f))
         if v.get("pass") != "primary" or v.get("scores") is None:
             continue
         it = next(x for x in m["items"] if x["item_id"] == v["item_id"])
@@ -157,8 +160,8 @@ def grading_set() -> Path:
     (RFC-005, "Judging modes") and matches SET_GLOB too."""
     sets = [
         p
-        for p in sorted((DATA / "judging-sets").glob(SET_GLOB))
-        if (json.loads(p.read_text()).get("mode") or "grade") == "grade"
+        for p in sorted(_store.glob(DATA / "judging-sets", SET_GLOB))
+        if (json.loads(_store.read_text(p)).get("mode") or "grade") == "grade"
     ]
     if len(sets) != 1:
         raise SystemExit(
@@ -170,7 +173,7 @@ def grading_set() -> Path:
 def compute(scorer: str = SCORER) -> dict[str, Any]:
     """Every figure from the judge re-measurement, including Goyal and Zhang validations."""
     gs = grading_set()
-    m = json.loads(gs.read_text())
+    m = json.loads(_store.read_text(gs))
     if len(m["arms"]) != 29:
         raise SystemExit(f"{gs.name} has {len(m['arms'])} arms, not 29")
     sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
@@ -180,16 +183,16 @@ def compute(scorer: str = SCORER) -> dict[str, Any]:
     proj = js.project(sc, scores, item_ids)
     summ = js.summarise(m, sc, m["arms"], scores, proj, {}, "recomputed", True, vdir)
 
-    files = [json.loads(f.read_text()) for f in vdir.glob("*/*.json")]
+    files = [json.loads(_store.read_text(f)) for f in _store.glob(vdir, "*/*.json")]
     hosted = []
     for a in m["arms"]:
-        met = json.loads((DATA / "runs" / a["run"] / "metrics.json").read_text())
+        met = json.loads(_store.read_text(DATA / "runs" / a["run"] / "metrics.json"))
         if (met.get("params") or {}).get("provider") == "litellm":
             hosted.append(a["config_id"])
     pa = summ["per_arm"]
     hscores = [pa[c]["judge_score"] for c in hosted]
     hc = json.loads(
-        (REPO / "examples" / "summarization-cnn-dailymail" / "human_check_judge.json").read_text()
+        _store.read_text(REPO / "examples" / "summarization-cnn-dailymail" / "human_check_judge.json")
     )
     h_bart = sum(x["preferred"] == "bart_l" for x in hc["pairs"])
     h_ds = sum(x["preferred"] == "deepseek_m" for x in hc["pairs"])

@@ -171,8 +171,8 @@ try:
     # ── the capture check ────────────────────────────────────────────────────────────────────
     r = evh("deploy-sheet", "--config", "own_v1", "--capture", "prod")
     check(
-        "--capture: the model matched by record id or alias, what differs and what is not recorded; exit 1",
-        r.returncode == 1
+        "--capture: the model matched by record id or alias, what differs and what is not recorded; exit 6",
+        r.returncode == 6
         and "model        3 match; differ: m-two (1)" in r.stdout
         and "prompt_sha   2 match; differ: p2 (1); not recorded: 1" in r.stdout
         and "NOT every captured decision was made by the promoted model and prompt" in r.stdout,
@@ -181,8 +181,8 @@ try:
     r = evh("deploy-sheet", "--config", "own_v1", "--capture", "prod", "--json")
     j = json.loads(r.stdout) if r.stdout.strip().startswith("{") else {}
     check(
-        "--capture --json: the check as data, exit 1 when it differs",
-        r.returncode == 1
+        "--capture --json: the check as data, exit 6 when it differs",
+        r.returncode == 6
         and j["capture_check"]["ok"] is False
         and j["capture_check"]["keys"]["model"]["differ"] == {"m-two": 1},
         out(r)[-400:],
@@ -190,7 +190,7 @@ try:
     r = evh("deploy-sheet", "--config", "own_v1", "--capture", "partial")
     check(
         "--capture: a record that does not say is not a match (all that say match, still exit 1)",
-        r.returncode == 1
+        r.returncode == 6
         and "prompt_sha   1 match; not recorded: 1" in r.stdout
         and "NOT every captured decision" in r.stdout,
         out(r)[-400:],

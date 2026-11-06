@@ -79,7 +79,7 @@ def project_port(kind: str, root: Path | None = None) -> int:
             except OSError:
                 continue
             return port
-    raise SystemExit(f"no free port in {base}-{base + 999}: pass --port N")
+    die(f"no free port in {base}-{base + 999}: pass --port N", "failed")
 
 
 def stray_home() -> str:
@@ -150,7 +150,7 @@ def env_float(name: str, default: float | None = None) -> float | None:
     try:
         return float(raw)
     except ValueError:
-        raise SystemExit(f"ERROR: {name}={raw!r} is not a number") from None
+        die(f"{name}={raw!r} is not a number", "not-configured")
 
 
 def env_int(name: str, default: int) -> int:
@@ -264,7 +264,13 @@ def ignored_by_git(path: Path) -> bool:
     # A run's metrics file, not the directory: the re-allow blocks admit `<dir>/<run>/metrics.json`
     # under a denied `data/runs-*/`, so only that path answers the question. Absolute, because `-C`
     # moves git's working directory and a relative probe would then name some other file.
-    probe = Path(path).resolve() / "_probe_run" / "metrics.json"
+    target = Path(path).resolve()
+    # In the database a run's place is its key under data/, wherever the database file is (a copy under .build/,
+    # make serve STORE=sqlite): asked as the project's own data/<key>, a copy shows what the project shows.
+    data = _paths()["DATA"].resolve()
+    if store() == "sqlite" and target.is_relative_to(data):
+        target = _paths()["ROOT"].resolve() / "data" / target.relative_to(data)
+    probe = target / "_probe_run" / "metrics.json"
     anchor = next((p for p in probe.parents if p.exists()), Path.cwd())
     try:
         r = subprocess.run(
@@ -310,8 +316,10 @@ def now() -> str:
 
 def sha256(path: Path) -> str:
     """Return the SHA-256 digest of a file's contents."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     h = hashlib.sha256()
-    with path.open("rb") as fh:
+    with _store.open_file(path, "rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
@@ -319,7 +327,9 @@ def sha256(path: Path) -> str:
 
 def read_json(path: Path) -> Any:
     """Parse and return the JSON object from a file."""
-    return json.loads(path.read_text(encoding="utf-8"))
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    return json.loads(_store.read_text(path, encoding="utf-8"))
 
 
 def write_text_atomic(path: Path, text: str) -> None:
@@ -345,6 +355,13 @@ def write_bytes_atomic(path: Path, data: bytes) -> None:
 
 
 def _write_atomic(path: Path, data: str | bytes, mode: str) -> None:
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    if (
+        _store.rel(path) is not None
+    ):  # RFC-025: the sqlite store writes one committed statement, atomic already
+        _store.write_bytes(path, data.encode("utf-8") if isinstance(data, str) else data)
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp")
     try:
@@ -426,11 +443,13 @@ def arm_config_files() -> list[Path]:
     (relative to the project root), for a project that keeps its arms elsewhere (this repository's are in
     examples/). Here, not in validate_tree, because measuring code reads it (a hypothesis's `against`) and
     the validator is not part of what a run's code hash covers."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     p = _paths()
-    found = set(p["CONFIGS"].glob("*.yaml"))
+    found = set(_store.glob(p["CONFIGS"], "*.yaml"))
     policy_file = p["DATA"] / "validate.json"
-    for pattern in (read_json(policy_file).get("configs") or []) if policy_file.is_file() else []:
-        found |= {f for f in p["ROOT"].glob(pattern) if f.is_file()}
+    for pattern in (read_json(policy_file).get("configs") or []) if _store.is_file(policy_file) else []:
+        found |= {f for f in _store.glob(p["ROOT"], pattern) if _store.is_file(f)}
     return sorted(found)
 
 
@@ -439,12 +458,13 @@ def load_goals(goals_dir: Path | None = None) -> dict[str, dict[str, Any]]:
     by the goal's `goal_id`, the file stem when it names none. The catalog keyed them that way
     and this by stem alone; V14 requires the two to agree."""
     import yaml  # noqa: PLC0415
+    from evaluation_harness import _store  # noqa: PLC0415
 
     out: dict[str, dict[str, Any]] = {}
     base = goals_dir or _paths()["GOALS"]
-    for f in sorted(base.glob("*.yaml")) if base.is_dir() else []:
+    for f in sorted(_store.glob(base, "*.yaml")) if _store.is_dir(base) else []:
         if f.name != "policy.yaml":
-            doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+            doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
             doc = doc if isinstance(doc, dict) else {}
             out[str(doc.get("goal_id") or f.stem)] = doc
     return out
@@ -455,9 +475,10 @@ def goal_policy() -> dict[str, Any]:
     name a goal. Absent, goals stay optional: a project upgrading changes nothing until it
     sets the date."""
     import yaml  # noqa: PLC0415
+    from evaluation_harness import _store  # noqa: PLC0415
 
     f = _paths()["GOALS"] / "policy.yaml"
-    doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.is_file() else None
+    doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) if _store.is_file(f) else None
     return doc if isinstance(doc, dict) else {}
 
 
@@ -468,24 +489,50 @@ DATASET_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 def dataset_id_ok(dataset_id: str) -> str:
     """The id, or SystemExit when it is not a plain name (a path would leave data/)."""
     if not DATASET_ID.fullmatch(dataset_id or "") or ".." in dataset_id:
-        raise SystemExit(f"not a dataset id: {dataset_id[:60]!r} (letters, digits, '.', '_', '-')")
+        die(f"not a dataset id: {dataset_id[:60]!r} (letters, digits, '.', '_', '-')", "bad-argument")
     return dataset_id
 
 
 def load_dataset(dataset_id: str) -> dict[str, Any]:
     """Load a dataset by id from data/datasets, or raise SystemExit."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     path = _paths()["DATASETS"] / f"{dataset_id_ok(dataset_id)}.json"
-    if not path.is_file():
-        raise SystemExit(
+    if not _store.is_file(path):
+        die(
             f"no such dataset: {dataset_id}\n"
             f"  expected {path}\n"
             f"  create one with: "
             + how(
                 f"evh dataset-create --dataset-id {dataset_id} --source-dir …",
                 f"make dataset-create DATASET_ID={dataset_id}",
-            )
+            ),
+            "not-found",
         )
     return read_json(path)
+
+
+def goal_cluster(goal: dict, dataset_id: str) -> str | None:
+    """The item field a goal clusters this dataset's tests by (`datasets[].cluster`), or None."""
+    return next(
+        (d.get("cluster") for d in goal.get("datasets") or [] if d.get("dataset_id") == dataset_id), None
+    )
+
+
+def item_clusters(dataset_id: str, field: str) -> dict:
+    """{item_id: cluster key}: each item's value of `field`, for the clustered paired test
+    (stats.clustered). Refused when no item carries the field: a typo would test item by item."""
+    keys = {
+        it["item_id"]: (it.get("fields") or {}).get(field)
+        for it in load_dataset(dataset_id).get("items") or []
+    }
+    keys = {i: v for i, v in keys.items() if v not in (None, "")}
+    if not keys:
+        die(
+            f"--cluster {field}: no item of {dataset_id} carries that field (evh dataset-profile lists them)",
+            "not-found",
+        )
+    return keys
 
 
 def dataset_item_ids(dataset_id: str) -> set:
@@ -500,7 +547,9 @@ def dataset_item_ids(dataset_id: str) -> set:
 
 def read_item_ids(path: Path) -> set[str]:
     """The item ids an `--items` file lists, one per line (blank lines ignored)."""
-    return {ln.strip() for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()}
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    return {ln.strip() for ln in _store.read_text(path, encoding="utf-8").splitlines() if ln.strip()}
 
 
 def item_selection(exclude_dataset: str | None, items_file: Path | None) -> tuple[set[str], set[str] | None]:
@@ -529,24 +578,30 @@ def scored_against_dir(reference_id: str | None) -> Path | None:
 def labels_reference(spec: str, dataset_id: str) -> str:
     """The reference_id a run scored against labels records, from `SET` or `DATASET/SET`; refused when the set is on
     another dataset (its item ids are that dataset's) or does not exist."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     set_ds, _, name = spec.rpartition("/")
     set_ds = set_ds or dataset_id
     if set_ds != dataset_id:
         die(
             f"--labels {spec}: a set on {set_ds}, not {dataset_id}. Scoring reads labels by this dataset's item ids: "
-            f"promote them (evh reference-promote --dataset-id {dataset_id} --labels {spec} …) or label this dataset"
+            f"promote them (evh reference-promote --dataset-id {dataset_id} --labels {spec} …) or label this dataset",
+            "mismatch",
         )
     rid = f"{LABELS_PREFIX}{dataset_id}/{name}"
     d = scored_against_dir(rid)
-    if d is None or not (d / "labels.json").is_file():
+    if d is None or not _store.is_file(d / "labels.json"):
         die(
-            f"--labels {spec}: no label set at data/labels/{dataset_id}/{name} (evh labels --dataset-id {dataset_id})"
+            f"--labels {spec}: no label set at data/labels/{dataset_id}/{name} (evh labels --dataset-id {dataset_id})",
+            "not-found",
         )
     return rid
 
 
 def item_path(dataset_id: str, item_id: str) -> Path | None:
     """Where an item's materialized copy is, or None when it is not materialized here."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     try:
         ds = load_dataset(dataset_id)
     except SystemExit:
@@ -555,7 +610,7 @@ def item_path(dataset_id: str, item_id: str) -> Path | None:
     if it is None:
         return None
     p = _paths()["MATERIALIZED"] / dataset_id / (it.get("source_path") or item_id)
-    return p if p.is_file() else None
+    return p if _store.is_file(p) else None
 
 
 #: The id a run records when it used the adapter bundled with the harness.
@@ -630,10 +685,117 @@ def load_module(path: Path, name: str) -> Any:
     return mod
 
 
-def die(msg: str) -> NoReturn:
-    """Refuse: `ERROR: msg` on stderr, exit 1. Every command refuses this way; four printed
-    their refusal to stdout instead, where a caller reading stderr saw nothing."""
-    raise SystemExit(f"ERROR: {msg}")
+#: Exit codes, one meaning each (RUNBOOK "Exit codes"), so a caller branches on the number and never
+#: has to read the text: 2 was both a usage error and the cost cap, 1 both a refusal and "validate
+#: found problems".
+EXIT_OK = 0
+EXIT_REFUSED = 1  # refused: `ERROR: <why>` on stderr, nothing done
+EXIT_USAGE = 2  # an unknown command or argument; the usage is printed
+EXIT_UNVALIDATED = 3  # a judge scorer that is not validated (--unvalidated runs it, labelled)
+EXIT_STOPPED = 4  # stopped early (the cost cap, a failing judge call): partial results kept, resumable
+EXIT_PARTLY = 5  # some of several runs failed (sweep); the others are kept
+EXIT_PROBLEMS = 6  # the command's checks ran and some failed (validate, importer-check, arm-smoke, ...)
+EXIT_NOTHING = 7  # it ran and measured nothing
+EXIT_INTERNAL = 70  # an error nothing caught, in the harness or the project's code: a traceback on stderr
+EXIT_TRY_LATER = 75  # a server could not be reached: run the same command again later, it resumes
+EXIT_INTERRUPTED = 130  # Ctrl-C
+
+
+#: What kind of refusal it is (RUNBOOK, Refusals): the word in `ERROR (<kind>): ...`, which a script or an
+#: agent reads instead of the message, so a message can be reworded without breaking it.
+REFUSALS = {
+    "not-found": "the dataset, run, arm, goal, file or other thing named does not exist",
+    "bad-argument": "an option is missing, malformed, or not allowed with another",
+    "would-overwrite": "what it would write is already there; it is never overwritten",
+    "mismatch": "two things that must agree do not: datasets, hashes, a run and its config",
+    "invalid-file": "a file the project wrote (a config, a scorer, a sheet, records) is malformed",
+    "not-materialized": "the data is not on this machine: fetch or materialize it first",
+    "not-enough": "too little to work on: too few items, arms or outputs",
+    "not-public": "the text asked for is not shown on a public server or for a hidden dataset",
+    "not-allowed": "a rule refuses it: a dirty build, a closed round, a bind beyond this machine",
+    "not-configured": "a key, a cost cap, a build ref or an endpoint is not set",
+    "failed": "something outside the command failed: an importer, a server, a hook, the warm-up",
+    "missing-dependency": "a package or a part of the installation is missing",
+}
+
+
+#: Where a project keeps its data (RFC-025): `files` (the default) or `sqlite` (everything under data/ in one database).
+STORES = ("files", "sqlite")
+_STORE_SEEN: list[Any] = []
+
+
+def configure_setting() -> tuple[bool, str | None]:
+    """Whether the project deploys its Configure pages (the data page, UXS-004): `EVAL_CONFIGURE` (1, true, yes),
+    else `configure: true` in its config.yaml; and what is wrong with it, if anything. The pages edit the database,
+    so they need `store: sqlite`: a files project is edited in its files."""
+    env = os.environ.get("EVAL_CONFIGURE", "").strip().lower()
+    if env:
+        on, where = env in ("1", "true", "yes"), "EVAL_CONFIGURE"
+    else:
+        cfg, on, where = _paths()["ROOT"] / "config.yaml", False, "configure in config.yaml"
+        if cfg.is_file():
+            import yaml  # noqa: PLC0415
+
+            try:
+                doc = yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}
+            except yaml.YAMLError:
+                doc = {}
+            on = isinstance(doc, dict) and doc.get("configure") is True
+    if on and store() != "sqlite":
+        return (
+            False,
+            f"{where} turns on the Configure pages, which need store: sqlite (this project's store is {store()})",
+        )
+    return on, None
+
+
+def configure() -> bool:
+    """Whether the Configure pages are deployed; refused (not-allowed) when they are asked for without SQLite."""
+    on, problem = configure_setting()
+    if problem:
+        die(problem, "not-allowed")
+    return on
+
+
+def store() -> str:
+    """The project's store: `EVAL_STORE`, else `store` in its config.yaml, else `files`."""
+    env = os.environ.get("EVAL_STORE", "").strip()
+    cfg = _paths()["ROOT"] / "config.yaml"
+    try:
+        st = cfg.stat() if not env else None
+        mtime = (st.st_mtime_ns, st.st_size) if st else None
+    except OSError:
+        mtime = None
+    key = (env, str(cfg), mtime)
+    if _STORE_SEEN and _STORE_SEEN[0] == key:
+        return _STORE_SEEN[1]
+    if env:
+        chosen, where = env, "EVAL_STORE"
+    else:
+        chosen, where = "files", f"store in {cfg}"
+        if mtime is not None:
+            import yaml  # noqa: PLC0415
+
+            try:
+                doc = yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}
+            except yaml.YAMLError:
+                doc = {}
+            chosen = str((doc.get("store") if isinstance(doc, dict) else None) or "files")
+    if chosen not in STORES:
+        said = f"{where}: {chosen!r} is not a store, one of {', '.join(STORES)}"
+        if env:
+            die(said, "bad-argument")
+        die(said, "invalid-file")
+    _STORE_SEEN[:] = [key, chosen]
+    return chosen
+
+
+def die(msg: str, kind: str) -> NoReturn:
+    """Refuse: `ERROR (<kind>): msg` on stderr, exit 1, `kind` one of REFUSALS. Every command refuses
+    this way; four printed their refusal to stdout instead, where a caller reading stderr saw nothing."""
+    if kind not in REFUSALS:
+        raise ValueError(f"no refusal kind {kind!r}: one of {', '.join(REFUSALS)}")
+    raise SystemExit(f"ERROR ({kind}): {msg}")
 
 
 def reference_texts(root: Path, dataset_id: str, tier: str = "gold") -> list[Path]:
@@ -641,14 +803,17 @@ def reference_texts(root: Path, dataset_id: str, tier: str = "gold") -> list[Pat
     only its manifest.json: a repository may commit a reference's checksums and not its texts
     (V16), which come with the public data. Read as empty, every arm matched nothing and the
     report tools printed zeros as if they were results."""
-    if not root.is_dir():
-        die(f"no {tier} references at {root}")
-    files = sorted(root.glob("*.txt"))
-    if not files and (root / "manifest.json").is_file():
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    if not _store.is_dir(root):
+        die(f"no {tier} references at {root}", "not-found")
+    files = sorted(_store.glob(root, "*.txt"))
+    if not files and _store.is_file(root / "manifest.json"):
         die(
             f"the {tier} references for {dataset_id} are not on this machine: {root} holds their "
             "checksums only (manifest.json). Fetch the dataset first, as the eval's README and "
-            "docs/REPRODUCE.md say (`make data EXP=<eval>`, or the example's fetch.py)."
+            "docs/REPRODUCE.md say (`make data EXP=<eval>`, or the example's fetch.py).",
+            "not-materialized",
         )
     return files
 
@@ -717,7 +882,7 @@ DESCRIPTIVE_KEYS = ("output_words", "output_chars", "lines", "chars", "n_items",
 #: whether each judge shares the judged arm's model family (`self_family_<judge>`), and
 #: evh run whether an item was replayed by --resume (`resumed`, whose mean is the share
 #: replayed). They stay in the record; no table, menu or spread lists them as metrics.
-BOOKKEEPING_PREFIXES = ("self_family_", "resumed")
+BOOKKEEPING_PREFIXES = ("self_family_", "resumed", "failed")
 
 
 def lower_is_better(metric: str) -> bool:

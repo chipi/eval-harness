@@ -29,14 +29,15 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness import leaderboard as lb  # noqa: E402
-from evaluation_harness._common import RUNS, dataset_item_ids, die  # noqa: E402
+from evaluation_harness._common import RUNS, dataset_item_ids, die, evh_prog  # noqa: E402
 from evaluation_harness._runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
 
 
 def main() -> int:
     """The significance tests, on only the items a previous dataset did not contain."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--exclude-dataset", help="drop every item this dataset also contains")
     ap.add_argument("--metric", help="default: the primary metric the runs recorded")
@@ -60,11 +61,11 @@ def main() -> int:
             f"{len(keep)} held out"
         )
 
-    runs = [r for r in runs_on(args.dataset_id, match=args.match) if (r[0] / "predictions.jsonl").is_file()]
+    runs = [r for r in runs_on(args.dataset_id, match=args.match) if _outputs.has_rows(r[0])]
     raw: list[float] = []
     M = matrix(runs, args.metric, keep=keep, raw=raw)
     if not M:
-        die("no runs matched")
+        die("no runs matched", "not-found")
     print(f"  {len(runs)} run(s), {len(M)} arm(s)")
     lb.significance(M, args.metric, asc=direction(runs, args.metric, args.asc, args.desc), raw_values=raw)
     return 0

@@ -1,6 +1,0 @@
-[
-  {
-    "text": "Borazon",
-    "type": "product"
-  }
-]

@@ -52,7 +52,11 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _jsonout  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _jsonout,
+    _outputs,
+    _store,
+)
 from evaluation_harness._common import (  # noqa: E402
     DATA,
     GOALS,
@@ -61,11 +65,13 @@ from evaluation_harness._common import (  # noqa: E402
     RUNS,
     dataset_item_ids,
     die,
+    evh_prog,
+    item_clusters,
     item_selection,
 )
 from evaluation_harness._fingerprint import measuring_modules  # noqa: E402
 from evaluation_harness._runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402 -- one implementation of "score per item"
-from evaluation_harness.stats import EXACT_UP_TO, fmt_p, holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
+from evaluation_harness.stats import EXACT_UP_TO, clustered, fmt_p, holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
 
 def _opponents(runs: list, against: str, exclude: str) -> list[str]:
@@ -95,21 +101,21 @@ def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
     deterministic."""
     h = hashlib.sha256()
     for f in measuring_modules(Path(__file__).resolve().parent, ("family_test.py",)):
-        h.update(f.name.encode() + b"\0" + f.read_bytes())
+        h.update(f.name.encode() + b"\0" + _store.read_bytes(f))
     h.update("\0".join([*argv, str(runs_dir.resolve())]).encode())
     for d, _m in runs_on(args.dataset_id, runs_dir=runs_dir):
-        mj, pj = d / "metrics.json", d / "predictions.jsonl"
-        h.update(d.name.encode() + mj.read_bytes() + (pj.read_bytes() if pj.is_file() else b""))
-    for g in sorted(GOALS.glob("*.yaml")) if GOALS.is_dir() else []:
-        h.update(g.name.encode() + b"\0" + g.read_bytes())
+        mj = d / "metrics.json"
+        h.update(d.name.encode() + _store.read_bytes(mj) + (_outputs.rows_text(d) or "").encode("utf-8"))
+    for g in sorted(_store.glob(GOALS, "*.yaml")) if _store.is_dir(GOALS) else []:
+        h.update(g.name.encode() + b"\0" + _store.read_bytes(g))
     # A round's record decides which arms --round keeps (its retirements, its carried arms).
-    for r in sorted(ROUNDS.glob("*/*.yaml")) if ROUNDS.is_dir() else []:
-        h.update(r.as_posix().encode() + b"\0" + r.read_bytes())
+    for r in sorted(_store.glob(ROUNDS, "*/*.yaml")) if _store.is_dir(ROUNDS) else []:
+        h.update(r.as_posix().encode() + b"\0" + _store.read_bytes(r))
     if args.round:  # a re-score stands in for its run in the round's reading, and picks its leader
-        for f in sorted((DATA / "runs-rescored").glob("*/*/*/metrics.json")):
-            h.update(f.as_posix().encode() + b"\0" + f.read_bytes())
+        for f in sorted(_store.glob(DATA / "runs-rescored", "*/*/*/metrics.json")):
+            h.update(f.as_posix().encode() + b"\0" + _store.read_bytes(f))
     if args.items:
-        h.update(args.items.read_bytes())
+        h.update(_store.read_bytes(args.items))
     if args.exclude_dataset:
         h.update("\0".join(sorted(dataset_item_ids(args.exclude_dataset))).encode())
     return h.hexdigest()
@@ -126,11 +132,11 @@ def main() -> int:
     if not args.round and not (args.a and args.against):
         ap.error("--a and --against are required (or --round, which defaults them)")
     runs_dir = args.runs_dir or RUNS
-    use_cache = not os.environ.get("EVAL_NO_CACHE") and runs_dir.is_dir()
+    use_cache = not os.environ.get("EVAL_NO_CACHE") and _store.is_dir(runs_dir)
     if use_cache:
         hit = CACHE / f"{_cache_key(sys.argv[1:], runs_dir, args)}.json"
-        if hit.is_file():
-            c = json.loads(hit.read_text(encoding="utf-8"))
+        if _store.is_file(hit):
+            c = json.loads(_store.read_text(hit, encoding="utf-8"))
             sys.stdout.write(c["stdout"])
             sys.stderr.write(c["stderr"])
             return c["rc"]
@@ -146,10 +152,12 @@ def main() -> int:
     if use_cache:
         # Best effort: the answer is in hand, and a read-only project (a server's copy) only loses the speed-up.
         try:
-            CACHE.mkdir(parents=True, exist_ok=True)
+            _store.mkdir(CACHE, parents=True, exist_ok=True)
             tmp = hit.with_suffix(".tmp")
-            tmp.write_text(
-                json.dumps({"stdout": out.getvalue(), "stderr": err.getvalue(), "rc": rc}), encoding="utf-8"
+            _store.write_text(
+                tmp,
+                json.dumps({"stdout": out.getvalue(), "stderr": err.getvalue(), "rc": rc}),
+                encoding="utf-8",
             )
             tmp.replace(hit)  # atomic: a concurrent reader never sees half a file
         except OSError:
@@ -158,7 +166,7 @@ def main() -> int:
 
 
 def _parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--a", help="config_id of the arm under test (with --round: default its leader)")
     ap.add_argument(
@@ -170,6 +178,18 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--runs-dir", type=Path, default=None, help="default: EVAL_RUNS_DIR, else data/runs")
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument("--items", type=Path, help="file of item_ids; restrict to exactly these")
+    ap.add_argument(
+        "--reduce",
+        default=None,
+        help="how an arm's repeats make one score per item: mean (the default), majority or at_least_K, for 0/1 "
+        "scores (with --round: default the goal's primary.reduce)",
+    )
+    ap.add_argument(
+        "--cluster",
+        metavar="FIELD",
+        help="an item field whose items are not independent: flip one sign per value of it, so related items "
+        "count once (with --round: default the goal's `cluster:`)",
+    )
     ap.add_argument("--permutations", type=int, default=20000)
     ap.add_argument("--alpha", type=float, default=0.05)
     ap.add_argument(
@@ -201,24 +221,30 @@ def _round_defaults(args, runs: list) -> Any:
 
     rnd = resolve(args.round, args.goal)
     if rnd["dataset_id"] != args.dataset_id:
-        die(f"round {args.round} is on {rnd['dataset_id']}, not {args.dataset_id}")
+        die(f"round {args.round} is on {rnd['dataset_id']}, not {args.dataset_id}", "mismatch")
     in_play = arms_of(rnd)
-    prim = ((_common.load_goals().get(rnd["goal"]) or {}).get("success_criteria") or {}).get("primary") or {}
+    goal = _common.load_goals().get(rnd["goal"]) or {}
+    prim = (goal.get("success_criteria") or {}).get("primary") or {}
     args.metric = args.metric or prim.get("measure")
+    args.cluster = args.cluster or _common.goal_cluster(goal, args.dataset_id)
+    args.reduce = args.reduce or (prim.get("reduce") if isinstance(prim, dict) else None)
     if args.a and args.a not in in_play:
-        die(f"{args.a} is not in play in round {args.round} ({', '.join(in_play)})")
-    values = _round_values(args.dataset_id)
+        die(f"{args.a} is not in play in round {args.round} ({', '.join(in_play)})", "not-found")
+    values = _round_values(args.dataset_id, args)
     chose = not args.a
     if chose:
         means = {c: statistics.fmean(v.values()) for c in in_play if (v := values(c, args.metric))}
         if not means:
-            die(f"no arm in round {args.round} records {args.metric} yet")
+            die(f"no arm in round {args.round} records {args.metric} yet", "not-enough")
         args.a = (min if prim.get("direction") == "lower" else max)(means, key=lambda c: means[c])
     declared = bool(args.against)
     if not declared:
         rest = [c for c in in_play if c != args.a]
         if not rest:
-            die(f"round {args.round} has no other arm in play to test {args.a} against: name --against")
+            die(
+                f"round {args.round} has no other arm in play to test {args.a} against: name --against",
+                "not-enough",
+            )
         args.against = ",".join(rest)
     print(
         f"  round {args.round}: {args.a}{' (its leader)' if chose else ''} against "
@@ -247,19 +273,24 @@ def _run(args) -> int:
     if values is not None:
         A = values(args.a, args.metric)
     else:
-        A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
+        A = per_item(
+            [r for r in runs if r[1]["config_id"] == args.a], args.metric, reduce=args.reduce or "mean"
+        )
     if not A:
-        die(f"no runs for {args.a} on {args.dataset_id}")
+        die(f"no runs for {args.a} on {args.dataset_id}", "not-found")
 
     drop, keep = item_selection(args.exclude_dataset, args.items)
 
     rng = random.Random(args.seed)
+    keys = item_clusters(args.dataset_id, args.cluster) if args.cluster else None
     rows: list[dict] = []
     for opp in _opponents(runs, args.against, args.a):
         B = (
             values(opp, args.metric)
             if values is not None
-            else per_item([r for r in runs if r[1]["config_id"] == opp], args.metric)
+            else per_item(
+                [r for r in runs if r[1]["config_id"] == opp], args.metric, reduce=args.reduce or "mean"
+            )
         )
         items = sorted(set(A) & set(B) - drop)
         if keep is not None:
@@ -267,17 +298,22 @@ def _run(args) -> int:
         if len(items) < 3:
             continue
         deltas = [A[i] - B[i] for i in items]
+        # The unit the test flips: an item, or with --cluster a cluster's summed difference.
+        units = clustered(dict(zip(items, deltas, strict=True)), keys)[0] if keys is not None else deltas
+        if len(units) < 2:
+            continue
         rows.append(
             {
                 "opp": opp,
                 "n": len(items),
+                "units": len(units),
                 "delta": statistics.fmean(deltas),
                 "wins": sum(1 for d in deltas if (d < 0 if lower else d > 0)),
-                "p": sign_flip_p(deltas, permutations=args.permutations, rng=rng),
+                "p": sign_flip_p(units, permutations=args.permutations, rng=rng),
             }
         )
     if not rows:
-        die("no opponents with enough shared items")
+        die("no opponents with enough shared items", "not-enough")
 
     # HOLM STEP-DOWN. Sorted ascending, threshold alpha/(m-i), and the moment one fails
     # every larger p-value fails with it -- that carry-forward is the whole procedure, and
@@ -302,12 +338,16 @@ def _run(args) -> int:
         f"  {args.a}  vs family '{getattr(args, 'family_label', None) or args.against}'   metric={args.metric}  {stratum}"
     )
     print(f"  family size m={m}, declared before the p-values were read")
+    if args.cluster:
+        print(
+            f"  clustered by {args.cluster}: items that share a value count as one (n is items, p is per cluster)"
+        )
     print(f"  Holm step-down at alpha={args.alpha}" + ("  (lower is better)" if lower else ""))
     # SAY WHICH p. Up to EXACT_UP_TO items it is exact, and every command prints the same number.
     # Above that it is a seeded estimate drawn from one random stream for the whole family, so
     # pair-test or the inspector, which draw one per pair, can differ in the third decimal.
     # Per row: opponents can share different numbers of items, so one family can hold both.
-    est = [r["n"] > EXACT_UP_TO for r in rows]
+    est = [r["units"] > EXACT_UP_TO for r in rows]
     if any(est) and not all(est):
         print(
             f"  p: exact up to {EXACT_UP_TO} shared items, a seeded estimate above ({args.permutations} "
@@ -340,7 +380,7 @@ def _run(args) -> int:
                 r["delta"],
                 r["wins"],
                 r["p"],
-                r["n"] <= EXACT_UP_TO,
+                r["units"] <= EXACT_UP_TO,
                 r["p_holm"],
                 r["thresh"],
                 bool(r["sep"]),
@@ -350,7 +390,7 @@ def _run(args) -> int:
     ):
         print(f"    {'opponent':{width}} {'delta':>9} {'A wins':>9} {'p':>8} {'thresh':>8}   verdict")
         for r in rows:
-            pv = ("~" if any(est) and not all(est) and r["n"] > EXACT_UP_TO else "") + fmt_p(r["p"])
+            pv = ("~" if any(est) and not all(est) and r["units"] > EXACT_UP_TO else "") + fmt_p(r["p"])
             print(
                 f"    {r['opp']:{width}} {r['delta']:+9.4f} {r['wins']:>4}/{r['n']:<4} "
                 f"{pv:>8} {r['thresh']:8.4f}   {'SIGNIFICANT' if r['sep'] else '--'}"
@@ -366,6 +406,7 @@ def _run(args) -> int:
             "direction": "lower" if lower else "higher",
             "n": n_items,  # None when the opponents share different numbers of items
             "n_range": [ns[0], ns[-1]],
+            "cluster": args.cluster or None,
             "family_size": m,
             "alpha": args.alpha,
             "correction": "holm",

@@ -138,7 +138,8 @@ the price" is a decision; "scored higher" is not yet one.
 ## When a run stops partway
 
 A 429 that outlasts the retries, a crash, or the cost cap leaves the finished items on disk; each
-output is written as it arrives. The run prints which run stopped, after how many items, and the
+output is written as it arrives. (One item the provider refuses does not stop it: that item is scored 0, listed in
+the run's `failed_items`, and called again on resume.) The run prints which run stopped, after how many items, and the
 exact command to continue it:
 
 <!-- guide-check: skip -->

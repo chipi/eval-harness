@@ -1,8 +1,0 @@
-```json
-[
-  {"text": "Renwick", "type": "person"},
-  {"text": "Wrigley Cup", "type": "event"},
-  {"text": "midget hockey tournament", "type": "event"},
-  {"text": "CAHA", "type": "organization"}
-]
-```

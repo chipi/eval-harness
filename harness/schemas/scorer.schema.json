@@ -11,6 +11,8 @@
     "dataset_id": {"type": "string", "minLength": 1},
     "arms_match": {"type": "string", "description": "The default arm set: a config_id substring."},
     "cost_cap_usd": {"type": "number", "exclusiveMinimum": 0},
+    "supersedes": {"type": "string", "minLength": 1, "description": "The scorer this one replaces: a changed rubric, prompt or judges is a new scorer (a frozen judging set is never rewritten), and this says which it follows (criteria drift, Shankar et al. 2024)."},
+    "why": {"type": "string", "description": "With supersedes: a sentence, what changed and why (which outputs led to it), carried like a promotion's reason."},
     "mode": {"enum": ["grade", "pick", "pairwise"], "default": "grade", "description": "What a judge is asked: grade (each output scored on the scale), pick (name the best output of an item; outputs_per_call must cover every arm) or pairwise (which of two is better, every pair of arms; outputs_per_call is 2). Absent means grade."},
     "judges": {
       "type": "array",
@@ -31,7 +33,8 @@
               "api_key_env": {"type": "string", "minLength": 1, "description": "Another variable to read the key from. A credential, not part of the judge's identity."},
               "base_url": {"type": "string", "minLength": 1},
               "usd_per_mtok_in": {"type": "number", "minimum": 0},
-              "usd_per_mtok_out": {"type": "number", "minimum": 0}
+              "usd_per_mtok_out": {"type": "number", "minimum": 0},
+              "family": {"type": "string", "minLength": 1, "description": "The judge model's vendor family (vendor_a, openai, ...): a scorer needs judges from two families at least (ADR-0001 §4), which judge_score checks when it loads the scorer."}
             }
           }
         }

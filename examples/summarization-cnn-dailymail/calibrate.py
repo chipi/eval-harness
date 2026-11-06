@@ -35,6 +35,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE.parent / "_shared"))
+sys.path.insert(0, str(HERE.parents[1] / "harness"))  # the evaluation_harness package: its store reads data/
+from evaluation_harness import _store  # noqa: E402
 from modules import load_module  # noqa: E402
 
 OUT = ROOT / "docs" / "evidence" / "calibration" / "summarization.json"
@@ -86,7 +88,7 @@ def main() -> int:
     by_id = {str(r["id"]): r for r in rows}
     slices = {}
     for ds in ("cnn_dailymail_200", "cnn_dailymail_dm200"):
-        items = json.loads((ROOT / "harness" / "data" / "datasets" / f"{ds}.json").read_text())["items"]
+        items = json.loads(_store.read_text(ROOT / "harness" / "data" / "datasets" / f"{ds}.json"))["items"]
         ids = [Path(i["source_path"]).stem for i in items]
         slices[ds] = score([by_id[i] for i in ids if i in by_id])
 
@@ -102,8 +104,8 @@ def main() -> int:
         "committed_slices": slices,
         "published": PUBLISHED,
     }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(result, indent=2) + "\n")
+    _store.mkdir(OUT.parent, parents=True, exist_ok=True)
+    _store.write_text(OUT, json.dumps(result, indent=2) + "\n")
     f, p = result["full_test"], PUBLISHED["lead3"]
     print(
         f"lead3 full test (n={f['n']}): R1 {f['rouge1']} ±{f['rouge1_ci95']}  "

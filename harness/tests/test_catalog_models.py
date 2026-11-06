@@ -19,18 +19,22 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import yaml
+from evaluation_harness import _outputs
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_models as cm
 from evaluation_harness import catalog_views as cv
 from evaluation_harness._check import check, summary
 from evaluation_harness.catalog_adapter import HarnessAdapter
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore
+
 COMMITTED = Path(__file__).resolve().parents[1] / "data" / "models"
 
 
 def run(data, run_id, config, params, record=None, deployment=None):
     d = data / "runs" / run_id
-    (d / "outputs").mkdir(parents=True)
+    d.mkdir(parents=True)
     m = {
         "run_id": run_id,
         "dataset_id": "ds1",
@@ -46,10 +50,8 @@ def run(data, run_id, config, params, record=None, deployment=None):
     if deployment:
         m["deployment_id"] = deployment
     (d / "metrics.json").write_text(json.dumps(m))
-    (d / "predictions.jsonl").write_text(
-        "".join(json.dumps({"item_id": f"i{i}", "acc": 0.5}) + "\n" for i in range(4))
-    )
-    (d / "outputs" / "i0.txt").write_text("out")
+    _runstore.put_rows_text(d, "".join(json.dumps({"item_id": f"i{i}", "acc": 0.5}) + "\n" for i in range(4)))
+    _outputs.writer(d).add("i0", "out")
 
 
 def record(data, doc):
@@ -410,7 +412,11 @@ with tempfile.TemporaryDirectory() as td:
         counts,
     )
     nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
-    check("nav: Models is under Arms", ">Models<" in nav and nav.count("<a ") == 12)
+    check(
+        "nav: Models is under Arms",
+        ">Models<" in nav and nav.count("<a ") == 12,
+        nav.count("<a "),
+    )
 
     listing = view(A, ["models"])
     check(

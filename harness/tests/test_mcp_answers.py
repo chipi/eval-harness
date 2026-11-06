@@ -94,7 +94,8 @@ try:
         "--write-answers: every tool that takes no argument, none whose default is dated or that needs an argument",
         r.returncode == 0
         and {"datasets", "goals", "arms", "metrics"} <= tools
-        and not tools & {"overview", "activity", "search", "dataset-items", "deploy-sheet"},
+        and not tools & {"overview", "activity", "search", "dataset-items", "deploy-sheet", "inspect"}
+        and "left out" not in r.stdout,
         f"exit {r.returncode}: {sorted(tools)} {r.stdout[-200:]}{r.stderr[-300:]}",
     )
     version = next((x["harness"] for x in lines), "")

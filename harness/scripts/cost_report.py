@@ -39,27 +39,24 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import json
 import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness._common import die  # noqa: E402
+from evaluation_harness import _runs  # noqa: E402
+from evaluation_harness._common import (  # noqa: E402
+    die,
+    evh_prog,
+)
 from evaluation_harness._runs import runs_on  # noqa: E402
 
 
 def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
     """(billed, recorded, items with a bill, items total) for one run."""
-    pj = run_dir / "predictions.jsonl"
-    if not pj.is_file():
-        return 0.0, 0.0, 0, 0
     billed = recorded = 0.0
     with_bill = total = 0
-    for line in pj.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        r = json.loads(line)
+    for r in _runs.item_rows(run_dir):
         total += 1
         recorded += float(r.get("cost_usd") or 0.0)
         b = ((r.get("_meta") or {}).get("usage") or {}).get("cost")
@@ -87,7 +84,7 @@ def _repeat_names(runs: list) -> dict[Path, str]:
 
 def main() -> int:
     """Report cost metrics for runs."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", help="only this dataset; default every dataset")
     ap.add_argument("--match", help="only runs whose config_id contains this")
     args = ap.parse_args()
@@ -111,7 +108,7 @@ def main() -> int:
         rows.append((billed, recorded, cid, m.get("dataset_id")))
 
     if not rows and not no_bill:
-        die("no runs matched")
+        die("no runs matched", "not-found")
 
     rows.sort(key=lambda r: -r[0])
     w = max((len(r[2]) for r in rows), default=20) + 2

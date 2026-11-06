@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _models
-from evaluation_harness._common import DATA, die, now
+from evaluation_harness._common import DATA, EXIT_PROBLEMS, die, evh_prog, now
 
 PROBE = (
     "Answer with one JSON object and nothing else, in the form "
@@ -88,7 +88,10 @@ def probe_llm(rec: dict[str, Any], dep: dict[str, Any]) -> tuple[dict[str, Any],
     """(report, flags, capabilities) of an LLM through one deployment's endpoint."""
     ep = dep.get("endpoint") or {}
     if not ep.get("provider") or not ep.get("model"):
-        die(f"{rec['model_id']}: deployment {dep.get('id')!r} has no endpoint (provider, model) to probe")
+        die(
+            f"{rec['model_id']}: deployment {dep.get('id')!r} has no endpoint (provider, model) to probe",
+            "invalid-file",
+        )
     base = {k: ep[k] for k in ("provider", "base_url", "model", "api_key_env") if ep.get(k)}
     settings = {k: v for k, v in (rec.get("settings") or {}).items() if k in CALL_PARAMS}
     flags: list[str] = []
@@ -164,7 +167,7 @@ def probe_llm(rec: dict[str, Any], dep: dict[str, Any]) -> tuple[dict[str, Any],
 
 def main() -> int:
     """Onboard one deployment (or an arm's model); exit 0 on ONBOARD PASS, 1 on ONBOARD CHECK."""
-    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.split("\n\n")[0])
     ap.add_argument("model_id")
     ap.add_argument(
         "--deployment", help="the deployment to probe and write: an `id` in the record's deployments"
@@ -175,7 +178,8 @@ def main() -> int:
     rec = _models.find(DATA, args.model_id)
     if rec is None:
         die(
-            f"no model record {args.model_id!r}: write data/models/{args.model_id}.yaml first (model_id, kind, aliases)"
+            f"no model record {args.model_id!r}: write data/models/{args.model_id}.yaml first (model_id, kind, aliases)",
+            "not-found",
         )
     before = json.loads(json.dumps(rec))  # what this run read, so it writes back only what it changed
     print(f"model-onboard: {args.model_id} ({rec.get('kind')})")
@@ -188,7 +192,8 @@ def main() -> int:
         )
         if dep is None:
             die(
-                f"--deployment: one of {', '.join(x.get('id', '?') for x in deployments) or '(no deployments in the record)'}"
+                f"--deployment: one of {', '.join(x.get('id', '?') for x in deployments) or '(no deployments in the record)'}",
+                "bad-argument",
             )
         report, flags, caps = probe_llm(rec, dep)
         d, c = report["default"], report["chosen"]
@@ -235,7 +240,8 @@ def main() -> int:
     else:
         if not args.config:
             die(
-                f"{args.model_id} is {rec.get('kind')}: onboard it through an arm that runs it (--config <arm.yaml>)"
+                f"{args.model_id} is {rec.get('kind')}: onboard it through an arm that runs it (--config <arm.yaml>)",
+                "bad-argument",
             )
         import subprocess  # noqa: PLC0415
 
@@ -292,7 +298,7 @@ def main() -> int:
     for f in flags:
         print(f"  - {f}")
     print(f"  written into data/models/{args.model_id}.yaml (deployment {dep['id']})")
-    return 0 if not flags else 1
+    return 0 if not flags else EXIT_PROBLEMS
 
 
 if __name__ == "__main__":

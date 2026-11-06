@@ -82,7 +82,9 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
     # An unknown provider is an error. It fell back to echo, so a typo in a config recorded
     # the echoed input as that model's output.
     if provider not in PROVIDERS:
-        raise SystemExit(f"unknown provider {provider!r}; this adapter knows {', '.join(sorted(PROVIDERS))}")
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(f"unknown provider {provider!r}; this adapter knows {', '.join(sorted(PROVIDERS))}", "not-found")
     fn: Callable[[str, dict[str, Any]], Result] = PROVIDERS[provider]
     started = time.perf_counter()
     # No retry wrapper here: the core retries every adapter. See the note below.

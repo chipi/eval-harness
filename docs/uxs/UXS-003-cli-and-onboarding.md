@@ -68,12 +68,14 @@ models).
 
 ## How a command speaks
 
-- **Refusals:** `ERROR: <why>` on stderr and exit 1, e.g.
-  `ERROR: no goal 'x': one of …` or "round r1 of g is still open: close it first (evh
-  round-close …)". An unknown command or argument prints the usage and exits 2.
-- **Exit codes** ([Runbook: exit codes](../../harness/docs/RUNBOOK.md#exit-codes)): 0 done; 1
-  refused or nothing measured; 2 a usage error, or a run stopped by the cost cap with its partial
-  results kept and resumable; 3 a judge scorer not validated.
+- **Refusals:** `ERROR (<kind>): <why>` on stderr and exit 1, e.g.
+  `ERROR (not-found): no goal 'x': one of …` or "round r1 of g is still open: close it first (evh
+  round-close …)". The kind is one of a fixed list ([Runbook: refusals](../../harness/docs/RUNBOOK.md#refusals)),
+  for a script or an agent to branch on. An unknown command or argument prints the usage and exits 2.
+- **Exit codes** ([Runbook: exit codes](../../harness/docs/RUNBOOK.md#exit-codes)): one meaning
+  each: 0 done; 1 refused; 2 a usage error; 3 a judge scorer not validated; 4 stopped early by the cost
+  cap, the partial results kept and resumable; 5 some runs of a sweep failed; 6 the checks ran and some
+  failed; 7 nothing measured; 70 an error nothing caught; 75 a server not reached; 130 interrupted.
 - **Hints:** a command that creates something ends with `Next: <command>`, e.g. after
   `dataset-create`: `Next: evh dataset-materialize --dataset-id tickets_v1`. Through `evh` the
   hint names an evh command; in a checkout, a make target.
@@ -109,7 +111,12 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard <id> --deployment <d>`, `evh arm-smoke --config <arm>` | |
 | reference set pages | `evh references [--reference-id <id>]` | `make references` |
 | the Captures page | `evh captures [--capture ID] [--json]` | |
+| the Configure page (SQLite, `configure: true`, local only, 0.8.0, UXS-004): the overview, a folder, find | `evh data-ls [PATH] [--find TEXT]` | |
+| the data page: a file; a setting's fields | `evh data-show PATH [--fields]` | |
+| the data page: the form's Save, Create | `evh data-put PATH --set KEY=VALUE … [--unset KEY …] [--new] [--check]`, or a whole file: `evh data-put PATH FILE` | |
+| the data page: Delete (a setting, or a whole run) | `evh data-rm PATH [--dry-run]` | |
 | the Labels page; a dataset page's labels (0.6.0) | `evh labels [--dataset-id D]` | |
+| a goal page's failure modes (0.8.0) | `evh tags [--dataset-id D]` | |
 | (no page action) labelling: a sheet to fill, then its import (0.6.0) | `evh label-sheet --dataset-id D --out sheet.csv [--items …] [--item ID …]`, `evh label-import sheet.csv --dataset-id D --set S --by NAME` | |
 | (no page action) a run's outputs, or outcome rules, as labels (0.6.0) | `evh label-from-run --run R --set S`, `evh label-from-capture --dataset-id D --capture C --map rules.yaml --set S` | |
 | a reference's "promoted from" (0.6.0) | `evh reference-promote --dataset-id D --labels S [--items …] --tier gold\|silver --reason "…"` | |

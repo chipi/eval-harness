@@ -43,7 +43,11 @@ def at(script: str) -> str:
     return f"scripts/{script}"
 
 
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, results  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
 
 
 def run(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
@@ -662,6 +666,35 @@ def test_example_scorer_suites_pass() -> None:
         ("test_p_cache.py", "the on-disk p cache: the same p, read back by a fresh process"),
         ("test_mcp_http.py", "evh mcp --http: health, Host check, --public, --rate, hooks"),
         ("test_mcp_answers.py", "evh mcp --write-answers and --answers: a release's answers written ahead"),
+        ("test_mcp_cancel.py", "evh mcp: a cancelled call stops the command it started"),
+        ("test_help_names.py", "every evh <command> --help names the command, not its script"),
+        (
+            "test_exit_codes.py",
+            "exit codes: the cost cap 4, nothing measured 7, usage 2, refusal 1, validate 6",
+        ),
+        ("test_refusal_kinds.py", "every refusal names its kind, the kinds as the Runbook lists them"),
+        (
+            "test_clusters.py",
+            "the clustered paired test: the item test with one item per cluster, its level held when items cluster",
+        ),
+        (
+            "test_cluster_commands.py",
+            "--cluster and a goal's cluster: through pair-test, family-test, goals, the inspector, validate",
+        ),
+        (
+            "test_noninferiority.py",
+            "non-inferiority: Tango for 0/1, the bootstrap-t from 100 units, its level at the margin",
+        ),
+        (
+            "test_reducers.py",
+            "repeats made one score per item: mean, majority, at_least_K; a goal's primary.reduce",
+        ),
+        ("test_alpha_all.py", "Krippendorff's alpha over any number of label sets, with its interval"),
+        ("test_scorer_supersedes.py", "a changed rubric names the scorer it supersedes, and why"),
+        (
+            "test_failed_items.py",
+            "a failed item is scored 0 and listed, the run goes on; weather and a broken adapter stop it",
+        ),
         ("test_scores_once.py", "each arm's scores read once per view and per build"),
         ("test_skills.py", "the agent skills: valid, installed, every evh block runs as written"),
         (
@@ -723,6 +756,78 @@ def test_example_scorer_suites_pass() -> None:
             "label sets: from a run, a sheet and its import, a capture's outcomes; never edited; they follow the item; V19",
         ),
         (
+            "test_dataset_version.py",
+            "a dataset's version MAJOR.MINOR from its lineage: 1.10 after 1.9, splits 1.0, V22, dataset-migrate",
+        ),
+        (
+            "test_licences.py",
+            "a dataset's licence: evh licences, dataset-create --licence, dataset-describe, V22",
+        ),
+        (
+            "test_source.py",
+            "where items came from: a fetcher's rows file as the source block, item links, V22, dataset-migrate",
+        ),
+        (
+            "test_card.py",
+            "a dataset's card: the datasheet questions in Croissant RAI's words; template, --card, V22",
+        ),
+        (
+            "test_sources.py",
+            "dataset sources: folder as --source-dir, a project's own with rows, licence, card; manifest; refusals",
+        ),
+        (
+            "test_croissant.py",
+            "a dataset as Croissant 1.1 (licence, card as rai:, files with sha256, typed fields) and its text card",
+        ),
+        (
+            "test_croissant_in.py",
+            "a dataset read from a Croissant description: rows, source, licence, card; sha256, parquet, fields refused",
+        ),
+        (
+            "test_fieldset_propose.py",
+            "a field set proposed from a source's features: choices from sampled values, --write, used as it is",
+        ),
+        (
+            "test_hf_source.py",
+            "the huggingface source on a local Hub: pinned to the parquet commit, licence, card, rows; sha256 checked",
+        ),
+        (
+            "test_publish.py",
+            "publishing to the Hub against a fake API: one commit, read back by sha256; hidden and unmaterialized refused",
+        ),
+        (
+            "test_zenodo_openml.py",
+            "the zenodo and openml sources on local APIs: a record's CSV (md5 checked), a dataset's parquet copy",
+        ),
+        (
+            "test_kaggle.py",
+            "the kaggle source on a local API: a version's zip, its one table, the licence name mapped; no kagglehub",
+        ),
+        (
+            "test_outputs.py",
+            "a run's outputs in one file (RFC-024): append, a torn line, finish, resume, a derived run reads its source's; both stores",
+        ),
+        (
+            "test_store.py",
+            "the project's store (RFC-025): the setting, _store on both, data-migrate there and back, never both (V23), concurrent writers, the release, the path-I/O guard",
+        ),
+        (
+            "test_settings_form.py",
+            "a setting as a form (UXS-004): every setting of this repository checks, writes back byte for byte, and keeps its comments through one-value edits",
+        ),
+        (
+            "test_data_page.py",
+            "the data page's server and evh data-*: list, show, check, put, rm on both stores; the header, Origin and public refusals; 80 concurrent requests",
+        ),
+        (
+            "test_run_migrate.py",
+            "run-migrate: outputs/ to outputs.jsonl byte for byte, derived copies dropped, idempotent, non-UTF-8 refused",
+        ),
+        (
+            "test_tags.py",
+            "failure modes: a tag sheet from inspect, its import as a tag set, evh tags counts per arm; refusals",
+        ),
+        (
             "test_picks.py",
             "picks: the append-only list, retarget, drop; dataset-extend from chosen picks, its lineage, labels following",
         ),
@@ -740,7 +845,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_deploy_sheet.py",
-            "the deploy sheet: what production must match; a capture checked against it, what differs, exit 1",
+            "the deploy sheet: what production must match; a capture checked against it, what differs, exit 6",
         ),
         (
             "test_catalog_labels.py",
@@ -804,7 +909,10 @@ def test_example_scorer_suites_pass() -> None:
             "test_no_shadowing.py",
             "a project's stats.py or adapter.py never replaces the harness's, nor the reverse",
         ),
-        ("test_hf_rows.py", "the examples' datasets-server fetcher: pacing, retries, each row's source"),
+        (
+            "test_hf_rows.py",
+            "the examples' Hub reader through the huggingface source: pages, pinned commit, rows map",
+        ),
         ("test_render_data.py", "the deployment copies every part of data/ the catalog reads"),
         ("test_runs_adapter.py", "run reading, direction, adapter loading, the judge panel"),
         ("check_report_claims.py", "report claims vs committed runs"),
@@ -991,34 +1099,19 @@ def test_resume_scores_and_persists() -> None:
         shutil.rmtree(runs, ignore_errors=True)
         return
     src = sorted(p.name for p in runs.iterdir() if p.is_dir())[0]
-    outs = sorted((runs / src / "outputs").glob("*.txt"))
+    outs = sorted(_outputs.outputs(runs / src))
     check("resume: outputs are on disk after a pass", len(outs) > 0, str(len(outs)))
 
-    # THE PROPERTY A CRASH ACTUALLY DEPENDS ON: outputs are written AS THEY ARE
-    # PRODUCED, not gathered up at the end. The simulated crash below (deleting files
-    # and resuming) exercises the resume path but would pass just as happily against a
-    # version that wrote everything in one go after the last item -- which is the
-    # version that lost a whole pass of paid outputs.
-    #
-    # Checked by mtime, which is the observable this leaves behind: every output must
-    # predate metrics.json, and the first must predate the last, because they were
-    # written one at a time while the pass ran.
-    mj = runs / src / "metrics.json"
-    if len(outs) > 1 and mj.is_file():
-        t_out = sorted(f.stat().st_mtime for f in outs)
-        check(
-            "resume: outputs are written DURING the pass, not after it",
-            t_out[-1] <= mj.stat().st_mtime and t_out[0] <= t_out[-1],
-            f"last output {t_out[-1]:.3f}, metrics {mj.stat().st_mtime:.3f}",
-        )
+    # Outputs are written AS THEY ARE PRODUCED (one synced line per item, RFC-024), not gathered at the end: proved
+    # on a pass that really stopped, in test_run_reports.py (the stopped run keeps its outputs and rows).
 
     # Simulate a crash: drop all but one output, as if the pass died at item 2.
-    for f in outs[1:]:
-        f.unlink()
+    kept = _outputs.outputs(runs / src)
+    _outputs.write_all(runs / src, {outs[0]: kept[outs[0]]}, outs[:1])
     r2 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", "--resume", src, env=env)
     check("resume: the resumed pass exits 0", r2.returncode == 0, (r2.stderr or "")[-160:])
     newest = max((p for p in runs.iterdir() if p.is_dir()), key=lambda p: p.stat().st_mtime)
-    rows = [ln for ln in (newest / "predictions.jsonl").read_text().splitlines() if ln.strip()]
+    rows = [ln for ln in (_outputs.rows_text(newest) or "").splitlines() if ln.strip()]
     check(
         "resume: every item is SCORED, not skipped",
         len(rows) == len(outs),
@@ -1035,10 +1128,8 @@ def test_resume_scores_and_persists() -> None:
     import json as _json  # noqa: PLC0415
 
     src_rows = {}
-    for line in (runs / src / "predictions.jsonl").read_text().splitlines():
-        if line.strip():
-            r = _json.loads(line)
-            src_rows[r["item_id"]] = r
+    for src_row in _runstore.rows(runs / src):
+        src_rows[src_row["item_id"]] = src_row
     replayed = [_json.loads(ln) for ln in rows if _json.loads(ln).get("resumed") == 1.0]
     check(
         "resume: at least one item was actually replayed",
@@ -1064,7 +1155,7 @@ def test_resume_scores_and_persists() -> None:
                 f"orig keys {sorted(o['_meta'])} now {sorted(r.get('_meta') or {})}",
             )
 
-    # THE ACTUAL CRASH SHAPE: outputs/ and run.json, no metrics.json, no
+    # THE ACTUAL CRASH SHAPE: outputs.jsonl, the row checkpoint and run.json, no metrics.json, no
     # predictions.jsonl -- because both are written only after the pass returns.
     #
     # Round 2 taught resume to carry each replayed item's cost, tokens and _meta
@@ -1074,18 +1165,16 @@ def test_resume_scores_and_persists() -> None:
     # during the pass, not that anything else is. Found by external review.
     crash = runs / "crashed"
     shutil.rmtree(crash, ignore_errors=True)
-    shutil.copytree(runs / src, crash)
+    _runstore.copy_run(runs / src, crash)
+    # What the pass had appended when it died: its rows (a finished run drops the checkpoint; a real stop keeps it,
+    # test_run_reports.py).
+    _runstore.put_rows_text(crash, _outputs.rows_text(crash) or "", partial=True)
     (crash / "metrics.json").unlink(missing_ok=True)
-    (crash / "predictions.jsonl").unlink(missing_ok=True)
+    _runstore.drop_rows(crash)
     check(
         "resume: a crashed run still carries its identity (run.json)",
         (crash / "run.json").is_file(),
         "run.json must be written before the first item, not after the pass",
-    )
-    check(
-        "resume: and its per-item rows (outputs/_rows.jsonl)",
-        (crash / "outputs" / "_rows.jsonl").is_file(),
-        "rows must be appended during the pass, not written at the end",
     )
 
     r3 = run("scripts/run.py", "--config", "data/configs/arm_b.yaml", "--resume", "crashed", env=env)
@@ -1097,7 +1186,7 @@ def test_resume_scores_and_persists() -> None:
     newest = max(
         (p for p in runs.iterdir() if p.is_dir() and p.name != "crashed"), key=lambda p: p.stat().st_mtime
     )
-    rows3 = [_json.loads(ln) for ln in (newest / "predictions.jsonl").read_text().splitlines() if ln.strip()]
+    rows3 = _runstore.rows(newest)
     replayed3 = [r for r in rows3 if r.get("resumed") == 1.0]
     check(
         "resume: after a CRASH, replayed rows still carry their measurements",
@@ -1158,11 +1247,13 @@ def test_resume_scores_and_persists() -> None:
             ((rf.stderr or "") + (rf.stdout or ""))[-200:],
         )
     else:
-        fx_outs = sorted((runs / "fx_src" / "outputs").glob("*.txt"))
-        for f in fx_outs[1:]:
-            f.unlink()
+        fx_texts = _outputs.outputs(runs / "fx_src")
+        fx_first = sorted(fx_texts)[0]
+        _outputs.write_all(runs / "fx_src", {fx_first: fx_texts[fx_first]}, [fx_first])
+        # What the pass had appended when it died: its rows (a finished run drops the checkpoint).
+        _runstore.put_rows_text(runs / "fx_src", _outputs.rows_text(runs / "fx_src") or "", partial=True)
         (runs / "fx_src" / "metrics.json").unlink(missing_ok=True)
-        (runs / "fx_src" / "predictions.jsonl").unlink(missing_ok=True)
+        _runstore.drop_rows(runs / "fx_src")
         rr = run(
             "scripts/run.py",
             "--config",
@@ -1173,15 +1264,7 @@ def test_resume_scores_and_persists() -> None:
             "fx_src",
             env={**env, "FX_PASS": "2"},
         )
-        fx_rows = (
-            [
-                _json.loads(ln)
-                for ln in (runs / "fx_res" / "predictions.jsonl").read_text().splitlines()
-                if ln.strip()
-            ]
-            if rr.returncode == 0
-            else []
-        )
+        fx_rows = _runstore.rows(runs / "fx_res") if rr.returncode == 0 else []
         fx_rep = [r for r in fx_rows if r.get("resumed") == 1.0]
         fx_new = [r for r in fx_rows if r.get("resumed") == 0.0]
         check(
@@ -1228,8 +1311,7 @@ def test_resume_scores_and_persists() -> None:
     # with arm_b's answers.
     anon = runs / "anonymous"
     shutil.rmtree(anon, ignore_errors=True)
-    (anon / "outputs").mkdir(parents=True)
-    (anon / "outputs" / "item_01.txt").write_text("from who knows where")
+    _outputs.writer(anon).add("item_01", "from who knows where")
     r4 = run("scripts/run.py", "--config", "data/configs/arm_a.yaml", "--resume", "anonymous", env=env)
     m4 = (r4.stderr or "") + (r4.stdout or "")
     check(
@@ -1346,7 +1428,7 @@ def test_rescore_rehashes_the_references_it_actually_read() -> None:
     src = None
     for d in sorted((HERE.parent / "data" / "runs").glob("fn_*")):
         m = d / "metrics.json"
-        if m.is_file() and (d / "outputs").is_dir():
+        if m.is_file() and _outputs.has_outputs(d):
             j = _json.loads(m.read_text())
             if ((j.get("fingerprint") or {}).get("data") or {}).get("reference_id"):
                 src = d
@@ -1359,9 +1441,9 @@ def test_rescore_rehashes_the_references_it_actually_read() -> None:
     shutil.rmtree(runs, ignore_errors=True)
     dst = runs / src.name
     dst.mkdir(parents=True)
-    for n in ("metrics.json", "predictions.jsonl"):
-        shutil.copy2(src / n, dst / n)
-    shutil.copytree(src / "outputs", dst / "outputs")
+    shutil.copy2(src / "metrics.json", dst / "metrics.json")
+    _runstore.put_rows_text(dst, _outputs.rows_text(src) or "")
+    _outputs.write_all(dst, _outputs.outputs(src), list(_outputs.outputs(src)))
     j = _json.loads((dst / "metrics.json").read_text())
     j["fingerprint"]["data"]["references_sha256"] = "0" * 64  # cannot match
     (dst / "metrics.json").write_text(_json.dumps(j))
@@ -1427,7 +1509,7 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
     mat = HERE.parent / "data" / "materialized" / "cnn_dailymail_200"
     src = None
     for d in sorted((HERE.parent / "data" / "runs").glob("cnn_*_n200_v1_*")):
-        if (d / "metrics.json").is_file() and (d / "outputs").is_dir():
+        if (d / "metrics.json").is_file() and _outputs.has_outputs(d):
             src = d
             break
     if src is None or not ds_file.is_file() or not mat.is_dir():
@@ -1443,9 +1525,9 @@ def test_rescore_takes_source_path_from_the_dataset() -> None:
     shutil.rmtree(tmp, ignore_errors=True)
     dst = tmp / src.name
     dst.mkdir(parents=True)
-    for n in ("metrics.json", "predictions.jsonl"):
-        shutil.copy2(src / n, dst / n)
-    shutil.copytree(src / "outputs", dst / "outputs")
+    shutil.copy2(src / "metrics.json", dst / "metrics.json")
+    _runstore.put_rows_text(dst, _outputs.rows_text(src) or "")
+    _outputs.write_all(dst, _outputs.outputs(src), list(_outputs.outputs(src)))
 
     env = {"EVAL_RUNS_DIR": str(tmp.relative_to(HERE.parent))}
     base = run(
@@ -1530,8 +1612,8 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
 
     Partial results are still kept and the resume hint still prints; that was
     deliberate. What changed is the exit code, because "the cap stopped me after 3 of
-    200 items" and "I measured 200 items" must not both be success. 1 = nothing
-    measured, 2 = stopped early with usable partial results, 0 = complete.
+    200 items" and "I measured 200 items" must not both be success. 7 = nothing
+    measured, 4 = stopped early with usable partial results, 0 = complete (RUNBOOK, Exit codes).
     """
     import shutil  # noqa: PLC0415
 
@@ -1570,7 +1652,11 @@ def test_a_run_that_measured_nothing_is_not_a_success() -> None:
         env={**env, "EVAL_MAX_COST_USD": "0"},
     )
     out = (r.stdout or "") + (r.stderr or "")
-    check("cost cap: a run that scored NO items exits non-zero", r.returncode != 0, f"exit {r.returncode}")
+    check(
+        "cost cap: a run that scored NO items exits 7 (nothing measured)",
+        r.returncode == 7,
+        f"exit {r.returncode}",
+    )
     check(
         "cost cap: and says nothing was measured",
         "scored NO items" in out or "Nothing was measured" in out,
@@ -1603,7 +1689,7 @@ def test_adapter_declaration_beats_a_stale_run() -> None:
 
     src = None
     for d in sorted((HERE.parent / "data" / "runs").glob("sf_*")):
-        if (d / "metrics.json").is_file() and (d / "predictions.jsonl").is_file():
+        if (d / "metrics.json").is_file() and _outputs.has_rows(d):
             m = _json.loads((d / "metrics.json").read_text())
             if "llm_named_unknown" in (m.get("scores") or {}):
                 src = d
@@ -1616,8 +1702,8 @@ def test_adapter_declaration_beats_a_stale_run() -> None:
     shutil.rmtree(runs, ignore_errors=True)
     dst = runs / src.name
     dst.mkdir(parents=True)
-    for name in ("metrics.json", "predictions.jsonl"):
-        shutil.copy2(src / name, dst / name)
+    shutil.copy2(src / "metrics.json", dst / "metrics.json")
+    _runstore.put_rows_text(dst, _outputs.rows_text(src) or "")
     m = _json.loads((dst / "metrics.json").read_text())
     m.setdefault("metric_kinds", {})["llm_named_unknown"] = "quality"  # the stale state
     (dst / "metrics.json").write_text(_json.dumps(m))
@@ -1699,10 +1785,9 @@ def test_a_rescored_run_carries_the_current_parse() -> None:
         m = _json.loads(mj.read_text(encoding="utf-8"))
         if m.get("dataset_id") != "few_nerd_280":
             continue
-        pj = mj.parent / "predictions.jsonl"
-        if not pj.is_file():
+        if not _outputs.has_rows(mj.parent):
             continue
-        rows = [_json.loads(x) for x in pj.read_text(encoding="utf-8").splitlines() if x.strip()]
+        rows = _runstore.rows(mj.parent)
         if not rows or "predicted" not in (rows[0].get("_meta") or {}):
             continue
         got = mean_item_f1({r["item_id"]: (r.get("_meta") or {}).get("predicted") for r in rows})
@@ -1925,9 +2010,9 @@ def test_two_runs_sharing_a_config_id_are_refused() -> None:
     for name in (src.name, src.name.replace("2026", "2027", 1)):
         d = runs / name
         d.mkdir(parents=True)
-        for f in ("metrics.json", "predictions.jsonl"):
-            if (src / f).is_file():
-                shutil.copy2(src / f, d / f)
+        shutil.copy2(src / "metrics.json", d / "metrics.json")
+        if _outputs.has_rows(src):
+            _runstore.put_rows_text(d, _outputs.rows_text(src) or "")
 
     ds = _json.loads((src / "metrics.json").read_text())["dataset_id"]
     raised = False
@@ -1946,9 +2031,9 @@ def test_two_runs_sharing_a_config_id_are_refused() -> None:
     for i in (1, 2, 3):
         d = runs / f"{src.name}_r{i}"
         d.mkdir(parents=True)
-        for f in ("metrics.json", "predictions.jsonl"):
-            if (src / f).is_file():
-                shutil.copy2(src / f, d / f)
+        shutil.copy2(src / "metrics.json", d / "metrics.json")
+        if _outputs.has_rows(src):
+            _runstore.put_rows_text(d, _outputs.rows_text(src) or "")
     try:
         got = runs_by_arm(runs, ds, prefix="sf_", strip="_n200_v1")
         ok, detail = sum(len(v) for v in got.values()) == 3, str(got)
@@ -1975,19 +2060,18 @@ def test_the_reports_significance_counts_are_real() -> None:
     import re as _re  # noqa: PLC0415
 
     reparsed = HERE.parent / "data" / "runs"
-    if not any(reparsed.glob("sf_glm_s_n200_v1_*/predictions.jsonl")):
+    if not any(_outputs.has_rows(d) for d in reparsed.glob("sf_glm_s_n200_v1_*")):
         print("  --   significance counts: skipped (no reparsed SciFact runs on disk)")
         return
 
     # Only the 2026-09-28 sweep: the re-runs duplicate arms and would double the family.
-    import shutil  # noqa: PLC0415
     import tempfile as _tf  # noqa: PLC0415
 
     with _tf.TemporaryDirectory() as td:
         scope = pathlib.Path(td) / "runs"
         scope.mkdir()
         for d in reparsed.glob("sf_*_n200_v1_20260928*"):
-            shutil.copytree(d, scope / d.name)
+            _runstore.copy_run(d, scope / d.name)
         r = run(
             "scripts/family_test.py",
             "--dataset-id",
@@ -2126,7 +2210,7 @@ def test_rescore_refuses_a_missing_reference_set() -> None:
     src = None
     for d in sorted((HERE.parent / "data" / "runs").glob("*")):
         mj = d / "metrics.json"
-        if not (mj.is_file() and (d / "outputs").is_dir()):
+        if not (mj.is_file() and _outputs.has_outputs(d)):
             continue
         m = _json.loads(mj.read_text())
         if ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id"):
@@ -2140,9 +2224,9 @@ def test_rescore_refuses_a_missing_reference_set() -> None:
     shutil.rmtree(runs, ignore_errors=True)
     dst = runs / src.name
     dst.mkdir(parents=True)
-    for name in ("metrics.json", "predictions.jsonl"):
-        shutil.copy2(src / name, dst / name)
-    shutil.copytree(src / "outputs", dst / "outputs")
+    shutil.copy2(src / "metrics.json", dst / "metrics.json")
+    _runstore.put_rows_text(dst, _outputs.rows_text(src) or "")
+    _outputs.write_all(dst, _outputs.outputs(src), list(_outputs.outputs(src)))
 
     # Point the copy at a reference_id that cannot exist. Equivalent to a fresh clone,
     # where the real one is absent because the corpus is gitignored -- and it does not
@@ -2234,11 +2318,12 @@ def test_rank_stability_ranks_the_right_way_up() -> None:
             (d / "metrics.json").write_text(
                 _json.dumps({"dataset_id": "rd_v1", "config_id": arm, "primary_metric": "latency_ms"})
             )
-            (d / "predictions.jsonl").write_text(
+            _runstore.put_rows_text(
+                d,
                 "".join(
                     _json.dumps({"item_id": f"i{k:02d}", "latency_ms": ms + k / 100}) + "\n"
                     for k in range(20)
-                )
+                ),
             )
         r = subprocess.run(
             [PY, str(HERE / "rank_stability.py"), "--dataset-id", "rd_v1", "--draws", "20"],
@@ -2293,10 +2378,11 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
                     }
                 )
             )
-            (d / "predictions.jsonl").write_text(
+            _runstore.put_rows_text(
+                d,
                 "\n".join(
                     json.dumps({"item_id": f"i{i}", "correct": float(c)}) for i, c in enumerate(correct_items)
-                )
+                ),
             )
 
         # Same mean (2 of 4), DIFFERENT items right. Two measurements.
@@ -2317,13 +2403,12 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
         for name, text in (("arm_a", "label: billing"), ("arm_b", "label: billing\nreason: a refund")):
             shutil.rmtree(root / name)
             make(name, f"model-{name}", [1, 1, 1, 1])
-            (root / name / "outputs").mkdir()
-            for i in range(4):
-                (root / name / "outputs" / f"i{i}.txt").write_text(text)
+            _outputs.write_all(root / name, {f"i{i}": text for i in range(4)}, [f"i{i}" for i in range(4)])
         dupes = vt._v5_in(root)
         check("V5: all items right, different outputs -> not flagged", not dupes, str(dupes)[:200])
-        for i in range(4):
-            (root / "arm_b" / "outputs" / f"i{i}.txt").write_text("label: billing")
+        _outputs.write_all(
+            root / "arm_b", {f"i{i}": "label: billing" for i in range(4)}, [f"i{i}" for i in range(4)]
+        )
         dupes = vt._v5_in(root)
         check("V5: all items right, the same outputs -> flagged", len(dupes) == 1, str(dupes)[:200])
 
@@ -2352,10 +2437,15 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
         shutil.rmtree(d, ignore_errors=True)
     try:
         shutil.copytree(src, runs / src.name)
-        # the run's outputs, as a person's labels promoted to gold (RFC-023: a reference is only promoted labels)
+        # the run's outputs, as a person's labels promoted to gold (RFC-023: a reference is only promoted labels):
+        # label-import reads a folder of <item_id>.txt, so they are written out as one first
+        as_labels = runs / "_as_labels"
+        as_labels.mkdir(parents=True, exist_ok=True)
+        for item, text in _outputs.outputs(src).items():
+            (as_labels / f"{item}.txt").write_text(text, encoding="utf-8")
         made = run(
             "scripts/label_import.py",
-            str((src / "outputs").relative_to(HERE.parent)),
+            str(as_labels.relative_to(HERE.parent)),
             "--dataset-id",
             "smoke_v1",
             "--set",
@@ -2646,9 +2736,9 @@ def test_family_test_cache_never_serves_a_stale_answer() -> None:
         d = root / f"{cid}_20260101T000000Z"
         d.mkdir(parents=True, exist_ok=True)
         (d / "metrics.json").write_text(json.dumps({"config_id": cid, "dataset_id": "tds"}), encoding="utf-8")
-        (d / "predictions.jsonl").write_text(
+        _runstore.put_rows_text(
+            d,
             "".join(json.dumps({"item_id": f"i{i}", "m": v}) + "\n" for i, v in enumerate(scores)),
-            encoding="utf-8",
         )
 
     with _tf.TemporaryDirectory() as td:
@@ -3307,11 +3397,9 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         )
         for arm, fam in (("arm_a", "gemma"), ("arm_b", "qwen")):
             d = data / "runs" / f"{arm}_20260101T000000Z"
-            (d / "outputs").mkdir(parents=True)
-            for i in ids:
-                (d / "outputs" / f"{i}.txt").write_text(f"{arm} summary of {i}\n")
-            (d / "predictions.jsonl").write_text(
-                "".join(_json.dumps({"item_id": i, "rouge1": 0.3}) + "\n" for i in ids)
+            _outputs.write_all(d, {i: f"{arm} summary of {i}\n" for i in ids}, list(ids))
+            _runstore.put_rows_text(
+                d, "".join(_json.dumps({"item_id": i, "rouge1": 0.3}) + "\n" for i in ids)
             )
             (d / "metrics.json").write_text(
                 _json.dumps(
@@ -3467,10 +3555,10 @@ def test_judge_score_runs_from_an_installed_package() -> None:
         task_ran = evh("judge-score", "--dataset-id", "jds_v1", "--scorer", "judge-task-v1", "--unvalidated")
         tjudged = data / "runs-judged" / "judge-task-v1"
         tvals = [
-            _json.loads(line)["judge_score_unvalidated"]
-            for f in sorted(tjudged.glob("arm_*/predictions.jsonl"))
-            for line in f.read_text().splitlines()
-            if line.strip()
+            r["judge_score_unvalidated"]
+            for d in sorted(tjudged.glob("arm_*"))
+            if _outputs.has_rows(d)
+            for r in _runstore.rows(d)
         ]
         tsets = [_json.loads(f.read_text()) for f in (data / "judging-sets").glob("jds_v1-*.json")]
         tverd = [

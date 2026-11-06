@@ -1,1 +1,0 @@
-[{"text": "Ruby", "type": "location"}, {"text": "Current TV", "type": "location"}]

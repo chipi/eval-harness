@@ -11,6 +11,7 @@
   "derived": {
     "at": "2026-10-25T13:39:55Z",
     "from": "cnn_gemma_s_n200_v1_20260926T073908Z",
+    "from_dir": "runs/cnn_gemma_s_n200_v1_20260926T073908Z",
     "kind": "judge",
     "with": {
       "judges": [

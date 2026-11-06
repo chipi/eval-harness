@@ -1,6 +1,0 @@
-[
-  {
-    "text": "Glendale",
-    "type": "location"
-  }
-]

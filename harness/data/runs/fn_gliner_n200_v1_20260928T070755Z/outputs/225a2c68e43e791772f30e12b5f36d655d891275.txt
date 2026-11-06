@@ -1,1 +1,0 @@
-[{"text": "In 1971", "type": "event"}, {"text": "she", "type": "person"}, {"text": "Islam", "type": "organization"}]

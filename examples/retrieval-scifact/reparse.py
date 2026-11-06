@@ -58,18 +58,23 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "examples" / "_shared"))
 sys.path.insert(0, str(ROOT / "harness"))  # the evaluation_harness package (a link to scripts/)
 
+from evaluation_harness import (  # noqa: E402
+    _outputs,
+    _store,
+)
 from evaluation_harness._fingerprint import seal  # noqa: E402
 from evaluation_harness._record import derived_record  # noqa: E402
+from evaluation_harness._runs import item_rows  # noqa: E402
 from retrieval import parse_ranking, score_ranking, scorer_sha256  # noqa: E402
 
 
 def qrels_for(refs: Path, item_id: str):
     f = refs / f"{item_id}.txt"
-    if not f.is_file():
+    if not _store.is_file(f):
         return None
     return {
         str(x["doc_id"]): int(x.get("score", 1))
-        for x in json.loads(f.read_text(encoding="utf-8"))
+        for x in json.loads(_store.read_text(f, encoding="utf-8"))
         if isinstance(x, dict) and x.get("doc_id") is not None
     }
 
@@ -82,25 +87,24 @@ def main() -> int:
     ap.add_argument("--refs", type=Path, default=ROOT / "harness/data/references/gold/scifact_200")
     args = ap.parse_args()
 
-    if not args.refs.is_dir() or not any(args.refs.glob("*.txt")):
+    if not _store.is_dir(args.refs) or not any(_store.glob(args.refs, "*.txt")):
         sys.exit(
             f"no references under {args.refs}.\n"
             f"  The corpus is gitignored; rebuild it first:\n"
             f"    python examples/retrieval-scifact/fetch.py"
         )
 
-    args.out.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(args.out, parents=True, exist_ok=True)
     changed_arms = 0
-    for d in sorted(args.runs.glob("*")):
+    for d in sorted(_store.glob(args.runs, "*")):
         mj = d / "metrics.json"
-        pj = d / "predictions.jsonl"
-        if not (mj.is_file() and pj.is_file()):
+        if not (_store.is_file(mj) and _outputs.has_rows(d)):
             continue
-        m = json.loads(mj.read_text(encoding="utf-8"))
+        m = json.loads(_store.read_text(mj, encoding="utf-8"))
         if m.get("dataset_id") != args.dataset_id:
             continue
 
-        rows = [json.loads(ln) for ln in pj.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        rows = list(item_rows(d))
         if not rows:
             continue
         has_llm = (rows[0].get("_meta") or {}).get("first_stage") is not None
@@ -156,10 +160,8 @@ def main() -> int:
                 scores[f"total_{k}"] = round(sum(vals), 8)
 
         run_dir = args.out / d.name
-        run_dir.mkdir(parents=True, exist_ok=True)
-        (run_dir / "predictions.jsonl").write_text(
-            "".join(json.dumps(r, sort_keys=True) + "\n" for r in new_rows), encoding="utf-8"
-        )
+        _store.mkdir(run_dir, parents=True, exist_ok=True)
+        _outputs.write_rows(run_dir, new_rows)
         new = derived_record(
             m,
             kind="reparse",
@@ -176,8 +178,8 @@ def main() -> int:
                 "fingerprint does not describe; see derived.with"
             )
             new["fingerprint"] = fp
-        (run_dir / "metrics.json").write_text(
-            json.dumps(new, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        _store.write_text(
+            run_dir / "metrics.json", json.dumps(new, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
         if moved:
             changed_arms += 1

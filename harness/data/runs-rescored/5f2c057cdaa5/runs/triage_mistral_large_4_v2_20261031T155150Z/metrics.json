@@ -12,6 +12,7 @@
   "derived": {
     "at": "2026-11-02T08:17:40Z",
     "from": "triage_mistral_large_4_v2_20261031T155150Z",
+    "from_dir": "runs/triage_mistral_large_4_v2_20261031T155150Z",
     "kind": "rescore",
     "with": {
       "adapter": "examples/triage-fleet/adapter.py",

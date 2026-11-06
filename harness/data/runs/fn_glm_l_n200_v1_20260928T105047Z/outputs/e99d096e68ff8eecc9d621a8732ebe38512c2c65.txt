@@ -1,4 +1,0 @@
-[
-  {"text": "1933", "type": "event"},
-  {"text": "Sanitarium", "type": "organization"}
-]

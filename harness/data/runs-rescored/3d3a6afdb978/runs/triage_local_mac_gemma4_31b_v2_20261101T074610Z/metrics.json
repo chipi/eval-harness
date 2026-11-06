@@ -12,6 +12,7 @@
   "derived": {
     "at": "2026-11-01T08:14:08Z",
     "from": "triage_local_mac_gemma4_31b_v2_20261101T074610Z",
+    "from_dir": "runs/triage_local_mac_gemma4_31b_v2_20261101T074610Z",
     "kind": "rescore",
     "with": {
       "adapter": "examples/triage-fleet/adapter.py",

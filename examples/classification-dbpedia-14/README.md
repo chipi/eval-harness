@@ -59,8 +59,8 @@ k. That is the fix for what AG News found: its first-k pilot slice was nested bu
 unrepresentative, and one arm read 0.35 there against 0.67 on the full set — about 3 SD.
 Here the same arm reads 0.625 and 0.707, which is 1.3 SE. Nested *and* representative.
 
-It also retries, with a separate backoff ladder for HTTP 429 and a `--delay` between
-requests.
+It reads the split through the harness's `huggingface` source: the Hub's parquet conversion at one pinned
+commit, each file checked against the sha256 the Hub lists.
 
 ### Licence
 

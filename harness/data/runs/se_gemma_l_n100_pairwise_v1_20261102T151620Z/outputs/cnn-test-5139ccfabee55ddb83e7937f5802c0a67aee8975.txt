@@ -1,1 +1,0 @@
-{"pairs": [{"a": 15, "b": 12, "better": 2}, {"a": 6, "b": 4, "better": 1}, {"a": 12, "b": 2, "better": 1}, {"a": 2, "b": 1, "better": 2}, {"a": 5, "b": 2, "better": 1}, {"a": 9, "b": 0, "better": 1}, {"a": 14, "b": 0, "better": 1}, {"a": 9, "b": 5, "better": 2}]}

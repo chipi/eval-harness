@@ -16,7 +16,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(0, str(HERE.parent))
 
-from evaluation_harness import _adapter  # noqa: E402
+from evaluation_harness import _adapter, _outputs  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness._runs import direction, item_rows, matrix, per_item, runs_on  # noqa: E402
 
@@ -25,10 +28,9 @@ def _run(base: Path, name: str, metrics: dict, rows: list, outputs: dict | None 
     d = base / name
     d.mkdir(parents=True)
     (d / "metrics.json").write_text(json.dumps(metrics), encoding="utf-8")
-    (d / "predictions.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    _runstore.put_rows_text(d, "".join(json.dumps(r) + "\n" for r in rows))
     for item, text in (outputs or {}).items():
-        (d / "outputs").mkdir(exist_ok=True)
-        (d / "outputs" / f"{item}.txt").write_text(text, encoding="utf-8")
+        _outputs.writer(d).add(item, text)
     return d
 
 
@@ -69,9 +71,7 @@ with tempfile.TemporaryDirectory() as tmp:
     )
     check("matrix: config_id -> item -> mean", set(matrix(runs, "f1")) == {"a", "b"})
 
-    (base / "a" / "predictions.jsonl").write_text(
-        '{"item_id": "i1", "f1": 0.9}\nnot json\n', encoding="utf-8"
-    )
+    _runstore.put_rows_text(base / "a", '{"item_id": "i1", "f1": 0.9}\nnot json\n')
     try:
         list(item_rows(base / "a"))
         raised = False
@@ -154,7 +154,7 @@ with tempfile.TemporaryDirectory() as tmp:
     )
 
     # The judge panel: real runs are judged on their own outputs, found where every command looks.
-    (base / "a" / "predictions.jsonl").write_text('{"item_id": "i1", "f1": 0.9}\n', encoding="utf-8")
+    _runstore.put_rows_text(base / "a", '{"item_id": "i1", "f1": 0.9}\n')
     from evaluation_harness import judge_panel as runner
 
     cands = runner._candidates_from({"runs_from": str(base), "dataset_id": "ds"})

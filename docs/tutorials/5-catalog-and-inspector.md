@@ -146,7 +146,7 @@ success_criteria:
   primary: {measure: overlap_f1, direction: higher}
   axes:
     speed: {limit: 500}                 # ms, on the p95: a slower arm is out
-    quality: {margin: 0.05}             # a contender if within 0.05 and not significantly different
+    quality: {margin: 0.05}             # a contender if shown no worse than the leader by more than 0.05
   strategy: balanced                    # or quality_first, or frugal
   tie_break: [cost, speed]
   guardrails:

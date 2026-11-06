@@ -1,6 +1,0 @@
-```json
-[
-  {"text": "Cold Harbor", "type": "location"},
-  {"text": "June 1–12", "type": "event"}
-]
-```

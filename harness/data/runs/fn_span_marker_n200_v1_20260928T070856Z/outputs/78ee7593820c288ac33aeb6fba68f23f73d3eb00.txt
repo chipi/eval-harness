@@ -1,1 +1,0 @@
-[{"text": "EDFL", "type": "organization"}, {"text": "Westmeadows", "type": "organization"}]

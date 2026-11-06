@@ -22,6 +22,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 from evaluation_harness._check import check, summary
 from evaluation_harness.stats import EXACT_UP_TO, fmt_p
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore
+
 ROOT = Path(__file__).resolve().parents[1]
 PY = sys.executable
 
@@ -67,7 +70,6 @@ def write_run(
     """Write a single run with metrics.json and predictions.jsonl."""
     run_dir = meta["runs"] / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "outputs").mkdir(exist_ok=True)
 
     # metrics.json with scores
     metrics = {
@@ -94,9 +96,9 @@ def write_run(
         row = {"item_id": item_id, **item_scores}
         pred_rows.append(json.dumps(row))
     if pred_rows:
-        (run_dir / "predictions.jsonl").write_text("\n".join(pred_rows) + "\n")
+        _runstore.put_rows_text(run_dir, "\n".join(pred_rows) + "\n")
     else:
-        (run_dir / "predictions.jsonl").write_text("")
+        _runstore.put_rows_text(run_dir, "")
 
 
 def write_reference(meta: dict, ref_type: str, dataset_id: str, items: dict) -> None:

@@ -378,9 +378,12 @@ def complete(prompt: str, params: dict[str, Any], *, role: str, max_tokens: int)
         raise ValueError(f"role {role!r} is not one of {ROLES}")
     found = problems(params, role)
     if found:
-        raise SystemExit(
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(
             "; ".join(found) + ". Set it in the project's .env or the environment; `evh env-check` "
-            "shows what each role reads."
+            "shows what each role reads.",
+            "not-configured",
         )
     params = {**params, "max_tokens": params.get("max_tokens", max_tokens)}
     return _SHAPES[SPECS[params["provider"]].shape](prompt, params, route(params, role))

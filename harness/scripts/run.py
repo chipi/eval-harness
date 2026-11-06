@@ -33,13 +33,12 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import json
-import os
 import sys
 import time
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _jsonout
+from evaluation_harness import _common, _jsonout, _outputs, _store
 from evaluation_harness._adapter import (
     calls_per_item,
     load_adapter,
@@ -53,6 +52,9 @@ from evaluation_harness._adapter import (
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     DATA,
+    EXIT_NOTHING,
+    EXIT_STOPPED,
+    EXIT_TRY_LATER,
     GOALS,
     MATERIALIZED,
     REFERENCES,
@@ -62,6 +64,7 @@ from evaluation_harness._common import (
     classify_metrics,
     die,
     env_float,
+    evh_prog,
     how,
     load_dataset,
     load_goals,
@@ -69,17 +72,16 @@ from evaluation_harness._common import (
     read_json,
     warn_if_ignored,
     write_json,
-    write_text_atomic,
 )
 from evaluation_harness._fingerprint import build_fingerprint
 from evaluation_harness._providers import secret_params
 from evaluation_harness._record import aggregate_scores, cut_off_items, run_record
-from evaluation_harness._retry import call_with_retries
+from evaluation_harness._retry import call_with_retries, is_transient
 
 try:
     import yaml
 except ImportError:  # pragma: no cover
-    die("pyyaml is required — pip install -r requirements.txt")
+    die("pyyaml is required — pip install -r requirements.txt", "missing-dependency")
 
 
 class _Resumed:
@@ -143,7 +145,7 @@ class _Resumed:
         # extras under `_extra` (empty when it has none), and exactly that is carried.
         self.extra: dict[str, float] = {
             k: float(v)
-            for k, v in prior["_extra"].items()
+            for k, v in (prior.get("_extra") or {}).items()  # none when the run resumed from kept no rows
             if isinstance(v, (int, float)) and not isinstance(v, bool)
         }
         self.meta: dict[str, Any] = dict(prior.get("_meta") or {})
@@ -186,6 +188,15 @@ class ServerUnreachable(RuntimeError):
     """An item's every model call failed because the server could not be reached."""
 
 
+class SystematicFailure(RuntimeError):
+    """Most items failed: an adapter or configuration error, not unlucky items, so the pass stops."""
+
+
+#: A failed item is scored and the pass goes on (A5, owner 2026-11-05), until failures are this many AND this share
+#: of the items called: then it is the adapter, not the items, and zeros would hide it.
+FAILED_STOP_COUNT, FAILED_STOP_SHARE = 5, 0.2
+
+
 def _unreachable(res: Any) -> str | None:
     """The error, when every call an adapter reports (`meta["calls"]`) failed reaching its server.
 
@@ -204,7 +215,7 @@ def _say_stopped(run_dir: Path, n_items: int, config: Any, exc: BaseException) -
     """What a run that stopped mid-pass left, and the two ways on: resume it, or delete it.
     A crash used to end in the adapter's traceback alone, the run directory stayed with no
     metrics.json, and the next `validate` failed V7 with nothing having said why."""
-    done = len(list((run_dir / "outputs").glob("*.txt"))) if (run_dir / "outputs").is_dir() else 0
+    done = _outputs.count(run_dir)
     what = "interrupted" if isinstance(exc, KeyboardInterrupt) else f"{type(exc).__name__}: {str(exc)[:160]}"
     print(
         f"\nSTOPPED: run {run_dir.name} stopped after {done} of {n_items} item(s) ({what}).\n"
@@ -228,9 +239,16 @@ def _reference_for(dataset_id: str) -> tuple[Path | None, str | None]:
     """
     for tier in ("gold", "silver"):
         d = REFERENCES / tier / dataset_id
-        if d.is_dir():
+        if _store.is_dir(d):
             return d, tier
     return None, None
+
+
+def _score_failure_of(adapter_path: Path | None) -> Any:
+    """The adapter's score_failure(reference), when it defines one (A5): what a failed item scores."""
+    from evaluation_harness._adapter import _module_or_none  # noqa: PLC0415
+
+    return getattr(_module_or_none(adapter_path), "score_failure", None)
 
 
 def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[str, str]:
@@ -247,7 +265,8 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
     cap = params.get("capture")
     if not cap:
         die(
-            f"{cfg.get('config_id')}: provider recorded needs params.capture, the capture its outputs come from"
+            f"{cfg.get('config_id')}: provider recorded needs params.capture, the capture its outputs come from",
+            "bad-argument",
         )
     _doc, recs = load_capture(cap)
     by_id = {r["id"]: r for r in recs}
@@ -257,7 +276,8 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
     if not callable(hook) and not field:
         die(
             f"{cfg.get('config_id')}: a recorded arm reads each output with the adapter's recorded_output(record), "
-            "or from the record's field named by params.field; it has neither"
+            "or from the record's field named by params.field; it has neither",
+            "invalid-file",
         )
     out: dict[str, str] = {}
     missing = []
@@ -269,11 +289,12 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
         out[it["item_id"]] = str(hook(rec) if callable(hook) else (rec.get("fields") or {}).get(field, ""))
     if missing:
         die(
-            f"capture {cap} has no record for {len(missing)} item(s) of {cfg['dataset_id']}: {', '.join(missing[:8])}"
+            f"capture {cap} has no record for {len(missing)} item(s) of {cfg['dataset_id']}: {', '.join(missing[:8])}",
+            "not-found",
         )
     from evaluation_harness._common import CAPTURES  # noqa: PLC0415
 
-    params["capture_sha256"] = hashlib.sha256((CAPTURES / cap / "capture.json").read_bytes()).hexdigest()
+    params["capture_sha256"] = hashlib.sha256(_store.read_bytes(CAPTURES / cap / "capture.json")).hexdigest()
     print(f"  a recorded arm: {len(out)} output(s) read from the capture {cap}, no system called")
     return out
 
@@ -335,21 +356,24 @@ def one_pass(
     scored_against: tuple[Path | None, str | None] | None = None,
     recorded: dict[str, str] | None = None,
     primary: str | None = None,
+    score_failure: Any = None,
 ) -> dict[str, Any]:
-    """One pass over the dataset. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
+    """One pass over the dataset. ``score_failure`` is the adapter's optional score_failure(reference): what an item
+    whose call failed scores (A5); without it, an empty answer's score. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
     --labels; by default the dataset's gold, else its silver. ``recorded`` ({item_id: output}) is a recorded arm's
     outputs, read from a capture: no system is called for them (RFC-023). ``call_system``/``score`` are INJECTED rather than
     imported at module scope, because which adapter runs is a property of the arm now. ``primary`` names the metric
     each item's progress line shows."""
     mat = MATERIALIZED / ds["dataset_id"]
-    if not mat.is_dir():
+    if not _store.is_dir(mat):
         die(
             f"{ds['dataset_id']} is not materialized.\n"
             f"  "
             + how(
                 f"evh dataset-materialize --dataset-id {ds['dataset_id']}",
                 f"make dataset-materialize DATASET_ID={ds['dataset_id']}",
-            )
+            ),
+            "not-materialized",
         )
     params = dict(cfg.get("params") or {})
     params.setdefault("seed", idx)
@@ -361,6 +385,8 @@ def one_pass(
     cap = env_float("EVAL_MAX_COST_USD")
     capped_at: str | None = None
     n_replayed = 0
+    failed_items: list[dict[str, str]] = []
+    n_called = 0
     carried_keys: set = set()
 
     # WRITE EACH OUTPUT THE MOMENT IT EXISTS, not at the end of the pass.
@@ -371,10 +397,13 @@ def one_pass(
     # this directory, so the feature meant to rescue you had nothing to read: the two
     # failures compounded into "a crash costs you the entire arm".
     #
-    # The cost of writing incrementally is one small file per item. The cost of not
+    # The cost of writing incrementally is one synced line per item (RFC-024). The cost of not
     # doing it was measured in dollars.
     if live_dir is not None:
-        live_dir.mkdir(parents=True, exist_ok=True)
+        _store.mkdir(live_dir, parents=True, exist_ok=True)
+    live = _outputs.writer(live_dir) if live_dir is not None else None
+    # The previous attempt's outputs (RFC-024: its outputs.jsonl), read once.
+    prior_out = _outputs.outputs(resume_dir) if resume_dir is not None else {}
 
     n_items = len(ds["items"])
     every = progress_every(n_items)
@@ -390,8 +419,7 @@ def one_pass(
         # produced no prediction row and no score. A fully-resumed run therefore emitted
         # an empty `predictions.jsonl` and a metrics file with no scores in it, while
         # reporting success. The outputs were all present and none of them counted.
-        done = resume_dir / f"{item['item_id']}.txt" if resume_dir else None
-        resumed = done is not None and done.is_file()
+        resumed = item["item_id"] in prior_out
 
         if not resumed and cap is not None and spent >= cap:
             # Check BEFORE the call: the cap is a ceiling on spend, not a report of
@@ -401,11 +429,10 @@ def one_pass(
 
         rel = item.get("source_path") or item["item_id"]
         src = mat / rel
-        source_text = src.read_text(encoding="utf-8", errors="replace")
+        source_text = _store.read_text(src, encoding="utf-8", errors="replace")
 
         if resumed:
-            assert done is not None  # resumed means it is on disk
-            res: Any = _Resumed(done.read_text(encoding="utf-8"), (prior_rows or {}).get(item["item_id"]))
+            res: Any = _Resumed(prior_out[item["item_id"]], (prior_rows or {}).get(item["item_id"]))
         elif recorded is not None:
             from evaluation_harness.adapter import Result  # noqa: PLC0415
 
@@ -415,40 +442,72 @@ def one_pass(
             # to be the adapter's business, and one adapter simply had none -- so a
             # single upstream 429 discarded an arm mid-sweep along with the items
             # already paid for.
-            res = call_with_retries(
-                _timed(call_system),
-                (source_text, params),
-                extra_transient=extra_transient,
-                label=f"item {item['item_id'][:8]}",
-            )
+            n_called += 1
+            try:
+                res = call_with_retries(
+                    _timed(call_system),
+                    (source_text, params),
+                    extra_transient=extra_transient,
+                    label=f"item {item['item_id'][:8]}",
+                )
+            except SystemExit:
+                raise
+            except Exception as exc:  # an item's failure is recorded, not raised (A5)
+                if is_transient(exc, extra_transient):
+                    # The provider kept failing past every retry: weather, not this item. Stop, as for an
+                    # unreachable server, so --resume calls it again later.
+                    raise ServerUnreachable(
+                        f"item {item['item_id']}: the provider kept failing after its retries: {type(exc).__name__}: {exc}"
+                    ) from exc
+                failed_items.append(
+                    {"item_id": item["item_id"], "error": f"{type(exc).__name__}: {str(exc)[:300]}"}
+                )
+                print(f"      FAILED item {item['item_id'][:8]}: {type(exc).__name__}: {str(exc)[:160]}")
+                if len(failed_items) > FAILED_STOP_COUNT and len(failed_items) > FAILED_STOP_SHARE * n_called:
+                    raise SystematicFailure(
+                        f"{len(failed_items)} of the {n_called} items called failed (the last: "
+                        f"{failed_items[-1]['error']}): an adapter or configuration error, not the items"
+                    ) from exc
+                from evaluation_harness.adapter import Result  # noqa: PLC0415
+
+                res = Result(output="", cost_usd=None)
             if res.cost_usd:
                 spent += res.cost_usd
             unreachable = _unreachable(res)
             if unreachable:
                 # Before the output is written, so `--resume` calls this item again.
                 raise ServerUnreachable(f"item {item['item_id']}: every model call failed: {unreachable}")
+        failed = bool(failed_items) and failed_items[-1]["item_id"] == item["item_id"]
         outputs[item["item_id"]] = res.output
-        if live_dir is not None and not resumed:
-            # Atomic: `--resume` treats the presence of this file as proof the item is
-            # done, so a half-written one is replayed as the model's answer and scored.
-            write_text_atomic(live_dir / f"{item['item_id']}.txt", res.output)
+        # A failed item's output is not written: --resume calls it again.
+        if live is not None and not resumed and not failed:
+            # One synced line per item: `--resume` treats a complete line as proof the item is done, and a torn
+            # last line (a kill mid-append) as not done, so a half-written output is never replayed and scored.
+            live.add(item["item_id"], res.output)
 
         reference = None
         if ref_dir is not None:
             rf = ref_dir / f"{item['item_id']}.txt"
-            if rf.is_file():
-                reference = rf.read_text(encoding="utf-8", errors="replace")
+            if _store.is_file(rf):
+                reference = _store.read_text(rf, encoding="utf-8", errors="replace")
 
         # Pass the SOURCE when the scorer wants it. Facets that compare the output to the
         # INPUT — grounding, compression — cannot be computed from output+reference alone,
         # and a scorer asking for a third argument used to get None silently: the
         # hallucination check simply never ran and nothing said so.
-        scored = (
-            score(res.output, reference, source_text)
-            if score_wants_source(score)
-            else score(res.output, reference)
-        )
+        # A failed item scores as an empty answer (0 on most measures), or as the adapter's score_failure(reference)
+        # says when it has one: a failure never makes an arm look better.
+        if failed and score_failure is not None:
+            scored = score_failure(reference)
+        else:
+            scored = (
+                score(res.output, reference, source_text)
+                if score_wants_source(score)
+                else score(res.output, reference)
+            )
         row: dict[str, Any] = {"item_id": item["item_id"], **scored}
+        # 0/1 on every row: its mean is the share of the pass that failed.
+        row["failed"] = 1.0 if failed else 0.0
         # On EVERY row, not just the resumed ones: the aggregate averages only the rows
         # that carry a key, so a flag set on resumed items alone would report 1.0
         # whether one item was replayed or all of them. As 0/1 on every row its mean is
@@ -481,7 +540,7 @@ def one_pass(
         # THE ROW GOES TO DISK NOW, NOT AT THE END OF THE PASS.
         #
         # `predictions.jsonl` is written after one_pass RETURNS, so a crashed run has
-        # outputs/ and nothing else. Round 2 taught the resume path to carry each
+        # its outputs and nothing else. Round 2 taught the resume path to carry each
         # replayed item's cost, tokens and _meta forward -- from predictions.jsonl,
         # which by construction does not exist in the one case resume is for. So the
         # fix worked for a tidy re-run and not for a crash, and RUNBOOK said "a
@@ -491,10 +550,7 @@ def one_pass(
         # Appended per item, so a kill at item k leaves k rows. Not atomic-per-file
         # because it is an append, but a torn final line is discarded on read.
         if live_dir is not None and not resumed:
-            with (live_dir / "_rows.jsonl").open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps(row, sort_keys=True) + "\n")
-                fh.flush()
-                os.fsync(fh.fileno())
+            _outputs.append_partial(live_dir, row)
 
         if n % every == 0 or n == n_items:
             print(
@@ -547,6 +603,7 @@ def one_pass(
         "reference_tier": ref_tier,
         "capped_at": capped_at,
         "spent_usd": round(spent, 8),
+        "failed_items": failed_items,
     }
 
 
@@ -588,9 +645,9 @@ def _dry_run(
     items = ds["items"]
     mat = MATERIALIZED / ds["dataset_id"]
     item_chars = sum(
-        len((mat / (i.get("source_path") or i["item_id"])).read_text(errors="replace"))
+        len(_store.read_text(mat / (i.get("source_path") or i["item_id"]), errors="replace"))
         for i in items
-        if (mat / (i.get("source_path") or i["item_id"])).is_file()
+        if _store.is_file(mat / (i.get("source_path") or i["item_id"]))
     )
     # The prompt the config gives is sent with every item (the bundled adapter sends `prompt`, a blank line, the
     # item). An adapter that builds its own prompt elsewhere cannot be asked for it, so that part is not counted.
@@ -699,17 +756,17 @@ def _dry_run(
 def _resume_source(
     resume: str | None, cfg: dict[str, Any], runs: Path = RUNS
 ) -> tuple[Path | None, dict[str, dict[str, Any]]]:
-    """For `--resume <run_id>`: (its outputs directory, {item_id: its row}); (None, {}) without. The run is looked
+    """For `--resume <run_id>`: (its run directory, {item_id: its row}); (None, {}) without. The run is looked
     for in `runs` (the runs directory, or a label set's). Dies when the run cannot be resumed as this arm."""
     if not resume:
         return None, {}
-    resume_dir = runs / resume / "outputs"
-    if not resume_dir.is_dir():
-        die(f"cannot resume: no outputs under {resume_dir}")
+    resume_dir = runs / resume
+    if not _outputs.own(resume_dir):
+        die(f"cannot resume: no outputs in {resume_dir} (the {_common.store()} store)", "not-found")
 
     # RESUMING FROM ANOTHER ARM'S OUTPUTS WAS ACCEPTED WITHOUT A WORD.
     #
-    # `--resume` took a run id and read its outputs/ directory. Nothing compared that
+    # `--resume` took a run id and read its outputs. Nothing compared that
     # run's arm to the one being launched, so
     #   make run CONFIG=arm_glm_s.yaml ARGS="--resume <a qwen_s run>"
     # replayed qwen_s's answers, scored them, and recorded the whole thing as glm_s --
@@ -730,36 +787,45 @@ def _resume_source(
     src_id = runs / resume / "run.json"
     src_metrics = runs / resume / "metrics.json"
     ident = (
-        read_json(src_id) if src_id.is_file() else read_json(src_metrics) if src_metrics.is_file() else None
+        read_json(src_id)
+        if _store.is_file(src_id)
+        else read_json(src_metrics)
+        if _store.is_file(src_metrics)
+        else None
     )
     if ident is None:
         die(
             f"cannot resume: {resume} has neither run.json nor metrics.json, so the "
             f"arm that produced those outputs cannot be identified.\n"
             f"  Resuming anyway would replay whatever is in that directory and record it "
-            f"under {cfg.get('config_id')!r}."
+            f"under {cfg.get('config_id')!r}.",
+            "not-found",
         )
     if ident.get("config_id") and ident["config_id"] != cfg.get("config_id"):
         die(
             f"cannot resume: {resume} is arm {ident['config_id']!r}, "
             f"this config is {cfg.get('config_id')!r}.\n"
             f"  Resuming would replay another arm's answers and record them "
-            f"under this one."
+            f"under this one.",
+            "mismatch",
         )
     if ident.get("dataset_id") and ident["dataset_id"] != cfg.get("dataset_id"):
         die(
             f"cannot resume: {resume} ran on dataset "
             f"{ident['dataset_id']!r}, this config is on "
-            f"{cfg.get('dataset_id')!r}."
+            f"{cfg.get('dataset_id')!r}.",
+            "mismatch",
         )
 
     # THE PRIOR ROWS, so a replayed item keeps the cost, tokens, latency and _meta
-    # measured for it. `outputs/_rows.jsonl` is appended DURING the pass and so
+    # measured for it. The row checkpoint is appended DURING the pass and so
     # survives a crash; predictions.jsonl is the tidy-exit copy of the same thing.
-    for src in (runs / resume / "outputs" / "_rows.jsonl", runs / resume / "predictions.jsonl"):
-        if not src.is_file():
+    for partial in (True, False):
+        text = _outputs.rows_text(runs / resume, partial=partial)
+        if text is None:
             continue
-        for line in src.read_text(encoding="utf-8").splitlines():
+        src = runs / resume / (_outputs.ROWS if partial else _outputs.PREDICTIONS)
+        for line in text.splitlines():
             if not line.strip():
                 continue
             try:
@@ -770,7 +836,8 @@ def _resume_source(
                 if not isinstance(r.get("_extra"), dict):
                     die(
                         f"cannot resume: {src} has rows without `_extra`; it was not written "
-                        f"by this version of the harness"
+                        f"by this version of the harness",
+                        "invalid-file",
                     )
                 prior_rows.setdefault(r["item_id"], r)
     if not prior_rows:
@@ -783,7 +850,7 @@ def _resume_source(
 
 def main() -> int:
     """Run an arm config against a dataset."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--config", required=True, type=Path)
     ap.add_argument(
         "--labels",
@@ -820,9 +887,9 @@ def main() -> int:
 
 
 def _run(args: argparse.Namespace) -> int:
-    if not args.config.is_file():
-        die(f"no config at {args.config}")
-    cfg = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
+    if not _store.is_file(args.config):
+        die(f"no config at {args.config}", "not-found")
+    cfg = yaml.safe_load(_store.read_text(args.config, encoding="utf-8")) or {}
     # A config may name a model record (RFC-020, optional): its settings come from the record, under the
     # config's own params, so every arm of that model runs the way it was onboarded. With `deployment:` it
     # also names where it runs (RFC-021): the fingerprint takes the deployment's facts from the record.
@@ -831,7 +898,7 @@ def _run(args: argparse.Namespace) -> int:
     try:
         cfg = _models.resolve(cfg, DATA)
     except ValueError as exc:
-        die(f"{args.config}: {exc}")
+        die(f"{args.config}: {exc}", "invalid-file")
     call_system, score, adapter_id, adapter_path, warmup, model_fingerprint = load_adapter(
         cfg.get("adapter"), Path(args.config)
     )
@@ -842,7 +909,7 @@ def _run(args: argparse.Namespace) -> int:
     declared_kinds = metric_kinds(adapter_path)
     for required in ("config_id", "dataset_id"):
         if required not in cfg:
-            die(f"{args.config} is missing required key: {required}")
+            die(f"{args.config} is missing required key: {required}", "invalid-file")
     # A key written into the config would be copied into every run record (metrics.json), and
     # from there onto pages: refused, with the way that keeps it out.
     secrets = secret_params(dict(cfg.get("params") or {}))
@@ -850,15 +917,17 @@ def _run(args: argparse.Namespace) -> int:
         die(
             f"{args.config}: params {', '.join(secrets)} look like a credential written into the config. "
             "Put the key in the environment (.env) and name the variable with api_key_env, or let the "
-            "provider read its usual variable; a key in a config is copied into every run record."
+            "provider read its usual variable; a key in a config is copied into every run record.",
+            "not-configured",
         )
 
     # A config names the goal it answers (data/goals/<goal_id>.yaml). Refused before a cent is
     # spent when the goal does not exist: a run filed under a typo answers nothing.
-    if cfg.get("goal") and GOALS.is_dir() and cfg["goal"] not in load_goals():
+    if cfg.get("goal") and _store.is_dir(GOALS) and cfg["goal"] not in load_goals():
         die(
             f"{args.config}: goal {cfg['goal']!r} is not in {GOALS} "
-            f"(known: {', '.join(sorted(load_goals())) or 'none'})"
+            f"(known: {', '.join(sorted(load_goals())) or 'none'})",
+            "not-found",
         )
     # A config may name a round of its goal (ADR-0004, optional): refused before a cent is spent
     # when the round does not exist, is closed, or runs on another dataset.
@@ -870,7 +939,7 @@ def _run(args: argparse.Namespace) -> int:
 
     bad_hypothesis = _hypothesis.problems(cfg, args.config)
     if bad_hypothesis:
-        die(f"{args.config}: " + "; ".join(bad_hypothesis))
+        die(f"{args.config}: " + "; ".join(bad_hypothesis), "invalid-file")
     ds = load_dataset(cfg["dataset_id"])
     stamp = now().replace(":", "").replace("-", "")
     base_id = args.run_id or f"{cfg['config_id']}_{stamp}"
@@ -895,13 +964,14 @@ def _run(args: argparse.Namespace) -> int:
     coverage = None
     if ref_tier and ref_dir is not None:
         ids = [it["item_id"] for it in ds.get("items") or []]
-        have = sum(1 for i in ids if (ref_dir / f"{i}.txt").is_file())
+        have = sum(1 for i in ids if _store.is_file(ref_dir / f"{i}.txt"))
         coverage = {"items_with_reference": have, "items": len(ids)}
         if have == 0:
             die(
                 f"{ref_tier} references for {cfg['dataset_id']} are at {ref_dir}, but none of its "
                 f"{len(ids)} items has a file there (<item_id>.txt): nothing would be scored.\n"
-                "  Check the file names against the dataset's item ids."
+                "  Check the file names against the dataset's item ids.",
+                "mismatch",
             )
         if have < len(ids):
             print(
@@ -959,7 +1029,8 @@ def _run(args: argparse.Namespace) -> int:
         except Exception as exc:  # noqa: BLE001 - fail before spending, with the reason
             die(
                 f"warm-up failed for {cfg['config_id']}: {type(exc).__name__}: {exc}\n"
-                "  nothing was run and nothing was spent."
+                "  nothing was run and nothing was spent.",
+                "failed",
             )
         warmup_ms = round((time.perf_counter() - started) * 1000, 3)
         if warmup_ms < WARMUP_NOTHING_MS:
@@ -1006,7 +1077,8 @@ def _run(args: argparse.Namespace) -> int:
             "  --repeat N asks for N INDEPENDENT passes; --resume says replay what is\n"
             "  already on disk. Together, every repeat after the first replays the same\n"
             "  outputs and re-counts their cost.\n"
-            "  Resume the interrupted pass with --repeat 1, then run the rest."
+            "  Resume the interrupted pass with --repeat 1, then run the rest.",
+            "bad-argument",
         )
 
     resume_dir, prior_rows = _resume_source(args.resume, cfg, runs)
@@ -1038,12 +1110,15 @@ def _run(args: argparse.Namespace) -> int:
     # runs of one config started in the same second shared a directory, and the second wrote over the first, a
     # committed run included (2026-11-04). An id already taken: the next second's stamp; a --run-id taken: refused.
     def taken(base: str) -> bool:
-        return (runs / base).exists() or any((runs / f"{base}_r{i + 1}").exists() for i in range(args.repeat))
+        return _store.exists(runs / base) or any(
+            _store.exists(runs / f"{base}_r{i + 1}") for i in range(args.repeat)
+        )
 
     if args.run_id:
         if taken(base_id):
             die(
-                f"--run-id {base_id}: {runs / base_id} exists: a run is never written into another; name a new id"
+                f"--run-id {base_id}: {runs / base_id} exists: a run is never written into another; name a new id",
+                "would-overwrite",
             )
     else:
         for _ in range(30):
@@ -1052,7 +1127,10 @@ def _run(args: argparse.Namespace) -> int:
             time.sleep(1.0)
             base_id = f"{cfg['config_id']}_{now().replace(':', '').replace('-', '')}"
         else:
-            die(f"{runs}: every run id for {cfg['config_id']} in the last 30 seconds is taken; run again")
+            die(
+                f"{runs}: every run id for {cfg['config_id']} in the last 30 seconds is taken; run again",
+                "failed",
+            )
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
         run_dir = runs / run_id
@@ -1063,7 +1141,7 @@ def _run(args: argparse.Namespace) -> int:
         # returns, so a crashed run could not say which arm produced its outputs --
         # which made `--resume`'s arm guard unenforceable in the one case resume is
         # for. This is small, written first, and never rewritten.
-        (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
+        _store.mkdir(run_dir, parents=True, exist_ok=True)
         write_json(
             run_dir / "run.json",
             {
@@ -1082,32 +1160,33 @@ def _run(args: argparse.Namespace) -> int:
                 i,
                 resume_dir=resume_dir,
                 prior_rows=prior_rows,
-                live_dir=run_dir / "outputs",
+                live_dir=run_dir,
                 call_system=call_system,
                 score=score,
                 extra_transient=transient_markers(adapter_path),
+                score_failure=_score_failure_of(adapter_path),
                 scored_against=(ref_dir, ref_tier),
                 recorded=recorded,
                 primary=primary_metric(adapter_path, cfg.get("params") or {}),
             )
         except BaseException as exc:
             _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)
+            if isinstance(exc, SystematicFailure):
+                die(str(exc), "failed")
             if isinstance(exc, ServerUnreachable):
-                sys.exit(1)  # said above in full; a traceback adds nothing
+                sys.exit(EXIT_TRY_LATER)  # said above in full; a traceback adds nothing
             raise
-        run_dir.mkdir(parents=True, exist_ok=True)
-        write_text_atomic(
-            run_dir / "predictions.jsonl",
-            "".join(json.dumps(p, sort_keys=True) + "\n" for p in result["predictions"]),
+        _store.mkdir(run_dir, parents=True, exist_ok=True)
+        _outputs.write_rows(run_dir, result["predictions"])
+        # The outputs were appended as produced; the finished file is every output in dataset order, a resumed
+        # item's included (it came from the PREVIOUS run, and this one must be self-contained), a failed item's
+        # left out (not done: --resume calls it again). The row checkpoint goes: predictions.jsonl has the rows.
+        failed_ids = {f["item_id"] for f in result.get("failed_items") or []}
+        _outputs.finish(
+            run_dir,
+            {k: v for k, v in result["outputs"].items() if k not in failed_ids},
+            [it["item_id"] for it in ds.get("items") or []],
         )
-        # Outputs are already on disk -- written per item by `one_pass`. Rewriting them
-        # here only matters for a resumed pass, whose outputs came from the PREVIOUS
-        # run's directory and must be copied into this one so the run is self-contained.
-        (run_dir / "outputs").mkdir(parents=True, exist_ok=True)
-        for item_id, text in result["outputs"].items():
-            dest = run_dir / "outputs" / f"{item_id}.txt"
-            if not dest.is_file():
-                write_text_atomic(dest, text)
 
         metrics = run_record(
             run_id=run_id,
@@ -1156,6 +1235,7 @@ def _run(args: argparse.Namespace) -> int:
             # than only in the terminal: which extras came forward, and for how many
             # replayed items nothing could.
             resume=result.get("resume") or None,
+            failed_items=result.get("failed_items") or None,
             repeat_index=(i + 1) if args.repeat > 1 else None,
         )
         write_json(run_dir / "metrics.json", metrics)
@@ -1242,12 +1322,12 @@ def _run(args: argparse.Namespace) -> int:
         for d in empty:
             print(f"    {d.name}")
         print("  Nothing was measured. Raise EVAL_MAX_COST_USD, or check the adapter.")
-        return 1
+        return EXIT_NOTHING
     if capped:
-        # Distinct from 1 (nothing measured) so a caller can tell "stopped early with
-        # usable partial results" from "produced nothing".
-        print("\n  Stopped early by the cost cap — exit 2. Partial results above are kept.")
-        return 2
+        # Distinct from EXIT_NOTHING so a caller can tell "stopped early with usable partial
+        # results" from "produced nothing".
+        print(f"\n  Stopped early by the cost cap — exit {EXIT_STOPPED}. Partial results above are kept.")
+        return EXIT_STOPPED
     warn_if_ignored(runs)
     return 0
 

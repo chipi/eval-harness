@@ -41,6 +41,19 @@ Each check exists because its absence let a real defect through somewhere:
   V20 hypotheses     a config whose `hypothesis:` names no config that exists, a measure that is not one
                      of the arm's metrics, a direction that is not better, worse or no-worse, or a key
                      it lacks (ADR-0025)
+  V21 failure modes  a failure-mode list that breaks its schema, is not named by its id or names a mode
+                     twice (or `ok`, which a sheet reads as "nothing wrong"); a tag set whose dataset or
+                     list does not exist, that names a mode not in its list or an item not in its
+                     dataset, or whose count is not its tags' (PLAN_0.8.0 D1)
+  V22 dataset records a dataset whose stored version is not the one its lineage gives (MAJOR.MINOR:
+                     1.0 from nothing or a split, MINOR + 1 for added items, MAJOR + 1 for removed or
+                     changed ones), a split side naming a parent version that is not its parent's, or
+                     a licence not on evh licences' list (E2), a source block with a key or value
+                     outside its form, item rows without an item_url to fill (E1), or a card key
+                     that is not one of Croissant RAI's (E4)
+                     (PLAN_0.8.0 E3; `evh dataset-migrate` brings old records to the format)
+  V23 run outputs    a run still in the old layout (an outputs/ folder: `evh run-migrate`), or a derived
+                     run with no outputs of its own whose source run is not here (RFC-024)
 
 Exit 1 on any failure, so it can gate.
 
@@ -61,13 +74,16 @@ import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 
+from evaluation_harness import _store
 from evaluation_harness._common import (
     BASELINES,
     CAPTURES,
     CONFIGS,
     DATA,
     DATASETS,
+    EXIT_PROBLEMS,
     FIELDS,
     GOALS,
     MATERIALIZED,
@@ -76,6 +92,7 @@ from evaluation_harness._common import (
     SCHEMAS,
     THROWAWAY_RUNS,
     data_rel,
+    die,
     goal_policy,
     ignored_by_git,
     load_goals,
@@ -109,7 +126,15 @@ def policy() -> dict:
     project's own `runs-adjudicated` was never checked while six names it does not have were.
     """
     f = DATA / "validate.json"
-    return dict(read_json(f)) if f.is_file() else {}
+    if not _store.is_file(f):
+        return {}
+    doc = parsed(f)
+    if not isinstance(doc, dict):
+        die(
+            f"{data_rel(f)} does not parse as a JSON object: fix it, it says which checks this project runs",
+            "invalid-file",
+        )
+    return dict(doc)
 
 
 def committed_dirs() -> list[str]:
@@ -124,9 +149,14 @@ def committed_dirs() -> list[str]:
 def tracked_run_dirs() -> list[str]:
     """Every git-tracked <data>/runs* directory holding a run's metrics.json, and each
     runs-rescored/<scorer>/<source> (RFC-022)."""
-    tracked = subprocess.run(
-        ["git", "ls-files", data_rel(DATA)], cwd=ROOT, capture_output=True, text=True
-    ).stdout.split()
+    from evaluation_harness import _common as _c  # noqa: PLC0415
+
+    if _c.store() == "sqlite":  # RFC-025: what the database holds is the record git holds in the files store
+        tracked = [data_rel(p) for p in _store.rglob(DATA, "metrics.json")]
+    else:
+        tracked = subprocess.run(
+            ["git", "ls-files", data_rel(DATA)], cwd=ROOT, capture_output=True, text=True
+        ).stdout.split()
     prefix = data_rel(DATA).rstrip("/") + "/"
     names = set()
     for f in tracked:
@@ -147,6 +177,16 @@ def check(label: str, ok: object, detail: str = "") -> None:
         problems.append(label)
 
 
+def parsed(path: Path) -> Any:
+    """The JSON at `path`, or None when it does not parse. V1 names every dataset, run, baseline and capture
+    that does not; the checks after it skip such a file, and a check of any other kind of file reports it
+    itself. Read directly, one broken file ended `validate` in a traceback and none of the later checks ran."""
+    try:
+        return read_json(path)
+    except (OSError, ValueError):
+        return None
+
+
 def v1_schemas() -> None:
     """V1: every document matches its schema."""
     if jsonschema is None:
@@ -156,30 +196,34 @@ def v1_schemas() -> None:
     import yaml  # noqa: PLC0415
 
     pairs = [
-        (DATASETS.glob("*.json"), "dataset.schema.json"),
+        (_store.glob(DATASETS, "*.json"), "dataset.schema.json"),
         (
-            (r / "metrics.json" for _, r in all_runs() if (r / "metrics.json").is_file()),
+            (r / "metrics.json" for _, r in all_runs() if _store.is_file(r / "metrics.json")),
             "metrics.schema.json",
         ),
-        (BASELINES.glob("*.json"), "baseline.schema.json"),
-        (CONFIGS.glob("*.yaml"), "config.schema.json"),
-        ((DATA / "scorers").glob("*.yaml"), "scorer.schema.json"),
-        ((DATA / "judging-sets").glob("*.json"), "judging-set.schema.json"),
-        ((DATA / "judge-verdicts").glob("*/*/*/*.json"), "verdict.schema.json"),
-        ((DATA / "models").glob("*.yaml"), "model.schema.json"),
-        ((DATA / "profiles").glob("*.json"), "profile.schema.json"),
-        (CAPTURES.glob("*/capture.json"), "capture.schema.json"),
+        (_store.glob(BASELINES, "*.json"), "baseline.schema.json"),
+        (_store.glob(CONFIGS, "*.yaml"), "config.schema.json"),
+        (_store.glob(DATA / "scorers", "*.yaml"), "scorer.schema.json"),
+        (_store.glob(DATA / "judging-sets", "*.json"), "judging-set.schema.json"),
+        (_store.glob(DATA / "judge-verdicts", "*/*/*/*.json"), "verdict.schema.json"),
+        (_store.glob(DATA / "models", "*.yaml"), "model.schema.json"),
+        (_store.glob(DATA / "profiles", "*.json"), "profile.schema.json"),
+        (_store.glob(CAPTURES, "*/capture.json"), "capture.schema.json"),
     ]
     bad = 0
     n = 0
     for files, schema_name in pairs:
-        schema = json.loads((SCHEMAS / schema_name).read_text())
+        schema = json.loads(_store.read_text(SCHEMAS / schema_name))
         for f in files:
-            if not Path(f).is_file():
+            if not _store.is_file(Path(f)):
                 continue
             n += 1
             try:
-                doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.suffix == ".yaml" else read_json(f)
+                doc = (
+                    yaml.safe_load(_store.read_text(f, encoding="utf-8"))
+                    if f.suffix == ".yaml"
+                    else read_json(f)
+                )
                 jsonschema.validate(doc, schema)
             except jsonschema.ValidationError as exc:
                 bad += 1
@@ -193,15 +237,15 @@ def v1_schemas() -> None:
 def v2_dataset_ids() -> None:
     """V2: every run's dataset_id resolves to an existing dataset, and so does every dataset's
     `derived_from` (the version it was made from)."""
-    known = {p.stem for p in DATASETS.glob("*.json")}
+    known = {p.stem for p in _store.glob(DATASETS, "*.json")}
     dangling = []
     for label, run in all_runs():
         m = run / "metrics.json"
-        if m.is_file():
-            did = read_json(m).get("dataset_id")
+        if _store.is_file(m) and (doc := parsed(m)) is not None:
+            did = doc.get("dataset_id")
             if did not in known:
                 dangling.append(f"{label} -> {did}")
-    for p in sorted(DATASETS.glob("*.json")):
+    for p in sorted(_store.glob(DATASETS, "*.json")):
         try:
             parent = (read_json(p).get("derived_from") or {}).get("dataset_id")
         except ValueError:
@@ -222,8 +266,8 @@ def v3_provenance() -> None:
     missing = []
     for label, run in all_runs():
         m = run / "metrics.json"
-        if m.is_file():
-            b = read_json(m).get("build") or {}
+        if _store.is_file(m) and (doc := parsed(m)) is not None:
+            b = doc.get("build") or {}
             if b.get("ref", "unknown") == "unknown":
                 missing.append(label)
     for r in missing:
@@ -237,17 +281,19 @@ def v4_materialized() -> None:
     output says so by name: the check used to print `ok` for it, and for a copy that had lost
     files, which is green for something never looked at."""
     drifted, missing, unchecked, checked = [], [], [], 0
-    for ds_file in sorted(DATASETS.glob("*.json")):
-        ds = read_json(ds_file)
+    for ds_file in sorted(_store.glob(DATASETS, "*.json")):
+        ds = parsed(ds_file)
+        if not isinstance(ds, dict) or "dataset_id" not in ds:
+            continue  # V1 names it
         mat = MATERIALIZED / ds["dataset_id"]
-        if not mat.is_dir():
+        if not _store.is_dir(mat):
             unchecked.append(ds["dataset_id"])
             continue
         checked += 1
         for item in ds["items"]:
             rel = item.get("source_path") or item["item_id"]
             f = mat / rel
-            if not f.is_file():
+            if not _store.is_file(f):
                 missing.append(f"{ds['dataset_id']}/{rel}")
             elif sha256(f) != item["source_sha256"]:
                 drifted.append(f"{ds['dataset_id']}/{rel}")
@@ -282,15 +328,11 @@ _V5_RUN_PROPERTIES = (
 
 
 def _outputs_signature(run: Path) -> str:
-    """A digest of what a run wrote (outputs/<item>.txt, by name). Runs without outputs all
+    """A digest of what a run wrote (its outputs, by item: _outputs.signature). Runs without outputs all
     share one value: what they wrote cannot tell them apart, so it excuses nothing."""
-    outs = sorted((run / "outputs").glob("*.txt")) if (run / "outputs").is_dir() else []
-    if not outs:
-        return "<no-outputs>"
-    h = hashlib.sha256()
-    for f in outs:
-        h.update(f.name.encode() + b"\0" + f.read_bytes() + b"\x1e")
-    return h.hexdigest()
+    from evaluation_harness import _outputs  # noqa: PLC0415
+
+    return _outputs.signature(run)
 
 
 def _per_item_signature(run_name: str | Path) -> str:
@@ -301,16 +343,14 @@ def _per_item_signature(run_name: str | Path) -> str:
     predictions returns its own name, so it can never match another run -- an unreadable
     file is a reason to say nothing, not a reason to accuse.
     """
-    path = (
-        run_name / "predictions.jsonl"
-        if isinstance(run_name, Path)
-        else RUNS / run_name / "predictions.jsonl"
-    )
-    if not path.is_file():
-        return f"<no-predictions:{run_name}>"
+    from evaluation_harness import _outputs  # noqa: PLC0415
+
     rows = []
     try:
-        for line in path.read_text(encoding="utf-8").splitlines():
+        text = _outputs.rows_text(run_name if isinstance(run_name, Path) else RUNS / run_name)
+        if text is None:
+            return f"<no-predictions:{run_name}>"
+        for line in text.splitlines():
             if not line.strip():
                 continue
             row = json.loads(line)
@@ -341,10 +381,9 @@ def v5_duplicate_scores() -> None:
 
 def _v5_in(base: Path) -> list[list]:
     by_key = defaultdict(list)
-    for run in sorted(base.iterdir()):
+    for run in sorted(_store.iterdir(base)):
         m = run / "metrics.json"
-        if m.is_file():
-            d = read_json(m)
+        if _store.is_file(m) and (d := parsed(m)) is not None:
             # Compare what the arm PRODUCED. A fabricated or copy-pasted result differs in
             # latency like any other, so keying on it let exactly the case this check exists
             # for slip through.
@@ -389,20 +428,22 @@ def v6_baselines() -> None:
     from evaluation_harness.promote_baseline import carried  # noqa: PLC0415
 
     broken = []
-    for b in sorted(BASELINES.glob("*.json")):
-        d = read_json(b)
+    for b in sorted(_store.glob(BASELINES, "*.json")):
+        d = parsed(b)
+        if not isinstance(d, dict):
+            continue  # V1 names it
         src = next(
             (
                 base / d.get("promoted_from", "")
                 for base in run_bases()
-                if (base / d.get("promoted_from", "")).is_dir()
+                if _store.is_dir(base / d.get("promoted_from", ""))
             ),
             None,
         )
         if src is None:
             broken.append(f"{b.name} -> {d.get('promoted_from')}: no such run")
             continue
-        m = read_json(src / "metrics.json") if (src / "metrics.json").is_file() else {}
+        m = (parsed(src / "metrics.json") or {}) if _store.is_file(src / "metrics.json") else {}
         for k, v in carried(m).items():
             if d.get(k) != v:
                 broken.append(f"{b.name}: {k} is {d.get(k)!r}, its run records {v!r}")
@@ -422,7 +463,7 @@ def run_bases() -> list[Path]:
     out, seen = [], set()
     for base in [RUNS, *(DATA / d for d in committed_dirs())]:
         key = base.resolve()
-        if base.is_dir() and key not in seen:
+        if _store.is_dir(base) and key not in seen:
             seen.add(key)
             out.append(base)
     return out
@@ -433,7 +474,7 @@ def all_runs() -> list[tuple[str, Path]]:
     out = []
     for base in run_bases():
         prefix = "" if base.resolve() == RUNS.resolve() else f"{base.name}/"
-        out += [(f"{prefix}{r.name}", r) for r in sorted(base.iterdir()) if r.is_dir()]
+        out += [(f"{prefix}{r.name}", r) for r in sorted(_store.iterdir(base)) if _store.is_dir(r)]
     return out
 
 
@@ -471,6 +512,11 @@ def v7_committed_runs_are_readable() -> None:
     Checked against the INDEX rather than the working tree: an in-progress run on disk
     is fine and expected, a committed one is not.
     """
+    from evaluation_harness import _common as _c  # noqa: PLC0415
+
+    if _c.store() == "sqlite":  # RFC-025: nothing under data/ is in git; the database is the record
+        print("  --   V7 committed runs (the sqlite store: nothing under data/ is in git)")
+        return
     have = _tracked_runs(RUNS)
     bad = sorted(r for r, files in have.items() if "metrics.json" not in files)
 
@@ -479,7 +525,7 @@ def v7_committed_runs_are_readable() -> None:
     # and nothing validated them at all. Found by external review.
     for extra in committed_dirs():
         base = DATA / extra
-        if not base.is_dir() or base.resolve() == RUNS.resolve():
+        if not _store.is_dir(base) or base.resolve() == RUNS.resolve():
             continue
         seen = _tracked_runs(base)
         bad += [f"{extra}/{r}" for r, files in sorted(seen.items()) if "metrics.json" not in files]
@@ -505,6 +551,11 @@ def v9_no_committed_evidence_is_missing() -> None:
     Floors as well as presence: a directory could be emptied one run at a time and each
     individual absence explained away.
     """
+    from evaluation_harness import _common as _c  # noqa: PLC0415
+
+    if _c.store() == "sqlite":  # RFC-025: nothing under data/ is in git; the database is the record
+        print("  --   V9 committed run files (the sqlite store: nothing under data/ is in git)")
+        return
     #: What each committed runs directory must contain. Raising one of these is a
     #: deliberate edit; lowering one should need an argument.
     #: `runs-linux` is here because it was NOT, and nothing else reached it either: the
@@ -555,25 +606,31 @@ def v9_no_committed_evidence_is_missing() -> None:
         if len(parts) < 3:
             continue
         seen.setdefault(f"{parts[0]}/{parts[1]}", set()).add(parts[2])
-        if not (ROOT / f).exists():
+        if not _store.exists(ROOT / f):
             missing.append(f)
     # PRESENCE IS NOT CONTENT. `: > predictions.jsonl` left the file tracked, present
     # and zero bytes, and V9 said "every committed run file is present on disk" while
     # the arm-row scan read `metrics.json` and reported 53/53. The evidence a run IS is
     # its rows; a run whose rows are gone is deleted whatever the directory listing
     # says. Found by external review, round 5.
+    from evaluation_harness import _outputs  # noqa: PLC0415
+
     for key, files in sorted(seen.items()):
         if "metrics.json" not in files:
             continue  # V7's business, not this one
-        if "predictions.jsonl" not in files:
+        if _outputs.PREDICTIONS not in files:
             incomplete.append(f"{key} has no predictions.jsonl")
             continue
-        _pj = DATA / key / "predictions.jsonl"
         _mj = DATA / key / "metrics.json"
-        if not _pj.is_file() or not _mj.is_file():
+        try:
+            _text = _outputs.rows_text(DATA / key)
+        except (OSError, ValueError):
+            incomplete.append(f"{key} predictions.jsonl is unreadable")
+            continue
+        if _text is None or not _store.is_file(_mj):
             continue  # already counted as missing above
         try:
-            _rows = sum(1 for _l in _pj.read_text(encoding="utf-8").splitlines() if _l.strip())
+            _rows = sum(1 for _l in _text.splitlines() if _l.strip())
             _want = int(read_json(_mj).get("n_items") or 0)
         except (OSError, ValueError, TypeError):
             incomplete.append(f"{key} predictions.jsonl is unreadable")
@@ -598,7 +655,7 @@ def v9_no_committed_evidence_is_missing() -> None:
     short = []
     for name, floor in sorted(FLOORS.items()):
         base = DATA / name
-        n = len(list(base.glob("*/metrics.json"))) if base.is_dir() else 0
+        n = len(list(_store.glob(base, "*/metrics.json"))) if _store.is_dir(base) else 0
         if n < floor:
             short.append(f"{name}: {n} runs, expected at least {floor}")
     for x in short:
@@ -657,9 +714,9 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
 
     for directory, pat, path, modfile, fn in SOURCES:
         base = DATA / directory
-        if not base.is_dir():
+        if not _store.is_dir(base):
             continue
-        runs = sorted(base.glob(f"{pat}/metrics.json"))
+        runs = sorted(_store.glob(base, f"{pat}/metrics.json"))
         if not runs:
             continue
         # By path, never by `import adapter`: every example's adapter is `adapter.py`, so a
@@ -685,7 +742,10 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
             current = {path[-1]: current[path[-1]]}  # the run names ONE of them
         checked, stale, silent, keys = 0, [], [], set()
         for mj in runs:
-            rec = _dig(read_json(mj), path)
+            doc = parsed(mj)
+            if doc is None:
+                continue  # V1 names it
+            rec = _dig(doc, path)
             if rec is None:
                 silent.append(mj.parent.name)
                 continue
@@ -764,12 +824,12 @@ def v8_no_duplicate_config_ids() -> None:
 
     bad = []
     for base in [(DATA / n) for n in COMMITTED]:
-        if not base.is_dir():
+        if not _store.is_dir(base):
             continue
         groups: dict = {}
-        for mj in sorted(base.glob("*/metrics.json")):
+        for mj in sorted(_store.glob(base, "*/metrics.json")):
             try:
-                m = json.loads(mj.read_text(encoding="utf-8"))
+                m = json.loads(_store.read_text(mj, encoding="utf-8"))
             except (OSError, ValueError):
                 continue
             key = (m.get("dataset_id"), m.get("config_id"))
@@ -805,9 +865,9 @@ def judging_set_problems(sets_dir: Path) -> list[str]:
     from evaluation_harness import judge_score as js  # noqa: PLC0415
 
     bad = []
-    for f in sorted(sets_dir.glob("*.json")):
+    for f in sorted(_store.glob(sets_dir, "*.json")):
         try:
-            m = json.loads(f.read_text(encoding="utf-8"))
+            m = json.loads(_store.read_text(f, encoding="utf-8"))
         except (OSError, ValueError) as exc:
             bad.append(f"{f.name}: unreadable ({exc})")
             continue
@@ -828,13 +888,15 @@ def verdict_problems(verdicts_dir: Path, sets_dir: Path) -> list[str]:
     of it, a pass, and a block of that item and pass, and its `n` is that block's size."""
     bad = []
     sets: dict = {}
-    for f in sorted(verdicts_dir.glob("*/*/*/*.json")):
+    for f in sorted(_store.glob(verdicts_dir, "*/*/*/*.json")):
         scorer_dir, set_id = f.parts[-4], f.parts[-3]
         label = f"{scorer_dir}/{set_id}/{f.parent.name}/{f.name}"
         if set_id not in sets:
             sp = sets_dir / f"{set_id}.json"
             try:
-                sets[set_id] = json.loads(sp.read_text(encoding="utf-8")) if sp.is_file() else None
+                sets[set_id] = (
+                    json.loads(_store.read_text(sp, encoding="utf-8")) if _store.is_file(sp) else None
+                )
             except (OSError, ValueError):
                 sets[set_id] = None
         m = sets[set_id]
@@ -842,7 +904,7 @@ def verdict_problems(verdicts_dir: Path, sets_dir: Path) -> list[str]:
             bad.append(f"{label}: judging set {set_id} does not exist (or is unreadable)")
             continue
         try:
-            v = json.loads(f.read_text(encoding="utf-8"))
+            v = json.loads(_store.read_text(f, encoding="utf-8"))
         except (OSError, ValueError):
             bad.append(f"{label}: unreadable")
             continue
@@ -893,9 +955,9 @@ def reply_problems(rec: dict, fix: str = "") -> list[str]:
 def validation_record_problems(validation_dir: Path) -> list[str]:
     """The same rule for the judge-validation records (<scorer>/<set>/<judge>/*.json)."""
     bad = []
-    for f in sorted(validation_dir.glob("*/*/*/*.json")):
+    for f in sorted(_store.glob(validation_dir, "*/*/*/*.json")):
         try:
-            rec = json.loads(f.read_text(encoding="utf-8"))
+            rec = json.loads(_store.read_text(f, encoding="utf-8"))
         except (OSError, ValueError):
             bad.append(f"{f.relative_to(validation_dir)}: unreadable")
             continue
@@ -912,7 +974,7 @@ def scorer_problems(scorers_dir: Path) -> list[str]:
     bad = []
     from yaml import YAMLError as yaml_error  # noqa: PLC0415
 
-    for f in sorted(scorers_dir.glob("*.yaml")):
+    for f in sorted(_store.glob(scorers_dir, "*.yaml")):
         try:
             sc = js.load_scorer(f)
             if sc["scorer_id"] != f.stem:
@@ -932,6 +994,17 @@ def scorer_problems(scorers_dir: Path) -> list[str]:
             # Size 2 exercises the rewrite: at 16 a SummEval prompt is returned unchanged, so a
             # prompt with neither `{n}` nor its phrases would pass and fail only at run time.
             js.render_prompt(js.prompt_text(sc), 2)
+            # A rubric that changed says what it replaced and why (C3): the scorer it supersedes exists, the reason
+            # is a sentence, and a reason names what it supersedes.
+            if sc.get("supersedes"):
+                if not _store.is_file(scorers_dir / f"{sc['supersedes']}.yaml"):
+                    bad.append(f"{f.name}: supersedes {sc['supersedes']!r}, which is not a scorer here")
+                if len(str(sc.get("why") or "").split()) < 4:
+                    bad.append(
+                        f"{f.name}: supersedes {sc['supersedes']}: `why` must be a sentence, what changed and why"
+                    )
+            elif sc.get("why"):
+                bad.append(f"{f.name}: `why` without `supersedes`: name the scorer this one replaces")
         except SystemExit as exc:
             bad.append(f"{f.name}: does not load ({exc})")
         except (KeyError, TypeError, AttributeError, ValueError, yaml_error) as exc:
@@ -979,16 +1052,16 @@ def v13_judge_scorers_are_well_formed() -> None:
 def v14_goals() -> None:
     """Goals are what a number is FOR (ADR-0002). Optional until a project sets
     data/goals/policy.yaml `required_from`; from then on every new run must name one."""
-    if not GOALS.is_dir():
+    if not _store.is_dir(GOALS):
         print("  --   V14 goals (no data/goals/: goals are optional until a project adds them)")
         return
     import yaml  # noqa: PLC0415
 
     goals, bad = load_goals(), []
-    schema = json.loads((SCHEMAS / "goal.schema.json").read_text())
+    schema = json.loads(_store.read_text(SCHEMAS / "goal.schema.json"))
     # The file name is the goal's id; read from the files, since load_goals keys by goal_id.
-    for f in sorted(GOALS.glob("*.yaml")):
-        doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.name != "policy.yaml" else None
+    for f in sorted(_store.glob(GOALS, "*.yaml")):
+        doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) if f.name != "policy.yaml" else None
         if isinstance(doc, dict) and doc.get("goal_id") != f.stem:
             bad.append(f"goals/{f.name}: goal_id {doc.get('goal_id')!r} is not its file name")
     for gid, g in goals.items():
@@ -1016,14 +1089,14 @@ def v14_goals() -> None:
         if fmt and ok and fmt not in ok:
             bad.append(f"{where}: format {fmt!r} is not one goal {gid!r} accepts ({', '.join(sorted(ok))})")
 
-    for f in sorted(CONFIGS.glob("*.yaml")) if CONFIGS.is_dir() else []:
-        doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+    for f in sorted(_store.glob(CONFIGS, "*.yaml")) if _store.is_dir(CONFIGS) else []:
+        doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
         named(f"configs/{f.name}", doc if isinstance(doc, dict) else {})
     since = str(goal_policy().get("required_from") or "")
     unnamed, n_runs = [], 0
     filed: dict[str, list] = defaultdict(list)
     for label, run in all_runs():
-        m = read_json(run / "metrics.json") if (run / "metrics.json").is_file() else None
+        m = parsed(run / "metrics.json") if _store.is_file(run / "metrics.json") else None
         if not isinstance(m, dict):
             continue
         n_runs += 1
@@ -1032,8 +1105,9 @@ def v14_goals() -> None:
             filed[str(m["goal"])].append((run, m))
         if since and not m.get("goal") and str(m.get("created_at", ""))[:10] >= since:
             unnamed.append(label)
-    for b in sorted(BASELINES.glob("*.json")):
-        named(f"baselines/{b.name}", read_json(b))
+    for b in sorted(_store.glob(BASELINES, "*.json")):
+        if isinstance(doc := parsed(b), dict):
+            named(f"baselines/{b.name}", doc)
     bad += [f"runs/{r}: created on or after {since} and names no goal" for r in unnamed]
     # THE GOAL DECIDES DIRECTION (_runs.lower_is_better_on), so it must not contradict what its
     # runs record (the adapter's METRIC_DIRECTIONS, import-run --asc) or a metric known to go
@@ -1052,11 +1126,42 @@ def v14_goals() -> None:
             bad.append(
                 f"goals/{gid}.yaml: {measure} is a cost, speed or token count; higher-is-better contradicts it"
             )
+    # A goal's `cluster:` names a field the dataset's items carry: a typo would test item by item and say nothing.
+    for gid, g in goals.items():
+        for d in g.get("datasets") or []:
+            field = d.get("cluster")
+            if not field:
+                continue
+            ds = parsed(DATASETS / f"{d.get('dataset_id')}.json")
+            if not isinstance(ds, dict):
+                continue  # V2 or V1 names it
+            have = sum(
+                1 for it in ds.get("items") or [] if (it.get("fields") or {}).get(field) not in (None, "")
+            )
+            if not have:
+                bad.append(
+                    f"goals/{gid}.yaml: cluster {field!r} on {d['dataset_id']}: no item carries that field"
+                )
     for x in bad:
         print(f"       {x}")
+    # The margin decides who is a contender: on the strategy's default it is a choice nobody made for this goal.
+    from evaluation_harness.axes import STRATEGY_MARGINS, strategy_of  # noqa: PLC0415
+
+    for gid, g in goals.items():
+        crit = g.get("success_criteria") or {}
+        strategy = strategy_of(g)
+        if (
+            strategy != "quality_first"
+            and ((crit.get("axes") or {}).get("quality") or {}).get("margin") is None
+        ):
+            notes.append(
+                f"V14 goal {gid}: contenders are decided on {strategy}'s default margin, "
+                f"{STRATEGY_MARGINS.get(strategy, 0):.0%} of the leader: set success_criteria.axes.quality.margin "
+                "(in the measure's units) to choose it"
+            )
     # min_items: a note, not a failure. A dataset smaller than the goal's minimum can still
     # be measured; it cannot pick a winner, and the goal page says so.
-    sizes = {p.stem: len((read_json(p) or {}).get("items") or []) for p in DATASETS.glob("*.json")}
+    sizes = {p.stem: len((parsed(p) or {}).get("items") or []) for p in _store.glob(DATASETS, "*.json")}
     for gid, g in goals.items():
         need = (g.get("success_criteria") or {}).get("min_items")
         for d in g.get("datasets") or []:
@@ -1088,10 +1193,12 @@ def v15_item_fields() -> None:
     typo in a column name would be a new field nobody filters or groups by."""
     from evaluation_harness import _fields  # noqa: PLC0415
 
-    fieldsets = {p.stem: p for p in sorted(FIELDS.glob("*.yaml"))} if FIELDS.is_dir() else {}
-    with_fields = []
-    for ds_file in sorted(DATASETS.glob("*.json")):
-        ds = read_json(ds_file)
+    fieldsets = {p.stem: p for p in sorted(_store.glob(FIELDS, "*.yaml"))} if _store.is_dir(FIELDS) else {}
+    with_fields: list[Any] = []
+    for ds_file in sorted(_store.glob(DATASETS, "*.json")):
+        ds = parsed(ds_file)
+        if not isinstance(ds, dict):
+            continue  # V1 names it
         if ds.get("fieldset") or any("fields" in it for it in ds.get("items") or []):
             with_fields.append(ds)
     if not fieldsets and not with_fields:
@@ -1140,18 +1247,20 @@ def v16_references() -> None:
     from evaluation_harness._references import drift  # noqa: PLC0415
 
     base = DATA / "references"
-    dirs = [d for tier in ("gold", "silver") for d in sorted((base / tier).glob("*")) if d.is_dir()]
+    dirs = [
+        d for tier in ("gold", "silver") for d in sorted(_store.glob(base / tier, "*")) if _store.is_dir(d)
+    ]
     if not dirs:
         print("  --   V16 references (none)")
         return
-    schema = json.loads((SCHEMAS / "reference.schema.json").read_text()) if jsonschema else None
+    schema = json.loads(_store.read_text(SCHEMAS / "reference.schema.json")) if jsonschema else None
     bad: list[str] = []
     fetched = here = unchecked = 0
     for d in dirs:
         rel = d.relative_to(base).as_posix()
         mf_path = d / "manifest.json"
-        texts = any(d.glob("*.txt"))
-        if not mf_path.is_file():
+        texts = any(_store.glob(d, "*.txt"))
+        if not _store.is_file(mf_path):
             if texts:
                 # ADR-0022: a reference set is made only by promoting labels, with a record of where it came from.
                 unchecked += 1
@@ -1164,7 +1273,10 @@ def v16_references() -> None:
                     f"evh reference-manifest --reference-id {rel} --source <how it is built>"
                 )
             continue
-        mf = read_json(mf_path)
+        mf = parsed(mf_path)
+        if not isinstance(mf, dict):
+            bad.append(f"{rel}: manifest.json does not parse")
+            continue
         if schema is not None:
             bad += [
                 f"{rel}/manifest.json: {e.message[:90]}"
@@ -1198,7 +1310,7 @@ def v17_captures() -> None:
     named, not failed. One with some records and not others fails."""
     from evaluation_harness._importers import record_sha256  # noqa: PLC0415
 
-    caps = sorted(CAPTURES.glob("*/capture.json")) if CAPTURES.is_dir() else []
+    caps = sorted(_store.glob(CAPTURES, "*/capture.json")) if _store.is_dir(CAPTURES) else []
     if not caps:
         print("  --   V17 captures (none)")
         return
@@ -1206,17 +1318,22 @@ def v17_captures() -> None:
     n = 0
     unfetched = []
     for c in caps:
-        doc = read_json(c)
-        if doc.get("records") and not any((c.parent / "records").glob("*.json")):
+        doc = parsed(c)
+        if not isinstance(doc, dict):
+            continue  # V1 names it
+        if doc.get("records") and not any(_store.glob(c.parent / "records", "*.json")):
             unfetched.append(c.parent.name)
             continue
         for entry in doc.get("records") or []:
             n += 1
             rf = c.parent / "records" / f"{entry.get('id')}.json"
-            if not rf.is_file():
+            if not _store.is_file(rf):
                 bad.append(f"{c.parent.name}/{entry.get('id')}: record file missing")
                 continue
-            rec = read_json(rf)
+            rec = parsed(rf)
+            if not isinstance(rec, dict):
+                bad.append(f"{c.parent.name}/{entry.get('id')}: record file does not parse")
+                continue
             if rec.get("id") != entry.get("id") or record_sha256(rec) != entry.get("sha256"):
                 bad.append(f"{c.parent.name}/{entry.get('id')}: does not match the hash the capture recorded")
         if doc.get("n_records") != len(doc.get("records") or []):
@@ -1242,21 +1359,24 @@ def v19_label_sets() -> None:
 
     from evaluation_harness import _common  # noqa: PLC0415
 
-    found = sorted(_common.LABELS.glob("*/*/labels.json")) if _common.LABELS.is_dir() else []
+    found = sorted(_store.glob(_common.LABELS, "*/*/labels.json")) if _store.is_dir(_common.LABELS) else []
     if not found:
         print("  --   V19 label sets (none)")
         return
     bad: list[str] = []
     n = 0
     for lj in found:
-        doc = read_json(lj)
+        doc = parsed(lj)
         rel = f"{lj.parent.parent.name}/{lj.parent.name}"
-        if not (_common.DATASETS / f"{doc.get('dataset_id')}.json").is_file():
+        if not isinstance(doc, dict):
+            bad.append(f"{rel}: labels.json does not parse")
+            continue
+        if not _store.is_file(_common.DATASETS / f"{doc.get('dataset_id')}.json"):
             bad.append(f"{rel}: its dataset {doc.get('dataset_id')!r} does not exist")
         items = doc.get("items") or {}
         if doc.get("n_items") != len(items):
             bad.append(f"{rel}: n_items {doc.get('n_items')} but {len(items)} listed")
-        kept_out = doc.get("redistributed") is False and not any(lj.parent.glob("*.txt"))
+        kept_out = doc.get("redistributed") is False and not any(_store.glob(lj.parent, "*.txt"))
         for iid, row in items.items():
             n += 1
             tf = lj.parent / f"{iid}.txt"
@@ -1264,9 +1384,9 @@ def v19_label_sets() -> None:
                 kept_out
             ):  # its texts are kept out of git (labels.json says how to rebuild them): nothing to check
                 continue
-            if not tf.is_file():
+            if not _store.is_file(tf):
                 bad.append(f"{rel}/{iid}: label file missing")
-            elif hashlib.sha256(tf.read_bytes()).hexdigest() != row.get("sha256"):
+            elif hashlib.sha256(_store.read_bytes(tf)).hexdigest() != row.get("sha256"):
                 bad.append(f"{rel}/{iid}: differs from the sha256 the set recorded (a set is never edited)")
     for b in bad[:10]:
         print(f"       {b}")
@@ -1288,7 +1408,7 @@ def v20_hypotheses() -> None:
     ids = None
     for c in config_files():
         try:
-            cfg = yaml.safe_load(c.read_text(encoding="utf-8")) or {}
+            cfg = yaml.safe_load(_store.read_text(c, encoding="utf-8")) or {}
         except yaml.YAMLError:
             continue  # V1 names a config that does not parse
         if not isinstance(cfg, dict) or cfg.get("hypothesis") is None:
@@ -1302,6 +1422,190 @@ def v20_hypotheses() -> None:
     for b in bad[:10]:
         print(f"       {b}")
     check(f"V20 hypotheses — {found} config(s) with one, every one sound", not bad, f"{len(bad)} problem(s)")
+
+
+def v21_failure_modes() -> None:
+    """V21: the failure-mode lists are well formed, and every tag set names its dataset's items and its list's modes
+    (PLAN_0.8.0 D1). A tag set is never edited, so a mode removed from its list later shows here."""
+    import yaml  # noqa: PLC0415
+    from evaluation_harness import _tags  # noqa: PLC0415
+
+    lists = sorted(_store.glob(_tags.modes_root(), "*.yaml")) if _store.is_dir(_tags.modes_root()) else []
+    sets = sorted(_store.glob(_tags.tags_root(), "*/*/tags.json")) if _store.is_dir(_tags.tags_root()) else []
+    if not lists and not sets:
+        print("  --   V21 failure modes (none)")
+        return
+    schema = json.loads(_store.read_text(SCHEMAS / "failure-modes.schema.json")) if jsonschema else None
+    bad: list[str] = []
+    known: dict[str, set[str]] = {}
+    for f in lists:
+        rel = f"failure-modes/{f.name}"
+        try:
+            doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {}
+        except yaml.YAMLError as e:
+            bad.append(f"{rel}: does not parse ({str(e).splitlines()[0]})")
+            continue
+        if schema is not None:
+            errs = sorted(
+                jsonschema.Draft202012Validator(schema).iter_errors(doc), key=lambda e: list(e.path)
+            )
+            if errs:
+                bad.append(f"{rel}: {errs[0].message[:90]}")
+                continue
+        if not isinstance(doc, dict):
+            bad.append(f"{rel}: not a mapping")
+            continue
+        if doc.get("failure_modes_id") != f.stem:
+            bad.append(f"{rel}: failure_modes_id {doc.get('failure_modes_id')!r} is not its file name")
+        ids = [str(m.get("id")) for m in doc.get("modes") or [] if isinstance(m, dict)]
+        if len(set(ids)) != len(ids):
+            bad.append(f"{rel}: a mode is named twice")
+        if _tags.OK in ids:
+            bad.append(f"{rel}: a mode named `{_tags.OK}`, which a sheet reads as nothing wrong")
+        known[f.stem] = set(ids)
+    n = 0
+    for tj in sets:
+        doc = parsed(tj)
+        rel = f"tags/{tj.parent.parent.name}/{tj.parent.name}"
+        if not isinstance(doc, dict):
+            bad.append(f"{rel}: tags.json does not parse")
+            continue
+        ds = parsed(DATASETS / f"{doc.get('dataset_id')}.json")
+        if not isinstance(ds, dict):
+            bad.append(f"{rel}: its dataset {doc.get('dataset_id')!r} does not exist")
+            continue
+        modes = known.get(doc.get("failure_modes") or "")
+        if modes is None:
+            bad.append(f"{rel}: its failure modes {doc.get('failure_modes')!r} do not exist")
+            continue
+        items = {it.get("item_id") for it in ds.get("items") or []}
+        runs = doc.get("runs") or {}
+        tagged = sum(len(v) for v in runs.values())
+        n += tagged
+        if doc.get("n_tagged") != tagged:
+            bad.append(f"{rel}: n_tagged {doc.get('n_tagged')} but {tagged} listed")
+        for run, by_item in runs.items():
+            for iid, t in by_item.items():
+                if iid not in items:
+                    bad.append(f"{rel}/{run}/{iid}: not an item of {doc['dataset_id']}")
+                off = [m for m in t.get("modes") or [] if m not in modes]
+                if off:
+                    bad.append(f"{rel}/{run}/{iid}: {', '.join(off)} not a mode of {doc['failure_modes']}")
+    for b in bad[:10]:
+        print(f"       {b}")
+    check(
+        f"V21 failure modes — {len(lists)} list(s), {len(sets)} tag set(s), {n} tag(s) name known modes and items",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
+def v22_dataset_records() -> None:
+    """V22: each dataset's stored version is the one its lineage gives (PLAN_0.8.0 E3), so a hand-edited or
+    pre-0.8.0 version is caught; `evh dataset-migrate` writes the right ones."""
+    from evaluation_harness import _card, _dataset_version, _licences, _source  # noqa: PLC0415
+
+    docs = (
+        {f.stem: parsed(f) for f in sorted(_store.glob(DATASETS, "*.json"))}
+        if _store.is_dir(DATASETS)
+        else {}
+    )
+    docs = {k: v for k, v in docs.items() if isinstance(v, dict)}  # V1 names one that does not parse
+    if not docs:
+        print("  --   V22 dataset records (none)")
+        return
+
+    def version_of(i: str | None) -> str | None:
+        return (docs.get(i) or {}).get("version") if i else None
+
+    bad: list[str] = []
+    for i, d in docs.items():
+        want = _dataset_version.expected(d, version_of)
+        if d.get("version") != want:
+            bad.append(f"datasets/{i}.json: version {d.get('version')!r}, its lineage gives {want}")
+        if "source" in d:
+            bad += [f"datasets/{i}.json: {p}" for p in _source.problems(d["source"])]
+        if "card" in d:
+            bad += [f"datasets/{i}.json: {p}" for p in _card.problems(d["card"])]
+        if any("source_row" in it for it in d.get("items") or []) and "{row}" not in str(
+            (d.get("source") or {}).get("item_url") or ""
+        ):
+            bad.append(f"datasets/{i}.json: items carry source_row, but source.item_url has no {{row}}")
+        if "licence" in d and _licences.problem(str(d["licence"])):
+            bad.append(f"datasets/{i}.json: licence {d['licence']!r} is not on the list (evh licences)")
+        sp = d.get("split") or {}
+        if sp and sp.get("from") in docs and sp.get("from_version") != version_of(sp.get("from")):
+            bad.append(
+                f"datasets/{i}.json: split.from_version {sp.get('from_version')!r}, but {sp['from']} is "
+                f"{version_of(sp['from'])}"
+            )
+    for b in bad[:10]:
+        print(f"       {b}")
+    if bad:
+        print("       evh dataset-migrate writes the versions the lineage gives (--dry-run shows them first)")
+    check(
+        f"V22 dataset records — {len(docs)} dataset(s), each version its lineage's",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
+
+
+def v23_run_outputs() -> None:
+    """V23: every run's outputs can be read (RFC-024): none is left in the old layout (an outputs/ folder), and a
+    derived run without outputs of its own finds its source's. And the project is files or its database, never both
+    (RFC-025): with files no data/project.sqlite; with the database nothing under data/ on disk but it. The Configure
+    pages (`configure: true`) are only for the database."""
+    from evaluation_harness import _common, _outputs, _store  # noqa: PLC0415
+
+    bad: list[str] = []
+    db = DATA / _store.DB
+    _on, configure_problem = _common.configure_setting()
+    if configure_problem:
+        bad.append(
+            f"{configure_problem}: set store: sqlite (evh data-migrate --to sqlite), or remove configure"
+        )
+    if _common.store() == "files":
+        if _store.is_file(db):
+            bad.append(
+                f"{_store.DB} beside the files while the project's store is files: evh data-migrate --to files"
+            )
+    else:
+        on_disk = _store.stray_files()
+        if on_disk:
+            bad.append(
+                f"{len(on_disk)} file(s) under data/ on disk while the project's store is sqlite (first:"
+                f" {on_disk[0].relative_to(DATA)}): evh data-migrate --to sqlite"
+            )
+    runs = sorted(
+        {
+            d
+            for root in _store.glob(DATA, "runs*")
+            if _store.is_dir(root)
+            for depth in ("*", "*/*", "*/*/*")
+            for d in _store.glob(root, depth)
+            if _store.is_file(d / "metrics.json")
+        }
+    )
+    for d in runs:
+        rel = d.relative_to(DATA)
+        if _outputs.old_layout(d):
+            bad.append(f"{rel}: an outputs/ folder (the layout before 0.8.0): evh run-migrate")
+            continue
+        if _outputs.own(d):
+            continue
+        frm = _outputs._derived_from(d)
+        if frm and _outputs.source(d) is None:
+            bad.append(f"{rel}: a derived run with no outputs of its own, and its source {frm} is not here")
+    if not runs and not bad:
+        print("  --   V23 run outputs (no runs)")
+        return
+    for b in bad[:10]:
+        print(f"       {b}")
+    check(
+        f"V23 run outputs — {len(runs)} run(s), every one's outputs readable; the project in one store",
+        not bad,
+        f"{len(bad)} problem(s)",
+    )
 
 
 def config_files() -> list[Path]:
@@ -1321,12 +1625,12 @@ def v18_model_records() -> None:
     from evaluation_harness import _models  # noqa: PLC0415
 
     recs = {r.get("model_id") for r in _models.load(DATA)}
-    if not recs and not (DATA / "models").is_dir():
+    if not recs and not _store.is_dir(DATA / "models"):
         print("  --   V18 model records (none)")
         return
     bad = _models.problems(DATA)
     for c in config_files():
-        cfg = yaml.safe_load(c.read_text(encoding="utf-8")) or {}
+        cfg = yaml.safe_load(_store.read_text(c, encoding="utf-8")) or {}
         rid = cfg.get("model_record") if isinstance(cfg, dict) else None
         dep = cfg.get("deployment") if isinstance(cfg, dict) else None
         if dep and not rid:
@@ -1362,10 +1666,10 @@ def note_uncommitted_runs() -> None:
     """A note, never a failure: finished runs in a runs directory git ignores. They are on this disk only;
     a fresh clone, CI and the published catalog never see them, so a result kept there splits the record
     in two (the self-hosted triage runs sat in data/runs-local that way). Throwaway names are skipped."""
-    for d in sorted(DATA.glob("runs*")):
-        if not d.is_dir() or d.name.startswith(THROWAWAY_RUNS) or not ignored_by_git(d):
+    for d in sorted(_store.glob(DATA, "runs*")):
+        if not _store.is_dir(d) or d.name.startswith(THROWAWAY_RUNS) or not ignored_by_git(d):
             continue
-        n = sum(1 for r in d.iterdir() if (r / "metrics.json").is_file())
+        n = sum(1 for r in _store.iterdir(d) if _store.is_file(r / "metrics.json"))
         if n:
             notes.append(
                 f"{data_rel(d)}: {n} finished run(s) that git ignores, so they are not committed and no catalog "
@@ -1432,6 +1736,9 @@ def main() -> int:
         v18_model_records,
         v19_label_sets,
         v20_hypotheses,
+        v21_failure_modes,
+        v22_dataset_records,
+        v23_run_outputs,
         note_uncommitted_runs,
         note_round_scorers,
     ):
@@ -1440,7 +1747,7 @@ def main() -> int:
         print(f"\n  note: {n}")
     if problems:
         print(f"\nVALIDATION FAILED — {len(problems)} check(s): {', '.join(problems)}")
-        return 1
+        return EXIT_PROBLEMS
     print("\nVALIDATION PASSED")
     return 0
 

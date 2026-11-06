@@ -108,17 +108,23 @@ def render_prompt(base: str, n: int) -> str:
     a, b = "16 numbered summaries", "a list of 16 integers"
     if COUNT in base:
         if a in base or b in base:
-            raise SystemExit(
+            from evaluation_harness._common import die  # noqa: PLC0415
+
+            die(
                 f"the prompt has both {COUNT} and SummEval's fixed count phrases "
-                f"({a!r} / {b!r}); the phrases would keep saying 16. Use one or the other"
+                f"({a!r} / {b!r}); the phrases would keep saying 16. Use one or the other",
+                "invalid-file",
             )
         return base.replace(COUNT, str(n))
     if n == 16:
         return base
     if a not in base or b not in base:
-        raise SystemExit(
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(
             f"the prompt has no {COUNT} where the count goes, and not SummEval's two "
-            f"count phrases ({a!r}, {b!r}); it cannot be rendered for {n} outputs"
+            f"count phrases ({a!r}, {b!r}); it cannot be rendered for {n} outputs",
+            "invalid-file",
         )
     if n == 1:
         # Singular grammar, and an example showing one value per key: the 16-wide example
@@ -128,8 +134,11 @@ def render_prompt(base: str, n: int) -> str:
             '"fluency": [4, 4, ...], "relevance": [2, 3, ...]}'
         )
         if ex not in base:
-            raise SystemExit(
-                "the prompt no longer contains the example line this pass rewrites for one summary"
+            from evaluation_harness._common import die  # noqa: PLC0415
+
+            die(
+                "the prompt no longer contains the example line this pass rewrites for one summary",
+                "invalid-file",
             )
         return (
             base.replace(a, "1 numbered summary")

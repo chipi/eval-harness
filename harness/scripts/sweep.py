@@ -25,39 +25,41 @@ import subprocess
 import sys
 from pathlib import Path
 
-from evaluation_harness._common import CODE, ROOT, die
+from evaluation_harness import _store
+from evaluation_harness._common import CODE, EXIT_PARTLY, ROOT, die, evh_prog
 
 try:
     import yaml
 except ImportError:  # pragma: no cover
-    die("pyyaml is required — pip install -r requirements.txt")
+    die("pyyaml is required — pip install -r requirements.txt", "missing-dependency")
 
 
 def main() -> int:
     """Generate a parameter sweep configuration."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--configs", nargs="+", required=True, type=Path)
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--dry-run", action="store_true", help="cost it without calling anything")
     ap.add_argument("--sort", help="leaderboard metric")
     args = ap.parse_args()
 
-    configs = [c for c in args.configs if c.is_file()]
+    configs = [c for c in args.configs if _store.is_file(c)]
     if not configs:
-        die(f"no config files matched: {' '.join(str(c) for c in args.configs)}")
+        die(f"no config files matched: {' '.join(str(c) for c in args.configs)}", "not-found")
 
     # Every arm must sit on the SAME dataset, or the leaderboard is a list of
     # unrelated numbers. Refuse up front rather than producing one.
     datasets: dict = {}
     for c in configs:
-        cfg = yaml.safe_load(c.read_text(encoding="utf-8")) or {}
+        cfg = yaml.safe_load(_store.read_text(c, encoding="utf-8")) or {}
         datasets.setdefault(cfg.get("dataset_id"), []).append(c.name)
     if len(datasets) != 1:
         lines = "\n".join(f"    {d or '(missing)'}: {', '.join(n)}" for d, n in datasets.items())
         die(
             "REFUSED — the arms do not share one dataset_id:\n"
             + lines
-            + "\n  A leaderboard across datasets ranks nothing. Re-run the odd ones out."
+            + "\n  A leaderboard across datasets ranks nothing. Re-run the odd ones out.",
+            "mismatch",
         )
     dataset_id = next(iter(datasets))
 
@@ -90,7 +92,7 @@ def main() -> int:
     if args.sort:
         lb += ["--sort", args.sort]
     subprocess.run(lb, cwd=ROOT)
-    return 1 if failed else 0
+    return EXIT_PARTLY if failed else 0
 
 
 if __name__ == "__main__":

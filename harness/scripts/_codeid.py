@@ -20,6 +20,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from evaluation_harness import _store
+
 #: Module-level names that hold documentation, not behaviour: dropped before hashing.
 DOC_NAMES = frozenset({"METRIC_DESCRIPTIONS"})
 
@@ -108,7 +110,7 @@ def file_sha256(path: Path | None) -> str | None:
     if path is None:
         return None
     try:
-        data = Path(path).read_bytes()
+        data = _store.read_bytes(Path(path))
     except OSError:
         return None
     if Path(path).suffix != ".py":

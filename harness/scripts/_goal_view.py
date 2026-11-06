@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from fnmatch import fnmatchcase
 
+from evaluation_harness import _store
 from evaluation_harness.stats import fmt_p
 
 
@@ -43,6 +44,30 @@ def vs_text(v: dict | None) -> str:
     delta = "—" if v.get("delta") is None else f"{v['delta']:+.3f}"
     p = "" if v.get("p") is None else f", p {fmt_p(v['p'])}"
     return f"{delta}{p}, {v.get('verdict') or '—'}"
+
+
+def ni_text(t: dict | None) -> str:
+    """The contender test in a cell (ADR-0026): 'within 0.074: p 0.0105, Holm 0.0016, not shown' or 'too few (65)'."""
+    if not t:
+        return "—"
+    if t.get("verdict") == "too few":
+        need = t.get("floor")
+        unit = (
+            "effective units"
+            if t.get("effective") is not None and t.get("units") != t.get("effective")
+            else "units"
+        )
+        return f"too few ({t.get('effective') or t.get('units')} {unit}" + (
+            f", needs {need})" if need else ")"
+        )
+    if t.get("verdict") == "untestable":
+        return "untestable"
+    head = f"within {t['margin']:.4g}"
+    if t.get("p") is None:
+        return f"{head}: {t.get('verdict')}"
+    thr = t.get("holm_threshold")
+    shown = "shown" if t.get("holm") else "not shown"
+    return f"{head}: p {fmt_p(t['p'])}" + (f", Holm {fmt_p(thr)}" if thr is not None else "") + f", {shown}"
 
 
 def hypothesis_of(A, arm: str) -> dict | None:
@@ -81,7 +106,7 @@ def _metrics_json(run_dir) -> dict | None:
 
     f = Path(run_dir) / "metrics.json"
     try:
-        return json.loads(f.read_text(encoding="utf-8")) if f.is_file() else None
+        return json.loads(_store.read_text(f, encoding="utf-8")) if _store.is_file(f) else None
     except (OSError, ValueError):
         return None
 
@@ -147,6 +172,8 @@ def group_values(
                 "retired_in": retired.get(r["arm"]) or None,
                 "flags": list(r["flags"]) + dec["out"].get(r["arm"], []),
                 "vs_leader": vs[r["arm"]],
+                # The contender test (ADR-0026): verdict, method, p, its level and Holm threshold, the margin.
+                "noninferior": (dec["rows"][r["arm"]].get("quality") or {}).get("noninferior"),
                 "axes": {ax["name"]: dec["rows"][r["arm"]][ax["name"]] for ax in axes},
                 "hypothesis": hypotheses.get(r["arm"]),
             }

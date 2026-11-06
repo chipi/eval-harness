@@ -55,20 +55,27 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _hypothesis, _jsonout  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _hypothesis,
+    _jsonout,
+    _store,
+)
 from evaluation_harness._common import (  # noqa: E402
     RUNS,
     data_rel,
     dataset_item_ids,
     die,
+    evh_prog,
+    item_clusters,
     read_item_ids,
     scored_against_dir,
 )
 from evaluation_harness._runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
-from evaluation_harness.stats import EXACT_UP_TO, fmt_p, sign_flip_p  # noqa: E402
+from evaluation_harness.stats import EXACT_UP_TO, clustered, fmt_p, sign_flip_p  # noqa: E402
+from evaluation_harness.stats import noninferior as stats_noninferior  # noqa: E402
 
 
-def _round_values(dataset_id: str) -> Any:
+def _round_values(dataset_id: str, args: Any = None) -> Any:
     """values(config_id, metric) -> {item_id: value} as the round reads the arm (RFC-022): its latest re-score when
     one stands in for its runs. Read from data/runs alone, an arm scored before a measure existed had none, and a
     test the round itself had run (production's run on triage_cost) found 0 shared items."""
@@ -80,7 +87,14 @@ def _round_values(dataset_id: str) -> Any:
 
     def values(config_id: str, metric: str) -> dict:
         arm = read(dataset_id, config_id)
-        return dict((ca.scores(arm).get(metric) or {}).get("values") or {}) if arm else {}
+        sc = (ca.scores(arm).get(metric) or {}) if arm else {}
+        reduce = getattr(args, "reduce", None)
+        if reduce and reduce != "mean":
+            from evaluation_harness.stats import reduce_repeats  # noqa: PLC0415
+
+            per = sc.get("repeats") or {i: [v] for i, v in (sc.get("values") or {}).items()}
+            return {i: reduce_repeats(v, reduce) for i, v in per.items()}
+        return dict(sc.get("values") or {})
 
     return values
 
@@ -94,14 +108,17 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
 
     rnd = resolve(args.round, args.goal)
     if rnd["dataset_id"] != args.dataset_id:
-        die(f"round {args.round} is on {rnd['dataset_id']}, not {args.dataset_id}")
+        die(f"round {args.round} is on {rnd['dataset_id']}, not {args.dataset_id}", "mismatch")
     in_play = arms_of(rnd)
     goal = _common.load_goals().get(rnd["goal"]) or {}
+    # The goal's tests flip one sign per cluster: so does this one, unless --cluster names another field.
+    args.cluster = args.cluster or _common.goal_cluster(goal, args.dataset_id)
+    args.reduce = args.reduce or ((goal.get("success_criteria") or {}).get("primary") or {}).get("reduce")
     prim = (goal.get("success_criteria") or {}).get("primary") or {}
     args.metric = args.metric or prim.get("measure")
     for x in (args.a, args.b):
         if x and x not in in_play:
-            die(f"{x} is not in play in round {args.round} ({', '.join(in_play)})")
+            die(f"{x} is not in play in round {args.round} ({', '.join(in_play)})", "not-found")
     chose = not args.a
     if not args.a:
         means = {}
@@ -110,13 +127,13 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
             if v:
                 means[c] = statistics.fmean(v.values())
         if not means:
-            die(f"no arm in round {args.round} records {args.metric} yet")
+            die(f"no arm in round {args.round} records {args.metric} yet", "not-enough")
         args.a = (min if prim.get("direction") == "lower" else max)(means, key=lambda c: means[c])
     if not args.b:
         base = rnd.get("baseline")
         args.b = next((m["config_id"] for d, m in runs if d.name == base), None)
         if not args.b or args.b == args.a:
-            die(f"round {args.round} records no other baseline run: name --b")
+            die(f"round {args.round} records no other baseline run: name --b", "not-enough")
     print(f"  round {args.round}: {args.a}{' (its leader)' if chose else ''} against {args.b}")
     # The comparisons the leader could have been: every arm in play but B, whether or not B is in play.
     return chose, len([c for c in in_play if c != args.b])
@@ -138,7 +155,7 @@ def _hypothesis_of(args: argparse.Namespace, runs: list) -> dict | None:
     if found:
         return found
     path = _hypothesis.config_ids().get(args.a) if a_runs else None
-    cfg = yaml.safe_load(path.read_text(encoding="utf-8")) if path else None
+    cfg = yaml.safe_load(_store.read_text(path, encoding="utf-8")) if path else None
     if same((cfg or {}).get("hypothesis")):
         return {
             **(cfg or {})["hypothesis"],
@@ -175,17 +192,17 @@ def _reference_hashes(reference_id: str, items: list[str]) -> dict[str, str]:
     recorded: dict = {}
     for name, key in (("manifest.json", "items_sha256"), ("labels.json", "items")):
         f = root / name
-        if f.is_file():
+        if _store.is_file(f):
             try:
-                recorded = json.loads(f.read_text(encoding="utf-8")).get(key) or {}
+                recorded = json.loads(_store.read_text(f, encoding="utf-8")).get(key) or {}
             except ValueError:
                 recorded = {}
             break
     out: dict[str, str] = {}
     for i in items:
         t = root / f"{i}.txt"
-        if t.is_file():
-            out[i] = hashlib.sha256(t.read_bytes()).hexdigest()
+        if _store.is_file(t):
+            out[i] = hashlib.sha256(_store.read_bytes(t)).hexdigest()
             continue
         got = recorded.get(i)
         got = got.get("sha256") if isinstance(got, dict) else got
@@ -205,7 +222,8 @@ def _check_same_reference(args: argparse.Namespace, runs_a: list, runs_b: list, 
                 f"{arm} on {ds} records "
                 + (f"{len(got)} different references ({', '.join(sorted(got))})" if got else "no reference")
                 + ": a cross-version comparison needs the one reference each arm was scored against, to check "
-                "that it says the same on both sides"
+                "that it says the same on both sides",
+                "mismatch",
             )
         ids.append(next(iter(got)))
     ha, hb = (_reference_hashes(r, items) for r in ids)
@@ -213,21 +231,23 @@ def _check_same_reference(args: argparse.Namespace, runs_a: list, runs_b: list, 
     if unread:
         die(
             f"cannot compare the references item by item: {len(unread)} item(s) have no reference text or "
-            f"checksum in {ids[0]} or {ids[1]} (e.g. {', '.join(unread[:_NAMED])})"
+            f"checksum in {ids[0]} or {ids[1]} (e.g. {', '.join(unread[:_NAMED])})",
+            "not-enough",
         )
     differ = [i for i in items if ha[i] != hb[i]]
     if differ:
         die(
             f"the reference differs between {args.dataset_id} ({ids[0]}) and {args.b_dataset} ({ids[1]}) on "
             f"{len(differ)} of {len(items)} item(s), e.g. {', '.join(differ[:_NAMED])}: the score does not "
-            "mean the same on both sides, so this is not a paired comparison"
+            "mean the same on both sides, so this is not a paired comparison",
+            "mismatch",
         )
     return f"{ids[0]} / {ids[1]}"
 
 
 def main() -> int:
     """Test a pre-registered pair with sign-flip permutation."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--a", help="config_id of the arm under test (with --round: default its leader)")
     ap.add_argument(
@@ -251,6 +271,24 @@ def main() -> int:
         "--items",
         type=Path,
         help="file of item_ids (one per line); restrict the test to exactly these",
+    )
+    ap.add_argument(
+        "--cluster",
+        metavar="FIELD",
+        help="an item field whose items are not independent (one thread's comments): flip one sign per value of "
+        "it, so related items count once (with --round: default the goal's `cluster:`)",
+    )
+    ap.add_argument(
+        "--reduce",
+        default=None,
+        help="how an arm's repeats make one score per item: mean (the default), majority or at_least_K, for 0/1 "
+        "scores (with --round: default the goal's primary.reduce)",
+    )
+    ap.add_argument(
+        "--margin",
+        type=float,
+        help="also test whether A is no worse than B by more than this, in the metric's units: the contender test "
+        "goals use (one-sided non-inferiority; ADR-0026), for this one pair, uncorrected",
     )
     ap.add_argument("--permutations", type=int, default=20000)
     ap.add_argument(
@@ -296,11 +334,14 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     runs_b = []
     if cross:
         if args.b_dataset == args.dataset_id:
-            die(f"--b-dataset is {args.dataset_id} itself: drop it, both arms are on one dataset")
+            die(
+                f"--b-dataset is {args.dataset_id} itself: drop it, both arms are on one dataset",
+                "bad-argument",
+            )
         ids_a, ids_b = dataset_item_ids(args.dataset_id), dataset_item_ids(args.b_dataset)
         warn_on_ambiguous_runs(runs_dir, args.b_dataset, label=runs_dir.name)
         runs_b = runs_on(args.b_dataset, runs_dir=runs_dir)
-    values = _round_values(args.dataset_id) if args.round else None
+    values = _round_values(args.dataset_id, args) if args.round else None
     chose, candidates = False, None
     if args.round:
         chose, candidates = _round_defaults(args, runs, values)
@@ -317,7 +358,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
         if other != args.metric:
             die(
                 f"the two datasets' runs record different primary metrics ({args.dataset_id}: {args.metric}, "
-                f"{args.b_dataset}: {other}): name the one to test with --metric"
+                f"{args.b_dataset}: {other}): name the one to test with --metric",
+                "mismatch",
             )
     if cross:
         arm_a = [r for r in runs if r[1]["config_id"] == args.a]
@@ -328,9 +370,13 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             die(
                 f"{args.metric} is {'lower' if lower else 'higher'}-is-better for {args.a} on {args.dataset_id} "
                 f"but {'lower' if lower_b else 'higher'}-is-better for {args.b} on {args.b_dataset}: not one "
-                "metric (pass --asc or --desc to decide)"
+                "metric (pass --asc or --desc to decide)",
+                "mismatch",
             )
-        A, B = per_item(arm_a, args.metric), per_item(arm_b, args.metric)
+        A, B = (
+            per_item(arm_a, args.metric, reduce=args.reduce or "mean"),
+            per_item(arm_b, args.metric, reduce=args.reduce or "mean"),
+        )
         # A measure that is not stored per item (the goal computes it at re-score) is a missing metric, not an
         # item mismatch: say which side, what is stored, and how to get it (2026-11-04, the first real use).
         for arm, ds, got, rs in ((args.a, args.dataset_id, A, arm_a), (args.b, args.b_dataset, B, arm_b)):
@@ -339,15 +385,20 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
                 die(
                     f"{args.metric} is not stored per item in {arm}'s runs on {ds} (stored: {', '.join(stored)}). "
                     "A measure computed at re-score is stored only in the re-scored runs (`evh rescore`): "
-                    "point --runs-dir at them."
+                    "point --runs-dir at them.",
+                    "not-enough",
                 )
     else:
         lower = direction(runs, args.metric, args.asc, args.desc)
         if values is not None:
             A, B = values(args.a, args.metric), values(args.b, args.metric)
         else:
-            A = per_item([r for r in runs if r[1]["config_id"] == args.a], args.metric)
-            B = per_item([r for r in runs if r[1]["config_id"] == args.b], args.metric)
+            A = per_item(
+                [r for r in runs if r[1]["config_id"] == args.a], args.metric, reduce=args.reduce or "mean"
+            )
+            B = per_item(
+                [r for r in runs if r[1]["config_id"] == args.b], args.metric, reduce=args.reduce or "mean"
+            )
     items = sorted(set(A) & set(B))
     if args.exclude_dataset:
         prior = dataset_item_ids(args.exclude_dataset)
@@ -367,13 +418,17 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     if cross:
         shared = ids_a & ids_b
         if not shared:
-            die(f"{args.dataset_id} and {args.b_dataset} share no item id: they do not pair by item")
+            die(
+                f"{args.dataset_id} and {args.b_dataset} share no item id: they do not pair by item",
+                "mismatch",
+            )
         items = [i for i in items if i in shared]
         if len(items) < 3:
             die(
                 f"only {len(items)} item(s) exist in both {args.dataset_id} ({len(ids_a)} items) and "
                 f"{args.b_dataset} ({len(ids_b)} items; {len(shared)} ids shared) and are scored for both arms: "
-                "nothing to test"
+                "nothing to test",
+                "not-enough",
             )
         refs = _check_same_reference(args, arm_a, arm_b, items)
         ids_run_a = sorted({d.name for d, _m in arm_a})
@@ -395,14 +450,25 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             f"    does not           {_DOES_NOT}",
         ]
     elif len(items) < 3:
-        die(f"only {len(items)} shared item(s): nothing to test")
+        die(f"only {len(items)} shared item(s): nothing to test", "not-enough")
 
     deltas = [A[i] - B[i] for i in items]
     obs = statistics.fmean(deltas)
     wins = sum(1 for d in deltas if (d < 0 if lower else d > 0))
     ties = sum(1 for d in deltas if d == 0)
 
-    p = sign_flip_p(deltas, permutations=args.permutations, seed=args.seed)
+    units, n_units = deltas, len(deltas)
+    if args.cluster:
+        units, _sizes = clustered(
+            dict(zip(items, deltas, strict=True)), item_clusters(args.dataset_id, args.cluster)
+        )
+        n_units = len(units)
+        if n_units < 2:
+            die(
+                f"--cluster {args.cluster}: the {len(items)} items are {n_units} cluster: nothing to test",
+                "not-enough",
+            )
+    p = sign_flip_p(units, permutations=args.permutations, seed=args.seed)
     # BONFERRONI, not Holm. One pair cannot do Holm: the step-down procedure compares the
     # smallest p to alpha/m, the next to alpha/(m-1), and so on, which needs the whole
     # family's p-values at once. alpha/m applied to every member is the strictest step
@@ -420,9 +486,27 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
         + (" (lower is better)" if lower else "")
         + (f" ({ties} exact tie(s))" if ties else "")
     )
-    exact = len(items) <= EXACT_UP_TO
-    how = f"exact, all 2^{len(items)} sign patterns" if exact else f"{args.permutations} permutations"
+    exact = n_units <= EXACT_UP_TO
+    how = f"exact, all 2^{n_units} sign patterns" if exact else f"{args.permutations} permutations"
+    if args.cluster:
+        print(f"    clusters           {n_units} by {args.cluster}: items that share a value count as one")
     print(f"    sign-flip p        {fmt_p(p)}  ({how})")
+    ni = None
+    if args.margin is not None:
+        ni = stats_noninferior(
+            {i: A[i] for i in items},
+            {i: B[i] for i in items},
+            args.margin,
+            higher_is_better=not lower,
+            clusters=item_clusters(args.dataset_id, args.cluster) if args.cluster else None,
+        )
+        said = (
+            f"p {fmt_p(ni['p'])} at one-sided {ni['level']:g} ({ni['method']})"
+            if ni.get("p") is not None
+            else ni["method"] or ""
+        )
+        label = f"within {args.margin:g} of B"
+        print(f"    {label:<19}{ni['verdict']}" + (f", {said}" if said else ""))
     hyp = None if cross else _hypothesis_of(args, runs)
     in_advance = bool(hyp and hyp["named"] is True)
     chosen_note = (
@@ -488,6 +572,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             "metric": args.metric,
             "dataset_id": args.dataset_id,
             "n": len(items),
+            "cluster": args.cluster or None,
+            "clusters": n_units if args.cluster else None,
             "direction": "lower" if lower else "higher",
             "delta": obs,
             "wins": wins,
@@ -502,6 +588,7 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             "threshold": thresh,
             "verdict": verdict,
             "selection": "leader" if chose else "named",
+            "noninferior": ni,
             "candidates": candidates if chose else None,
             "hypothesis": {
                 "against": hyp["against"],

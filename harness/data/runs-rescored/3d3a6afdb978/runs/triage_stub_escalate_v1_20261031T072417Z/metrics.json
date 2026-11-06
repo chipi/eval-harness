@@ -11,6 +11,7 @@
   "derived": {
     "at": "2026-11-01T08:14:08Z",
     "from": "triage_stub_escalate_v1_20261031T072417Z",
+    "from_dir": "runs/triage_stub_escalate_v1_20261031T072417Z",
     "kind": "rescore",
     "with": {
       "adapter": "examples/triage-fleet/adapter.py",

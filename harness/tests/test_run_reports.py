@@ -21,7 +21,11 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-reports-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-reports", EVAL_MAX_RETRIES="0")
@@ -34,7 +38,7 @@ from types import SimpleNamespace
 
 def call_system(text, params):
     if params.get("fail_on") and params["fail_on"] in text and not os.path.exists(params["flag"]):
-        raise RuntimeError("the provider is down")
+        raise RuntimeError("503 Service Unavailable: the provider is down")
     if params.get("refuse_on") and params["refuse_on"] in text and not os.path.exists(params["flag"]):
         # an adapter that turns failed calls into an answer, as the triage fleet's replay does
         refused = {"error": "URLError: <urlopen error [Errno 111] Connection refused>"}
@@ -77,7 +81,7 @@ try:
 
     r = evh("run", "--config", config("plain"))
     run = next((proj / "data" / "runs").glob("plain_v1_*"), None)
-    rows = [json.loads(x) for x in (run / "predictions.jsonl").read_text().splitlines()] if run else []
+    rows = _runstore.rows(run) if run else []
     rows_plain = rows
     check(
         "the core times every call: latency_ms on each row, from an adapter that reports none",
@@ -105,6 +109,18 @@ try:
         and "or delete" in out,
         out[-600:],
     )
+    check(
+        "the stopped run keeps what its pass appended: the outputs done so far and their rows, no predictions.jsonl",
+        stopped is not None
+        and _outputs.count(stopped) >= 1
+        and _outputs.rows_text(stopped, partial=True) is not None
+        and len(_runstore.rows(stopped, partial=True)) == _outputs.count(stopped)
+        and not _outputs.has_rows(stopped),
+        (
+            _outputs.count(stopped) if stopped else None,
+            sorted(p.name for p in stopped.iterdir()) if stopped else None,
+        ),
+    )
     flag.write_text("1")
     r = evh("run", "--config", "data/configs/flaky.yaml", "--resume", stopped.name if stopped else "")
     check("resuming it finishes the run", r.returncode == 0, (r.stdout + r.stderr)[-300:])
@@ -122,7 +138,7 @@ try:
         and "Connection refused" in out
         and "Traceback" not in out
         and not (gone / "metrics.json").exists()
-        and "no decision" not in "".join(p.read_text() for p in (gone / "outputs").glob("*.txt")),
+        and "no decision" not in "".join(_outputs.outputs(gone).values()),
         out[-600:],
     )
     back.write_text("1")
@@ -130,14 +146,13 @@ try:
     # A resume is a run of its own (config id and the time it started), unless both start in the same second:
     # read the newest run of the arm, never assume it is the stopped one's directory.
     resumed = sorted((proj / "data" / "runs").glob("refused_v1_*"))[-1]
-    preds = resumed / "predictions.jsonl"
-    rows = [json.loads(x) for x in preds.read_text().splitlines()] if preds.is_file() else []
-    answers = list((resumed / "outputs").glob("*.txt"))
+    rows = _runstore.rows(resumed)
+    answers = list(_outputs.outputs(resumed).values())
     check(
         "resumed with the server back, the refused item is called again and every item is an answer",
         r.returncode == 0
         and len(rows) == len(rows_plain)
-        and all(p.read_text() != "no decision" for p in answers)
+        and all(a != "no decision" for a in answers)
         and len(answers) == len(rows_plain),
         ((r.stdout + r.stderr)[-300:], len(rows), len(rows_plain)),
     )

@@ -19,6 +19,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _store
+
 DIRECTIONS = ("better", "worse", "no-worse")
 KEYS = ("against", "measure", "direction", "statement", "items")
 REQUIRED = ("against", "measure", "direction", "statement")
@@ -40,7 +42,7 @@ def config_ids() -> dict[str, Path]:
     out: dict[str, Path] = {}
     for f in config_files():
         try:
-            doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+            doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
         except (OSError, yaml.YAMLError):
             continue
         if isinstance(doc, dict) and doc.get("config_id"):
@@ -62,10 +64,10 @@ def known_metrics(cfg: dict, config_path: Path | None) -> set[str]:
             if p.is_absolute()
             else [*([config_path.resolve().parent / p] if config_path else []), _common.ROOT / p]
         ):
-            if cand.is_file():
+            if _store.is_file(cand):
                 path = cand
                 break
-    elif (_common.ROOT / "adapter.py").is_file():
+    elif _store.is_file(_common.ROOT / "adapter.py"):
         path = _common.ROOT / "adapter.py"
     params = dict(cfg.get("params") or {})
     names: set[str] = set(_adapter.metric_kinds(path)) | set(_adapter.metric_directions(path))
@@ -129,7 +131,7 @@ def problems(cfg: dict, config_path: Path | None = None, ids: dict | None = None
                 if p.is_absolute()
                 else [*([config_path.resolve().parent / p] if config_path else []), _common.ROOT / p]
             )
-            if not any(c.is_file() for c in cands):
+            if not any(_store.is_file(c) for c in cands):
                 out.append(
                     f"hypothesis.items: no file {h['items']!r} (relative to the config, then the project)"
                 )

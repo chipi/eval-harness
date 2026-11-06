@@ -11,6 +11,7 @@
   "derived": {
     "at": "2026-11-02T16:17:08Z",
     "from": "cnn_glm_s_n200_v1_20260926T102344Z",
+    "from_dir": "runs/cnn_glm_s_n200_v1_20260926T102344Z",
     "kind": "judge",
     "with": {
       "judges": [

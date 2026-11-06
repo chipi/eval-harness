@@ -69,6 +69,7 @@
     "warmup_ms": {"type": ["number", "null"], "description": "The adapter's warm-up, kept out of the per-item latency."},
     "providers_seen": {"type": "object", "description": "Which upstream providers answered, and how often."},
     "resume": {"type": "object", "description": "What a resumed run replayed from the pass it resumed."},
+    "failed_items": {"type": "array", "items": {"type": "object", "required": ["item_id", "error"], "properties": {"item_id": {"type": "string"}, "error": {"type": "string"}}}, "description": "Items whose call failed (not transiently): scored as an empty answer or the adapter's score_failure, the pass went on (A5)."},
     "imported": {"type": "object", "description": "import-run: the source file and its coverage of the dataset."},
     "rescore_dropped_metrics": {"type": "array", "items": {"type": "string"}, "description": "rescore: metrics the source recorded and the current scorer no longer emits."},
     "source_created_at": {"type": "string", "description": "A derived run: when the run it was derived from was measured."},
@@ -79,6 +80,7 @@
       "properties": {
         "kind": {"enum": ["rescore", "judge", "reparse"]},
         "from": {"type": "string", "description": "The source run's directory name."},
+        "from_dir": {"type": "string", "description": "The source run's directory under the data directory (RFC-024): a derived run reads its outputs from there, and from no other run of the same name."},
         "at": {"type": "string"},
         "with": {"type": "object", "description": "What computed it: the adapter and scorer hashes (rescore), the judge scorer (judge), the parser (reparse)."},
         "source": {"type": "object", "description": "The source's own derived block, when it was itself derived."}

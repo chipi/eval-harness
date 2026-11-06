@@ -25,6 +25,9 @@ KIT = HERE.parent / "tutorial"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 PY = sys.executable
 KEEP = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_") and k != "COLUMNS"}
 
@@ -56,10 +59,11 @@ def write_run(proj: Path, name: str, config: str, scores: dict, extra: dict | No
         **(extra or {}),
     }
     (d / "metrics.json").write_text(json.dumps(m))
-    (d / "predictions.jsonl").write_text(
+    _runstore.put_rows_text(
+        d,
         "".join(
             json.dumps({"item_id": f"i{i}", "acc": scores["acc"], "cost_usd": 0.001}) + "\n" for i in range(4)
-        )
+        ),
     )
 
 
@@ -75,15 +79,15 @@ try:
         ("single", "arm_one_v1"),
     ):
         write_run(syn, name, cfg, {"acc": 0.5, "total_cost_usd": 0.004})
-        pj = syn / "data" / "runs" / name / "predictions.jsonl"
-        pj.write_text(
+        _runstore.put_rows_text(
+            syn / "data" / "runs" / name,
             "".join(
                 json.dumps(
                     {"item_id": f"i{i}", "acc": 0.5, "cost_usd": 0.001, "_meta": {"usage": {"cost": 0.001}}}
                 )
                 + "\n"
                 for i in range(4)
-            )
+            ),
         )
     r = evh(syn, "cost-report", "--dataset-id", "dsv")
     rows = [ln.split()[0:2] for ln in r.stdout.splitlines() if ln.strip().startswith("arm_")]
@@ -247,7 +251,7 @@ try:
         (one, none),
     )
 
-    line = rs.closing_line([("gold/x", "gold/x")]) + "evh goals"
+    line = " ".join((rs.closing_line([("gold/x", "gold/x")]) + "evh goals").split())
     check(
         "rescore: the closing line is a whole sentence ending with the command, for a re-score on the run's reference",
         "in place of its runs when every run of the arm was re-scored against the reference it was measured on."
@@ -256,13 +260,22 @@ try:
         and "Not in place" not in line,
         line,
     )
-    line = rs.closing_line([("gold/x", "silver/x"), ("gold/x", "silver/x")]) + "evh goals"
+    line = " ".join((rs.closing_line([("gold/x", "silver/x"), ("gold/x", "silver/x")]) + "evh goals").split())
     check(
         "rescore: a re-score on another reference says it is a table of its own and the old table is unchanged",
         "Not in place: 2 run(s) against silver/x, measured against gold/x." in line
         and "the table scored against the old one stays as it was" in line
         and line.endswith("evh goals"),
         line,
+    )
+    many: list[tuple[str | None, str]] = [
+        (f"gold/set_{i}_with_a_long_name", f"silver/set_{i}_with_a_long_name") for i in range(4)
+    ]
+    widths = [len(x) for x in rs.closing_line(many).splitlines()]
+    check(
+        "rescore: the closing lines are wrapped to 100 columns, however many references they name",
+        max(widths) <= 100 and len(widths) > 3,
+        widths,
     )
 
     check(
@@ -484,13 +497,13 @@ try:
         out(clean)[-500:],
     )
     cut_run = next((data / "runs").glob("tickets_lead1_v1_*"))
-    preds = [json.loads(x) for x in (cut_run / "predictions.jsonl").read_text().splitlines()]
+    preds = _runstore.rows(cut_run)
     preds[0].setdefault("_meta", {})["finish_reason"] = "length"
     preds[1]["tokens_out"] = 99
     cm = json.loads((cut_run / "metrics.json").read_text())
     cm.setdefault("params", {})["max_tokens"] = 99
     (cut_run / "metrics.json").write_text(json.dumps(cm))
-    (cut_run / "predictions.jsonl").write_text("".join(json.dumps(x) + "\n" for x in preds))
+    _runstore.put_rows_text(cut_run, "".join(json.dumps(x) + "\n" for x in preds))
     cutr = evh(proj, "rescore", "--dataset-id", "tickets_v1", "--out", str(proj / "rs_cut"))
     flat_cut = " ".join(cutr.stdout.split())
     check(
@@ -513,7 +526,7 @@ try:
         "rescore: ends with a whole sentence and the command, for the reference the runs were measured on",
         rsr.returncode == 0
         and "in place of its runs when every run of the arm was re-scored against the reference it was measured on."
-        in rsr.stdout
+        in " ".join(rsr.stdout.split())
         and rsr.stdout.rstrip().endswith(("See it with: evh goals", "See it with: make catalog")),
         rsr.stdout[-500:],
     )
@@ -605,5 +618,27 @@ try:
 finally:
     shutil.rmtree(syn, ignore_errors=True)
     shutil.rmtree(tutorial_proj, ignore_errors=True)
+
+# A judged table at 120 columns: each judge's own score stays beside the panel's, ahead of cost and speed (0.7.1
+# printed the panel's score, latency and cost, and named the judges "Not shown").
+from evaluation_harness import leaderboard as lbm  # noqa: E402
+
+os.environ["COLUMNS"] = "120"
+show = [
+    "judge_judge_a_unvalidated",
+    "judge_judge_b_unvalidated",
+    "judge_score_unvalidated",
+    "cost_usd",
+    "latency_ms",
+    "total_cost_usd",
+]
+kinds = {"cost_usd": "cost", "total_cost_usd": "cost", "latency_ms": "speed"}
+judged_rows = [{"config_id": f"tickets_arm{i}_v1", **dict.fromkeys(show, 3.25)} for i in range(4)]
+kept = lbm._fit_columns(show, judged_rows, kinds, "judge_score_unvalidated", False)
+check(
+    "leaderboard: a judged table keeps each judge's score beside the panel's, ahead of cost and speed",
+    {"judge_judge_a_unvalidated", "judge_judge_b_unvalidated", "judge_score_unvalidated"} <= set(kept),
+    kept,
+)
 
 sys.exit(summary())

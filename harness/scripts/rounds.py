@@ -31,7 +31,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _jsonout, _rounds
+from evaluation_harness import _common, _jsonout, _rounds, _store
 from evaluation_harness import catalog_serve as cs
 from evaluation_harness._common import die, load_goals, now, read_json
 from evaluation_harness.catalog_adapter import load_catalog_adapter
@@ -43,7 +43,10 @@ HERE = Path(__file__).resolve().parent
 def _goal(goal: str) -> dict:
     goals = load_goals()
     if goal not in goals:
-        die(f"no goal {goal!r}: one of {', '.join(sorted(goals)) or '(none: add data/goals/<id>.yaml)'}")
+        die(
+            f"no goal {goal!r}: one of {', '.join(sorted(goals)) or '(none: add data/goals/<id>.yaml)'}",
+            "not-found",
+        )
     return goals[goal]
 
 
@@ -51,7 +54,7 @@ def _round(goal: str, rid: str) -> dict:
     rnd = _rounds.find(goal, rid)
     if rnd is None:
         have = ", ".join(r["round_id"] for r in _rounds.load_rounds(goal)) or "none"
-        die(f"no round {rid!r} for goal {goal!r} (it has: {have})")
+        die(f"no round {rid!r} for goal {goal!r} (it has: {have})", "not-found")
     return rnd
 
 
@@ -88,8 +91,8 @@ def open_round(argv: list[str]) -> int:
     ap.add_argument("--budget-usd", type=float, help="what the round may spend")
     args = ap.parse_args(argv)
     _goal(args.goal)
-    if not (_common.DATASETS / f"{args.dataset}.json").is_file():
-        die(f"no dataset {args.dataset!r} (evh dataset-create first)")
+    if not _store.is_file(_common.DATASETS / f"{args.dataset}.json"):
+        die(f"no dataset {args.dataset!r} (evh dataset-create first)", "not-found")
     if args.from_:
         _round(args.goal, args.from_)
     from evaluation_harness import rescore as rs  # noqa: PLC0415
@@ -97,25 +100,29 @@ def open_round(argv: list[str]) -> int:
     carried = _ids(args.keep)
     if args.adopt:
         if args.from_ or _rounds.load_rounds(args.goal):
-            die(f"--adopt records a goal's first round; {args.goal} has rounds already (use --from)")
+            die(
+                f"--adopt records a goal's first round; {args.goal} has rounds already (use --from)",
+                "bad-argument",
+            )
         carried = sorted(
             {m["config_id"] for _d, m in rs.measured_runs(args.dataset) if m.get("goal") == args.goal}
         )
         if not carried:
-            die(f"--adopt: no run on {args.dataset} names goal {args.goal}")
+            die(f"--adopt: no run on {args.dataset} names goal {args.goal}", "not-found")
     elif carried == ["all"]:
         if not args.from_:
-            die("--keep all needs --from: the round whose arms are carried")
+            die("--keep all needs --from: the round whose arms are carried", "bad-argument")
         carried = _rounds.arms_of(_round(args.goal, args.from_))
     if args.scoring and len(args.scoring.split()) < 3:
-        die("--scoring needs a sentence: what changed in the scoring, and why?")
+        die("--scoring needs a sentence: what changed in the scoring, and why?", "bad-argument")
     open_ones = [r["round_id"] for r in _rounds.load_rounds(args.goal) if r.get("status") == "open"]
     if open_ones:
         die(
-            f'round {open_ones[0]} of {args.goal} is still open: close it first (evh round-close --goal {args.goal} --round {open_ones[0]} --conclusion "...")'
+            f'round {open_ones[0]} of {args.goal} is still open: close it first (evh round-close --goal {args.goal} --round {open_ones[0]} --conclusion "...")',
+            "not-allowed",
         )
     if args.retire and len(args.reason.split()) < 3:
-        die("--retire needs --reason, a sentence: why are these arms dropped?")
+        die("--retire needs --reason, a sentence: why are these arms dropped?", "bad-argument")
     base = _common.BASELINES / f"{args.dataset}_baseline.json"
     rid = _rounds.next_id(args.goal)
     doc = {
@@ -125,7 +132,7 @@ def open_round(argv: list[str]) -> int:
         "from": args.from_,
         "hypothesis": args.hypothesis,
         "changes": args.change,
-        "baseline": read_json(base).get("promoted_from") if base.is_file() else None,
+        "baseline": read_json(base).get("promoted_from") if _store.is_file(base) else None,
         "budget_usd": args.budget_usd,
         "carried": carried,
         "status": "open",
@@ -200,15 +207,18 @@ def retire(argv: list[str]) -> int:
     args = ap.parse_args(argv)
     rnd = _round(args.goal, args.round)
     if rnd.get("status") == "closed":
-        die(f"round {args.round} is closed")
+        die(f"round {args.round} is closed", "not-allowed")
     if len(args.reason.split()) < 3:
-        die("--reason must be a sentence: what did the tests show?")
+        die("--reason must be a sentence: what did the tests show?", "bad-argument")
     where = (_common.DATA / args.runs_dir) if args.runs_dir else None
-    if where is not None and not where.is_dir():
-        die(f"--runs-dir {args.runs_dir}: no such directory under {_common.DATA}")
+    if where is not None and not _store.is_dir(where):
+        die(f"--runs-dir {args.runs_dir}: no such directory under {_common.DATA}", "not-found")
     in_play = _rounds.arms_of(rnd, where)
     if args.arm not in in_play:
-        die(f"{args.arm!r} is not in play in {args.round}: {', '.join(in_play) or '(no arms yet)'}")
+        die(
+            f"{args.arm!r} is not in play in {args.round}: {', '.join(in_play) or '(no arms yet)'}",
+            "not-found",
+        )
     entry = {"config_id": args.arm, "reason": args.reason, "at": now()}
     if args.runs_dir:
         entry = {
@@ -239,9 +249,9 @@ def close(argv: list[str]) -> int:
     args = ap.parse_args(argv)
     rnd = _round(args.goal, args.round)
     if rnd.get("status") == "closed":
-        die(f"round {args.round} is already closed")
+        die(f"round {args.round} is already closed", "not-allowed")
     if len(args.conclusion.split()) < 3:
-        die("--conclusion must be a sentence: what did the round show?")
+        die("--conclusion must be a sentence: what did the round show?", "bad-argument")
     if args.promote:
         r = subprocess.run(
             [
@@ -258,7 +268,7 @@ def close(argv: list[str]) -> int:
         sys.stdout.write(r.stdout)
         if r.returncode:
             sys.stderr.write(r.stderr)
-            die("the round stays open: promotion was refused (above)")
+            die("the round stays open: promotion was refused (above)", "not-allowed")
     rnd["status"] = "closed"
     rnd["closed_at"] = now()
     rnd["conclusion"] = {"text": args.conclusion, "promoted_run": args.promote}
@@ -322,7 +332,7 @@ def _silver_authors(A, ds: str) -> list[tuple[str, str]]:
     out = []
     root = _common.REFERENCES / "silver"
     known = set(A.arms())
-    for mf in sorted(root.glob("*/manifest.json")) if root.is_dir() else []:
+    for mf in sorted(_store.glob(root, "*/manifest.json")) if _store.is_dir(root) else []:
         m = read_json(mf)
         cid = (m.get("from_run") or {}).get("config_id") or m.get("authored_by")
         if m.get("dataset_id") == ds and cid and _arm(A, ds, cid) in known:
@@ -482,7 +492,7 @@ def evidence(goal: str, rnd: dict) -> dict:
             # More arms than the inspector compares in one request: the same paired test, Holm across them,
             # read from the scores directly. The request's refusal used to leave the rows empty, without a word.
             series = {a: (A.scores(a).get(metric) or {}).get("values") or {} for a in arms}
-            d = stats.compare(series, leader, higher_is_better=not lower)
+            d = stats.compare(series, leader, higher_is_better=not lower, clusters=cs.goal_clusters_on(ds)[0])
         if d.get("error"):
             out["notes"].append(f"no comparison: {d['error']}")
         out["rows"] = d.get("rows") or []
@@ -632,7 +642,7 @@ def _status(args: argparse.Namespace) -> int:
         if rnd.get(k):
             print(textwrap.fill(rnd[k], 96, initial_indent="  hypothesis: ", subsequent_indent="    "))
     for ch in rnd.get("changes") or []:
-        print(f"  changed: {ch}")
+        print(textwrap.fill(str(ch), 100, initial_indent="  changed: ", subsequent_indent="           "))
     for x in rnd.get("retired") or []:
         print(f"  retired: {x['config_id']} ({x['reason']})")
     if rnd.get("scorer"):
@@ -695,7 +705,10 @@ def _status(args: argparse.Namespace) -> int:
         for what, cmd in ev["suggest"]:
             print(f"    - {what}" + (f"\n        {cmd}" if cmd else ""))
     if rnd["status"] == "closed":
-        print(f"\n  concluded: {(rnd.get('conclusion') or {}).get('text', '')}")
+        text = str((rnd.get("conclusion") or {}).get("text", ""))
+        print(
+            "\n" + textwrap.fill(text, 100, initial_indent="  concluded: ", subsequent_indent="             ")
+        )
     return 0
 
 

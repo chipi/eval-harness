@@ -30,9 +30,9 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _models
+from evaluation_harness import _models, _runs, _store
 from evaluation_harness._adapter import adapter_module
-from evaluation_harness._common import BASELINES, DATA, RUNS, die, read_json
+from evaluation_harness._common import BASELINES, DATA, EXIT_PROBLEMS, RUNS, die, evh_prog, read_json
 from evaluation_harness._runs import runs_on
 from evaluation_harness.dataset_from_capture import load_capture
 
@@ -49,12 +49,12 @@ def promoted_run(
     baselines = (data_dir / "baselines") if data_dir else BASELINES
     runs = runs_dir or RUNS
     best: tuple[str, Path, dict[str, Any]] | None = None
-    for f in sorted(baselines.glob("*.json")) if baselines.is_dir() else []:
+    for f in sorted(_store.glob(baselines, "*.json")) if _store.is_dir(baselines) else []:
         b = read_json(f)
         run = runs / str(b.get("promoted_from") or "")
         if (
             b.get("promoted_from")
-            and (run / "metrics.json").is_file()
+            and _store.is_file(run / "metrics.json")
             and read_json(run / "metrics.json").get("config_id") == config_id
             and (best is None or str(b.get("promoted_at")) > best[0])
         ):
@@ -63,16 +63,15 @@ def promoted_run(
         return best[1], best[2]
     found = runs_on(config_id=config_id, runs_dir=runs)
     if not found:
-        die(f"--config {config_id}: no run of that config (evh runs-list)")
+        die(f"--config {config_id}: no run of that config (evh runs-list)", "not-found")
     return found[-1][0], None
 
 
 def reported(run: Path) -> dict[str, list[str]]:
     """{key: values}: what the system reported per item (`_meta` in predictions.jsonl), the keys with few values."""
     seen: dict[str, set[str]] = {}
-    f = run / "predictions.jsonl"
-    for line in f.read_text(encoding="utf-8").splitlines() if f.is_file() else []:
-        meta = (json.loads(line) if line.strip() else {}).get("_meta") or {}
+    for row in _runs.item_rows(run):
+        meta = row.get("_meta") or {}
         for k, v in meta.items():
             if isinstance(v, (str, int, float)) and not isinstance(v, bool):
                 seen.setdefault(k, set()).add(str(v))
@@ -153,7 +152,8 @@ def check(s: dict[str, Any], capture_id: str, captures_dir: Path | None = None) 
     if not callable(fn):
         die(
             f"--capture: the adapter {s['_adapter_spec']} has no production_ran(record): it cannot say what production"
-            " ran"
+            " ran",
+            "invalid-file",
         )
     _, recs = load_capture(capture_id, captures_dir)
     per: dict[str, dict[str, Any]] = {}
@@ -174,7 +174,7 @@ def check(s: dict[str, Any], capture_id: str, captures_dir: Path | None = None) 
 
 def main() -> int:
     """Print the deploy sheet, and the capture check."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--config", required=True, help="the arm's config_id (its promoted run, else its latest)")
     ap.add_argument(
         "--capture", help="a capture whose records say what production ran (the adapter's production_ran)"
@@ -192,7 +192,7 @@ def main() -> int:
         if c is not None:
             out["capture_check"] = {**c, "ok": ok}
         print(json.dumps(out, indent=2, default=dict))
-        return 0 if ok else 1
+        return 0 if ok else EXIT_PROBLEMS
     p = s["promoted"]
     print(f"deploy sheet: {s['config_id']}")
     ref = s.get("reference") or {}
@@ -249,7 +249,7 @@ def main() -> int:
             if ok
             else "\nNOT every captured decision was made by the promoted model and prompt (above: what differs)"
         )
-    return 0 if ok else 1
+    return 0 if ok else EXIT_PROBLEMS
 
 
 if __name__ == "__main__":

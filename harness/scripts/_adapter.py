@@ -23,7 +23,7 @@ import importlib
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _store
 from evaluation_harness._common import (
     BUNDLED_ADAPTER_ID,
     CODE,
@@ -142,6 +142,7 @@ def _kinds_of(module: Any) -> dict[str, str]:
     # reads higher as better -- and "was not actually run this pass" would sort to the
     # top. Declared here rather than asked of every adapter, because the core owns them.
     out.setdefault("resumed", "descriptive")
+    out.setdefault("failed", "descriptive")
     return out
 
 
@@ -291,9 +292,9 @@ def _find_adapter(spec: str, config_path: Path | None) -> Path:
             candidates.append(config_path.resolve().parent / path)
         candidates.append(_common.ROOT / path)
     for candidate in candidates:
-        if candidate.is_file():
+        if _store.is_file(candidate):
             return candidate
-    die(f"adapter not found: {spec}\n" + "".join(f"  looked in: {c}\n" for c in candidates))
+    die(f"adapter not found: {spec}\n" + "".join(f"  looked in: {c}\n" for c in candidates), "not-found")
 
 
 def load_adapter(
@@ -319,7 +320,7 @@ def load_adapter(
     """
     if spec:
         path = _find_adapter(spec, config_path)
-    elif (_common.ROOT / "adapter.py").is_file():
+    elif _store.is_file(_common.ROOT / "adapter.py"):
         path = _common.ROOT / "adapter.py"
     else:
         default = module_at(BUNDLED)
@@ -334,10 +335,10 @@ def load_adapter(
     try:
         module = module_at(path)
     except ModuleNotLoadable:
-        die(f"adapter is not importable: {path}")
+        die(f"adapter is not importable: {path}", "invalid-file")
     for required in ("call_system", "score"):
         if not hasattr(module, required):
-            die(f"adapter {path} defines no {required}()")
+            die(f"adapter {path} defines no {required}()", "invalid-file")
     adapter_id = _portable_id(path)
     return (
         module.call_system,

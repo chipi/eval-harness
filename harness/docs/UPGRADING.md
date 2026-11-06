@@ -5,6 +5,35 @@ change the pin, then check what it says can move. **If you copied `harness/` int
 repository** before October 2026, read the rest of this page first: your copy has
 correctness bugs, not just missing features.
 
+## From 0.7.2 to 0.8.0 (unreleased)
+
+- **Run `evh run-migrate` once** (RFC-024; `--dry-run` first shows what it will do). A run's outputs become one
+  `outputs.jsonl` instead of an `outputs/` folder of `<item>.txt`, a derived run whose outputs are byte copies of its
+  source's keeps none of its own, and the leftover row checkpoint goes. Each run is checked byte for byte before
+  its folder is removed; nothing in a fingerprint moves. Then let git see the new files: a `.gitignore` that
+  re-admits `outputs/**` in a run directory needs `!…/outputs.jsonl` instead (this repository's
+  `harness/.gitignore` shows the pattern). The old layout is not read after the upgrade.
+- **A project's data can live in SQLite** (RFC-025), if you want it: nothing changes unless `config.yaml` says
+  `store: sqlite` (or `EVAL_STORE=sqlite`). Then `evh data-migrate --to sqlite` moves everything under `data/` into
+  `data/project.sqlite`; `--to files` moves it back. Python under `data/` moves out first (it is never in the
+  database).
+- **A goal's recommendation can move.** Contenders are now the arms shown no worse than the leader by more than
+  the margin (ADR-0026), and the default margins are 5% (`balanced`) and 10% (`frugal`) of the leader. Read
+  `evh goals --goal G` after upgrading. A goal that wants its old breadth back sets `axes.quality.margin` in the
+  measure's units; one on fewer than 100 items with a continuous measure now recommends its leader and says
+  "too few items to call a tie". `evh validate` notes every goal on a default margin. No run, score or
+  fingerprint changes.
+- **A run with one failing item now finishes** and scores that item 0 (`failed_items` in metrics.json, `failed`
+  on its row): a script that expected the run to stop reads those instead. A provider error that outlasts its
+  retries exits `75`.
+- **Scripts and CI that branch on exit codes:** the cost cap is `4` (was `2`), nothing measured `7` (was `1`), an
+  unreachable server `75` (was `1`), and a check that found problems `6` (was `1`) for `validate`, `self-test`,
+  `env-check`, `importer-check`, `arm-smoke`, `model-onboard` and `deploy-sheet --capture`; a partly failed
+  `sweep` is `5`. A check for "non-zero" needs no change. The table: RUNBOOK, Exit codes.
+- **Scripts matching a refusal's text:** the line is `ERROR (<kind>): <why>` (was `ERROR: <why>`). Match the
+  kind (RUNBOOK, Refusals), not the wording. A project's `AGENTS.md` written by `evh init` before 0.8.0 lacks
+  the "When a command stops" section; copy it from a new `evh init` if your agents read the file.
+
 ## From 0.7.1 to 0.7.2
 
 Change the pin to `@v0.7.2`. Nothing to migrate and no result moves. A deployment that serves `evh mcp --public

@@ -34,7 +34,6 @@ import argparse
 import html
 import json
 import re
-import shutil
 import statistics
 import sys
 from datetime import datetime, timezone
@@ -43,8 +42,8 @@ from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common, _fields, _visibility  # noqa: E402
-from evaluation_harness._common import ROOT  # noqa: E402
+from evaluation_harness import _common, _fields, _store, _visibility  # noqa: E402
+from evaluation_harness._common import ROOT, die  # noqa: E402
 from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
     axes_of,
@@ -59,7 +58,7 @@ from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalo
 from evaluation_harness.stats import fmt_p  # noqa: E402
 
 #: The front-end files every page loads: installed beside the package, or in a checkout.
-ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if p.is_dir())
+ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if _store.is_dir(p))
 # forest.js draws a baseline's answers chart; no page of the harness's own uses it, a project's
 # builder does (podcast_scraper's baseline pages), so it ships with the assets.
 ASSETS = (
@@ -72,6 +71,8 @@ ASSETS = (
     "overview.js",
     "arms.js",
     "group.js",
+    "data_form.js",
+    "data.js",
     "icon.svg",
 )
 #: Links that would put more arms than this in one inspector URL go to the picker instead.
@@ -128,6 +129,11 @@ NAV = [
     ("activity", "activity.html", "Activity"),
     ("inspect", "inspect.html", "Inspector"),
 ]
+#: The Configure pages (UXS-004): a menu of their own, built only for a project that deploys them (`configure: true`,
+#: SQLite only); even then shown only by a local catalog-serve, which catalog.js asks.
+CONFIGURE_NAV = ("configure", "data.html", "Configure", "local-only")
+#: The Configure pages' own scripts, copied only when they are built.
+CONFIGURE_ASSETS = ("data_form.js", "data.js")
 
 #: What the harness's own metrics measure; a project describes its own with METRIC_DESCRIPTIONS.
 BUILTIN_METRICS = {
@@ -153,6 +159,8 @@ BUILTIN_METRICS = {
     "overlap_f1": "Token-overlap F1 against the reference: the bundled adapter's placeholder, "
     "enough to run the loop, not to defend a decision.",
     "output_words": "How many words the output has: a description of the output, not a quality.",
+    "failed": "1 when the item's call failed (not transiently) and it was scored as an empty answer; the run "
+    "listed it in failed_items and went on. Its mean is the share of the run that failed.",
     "resumed": "1 when the item was replayed from a stopped run's stored output (--resume), "
     "else 0: bookkeeping, not a score.",
     "reasoning_tokens": "Tokens a reasoning model spent thinking before it answered, as the provider "
@@ -606,8 +614,8 @@ def group_chips(tid: str, groups: tuple) -> str:
 def write(out: Path, rel: str, content: str) -> None:
     """Write content to a relative path within output directory."""
     p = out / rel
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(content, encoding="utf-8")
+    _store.mkdir(p.parent, parents=True, exist_ok=True)
+    _store.write_text(p, content, encoding="utf-8")
 
 
 def write_periods(A: Adapter, by_ds: dict, out: Path) -> None:
@@ -762,12 +770,14 @@ def inspect_url(arms: list, up: str = "", **params) -> str:
     return f"{up}inspect.html?runs=" + quote(",".join(arms), safe=",/") + (f"&{q}" if q else "")
 
 
-def copy_assets(out: Path) -> None:
-    """Copy CSS, JS, and SVG assets to output directory."""
-    (out / "assets").mkdir(parents=True, exist_ok=True)
+def copy_assets(out: Path, configure: bool = False) -> None:
+    """Copy CSS, JS, and SVG assets to output directory (the Configure pages' scripts only when they are built)."""
+    _store.mkdir(out / "assets", parents=True, exist_ok=True)
     for a in ASSETS:
-        shutil.copy(ASSET_DIR / a, out / "assets" / a)
-    (out / "assets" / "head.js").write_text(HEAD_JS_SRC, encoding="utf-8")
+        if a in CONFIGURE_ASSETS and not configure:
+            continue
+        _store.copy_file(ASSET_DIR / a, out / "assets" / a)
+    _store.write_text(out / "assets" / "head.js", HEAD_JS_SRC, encoding="utf-8")
 
 
 def fmt(v) -> str:
@@ -1256,6 +1266,7 @@ def glance(A: Adapter, by_ds: dict) -> list[dict]:
                     base,
                     higher_is_better=not lower,
                     family=1,
+                    clusters=goal_clusters(A, g, ds)[0],
                 )
                 test = (cmp.get("rows") or [None])[0]
             rec = dec["recommended"] if dec else None
@@ -1338,7 +1349,7 @@ def coverage(A: Adapter, by_ds: dict) -> list[dict]:
                         m
                         for a in v["arms"]
                         for m in a["means"]
-                        if not m.startswith(("self_family_", "resumed", "total_"))
+                        if not m.startswith(("self_family_", "resumed", "failed", "total_"))
                     }
                 ),
                 "goals": goals.get(ds, []),
@@ -2205,7 +2216,7 @@ def render_added(A: Adapter, ds: str) -> str:
     sha = {}
     got = getattr(A, "data_dir", None)
     if got is not None:
-        doc = json.loads((Path(got) / "datasets" / f"{ds}.json").read_text(encoding="utf-8"))
+        doc = json.loads(_store.read_text(Path(got) / "datasets" / f"{ds}.json", encoding="utf-8"))
         sha = {it["item_id"]: it.get("source_sha256") for it in doc.get("items") or []}
     rows = [
         {
@@ -2296,7 +2307,7 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
         )
     ]
     if src:
-        name = e(src.get("name") or "the source")
+        name = e(src.get("ref") or src.get("provider") or "the source")
         lines.append(
             (
                 f'Source: <a href="{e(src["url"])}" rel="noopener">{name}</a>'
@@ -2371,6 +2382,10 @@ def _texts_tracked(ds: str) -> bool:
     except SystemExit:
         return False
     src = ROOT / d.get("source_dir", "data/sources")
+    if _common.store() == "sqlite":  # RFC-025: the database is the record, as git is for files
+        return all(
+            _store.is_file(src / (it.get("source_path") or it["item_id"])) for it in d.get("items") or []
+        )
     return not dataset_profile.tracked(
         [src / (it.get("source_path") or it["item_id"]) for it in d.get("items") or []]
     )
@@ -3158,6 +3173,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
                     trs,
                 )
                 inner += tradeoff_charts(dec, named, gm)
+        inner += _failure_modes_html(A, ds, v.get("arms") or [])
         body += block(f"{n:02d}", f"{ds}{' · ' + ans['role'] if ans['role'] else ''}", inner)
         n += 1
     write(
@@ -3172,6 +3188,28 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             item=A.item_word,
             elsewhere=(("goals", {"goal": g["goal_id"]}),),
         ),
+    )
+
+
+def _failure_modes_html(A: Adapter, ds: str, rows: list) -> str:
+    """How the dataset's arms fail, from the tags on their outputs (PLAN_0.8.0 D1): per tagged arm the outputs read, how
+    many had a failure and each mode's count. A tag needs no measure, so every arm of the dataset is listed, not only
+    those of a group. Empty when none was tagged (or the adapter has no tags)."""
+    fn = getattr(A, "tag_counts", None)
+    got = [(r, fn(ds, r["arm"])) for r in rows] if callable(fn) else []
+    got = [(r, c) for r, c in got if c]
+    if not got:
+        return ""
+    named, _scorer = shown_labels({r["arm"]: r["label"] for r, _ in got})
+    lis = "".join(
+        f"<li>{arm_link(r['arm'], named[r['arm']], '../')}: {c['tagged']} of {c['outputs']} output(s) read have a failure"
+        + (": " + ", ".join(f"{e(m)} {n}" for m, n in c["modes"].items()) if c["modes"] else "")
+        + "</li>"
+        for r, c in got
+    )
+    return (
+        '<p class="small"><b>failure modes</b> <small class="muted">(tagged by hand on outputs read; '
+        f'<code>evh tags --dataset-id {e(ds)}</code>)</small></p><ul class="small">{lis}</ul>'
     )
 
 
@@ -3224,6 +3262,16 @@ def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
     return out
 
 
+def goal_clusters(A: Adapter, g: dict, ds: str) -> tuple[dict | None, str | None]:
+    """({item: cluster key}, field) when the goal's entry for `ds` names `cluster: FIELD`, else (None, None).
+    Items with no value for the field are clusters of their own (stats.clustered)."""
+    field = next((d.get("cluster") for d in g.get("datasets") or [] if d.get("dataset_id") == ds), None)
+    if not field:
+        return None, None
+    values = item_fields(A, ds).get("values") or {}
+    return {i: v[field] for i, v in values.items() if v.get(field) not in (None, "")}, field
+
+
 def group_decision(
     A: Adapter,
     g: dict,
@@ -3258,9 +3306,16 @@ def group_decision(
     }
     machines = {r["arm"]: r.get("machine", "") for r in rows}
     baseline = next((r["arm"] for r in rows if r.get("baseline")), None)
+    clusters, cluster_by = goal_clusters(A, g, ds)
     dec = axes.decide(
-        goal, arms, lambda m: "lower" if A.lower_is_better(m, ds) else None, machines, baseline=baseline
-    ) | {"goal": goal}
+        goal,
+        arms,
+        lambda m: "lower" if A.lower_is_better(m, ds) else None,
+        machines,
+        baseline=baseline,
+        clusters=clusters,
+        cluster_by=cluster_by,
+    ) | {"goal": goal, "dataset": ds}
     if not decides_on(g, ds):
         # The goal never decides here (a pilot slice, a generalization check): the leader stands, the
         # recommendation does not.
@@ -3335,7 +3390,11 @@ def baseline_gap(A: Adapter, dec: dict, rows: list, gm: str) -> str:
     labels = {r["arm"]: r["label"] for r in rows}
     higher = dec["axes"][0]["direction"] == "higher"
     series = {a: (A.scores(a).get(gm) or {}).get("values") or {} for a in (rec, base["arm"])}
-    row = (stats.compare(series, base["arm"], higher_is_better=higher, family=1).get("rows") or [None])[0]
+    clusters = goal_clusters(A, dec.get("goal") or {}, dec.get("dataset") or "")[0]
+    row = (
+        stats.compare(series, base["arm"], higher_is_better=higher, family=1, clusters=clusters).get("rows")
+        or [None]
+    )[0]
     if not row or row.get("p") is None:
         return ""
     return (
@@ -3360,10 +3419,17 @@ def shown_axes(dec: dict) -> list:
 
 def axis_cell(ax: dict, cell: dict) -> str:
     """A table cell for one arm on one axis, sortable by its value, marked when past the limit."""
+    from evaluation_harness import _goal_view  # noqa: PLC0415
+
     v = cell.get("value")
     over = cell.get("within") is False
     vs = (cell.get("vs_leader") or {}).get("verdict")
-    title = (f"vs the quality leader: {vs}" if vs else "") + ("; past the limit" if over else "")
+    ni = cell.get("noninferior")
+    title = (
+        (f"vs the quality leader: {vs}" if vs else "")
+        + (f"; contender test: {_goal_view.ni_text(ni)}" if ni else "")
+        + ("; past the limit" if over else "")
+    )
     attrs = f'data-v="{v if v is not None else ""}"' + (' class="over"' if over else "")
     attrs += f' title="{e(title)}"' if title else ""
     return f"<span {attrs}>{e(cell_text(ax, cell))}</span>"
@@ -3563,7 +3629,7 @@ def render_metrics(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     idx = metric_index(A, by_ds)
     w = window(A, by_ds)
     rows, period_rows = [], period_metrics(A, by_ds)
-    for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed")), k)):
+    for m in sorted(idx, key=lambda k: (k.startswith(("total_", "self_family_", "resumed", "failed")), k)):
         where = idx[m]
         lower = any(A.lower_is_better(m, ds) for ds in where["datasets"]) if where["datasets"] else False
         # Direction first: cost, tokens and latency are "neutral" to the tests but lower is better.
@@ -4505,6 +4571,36 @@ def write_pick(A: Adapter, by_ds: dict, out: Path, rows: list[dict]) -> None:
     )
 
 
+def render_data(A: Adapter, out: Path, page_fn=page, serve: str = "evh catalog-serve", **page_kw) -> None:
+    """The Configure page (UXS-004), built only for a project that deploys it; assets/data.js fills it from the local
+    server's /api/data/. The one page
+    that writes, and only through a server on this machine (ADR-0027)."""
+    body = (
+        '<section class="hero slim"><div class="wrap"><p class="kicker">configure</p>'
+        "<h1>Project data</h1><p class=dek>What this project keeps under data/: its settings, which you can "
+        "create, change and delete here, and the data the harness wrote, shown read-only.</p>"
+        '<p class="dm-store small" id="store"></p></div></section>'
+        '<section class="block tight"><div class="wrap" id="app">'
+        f'<p class="muted">Loading… (this page needs <code>{e(serve)}</code> on this machine; opened from disk it '
+        "cannot read the project's data.)</p></div></section>"
+    )
+    write(
+        out,
+        "data.html",
+        page_fn(
+            "Project data",
+            body,
+            0,
+            "configure",
+            ("assets/data_form.js", "assets/data.js"),
+            item=A.item_word,
+            serve=serve,
+            elsewhere=(("data-ls", {}),),
+            **page_kw,
+        ),
+    )
+
+
 def render_inspect(
     A: Adapter,
     out: Path,
@@ -4661,10 +4757,11 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     the catalog belongs to, (label, url) each, "." for the catalog itself: the header's switcher."""
     global SECTIONS
     SECTIONS = tuple(sections)
-    nav = NAV
-    if out.exists():
-        shutil.rmtree(out)
-    copy_assets(out)
+    configure = _common.configure()
+    nav = [*NAV, CONFIGURE_NAV] if configure else NAV
+    if _store.exists(out):
+        _store.rmtree(out)
+    copy_assets(out, configure)
     A = scores_once(A)  # one build: each arm's scores read once, not for every page that asks
     by_ds = collect(A)
     write_periods(A, by_ds, out)
@@ -4695,6 +4792,8 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     write_search(A, by_ds, out)
     write_pick(A, by_ds, out, arms_rows)
     render_inspect(A, out, nav=nav, pages=True, pick=True)
+    if configure:
+        render_data(A, out, nav=nav)
     return {
         "goals": n_goals,
         "datasets": len(by_ds),
@@ -4810,35 +4909,37 @@ def main() -> int:
     args = ap.parse_args()
     for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto), ("--card", args.card)):
         if url and not url.startswith(("https://", "http://")):
-            raise SystemExit(f"{flag} {url!r}: expected https://...")
+            die(f"{flag} {url!r}: expected https://...", "bad-argument")
     MCP = args.mcp or ""
     CARD = args.card or ""
     MCP_HOWTO = args.mcp_howto or MCP_HOWTO
     if not args.api.startswith("/") or not args.api.endswith("/"):
-        raise SystemExit(
-            f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/"
+        die(
+            f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/",
+            "bad-argument",
         )
     API = args.api
     BRAND = args.brand
     if args.head:
-        if not args.head.is_file():
-            raise SystemExit(f"--head {args.head}: no such file")
-        HEAD = args.head.read_text(encoding="utf-8").strip() + "\n"
+        if not _store.is_file(args.head):
+            die(f"--head {args.head}: no such file", "not-found")
+        HEAD = _store.read_text(args.head, encoding="utf-8").strip() + "\n"
     if args.repo:
         if not args.repo.startswith(("https://", "http://")):
-            raise SystemExit(
-                f"--repo {args.repo!r}: expected https://..., where the project's files can be read"
+            die(
+                f"--repo {args.repo!r}: expected https://..., where the project's files can be read",
+                "bad-argument",
             )
         REPO = args.repo if args.repo.endswith("/") else args.repo + "/"
     if args.about:
-        if not args.about.is_file():
-            raise SystemExit(f"--about {args.about}: no such file")
-        ABOUT = args.about.read_text(encoding="utf-8").strip()
+        if not _store.is_file(args.about):
+            die(f"--about {args.about}: no such file", "not-found")
+        ABOUT = _store.read_text(args.about, encoding="utf-8").strip()
     sections = []
     for spec in args.link:
         label, _, url = spec.partition("=")
         if not label or not (url == "." or url.startswith(("https://", "http://"))):
-            raise SystemExit(f"--link {spec!r}: expected LABEL=https://... or LABEL=. for the catalog")
+            die(f"--link {spec!r}: expected LABEL=https://... or LABEL=. for the catalog", "bad-argument")
         sections.append((label, url))
     if sections and not any(u == "." for _, u in sections):
         sections.insert(0, ("Catalog", "."))

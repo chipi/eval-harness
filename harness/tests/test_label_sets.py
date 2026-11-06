@@ -22,7 +22,18 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+
+def _set_output(d, item, text):
+    """Change one output of a run in place (None removes it), as a hand edit of its outputs.jsonl would."""
+    texts = _outputs.outputs(d)
+    texts.pop(item, None)
+    if text is not None:
+        texts[item] = text
+    _outputs.write_all(d, texts, list(texts))
+
 
 proj = Path(tempfile.mkdtemp(prefix="evh-labels-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-labels")
@@ -81,7 +92,7 @@ try:
         and len(doc["guideline"]["sha256"]) == 64
         and all(len(v["item_sha256"]) == 64 for v in doc["items"].values())
         and (LABELS / "tickets_v1" / "author_v1" / "t01_login.txt").read_text()
-        == (data / "runs" / author / "outputs" / "t01_login.txt").read_text().strip() + "\n",
+        == (_outputs.output(data / "runs" / author, "t01_login") or "").strip() + "\n",
         out(r)[-300:],
     )
     r = evh("label-from-run", "--run", author, "--set", "author_v1")
@@ -116,8 +127,8 @@ try:
         out(r)[-300:],
     )
     r, rows = sheet("s_dis.csv", "--items", "disagree", "--runs", f"{lead},{author}")
-    lo = {p.stem: p.read_text().strip() for p in (data / "runs" / lead / "outputs").glob("*.txt")}
-    au = {p.stem: p.read_text().strip() for p in (data / "runs" / author / "outputs").glob("*.txt")}
+    lo = {k: v.strip() for k, v in _outputs.outputs(data / "runs" / lead).items()}
+    au = {k: v.strip() for k, v in _outputs.outputs(data / "runs" / author).items()}
     check(
         "label-sheet --items disagree: exactly the items the two runs decided differently",
         r.returncode == 0
@@ -721,10 +732,7 @@ try:
         "arm-from-capture: a config with provider recorded, run: each output the record's field, no call, no cost",
         "provider: recorded" in cfg_text
         and rec_run is not None
-        and all(
-            (rec_run / "outputs" / f"{i}.txt").read_text() == str(cap_recs[i]["fields"]["channel"])
-            for i in cap_recs
-        )
+        and all(_outputs.output(rec_run, i) == str(cap_recs[i]["fields"]["channel"]) for i in cap_recs)
         and not (rec_m.get("scores") or {}).get("total_cost_usd")
         and len(rec_m["fingerprint"]["settings"].get("capture_sha256", "")) == 64
         and "no system called" in out(r),
@@ -758,9 +766,9 @@ try:
     # ── agreement: --disagree keeps the items the arms decided differently (step 5) ──────────────
     alt = data / "runs-alt" / lead
     shutil.copytree(data / "runs" / lead, alt)
-    changed = sorted(p.stem for p in (alt / "outputs").glob("*.txt"))[:2]
+    changed = sorted(_outputs.outputs(alt))[:2]
     for i in changed:
-        (alt / "outputs" / f"{i}.txt").write_text("a different decision")
+        _set_output(alt, i, "a different decision")
 
     def inspected(*extra):
         r = evh(

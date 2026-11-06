@@ -1,1 +1,0 @@
-[{"text": "Positive-sense", "type": "location"}, {"text": "RNA", "type": "location"}]

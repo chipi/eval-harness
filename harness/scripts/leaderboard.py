@@ -31,7 +31,7 @@ import shutil
 import statistics
 import textwrap
 
-from evaluation_harness import _jsonout
+from evaluation_harness import _jsonout, _store
 from evaluation_harness._adapter import recorded_metric_kinds
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -39,6 +39,7 @@ from evaluation_harness._common import (
     RUNS,
     classify_metrics,
     die,
+    evh_prog,
     how,
     read_json,
 )
@@ -421,11 +422,16 @@ def _cell(v: float | None, kind: str | None) -> str:
 def _fit_columns(
     show: list[str], rows: list[dict], kinds: dict[str, str], sort_key: str, wide: bool
 ) -> list[str]:
-    """The metric columns the text table has room for, in the order they matter: the ranking metric, the cost and
-    the speed the frontier reads, the other quality metrics, then the rest. The first always stays."""
+    """The metric columns the text table has room for, in the order they matter: the ranking metric and the quality
+    metrics of its family (its first word: a judged table's `judge_score_…` and each judge's `judge_<id>_…`), the
+    cost and the speed the frontier reads, the other quality metrics, then the rest. The first always stays."""
     if wide:
         return show
+    family = sort_key.split("_", 1)[0] + "_"
     first = [k for k in show if k == sort_key]
+    first += [
+        k for k in show if k != sort_key and k.startswith(family) and kinds.get(k, "quality") == "quality"
+    ]
     frontier = [
         next((k for k in show if kinds.get(k) == "cost" and k.startswith("total_")), None)
         or next((k for k in show if kinds.get(k) == "cost"), None),
@@ -531,7 +537,7 @@ def _own_reference(by_config: dict[str, list[dict]]) -> dict[str, str]:
                 continue
             if ref not in authors:
                 mf = REFERENCES / ref / "manifest.json"
-                authors[ref] = read_json(mf).get("authored_by") if mf.is_file() else None
+                authors[ref] = read_json(mf).get("authored_by") if _store.is_file(mf) else None
             if authors[ref] == config_id:
                 out[config_id] = ref
     return out
@@ -585,7 +591,7 @@ def _metric_kinds(by_config: dict[str, list[dict]]) -> dict[str, str]:
 
 def main() -> int:
     """Generate a leaderboard from run results."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--sort", help="metric to rank by (default: the first quality metric)")
     ap.add_argument(
@@ -659,7 +665,7 @@ def _judging_summary(found: list) -> None:
     seen = set()
     for d, _m in found:
         f = d.parent / "summary.json"
-        if f in seen or not f.is_file():
+        if f in seen or not _store.is_file(f):
             continue
         seen.add(f)
         s = read_json(f)
@@ -713,7 +719,8 @@ def _table(args: argparse.Namespace, found: list) -> dict:
             + (f" matching {args.match!r}" if args.match else "")
             + ".\n  "
             + how("evh runs-list", "make runs-list")
-            + "   to see what exists"
+            + "   to see what exists",
+            "not-found",
         )
 
     all_keys = sorted(
@@ -769,7 +776,7 @@ def _table(args: argparse.Namespace, found: list) -> dict:
         )
     ranking_on_descriptive = kinds.get(sort_key) == "descriptive"
     if sort_key not in all_keys:
-        die(f"no metric {sort_key!r} on these runs. Available: {', '.join(all_keys)}")
+        die(f"no metric {sort_key!r} on these runs. Available: {', '.join(all_keys)}", "not-found")
 
     rows: list[dict] = []
     for config_id, runs in by_config.items():

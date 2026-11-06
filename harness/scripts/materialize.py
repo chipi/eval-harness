@@ -21,13 +21,13 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import shutil
 from pathlib import Path
 
-from evaluation_harness import _fetch
+from evaluation_harness import _fetch, _store
 from evaluation_harness._common import (
     MATERIALIZED,
     die,
+    evh_prog,
     load_dataset,
     now,
     sha256,
@@ -37,7 +37,7 @@ from evaluation_harness._common import (
 
 def main() -> int:
     """Materialize a dataset from sources and verify hashes."""
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--force", action="store_true", help="rebuild even if it exists")
     args = ap.parse_args()
@@ -46,12 +46,12 @@ def main() -> int:
     src_root = Path(ds.get("source_dir", "data/sources"))
     out = MATERIALIZED / args.dataset_id
 
-    if out.exists() and not args.force:
+    if _store.exists(out) and not args.force:
         print(f"{out} exists — nothing to do (--force to rebuild)")
         return 0
-    if out.exists():
-        shutil.rmtree(out)
-    out.mkdir(parents=True)
+    if _store.exists(out):
+        _store.rmtree(out)
+    _store.mkdir(out, parents=True)
 
     drifted, missing, unfetched = [], [], []
     for item in ds["items"]:
@@ -66,11 +66,11 @@ def main() -> int:
                 unfetched.append((rel, str(exc)))
                 continue
             dst = out / rel
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src, dst)
+            _store.mkdir(dst.parent, parents=True, exist_ok=True)
+            _store.copy_file(src, dst)
             continue
         src = src_root / rel
-        if not src.is_file():
+        if not _store.is_file(src):
             missing.append(rel)
             continue
         actual = sha256(src)
@@ -78,8 +78,8 @@ def main() -> int:
             drifted.append((rel, item["source_sha256"][:12], actual[:12]))
             continue
         dst = out / rel
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dst)
+        _store.mkdir(dst.parent, parents=True, exist_ok=True)
+        _store.copy_file(src, dst)
 
     if missing or drifted or unfetched:
         for rel in missing:
@@ -92,7 +92,8 @@ def main() -> int:
             f"{len(missing)} missing, {len(drifted)} changed, {len(unfetched)} not fetched as pinned "
             "since the dataset was frozen.\n"
             "  sources/ is immutable. If an input genuinely changed, that is a NEW\n"
-            "  dataset (_v2) — every number already published was measured on the old bytes."
+            "  dataset (_v2) — every number already published was measured on the old bytes.",
+            "not-materialized",
         )
 
     write_json(

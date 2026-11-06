@@ -1,1 +1,0 @@
-[{"text": "Rho Aquilae", "type": "other"}, {"text": "Bayer", "type": "other"}]

@@ -1,8 +1,0 @@
-```json
-[
-  {"text": "April 13", "type": "event"},
-  {"text": "2012", "type": "event"},
-  {"text": "Cartoon Planet", "type": "building"},
-  {"text": "2013", "type": "event"}
-]
-```

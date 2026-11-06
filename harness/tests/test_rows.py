@@ -25,7 +25,21 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
+
+def _set_output(d, item, text):
+    """Change one output of a run in place (None removes it), as a hand edit of its outputs.jsonl would."""
+    texts = _outputs.outputs(d)
+    texts.pop(item, None)
+    if text is not None:
+        texts[item] = text
+    _outputs.write_all(d, texts, list(texts))
+
 
 proj = Path(tempfile.mkdtemp(prefix="evh-rows-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-rows")
@@ -165,9 +179,7 @@ try:
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
         run = next(p for p in (data / "runs").glob(f"tickets_{arm}_v1_*"))
         for item, text in by_item.items():
-            (run / "outputs" / f"{item}.txt").unlink(missing_ok=True)
-            if text is not None:
-                (run / "outputs" / f"{item}.txt").write_text(text + "\n")
+            _set_output(run, item, None if text is None else text + "\n")
     RUNS = "tickets_lead1_v1,tickets_author_v1,tickets_lead2_noisy_v1"
     every = sorted(decided["lead1"])
     # A person labels three tickets: production right on t01 and t03, wrong on t02.
@@ -356,8 +368,9 @@ try:
         extra={"PYTHONPATH": str(HERE.parent)},
     )
     jout = {
-        p.stem: json.loads(p.read_text())["disposition"]
-        for p in (data / "runs" / "jsonish" / "outputs").glob("t*.txt")
+        k: json.loads(v)["disposition"]
+        for k, v in _outputs.outputs(data / "runs" / "jsonish").items()
+        if k.startswith("t")
     }
     # Right on two, wrong on one, by construction: the label is the output's disposition, or the other one.
     flip = {"file": "dismiss", "dismiss": "file"}
@@ -410,11 +423,10 @@ try:
     run_dirs = {k: next((data / "runs").glob(f"{T[k]}_*")) for k in T}
     for n, k in enumerate(T):
         lines = []
-        for line in (run_dirs[k] / "predictions.jsonl").read_text().splitlines():
-            row = json.loads(line)
+        for row in _runstore.rows(run_dirs[k]):
             row["overlap_f1"], row["latency_ms"] = f1[row["item_id"]][n], lat[row["item_id"]][n]
             lines.append(json.dumps(row, sort_keys=True))
-        (run_dirs[k] / "predictions.jsonl").write_text("\n".join(lines) + "\n")
+        _runstore.put_rows_text(run_dirs[k], "\n".join(lines) + "\n")
 
     def footer_label(r, start):
         table = next((b for b in blocks_of(r) if b.get("columns", [""])[0] == "per arm"), {"rows": []})
@@ -523,10 +535,11 @@ try:
             }
             m["primary_metric"] = metric
             (jd / "metrics.json").write_text(json.dumps(m))
-            (jd / "predictions.jsonl").write_text(
+            _runstore.put_rows_text(
+                jd,
                 "".join(
                     json.dumps({"item_id": i, metric: v[list(T).index(k)]}) + "\n" for i, v in values.items()
-                )
+                ),
             )
 
     grade = {i: (n % 5 + 1.0, (n * 2) % 5 + 1.0, (n * 3) % 5 + 1.0) for n, i in enumerate(f1)}

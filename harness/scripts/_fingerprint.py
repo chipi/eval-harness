@@ -51,6 +51,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Callable
 
+from evaluation_harness import _store
 from evaluation_harness._providers import PROVIDERS, identity_params
 
 VERSION = 5
@@ -194,10 +195,10 @@ def measuring_modules(here: Path | None = None, producers: tuple[str, ...] = _PR
     while todo:
         name = todo.pop()
         p = here / name
-        if name in seen or not p.is_file():
+        if name in seen or not _store.is_file(p):
             continue
         seen.add(name)
-        for node in ast.walk(ast.parse(p.read_text(encoding="utf-8"))):
+        for node in ast.walk(ast.parse(_store.read_text(p, encoding="utf-8"))):
             # The package's own modules, as they import each other: `from evaluation_harness._x
             # import ...`, `from evaluation_harness import x`, `import evaluation_harness.x`.
             mods = []
@@ -207,7 +208,7 @@ def measuring_modules(here: Path | None = None, producers: tuple[str, ...] = _PR
                 mods = [a.name for a in node.names]
             elif isinstance(node, ast.ImportFrom) and (node.module or "").startswith(_PACKAGE + "."):
                 mods = [(node.module or "").split(".")[1]]
-            todo += [f"{m}.py" for m in mods if (here / f"{m}.py").is_file()]
+            todo += [f"{m}.py" for m in mods if _store.is_file(here / f"{m}.py")]
     return sorted(here / n for n in seen)
 
 
@@ -249,7 +250,7 @@ def _harness_identity(root: Path, data_dir: Path | None = None) -> dict[str, Any
         "dirty": bool(dirt) if dirt is not None else None,
         "version": __version__,
         "code_sha256": harness_code_sha256(),
-        "installed": not (here.parent / "Makefile").is_file(),
+        "installed": not _store.is_file(here.parent / "Makefile"),
     }
 
 
@@ -257,7 +258,7 @@ def sha256_file(path: Path) -> str | None:
     """Content hash of one file, or None if unreadable."""
     try:
         h = hashlib.sha256()
-        with path.open("rb") as fh:
+        with _store.open_file(path, "rb") as fh:
             for chunk in iter(lambda: fh.read(1 << 20), b""):
                 h.update(chunk)
         return h.hexdigest()
@@ -692,7 +693,7 @@ def references_digest(root: Path, reference_id: str | None, data_dir: Path | Non
         if reference_id.startswith("labels/")
         else base / "references" / reference_id
     )
-    if not ref_dir.is_dir():
+    if not _store.is_dir(ref_dir):
         return None
     # EVERY FILE, not just *.txt. A silver reference directory also carries
     # manifest.json, which records WHICH MODEL authored those references and whether
@@ -706,8 +707,8 @@ def references_digest(root: Path, reference_id: str | None, data_dir: Path | Non
     # count) or the directory's own name (dataset, tier). A gold manifest then adds nothing, and
     # rewording, re-dating or re-fetching a reference never moves a run's hash.
     h = hashlib.sha256()
-    for f in sorted(x for x in ref_dir.iterdir() if x.is_file()):
-        data = f.read_bytes()
+    for f in sorted(x for x in _store.iterdir(ref_dir) if _store.is_file(x)):
+        data = _store.read_bytes(f)
         if f.name == "manifest.json":
             try:
                 doc = {k: v for k, v in json.loads(data).items() if k in AUTHORSHIP}

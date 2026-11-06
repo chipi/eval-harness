@@ -23,6 +23,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+from evaluation_harness import _store  # noqa: E402
+from evaluation_harness._runs import item_rows  # noqa: E402
 from evaluation_harness.stats import holm, sign_flip_p, spearman  # noqa: E402
 
 RUNS = HERE.parent / "data" / "runs"
@@ -72,17 +74,13 @@ def summarisation_hosted(n: int = 20) -> dict:
     models -- so the two evals' stability is compared like for like. Its report's
     own figure (0.443) is over all 29 arms, local ones included."""
     scores = {}
-    for mj in sorted(RUNS.glob("cnn_*_n200_v1_*/metrics.json")):
+    for mj in sorted(_store.glob(RUNS, "cnn_*_n200_v1_*/metrics.json")):
         if "20260929" in mj.parent.name:
             continue  # the 2026-09-29 re-runs duplicate arms; every other check skips them too
-        m = json.loads(mj.read_text(encoding="utf-8"))
+        m = json.loads(_store.read_text(mj, encoding="utf-8"))
         if m.get("dataset_id") != "cnn_dailymail_200" or (m.get("params") or {}).get("provider") != "litellm":
             continue
-        rows = {}
-        for line in (mj.parent / "predictions.jsonl").read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                r = json.loads(line)
-                rows[r["item_id"]] = r["coverage"]
+        rows = {r["item_id"]: r["coverage"] for r in item_rows(mj.parent)}
         scores[m["config_id"]] = rows
     items = sorted(next(iter(scores.values())))
     return {"n_arms": len(scores), **split_half(scores, items, n, random.Random(SEED))}
@@ -106,19 +104,17 @@ def tier_tests(per_item: dict, items: list, permutations: int = 20000) -> dict:
 def load() -> dict:
     """arm -> {"scores", "rows" (item_id -> prediction row), "billed"}."""
     arms = {}
-    for mj in sorted(RUNS.glob(f"{PREFIX}*{SUFFIX}_*/metrics.json")):
-        m = json.loads(mj.read_text(encoding="utf-8"))
+    for mj in sorted(_store.glob(RUNS, f"{PREFIX}*{SUFFIX}_*/metrics.json")):
+        m = json.loads(_store.read_text(mj, encoding="utf-8"))
         if m.get("dataset_id") != DATASET:
             continue
         arm = m["config_id"][len(PREFIX) : -len(SUFFIX)]
         if arm in arms:
             raise SystemExit(f"two runs for {m['config_id']}: cannot pick one")
         rows, billed = {}, 0.0
-        for line in (mj.parent / "predictions.jsonl").read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                r = json.loads(line)
-                rows[r["item_id"]] = r
-                billed += float(((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0)
+        for r in item_rows(mj.parent):
+            rows[r["item_id"]] = r
+            billed += float(((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0)
         arms[arm] = {"scores": m["scores"], "rows": rows, "billed": billed}
     return arms
 

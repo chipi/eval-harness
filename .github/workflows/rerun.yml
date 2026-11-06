@@ -88,9 +88,9 @@ jobs:
           key: rerun-data-${{ matrix.exp }}-${{ hashFiles('harness/data/datasets/**', 'harness/data/references/gold/*/manifest.json', 'examples/*/fetch.py', 'examples/_shared/hf_rows.py') }}
       - name: data (fetch + hash check)
         run: harness/.venv/bin/python examples/reproduce.py data ${{ matrix.exp }} --light
-      - name: the parquet fallback reads the same rows as /rows (once; it covers every split the examples fetch)
+      - name: the huggingface source reads the same rows as /rows (once; it covers every split the examples fetch)
         if: matrix.exp == 'ag-news'
-        run: uv run --project examples/classification-ag-news python examples/_shared/check_parquet_fallback.py
+        run: uv run --project examples/classification-ag-news python examples/_shared/check_hf_source.py
       - name: rerun
         run: harness/.venv/bin/python examples/reproduce.py run ${{ matrix.exp }} --arms ${{ matrix.arms }}
       - name: replication card

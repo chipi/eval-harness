@@ -16,6 +16,8 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _store
+
 try:
     import yaml
 except ImportError:  # pragma: no cover
@@ -30,11 +32,11 @@ def records_dir(data_dir: Path) -> Path:
 def load(data_dir: Path) -> list[dict[str, Any]]:
     """Every record under data_dir/models/, sorted by id; a file that is not a mapping is skipped."""
     base = records_dir(data_dir)
-    if yaml is None or not base.is_dir():
+    if yaml is None or not _store.is_dir(base):
         return []
     out = []
-    for f in sorted(base.glob("*.yaml")):
-        doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+    for f in sorted(_store.glob(base, "*.yaml")):
+        doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
         if isinstance(doc, dict):
             out.append(doc)
     return out
@@ -64,12 +66,12 @@ def update_record(data_dir: Path, model_id: str, change: Any) -> dict[str, Any]:
 
     f = records_dir(data_dir) / f"{model_id}.yaml"
     lock = lock_path(f)
-    with open(lock, "w") as fh:
+    with _store.open_file(lock, "w") as fh:
         fcntl.flock(fh, fcntl.LOCK_EX)
         try:
             doc = find(data_dir, model_id) or {}
             change(doc)
-            f.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True), encoding="utf-8")
+            _store.write_text(f, yaml.safe_dump(doc, sort_keys=False, allow_unicode=True), encoding="utf-8")
         finally:
             fcntl.flock(fh, fcntl.LOCK_UN)
     return doc
@@ -91,9 +93,9 @@ def split_accepted(
 def find(data_dir: Path, model_id: str) -> dict[str, Any] | None:
     """The record with this id, or None when there is none."""
     f = records_dir(data_dir) / f"{model_id}.yaml"
-    if yaml is None or not f.is_file():
+    if yaml is None or not _store.is_file(f):
         return None
-    doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+    doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
     return doc if isinstance(doc, dict) else None
 
 
@@ -140,8 +142,8 @@ def problems(data_dir: Path) -> list[str]:
     out = []
     seen: dict[str, str] = {}
     base = records_dir(data_dir)
-    for f in sorted(base.glob("*.yaml")) if base.is_dir() else []:
-        doc = yaml.safe_load(f.read_text(encoding="utf-8")) if yaml else None
+    for f in sorted(_store.glob(base, "*.yaml")) if _store.is_dir(base) else []:
+        doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) if yaml else None
         if not isinstance(doc, dict):
             out.append(f"{f.name}: not a mapping")
             continue

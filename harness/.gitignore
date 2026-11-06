@@ -14,7 +14,7 @@ data/materialized/*
 #   metrics.json      1.0 MB total — every leaderboard, cost and headline figure
 #   predictions.jsonl  39 MB total — per-item scores, so every significance test,
 #                                    rank-stability curve and holdout can be rerun
-#   outputs/           COMMITTED, 7.3 MB — see below
+#   outputs.jsonl      COMMITTED: the run's outputs, one line per item (RFC-024) — see below
 #
 # Checked before committing: predictions.jsonl carries no article text. `_meta` holds
 # provider metadata, a predicted label, a list of document ids, or Few-NERD entity
@@ -43,26 +43,23 @@ data/materialized/*
 data/runs/*/*
 !data/runs/*/metrics.json
 !data/runs/*/predictions.jsonl
-!data/runs/*/outputs
-!data/runs/*/outputs/**
+!data/runs/*/outputs.jsonl
 !data/runs/README.md
 
 # ...but NOT these two, which exist for crash recovery and are redundant once a run
 # exits cleanly:
-#   _rows.jsonl  the per-item rows, appended during the pass so a crash leaves them.
+#   rows.partial.jsonl  the per-item rows, appended during the pass so a crash leaves them.
 #                predictions.jsonl is the same data, written on a clean exit.
 #   run.json     the run's identity, written before the first item so a crashed run
 #                can still say which arm produced its outputs. metrics.json carries
 #                the same fields and more.
 # Committing either would duplicate every prediction row for no reader.
-data/runs/*/outputs/_rows.jsonl
+data/runs/*/rows.partial.jsonl
 data/runs/*/run.json
 
 # And the temp files `write_text_atomic` creates next to their target. A crash between
 # mkstemp and os.replace leaves one behind, and `!data/runs/*/outputs/**` above would
 # otherwise commit it. Found by external review.
-data/runs/*/outputs/*.tmp
-data/runs/*/outputs/.*.tmp
 
 # EXCEPT the 72 summarisation DEV runs (cnn_dailymail_20, three repeats each). They
 # predate `_portable_id` and record an absolute adapter path containing a username and
@@ -177,9 +174,8 @@ data/runs-*/
 data/runs-repeats/*/*
 !data/runs-repeats/*/metrics.json
 !data/runs-repeats/*/predictions.jsonl
-!data/runs-repeats/*/outputs
-!data/runs-repeats/*/outputs/**
-data/runs-repeats/*/outputs/_rows.jsonl
+!data/runs-repeats/*/outputs.jsonl
+data/runs-repeats/*/rows.partial.jsonl
 !data/runs-repeats/README.md
 
 # data/runs-linux/ — every local arm re-run on ONE machine, back to back, idle. The
@@ -191,9 +187,8 @@ data/runs-repeats/*/outputs/_rows.jsonl
 data/runs-linux/*/*
 !data/runs-linux/*/metrics.json
 !data/runs-linux/*/predictions.jsonl
-!data/runs-linux/*/outputs
-!data/runs-linux/*/outputs/**
-data/runs-linux/*/outputs/_rows.jsonl
+!data/runs-linux/*/outputs.jsonl
+data/runs-linux/*/rows.partial.jsonl
 !data/runs-linux/README.md
 
 # data/runs-adjudicated/ — AG News re-scored ($0) against gold/ag_news_200_adj1, the gold with
@@ -203,9 +198,8 @@ data/runs-linux/*/outputs/_rows.jsonl
 data/runs-adjudicated/*/*
 !data/runs-adjudicated/*/metrics.json
 !data/runs-adjudicated/*/predictions.jsonl
-!data/runs-adjudicated/*/outputs
-!data/runs-adjudicated/*/outputs/**
-data/runs-adjudicated/*/outputs/_rows.jsonl
+!data/runs-adjudicated/*/outputs.jsonl
+data/runs-adjudicated/*/rows.partial.jsonl
 
 # data/runs-rescored/<scorer>/<source>/ — re-scores (evh rescore, RFC-022): the stored outputs read again by
 # another scorer, $0, the scorer by its code, the source the runs directory read. The one place the tool
@@ -214,9 +208,8 @@ data/runs-adjudicated/*/outputs/_rows.jsonl
 data/runs-rescored/*/*/*/*
 !data/runs-rescored/*/*/*/metrics.json
 !data/runs-rescored/*/*/*/predictions.jsonl
-!data/runs-rescored/*/*/*/outputs
-!data/runs-rescored/*/*/*/outputs/**
-data/runs-rescored/*/*/*/outputs/_rows.jsonl
+!data/runs-rescored/*/*/*/outputs.jsonl
+data/runs-rescored/*/*/*/rows.partial.jsonl
 
 # data/runs-labels-<dataset>-<set>/ — runs scored against a label set (RFC-023: `rescore --labels`,
 # `evh run --labels`, a recorded arm with `--labels`): arms of their own, never one more run of the config's
@@ -225,9 +218,8 @@ data/runs-rescored/*/*/*/outputs/_rows.jsonl
 data/runs-labels-*/*/*
 !data/runs-labels-*/*/metrics.json
 !data/runs-labels-*/*/predictions.jsonl
-!data/runs-labels-*/*/outputs
-!data/runs-labels-*/*/outputs/**
-data/runs-labels-*/*/outputs/_rows.jsonl
+!data/runs-labels-*/*/outputs.jsonl
+data/runs-labels-*/*/rows.partial.jsonl
 
 # data/runs-silver/ — the CNN arms re-scored ($0) against silver/cnn_dailymail_200, the frontier
 # arm's summaries: a silver group beside gold on the goal page, where silver's family bias shows.
@@ -236,9 +228,8 @@ data/runs-labels-*/*/outputs/_rows.jsonl
 data/runs-silver/*/*
 !data/runs-silver/*/metrics.json
 !data/runs-silver/*/predictions.jsonl
-!data/runs-silver/*/outputs
-!data/runs-silver/*/outputs/**
-data/runs-silver/*/outputs/_rows.jsonl
+!data/runs-silver/*/outputs.jsonl
+data/runs-silver/*/rows.partial.jsonl
 
 # data/runs-judged/<scorer>/ — the CNN summaries re-measured by LLM judges (ADR-0001), each run
 # projected from the stored verdicts in data/judge-verdicts/ by `judge-score --no-calls` ($0).
@@ -248,9 +239,8 @@ data/runs-silver/*/outputs/_rows.jsonl
 data/runs-judged/*/*/*
 !data/runs-judged/*/*/metrics.json
 !data/runs-judged/*/*/predictions.jsonl
-!data/runs-judged/*/*/outputs
-!data/runs-judged/*/*/outputs/**
-data/runs-judged/*/*/outputs/_rows.jsonl
+!data/runs-judged/*/*/outputs.jsonl
+data/runs-judged/*/*/rows.partial.jsonl
 
 # EXCEPT data/runs-pair/, WHICH WAS NEVER A WORKING ARTIFACT. It holds the four runs
 # behind the pre-registered prediction -- the single most-advertised result in this
@@ -262,9 +252,8 @@ data/runs-judged/*/*/outputs/_rows.jsonl
 data/runs-pair/*/*
 !data/runs-pair/*/metrics.json
 !data/runs-pair/*/predictions.jsonl
-!data/runs-pair/*/outputs
-!data/runs-pair/*/outputs/**
-data/runs-pair/*/outputs/_rows.jsonl
+!data/runs-pair/*/outputs.jsonl
+data/runs-pair/*/rows.partial.jsonl
 
 # Any other EVAL_RUNS_DIR: smoke passes, timing probes, throwaway scopes. Ignored for the
 # same reason, plus one the last sweep learned the hard way -- an untracked directory under
@@ -333,3 +322,6 @@ data/sources/orrery_triage_v2.hf/
 data/captures/*/records/
 data/sources/fleet_dedup_*/
 data/sources/fleet_dedup_v1.hf/
+
+# The sqlite store (RFC-025, store: sqlite): the project's data in one database, not in git; never committed here.
+data/project.sqlite*

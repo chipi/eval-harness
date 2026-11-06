@@ -163,16 +163,22 @@ def build_judge(spec: dict | None, *, use_fake: bool = False) -> Judge | None:
     if spec is None:
         return None
     if not isinstance(spec, dict) or any(spec.get(k) in (None, "") for k in SPEC_REQUIRED):
-        raise SystemExit(
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(
             f"a panel judge is a mapping with {', '.join(SPEC_REQUIRED)} "
-            "(and optionally temperature, max_tokens, base_url, api_key_env); got " + repr(spec)
+            "(and optionally temperature, max_tokens, base_url, api_key_env); got " + repr(spec),
+            "invalid-file",
         )
     if use_fake:
         return FakeJudge(name=spec["id"])
     found = _providers.problems({k: v for k, v in spec.items() if k != "id"}, "judge")
     if found:
-        raise SystemExit(
+        from evaluation_harness._common import die  # noqa: PLC0415
+
+        die(
             f"judge {spec['id']}: " + "; ".join(found) + ". Nothing was called; `evh env-check` shows "
-            "what each role reads, and --use-fake-judge runs the panel offline."
+            "what each role reads, and --use-fake-judge runs the panel offline.",
+            "not-configured",
         )
     return HostedJudge(spec)
