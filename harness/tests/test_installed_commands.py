@@ -282,6 +282,7 @@ def main() -> int:
             ("tags", [], "ok:No tag sets yet"),
             ("licences", ["--search", "share"], "ok:CC-BY-SA-4.0"),
             ("run-migrate", ["--dry-run"], "ok:run(s)"),
+            ("data-migrate", ["--to", "files", "--dry-run"], "ok:would move into the files store"),
             ("dataset-publish", ["--dataset-id", "tickets_v1", "--to", "folder"], "cannot publish"),
             (
                 "fieldset-propose",
