@@ -71,6 +71,7 @@ nav:
           - "UXS-002: The run inspector": uxs/UXS-002-inspector.md
           - "UXS-003: The command line and the first evaluation": uxs/UXS-003-cli-and-onboarding.md
           - "UXS-004: The data page (draft, 0.8.0)": uxs/UXS-004-data-page.md
+          - "UXS-005: The Workbench (sketches)": uxs/UXS-005-workbench.md
       - Designs (RFCs):
           - Index: rfc/index.md
           - "RFC-001: The run fingerprint and code identity (version 4)": rfc/RFC-001-fingerprint-and-code-identity.md

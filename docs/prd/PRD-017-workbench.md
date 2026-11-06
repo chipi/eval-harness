@@ -3,7 +3,7 @@
 - **Status**: Draft (owner, 2026-11-06: "workbench is a good name"; "start with the PRD and then the RFC"); 0.8.0
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-004](PRD-004-catalog-and-inspector.md) (the catalog and the inspector, which stay read-only),
-  [PRD-016](PRD-016-managing-project-data.md) (the Configure page, which the Workbench replaces),
+  [PRD-016](PRD-016-managing-project-data.md) (the Configure page, retired: the Workbench replaces it),
   [PRD-005](PRD-005-goals-and-rounds.md) (goals and rounds), [PRD-014](PRD-014-datasets-from-production.md) (datasets
   from production), [PRD-015](PRD-015-models-onboarded-once.md) (models onboarded once)
 - **Related RFCs**: RFC-026 (an API for every command, with jobs: to be written), RFC-025 (files or one database)
@@ -142,16 +142,16 @@ against people's labels before it may decide.
 - A run of ten arms shows its cost before it starts and its progress while it runs, and survives a closed browser.
 - The catalog remains read-only; every Workbench result is one link from its catalog page.
 
-## Open questions
+## Decisions (owner, 2026-11-06)
 
-1. One server for both apps (the catalog and the Workbench under their own paths), or two?
-2. Labelling: the CSV round trip first (it exists), or an in-app labelling screen in W2 from the start?
-3. How the Workbench edits files in files mode: through the same API (the server writes the file), with the
-   comment-keeping save the Configure page has.
-4. What happens to the Configure page: retired once the Workbench's forms cover its kinds, or kept as the Workbench's
-   "files and data" view.
-5. The data model: whether SQLite keeps settings as YAML bytes (today) or as entities in tables (RFC to come); the
-   Workbench is designed on the entities either way.
+1. **One server** for both apps: the catalog and the Workbench under their own paths.
+2. **Labelling** in W2: an in-app labelling screen is the first surface; the CSV round trip (`label-sheet` /
+   `label-import`, `sheet-import`) stays as an option.
+3. **Files mode:** the Workbench edits a files project's files as it writes a SQLite project's database: the server
+   saves, changing only the values that changed and keeping the file's comments (how, the RFC says).
+4. **The Configure page is retired** and what was built for it is thrown away (its pages, forms and routes); the
+   store (RFC-025) stays.
+5. **The data model** is worked out as a mock data model alongside the mockup, and reviewed with it.
 
 ## How it is decided, before anything is built
 
@@ -159,7 +159,8 @@ Owner, 2026-11-06: agree first, then build.
 
 1. **The structure** (this PRD): what the Workbench solves, its workflows, where the UI effort goes.
 2. **Sketches** of the screens of W1 to W3 and the home, and the plain forms of W4 to W7 (a UXS).
-3. **A clickable mockup** of those screens with this repository's real data, reviewed with the owner in as many
+3. **A clickable mockup** of those screens with this repository's real data, and beside it a mock data model (the
+   entities the screens show and how they link), both reviewed with the owner in as many
    rounds as it takes. The mockup is the Workbench app's first form, static: its pages, layout and styles are the
    app's own, so once it is agreed it is wired to the API rather than rebuilt (owner: "think about the mock-up as
    already a workbench app that you're starting, except it's just a static thing").
