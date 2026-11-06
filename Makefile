@@ -7,6 +7,8 @@
 #   make reproduce EXP=scifact LEVEL=local      (local | baselines | hosted | all)
 #   make compare   EXP=scifact           the replication card: does every finding hold?
 #   make reproduce EXP=scifact CONFIG=path/to/your_arm.yaml    add a model of your own
+#   make serve [STORE=sqlite] [CONFIGURE=1]   the catalog and inspector on 127.0.0.1 (a SQLite copy of the data;
+#                                        with CONFIGURE=1 its Configure pages)
 #   make browser-check                   the inspector and the public site in headless Chromium
 #   make guard-check                     the checks can fail: each checker catches its planted defects
 #   make quality                         lint, types, security, dead code, docstrings, spelling, shell
@@ -22,11 +24,11 @@ ARMS ?=
 CONFIG ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs browser-check browser-real-check budget-check guard-check commands-check \
+.PHONY: help setup verify list plan data reproduce compare site docs serve browser-check browser-real-check budget-check guard-check commands-check \
 	quality-install quality lint format type security audit-locks deadcode docstrings spelling shell complexity
 
 help:
-	@sed -n '1,14p' Makefile | sed 's/^# \{0,1\}//'
+	@sed -n '1,16p' Makefile | sed 's/^# \{0,1\}//'
 
 $(PY):
 	$(MAKE) -C harness install
@@ -64,6 +66,9 @@ site: $(PY)
 
 # Both front ends in headless Chromium: the catalog and run inspector, then the public site
 # served with production's headers. Needs `make -C harness browser-install` once.
+serve: $(PY)
+	$(MAKE) -C harness serve STORE=$(STORE) CONFIGURE=$(CONFIGURE) FRESH=$(FRESH) ARGS="$(ARGS)"
+
 browser-check: $(PY)
 	$(MAKE) -C harness browser-check
 	$(PY) site/test_browser.py

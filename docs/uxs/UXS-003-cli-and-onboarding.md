@@ -111,7 +111,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | (no page action) onboarding a model's deployment, smoking an arm before its run | `evh model-onboard <id> --deployment <d>`, `evh arm-smoke --config <arm>` | |
 | reference set pages | `evh references [--reference-id <id>]` | `make references` |
 | the Captures page | `evh captures [--capture ID] [--json]` | |
-| the data page (Manage, local only, 0.8.0, UXS-004): the overview, a folder, find | `evh data-ls [PATH] [--find TEXT]` | |
+| the Configure page (SQLite, `configure: true`, local only, 0.8.0, UXS-004): the overview, a folder, find | `evh data-ls [PATH] [--find TEXT]` | |
 | the data page: a file; a setting's fields | `evh data-show PATH [--fields]` | |
 | the data page: the form's Save, Create | `evh data-put PATH --set KEY=VALUE … [--unset KEY …] [--new] [--check]`, or a whole file: `evh data-put PATH FILE` | |
 | the data page: Delete (a setting, or a whole run) | `evh data-rm PATH [--dry-run]` | |

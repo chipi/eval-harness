@@ -591,8 +591,12 @@ data page or `evh data-put` (below), and a folder of files through `data-migrate
 read git, say why they do not apply. A release reads the database and writes the same files layout
 as a files project, a hidden dataset's text left out.
 
-**The data page** (UXS-004). `evh catalog-serve` serves `data.html`, linked from the header's Data
-menu as **Manage**: everything under `data/`, in either store, and the project's settings (arm
+**The Configure page** (UXS-004). A SQLite project that sets `configure: true` in its
+`config.yaml` (or `EVAL_CONFIGURE=1`) gets a **Configure** item in the catalog's header, after
+Inspector; `evh catalog-serve` on this machine serves it. Without it the catalog is built and served
+with no Configure part; with `store: files` it is refused (a files project is edited in its files).
+`make serve STORE=sqlite CONFIGURE=1` tries it on a SQLite copy of this repository's data. The page
+shows everything under `data/` and the project's settings (arm
 configs, goals, fieldsets, judge scorers, model records, failure-mode lists, `validate.json`), which
 it creates, edits and deletes in a form built from each kind's schema: a field per key, no YAML to
 type. A setting is saved only after it passes the check: it matches its schema, and (all but an arm

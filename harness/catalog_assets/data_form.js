@@ -126,7 +126,13 @@
     function control(node, path, v) {
       const k = kindOf(node), p = esc(key(path)), id = `df-${++uid}`;
       const writer = lookup(spec.written, path);
-      if (writer) return [id, `<div class="df-ro">${viewValue(node, v)}<p class="df-help">written by <code>${esc(writer)}</code>; kept as it is</p></div>`];
+      if (writer) {
+        // what a command wrote is kept as it is: folded, so a record's form is about what a person sets
+        const big = isObj(v) || Array.isArray(v);
+        return [id, big
+          ? `<details class="df-ro"><summary>written by <code>${esc(writer)}</code>; kept as it is</summary>${viewValue(node, v)}</details>`
+          : `<div class="df-ro">${viewValue(node, v)}<p class="df-help">written by <code>${esc(writer)}</code>; kept as it is</p></div>`];
+      }
       if (spec.id_key && path.length === 1 && path[0] === spec.id_key && spec.id_is_file_name && !spec.new) {
         return [id, `<span class="df-fixed" id="${id}">${esc(v)}</span><p class="df-help">the file's name; renaming is not supported</p>`];
       }
@@ -185,7 +191,8 @@
       const others = Object.keys(val).filter(n => !(n in props));
       const extra = others.length && node.additionalProperties !== false
         ? `<div class="df-row"><span class="df-label">other keys</span><div class="df-ctl">${others.map(n => `<div class="df-kv" data-at="${esc(key([...path, n]))}"><span class="df-k">${esc(n)}</span>${anyValue([...path, n], val[n])}<button type="button" class="btn small df-del" data-path="${esc(key([...path, n]))}" aria-label="remove ${esc(n)}">×</button></div>`).join('')}</div></div>` : '';
-      const more = later.length ? (path.length ? later.join('') : `<details class="df-more"><summary>more fields (${later.length})</summary>${later.join('')}</details>`) : '';
+      // the optional fields a setting does not set, folded at every level (a deployment card, too)
+      const more = later.length ? `<details class="df-more"><summary>more fields (${later.length})</summary>${later.join('')}</details>` : '';
       return `<div class="df-group">${[...first, ...set].map(r).join('')}${extra}${more}</div>`;
     }
     function list(node, path, v) {

@@ -17,8 +17,9 @@
 
 ## Summary
 
-`data.html` is the catalog's page for what a project keeps under `data/`: every folder and file, in either store,
-and the project's **settings**, which a person can create, edit and delete there. It is a live page like the
+`data.html` is the **Configure** page of a project that keeps its data in SQLite and deploys it (`configure: true`):
+every folder and file the project keeps under `data/`, and its **settings**, which a person can create, edit and delete
+there. It is a live page like the
 inspector: the catalog build writes its shell, `evh catalog-serve` fills it, and it writes only through that
 server on this machine. Its state is in the URL, so a file or a folder can be linked to.
 
@@ -45,7 +46,10 @@ server on this machine. Its state is in the URL, so a file or a folder can be li
   the end of its output when it fails).
 - **The file stays the person's.** Saving from the form changes only the values that changed: the file's comments
   and the order of its keys are kept (ruamel.yaml, owner yes 2026-11-06).
-- **The same in both stores.** The page does not change with the store; a badge says which one the project uses.
+- **SQLite only, and deployed on purpose** (owner, 2026-11-06). A files project is edited in its files, so it never
+  has the page: `configure: true` (or `EVAL_CONFIGURE=1`) with `store: files` is refused by `evh catalog` and
+  `catalog-serve` and named by `validate` V23. A SQLite project chooses: the catalog only (the default), or the
+  catalog and Configure.
 - **Parity.** Every view and every action is a command: `evh data-ls`, `data-show`, `data-put` or `data-rm` (below).
 
 ## Scope
@@ -58,9 +62,20 @@ write on a public server; Python code.
 
 ## Where it is
 
-In the header's **Data** group, after Reference sets: **Manage**. The link is shown only when the page is served by a
-local `catalog-serve` that answers `/api/data/store`; on a public deployment or a page opened from disk it stays
-hidden.
+**Configure**, a menu item of its own at the end of the header, after Inspector; the catalog's menus (Data, Arms)
+are what they are without it. Two deployments:
+
+| | built | served |
+| --- | --- | --- |
+| **catalog only** (the default; every files project) | no Configure item, no `data.html`, no `data.js` / `data_form.js` | no `/api/data` route (404) |
+| **catalog and Configure** (`configure: true`, SQLite) | the item, the page and its scripts | `/api/data` by a local `catalog-serve` only |
+
+Even when built, the item is shown only when a local `catalog-serve` answers `/api/data/store`: on a public
+deployment or a page opened from disk it stays hidden, and a public server answers no `/api/data` call.
+
+To try it: `make serve STORE=sqlite CONFIGURE=1` serves this repository's data from a SQLite copy
+(`.build/serve-sqlite/`, made once; `FRESH=1` makes it again), so the tracked files are never touched; without
+`CONFIGURE` the same copy is served as the catalog only; `make serve` alone is the files catalog.
 
 ## State in the URL
 
@@ -142,7 +157,8 @@ data.**
 
 - **Fields come from the schema.** Each key of the kind's schema is a row: its name as the label (`*` when
   required), the control, and the schema's description as help. Required keys come first in the schema's order,
-  then the optional ones a file sets, then **more fields** (closed) with the optional ones it does not.
+  then the optional ones a file sets, then **more fields** (closed) with the optional ones it does not, at every
+  level (a deployment's card has its own).
 - **Controls by type.** A string is one line; a long-text key (`statement`, `decision`, `description`, `notes`,
   `why`, `rule`, `usage`, `what`, `differs_from_this_use`) is a box of a few lines. A number or integer is a number
   field. A boolean is a choice of **not set / yes / no**. An `enum` is a menu; a `const` is shown, fixed. A key that
@@ -163,7 +179,7 @@ data.**
   may be typed, and the check says if it is wrong.
 - **Written by a command.** A field a command writes is shown read-only with **written by `evh model-onboard`**
   (a model record's `capabilities`, a deployment's `onboarding` and `checked_at`) or **written by `evh arm-smoke`**
-  (`smokes`); saving keeps it as it is.
+  (`smokes`), a group of them folded behind that line; saving keeps it as it is.
 - **The id.** For every kind but an arm config the id is the file name, so an existing setting's id is shown, fixed
   (renaming is not supported). An arm config's `config_id` is a field like the others.
 - **Save** checks first. A problem is shown at its field, in red, and all of them are listed above the buttons, each
@@ -216,7 +232,7 @@ data.**
 ## Checklist for a change to the data page
 
 - Each view rendered by the browser test, with a setting edited in its form, created and deleted, and a run
-  deleted, on both stores.
+  deleted, in a SQLite project that deploys Configure; a files project's catalog has no Configure item, page or route.
 - Every settings file in the repository and the examples opens in its form, and saving it unchanged writes nothing.
 - A save from the form keeps the file's comments: a test edits one value of a commented file and compares the rest.
 - Every refusal above has a test, on the page and on the command.

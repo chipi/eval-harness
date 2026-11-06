@@ -264,7 +264,13 @@ def ignored_by_git(path: Path) -> bool:
     # A run's metrics file, not the directory: the re-allow blocks admit `<dir>/<run>/metrics.json`
     # under a denied `data/runs-*/`, so only that path answers the question. Absolute, because `-C`
     # moves git's working directory and a relative probe would then name some other file.
-    probe = Path(path).resolve() / "_probe_run" / "metrics.json"
+    target = Path(path).resolve()
+    # In the database a run's place is its key under data/, wherever the database file is (a copy under .build/,
+    # make serve STORE=sqlite): asked as the project's own data/<key>, a copy shows what the project shows.
+    data = _paths()["DATA"].resolve()
+    if store() == "sqlite" and target.is_relative_to(data):
+        target = _paths()["ROOT"].resolve() / "data" / target.relative_to(data)
+    probe = target / "_probe_run" / "metrics.json"
     anchor = next((p for p in probe.parents if p.exists()), Path.cwd())
     try:
         r = subprocess.run(
@@ -716,6 +722,39 @@ REFUSALS = {
 #: Where a project keeps its data (RFC-025): `files` (the default) or `sqlite` (everything under data/ in one database).
 STORES = ("files", "sqlite")
 _STORE_SEEN: list[Any] = []
+
+
+def configure_setting() -> tuple[bool, str | None]:
+    """Whether the project deploys its Configure pages (the data page, UXS-004): `EVAL_CONFIGURE` (1, true, yes),
+    else `configure: true` in its config.yaml; and what is wrong with it, if anything. The pages edit the database,
+    so they need `store: sqlite`: a files project is edited in its files."""
+    env = os.environ.get("EVAL_CONFIGURE", "").strip().lower()
+    if env:
+        on, where = env in ("1", "true", "yes"), "EVAL_CONFIGURE"
+    else:
+        cfg, on, where = _paths()["ROOT"] / "config.yaml", False, "configure in config.yaml"
+        if cfg.is_file():
+            import yaml  # noqa: PLC0415
+
+            try:
+                doc = yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}
+            except yaml.YAMLError:
+                doc = {}
+            on = isinstance(doc, dict) and doc.get("configure") is True
+    if on and store() != "sqlite":
+        return (
+            False,
+            f"{where} turns on the Configure pages, which need store: sqlite (this project's store is {store()})",
+        )
+    return on, None
+
+
+def configure() -> bool:
+    """Whether the Configure pages are deployed; refused (not-allowed) when they are asked for without SQLite."""
+    on, problem = configure_setting()
+    if problem:
+        die(problem, "not-allowed")
+    return on
 
 
 def store() -> str:

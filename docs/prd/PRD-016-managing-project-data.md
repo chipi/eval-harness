@@ -25,7 +25,8 @@ for a small CRUD page next to the catalog for users to manage their settings and
 
 ## Goals
 
-- Browse every folder and file the project keeps, in either store, with sizes and dates.
+- Browse every folder and file the project keeps, with sizes and dates, in a SQLite project that deploys the
+  Configure pages (`configure: true`); a files project is edited in its files and has none.
 - Create, edit and delete a setting, each change checked against the setting's schema before it is saved.
 - Delete a run (its record, outputs and rows), which in the database has no folder to remove.
 - The same from the command line (`evh data-ls`, `data-show`, `data-put`, `data-rm`).

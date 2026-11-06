@@ -1553,11 +1553,17 @@ def v22_dataset_records() -> None:
 def v23_run_outputs() -> None:
     """V23: every run's outputs can be read (RFC-024): none is left in the old layout (an outputs/ folder), and a
     derived run without outputs of its own finds its source's. And the project is files or its database, never both
-    (RFC-025): with files no data/project.sqlite; with the database nothing under data/ on disk but it."""
+    (RFC-025): with files no data/project.sqlite; with the database nothing under data/ on disk but it. The Configure
+    pages (`configure: true`) are only for the database."""
     from evaluation_harness import _common, _outputs, _store  # noqa: PLC0415
 
     bad: list[str] = []
     db = DATA / _store.DB
+    _on, configure_problem = _common.configure_setting()
+    if configure_problem:
+        bad.append(
+            f"{configure_problem}: set store: sqlite (evh data-migrate --to sqlite), or remove configure"
+        )
     if _common.store() == "files":
         if _store.is_file(db):
             bad.append(

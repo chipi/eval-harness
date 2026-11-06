@@ -22,7 +22,10 @@ person can edit; the owner asked for a small page to manage settings and data.
   answers no `/api/data` call at all.
 - **One implementation.** The page and `evh data-ls`, `data-show`, `data-put`, `data-rm` call the same module (`_data_page`),
   which reads and writes through `_store`, so the page and the command line refuse the same things with the same
-  words, in either store.
+  words.
+- **SQLite only, deployed on purpose** (owner, 2026-11-06). The page is the Configure menu of a SQLite project that
+  sets `configure: true`; without it the catalog is built and served with no Configure part at all, and a files
+  project can never turn it on (it is edited in its files).
 
 ## Consequences
 

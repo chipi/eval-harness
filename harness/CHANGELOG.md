@@ -20,8 +20,11 @@ that can move a result is never a patch release without saying so under **Change
   path I/O anywhere else. `evh data-migrate --to sqlite|files` moves a project either way, every file read back by
   its sha256; on this repository's data the round trip gives back every file byte for byte. `validate` V23 names a
   project in both. Python code is never in the database.
-- **The data page** (PRD-016, UXS-004, ADR-0027). `evh catalog-serve` serves `data.html` (the header's Data menu,
-  **Manage**): everything a project keeps under `data/`, in either store, and its settings (arm configs, goals,
+- **The Configure page** (PRD-016, UXS-004, ADR-0027), for a SQLite project that sets `configure: true`: a menu
+  item of its own after Inspector, served by a local `catalog-serve`. Without it the catalog is built and served
+  with no Configure part at all; a files project cannot turn it on (it is edited in its files; `validate` V23 names
+  it). `make serve [STORE=sqlite] [CONFIGURE=1]` stands the whole thing up on 127.0.0.1, in SQLite from a copy of
+  this repository's data. The page: everything a project keeps under `data/` and its settings (arm configs, goals,
   fieldsets, judge scorers, model records, failure-mode lists, `validate.json`) created, edited and deleted there,
   in a form built from each kind's schema: a field per key, the right control for its type, the project's datasets,
   goals and model records suggested; no YAML to type. A setting is saved only after it passes the check (it matches

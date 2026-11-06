@@ -413,8 +413,8 @@ with tempfile.TemporaryDirectory() as td:
     )
     nav = re.findall(r'<nav class="nav">(.*?)</nav>', home)[0]
     check(
-        "nav: Models is under Arms (and Manage, the data page, is the thirteenth link)",
-        ">Models<" in nav and ">Manage<" in nav and nav.count("<a ") == 13,
+        "nav: Models is under Arms",
+        ">Models<" in nav and nav.count("<a ") == 12,
         nav.count("<a "),
     )
 

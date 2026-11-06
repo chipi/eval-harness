@@ -1010,6 +1010,9 @@ DATA_ROUTES = (
     "/api/data/form",
     "/api/data/rebuild",
 )
+#: Whether this server answers the Configure pages' routes (main sets it): a local server of a project that deploys
+#: them (`configure: true`, SQLite only). Off, they are 404, as on a public server.
+CONFIGURE_ON: list[bool] = [False]
 #: The catalog this server serves (main sets it), which the data page can rebuild after a setting changes.
 CATALOG_DIR: list[Path] = []
 #: The one rebuild at a time: its state, when it started and ended, and the end of its output when it failed.
@@ -1154,8 +1157,8 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     if ".." in p.split("/"):
         return 404
     if p.startswith("/api/"):
-        if p in DATA_ROUTES:  # this machine's only (ADR-0027)
-            return 404 if LIMITS["hosts"] else 0
+        if p in DATA_ROUTES:  # this machine's only (ADR-0027), and only for a project that deploys them
+            return 404 if LIMITS["hosts"] or not CONFIGURE_ON[0] else 0
         return 0 if p in API_ROUTES else 404
     prefix = next((x for x in prefixes if p.startswith(x)), None)
     if prefix is None:
@@ -1302,7 +1305,7 @@ class Handler(SimpleHTTPRequestHandler):
         url = urlparse(self.path)
         if self._refuse():
             return
-        if url.path not in DATA_ROUTES or LIMITS["hosts"]:
+        if url.path not in DATA_ROUTES or LIMITS["hosts"] or not CONFIGURE_ON[0]:
             self.send_error(404)
             return
         if self.headers.get(DATA_HEADER) != "1":
@@ -1505,6 +1508,7 @@ def main() -> int:
             die(f"no catalog at {args.build_dir}: run `evh catalog` first", "not-found")
         Handler.prefixes = served(args.build_dir, A.data_dir, tuple(getattr(A, "served_dirs", ())))
         CATALOG_DIR[:] = [args.build_dir.resolve()]
+        CONFIGURE_ON[:] = [_common.configure()]
     if args.warm:
         threading.Thread(
             target=lambda: print(f"warm: {warm(args.warm)} comparison(s) cached", flush=True), daemon=True

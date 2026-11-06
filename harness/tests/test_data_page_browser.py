@@ -6,7 +6,9 @@
 
 In a tutorial project served by a local catalog-serve, kept as files and then moved into its database:
 
-  - the header's Data menu has Manage on the local server; a page opened from disk does not show it;
+  - a SQLite project that deploys Configure (`configure: true`): the header has Configure, a menu of its own beside
+    the catalog's (its Data menu as it was); a page opened from disk does not show it. A files project: no Configure
+    in its menus, no data.html, nothing served at /api/data;
   - the overview: the store badge, the settings tiles, the data folders; finding a file by name;
   - a folder of settings, and its "+ New";
   - a setting: its fields (not its YAML), the runs made with it, its sha256, Edit and Delete; the file as stored
@@ -70,9 +72,12 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
         try:
             page.goto(base + "index.html")
             page.wait_for_function("document.body.classList.contains('local-data')", timeout=10000)
+            link = page.locator("nav.nav > a[href$='data.html']")
             page.locator("details.navgroup[data-group=data] summary").click()
-            link = page.locator("details.navgroup[data-group=data] a[href$='data.html']")
-            check(f"{store}: the Data menu has Manage on a local server", link.is_visible())
+            data_menu = page.locator("details.navgroup[data-group=data] .navlist").inner_text()
+            check(f"{store}: Configure is a menu of its own on a local server; the Data menu is the catalog's",
+                  link.is_visible() and link.inner_text() == "Configure" and "Manage" not in data_menu
+                  and "Configure" not in data_menu, data_menu)  # fmt: skip
             shot(page, "menu")
 
             page.goto(base + "data.html")
@@ -122,7 +127,7 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
             check(f"{store}: the form has a field per key, required ones marked, the project's datasets suggested",
                   req.endswith("*") and page.locator("[data-p='dataset_id']").get_attribute("list") == "dl-datasets"
                   and "tickets_v1" in dl and page.locator("[data-p='params.sentences']").input_value() == "1"
-                  and page.locator("details.df-more").count() == 1 and page.locator("textarea, .dm-edit").count() == 0,
+                  and page.locator(".df-form > .df-group > details.df-more").count() == 1 and page.locator("textarea, .dm-edit").count() == 0,
                   (req, dl))  # fmt: skip
             shot(page, "form")
             page.fill("[data-p='dataset_id']", "")
@@ -135,7 +140,7 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
             shot(page, "form-refused")
             page.fill("[data-p='dataset_id']", "tickets_v1")
             page.fill("[data-p='params.sentences']", "2")
-            page.locator("details.df-more summary").click()
+            page.locator(".df-form > .df-group > details.df-more > summary").click()
             page.fill("[data-p='goal']", "tickets_summary")
             page.locator(".df-row[data-at='params'] .df-addkey").click()
             page.fill("[data-rename='params.key1']", "temperature")
@@ -205,50 +210,63 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
                 bad = page.locator("#dm-result .dm-bad")
                 return bad.inner_text() if bad.count() else ""
 
+            def unfold() -> None:
+                # "more fields" opened, as a person would click it: the form folds what a setting does not set
+                page.evaluate(
+                    "document.querySelectorAll('#dm-form details.df-more').forEach(d => d.open = true)"
+                )
+
             def add(at: str) -> None:
+                unfold()
                 page.locator(f".df-row[data-at='{at}'] .df-add").first.click()
 
+            def fill(sel: str, value: str) -> None:
+                unfold()
+                page.fill(sel, value)
+
             def fill_config() -> None:
-                page.fill("#dm-name", "ui_arm")
-                page.fill("[data-p='config_id']", "ui_arm_v1")
-                page.fill("[data-p='dataset_id']", "tickets_v1")
-                page.fill("[data-p='params.provider']", "echo")
+                fill("#dm-name", "ui_arm")
+                fill("[data-p='config_id']", "ui_arm_v1")
+                fill("[data-p='dataset_id']", "tickets_v1")
+                fill("[data-p='params.provider']", "echo")
 
             def fill_fieldset() -> None:
-                page.fill("[data-p='fieldset_id']", "ui_fields")
+                fill("[data-p='fieldset_id']", "ui_fields")
                 add("fields")
-                page.fill("[data-p='fields.0.name']", "channel")
+                fill("[data-p='fields.0.name']", "channel")
                 page.select_option("[data-p='fields.0.type']", label="choice")
                 add("fields.0.values")
-                page.fill("[data-p='fields.0.values.0']", "email")
+                fill("[data-p='fields.0.values.0']", "email")
+                unfold()
                 page.locator(".df-row[data-at='fields.0.values'] .df-add").click()
-                page.fill("[data-p='fields.0.values.1']", "chat")
+                fill("[data-p='fields.0.values.1']", "chat")
 
             def fill_scorer() -> None:
-                page.fill("[data-p='scorer_id']", "ui_scorer")
-                page.fill("[data-p='dataset_id']", "tickets_v1")
+                fill("[data-p='scorer_id']", "ui_scorer")
+                fill("[data-p='dataset_id']", "tickets_v1")
                 for i, family in (
                     (0, "vendor_a"),
                     (1, "vendor_b"),
                 ):  # two judges of two families (ADR-0001 §4)
                     page.locator(".df-row[data-at='judges'] .df-add").last.click()
-                    page.fill(f"[data-p='judges.{i}.id']", f"j{i}")
+                    fill(f"[data-p='judges.{i}.id']", f"j{i}")
+                    unfold()
                     page.select_option(f"[data-p='judges.{i}.params.provider']", label="fake")
-                    page.fill(f"[data-p='judges.{i}.params.model']", f"fake-{i}")
-                    page.fill(f"[data-p='judges.{i}.params.usd_per_mtok_in']", "0")
-                    page.fill(f"[data-p='judges.{i}.params.usd_per_mtok_out']", "0")
-                    page.fill(f"[data-p='judges.{i}.params.family']", family)
-                page.fill("[data-p='prompt.file']", "tutorial/judge_prompt.txt")
+                    fill(f"[data-p='judges.{i}.params.model']", f"fake-{i}")
+                    fill(f"[data-p='judges.{i}.params.usd_per_mtok_in']", "0")
+                    fill(f"[data-p='judges.{i}.params.usd_per_mtok_out']", "0")
+                    fill(f"[data-p='judges.{i}.params.family']", family)
+                fill("[data-p='prompt.file']", "tutorial/judge_prompt.txt")
 
             def fill_model() -> None:
-                page.fill("[data-p='model_id']", "ui_model")
+                fill("[data-p='model_id']", "ui_model")
                 add("aliases")
-                page.fill("[data-p='aliases.0']", "echo")
+                fill("[data-p='aliases.0']", "echo")
 
             def fill_modes() -> None:
-                page.fill("[data-p='failure_modes_id']", "ui_modes")
+                fill("[data-p='failure_modes_id']", "ui_modes")
                 add("modes")
-                page.fill("[data-p='modes.0.id']", "invented-fact")
+                fill("[data-p='modes.0.id']", "invented-fact")
 
             kinds = {
                 "configs/ui_arm.yaml": fill_config,
@@ -258,11 +276,11 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
                 "failure-modes/ui_modes.yaml": fill_modes,
             }
             made, edited, gone = [], [], []
-            for target, fill in kinds.items():
+            for target, fill_kind in kinds.items():
                 folder = target.split("/")[0]
                 page.goto(base + f"data.html?path={folder}&new=1")
                 page.wait_for_selector(".df-row")
-                fill()
+                fill_kind()
                 said = save_and_wait("Created.")
                 if said or "Created." not in page.locator(".dm-note").inner_text():
                     made.append((target, said[:300]))
@@ -280,7 +298,7 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
             for target, (field, value) in change.items():
                 page.goto(base + f"data.html?path={target}&edit=1")
                 page.wait_for_selector(".df-row")
-                page.fill(f"[data-p='{field}']", value)
+                fill(f"[data-p='{field}']", value)
                 said = save_and_wait("Saved.")
                 if said or value not in page.locator(".df-show").inner_text():
                     edited.append((target, said[:200]))
@@ -447,11 +465,11 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
                 " | ".join(errors[:5]) + " | " + " | ".join(failed[:5]),
             )
 
-            # Opened from disk: the menu has no Manage.
+            # Opened from disk: the menu has no Configure.
             disk = browser.new_page()
             disk.goto((proj / ".build" / "catalog" / "index.html").as_uri())
             disk.wait_for_timeout(500)
-            check(f"{store}: a page opened from disk does not show Manage",
+            check(f"{store}: a page opened from disk does not show Configure",
                   not disk.locator("a[href$='data.html']").first.is_visible())  # fmt: skip
         except Exception:
             # what the page showed when a step failed: its text, the errors it logged, the requests that failed
@@ -459,6 +477,26 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
             print("  console:", errors[:5], "failed requests:", failed[:5])
             raise
         browser.close()
+
+
+def files_case(base: str) -> None:
+    """A files project deploys no Configure: not in its menus, no page, nothing served."""
+    from playwright.sync_api import sync_playwright  # noqa: PLC0415
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch()
+        page = browser.new_page()
+        page.goto(base + "index.html")
+        page.wait_for_timeout(800)
+        nav = page.locator("nav.nav").inner_html()
+        status = page.request.get(base + "data.html").status
+        api = page.request.get(base.replace(".build/catalog/", "") + "api/data/store").status
+        browser.close()
+    check(
+        "files: no Configure in the menus, no data.html, nothing at /api/data",
+        "data.html" not in nav and "Configure" not in nav and status == 404 and api == 404,
+        (status, api),
+    )
 
 
 def main() -> int:
@@ -477,7 +515,11 @@ def main() -> int:
         ENV[store] = env
         p, port = serve(proj, env)
         try:
-            drive(store, f"http://127.0.0.1:{port}/.build/catalog/", proj, args.shots)
+            base = f"http://127.0.0.1:{port}/.build/catalog/"
+            if store == "files":
+                files_case(base)
+            else:
+                drive(store, base, proj, args.shots)
         finally:
             os.killpg(p.pid, 15)
             p.wait(timeout=30)
