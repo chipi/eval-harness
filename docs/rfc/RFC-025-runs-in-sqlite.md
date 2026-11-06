@@ -27,6 +27,9 @@ SQLite is in Python's standard library: no dependency.
 - **Python code** (`*.py`) under `data/` stays a file in both stores.
 - **Moving**: `evh data-migrate --to sqlite|files`; every file read back and compared by sha256 before the old copy
   is removed.
+- **Getting data in**: in SQLite mode `data-migrate --to sqlite` is the only way a file a person writes (a goal, a
+  config) gets into the database; a way to add and change them without files comes with the API of RFC-026 (owner,
+  2026-11-06). The harness's own writes (runs, datasets it creates, labels, verdicts) go to the database directly.
 - **validate** in SQLite mode skips the checks that ask git what is committed (nothing in the database is in git) and
   says so. **A release** copies the database with a hidden dataset's text removed.
 
@@ -38,7 +41,9 @@ Anything else: no settings screen, no history, no export or import, no extra com
 
 - The store's tests on both stores; `data-migrate` there and back on a copy of this repository's `data/`, every file
   byte-identical.
-- The full suite (`make verify`) on both stores.
+- The full suite (`make verify`) on the files store. On the sqlite store, what reads a project: this repository's
+  `data/` moved into a database in a separate copy, through validate, the catalog, the site check and the report
+  checks. The whole suite on the sqlite store needs a way to put its fixtures in, so it comes with RFC-026.
 - S1's bench on both stores, before S2.
 
 ## Built before this version, replaced by it

@@ -167,7 +167,10 @@ and private datasets on Kaggle and the Hub are not tried (no Kaggle credentials 
 `store: sqlite` in the project's `config.yaml` (or `EVAL_STORE`) puts everything under `data/` in one database,
 `data/project.sqlite`, which every command, the catalog and the inspector read and write; Python code never in it.
 `evh data-migrate --to sqlite|files`. Built so far: a run's outputs and rows behind one module in either store
-(f28f050e4, 6e8ed1842). Done when: the full suite (`make verify`) is green on both stores, then S1's bench on both.
+(f28f050e4, 6e8ed1842). Getting data in is `data-migrate` only until S0b's API (owner, 2026-11-06). Done when: the
+full suite is green on files; validate, catalog, site check and report checks green on this repository's data in a
+database; S1's bench on both stores (each bench project made as files, then moved). The full suite on sqlite comes
+with S0b.
 [RFC-025](../../docs/rfc/RFC-025-runs-in-sqlite.md), minimal version accepted 2026-11-06.
 
 **S0b, next after S0: an API for every command (owner, 2026-11-06: "next RFC is for this API").** Today only the
