@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Bring the project's runs to one outputs file each, once (idempotent; RFC-024).
+"""Bring the project's runs to one outputs file each, once (idempotent; RFC-024), or move them between stores (RFC-025).
 
     evh run-migrate --dry-run     what would change: runs, files before and after
     evh run-migrate               write it
+    evh run-migrate --to sqlite   move every run's outputs into data/runs.sqlite (after setting runs.store: sqlite)
+    evh run-migrate --to files    move them back into each run's outputs.jsonl (after setting runs.store: files)
 
 For every run directory under data/runs* that still has an `outputs/` folder: its `outputs/<item>.txt` become one
 `outputs.jsonl`, in the dataset's order, each line checked against the bytes of the file it came from. A derived run
@@ -11,6 +13,11 @@ its source's. One that differs, or whose source is not here, keeps its own file 
 (`outputs/_rows.jsonl`) is dropped when predictions.jsonl has every row it holds, else kept as `rows.partial.jsonl`.
 Before a run's folder is removed, V5's signature and every output read back are checked equal to what the files
 held; any difference stops the migration with nothing of that run changed.
+
+`--to` moves runs one at a time: written to the target store, every output's sha256 and the order read back equal to
+the source's, then deleted from the source. A crash between leaves the run in both, and the next `--to` finishes it.
+It refuses while the project's store (runs.store, or EVAL_RUNS_STORE) is not the target, so nothing writes to the old
+store after the move.
 """
 
 from __future__ import annotations
@@ -66,7 +73,7 @@ def _texts_of(d: Path) -> dict[str, str] | None:
     if (d / "outputs").is_dir():
         raw = _read_files(d)
         return {i: b.decode("utf-8") for i, b in raw.items() if _utf8(b)}
-    if (d / _outputs.FILE).is_file():
+    if _outputs.own(d):
         return _outputs.outputs(d)
     return None
 
@@ -102,7 +109,7 @@ def migrate(dry_run: bool) -> dict[str, int]:
     for root in sorted(p for p in _common.DATA.glob("runs*") if p.is_dir()):
         for depth in ("*", "*/*", "*/*/*"):
             for c in root.glob(depth):
-                layout = c.is_dir() and ((c / "outputs").is_dir() or (c / _outputs.FILE).is_file())
+                layout = c.is_dir() and ((c / "outputs").is_dir() or _outputs.own(c))
                 if layout and not (_metrics(c).get("derived") or {}).get("from"):
                     by_name.setdefault(c.name, []).append(c)
     n = {"runs": len(runs), "own_file": 0, "reads_source": 0, "files_before": 0, "kept_checkpoint": 0}
@@ -124,7 +131,7 @@ def migrate(dry_run: bool) -> dict[str, int]:
                 _outputs.write_all(d, texts, _order(d, list(texts)))
                 back = _outputs.outputs(d)
                 if back != texts or _outputs.signature(d) != _old_signature(raw):
-                    (d / _outputs.FILE).unlink(missing_ok=True)
+                    _outputs.store().delete(d)
                     die(
                         f"{d}: the outputs read back are not the files' bytes; nothing of it changed",
                         "mismatch",
@@ -157,7 +164,7 @@ def migrate(dry_run: bool) -> dict[str, int]:
     ):
         m = _metrics(d)
         der = m.get("derived") or {}
-        if not d.is_dir() or not der.get("from") or der.get("from_dir") or (d / _outputs.FILE).is_file():
+        if not d.is_dir() or not der.get("from") or der.get("from_dir") or _outputs.own(d):
             continue
         if (d / "outputs").is_dir() and dry_run:
             src = _source_of(d, by_name)  # moved above in a real run; in a dry run it still has its folder
@@ -174,8 +181,7 @@ def migrate(dry_run: bool) -> dict[str, int]:
     if not dry_run:
         # Once every run is moved: what a derived run reads through the one reader is what its files held, else
         # it gets its own file back (and is named).
-        _outputs._CACHE.clear()
-        _outputs._NAMES.clear()
+        _outputs.reset()
         for d, texts, raw in reads_source:
             if _outputs.outputs(d) != texts or _outputs.signature(d) != _old_signature(raw):
                 _outputs.write_all(d, texts, _order(d, list(texts)))
@@ -210,11 +216,82 @@ def _checkpoint_needed(rows: Path, predictions: Path) -> bool:
     return not ids(rows) <= ids(predictions)
 
 
+def _run_dirs_of(st: _outputs.Store) -> list[Path]:
+    """Every run directory a store holds outputs for."""
+    if isinstance(st, _outputs.SqliteStore):
+        return sorted(Path(k) if Path(k).is_absolute() else _common.DATA / k for k in st.runs())
+    roots = {*(p for p in _common.DATA.glob("runs*") if p.is_dir()), _common.RUNS}
+    return sorted(
+        {
+            d
+            for r in roots
+            if r.is_dir()
+            for depth in ("*", "*/*", "*/*/*")
+            for d in r.glob(depth)
+            if st.has(d)
+        }
+    )
+
+
+def move(to: str, dry_run: bool) -> dict[str, int]:
+    """Every run's outputs moved from the other store into `to`; counts of runs and outputs moved."""
+    configured = _common.runs_store()
+    if configured != to:
+        die(
+            f"the project's runs store is {configured}: set runs.store: {to} in config.yaml (or EVAL_RUNS_STORE={to})"
+            " first, so nothing writes to the old store after the move",
+            "not-allowed",
+        )
+    src = _outputs.store_named("files" if to == "sqlite" else "sqlite")
+    dst = _outputs.store_named(to)
+    n = {"runs": 0, "outputs": 0, "finished": 0}
+    for d in _run_dirs_of(src):
+        rows = src.rows(d)
+        bad = [r.get("item_id") for r in rows if _outputs.sha256(str(r.get("text", ""))) != r.get("sha256")]
+        if bad:
+            die(
+                f"{d}: output(s) whose text does not match its sha256: {', '.join(map(str, bad[:5]))}",
+                "mismatch",
+            )
+        texts = {r["item_id"]: r["text"] for r in rows}
+        order = list(texts)
+        if dst.has(d):
+            if dst.read(d) != texts:
+                die(
+                    f"{d}: already in the {to} store with different outputs; nothing of it changed",
+                    "would-overwrite",
+                )
+            n["finished"] += 1  # a move a crash stopped after the write: only the delete is left
+        n["runs"] += 1
+        n["outputs"] += len(texts)
+        if dry_run:
+            continue
+        if not dst.has(d):
+            dst.write_all(d, texts, order)
+        back = dst.rows(d)
+        if [(r["item_id"], r["text"], r["sha256"]) for r in back] != [
+            (r["item_id"], r["text"], r["sha256"]) for r in rows
+        ]:
+            dst.delete(d)
+            die(f"{d}: the outputs read back from the {to} store differ; it stays in the old one", "mismatch")
+        src.delete(d)
+    if not dry_run:
+        _outputs.reset()
+    return n
+
+
 def main() -> int:
     """Migrate every run under data/runs* to one outputs file."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dry-run", action="store_true", help="count what would change; write nothing")
+    ap.add_argument(
+        "--to",
+        choices=_common.RUNS_STORES,
+        help="move every run's outputs into this store (the project's runs.store must already name it)",
+    )
     args = ap.parse_args()
+    if args.to:
+        _common.runs_store()  # a malformed setting refuses before anything is read
     n = migrate(args.dry_run)
     after = n["own_file"] + n["kept_checkpoint"]
     verb = "would become" if args.dry_run else "became"
@@ -228,6 +305,12 @@ def main() -> int:
             else ""
         )
     )
+    if args.to:
+        m = move(args.to, args.dry_run)
+        print(
+            f"{m['runs']} run(s), {m['outputs']} output(s) {'would move' if args.dry_run else 'moved'} into the {args.to}"
+            f" store" + (f" ({m['finished']} a stopped move had already written)" if m["finished"] else "")
+        )
     return 0
 
 

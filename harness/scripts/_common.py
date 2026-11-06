@@ -690,6 +690,47 @@ REFUSALS = {
 }
 
 
+#: Where a project keeps its runs' per-item data (RFC-025): `files` (the default) or `sqlite` (data/runs.sqlite).
+RUNS_STORES = ("files", "sqlite")
+_RUNS_STORE_SEEN: list[Any] = []
+
+
+def runs_store() -> str:
+    """The project's runs store: `EVAL_RUNS_STORE`, else `runs.store` in its config.yaml, else `files`."""
+    env = os.environ.get("EVAL_RUNS_STORE", "").strip()
+    cfg = _paths()["ROOT"] / "config.yaml"
+    try:
+        st = cfg.stat() if not env else None
+        mtime = (st.st_mtime_ns, st.st_size) if st else None
+    except OSError:
+        mtime = None
+    key = (env, str(cfg), mtime)
+    if _RUNS_STORE_SEEN and _RUNS_STORE_SEEN[0] == key:
+        return _RUNS_STORE_SEEN[1]
+    if env:
+        store, where = env, "EVAL_RUNS_STORE"
+    else:
+        store, where = "files", f"runs.store in {cfg}"
+        if mtime is not None:
+            import yaml  # noqa: PLC0415
+
+            try:
+                doc = yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}
+            except yaml.YAMLError:
+                doc = {}
+            runs = doc.get("runs") if isinstance(doc, dict) else None
+            store = (
+                str((runs or {}).get("store") or "files") if isinstance(runs, dict) or runs is None else "?"
+            )
+    if store not in RUNS_STORES:
+        die(
+            f"{where}: {store!r} is not a runs store, one of {', '.join(RUNS_STORES)}",
+            "bad-argument" if env else "invalid-file",
+        )
+    _RUNS_STORE_SEEN[:] = [key, store]
+    return store
+
+
 def die(msg: str, kind: str) -> NoReturn:
     """Refuse: `ERROR (<kind>): msg` on stderr, exit 1, `kind` one of REFUSALS. Every command refuses
     this way; four printed their refusal to stdout instead, where a caller reading stderr saw nothing."""

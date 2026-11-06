@@ -802,7 +802,11 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_outputs.py",
-            "a run's outputs in one file (RFC-024): append, a torn line, finish, resume, a derived run reads its source's",
+            "a run's outputs in one file (RFC-024): append, a torn line, finish, resume, a derived run reads its source's; both stores",
+        ),
+        (
+            "test_runs_store.py",
+            "the runs store (RFC-025): the setting, run-migrate --to sqlite and back, a stopped move, the release copy, concurrent writers",
         ),
         (
             "test_run_migrate.py",

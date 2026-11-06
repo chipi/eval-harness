@@ -39,7 +39,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _jsonout, _outputs
+from evaluation_harness import _common, _jsonout, _outputs
 from evaluation_harness._adapter import (
     calls_per_item,
     load_adapter,
@@ -766,8 +766,8 @@ def _resume_source(
     if not resume:
         return None, {}
     resume_dir = runs / resume
-    if not (resume_dir / _outputs.FILE).is_file():
-        die(f"cannot resume: no outputs in {resume_dir} ({_outputs.FILE})", "not-found")
+    if not _outputs.own(resume_dir):
+        die(f"cannot resume: no outputs in {resume_dir} (the {_common.runs_store()} store)", "not-found")
 
     # RESUMING FROM ANOTHER ARM'S OUTPUTS WAS ACCEPTED WITHOUT A WORD.
     #

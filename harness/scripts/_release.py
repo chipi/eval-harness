@@ -7,11 +7,12 @@ Copies the run directories (runs*) and the data the catalog and the inspector re
 COPIED_FILES), and refuses, before anything is written, a release that would carry text the
 repository does not publish:
   - reference texts git does not track (a gold reference is not committed; a working copy may have
-    fetched it), and run outputs git does not track;
+    fetched it), and run outputs git does not track (an outputs.jsonl, or a runs.sqlite holding a shown run's);
   - for a dataset marked `text: hidden` (RFC-019 §4): its arms' outputs and their predictions'
     `_meta` beyond the call (CALL_META), its references' texts (their manifests stay), the judge verdicts on it, its
     profile's text, labels and links, and its items' source URLs and text and URL field values.
-Captures are copied as their capture.json only: records never leave the project. Materialized items
+With the sqlite store (RFC-025) the copy's runs.sqlite is the project's without a hidden dataset's runs, rebuilt so
+their texts are in none of its pages. Captures are copied as their capture.json only: records never leave the project. Materialized items
 are never copied. render.sh calls this; the hidden-text test calls it directly.
 """
 
@@ -125,7 +126,19 @@ def plan_problems(src: Path) -> list[str]:
             if str(f.relative_to(src)) not in tracked:
                 bad.append(f"run output git does not track: {f.relative_to(src)}")
                 break  # one per run is enough to name it
+    shown = [k for k in _outputs.db_runs(src / _outputs.DB) if not _hidden_key(src, k)]
+    if shown and _outputs.DB not in tracked:
+        bad.append(
+            f"run outputs git does not track: {_outputs.DB} holds {len(shown)} shown run(s)' outputs"
+            " (a release publishes only what the repository commits)"
+        )
     return bad
+
+
+def _hidden_key(src: Path, key: str) -> bool:
+    """Whether a runs-database run (its directory under data/) is of a hidden dataset."""
+    d = Path(key) if Path(key).is_absolute() else src / key
+    return hidden(_dataset_of_run(d), src / "datasets")
 
 
 def _manifest_dataset(ref_dir: Path) -> str | None:
@@ -175,6 +188,8 @@ def copy_data(src: Path, dst: Path) -> dict:
         for f in sorted(p for p in base.iterdir() if p.is_file()):
             (dst / base.name).mkdir(parents=True, exist_ok=True)
             shutil.copy2(f, dst / base.name / f.name)
+    if (src / _outputs.DB).is_file():
+        _outputs.db_copy(src / _outputs.DB, dst / _outputs.DB, lambda k: _hidden_key(src, k))
     for name in COPIED_DIRS:
         d = src / name
         if not d.is_dir():

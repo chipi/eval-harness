@@ -1520,8 +1520,8 @@ def v22_dataset_records() -> None:
 
 def v23_run_outputs() -> None:
     """V23: every run's outputs can be read (RFC-024): none is left in the old layout (an outputs/ folder), and a
-    derived run without an outputs file of its own finds its source's."""
-    from evaluation_harness import _outputs  # noqa: PLC0415
+    derived run without outputs of its own finds its source's, and none sits in the store the project does not use (RFC-025)."""
+    from evaluation_harness import _common, _outputs  # noqa: PLC0415
 
     runs = sorted(
         {
@@ -1537,12 +1537,25 @@ def v23_run_outputs() -> None:
         print("  --   V23 run outputs (no runs)")
         return
     bad: list[str] = []
+    store = _common.runs_store()
+    if store == "files":
+        held = _outputs.store_named("sqlite")
+        left = held.runs() if isinstance(held, _outputs.SqliteStore) else []
+        if left:
+            bad.append(
+                f"{_outputs.DB} holds {len(left)} run(s)' outputs while the project's store is files:"
+                " evh run-migrate --to files"
+            )
     for d in runs:
         rel = d.relative_to(DATA)
         if _outputs.old_layout(d):
             bad.append(f"{rel}: an outputs/ folder (the layout before 0.8.0): evh run-migrate")
             continue
-        if (d / _outputs.FILE).is_file():
+        if store == "sqlite" and _outputs.store_named("files").has(d):
+            bad.append(
+                f"{rel}: an {_outputs.FILE} while the project's store is sqlite: evh run-migrate --to sqlite"
+            )
+        if _outputs.own(d):
             continue
         frm = _outputs._derived_from(d)
         if frm and _outputs.source(d) is None:
