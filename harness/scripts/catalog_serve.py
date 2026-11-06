@@ -1020,25 +1020,26 @@ _REBUILD_LOCK = threading.Lock()
 def _rebuild(out: Path) -> None:
     """`evh catalog` into a folder beside the served one, in a child process (a build is CPU work: in this process
     it would starve the server's answers), then the new folder swapped in, so the pages are served throughout."""
-    import shutil  # noqa: PLC0415
     import subprocess  # noqa: PLC0415  # nosec B404 - our own command, no shell
+
+    from evaluation_harness import _store  # noqa: PLC0415
 
     nxt, old = out.with_name(out.name + ".next"), out.with_name(out.name + ".old")
     for d in (nxt, old):
-        shutil.rmtree(d, ignore_errors=True)
+        _store.rmtree(d, ignore_errors=True)
     t0 = time.time()
     r = subprocess.run(  # nosec B603 - this interpreter and the package's own command
         [sys.executable, "-m", "evaluation_harness", "catalog", "--out", str(nxt)],
         cwd=ROOT, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
     )  # fmt: skip
-    if r.returncode == 0 and (nxt / "index.html").is_file():
-        if out.exists():
-            out.rename(old)
-        nxt.rename(out)
-        shutil.rmtree(old, ignore_errors=True)
+    if r.returncode == 0 and _store.is_file(nxt / "index.html"):
+        if _store.exists(out):
+            _store.replace(out, old)
+        _store.replace(nxt, out)
+        _store.rmtree(old, ignore_errors=True)
         state = {"state": "done"}
     else:
-        shutil.rmtree(nxt, ignore_errors=True)
+        _store.rmtree(nxt, ignore_errors=True)
         state = {"state": "failed", "tail": ((r.stdout or "") + (r.stderr or ""))[-1500:]}
     with _REBUILD_LOCK:
         REBUILD.clear()
@@ -1049,12 +1050,11 @@ def rebuild_state() -> dict:
     """The rebuild's state, and when the served catalog was built."""
     with _REBUILD_LOCK:
         out = dict(REBUILD)
+    from evaluation_harness import _store  # noqa: PLC0415
+
     index = CATALOG_DIR[0] / "index.html" if CATALOG_DIR else None
-    out["built"] = (
-        time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(index.stat().st_mtime))
-        if index and index.is_file()
-        else None
-    )
+    built = _store.stat(index).st_mtime if index is not None and _store.is_file(index) else None
+    out["built"] = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(built)) if built else None
     return out
 
 
