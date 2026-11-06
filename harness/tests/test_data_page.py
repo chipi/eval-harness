@@ -22,6 +22,7 @@ In a tutorial project with a dataset, two runs, a goal, kept as files and then m
 
 from __future__ import annotations
 
+import atexit
 import json
 import os
 import shutil
@@ -36,14 +37,29 @@ from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
+sys.path.insert(0, str(HARNESS / "tools"))  # _wheel, shared with the deploy
+import _wheel  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+#: The package as `pip install` lays it out (built once per process): the commands run from it, as a project runs
+#: them, so a file the package leaves out fails here.
+_SITE: list[Path] = []
+
+
+def site() -> Path:
+    if not _SITE:
+        tmp = Path(tempfile.mkdtemp(prefix="evh-datapage-site-"))
+        atexit.register(shutil.rmtree, tmp, True)
+        _SITE.append(_wheel.install(tmp / "site-packages"))
+    return _SITE[0]
+
 
 GOOD_GOAL_EDIT = "# the margin a person changed on the page\n"
 
 
 def setup(store: str) -> tuple[Path, dict]:
     proj = Path(tempfile.mkdtemp(prefix=f"evh-datapage-{store}-"))
-    env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-data-page")
+    env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-data-page", PYTHONPATH=str(site()))
     for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_STORE", "EVAL_MAX_COST_USD"):
         env.pop(k, None)
 
