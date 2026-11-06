@@ -249,8 +249,8 @@ class SqliteStore:
 
     @staticmethod
     def key(run_dir: Path) -> str:
-        """The run's directory under data/ (what `derived.from_dir` names). Writing a run elsewhere is refused (a
-        project is files or its database, never both); reading one finds nothing."""
+        """The run's directory under data/ (what `derived.from_dir` names). A run elsewhere (a scratch folder outside
+        the project) is not the project's data: it is the disk's, as every path outside data/ is (`_store`)."""
         k = _store.rel(run_dir)
         if k is None:
             raise ValueError(
@@ -290,8 +290,8 @@ class SqliteStore:
 
     def has(self, run_dir: Path) -> bool:
         """Whether the run itself holds outputs here."""
-        if _store.rel(run_dir) is None:
-            return False
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.has(run_dir)
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
@@ -304,8 +304,8 @@ class SqliteStore:
 
     def read(self, run_dir: Path) -> dict[str, str]:
         """{item_id: text} of the run's own outputs; {} when it has none."""
-        if _store.rel(run_dir) is None:
-            return {}
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.read(run_dir)
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
@@ -319,8 +319,8 @@ class SqliteStore:
 
     def lines(self, run_dir: Path) -> list[dict[str, Any]]:
         """The run's own outputs as stored (item_id, text, sha256), in order."""
-        if _store.rel(run_dir) is None:
-            return []
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.lines(run_dir)
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
@@ -349,6 +349,8 @@ class SqliteStore:
 
     def add(self, run_dir: Path, item_id: str, text: str) -> None:
         """One item's output, on disk before this returns."""
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.add(run_dir, item_id, text)
         with self._lock:
             conn = self._db(create=True)
             assert conn is not None
@@ -360,6 +362,8 @@ class SqliteStore:
 
     def write_all(self, run_dir: Path, texts: dict[str, str], order: Iterable[str]) -> None:
         """The run's whole outputs at once, in `order`, atomically; items not in `texts` left out."""
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.write_all(run_dir, texts, order)
         with self._lock:
             conn = self._db(create=True)
             assert conn is not None
@@ -377,6 +381,8 @@ class SqliteStore:
 
     def delete(self, run_dir: Path) -> None:
         """The run's outputs gone from here."""
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.delete(run_dir)
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
@@ -387,8 +393,8 @@ class SqliteStore:
 
     def rows_text(self, run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
         """The run's rows exactly as written (the checkpoint's with `partial`); None when it has none."""
-        if _store.rel(run_dir) is None:
-            return None
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.rows_text(run_dir, partial, errors)
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
@@ -404,6 +410,8 @@ class SqliteStore:
 
     def put_rows(self, run_dir: Path, text: str, partial: bool = False) -> None:
         """The run's rows replaced by `text` at once, atomically."""
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.put_rows(run_dir, text, partial)
         with self._lock:
             conn = self._db(create=True)
             assert conn is not None
@@ -424,6 +432,8 @@ class SqliteStore:
 
     def append_row(self, run_dir: Path, line: str, partial: bool = True) -> None:
         """One row line (its newline included) added, on disk before this returns."""
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.append_row(run_dir, line, partial)
         with self._lock:
             conn = self._db(create=True)
             assert conn is not None
@@ -443,6 +453,8 @@ class SqliteStore:
 
     def drop_rows(self, run_dir: Path, partial: bool = False) -> None:
         """The run's rows (or its checkpoint) gone from here."""
+        if _store.rel(run_dir) is None:  # outside data/: the disk's
+            return _FILES.drop_rows(run_dir, partial)
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
@@ -457,7 +469,7 @@ class SqliteStore:
             conn = self._db(create=False)
             if conn is None:
                 return {}
-            keys = {self.key(d): Path(d) for d in run_dirs if _store.rel(d) is not None}
+            keys = {self.key(d): Path(d) for d in run_dirs if _store.rel(d) is not None}  # the rest: files
             out: dict[Path, str] = {}
             for k, line in conn.execute(
                 "SELECT run, row FROM rows WHERE item_id = ? AND partial = 0 ORDER BY run, n", (item_id,)
@@ -689,7 +701,8 @@ def item_across(run_dirs: Iterable[Path], item_id: str) -> dict[Path, dict[str, 
     lines: dict[Path, str] = {}
     if isinstance(st, SqliteStore):
         lines = st.item_across(dirs, item_id)
-    else:
+        dirs = [d for d in dirs if _store.rel(d) is None]  # outside data/: the disk's
+    if dirs:
         for d in dirs:
             text = _FILES.rows_text(d) or ""
             hit = _ROWS_INDEX.get(str(d))

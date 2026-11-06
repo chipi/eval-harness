@@ -1359,7 +1359,7 @@ def v19_label_sets() -> None:
 
     from evaluation_harness import _common  # noqa: PLC0415
 
-    found = sorted(_common.LABELS.glob("*/*/labels.json")) if _common.LABELS.is_dir() else []
+    found = sorted(_store.glob(_common.LABELS, "*/*/labels.json")) if _store.is_dir(_common.LABELS) else []
     if not found:
         print("  --   V19 label sets (none)")
         return

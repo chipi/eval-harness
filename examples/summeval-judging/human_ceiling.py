@@ -42,6 +42,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE.parent / "_shared"))
+sys.path.insert(0, str(HERE.parents[1] / "harness"))  # the evaluation_harness package: its store reads data/
+from evaluation_harness import _store  # noqa: E402
 from modules import load_module  # noqa: E402
 
 URL = "https://storage.googleapis.com/sfr-summarization-repo-research/model_annotations.aligned.jsonl"
@@ -68,7 +70,7 @@ def main() -> int:
     ad = _adapter()
     # The same file the adapter pins: fetched once and checked against its sha256 (this script
     # used to download it unverified and only record the hash afterwards).
-    raw = ad._cached(CACHE, URL, ad.ORIGINAL_SHA256).read_bytes()
+    raw = _store.read_bytes(ad._cached(CACHE, URL, ad.ORIGINAL_SHA256))
     original: dict = {}
     for line in raw.decode("utf-8").splitlines():
         if line.strip():
@@ -87,10 +89,10 @@ def main() -> int:
         return statistics.fmean(e[d] for e in ann)
 
     items, duplicate_groups, ambiguous_groups, scored_differently = {}, 0, 0, 0
-    for gp in sorted(GOLD.glob("*.txt")):
+    for gp in sorted(_store.glob(GOLD, "*.txt")):
         key = _article_key(gp.stem)
-        item = ad._item((MATERIALIZED / gp.name).read_text(encoding="utf-8"))
-        gold_ref = json.loads(gp.read_text())
+        item = ad._item(_store.read_text(MATERIALIZED / gp.name, encoding="utf-8"))
+        gold_ref = json.loads(_store.read_text(gp))
         rows = original.get(key, [])
         experts = [None] * ad.N_SUMMARIES
         texts = [_norm(t) for t in item["summaries"]]
@@ -157,14 +159,14 @@ def main() -> int:
     # leave-one-out reference, averaged over the three. Re-scoring against the full gold
     # first must reproduce the arm's committed tau, or the alignment is wrong.
     arms = {}
-    for mj in sorted(RUNS.glob("se_*_n100_v1_*/metrics.json")):
-        m = json.loads(mj.read_text())
+    for mj in sorted(_store.glob(RUNS, "se_*_n100_v1_*/metrics.json")):
+        m = json.loads(_store.read_text(mj))
         if m.get("dataset_id") != "summeval_100":
             continue
         arm = m["config_id"][len("se_") : -len("_n100_v1")]
         full, loo, loo_by_item = [], [], {}
         for stem, it in items.items():
-            out = (mj.parent / "outputs" / f"{stem}.txt").read_text(encoding="utf-8")
+            out = _store.read_text(mj.parent / "outputs" / f"{stem}.txt", encoding="utf-8")
             full.append(ad.score(out, json.dumps(it["gold"]))["tau"])
             loo.append(statistics.fmean(ad.score(out, rest_of(it, k))["tau"] for k in range(3)))
             loo_by_item[stem] = loo[-1]
@@ -296,7 +298,7 @@ def main() -> int:
         "position_prior": position_prior,
         "arms": dict(sorted(arms.items(), key=lambda kv: -kv[1]["tau_vs_two_experts"])),
     }
-    OUT.write_text(json.dumps(result, indent=2) + "\n")
+    _store.write_text(OUT, json.dumps(result, indent=2) + "\n")
     print(f"gold reproduced, and every arm re-scored exactly, on all {len(items)} articles")
     print(
         f"identical-text groups: {duplicate_groups} in {result['duplicate_articles']} articles, "

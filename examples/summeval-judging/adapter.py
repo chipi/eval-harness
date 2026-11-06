@@ -55,6 +55,8 @@ from typing import Any, Dict, List, Optional
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
+sys.path.insert(0, str(HERE.parents[1] / "harness"))  # the evaluation_harness package: its store reads data/
+from evaluation_harness import _store  # noqa: E402
 import gateway  # noqa: E402
 from codehash import code_digest  # noqa: E402
 
@@ -204,9 +206,9 @@ def _prompt(params: Dict[str, Any]) -> str:
         return str(params["prompt"])
     path = (HERE / str(params.get("prompt_file") or "prompt.txt")).resolve()
     if str(path) not in _PROMPT_CACHE:
-        if not path.is_file():
+        if not _store.is_file(path):
             raise SystemExit(f"prompt file not found: {path}")
-        _PROMPT_CACHE[str(path)] = path.read_text(encoding="utf-8").strip()
+        _PROMPT_CACHE[str(path)] = _store.read_text(path, encoding="utf-8").strip()
     return _PROMPT_CACHE[str(path)]
 
 
@@ -503,13 +505,13 @@ _PUNKT_OK = False
 
 
 def _cached(path: Path, url: str, sha256: str) -> Path:
-    if not path.is_file():
+    if not _store.is_file(path):
         import urllib.request  # noqa: PLC0415
 
-        path.parent.mkdir(parents=True, exist_ok=True)
+        _store.mkdir(path.parent, parents=True, exist_ok=True)
         with urllib.request.urlopen(url, timeout=120) as r:  # noqa: S310 — a pinned https URL, its bytes checked by sha256  # nosec B310
-            path.write_bytes(r.read())
-    got = hashlib.sha256(path.read_bytes()).hexdigest()
+            _store.write_bytes(path, r.read())
+    got = hashlib.sha256(_store.read_bytes(path)).hexdigest()
     if got != sha256:
         raise RuntimeError(f"{path.name}: sha256 {got} is not the pinned {sha256}; "
                            f"{url} no longer serves the file the runs used")
@@ -518,8 +520,8 @@ def _cached(path: Path, url: str, sha256: str) -> Path:
 
 def punkt_english_digest(folder: Path) -> str:
     h = hashlib.sha256()
-    for f in sorted(folder.iterdir()):
-        h.update(f.name.encode() + b"\x00" + f.read_bytes() + b"\x1e")
+    for f in sorted(_store.iterdir(folder)):
+        h.update(f.name.encode() + b"\x00" + _store.read_bytes(f) + b"\x1e")
     return h.hexdigest()
 
 
@@ -553,7 +555,7 @@ def _unieval_model(params: Dict[str, Any]) -> Any:
         if params["model"] == UNIEVAL_MODEL:
             from transformers import PreTrainedTokenizerFast  # noqa: PLC0415
 
-            if hashlib.sha256(UNIEVAL_TOKENIZER.read_bytes()).hexdigest() != UNIEVAL_TOKENIZER_SHA256:
+            if hashlib.sha256(_store.read_bytes(UNIEVAL_TOKENIZER)).hexdigest() != UNIEVAL_TOKENIZER_SHA256:
                 raise SystemExit(f"{UNIEVAL_TOKENIZER}: not the pinned sha256 {UNIEVAL_TOKENIZER_SHA256}")
             tok = PreTrainedTokenizerFast(tokenizer_file=str(UNIEVAL_TOKENIZER), eos_token="</s>",  # noqa: S106 — special tokens, not passwords
                                           unk_token="<unk>", pad_token="<pad>", model_max_length=512)  # noqa: S106 — special tokens
@@ -588,14 +590,14 @@ def _unieval_published() -> Any:
         by_text: Dict[str, set] = {}
         orig = _cached(SOURCES / "summeval_original" / "model_annotations.aligned.jsonl", ORIGINAL_URL,
                        ORIGINAL_SHA256)
-        for line in orig.read_text(encoding="utf-8").splitlines():
+        for line in _store.read_text(orig, encoding="utf-8").splitlines():
             if line.strip():
                 r = json.loads(line)
                 by_text.setdefault(norm(r["decoded"]), set()).add((r["id"].split("-test-")[1], r["model_id"]))
         rows = {}
         ue = _cached(SOURCES / "summeval_unieval" / "summeval.json", UNIEVAL_INPUTS_URL,
                      UNIEVAL_INPUTS_SHA256)
-        for r in json.loads(ue.read_text(encoding="utf-8")):
+        for r in json.loads(_store.read_text(ue, encoding="utf-8")):
             rows[(r["doc_id"].split("-test-")[1], r["system_id"])] = r
         _UE_PUBLISHED = (norm, by_text, rows)
     return _UE_PUBLISHED
@@ -741,7 +743,7 @@ def fingerprint(params: Dict[str, Any]) -> Dict[str, Any]:
             fp["original_release_sha256"] = ORIGINAL_SHA256
             ue = SOURCES / "summeval_unieval" / "summeval.json"
             fp["unieval_inputs_url"] = UNIEVAL_INPUTS_URL
-            fp["unieval_inputs_sha256"] = hashlib.sha256(ue.read_bytes()).hexdigest() if ue.is_file() else None
+            fp["unieval_inputs_sha256"] = hashlib.sha256(_store.read_bytes(ue)).hexdigest() if _store.is_file(ue) else None
         return fp
     alias = params.get("model")
     upstream, id_source = gateway.resolve_upstream(alias)

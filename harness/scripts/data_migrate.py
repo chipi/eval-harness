@@ -135,12 +135,11 @@ def to_sqlite(dry_run: bool) -> dict[str, int]:
                 )
         for name in PER_ITEM:
             (d / name).unlink(missing_ok=True)
-    if not dry_run:
-        for root, dirs, _files in sorted(os.walk(data, topdown=False)):
-            for x in dirs:
-                q = Path(root) / x
-                if q.is_dir() and not any(q.iterdir()):
-                    q.rmdir()
+    if not dry_run:  # the emptied folders go too, deepest first (os.walk bottom-up), data/ itself stays
+        for root, _dirs, _files in os.walk(data, topdown=False):
+            q = Path(root)
+            if q != data and not any(q.iterdir()):
+                q.rmdir()
     return n
 
 

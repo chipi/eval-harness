@@ -79,7 +79,7 @@ _ZHANG: dict[str, dict[str, Any]] = {}
 
 def _zhang(scorer: str) -> dict[str, Any]:
     vroot = DATA / "judge-validation" / scorer / "zhang2023-cnndm"
-    if vz.FILE.is_file():
+    if _store.is_file(vz.FILE):
         sc = js.load_scorer(DATA / "scorers" / f"{scorer}.yaml")
         data = vz.load()
         systems = sorted(next(iter(data.values()))["systems"])

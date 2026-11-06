@@ -13,7 +13,6 @@ Each entry is (report, label, claimed value, run, metric). A claim that drifts f
 here rather than in a reader's head.
 """
 
-import glob
 import json
 import re
 import statistics
@@ -196,7 +195,7 @@ def check(label: str, cond: object, detail: str = "") -> None:
 
 def score(base: Path, cid: str, metric: str):
     """Retrieve a metric score from a run by config_id."""
-    for d in sorted(glob.glob(str(base / f"{cid}_*"))):
+    for d in sorted(_store.glob_str(str(base / f"{cid}_*"))):
         m = json.loads(_store.read_text(Path(Path(d) / "metrics.json"), encoding="utf-8"))
         if m.get("config_id") == cid:
             return m["scores"].get(metric)
@@ -242,7 +241,6 @@ for label, claimed, (b1, c1, m1), (b2, c2, m2) in DELTAS:
 # Every per-arm "$" cell in a report must equal what the provider BILLED, summed from
 # `_meta.usage.cost` in that run's predictions. The price table is the fallback for an
 # arm with no bill and must never be what a report quotes.
-import glob as _glob  # noqa: E402
 
 #: The evals, from the one registry reproduce.py and the site read
 #: (examples/evals.json). These tables restated it by hand, so a renamed dataset or
@@ -274,7 +272,7 @@ def _first_arm_cell(cells):
 
 def _billed_and_recorded(prefix, dataset_id):
     out = {}
-    for f in sorted(_glob.glob(str(DATA / f"{prefix}*" / "metrics.json"))):
+    for f in sorted(_store.glob_str(str(DATA / f"{prefix}*" / "metrics.json"))):
         m = json.loads(_store.read_text(Path(f), encoding="utf-8"))
         if m.get("dataset_id") != dataset_id or not _outputs.has_rows(Path(f).parent):
             continue
@@ -418,7 +416,7 @@ for _rep, _dss in REPORT_DATASETS.items():
     for _ds in _dss:
         _pref, _metric, _base = PRIMARY_BY_DATASET[_ds]
         _vals = {}
-        for f in _glob.glob(str(_base / f"{_pref}*" / "metrics.json")):
+        for f in _store.glob_str(str(_base / f"{_pref}*" / "metrics.json")):
             if "20260929" in Path(f).parent.name:
                 continue
             _m = json.loads(_store.read_text(Path(f), encoding="utf-8"))
@@ -681,7 +679,7 @@ check(
 def _arm_costs(prefix, dataset_id):
     """Billed cost per arm, excluding the 2026-09-29 re-runs (which duplicate arms)."""
     out = {}
-    for f in sorted(_glob.glob(str(DATA / f"{prefix}*" / "metrics.json"))):
+    for f in sorted(_store.glob_str(str(DATA / f"{prefix}*" / "metrics.json"))):
         if "20260929" in Path(f).parent.name:
             continue
         m = json.loads(_store.read_text(Path(f), encoding="utf-8"))
@@ -813,7 +811,7 @@ def _not_significant(leader, runs_dir, dataset_id, metric):
 
 
 def _provider(runs_dir, config_id):
-    for f in sorted(glob.glob(str(runs_dir / f"{config_id}_2*" / "metrics.json"))):
+    for f in sorted(_store.glob_str(str(runs_dir / f"{config_id}_2*" / "metrics.json"))):
         if "20260929" in Path(f).parent.name:
             continue
         return (json.loads(_store.read_text(Path(f), encoding="utf-8")).get("params") or {}).get("provider")
@@ -1725,7 +1723,7 @@ for dear, cheap in (("anthropic_m", "deepseek_m"), ("openai_l", "deepseek_m")):
 
 # Pareto frontier over the 24 HOSTED summarisation arms: quality, cost, latency.
 _cnn_q = {}
-for f in sorted(_glob.glob(str(DATA / "cnn_*" / "metrics.json"))):
+for f in sorted(_store.glob_str(str(DATA / "cnn_*" / "metrics.json"))):
     if "20260929" in Path(f).parent.name:
         continue
     m = json.loads(_store.read_text(Path(f), encoding="utf-8"))
@@ -2756,7 +2754,7 @@ else:
     print("  --   NER: pilot rho skipped (the 28 Few-NERD runs are not all here)")
 _oth = {}
 for _a in ("gliner", "openai_m", "anthropic_l", "span_marker"):
-    _found = glob.glob(str(DATA / f"fn_{_a}_n200_v1_*"))
+    _found = _store.glob_str(str(DATA / f"fn_{_a}_n200_v1_*"))
     _oth[_a] = (
         sum(
             1

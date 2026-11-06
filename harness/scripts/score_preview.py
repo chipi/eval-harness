@@ -131,7 +131,7 @@ def main() -> int:
 def _derived_on(dataset_id: str) -> int:
     """How many re-scored (derived) runs on the dataset the goal can read: what score-preview leaves alone."""
     n = 0
-    bases = [b for b in sorted(_common.DATA.glob("runs*")) if b.name != rs.RESCORED]
+    bases = [b for b in sorted(_store.glob(_common.DATA, "runs*")) if b.name != rs.RESCORED]
     bases += sorted(_store.glob(_common.DATA / rs.RESCORED, "*/*"))
     for base in bases:
         if _store.is_dir(base) and not _common.ignored_by_git(base):

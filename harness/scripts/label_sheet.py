@@ -41,7 +41,7 @@ VIEW = 160
 def run_dir(name: str, dataset_id: str) -> Path:
     """A run by its id, or a config's latest run on the dataset: in data/runs, else in a label set's runs
     (data/runs-labels-<dataset>-<set>/, where a run scored against labels lands)."""
-    bases = [_common.RUNS, *sorted(_common.DATA.glob(f"runs-labels-{dataset_id}-*"))]
+    bases = [_common.RUNS, *sorted(_store.glob(_common.DATA, f"runs-labels-{dataset_id}-*"))]
     # An arm id, as the catalog names it (catalog_adapter._index): <runs dir>/<dataset>/<config_id>, the runs dir
     # nested for a judging or a re-scoring pass (runs-judged/<scorer>, runs-rescored/<scoring>/runs).
     if name.count("/") >= 2:

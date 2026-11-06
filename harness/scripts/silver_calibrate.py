@@ -39,7 +39,6 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import glob
 import os
 import re
 import statistics
@@ -211,12 +210,12 @@ def main() -> int:
         )
     trusted = {
         os.path.basename(f)[:-4]: _store.read_text(Path(f), encoding="utf-8").strip()
-        for f in glob.glob(str(REFERENCES / ref_id / "*.txt"))
+        for f in _store.glob_str(str(REFERENCES / ref_id / "*.txt"))
     }
     mat = MATERIALIZED / args.dataset_id
     sources = {
         os.path.basename(f)[:-4]: _store.read_text(Path(f), encoding="utf-8", errors="replace")
-        for f in glob.glob(str(mat / "*.txt"))
+        for f in _store.glob_str(str(mat / "*.txt"))
     }
     items = sorted(trusted)
 

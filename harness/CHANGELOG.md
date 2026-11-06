@@ -13,15 +13,13 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
-- **Runs in SQLite, a project's choice** (RFC-025). Files stay the default; `runs: {store: sqlite}` in
-  `config.yaml`, or `EVAL_RUNS_STORE=sqlite`, keeps every run's outputs and rows in `data/runs.sqlite` (write-ahead
-  logged, one committed insert per output and row). `metrics.json` and `run.json` stay files. Every module now reads
-  and writes a run's rows through one reader and writer, as RFC-024 did for outputs, and a test fails on a
-  `predictions.jsonl` path built anywhere else. `evh run-migrate --to sqlite|files` moves a project either way, each
-  run read back equal before the old copy goes; on this repository's 736 runs (46,800 outputs, 94,650 rows) the
-  round trip gave back every `outputs.jsonl` and `predictions.jsonl` byte for byte. `validate` V23 names outputs or rows left in the store
-  the project does not use. A release copies `runs.sqlite` without a hidden dataset's text (deleted pages zeroed,
-  the file rebuilt). `evh inspect --items-out` reads only the shown items' rows.
+- **A project's data in SQLite, a project's choice** (RFC-025). Files stay the default; `store: sqlite` in
+  `config.yaml`, or `EVAL_STORE=sqlite`, keeps everything under `data/` in one database, `data/project.sqlite`
+  (write-ahead logged; a run's outputs and rows committed as they are produced), and nothing under `data/` on disk
+  but it. Every command, the catalog and the inspector read and write through one module (`_store`); a test fails on
+  path I/O anywhere else. `evh data-migrate --to sqlite|files` moves a project either way, every file read back by
+  its sha256; on this repository's data the round trip gives back every file byte for byte. `validate` V23 names a
+  project in both. Python code is never in the database.
 - **Tests that know when items are related.** `--cluster FIELD` on `pair-test`, `family-test` and
   `bootstrap-test`, and `cluster: FIELD` on a goal's dataset (used by the goal page, `evh goals`, the inspector,
   rounds and `--round`): items that share a value of the field (one thread's comments, one incident's decisions)

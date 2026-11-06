@@ -473,3 +473,19 @@ def stray_files() -> list[Path]:
             if not (q.parent == data and (f == DB or f.startswith(DB + "-"))):
                 out.append(q)
     return out
+
+
+def glob_str(pattern: str) -> list[str]:
+    """glob.glob: the paths a pattern matches, as strings; one under data/ in the sqlite store matched in the
+    database."""
+    import glob as _glob  # noqa: PLC0415
+
+    parts = Path(pattern).parts
+    lit = next((i for i, x in enumerate(parts) if any(c in x for c in "*?[")), len(parts))
+    base = Path(*parts[:lit]) if lit else Path(".")
+    if rel(base) is None and not (sqlite() and _is_data_root(base)):
+        return _glob.glob(pattern)
+    rest = "/".join(parts[lit:])
+    if not rest:
+        return [str(base)] if exists(base) else []
+    return [str(q) for q in glob(base, rest)]

@@ -69,7 +69,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dry-run", action="store_true", help="say what would change, change nothing")
     args = ap.parse_args()
-    refs = sorted(_common.REFERENCES.glob("*/*/manifest.json"))
+    refs = sorted(_store.glob(_common.REFERENCES, "*/*/manifest.json"))
     done = sets = 0
     for mf in refs:
         m = read_json(mf)

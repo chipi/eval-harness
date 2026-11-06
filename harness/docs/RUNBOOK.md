@@ -564,32 +564,32 @@ The `.gitignore` `evh init` writes ignores only the throwaway directories, so a 
 its derived sets like its measured runs. This repository's own `.gitignore` is stricter: it
 ignores every `data/runs-*` directory and re-allows each derived set by name.
 
-**Files or SQLite** (RFC-025). A run's per-item data, its outputs (`outputs.jsonl`) and its rows
-(`predictions.jsonl`), are files in its directory by default: git can diff and review them. A project
-whose runs are not committed (production-scale data, many arms) can keep them in one database
-instead, `data/runs.sqlite`, with one key in its `config.yaml`:
+**Files or SQLite** (RFC-025). A project keeps its data as files under `data/` by default: git can
+diff and review them. One key in its `config.yaml` puts everything under `data/` in one SQLite
+database instead, `data/project.sqlite`:
 
 ```yaml
-runs:
-  store: sqlite        # files (the default) or sqlite
+store: sqlite        # files (the default) or sqlite
 ```
 
-or `EVAL_RUNS_STORE=sqlite`, which wins over the file. Each run stays a directory with its
-`metrics.json` and `run.json`; every command reads the store the same way, and a run writes each
-output and row as one committed insert, so a crash keeps everything committed before it. Move an
-existing project after setting the key, either way:
+or `EVAL_STORE=sqlite`, which wins over the file. A project is either files or its database, never
+both: every command, the catalog and the inspector read and write the database, nothing under
+`data/` is a file but it, and a run's outputs and rows are committed as they are produced, so a crash
+keeps everything committed before it. Python code is never in the database: keep it outside `data/`
+and name it by path. Move a project after setting the key, either way:
 
 ```bash
-evh run-migrate --to sqlite --dry-run   # what would move
-evh run-migrate --to sqlite             # each run written, read back equal, then removed from the files
-evh run-migrate --to files              # back, after setting runs.store: files
+evh data-migrate --to sqlite --dry-run   # what would move
+evh data-migrate --to sqlite             # every file read back by its sha256, then removed from disk
+evh data-migrate --to files              # back, byte for byte, after setting store: files
 ```
 
-`run-migrate --to` refuses while the project's store is not the target, and refuses a run that is in
-both stores with different contents; a move a crash stopped is finished by the next one. `validate`
-V23 names outputs or rows left in the store the project does not use. A release copies
-`runs.sqlite` (a hidden dataset's outputs removed, its rows cut to the call) and refuses one git
-does not track, as it refuses an untracked `outputs.jsonl`.
+`data-migrate` refuses while the project's store is not the target, while `data/` holds Python, and
+while a run is still in the layout before 0.8.0 (`evh run-migrate` first); a move a crash stopped is
+finished by the next one. In SQLite mode `data-migrate` is how a file you write (a goal, a config)
+gets in. `validate` V23 names a database beside files, or files beside the database; V7 and V9, which
+read git, say why they do not apply. A release reads the database and writes the same files layout
+as a files project, a hidden dataset's text left out.
 
 `evh run` and `rescore` print a `WARNING` when they write to a directory git ignores
 that is neither, or to one outside the project's data, and `evh validate` notes any ignored
@@ -666,7 +666,7 @@ Three things worth knowing:
   as it is produced (a torn last line from a kill is not an output, so that item is called again) and rewritten in
   dataset order when the run completes; a derived run (a re-score, a judging, a sheet import) keeps no outputs of its
   own and reads its source's (RFC-024). With the sqlite store the same outputs and rows are rows of
-  `data/runs.sqlite`, each committed as it is produced (RFC-025).
+  `data/project.sqlite`, each committed as it is produced (RFC-025).
 - **You cannot resume from a different arm, or from one that cannot be identified.**
   The source's `config_id` and `dataset_id` are checked against the config you are
   launching and a mismatch is refused. Identity comes from `run.json`, written **before

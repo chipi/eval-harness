@@ -179,7 +179,7 @@ def problems() -> list[str]:
     from evaluation_harness._common import load_goals  # noqa: PLC0415
 
     goals = set(load_goals())
-    datasets = {p.stem for p in _common.DATASETS.glob("*.json")}
+    datasets = {p.stem for p in _store.glob(_common.DATASETS, "*.json")}
     known = set()
     for f in sorted(_store.glob(base, "*/*.yaml")):
         rel = f.relative_to(base).as_posix()

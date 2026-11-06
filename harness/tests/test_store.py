@@ -367,6 +367,7 @@ FUNCS = (
     {("shutil", f) for f in ("rmtree", "copy", "copy2", "copyfile", "copytree", "move")}
     | {("os", f) for f in ("replace", "rename", "remove", "unlink", "makedirs", "listdir", "walk", "scandir")}
     | {("os.path", f) for f in ("exists", "isfile", "isdir", "getmtime", "getsize")}
+    | {(m, f) for m in ("glob", "_glob") for f in ("glob", "iglob")}
 )
 
 
@@ -400,7 +401,9 @@ for f in sorted(HERE.glob("*.py")):
             recv = dotted(fn.value)
             if (recv, fn.attr) in FUNCS:
                 stray.append(f"{f.name}:{n.lineno} {recv}.{fn.attr}")
-            elif fn.attr in METHODS and recv != "_store" and not (recv and recv.split(".")[0] in mods):
+            # a module's own function (os.path.exists, glob.glob) is not path I/O; a path a module holds
+            # (_common.DATASETS.glob) is
+            elif fn.attr in METHODS and recv != "_store" and not (recv in mods or recv == "os.path"):
                 stray.append(f"{f.name}:{n.lineno} .{fn.attr}()")
 check(
     "no module but the store's own does path I/O itself (everything else through _store)",
