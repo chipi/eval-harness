@@ -163,13 +163,16 @@ and private datasets on Kaggle and the Hub are not tried (no Kaggle credentials 
 
 ### S. Scale: 1,000 to 10,000 items
 
-**S0, built 2026-11-06 (f28f050e4, 6e8ed1842; RFC-025 "As built"): runs in SQLite, a project's choice.** Not
-measured yet: S1's bench on the sqlite store (to run with S2's re-measure, layer 6 of step 7). Files stay the default; one key in the project's
-`config.yaml` (`runs: {store: sqlite}`, or `EVAL_RUNS_STORE`) puts them in `data/runs.sqlite`. Phase 1 is a run's
-outputs (RFC-024 left one module, `_outputs.py`, to swap the store under); phase 2 its rows (`predictions.jsonl`, read
-today by many modules, so first one reader as RFC-024 did for outputs). `metrics.json` and `run.json` stay files.
-`evh run-migrate --to sqlite|files` moves a project either way, checked by the same signatures.
-[RFC-025](../../docs/rfc/RFC-025-runs-in-sqlite.md), accepted 2026-11-06: both phases in 0.8.0.
+**S0, in progress: a project's data in SQLite, minimal version (owner, 2026-11-06).** Files stay the default;
+`store: sqlite` in the project's `config.yaml` (or `EVAL_STORE`) puts everything under `data/` in one database,
+`data/project.sqlite`, which every command, the catalog and the inspector read and write; Python code never in it.
+`evh data-migrate --to sqlite|files`. Built so far: a run's outputs and rows behind one module in either store
+(f28f050e4, 6e8ed1842). Done when: the full suite (`make verify`) is green on both stores, then S1's bench on both.
+[RFC-025](../../docs/rfc/RFC-025-runs-in-sqlite.md), minimal version accepted 2026-11-06.
+
+**S0b, next after S0: an API for every command (owner, 2026-11-06: "next RFC is for this API").** Today only the
+read side exists outside the CLI (`evh mcp`, 26 read tools; `catalog-serve`, 5 read endpoints); about 50 of the
+CLI's 75 commands are reachable only from it. RFC-026 first, written after S0 is green.
 
 | # | what |
 | --- | --- |
