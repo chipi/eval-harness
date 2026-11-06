@@ -321,6 +321,27 @@ try:
         rc == 0 and "tickets_h" in out and MARK["h"] not in out + err,
         (out + err)[-300:],
     )
+    # A judging of a hidden run sits a level deeper (data/runs-judged/<scorer>/<run>) and its rows carry the source
+    # row's `_meta`, which can quote the item: the release cuts them to the call too.
+    hrun = next(
+        d
+        for d in sorted((data / "runs").iterdir())
+        if (d / "metrics.json").is_file()
+        and json.loads((d / "metrics.json").read_text()).get("dataset_id") == "tickets_h"
+    )
+    jdir = data / "runs-judged" / "j1" / hrun.name
+    jdir.mkdir(parents=True)
+    (jdir / "metrics.json").write_text(
+        json.dumps(
+            {"run_id": hrun.name, "dataset_id": "tickets_h", "derived": {"kind": "judge", "from": hrun.name}}
+        )
+    )
+    (jdir / "predictions.jsonl").write_text(
+        json.dumps(
+            {"item_id": item, "judge_x": 1.0, "_meta": {"usage": {"t": 1}, "prompt": f"quoting {MARK['h']}"}}
+        )
+        + "\n"
+    )
     rel = proj / ".release"
     counts = copy_data(data, rel)
     check(
@@ -341,7 +362,7 @@ try:
     check("release: nothing of the hidden dataset's text", not found(rel, MARK["h"]), found(rel, MARK["h"]))
     check(
         "release: the hidden dataset's runs, reference (manifest only) and profile are there, numbers only",
-        counts["hidden_runs"] == 2
+        counts["hidden_runs"] == 3
         and counts["hidden_refs"] == 1
         and (rel / "references" / "gold" / "tickets_h").is_dir()
         and not [

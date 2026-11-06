@@ -164,6 +164,11 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A release cuts a hidden dataset's judged and re-scored runs too.** The deployment's copy decided "hidden" for
+  each folder directly under `data/runs*`, so a run a level deeper (`runs-judged/<scorer>/<run>`,
+  `runs-rescored/<scorer>/<source>/<run>`) on a hidden dataset was copied whole, its rows' `_meta` (which a judging
+  carries over from the source row) included. Each run is now decided by its own dataset. This repository has no
+  hidden dataset, so its published catalog never carried any.
 - **`evh <command> --help` names the command.** 43 of the 67 commands printed the script behind them
   (`evh run-promote --help` said `usage: promote_baseline.py`).
 - **`evh validate` survives a file that does not parse.** A dataset, run, baseline or capture that is not valid

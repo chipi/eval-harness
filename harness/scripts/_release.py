@@ -119,13 +119,14 @@ def plan_problems(src: Path) -> list[str]:
             ds = _manifest_dataset(f.parent)
             if not hidden(ds, src / "datasets") and str(f.relative_to(src)) not in tracked:
                 bad.append(f"reference text git does not track: {f.relative_to(src)}")
-    for run in sorted(p for base in src.glob("runs*") if base.is_dir() for p in base.iterdir() if p.is_dir()):
-        if hidden(_dataset_of_run(run), src / "datasets"):
-            continue
-        for f in sorted(run.rglob(_outputs.FILE)):
-            if str(f.relative_to(src)) not in tracked:
-                bad.append(f"run output git does not track: {f.relative_to(src)}")
-                break  # one per run is enough to name it
+    for run in _run_dirs(src):
+        f = run / _outputs.FILE
+        if (
+            f.is_file()
+            and not hidden(_dataset_of_run(run), src / "datasets")
+            and str(f.relative_to(src)) not in tracked
+        ):
+            bad.append(f"run output git does not track: {f.relative_to(src)}")
     shown = [k for k in _outputs.db_runs(src / _outputs.DB) if not _hidden_key(src, k)]
     if shown and _outputs.DB not in tracked:
         bad.append(
@@ -133,6 +134,22 @@ def plan_problems(src: Path) -> list[str]:
             " (a release publishes only what the repository commits)"
         )
     return bad
+
+
+def _run_dirs(src: Path) -> list[Path]:
+    """Every run directory under data/runs*, at the depth it sits: data/runs/<run>, data/runs-judged/<scorer>/<run>,
+    data/runs-rescored/<scorer>/<source>/<run>. Whether a run's text is hidden is its own dataset's, so it is decided
+    per run, never for the folder that holds it."""
+    return sorted(
+        {
+            d
+            for base in src.glob("runs*")
+            if base.is_dir()
+            for depth in ("*", "*/*", "*/*/*")
+            for d in base.glob(depth)
+            if d.is_dir() and (d / "metrics.json").is_file()
+        }
+    )
 
 
 def _hidden_key(src: Path, key: str) -> bool:
@@ -182,24 +199,26 @@ def copy_data(src: Path, dst: Path) -> dict:
     dst.mkdir(parents=True, exist_ok=True)
     datasets = src / "datasets"
     counts = {"hidden_runs": 0, "hidden_refs": 0, "hidden_verdicts": 0}
+    hidden_runs = {str(d.resolve()) for d in _run_dirs(src) if hidden(_dataset_of_run(d), datasets)}
+
+    def leave_out(folder: str, names: list[str]) -> set[str]:
+        """A hidden dataset's run is copied without its outputs."""
+        return (
+            {"outputs", _outputs.FILE} & set(names) if str(Path(folder).resolve()) in hidden_runs else set()
+        )
+
     for base in sorted(p for p in src.glob("runs*") if p.is_dir()):
-        for run in sorted(p for p in base.iterdir() if p.is_dir()):
-            out = dst / base.name / run.name
-            if hidden(_dataset_of_run(run), datasets):
-                counts["hidden_runs"] += 1
-                shutil.copytree(run, out, ignore=shutil.ignore_patterns("outputs", _outputs.FILE))
-                files = _outputs.store_named("files")  # the copy of a files-store run is files
-                for partial in (False, True):
-                    text = files.rows_text(out, partial)
-                    if text is not None:
-                        files.put_rows(
-                            out, "".join(_call_only_line(x) for x in text.splitlines() if x.strip()), partial
-                        )
-            else:
-                shutil.copytree(run, out)
-        for f in sorted(p for p in base.iterdir() if p.is_file()):
-            (dst / base.name).mkdir(parents=True, exist_ok=True)
-            shutil.copy2(f, dst / base.name / f.name)
+        shutil.copytree(base, dst / base.name, ignore=leave_out, dirs_exist_ok=True)
+    files = _outputs.store_named("files")  # the copy of a files-store run is files
+    for run in sorted(hidden_runs):
+        out = dst / Path(run).relative_to(src.resolve())
+        counts["hidden_runs"] += 1
+        for partial in (False, True):
+            text = files.rows_text(out, partial)
+            if text is not None:
+                files.put_rows(
+                    out, "".join(_call_only_line(x) for x in text.splitlines() if x.strip()), partial
+                )
     if (src / _outputs.DB).is_file():
         _outputs.db_copy(src / _outputs.DB, dst / _outputs.DB, lambda k: _hidden_key(src, k), _call_only_line)
     for name in COPIED_DIRS:
