@@ -13,6 +13,7 @@ written to the disk but the database itself.
 from __future__ import annotations
 
 import fnmatch
+import functools
 import hashlib
 import io
 import os
@@ -29,7 +30,23 @@ from evaluation_harness import _common
 
 DB = "project.sqlite"
 SCHEMA_VERSION = "1"
+#: One lock for the one connection: a server answers requests on several threads at once, and a sqlite3
+#: connection used by two threads at once can crash the process (catalog-serve died that way, 2026-11-06).
+#: `_outputs` takes the same lock for its tables in the same database.
 _LOCK = threading.RLock()
+
+
+def _locked(fn: Any) -> Any:
+    """`fn` with the connection's lock held for the whole call (reentrant: a locked function may call another)."""
+
+    @functools.wraps(fn)
+    def run(*args: Any, **kwargs: Any) -> Any:
+        with _LOCK:
+            return fn(*args, **kwargs)
+
+    return run
+
+
 _CONN: dict[str, sqlite3.Connection] = {}
 
 
@@ -102,6 +119,7 @@ def _like(prefix: str) -> str:
 
 
 # ── reading ──────────────────────────────────────────────────────────────────────────────────────────────────────
+@_locked
 def _get(key: str) -> bytes | None:
     conn = connect(create=False)
     if conn is None:
@@ -137,6 +155,7 @@ def read_text(path: Any, encoding: str = "utf-8", errors: str | None = None) -> 
     return read_bytes(path).decode(encoding, errors or "strict")
 
 
+@_locked
 def is_file(path: Any) -> bool:
     """Whether the path is a file."""
     if not _pathlike(path):
@@ -148,6 +167,7 @@ def is_file(path: Any) -> bool:
     return bool(conn and conn.execute("SELECT 1 FROM files WHERE path = ?", (key,)).fetchone())
 
 
+@_locked
 def is_dir(path: Any) -> bool:
     """Whether the path is a directory (in the database: a prefix some file has; data/ itself always is)."""
     if not _pathlike(path):
@@ -185,6 +205,7 @@ class Stat:
     st_size: int
 
 
+@_locked
 def stat(path: Any) -> Any:
     """os.stat for the filesystem; size and modification time for a file in the database."""
     if not _pathlike(path):
@@ -205,6 +226,7 @@ def stat(path: Any) -> Any:
     return Stat(got[1] / 1e9, int(got[1]), int(got[0]))
 
 
+@_locked
 def _keys_under(key: str) -> list[str]:
     conn = connect(create=False)
     if conn is None:
@@ -292,6 +314,7 @@ def rglob(path: Any, pattern: str) -> Iterator[Path]:
 
 
 # ── writing ──────────────────────────────────────────────────────────────────────────────────────────────────────
+@_locked
 def _put(key: str, data: bytes) -> None:
     conn = connect()
     assert conn is not None
@@ -337,6 +360,7 @@ def mkdir(path: Any, parents: bool = False, exist_ok: bool = False) -> None:
         Path(path).mkdir(parents=parents, exist_ok=exist_ok)
 
 
+@_locked
 def unlink(path: Any, missing_ok: bool = False) -> None:
     """The file removed."""
     if not _pathlike(path):
@@ -352,6 +376,7 @@ def unlink(path: Any, missing_ok: bool = False) -> None:
         raise _missing(path)
 
 
+@_locked
 def rmtree(path: Any, ignore_errors: bool = False) -> None:
     """The directory and everything under it removed; in the database a run's outputs and rows go with it."""
     key = rel(path)

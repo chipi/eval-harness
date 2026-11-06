@@ -20,6 +20,14 @@ that can move a result is never a patch release without saying so under **Change
   path I/O anywhere else. `evh data-migrate --to sqlite|files` moves a project either way, every file read back by
   its sha256; on this repository's data the round trip gives back every file byte for byte. `validate` V23 names a
   project in both. Python code is never in the database.
+- **The data page** (PRD-016, UXS-004, ADR-0027). `evh catalog-serve` serves `data.html` (the header's Data menu,
+  **Manage**): everything a project keeps under `data/`, in either store, and its settings (arm configs, goals,
+  fieldsets, judge scorers, model records, failure-mode lists, `validate.json`) created, edited and deleted there.
+  A setting is saved only after it passes the check (it parses, matches its schema, its id is its file name but for
+  an arm config); harness-written data is shown read-only with the command that writes it; a run is deleted whole.
+  It is the one catalog page that writes, on this machine only: a public server answers no `/api/data` call. The
+  same in the terminal: `evh data-ls`, `data-show`, `data-put`, `data-rm`. In SQLite mode it is how a person's
+  settings get into the database without `data-migrate`.
 - **Tests that know when items are related.** `--cluster FIELD` on `pair-test`, `family-test` and
   `bootstrap-test`, and `cluster: FIELD` on a goal's dataset (used by the goal page, `evh goals`, the inspector,
   rounds and `--round`): items that share a value of the field (one thread's comments, one incident's decisions)

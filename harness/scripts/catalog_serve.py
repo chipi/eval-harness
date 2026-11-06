@@ -1000,6 +1000,78 @@ def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
 
 #: The API's endpoints. Anything else under /api/ is 404: it is not a way into the files.
 API_ROUTES = ("/api/health", "/api/compare", "/api/item", "/api/sheet")
+#: The data page's endpoints (UXS-004, ADR-0027): this machine's only; a public server answers none of them.
+DATA_ROUTES = (
+    "/api/data/store",
+    "/api/data/list",
+    "/api/data/file",
+    "/api/data/find",
+    "/api/data/template",
+    "/api/data/run",
+    "/api/data/check",
+)
+#: The header every data write must carry: a page from another origin cannot send it without a CORS preflight,
+#: which this server never grants (ADR-0027).
+DATA_HEADER = "X-EVH-Data"
+#: The largest setting a write takes, in bytes.
+DATA_MAX_BODY = 2_000_000
+#: A refusal's kind (`_data_page.Refused`) as its HTTP status.
+DATA_STATUS = {
+    "not-found": 404,
+    "not-allowed": 403,
+    "bad-argument": 400,
+    "would-overwrite": 409,
+    "invalid-file": 422,
+}
+
+
+def data_answer(method: str, path: str, query: str, body: bytes | None = None) -> tuple:
+    """The data page's API (UXS-004): (status, JSON body). Reads: GET store, list, file, find, template, run. Writes:
+    POST check (saves nothing), PUT file (create or change a setting), DELETE file (a setting, or a whole run)."""
+    from evaluation_harness import _data_page  # noqa: PLC0415
+
+    q = parse_qs(query)
+
+    def arg(name: str, default: str = "") -> str:
+        return q.get(name, [default])[0]
+
+    try:
+        if method == "GET":
+            if path == "/api/data/store":
+                return 200, _data_page.overview()
+            if path == "/api/data/list":
+                norm = _data_page.resolve(arg("path"))[0]
+                if _data_page.is_file(norm):  # a file, not a folder: the page opens it (no failed request)
+                    return 200, {"path": norm, "file": True}
+                return 200, _data_page.listing(norm, int(arg("offset", "0") or 0))
+            if path == "/api/data/file":
+                return 200, _data_page.show(arg("path"))
+            if path == "/api/data/find":
+                return 200, _data_page.search(arg("q"))
+            if path == "/api/data/template":
+                return 200, {"text": _data_page.template(arg("folder"), arg("id"))}
+            if path == "/api/data/run":
+                return 200, _data_page.run_summary(arg("path"))
+            return 405, {"error": "use POST, PUT or DELETE for this"}
+        text = (body or b"").decode("utf-8")
+        if method == "POST" and path == "/api/data/check":
+            problems = _data_page.check(arg("path"), text)
+            return 200, {
+                "path": arg("path"),
+                "problems": problems,
+                "checked": _data_page.checked(arg("path")),
+            }
+        if method == "PUT" and path == "/api/data/file":
+            return 200, _data_page.put(arg("path"), text, new=arg("new") == "1")
+        if method == "DELETE" and path == "/api/data/file":
+            return 200, _data_page.remove(arg("path"))
+        return 405, {"error": f"{method} is not served at {path}"}
+    except _data_page.Refused as exc:
+        return DATA_STATUS.get(exc.kind, 400), {"error": str(exc), "kind": exc.kind}
+    except UnicodeDecodeError:
+        return 400, {"error": "a setting is UTF-8 text"}
+    except ValueError as exc:
+        return 400, {"error": str(exc)}
 
 
 def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
@@ -1018,6 +1090,8 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     if ".." in p.split("/"):
         return 404
     if p.startswith("/api/"):
+        if p in DATA_ROUTES:  # this machine's only (ADR-0027)
+            return 404 if LIMITS["hosts"] else 0
         return 0 if p in API_ROUTES else 404
     prefix = next((x for x in prefixes if p.startswith(x)), None)
     if prefix is None:
@@ -1146,6 +1220,44 @@ class Handler(SimpleHTTPRequestHandler):
             return True
         return False
 
+    def do_POST(self):
+        """The data page's check (UXS-004), observed by the hooks."""
+        self._observed(lambda: self._write("POST"))
+
+    def do_PUT(self):
+        """The data page's save (UXS-004), observed by the hooks."""
+        self._observed(lambda: self._write("PUT"))
+
+    def do_DELETE(self):
+        """The data page's delete (UXS-004), observed by the hooks."""
+        self._observed(lambda: self._write("DELETE"))
+
+    def _write(self, method: str) -> None:
+        """A data write: only to a data route, on this machine (`_refuse`), with the data header, and from no other
+        origin (ADR-0027)."""
+        url = urlparse(self.path)
+        if self._refuse():
+            return
+        if url.path not in DATA_ROUTES or LIMITS["hosts"]:
+            self.send_error(404)
+            return
+        if self.headers.get(DATA_HEADER) != "1":
+            return self._json(
+                403,
+                {"error": f"a write needs the {DATA_HEADER}: 1 header (the data page sends it)"},
+                cache=False,
+            )
+        origin = self.headers.get("Origin")
+        port = int(self.server.server_address[1])  # type: ignore[index]  # an AF_INET (host, port)
+        if origin is not None and origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"):
+            return self._json(403, {"error": "a write from another origin is refused"}, cache=False)
+        n = int(self.headers.get("Content-Length") or 0)
+        if n > DATA_MAX_BODY:
+            return self._json(413, {"error": f"a setting is at most {DATA_MAX_BODY:,} bytes"}, cache=False)
+        body = self.rfile.read(n) if n else b""
+        code, answer_body = data_answer(method, url.path, url.query, body)
+        self._json(code, answer_body, cache=False)
+
     def do_HEAD(self):
         """Handle HEAD requests with access checks."""
         if not self._refuse():
@@ -1183,6 +1295,9 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
+        if url.path in DATA_ROUTES:
+            code, body = data_answer("GET", url.path, url.query)
+            return self._json(code, body, cache=False)
         if url.path in ("/api/compare", "/api/item", "/api/sheet"):
             # A client-supplied header is trusted only when named (--client-header): behind a
             # proxy that sets it, with the origin reachable only through that proxy. Otherwise
@@ -1230,12 +1345,12 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
         return True
 
-    def _json(self, code: int, body) -> None:
+    def _json(self, code: int, body, cache: bool = True) -> None:
         data = body if isinstance(body, bytes) else json.dumps(body).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "no-store" if code >= 400 else "public, max-age=300")
+        self.send_header("Cache-Control", "no-store" if code >= 400 or not cache else "public, max-age=300")
         self.end_headers()
         self.wfile.write(data)
 

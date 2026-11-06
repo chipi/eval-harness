@@ -30,9 +30,11 @@ SQLite is in Python's standard library: no dependency.
   while `data/` holds a `.py` file, naming each.
 - **Moving**: `evh data-migrate --to sqlite|files`; every file read back and compared by sha256 before the old copy
   is removed.
-- **Getting data in**: in SQLite mode `data-migrate --to sqlite` is the only way a file a person writes (a goal, a
-  config) gets into the database; a way to add and change them without files comes with the API of RFC-026 (owner,
-  2026-11-06). The harness's own writes (runs, datasets it creates, labels, verdicts) go to the database directly.
+- **Getting data in**: in SQLite mode a person's settings (a goal, a config) get into the database through the data
+  page or `evh data-put` ([PRD-016](../prd/PRD-016-managing-project-data.md),
+  [UXS-004](../uxs/UXS-004-data-page.md); the owner asked for it after first choosing `data-migrate` alone, 2026-11-06),
+  and a folder of files through `data-migrate --to sqlite`; every command over an API comes with RFC-026. The
+  harness's own writes (runs, datasets it creates, labels, verdicts) go to the database directly.
 - **validate** in SQLite mode skips the checks that ask git what is committed (nothing in the database is in git) and
   says so. **A release** copies the database with a hidden dataset's text removed.
 

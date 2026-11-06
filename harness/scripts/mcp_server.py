@@ -69,10 +69,14 @@ READ_TOOLS = (
     "dataset-card",
     "picks",
     "deploy-sheet",
+    "data-ls",
+    "data-show",
 )
 NOT_TOOLS = {
     "run-migrate": "rewrites the run directories",
     "data-migrate": "moves the project's data between files and its database",
+    "data-put": "writes a setting",
+    "data-rm": "deletes a setting or a run",
     "dataset-publish": "writes to an outside service (a new Hub repo)",
     "fieldset-propose": "reads a source (it can fetch from the network) and can write a field set",
     "dataset-describe": "writes a dataset record",
@@ -382,7 +386,11 @@ PUBLIC_HIDDEN = {
 }
 #: In --public mode, the tools left out, and why: a public server serves a copy of the data, not a
 #: whole project (no corpora, no example code), so validate would only ever report what is not there.
-PUBLIC_DROPPED = {"validate": "a public copy is not a whole project: validate fails by design"}
+PUBLIC_DROPPED = {
+    "validate": "a public copy is not a whole project: validate fails by design",
+    "data-ls": "the project's files are this machine's (the data page, UXS-004)",
+    "data-show": "a file's text is this machine's: a hidden dataset's items too (the data page, UXS-004)",
+}
 
 
 def tools_for(public: bool) -> tuple:

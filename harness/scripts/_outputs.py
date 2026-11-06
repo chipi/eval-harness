@@ -28,7 +28,6 @@ import hashlib
 import json
 import os
 import sqlite3
-import threading
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Protocol
@@ -241,7 +240,7 @@ class SqliteStore:
     name = "sqlite"
 
     def __init__(self) -> None:
-        self._lock = threading.RLock()
+        self._lock = _store._LOCK  # the one connection's lock (_store)
         self._cache: dict[str, dict[str, str]] = {}
         self._rows: dict[tuple[str, bool], str | None] = {}
         self._version: int | None = None

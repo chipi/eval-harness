@@ -114,6 +114,7 @@ budget-check:
 
 browser-check:
 	$(PYTHON) tests/test_inspector_browser.py
+	$(PYTHON) tests/test_data_page_browser.py
 
 # The catalog of this repository's own runs in Chromium (tests/test_catalog_real_browser.py): the
 # pages at the size the deployment serves. Reuses budget-check's catalog, else builds it.

@@ -812,6 +812,10 @@ def test_example_scorer_suites_pass() -> None:
             "the project's store (RFC-025): the setting, _store on both, data-migrate there and back, never both (V23), concurrent writers, the release, the path-I/O guard",
         ),
         (
+            "test_data_page.py",
+            "the data page's server and evh data-*: list, show, check, put, rm on both stores; the header, Origin and public refusals; 80 concurrent requests",
+        ),
+        (
             "test_run_migrate.py",
             "run-migrate: outputs/ to outputs.jsonl byte for byte, derived copies dropped, idempotent, non-UTF-8 refused",
         ),

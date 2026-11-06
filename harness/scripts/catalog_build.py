@@ -71,6 +71,7 @@ ASSETS = (
     "overview.js",
     "arms.js",
     "group.js",
+    "data.js",
     "icon.svg",
 )
 #: Links that would put more arms than this in one inspector URL go to the picker instead.
@@ -111,6 +112,8 @@ NAV = [
             ("captures", "captures.html", "Captures"),
             ("labels", "labels.html", "Labels"),
             ("references", "references.html", "Reference sets"),
+            # the data page (UXS-004): shown only by a local catalog-serve (catalog.js asks it)
+            ("manage", "data.html", "Manage", "local-only"),
         ],
         "Data",
     ),
@@ -4562,6 +4565,35 @@ def write_pick(A: Adapter, by_ds: dict, out: Path, rows: list[dict]) -> None:
     )
 
 
+def render_data(A: Adapter, out: Path, page_fn=page, serve: str = "evh catalog-serve", **page_kw) -> None:
+    """The data page's shell (UXS-004); assets/data.js fills it from the local server's /api/data/. The one page
+    that writes, and only through a server on this machine (ADR-0027)."""
+    body = (
+        '<section class="hero slim"><div class="wrap"><p class="kicker">data</p>'
+        "<h1>Project data</h1><p class=dek>What this project keeps under data/: its settings, which you can "
+        "create, change and delete here, and the data the harness wrote, shown read-only.</p>"
+        '<p class="dm-store small" id="store"></p></div></section>'
+        '<section class="block tight"><div class="wrap" id="app">'
+        f'<p class="muted">Loading… (this page needs <code>{e(serve)}</code> on this machine; opened from disk it '
+        "cannot read the project's data.)</p></div></section>"
+    )
+    write(
+        out,
+        "data.html",
+        page_fn(
+            "Project data",
+            body,
+            0,
+            "manage",
+            ("assets/data.js",),
+            item=A.item_word,
+            serve=serve,
+            elsewhere=(("data-ls", {}),),
+            **page_kw,
+        ),
+    )
+
+
 def render_inspect(
     A: Adapter,
     out: Path,
@@ -4752,6 +4784,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     write_search(A, by_ds, out)
     write_pick(A, by_ds, out, arms_rows)
     render_inspect(A, out, nav=nav, pages=True, pick=True)
+    render_data(A, out, nav=nav)
     return {
         "goals": n_goals,
         "datasets": len(by_ds),

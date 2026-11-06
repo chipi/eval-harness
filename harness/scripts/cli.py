@@ -61,6 +61,10 @@ COMMANDS = {
         "data_migrate.py",
         "move the project's data/ into its SQLite database or back (RFC-025)",
     ),
+    "data-ls": ("data_ls.py", "list what the project keeps under data/, in either store (UXS-004)"),
+    "data-show": ("data_show.py", "show one file of the project's data"),
+    "data-put": ("data_put.py", "create or change a setting (config, goal, fieldset, ...), checked first"),
+    "data-rm": ("data_rm.py", "delete a setting, or a whole run"),
     "dataset-migrate": (
         "dataset_migrate.py",
         "bring the dataset records to this release's format, once (idempotent)",

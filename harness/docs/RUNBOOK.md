@@ -586,10 +586,27 @@ evh data-migrate --to files              # back, byte for byte, after setting st
 
 `data-migrate` refuses while the project's store is not the target, while `data/` holds Python, and
 while a run is still in the layout before 0.8.0 (`evh run-migrate` first); a move a crash stopped is
-finished by the next one. In SQLite mode `data-migrate` is how a file you write (a goal, a config)
-gets in. `validate` V23 names a database beside files, or files beside the database; V7 and V9, which
+finished by the next one. In SQLite mode a setting you write (a goal, a config) gets in through the
+data page or `evh data-put` (below), and a folder of files through `data-migrate`. `validate` V23 names a database beside files, or files beside the database; V7 and V9, which
 read git, say why they do not apply. A release reads the database and writes the same files layout
 as a files project, a hidden dataset's text left out.
+
+**The data page** (UXS-004). `evh catalog-serve` serves `data.html`, linked from the header's Data
+menu as **Manage**: everything under `data/`, in either store, and the project's settings (arm
+configs, goals, fieldsets, judge scorers, model records, failure-mode lists, `validate.json`), which
+it creates, edits and deletes. A setting is saved only after it passes the check: it parses, matches
+its schema, and (all but an arm config) its id is its file name. Harness-written data is shown
+read-only with the command that writes it; a run is the one kind of data it deletes, whole. It writes
+on this machine only: a public server answers no `/api/data` call (ADR-0027). Each view and action is
+a command:
+
+```bash
+evh data-ls [PATH] [--find TEXT]          # the overview, a folder, or every file whose path holds TEXT
+evh data-show goals/x.yaml                # one file: its text, size, sha256, and who writes it
+evh data-put goals/x.yaml x.yaml --check  # the check alone
+evh data-put goals/x.yaml x.yaml [--new]  # save it (- reads stdin); --new refuses a name already taken
+evh data-rm runs/<run> --dry-run          # what would go; without --dry-run, a setting or a whole run
+```
 
 `evh run` and `rescore` print a `WARNING` when they write to a directory git ignores
 that is neither, or to one outside the project's data, and `evh validate` notes any ignored

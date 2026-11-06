@@ -1,0 +1,373 @@
+#!/usr/bin/env python3
+"""The data page's commands and API (PRD-016, UXS-004, ADR-0027), on both stores.
+
+    python tests/test_data_page.py
+
+In a tutorial project with a dataset, two runs, a goal, kept as files and then moved into its database:
+
+  - evh data-ls: the store, the settings folders with their counts, the data folders; a folder; --find.
+  - evh data-show: a setting's text, size, sha256; a run's file says what writes it.
+  - evh data-put --check: a YAML error with its line, a schema error, an id that is not the file name; nothing saved.
+  - evh data-put: a valid change saved and read back; --new refuses a name taken; a harness-written file, a path
+    outside data/ and Python are refused.
+  - evh data-rm: --dry-run names what a run takes; a setting, then a run, deleted (its outputs and rows with it);
+    a dataset refused.
+  - The API on a local catalog-serve answers the same; a write without the X-EVH-Data header, or from another
+    origin, is refused; a public server answers no /api/data call, a write least of all.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+HARNESS = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(HARNESS))
+from evaluation_harness._check import check, summary  # noqa: E402
+
+GOOD_GOAL_EDIT = "# the margin a person changed on the page\n"
+
+
+def setup(store: str) -> tuple[Path, dict]:
+    proj = Path(tempfile.mkdtemp(prefix=f"evh-datapage-{store}-"))
+    env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-data-page")
+    for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_STORE", "EVAL_MAX_COST_USD"):
+        env.pop(k, None)
+
+    def evh(*args: str) -> None:
+        r = subprocess.run([sys.executable, "-m", "evaluation_harness", *args], cwd=proj, env=env,
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL)  # fmt: skip
+        if r.returncode:
+            raise SystemExit(f"setup: evh {' '.join(args)} failed:\n{r.stdout}{r.stderr}")
+
+    evh("init", "--tutorial")
+    shutil.copy(proj / "tutorial/fields/tickets.yaml", proj / "data/fields/")
+    evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets", "--fieldset", "tickets",
+        "--fields", "tutorial/ticket_fields.csv")  # fmt: skip
+    evh("dataset-materialize", "--dataset-id", "tickets_v1")
+    for f in (proj / "tutorial/configs").glob("tickets_*.yaml"):
+        shutil.copy(f, proj / "data/configs/")
+    for arm in ("lead1", "lead2"):
+        evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
+    shutil.copy(proj / "tutorial/goals/tickets_summary.yaml", proj / "data/goals/")
+    if store == "sqlite":
+        (proj / "config.yaml").write_text("store: sqlite\n")
+        env["EVAL_STORE"] = "sqlite"
+        evh("data-migrate", "--to", "sqlite")
+    evh("catalog")
+    return proj, env
+
+
+def cli(proj: Path, env: dict, *args: str, stdin: str | None = None) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, "-m", "evaluation_harness", *args], cwd=proj, env=env,
+                          capture_output=True, text=True, input=stdin)  # fmt: skip
+
+
+def serve(proj: Path, env: dict, *extra: str) -> tuple:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    log = proj / "serve.log"
+    with open(log, "w", encoding="utf-8") as fh:
+        p = subprocess.Popen([sys.executable, "-m", "evaluation_harness", "catalog-serve", "--port", str(port), *extra],
+                             cwd=proj, env=env, stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)  # fmt: skip
+    for _ in range(150):
+        try:
+            urllib.request.urlopen(f"http://127.0.0.1:{port}/api/health", timeout=1)  # nosec B310
+            break
+        except Exception:  # noqa: BLE001 - not up yet
+            if p.poll() is not None:
+                raise SystemExit(f"catalog-serve exited:\n{log.read_text()}") from None
+            time.sleep(0.1)
+    return p, port
+
+
+def http(
+    port: int,
+    method: str,
+    route: str,
+    body: str | None = None,
+    headers: dict | None = None,
+    host: str | None = None,
+):
+    req = urllib.request.Request(f"http://127.0.0.1:{port}{route}", data=body.encode() if body is not None else None,
+                                 method=method, headers=headers or {})  # fmt: skip
+    if host:
+        req.add_header("Host", host)
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:  # noqa: S310 - the test's own server  # nosec B310
+            raw = r.read()
+            return r.status, json.loads(raw) if raw[:1] in (b"{", b"[") else raw
+    except urllib.error.HTTPError as e:
+        raw = e.read()
+        try:
+            return e.code, json.loads(raw)
+        except ValueError:
+            return e.code, raw
+
+
+W = {"X-EVH-Data": "1", "Content-Type": "text/plain; charset=utf-8"}
+
+
+def run_case(store: str) -> None:
+    proj, env = setup(store)
+    try:
+        data = proj / "data"
+        goal = "goals/tickets_summary.yaml"
+        r = cli(proj, env, "data-ls")
+        check(
+            f"{store}: data-ls names the store, the settings folders and the data folders",
+            r.returncode == 0
+            and f"store: {store}" in r.stdout
+            and "configs" in r.stdout
+            and "runs" in r.stdout,
+            (r.stdout + r.stderr)[-400:],
+        )
+        r = cli(proj, env, "data-ls", "configs", "--json")
+        names = (
+            [e["name"] for e in json.loads(r.stdout)["result"]["values"]["listing"]["entries"]]
+            if r.returncode == 0
+            else []
+        )
+        check(f"{store}: data-ls configs lists the arm configs", "tickets_lead1.yaml" in names, names)
+        r = cli(proj, env, "data-ls", "scorers", "--json")
+        ls = json.loads(r.stdout)["result"]["values"]["listing"] if r.returncode == 0 else {}
+        check(
+            f"{store}: a settings folder not made yet lists empty, ready for its first file",
+            ls.get("entries") == [] and ls.get("settings_folder") == "scorers",
+            (r.stdout + r.stderr)[-300:],
+        )
+        r = cli(proj, env, "data-ls", "nothing-here")
+        check(f"{store}: any other missing folder is refused", r.returncode != 0, r.stdout[-200:])
+        r = cli(proj, env, "data-ls", "--find", "summary")
+        check(f"{store}: data-ls --find finds the goal by name", goal in r.stdout, r.stdout[-300:])
+        r = cli(proj, env, "data-show", goal, "--json")
+        f = json.loads(r.stdout)["result"]["values"]["file"] if r.returncode == 0 else {}
+        before = f.get("text") or ""
+        check(f"{store}: data-show: a goal's text, editable, its sha256", "goal_id: tickets_summary" in before
+              and f.get("editable") is True and len(f.get("sha256", "")) == 64, f)  # fmt: skip
+        run = next(
+            e["path"]
+            for e in json.loads(cli(proj, env, "data-ls", "runs", "--json").stdout)["result"]["values"][
+                "listing"
+            ]["entries"]
+            if e["type"] == "run"
+        )
+        r = cli(proj, env, "data-show", f"{run}/metrics.json")
+        check(f"{store}: a run's file says it is written by evh run and is not edited here",
+              r.returncode == 0 and "written by evh run" in r.stdout, r.stdout[-200:])  # fmt: skip
+
+        # Checks: nothing saved on a problem.
+        r = cli(
+            proj, env, "data-put", goal, "-", "--check", stdin="goal_id: tickets_summary\ntitle: [unclosed\n"
+        )
+        check(
+            f"{store}: --check: a YAML error with its line",
+            r.returncode == 1 and "not YAML (line" in r.stdout,
+            r.stdout,
+        )
+        r = cli(
+            proj,
+            env,
+            "data-put",
+            goal,
+            "-",
+            "--check",
+            stdin=before.replace("goal_id: tickets_summary", "goal_id: other"),
+        )
+        check(
+            f"{store}: --check: an id that is not the file name",
+            r.returncode == 1 and "must be the file name" in r.stdout,
+            r.stdout,
+        )
+        cfg = cli(proj, env, "data-show", "configs/tickets_lead1.yaml", "--text").stdout
+        r = cli(proj, env, "data-put", "configs/tickets_lead1.yaml", "-", "--check", stdin=cfg)
+        check(f"{store}: --check: an arm config's config_id need not be its file name (the tutorial's is not)",
+              r.returncode == 0 and "passes the check: it parses, matches config.schema.json" in r.stdout, r.stdout)  # fmt: skip
+        r = cli(proj, env, "data-put", goal, "-", "--check", stdin="goal_id: tickets_summary\n")
+        check(
+            f"{store}: --check: the schema's missing keys",
+            r.returncode == 1 and "is a required property" in r.stdout,
+            r.stdout[-300:],
+        )
+        r = cli(proj, env, "data-put", goal, "-", stdin="goal_id: tickets_summary\n")
+        same = cli(proj, env, "data-show", goal, "--text").stdout
+        check(f"{store}: a failing put is refused and saves nothing", r.returncode != 0 and "ERROR (invalid-file)" in r.stderr
+              and same == before, r.stderr[-300:])  # fmt: skip
+        # A valid change, saved and read back.
+        r = cli(proj, env, "data-put", goal, "-", stdin=GOOD_GOAL_EDIT + before)
+        check(f"{store}: a valid change is saved and reads back", r.returncode == 0 and "saved goals/tickets_summary.yaml" in r.stdout
+              and cli(proj, env, "data-show", goal, "--text").stdout == GOOD_GOAL_EDIT + before, (r.stdout + r.stderr)[-300:])  # fmt: skip
+        r = cli(proj, env, "goals")
+        check(
+            f"{store}: evh goals reads the changed goal",
+            r.returncode == 0 and "tickets_summary" in r.stdout,
+            r.stderr[-300:],
+        )
+        r = cli(proj, env, "data-put", goal, "-", "--new", stdin=before)
+        check(
+            f"{store}: --new refuses a name already taken",
+            "ERROR (would-overwrite)" in r.stderr,
+            r.stderr[-200:],
+        )
+        new_cfg = cli(proj, env, "data-show", "configs/tickets_lead1.yaml", "--text").stdout.replace(
+            "config_id: tickets_lead1_v1", "config_id: tickets_lead3"
+        )
+        r = cli(proj, env, "data-put", "configs/tickets_lead3.yaml", "-", "--new", stdin=new_cfg)
+        check(f"{store}: a new arm config is created", r.returncode == 0, (r.stdout + r.stderr)[-300:])
+        for target, why in ((f"{run}/metrics.json", "written by evh run"), ("datasets/tickets_v1.json", "written by the dataset-* commands"),
+                            ("../config.yaml", "outside the project's data"), ("configs/x.py", "code")):  # fmt: skip
+            r = cli(proj, env, "data-put", target, "-", stdin="x: 1\n")
+            check(
+                f"{store}: data-put refuses {target}",
+                r.returncode != 0 and "ERROR (not-allowed)" in r.stderr and why in r.stderr,
+                r.stderr[-200:],
+            )
+
+        # The API on a local server, then a public one.
+        p, port = serve(proj, env)
+        try:
+            code, body = http(port, "GET", "/api/data/store")
+            check(
+                f"{store}: GET /api/data/store answers locally",
+                code == 200 and body.get("store") == store,
+                (code, body),
+            )
+            code, body = http(port, "GET", "/api/data/file?path=" + goal)
+            check(
+                f"{store}: GET /api/data/file reads the changed goal",
+                code == 200 and body["text"].startswith(GOOD_GOAL_EDIT),
+                code,
+            )
+            code, body = http(
+                port, "PUT", "/api/data/file?path=" + goal, before, {"Content-Type": "text/plain"}
+            )
+            check(
+                f"{store}: a write without the X-EVH-Data header is refused",
+                code == 403 and "X-EVH-Data" in body.get("error", ""),
+                (code, body),
+            )
+            code, body = http(
+                port, "PUT", "/api/data/file?path=" + goal, before, {**W, "Origin": "http://evil.example"}
+            )
+            check(f"{store}: a write from another origin is refused", code == 403, (code, body))
+            code, body = http(port, "POST", "/api/data/check?path=" + goal, "goal_id: other\n", W)
+            check(f"{store}: POST check lists the problems", code == 200 and body["problems"], (code, body))
+            code, body = http(port, "PUT", "/api/data/file?path=" + goal, before, W)
+            check(f"{store}: PUT saves a valid setting", code == 200 and body["text"] == before, (code, body))
+            code, body = http(port, "PUT", "/api/data/file?path=datasets/tickets_v1.json", "{}", W)
+            check(
+                f"{store}: PUT refuses a harness-written file",
+                code == 403 and body.get("kind") == "not-allowed",
+                (code, body),
+            )
+            code, body = http(port, "GET", "/api/data/list?path=..%2F")
+            check(f"{store}: a path outside data/ is refused", code in (403, 404), (code, body))
+            code, body = http(port, "GET", "/api/data/store", host="evil.example")
+            check(f"{store}: another Host is refused (DNS rebinding)", code == 403, code)
+            code, body = http(port, "GET", "/api/data/run?path=" + run)
+            n_out = body.get("outputs") if code == 200 else None
+            check(
+                f"{store}: GET run names what a delete takes",
+                code == 200 and n_out and body.get("rows"),
+                (code, body),
+            )
+            code, body = http(port, "DELETE", "/api/data/file?path=" + run, None, W)
+            check(
+                f"{store}: DELETE deletes a whole run with its outputs and rows",
+                code == 200 and body.get("outputs") == n_out,
+                (code, body),
+            )
+            code, body = http(port, "GET", "/api/data/file?path=" + f"{run}/metrics.json")
+            check(f"{store}: the deleted run is gone", code == 404, code)
+            code, body = http(port, "DELETE", "/api/data/file?path=datasets/tickets_v1.json", None, W)
+            check(f"{store}: DELETE refuses a dataset", code == 403, (code, body))
+            # The page asks in parallel, and the server answers on threads sharing one database connection: an
+            # unlocked connection killed the server (2026-11-06). Every answer, and the server still up.
+            from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415
+
+            routes = ["/api/data/store", "/api/data/list?path=configs", "/api/data/file?path=" + goal,
+                      "/api/data/find?q=tickets", "/api/data/list?path=runs"] * 16  # fmt: skip
+            with ThreadPoolExecutor(max_workers=16) as pool:
+                codes = list(pool.map(lambda rt: http(port, "GET", rt)[0], routes))
+            alive = http(port, "GET", "/api/health")[0]
+            check(f"{store}: 80 requests at once all answered, the server still up",
+                  codes == [200] * len(routes) and alive == 200, sorted(set(codes)))  # fmt: skip
+        finally:
+            os.killpg(p.pid, 15)
+            p.wait(timeout=30)
+        if store == "sqlite":
+            check(f"{store}: everything above stayed in the database (nothing under data/ on disk)",
+                  sorted(x.name for x in data.iterdir()) == ["project.sqlite"] or all(x.name.startswith("project.sqlite") for x in data.iterdir()),
+                  sorted(x.name for x in data.iterdir()))  # fmt: skip
+        # The commands' deletes.
+        r = cli(proj, env, "data-rm", "configs/tickets_lead3.yaml", "--dry-run")
+        check(f"{store}: data-rm --dry-run deletes nothing", r.returncode == 0 and "would delete" in r.stdout
+              and cli(proj, env, "data-show", "configs/tickets_lead3.yaml").returncode == 0, r.stdout)  # fmt: skip
+        r = cli(proj, env, "data-rm", "configs/tickets_lead3.yaml")
+        check(
+            f"{store}: data-rm deletes a setting",
+            r.returncode == 0 and cli(proj, env, "data-show", "configs/tickets_lead3.yaml").returncode != 0,
+            r.stderr[-200:],
+        )
+        r = cli(proj, env, "data-rm", "datasets/tickets_v1.json", "--dry-run")
+        check(
+            f"{store}: data-rm --dry-run refuses a dataset as data-rm would",
+            "ERROR (not-allowed)" in r.stderr,
+            r.stderr[-200:],
+        )
+    finally:
+        shutil.rmtree(proj, ignore_errors=True)
+
+
+def public_case() -> None:
+    """A public server answers no /api/data call, a write least of all."""
+    proj, env = setup("files")
+    try:
+        with socket.socket() as s:
+            s.bind(("127.0.0.1", 0))
+            port = s.getsockname()[1]
+        log = proj / "public.log"
+        with open(log, "w", encoding="utf-8") as fh:
+            p = subprocess.Popen([sys.executable, "-m", "evaluation_harness", "catalog-serve", "--port", str(port),
+                                  "--public", f"127.0.0.1:{port}"], cwd=proj, env=env, stdout=fh,
+                                 stderr=subprocess.STDOUT, start_new_session=True)  # fmt: skip
+        try:
+            for _ in range(150):
+                try:
+                    code, _b = http(port, "GET", "/api/health", host=f"127.0.0.1:{port}")
+                    if code == 200:
+                        break
+                except urllib.error.URLError:
+                    pass  # not up yet
+                if p.poll() is not None:
+                    raise SystemExit(f"catalog-serve --public exited:\n{log.read_text()}")
+                time.sleep(0.1)
+            code, _b = http(port, "GET", "/api/data/store")
+            check("public: GET /api/data/store is 404", code == 404, code)
+            code, _b = http(port, "PUT", "/api/data/file?path=goals/tickets_summary.yaml", "x: 1\n", W)
+            check("public: PUT is 404", code == 404, code)
+            code, _b = http(port, "DELETE", "/api/data/file?path=goals/tickets_summary.yaml", None, W)
+            check("public: DELETE is 404, the goal untouched",
+                  code == 404 and (proj / "data/goals/tickets_summary.yaml").is_file(), code)  # fmt: skip
+        finally:
+            os.killpg(p.pid, 15)
+            p.wait(timeout=30)
+    finally:
+        shutil.rmtree(proj, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    for store in ("files", "sqlite"):
+        run_case(store)
+    public_case()
+    sys.exit(summary())

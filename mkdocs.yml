@@ -63,11 +63,13 @@ nav:
           - "PRD-007: One install, your own keys": prd/PRD-007-packaging-and-providers.md
           - "PRD-014: Datasets from production (built, 0.6.0)": prd/PRD-014-datasets-from-production.md
           - "PRD-015: Models, onboarded once, for every eval (built, 0.6.0)": prd/PRD-015-models-onboarded-once.md
+          - "PRD-016: Managing a project's data from the catalog (draft, 0.8.0)": prd/PRD-016-managing-project-data.md
       - Experience (UXS):
           - Index: uxs/index.md
           - "UXS-001: The catalog": uxs/UXS-001-catalog.md
           - "UXS-002: The run inspector": uxs/UXS-002-inspector.md
           - "UXS-003: The command line and the first evaluation": uxs/UXS-003-cli-and-onboarding.md
+          - "UXS-004: The data page (draft, 0.8.0)": uxs/UXS-004-data-page.md
       - Designs (RFCs):
           - Index: rfc/index.md
           - "RFC-001: The run fingerprint and code identity (version 4)": rfc/RFC-001-fingerprint-and-code-identity.md
@@ -101,6 +103,7 @@ nav:
           - "ADR-0024: Several projects on one machine share nothing (accepted, 0.6.0)": adr/ADR-0024-several-projects-on-one-machine.md
           - "ADR-0025: A hypothesis is written in the arm's config, committed before the run (accepted, 0.7.0)": adr/ADR-0025-a-hypothesis-lives-in-the-arm-config.md
           - "ADR-0026: A contender is shown no worse than the leader; a strategy is a default margin (accepted, 0.8.0)": adr/ADR-0026-contenders-by-non-inferiority.md
+          - "ADR-0027: One catalog page writes: the data page, on this machine only (proposed, 0.8.0)": adr/ADR-0027-the-data-page-writes-locally.md
   - The evals:
       - Reproduce it: REPRODUCE.md
       - Protocol: PROTOCOL.md
