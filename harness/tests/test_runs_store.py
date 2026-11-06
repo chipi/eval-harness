@@ -306,6 +306,47 @@ try:
         (r.stdout + r.stderr)[-300:],
     )
 
+    # A run is its directory, in the sqlite store too: deleted, it has nothing; made again at the same path (a
+    # --run-id used again), it starts empty, never with the deleted run's outputs; copied without its data, empty.
+    use("sqlite")
+    again = runs / "again_v1_x"
+    w = _outputs.writer(again)
+    for item in ("a1", "a2", "a3"):
+        w.add(item, "first run")
+    shutil.rmtree(again)
+    gone_reads = (_outputs.outputs(again), _outputs.rows_text(again), _outputs.has_outputs(again))
+    _outputs.writer(again).add("a1", "second run")
+    copied = runs / "copied_v1_x"
+    shutil.copytree(again, copied)
+    check(
+        "sqlite store: a deleted run directory has nothing; made again it starts empty; a bare copy is empty",
+        gone_reads == ({}, None, False)
+        and _outputs.outputs(again) == {"a1": "second run"}
+        and _outputs.outputs(copied) == {},
+        (gone_reads, _outputs.outputs(again), _outputs.outputs(copied)),
+    )
+    shutil.rmtree(copied)
+    shutil.rmtree(again)
+    keys_before = _outputs.db_runs(data / _outputs.DB)
+    _outputs.reset()
+    r = evh("run-migrate", "--to", "sqlite", store="sqlite")
+    use("sqlite")
+    check(
+        "--to sqlite removes the entries of deleted run directories, and says so",
+        r.returncode == 0
+        and "runs/again_v1_x" in keys_before
+        and "runs/again_v1_x" not in _outputs.db_runs(data / _outputs.DB)
+        and "deleted run directories removed" in r.stdout,
+        (r.stdout + r.stderr)[-300:],
+    )
+    check(
+        "a database per runs folder: a judged run is in data/runs-judged.sqlite, never in data/runs.sqlite",
+        (data / "runs-judged.sqlite").is_file()
+        and any(k.startswith("runs-judged/") for k in _outputs.db_runs(data / "runs-judged.sqlite", "rows"))
+        and not any(k.startswith("runs-judged/") for k in _outputs.db_runs(data / _outputs.DB, "rows")),
+        (_outputs.db_runs(data / "runs-judged.sqlite", "rows"), _outputs.db_runs(data / _outputs.DB, "rows")),
+    )
+
     # Two processes writing their own runs at once while a third reads one of them: every output committed.
     worker = proj / "worker.py"
     worker.write_text(

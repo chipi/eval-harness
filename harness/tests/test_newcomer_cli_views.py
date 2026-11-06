@@ -25,6 +25,9 @@ KIT = HERE.parent / "tutorial"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 PY = sys.executable
 KEEP = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_") and k != "COLUMNS"}
 
@@ -56,10 +59,11 @@ def write_run(proj: Path, name: str, config: str, scores: dict, extra: dict | No
         **(extra or {}),
     }
     (d / "metrics.json").write_text(json.dumps(m))
-    (d / "predictions.jsonl").write_text(
+    _runstore.put_rows_text(
+        d,
         "".join(
             json.dumps({"item_id": f"i{i}", "acc": scores["acc"], "cost_usd": 0.001}) + "\n" for i in range(4)
-        )
+        ),
     )
 
 
@@ -75,15 +79,15 @@ try:
         ("single", "arm_one_v1"),
     ):
         write_run(syn, name, cfg, {"acc": 0.5, "total_cost_usd": 0.004})
-        pj = syn / "data" / "runs" / name / "predictions.jsonl"
-        pj.write_text(
+        _runstore.put_rows_text(
+            syn / "data" / "runs" / name,
             "".join(
                 json.dumps(
                     {"item_id": f"i{i}", "acc": 0.5, "cost_usd": 0.001, "_meta": {"usage": {"cost": 0.001}}}
                 )
                 + "\n"
                 for i in range(4)
-            )
+            ),
         )
     r = evh(syn, "cost-report", "--dataset-id", "dsv")
     rows = [ln.split()[0:2] for ln in r.stdout.splitlines() if ln.strip().startswith("arm_")]
@@ -493,13 +497,13 @@ try:
         out(clean)[-500:],
     )
     cut_run = next((data / "runs").glob("tickets_lead1_v1_*"))
-    preds = [json.loads(x) for x in (cut_run / "predictions.jsonl").read_text().splitlines()]
+    preds = _runstore.rows(cut_run)
     preds[0].setdefault("_meta", {})["finish_reason"] = "length"
     preds[1]["tokens_out"] = 99
     cm = json.loads((cut_run / "metrics.json").read_text())
     cm.setdefault("params", {})["max_tokens"] = 99
     (cut_run / "metrics.json").write_text(json.dumps(cm))
-    (cut_run / "predictions.jsonl").write_text("".join(json.dumps(x) + "\n" for x in preds))
+    _runstore.put_rows_text(cut_run, "".join(json.dumps(x) + "\n" for x in preds))
     cutr = evh(proj, "rescore", "--dataset-id", "tickets_v1", "--out", str(proj / "rs_cut"))
     flat_cut = " ".join(cutr.stdout.split())
     check(

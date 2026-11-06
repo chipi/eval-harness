@@ -33,6 +33,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-sheet-import-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-sheet-import")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_PUBLIC"):
@@ -275,10 +278,7 @@ try:
     for arm, cid in ARMS.items():
         d = next(iter(jroot.glob(f"{cid}_*")), None)
         if d is not None:
-            recs[arm] = {
-                json.loads(ln)["item_id"]: json.loads(ln)
-                for ln in (d / "predictions.jsonl").read_text().splitlines()
-            }
+            recs[arm] = {x["item_id"]: x for x in _runstore.rows(d)}
             metrics[arm] = json.loads((d / "metrics.json").read_text())
     check(
         "sheet-import pick: judged runs under data/runs-judged/<scorer>/, one per arm, named as the source run",
@@ -438,10 +438,7 @@ try:
     for arm, cid in ARMS.items():
         d = next(iter(sroot.glob(f"{cid}_*")), None)
         if d is not None:
-            srecs[arm] = {
-                json.loads(ln)["item_id"]: json.loads(ln)["judge_score_unvalidated"]
-                for ln in (d / "predictions.jsonl").read_text().splitlines()
-            }
+            srecs[arm] = {x["item_id"]: x["judge_score_unvalidated"] for x in _runstore.rows(d)}
             smet[arm] = json.loads((d / "metrics.json").read_text())
     check(
         "sheet-import scores: judge_score_unvalidated per arm per item, mapped back through the shuffle; a comma decimal read; an empty cell skipped",

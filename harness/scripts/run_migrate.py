@@ -221,8 +221,10 @@ def _run_dirs_of(st: _outputs.Store) -> list[Path]:
     if isinstance(st, _outputs.SqliteRouter):
         # The project's database, and the runs directory's when EVAL_RUNS_DIR puts it under another runs* folder.
         found: set[Path] = set()
-        for path in {_common.DATA / _outputs.DB, _outputs.db_for(_common.RUNS / "_")} - {None}:
+        for path in {*_outputs.dbs(_common.DATA), _outputs.db_for(_common.RUNS / "_")} - {None}:
             assert path is not None
+            if not path.is_file():
+                continue
             db = st.db(path)
             found |= {path.parent / k for k in {*db.runs(), *(k for k, _ in db.row_runs())}}
         return sorted(found)
@@ -309,7 +311,10 @@ def move(to: str, dry_run: bool) -> dict[str, int]:
     dst = _outputs.store_named(to)
     db = src if isinstance(src, _outputs.SqliteRouter) else dst
     assert isinstance(db, _outputs.SqliteRouter)
-    n = {"runs": 0, "outputs": 0, "rows": 0, "finished": 0, "outside": 0}
+    n = {"runs": 0, "outputs": 0, "rows": 0, "finished": 0, "outside": 0, "orphans": 0}
+    if not dry_run:  # entries whose run directory is gone (deleted by hand): nothing to move, removed
+        for path, key in db.orphans():
+            n["orphans"] += db.db(path).purge([key])
     for d in _run_dirs_of(src):
         if not db.holds(d):  # a run under no runs* folder keeps its files in either store: nothing to move
             n["outside"] += 1
@@ -358,6 +363,7 @@ def main() -> int:
             f" store"
             + (f" ({m['finished']} a stopped move had already written)" if m["finished"] else "")
             + (f"; {m['outside']} run(s) under no runs* folder keep their files" if m["outside"] else "")
+            + (f"; {m['orphans']} entry(ies) of deleted run directories removed" if m["orphans"] else "")
         )
     return 0
 

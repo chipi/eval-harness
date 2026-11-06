@@ -35,6 +35,9 @@ os.environ.update(env)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 MARK = {"s": "Shownmarkerword", "h": "Hiddenmarkerword"}
 FIELDSET = """fieldset_id: notes
 description: test fields
@@ -336,11 +339,12 @@ try:
             {"run_id": hrun.name, "dataset_id": "tickets_h", "derived": {"kind": "judge", "from": hrun.name}}
         )
     )
-    (jdir / "predictions.jsonl").write_text(
+    _runstore.put_rows_text(
+        jdir,
         json.dumps(
             {"item_id": item, "judge_x": 1.0, "_meta": {"usage": {"t": 1}, "prompt": f"quoting {MARK['h']}"}}
         )
-        + "\n"
+        + "\n",
     )
     rel = proj / ".release"
     counts = copy_data(data, rel)

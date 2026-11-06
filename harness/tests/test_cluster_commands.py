@@ -24,6 +24,9 @@ sys.path.insert(0, str(HARNESS))
 from evaluation_harness import stats  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-cluster-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-cluster")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
@@ -128,7 +131,7 @@ try:
     per = {}
     for arm in ("tickets_lead1_v1", "tickets_lead2_v1"):
         run = next((data / "runs").glob(f"{arm}_*"))
-        rows = [json.loads(x) for x in (run / "predictions.jsonl").read_text().splitlines() if x.strip()]
+        rows = _runstore.rows(run)
         per[arm] = {x["item_id"]: x[v.get("metric", "overlap_f1")] for x in rows}
     area = {
         "t01_login": "account",

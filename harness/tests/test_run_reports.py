@@ -24,6 +24,9 @@ KIT = HERE.parent / "tutorial"
 from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-reports-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-reports", EVAL_MAX_RETRIES="0")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -78,7 +81,7 @@ try:
 
     r = evh("run", "--config", config("plain"))
     run = next((proj / "data" / "runs").glob("plain_v1_*"), None)
-    rows = [json.loads(x) for x in (run / "predictions.jsonl").read_text().splitlines()] if run else []
+    rows = _runstore.rows(run) if run else []
     rows_plain = rows
     check(
         "the core times every call: latency_ms on each row, from an adapter that reports none",
@@ -110,9 +113,9 @@ try:
         "the stopped run keeps what its pass appended: the outputs done so far and their rows, no predictions.jsonl",
         stopped is not None
         and _outputs.count(stopped) >= 1
-        and (stopped / _outputs.ROWS).is_file()
-        and len((stopped / _outputs.ROWS).read_text().splitlines()) == _outputs.count(stopped)
-        and not (stopped / "predictions.jsonl").exists(),
+        and _outputs.rows_text(stopped, partial=True) is not None
+        and len(_runstore.rows(stopped, partial=True)) == _outputs.count(stopped)
+        and not _outputs.has_rows(stopped),
         (
             _outputs.count(stopped) if stopped else None,
             sorted(p.name for p in stopped.iterdir()) if stopped else None,
@@ -143,8 +146,7 @@ try:
     # A resume is a run of its own (config id and the time it started), unless both start in the same second:
     # read the newest run of the arm, never assume it is the stopped one's directory.
     resumed = sorted((proj / "data" / "runs").glob("refused_v1_*"))[-1]
-    preds = resumed / "predictions.jsonl"
-    rows = [json.loads(x) for x in preds.read_text().splitlines()] if preds.is_file() else []
+    rows = _runstore.rows(resumed)
     answers = list(_outputs.outputs(resumed).values())
     check(
         "resumed with the server back, the refused item is called again and every item is an answer",

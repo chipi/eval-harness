@@ -49,9 +49,12 @@ IGNORE = """\
 .cache/
 data/materialized/
 __pycache__/
-# throwaway passes (smoke runs, sweeps): never results, never in the catalog
-data/runs-smoke*/
-data/runs-tune*/
+# throwaway passes (smoke runs, sweeps): never results, never in the catalog; with the sqlite store, their databases
+data/runs-smoke*
+data/runs-tune*
+# the sqlite store's write-ahead files (RFC-025)
+data/*.sqlite-wal
+data/*.sqlite-shm
 """
 
 

@@ -723,10 +723,10 @@ def runs_store() -> str:
                 str((runs or {}).get("store") or "files") if isinstance(runs, dict) or runs is None else "?"
             )
     if store not in RUNS_STORES:
-        die(
-            f"{where}: {store!r} is not a runs store, one of {', '.join(RUNS_STORES)}",
-            "bad-argument" if env else "invalid-file",
-        )
+        said = f"{where}: {store!r} is not a runs store, one of {', '.join(RUNS_STORES)}"
+        if env:
+            die(said, "bad-argument")
+        die(said, "invalid-file")
     _RUNS_STORE_SEEN[:] = [key, store]
     return store
 

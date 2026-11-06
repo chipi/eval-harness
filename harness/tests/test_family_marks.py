@@ -22,6 +22,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-family-"))
 env = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
 env.update(EVAL_HOME=str(proj))
@@ -42,8 +45,8 @@ def run(config, items):
             }
         )
     )
-    (d / "predictions.jsonl").write_text(
-        "".join(json.dumps({"item_id": f"i{i:03d}", "acc": rng.random()}) + "\n" for i in range(items))
+    _runstore.put_rows_text(
+        d, "".join(json.dumps({"item_id": f"i{i:03d}", "acc": rng.random()}) + "\n" for i in range(items))
     )
 
 

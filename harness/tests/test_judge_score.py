@@ -26,6 +26,9 @@ import functools
 import operator
 
 from evaluation_harness import judge_score as js
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore
 from evaluation_harness import judging
 from evaluation_harness._common import load_module
 
@@ -822,7 +825,7 @@ with tempfile.TemporaryDirectory() as tmp:
                     "_meta": {"usage": {"cost": 0.001}},
                 }
             )
-        (d / "predictions.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+        _runstore.put_rows_text(d, "".join(json.dumps(r) + "\n" for r in rows))
         (d / "metrics.json").write_text(
             json.dumps(
                 {
@@ -861,7 +864,7 @@ with tempfile.TemporaryDirectory() as tmp:
         sorted(p.name for p in out.iterdir()) == sorted(a["run"] for a in ARMS),
     )
     check("the originals are untouched (byte for byte)", all(p.read_bytes() == b for p, b in before.items()))
-    pr = [json.loads(x) for x in (r0 / "predictions.jsonl").read_text().splitlines()]
+    pr = _runstore.rows(r0)
     mj = json.loads((r0 / "metrics.json").read_text())
     check(
         "predictions carry the primary, per-judge columns and the CARRY fields",
@@ -2921,11 +2924,12 @@ with tempfile.TemporaryDirectory() as tmp:
         outs = m_outputs()
         for i in MITEMS:
             _outputs.writer(d).add(i, outs[a["config_id"]][i])
-        (d / "predictions.jsonl").write_text(
+        _runstore.put_rows_text(
+            d,
             "".join(
                 json.dumps({"item_id": i, "coverage": 0.3, "cost_usd": 0.001, "latency_ms": 5.0}) + "\n"
                 for i in MITEMS
-            )
+            ),
         )
         (d / "metrics.json").write_text(
             json.dumps(
@@ -2950,7 +2954,7 @@ with tempfile.TemporaryDirectory() as tmp:
     out = td / "judged" / sc["scorer_id"]
     js.write_scored_runs(man, sc, arms_d, proj, out, "unvalidated judge", False)
     win_dir = out / MARMS[3]["run"]
-    rows = [json.loads(x) for x in (win_dir / "predictions.jsonl").read_text().splitlines()]
+    rows = _runstore.rows(win_dir)
     mj = json.loads((win_dir / "metrics.json").read_text())
     check(
         "pick judged runs: the primary is judge_won (judge_won_unvalidated while unvalidated), with per-judge columns",

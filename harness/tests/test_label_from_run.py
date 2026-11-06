@@ -25,6 +25,9 @@ KIT = HERE.parent / "tutorial"
 from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 
 def _set_output(d, item, text):
     """Change one output of a run in place (None removes it), as a hand edit of its outputs.jsonl would."""
@@ -128,10 +131,10 @@ try:
 
     def cut_off(d, m):
         m["params"]["max_tokens"] = 40
-        rows = [json.loads(x) for x in (d / "predictions.jsonl").read_text().splitlines() if x.strip()]
+        rows = _runstore.rows(d)
         for row in rows[:2]:
             row["tokens_out"] = 40
-        (d / "predictions.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows))
+        _runstore.put_rows_text(d, "".join(json.dumps(x) + "\n" for x in rows))
 
     for name, edit, text in (
         ("unfinished", unfinished, "no finished run"),

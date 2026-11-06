@@ -19,6 +19,10 @@ from pathlib import Path
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))  # the evaluation_harness package
 from evaluation_harness import _jsonout  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 RUNS = HARNESS / "data" / "runs"
@@ -80,10 +84,10 @@ def main() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="evh-family-"))
     try:
         for cid in (a, b, c):
-            shutil.copytree(run_of(cid), tmp / run_of(cid).name)
-        short = tmp / run_of(c).name / "predictions.jsonl"
-        short.write_text(
-            "".join(short.read_text(encoding="utf-8").splitlines(keepends=True)[:40]), encoding="utf-8"
+            _runstore.copy_run(run_of(cid), tmp / run_of(cid).name)
+        short = tmp / run_of(c).name
+        _runstore.put_rows_text(
+            short, "".join((_outputs.rows_text(short) or "").splitlines(keepends=True)[:40])
         )
         r = evh(
             "family-test",

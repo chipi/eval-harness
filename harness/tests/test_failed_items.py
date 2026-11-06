@@ -24,6 +24,9 @@ sys.path.insert(0, str(HARNESS))
 from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-failed-"))
 env = dict(
     os.environ,
@@ -102,7 +105,7 @@ try:
     r = evh("run", "--config", str(data / "configs" / "one.yaml"))
     run = next((data / "runs").glob("one_v1_*"), None)
     m = json.loads((run / "metrics.json").read_text()) if run else {}
-    rows = [json.loads(x) for x in (run / "predictions.jsonl").read_text().splitlines()] if run else []
+    rows = _runstore.rows(run) if run else []
     bad: dict = next((x for x in rows if x["failed"] == 1.0), {})
     check(
         "one ticket fails: the run finishes (exit 0) and lists it, with its error",

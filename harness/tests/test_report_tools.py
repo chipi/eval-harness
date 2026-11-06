@@ -34,6 +34,9 @@ HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 
 def tool(script: str, data: Path | None, *args: str) -> subprocess.CompletedProcess:
     env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
@@ -57,7 +60,7 @@ def write_run(
         json.dumps({"run_id": run_id, "dataset_id": dataset, "config_id": config, "scores": scores or {}}),
         encoding="utf-8",
     )
-    (d / "predictions.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    _runstore.put_rows_text(d, "".join(json.dumps(r) + "\n" for r in rows))
 
 
 def fetched_gold(data: Path, dataset: str, items: dict, redistributed: bool = True) -> None:

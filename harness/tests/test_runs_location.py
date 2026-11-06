@@ -18,6 +18,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness import _common, catalog_build, validate_tree
 from evaluation_harness._check import check, summary
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore
+
 with tempfile.TemporaryDirectory() as tmp:
     root = Path(tmp)
     subprocess.run(["git", "init", "-q", str(root)], check=True)
@@ -139,7 +142,7 @@ with tempfile.TemporaryDirectory() as tmp:
             **extra,
         }
         (rdir / "metrics.json").write_text(json.dumps(meta))
-        (rdir / "predictions.jsonl").write_text(json.dumps({"item_id": "i1", "acc": 1.0}) + "\n")
+        _runstore.put_rows_text(rdir, json.dumps({"item_id": "i1", "acc": 1.0}) + "\n")
     from evaluation_harness import catalog_arms
     from evaluation_harness.catalog_adapter import HarnessAdapter
 

@@ -32,6 +32,9 @@ from evaluation_harness import catalog_serve as cs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 _pf = cb.promoted_from_html(
     {"promoted_from": {"labels": None, "source": {"kind": "model", "config_id": "arm_x_v1"}}}
 )
@@ -65,7 +68,7 @@ def run(runs_dir, run_id, dataset, config, scores, text=SECRET, kinds=None, ref=
     for i, s in enumerate(scores):
         rows.append(json.dumps({"item_id": f"i{i:02d}", "acc": s, "words": 10.0 + i}))
         _outputs.writer(d).add(f"i{i:02d}", f"{text} {config} {i}")
-    (d / "predictions.jsonl").write_text("\n".join(rows) + "\n")
+    _runstore.put_rows_text(d, "\n".join(rows) + "\n")
 
 
 def promoted(ref_dir, tier, dataset, source, labels, **authorship):
@@ -1073,7 +1076,8 @@ try:
                 }
             )
         )
-        (d / "predictions.jsonl").write_text(
+        _runstore.put_rows_text(
+            d,
             "".join(
                 json.dumps(
                     {
@@ -1087,7 +1091,7 @@ try:
                 )
                 + "\n"
                 for i, v in enumerate(accs)
-            )
+            ),
         )
     cs.set_adapter(HarnessAdapter(data3))
     plain = cs.compare({"runs": ["runs/ds1/arm_p,runs/ds1/arm_q"], "baseline": ["runs/ds1/arm_p"]})

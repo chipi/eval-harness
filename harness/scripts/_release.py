@@ -127,12 +127,13 @@ def plan_problems(src: Path) -> list[str]:
             and str(f.relative_to(src)) not in tracked
         ):
             bad.append(f"run output git does not track: {f.relative_to(src)}")
-    shown = [k for k in _outputs.db_runs(src / _outputs.DB) if not _hidden_key(src, k)]
-    if shown and _outputs.DB not in tracked:
-        bad.append(
-            f"run outputs git does not track: {_outputs.DB} holds {len(shown)} shown run(s)' outputs"
-            " (a release publishes only what the repository commits)"
-        )
+    for db in _outputs.dbs(src):
+        shown = [k for k in _outputs.db_runs(db) if not _hidden_key(src, k)]
+        if shown and db.name not in tracked:
+            bad.append(
+                f"run outputs git does not track: {db.name} holds {len(shown)} shown run(s)' outputs"
+                " (a release publishes only what the repository commits)"
+            )
     return bad
 
 
@@ -219,8 +220,8 @@ def copy_data(src: Path, dst: Path) -> dict:
                 files.put_rows(
                     out, "".join(_call_only_line(x) for x in text.splitlines() if x.strip()), partial
                 )
-    if (src / _outputs.DB).is_file():
-        _outputs.db_copy(src / _outputs.DB, dst / _outputs.DB, lambda k: _hidden_key(src, k), _call_only_line)
+    for db in _outputs.dbs(src):
+        _outputs.db_copy(db, dst / db.name, lambda k: _hidden_key(src, k), _call_only_line)
     for name in COPIED_DIRS:
         d = src / name
         if not d.is_dir():

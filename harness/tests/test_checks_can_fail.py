@@ -29,6 +29,10 @@ REPO = HARNESS.parent
 sys.path.insert(0, str(HARNESS))  # the evaluation_harness package
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+from evaluation_harness import _outputs  # noqa: E402
+
 #: (checker, the defect, file, anchor, what it becomes, what the checker's output must say)
 #: An anchor that no longer matches exactly once is a failure, not a skip.
 PLANTS = [
@@ -217,7 +221,13 @@ def shadow_tree() -> Path:
             shutil.copy2(s, d)
 
     for child in (HARNESS / "data").iterdir():
-        if child.name in committed or (child.is_dir() and child.name.startswith("runs")):
+        if child.suffix == ".sqlite" and child.name.startswith(
+            "runs"
+        ):  # a copy of its own, which a plant changes
+            _outputs.db_copy(child, data / child.name, lambda _k: False)
+        elif child.name.startswith("runs") and ".sqlite-" in child.name:
+            continue  # the database's write-ahead log: in the copy already
+        elif child.name in committed or (child.is_dir() and child.name.startswith("runs")):
             shutil.copytree(child, data / child.name, symlinks=True, copy_function=link_or_copy)
         else:
             (data / child.name).symlink_to(child)
@@ -256,10 +266,13 @@ def plant_runs_linux(shadow: Path) -> None:
     truncated runs are ones no planted claim above depends on."""
     linux = shadow / "harness" / "data" / "runs-linux"
     src = sorted(linux.glob("cnn_bart_s_*/"))[0]
-    shutil.copytree(src, linux / (src.name + "b"))
-    replace(sorted(linux.glob("ag_bert_base_fy_*/"))[0] / "predictions.jsonl", "")
-    partial = sorted(linux.glob("cnn_bart_m_*/"))[0] / "predictions.jsonl"
-    replace(partial, "".join(partial.read_text(encoding="utf-8").splitlines(keepends=True)[:-3]))
+    _runstore.copy_run(src, linux / (src.name + "b"))
+    # Rows are replaced through the store: a new file (never the hard-linked one) or the shadow's own database.
+    _runstore.put_rows_text(sorted(linux.glob("ag_bert_base_fy_*/"))[0], "")
+    partial = sorted(linux.glob("cnn_bart_m_*/"))[0]
+    _runstore.put_rows_text(
+        partial, "".join((_outputs.rows_text(partial) or "").splitlines(keepends=True)[:-3])
+    )
 
 
 def plant_runs_pair(shadow: Path) -> str:

@@ -29,6 +29,7 @@ import json
 import os
 import sqlite3
 import threading
+import uuid
 from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any, Protocol
@@ -38,11 +39,22 @@ from evaluation_harness import _common
 FILE = "outputs.jsonl"
 #: The checkpoint of rows a pass appends as it goes (a crashed run has no predictions.jsonl yet); deleted by finish().
 ROWS = "rows.partial.jsonl"
-#: The sqlite store's database, in the project's data directory.
+#: The sqlite store's database of data/runs; every runs folder has its own beside it (data/runs-judged.sqlite ...),
+#: so git commits or ignores each as it does the folder.
 DB = "runs.sqlite"
 #: A run's rows in the files store.
 PREDICTIONS = "predictions.jsonl"
+#: In the sqlite store, the token that ties a run directory to its entries in the database: they are the run's only
+#: while the directory holds the token the database recorded for it. A run directory deleted (or made again at the
+#: same path, or copied without its data) has no entries, as a deleted directory has no files.
+MARK = ".store-id"
 SCHEMA_VERSION = "1"
+#: A run's entries, table by table: its outputs, its rows, its directory's token.
+_DELETE = {
+    "outputs": "DELETE FROM outputs WHERE run = ?",
+    "rows": "DELETE FROM rows WHERE run = ?",
+    "run_ids": "DELETE FROM run_ids WHERE run = ?",
+}
 _CACHE: dict[str, tuple[float, dict[str, str]]] = {}
 _NAMES: dict[str, list[Path]] = {}
 _ROWS_CACHE: dict[tuple[str, str], tuple[tuple[int, int], str]] = {}
@@ -244,6 +256,8 @@ class SqliteStore:
         self._conn: sqlite3.Connection | None = None
         self._cache: dict[str, dict[str, str]] = {}
         self._rows: dict[tuple[str, bool], str | None] = {}
+        self._ids: dict[str, str | None] = {}
+        self._marks: dict[str, tuple[tuple[int, int], str]] = {}
         self._version: int | None = None
 
     def key(self, run_dir: Path) -> str | None:
@@ -284,6 +298,7 @@ class SqliteStore:
                 " item_id TEXT, row TEXT NOT NULL, PRIMARY KEY (run, partial, n))"
             )
             conn.execute("CREATE INDEX IF NOT EXISTS rows_item ON rows (item_id, run) WHERE partial = 0")
+            conn.execute("CREATE TABLE IF NOT EXISTS run_ids (run TEXT PRIMARY KEY, token TEXT NOT NULL)")
             conn.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
             conn.execute("INSERT OR IGNORE INTO meta VALUES ('schema_version', ?)", (SCHEMA_VERSION,))
             self._conn = conn
@@ -295,7 +310,111 @@ class SqliteStore:
         if v != self._version:
             self._cache.clear()
             self._rows.clear()
+            self._ids.clear()
             self._version = v
+
+    def _mark(self, run_dir: Path) -> str | None:
+        """The token the run directory holds; None when it holds none (or is gone)."""
+        f = Path(run_dir) / MARK
+        try:
+            st = f.stat()
+        except OSError:
+            return None
+        stamp = (st.st_mtime_ns, st.st_size)
+        hit = self._marks.get(str(f))
+        if hit and hit[0] == stamp:
+            return hit[1]
+        tok = f.read_text(encoding="utf-8").strip()
+        self._marks[str(f)] = (stamp, tok)
+        return tok
+
+    def _live(self, conn: sqlite3.Connection, k: str, run_dir: Path) -> bool:
+        """Whether the database's entries for `k` are this directory's: its token is the one recorded."""
+        mark = self._mark(run_dir)
+        if mark is None:
+            return False
+        if k not in self._ids:
+            got = conn.execute("SELECT token FROM run_ids WHERE run = ?", (k,)).fetchone()
+            self._ids[k] = got[0] if got else None
+        return self._ids[k] == mark
+
+    def _claim(self, conn: sqlite3.Connection, k: str, run_dir: Path) -> None:
+        """Before a write: a directory that is not yet the database's owner of `k` becomes it, and whatever the
+        database held for `k` (a deleted directory's) goes first."""
+        self._fresh(conn)
+        if self._live(conn, k, run_dir):
+            return
+        tok = uuid.uuid4().hex
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            for table in ("outputs", "rows"):
+                conn.execute(_DELETE[table], (k,))
+            conn.execute("INSERT OR REPLACE INTO run_ids VALUES (?, ?)", (k, tok))
+        except BaseException:
+            conn.execute("ROLLBACK")
+            raise
+        conn.execute("COMMIT")
+        _common.write_text_atomic(Path(run_dir) / MARK, tok + "\n")
+        self._ids[k] = tok
+        self._cache.pop(k, None)
+        self._rows.pop((k, False), None)
+        self._rows.pop((k, True), None)
+
+    def forget(self, run_dir: Path) -> None:
+        """Everything the database holds for a run, and its directory's token, gone (a run moved to files)."""
+        with self._lock:
+            conn = self._db(create=False)
+            k = self._k(run_dir)
+            if conn is not None:
+                conn.execute("BEGIN IMMEDIATE")
+                try:
+                    for statement in _DELETE.values():
+                        conn.execute(statement, (k,))
+                except BaseException:
+                    conn.execute("ROLLBACK")
+                    raise
+                conn.execute("COMMIT")
+            (Path(run_dir) / MARK).unlink(missing_ok=True)
+            self._ids.pop(k, None)
+            self._cache.pop(k, None)
+            self._rows.pop((k, False), None)
+            self._rows.pop((k, True), None)
+
+    def orphans(self) -> list[str]:
+        """The runs (keys) the database holds entries for whose directory is gone or holds another token."""
+        with self._lock:
+            conn = self._db(create=False)
+            if conn is None:
+                return []
+            self._fresh(conn)
+            keys = {
+                r[0]
+                for r in conn.execute(
+                    "SELECT run FROM outputs UNION SELECT run FROM rows UNION SELECT run FROM run_ids"
+                )
+            }
+            return sorted(k for k in keys if not self._live(conn, k, self.path.parent / k))
+
+    def purge(self, keys: Iterable[str]) -> int:
+        """The entries of these runs deleted (orphans: their directories are gone); how many runs."""
+        keys = list(keys)
+        with self._lock:
+            conn = self._db(create=False)
+            if conn is None or not keys:
+                return 0
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                for statement in _DELETE.values():
+                    conn.executemany(statement, [(k,) for k in keys])
+            except BaseException:
+                conn.execute("ROLLBACK")
+                raise
+            conn.execute("COMMIT")
+            for k in keys:
+                self._ids.pop(k, None)
+                self._cache.pop(k, None)
+            self._rows.clear()
+            return len(keys)
 
     def has(self, run_dir: Path) -> bool:
         """Whether the run itself holds outputs here."""
@@ -307,6 +426,8 @@ class SqliteStore:
                 return False
             self._fresh(conn)
             k = self._k(run_dir)
+            if not self._live(conn, k, run_dir):
+                return False
             if self._cache.get(k):
                 return True
             return conn.execute("SELECT 1 FROM outputs WHERE run = ? LIMIT 1", (k,)).fetchone() is not None
@@ -321,6 +442,8 @@ class SqliteStore:
                 return {}
             self._fresh(conn)
             k = self._k(run_dir)
+            if not self._live(conn, k, run_dir):
+                return {}
             if k not in self._cache:
                 cur = conn.execute("SELECT item_id, text FROM outputs WHERE run = ? ORDER BY rowid", (k,))
                 self._cache[k] = dict(cur.fetchall())
@@ -333,6 +456,9 @@ class SqliteStore:
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
+                return []
+            self._fresh(conn)
+            if not self._live(conn, self._k(run_dir), run_dir):
                 return []
             cur = conn.execute(
                 "SELECT item_id, text, sha256 FROM outputs WHERE run = ? ORDER BY rowid", (self._k(run_dir),)
@@ -356,6 +482,7 @@ class SqliteStore:
             conn = self._db(create=True)
             assert conn is not None
             k = self._k(run_dir)
+            self._claim(conn, k, run_dir)
             conn.execute(
                 "INSERT OR REPLACE INTO outputs VALUES (?, ?, ?, ?)", (k, item_id, text, sha256(text))
             )
@@ -370,6 +497,7 @@ class SqliteStore:
             conn = self._db(create=True)
             assert conn is not None
             k = self._k(run_dir)
+            self._claim(conn, k, run_dir)
             rows = [(k, item, texts[item], sha256(texts[item])) for item in order if item in texts]
             conn.execute("BEGIN IMMEDIATE")
             try:
@@ -403,6 +531,8 @@ class SqliteStore:
                 return None
             self._fresh(conn)
             ck = (self._k(run_dir), partial)
+            if not self._live(conn, ck[0], run_dir):
+                return None
             if ck not in self._rows:
                 got = conn.execute(
                     "SELECT row FROM rows WHERE run = ? AND partial = ? ORDER BY n", (ck[0], int(partial))
@@ -419,6 +549,7 @@ class SqliteStore:
             conn = self._db(create=True)
             assert conn is not None
             k = self._k(run_dir)
+            self._claim(conn, k, run_dir)
             lines = text.splitlines(keepends=True)
             vals = [(k, int(partial), 0, None, "")] + [
                 (k, int(partial), n, _item_of(line), line) for n, line in enumerate(lines, 1)
@@ -442,6 +573,7 @@ class SqliteStore:
             conn = self._db(create=True)
             assert conn is not None
             k = self._k(run_dir)
+            self._claim(conn, k, run_dir)
             conn.execute("BEGIN IMMEDIATE")
             try:
                 conn.execute("INSERT OR IGNORE INTO rows VALUES (?, ?, 0, NULL, '')", (k, int(partial)))
@@ -482,7 +614,8 @@ class SqliteStore:
             conn = self._db(create=False)
             if conn is None:
                 return {}
-            keys = {self._k(d): Path(d) for d in run_dirs}
+            self._fresh(conn)
+            keys = {self._k(d): Path(d) for d in run_dirs if self._live(conn, self._k(d), Path(d))}
             out: dict[Path, str] = {}
             for k, line in conn.execute(
                 "SELECT run, row FROM rows WHERE item_id = ? AND partial = 0 ORDER BY run, n", (item_id,)
@@ -499,6 +632,8 @@ class SqliteStore:
                 self._conn = None
             self._cache.clear()
             self._rows.clear()
+            self._ids.clear()
+            self._marks.clear()
             self._version = None
 
 
@@ -556,16 +691,24 @@ def db_copy(
 
 
 def db_for(run_dir: Path) -> Path | None:
-    """The database that holds a run in the sqlite store, decided by where the run is, whichever process asks: the
-    project's `data/runs.sqlite` for a run under its data directory; for a run elsewhere, `runs.sqlite` beside the
-    topmost `runs*` folder it is under (another project's data, a test's temporary one); None for a run under no
-    `runs*` folder, which keeps its files."""
+    """The database that holds a run in the sqlite store, decided by where the run is, whichever process asks: one
+    per runs folder, beside it, named after it. A run under the project's data directory is in the database of the
+    folder it sits in there (data/runs/x in data/runs.sqlite, data/runs-judged/s/x in data/runs-judged.sqlite); a run
+    elsewhere in the database of the topmost `runs*` folder it is under (another project's data, a test's temporary
+    one); a run under no `runs*` folder keeps its files. A folder git ignores (data/runs-smoke*) has a database git
+    ignores by the same pattern, and a committed folder's is committed beside it."""
     d = Path(run_dir).resolve()
     data = _common.DATA.resolve()
     if data in d.parents:
-        return data / DB
+        top = data / d.relative_to(data).parts[0]
+        return data / f"{top.name}.sqlite" if top != d else None
     tops = [a for a in d.parents if a.name.startswith("runs")]
-    return tops[-1].parent / DB if tops else None
+    return tops[-1].parent / f"{tops[-1].name}.sqlite" if tops else None
+
+
+def dbs(data: Path) -> list[Path]:
+    """The runs databases a data directory holds (one per runs folder)."""
+    return sorted(p for p in Path(data).glob("runs*.sqlite") if p.is_file())
 
 
 class SqliteRouter:
@@ -579,10 +722,6 @@ class SqliteRouter:
     def db(self, path: Path) -> SqliteStore:
         """The store of one database file."""
         return self._dbs.setdefault(str(Path(path).resolve()), SqliteStore(Path(path)))
-
-    def main(self) -> SqliteStore:
-        """The project's database, data/runs.sqlite."""
-        return self.db(_common.DATA / DB)
 
     def of(self, run_dir: Path) -> Store:
         """The store that holds this run."""
@@ -634,12 +773,22 @@ class SqliteRouter:
         self.of(run_dir).drop_rows(run_dir, partial)
 
     def runs(self) -> list[str]:
-        """Every run (its key) the project's database holds outputs for."""
-        return self.main().runs()
+        """Every run (its key under data/) the project's databases hold outputs for."""
+        return sorted({k for p in dbs(_common.DATA) for k in self.db(p).runs()})
+
+    def orphans(self) -> list[tuple[Path, str]]:
+        """(database, run) for every entry of the project's databases whose directory is gone."""
+        return [(p, k) for p in dbs(_common.DATA) for k in self.db(p).orphans()]
+
+    def forget(self, run_dir: Path) -> None:
+        """Everything the run's database holds for it gone, its token too."""
+        st = self.of(run_dir)
+        if isinstance(st, SqliteStore):
+            st.forget(run_dir)
 
     def row_runs(self) -> list[tuple[str, bool]]:
-        """Every (run, partial) the project's database holds rows for."""
-        return self.main().row_runs()
+        """Every (run, partial) the project's databases hold rows for."""
+        return sorted({r for p in dbs(_common.DATA) for r in self.db(p).row_runs()})
 
     def close(self) -> None:
         """Every database closed."""

@@ -597,7 +597,7 @@ def v9_no_committed_evidence_is_missing() -> None:
 
     # In the sqlite store a run's rows are not a committed file: they are read from runs.sqlite.
     in_db = _common.runs_store() == "sqlite"
-    what = f"its rows in {_outputs.DB}" if in_db else _outputs.PREDICTIONS
+    what = "its rows in the runs database" if in_db else _outputs.PREDICTIONS
     for key, files in sorted(seen.items()):
         if "metrics.json" not in files:
             continue  # V7's business, not this one
@@ -612,7 +612,7 @@ def v9_no_committed_evidence_is_missing() -> None:
             continue
         if _text is None or not _mj.is_file():
             if in_db and _mj.is_file():
-                incomplete.append(f"{key} has no rows in {_outputs.DB}")
+                incomplete.append(f"{key} has no rows in its runs database")
             continue  # else already counted as missing above
         try:
             _rows = sum(1 for _l in _text.splitlines() if _l.strip())
@@ -1557,7 +1557,7 @@ def v23_run_outputs() -> None:
         )
         if left:
             bad.append(
-                f"{_outputs.DB} holds {len(left)} run(s)' outputs or rows while the project's store is files:"
+                f"runs*.sqlite hold {len(left)} run(s)' outputs or rows while the project's store is files:"
                 " evh run-migrate --to files"
             )
     for d in runs:
@@ -1585,6 +1585,14 @@ def v23_run_outputs() -> None:
         frm = _outputs._derived_from(d)
         if frm and _outputs.source(d) is None:
             bad.append(f"{rel}: a derived run with no outputs of its own, and its source {frm} is not here")
+    if store == "sqlite":
+        orphans = _outputs.store_named("sqlite")
+        left_over = orphans.orphans() if isinstance(orphans, _outputs.SqliteRouter) else []
+        if left_over:
+            print(
+                f"  --   V23 note: runs*.sqlite hold {len(left_over)} deleted run director(ies)' entries, read by"
+                " nothing: evh run-migrate --to sqlite removes them"
+            )
     for b in bad[:10]:
         print(f"       {b}")
     check(

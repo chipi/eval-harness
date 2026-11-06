@@ -18,6 +18,9 @@ from evaluation_harness import axes, stats
 from evaluation_harness._check import check, summary
 from evaluation_harness._runs import per_item
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore
+
 r = stats.reduce_repeats
 check(
     "mean is the default and the old number",
@@ -68,7 +71,7 @@ with tempfile.TemporaryDirectory() as tmp:
         d = Path(tmp) / f"arm_r{k}"
         d.mkdir()
         rows = [{"item_id": f"x{j}", "correct": v} for j, v in enumerate(vals)]
-        (d / "predictions.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows))
+        _runstore.put_rows_text(d, "".join(json.dumps(x) + "\n" for x in rows))
         runs.append((d, {}))
     m = per_item(runs, "correct")
     mj = per_item(runs, "correct", reduce="majority")
