@@ -176,7 +176,9 @@
       const later = unset.map(n => {
         const k = kindOf(props[n]);
         if (['group', 'map', 'free', 'list', 'cards'].includes(k)) {
-          return `<div class="df-row" data-at="${esc(key([...path, n]))}"><span class="df-label">${esc(label(n))}</span><div class="df-ctl">${addBtn([...path, n], label(n), fresh(props[n]))}${help(props[n])}<p class="df-err" hidden></p></div></div>`;
+          // a list added starts with its first item, ready to fill in
+          const init = k === 'list' || k === 'cards' ? [fresh(props[n].items || {}) ?? ''] : fresh(props[n]);
+          return `<div class="df-row" data-at="${esc(key([...path, n]))}"><span class="df-label">${esc(label(n))}</span><div class="df-ctl">${addBtn([...path, n], label(n), init)}${help(props[n])}<p class="df-err" hidden></p></div></div>`;
         }
         return r(n);
       });

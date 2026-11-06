@@ -597,7 +597,10 @@ configs, goals, fieldsets, judge scorers, model records, failure-mode lists, `va
 it creates, edits and deletes in a form built from each kind's schema: a field per key, no YAML to
 type. A setting is saved only after it passes the check: it matches its schema, and (all but an arm
 config) its id is its file name; each problem is shown at its field. A save keeps the file's comments
-and every line it does not change (ruamel.yaml). Harness-written data is shown
+and every line it does not change (ruamel.yaml), and only when `evh validate` passes on the project
+with it (a change validate refuses is put back, its reasons shown). **Rebuild the catalog** on the page
+runs `evh catalog` into a folder beside the served one and swaps it in, so the other pages show a
+change without a terminal. Harness-written data is shown
 read-only with the command that writes it; a run is the one kind of data it deletes, whole. It writes
 on this machine only: a public server answers no `/api/data` call (ADR-0027). Each view and action is
 a command:

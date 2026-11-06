@@ -94,7 +94,8 @@
     const pager = ls.total > ls.entries.length ? `<p class="pager small muted">Showing ${offset + 1}–${offset + ls.entries.length} of ${ls.total}`
       + (offset > 0 ? ` <a class="btn small" href="${href({path, offset: Math.max(0, offset - 500)})}">previous</a>` : '')
       + (offset + ls.entries.length < ls.total ? ` <a class="btn small" href="${href({path, offset: offset + 500})}">next</a>` : '') + '</p>' : '';
-    const add = settings ? `<a class="btn dm-new" href="${href({path, new: '1'})}">+ New ${esc(ls.kind)}</a>` : '';
+    const add = (settings ? `<a class="btn dm-new" href="${href({path, new: '1'})}">+ New ${esc(ls.kind)}</a>` : '')
+      + (ls.also_new ? ` <a class="btn dm-new-policy" href="${href({path, new: '1', folder: ls.also_new})}">+ New goal policy</a>` : '');
     app.innerHTML = `<div class="dm-head">${crumbs(path)}${add}</div>` + note()
       + (ls.entries.length ? `<div class="scroll-x"><table class="dm-table"><thead><tr><th>name</th><th>what</th><th>modified</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>${pager}`
         : `<p class="muted">Nothing in ${esc(path)} yet.${settings ? ' Its first setting creates it.' : ''}</p>`)
@@ -133,13 +134,13 @@
   async function editor(path, isNew) {
     const folderName = isNew ? (P.get('folder') || path) : null;
     const spec = isNew ? await get('form', {new: folderName}) : await get('form', {path});
-    const isPolicy = spec.folder === 'validate.json';
+    const isPolicy = spec.folder === 'validate.json' || spec.folder === 'goals/policy.yaml';
     const isConfig = spec.folder === 'configs';
     const nameRow = isNew && isConfig
       ? `<div class="df-row dm-filename" data-at="(file)"><label class="df-label" for="dm-name">file name <span class="df-req">*</span></label><div class="df-ctl">`
         + `<span class="dm-name"><span class="muted">configs/</span><input id="dm-name" type="text" pattern="[A-Za-z0-9_.-]+" autocomplete="off"><span class="muted">.yaml</span></span>`
         + `<p class="df-help">The arm's file; its config_id below is its identity, and can carry a version (tickets_lead1_v1).</p><p class="df-err" hidden></p></div></div>` : '';
-    app.innerHTML = `<div class="dm-head">${crumbs(isNew ? (isPolicy ? '' : spec.folder) : path, isNew ? 'new ' + spec.kind : 'editing')}</div>`
+    app.innerHTML = `<div class="dm-head">${crumbs(isNew ? (spec.folder === 'validate.json' ? '' : spec.folder.split('/')[0]) : path, isNew ? 'new ' + spec.kind : 'editing')}</div>`
       + runsNote(spec.runs_made, true) + nameRow + '<div id="dm-form"></div>'
       + `<div id="dm-result" role="status"></div><p class="btns"><button type="button" class="btn primary" id="dm-save">${isNew ? 'Create' : 'Save'}</button>`
       + `<button type="button" class="btn" id="dm-cancel">Cancel</button></p><div id="dm-panel"></div>`;
@@ -148,7 +149,7 @@
     // the list of problems is the last save's: an edit makes it stale, so it goes (each field's own message too)
     ['input', 'change'].forEach(ev => app.addEventListener(ev, e => { if (e.target.closest('#dm-form, .dm-filename')) result.innerHTML = ''; }));
     const target = () => {
-      if (isPolicy) return 'validate.json';
+      if (isPolicy) return spec.folder;
       if (!isNew) return path;
       const stem = isConfig ? (nm.value || '').trim() : String(form.values()[spec.id_key] || '').trim();
       return stem ? `${spec.folder}/${stem}.yaml` : '';
@@ -181,7 +182,7 @@
       } catch (e) { result.innerHTML = fail(e); }
     });
     document.getElementById('dm-cancel').addEventListener('click', () => {
-      const back = isNew ? href({path: isPolicy ? '' : spec.folder}) : href({path});
+      const back = isNew ? href({path: spec.folder === 'validate.json' ? '' : spec.folder.split('/')[0]}) : href({path});
       if (!form.changed() && !(nm && nm.value)) { location.href = back; return; }
       const panel = document.getElementById('dm-panel');
       panel.innerHTML = `<div class="dm-confirm"><p>Discard your changes?</p><p class="btns"><a class="btn danger" href="${back}">Discard</a>`
@@ -219,6 +220,29 @@
     });
   }
 
+  // ── the catalog's rebuild: its other pages are built ahead; after a change they show it once rebuilt ─────────
+  async function rebuildLine(start) {
+    let el = document.getElementById('dm-rebuild');
+    if (!el) {
+      el = document.createElement('p');
+      el.id = 'dm-rebuild'; el.className = 'dm-rebuild small';
+      el.setAttribute('role', 'status');
+      (badge || app).insertAdjacentElement('afterend', el);
+    }
+    let r;
+    try { r = start ? await write('POST', 'rebuild', {}) : await get('rebuild'); } catch (e) { el.textContent = e.message; return; }
+    const btn = '<button type="button" class="btn small" id="dm-rebuild-go">Rebuild the catalog</button>';
+    if (r.state === 'running') {
+      el.innerHTML = `Rebuilding the catalog… <span class="muted">(${Math.round(Date.now() / 1000 - r.started)} s)</span>`;
+      setTimeout(() => rebuildLine(false), 2000);
+      return;
+    }
+    if (r.state === 'done') el.innerHTML = `Rebuilt in ${r.seconds} s: the catalog's pages show the project's data as it is now. ${btn}`;
+    else if (r.state === 'failed') el.innerHTML = `The rebuild failed; the catalog is the one built ${esc(r.built || 'before')}. ${btn}<pre class="dm-text">${esc(r.tail || '')}</pre>`;
+    else el.innerHTML = `The catalog's pages were built ${esc(r.built || '(not yet)')}; a change made here shows there once it is rebuilt. ${btn}`;
+    document.getElementById('dm-rebuild-go').addEventListener('click', () => rebuildLine(true));
+  }
+
   // ── the router ───────────────────────────────────────────────────────────────────────────────────────────────
   async function main() {
     let o;
@@ -226,6 +250,7 @@
     if (badge) badge.innerHTML = o.store === 'sqlite'
       ? `store: SQLite · <code>${esc(o.database)}</code> · ${size(o.database_bytes)}` : 'store: files';
     const path = (P.get('path') || '').replace(/^\/+|\/+$/g, '');
+    rebuildLine(false);
     try {
       if (P.get('new') === '1') return await editor(path, true);
       if (!path) return await overview();

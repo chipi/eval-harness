@@ -16,7 +16,14 @@ In a tutorial project served by a local catalog-serve, kept as files and then mo
     a parameter added (its key, its type, its value), saved: the file keeps its comments;
   - a new goal in its form: fields filled, a dataset card added and removed, Create, then Delete through the page's
     own confirmation;
+  - every kind of setting through the page alone (an arm config, a fieldset, a judge scorer, a model record, a
+    failure-mode list, the validate policy; the goal above): created in its form, a value changed, deleted; the
+    harness's own check (evh validate) reads what the page created; in SQLite everything stays in the database;
   - deleting a run, after the panel says what goes;
+  - the catalog's rebuild from the page: the line says when it was built, Rebuild runs it, and the Goals page shows
+    a goal's title changed in the form; the catalog is served throughout;
+  - in the dark theme (the catalog's default) every page and the form paint dark: no field, card or panel on a
+    light ground, every label, help line, error and control's text at a contrast of at least 3.5 against its ground;
   - at phone width no page scrolls sideways; no page logs a console error.
 
 Missing Playwright is a failure that says how to install it, not a skip.
@@ -35,6 +42,9 @@ sys.path.insert(0, str(HARNESS))
 sys.path.insert(0, str(HARNESS / "tests"))
 from evaluation_harness._check import check, summary  # noqa: E402
 from test_data_page import serve, setup  # noqa: E402
+
+#: Each store's environment, for the commands the walk runs to check what the page wrote (set by main).
+ENV: dict[str, dict] = {}
 
 
 def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
@@ -185,6 +195,142 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
                 "Deleted goals/draft_goal.yaml." in page.locator(".dm-note").inner_text(),
             )
 
+            # Every kind of setting through the page alone: created in its form, a value changed, deleted.
+            def save_and_wait(word: str) -> str:
+                page.click("#dm-save")
+                page.wait_for_function(
+                    f"(document.querySelector('.dm-note') || {{}}).textContent?.includes({word!r})"
+                    " || !!document.querySelector('#dm-result .dm-bad')"
+                )
+                bad = page.locator("#dm-result .dm-bad")
+                return bad.inner_text() if bad.count() else ""
+
+            def add(at: str) -> None:
+                page.locator(f".df-row[data-at='{at}'] .df-add").first.click()
+
+            def fill_config() -> None:
+                page.fill("#dm-name", "ui_arm")
+                page.fill("[data-p='config_id']", "ui_arm_v1")
+                page.fill("[data-p='dataset_id']", "tickets_v1")
+                page.fill("[data-p='params.provider']", "echo")
+
+            def fill_fieldset() -> None:
+                page.fill("[data-p='fieldset_id']", "ui_fields")
+                add("fields")
+                page.fill("[data-p='fields.0.name']", "channel")
+                page.select_option("[data-p='fields.0.type']", label="choice")
+                add("fields.0.values")
+                page.fill("[data-p='fields.0.values.0']", "email")
+                page.locator(".df-row[data-at='fields.0.values'] .df-add").click()
+                page.fill("[data-p='fields.0.values.1']", "chat")
+
+            def fill_scorer() -> None:
+                page.fill("[data-p='scorer_id']", "ui_scorer")
+                page.fill("[data-p='dataset_id']", "tickets_v1")
+                for i, family in (
+                    (0, "vendor_a"),
+                    (1, "vendor_b"),
+                ):  # two judges of two families (ADR-0001 §4)
+                    page.locator(".df-row[data-at='judges'] .df-add").last.click()
+                    page.fill(f"[data-p='judges.{i}.id']", f"j{i}")
+                    page.select_option(f"[data-p='judges.{i}.params.provider']", label="fake")
+                    page.fill(f"[data-p='judges.{i}.params.model']", f"fake-{i}")
+                    page.fill(f"[data-p='judges.{i}.params.usd_per_mtok_in']", "0")
+                    page.fill(f"[data-p='judges.{i}.params.usd_per_mtok_out']", "0")
+                    page.fill(f"[data-p='judges.{i}.params.family']", family)
+                page.fill("[data-p='prompt.file']", "tutorial/judge_prompt.txt")
+
+            def fill_model() -> None:
+                page.fill("[data-p='model_id']", "ui_model")
+                add("aliases")
+                page.fill("[data-p='aliases.0']", "echo")
+
+            def fill_modes() -> None:
+                page.fill("[data-p='failure_modes_id']", "ui_modes")
+                add("modes")
+                page.fill("[data-p='modes.0.id']", "invented-fact")
+
+            kinds = {
+                "configs/ui_arm.yaml": fill_config,
+                "fields/ui_fields.yaml": fill_fieldset,
+                "scorers/ui_scorer.yaml": fill_scorer,
+                "models/ui_model.yaml": fill_model,
+                "failure-modes/ui_modes.yaml": fill_modes,
+            }
+            made, edited, gone = [], [], []
+            for target, fill in kinds.items():
+                folder = target.split("/")[0]
+                page.goto(base + f"data.html?path={folder}&new=1")
+                page.wait_for_selector(".df-row")
+                fill()
+                said = save_and_wait("Created.")
+                if said or "Created." not in page.locator(".dm-note").inner_text():
+                    made.append((target, said[:300]))
+                    continue
+                if target == "configs/ui_arm.yaml":
+                    shot(page, "created-arm")
+            check(
+                f"{store}: every kind of setting is created in its form, through the page alone",
+                not made,
+                made,
+            )
+            change = {"configs/ui_arm.yaml": ("config_id", "ui_arm_v2"), "fields/ui_fields.yaml": ("fields.0.label", "Channel"),
+                      "scorers/ui_scorer.yaml": ("judges.0.params.model", "fake-b"), "models/ui_model.yaml": ("aliases.0", "echo-2"),
+                      "failure-modes/ui_modes.yaml": ("modes.0.label", "Invented fact")}  # fmt: skip
+            for target, (field, value) in change.items():
+                page.goto(base + f"data.html?path={target}&edit=1")
+                page.wait_for_selector(".df-row")
+                page.fill(f"[data-p='{field}']", value)
+                said = save_and_wait("Saved.")
+                if said or value not in page.locator(".df-show").inner_text():
+                    edited.append((target, said[:200]))
+            # the validate policy: its tile opens it, or a new one when the project has none
+            page.goto(base + "data.html")
+            page.wait_for_selector(".dm-tile")
+            page.locator(".dm-tile", has_text="validate.json").click()
+            page.wait_for_selector(".df-row, .df-show")
+            if page.locator(".df-show").count():
+                page.get_by_role("link", name="Edit").click()
+                page.wait_for_selector(".df-row")
+            add("committed")
+            page.locator("[data-p^='committed.']").last.fill("runs")
+            said = save_and_wait("aved.") if "new=1" not in page.url else save_and_wait("Created.")
+            policy = page.locator(".df-show").inner_text() if page.locator(".df-show").count() else ""
+            if said or "runs" not in policy:
+                edited.append(("validate.json", said[:200] or policy[:200]))
+            check(
+                f"{store}: every kind's setting takes a change through its form (the validate policy too)",
+                not edited,
+                edited,
+            )
+            import subprocess as _sp  # noqa: PLC0415
+
+            v = _sp.run([sys.executable, "-m", "evaluation_harness", "validate"], cwd=proj, env=os.environ | ENV[store],
+                        capture_output=True, text=True, check=False)  # fmt: skip
+            check(f"{store}: evh validate reads what the page created and passes", v.returncode == 0,
+                  (v.stdout + v.stderr)[-600:])  # fmt: skip
+            for target in kinds:
+                page.goto(base + f"data.html?path={target}")
+                page.wait_for_selector(".dm-del-file")
+                page.click(".dm-del-file")
+                page.wait_for_selector(".dm-confirm")
+                page.click("#dm-yes")
+                page.wait_for_function(
+                    "(document.querySelector('.dm-note') || {}).textContent?.includes('Deleted')"
+                )
+                if (
+                    page.request.get(
+                        base.replace(".build/catalog/", "") + f"api/data/file?path={target}"
+                    ).status
+                    != 404
+                ):
+                    gone.append(target)
+            check(f"{store}: each one is deleted through the page", not gone, gone)
+            if store == "sqlite":
+                on_disk = sorted(x.name for x in (proj / "data").iterdir())
+                check(f"{store}: everything the page wrote is in the database (data/ on disk holds only it)",
+                      all(n.startswith("project.sqlite") for n in on_disk), on_disk)  # fmt: skip
+
             # A run: its file read-only, then the run deleted.
             page.goto(base + "data.html?path=runs")
             page.wait_for_selector(".dm-table")
@@ -214,6 +360,73 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
                 if page.locator(".dm-table").count()
                 else True,
             )
+
+            # The catalog's rebuild: a goal's title changed in the form, then shown on the Goals page once rebuilt.
+            page.goto(base + "data.html?path=goals/tickets_summary.yaml&edit=1")
+            page.wait_for_selector("[data-p='title']")
+            page.fill("[data-p='title']", "Ticket summaries, renamed on the data page")
+            page.click("#dm-save")
+            page.wait_for_function(
+                "(document.querySelector('.dm-note') || {}).textContent?.includes('Saved.')"
+            )
+            page.wait_for_selector("#dm-rebuild-go")
+            before = page.locator("#dm-rebuild").inner_text()
+            page.click("#dm-rebuild-go")
+            page.wait_for_function(
+                "(document.getElementById('dm-rebuild') || {}).textContent?.includes('Rebuilding')",
+                timeout=10000,
+            )
+            shot(page, "rebuilding")
+            served = page.request.get(base + "index.html").status
+            page.wait_for_function(
+                "(document.getElementById('dm-rebuild') || {}).textContent?.includes('Rebuilt in')",
+                timeout=300000,
+            )
+            shot(page, "rebuilt")
+            goals = page.request.get(base + "goals.html").text()
+            check(f"{store}: the page rebuilds the catalog: the Goals page shows the new title, the catalog served throughout",
+                  "were built" in before and served == 200 and "Ticket summaries, renamed on the data page" in goals,
+                  (before, served))  # fmt: skip
+
+            # The dark theme, the catalog's default: every page and the form paint dark.
+            page.emulate_media(color_scheme="dark")
+            light: list = []
+            for url, name in (("data.html", "dark-overview"), ("data.html?path=configs/tickets_lead1.yaml", "dark-setting"),
+                              ("data.html?path=configs/tickets_lead1.yaml&edit=1", "dark-form"),
+                              ("data.html?path=goals&new=1", "dark-new-goal"), ("data.html?path=runs", "dark-runs")):  # fmt: skip
+                page.goto(base + url)
+                page.wait_for_selector(".dm-tile, .df-row, .df-show, .dm-table")
+                if "edit=1" in url:
+                    page.fill("[data-p='dataset_id']", "")
+                    page.click("#dm-save")
+                    page.wait_for_selector("#dm-result .dm-bad")
+                page.wait_for_timeout(400)  # past the buttons' colour transition
+                bright = page.evaluate("""() => {
+                  const rgba = c => { const m = c.match(/[\\d.]+/g) || [0, 0, 0, 0]; const [r, g, b, a = 1] = m.map(Number); return {r, g, b, a}; };
+                  const L = ({r, g, b}) => [r, g, b].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; })
+                    .reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+                  const page = rgba(getComputedStyle(document.body).backgroundColor);
+                  const out = [];
+                  if (L(page) > 0.2) out.push('body on a light ground');
+                  document.querySelectorAll('input, select, textarea, .df-card, .dm-confirm, .dm-text, button, .tile, label, .df-help, .df-err, .dm-bad').forEach(el => {
+                    const cs = getComputedStyle(el);
+                    const own = rgba(cs.backgroundColor), ground = own.a >= 0.5 ? own : page;
+                    const fg = L(rgba(cs.color)), bg = L(ground);
+                    const ratio = (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
+                    const field = /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.matches('.df-card, .dm-confirm, .dm-text, .tile');
+                    if ((field && bg > 0.2) || ratio < 3.5) out.push(`${el.tagName}.${el.className} contrast ${ratio.toFixed(1)}`);
+                  });
+                  return out.slice(0, 5);
+                }""")
+                if bright:
+                    light.append((url, bright))
+                shot(page, name)
+            check(
+                f"{store}: in the dark theme every page and the form paint dark, every text readable (contrast >= 3.5)",
+                not light,
+                light,
+            )
+            page.emulate_media(color_scheme="light")
 
             # Phone width: nothing scrolls sideways.
             page.set_viewport_size({"width": 390, "height": 800})
@@ -261,6 +474,7 @@ def main() -> int:
         args.shots.mkdir(parents=True, exist_ok=True)
     for store in ("files", "sqlite"):
         proj, env = setup(store)
+        ENV[store] = env
         p, port = serve(proj, env)
         try:
             drive(store, f"http://127.0.0.1:{port}/.build/catalog/", proj, args.shots)

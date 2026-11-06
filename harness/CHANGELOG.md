@@ -31,10 +31,16 @@ that can move a result is never a patch release without saying so under **Change
   command that writes it; a run is deleted whole.
   It is the one catalog page that writes, on this machine only: a public server answers no `/api/data` call. The
   same in the terminal: `evh data-ls`, `data-show [--fields]`, `data-put [--set KEY=VALUE] [--unset KEY]`, `data-rm`.
-  In SQLite mode it is how a person's settings get into the database without `data-migrate`. New dependency:
+  A save runs `evh validate` before and after it: what the project's own check newly refuses (a scorer with judges
+  of one family, a config naming a goal that does not exist) puts the file back and comes back as the save's
+  problems. **Rebuild the catalog** on the page rebuilds the other pages beside the served ones and swaps them in.
+  Every kind of setting can be created, changed and deleted through the page alone, so a project in SQLite needs
+  no terminal to manage its settings. In SQLite mode it is how a person's settings get into the database without
+  `data-migrate`. New dependency:
   `ruamel.yaml` (owner yes, 2026-11-06), which writes a setting back with its comments.
-- **`schemas/validate.schema.json`**: the validate policy's keys, written from what `validate` reads; the data page
-  builds its form from it and checks it with it.
+- **`schemas/validate.schema.json`** and **`schemas/goal-policy.schema.json`**: the validate policy's keys and the goal
+  policy's `required_from`, written from what `validate` and `goal_policy` read; the data page builds their forms from
+  them. A judge's `params.family`, which `judge_score` requires two of, is in the scorer schema.
 - **Tests that know when items are related.** `--cluster FIELD` on `pair-test`, `family-test` and
   `bootstrap-test`, and `cluster: FIELD` on a goal's dataset (used by the goal page, `evh goals`, the inspector,
   rounds and `--round`): items that share a value of the field (one thread's comments, one incident's decisions)

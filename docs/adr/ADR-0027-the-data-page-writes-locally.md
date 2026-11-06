@@ -1,6 +1,6 @@
 # ADR-0027 — One catalog page writes: the data page, on this machine only (0.8.0)
 
-**Status:** Proposed (owner, 2026-11-06: "build simple CRUD UI for this"); built in 0.8.0, awaiting the owner's acceptance.
+**Status:** Accepted (owner, 2026-11-06); built in 0.8.0.
 **Date:** 2026-11-06
 **Detail:** [PRD-016](../prd/PRD-016-managing-project-data.md), [UXS-004](../uxs/UXS-004-data-page.md),
 [RFC-025](../rfc/RFC-025-runs-in-sqlite.md)

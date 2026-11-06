@@ -200,7 +200,7 @@ def run_case(store: str) -> None:
         r = cli(proj, env, "data-put", goal, "-", "--check", stdin="goal_id: tickets_summary\n")
         check(
             f"{store}: --check: the schema's missing keys",
-            r.returncode == 1 and "is a required property" in r.stdout,
+            r.returncode == 1 and "title: required" in r.stdout,
             r.stdout[-300:],
         )
         r = cli(proj, env, "data-put", goal, "-", stdin="goal_id: tickets_summary\n")
@@ -251,6 +251,10 @@ def run_case(store: str) -> None:
             r.returncode == 0 and "nothing changed" in r.stdout,
             r.stdout,
         )
+        r = cli(proj, env, "data-put", lead1, "--set", "goal=no_such_goal")
+        check(f"{store}: a change the schema allows but evh validate refuses is put back, and says why",
+              r.returncode != 0 and "V14" in r.stderr and "no_such_goal" in r.stderr
+              and cli(proj, env, "data-show", lead1, "--text").stdout == cfg_after, r.stderr[-400:])  # fmt: skip
         for target, why in ((f"{run}/metrics.json", "written by evh run"), ("datasets/tickets_v1.json", "written by the dataset-* commands"),
                             ("../config.yaml", "outside the project's data"), ("configs/x.py", "code")):  # fmt: skip
             r = cli(proj, env, "data-put", target, "-", stdin="x: 1\n")
@@ -350,6 +354,30 @@ def run_case(store: str) -> None:
             check(f"{store}: new=1 refuses a name already taken", code == 409, (code, body))
             code, body = http(port, "DELETE", "/api/data/file?path=goals/draft_goal.yaml", None, W)
             check(f"{store}: the new goal is deleted", code == 200, (code, body))
+            bad_cfg = json.loads(json.dumps(cform["values"]))
+            bad_cfg["goal"] = "no_such_goal"
+            cfg_text = http(port, "GET", "/api/data/file?path=configs/tickets_lead1.yaml")[1]["text"]
+            code, body = http(
+                port, "PUT", "/api/data/form?path=configs/tickets_lead1.yaml", json.dumps(bad_cfg), W
+            )
+            msgs = " | ".join(p["message"] for p in body.get("problems", []))
+            check(f"{store}: PUT form: what evh validate refuses comes back as problems, the file put back",
+                  code == 200 and body.get("saved") is False and "V14" in msgs and "no_such_goal" in msgs
+                  and http(port, "GET", "/api/data/file?path=configs/tickets_lead1.yaml")[1]["text"] == cfg_text, (code, body))  # fmt: skip
+            code, gp = http(port, "GET", "/api/data/form?new=goals/policy.yaml")
+            code2, body = http(
+                port,
+                "PUT",
+                "/api/data/form?path=goals/policy.yaml&new=1",
+                json.dumps({"required_from": "2099-01-01"}),
+                W,
+            )
+            code3, shown = http(port, "GET", "/api/data/file?path=goals/policy.yaml")
+            check(f"{store}: the goal policy is a setting of its own: its form, created, read back",
+                  code == 200 and gp.get("kind") == "goal policy" and code2 == 200 and body.get("saved") and code3 == 200
+                  and "2099-01-01" in shown.get("text", "") and shown.get("setting_kind") == "goal policy",
+                  (gp.get("kind"), body, shown.get("text")))  # fmt: skip
+            http(port, "DELETE", "/api/data/file?path=goals/policy.yaml", None, W)
             code, body = http(port, "PUT", "/api/data/form?path=datasets/tickets_v1.json", "{}", W)
             check(
                 f"{store}: PUT form refuses a harness-written file",

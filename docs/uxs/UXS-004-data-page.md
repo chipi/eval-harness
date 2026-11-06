@@ -30,10 +30,19 @@ server on this machine. Its state is in the URL, so a file or a folder can be li
 - **A form, not a text editor.** A setting is entered in a form built from its kind's schema: one labelled field
   per key, the right control for its type, the schema's description as its help. Nobody types YAML on this page.
 - **Check before save.** A setting is saved only when it matches its schema, and, for every kind but an arm config,
-  its id is its file name: the same check `evh data-put --check` prints. An arm config is exempt because
+  its id is its file name: the same check `evh data-put --check` prints. Then the project's own check runs:
+  `evh validate` before the write and after it, and anything it says after that it did not say before (a scorer
+  with judges of one family, a config naming a goal that does not exist) puts the file back as it was and comes
+  back as the save's problems. A setting the page saves is one `validate` passes. An arm config is exempt because
   its `config_id` is versioned (`data/configs/tickets_lead1.yaml` holds `tickets_lead1_v1`); the other kinds are found
   by their id (validate checks goals, scorers, models and failure-mode lists; a fieldset is read as `<id>.yaml`).
-  `validate.json` is checked against `schemas/validate.schema.json`, written from what `validate` reads.
+  `validate.json` is checked against `schemas/validate.schema.json`, written from what `validate` reads, and the goal
+  policy (`goals/policy.yaml`, not a goal) against `schemas/goal-policy.schema.json`; the goals folder offers
+  **+ New goal policy** when the project has none.
+- **The catalog follows.** The catalog's other pages are built ahead of time; a line under the store badge says when,
+  and **Rebuild the catalog** runs `evh catalog` in a child process into a folder beside the served one, then swaps
+  it in, so the pages are served throughout. The line follows the rebuild (**Rebuilding…**, **Rebuilt in N s**, or
+  the end of its output when it fails).
 - **The file stays the person's.** Saving from the form changes only the values that changed: the file's comments
   and the order of its keys are kept (ruamel.yaml, owner yes 2026-11-06).
 - **The same in both stores.** The page does not change with the store; a badge says which one the project uses.
@@ -211,4 +220,8 @@ data.**
 - Every settings file in the repository and the examples opens in its form, and saving it unchanged writes nothing.
 - A save from the form keeps the file's comments: a test edits one value of a commented file and compares the rest.
 - Every refusal above has a test, on the page and on the command.
+- Every kind of setting created, changed and deleted through the page alone, `evh validate` passing on what it
+  made, and in SQLite nothing on disk but the database.
+- In the dark theme (the catalog's default) every page and the form paint dark; every label, help line, error and
+  control's text at a contrast of at least 3.5 against its ground.
 - The public server answers no `/api/data` call.

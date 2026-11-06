@@ -27,8 +27,10 @@ SETTINGS: dict[str, tuple[str, str, str, bool]] = {
     "models": ("model record", "model.schema.json", "model_id", True),
     "failure-modes": ("failure-mode list", "failure-modes.schema.json", "failure_modes_id", True),
 }
-#: The validate policy: a setting of its own, JSON, with no schema.
+#: The validate policy: a setting of its own, JSON (schemas/validate.schema.json).
 POLICY = "validate.json"
+#: The goal policy: goals/policy.yaml is not a goal, but the date from which every run must name one.
+GOAL_POLICY = "goals/policy.yaml"
 #: What a folder of harness-written data is, and the command that writes it.
 WRITERS: dict[str, tuple[str, str]] = {
     "datasets": ("datasets", "the dataset-* commands (dataset-create, dataset-extend, dataset-split, ...)"),
@@ -101,7 +103,9 @@ def kind_of(rel: str) -> str:
     if rel.endswith(".py"):
         return "code"
     parts = rel.split("/")
-    if rel == POLICY or (len(parts) == 2 and parts[0] in SETTINGS and parts[1].endswith((".yaml", ".yml"))):
+    if rel in (POLICY, GOAL_POLICY) or (
+        len(parts) == 2 and parts[0] in SETTINGS and parts[1].endswith((".yaml", ".yml"))
+    ):
         return "setting"
     if parts[0].startswith("runs"):
         d = _data() / rel
@@ -205,6 +209,8 @@ def listing(rel: str, offset: int = 0) -> dict[str, Any]:
         "path": norm,
         "settings_folder": folder if norm in SETTINGS else None,
         "kind": SETTINGS[norm][0] if norm in SETTINGS else None,
+        # the goal policy is made from the goals folder, when the project has none
+        "also_new": GOAL_POLICY if norm == "goals" and not _store.is_file(_data() / GOAL_POLICY) else None,
         "total": len(entries),
         "offset": offset,
         "entries": entries[offset : offset + PAGE],
@@ -268,7 +274,13 @@ def show(rel: str) -> dict[str, Any]:
         run_dir = norm.rsplit("/", 1)[0]
         out["run"] = run_dir
     if k == "setting":
-        out["setting_kind"] = "validate policy" if norm == POLICY else SETTINGS[norm.split("/", 1)[0]][0]
+        out["setting_kind"] = (
+            "validate policy"
+            if norm == POLICY
+            else "goal policy"
+            if norm == GOAL_POLICY
+            else SETTINGS[norm.split("/", 1)[0]][0]
+        )
     if k == "setting" and norm.startswith("configs/") and text is not None:
         import yaml  # noqa: PLC0415
 
@@ -281,7 +293,10 @@ def show(rel: str) -> dict[str, Any]:
 
 
 def check(rel: str, text: str) -> list[str]:
-    """What is wrong with this text as the setting at `rel`; [] when it may be saved."""
+    """What is wrong with this text as the setting at `rel`; [] when it may be saved. The form's own check
+    (`_settings_form.problems`) once the text parses."""
+    from evaluation_harness import _settings_form  # noqa: PLC0415
+
     norm, _f = resolve(rel)
     if kind_of(norm) != "setting":
         raise Refused(_not_edited(norm), "not-allowed")
@@ -290,42 +305,32 @@ def check(rel: str, text: str) -> list[str]:
             doc = json.loads(text)
         except ValueError as exc:
             return [f"not JSON: {exc}"]
-        return [] if isinstance(doc, dict) else ["the validate policy is a JSON object"]
-    import yaml  # noqa: PLC0415
+    else:
+        import yaml  # noqa: PLC0415
 
-    try:
-        doc = yaml.safe_load(text)
-    except yaml.YAMLError as exc:
-        mark = getattr(exc, "problem_mark", None)
-        where = f" (line {mark.line + 1}, column {mark.column + 1})" if mark else ""
-        return [f"not YAML{where}: {getattr(exc, 'problem', None) or exc}"]
+        try:
+            doc = yaml.safe_load(text)
+        except yaml.YAMLError as exc:
+            mark = getattr(exc, "problem_mark", None)
+            where = f" (line {mark.line + 1}, column {mark.column + 1})" if mark else ""
+            return [f"not YAML{where}: {getattr(exc, 'problem', None) or exc}"]
+        if doc is None and norm == GOAL_POLICY:
+            doc = {}
     if not isinstance(doc, dict):
-        return ["a setting is a YAML mapping (key: value lines)"]
-    folder, name = norm.split("/", 1)
-    _word, schema_name, key, named = SETTINGS[folder]
-    problems = []
-    stem = PurePosixPath(name).stem
-    if named and doc.get(key) != stem:
-        problems.append(f"{key} is {doc.get(key)!r}: it must be the file name, {stem!r}")
-    try:
-        import jsonschema  # noqa: PLC0415
-
-        schema = json.loads(_store.read_text(_common.SCHEMAS / schema_name))
-        for err in sorted(
-            jsonschema.Draft202012Validator(schema).iter_errors(doc), key=lambda e: list(e.path)
-        ):
-            where = ".".join(str(x) for x in err.path) or "(top)"
-            problems.append(f"{where}: {err.message}")
-    except ImportError:  # pragma: no cover - jsonschema is a dependency
-        problems.append("jsonschema is not installed: the setting cannot be checked")
-    return problems
+        return ["a setting is a mapping of keys (key: value lines)"]
+    return [
+        f"{'.'.join(map(str, p['path'])) or '(top)'}: {p['message']}"
+        for p in _settings_form.problems(norm, _settings_form.plain(doc))
+    ]
 
 
 def checked(rel: str) -> str:
     """What the check of this setting checks, as the page and `data-put --check` say it on a pass."""
     norm, _f = resolve(rel)
     if norm == POLICY:
-        return "it is a JSON object"
+        return "it matches validate.schema.json"
+    if norm == GOAL_POLICY:
+        return "it matches goal-policy.schema.json"
     folder = norm.split("/", 1)[0]
     _word, schema_name, key, named = SETTINGS[folder]
     return f"it parses, matches {schema_name}" + (f", and its {key} is its file name" if named else "")
@@ -346,8 +351,9 @@ def put(rel: str, text: str, new: bool = False) -> dict[str, Any]:
         raise Refused(f"{norm} exists: open it to edit it.", "would-overwrite")
     if problems:
         raise Refused(f"{norm} not saved:\n  " + "\n  ".join(problems), "invalid-file")
-    _store.mkdir(f.parent, parents=True, exist_ok=True)
-    _common.write_text_atomic(f, text)
+    from evaluation_harness import _settings_form  # noqa: PLC0415
+
+    _settings_form.guarded_write(norm, f, text)
     return show(norm)
 
 

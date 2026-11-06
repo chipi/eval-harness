@@ -758,3 +758,6 @@ dl.df-view dl.df-view { padding-left: 12px; border-left: 2px solid var(--hair); 
   .df-row, .df-card .df-row, dl.df-view { grid-template-columns: minmax(0, 1fr); }
   .df-label { padding-top: 0; }
 }
+
+.dm-rebuild { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 0; color: var(--muted); }
+.dm-rebuild .dm-text { flex-basis: 100%; max-height: 12em; }

@@ -33,7 +33,8 @@
               "api_key_env": {"type": "string", "minLength": 1, "description": "Another variable to read the key from. A credential, not part of the judge's identity."},
               "base_url": {"type": "string", "minLength": 1},
               "usd_per_mtok_in": {"type": "number", "minimum": 0},
-              "usd_per_mtok_out": {"type": "number", "minimum": 0}
+              "usd_per_mtok_out": {"type": "number", "minimum": 0},
+              "family": {"type": "string", "minLength": 1, "description": "The judge model's vendor family (vendor_a, openai, ...): a scorer needs judges from two families at least (ADR-0001 §4), which judge_score checks when it loads the scorer."}
             }
           }
         }

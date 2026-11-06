@@ -87,12 +87,19 @@ NEW: dict[str, dict[str, Any]] = {
     "models": {"model_id": "", "kind": "llm", "aliases": []},
     "failure-modes": {"failure_modes_id": "", "modes": []},
     _data_page.POLICY: {"committed": [], "floors": {}},
+    _data_page.GOAL_POLICY: {"required_from": ""},
 }
 
 
+#: The schema of the goal policy (goals/policy.yaml), a setting of its own beside the goals.
+GOAL_POLICY_SCHEMA = "goal-policy.schema.json"
+
+
 def folder_of(norm: str) -> str:
-    """The settings folder a setting's path is in (the policy is its own)."""
-    return _data_page.POLICY if norm == _data_page.POLICY else norm.split("/", 1)[0]
+    """The settings folder a setting's path is in; each policy is its own."""
+    if norm in (_data_page.POLICY, _data_page.GOAL_POLICY):
+        return norm
+    return norm.split("/", 1)[0]
 
 
 def _inline(node: Any, defs: dict[str, Any]) -> Any:
@@ -110,7 +117,9 @@ def _inline(node: Any, defs: dict[str, Any]) -> Any:
 
 def schema_of(folder: str) -> dict[str, Any]:
     """The kind's schema with its `$defs` references inlined, as the form builds from it."""
-    name = POLICY_SCHEMA if folder == _data_page.POLICY else _data_page.SETTINGS[folder][1]
+    name = {_data_page.POLICY: POLICY_SCHEMA, _data_page.GOAL_POLICY: GOAL_POLICY_SCHEMA}.get(
+        folder
+    ) or _data_page.SETTINGS[folder][1]
     raw = json.loads(_store.read_text(_common.SCHEMAS / name))
     return dict(_inline(raw, raw.get("$defs") or {}))
 
@@ -131,6 +140,8 @@ def values_of(norm: str) -> dict[str, Any]:
     text = _store.read_text(_data_page.resolve(norm)[1])
     if norm == _data_page.POLICY:
         doc = json.loads(text)
+    elif not text.strip():
+        doc = {}
     else:
         import yaml  # noqa: PLC0415
 
@@ -142,7 +153,11 @@ def values_of(norm: str) -> dict[str, Any]:
 
 def _stems(folder: str) -> list[str]:
     d = _common.DATA / folder
-    return sorted(p.stem for p in _store.glob(d, "*.yaml")) if _store.is_dir(d) else []
+    return (
+        sorted(p.stem for p in _store.glob(d, "*.yaml") if f"{folder}/{p.name}" != _data_page.GOAL_POLICY)
+        if _store.is_dir(d)
+        else []
+    )
 
 
 def options() -> dict[str, Any]:
@@ -199,9 +214,9 @@ def form(rel: str, new_in: str | None = None) -> dict[str, Any]:
     from its kind's values; otherwise `rel` is an existing setting."""
     if new_in is not None:
         folder = new_in
-        if folder not in _data_page.SETTINGS and folder != _data_page.POLICY:
+        if folder not in _data_page.SETTINGS and folder not in (_data_page.POLICY, _data_page.GOAL_POLICY):
             raise _data_page.Refused(f"{folder} is not a folder of settings.", "bad-argument")
-        norm = _data_page.POLICY if folder == _data_page.POLICY else ""
+        norm = folder if folder in (_data_page.POLICY, _data_page.GOAL_POLICY) else ""
         values = copy.deepcopy(NEW[folder])
     else:
         norm, f = _data_page.resolve(rel)
@@ -214,6 +229,8 @@ def form(rel: str, new_in: str | None = None) -> dict[str, Any]:
     word, key, named = (
         ("validate policy", None, False)
         if folder == _data_page.POLICY
+        else ("goal policy", None, False)
+        if folder == _data_page.GOAL_POLICY
         else (_data_page.SETTINGS[folder][0], _data_page.SETTINGS[folder][2], _data_page.SETTINGS[folder][3])
     )
     out: dict[str, Any] = {
@@ -245,7 +262,7 @@ def problems(rel: str, values: Any) -> list[dict[str, Any]]:
         return [{"path": [], "message": "a setting is a mapping of keys"}]
     folder = folder_of(norm)
     out: list[dict[str, Any]] = []
-    if folder != _data_page.POLICY:
+    if folder in _data_page.SETTINGS:
         _word, _schema, key, named = _data_page.SETTINGS[folder]
         stem = PurePosixPath(norm).stem
         if named and values.get(key) != stem:
@@ -284,6 +301,9 @@ def _said(err: Any) -> dict[str, Any]:
         return {"path": path, "message": f"must be {err.validator_value}"}
     if v == "pattern":
         return {"path": path, "message": f"{err.instance!r} does not have the form {err.validator_value}"}
+    if v == "minItems":
+        n = err.validator_value
+        return {"path": path, "message": f"needs at least {n}: add {'one' if n == 1 else n}"}
     if v == "minimum":
         return {"path": path, "message": f"must be at least {err.validator_value}"}
     if v == "additionalProperties":
@@ -368,15 +388,16 @@ def merge(old: Any, new: Any, order: list[str] | None = None) -> Any:
     return old if _same(old, new) else new
 
 
-def _at(ops: Sequence[tuple[str, int, int, int, int]], x: int) -> int:
-    """Where line `x` of the first text is in the second, by their opcodes; `x` is never inside a changed block."""
-    for tag, i1, i2, j1, j2 in ops:
+def _at(ops: Sequence[tuple[str, int, int, int, int]], x: int, end: bool = False) -> int:
+    """Where line `x` of the first text is in the second, by their opcodes; `x` is never inside a changed block.
+    At a boundary where lines were inserted, the start of a stretch (`end` False) is before them, its end after."""
+    for tag, i1, i2, j1, j2 in reversed(ops) if end else ops:
         if tag == "equal" and i1 <= x <= i2:
             return j1 + (x - i1)
-        if x == i1:
-            return j1
-        if x == i2:
-            return j2
+        if x == (i2 if end else i1):
+            return j2 if end else j1
+        if x == (i1 if end else i2):
+            return j1 if end else j2
     return ops[-1][4] if ops else 0
 
 
@@ -415,10 +436,10 @@ def patch(ours: str, base: str, theirs: str) -> str:
             regions.append([lo, hi])
     out, x = [], 0
     for lo, hi in regions:
-        out += o[_at(bo, x) : _at(bo, lo)]
-        out += t[_at(bt, lo) : _at(bt, hi)]
+        out += o[_at(bo, x, end=True) : _at(bo, lo)]
+        out += t[_at(bt, lo) : _at(bt, hi, end=True)]
         x = hi
-    out += o[_at(bo, x) :]
+    out += o[_at(bo, x, end=True) :]
     return "".join(out)
 
 
@@ -456,9 +477,72 @@ def save(rel: str, values: dict[str, Any], new: bool = False) -> dict[str, Any]:
     before = _store.read_text(f) if _store.is_file(f) else None
     if before is not None and values_of(norm) == values:
         return {**_data_page.show(norm), "unchanged": True}
-    _store.mkdir(f.parent, parents=True, exist_ok=True)
-    _common.write_text_atomic(f, text_for(norm, values, before))
+    guarded_write(norm, f, text_for(norm, values, before))
     return {**_data_page.show(norm), "unchanged": False}
+
+
+def guarded_write(norm: str, f: Any, text: str) -> None:
+    """Write a setting, then let the project's own check (`evh validate`) judge it: anything it says now that it did
+    not say before is the change's, and the file is put back as it was (or removed, if it is new)."""
+    before = _store.read_text(f) if _store.is_file(f) else None
+    was = project_check()
+    _store.mkdir(f.parent, parents=True, exist_ok=True)
+    _common.write_text_atomic(f, text)
+    new = project_check_since(was)
+    if new:
+        if before is None:
+            _store.unlink(f)
+        else:
+            _common.write_text_atomic(f, before)
+        raise ProjectRefused(new)
+
+
+class ProjectRefused(_data_page.Refused):
+    """A save the project's own check (`evh validate`) refuses: it was written, checked, and put back as it was."""
+
+    def __init__(self, found: list[dict[str, Any]]) -> None:
+        super().__init__(
+            "not saved: evh validate refuses it:\n  " + "\n  ".join(p["message"] for p in found),
+            "invalid-file",
+        )
+        self.problems = [{"path": [], "message": p["message"]} for p in found]
+
+
+def project_check() -> dict[str, list[str]]:
+    """`evh validate` on the project as it is: each failing check (V1, V13, ...) with the lines it printed about it.
+    A child process: validate reads module state the server's own process must not share."""
+    import os  # noqa: PLC0415
+    import subprocess  # noqa: PLC0415  # nosec B404 - the package's own command, no shell
+    import sys  # noqa: PLC0415
+
+    r = subprocess.run(  # nosec B603
+        [sys.executable, "-m", "evaluation_harness", "validate"],
+        cwd=_common.ROOT, capture_output=True, text=True, stdin=subprocess.DEVNULL, env=dict(os.environ), check=False,
+    )  # fmt: skip
+    failing: dict[str, list[str]] = {}
+    said: list[str] = []
+    for line in r.stdout.splitlines():
+        if line.startswith("       "):
+            said.append(line.strip())
+            continue
+        if line.startswith("  FAIL "):
+            label = line[7:].split(" — ")[0].strip()
+            failing[label] = said
+        if line.startswith(("  ok ", "  FAIL ", "  -- ")):
+            said = []
+    return failing
+
+
+def project_check_since(was: dict[str, list[str]]) -> list[dict[str, Any]]:
+    """What `evh validate` says now that it did not say in `was`: a check newly failing, or a failing check's new lines.
+    Any of it is the change's: the check ran on the project as it was, then again with the change written."""
+    now = project_check()
+    out = []
+    for label, lines in now.items():
+        old = set(was.get(label, []))
+        fresh = [x for x in lines if x not in old] or ([] if label in was else [label])
+        out += [{"message": f"{label}: {x}" if x != label else label} for x in fresh]
+    return out
 
 
 def _steps(key: str) -> list[Any]:

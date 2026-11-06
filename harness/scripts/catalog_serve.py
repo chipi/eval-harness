@@ -1008,7 +1008,68 @@ DATA_ROUTES = (
     "/api/data/find",
     "/api/data/run",
     "/api/data/form",
+    "/api/data/rebuild",
 )
+#: The catalog this server serves (main sets it), which the data page can rebuild after a setting changes.
+CATALOG_DIR: list[Path] = []
+#: The one rebuild at a time: its state, when it started and ended, and the end of its output when it failed.
+REBUILD: dict = {"state": "idle"}
+_REBUILD_LOCK = threading.Lock()
+
+
+def _rebuild(out: Path) -> None:
+    """`evh catalog` into a folder beside the served one, in a child process (a build is CPU work: in this process
+    it would starve the server's answers), then the new folder swapped in, so the pages are served throughout."""
+    import shutil  # noqa: PLC0415
+    import subprocess  # noqa: PLC0415  # nosec B404 - our own command, no shell
+
+    nxt, old = out.with_name(out.name + ".next"), out.with_name(out.name + ".old")
+    for d in (nxt, old):
+        shutil.rmtree(d, ignore_errors=True)
+    t0 = time.time()
+    r = subprocess.run(  # nosec B603 - this interpreter and the package's own command
+        [sys.executable, "-m", "evaluation_harness", "catalog", "--out", str(nxt)],
+        cwd=ROOT, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
+    )  # fmt: skip
+    if r.returncode == 0 and (nxt / "index.html").is_file():
+        if out.exists():
+            out.rename(old)
+        nxt.rename(out)
+        shutil.rmtree(old, ignore_errors=True)
+        state = {"state": "done"}
+    else:
+        shutil.rmtree(nxt, ignore_errors=True)
+        state = {"state": "failed", "tail": ((r.stdout or "") + (r.stderr or ""))[-1500:]}
+    with _REBUILD_LOCK:
+        REBUILD.clear()
+        REBUILD.update(state, started=t0, seconds=round(time.time() - t0, 1))
+
+
+def rebuild_state() -> dict:
+    """The rebuild's state, and when the served catalog was built."""
+    with _REBUILD_LOCK:
+        out = dict(REBUILD)
+    index = CATALOG_DIR[0] / "index.html" if CATALOG_DIR else None
+    out["built"] = (
+        time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(index.stat().st_mtime))
+        if index and index.is_file()
+        else None
+    )
+    return out
+
+
+def start_rebuild() -> dict:
+    """Start a rebuild unless one is running; the state either way."""
+    if not CATALOG_DIR:
+        return {"state": "failed", "tail": "this server serves no catalog it can rebuild"}
+    with _REBUILD_LOCK:
+        if REBUILD.get("state") != "running":
+            REBUILD.clear()
+            REBUILD.update(state="running", started=time.time())
+            threading.Thread(target=_rebuild, args=(CATALOG_DIR[0],), daemon=True).start()
+    return rebuild_state()
+
+
 #: The header every data write must carry: a page from another origin cannot send it without a CORS preflight,
 #: which this server never grants (ADR-0027).
 DATA_HEADER = "X-EVH-Data"
@@ -1050,15 +1111,22 @@ def data_answer(method: str, path: str, query: str, body: bytes | None = None) -
                 return 200, _data_page.search(arg("q"))
             if path == "/api/data/form":
                 return 200, _settings_form.form(arg("path"), new_in=arg("new") or None)
+            if path == "/api/data/rebuild":
+                return 200, rebuild_state()
             if path == "/api/data/run":
                 return 200, _data_page.run_summary(arg("path"))
             return 405, {"error": "use POST, PUT or DELETE for this"}
+        if method == "POST" and path == "/api/data/rebuild":
+            return 200, start_rebuild()
         if method == "PUT" and path == "/api/data/form":
             values = json.loads((body or b"").decode("utf-8") or "null")
             found = _settings_form.problems(arg("path"), values)
             if found:
                 return 200, {"saved": False, "problems": found}
-            return 200, {"saved": True, **_settings_form.save(arg("path"), values, new=arg("new") == "1")}
+            try:
+                return 200, {"saved": True, **_settings_form.save(arg("path"), values, new=arg("new") == "1")}
+            except _settings_form.ProjectRefused as exc:
+                return 200, {"saved": False, "problems": exc.problems}
         if method == "DELETE" and path == "/api/data/file":
             return 200, _data_page.remove(arg("path"))
         return 405, {"error": f"{method} is not served at {path}"}
@@ -1436,6 +1504,7 @@ def main() -> int:
         if not _store.is_file(args.build_dir / "index.html"):
             die(f"no catalog at {args.build_dir}: run `evh catalog` first", "not-found")
         Handler.prefixes = served(args.build_dir, A.data_dir, tuple(getattr(A, "served_dirs", ())))
+        CATALOG_DIR[:] = [args.build_dir.resolve()]
     if args.warm:
         threading.Thread(
             target=lambda: print(f"warm: {warm(args.warm)} comparison(s) cached", flush=True), daemon=True
