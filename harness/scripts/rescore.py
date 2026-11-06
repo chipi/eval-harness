@@ -39,7 +39,7 @@ import textwrap
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _outputs
+from evaluation_harness import _outputs, _runs
 from evaluation_harness._adapter import load_recorded_adapter, score_wants_source
 from evaluation_harness._common import (
     DATA,
@@ -435,10 +435,7 @@ def rescore_one(
     extra_keys = set(m.get("metric_kinds", {})) & {"truncated", "reasoning_tokens"}
     extra_keys |= {"truncated", "reasoning_tokens"}
     dropped: set = set()
-    for line in (d / "predictions.jsonl").read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        old = json.loads(line)
+    for old in _runs.item_rows(d):
         row, had_ref, recost = _rescore_row(
             old, d, ref_dir, mat, item_source, score, wants_source, extra_keys
         )
@@ -456,9 +453,7 @@ def rescore_one(
 
     run_dir = out_dir / d.name
     run_dir.mkdir(parents=True, exist_ok=True)  # no outputs of its own: they are its source's (RFC-024)
-    (run_dir / "predictions.jsonl").write_text(
-        "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows), encoding="utf-8"
-    )
+    _outputs.write_rows(run_dir, rows)
     # Provenance of the RESCORE itself: which run it came from, and which scorer
     # produced these numbers. Without this a rescored run is indistinguishable from
     # a measured one, which is the whole risk of having this script at all.
@@ -635,11 +630,7 @@ def cut_off_lines(todo: list[tuple[Path, dict]], done: list[tuple[Path, dict]]) 
     for d, m in sorted(todo, key=lambda t: t[0].name):
         if d.name not in rescored:
             continue
-        rows = [
-            json.loads(x)
-            for x in (d / "predictions.jsonl").read_text(encoding="utf-8").splitlines()
-            if x.strip()
-        ]
+        rows = list(_runs.item_rows(d))
         cap = (m.get("params") or {}).get("max_tokens")
         cut = cut_off_items(rows, cap)
         if cut:

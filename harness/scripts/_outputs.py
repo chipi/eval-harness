@@ -1,4 +1,4 @@
-"""A run's outputs, read and written only here (RFC-024), in the project's runs store (RFC-025).
+"""A run's outputs and rows, read and written only here (RFC-024), in the project's runs store (RFC-025).
 
 The files store (the default) keeps one file per run, `outputs.jsonl`:
 
@@ -14,6 +14,12 @@ so that item is called again. `finish` rewrites them in dataset order when the r
 re-score, a judging, a sheet import) writes no outputs of its own: `output()` and `outputs()` follow its
 `derived.from_dir` (else `derived.from`) to the run whose they are. Every module reads outputs through this one: a
 test fails on an `outputs/` path built anywhere else.
+
+A run's rows (one JSON object per item: its scores, cost, tokens, `_meta`) are its `predictions.jsonl` in the files
+store and table `rows (run, partial, n, item_id, row)` in the sqlite one, each line's exact text kept, so `rows_text`
+is the same bytes in either. `partial` rows are the pass's checkpoint (`rows.partial.jsonl`), appended per item and
+dropped by `finish`. `_runs.item_rows` and `write_rows` are how every module reads and writes them; a test fails on a
+`predictions.jsonl` path built anywhere else.
 """
 
 from __future__ import annotations
@@ -34,9 +40,14 @@ FILE = "outputs.jsonl"
 ROWS = "rows.partial.jsonl"
 #: The sqlite store's database, in the project's data directory.
 DB = "runs.sqlite"
+#: A run's rows in the files store.
+PREDICTIONS = "predictions.jsonl"
 SCHEMA_VERSION = "1"
 _CACHE: dict[str, tuple[float, dict[str, str]]] = {}
 _NAMES: dict[str, list[Path]] = {}
+_ROWS_CACHE: dict[tuple[str, str], tuple[tuple[int, int], str]] = {}
+#: {run dir: (its rows text, {item_id: its first row line})}, valid while rows_text returns that same text.
+_ROWS_INDEX: dict[str, tuple[str, dict[str, str]]] = {}
 
 
 def sha256(text: str) -> str:
@@ -46,6 +57,20 @@ def sha256(text: str) -> str:
 
 def _line(item_id: str, text: str) -> str:
     return json.dumps({"item_id": item_id, "text": text, "sha256": sha256(text)}, ensure_ascii=False)
+
+
+def _forget_rows(path: Path) -> None:
+    for k in [k for k in _ROWS_CACHE if k[0] == str(path)]:
+        _ROWS_CACHE.pop(k, None)
+
+
+def _item_of(line: str) -> str | None:
+    """A row line's item id, None when it has none (or is not JSON)."""
+    try:
+        row = json.loads(line)
+    except ValueError:
+        return None
+    return str(row["item_id"]) if isinstance(row, dict) and row.get("item_id") is not None else None
 
 
 class Store(Protocol):
@@ -61,7 +86,7 @@ class Store(Protocol):
         """{item_id: text} of the run's own outputs; {} when it has none."""
         ...
 
-    def rows(self, run_dir: Path) -> list[dict[str, Any]]:
+    def lines(self, run_dir: Path) -> list[dict[str, Any]]:
         """The run's own outputs as stored (item_id, text, sha256), in order."""
         ...
 
@@ -75,6 +100,23 @@ class Store(Protocol):
 
     def delete(self, run_dir: Path) -> None:
         """The run's outputs gone from here."""
+        ...
+
+    def rows_text(self, run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
+        """The run's rows exactly as written (the checkpoint's with `partial`); None when it has none. Bytes that
+        are not UTF-8 raise, unless `errors` says otherwise (`replace`)."""
+        ...
+
+    def put_rows(self, run_dir: Path, text: str, partial: bool = False) -> None:
+        """The run's rows replaced by `text` at once, atomically."""
+        ...
+
+    def append_row(self, run_dir: Path, line: str, partial: bool = True) -> None:
+        """One row line (its newline included) added, on disk before this returns."""
+        ...
+
+    def drop_rows(self, run_dir: Path, partial: bool = False) -> None:
+        """The run's rows (or its checkpoint) gone from here."""
         ...
 
 
@@ -114,7 +156,7 @@ class FileStore:
         _CACHE[key] = (mtime, out)
         return out
 
-    def rows(self, run_dir: Path) -> list[dict[str, Any]]:
+    def lines(self, run_dir: Path) -> list[dict[str, Any]]:
         """The run's own outputs as stored (item_id, text, sha256), in order."""
         p = Path(run_dir) / FILE
         if not p.is_file():
@@ -149,6 +191,46 @@ class FileStore:
         path.unlink(missing_ok=True)
         _CACHE.pop(str(path), None)
 
+    @staticmethod
+    def _rows_path(run_dir: Path, partial: bool) -> Path:
+        return Path(run_dir) / (ROWS if partial else PREDICTIONS)
+
+    def rows_text(self, run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
+        """The run's rows exactly as written (the checkpoint's with `partial`); None when it has none."""
+        path = self._rows_path(run_dir, partial)
+        try:
+            st = path.stat()
+        except OSError:
+            return None
+        key, stamp = (str(path), errors), (st.st_mtime_ns, st.st_size)
+        hit = _ROWS_CACHE.get(key)
+        if hit and hit[0] == stamp:
+            return hit[1]
+        text = path.read_bytes().decode("utf-8", errors=errors)
+        _ROWS_CACHE[key] = (stamp, text)
+        return text
+
+    def put_rows(self, run_dir: Path, text: str, partial: bool = False) -> None:
+        """The run's rows replaced by `text` at once, atomically."""
+        path = self._rows_path(run_dir, partial)
+        _common.write_text_atomic(path, text)
+        _forget_rows(path)
+
+    def append_row(self, run_dir: Path, line: str, partial: bool = True) -> None:
+        """One row line (its newline included) added, on disk before this returns."""
+        path = self._rows_path(run_dir, partial)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(line)
+            fh.flush()
+            os.fsync(fh.fileno())
+
+    def drop_rows(self, run_dir: Path, partial: bool = False) -> None:
+        """The run's rows (or its checkpoint) gone from here."""
+        path = self._rows_path(run_dir, partial)
+        path.unlink(missing_ok=True)
+        _forget_rows(path)
+
 
 class SqliteStore:
     """Every run's outputs in one database, write-ahead logged: readers never block the writer, and a crash keeps
@@ -161,15 +243,28 @@ class SqliteStore:
         self._lock = threading.RLock()
         self._conn: sqlite3.Connection | None = None
         self._cache: dict[str, dict[str, str]] = {}
+        self._rows: dict[tuple[str, bool], str | None] = {}
         self._version: int | None = None
 
-    def key(self, run_dir: Path) -> str:
-        """The run's directory under data/ (what `derived.from_dir` names); an absolute path outside it."""
-        d = Path(run_dir).resolve()
+    def key(self, run_dir: Path) -> str | None:
+        """The run's directory under the database's data directory (what `derived.from_dir` names); None for a run
+        directory anywhere else (EVAL_RUNS_DIR outside data/, a test's temporary one): that run keeps its files, so the
+        project's database never holds a run that is not the project's."""
         try:
-            return d.relative_to(_common.DATA.resolve()).as_posix()
+            return Path(run_dir).resolve().relative_to(self.path.parent.resolve()).as_posix()
         except ValueError:
-            return d.as_posix()
+            return None
+
+    def holds(self, run_dir: Path) -> bool:
+        """Whether this database is where the run's outputs and rows live (it is under its data directory)."""
+        return self.key(run_dir) is not None
+
+    def _k(self, run_dir: Path) -> str:
+        """The key of a run this database holds (every caller has checked `holds` first)."""
+        k = self.key(run_dir)
+        if k is None:
+            raise ValueError(f"{run_dir} is not under {self.path.parent}")
+        return k
 
     def _db(self, create: bool) -> sqlite3.Connection | None:
         if self._conn is None:
@@ -183,6 +278,13 @@ class SqliteStore:
                 "CREATE TABLE IF NOT EXISTS outputs (run TEXT NOT NULL, item_id TEXT NOT NULL, text TEXT NOT NULL,"
                 " sha256 TEXT NOT NULL, PRIMARY KEY (run, item_id))"
             )
+            # n = 0 is the marker that the rows were written (an empty predictions.jsonl is a run's rows too);
+            # every line, its newline included, from n = 1 in order.
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS rows (run TEXT NOT NULL, partial INTEGER NOT NULL, n INTEGER NOT NULL,"
+                " item_id TEXT, row TEXT NOT NULL, PRIMARY KEY (run, partial, n))"
+            )
+            conn.execute("CREATE INDEX IF NOT EXISTS rows_item ON rows (item_id, run) WHERE partial = 0")
             conn.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
             conn.execute("INSERT OR IGNORE INTO meta VALUES ('schema_version', ?)", (SCHEMA_VERSION,))
             self._conn = conn
@@ -193,41 +295,48 @@ class SqliteStore:
         v = conn.execute("PRAGMA data_version").fetchone()[0]
         if v != self._version:
             self._cache.clear()
+            self._rows.clear()
             self._version = v
 
     def has(self, run_dir: Path) -> bool:
         """Whether the run itself holds outputs here."""
+        if not self.holds(run_dir):
+            return _FILES.has(run_dir)
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
                 return False
             self._fresh(conn)
-            k = self.key(run_dir)
+            k = self._k(run_dir)
             if self._cache.get(k):
                 return True
             return conn.execute("SELECT 1 FROM outputs WHERE run = ? LIMIT 1", (k,)).fetchone() is not None
 
     def read(self, run_dir: Path) -> dict[str, str]:
         """{item_id: text} of the run's own outputs; {} when it has none."""
+        if not self.holds(run_dir):
+            return _FILES.read(run_dir)
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
                 return {}
             self._fresh(conn)
-            k = self.key(run_dir)
+            k = self._k(run_dir)
             if k not in self._cache:
                 cur = conn.execute("SELECT item_id, text FROM outputs WHERE run = ? ORDER BY rowid", (k,))
                 self._cache[k] = dict(cur.fetchall())
             return self._cache[k]
 
-    def rows(self, run_dir: Path) -> list[dict[str, Any]]:
+    def lines(self, run_dir: Path) -> list[dict[str, Any]]:
         """The run's own outputs as stored (item_id, text, sha256), in order."""
+        if not self.holds(run_dir):
+            return _FILES.lines(run_dir)
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
                 return []
             cur = conn.execute(
-                "SELECT item_id, text, sha256 FROM outputs WHERE run = ? ORDER BY rowid", (self.key(run_dir),)
+                "SELECT item_id, text, sha256 FROM outputs WHERE run = ? ORDER BY rowid", (self._k(run_dir),)
             )
             return [{"item_id": i, "text": t, "sha256": s} for i, t, s in cur.fetchall()]
 
@@ -241,11 +350,13 @@ class SqliteStore:
 
     def add(self, run_dir: Path, item_id: str, text: str) -> None:
         """One item's output, on disk before this returns."""
+        if not self.holds(run_dir):
+            return _FILES.add(run_dir, item_id, text)
         Path(run_dir).mkdir(parents=True, exist_ok=True)
         with self._lock:
             conn = self._db(create=True)
             assert conn is not None
-            k = self.key(run_dir)
+            k = self._k(run_dir)
             conn.execute(
                 "INSERT OR REPLACE INTO outputs VALUES (?, ?, ?, ?)", (k, item_id, text, sha256(text))
             )
@@ -253,11 +364,13 @@ class SqliteStore:
 
     def write_all(self, run_dir: Path, texts: dict[str, str], order: Iterable[str]) -> None:
         """The run's whole outputs at once, in `order`, atomically; items not in `texts` left out."""
+        if not self.holds(run_dir):
+            return _FILES.write_all(run_dir, texts, order)
         Path(run_dir).mkdir(parents=True, exist_ok=True)
         with self._lock:
             conn = self._db(create=True)
             assert conn is not None
-            k = self.key(run_dir)
+            k = self._k(run_dir)
             rows = [(k, item, texts[item], sha256(texts[item])) for item in order if item in texts]
             conn.execute("BEGIN IMMEDIATE")
             try:
@@ -271,13 +384,113 @@ class SqliteStore:
 
     def delete(self, run_dir: Path) -> None:
         """The run's outputs gone from here."""
+        if not self.holds(run_dir):
+            return _FILES.delete(run_dir)
         with self._lock:
             conn = self._db(create=False)
             if conn is None:
                 return
-            k = self.key(run_dir)
+            k = self._k(run_dir)
             conn.execute("DELETE FROM outputs WHERE run = ?", (k,))
             self._cache.pop(k, None)
+
+    def rows_text(self, run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
+        """The run's rows exactly as written (the checkpoint's with `partial`); None when it has none."""
+        if not self.holds(run_dir):
+            return _FILES.rows_text(run_dir, partial, errors)
+        with self._lock:
+            conn = self._db(create=False)
+            if conn is None:
+                return None
+            self._fresh(conn)
+            ck = (self._k(run_dir), partial)
+            if ck not in self._rows:
+                got = conn.execute(
+                    "SELECT row FROM rows WHERE run = ? AND partial = ? ORDER BY n", (ck[0], int(partial))
+                ).fetchall()
+                self._rows[ck] = "".join(r[0] for r in got) if got else None
+            return self._rows[ck]
+
+    def put_rows(self, run_dir: Path, text: str, partial: bool = False) -> None:
+        """The run's rows replaced by `text` at once, atomically."""
+        if not self.holds(run_dir):
+            return _FILES.put_rows(run_dir, text, partial)
+        Path(run_dir).mkdir(parents=True, exist_ok=True)
+        with self._lock:
+            conn = self._db(create=True)
+            assert conn is not None
+            k = self._k(run_dir)
+            lines = text.splitlines(keepends=True)
+            vals = [(k, int(partial), 0, None, "")] + [
+                (k, int(partial), n, _item_of(line), line) for n, line in enumerate(lines, 1)
+            ]
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                conn.execute("DELETE FROM rows WHERE run = ? AND partial = ?", (k, int(partial)))
+                conn.executemany("INSERT INTO rows VALUES (?, ?, ?, ?, ?)", vals)
+            except BaseException:
+                conn.execute("ROLLBACK")
+                raise
+            conn.execute("COMMIT")
+            self._rows.pop((k, partial), None)
+
+    def append_row(self, run_dir: Path, line: str, partial: bool = True) -> None:
+        """One row line (its newline included) added, on disk before this returns."""
+        if not self.holds(run_dir):
+            return _FILES.append_row(run_dir, line, partial)
+        Path(run_dir).mkdir(parents=True, exist_ok=True)
+        with self._lock:
+            conn = self._db(create=True)
+            assert conn is not None
+            k = self._k(run_dir)
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                conn.execute("INSERT OR IGNORE INTO rows VALUES (?, ?, 0, NULL, '')", (k, int(partial)))
+                conn.execute(
+                    "INSERT INTO rows SELECT ?, ?, MAX(n) + 1, ?, ? FROM rows WHERE run = ? AND partial = ?",
+                    (k, int(partial), _item_of(line), line, k, int(partial)),
+                )
+            except BaseException:
+                conn.execute("ROLLBACK")
+                raise
+            conn.execute("COMMIT")
+            self._rows.pop((k, partial), None)
+
+    def drop_rows(self, run_dir: Path, partial: bool = False) -> None:
+        """The run's rows (or its checkpoint) gone from here."""
+        if not self.holds(run_dir):
+            return _FILES.drop_rows(run_dir, partial)
+        with self._lock:
+            conn = self._db(create=False)
+            if conn is None:
+                return
+            k = self._k(run_dir)
+            conn.execute("DELETE FROM rows WHERE run = ? AND partial = ?", (k, int(partial)))
+            self._rows.pop((k, partial), None)
+
+    def row_runs(self) -> list[tuple[str, bool]]:
+        """Every (run, partial) the database holds rows for."""
+        with self._lock:
+            conn = self._db(create=False)
+            if conn is None:
+                return []
+            got = conn.execute("SELECT DISTINCT run, partial FROM rows ORDER BY run, partial").fetchall()
+            return [(r, bool(pt)) for r, pt in got]
+
+    def item_across(self, run_dirs: list[Path], item_id: str) -> dict[Path, str]:
+        """{run_dir: its row line} for one item, in one query."""
+        with self._lock:
+            conn = self._db(create=False)
+            if conn is None:
+                return {}
+            keys = {self._k(d): Path(d) for d in run_dirs}
+            out: dict[Path, str] = {}
+            for k, line in conn.execute(
+                "SELECT run, row FROM rows WHERE item_id = ? AND partial = 0 ORDER BY run, n", (item_id,)
+            ):
+                if k in keys and keys[k] not in out:
+                    out[keys[k]] = line
+            return out
 
     def close(self) -> None:
         """The connection closed and the cache dropped."""
@@ -286,25 +499,33 @@ class SqliteStore:
                 self._conn.close()
                 self._conn = None
             self._cache.clear()
+            self._rows.clear()
             self._version = None
 
 
-def db_runs(db: Path) -> list[str]:
-    """The runs (keys under the data directory) a runs database holds outputs for; [] when there is none."""
-    if not Path(db).is_file():
+def db_runs(db: Path, table: str = "outputs") -> list[str]:
+    """The runs (keys under the data directory) a runs database holds outputs (or `rows`) for; [] when none."""
+    query = {
+        "outputs": "SELECT DISTINCT run FROM outputs ORDER BY run",
+        "rows": "SELECT DISTINCT run FROM rows ORDER BY run",
+    }.get(table)
+    if query is None or not Path(db).is_file():
         return []
     conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=60)
     try:
-        return [r[0] for r in conn.execute("SELECT DISTINCT run FROM outputs ORDER BY run")]
+        return [r[0] for r in conn.execute(query)]
     except sqlite3.OperationalError:
         return []
     finally:
         conn.close()
 
 
-def db_copy(db: Path, dst: Path, drop: Callable[[str], bool]) -> int:
+def db_copy(
+    db: Path, dst: Path, drop: Callable[[str], bool], rewrite: Callable[[str], str] | None = None
+) -> int:
     """A consistent copy of a runs database (a run writing meanwhile included up to its last commit) at `dst`, one
-    file, without the runs `drop` names, rebuilt so their texts are in none of its pages; how many runs it dropped."""
+    file: the runs `drop` names without their outputs and with each row line passed through `rewrite`, rebuilt so
+    what was taken out is in none of its pages; how many runs it dropped."""
     dst = Path(dst)
     dst.parent.mkdir(parents=True, exist_ok=True)
     dst.unlink(missing_ok=True)
@@ -315,8 +536,18 @@ def db_copy(db: Path, dst: Path, drop: Callable[[str], bool]) -> int:
         out.execute(
             "PRAGMA secure_delete=ON"
         )  # a deleted text is zeroed even where the build's default is off
-        gone = [k for (k,) in out.execute("SELECT DISTINCT run FROM outputs") if drop(k)]
+        runs = {
+            k for (k,) in out.execute("SELECT DISTINCT run FROM outputs UNION SELECT DISTINCT run FROM rows")
+        }
+        gone = sorted(k for k in runs if drop(k))
         out.executemany("DELETE FROM outputs WHERE run = ?", [(k,) for k in gone])
+        if rewrite is not None:
+            for k in gone:
+                got = out.execute("SELECT partial, n, row FROM rows WHERE run = ? AND n > 0", (k,)).fetchall()
+                out.executemany(
+                    "UPDATE rows SET row = ? WHERE run = ? AND partial = ? AND n = ?",
+                    [(rewrite(line), k, pt, n) for pt, n, line in got],
+                )
         out.execute("PRAGMA journal_mode=DELETE")
         out.execute("VACUUM")
     finally:
@@ -345,6 +576,8 @@ def store() -> Store:
 def reset() -> None:
     """Forget every cache and close the database (after a migration, or a test that changed the data directory)."""
     _CACHE.clear()
+    _ROWS_CACHE.clear()
+    _ROWS_INDEX.clear()
     _NAMES.clear()
     for s in _SQLITE.values():
         s.close()
@@ -490,9 +723,9 @@ def write_all(run_dir: Path, texts: dict[str, str], order: Iterable[str]) -> Non
 
 
 def finish(run_dir: Path, texts: dict[str, str], order: Iterable[str]) -> None:
-    """A completed run: its outputs in dataset order, the row checkpoint gone (predictions.jsonl has the rows)."""
+    """A completed run: its outputs in dataset order, the row checkpoint gone (its rows are written)."""
     write_all(run_dir, texts, order)
-    (Path(run_dir) / ROWS).unlink(missing_ok=True)
+    store().drop_rows(Path(run_dir), partial=True)
 
 
 def count(run_dir: Path) -> int:
@@ -502,4 +735,63 @@ def count(run_dir: Path) -> int:
 
 def lines(run_dir: Path) -> list[dict[str, Any]]:
     """The run's own outputs as written (item_id, text, sha256), for a release or a check that needs the sha256."""
-    return store().rows(Path(run_dir))
+    return store().lines(Path(run_dir))
+
+
+def row_line(row: dict[str, Any]) -> str:
+    """A row as a line of a run's rows: JSON, keys sorted, its newline."""
+    return json.dumps(row, sort_keys=True) + "\n"
+
+
+def rows_text(run_dir: Path, partial: bool = False, errors: str = "strict") -> str | None:
+    """A run's rows exactly as written (with `partial`, its checkpoint's); None when it has none. Bytes that are not
+    UTF-8 raise UnicodeDecodeError unless `errors` is `replace` (a page that shows a run may)."""
+    return store().rows_text(Path(run_dir), partial, errors)
+
+
+def has_rows(run_dir: Path) -> bool:
+    """Whether a run has its rows (a finished pass, or a derived run's)."""
+    return rows_text(run_dir) is not None
+
+
+def write_rows(run_dir: Path, rows: Iterable[dict[str, Any]]) -> None:
+    """A run's rows, all at once, atomically."""
+    store().put_rows(Path(run_dir), "".join(row_line(r) for r in rows))
+
+
+def append_partial(run_dir: Path, row: dict[str, Any]) -> None:
+    """One row added to the run's checkpoint, on disk before the next item."""
+    store().append_row(Path(run_dir), row_line(row), partial=True)
+
+
+def item_across(run_dirs: Iterable[Path], item_id: str) -> dict[Path, dict[str, Any]]:
+    """{run_dir: its row for this item} over many runs: one query in the sqlite store, each run's rows read in the
+    files store. A run without a row for the item is left out."""
+    dirs = [Path(d) for d in run_dirs]
+    st = store()
+    lines: dict[Path, str] = {}
+    if isinstance(st, SqliteStore):
+        lines = st.item_across([d for d in dirs if st.holds(d)], item_id)
+        dirs = [d for d in dirs if not st.holds(d)]
+    if dirs:
+        for d in dirs:
+            text = _FILES.rows_text(d) or ""
+            hit = _ROWS_INDEX.get(str(d))
+            if hit is None or hit[0] is not text:
+                index: dict[str, str] = {}
+                for line in text.splitlines():
+                    i = _item_of(line)
+                    if i is not None:
+                        index.setdefault(i, line)
+                hit = _ROWS_INDEX[str(d)] = (text, index)
+            if item_id in hit[1]:
+                lines[d] = hit[1][item_id]
+    out: dict[Path, dict[str, Any]] = {}
+    for d, line in lines.items():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict):
+            out[d] = row
+    return out

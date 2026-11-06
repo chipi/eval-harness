@@ -30,7 +30,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _models
+from evaluation_harness import _models, _runs
 from evaluation_harness._adapter import adapter_module
 from evaluation_harness._common import BASELINES, DATA, EXIT_PROBLEMS, RUNS, die, evh_prog, read_json
 from evaluation_harness._runs import runs_on
@@ -70,9 +70,8 @@ def promoted_run(
 def reported(run: Path) -> dict[str, list[str]]:
     """{key: values}: what the system reported per item (`_meta` in predictions.jsonl), the keys with few values."""
     seen: dict[str, set[str]] = {}
-    f = run / "predictions.jsonl"
-    for line in f.read_text(encoding="utf-8").splitlines() if f.is_file() else []:
-        meta = (json.loads(line) if line.strip() else {}).get("_meta") or {}
+    for row in _runs.item_rows(run):
+        meta = row.get("_meta") or {}
         for k, v in meta.items():
             if isinstance(v, (str, int, float)) and not isinstance(v, bool):
                 seen.setdefault(k, set()).add(str(v))

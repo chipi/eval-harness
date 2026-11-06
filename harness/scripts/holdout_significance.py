@@ -29,6 +29,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
+from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness import leaderboard as lb  # noqa: E402
 from evaluation_harness._common import RUNS, dataset_item_ids, die, evh_prog  # noqa: E402
 from evaluation_harness._runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
@@ -60,7 +61,7 @@ def main() -> int:
             f"{len(keep)} held out"
         )
 
-    runs = [r for r in runs_on(args.dataset_id, match=args.match) if (r[0] / "predictions.jsonl").is_file()]
+    runs = [r for r in runs_on(args.dataset_id, match=args.match) if _outputs.has_rows(r[0])]
     raw: list[float] = []
     M = matrix(runs, args.metric, keep=keep, raw=raw)
     if not M:

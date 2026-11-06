@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """The project's runs store (RFC-025): files by default, sqlite by one key, moved either way by run-migrate --to.
+Outputs and rows (predictions.jsonl, its checkpoint) both.
 
     python tests/test_runs_store.py
 
@@ -7,7 +8,9 @@ The setting: files with no key, `runs.store: sqlite` in config.yaml, EVAL_RUNS_S
 refused. The move: refused while the project's store is not the target; files to sqlite and back, every output, its
 order, its sha256 and V5's signature equal, nothing left behind; a move a crash stopped after the write is finished
 by the next; a run in both stores with different outputs is refused, nothing changed. V23 names outputs left in the
-store the project does not use. Two processes writing at once while a third reads: every output committed.
+store the project does not use. A release keeps a hidden dataset's rows cut to the call. One item's row across runs
+reads the same from either store. Two processes writing at once while a third reads: every output committed. No
+module but _outputs (and the migration) builds a predictions.jsonl path.
 """
 
 import contextlib
@@ -104,8 +107,20 @@ try:
     (j / "metrics.json").write_text(
         json.dumps({"derived": {"kind": "judge", "from": a.name, "from_dir": "runs/" + a.name}})
     )
+    # Rows: a finished run's, a derived run's (rows only), a stopped run's checkpoint (no predictions.jsonl yet).
+    _outputs.write_rows(
+        a, [{"item_id": i, "score": n / 7, "_meta": {"usage": {"t": n}}} for n, i in enumerate(texts_a)]
+    )
+    _outputs.write_rows(j, [{"item_id": "i1", "judge": 1.0}, {"item_id": "i2", "judge": 0.5}])
+    _outputs.append_partial(b, {"item_id": "j1", "score": 1})
+    _outputs.append_partial(b, {"item_id": "j2", "score": 0})
     before = {d: (_outputs.lines(d), _outputs.signature(d)) for d in (a, b)}
     sig_j = _outputs.signature(j)
+    rows_before = {(d, pt): _outputs.rows_text(d, pt) for d in (a, b, j) for pt in (False, True)}
+    bytes_before = {
+        f: f.read_bytes() for f in (a / "predictions.jsonl", j / "predictions.jsonl", b / _outputs.ROWS)
+    }
+    across_files = _outputs.item_across([a, j, b], "i2")
 
     r = evh("run-migrate", "--to", "sqlite", store="files")
     check(
@@ -117,7 +132,7 @@ try:
     check(
         "--to sqlite --dry-run counts and moves nothing",
         r.returncode == 0
-        and "2 run(s), 32 output(s) would move" in r.stdout
+        and "3 run(s), 32 output(s), 34 row(s) would move" in r.stdout
         and (a / _outputs.FILE).is_file(),
         (r.stdout + r.stderr)[-300:],
     )
@@ -140,6 +155,17 @@ try:
         and (proj / "data" / _outputs.DB).is_file(),
         (r.stdout + r.stderr)[-300:],
     )
+    check(
+        "--to sqlite: every run's rows and checkpoint exactly as written; no predictions.jsonl or checkpoint file left",
+        all(_outputs.rows_text(d, pt) == t for (d, pt), t in rows_before.items())
+        and not any(f.exists() for f in bytes_before),
+        {f"{d.name}:{pt}": _outputs.rows_text(d, pt) == t for (d, pt), t in rows_before.items()},
+    )
+    check(
+        "one item's row across runs: the same from either store",
+        _outputs.item_across([a, j, b], "i2") == across_files and set(across_files) == {a, j},
+        (across_files, _outputs.item_across([a, j, b], "i2")),
+    )
     problems, out = v23()
     check("V23 passes on the sqlite store", not problems, out)
     use("files")
@@ -156,7 +182,9 @@ try:
         "--to files: back in each run's outputs.jsonl, equal, the database emptied",
         r.returncode == 0
         and all(_outputs.lines(d) == before[d][0] and _outputs.signature(d) == before[d][1] for d in (a, b))
-        and _outputs.db_runs(proj / "data" / _outputs.DB) == [],
+        and _outputs.db_runs(proj / "data" / _outputs.DB) == []
+        and _outputs.db_runs(proj / "data" / _outputs.DB, "rows") == []
+        and all(f.read_bytes() == v for f, v in bytes_before.items()),
         (r.stdout + r.stderr)[-300:],
     )
 
@@ -200,6 +228,9 @@ try:
     for name, ds, text in (("rel_h", "h", "HIDDEN-MARK-7781"), ("rel_s", "s", "SHOWN-MARK-2213")):
         d = runs / name
         _outputs.writer(d).add("x1", text)
+        _outputs.write_rows(
+            d, [{"item_id": "x1", "score": 0.25, "_meta": {"usage": {"t": 3}, "prompt": text}}]
+        )
         (d / "metrics.json").write_text(json.dumps({"run_id": name, "dataset_id": ds}))
     _outputs.reset()  # the writer's connection closed, so git sees the whole database
     git = ["git", "-C", str(proj), "-c", "user.name=t", "-c", "user.email=t@t"]
@@ -224,6 +255,44 @@ try:
         == sorted(k for k in _outputs.db_runs(data / _outputs.DB) if k != "runs/rel_h")
         and not list(rel.glob(_outputs.DB + "-*")),
         (_outputs.db_runs(rel / _outputs.DB), sorted(p.name for p in rel.iterdir())),
+    )
+    import sqlite3
+
+    con = sqlite3.connect(str(rel / _outputs.DB))
+    hid = [json.loads(x) for (x,) in con.execute("SELECT row FROM rows WHERE run = 'runs/rel_h' AND n > 0")]
+    con.close()
+    check(
+        "release: the hidden run's rows stay, cut to the call (its score and usage, no prompt)",
+        hid == [{"item_id": "x1", "score": 0.25, "_meta": {"usage": {"t": 3}}}],
+        hid,
+    )
+
+    # A run directory outside data/ (EVAL_RUNS_DIR elsewhere, a test's temporary one) keeps its files with the sqlite
+    # store: the project's database holds only the project's runs, and a move leaves that run as it is.
+    use("sqlite")
+    far = proj / "elsewhere" / "runs" / "far_v1_x"
+    _outputs.writer(far).add("f1", "far away")
+    _outputs.write_rows(far, [{"item_id": "f1", "score": 1}])
+    keys = _outputs.db_runs(data / _outputs.DB) + _outputs.db_runs(data / _outputs.DB, "rows")
+    check(
+        "sqlite store: a run outside data/ keeps its files; the database never names it",
+        (far / _outputs.FILE).is_file()
+        and (far / _outputs.PREDICTIONS).is_file()
+        and _outputs.output(far, "f1") == "far away"
+        and not any("far_v1_x" in k for k in keys),
+        keys,
+    )
+    _outputs.reset()
+    env["EVAL_RUNS_DIR"] = str(far.parent)
+    r = evh("run-migrate", "--to", "sqlite", store="sqlite")
+    env.pop("EVAL_RUNS_DIR")
+    check(
+        "--to sqlite leaves a run outside data/ in its files (none deleted) and says so",
+        r.returncode == 0
+        and "1 run(s) outside data/ keep their files" in r.stdout
+        and (far / _outputs.FILE).read_text().count("far away") == 1
+        and (far / _outputs.PREDICTIONS).is_file(),
+        (r.stdout + r.stderr)[-300:],
     )
 
     # Two processes writing their own runs at once while a third reads one of them: every output committed.
@@ -274,4 +343,18 @@ try:
 finally:
     _outputs.reset()
     shutil.rmtree(proj, ignore_errors=True)
+
+# No module but _outputs builds a predictions.jsonl path (RFC-025: one reader and writer for rows); the migration
+# reads the old layout's beside its outputs/ folder.
+import re  # noqa: E402
+
+pat = re.compile(r'/ "predictions\.jsonl"|"predictions\.jsonl"\s*\)|\(\s*"predictions\.jsonl"')
+stray = [
+    f"{f.name}:{n}"
+    for f in sorted(HERE.glob("*.py"))
+    if f.name not in ("_outputs.py", "run_migrate.py")
+    for n, line in enumerate(f.read_text().splitlines(), 1)
+    if pat.search(line) and not line.lstrip().startswith("#")
+]
+check("no module but _outputs.py (and the migration) builds a predictions.jsonl path", not stray, stray)
 sys.exit(summary())

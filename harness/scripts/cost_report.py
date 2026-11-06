@@ -39,12 +39,12 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import json
 import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
+from evaluation_harness import _runs  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     die,
     evh_prog,
@@ -54,15 +54,9 @@ from evaluation_harness._runs import runs_on  # noqa: E402
 
 def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
     """(billed, recorded, items with a bill, items total) for one run."""
-    pj = run_dir / "predictions.jsonl"
-    if not pj.is_file():
-        return 0.0, 0.0, 0, 0
     billed = recorded = 0.0
     with_bill = total = 0
-    for line in pj.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        r = json.loads(line)
+    for r in _runs.item_rows(run_dir):
         total += 1
         recorded += float(r.get("cost_usd") or 0.0)
         b = ((r.get("_meta") or {}).get("usage") or {}).get("cost")

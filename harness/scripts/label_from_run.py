@@ -24,10 +24,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import hashlib
-import json
 from pathlib import Path
 
-from evaluation_harness import _outputs
+from evaluation_harness import _outputs, _runs
 from evaluation_harness._common import RUNS, die, evh_prog, load_dataset, read_json
 from evaluation_harness._label_sets import set_dir, write_set
 
@@ -107,12 +106,8 @@ def _from_run(run_id: str, dataset_id: str, items: list[dict], args: argparse.Na
             "not-allowed",
         )
     tokens: dict[str, object] = {}
-    pred = run_dir / "predictions.jsonl"
-    if pred.is_file():
-        for line in pred.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                row = json.loads(line)
-                tokens[row.get("item_id")] = row.get("tokens_out")
+    for row in _runs.item_rows(run_dir):
+        tokens[row["item_id"]] = row.get("tokens_out")
     rows, missing = [], []
     for item in items:
         text = _outputs.output(run_dir, item["item_id"])

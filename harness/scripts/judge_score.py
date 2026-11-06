@@ -67,7 +67,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Callable
 
-from evaluation_harness import _outputs, _providers
+from evaluation_harness import _outputs, _providers, _runs
 from evaluation_harness._codeid import content_sha256, file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -89,7 +89,6 @@ from evaluation_harness._common import (
     now,
     read_json,
     write_json,
-    write_text_atomic,
 )
 from evaluation_harness._fingerprint import seal
 from evaluation_harness._providers import identity_params
@@ -1385,11 +1384,7 @@ def write_scored_runs(
     for a in arms:
         cid, src = a["config_id"], Path(a["dir"])
         m = read_json(src / "metrics.json")
-        old_rows = {}
-        for line in (src / "predictions.jsonl").read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                r = json.loads(line)
-                old_rows[r["item_id"]] = r
+        old_rows = {r["item_id"]: r for r in _runs.item_rows(src)}
         rows = []
         for i in manifest["items"]:
             iid = i["item_id"]
@@ -1420,9 +1415,7 @@ def write_scored_runs(
             )
         run_dir = out_root / src.name
         run_dir.mkdir(parents=True, exist_ok=True)  # no outputs of its own: they are its source's (RFC-024)
-        write_text_atomic(
-            run_dir / "predictions.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows)
-        )
+        _outputs.write_rows(run_dir, rows)
         # A judge reads no reference, so the source run's tier does not describe these scores;
         # it is kept, as the source's, in derived.with.
         source_tier = m.get("reference_tier")

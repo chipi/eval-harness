@@ -43,7 +43,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _tags
+from evaluation_harness import _common, _outputs, _tags
 from evaluation_harness._codeid import file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -53,7 +53,6 @@ from evaluation_harness._common import (
     load_dataset,
     read_json,
     write_json,
-    write_text_atomic,
 )
 from evaluation_harness._fingerprint import seal
 from evaluation_harness._label_sets import set_dir, write_set
@@ -351,9 +350,7 @@ def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> 
             new["fingerprint"] = fp
         out = root / src.name
         out.mkdir(parents=True, exist_ok=True)  # no outputs of its own: they are its source's (RFC-024)
-        write_text_atomic(
-            out / "predictions.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in recs)
-        )
+        _outputs.write_rows(out, recs)
         write_json(out / "metrics.json", new)
         written += 1
     n = sum(len(v) for v in values.values())

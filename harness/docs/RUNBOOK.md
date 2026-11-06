@@ -564,6 +564,33 @@ The `.gitignore` `evh init` writes ignores only the throwaway directories, so a 
 its derived sets like its measured runs. This repository's own `.gitignore` is stricter: it
 ignores every `data/runs-*` directory and re-allows each derived set by name.
 
+**Files or SQLite** (RFC-025). A run's per-item data, its outputs (`outputs.jsonl`) and its rows
+(`predictions.jsonl`), are files in its directory by default: git can diff and review them. A project
+whose runs are not committed (production-scale data, many arms) can keep them in one database
+instead, `data/runs.sqlite`, with one key in its `config.yaml`:
+
+```yaml
+runs:
+  store: sqlite        # files (the default) or sqlite
+```
+
+or `EVAL_RUNS_STORE=sqlite`, which wins over the file. Each run stays a directory with its
+`metrics.json` and `run.json`; every command reads the store the same way, and a run writes each
+output and row as one committed insert, so a crash keeps everything committed before it. Move an
+existing project after setting the key, either way:
+
+```bash
+evh run-migrate --to sqlite --dry-run   # what would move
+evh run-migrate --to sqlite             # each run written, read back equal, then removed from the files
+evh run-migrate --to files              # back, after setting runs.store: files
+```
+
+`run-migrate --to` refuses while the project's store is not the target, and refuses a run that is in
+both stores with different contents; a move a crash stopped is finished by the next one. `validate`
+V23 names outputs or rows left in the store the project does not use. A release copies
+`runs.sqlite` (a hidden dataset's outputs removed, its rows cut to the call) and refuses one git
+does not track, as it refuses an untracked `outputs.jsonl`.
+
 `evh run` and `rescore` print a `WARNING` when they write to a directory git ignores
 that is neither, or to one outside the project's data, and `evh validate` notes any ignored
 directory that already holds finished runs. The catalog, `evh goals` and `evh arms` read only
@@ -638,7 +665,8 @@ Three things worth knowing:
   `predictions.jsonl`, still carries them. A run's outputs are one file, `outputs.jsonl`, a line per item appended
   as it is produced (a torn last line from a kill is not an output, so that item is called again) and rewritten in
   dataset order when the run completes; a derived run (a re-score, a judging, a sheet import) keeps no outputs of its
-  own and reads its source's (RFC-024).
+  own and reads its source's (RFC-024). With the sqlite store the same outputs and rows are rows of
+  `data/runs.sqlite`, each committed as it is produced (RFC-025).
 - **You cannot resume from a different arm, or from one that cannot be identified.**
   The source's `config_id` and `dataset_id` are checked against the config you are
   launching and a mismatch is refused. Identity comes from `run.json`, written **before

@@ -27,7 +27,7 @@ import sys
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _outputs
 from evaluation_harness._common import lower_is_better
 
 Run = tuple[Path, dict]
@@ -78,15 +78,14 @@ def by_arm(runs: Iterable[Run]) -> dict[str, list[Run]]:
 
 
 def item_rows(run_dir: Path, strict: bool = True) -> Iterator[dict]:
-    """The rows of a run's predictions.jsonl that name an item. A malformed line raises
-    (naming the file and line) unless `strict` is False, when it is skipped: a statistical
+    """The rows of a run (its predictions.jsonl, or the sqlite store's) that name an item. A malformed line raises
+    (naming the run and line) unless `strict` is False, when it is skipped: a statistical
     test must not quietly drop an item, a page that shows a run may."""
-    pj = run_dir / "predictions.jsonl"
-    if not pj.is_file():
+    text = _outputs.rows_text(run_dir, errors="strict" if strict else "replace")
+    if text is None:
         return
-    for n, line in enumerate(
-        pj.read_text(encoding="utf-8", errors="strict" if strict else "replace").splitlines(), 1
-    ):
+    pj = Path(run_dir) / _outputs.PREDICTIONS
+    for n, line in enumerate(text.splitlines(), 1):
         if not line.strip():
             continue
         try:

@@ -52,7 +52,7 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _jsonout  # noqa: E402
+from evaluation_harness import _jsonout, _outputs  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     DATA,
     GOALS,
@@ -100,8 +100,8 @@ def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
         h.update(f.name.encode() + b"\0" + f.read_bytes())
     h.update("\0".join([*argv, str(runs_dir.resolve())]).encode())
     for d, _m in runs_on(args.dataset_id, runs_dir=runs_dir):
-        mj, pj = d / "metrics.json", d / "predictions.jsonl"
-        h.update(d.name.encode() + mj.read_bytes() + (pj.read_bytes() if pj.is_file() else b""))
+        mj = d / "metrics.json"
+        h.update(d.name.encode() + mj.read_bytes() + (_outputs.rows_text(d) or "").encode("utf-8"))
     for g in sorted(GOALS.glob("*.yaml")) if GOALS.is_dir() else []:
         h.update(g.name.encode() + b"\0" + g.read_bytes())
     # A round's record decides which arms --round keeps (its retirements, its carried arms).

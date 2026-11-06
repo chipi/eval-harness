@@ -33,7 +33,6 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -73,7 +72,6 @@ from evaluation_harness._common import (
     read_json,
     warn_if_ignored,
     write_json,
-    write_text_atomic,
 )
 from evaluation_harness._fingerprint import build_fingerprint
 from evaluation_harness._providers import secret_params
@@ -552,10 +550,7 @@ def one_pass(
         # Appended per item, so a kill at item k leaves k rows. Not atomic-per-file
         # because it is an append, but a torn final line is discarded on read.
         if live_dir is not None and not resumed:
-            with (live_dir / _outputs.ROWS).open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps(row, sort_keys=True) + "\n")
-                fh.flush()
-                os.fsync(fh.fileno())
+            _outputs.append_partial(live_dir, row)
 
         if n % every == 0 or n == n_items:
             print(
@@ -821,10 +816,12 @@ def _resume_source(
     # THE PRIOR ROWS, so a replayed item keeps the cost, tokens, latency and _meta
     # measured for it. The row checkpoint is appended DURING the pass and so
     # survives a crash; predictions.jsonl is the tidy-exit copy of the same thing.
-    for src in (runs / resume / _outputs.ROWS, runs / resume / "predictions.jsonl"):
-        if not src.is_file():
+    for partial in (True, False):
+        text = _outputs.rows_text(runs / resume, partial=partial)
+        if text is None:
             continue
-        for line in src.read_text(encoding="utf-8").splitlines():
+        src = runs / resume / (_outputs.ROWS if partial else _outputs.PREDICTIONS)
+        for line in text.splitlines():
             if not line.strip():
                 continue
             try:
@@ -1174,10 +1171,7 @@ def _run(args: argparse.Namespace) -> int:
                 sys.exit(EXIT_TRY_LATER)  # said above in full; a traceback adds nothing
             raise
         run_dir.mkdir(parents=True, exist_ok=True)
-        write_text_atomic(
-            run_dir / "predictions.jsonl",
-            "".join(json.dumps(p, sort_keys=True) + "\n" for p in result["predictions"]),
-        )
+        _outputs.write_rows(run_dir, result["predictions"])
         # The outputs were appended as produced; the finished file is every output in dataset order, a resumed
         # item's included (it came from the PREVIOUS run, and this one must be self-contained), a failed item's
         # left out (not done: --resume calls it again). The row checkpoint goes: predictions.jsonl has the rows.

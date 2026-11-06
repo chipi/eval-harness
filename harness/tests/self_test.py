@@ -806,7 +806,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_runs_store.py",
-            "the runs store (RFC-025): the setting, run-migrate --to sqlite and back, a stopped move, the release copy, concurrent writers",
+            "the runs store (RFC-025): the setting, outputs and rows moved to sqlite and back, a stopped move, a run outside data/, the release copy, one item across runs, concurrent writers, the rows guard",
         ),
         (
             "test_run_migrate.py",

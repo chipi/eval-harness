@@ -557,7 +557,7 @@ class HarnessAdapter:
 
     def recorded_means(self, arm: str) -> dict[str, float]:
         """Return run-level averages for arms with no per-item scores."""
-        if any((d / "predictions.jsonl").is_file() for d in self._dirs(arm)):
+        if any(_outputs.has_rows(d) for d in self._dirs(arm)):
             return {}
         return _numeric(self._metrics(arm).get("scores") or {})
 

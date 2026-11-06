@@ -333,16 +333,14 @@ def _per_item_signature(run_name: str | Path) -> str:
     predictions returns its own name, so it can never match another run -- an unreadable
     file is a reason to say nothing, not a reason to accuse.
     """
-    path = (
-        run_name / "predictions.jsonl"
-        if isinstance(run_name, Path)
-        else RUNS / run_name / "predictions.jsonl"
-    )
-    if not path.is_file():
-        return f"<no-predictions:{run_name}>"
+    from evaluation_harness import _outputs  # noqa: PLC0415
+
     rows = []
     try:
-        for line in path.read_text(encoding="utf-8").splitlines():
+        text = _outputs.rows_text(run_name if isinstance(run_name, Path) else RUNS / run_name)
+        if text is None:
+            return f"<no-predictions:{run_name}>"
+        for line in text.splitlines():
             if not line.strip():
                 continue
             row = json.loads(line)
@@ -595,24 +593,35 @@ def v9_no_committed_evidence_is_missing() -> None:
     # the arm-row scan read `metrics.json` and reported 53/53. The evidence a run IS is
     # its rows; a run whose rows are gone is deleted whatever the directory listing
     # says. Found by external review, round 5.
+    from evaluation_harness import _common, _outputs  # noqa: PLC0415
+
+    # In the sqlite store a run's rows are not a committed file: they are read from runs.sqlite.
+    in_db = _common.runs_store() == "sqlite"
+    what = f"its rows in {_outputs.DB}" if in_db else _outputs.PREDICTIONS
     for key, files in sorted(seen.items()):
         if "metrics.json" not in files:
             continue  # V7's business, not this one
-        if "predictions.jsonl" not in files:
+        if not in_db and _outputs.PREDICTIONS not in files:
             incomplete.append(f"{key} has no predictions.jsonl")
             continue
-        _pj = DATA / key / "predictions.jsonl"
         _mj = DATA / key / "metrics.json"
-        if not _pj.is_file() or not _mj.is_file():
-            continue  # already counted as missing above
         try:
-            _rows = sum(1 for _l in _pj.read_text(encoding="utf-8").splitlines() if _l.strip())
+            _text = _outputs.rows_text(DATA / key)
+        except (OSError, ValueError):
+            incomplete.append(f"{key} {what} is unreadable")
+            continue
+        if _text is None or not _mj.is_file():
+            if in_db and _mj.is_file():
+                incomplete.append(f"{key} has no rows in {_outputs.DB}")
+            continue  # else already counted as missing above
+        try:
+            _rows = sum(1 for _l in _text.splitlines() if _l.strip())
             _want = int(read_json(_mj).get("n_items") or 0)
         except (OSError, ValueError, TypeError):
-            incomplete.append(f"{key} predictions.jsonl is unreadable")
+            incomplete.append(f"{key} {what} is unreadable")
             continue
         if _rows == 0:
-            incomplete.append(f"{key} predictions.jsonl is empty")
+            incomplete.append(f"{key} {what} is empty")
         elif _want and _rows != _want:
             incomplete.append(f"{key} has {_rows} prediction rows, metrics.json says n_items={_want}")
     for x in missing[:5] + incomplete[:5]:
@@ -1520,7 +1529,8 @@ def v22_dataset_records() -> None:
 
 def v23_run_outputs() -> None:
     """V23: every run's outputs can be read (RFC-024): none is left in the old layout (an outputs/ folder), and a
-    derived run without outputs of its own finds its source's, and none sits in the store the project does not use (RFC-025)."""
+    derived run without outputs of its own finds its source's, and no outputs or rows sit in the store the project
+    does not use (RFC-025)."""
     from evaluation_harness import _common, _outputs  # noqa: PLC0415
 
     runs = sorted(
@@ -1540,10 +1550,14 @@ def v23_run_outputs() -> None:
     store = _common.runs_store()
     if store == "files":
         held = _outputs.store_named("sqlite")
-        left = held.runs() if isinstance(held, _outputs.SqliteStore) else []
+        left = (
+            {*held.runs(), *(k for k, _ in held.row_runs())}
+            if isinstance(held, _outputs.SqliteStore)
+            else set()
+        )
         if left:
             bad.append(
-                f"{_outputs.DB} holds {len(left)} run(s)' outputs while the project's store is files:"
+                f"{_outputs.DB} holds {len(left)} run(s)' outputs or rows while the project's store is files:"
                 " evh run-migrate --to files"
             )
     for d in runs:
@@ -1551,10 +1565,21 @@ def v23_run_outputs() -> None:
         if _outputs.old_layout(d):
             bad.append(f"{rel}: an outputs/ folder (the layout before 0.8.0): evh run-migrate")
             continue
-        if store == "sqlite" and _outputs.store_named("files").has(d):
-            bad.append(
-                f"{rel}: an {_outputs.FILE} while the project's store is sqlite: evh run-migrate --to sqlite"
-            )
+        if store == "sqlite":
+            files = _outputs.store_named("files")
+            left_files = [
+                name
+                for name, there in (
+                    (_outputs.FILE, files.has(d)),
+                    (_outputs.PREDICTIONS, files.rows_text(d) is not None),
+                    (_outputs.ROWS, files.rows_text(d, partial=True) is not None),
+                )
+                if there
+            ]
+            if left_files:
+                bad.append(
+                    f"{rel}: {', '.join(left_files)} while the project's store is sqlite: evh run-migrate --to sqlite"
+                )
         if _outputs.own(d):
             continue
         frm = _outputs._derived_from(d)

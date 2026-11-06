@@ -158,6 +158,15 @@ def _call_only(row: dict) -> dict:
     return out
 
 
+def _call_only_line(line: str) -> str:
+    """One row line of a hidden dataset's run, cut to _call_only; a line that is not a row is dropped."""
+    try:
+        row = json.loads(line)
+    except ValueError:
+        return ""
+    return json.dumps(_call_only(row)) + "\n" if isinstance(row, dict) else ""
+
+
 def copy_data(src: Path, dst: Path) -> dict:
     """Copy `src` (a project's data/) into `dst`; refuse first if it would publish untracked text."""
     bad = plan_problems(src)
@@ -179,17 +188,20 @@ def copy_data(src: Path, dst: Path) -> dict:
             if hidden(_dataset_of_run(run), datasets):
                 counts["hidden_runs"] += 1
                 shutil.copytree(run, out, ignore=shutil.ignore_patterns("outputs", _outputs.FILE))
-                pred = out / "predictions.jsonl"
-                if pred.is_file():
-                    rows = [json.loads(x) for x in pred.read_text(encoding="utf-8").splitlines() if x.strip()]
-                    pred.write_text("".join(json.dumps(_call_only(r)) + "\n" for r in rows), encoding="utf-8")
+                files = _outputs.store_named("files")  # the copy of a files-store run is files
+                for partial in (False, True):
+                    text = files.rows_text(out, partial)
+                    if text is not None:
+                        files.put_rows(
+                            out, "".join(_call_only_line(x) for x in text.splitlines() if x.strip()), partial
+                        )
             else:
                 shutil.copytree(run, out)
         for f in sorted(p for p in base.iterdir() if p.is_file()):
             (dst / base.name).mkdir(parents=True, exist_ok=True)
             shutil.copy2(f, dst / base.name / f.name)
     if (src / _outputs.DB).is_file():
-        _outputs.db_copy(src / _outputs.DB, dst / _outputs.DB, lambda k: _hidden_key(src, k))
+        _outputs.db_copy(src / _outputs.DB, dst / _outputs.DB, lambda k: _hidden_key(src, k), _call_only_line)
     for name in COPIED_DIRS:
         d = src / name
         if not d.is_dir():

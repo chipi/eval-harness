@@ -3,8 +3,8 @@
 
     evh run-migrate --dry-run     what would change: runs, files before and after
     evh run-migrate               write it
-    evh run-migrate --to sqlite   move every run's outputs into data/runs.sqlite (after setting runs.store: sqlite)
-    evh run-migrate --to files    move them back into each run's outputs.jsonl (after setting runs.store: files)
+    evh run-migrate --to sqlite   move every run's outputs and rows into data/runs.sqlite (runs.store: sqlite first)
+    evh run-migrate --to files    move them back into each run's outputs.jsonl and predictions.jsonl
 
 For every run directory under data/runs* that still has an `outputs/` folder: its `outputs/<item>.txt` become one
 `outputs.jsonl`, in the dataset's order, each line checked against the bytes of the file it came from. A derived run
@@ -14,8 +14,8 @@ its source's. One that differs, or whose source is not here, keeps its own file 
 Before a run's folder is removed, V5's signature and every output read back are checked equal to what the files
 held; any difference stops the migration with nothing of that run changed.
 
-`--to` moves runs one at a time: written to the target store, every output's sha256 and the order read back equal to
-the source's, then deleted from the source. A crash between leaves the run in both, and the next `--to` finishes it.
+`--to` moves runs one at a time: written to the target store, every output's sha256 and the order, and the rows'
+exact text, read back equal to the source's, then deleted from the source. A crash between leaves the run in both, and the next `--to` finishes it.
 It refuses while the project's store (runs.store, or EVAL_RUNS_STORE) is not the target, so nothing writes to the old
 store after the move.
 """
@@ -217,9 +217,10 @@ def _checkpoint_needed(rows: Path, predictions: Path) -> bool:
 
 
 def _run_dirs_of(st: _outputs.Store) -> list[Path]:
-    """Every run directory a store holds outputs for."""
+    """Every run directory a store holds outputs, rows or a row checkpoint for."""
     if isinstance(st, _outputs.SqliteStore):
-        return sorted(Path(k) if Path(k).is_absolute() else _common.DATA / k for k in st.runs())
+        keys = {*st.runs(), *(k for k, _ in st.row_runs())}
+        return sorted(Path(k) if Path(k).is_absolute() else _common.DATA / k for k in keys)
     roots = {*(p for p in _common.DATA.glob("runs*") if p.is_dir()), _common.RUNS}
     return sorted(
         {
@@ -228,13 +229,70 @@ def _run_dirs_of(st: _outputs.Store) -> list[Path]:
             if r.is_dir()
             for depth in ("*", "*/*", "*/*/*")
             for d in r.glob(depth)
-            if st.has(d)
+            if st.has(d) or st.rows_text(d) is not None or st.rows_text(d, partial=True) is not None
         }
     )
 
 
+def _move_outputs(
+    d: Path, src: _outputs.Store, dst: _outputs.Store, to: str, dry_run: bool
+) -> tuple[int, bool]:
+    """One run's outputs moved; (how many, whether a stopped move had already written them)."""
+    rows = src.lines(d)
+    if not rows:
+        return 0, False
+    bad = [r.get("item_id") for r in rows if _outputs.sha256(str(r.get("text", ""))) != r.get("sha256")]
+    if bad:
+        die(
+            f"{d}: output(s) whose text does not match its sha256: {', '.join(map(str, bad[:5]))}", "mismatch"
+        )
+    texts = {r["item_id"]: r["text"] for r in rows}
+    finished = dst.has(d)
+    if finished and dst.read(d) != texts:
+        die(
+            f"{d}: already in the {to} store with different outputs; nothing of it changed", "would-overwrite"
+        )
+    if dry_run:
+        return len(texts), finished
+    if not finished:
+        dst.write_all(d, texts, list(texts))
+    want = [(r["item_id"], r["text"], r["sha256"]) for r in rows]
+    if [(r["item_id"], r["text"], r["sha256"]) for r in dst.lines(d)] != want:
+        dst.delete(d)
+        die(f"{d}: the outputs read back from the {to} store differ; it stays in the old one", "mismatch")
+    src.delete(d)
+    return len(texts), finished
+
+
+def _move_rows(d: Path, src: _outputs.Store, dst: _outputs.Store, to: str, dry_run: bool) -> tuple[int, bool]:
+    """One run's rows and row checkpoint moved, each exactly as written; (row lines, whether already written)."""
+    n, finished = 0, False
+    for partial in (False, True):
+        text = src.rows_text(d, partial)
+        if text is None:
+            continue
+        there = dst.rows_text(d, partial)
+        if there is not None and there != text:
+            what = "row checkpoint" if partial else "rows"
+            die(
+                f"{d}: already in the {to} store with different {what}; nothing of it changed",
+                "would-overwrite",
+            )
+        finished = finished or there is not None
+        n += len(text.splitlines())
+        if dry_run:
+            continue
+        if there is None:
+            dst.put_rows(d, text, partial)
+        if dst.rows_text(d, partial) != text:
+            dst.drop_rows(d, partial)
+            die(f"{d}: the rows read back from the {to} store differ; they stay in the old one", "mismatch")
+        src.drop_rows(d, partial)
+    return n, finished
+
+
 def move(to: str, dry_run: bool) -> dict[str, int]:
-    """Every run's outputs moved from the other store into `to`; counts of runs and outputs moved."""
+    """Every run's outputs and rows moved from the other store into `to`; counts of what moved."""
     configured = _common.runs_store()
     if configured != to:
         die(
@@ -244,37 +302,19 @@ def move(to: str, dry_run: bool) -> dict[str, int]:
         )
     src = _outputs.store_named("files" if to == "sqlite" else "sqlite")
     dst = _outputs.store_named(to)
-    n = {"runs": 0, "outputs": 0, "finished": 0}
+    db = src if isinstance(src, _outputs.SqliteStore) else dst
+    assert isinstance(db, _outputs.SqliteStore)
+    n = {"runs": 0, "outputs": 0, "rows": 0, "finished": 0, "outside": 0}
     for d in _run_dirs_of(src):
-        rows = src.rows(d)
-        bad = [r.get("item_id") for r in rows if _outputs.sha256(str(r.get("text", ""))) != r.get("sha256")]
-        if bad:
-            die(
-                f"{d}: output(s) whose text does not match its sha256: {', '.join(map(str, bad[:5]))}",
-                "mismatch",
-            )
-        texts = {r["item_id"]: r["text"] for r in rows}
-        order = list(texts)
-        if dst.has(d):
-            if dst.read(d) != texts:
-                die(
-                    f"{d}: already in the {to} store with different outputs; nothing of it changed",
-                    "would-overwrite",
-                )
-            n["finished"] += 1  # a move a crash stopped after the write: only the delete is left
-        n["runs"] += 1
-        n["outputs"] += len(texts)
-        if dry_run:
+        if not db.holds(d):  # a run outside data/ keeps its files in either store: nothing to move
+            n["outside"] += 1
             continue
-        if not dst.has(d):
-            dst.write_all(d, texts, order)
-        back = dst.rows(d)
-        if [(r["item_id"], r["text"], r["sha256"]) for r in back] != [
-            (r["item_id"], r["text"], r["sha256"]) for r in rows
-        ]:
-            dst.delete(d)
-            die(f"{d}: the outputs read back from the {to} store differ; it stays in the old one", "mismatch")
-        src.delete(d)
+        outs, done_o = _move_outputs(d, src, dst, to, dry_run)
+        rows, done_r = _move_rows(d, src, dst, to, dry_run)
+        n["runs"] += 1
+        n["outputs"] += outs
+        n["rows"] += rows
+        n["finished"] += done_o or done_r  # a move a crash stopped after the write: only the delete was left
     if not dry_run:
         _outputs.reset()
     return n
@@ -308,8 +348,11 @@ def main() -> int:
     if args.to:
         m = move(args.to, args.dry_run)
         print(
-            f"{m['runs']} run(s), {m['outputs']} output(s) {'would move' if args.dry_run else 'moved'} into the {args.to}"
-            f" store" + (f" ({m['finished']} a stopped move had already written)" if m["finished"] else "")
+            f"{m['runs']} run(s), {m['outputs']} output(s), {m['rows']} row(s)"
+            f" {'would move' if args.dry_run else 'moved'} into the {args.to}"
+            f" store"
+            + (f" ({m['finished']} a stopped move had already written)" if m["finished"] else "")
+            + (f"; {m['outside']} run(s) outside data/ keep their files" if m["outside"] else "")
         )
     return 0
 

@@ -47,6 +47,7 @@ import json
 import math
 from pathlib import Path
 
+from evaluation_harness import _outputs
 from evaluation_harness._common import (
     DATA,
     DATASETS,
@@ -59,7 +60,6 @@ from evaluation_harness._common import (
     read_json,
     sha256,
     write_json,
-    write_text_atomic,
 )
 from evaluation_harness._fingerprint import build_fingerprint
 from evaluation_harness._record import run_record
@@ -226,9 +226,7 @@ def main() -> int:
             "imported": True,
         },
     )
-    write_text_atomic(
-        run_dir / "predictions.jsonl", "".join(json.dumps(r, sort_keys=True) + "\n" for r in rows)
-    )
+    _outputs.write_rows(run_dir, rows)
     metrics_doc = run_record(
         run_id=run_id,
         dataset_id=args.dataset_id,

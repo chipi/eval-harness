@@ -44,7 +44,7 @@ import textwrap
 from datetime import date
 from pathlib import Path
 
-from evaluation_harness import _goal_view, _jsonout, _sheet
+from evaluation_harness import _goal_view, _jsonout, _outputs, _sheet
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_models as cm
 from evaluation_harness import catalog_periods as cp
@@ -2013,7 +2013,6 @@ def _crosstab(A, args) -> None:
 def _items_out(A, args) -> None:
     """evh inspect --runs A,B --items-out [--disagree] [--where F:V]: each item's output of every run, its scores, the
     recorded facts, beside the reference and the labels (the sheet's model, read as records, the texts whole)."""
-    from evaluation_harness._runs import item_rows  # noqa: PLC0415
 
     tokens = [t.strip() for t in args.runs.split(",") if t.strip()]
     if args.disagree and len(tokens) < 2:
@@ -2037,9 +2036,12 @@ def _items_out(A, args) -> None:
     model = _sheet.build(ds, tokens, cs._fields_of, metric=args.metric, from_dir=args.from_dir)
     found = _sheet.by_where(model, args.where)
     shown = _sheet.by_signals(found, ["disagree"] if args.disagree else [])
-    meta = {}
-    for a, (d, _m) in zip(model["arms"], model["_runs"], strict=True):
-        meta[a["token"]] = {r["item_id"]: r.get("_meta") for r in item_rows(d, strict=False)}
+    # Only the shown items' rows: one query per item in the sqlite store, each run's rows indexed once in files.
+    tok_of = {d: a["token"] for a, (d, _m) in zip(model["arms"], model["_runs"], strict=True)}
+    meta: dict[str, dict[str, object]] = {a["token"]: {} for a in model["arms"]}
+    for r in shown:
+        for d, row in _outputs.item_across(list(tok_of), r["item"]).items():
+            meta[tok_of[d]][r["item"]] = row.get("_meta")
     records = []
     for r in shown:
         records.append(

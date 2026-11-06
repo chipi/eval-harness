@@ -13,6 +13,10 @@ correctness bugs, not just missing features.
   its folder is removed; nothing in a fingerprint moves. Then let git see the new files: a `.gitignore` that
   re-admits `outputs/**` in a run directory needs `!…/outputs.jsonl` instead (this repository's
   `harness/.gitignore` shows the pattern). The old layout is not read after the upgrade.
+- **Runs can live in SQLite** (RFC-025), if you want it: nothing changes unless `config.yaml` sets
+  `runs: {store: sqlite}` (or `EVAL_RUNS_STORE=sqlite`). Then `evh run-migrate --to sqlite` moves every run's
+  outputs and rows into `data/runs.sqlite`; `--to files` moves them back. A project that commits its runs keeps
+  files.
 - **A goal's recommendation can move.** Contenders are now the arms shown no worse than the leader by more than
   the margin (ADR-0026), and the default margins are 5% (`balanced`) and 10% (`frugal`) of the leader. Read
   `evh goals --goal G` after upgrading. A goal that wants its old breadth back sets `axes.quality.margin` in the

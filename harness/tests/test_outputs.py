@@ -61,14 +61,14 @@ def body(store: str) -> None:
             _outputs.outputs(a) == {"i2": "second", "i1": "first é"} and _outputs.output(a, "i3") is None,
             _outputs.outputs(a),
         )
-        (a / _outputs.ROWS).write_text("{}\n")
+        _outputs.append_partial(a, {"item_id": "i1"})
         _outputs.finish(a, {"i1": "first é", "i2": "second", "i9": "not in the dataset"}, ["i1", "i2", "i3"])
         rows = _outputs.lines(a)
         check(
             f"{store}: finish(): dataset order, only the dataset's items, each line's sha256, the row checkpoint gone",
             [r["item_id"] for r in rows] == ["i1", "i2"]
             and rows[0]["sha256"] == hashlib.sha256("first é".encode()).hexdigest()
-            and not (a / _outputs.ROWS).exists(),
+            and _outputs.rows_text(a, partial=True) is None,
             rows,
         )
         (a / "metrics.json").write_text(json.dumps({"run_id": a.name}))
@@ -118,7 +118,7 @@ def body(store: str) -> None:
             and _outputs.count(run) == 6
             and (run / _outputs.FILE).exists() != sq
             and not (run / "outputs").exists()
-            and not (run / _outputs.ROWS).exists(),
+            and _outputs.rows_text(run, partial=True) is None,
             (r1.stdout + r1.stderr)[-300:],
         )
         # A run stopped after two items: its outputs file and run.json, no metrics.json; resume it.
