@@ -26,10 +26,13 @@ KIT = HARNESS / "tutorial"
 sys.path.insert(0, str(HARNESS))
 proj = Path(tempfile.mkdtemp(prefix="evh-outputs-"))
 os.environ["EVAL_HOME"] = str(proj)
-os.environ.pop("EVAL_RUNS_STORE", None)
+os.environ.pop("EVAL_STORE", None)
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
     os.environ.pop(k, None)
-from evaluation_harness import _outputs  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _outputs,
+    _store,
+)
 from evaluation_harness._check import check, summary  # noqa: E402
 
 env = dict(os.environ, EVAL_BUILD_REF="test-outputs")
@@ -44,7 +47,7 @@ def evh(*args):
 
 
 def body(store: str) -> None:
-    os.environ["EVAL_RUNS_STORE"] = env["EVAL_RUNS_STORE"] = store
+    os.environ["EVAL_STORE"] = env["EVAL_STORE"] = store
     _outputs.reset()
     sq = store == "sqlite"
     try:
@@ -54,7 +57,7 @@ def body(store: str) -> None:
         w.add("i2", "second")
         w.add("i1", "first é")
         if not sq:
-            with (a / _outputs.FILE).open("a", encoding="utf-8") as fh:
+            with _store.open_file(a / _outputs.FILE, "a", encoding="utf-8") as fh:
                 fh.write('{"item_id": "i3", "text": "torn')
         check(
             f"{store}: appended outputs read back" + ("" if sq else "; a torn last line is not an output"),
@@ -71,13 +74,13 @@ def body(store: str) -> None:
             and _outputs.rows_text(a, partial=True) is None,
             rows,
         )
-        (a / "metrics.json").write_text(json.dumps({"run_id": a.name}))
+        _store.write_text(a / "metrics.json", json.dumps({"run_id": a.name}))
         j = proj / "data" / "runs-judged" / "judge1" / a.name
-        j.mkdir(parents=True)
-        (j / "metrics.json").write_text(json.dumps({"derived": {"kind": "judge", "from": a.name}}))
+        _store.mkdir(j, parents=True)
+        _store.write_text(j / "metrics.json", json.dumps({"derived": {"kind": "judge", "from": a.name}}))
         r = proj / "data" / "runs-rescored" / "s1" / "runs-judged" / a.name
-        r.mkdir(parents=True)
-        (r / "metrics.json").write_text(json.dumps({"derived": {"kind": "rescore", "from": a.name}}))
+        _store.mkdir(r, parents=True)
+        _store.write_text(r / "metrics.json", json.dumps({"derived": {"kind": "rescore", "from": a.name}}))
         check(
             f"{store}: a derived run reads its source's outputs; one of a derived run too",
             _outputs.output(j, "i2") == "second"
@@ -98,32 +101,32 @@ def body(store: str) -> None:
         )
         check(
             f"{store}: the outputs are in the store, and only there",
-            (a / _outputs.FILE).exists() != sq and (proj / "data" / _outputs.DB).exists() == sq,
+            _store.exists(a / _outputs.FILE) != sq and _store.exists(proj / "data" / _store.DB) == sq,
         )
 
         _outputs.reset()
-        shutil.rmtree(proj / "data")
-        (proj / "data" / "configs").mkdir(parents=True)
+        _store.rmtree(proj / "data")
+        _store.mkdir(proj / "data" / "configs", parents=True)
         shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
         r1 = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
         r1 = r1 if r1.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
         cfg = proj / "data" / "configs" / "lead1.yaml"
-        cfg.write_text((KIT / "configs" / "tickets_lead1.yaml").read_text())
+        _store.write_text(cfg, _store.read_text(KIT / "configs" / "tickets_lead1.yaml"))
         r1 = r1 if r1.returncode else evh("run", "--config", str(cfg))
-        run = next((proj / "data" / "runs").glob("tickets_lead1_v1_*"), proj / "missing")
+        run = next(_store.glob(proj / "data" / "runs", "tickets_lead1_v1_*"), proj / "missing")
         check(
             f"{store}: a run writes its outputs, every item, and no outputs/ folder or row checkpoint",
             r1.returncode == 0
             and run is not None
             and _outputs.count(run) == 6
-            and (run / _outputs.FILE).exists() != sq
-            and not (run / "outputs").exists()
+            and _store.exists(run / _outputs.FILE) != sq
+            and not _store.exists(run / "outputs")
             and _outputs.rows_text(run, partial=True) is None,
             (r1.stdout + r1.stderr)[-300:],
         )
         # A run stopped after two items: its outputs file and run.json, no metrics.json; resume it.
         stopped = proj / "data" / "runs" / "tickets_lead1_v1_stopped"
-        stopped.mkdir()
+        _store.mkdir(stopped)
         done = _outputs.lines(run)
         if sq:
             w = _outputs.writer(stopped)
@@ -131,38 +134,39 @@ def body(store: str) -> None:
                 w.add(row["item_id"], row["text"])
         else:
             lines = [json.dumps(r, ensure_ascii=False) for r in done]
-            (stopped / _outputs.FILE).write_text("\n".join(lines[:2]) + "\n" + lines[2][:20])
-        (stopped / "run.json").write_text(
-            json.dumps({"config_id": "tickets_lead1_v1", "dataset_id": "tickets_v1"})
+            _store.write_text(stopped / _outputs.FILE, "\n".join(lines[:2]) + "\n" + lines[2][:20])
+        _store.write_text(
+            stopped / "run.json", json.dumps({"config_id": "tickets_lead1_v1", "dataset_id": "tickets_v1"})
         )
         r2 = evh("run", "--config", str(cfg), "--resume", "tickets_lead1_v1_stopped")
-        new = sorted((proj / "data" / "runs").glob("tickets_lead1_v1_2*"))[-1]
+        new = sorted(_store.glob(proj / "data" / "runs", "tickets_lead1_v1_2*"))[-1]
         check(
             f"{store}: --resume: the two done items replayed, the third called again; the new run's outputs whole",
             r2.returncode == 0
-            and json.loads((new / "metrics.json").read_text()).get("resume", {}).get("replayed_items") == 2
+            and json.loads(_store.read_text(new / "metrics.json")).get("resume", {}).get("replayed_items")
+            == 2
             and _outputs.outputs(new) == _outputs.outputs(run),
             (r2.stdout + r2.stderr)[-400:],
         )
     finally:
         _outputs.reset()
-        shutil.rmtree(proj / "data", ignore_errors=True)
-        shutil.rmtree(proj / "tutorial", ignore_errors=True)
+        _store.rmtree(proj / "data", ignore_errors=True)
+        _store.rmtree(proj / "tutorial", ignore_errors=True)
 
 
 try:
     for store in ("files", "sqlite"):
         body(store)
 finally:
-    shutil.rmtree(proj, ignore_errors=True)
+    _store.rmtree(proj, ignore_errors=True)
 
 # No module but _outputs builds an outputs/ path (RFC-024: one reader); run_migrate reads the old one to move it.
 pat = re.compile(r'"outputs"\s*\)|/ "outputs"|"outputs/')
 stray = [
     f"{p.name}:{n}"
-    for p in sorted(HERE.glob("*.py"))
+    for p in sorted(_store.glob(HERE, "*.py"))
     if p.name not in ("_outputs.py", "run_migrate.py")  # the migration reads the old layout, by design
-    for n, line in enumerate(p.read_text().splitlines(), 1)
+    for n, line in enumerate(_store.read_text(p).splitlines(), 1)
     if pat.search(line) and not line.lstrip().startswith("#")
 ]
 check("no module but _outputs.py (and the migration) builds an outputs/ path", not stray, stray)

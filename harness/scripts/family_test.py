@@ -52,7 +52,11 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _jsonout, _outputs  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _jsonout,
+    _outputs,
+    _store,
+)
 from evaluation_harness._common import (  # noqa: E402
     DATA,
     GOALS,
@@ -97,21 +101,21 @@ def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
     deterministic."""
     h = hashlib.sha256()
     for f in measuring_modules(Path(__file__).resolve().parent, ("family_test.py",)):
-        h.update(f.name.encode() + b"\0" + f.read_bytes())
+        h.update(f.name.encode() + b"\0" + _store.read_bytes(f))
     h.update("\0".join([*argv, str(runs_dir.resolve())]).encode())
     for d, _m in runs_on(args.dataset_id, runs_dir=runs_dir):
         mj = d / "metrics.json"
-        h.update(d.name.encode() + mj.read_bytes() + (_outputs.rows_text(d) or "").encode("utf-8"))
-    for g in sorted(GOALS.glob("*.yaml")) if GOALS.is_dir() else []:
-        h.update(g.name.encode() + b"\0" + g.read_bytes())
+        h.update(d.name.encode() + _store.read_bytes(mj) + (_outputs.rows_text(d) or "").encode("utf-8"))
+    for g in sorted(_store.glob(GOALS, "*.yaml")) if _store.is_dir(GOALS) else []:
+        h.update(g.name.encode() + b"\0" + _store.read_bytes(g))
     # A round's record decides which arms --round keeps (its retirements, its carried arms).
-    for r in sorted(ROUNDS.glob("*/*.yaml")) if ROUNDS.is_dir() else []:
-        h.update(r.as_posix().encode() + b"\0" + r.read_bytes())
+    for r in sorted(_store.glob(ROUNDS, "*/*.yaml")) if _store.is_dir(ROUNDS) else []:
+        h.update(r.as_posix().encode() + b"\0" + _store.read_bytes(r))
     if args.round:  # a re-score stands in for its run in the round's reading, and picks its leader
-        for f in sorted((DATA / "runs-rescored").glob("*/*/*/metrics.json")):
-            h.update(f.as_posix().encode() + b"\0" + f.read_bytes())
+        for f in sorted(_store.glob(DATA / "runs-rescored", "*/*/*/metrics.json")):
+            h.update(f.as_posix().encode() + b"\0" + _store.read_bytes(f))
     if args.items:
-        h.update(args.items.read_bytes())
+        h.update(_store.read_bytes(args.items))
     if args.exclude_dataset:
         h.update("\0".join(sorted(dataset_item_ids(args.exclude_dataset))).encode())
     return h.hexdigest()
@@ -128,11 +132,11 @@ def main() -> int:
     if not args.round and not (args.a and args.against):
         ap.error("--a and --against are required (or --round, which defaults them)")
     runs_dir = args.runs_dir or RUNS
-    use_cache = not os.environ.get("EVAL_NO_CACHE") and runs_dir.is_dir()
+    use_cache = not os.environ.get("EVAL_NO_CACHE") and _store.is_dir(runs_dir)
     if use_cache:
         hit = CACHE / f"{_cache_key(sys.argv[1:], runs_dir, args)}.json"
-        if hit.is_file():
-            c = json.loads(hit.read_text(encoding="utf-8"))
+        if _store.is_file(hit):
+            c = json.loads(_store.read_text(hit, encoding="utf-8"))
             sys.stdout.write(c["stdout"])
             sys.stderr.write(c["stderr"])
             return c["rc"]
@@ -148,10 +152,12 @@ def main() -> int:
     if use_cache:
         # Best effort: the answer is in hand, and a read-only project (a server's copy) only loses the speed-up.
         try:
-            CACHE.mkdir(parents=True, exist_ok=True)
+            _store.mkdir(CACHE, parents=True, exist_ok=True)
             tmp = hit.with_suffix(".tmp")
-            tmp.write_text(
-                json.dumps({"stdout": out.getvalue(), "stderr": err.getvalue(), "rc": rc}), encoding="utf-8"
+            _store.write_text(
+                tmp,
+                json.dumps({"stdout": out.getvalue(), "stderr": err.getvalue(), "rc": rc}),
+                encoding="utf-8",
             )
             tmp.replace(hit)  # atomic: a concurrent reader never sees half a file
         except OSError:

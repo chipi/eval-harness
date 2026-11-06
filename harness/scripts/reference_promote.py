@@ -26,6 +26,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 from collections import Counter
 
+from evaluation_harness import _store
 from evaluation_harness._common import REFERENCES, die, evh_prog, load_dataset, now, read_json
 from evaluation_harness._label_sets import answers, label_line, label_text, labels_for, sets, source_line
 from evaluation_harness._references import write_manifest
@@ -64,9 +65,13 @@ def main() -> int:
     if "/" in name or name.startswith(".") or not name:
         die(f"--name {name!r}: one name, no path", "bad-argument")
     ref_dir = REFERENCES / args.tier / name
-    kept_out = (ref_dir / "manifest.json").is_file() and not any(ref_dir.glob("*.txt"))
-    hand_made = ref_dir.is_dir() and not (ref_dir / "manifest.json").exists() and any(ref_dir.glob("*.txt"))
-    if ref_dir.exists() and any(ref_dir.iterdir()) and not kept_out and not hand_made:
+    kept_out = _store.is_file(ref_dir / "manifest.json") and not any(_store.glob(ref_dir, "*.txt"))
+    hand_made = (
+        _store.is_dir(ref_dir)
+        and not _store.exists(ref_dir / "manifest.json")
+        and any(_store.glob(ref_dir, "*.txt"))
+    )
+    if _store.exists(ref_dir) and any(_store.iterdir(ref_dir)) and not kept_out and not hand_made:
         die(
             f"{ref_dir} exists: a reference set is never overwritten. Name another with --name.",
             "would-overwrite",
@@ -100,7 +105,7 @@ def main() -> int:
     if hand_made:
         # A folder made by hand, with no manifest (ADR-0022): adopted only when it holds exactly these labels, so a
         # reference is still never overwritten; it then gets the promotion record it never had.
-        here = {f.stem: f.read_text(encoding="utf-8").strip() for f in ref_dir.glob("*.txt")}
+        here = {f.stem: _store.read_text(f, encoding="utf-8").strip() for f in _store.glob(ref_dir, "*.txt")}
         if set(here) != set(chosen) or any(
             label_text(answers(here[i])) != mine[i]["text"].strip() for i in chosen
         ):
@@ -113,11 +118,11 @@ def main() -> int:
             )
     doc = next((d for d in sets() if d["dataset_id"] == set_ds and d["set"] == set_name), {})
     not_here = doc.get("redistributed") is False
-    ref_dir.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(ref_dir, parents=True, exist_ok=True)
     # An adopted folder keeps its files byte for byte: they are the labels already, and the reference digest every run
     # scored against it recorded is of these bytes (a newline added to each moved it).
     for iid in [] if hand_made else chosen:
-        (ref_dir / f"{iid}.txt").write_text(mine[iid]["text"] + "\n", encoding="utf-8")
+        _store.write_text(ref_dir / f"{iid}.txt", mine[iid]["text"] + "\n", encoding="utf-8")
     authorship = {}
     if source.get("kind") == "model":
         # Who authored the texts is part of a reference's identity (the fingerprint hashes it): a run scored against
@@ -149,8 +154,9 @@ def main() -> int:
         ),
     )
     if not_here:
-        (ref_dir / ".gitignore").write_text(
-            "# the reference set's texts are not redistributed (see manifest.json)\n*.txt\n"
+        _store.write_text(
+            ref_dir / ".gitignore",
+            "# the reference set's texts are not redistributed (see manifest.json)\n*.txt\n",
         )
     print(
         f"{ref_dir}: {len(chosen)} of {len(ids)} item(s), {args.tier}, promoted from {set_ds}/{set_name} "
@@ -193,7 +199,7 @@ def _rebuild(ref_dir, mine: dict, set_ds: str, set_name: str) -> int:
             "mismatch",
         )
     for iid, text in texts.items():
-        (ref_dir / f"{iid}.txt").write_text(text, encoding="utf-8")
+        _store.write_text(ref_dir / f"{iid}.txt", text, encoding="utf-8")
     print(f"{ref_dir}: {len(texts)} text(s) rebuilt from {set_ds}/{set_name}, matching the manifest")
     return 0
 

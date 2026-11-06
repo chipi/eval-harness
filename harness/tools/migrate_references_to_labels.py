@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 import argparse
 import hashlib
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _store
 from evaluation_harness._common import now, read_json, write_json
 
 REASON = "promoted before labels existed (0.6.0): its tier was given when it was made"
@@ -77,7 +77,7 @@ def main() -> int:
         if m.get("promoted_from"):
             continue
         ds_id = m.get("dataset_id")
-        texts = sorted(mf.parent.glob("*.txt"))
+        texts = sorted(_store.glob(mf.parent, "*.txt"))
         source = source_of(m)
         set_name = f"{tier}_{name}" if texts else None
         print(
@@ -94,11 +94,11 @@ def main() -> int:
             ds = read_json(_common.DATASETS / f"{ds_id}.json")
             item_sha = {it["item_id"]: it.get("source_sha256") or "" for it in ds.get("items") or []}
             out = _common.LABELS / ds_id / set_name
-            out.mkdir(parents=True, exist_ok=True)
+            _store.mkdir(out, parents=True, exist_ok=True)
             rows = {}
             for t in texts:
-                data = t.read_bytes()
-                (out / t.name).write_bytes(data)
+                data = _store.read_bytes(t)
+                _store.write_bytes(out / t.name, data)
                 rows[t.stem] = {
                     "sha256": hashlib.sha256(data).hexdigest(),
                     "item_sha256": item_sha.get(t.stem, ""),

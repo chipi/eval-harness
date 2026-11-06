@@ -310,8 +310,10 @@ def now() -> str:
 
 def sha256(path: Path) -> str:
     """Return the SHA-256 digest of a file's contents."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     h = hashlib.sha256()
-    with path.open("rb") as fh:
+    with _store.open_file(path, "rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
@@ -319,7 +321,9 @@ def sha256(path: Path) -> str:
 
 def read_json(path: Path) -> Any:
     """Parse and return the JSON object from a file."""
-    return json.loads(path.read_text(encoding="utf-8"))
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    return json.loads(_store.read_text(path, encoding="utf-8"))
 
 
 def write_text_atomic(path: Path, text: str) -> None:
@@ -345,6 +349,13 @@ def write_bytes_atomic(path: Path, data: bytes) -> None:
 
 
 def _write_atomic(path: Path, data: str | bytes, mode: str) -> None:
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    if (
+        _store.rel(path) is not None
+    ):  # RFC-025: the sqlite store writes one committed statement, atomic already
+        _store.write_bytes(path, data.encode("utf-8") if isinstance(data, str) else data)
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp")
     try:
@@ -426,11 +437,13 @@ def arm_config_files() -> list[Path]:
     (relative to the project root), for a project that keeps its arms elsewhere (this repository's are in
     examples/). Here, not in validate_tree, because measuring code reads it (a hypothesis's `against`) and
     the validator is not part of what a run's code hash covers."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     p = _paths()
-    found = set(p["CONFIGS"].glob("*.yaml"))
+    found = set(_store.glob(p["CONFIGS"], "*.yaml"))
     policy_file = p["DATA"] / "validate.json"
-    for pattern in (read_json(policy_file).get("configs") or []) if policy_file.is_file() else []:
-        found |= {f for f in p["ROOT"].glob(pattern) if f.is_file()}
+    for pattern in (read_json(policy_file).get("configs") or []) if _store.is_file(policy_file) else []:
+        found |= {f for f in _store.glob(p["ROOT"], pattern) if _store.is_file(f)}
     return sorted(found)
 
 
@@ -439,12 +452,13 @@ def load_goals(goals_dir: Path | None = None) -> dict[str, dict[str, Any]]:
     by the goal's `goal_id`, the file stem when it names none. The catalog keyed them that way
     and this by stem alone; V14 requires the two to agree."""
     import yaml  # noqa: PLC0415
+    from evaluation_harness import _store  # noqa: PLC0415
 
     out: dict[str, dict[str, Any]] = {}
     base = goals_dir or _paths()["GOALS"]
-    for f in sorted(base.glob("*.yaml")) if base.is_dir() else []:
+    for f in sorted(_store.glob(base, "*.yaml")) if _store.is_dir(base) else []:
         if f.name != "policy.yaml":
-            doc = yaml.safe_load(f.read_text(encoding="utf-8"))
+            doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
             doc = doc if isinstance(doc, dict) else {}
             out[str(doc.get("goal_id") or f.stem)] = doc
     return out
@@ -455,9 +469,10 @@ def goal_policy() -> dict[str, Any]:
     name a goal. Absent, goals stay optional: a project upgrading changes nothing until it
     sets the date."""
     import yaml  # noqa: PLC0415
+    from evaluation_harness import _store  # noqa: PLC0415
 
     f = _paths()["GOALS"] / "policy.yaml"
-    doc = yaml.safe_load(f.read_text(encoding="utf-8")) if f.is_file() else None
+    doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) if _store.is_file(f) else None
     return doc if isinstance(doc, dict) else {}
 
 
@@ -474,8 +489,10 @@ def dataset_id_ok(dataset_id: str) -> str:
 
 def load_dataset(dataset_id: str) -> dict[str, Any]:
     """Load a dataset by id from data/datasets, or raise SystemExit."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     path = _paths()["DATASETS"] / f"{dataset_id_ok(dataset_id)}.json"
-    if not path.is_file():
+    if not _store.is_file(path):
         die(
             f"no such dataset: {dataset_id}\n"
             f"  expected {path}\n"
@@ -524,7 +541,9 @@ def dataset_item_ids(dataset_id: str) -> set:
 
 def read_item_ids(path: Path) -> set[str]:
     """The item ids an `--items` file lists, one per line (blank lines ignored)."""
-    return {ln.strip() for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()}
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    return {ln.strip() for ln in _store.read_text(path, encoding="utf-8").splitlines() if ln.strip()}
 
 
 def item_selection(exclude_dataset: str | None, items_file: Path | None) -> tuple[set[str], set[str] | None]:
@@ -553,6 +572,8 @@ def scored_against_dir(reference_id: str | None) -> Path | None:
 def labels_reference(spec: str, dataset_id: str) -> str:
     """The reference_id a run scored against labels records, from `SET` or `DATASET/SET`; refused when the set is on
     another dataset (its item ids are that dataset's) or does not exist."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     set_ds, _, name = spec.rpartition("/")
     set_ds = set_ds or dataset_id
     if set_ds != dataset_id:
@@ -563,7 +584,7 @@ def labels_reference(spec: str, dataset_id: str) -> str:
         )
     rid = f"{LABELS_PREFIX}{dataset_id}/{name}"
     d = scored_against_dir(rid)
-    if d is None or not (d / "labels.json").is_file():
+    if d is None or not _store.is_file(d / "labels.json"):
         die(
             f"--labels {spec}: no label set at data/labels/{dataset_id}/{name} (evh labels --dataset-id {dataset_id})",
             "not-found",
@@ -573,6 +594,8 @@ def labels_reference(spec: str, dataset_id: str) -> str:
 
 def item_path(dataset_id: str, item_id: str) -> Path | None:
     """Where an item's materialized copy is, or None when it is not materialized here."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
     try:
         ds = load_dataset(dataset_id)
     except SystemExit:
@@ -581,7 +604,7 @@ def item_path(dataset_id: str, item_id: str) -> Path | None:
     if it is None:
         return None
     p = _paths()["MATERIALIZED"] / dataset_id / (it.get("source_path") or item_id)
-    return p if p.is_file() else None
+    return p if _store.is_file(p) else None
 
 
 #: The id a run records when it used the adapter bundled with the harness.
@@ -690,14 +713,14 @@ REFUSALS = {
 }
 
 
-#: Where a project keeps its runs' per-item data (RFC-025): `files` (the default) or `sqlite` (data/runs.sqlite).
-RUNS_STORES = ("files", "sqlite")
-_RUNS_STORE_SEEN: list[Any] = []
+#: Where a project keeps its data (RFC-025): `files` (the default) or `sqlite` (everything under data/ in one database).
+STORES = ("files", "sqlite")
+_STORE_SEEN: list[Any] = []
 
 
-def runs_store() -> str:
-    """The project's runs store: `EVAL_RUNS_STORE`, else `runs.store` in its config.yaml, else `files`."""
-    env = os.environ.get("EVAL_RUNS_STORE", "").strip()
+def store() -> str:
+    """The project's store: `EVAL_STORE`, else `store` in its config.yaml, else `files`."""
+    env = os.environ.get("EVAL_STORE", "").strip()
     cfg = _paths()["ROOT"] / "config.yaml"
     try:
         st = cfg.stat() if not env else None
@@ -705,12 +728,12 @@ def runs_store() -> str:
     except OSError:
         mtime = None
     key = (env, str(cfg), mtime)
-    if _RUNS_STORE_SEEN and _RUNS_STORE_SEEN[0] == key:
-        return _RUNS_STORE_SEEN[1]
+    if _STORE_SEEN and _STORE_SEEN[0] == key:
+        return _STORE_SEEN[1]
     if env:
-        store, where = env, "EVAL_RUNS_STORE"
+        chosen, where = env, "EVAL_STORE"
     else:
-        store, where = "files", f"runs.store in {cfg}"
+        chosen, where = "files", f"store in {cfg}"
         if mtime is not None:
             import yaml  # noqa: PLC0415
 
@@ -718,17 +741,14 @@ def runs_store() -> str:
                 doc = yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}
             except yaml.YAMLError:
                 doc = {}
-            runs = doc.get("runs") if isinstance(doc, dict) else None
-            store = (
-                str((runs or {}).get("store") or "files") if isinstance(runs, dict) or runs is None else "?"
-            )
-    if store not in RUNS_STORES:
-        said = f"{where}: {store!r} is not a runs store, one of {', '.join(RUNS_STORES)}"
+            chosen = str((doc.get("store") if isinstance(doc, dict) else None) or "files")
+    if chosen not in STORES:
+        said = f"{where}: {chosen!r} is not a store, one of {', '.join(STORES)}"
         if env:
             die(said, "bad-argument")
         die(said, "invalid-file")
-    _RUNS_STORE_SEEN[:] = [key, store]
-    return store
+    _STORE_SEEN[:] = [key, chosen]
+    return chosen
 
 
 def die(msg: str, kind: str) -> NoReturn:
@@ -744,10 +764,12 @@ def reference_texts(root: Path, dataset_id: str, tier: str = "gold") -> list[Pat
     only its manifest.json: a repository may commit a reference's checksums and not its texts
     (V16), which come with the public data. Read as empty, every arm matched nothing and the
     report tools printed zeros as if they were results."""
-    if not root.is_dir():
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    if not _store.is_dir(root):
         die(f"no {tier} references at {root}", "not-found")
-    files = sorted(root.glob("*.txt"))
-    if not files and (root / "manifest.json").is_file():
+    files = sorted(_store.glob(root, "*.txt"))
+    if not files and _store.is_file(root / "manifest.json"):
         die(
             f"the {tier} references for {dataset_id} are not on this machine: {root} holds their "
             "checksums only (manifest.json). Fetch the dataset first, as the eval's README and "

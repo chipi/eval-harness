@@ -59,7 +59,13 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _fields, _visibility, stats  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _common,
+    _fields,
+    _store,
+    _visibility,
+    stats,
+)
 from evaluation_harness._common import (  # noqa: E402
     ROOT,
     SPEED_KEYS,
@@ -673,7 +679,7 @@ def item(params: dict) -> dict:
     if alone:
         from evaluation_harness._common import DATASETS  # noqa: PLC0415
 
-        if not plain_item(alone) or not (DATASETS / f"{alone}.json").is_file():
+        if not plain_item(alone) or not _store.is_file(DATASETS / f"{alone}.json"):
             return {"error": "need dataset=<a dataset id>"}
     if not it or (not arms and not alone) or any(not _arms_known(a) for a in arms):
         return {"error": "need arms=<arm>,... known to the catalog and item=<item_id>"}
@@ -740,7 +746,7 @@ def _sheet_rows(params: dict) -> tuple[dict, list, list]:
     from evaluation_harness._common import DATASETS  # noqa: PLC0415
 
     ds = params.get("dataset", [""])[0]
-    if not ds or not plain_item(ds) or not (DATASETS / f"{ds}.json").is_file():
+    if not ds or not plain_item(ds) or not _store.is_file(DATASETS / f"{ds}.json"):
         die("need dataset=<a dataset id>", "bad-argument")
     runs = [r.strip("/") for r in params.get("runs", [""])[0].split(",") if r.strip()]
     if len(runs) > LIMITS["max_arms"]:
@@ -855,7 +861,7 @@ def sheet(params: dict) -> dict:
         "total": len(found),
         "counts": _sheet.counts(found),
         "sets": [c["key"] for c in model["label_cols"]],
-        "datasets": sorted(p.stem for p in DATASETS.glob("*.json") if p.stem != ds),
+        "datasets": sorted(p.stem for p in _store.glob(DATASETS, "*.json") if p.stem != ds),
         "fields": _field_list(model["decl"]),
         "wrong": params.get("wrong", [""])[0],
         "new": params.get("new", [""])[0],
@@ -956,8 +962,10 @@ def warm(build_dir: Path) -> int:
     """Answer, once, every comparison the built catalog links to: the pages' own links then
     come from the cache. Returns how many."""
     links = set()
-    for page in sorted(build_dir.rglob("*.html")):
-        for href in re.findall(r'href="(?:\.\./)*inspect\.html\?([^"]+)"', page.read_text(encoding="utf-8")):
+    for page in sorted(_store.rglob(build_dir, "*.html")):
+        for href in re.findall(
+            r'href="(?:\.\./)*inspect\.html\?([^"]+)"', _store.read_text(page, encoding="utf-8")
+        ):
             links.add(href.replace("&amp;", "&"))
     done = 0
     for q in sorted(links):
@@ -1041,7 +1049,7 @@ def load_hooks(spec: str):
     target, _, name = spec.partition(":")
     if target.endswith(".py"):
         path = Path(target).resolve()
-        if not path.is_file():
+        if not _store.is_file(path):
             die(f"--hooks: no file {target}", "not-found")
         from evaluation_harness._common import ModuleNotLoadable, load_module  # noqa: PLC0415
 
@@ -1190,7 +1198,37 @@ class Handler(SimpleHTTPRequestHandler):
         if not self.prefixes:  # public mode: the API only, never a file
             self.send_error(404)
             return
+        if self._from_store(url.path):
+            return
         super().do_GET()
+
+    def _from_store(self, url_path: str) -> bool:
+        """With the sqlite store (RFC-025) a file of the data tree is a row of the project's database: served from
+        it, through the same prefix and path checks as a file on disk. False for anything else."""
+        if _common.store() != "sqlite":
+            return False
+        data = _common.DATA
+        try:
+            data_prefix = "/" + data.resolve().relative_to(ROOT.resolve()).as_posix().strip("/") + "/"
+        except ValueError:  # a data directory outside the project has no URL (served() says so at start)
+            return False
+        if not url_path.startswith(data_prefix):
+            return False
+        rel = Path(unquote(url_path[len(data_prefix) :]))
+        if ".." in rel.parts or rel.is_absolute():
+            self.send_error(404)
+            return True
+        f = data / rel
+        if not _store.is_file(f):
+            self.send_error(404)
+            return True
+        body = _store.read_bytes(f)
+        self.send_response(200)
+        self.send_header("Content-Type", self.guess_type(str(f)))
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+        return True
 
     def _json(self, code: int, body) -> None:
         data = body if isinstance(body, bytes) else json.dumps(body).encode()
@@ -1284,7 +1322,7 @@ def main() -> int:
     else:
         if args.bind != "127.0.0.1":
             die("--bind other than 127.0.0.1 needs --public (and a proxy in front)", "not-allowed")
-        if not (args.build_dir / "index.html").is_file():
+        if not _store.is_file(args.build_dir / "index.html"):
             die(f"no catalog at {args.build_dir}: run `evh catalog` first", "not-found")
         Handler.prefixes = served(args.build_dir, A.data_dir, tuple(getattr(A, "served_dirs", ())))
     if args.warm:

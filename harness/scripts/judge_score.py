@@ -67,7 +67,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Callable
 
-from evaluation_harness import _outputs, _providers, _runs
+from evaluation_harness import _outputs, _providers, _runs, _store
 from evaluation_harness._codeid import content_sha256, file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -173,10 +173,10 @@ def _keep_withheld(record: Path, text: str) -> Path:
     """A withheld reply's text in `<record dir>/.withheld/<record>.txt`, a directory that
     ignores itself in git: the record keeps only the hash, the text stays on this machine."""
     d = record.parent / ".withheld"
-    d.mkdir(parents=True, exist_ok=True)
-    (d / ".gitignore").write_text("*\n", encoding="utf-8")
+    _store.mkdir(d, parents=True, exist_ok=True)
+    _store.write_text(d / ".gitignore", "*\n", encoding="utf-8")
     out = d / f"{record.stem}.txt"
-    out.write_text(text, encoding="utf-8")
+    _store.write_text(out, text, encoding="utf-8")
     return out
 
 
@@ -221,8 +221,8 @@ def records_sha256(vdir: Path) -> str:
     """One hash over a judge's stored validation records (names and bytes, sorted), so a
     report built from them can be checked against them where the human data is absent."""
     h = hashlib.sha256()
-    for f in sorted(p for p in vdir.glob("*.json") if p.name != "report.json"):
-        h.update(f.name.encode() + b"\0" + f.read_bytes() + b"\0")
+    for f in sorted(p for p in _store.glob(vdir, "*.json") if p.name != "report.json"):
+        h.update(f.name.encode() + b"\0" + _store.read_bytes(f) + b"\0")
     return h.hexdigest()
 
 
@@ -233,9 +233,9 @@ def _canon(obj: Any) -> str:
 # ── the scorer artifact and the validation gate ──────────────────────────────
 def load_scorer(path: Path) -> dict[str, Any]:
     """Load and validate a judge scorer YAML file; die on schema or missing judges."""
-    if not path.is_file():
+    if not _store.is_file(path):
         die(f"no such scorer: {path}", "not-found")
-    sc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    sc = yaml.safe_load(_store.read_text(path, encoding="utf-8")) or {}
     # Its content, not its bytes: a comment in the YAML is documentation and changes no judgement.
     sc["_sha256"] = content_sha256(sc)
     sc["_dir"] = str(path.resolve().parent)
@@ -358,13 +358,13 @@ def prompt_candidates(sc: dict[str, Any], root: Path | None = None) -> list[Path
 def prompt_text(sc: dict[str, Any], root: Path | None = None) -> str:
     """Read the scorer's prompt file; die if it is not found."""
     cands = prompt_candidates(sc, root)
-    p = next((c for c in cands if c.is_file()), None)
+    p = next((c for c in cands if _store.is_file(c)), None)
     if p is None:
         die(
             f"prompt file not found: {sc['prompt']['file']} (looked in {', '.join(str(c) for c in cands)})",
             "not-found",
         )
-    return p.read_text(encoding="utf-8").strip()
+    return _store.read_text(p, encoding="utf-8").strip()
 
 
 #: Params that change what a judge says. The validation run recorded them; the scorer must
@@ -400,7 +400,7 @@ def validation_problems(
             out.append(f"judge {j['id']!r}: no validation run names it")
             continue
         d = runs_dir / str(r.get("run", ""))
-        if not (d / "metrics.json").is_file():
+        if not _store.is_file(d / "metrics.json"):
             out.append(f"judge {j['id']!r}: validation run {r.get('run')!r} is not in {runs_dir}")
             continue
         m = read_json(d / "metrics.json")
@@ -672,7 +672,7 @@ def message_for(
 def freeze(manifest: dict[str, Any], sets_dir: Path = SETS) -> Path:
     """Write the manifest once; an existing one with the same id must match byte for byte."""
     path = sets_dir / f"{manifest['judging_set_id']}.json"
-    if path.is_file():
+    if _store.is_file(path):
         if read_json(path).get("judging_set_sha256") != manifest["judging_set_sha256"]:
             die(
                 f"{path.name} exists with a different hash: a frozen judging set is never rewritten",
@@ -727,7 +727,7 @@ def tasks(manifest: dict[str, Any]) -> list[tuple[dict[str, Any], str, int]]:
 def stored_cost(vdir: Path) -> float:
     """Sum cost_usd over all verdicts in the judge directory."""
     total = 0.0
-    for f in vdir.glob("*/*.json"):
+    for f in _store.glob(vdir, "*/*.json"):
         try:
             total += float(read_json(f).get("cost_usd") or 0.0)
         except (OSError, ValueError):
@@ -781,7 +781,7 @@ def run_judging(
             msg = None
             for j in sc["judges"]:
                 path = verdict_path(vdir, j["id"], item["item_id"], pass_name, block)
-                if path.is_file():
+                if _store.is_file(path):
                     old = read_json(path)
                     if old.get("judge_fp") != judge_fingerprint(j):
                         die(
@@ -837,7 +837,7 @@ def run_judging(
                     why = "empty reply"
                 # A retried block replaces the stored reply; the earlier calls were paid for
                 # too, so their cost stays in the record (and in every bill read from it).
-                prior = read_json(path) if path.is_file() else {}
+                prior = read_json(path) if _store.is_file(path) else {}
                 earlier = float(prior.get("cost_usd") or 0.0)
                 write_json(
                     path,
@@ -940,7 +940,7 @@ def load_readings(
                 blocks = it["position" if p == "position" else "primary"]
                 for b, arm_ids in enumerate(blocks):
                     f = verdict_path(vdir, j["id"], it["item_id"], p, b)
-                    v = read_json(f).get(VERDICT_KEY[mode]) if f.is_file() else None
+                    v = read_json(f).get(VERDICT_KEY[mode]) if _store.is_file(f) else None
                     if v is not None:
                         out[j["id"]][p].setdefault(it["item_id"], {})[b] = block_outcome(mode, arm_ids, v)
     return out
@@ -993,7 +993,7 @@ def load_scores(
                 ok = True
                 for b, arm_ids in enumerate(it[key]):
                     f = verdict_path(vdir, j["id"], it["item_id"], p, b)
-                    s = read_json(f).get("scores") if f.is_file() else None
+                    s = read_json(f).get("scores") if _store.is_file(f) else None
                     if s is None:
                         ok = False
                         break
@@ -1311,7 +1311,7 @@ def summarise(
         }
     calls = {}
     for j in jids:
-        files = sorted((vdir / j).glob("*.json")) if (vdir / j).is_dir() else []
+        files = sorted(_store.glob(vdir / j, "*.json")) if _store.is_dir(vdir / j) else []
         vs = [read_json(f) for f in files]
         calls[j] = {
             "verdicts": len(vs),
@@ -1414,7 +1414,9 @@ def write_scored_runs(
                 else kinds.get(k) or known.get(k) or ("quality" if k.startswith("judge_") else "descriptive")
             )
         run_dir = out_root / src.name
-        run_dir.mkdir(parents=True, exist_ok=True)  # no outputs of its own: they are its source's (RFC-024)
+        _store.mkdir(
+            run_dir, parents=True, exist_ok=True
+        )  # no outputs of its own: they are its source's (RFC-024)
         _outputs.write_rows(run_dir, rows)
         # A judge reads no reference, so the source run's tier does not describe these scores;
         # it is kept, as the source's, in derived.with.
@@ -1489,7 +1491,7 @@ def estimate(
         n = len(item["position" if p == "position" else "primary"][b])
         for j in sc["judges"]:
             e = per_judge[j["id"]]
-            if verdict_path(vdir, j["id"], item["item_id"], p, b).is_file():
+            if _store.is_file(verdict_path(vdir, j["id"], item["item_id"], p, b)):
                 e["stored"] += 1
                 continue
             e["calls"] += 1
@@ -1626,7 +1628,7 @@ def main() -> int:
             print(f"  - {p}")
 
     ds_file = DATA / "datasets" / f"{dataset_id_ok(args.dataset_id)}.json"
-    if not ds_file.is_file():
+    if not _store.is_file(ds_file):
         die(f"no dataset {args.dataset_id}", "not-found")
     ds = read_json(ds_file)
     items = ds["items"]
@@ -1635,13 +1637,13 @@ def main() -> int:
     articles = {}
     for it in items:
         f = mat / (it.get("source_path") or f"{it['item_id']}.txt")
-        if not f.is_file():
+        if not _store.is_file(f):
             die(
                 f"{f} is missing: materialize the dataset first "
                 f"({how(f'evh dataset-materialize --dataset-id {args.dataset_id}', f'make dataset-materialize DATASET_ID={args.dataset_id}')})",
                 "not-materialized",
             )
-        articles[it["item_id"]] = f.read_text(encoding="utf-8", errors="replace")
+        articles[it["item_id"]] = _store.read_text(f, encoding="utf-8", errors="replace")
     arms = discover_arms(args.dataset_id, args.match or sc.get("arms_match", ""))
     if args.arms:
         arms = select_arms(arms, args.arms)

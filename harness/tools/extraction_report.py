@@ -59,7 +59,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
-from evaluation_harness import _outputs  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _outputs,
+    _store,
+)
 from evaluation_harness._common import REFERENCES, RUNS, die, item_path, read_json, reference_texts  # noqa: E402
 from evaluation_harness._runs import item_rows, warn_on_ambiguous_runs  # noqa: E402
 
@@ -78,7 +81,7 @@ def gold_sets(dataset_id: str) -> dict:
     out = {}
     for p in reference_texts(REFERENCES / "gold" / dataset_id, dataset_id):
         try:
-            out[p.stem] = json.loads(p.read_text(encoding="utf-8"))
+            out[p.stem] = json.loads(_store.read_text(p, encoding="utf-8"))
         except ValueError:
             die(f"gold reference {p.name} is not JSON — is this a set-valued dataset?", "invalid-file")
     return out
@@ -91,9 +94,9 @@ def predictions(dataset_id: str, match: str | None) -> dict:
     apart: an arm that could not be read did not predict the empty set.
     """
     out: dict = defaultdict(dict)
-    for d in sorted(RUNS.glob("*")):
+    for d in sorted(_store.glob(RUNS, "*")):
         mj = d / "metrics.json"
-        if not (mj.is_file() and _outputs.has_rows(d)):
+        if not (_store.is_file(mj) and _outputs.has_rows(d)):
             continue
         m = read_json(mj)
         cid = m.get("config_id")
@@ -195,7 +198,7 @@ def _consensus(preds: dict, gold: dict, threshold: float, top: int, dataset_id: 
 
     def snippet(item: str) -> str:
         f = item_path(dataset_id, item)
-        return " ".join(f.read_text(encoding="utf-8").split())[:150] if f is not None else ""
+        return " ".join(_store.read_text(f, encoding="utf-8").split())[:150] if f is not None else ""
 
     # ARMS, not occurrences. Counting occurrences let one arm that emitted the same span
     # twice contribute two votes, and the report printed "25/17" -- a consensus figure

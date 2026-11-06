@@ -25,6 +25,7 @@ import argparse
 from pathlib import Path
 
 import yaml
+from evaluation_harness import _store
 from evaluation_harness._common import CAPTURES, CONFIGS, ROOT, dataset_id_ok, die, evh_prog, load_dataset
 
 
@@ -45,16 +46,16 @@ def main() -> int:
     args = ap.parse_args()
 
     load_dataset(args.dataset_id)
-    if not (CAPTURES / dataset_id_ok(args.capture) / "capture.json").is_file():
+    if not _store.is_file(CAPTURES / dataset_id_ok(args.capture) / "capture.json"):
         die(f"no capture {args.capture} (evh captures)", "not-found")
     out = CONFIGS / f"{dataset_id_ok(args.config_id)}.yaml"
-    if out.exists():
+    if _store.exists(out):
         die(f"{out} exists: a config is not overwritten. Name the arm another way (--as).", "would-overwrite")
     cfg: dict = {"config_id": args.config_id, "dataset_id": args.dataset_id}
     if args.like:
-        if not args.like.is_file():
+        if not _store.is_file(args.like):
             die(f"--like: no config {args.like}", "not-found")
-        like = yaml.safe_load(args.like.read_text(encoding="utf-8")) or {}
+        like = yaml.safe_load(_store.read_text(args.like, encoding="utf-8")) or {}
         if like.get("adapter"):
             # Written relative to the project (the new config is elsewhere than the one it is like).
             a = (args.like.parent / like["adapter"]).resolve()
@@ -86,8 +87,9 @@ def main() -> int:
         "capture": args.capture,
         **({"field": args.field} if args.field else {}),
     }
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(
+    _store.mkdir(out.parent, parents=True, exist_ok=True)
+    _store.write_text(
+        out,
         "# Production's recorded decisions as an arm (evh arm-from-capture, RFC-023): no system is called.\n"
         + yaml.safe_dump(cfg, sort_keys=False),
         encoding="utf-8",

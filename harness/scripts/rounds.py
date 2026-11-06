@@ -31,7 +31,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _jsonout, _rounds
+from evaluation_harness import _common, _jsonout, _rounds, _store
 from evaluation_harness import catalog_serve as cs
 from evaluation_harness._common import die, load_goals, now, read_json
 from evaluation_harness.catalog_adapter import load_catalog_adapter
@@ -91,7 +91,7 @@ def open_round(argv: list[str]) -> int:
     ap.add_argument("--budget-usd", type=float, help="what the round may spend")
     args = ap.parse_args(argv)
     _goal(args.goal)
-    if not (_common.DATASETS / f"{args.dataset}.json").is_file():
+    if not _store.is_file(_common.DATASETS / f"{args.dataset}.json"):
         die(f"no dataset {args.dataset!r} (evh dataset-create first)", "not-found")
     if args.from_:
         _round(args.goal, args.from_)
@@ -132,7 +132,7 @@ def open_round(argv: list[str]) -> int:
         "from": args.from_,
         "hypothesis": args.hypothesis,
         "changes": args.change,
-        "baseline": read_json(base).get("promoted_from") if base.is_file() else None,
+        "baseline": read_json(base).get("promoted_from") if _store.is_file(base) else None,
         "budget_usd": args.budget_usd,
         "carried": carried,
         "status": "open",
@@ -211,7 +211,7 @@ def retire(argv: list[str]) -> int:
     if len(args.reason.split()) < 3:
         die("--reason must be a sentence: what did the tests show?", "bad-argument")
     where = (_common.DATA / args.runs_dir) if args.runs_dir else None
-    if where is not None and not where.is_dir():
+    if where is not None and not _store.is_dir(where):
         die(f"--runs-dir {args.runs_dir}: no such directory under {_common.DATA}", "not-found")
     in_play = _rounds.arms_of(rnd, where)
     if args.arm not in in_play:
@@ -332,7 +332,7 @@ def _silver_authors(A, ds: str) -> list[tuple[str, str]]:
     out = []
     root = _common.REFERENCES / "silver"
     known = set(A.arms())
-    for mf in sorted(root.glob("*/manifest.json")) if root.is_dir() else []:
+    for mf in sorted(_store.glob(root, "*/manifest.json")) if _store.is_dir(root) else []:
         m = read_json(mf)
         cid = (m.get("from_run") or {}).get("config_id") or m.get("authored_by")
         if m.get("dataset_id") == ds and cid and _arm(A, ds, cid) in known:

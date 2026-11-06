@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from fnmatch import fnmatchcase
 
+from evaluation_harness import _store
 from evaluation_harness.stats import fmt_p
 
 
@@ -105,7 +106,7 @@ def _metrics_json(run_dir) -> dict | None:
 
     f = Path(run_dir) / "metrics.json"
     try:
-        return json.loads(f.read_text(encoding="utf-8")) if f.is_file() else None
+        return json.loads(_store.read_text(f, encoding="utf-8")) if _store.is_file(f) else None
     except (OSError, ValueError):
         return None
 

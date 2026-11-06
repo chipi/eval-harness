@@ -27,12 +27,12 @@ import hashlib
 import json
 import os
 import re
-import shutil
 import tempfile
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _store
 from evaluation_harness._common import die, load_dataset, now, read_json, write_json
 
 SOURCES = ("person", "model", "rule")
@@ -219,7 +219,7 @@ def guideline_of(path: Path | None) -> dict[str, str] | None:
     """The guideline a set was labelled by, as it records it (its path within the project and its sha256)."""
     if path is None:
         return None
-    if not path.is_file():
+    if not _store.is_file(path):
         die(f"--guideline: no file {path}", "not-found")
     from evaluation_harness._common import ROOT  # noqa: PLC0415
 
@@ -227,7 +227,7 @@ def guideline_of(path: Path | None) -> dict[str, str] | None:
         shown = str(path.resolve().relative_to(ROOT))
     except ValueError:
         shown = path.name
-    return {"path": shown, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+    return {"path": shown, "sha256": hashlib.sha256(_store.read_bytes(path)).hexdigest()}
 
 
 def write_set(
@@ -245,7 +245,7 @@ def write_set(
     if source.get("kind") not in SOURCES:
         die(f"a label's source is one of {', '.join(SOURCES)}, not {source.get('kind')!r}", "invalid-file")
     out = set_dir(dataset_id, name)
-    if out.exists() and any(out.iterdir()):
+    if _store.exists(out) and any(_store.iterdir(out)):
         die(
             f"{out} exists: a label set is never edited. A correction is a new set: name another.",
             "would-overwrite",
@@ -302,24 +302,25 @@ def write_set(
     if rebuild:
         doc["redistributed"] = False
         doc["rebuild"] = rebuild
-    out.parent.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(out.parent, parents=True, exist_ok=True)
     tmp = Path(tempfile.mkdtemp(prefix=f".{name}.partial-", dir=out.parent))
     umask = os.umask(0)
     os.umask(umask)
     tmp.chmod(0o777 & ~umask)  # a plain mkdir's mode, not mkdtemp's private 0700
     try:
         for iid, text in texts.items():
-            (tmp / f"{iid}.txt").write_text(text, encoding="utf-8")
+            _store.write_text(tmp / f"{iid}.txt", text, encoding="utf-8")
         if rebuild:
-            (tmp / ".gitignore").write_text(
-                "# the label texts are not redistributed (labels.json says how to rebuild them)\n*.txt\n"
+            _store.write_text(
+                tmp / ".gitignore",
+                "# the label texts are not redistributed (labels.json says how to rebuild them)\n*.txt\n",
             )
         write_json(tmp / "labels.json", doc)
-        if out.exists():
+        if _store.exists(out):
             out.rmdir()  # empty (checked above): the rename needs the name free
         tmp.rename(out)
     except BaseException:
-        shutil.rmtree(tmp, ignore_errors=True)
+        _store.rmtree(tmp, ignore_errors=True)
         raise
     return doc
 
@@ -328,7 +329,7 @@ def sets() -> list[dict[str, Any]]:
     """Every label set in the project, each its record with `_dir`; sorted by dataset, then set."""
     root = labels_root()
     found = []
-    for f in sorted(root.glob("*/*/labels.json")) if root.is_dir() else []:
+    for f in sorted(_store.glob(root, "*/*/labels.json")) if _store.is_dir(root) else []:
         doc = read_json(f)
         if isinstance(doc, dict):
             doc["_dir"] = f.parent
@@ -339,7 +340,7 @@ def sets() -> list[dict[str, Any]]:
 def text_of(doc: dict[str, Any], item_id: str) -> str | None:
     """One label's text from a set, or None."""
     f = Path(doc["_dir"]) / f"{item_id}.txt"
-    return f.read_text(encoding="utf-8").strip() if f.is_file() else None
+    return _store.read_text(f, encoding="utf-8").strip() if _store.is_file(f) else None
 
 
 def labels_for(dataset_id: str) -> dict[str, list[dict[str, Any]]]:
@@ -430,19 +431,19 @@ def contested(dataset_id: str, tier: str = "gold") -> dict[str, Any] | None:
     from evaluation_harness import _common  # noqa: PLC0415
 
     root = _common.REFERENCES / tier / dataset_id
-    if not root.is_dir():
+    if not _store.is_dir(root):
         return None
     manifest = root / "manifest.json"
     origin: dict[str, Any] = {}
-    if manifest.is_file():
-        origin = (json.loads(manifest.read_text(encoding="utf-8")).get("promoted_from") or {}) or {}
+    if _store.is_file(manifest):
+        origin = (json.loads(_store.read_text(manifest, encoding="utf-8")).get("promoted_from") or {}) or {}
     own = (origin.get("dataset_id"), origin.get("labels"))
     rows: list[dict[str, Any]] = []
     for item, labels in sorted(labels_for(dataset_id).items()):
         ref_file = root / f"{item}.txt"
-        if not ref_file.is_file():
+        if not _store.is_file(ref_file):
             continue
-        ref = frozenset(answers(ref_file.read_text(encoding="utf-8")))
+        ref = frozenset(answers(_store.read_text(ref_file, encoding="utf-8")))
         people = [
             r
             for r in labels

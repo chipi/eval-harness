@@ -36,6 +36,8 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _store
+
 HERE = Path(__file__).resolve().parent
 
 #: The commands that are tools: they only read. Every other command is in NOT_TOOLS with the
@@ -70,6 +72,7 @@ READ_TOOLS = (
 )
 NOT_TOOLS = {
     "run-migrate": "rewrites the run directories",
+    "data-migrate": "moves the project's data between files and its database",
     "dataset-publish": "writes to an outside service (a new Hub repo)",
     "fieldset-propose": "reads a source (it can fetch from the network) and can write a field set",
     "dataset-describe": "writes a dataset record",
@@ -441,8 +444,8 @@ def write_answers(project: Path, path: Path, public: bool, timeout: float = TIME
                 )
             continue
         lines.append(json.dumps({"tool": c, "argv": argv, "out": out, "harness": __version__}))
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("".join(x + "\n" for x in lines), encoding="utf-8")
+    _store.mkdir(path.parent, parents=True, exist_ok=True)
+    _store.write_text(path, "".join(x + "\n" for x in lines), encoding="utf-8")
     print(
         f"{path}: {len(lines)} answer(s) written ahead"
         + (f"; left out: {', '.join(left)}" if left else "")
@@ -459,7 +462,7 @@ BY_DATASET = ("leaderboard",)
 
 def dataset_ids(project: Path) -> list[str]:
     """The project's dataset ids (data/datasets/*.json), sorted."""
-    return sorted(p.stem for p in (project / "data" / "datasets").glob("*.json"))
+    return sorted(p.stem for p in _store.glob(project / "data" / "datasets", "*.json"))
 
 
 def _answer(types, name: str, out: str, public: bool):
@@ -584,7 +587,7 @@ def build_server(
 
     parsers = {c: parser_of(c) for c in tools_for(public)}
     if public and answers_file is not None:
-        for line in answers_file.read_text(encoding="utf-8").splitlines():
+        for line in _store.read_text(answers_file, encoding="utf-8").splitlines():
             try:
                 rec = json.loads(line)
             except ValueError:

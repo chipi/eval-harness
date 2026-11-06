@@ -808,8 +808,8 @@ def test_example_scorer_suites_pass() -> None:
             "a run's outputs in one file (RFC-024): append, a torn line, finish, resume, a derived run reads its source's; both stores",
         ),
         (
-            "test_runs_store.py",
-            "the runs store (RFC-025): the setting, outputs and rows moved to sqlite and back, a stopped move, a run outside data/, the release copy, one item across runs, concurrent writers, the rows guard",
+            "test_store.py",
+            "the project's store (RFC-025): the setting, _store on both, data-migrate there and back, never both (V23), concurrent writers, the release, the path-I/O guard",
         ),
         (
             "test_run_migrate.py",

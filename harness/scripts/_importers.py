@@ -24,6 +24,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _store
 from evaluation_harness._common import CODE, DATA, die, load_module
 
 RECORD_KEYS = {"id", "body", "fields", "created_at", "source", "labels", "outcome"}
@@ -37,7 +38,7 @@ IMPORTER_NAME = re.compile(r"[a-z0-9][a-z0-9_]*")
 
 def builtin_names() -> list[str]:
     """The importers that come with the harness."""
-    return sorted(p.stem for p in (CODE / "importers").glob("*.py") if not p.stem.startswith("_"))
+    return sorted(p.stem for p in _store.glob(CODE / "importers", "*.py") if not p.stem.startswith("_"))
 
 
 def resolve(name: str) -> tuple[type, Path]:
@@ -52,7 +53,7 @@ def resolve(name: str) -> tuple[type, Path]:
             # From where the command runs, else from the project root (data/'s parent): a capture records
             # the path as given, and running from another directory must still find the same file.
             here, project = (Path.cwd() / path).resolve(), (DATA.parent / path).resolve()
-            path = here if here.is_file() or not project.is_file() else project
+            path = here if _store.is_file(here) or not _store.is_file(project) else project
     else:
         if not IMPORTER_NAME.fullmatch(name):
             die(
@@ -60,13 +61,13 @@ def resolve(name: str) -> tuple[type, Path]:
                 "bad-argument",
             )
         path, cls_name = DATA / "importers" / f"{name}.py", "Importer"
-        if not path.is_file():
+        if not _store.is_file(path):
             die(
                 f"--importer {name}: not a built-in importer ({', '.join(builtin_names())}), and no "
                 f"{path} with a class Importer; or name a file: path/to/importer.py:Class",
                 "not-found",
             )
-    if not path.is_file():
+    if not _store.is_file(path):
         die(f"--importer {name}: no file {path}", "not-found")
     mod = load_module(path, f"evh_importer_{hashlib.sha256(str(path).encode()).hexdigest()[:12]}")
     cls = getattr(mod, cls_name, None)
@@ -77,7 +78,7 @@ def resolve(name: str) -> tuple[type, Path]:
 
 def code_sha256(path: Path) -> str:
     """The sha256 of an importer's source file: a capture records which code read it."""
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return hashlib.sha256(_store.read_bytes(path)).hexdigest()
 
 
 def canonical(value: Any) -> bytes:

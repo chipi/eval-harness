@@ -23,12 +23,15 @@ import shutil
 import sys
 from pathlib import Path
 
+from evaluation_harness import _store
 from evaluation_harness._common import die, evh_prog
 
 HERE = Path(__file__).resolve().parent
 #: The skills are package data in an install (evaluation_harness/skills) and a sibling of
 #: scripts/ in a checkout (harness/skills).
-SKILLS = next((p for p in (HERE / "skills", HERE.parent / "skills") if any(p.glob("*/SKILL.md"))), None)
+SKILLS = next(
+    (p for p in (HERE / "skills", HERE.parent / "skills") if any(_store.glob(p, "*/SKILL.md"))), None
+)
 #: Where a copy records what it was copied from, so a later run can tell "unchanged" from "edited".
 STAMP = ".evh-skill.sha256"
 
@@ -36,8 +39,8 @@ STAMP = ".evh-skill.sha256"
 def _digest(folder: Path) -> str:
     """One hash over a skill's files (not the stamp), path by path."""
     h = hashlib.sha256()
-    for f in sorted(p for p in folder.rglob("*") if p.is_file() and p.name != STAMP):
-        h.update(f.relative_to(folder).as_posix().encode() + b"\0" + f.read_bytes() + b"\0")
+    for f in sorted(p for p in _store.rglob(folder, "*") if _store.is_file(p) and p.name != STAMP):
+        h.update(f.relative_to(folder).as_posix().encode() + b"\0" + _store.read_bytes(f) + b"\0")
     return h.hexdigest()
 
 
@@ -49,26 +52,26 @@ def main() -> int:
     args = ap.parse_args()
     if SKILLS is None:
         die("the skills are not in this installation", "missing-dependency")
-    args.target.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(args.target, parents=True, exist_ok=True)
     wrote, updated, same, kept = [], [], [], []
-    for src in sorted(p.parent for p in SKILLS.glob("*/SKILL.md")):
+    for src in sorted(p.parent for p in _store.glob(SKILLS, "*/SKILL.md")):
         dst = args.target / src.name
         new = _digest(src)
-        if dst.exists():
+        if _store.exists(dst):
             stamp = dst / STAMP
-            was = stamp.read_text(encoding="utf-8").strip() if stamp.is_file() else ""
+            was = _store.read_text(stamp, encoding="utf-8").strip() if _store.is_file(stamp) else ""
             if _digest(dst) == new:
                 same.append(src.name)
                 continue
             if _digest(dst) != was and not args.force:
                 kept.append(src.name)  # edited after it was installed
                 continue
-            shutil.rmtree(dst)
+            _store.rmtree(dst)
             updated.append(src.name)
         else:
             wrote.append(src.name)
         shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__"))
-        (dst / STAMP).write_text(new + "\n", encoding="utf-8")
+        _store.write_text(dst / STAMP, new + "\n", encoding="utf-8")
     print(f"skills: {args.target}")
     for word, names in (("wrote", wrote), ("updated", updated), ("current", same)):
         if names:

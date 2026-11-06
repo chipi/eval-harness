@@ -31,12 +31,11 @@ import argparse
 import hashlib
 import json
 import shlex
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
-from evaluation_harness import _importers
+from evaluation_harness import _importers, _store
 from evaluation_harness._common import (
     CAPTURES,
     DATASETS,
@@ -70,7 +69,7 @@ def mismatched(records: Path, entries: list[dict], key: str = "sha256") -> list[
     for e in entries:
         f = records / f"{e['id']}.json"
         try:
-            rec = json.loads(f.read_text(encoding="utf-8"))
+            rec = json.loads(_store.read_text(f, encoding="utf-8"))
         except (OSError, ValueError):
             bad.append(e["id"])
             continue
@@ -90,9 +89,9 @@ def dataset_files(capture_id: str, recs: dict) -> tuple[list[tuple[Path, bytes]]
     writes: list[tuple[Path, bytes]] = []
     bad: list[str] = []
     said: list[str] = []
-    for f in sorted(DATASETS.glob("*.json")):
+    for f in sorted(_store.glob(DATASETS, "*.json")):
         try:
-            doc = json.loads(f.read_text(encoding="utf-8"))
+            doc = json.loads(_store.read_text(f, encoding="utf-8"))
         except (OSError, ValueError):
             continue
         if not isinstance(doc, dict) or (doc.get("made_from") or {}).get("capture") != capture_id:
@@ -133,12 +132,17 @@ def main() -> int:
     args = ap.parse_args()
 
     base = CAPTURES / dataset_id_ok(args.capture)
-    if not (base / "capture.json").is_file():
+    if not _store.is_file(base / "capture.json"):
         die(f"no capture {args.capture!r} at {base}", "not-found")
     doc = read_json(base / "capture.json")
     entries = doc.get("records") or []
     records = base / "records"
-    if records.is_dir() and any(records.iterdir()) and mismatched(records, entries) and not args.force:
+    if (
+        _store.is_dir(records)
+        and any(_store.iterdir(records))
+        and mismatched(records, entries)
+        and not args.force
+    ):
         die(
             f"{records} exists and does not match capture.json ({named(mismatched(records, entries), 'differ')}). "
             "Pass --force to replace it with the records read again.",
@@ -209,14 +213,14 @@ def main() -> int:
                 f"{', '.join(bad_items[:5])}; nothing written",
                 "mismatch",
             )
-        if records.exists():
-            shutil.rmtree(records)
+        if _store.exists(records):
+            _store.rmtree(records)
         tmp.rename(records)
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        _store.rmtree(tmp, ignore_errors=True)
     for dest, data in writes:
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(data)
+        _store.mkdir(dest.parent, parents=True, exist_ok=True)
+        _store.write_bytes(dest, data)
     print(
         f"{code_note}capture {args.capture}: {len(entries)} records restored to {records}, hashes ok"
         + (" (scrubbed again with the recorded command)" if scrub else "")

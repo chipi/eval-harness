@@ -20,7 +20,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _store
 from evaluation_harness._common import die, now, read_json, write_json
 
 SET_ID = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,99}$")
@@ -47,12 +47,12 @@ def load_modes(modes_id: str) -> dict[str, Any]:
     if not SET_ID.match(modes_id or ""):
         die(f"--modes {modes_id!r}: lowercase letters, digits, _ . - (at most 100)", "bad-argument")
     f = modes_root() / f"{modes_id}.yaml"
-    if not f.is_file():
+    if not _store.is_file(f):
         die(
             f"no failure modes {modes_id!r}: write {f.relative_to(_common.ROOT)} first (failure_modes_id, modes)",
             "not-found",
         )
-    doc = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+    doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {}
     ids = [m.get("id") for m in doc.get("modes") or [] if isinstance(m, dict)]
     if not ids or len(set(ids)) != len(ids):
         die(f"{f.name}: modes must be a list of distinct ids", "invalid-file")
@@ -99,7 +99,7 @@ def write_tags(
     """Write a new tag set. `tags`: {run_id: {item_id: {"modes": [...], "note": str?}}}. Refused when the set
     exists (never edited), an item is not in the dataset, or a mode is not in the list."""
     out = set_dir(dataset_id, name)
-    if out.exists() and any(out.iterdir()):
+    if _store.exists(out) and any(_store.iterdir(out)):
         die(
             f"{out} exists: a tag set is never edited. A correction is a new set: name another.",
             "would-overwrite",
@@ -131,7 +131,7 @@ def write_tags(
         "n_tagged": sum(len(v) for v in tags.values()),
         "runs": tags,
     }
-    out.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(out, parents=True, exist_ok=True)
     write_json(out / "tags.json", doc)
     return doc
 
@@ -141,7 +141,7 @@ def tag_sets(dataset_id: str | None = None) -> list[dict[str, Any]]:
     root = tags_root()
     pat = f"{dataset_id}/*/tags.json" if dataset_id else "*/*/tags.json"
     found = []
-    for f in sorted(root.glob(pat)) if root.is_dir() else []:
+    for f in sorted(_store.glob(root, pat)) if _store.is_dir(root) else []:
         doc = read_json(f)
         if isinstance(doc, dict):
             found.append(doc)

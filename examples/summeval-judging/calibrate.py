@@ -41,6 +41,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE.parent / "_shared"))
 sys.path.insert(0, str(ROOT / "harness"))  # the evaluation_harness package (a link to scripts/)
+from evaluation_harness import _store  # noqa: E402
 from modules import load_module  # noqa: E402
 
 RUNS = ROOT / "harness" / "data" / "runs"
@@ -67,7 +68,7 @@ def _shared():
 def run_dir(arm: str) -> Path:
     from evaluation_harness import _outputs  # noqa: PLC0415
 
-    hits = sorted(d for d in RUNS.glob(f"se_{arm}_n100_v1_*") if _outputs.has_rows(d))
+    hits = sorted(d for d in _store.glob(RUNS, f"se_{arm}_n100_v1_*") if _outputs.has_rows(d))
     if len(hits) != 1:
         raise SystemExit(f"expected one committed run for se_{arm}_n100_v1, found {len(hits)}")
     return hits[0]
@@ -93,14 +94,14 @@ def unieval_inputs() -> dict:
 
     ad = _adapter()
     data = ROOT / "harness" / "data"
-    items = json.loads((data / "datasets" / "summeval_100.json").read_text())["items"]
+    items = json.loads(_store.read_text(data / "datasets" / "summeval_100.json"))["items"]
     norm, by_text, rows = ad._unieval_published()
     alnum = lambda t: re.sub(r"[^a-z0-9]", "", t.lower())  # noqa: E731
     nobr = lambda t: alnum(t.lower().replace("-lrb-", "(").replace("-rrb-", ")"))  # noqa: E731
     n = exact = same = brackets = ref = src = 0
     for it in items:
         item = ad._item(
-            (data / "materialized" / "summeval_100" / it["source_path"]).read_text(encoding="utf-8")
+            _store.read_text(data / "materialized" / "summeval_100" / it["source_path"], encoding="utf-8")
         )
         keys = [by_text.get(norm(x), set()) for x in item["summaries"]]
         doc = set.intersection(*[{d for d, _ in k} for k in keys]).pop()
@@ -131,9 +132,9 @@ def position_lookup() -> dict:
     which an arm could be reading system identity rather than the summary."""
     ad = _adapter()
     data = ROOT / "harness" / "data"
-    items = json.loads((data / "datasets" / "summeval_100.json").read_text())["items"]
+    items = json.loads(_store.read_text(data / "datasets" / "summeval_100.json"))["items"]
     golds = [
-        (data / "references" / "gold" / "summeval_100" / it["source_path"]).read_text(encoding="utf-8")
+        _store.read_text(data / "references" / "gold" / "summeval_100" / it["source_path"], encoding="utf-8")
         for it in items
     ]
     g = [json.loads(x) for x in golds]
@@ -148,7 +149,7 @@ def position_lookup() -> dict:
     systems = [set() for _ in range(16)]
     for it in items:
         item = ad._item(
-            (data / "materialized" / "summeval_100" / it["source_path"]).read_text(encoding="utf-8")
+            _store.read_text(data / "materialized" / "summeval_100" / it["source_path"], encoding="utf-8")
         )
         keys = [by_text.get(norm(x), set()) for x in item["summaries"]]
         doc = set.intersection(*[{d for d, _ in k} for k in keys]).pop()
@@ -167,13 +168,15 @@ def reference_combinations() -> dict:
     from rouge_score import rouge_scorer  # noqa: PLC0415 - the example's own dependency
 
     data = ROOT / "harness" / "data"
-    items = json.loads((data / "datasets" / "summeval_100.json").read_text())["items"]
+    items = json.loads(_store.read_text(data / "datasets" / "summeval_100.json"))["items"]
     scorer = rouge_scorer.RougeScorer(["rouge1"], use_stemmer=True)
     rules = {"mean": statistics.fmean, "max": max, "first": lambda v: v[0]}
     got: dict = {k: [] for k in rules}
     for it in items:
-        text = (data / "materialized" / "summeval_100" / it["source_path"]).read_text(encoding="utf-8")
-        ref = (data / "references" / "gold" / "summeval_100" / it["source_path"]).read_text(encoding="utf-8")
+        text = _store.read_text(data / "materialized" / "summeval_100" / it["source_path"], encoding="utf-8")
+        ref = _store.read_text(
+            data / "references" / "gold" / "summeval_100" / it["source_path"], encoding="utf-8"
+        )
         item = adapter._item(text)
         per = [[scorer.score(r, s)["rouge1"].fmeasure for r in item["references"]] for s in item["summaries"]]
         for k, rule in rules.items():
@@ -245,7 +248,7 @@ def main() -> int:
                 f"          {d:11s} {x['value']:.4f} +/-{x['ci95']:.4f} vs {x['published']:.3f}"
                 f"  ({x['value'] - x['published']:+.4f})  {x['verdict']}"
             )
-    combos = json.loads(path.read_text())["rouge1_reference_combination"]
+    combos = json.loads(_store.read_text(path))["rouge1_reference_combination"]
     print(
         "  ROUGE-1 by reference combination: "
         + "  ".join(f"{k} rho {v['rho']:.4f} tau {v['tau']:.4f}" for k, v in combos.items())
@@ -255,12 +258,12 @@ def main() -> int:
         + json.dumps(
             {
                 k: v
-                for k, v in json.loads(path.read_text())["unievalpub_inputs_vs_ours"].items()
+                for k, v in json.loads(_store.read_text(path))["unievalpub_inputs_vs_ours"].items()
                 if not k.endswith("sha256")
             }
         )
     )
-    print("  position lookup: " + json.dumps(json.loads(path.read_text())["position_lookup"]))
+    print("  position lookup: " + json.dumps(json.loads(_store.read_text(path))["position_lookup"]))
     print(f"wrote {path.relative_to(ROOT)}")
     return 0
 

@@ -22,6 +22,7 @@ import yaml
 
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._common import no_options  # noqa: E402
 
 no_options(__doc__)  # --help prints this; anything else is refused
@@ -39,10 +40,10 @@ def check(label, cond, detail=""):
     print(f"  {'ok  ' if cond else 'FAIL'} {label}{('   ' + detail) if detail and not cond else ''}")
 
 
-if not EV.is_file():
+if not _store.is_file(EV):
     print(f"FAIL  no evidence capture at {EV}")
     sys.exit(1)
-facts = json.loads(EV.read_text())["models"]
+facts = json.loads(_store.read_text(EV))["models"]
 
 # WHERE THE CLAIMS COME FROM: THE DOCUMENTS, NOT THIS FILE.
 #
@@ -50,8 +51,8 @@ facts = json.loads(EV.read_text())["models"]
 # evidence. That checks the checker. Editing REPORT_SYNTHESIS.md to say bart-large-cnn
 # is GPL, or that DeepSeek is 40 GB, changed nothing here and `make ci` stayed green.
 # Found by external review. The claims are now parsed out of the prose that makes them.
-REF = (ROOT / "docs" / "REFERENCE.md").read_text()
-SYN = (ROOT / "research" / "REPORT_SYNTHESIS.md").read_text()
+REF = _store.read_text(ROOT / "docs" / "REFERENCE.md")
+SYN = _store.read_text(ROOT / "research" / "REPORT_SYNTHESIS.md")
 
 #: Display name -> HuggingFace id. An IDENTITY mapping, not a claim: the reports write
 #: "Llama-3.3-70B" where the API says "meta-llama/Llama-3.3-70B-Instruct". If a report
@@ -187,13 +188,13 @@ check(
 _stale = [
     f"{f}:{i}: {ln.strip()[:70]}"
     for f in ("REPORT_SYNTHESIS.md", "REPORT_SUMMARIZATION.md")
-    for i, ln in enumerate((ROOT / "research" / f).read_text().splitlines(), 1)
+    for i, ln in enumerate(_store.read_text(ROOT / "research" / f).splitlines(), 1)
     if "765 GB" in ln and not any(w in ln for w in ("until", "never measured", "inflated", "derived"))
 ]
 check("765 GB survives only where it is marked as the corrected-away figure", not _stale, "; ".join(_stale))
 
 # The tier split the synthesis states.
-syn = (ROOT / "research" / "REPORT_SYNTHESIS.md").read_text()
+syn = _store.read_text(ROOT / "research" / "REPORT_SYNTHESIS.md")
 # DERIVED, not asserted. This used to check that the synthesis contains the checker's
 # own literal "14 of the 24" -- the same self-verifying shape round 2 found elsewhere in
 # this file. The open/proprietary split is a fact about REFERENCE.md's licence table, so
@@ -209,7 +210,7 @@ syn = (ROOT / "research" / "REPORT_SYNTHESIS.md").read_text()
 # Count them, and require the synthesis to state the count. Marking a model proprietary
 # in REFERENCE.md must move the number in REPORT_SYNTHESIS or fail.
 _HOSTED_ROW = re.compile(r"^\| `([a-z0-9_]+)` \|[^|]*\|[^|]*\| (\*\*open\*\*|proprietary)", re.M)
-_hosted_rows = _HOSTED_ROW.findall((ROOT / "docs" / "REFERENCE.md").read_text())
+_hosted_rows = _HOSTED_ROW.findall(_store.read_text(ROOT / "docs" / "REFERENCE.md"))
 _hosted_open = sum(1 for _a, _k in _hosted_rows if _k != "proprietary")
 check(
     f"REFERENCE.md tabulates 24 hosted arms (found {len(_hosted_rows)})",
@@ -250,12 +251,15 @@ check(
 # REFERENCE.md repeats the count in its own prose, two paragraphs below the table.
 check(
     f"...and REFERENCE.md's own prose agrees ({_hosted_open})",
-    re.search(rf"\*\*{_hosted_open} of these 24\b", (ROOT / "docs" / "REFERENCE.md").read_text()) is not None,
+    re.search(rf"\*\*{_hosted_open} of these 24\b", _store.read_text(ROOT / "docs" / "REFERENCE.md"))
+    is not None,
     f"REFERENCE.md's table marks {_hosted_open} open; its prose says otherwise",
 )
 check(
     "mistral_l is tabulated as open in REFERENCE.md",
-    re.search(r"\| `mistral_l` \|[^|]*\|[^|]*\| \*\*open\*\*", (ROOT / "docs" / "REFERENCE.md").read_text())
+    re.search(
+        r"\| `mistral_l` \|[^|]*\|[^|]*\| \*\*open\*\*", _store.read_text(ROOT / "docs" / "REFERENCE.md")
+    )
     is not None,
 )
 
@@ -264,7 +268,7 @@ check(
 # wrong side of the filter while REFERENCE.md says otherwise. The replacement arm (qwen37max) is
 # stated in REFERENCE.md's note under the table, not in it.
 
-_ref = (ROOT / "docs" / "REFERENCE.md").read_text()
+_ref = _store.read_text(ROOT / "docs" / "REFERENCE.md")
 _by_alias = {
     alias: ("proprietary" if kind == "proprietary" else "open")
     for alias, kind in re.findall(
@@ -274,8 +278,8 @@ _by_alias = {
 for alias, kind in re.findall(r"alias `([^`]+)` → \[[^\]]+\]\([^)]+\), weights: (open|proprietary)", _ref):
     _by_alias[alias] = kind
 _models = {}
-for _f in sorted((ROOT / "harness" / "data" / "models").glob("*.yaml")):
-    _rec = yaml.safe_load(_f.read_text(encoding="utf-8")) or {}
+for _f in sorted(_store.glob(ROOT / "harness" / "data" / "models", "*.yaml")):
+    _rec = yaml.safe_load(_store.read_text(_f, encoding="utf-8")) or {}
     for _a in _rec.get("aliases") or []:
         _models[_a] = _rec
 _differ = [

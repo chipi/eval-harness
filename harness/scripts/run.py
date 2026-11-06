@@ -38,7 +38,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _jsonout, _outputs
+from evaluation_harness import _common, _jsonout, _outputs, _store
 from evaluation_harness._adapter import (
     calls_per_item,
     load_adapter,
@@ -239,7 +239,7 @@ def _reference_for(dataset_id: str) -> tuple[Path | None, str | None]:
     """
     for tier in ("gold", "silver"):
         d = REFERENCES / tier / dataset_id
-        if d.is_dir():
+        if _store.is_dir(d):
             return d, tier
     return None, None
 
@@ -294,7 +294,7 @@ def _recorded_outputs(cfg: dict[str, Any], adapter_path: Path | None) -> dict[st
         )
     from evaluation_harness._common import CAPTURES  # noqa: PLC0415
 
-    params["capture_sha256"] = hashlib.sha256((CAPTURES / cap / "capture.json").read_bytes()).hexdigest()
+    params["capture_sha256"] = hashlib.sha256(_store.read_bytes(CAPTURES / cap / "capture.json")).hexdigest()
     print(f"  a recorded arm: {len(out)} output(s) read from the capture {cap}, no system called")
     return out
 
@@ -365,7 +365,7 @@ def one_pass(
     imported at module scope, because which adapter runs is a property of the arm now. ``primary`` names the metric
     each item's progress line shows."""
     mat = MATERIALIZED / ds["dataset_id"]
-    if not mat.is_dir():
+    if not _store.is_dir(mat):
         die(
             f"{ds['dataset_id']} is not materialized.\n"
             f"  "
@@ -400,7 +400,7 @@ def one_pass(
     # The cost of writing incrementally is one synced line per item (RFC-024). The cost of not
     # doing it was measured in dollars.
     if live_dir is not None:
-        live_dir.mkdir(parents=True, exist_ok=True)
+        _store.mkdir(live_dir, parents=True, exist_ok=True)
     live = _outputs.writer(live_dir) if live_dir is not None else None
     # The previous attempt's outputs (RFC-024: its outputs.jsonl), read once.
     prior_out = _outputs.outputs(resume_dir) if resume_dir is not None else {}
@@ -429,7 +429,7 @@ def one_pass(
 
         rel = item.get("source_path") or item["item_id"]
         src = mat / rel
-        source_text = src.read_text(encoding="utf-8", errors="replace")
+        source_text = _store.read_text(src, encoding="utf-8", errors="replace")
 
         if resumed:
             res: Any = _Resumed(prior_out[item["item_id"]], (prior_rows or {}).get(item["item_id"]))
@@ -488,8 +488,8 @@ def one_pass(
         reference = None
         if ref_dir is not None:
             rf = ref_dir / f"{item['item_id']}.txt"
-            if rf.is_file():
-                reference = rf.read_text(encoding="utf-8", errors="replace")
+            if _store.is_file(rf):
+                reference = _store.read_text(rf, encoding="utf-8", errors="replace")
 
         # Pass the SOURCE when the scorer wants it. Facets that compare the output to the
         # INPUT — grounding, compression — cannot be computed from output+reference alone,
@@ -645,9 +645,9 @@ def _dry_run(
     items = ds["items"]
     mat = MATERIALIZED / ds["dataset_id"]
     item_chars = sum(
-        len((mat / (i.get("source_path") or i["item_id"])).read_text(errors="replace"))
+        len(_store.read_text(mat / (i.get("source_path") or i["item_id"]), errors="replace"))
         for i in items
-        if (mat / (i.get("source_path") or i["item_id"])).is_file()
+        if _store.is_file(mat / (i.get("source_path") or i["item_id"]))
     )
     # The prompt the config gives is sent with every item (the bundled adapter sends `prompt`, a blank line, the
     # item). An adapter that builds its own prompt elsewhere cannot be asked for it, so that part is not counted.
@@ -762,7 +762,7 @@ def _resume_source(
         return None, {}
     resume_dir = runs / resume
     if not _outputs.own(resume_dir):
-        die(f"cannot resume: no outputs in {resume_dir} (the {_common.runs_store()} store)", "not-found")
+        die(f"cannot resume: no outputs in {resume_dir} (the {_common.store()} store)", "not-found")
 
     # RESUMING FROM ANOTHER ARM'S OUTPUTS WAS ACCEPTED WITHOUT A WORD.
     #
@@ -787,7 +787,11 @@ def _resume_source(
     src_id = runs / resume / "run.json"
     src_metrics = runs / resume / "metrics.json"
     ident = (
-        read_json(src_id) if src_id.is_file() else read_json(src_metrics) if src_metrics.is_file() else None
+        read_json(src_id)
+        if _store.is_file(src_id)
+        else read_json(src_metrics)
+        if _store.is_file(src_metrics)
+        else None
     )
     if ident is None:
         die(
@@ -883,9 +887,9 @@ def main() -> int:
 
 
 def _run(args: argparse.Namespace) -> int:
-    if not args.config.is_file():
+    if not _store.is_file(args.config):
         die(f"no config at {args.config}", "not-found")
-    cfg = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
+    cfg = yaml.safe_load(_store.read_text(args.config, encoding="utf-8")) or {}
     # A config may name a model record (RFC-020, optional): its settings come from the record, under the
     # config's own params, so every arm of that model runs the way it was onboarded. With `deployment:` it
     # also names where it runs (RFC-021): the fingerprint takes the deployment's facts from the record.
@@ -919,7 +923,7 @@ def _run(args: argparse.Namespace) -> int:
 
     # A config names the goal it answers (data/goals/<goal_id>.yaml). Refused before a cent is
     # spent when the goal does not exist: a run filed under a typo answers nothing.
-    if cfg.get("goal") and GOALS.is_dir() and cfg["goal"] not in load_goals():
+    if cfg.get("goal") and _store.is_dir(GOALS) and cfg["goal"] not in load_goals():
         die(
             f"{args.config}: goal {cfg['goal']!r} is not in {GOALS} "
             f"(known: {', '.join(sorted(load_goals())) or 'none'})",
@@ -960,7 +964,7 @@ def _run(args: argparse.Namespace) -> int:
     coverage = None
     if ref_tier and ref_dir is not None:
         ids = [it["item_id"] for it in ds.get("items") or []]
-        have = sum(1 for i in ids if (ref_dir / f"{i}.txt").is_file())
+        have = sum(1 for i in ids if _store.is_file(ref_dir / f"{i}.txt"))
         coverage = {"items_with_reference": have, "items": len(ids)}
         if have == 0:
             die(
@@ -1106,7 +1110,9 @@ def _run(args: argparse.Namespace) -> int:
     # runs of one config started in the same second shared a directory, and the second wrote over the first, a
     # committed run included (2026-11-04). An id already taken: the next second's stamp; a --run-id taken: refused.
     def taken(base: str) -> bool:
-        return (runs / base).exists() or any((runs / f"{base}_r{i + 1}").exists() for i in range(args.repeat))
+        return _store.exists(runs / base) or any(
+            _store.exists(runs / f"{base}_r{i + 1}") for i in range(args.repeat)
+        )
 
     if args.run_id:
         if taken(base_id):
@@ -1135,7 +1141,7 @@ def _run(args: argparse.Namespace) -> int:
         # returns, so a crashed run could not say which arm produced its outputs --
         # which made `--resume`'s arm guard unenforceable in the one case resume is
         # for. This is small, written first, and never rewritten.
-        run_dir.mkdir(parents=True, exist_ok=True)
+        _store.mkdir(run_dir, parents=True, exist_ok=True)
         write_json(
             run_dir / "run.json",
             {
@@ -1170,7 +1176,7 @@ def _run(args: argparse.Namespace) -> int:
             if isinstance(exc, ServerUnreachable):
                 sys.exit(EXIT_TRY_LATER)  # said above in full; a traceback adds nothing
             raise
-        run_dir.mkdir(parents=True, exist_ok=True)
+        _store.mkdir(run_dir, parents=True, exist_ok=True)
         _outputs.write_rows(run_dir, result["predictions"])
         # The outputs were appended as produced; the finished file is every output in dataset order, a resumed
         # item's included (it came from the PREVIOUS run, and this one must be self-contained), a failed item's

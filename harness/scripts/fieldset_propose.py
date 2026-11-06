@@ -25,7 +25,7 @@ import re
 from typing import Any
 
 import yaml
-from evaluation_harness import _fields, _sources
+from evaluation_harness import _fields, _sources, _store
 from evaluation_harness._common import FIELDS, die, evh_prog, write_text_atomic
 
 #: A source's feature types (schema.org's, Hugging Face's and Python's spellings) as the field set's types.
@@ -117,9 +117,9 @@ def main() -> int:
         )
         return 0
     out = FIELDS / f"{args.fieldset_id}.yaml"
-    if out.exists():
+    if _store.exists(out):
         die(f"{out} exists: a field set is not overwritten (name another --fieldset-id)", "would-overwrite")
-    out.parent.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(out.parent, parents=True, exist_ok=True)
     write_text_atomic(out, text)
     print(f"wrote {out}: {len(fields)} field(s); use it: dataset-create … --fieldset {args.fieldset_id}")
     return 0

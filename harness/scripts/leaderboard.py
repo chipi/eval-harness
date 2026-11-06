@@ -31,7 +31,7 @@ import shutil
 import statistics
 import textwrap
 
-from evaluation_harness import _jsonout
+from evaluation_harness import _jsonout, _store
 from evaluation_harness._adapter import recorded_metric_kinds
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -537,7 +537,7 @@ def _own_reference(by_config: dict[str, list[dict]]) -> dict[str, str]:
                 continue
             if ref not in authors:
                 mf = REFERENCES / ref / "manifest.json"
-                authors[ref] = read_json(mf).get("authored_by") if mf.is_file() else None
+                authors[ref] = read_json(mf).get("authored_by") if _store.is_file(mf) else None
             if authors[ref] == config_id:
                 out[config_id] = ref
     return out
@@ -665,7 +665,7 @@ def _judging_summary(found: list) -> None:
     seen = set()
     for d, _m in found:
         f = d.parent / "summary.json"
-        if f in seen or not f.is_file():
+        if f in seen or not _store.is_file(f):
             continue
         seen.add(f)
         s = read_json(f)

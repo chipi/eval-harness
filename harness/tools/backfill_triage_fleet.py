@@ -25,6 +25,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "examples" / "triage-fleet"))
 import adapter  # noqa: E402
 from evaluation_harness import _fingerprint as fpmod  # noqa: E402
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._runs import item_rows  # noqa: E402
 
 DATA = HERE / "data"
@@ -78,8 +79,8 @@ def main() -> int:
         )
     counts = {"backfilled": 0, "already": 0}
     for d in DIRS:
-        for p in sorted((DATA / d).glob("triage_*/metrics.json")):
-            m = json.loads(p.read_text(encoding="utf-8"))
+        for p in sorted(_store.glob(DATA / d, "triage_*/metrics.json")):
+            m = json.loads(_store.read_text(p, encoding="utf-8"))
             if item_prompt_shas(p.parent) != {PROMPT_SHA}:
                 raise SystemExit(
                     f"{p.parent.name}: items recorded {item_prompt_shas(p.parent)}, not {PROMPT_SHA}"
@@ -90,7 +91,7 @@ def main() -> int:
                 continue
             counts["backfilled"] += 1
             if args.apply:
-                p.write_text(json.dumps(new, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                _store.write_text(p, json.dumps(new, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(("applied" if args.apply else "dry run"), counts)
     return 0
 

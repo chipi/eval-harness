@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _fingerprint as fpmod
+from evaluation_harness import _store
 from evaluation_harness._common import DATA, evh_prog, write_text_atomic
 
 DEPLOYMENT_PARTS = ("deployment", "settings", "runner")
@@ -94,7 +95,9 @@ def _dump(doc: dict[str, Any]) -> str:
 
 def run_files(data: Path) -> list[Path]:
     """Every run's metrics.json under data/runs*/."""
-    return sorted(p for d in data.glob("runs*") if d.is_dir() for p in d.rglob("metrics.json"))
+    return sorted(
+        p for d in _store.glob(data, "runs*") if _store.is_dir(d) for p in _store.rglob(d, "metrics.json")
+    )
 
 
 def main() -> int:
@@ -113,7 +116,7 @@ def main() -> int:
     docs: dict[Path, dict[str, Any]] = {}
     before: Counter[str] = Counter()
     for f in run_files(data):
-        text = f.read_text(encoding="utf-8")
+        text = _store.read_text(f, encoding="utf-8")
         doc = json.loads(text)
         docs[f] = doc
         fp = doc.get("fingerprint")
@@ -163,8 +166,8 @@ def main() -> int:
             write_text_atomic(f, _dump(doc))
 
     baselines = 0
-    for b in sorted((data / "baselines").glob("*.json")) if (data / "baselines").is_dir() else []:
-        doc = json.loads(b.read_text(encoding="utf-8"))
+    for b in sorted(_store.glob(data / "baselines", "*.json")) if _store.is_dir(data / "baselines") else []:
+        doc = json.loads(_store.read_text(b, encoding="utf-8"))
         runs = [
             f
             for f in migrated

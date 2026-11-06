@@ -57,6 +57,10 @@ COMMANDS = {
     ),
     "licences": ("view_licences.py", "the licences a dataset can name (SPDX ids), a line each"),
     "run-migrate": ("run_migrate.py", "bring the runs to one outputs file each (RFC-024), once (idempotent)"),
+    "data-migrate": (
+        "data_migrate.py",
+        "move the project's data/ into its SQLite database or back (RFC-025)",
+    ),
     "dataset-migrate": (
         "dataset_migrate.py",
         "bring the dataset records to this release's format, once (idempotent)",

@@ -41,6 +41,7 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
     RUNS,
     die,
@@ -92,7 +93,7 @@ def _report_consensus_misses(rows: list, gold: dict, dataset_id: str, threshold:
         print(f"      gold {gold[item]}   predicted {tally}")
         f = item_path(dataset_id, item)
         if f is not None:
-            snippet = " ".join(f.read_text(encoding="utf-8").split())[:150]
+            snippet = " ".join(_store.read_text(f, encoding="utf-8").split())[:150]
             print(f"      {snippet}")
 
 

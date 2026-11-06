@@ -29,7 +29,7 @@ import argparse
 import json
 from pathlib import Path
 
-from evaluation_harness import _common, _outputs
+from evaluation_harness import _common, _outputs, _store
 from evaluation_harness._common import die, evh_prog, item_path, load_dataset, read_json
 from evaluation_harness._label_sets import labels_for, sets, text_of
 from evaluation_harness._runs import runs_on
@@ -47,7 +47,12 @@ def run_dir(name: str, dataset_id: str) -> Path:
     if name.count("/") >= 2:
         where, ds, config_id = name.rsplit("/", 2)
         base = _common.RUNS if where == "runs" else _common.DATA / where
-        if ds != dataset_id or not where.startswith("runs") or ".." in where.split("/") or not base.is_dir():
+        if (
+            ds != dataset_id
+            or not where.startswith("runs")
+            or ".." in where.split("/")
+            or not _store.is_dir(base)
+        ):
             die(f"--runs {name}: not an arm on {dataset_id}", "not-found")
         found = runs_on(dataset_id, runs_dir=base, config_id=config_id)
         if not found:
@@ -55,7 +60,7 @@ def run_dir(name: str, dataset_id: str) -> Path:
         return found[-1][0]
     for base in bases:
         d = base / name
-        if (d / "metrics.json").is_file():
+        if _store.is_file(d / "metrics.json"):
             if read_json(d / "metrics.json").get("dataset_id") != dataset_id:
                 die(f"--runs {name}: that run is not on {dataset_id}", "mismatch")
             return d
@@ -78,7 +83,7 @@ def view(dataset_id: str, item_id: str, limit: int | None = VIEW) -> str:
     p = item_path(dataset_id, item_id)
     if p is None:
         return ""
-    text = p.read_text(encoding="utf-8", errors="replace")
+    text = _store.read_text(p, encoding="utf-8", errors="replace")
     if p.suffix == ".json":
         try:
             text = json.dumps(json.loads(text), ensure_ascii=False)
@@ -107,7 +112,7 @@ def main() -> int:
         "header; label-import refuses any other",
     )
     args = ap.parse_args()
-    if args.out.exists():
+    if _store.exists(args.out):
         die(f"{args.out} exists: a sheet is not overwritten (you may have filled it)", "would-overwrite")
     choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
     header, rows, n = build(args.dataset_id, args.items, args.item, args.runs, args.propose, choices)

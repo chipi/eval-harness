@@ -19,7 +19,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import os
 
-from evaluation_harness import _providers
+from evaluation_harness import _providers, _store
 from evaluation_harness._common import (
     DOTENV_LOADED,
     EXIT_PROBLEMS,
@@ -62,10 +62,10 @@ def main() -> int:
     # load_dotenv() again here would report 0 — everything is already in the
     # environment by then — which read as "your .env did nothing".
     print(
-        f".env: {'loaded ' + str(DOTENV_LOADED) + ' var(s)' if env_file.is_file() else 'NOT PRESENT'}"
+        f".env: {'loaded ' + str(DOTENV_LOADED) + ' var(s)' if _store.is_file(env_file) else 'NOT PRESENT'}"
         f"   ({env_file})"
     )
-    if not env_file.is_file():
+    if not _store.is_file(env_file):
         print("      create it with the keys your providers read, one NAME=value per line\n")
 
     print(

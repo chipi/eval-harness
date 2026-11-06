@@ -23,6 +23,7 @@ import importlib
 import re
 from pathlib import Path
 
+from evaluation_harness import _store
 from evaluation_harness._common import CODE, DATA, die, load_module
 
 NAME = re.compile(r"[a-z0-9][a-z0-9_]*")
@@ -30,7 +31,7 @@ NAME = re.compile(r"[a-z0-9][a-z0-9_]*")
 
 def builtin_names() -> list[str]:
     """The sources that come with the harness."""
-    return sorted(p.stem for p in (CODE / "sources").glob("*.py") if not p.stem.startswith("_"))
+    return sorted(p.stem for p in _store.glob(CODE / "sources", "*.py") if not p.stem.startswith("_"))
 
 
 def resolve(name: str) -> tuple[type, Path]:
@@ -43,7 +44,7 @@ def resolve(name: str) -> tuple[type, Path]:
         path = Path(file).expanduser()
         if not path.is_absolute():
             here, project = (Path.cwd() / path).resolve(), (DATA.parent / path).resolve()
-            path = here if here.is_file() or not project.is_file() else project
+            path = here if _store.is_file(here) or not _store.is_file(project) else project
     else:
         if not NAME.fullmatch(name):
             die(
@@ -51,13 +52,13 @@ def resolve(name: str) -> tuple[type, Path]:
                 "bad-argument",
             )
         path, cls_name = DATA / "dataset_sources" / f"{name}.py", "Source"
-        if not path.is_file():
+        if not _store.is_file(path):
             die(
                 f"--source {name}: not a built-in source ({', '.join(builtin_names())}), and no {path} with a "
                 "class Source; or name a file: path/to/source.py:Class",
                 "not-found",
             )
-    if not path.is_file():
+    if not _store.is_file(path):
         die(f"--source {name}: no file {path}", "not-found")
     mod = load_module(path, f"evh_source_{hashlib.sha256(str(path).encode()).hexdigest()[:12]}")
     cls = getattr(mod, cls_name, None)

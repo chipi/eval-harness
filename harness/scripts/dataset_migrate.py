@@ -25,7 +25,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 from typing import Any
 
-from evaluation_harness import _dataset_version, _source
+from evaluation_harness import _dataset_version, _source, _store
 from evaluation_harness._common import DATA, DATASETS, evh_prog, read_json, write_json
 
 PROFILES = DATA / "profiles"
@@ -95,9 +95,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dry-run", action="store_true", help="print what would change; write nothing")
     args = ap.parse_args()
-    files = {f.stem: f for f in sorted(DATASETS.glob("*.json"))} if DATASETS.is_dir() else {}
+    files = {f.stem: f for f in sorted(_store.glob(DATASETS, "*.json"))} if _store.is_dir(DATASETS) else {}
     docs = {i: read_json(f) for i, f in files.items()}
-    pfiles = {i: PROFILES / f"{i}.json" for i in docs if (PROFILES / f"{i}.json").is_file()}
+    pfiles = {i: PROFILES / f"{i}.json" for i in docs if _store.is_file(PROFILES / f"{i}.json")}
     profiles = {i: read_json(p) for i, p in pfiles.items()}
     before = {i: dict(p).get("source") for i, p in profiles.items()}
     changes = migrate(docs, profiles)

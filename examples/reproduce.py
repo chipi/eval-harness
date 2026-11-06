@@ -49,6 +49,7 @@ DATA = HARNESS / "data"
 REPRO = DATA / "runs-repro"
 sys.path.insert(0, str(HERE / "_shared"))
 sys.path.insert(0, str(HARNESS))  # the evaluation_harness package (a link to scripts/)
+from evaluation_harness import _store  # noqa: E402
 
 #: Arms that are not models -- floors that check the scorer. Free and deterministic.
 BASELINES = {"lead3", "keyword", "constant", "capitalized", "nothing", "random", "first_k", "length"}
@@ -56,7 +57,7 @@ HOSTED_PROVIDERS = {"litellm", "rerank"}
 
 
 def registry() -> dict:
-    return {e["slug"]: e for e in json.loads((HERE / "evals.json").read_text())["evals"]}
+    return {e["slug"]: e for e in json.loads(_store.read_text(HERE / "evals.json"))["evals"]}
 
 
 def _load_dotenv() -> None:
@@ -70,8 +71,8 @@ def _load_dotenv() -> None:
 def committed(exp: dict) -> dict:
     """{arm: {cid, dir, score, kind, cost, minutes, model}} from the committed record."""
     out = {}
-    for f in sorted((DATA / exp["base"]).glob(f"{exp['prefix']}*/metrics.json")):
-        m = json.loads(f.read_text())
+    for f in sorted(_store.glob(DATA / exp["base"], f"{exp['prefix']}*/metrics.json")):
+        m = json.loads(_store.read_text(f))
         cid = m.get("config_id", "")
         if m.get("dataset_id") != exp["dataset"] or not cid.endswith(exp["suffix"]):
             continue
@@ -93,7 +94,7 @@ def committed(exp: dict) -> dict:
             "n": m.get("n_items"),
         }
     # Cost and time come from data/runs, where the provider's response was recorded.
-    table = json.loads((HERE / "local_models.json").read_text())
+    table = json.loads(_store.read_text(HERE / "local_models.json"))
     pins, safe = table["revisions"], table.get("safetensors", {})
     for _arm, a in out.items():
         a["cost"], a["minutes"] = 0.0, None
@@ -105,8 +106,8 @@ def committed(exp: dict) -> dict:
             if a["kind"] == "local"
             else None
         )
-        for f in (DATA / "runs").glob(f"{a['cid']}_*/metrics.json"):
-            m = json.loads(f.read_text())
+        for f in _store.glob(DATA / "runs", f"{a['cid']}_*/metrics.json"):
+            m = json.loads(_store.read_text(f))
             if m.get("dataset_id") != exp["dataset"]:
                 continue
             from evaluation_harness._runs import item_rows  # noqa: PLC0415 - harness/ is on sys.path above
@@ -122,8 +123,8 @@ def committed(exp: dict) -> dict:
 def configs(exp: dict) -> dict:
     """{config_id: path} for the example's configs."""
     out = {}
-    for p in sorted((HERE / exp["example"] / "configs").glob("*.yaml")):
-        cfg = yaml.safe_load(p.read_text()) or {}
+    for p in sorted(_store.glob(HERE / exp["example"] / "configs", "*.yaml")):
+        cfg = yaml.safe_load(_store.read_text(p)) or {}
         if cfg.get("config_id"):
             out[cfg["config_id"]] = p
     return out
@@ -185,11 +186,11 @@ def plan(exp: dict, level: str, only: str | None) -> int:
     )
 
     venv = _venv_python(exp)
-    have = {d: (DATA / "materialized" / d).is_dir() for d in exp["datasets"]}
+    have = {d: _store.is_dir(DATA / "materialized" / d) for d in exp["datasets"]}
     needs_hosted = any(arms[a]["kind"] == "hosted" for a in chosen)
     route = _route()
     print("\n  ready?")
-    print(f"    environment   {'yes' if venv.is_file() else 'no  -> make data EXP=' + exp['slug']}")
+    print(f"    environment   {'yes' if _store.is_file(venv) else 'no  -> make data EXP=' + exp['slug']}")
     for d, ok in have.items():
         print(f"    data {d:14s} {'yes, hash-checked' if ok else 'no  -> make data EXP=' + exp['slug']}")
     if needs_hosted:
@@ -243,9 +244,9 @@ def run(exp: dict, level: str, only: str | None, extra: str | None = None) -> in
     chosen = [] if extra and not only else select(arms, level, only)
     cfgs = configs(exp)
     venv = _venv_python(exp)
-    if not venv.is_file():
+    if not _store.is_file(venv):
         raise SystemExit(f"no environment for {exp['slug']} yet: make data EXP={exp['slug']}")
-    missing = [d for d in exp["datasets"] if not (DATA / "materialized" / d).is_dir()]
+    missing = [d for d in exp["datasets"] if not _store.is_dir(DATA / "materialized" / d)]
     if missing:
         raise SystemExit(f"data not fetched ({', '.join(missing)}): make data EXP={exp['slug']}")
     if any(arms[a]["kind"] == "hosted" for a in chosen) and not _route():
@@ -254,7 +255,7 @@ def run(exp: dict, level: str, only: str | None, extra: str | None = None) -> in
             "harness/.env (see docs/REPRODUCE.md)"
         )
     out = REPRO / exp["slug"]
-    out.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(out, parents=True, exist_ok=True)
     for a in chosen:
         cid = arms[a]["cid"]
         if cid not in cfgs:
@@ -286,18 +287,18 @@ def _pinned(cfg_path: Path, arm: dict, out: Path) -> Path:
     """
     if not arm.get("revision"):
         return cfg_path
-    cfg = yaml.safe_load(cfg_path.read_text())
+    cfg = yaml.safe_load(_store.read_text(cfg_path))
     cfg["adapter"] = str((cfg_path.parent / cfg.get("adapter", "")).resolve())
     cfg.setdefault("params", {})["revision"] = arm["revision"]
     pinned = out / "configs" / cfg_path.name
-    pinned.parent.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(pinned.parent, parents=True, exist_ok=True)
     what = (
         "the verified safetensors conversion of the committed run's weights"
         if arm.get("safetensors")
         else "the committed run's weights"
     )
-    pinned.write_text(
-        f"# {cfg_path.relative_to(ROOT)}, pinned to {what}\n" + yaml.safe_dump(cfg, sort_keys=False)
+    _store.write_text(
+        pinned, f"# {cfg_path.relative_to(ROOT)}, pinned to {what}\n" + yaml.safe_dump(cfg, sort_keys=False)
     )
     print(
         f"  weights pinned to {arm['revision'][:12]}"
@@ -312,9 +313,9 @@ def _pinned(cfg_path: Path, arm: dict, out: Path) -> Path:
 
 def _run_new_arm(exp: dict, arms: dict, path: Path, venv: Path, out: Path) -> None:
     """Your own arm, measured on the same items and scored by the same code."""
-    if not path.is_file():
+    if not _store.is_file(path):
         raise SystemExit(f"no config at {path}")
-    cfg = yaml.safe_load(path.read_text()) or {}
+    cfg = yaml.safe_load(_store.read_text(path)) or {}
     cid, ds = cfg.get("config_id", ""), cfg.get("dataset_id")
     if ds != exp["dataset"]:
         raise SystemExit(f"{path.name}: dataset_id must be {exp['dataset']} (got {ds})")
@@ -343,8 +344,8 @@ def _items(run_dir: Path, metric: str) -> dict:
 def _latest_repro(exp: dict) -> dict:
     """{arm: run_dir} -- the newest rerun of each measured arm."""
     out: dict = {}
-    for f in sorted((REPRO / exp["slug"]).glob(f"{exp['prefix']}*/metrics.json")):
-        m = json.loads(f.read_text())
+    for f in sorted(_store.glob(REPRO / exp["slug"], f"{exp['prefix']}*/metrics.json")):
+        m = json.loads(_store.read_text(f))
         cid = m.get("config_id", "")
         if m.get("dataset_id") == exp["dataset"] and cid.endswith(exp["suffix"]):
             arm = cid[len(exp["prefix"]) : -len(exp["suffix"])]
@@ -423,8 +424,8 @@ def compare(exp: dict) -> int:
         ca, ra = [c[i] for i in common], [r[i] for i in common]
         same = sum(abs(x - y) < 1e-9 for x, y in zip(ca, ra))
         p = _paired_p(ca, ra)
-        m_new = json.loads((reruns[a] / "metrics.json").read_text())
-        m_old = json.loads((arms[a]["dir"] / "metrics.json").read_text())
+        m_new = json.loads(_store.read_text(reruns[a] / "metrics.json"))
+        m_old = json.loads(_store.read_text(arms[a]["dir"] / "metrics.json"))
         up_new, up_old = (_upstream(x) for x in (m_new, m_old))
         upstream = (
             "—"
@@ -511,7 +512,7 @@ def compare(exp: dict) -> int:
         ),
     ]
     card = "\n".join(lines) + "\n"
-    (REPRO / exp["slug"] / "REPLICATION.md").write_text(card)
+    _store.write_text(REPRO / exp["slug"] / "REPLICATION.md", card)
     print(card)
     print(f"written to {(REPRO / exp['slug'] / 'REPLICATION.md').relative_to(ROOT)}")
     return 1 if moved or any(s.startswith("DIFFERS") for s in statuses.values()) else 0

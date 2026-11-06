@@ -25,6 +25,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from evaluation_harness import _store
 from evaluation_harness._common import CODE, EXIT_PARTLY, ROOT, die, evh_prog
 
 try:
@@ -42,7 +43,7 @@ def main() -> int:
     ap.add_argument("--sort", help="leaderboard metric")
     args = ap.parse_args()
 
-    configs = [c for c in args.configs if c.is_file()]
+    configs = [c for c in args.configs if _store.is_file(c)]
     if not configs:
         die(f"no config files matched: {' '.join(str(c) for c in args.configs)}", "not-found")
 
@@ -50,7 +51,7 @@ def main() -> int:
     # unrelated numbers. Refuse up front rather than producing one.
     datasets: dict = {}
     for c in configs:
-        cfg = yaml.safe_load(c.read_text(encoding="utf-8")) or {}
+        cfg = yaml.safe_load(_store.read_text(c, encoding="utf-8")) or {}
         datasets.setdefault(cfg.get("dataset_id"), []).append(c.name)
     if len(datasets) != 1:
         lines = "\n".join(f"    {d or '(missing)'}: {', '.join(n)}" for d, n in datasets.items())

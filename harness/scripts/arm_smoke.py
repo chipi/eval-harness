@@ -32,7 +32,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _jsonout, _models
+from evaluation_harness import _jsonout, _models, _store
 from evaluation_harness._adapter import load_adapter, score_wants_source
 from evaluation_harness._common import DATA, EXIT_PROBLEMS, MATERIALIZED, die, evh_prog, load_dataset, now
 
@@ -219,11 +219,11 @@ def main() -> int:
 
 
 def _smoke(args: argparse.Namespace) -> int:
-    if not args.config.is_file():
+    if not _store.is_file(args.config):
         die(f"no config at {args.config}", "not-found")
     import yaml  # noqa: PLC0415
 
-    cfg = yaml.safe_load(args.config.read_text(encoding="utf-8")) or {}
+    cfg = yaml.safe_load(_store.read_text(args.config, encoding="utf-8")) or {}
     try:
         cfg = _models.resolve(cfg, DATA)
     except ValueError as exc:
@@ -280,8 +280,8 @@ def _smoke(args: argparse.Namespace) -> int:
         billed += min(bill, cost) if bill is not None else 0.0
 
     for n, item in enumerate(ds["items"][: args.items]):
-        text = (mat / (item.get("source_path") or item["item_id"])).read_text(
-            encoding="utf-8", errors="replace"
+        text = _store.read_text(
+            mat / (item.get("source_path") or item["item_id"]), encoding="utf-8", errors="replace"
         )
         row: dict[str, Any] = {"item": item["item_id"]}
         t0 = time.perf_counter()
@@ -299,8 +299,8 @@ def _smoke(args: argparse.Namespace) -> int:
         row["output_chars"] = len(res.output or "")
         row["cost_usd"] = getattr(res, "cost_usd", None)
         ref = None
-        if ref_dir is not None and (ref_dir / f"{item['item_id']}.txt").is_file():
-            ref = (ref_dir / f"{item['item_id']}.txt").read_text(encoding="utf-8", errors="replace")
+        if ref_dir is not None and _store.is_file(ref_dir / f"{item['item_id']}.txt"):
+            ref = _store.read_text(ref_dir / f"{item['item_id']}.txt", encoding="utf-8", errors="replace")
         try:
             scored = score(res.output, ref, text) if score_wants_source(score) else score(res.output, ref)
             row["scored"] = bool(scored)

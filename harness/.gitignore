@@ -42,7 +42,6 @@ data/materialized/*
 # hole. To reverse just this one, add: data/runs/cnn_*/outputs/
 data/runs/*/*
 !data/runs/*/metrics.json
-!data/runs/*/.store-id
 !data/runs/*/predictions.jsonl
 !data/runs/*/outputs.jsonl
 !data/runs/README.md
@@ -162,19 +161,6 @@ data/references/silver/summeval_*/*
 # the two directories stayed tracked only because git ignores nothing already tracked,
 # and adding any NEW file to either (this README, for one) silently failed.
 data/runs-*/
-# The sqlite store (RFC-025, runs.store: sqlite): a database per runs folder, beside it, ignored or kept as the
-# folder is; data/runs.sqlite is data/runs'. Its write-ahead files are never kept.
-data/runs-*.sqlite
-data/*.sqlite-wal
-data/*.sqlite-shm
-!data/runs-repeats.sqlite
-!data/runs-linux.sqlite
-!data/runs-adjudicated.sqlite
-!data/runs-rescored.sqlite
-!data/runs-labels-*.sqlite
-!data/runs-silver.sqlite
-!data/runs-judged.sqlite
-!data/runs-pair.sqlite
 
 # --- re-allowed, and only these ---------------------------------------------------
 
@@ -187,7 +173,6 @@ data/*.sqlite-shm
 !data/runs-repeats/
 data/runs-repeats/*/*
 !data/runs-repeats/*/metrics.json
-!data/runs-repeats/*/.store-id
 !data/runs-repeats/*/predictions.jsonl
 !data/runs-repeats/*/outputs.jsonl
 data/runs-repeats/*/rows.partial.jsonl
@@ -201,7 +186,6 @@ data/runs-repeats/*/rows.partial.jsonl
 !data/runs-linux/
 data/runs-linux/*/*
 !data/runs-linux/*/metrics.json
-!data/runs-linux/*/.store-id
 !data/runs-linux/*/predictions.jsonl
 !data/runs-linux/*/outputs.jsonl
 data/runs-linux/*/rows.partial.jsonl
@@ -213,7 +197,6 @@ data/runs-linux/*/rows.partial.jsonl
 !data/runs-adjudicated/
 data/runs-adjudicated/*/*
 !data/runs-adjudicated/*/metrics.json
-!data/runs-adjudicated/*/.store-id
 !data/runs-adjudicated/*/predictions.jsonl
 !data/runs-adjudicated/*/outputs.jsonl
 data/runs-adjudicated/*/rows.partial.jsonl
@@ -224,7 +207,6 @@ data/runs-adjudicated/*/rows.partial.jsonl
 !data/runs-rescored/
 data/runs-rescored/*/*/*/*
 !data/runs-rescored/*/*/*/metrics.json
-!data/runs-rescored/*/*/*/.store-id
 !data/runs-rescored/*/*/*/predictions.jsonl
 !data/runs-rescored/*/*/*/outputs.jsonl
 data/runs-rescored/*/*/*/rows.partial.jsonl
@@ -235,7 +217,6 @@ data/runs-rescored/*/*/*/rows.partial.jsonl
 !data/runs-labels-*/
 data/runs-labels-*/*/*
 !data/runs-labels-*/*/metrics.json
-!data/runs-labels-*/*/.store-id
 !data/runs-labels-*/*/predictions.jsonl
 !data/runs-labels-*/*/outputs.jsonl
 data/runs-labels-*/*/rows.partial.jsonl
@@ -246,7 +227,6 @@ data/runs-labels-*/*/rows.partial.jsonl
 !data/runs-silver/
 data/runs-silver/*/*
 !data/runs-silver/*/metrics.json
-!data/runs-silver/*/.store-id
 !data/runs-silver/*/predictions.jsonl
 !data/runs-silver/*/outputs.jsonl
 data/runs-silver/*/rows.partial.jsonl
@@ -258,7 +238,6 @@ data/runs-silver/*/rows.partial.jsonl
 !data/runs-judged/
 data/runs-judged/*/*/*
 !data/runs-judged/*/*/metrics.json
-!data/runs-judged/*/*/.store-id
 !data/runs-judged/*/*/predictions.jsonl
 !data/runs-judged/*/*/outputs.jsonl
 data/runs-judged/*/*/rows.partial.jsonl
@@ -272,7 +251,6 @@ data/runs-judged/*/*/rows.partial.jsonl
 !data/runs-pair/
 data/runs-pair/*/*
 !data/runs-pair/*/metrics.json
-!data/runs-pair/*/.store-id
 !data/runs-pair/*/predictions.jsonl
 !data/runs-pair/*/outputs.jsonl
 data/runs-pair/*/rows.partial.jsonl
@@ -344,3 +322,6 @@ data/sources/orrery_triage_v2.hf/
 data/captures/*/records/
 data/sources/fleet_dedup_*/
 data/sources/fleet_dedup_v1.hf/
+
+# The sqlite store (RFC-025, store: sqlite): the project's data in one database, not in git; never committed here.
+data/project.sqlite*

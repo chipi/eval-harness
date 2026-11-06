@@ -16,7 +16,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 
-from evaluation_harness import _jsonout
+from evaluation_harness import _jsonout, _store
 from evaluation_harness._common import (
     BASELINES,
     BOOKKEEPING_PREFIXES,
@@ -49,7 +49,7 @@ def _baseline_scores(b: dict) -> tuple[dict, int]:
 
 
 def _baselines() -> int:
-    files = sorted(BASELINES.glob("*.json"))
+    files = sorted(_store.glob(BASELINES, "*.json"))
     if not files:
         print(
             "no baselines yet — promote a run:  "

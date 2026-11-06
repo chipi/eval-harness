@@ -37,7 +37,7 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _card, _dataset_version, _fetch, _fields, _licences, _source, _sources
+from evaluation_harness import _card, _dataset_version, _fetch, _fields, _licences, _source, _sources, _store
 from evaluation_harness._common import (
     DATASETS,
     ROOT,
@@ -90,7 +90,7 @@ def _fieldset(fieldset_id):
 
 def _attach(items: list, fieldset: dict, path: Path) -> None:
     """Put the values in `path` (rows keyed by item_id) on the matching items, typed."""
-    if not path.is_file():
+    if not _store.is_file(path):
         die(f"no fields file at {path}", "not-found")
     by_id = {it["item_id"]: it for it in items}
     bad = []
@@ -121,7 +121,7 @@ def _attach(items: list, fieldset: dict, path: Path) -> None:
 def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
     """Items from a manifest: each row an item_id and its source_url (pinned by source_sha256,
     or fetched and pinned now), or a source_path under --source-dir. Other columns are fields."""
-    if not path.is_file():
+    if not _store.is_file(path):
         die(f"no manifest at {path}", "not-found")
     known = ("item_id", "source_url", "source_path", "source_sha256")
     items, bad, pinned = [], [], 0
@@ -150,7 +150,7 @@ def _from_manifest(path: Path, fieldset, source_dir: Path, tags: list) -> list:
             item.update(source_path=rel or f"{iid}{_fetch.suffix_of(url)}", source_url=url, source_sha256=got)
         elif rel:
             p = source_dir / rel
-            if not p.is_file():
+            if not _store.is_file(p):
                 bad.append(f"row {n} ({iid}): no file {p}")
                 continue
             item.update(source_path=rel, source_sha256=sha256(p))
@@ -183,7 +183,6 @@ def _from_source(name: str, query_text: str, dataset_id: str, fieldset, force: b
     """(items, what the source said) from a dataset source (E5): its items written into data/sources/<id>/, a
     `source_url` one pinned as a manifest's is, its row and fields kept."""
     import json  # noqa: PLC0415
-    import shutil  # noqa: PLC0415
 
     try:
         query = json.loads(query_text or "{}")
@@ -201,7 +200,7 @@ def _from_source(name: str, query_text: str, dataset_id: str, fieldset, force: b
     block = _source.block(said.get("source") or {"provider": name})
     bad = _source.problems(block) + _card.problems(said.get("card") or {})
     out = SOURCES / dataset_id
-    if out.exists() and any(out.iterdir()) and not force:
+    if _store.exists(out) and any(_store.iterdir(out)) and not force:
         die(f"{out} has files: the items of another fetch (--force to replace them)", "would-overwrite")
     items, ids = [], set()
     for n, it in enumerate(got, 1):
@@ -213,14 +212,14 @@ def _from_source(name: str, query_text: str, dataset_id: str, fieldset, force: b
         item: dict = {"item_id": iid}
         if it.get("text") is not None:
             dest = out / f"{iid}.txt"
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_text(str(it["text"]), encoding="utf-8")
+            _store.mkdir(dest.parent, parents=True, exist_ok=True)
+            _store.write_text(dest, str(it["text"]), encoding="utf-8")
             item.update(source_path=f"{iid}.txt", source_sha256=sha256(dest))
         elif it.get("file"):
             f = Path(it["file"])
             dest = out / f"{iid}{f.suffix}"
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(f, dest)
+            _store.mkdir(dest.parent, parents=True, exist_ok=True)
+            _store.copy_file(f, dest)
             item.update(source_path=dest.relative_to(out).as_posix(), source_sha256=sha256(dest))
         elif it.get("source_url"):
             url, pin = str(it["source_url"]), str(it.get("source_sha256") or "")
@@ -261,7 +260,7 @@ def _lineage(parent_id: str, dataset_id: str, items: list) -> dict:
             "bad-argument",
         )
     path = DATASETS / f"{parent_id}.json"
-    if not path.is_file():
+    if not _store.is_file(path):
         die(f"--from {parent_id}: no dataset at {path}", "not-found")
     old = {it["item_id"]: it["source_sha256"] for it in read_json(path).get("items") or []}
     new = {it["item_id"]: it["source_sha256"] for it in items}
@@ -287,7 +286,7 @@ def _say_lineage(lin: dict | None) -> None:
 def parent_version(dataset_id: str | None) -> str | None:
     """A dataset's stored version (E3), None when there is no such dataset."""
     path = DATASETS / f"{dataset_id}.json" if dataset_id else None
-    return read_json(path).get("version") if path and path.is_file() else None
+    return read_json(path).get("version") if path and _store.is_file(path) else None
 
 
 def _write(
@@ -414,7 +413,7 @@ def main() -> int:
 
     out = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
     previous = {}
-    if out.exists():
+    if _store.exists(out):
         try:
             previous = read_json(out)
         except Exception:  # noqa: BLE001 — an unreadable previous file is simply replaced
@@ -452,7 +451,7 @@ def main() -> int:
         )
         return 0
 
-    if out.exists() and not args.force:
+    if _store.exists(out) and not args.force:
         die(
             f"{out} already exists.\n"
             "  A dataset is FROZEN — runs cite it by id and were measured on these bytes.\n"
@@ -510,7 +509,7 @@ def main() -> int:
             previous,
             fieldset,
             desc,
-            _relative_source_dir(args.source_dir) if args.source_dir.is_dir() else "",
+            _relative_source_dir(args.source_dir) if _store.is_dir(args.source_dir) else "",
             lineage,
             licence=licence,
         )
@@ -525,7 +524,7 @@ def main() -> int:
         )
         return 0
 
-    if not args.source_dir.is_dir():
+    if not _store.is_dir(args.source_dir):
         die(f"no source dir at {args.source_dir} — put your raw inputs there first", "not-found")
 
     # Skip the directory's own documentation and dotfiles. Every data dir here
@@ -534,7 +533,7 @@ def main() -> int:
     # hashes verified" — which is exactly the kind of quiet wrong answer this
     # tooling exists to prevent.
     def is_item(p: Path) -> bool:
-        if not p.is_file() or p.name.startswith("."):
+        if not _store.is_file(p) or p.name.startswith("."):
             return False
         return args.include_docs or p.name.lower() not in {"readme.md", "readme.txt", "readme"}
 

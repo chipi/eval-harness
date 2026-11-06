@@ -43,7 +43,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _outputs, _tags
+from evaluation_harness import _common, _outputs, _store, _tags
 from evaluation_harness._codeid import file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -97,7 +97,7 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    if not args.sheet.is_file():
+    if not _store.is_file(args.sheet):
         die(f"no sheet {args.sheet}", "not-found")
     load_dataset(args.dataset_id)
     rows, choices = read_csv(args.sheet)
@@ -108,7 +108,7 @@ def main() -> int:
         )
     head = list(rows[0])
     rows = [r for r in rows if not r["item_id"].startswith(NOT_AN_ITEM)]
-    sha = hashlib.sha256(args.sheet.read_bytes()).hexdigest()
+    sha = hashlib.sha256(_store.read_bytes(args.sheet)).hexdigest()
 
     def filled(col: str) -> bool:
         return any((r.get(col) or "").strip() for r in rows)
@@ -141,7 +141,7 @@ def main() -> int:
     if has_label:
         labels, notes = labels_from_rows(rows, choices)
         out = set_dir(args.dataset_id, args.name)
-        if out.exists() and any(out.iterdir()):
+        if _store.exists(out) and any(_store.iterdir(out)):
             die(
                 f"{out} exists: a label set is never edited. A correction is a new set: name another.",
                 "would-overwrite",
@@ -154,7 +154,7 @@ def main() -> int:
                 "bad-argument",
             )
         target = _common.DATA / "runs-judged" / args.scorer
-        if target.exists() and any(target.iterdir()):
+        if _store.exists(target) and any(_store.iterdir(target)):
             die(
                 f"{target} exists: judged runs are never overwritten. Name another --scorer.",
                 "would-overwrite",
@@ -291,7 +291,7 @@ def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> 
     for k, per_item in sorted(values.items()):
         arm = key["arms"][k]
         src = _common.DATA / arm["path"] if arm.get("path") else None
-        if src is None or not (src / "metrics.json").is_file():
+        if src is None or not _store.is_file(src / "metrics.json"):
             src = run_dir(arm["run"], args.dataset_id)
         m = read_json(src / "metrics.json")
         old = {r["item_id"]: r for r in item_rows(src, strict=False)}
@@ -349,7 +349,9 @@ def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> 
             )
             new["fingerprint"] = fp
         out = root / src.name
-        out.mkdir(parents=True, exist_ok=True)  # no outputs of its own: they are its source's (RFC-024)
+        _store.mkdir(
+            out, parents=True, exist_ok=True
+        )  # no outputs of its own: they are its source's (RFC-024)
         _outputs.write_rows(out, recs)
         write_json(out / "metrics.json", new)
         written += 1

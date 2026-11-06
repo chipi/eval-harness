@@ -23,7 +23,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import json
 
-from evaluation_harness import _card, _croissant, _fields, _hf_readme, _licences
+from evaluation_harness import _card, _croissant, _fields, _hf_readme, _licences, _store
 from evaluation_harness._common import DATASETS, dataset_id_ok, die, evh_prog, read_json, write_text_atomic
 
 
@@ -63,7 +63,7 @@ def main() -> int:
     ap.add_argument("--out", type=_Path, help="write to this file instead of stdout")
     args = ap.parse_args()
     f = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
-    if not f.is_file():
+    if not _store.is_file(f):
         die(f"no dataset {args.dataset_id!r} (evh datasets lists them)", "not-found")
     record = read_json(f)
     if args.format == "text":

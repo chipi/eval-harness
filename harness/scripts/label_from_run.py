@@ -26,7 +26,7 @@ import argparse
 import hashlib
 from pathlib import Path
 
-from evaluation_harness import _outputs, _runs
+from evaluation_harness import _outputs, _runs, _store
 from evaluation_harness._common import RUNS, die, evh_prog, load_dataset, read_json
 from evaluation_harness._label_sets import set_dir, write_set
 
@@ -78,8 +78,8 @@ def _from_run(run_id: str, dataset_id: str, items: list[dict], args: argparse.Na
     so it must name the code and the system that produced it.
     """
     run_dir = RUNS / run_id
-    if not (run_dir / "metrics.json").is_file():
-        hint = " (it has no metrics.json: it did not finish)" if run_dir.is_dir() else ""
+    if not _store.is_file(run_dir / "metrics.json"):
+        hint = " (it has no metrics.json: it did not finish)" if _store.is_dir(run_dir) else ""
         die(f"no finished run {run_id!r} under {RUNS}{hint}", "not-found")
     m = read_json(run_dir / "metrics.json")
     if m.get("dataset_id") != dataset_id:
@@ -148,7 +148,7 @@ def _rebuild(dataset_id: str, name: str, rows: list) -> bool:
     against the set's checksums. False when this is not that case."""
     d = set_dir(dataset_id, name)
     lj = d / "labels.json"
-    if not lj.is_file() or any(d.glob("*.txt")):
+    if not _store.is_file(lj) or any(_store.glob(d, "*.txt")):
         return False
     doc = read_json(lj)
     if doc.get("redistributed") is not False:
@@ -163,7 +163,7 @@ def _rebuild(dataset_id: str, name: str, rows: list) -> bool:
             "mismatch",
         )
     for iid, text in texts.items():
-        (d / f"{iid}.txt").write_text(text, encoding="utf-8")
+        _store.write_text(d / f"{iid}.txt", text, encoding="utf-8")
     print(f"{d}: {len(texts)} label text(s) rebuilt from the run, matching the set (no calls)")
     return True
 
@@ -189,7 +189,7 @@ def main() -> int:
     args = ap.parse_args()
 
     m = RUNS / args.run / "metrics.json"
-    if not m.is_file():
+    if not _store.is_file(m):
         die(f"no finished run {args.run!r} under {RUNS}", "not-found")
     dataset_id = read_json(m).get("dataset_id")
     if not dataset_id:

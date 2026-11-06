@@ -27,7 +27,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 from pathlib import Path
 
-from evaluation_harness import _jsonout
+from evaluation_harness import _jsonout, _store
 from evaluation_harness._adapter import recorded_metric_kinds
 from evaluation_harness._common import (
     RUNS,
@@ -171,7 +171,7 @@ def load(run_id: str) -> dict:
     if run_id in ("", ".", "..") or run_id != Path(run_id).name:
         die(f"no run {run_id!r}: a run id names a directory of {RUNS.name}, not a path", "bad-argument")
     p = RUNS / run_id / "metrics.json"
-    if not p.is_file():
+    if not _store.is_file(p):
         die(f"no run {run_id!r} (looked for {p})", "not-found")
     return read_json(p)
 

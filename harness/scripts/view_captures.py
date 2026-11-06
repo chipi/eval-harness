@@ -18,6 +18,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import json
 
+from evaluation_harness import _store
 from evaluation_harness._common import CAPTURES, DATASETS, dataset_id_ok, die, evh_prog, read_json
 
 
@@ -47,11 +48,11 @@ def listing(data_dir: _Path | None = None) -> list[dict]:
     caps = data_dir / "captures" if data_dir else CAPTURES
     dsets = data_dir / "datasets" if data_dir else DATASETS
     made: dict = {}
-    for f in sorted(dsets.glob("*.json")) if dsets.is_dir() else []:
+    for f in sorted(_store.glob(dsets, "*.json")) if _store.is_dir(dsets) else []:
         cap = (read_json(f).get("made_from") or {}).get("capture")
         if cap:
             made.setdefault(cap, []).append(f.stem)
-    ids = sorted(p.parent.name for p in caps.glob("*/capture.json")) if caps.is_dir() else []
+    ids = sorted(p.parent.name for p in _store.glob(caps, "*/capture.json")) if _store.is_dir(caps) else []
     return [summary(i, made, caps) for i in ids]
 
 

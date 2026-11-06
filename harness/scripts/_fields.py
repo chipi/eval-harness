@@ -25,7 +25,7 @@ import statistics
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _store
 
 TYPES = ("text", "number", "integer", "boolean", "date", "duration", "url", "choice")
 #: Types a comparison can be broken down by: a handful of named groups, never a continuum.
@@ -45,9 +45,9 @@ def load_fieldset(fieldset_id: str, fields_dir: Path | None = None) -> dict[str,
     import yaml  # noqa: PLC0415
 
     p = fieldset_path(fieldset_id, fields_dir)
-    if not p.is_file():
+    if not _store.is_file(p):
         return None
-    doc = yaml.safe_load(p.read_text(encoding="utf-8"))
+    doc = yaml.safe_load(_store.read_text(p, encoding="utf-8"))
     return doc if isinstance(doc, dict) else {}
 
 
@@ -65,7 +65,7 @@ def fieldset_problems(fieldset_id: str, fs: dict[str, Any]) -> list[str]:
     import json  # noqa: PLC0415
 
     try:
-        jsonschema.validate(fs, json.loads((_common.SCHEMAS / "fieldset.schema.json").read_text()))
+        jsonschema.validate(fs, json.loads(_store.read_text(_common.SCHEMAS / "fieldset.schema.json")))
     except jsonschema.ValidationError as exc:
         out.append(exc.message)
     return out
@@ -159,8 +159,10 @@ def digest(items: list[dict[str, Any]]) -> str:
 def read_rows(path: Path) -> list[dict[str, Any]]:
     """Rows of a .csv (header row) or .jsonl file, as dicts."""
     if path.suffix.lower() == ".jsonl":
-        return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
-    with path.open(newline="", encoding="utf-8-sig") as fh:  # a spreadsheet's CSV may begin with a BOM
+        return [json.loads(x) for x in _store.read_text(path, encoding="utf-8").splitlines() if x.strip()]
+    with _store.open_file(
+        path, newline="", encoding="utf-8-sig"
+    ) as fh:  # a spreadsheet's CSV may begin with a BOM
         return list(csv.DictReader(fh))
 
 

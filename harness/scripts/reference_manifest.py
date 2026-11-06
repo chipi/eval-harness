@@ -20,7 +20,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _store
 from evaluation_harness._common import die, now
 from evaluation_harness._label_sets import source_line
 from evaluation_harness._references import write_manifest
@@ -68,7 +68,7 @@ def main() -> int:
         die(f"--reference-id {args.reference_id!r}: expected gold/<name> or silver/<name>", "bad-argument")
     dataset_id = args.dataset_id or name
     ref_dir = _common.DATA / "references" / tier / name
-    if not any(ref_dir.glob("*.txt")):
+    if not any(_store.glob(ref_dir, "*.txt")):
         die(f"{ref_dir} has no reference texts: build them first ({args.source})", "not-found")
     source = {"kind": args.kind, "by": args.labelled_by, "via": args.source}
     doc = write_manifest(

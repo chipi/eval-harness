@@ -34,7 +34,6 @@ import argparse
 import html
 import json
 import re
-import shutil
 import statistics
 import sys
 from datetime import datetime, timezone
@@ -43,7 +42,7 @@ from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common, _fields, _visibility  # noqa: E402
+from evaluation_harness import _common, _fields, _store, _visibility  # noqa: E402
 from evaluation_harness._common import ROOT, die  # noqa: E402
 from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
@@ -59,7 +58,7 @@ from evaluation_harness.catalog_adapter import Adapter, item_fields, load_catalo
 from evaluation_harness.stats import fmt_p  # noqa: E402
 
 #: The front-end files every page loads: installed beside the package, or in a checkout.
-ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if p.is_dir())
+ASSET_DIR = next(p for p in (HERE / "catalog_assets", HERE.parent / "catalog_assets") if _store.is_dir(p))
 # forest.js draws a baseline's answers chart; no page of the harness's own uses it, a project's
 # builder does (podcast_scraper's baseline pages), so it ships with the assets.
 ASSETS = (
@@ -608,8 +607,8 @@ def group_chips(tid: str, groups: tuple) -> str:
 def write(out: Path, rel: str, content: str) -> None:
     """Write content to a relative path within output directory."""
     p = out / rel
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(content, encoding="utf-8")
+    _store.mkdir(p.parent, parents=True, exist_ok=True)
+    _store.write_text(p, content, encoding="utf-8")
 
 
 def write_periods(A: Adapter, by_ds: dict, out: Path) -> None:
@@ -766,10 +765,10 @@ def inspect_url(arms: list, up: str = "", **params) -> str:
 
 def copy_assets(out: Path) -> None:
     """Copy CSS, JS, and SVG assets to output directory."""
-    (out / "assets").mkdir(parents=True, exist_ok=True)
+    _store.mkdir(out / "assets", parents=True, exist_ok=True)
     for a in ASSETS:
-        shutil.copy(ASSET_DIR / a, out / "assets" / a)
-    (out / "assets" / "head.js").write_text(HEAD_JS_SRC, encoding="utf-8")
+        _store.copy_file(ASSET_DIR / a, out / "assets" / a)
+    _store.write_text(out / "assets" / "head.js", HEAD_JS_SRC, encoding="utf-8")
 
 
 def fmt(v) -> str:
@@ -2208,7 +2207,7 @@ def render_added(A: Adapter, ds: str) -> str:
     sha = {}
     got = getattr(A, "data_dir", None)
     if got is not None:
-        doc = json.loads((Path(got) / "datasets" / f"{ds}.json").read_text(encoding="utf-8"))
+        doc = json.loads(_store.read_text(Path(got) / "datasets" / f"{ds}.json", encoding="utf-8"))
         sha = {it["item_id"]: it.get("source_sha256") for it in doc.get("items") or []}
     rows = [
         {
@@ -2374,6 +2373,10 @@ def _texts_tracked(ds: str) -> bool:
     except SystemExit:
         return False
     src = ROOT / d.get("source_dir", "data/sources")
+    if _common.store() == "sqlite":  # RFC-025: the database is the record, as git is for files
+        return all(
+            _store.is_file(src / (it.get("source_path") or it["item_id"])) for it in d.get("items") or []
+        )
     return not dataset_profile.tracked(
         [src / (it.get("source_path") or it["item_id"]) for it in d.get("items") or []]
     )
@@ -4716,8 +4719,8 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     global SECTIONS
     SECTIONS = tuple(sections)
     nav = NAV
-    if out.exists():
-        shutil.rmtree(out)
+    if _store.exists(out):
+        _store.rmtree(out)
     copy_assets(out)
     A = scores_once(A)  # one build: each arm's scores read once, not for every page that asks
     by_ds = collect(A)
@@ -4876,9 +4879,9 @@ def main() -> int:
     API = args.api
     BRAND = args.brand
     if args.head:
-        if not args.head.is_file():
+        if not _store.is_file(args.head):
             die(f"--head {args.head}: no such file", "not-found")
-        HEAD = args.head.read_text(encoding="utf-8").strip() + "\n"
+        HEAD = _store.read_text(args.head, encoding="utf-8").strip() + "\n"
     if args.repo:
         if not args.repo.startswith(("https://", "http://")):
             die(
@@ -4887,9 +4890,9 @@ def main() -> int:
             )
         REPO = args.repo if args.repo.endswith("/") else args.repo + "/"
     if args.about:
-        if not args.about.is_file():
+        if not _store.is_file(args.about):
             die(f"--about {args.about}: no such file", "not-found")
-        ABOUT = args.about.read_text(encoding="utf-8").strip()
+        ABOUT = _store.read_text(args.about, encoding="utf-8").strip()
     sections = []
     for spec in args.link:
         label, _, url = spec.partition("=")

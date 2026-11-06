@@ -37,9 +37,8 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import shutil
 
-from evaluation_harness import _importers
+from evaluation_harness import _importers, _store
 from evaluation_harness._common import CAPTURES, dataset_id_ok, die, evh_prog, now, read_json, write_json
 from evaluation_harness.importer_check import query_of
 
@@ -90,7 +89,7 @@ def main() -> int:
         sample = {"rate": args.sample_rate, "seed": args.seed}
     elif args.seed is not None:
         die("--seed goes with --sample-rate", "bad-argument")
-    if (out / "capture.json").exists() and not args.force:
+    if _store.exists(out / "capture.json") and not args.force:
         die(
             f"{out} exists: a capture is not overwritten. Name a new one, or pass --force if nothing is made from it.",
             "would-overwrite",
@@ -149,9 +148,9 @@ def main() -> int:
             "invalid-file",
         )
 
-    if out.exists():
-        shutil.rmtree(out)
-    (out / "records").mkdir(parents=True)
+    if _store.exists(out):
+        _store.rmtree(out)
+    _store.mkdir(out / "records", parents=True)
     for r in norm:
         write_json(out / "records" / f"{r['id']}.json", r)
     doc = {

@@ -23,6 +23,7 @@ import hashlib
 from collections import Counter
 from pathlib import Path
 
+from evaluation_harness import _store
 from evaluation_harness._common import CAPTURES, die, evh_prog, load_dataset
 from evaluation_harness._importers import parse_time
 from evaluation_harness._label_sets import label_text, write_set
@@ -71,10 +72,12 @@ def main() -> int:
     source = {
         "kind": "rule",
         "capture": args.capture,
-        "capture_sha256": hashlib.sha256((CAPTURES / args.capture / "capture.json").read_bytes()).hexdigest(),
+        "capture_sha256": hashlib.sha256(
+            _store.read_bytes(CAPTURES / args.capture / "capture.json")
+        ).hexdigest(),
         "captured_at": doc.get("captured_at"),
         "mapping": args.map.as_posix(),
-        "mapping_sha256": hashlib.sha256(args.map.read_bytes()).hexdigest(),
+        "mapping_sha256": hashlib.sha256(_store.read_bytes(args.map)).hexdigest(),
         **{k: counts[k] for k in ("matched", "skipped", "unmatched", "no_record")},
     }
     out = write_set(args.dataset_id, args.name, labels, source, args.map)

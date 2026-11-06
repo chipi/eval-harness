@@ -25,12 +25,11 @@ import argparse
 import hashlib
 import json
 import shlex
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
-from evaluation_harness import _importers
+from evaluation_harness import _importers, _store
 from evaluation_harness._common import (
     CAPTURES,
     ROOT,
@@ -61,40 +60,46 @@ def main() -> int:
     if "{records}" not in args.command:
         die("--command must name {records}, the folder the scrubber works on", "bad-argument")
     base = CAPTURES / dataset_id_ok(args.capture)
-    if not (base / "capture.json").is_file():
+    if not _store.is_file(base / "capture.json"):
         die(f"no capture {args.capture!r} at {base}", "not-found")
     doc = read_json(base / "capture.json")
     records = base / "records"
-    argv = [a.replace("{records}", str(records)) for a in shlex.split(args.command)]
     with tempfile.TemporaryDirectory() as td:
-        backup = Path(td) / "records"
-        shutil.copytree(records, backup)
+        # The scrubber works on a copy (a folder it can rewrite whichever the project's store, RFC-025); the records
+        # are replaced only when every one comes back well-formed, so a failure leaves them as they were.
+        work = Path(td) / "records"
+        _store.copy_tree(records, work)
+        argv = [a.replace("{records}", str(work)) for a in shlex.split(args.command)]
 
-        def restore(why: str) -> None:
-            shutil.rmtree(records)
-            shutil.copytree(backup, records)
+        def refuse(why: str) -> None:
             die(f"{why}; the records are as they were, nothing recorded", "failed")
 
         r = subprocess.run(argv, capture_output=True, text=True)
         if r.returncode != 0:
-            restore(f"the scrubber exited {r.returncode}: {(r.stderr or r.stdout).strip()[-300:]}")
+            refuse(f"the scrubber exited {r.returncode}: {(r.stderr or r.stdout).strip()[-300:]}")
         changed = 0
         for entry in doc["records"]:
-            f = records / f"{entry['id']}.json"
+            f = work / f"{entry['id']}.json"
             try:
-                rec = json.loads(f.read_text(encoding="utf-8"))
+                rec = json.loads(_store.read_text(f, encoding="utf-8"))
             except (OSError, json.JSONDecodeError):
-                restore(f"{f.name} is not valid JSON after scrubbing")
+                refuse(f"{f.name} is not valid JSON after scrubbing")
             if not isinstance(rec, dict) or rec.get("id") != entry["id"] or _importers.problems(rec):
-                restore(f"{f.name} is no longer the same well-formed record after scrubbing")
+                refuse(f"{f.name} is no longer the same well-formed record after scrubbing")
             new = _importers.record_sha256(rec)
             if new != entry["sha256"]:
                 changed += 1
                 entry.setdefault("sha256_before_scrub", entry["sha256"])
                 entry["sha256"] = new
                 entry["body_sha256"] = _importers.body_sha256(rec)
+        _store.rmtree(records)
+        _store.copy_tree(work, records)
     # Keyed relative to the project (never a machine's absolute path in a committed file).
-    named = {_label(a): hashlib.sha256(Path(a).read_bytes()).hexdigest() for a in argv if Path(a).is_file()}
+    named = {
+        _label(a): hashlib.sha256(_store.read_bytes(Path(a))).hexdigest()
+        for a in argv
+        if _store.is_file(Path(a))
+    }
     doc["scrubbed"] = {
         "command": args.command,
         "files_sha256": named,

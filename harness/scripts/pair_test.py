@@ -55,7 +55,11 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _hypothesis, _jsonout  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _hypothesis,
+    _jsonout,
+    _store,
+)
 from evaluation_harness._common import (  # noqa: E402
     RUNS,
     data_rel,
@@ -151,7 +155,7 @@ def _hypothesis_of(args: argparse.Namespace, runs: list) -> dict | None:
     if found:
         return found
     path = _hypothesis.config_ids().get(args.a) if a_runs else None
-    cfg = yaml.safe_load(path.read_text(encoding="utf-8")) if path else None
+    cfg = yaml.safe_load(_store.read_text(path, encoding="utf-8")) if path else None
     if same((cfg or {}).get("hypothesis")):
         return {
             **(cfg or {})["hypothesis"],
@@ -188,17 +192,17 @@ def _reference_hashes(reference_id: str, items: list[str]) -> dict[str, str]:
     recorded: dict = {}
     for name, key in (("manifest.json", "items_sha256"), ("labels.json", "items")):
         f = root / name
-        if f.is_file():
+        if _store.is_file(f):
             try:
-                recorded = json.loads(f.read_text(encoding="utf-8")).get(key) or {}
+                recorded = json.loads(_store.read_text(f, encoding="utf-8")).get(key) or {}
             except ValueError:
                 recorded = {}
             break
     out: dict[str, str] = {}
     for i in items:
         t = root / f"{i}.txt"
-        if t.is_file():
-            out[i] = hashlib.sha256(t.read_bytes()).hexdigest()
+        if _store.is_file(t):
+            out[i] = hashlib.sha256(_store.read_bytes(t)).hexdigest()
             continue
         got = recorded.get(i)
         got = got.get("sha256") if isinstance(got, dict) else got

@@ -27,7 +27,7 @@ import sys
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
-from evaluation_harness import _common, _outputs
+from evaluation_harness import _common, _outputs, _store
 from evaluation_harness._common import lower_is_better
 
 Run = tuple[Path, dict]
@@ -37,7 +37,7 @@ def read_metrics(run_dir: Path) -> dict | None:
     """A run's metrics.json, or None when it is missing, unreadable or not an object."""
     mj = run_dir / "metrics.json"
     try:
-        m = json.loads(mj.read_text(encoding="utf-8"))
+        m = json.loads(_store.read_text(mj, encoding="utf-8"))
     except (OSError, ValueError):
         return None
     return m if isinstance(m, dict) else None
@@ -55,8 +55,8 @@ def runs_on(
     `match`, or exactly `config_id`."""
     base = runs_dir or _common.RUNS
     out: list[Run] = []
-    for d in sorted(base.iterdir()) if base.is_dir() else []:
-        m = read_metrics(d) if d.is_dir() else None
+    for d in sorted(_store.iterdir(base)) if _store.is_dir(base) else []:
+        m = read_metrics(d) if _store.is_dir(d) else None
         if m is None or not m.get("config_id"):
             continue
         if dataset_id is not None and m.get("dataset_id") != dataset_id:

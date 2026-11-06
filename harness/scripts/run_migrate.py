@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Bring the project's runs to one outputs file each, once (idempotent; RFC-024), or move them between stores (RFC-025).
+"""Bring the project's runs to one outputs file each, once (idempotent; RFC-024).
 
     evh run-migrate --dry-run     what would change: runs, files before and after
     evh run-migrate               write it
-    evh run-migrate --to sqlite   move every run's outputs and rows into data/runs.sqlite (runs.store: sqlite first)
-    evh run-migrate --to files    move them back into each run's outputs.jsonl and predictions.jsonl
 
 For every run directory under data/runs* that still has an `outputs/` folder: its `outputs/<item>.txt` become one
 `outputs.jsonl`, in the dataset's order, each line checked against the bytes of the file it came from. A derived run
@@ -13,11 +11,6 @@ its source's. One that differs, or whose source is not here, keeps its own file 
 (`outputs/_rows.jsonl`) is dropped when predictions.jsonl has every row it holds, else kept as `rows.partial.jsonl`.
 Before a run's folder is removed, V5's signature and every output read back are checked equal to what the files
 held; any difference stops the migration with nothing of that run changed.
-
-`--to` moves runs one at a time: written to the target store, every output's sha256 and the order, and the rows'
-exact text, read back equal to the source's, then deleted from the source. A crash between leaves the run in both, and the next `--to` finishes it.
-It refuses while the project's store (runs.store, or EVAL_RUNS_STORE) is not the target, so nothing writes to the old
-store after the move.
 """
 
 from __future__ import annotations
@@ -216,132 +209,11 @@ def _checkpoint_needed(rows: Path, predictions: Path) -> bool:
     return not ids(rows) <= ids(predictions)
 
 
-def _run_dirs_of(st: _outputs.Store) -> list[Path]:
-    """Every run directory a store holds outputs, rows or a row checkpoint for."""
-    if isinstance(st, _outputs.SqliteRouter):
-        # The project's database, and the runs directory's when EVAL_RUNS_DIR puts it under another runs* folder.
-        found: set[Path] = set()
-        for path in {*_outputs.dbs(_common.DATA), _outputs.db_for(_common.RUNS / "_")} - {None}:
-            assert path is not None
-            if not path.is_file():
-                continue
-            db = st.db(path)
-            found |= {path.parent / k for k in {*db.runs(), *(k for k, _ in db.row_runs())}}
-        return sorted(found)
-    roots = {*(p for p in _common.DATA.glob("runs*") if p.is_dir()), _common.RUNS}
-    return sorted(
-        {
-            d
-            for r in roots
-            if r.is_dir()
-            for depth in ("*", "*/*", "*/*/*")
-            for d in r.glob(depth)
-            if st.has(d) or st.rows_text(d) is not None or st.rows_text(d, partial=True) is not None
-        }
-    )
-
-
-def _move_outputs(
-    d: Path, src: _outputs.Store, dst: _outputs.Store, to: str, dry_run: bool
-) -> tuple[int, bool]:
-    """One run's outputs moved; (how many, whether a stopped move had already written them)."""
-    rows = src.lines(d)
-    if not rows:
-        return 0, False
-    bad = [r.get("item_id") for r in rows if _outputs.sha256(str(r.get("text", ""))) != r.get("sha256")]
-    if bad:
-        die(
-            f"{d}: output(s) whose text does not match its sha256: {', '.join(map(str, bad[:5]))}", "mismatch"
-        )
-    texts = {r["item_id"]: r["text"] for r in rows}
-    finished = dst.has(d)
-    if finished and dst.read(d) != texts:
-        die(
-            f"{d}: already in the {to} store with different outputs; nothing of it changed", "would-overwrite"
-        )
-    if dry_run:
-        return len(texts), finished
-    if not finished:
-        dst.write_all(d, texts, list(texts))
-    want = [(r["item_id"], r["text"], r["sha256"]) for r in rows]
-    if [(r["item_id"], r["text"], r["sha256"]) for r in dst.lines(d)] != want:
-        dst.delete(d)
-        die(f"{d}: the outputs read back from the {to} store differ; it stays in the old one", "mismatch")
-    src.delete(d)
-    return len(texts), finished
-
-
-def _move_rows(d: Path, src: _outputs.Store, dst: _outputs.Store, to: str, dry_run: bool) -> tuple[int, bool]:
-    """One run's rows and row checkpoint moved, each exactly as written; (row lines, whether already written)."""
-    n, finished = 0, False
-    for partial in (False, True):
-        text = src.rows_text(d, partial)
-        if text is None:
-            continue
-        there = dst.rows_text(d, partial)
-        if there is not None and there != text:
-            what = "row checkpoint" if partial else "rows"
-            die(
-                f"{d}: already in the {to} store with different {what}; nothing of it changed",
-                "would-overwrite",
-            )
-        finished = finished or there is not None
-        n += len(text.splitlines())
-        if dry_run:
-            continue
-        if there is None:
-            dst.put_rows(d, text, partial)
-        if dst.rows_text(d, partial) != text:
-            dst.drop_rows(d, partial)
-            die(f"{d}: the rows read back from the {to} store differ; they stay in the old one", "mismatch")
-        src.drop_rows(d, partial)
-    return n, finished
-
-
-def move(to: str, dry_run: bool) -> dict[str, int]:
-    """Every run's outputs and rows moved from the other store into `to`; counts of what moved."""
-    configured = _common.runs_store()
-    if configured != to:
-        die(
-            f"the project's runs store is {configured}: set runs.store: {to} in config.yaml (or EVAL_RUNS_STORE={to})"
-            " first, so nothing writes to the old store after the move",
-            "not-allowed",
-        )
-    src = _outputs.store_named("files" if to == "sqlite" else "sqlite")
-    dst = _outputs.store_named(to)
-    db = src if isinstance(src, _outputs.SqliteRouter) else dst
-    assert isinstance(db, _outputs.SqliteRouter)
-    n = {"runs": 0, "outputs": 0, "rows": 0, "finished": 0, "outside": 0, "orphans": 0}
-    if not dry_run:  # entries whose run directory is gone (deleted by hand): nothing to move, removed
-        for path, key in db.orphans():
-            n["orphans"] += db.db(path).purge([key])
-    for d in _run_dirs_of(src):
-        if not db.holds(d):  # a run under no runs* folder keeps its files in either store: nothing to move
-            n["outside"] += 1
-            continue
-        outs, done_o = _move_outputs(d, src, dst, to, dry_run)
-        rows, done_r = _move_rows(d, src, dst, to, dry_run)
-        n["runs"] += 1
-        n["outputs"] += outs
-        n["rows"] += rows
-        n["finished"] += done_o or done_r  # a move a crash stopped after the write: only the delete was left
-    if not dry_run:
-        _outputs.reset()
-    return n
-
-
 def main() -> int:
     """Migrate every run under data/runs* to one outputs file."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dry-run", action="store_true", help="count what would change; write nothing")
-    ap.add_argument(
-        "--to",
-        choices=_common.RUNS_STORES,
-        help="move every run's outputs into this store (the project's runs.store must already name it)",
-    )
     args = ap.parse_args()
-    if args.to:
-        _common.runs_store()  # a malformed setting refuses before anything is read
     n = migrate(args.dry_run)
     after = n["own_file"] + n["kept_checkpoint"]
     verb = "would become" if args.dry_run else "became"
@@ -355,16 +227,6 @@ def main() -> int:
             else ""
         )
     )
-    if args.to:
-        m = move(args.to, args.dry_run)
-        print(
-            f"{m['runs']} run(s), {m['outputs']} output(s), {m['rows']} row(s)"
-            f" {'would move' if args.dry_run else 'moved'} into the {args.to}"
-            f" store"
-            + (f" ({m['finished']} a stopped move had already written)" if m["finished"] else "")
-            + (f"; {m['outside']} run(s) under no runs* folder keep their files" if m["outside"] else "")
-            + (f"; {m['orphans']} entry(ies) of deleted run directories removed" if m["orphans"] else "")
-        )
     return 0
 
 

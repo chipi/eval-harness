@@ -27,14 +27,14 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from evaluation_harness import _importers
+from evaluation_harness import _importers, _store
 from evaluation_harness._common import EXIT_PROBLEMS, die, evh_prog
 
 
 def query_of(text: str) -> dict:
     """A query given as JSON, or as @path to a JSON file."""
     try:
-        q = json.loads(Path(text[1:]).read_text(encoding="utf-8") if text.startswith("@") else text)
+        q = json.loads(_store.read_text(Path(text[1:]), encoding="utf-8") if text.startswith("@") else text)
     except (OSError, json.JSONDecodeError) as exc:
         die(f"--query: {exc}", "bad-argument")
     if not isinstance(q, dict):

@@ -26,7 +26,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import hashlib
 
-from evaluation_harness import _fields
+from evaluation_harness import _fields, _store
 from evaluation_harness._common import DATASETS, dataset_id_ok, die, evh_prog, load_dataset, read_json
 from evaluation_harness.dataset_create import _lineage, _write
 
@@ -83,7 +83,7 @@ def main() -> int:
     for part in ("validation", "test"):
         out_id = f"{args.dataset_id}_{part}"
         out = DATASETS / f"{dataset_id_ok(out_id)}.json"
-        if out.exists() and not args.force:
+        if _store.exists(out) and not args.force:
             die(
                 f"{out} already exists: a dataset is frozen. --force if nothing cites it yet.",
                 "would-overwrite",
@@ -95,7 +95,7 @@ def main() -> int:
             out,
             out_id,
             mine,
-            read_json(out) if out.exists() else {},
+            read_json(out) if _store.exists(out) else {},
             fieldset,
             f"{part} of {args.dataset_id}: {len(mine)} of {len(items)} item(s), split by {args.by}"
             + (f" on {args.key}" if args.key else ""),

@@ -22,7 +22,7 @@ import argparse
 import hashlib
 import json
 
-from evaluation_harness import _sources
+from evaluation_harness import _sources, _store
 from evaluation_harness._common import (
     DATASETS,
     dataset_id_ok,
@@ -45,7 +45,7 @@ def main() -> int:
     )
     args = ap.parse_args()
     f = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
-    if not f.is_file():
+    if not _store.is_file(f):
         die(f"no dataset {args.dataset_id!r} (evh datasets lists them)", "not-found")
     record = read_json(f)
     if record.get("text") == "hidden":
@@ -63,7 +63,7 @@ def main() -> int:
         if p is None:
             bad.append(f"{it['item_id']}: not materialized here")
             continue
-        data = p.read_bytes()
+        data = _store.read_bytes(p)
         if hashlib.sha256(data).hexdigest() != it["source_sha256"]:
             bad.append(f"{it['item_id']}: its bytes are not its sha256")
             continue

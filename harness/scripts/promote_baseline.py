@@ -26,6 +26,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import os
 
+from evaluation_harness import _store
 from evaluation_harness._common import (
     BASELINES,
     BOOKKEEPING_PREFIXES,
@@ -49,8 +50,8 @@ def _repeats(m: dict) -> dict | None:
         return None
     base = re.sub(r"_r\d+$", "", m["run_id"])
     sibs = []
-    for d in sorted(RUNS.glob(f"{base}_r*")):
-        mm = read_json(d / "metrics.json") if (d / "metrics.json").is_file() else {}
+    for d in sorted(_store.glob(RUNS, f"{base}_r*")):
+        mm = read_json(d / "metrics.json") if _store.is_file(d / "metrics.json") else {}
         if mm.get("config_id") == m["config_id"] and mm.get("repeat_index"):
             sibs.append(mm)
     if len(sibs) < 2:
@@ -112,7 +113,7 @@ def main() -> int:
         )
 
     src = RUNS / args.run / "metrics.json"
-    if not src.is_file():
+    if not _store.is_file(src):
         die(f"no run {args.run!r} (looked for {src})", "not-found")
     m = read_json(src)
 
@@ -147,7 +148,7 @@ def main() -> int:
     repeats = _repeats(m)
     baseline_id = args.baseline_id or f"{m['dataset_id']}_baseline"
     out = BASELINES / f"{baseline_id}.json"
-    if out.is_file():
+    if _store.is_file(out):
         print(f"  replaces the baseline promoted from {read_json(out).get('promoted_from')} (git keeps it)")
 
     write_json(

@@ -23,7 +23,7 @@ import importlib
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _store
 from evaluation_harness._common import (
     BUNDLED_ADAPTER_ID,
     CODE,
@@ -292,7 +292,7 @@ def _find_adapter(spec: str, config_path: Path | None) -> Path:
             candidates.append(config_path.resolve().parent / path)
         candidates.append(_common.ROOT / path)
     for candidate in candidates:
-        if candidate.is_file():
+        if _store.is_file(candidate):
             return candidate
     die(f"adapter not found: {spec}\n" + "".join(f"  looked in: {c}\n" for c in candidates), "not-found")
 
@@ -320,7 +320,7 @@ def load_adapter(
     """
     if spec:
         path = _find_adapter(spec, config_path)
-    elif (_common.ROOT / "adapter.py").is_file():
+    elif _store.is_file(_common.ROOT / "adapter.py"):
         path = _common.ROOT / "adapter.py"
     else:
         default = module_at(BUNDLED)

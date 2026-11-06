@@ -23,7 +23,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 
-from evaluation_harness import _card, _licences
+from evaluation_harness import _card, _licences, _store
 from evaluation_harness._common import DATASETS, dataset_id_ok, die, evh_prog, read_json, write_json
 
 
@@ -31,10 +31,10 @@ def _read_card(path: _Path) -> dict:
     """A card file read and checked: its answered keys only (an empty answer is not an answer)."""
     import yaml  # noqa: PLC0415
 
-    if not path.is_file():
+    if not _store.is_file(path):
         die(f"no card file {path}", "not-found")
     try:
-        doc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        doc = yaml.safe_load(_store.read_text(path, encoding="utf-8")) or {}
     except yaml.YAMLError as e:
         die(f"{path}: not YAML or JSON ({str(e).splitlines()[0]})", "invalid-file")
     if not isinstance(doc, dict):
@@ -68,7 +68,7 @@ def main() -> int:
         die("nothing to change: name --licence, --description or --card", "bad-argument")
     card = _read_card(args.card) if args.card is not None else None
     f = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
-    if not f.is_file():
+    if not _store.is_file(f):
         die(f"no dataset {args.dataset_id!r} (evh datasets lists them)", "not-found")
     doc = read_json(f)
     said = []

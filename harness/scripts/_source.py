@@ -22,6 +22,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from evaluation_harness import _store
+
 KEYS = ("provider", "ref", "url", "revision", "config", "split", "gated", "description_sha256", "item_url")
 
 
@@ -81,7 +83,7 @@ def from_rows_file(path: Path, items: list[dict[str, Any]]) -> tuple[dict[str, A
     (an id alone may recur in another dataset). (None, {}) when there is no file or no row matches."""
     from evaluation_harness._common import read_json  # noqa: PLC0415
 
-    if not path.is_file():
+    if not _store.is_file(path):
         return None, {}
     doc = read_json(path)
     sha = {it["item_id"]: it.get("source_sha256") for it in items}

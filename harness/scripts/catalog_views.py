@@ -44,7 +44,7 @@ import textwrap
 from datetime import date
 from pathlib import Path
 
-from evaluation_harness import _goal_view, _jsonout, _outputs, _sheet
+from evaluation_harness import _goal_view, _jsonout, _outputs, _sheet, _store
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_models as cm
 from evaluation_harness import catalog_periods as cp
@@ -1742,7 +1742,7 @@ def _sheet_csv(args, model: dict, shown: list) -> int:
     key_file = _sheet.key_path(args.csv)
     blind = args.fill in ("pick", "scores")
     for f in (args.csv, key_file if blind or args.fill == "tags" else None):
-        if f is not None and f.exists():
+        if f is not None and _store.exists(f):
             die(f"{f} exists: a sheet is not overwritten (you may have filled it)", "would-overwrite")
     if args.fill == "tags":
         from evaluation_harness import _tags  # noqa: PLC0415
@@ -1780,10 +1780,10 @@ def _sheet_csv(args, model: dict, shown: list) -> int:
         if not m or int(m.group(1)) >= int(m.group(2)):
             die(f"--scale {args.scale}: LO..HI, two whole numbers, LO below HI (e.g. 1..5)", "bad-argument")
         scale = (int(m.group(1)), int(m.group(2)))
-    if args.rubric and not args.rubric.is_file():
+    if args.rubric and not _store.is_file(args.rubric):
         die(f"--rubric: no file {args.rubric}", "not-found")
     rubric = _sheet.rubric_text(
-        args.fill, scale, args.rubric.read_text(encoding="utf-8") if args.rubric else None
+        args.fill, scale, _store.read_text(args.rubric, encoding="utf-8") if args.rubric else None
     )
     head, body, key, left_out = _sheet.blind(
         model, shown, args.fill, seed=args.seed or 0, rubric=rubric, scale=scale

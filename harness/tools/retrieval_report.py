@@ -36,7 +36,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
 sys.path.insert(0, str(HERE.parents[1] / "examples" / "_shared"))
 
-from evaluation_harness import _outputs  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _outputs,
+    _store,
+)
 from evaluation_harness._common import REFERENCES, RUNS, die, read_json, reference_texts  # noqa: E402
 from evaluation_harness._runs import item_rows, warn_on_ambiguous_runs  # noqa: E402
 
@@ -50,7 +53,7 @@ def qrels(dataset_id: str) -> dict:
     """Load gold relevance judgments for a dataset; die if not found."""
     out = {}
     for p in reference_texts(REFERENCES / "gold" / dataset_id, dataset_id):
-        judged = json.loads(p.read_text(encoding="utf-8"))
+        judged = json.loads(_store.read_text(p, encoding="utf-8"))
         out[p.stem] = {str(j["doc_id"]): int(j.get("score", 1)) for j in judged}
     return out
 
@@ -58,9 +61,9 @@ def qrels(dataset_id: str) -> dict:
 def runs(dataset_id: str, match: str | None) -> dict:
     """All runs on this dataset; optionally filtered by config_id substring."""
     out: dict = {}
-    for d in sorted(RUNS.glob("*")):
+    for d in sorted(_store.glob(RUNS, "*")):
         mj = d / "metrics.json"
-        if not (mj.is_file() and _outputs.has_rows(d)):
+        if not (_store.is_file(mj) and _outputs.has_rows(d)):
             continue
         m = read_json(mj)
         cid = m.get("config_id")

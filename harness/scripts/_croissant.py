@@ -16,7 +16,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _licences
+from evaluation_harness import _licences, _store
 
 CONFORMS = "http://mlcommons.org/croissant/1.1"
 #: The spec's context (Croissant 1.1, Appendix 1), as it gives it.
@@ -115,7 +115,7 @@ def export(
             "name": rec_id,
             "contentUrl": f"data/datasets/{rec_id}",
             "encodingFormat": "application/json",
-            "sha256": hashlib.sha256(record_file.read_bytes()).hexdigest(),
+            "sha256": hashlib.sha256(_store.read_bytes(record_file)).hexdigest(),
         }
     ]
     items = record.get("items") or []

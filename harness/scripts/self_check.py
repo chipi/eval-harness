@@ -25,11 +25,12 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+from evaluation_harness import _store
 
 HERE = Path(__file__).resolve().parent
 
@@ -37,9 +38,9 @@ HERE = Path(__file__).resolve().parent
 def in_checkout() -> bool:
     """Check whether we are running in an eval-harness checkout."""
     return (
-        (HERE.parent / "Makefile").is_file()
-        and (HERE.parent / "pyproject.toml").is_file()
-        and (HERE.parent / "tests" / "self_test.py").is_file()
+        _store.is_file(HERE.parent / "Makefile")
+        and _store.is_file(HERE.parent / "pyproject.toml")
+        and _store.is_file(HERE.parent / "tests" / "self_test.py")
     )
 
 
@@ -82,10 +83,10 @@ def main() -> int:
             env,
         )
         if step("init --tutorial", [*evh, "init", "--tutorial"], tmp, env):
-            shutil.copy(tmp / "tutorial/fields/tickets.yaml", tmp / "data/fields/")
-            for f in (tmp / "tutorial/configs").glob("tickets_lead*.yaml"):
+            _store.copy_file(tmp / "tutorial/fields/tickets.yaml", tmp / "data/fields/")
+            for f in _store.glob(tmp / "tutorial/configs", "tickets_lead*.yaml"):
                 if "noisy" not in f.name:
-                    shutil.copy(f, tmp / "data/configs/")
+                    _store.copy_file(f, tmp / "data/configs/")
             steps = [
                 (
                     "dataset-create with fields",
@@ -170,7 +171,7 @@ def main() -> int:
                 if not step(label, evh + args, tmp, env):
                     break
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        _store.rmtree(tmp, ignore_errors=True)
     failed = results.count(False)
     print(
         f"\nself-check: {len(results) - failed}/{len(results)} passed"

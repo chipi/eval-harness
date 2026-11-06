@@ -18,6 +18,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
+from evaluation_harness import _store
 from evaluation_harness._common import write_json
 
 #: What each tier is, said wherever a number scored against it is shown.
@@ -32,7 +33,10 @@ CAVEATS = {
 
 def item_hashes(ref_dir: Path) -> dict[str, str]:
     """{item_id: sha256 of its text} for the reference texts present in `ref_dir`."""
-    return {f.stem: hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(ref_dir.glob("*.txt"))}
+    return {
+        f.stem: hashlib.sha256(_store.read_bytes(f)).hexdigest()
+        for f in sorted(_store.glob(ref_dir, "*.txt"))
+    }
 
 
 def write_manifest(

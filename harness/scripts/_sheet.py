@@ -46,7 +46,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common
+from evaluation_harness import _common, _store
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     LABELS_PREFIX,
@@ -147,7 +147,7 @@ def _arm_dir(token: str, dataset_id: str, from_dir: str) -> Path:
             die(f"--from {from_dir}: a folder under data/", "bad-argument")
         base = _common.DATA / from_dir
         d = base / token
-        m = read_metrics(d) if d.is_dir() else None
+        m = read_metrics(d) if _store.is_dir(d) else None
         if m is not None:
             if m.get("dataset_id") != dataset_id:
                 die(f"--runs {token}: that run is not on {dataset_id}", "mismatch")
@@ -164,9 +164,9 @@ def _judged(d: Path, dataset_id: str) -> list[dict[str, Any]]:
     metrics, per_item {item: {metric: value}}, names (the judge's metrics a cell shows)}."""
     root = _common.DATA / "runs-judged"
     out = []
-    for sd in sorted(root.iterdir()) if root.is_dir() else []:
+    for sd in sorted(_store.iterdir(root)) if _store.is_dir(root) else []:
         jd = sd / d.name
-        if not sd.is_dir() or sd == d.parent or not jd.is_dir():
+        if not _store.is_dir(sd) or sd == d.parent or not _store.is_dir(jd):
             continue
         jm = read_metrics(jd)
         if (
@@ -387,7 +387,7 @@ def build(
             "metrics"
         ].get("reference_id")
         d = scored_against_dir(rid) if rid and not str(rid).startswith(LABELS_PREFIX) else None
-        if rid and d is not None and d.is_dir():
+        if rid and d is not None and _store.is_dir(d):
             refs.setdefault(str(rid), d)
     ref_cols = [{"key": rid, "header": f"reference: {rid}"} for rid in refs]
 
@@ -495,7 +495,8 @@ def build(
                 "references": {
                     rid: txt
                     for rid, d in refs.items()
-                    if (f := d / f"{i}.txt").is_file() and (txt := f.read_text(encoding="utf-8").strip())
+                    if _store.is_file(f := d / f"{i}.txt")
+                    and (txt := _store.read_text(f, encoding="utf-8").strip())
                 },
                 "winners": winners,
                 "judged_on": judged_on,
@@ -903,7 +904,7 @@ def key_path(sheet: Path) -> Path:
 
 def read_key(path: Path) -> dict[str, Any]:
     """A sheet's key; refused when missing or not a key."""
-    if not path.is_file():
+    if not _store.is_file(path):
         die(f"no key at {path}: `--fill` writes it beside the sheet (name another with --key)", "not-found")
     try:
         key = read_json(path)

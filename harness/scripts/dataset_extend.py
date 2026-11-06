@@ -23,9 +23,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import shutil
 from pathlib import Path
 
+from evaluation_harness import _store
 from evaluation_harness._common import (
     DATASETS,
     ROOT,
@@ -60,10 +60,10 @@ def main() -> int:
 
     v1 = load_dataset(args.dataset)
     out = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
-    if out.exists():
+    if _store.exists(out):
         die(f"{out} exists: a version is a new dataset; name it another way", "would-overwrite")
     src = SOURCES / args.dataset_id
-    if src.exists() and any(src.iterdir()):
+    if _store.exists(src) and any(_store.iterdir(src)):
         die(f"{src} exists and is not empty", "would-overwrite")
     pool = waiting()
     if args.picks:
@@ -89,17 +89,17 @@ def main() -> int:
                 )
             chosen.append(hits[0])
     v1_items = {it["item_id"]: it for it in v1.get("items") or []}
-    src.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(src, parents=True, exist_ok=True)
     v1_src = source_dir(v1)
     items: list[dict] = []
     for it in v1.get("items") or []:
         p = v1_src / it.get("source_path", it["item_id"])
-        if not p.is_file():
+        if not _store.is_file(p):
             die(
                 f"{args.dataset}: no source file {p} for {it['item_id']}; fetch or materialize it first",
                 "not-materialized",
             )
-        shutil.copyfile(p, src / it["source_path"])
+        _store.copy_file(p, src / it["source_path"])
         items.append(dict(it))
     added, hidden = [], v1.get("text") == "hidden"
     for p in chosen:
@@ -113,12 +113,12 @@ def main() -> int:
                 continue
             die(f"{p['item']} is in {args.dataset} with other content: an id names one item", "mismatch")
         f = source_dir(ds) / it.get("source_path", it["item_id"])
-        if not f.is_file() or sha256(f) != p.get("sha256"):
+        if not _store.is_file(f) or sha256(f) != p.get("sha256"):
             die(
                 f"{p['from']}/{p['item']}: its file is not the one picked (missing, or changed since)",
                 "mismatch",
             )
-        shutil.copyfile(f, src / it["source_path"])
+        _store.copy_file(f, src / it["source_path"])
         new = {k: it[k] for k in ("item_id", "source_path", "source_sha256") if k in it}
         if it.get("fields") and ds.get("fieldset") == v1.get("fieldset"):
             new["fields"] = it["fields"]

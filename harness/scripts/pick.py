@@ -22,6 +22,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 
+from evaluation_harness import _store
 from evaluation_harness._common import DATASETS, dataset_id_ok, die, evh_prog, load_dataset
 from evaluation_harness._picks import append, state
 
@@ -66,7 +67,7 @@ def main() -> int:
             die(f"--tag {t!r}: KEY=VALUE", "bad-argument")
         tags[k] = v
     for t in args.targets:
-        if not (DATASETS / f"{dataset_id_ok(t)}.json").is_file():
+        if not _store.is_file(DATASETS / f"{dataset_id_ok(t)}.json"):
             die(f"--for {t}: no such dataset", "not-found")
     capture = (ds.get("made_from") or {}).get("capture")
     append(

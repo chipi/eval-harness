@@ -35,7 +35,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
-from evaluation_harness import _common, _visibility
+from evaluation_harness import _common, _store, _visibility
 from evaluation_harness._common import die, read_json, write_json
 from evaluation_harness._fingerprint import items_digest
 from evaluation_harness._version import __version__
@@ -176,14 +176,14 @@ def profile(dataset_id: str, with_text: bool) -> dict:
     texts: dict[str, str] = {}
     for it in items:
         p = mat / (it.get("source_path") or it["item_id"])
-        if not p.is_file():
+        if not _store.is_file(p):
             die(
                 f"{dataset_id} is not materialized here ({p} is missing): a profile is computed from the items. "
                 f"Fetch and materialize it first (`evh dataset-materialize --dataset-id {dataset_id}`, or in "
                 "this repository `make data EXP=<eval>`).",
                 "not-materialized",
             )
-        texts[it["item_id"]] = p.read_text(encoding="utf-8", errors="replace")
+        texts[it["item_id"]] = _store.read_text(p, encoding="utf-8", errors="replace")
     if with_text and ds.get("text") == "hidden":
         die(f"{dataset_id} is `text: hidden`: its profile carries no text (RFC-019)", "not-public")
     if with_text:
@@ -200,7 +200,11 @@ def profile(dataset_id: str, with_text: bool) -> dict:
     refs: list[dict] = []
     per_item: dict[str, dict[str, str]] = {}
     for ref_id, d in gold_references(dataset_id):
-        got = {k: (d / f"{k}.txt").read_text(encoding="utf-8") for k in texts if (d / f"{k}.txt").is_file()}
+        got = {
+            k: _store.read_text(d / f"{k}.txt", encoding="utf-8")
+            for k in texts
+            if _store.is_file(d / f"{k}.txt")
+        }
         if not got:
             refs.append(
                 {
@@ -275,7 +279,7 @@ def render(p: dict, item: str | None) -> str:
         out.append(f"{r['item_id'][:16]}  {r['words']:>6} words  {ref}  {r.get('source_url', '')}".rstrip())
         if item:
             local = _common.item_path(p["dataset_id"], r["item_id"])
-            text = local.read_text(encoding="utf-8", errors="replace") if local else r.get("text")
+            text = _store.read_text(local, encoding="utf-8", errors="replace") if local else r.get("text")
             out.append("")
             out.append(
                 text if text else "(its text is not on this machine, and the profile does not carry it)"
@@ -286,7 +290,7 @@ def render(p: dict, item: str | None) -> str:
 def load_profile(dataset_id: str) -> dict:
     """data/profiles/<dataset_id>.json, or a refusal saying how to write it."""
     f = _common.DATA / "profiles" / f"{_common.dataset_id_ok(dataset_id)}.json"
-    if not f.is_file():
+    if not _store.is_file(f):
         die(
             f"no profile for {dataset_id} ({f}): write one with `evh dataset-profile --dataset-id {dataset_id}` "
             "where the dataset is materialized.",
@@ -345,7 +349,7 @@ def main_items(argv: list[str] | None = None) -> int:
             for r in rows:  # its text when it is here, as the printed form shows it
                 local = _common.item_path(p["dataset_id"], r["item_id"])
                 if local:
-                    r["text"] = local.read_text(encoding="utf-8", errors="replace")
+                    r["text"] = _store.read_text(local, encoding="utf-8", errors="replace")
             p = dict(p, rows=rows)
         print(json.dumps({"command": "dataset-items", "version": __version__, "result": p}, indent=1))
     else:

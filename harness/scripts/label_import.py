@@ -27,6 +27,7 @@ import argparse
 import hashlib
 from pathlib import Path
 
+from evaluation_harness import _store
 from evaluation_harness._common import die, evh_prog
 from evaluation_harness._label_sets import answers, label_text, write_set
 from evaluation_harness._sheets import ALSO, read_csv
@@ -88,9 +89,9 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    if args.sheet.is_dir():
+    if _store.is_dir(args.sheet):
         return _folder(args)
-    if not args.sheet.is_file():
+    if not _store.is_file(args.sheet):
         die(f"no sheet {args.sheet}", "not-found")
     rows, choices = read_csv(args.sheet)
     if not rows or "item_id" not in rows[0] or "label" not in rows[0]:
@@ -103,7 +104,7 @@ def main() -> int:
         "kind": "person",
         "by": args.by,
         "sheet": args.sheet.name,
-        "sheet_sha256": hashlib.sha256(args.sheet.read_bytes()).hexdigest(),
+        "sheet_sha256": hashlib.sha256(_store.read_bytes(args.sheet)).hexdigest(),
     }
     doc = write_set(args.dataset_id, args.name, labels, source, args.guideline, notes)
     print(
@@ -114,13 +115,13 @@ def main() -> int:
 
 def _folder(args: argparse.Namespace) -> int:
     """A folder of answers a person wrote, one <item_id>.txt per item, as a person's label set."""
-    files = sorted(args.sheet.glob("*.txt"))
+    files = sorted(_store.glob(args.sheet, "*.txt"))
     if not files:
         die(f"{args.sheet}: no <item_id>.txt in it", "invalid-file")
-    labels = {p.stem: p.read_text(encoding="utf-8") for p in files}
+    labels = {p.stem: _store.read_text(p, encoding="utf-8") for p in files}
     digest = hashlib.sha256()
     for p in files:
-        digest.update(p.name.encode() + b"\0" + p.read_bytes())
+        digest.update(p.name.encode() + b"\0" + _store.read_bytes(p))
     source = {"kind": "person", "by": args.by, "folder": args.sheet.name, "folder_sha256": digest.hexdigest()}
     doc = write_set(args.dataset_id, args.name, labels, source, args.guideline)
     print(

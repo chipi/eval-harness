@@ -47,7 +47,7 @@ import json
 import math
 from pathlib import Path
 
-from evaluation_harness import _outputs
+from evaluation_harness import _outputs, _store
 from evaluation_harness._common import (
     DATA,
     DATASETS,
@@ -67,7 +67,7 @@ from evaluation_harness._record import run_record
 
 def _rows(path: Path) -> list:
     rows = []
-    for n, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    for n, raw in enumerate(_store.read_text(path, encoding="utf-8").splitlines(), 1):
         if not raw.strip():
             continue
         try:
@@ -121,7 +121,7 @@ def main() -> int:
     args = ap.parse_args()
 
     ds_file = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
-    if not ds_file.is_file():
+    if not _store.is_file(ds_file):
         die(
             f"dataset {args.dataset_id} is not frozen: {ds_file} does not exist. "
             f"Freeze the items first (evh dataset-create).",
@@ -172,7 +172,7 @@ def main() -> int:
 
     run_id = args.run_id or f"{args.config_id}_{now().replace('-', '').replace(':', '')}"
     run_dir = RUNS / run_id
-    if run_dir.exists():
+    if _store.exists(run_dir):
         die(f"{run_dir} already exists", "would-overwrite")
 
     scorer_sha256 = None
@@ -215,7 +215,7 @@ def main() -> int:
     )
     fingerprint["imported"] = imported
 
-    run_dir.mkdir(parents=True)
+    _store.mkdir(run_dir, parents=True)
     write_json(
         run_dir / "run.json",
         {

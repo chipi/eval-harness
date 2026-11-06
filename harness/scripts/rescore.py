@@ -39,7 +39,7 @@ import textwrap
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _outputs, _runs
+from evaluation_harness import _outputs, _runs, _store
 from evaluation_harness._adapter import load_recorded_adapter, score_wants_source
 from evaluation_harness._common import (
     DATA,
@@ -90,7 +90,7 @@ def _item_sources(dataset_id: str) -> dict[str, str]:
     otherwise the source text arrived as None: silently, because a scorer that wanted the
     source then measured nothing rather than failing."""
     ds_file = DATASETS / f"{dataset_id_ok(dataset_id)}.json"
-    items = read_json(ds_file).get("items") or [] if ds_file.is_file() else []
+    items = read_json(ds_file).get("items") or [] if _store.is_file(ds_file) else []
     return {it["item_id"]: it["source_path"] for it in items if it.get("item_id") and it.get("source_path")}
 
 
@@ -131,8 +131,8 @@ def _rescore_row(
     reference = None
     if ref_dir:
         rf = ref_dir / f"{item_id}.txt"
-        if rf.is_file():
-            reference = rf.read_text(encoding="utf-8", errors="replace")
+        if _store.is_file(rf):
+            reference = _store.read_text(rf, encoding="utf-8", errors="replace")
             had_ref = True
     source_text = None
     # `source_path` is the dataset's own name for the file; it only happens to
@@ -141,8 +141,8 @@ def _rescore_row(
     # source then measures nothing, quietly.
     rel = item_source.get(item_id) or old.get("source_path") or f"{item_id}.txt"
     for cand in (mat / rel, mat / f"{item_id}.txt", mat / item_id):
-        if cand.is_file():
-            source_text = cand.read_text(encoding="utf-8", errors="replace")
+        if _store.is_file(cand):
+            source_text = _store.read_text(cand, encoding="utf-8", errors="replace")
             break
     scored = score(output, reference, source_text) if wants_source else score(output, reference)
     row: dict[str, Any] = {"item_id": item_id, **scored}
@@ -346,7 +346,7 @@ def latest_scoring(d: Path, m: dict) -> tuple[str, Path | None]:
     data/runs-rescored, else the run's own scorer."""
     found = [
         (read_json(x).get("created_at") or "", x.parent)
-        for x in (DATA / RESCORED).glob(f"*/*/{d.name}/metrics.json")
+        for x in _store.glob(DATA / RESCORED, f"*/*/{d.name}/metrics.json")
         if ((read_json(x).get("derived") or {}).get("from")) == d.name
     ]
     if not found:
@@ -373,8 +373,8 @@ def measured_runs(dataset_id: str, configs: set[str] | None = None) -> list[tupl
     """Every measured (not derived) run on the dataset, of the configs when named, in every runs directory git
     keeps: what a round's or a goal's arms were first scored from."""
     out: list[tuple[Path, dict]] = []
-    for base in sorted(DATA.glob("runs*")):
-        if not base.is_dir() or base.name in (RESCORED, "runs-judged") or ignored_by_git(base):
+    for base in sorted(_store.glob(DATA, "runs*")):
+        if not _store.is_dir(base) or base.name in (RESCORED, "runs-judged") or ignored_by_git(base):
             continue
         for d, m in runs_on(dataset_id, runs_dir=base):
             if m.get("derived") or (configs is not None and m.get("config_id") not in configs):
@@ -452,7 +452,9 @@ def rescore_one(
     scores = aggregate_scores(rows)
 
     run_dir = out_dir / d.name
-    run_dir.mkdir(parents=True, exist_ok=True)  # no outputs of its own: they are its source's (RFC-024)
+    _store.mkdir(
+        run_dir, parents=True, exist_ok=True
+    )  # no outputs of its own: they are its source's (RFC-024)
     _outputs.write_rows(run_dir, rows)
     # Provenance of the RESCORE itself: which run it came from, and which scorer
     # produced these numbers. Without this a rescored run is indistinguishable from
@@ -557,7 +559,7 @@ def main() -> int:
         args.reference_id = labels_reference(args.labels, args.dataset_id)
         if args.out is None:
             args.out = DATA / f"runs-labels-{args.dataset_id}-{args.reference_id.rsplit('/', 1)[1]}"
-    elif args.reference_id and not (REFERENCES / args.reference_id).is_dir():
+    elif args.reference_id and not _store.is_dir(REFERENCES / args.reference_id):
         die(f"no reference set at data/references/{args.reference_id}", "not-found")
     rnd = None
     if args.round_id:
@@ -596,7 +598,7 @@ def main() -> int:
         )
     print(f"rescoring {len(todo)} run(s)" + (f" -> {args.out}" if args.out else ""))
     if args.out:
-        args.out.mkdir(parents=True, exist_ok=True)
+        _store.mkdir(args.out, parents=True, exist_ok=True)
     done = rescore_runs(todo, out=args.out, reference_id=args.reference_id)
     dirs = sorted(
         {str(d.parent.relative_to(DATA)) if d.parent.is_relative_to(DATA) else str(d.parent) for d, _ in done}

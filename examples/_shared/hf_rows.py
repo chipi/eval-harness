@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "harness"))  # the harness's own package
+from evaluation_harness import _store
 from evaluation_harness.sources import huggingface as _hf
 
 VIEWER = "https://huggingface.co/datasets/{dataset}/viewer/{config}/{split}?row={row}"
@@ -92,8 +93,8 @@ class Sources:
         rows = {}
         for item, idx in sorted(self.rows.items()):
             f = src / f"{item}.txt"
-            if f.is_file():
-                rows[item] = {"row": idx, "sha256": hashlib.sha256(f.read_bytes()).hexdigest()}
+            if _store.is_file(f):
+                rows[item] = {"row": idx, "sha256": hashlib.sha256(_store.read_bytes(f)).hexdigest()}
         doc = {
             # The harness's source block (E1): the commit read is the revision; gated and the description's
             # sha256 are not read here: null.
@@ -111,5 +112,5 @@ class Sources:
             "rows": rows,
         }
         out = harness_root / "data" / "sources" / f"{dataset_id}.rows.json"
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
+        _store.mkdir(out.parent, parents=True, exist_ok=True)
+        _store.write_text(out, json.dumps(doc, indent=1) + "\n", encoding="utf-8")

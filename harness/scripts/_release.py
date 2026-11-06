@@ -25,12 +25,11 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import json
-import shutil
 import subprocess
 from pathlib import Path
 
 import yaml
-from evaluation_harness import _outputs
+from evaluation_harness import _common, _outputs, _store
 from evaluation_harness._visibility import hidden, public_profile
 
 #: The directories of data/ the catalog and the inspector read (tests/test_render_data.py checks it
@@ -71,7 +70,10 @@ CALL_META = (
 
 
 def _tracked(src: Path) -> set[str] | None:
-    """The files git tracks under `src`, relative to it; None when it is not in a git checkout."""
+    """The files git tracks under `src`, relative to it; None when it is not in a git checkout. With the sqlite
+    store (RFC-025) the files the database holds: it is the record git is for files."""
+    if _common.store() == "sqlite":
+        return {str(Path(p).relative_to(src)) for p in _store.rglob(src, "*") if _store.is_file(p)}
     try:
         top = subprocess.run(
             ["git", "-C", str(src), "rev-parse", "--show-toplevel"],
@@ -94,16 +96,18 @@ def _tracked(src: Path) -> set[str] | None:
 def _dataset_of_run(run: Path) -> str | None:
     m = run / "metrics.json"
     try:
-        return json.loads(m.read_text(encoding="utf-8")).get("dataset_id") if m.is_file() else None
+        return (
+            json.loads(_store.read_text(m, encoding="utf-8")).get("dataset_id") if _store.is_file(m) else None
+        )
     except ValueError:
         return None
 
 
 def _field_types(src: Path, fieldset_id: str | None) -> dict:
     f = src / "fields" / f"{fieldset_id}.yaml"
-    if not fieldset_id or not f.is_file():
+    if not fieldset_id or not _store.is_file(f):
         return {}
-    doc = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+    doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {}
     return {x["name"]: x.get("type") for x in doc.get("fields") or []}
 
 
@@ -114,26 +118,19 @@ def plan_problems(src: Path) -> list[str]:
     if tracked is None:
         return [f"{src} is not in a git checkout: what the repository publishes cannot be told"]
     bad = []
-    for f in sorted((src / "references").glob("*/*/*")) if (src / "references").is_dir() else []:
-        if f.is_file() and f.name != "manifest.json":
+    for f in sorted(_store.glob(src / "references", "*/*/*")) if _store.is_dir(src / "references") else []:
+        if _store.is_file(f) and f.name != "manifest.json":
             ds = _manifest_dataset(f.parent)
             if not hidden(ds, src / "datasets") and str(f.relative_to(src)) not in tracked:
                 bad.append(f"reference text git does not track: {f.relative_to(src)}")
     for run in _run_dirs(src):
         f = run / _outputs.FILE
         if (
-            f.is_file()
+            _store.is_file(f)
             and not hidden(_dataset_of_run(run), src / "datasets")
             and str(f.relative_to(src)) not in tracked
         ):
             bad.append(f"run output git does not track: {f.relative_to(src)}")
-    for db in _outputs.dbs(src):
-        shown = [k for k in _outputs.db_runs(db) if not _hidden_key(src, k)]
-        if shown and db.name not in tracked:
-            bad.append(
-                f"run outputs git does not track: {db.name} holds {len(shown)} shown run(s)' outputs"
-                " (a release publishes only what the repository commits)"
-            )
     return bad
 
 
@@ -144,11 +141,11 @@ def _run_dirs(src: Path) -> list[Path]:
     return sorted(
         {
             d
-            for base in src.glob("runs*")
-            if base.is_dir()
+            for base in _store.glob(src, "runs*")
+            if _store.is_dir(base)
             for depth in ("*", "*/*", "*/*/*")
-            for d in base.glob(depth)
-            if d.is_dir() and (d / "metrics.json").is_file()
+            for d in _store.glob(base, depth)
+            if _store.is_dir(d) and _store.is_file(d / "metrics.json")
         }
     )
 
@@ -162,7 +159,11 @@ def _hidden_key(src: Path, key: str) -> bool:
 def _manifest_dataset(ref_dir: Path) -> str | None:
     m = ref_dir / "manifest.json"
     try:
-        return json.loads(m.read_text(encoding="utf-8")).get("dataset_id") if m.is_file() else ref_dir.name
+        return (
+            json.loads(_store.read_text(m, encoding="utf-8")).get("dataset_id")
+            if _store.is_file(m)
+            else ref_dir.name
+        )
     except ValueError:
         return ref_dir.name
 
@@ -197,22 +198,37 @@ def copy_data(src: Path, dst: Path) -> dict:
             + (f"\n  (+{len(bad) - 10})" if len(bad) > 10 else ""),
             "not-allowed",
         )
-    dst.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(dst, parents=True, exist_ok=True)
     datasets = src / "datasets"
     counts = {"hidden_runs": 0, "hidden_refs": 0, "hidden_verdicts": 0}
     hidden_runs = {str(d.resolve()) for d in _run_dirs(src) if hidden(_dataset_of_run(d), datasets)}
 
-    def leave_out(folder: str, names: list[str]) -> set[str]:
-        """A hidden dataset's run is copied without its outputs."""
-        return (
-            {"outputs", _outputs.FILE} & set(names) if str(Path(folder).resolve()) in hidden_runs else set()
-        )
-
-    for base in sorted(p for p in src.glob("runs*") if p.is_dir()):
-        shutil.copytree(base, dst / base.name, ignore=leave_out, dirs_exist_ok=True)
-    files = _outputs.store_named("files")  # the copy of a files-store run is files
-    for run in sorted(hidden_runs):
-        out = dst / Path(run).relative_to(src.resolve())
+    # Every file of every runs folder, a hidden dataset's run without its outputs; read through the store, so a
+    # project in its database (RFC-025) is released as the same files layout as a project in files.
+    for base in sorted(p for p in _store.glob(src, "runs*") if _store.is_dir(p)):
+        for f in sorted(_store.rglob(base, "*")):
+            if not _store.is_file(f):
+                continue
+            run_of = next((r for r in (f.parent, f.parent.parent) if str(r.resolve()) in hidden_runs), None)
+            if run_of is not None and (f.name == _outputs.FILE or f.parent.name == _outputs.OLD_DIR):
+                continue
+            out = dst / f.relative_to(src)
+            _store.mkdir(out.parent, parents=True, exist_ok=True)
+            _store.copy_file(f, out)
+    files = _outputs.store_named("files")  # the copy is files, whichever the project's store
+    if _common.store() == "sqlite":  # a run's outputs and rows are in the database's per-item tables
+        st = _outputs.store()
+        for run in _run_dirs(src):
+            out = dst / run.relative_to(src)
+            outs = st.lines(run)
+            if outs and str(run.resolve()) not in hidden_runs:
+                files.write_all(out, {o["item_id"]: o["text"] for o in outs}, [o["item_id"] for o in outs])
+            for partial in (False, True):
+                text = st.rows_text(run, partial)
+                if text is not None:
+                    files.put_rows(out, text, partial)
+    for hidden_run in sorted(hidden_runs):
+        out = dst / Path(hidden_run).relative_to(src.resolve())
         counts["hidden_runs"] += 1
         for partial in (False, True):
             text = files.rows_text(out, partial)
@@ -220,77 +236,79 @@ def copy_data(src: Path, dst: Path) -> dict:
                 files.put_rows(
                     out, "".join(_call_only_line(x) for x in text.splitlines() if x.strip()), partial
                 )
-    for db in _outputs.dbs(src):
-        _outputs.db_copy(db, dst / db.name, lambda k: _hidden_key(src, k), _call_only_line)
     for name in COPIED_DIRS:
         d = src / name
-        if not d.is_dir():
+        if not _store.is_dir(d):
             continue
         if name == "references":
-            for f in sorted(p for p in d.iterdir() if p.is_file()):
-                (dst / name).mkdir(parents=True, exist_ok=True)
-                shutil.copy2(f, dst / name / f.name)
-            for ref in sorted(p for p in d.glob("*/*") if p.is_dir()):
+            for f in sorted(p for p in _store.iterdir(d) if _store.is_file(p)):
+                _store.mkdir(dst / name, parents=True, exist_ok=True)
+                _store.copy_file(f, dst / name / f.name)
+            for ref in sorted(p for p in _store.glob(d, "*/*") if _store.is_dir(p)):
                 out = dst / name / ref.relative_to(d)
                 if hidden(_manifest_dataset(ref), datasets):
                     counts["hidden_refs"] += 1
-                    out.mkdir(parents=True, exist_ok=True)
-                    if (ref / "manifest.json").is_file():
-                        shutil.copy2(ref / "manifest.json", out / "manifest.json")
+                    _store.mkdir(out, parents=True, exist_ok=True)
+                    if _store.is_file(ref / "manifest.json"):
+                        _store.copy_file(ref / "manifest.json", out / "manifest.json")
                 else:
-                    shutil.copytree(ref, out)
+                    _store.copy_tree(ref, out)
         elif name == "judge-verdicts":
-            for vdir in sorted(p for p in d.glob("*/*") if p.is_dir()):
+            for vdir in sorted(p for p in _store.glob(d, "*/*") if _store.is_dir(p)):
                 js = src / "judging-sets" / f"{vdir.name}.json"
-                ds = json.loads(js.read_text(encoding="utf-8")).get("dataset_id") if js.is_file() else None
+                ds = (
+                    json.loads(_store.read_text(js, encoding="utf-8")).get("dataset_id")
+                    if _store.is_file(js)
+                    else None
+                )
                 if hidden(ds, datasets):
                     counts["hidden_verdicts"] += 1
                     continue
-                shutil.copytree(vdir, dst / name / vdir.relative_to(d))
+                _store.copy_tree(vdir, dst / name / vdir.relative_to(d))
         elif name == "labels":
             # As captures: the record (source, counts, hashes: what the catalog reads), never a label's text.
-            for rec in sorted(d.glob("*/*/labels.json")):
+            for rec in sorted(_store.glob(d, "*/*/labels.json")):
                 out = dst / name / rec.parent.relative_to(d)
-                out.mkdir(parents=True, exist_ok=True)
-                doc = json.loads(rec.read_text(encoding="utf-8"))
+                _store.mkdir(out, parents=True, exist_ok=True)
+                doc = json.loads(_store.read_text(rec, encoding="utf-8"))
                 if "notes" in doc and hidden(doc.get("dataset_id"), datasets):
                     # A person's notes on a hidden dataset's items are its text (RFC-019 §4, adjudication notes).
                     doc.pop("notes")
-                    (out / "labels.json").write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
+                    _store.write_text(out / "labels.json", json.dumps(doc, indent=1) + "\n", encoding="utf-8")
                 else:
-                    shutil.copy2(rec, out / "labels.json")
+                    _store.copy_file(rec, out / "labels.json")
         elif name == "tags":
             # The modes counted on the goal page; a person's note on a hidden dataset's output is its text: dropped.
-            for rec in sorted(d.glob("*/*/tags.json")):
+            for rec in sorted(_store.glob(d, "*/*/tags.json")):
                 out = dst / name / rec.parent.relative_to(d)
-                out.mkdir(parents=True, exist_ok=True)
-                doc = json.loads(rec.read_text(encoding="utf-8"))
+                _store.mkdir(out, parents=True, exist_ok=True)
+                doc = json.loads(_store.read_text(rec, encoding="utf-8"))
                 if hidden(doc.get("dataset_id"), datasets):
                     for by_item in (doc.get("runs") or {}).values():
                         for t in by_item.values():
                             t.pop("note", None)
-                    (out / "tags.json").write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
+                    _store.write_text(out / "tags.json", json.dumps(doc, indent=1) + "\n", encoding="utf-8")
                 else:
-                    shutil.copy2(rec, out / "tags.json")
+                    _store.copy_file(rec, out / "tags.json")
         elif name == "captures":
-            for cap in sorted(d.glob("*/capture.json")):
-                (dst / name / cap.parent.name).mkdir(parents=True, exist_ok=True)
-                shutil.copy2(cap, dst / name / cap.parent.name / "capture.json")
+            for cap in sorted(_store.glob(d, "*/capture.json")):
+                _store.mkdir(dst / name / cap.parent.name, parents=True, exist_ok=True)
+                _store.copy_file(cap, dst / name / cap.parent.name / "capture.json")
         elif name == "profiles":
-            (dst / name).mkdir(parents=True, exist_ok=True)
-            for f in sorted(d.glob("*")):
+            _store.mkdir(dst / name, parents=True, exist_ok=True)
+            for f in sorted(_store.glob(d, "*")):
                 if f.suffix == ".json" and hidden(f.stem, datasets):
-                    p = json.loads(f.read_text(encoding="utf-8"))
-                    (dst / name / f.name).write_text(
-                        json.dumps(public_profile(p), indent=1) + "\n", encoding="utf-8"
+                    p = json.loads(_store.read_text(f, encoding="utf-8"))
+                    _store.write_text(
+                        dst / name / f.name, json.dumps(public_profile(p), indent=1) + "\n", encoding="utf-8"
                     )
-                elif f.is_file():
-                    shutil.copy2(f, dst / name / f.name)
+                elif _store.is_file(f):
+                    _store.copy_file(f, dst / name / f.name)
         elif name == "datasets":
-            (dst / name).mkdir(parents=True, exist_ok=True)
-            for f in sorted(d.glob("*")):
+            _store.mkdir(dst / name, parents=True, exist_ok=True)
+            for f in sorted(_store.glob(d, "*")):
                 if f.suffix == ".json" and hidden(f.stem, datasets):
-                    doc = json.loads(f.read_text(encoding="utf-8"))
+                    doc = json.loads(_store.read_text(f, encoding="utf-8"))
                     types = _field_types(src, doc.get("fieldset"))
                     for it in doc.get("items") or []:
                         it.pop("source_url", None)
@@ -298,16 +316,18 @@ def copy_data(src: Path, dst: Path) -> dict:
                             it["fields"] = {
                                 k: v for k, v in it["fields"].items() if types.get(k) not in ("text", "url")
                             }
-                    (dst / name / f.name).write_text(
-                        json.dumps(doc, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+                    _store.write_text(
+                        dst / name / f.name,
+                        json.dumps(doc, indent=2, sort_keys=True) + "\n",
+                        encoding="utf-8",
                     )
-                elif f.is_file():
-                    shutil.copy2(f, dst / name / f.name)
+                elif _store.is_file(f):
+                    _store.copy_file(f, dst / name / f.name)
         else:
-            shutil.copytree(d, dst / name, dirs_exist_ok=True)
+            _store.copy_tree(d, dst / name)
     for name in COPIED_FILES:
-        if (src / name).is_file():
-            shutil.copy2(src / name, dst / name)
+        if _store.is_file(src / name):
+            _store.copy_file(src / name, dst / name)
     return counts
 
 

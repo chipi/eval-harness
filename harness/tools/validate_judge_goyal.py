@@ -47,7 +47,10 @@ from typing import Any
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tools/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tools/
-from evaluation_harness import _fetch  # noqa: E402
+from evaluation_harness import (  # noqa: E402
+    _fetch,
+    _store,
+)
 from evaluation_harness import judge_score as js  # noqa: E402
 from evaluation_harness._common import die, write_bytes_atomic, write_text_atomic  # noqa: E402
 from evaluation_harness._retry import call_with_retries  # noqa: E402
@@ -71,11 +74,11 @@ def _file_sha(b: bytes) -> str:
 def load_local() -> dict | None:
     """The human annotations if already on disk (both pins checked), else None. Never downloads."""
     f = EXT / "human_annotations" / "cnn_human.json"
-    if ZIP_PATH.is_file() and _file_sha(ZIP_PATH.read_bytes()) != ZIP_SHA256:
+    if _store.is_file(ZIP_PATH) and _file_sha(_store.read_bytes(ZIP_PATH)) != ZIP_SHA256:
         die(f"{ZIP_PATH} does not match the pinned sha256 {ZIP_SHA256}; refusing to use it", "mismatch")
-    if not f.is_file():
+    if not _store.is_file(f):
         return None
-    raw = f.read_bytes()
+    raw = _store.read_bytes(f)
     if _file_sha(raw) != CNN_JSON_SHA256:
         die(f"{f} has sha256 {_file_sha(raw)}, not the pinned {CNN_JSON_SHA256}", "mismatch")
     return json.loads(raw)
@@ -85,16 +88,16 @@ def load() -> dict:
     """Download and extract the Goyal data if not already on disk; validate both pins."""
     data = load_local()
     if data is None:
-        if not ZIP_PATH.is_file():
+        if not _store.is_file(ZIP_PATH):
             # Retried, checked against the pin, and only a whole file ever lands: a download cut
             # short used to leave a partial zip that every later run refused.
             try:
                 src, _ = _fetch.fetch(URL, ZIP_SHA256)
             except _fetch.FetchError as exc:
                 die(f"{exc}; refusing to extract it", "failed")
-            EXT.mkdir(parents=True, exist_ok=True)
-            write_bytes_atomic(ZIP_PATH, src.read_bytes())
-        zipfile.ZipFile(io.BytesIO(ZIP_PATH.read_bytes())).extractall(EXT)
+            _store.mkdir(EXT, parents=True, exist_ok=True)
+            write_bytes_atomic(ZIP_PATH, _store.read_bytes(src))
+        zipfile.ZipFile(io.BytesIO(_store.read_bytes(ZIP_PATH))).extractall(EXT)
         data = load_local()
         if data is None:
             die(f"{ZIP_PATH} extracted, but it holds no human_annotations/cnn_human.json", "invalid-file")
@@ -325,7 +328,7 @@ def judge_stats(data: dict, recs: dict[str, dict]) -> dict:
 
 def read_records(vdir: Path, data: dict) -> dict[str, dict]:
     """Load all judge verdicts for the articles in data; keyed by article_id."""
-    return {aid: json.loads(record_path(vdir, aid).read_text()) for aid in data}
+    return {aid: json.loads(_store.read_text(record_path(vdir, aid))) for aid in data}
 
 
 # ── stored-record integrity ──────────────────────────────────────────────────
@@ -380,10 +383,10 @@ def main() -> int:
         for aid, v in data.items():
             so, sha = exp[(j["id"], aid)] = expected(base, aid, v)
             f = record_path(vroot / j["id"], aid)
-            if not f.is_file():
+            if not _store.is_file(f):
                 missing.append(f"{j['id']}/{f.name} (article {aid})")
                 continue
-            rec = json.loads(f.read_text())
+            rec = json.loads(_store.read_text(f))
             if args.backfill_provenance and "judge_fp" not in rec and "prompt_sha" not in rec:
                 if rec.get("order") != so:
                     problems.append(
@@ -421,9 +424,9 @@ def main() -> int:
             die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD", "not-configured")
 
     spent = sum(
-        float(json.loads(f.read_text()).get("cost_usd") or 0.0)
+        float(json.loads(_store.read_text(f)).get("cost_usd") or 0.0)
         for j in sc["judges"]
-        for f in (vroot / j["id"]).glob("*.json")
+        for f in _store.glob(vroot / j["id"], "*.json")
     )
     report: dict[str, Any] = {
         "source": "Goyal, Li & Durrett 2022, cnn_human.json (CC BY 4.0)",
@@ -441,11 +444,11 @@ def main() -> int:
     for j in sc["judges"]:
         jid, fp = j["id"], js.judge_fingerprint(j)
         vdir = vroot / jid
-        vdir.mkdir(parents=True, exist_ok=True)
+        _store.mkdir(vdir, parents=True, exist_ok=True)
         billed = 0.0
         for aid, v in data.items():
             f = record_path(vdir, aid)
-            if f.is_file():
+            if _store.is_file(f):
                 continue
             if aborted:
                 continue
@@ -489,7 +492,9 @@ def main() -> int:
             if cost is None:
                 print(f"{jid}: no cost and no token counts; spend unknown, stopping")
                 aborted = True
-        billed = sum(float(json.loads(f.read_text()).get("cost_usd") or 0.0) for f in vdir.glob("*.json"))
+        billed = sum(
+            float(json.loads(_store.read_text(f)).get("cost_usd") or 0.0) for f in _store.glob(vdir, "*.json")
+        )
         if aborted:
             die(f"stopped before every record of {jid} was stored; nothing reported", "not-enough")
         recs = read_records(vdir, data)

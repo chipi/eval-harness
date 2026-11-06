@@ -19,6 +19,7 @@ import json
 import os
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -31,7 +32,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
-from evaluation_harness import _outputs  # noqa: E402
+from evaluation_harness import _outputs, _store  # noqa: E402
 
 #: (checker, the defect, file, anchor, what it becomes, what the checker's output must say)
 #: An anchor that no longer matches exactly once is a failure, not a skip.
@@ -221,11 +222,12 @@ def shadow_tree() -> Path:
             shutil.copy2(s, d)
 
     for child in (HARNESS / "data").iterdir():
-        if child.suffix == ".sqlite" and child.name.startswith(
-            "runs"
-        ):  # a copy of its own, which a plant changes
-            _outputs.db_copy(child, data / child.name, lambda _k: False)
-        elif child.name.startswith("runs") and ".sqlite-" in child.name:
+        if child.name == _store.DB:  # the sqlite store (RFC-025): a copy of its own, which a plant changes
+            src_db, dst_db = sqlite3.connect(str(child)), sqlite3.connect(str(data / child.name))
+            src_db.backup(dst_db)
+            src_db.close()
+            dst_db.close()
+        elif child.name.startswith(_store.DB + "-"):
             continue  # the database's write-ahead log: in the copy already
         elif child.name in committed or (child.is_dir() and child.name.startswith("runs")):
             shutil.copytree(child, data / child.name, symlinks=True, copy_function=link_or_copy)

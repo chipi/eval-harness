@@ -30,7 +30,7 @@ import yaml
 
 # The harness's own run reading, so the panel finds runs where every command does (the
 # project, EVAL_RUNS_DIR) and picks the metric the same way.
-from evaluation_harness import _outputs
+from evaluation_harness import _outputs, _store
 from evaluation_harness._common import ROOT, RUNS, die, evh_prog
 from evaluation_harness._runs import default_metric, direction, item_rows, runs_on
 from evaluation_harness.panel_judges import ItemScore, build_judge
@@ -300,9 +300,9 @@ def write_report(
     config: dict[str, Any],
 ) -> None:
     """Write finalists.jsonl + report.json + report.md."""
-    output_dir.mkdir(parents=True, exist_ok=True)
+    _store.mkdir(output_dir, parents=True, exist_ok=True)
 
-    with (output_dir / "finalists.jsonl").open("w", encoding="utf-8") as fh:
+    with _store.open_file(output_dir / "finalists.jsonl", "w", encoding="utf-8") as fh:
         for fin in finalists:
             fh.write(json.dumps(asdict(fin), default=str) + "\n")
 
@@ -312,10 +312,10 @@ def write_report(
         "promotion": [asdict(p) for p in promotion_summary],
         "finalists": [asdict(f) for f in finalists],
     }
-    (output_dir / "report.json").write_text(json.dumps(report, indent=2, default=str))
+    _store.write_text(output_dir / "report.json", json.dumps(report, indent=2, default=str))
 
     md = _markdown_report(finalists, promotion_summary)
-    (output_dir / "report.md").write_text(md)
+    _store.write_text(output_dir / "report.md", md)
 
     logger.info("Report written to %s", output_dir)
 
@@ -408,7 +408,7 @@ def _candidates_from(cfg: dict[str, Any]) -> list[RunCandidate]:
     root = RUNS if src == "runs" else pathlib.Path(src)
     if not root.is_absolute():
         root = ROOT / root
-    if not root.is_dir():
+    if not _store.is_dir(root):
         die(f"runs_from: no such directory: {root}", "not-found")
 
     want_ds: str | None = cfg.get("dataset_id")
@@ -461,7 +461,7 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--use-fake-judge", action="store_true")
     args = ap.parse_args(argv)
 
-    cfg = yaml.safe_load(Path(args.config).read_text())
+    cfg = yaml.safe_load(_store.read_text(Path(args.config)))
 
     candidates = _candidates_from(cfg)
     promoted, promo_summary = promote_finalists(

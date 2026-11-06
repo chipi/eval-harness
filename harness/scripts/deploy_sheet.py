@@ -30,7 +30,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _models, _runs
+from evaluation_harness import _models, _runs, _store
 from evaluation_harness._adapter import adapter_module
 from evaluation_harness._common import BASELINES, DATA, EXIT_PROBLEMS, RUNS, die, evh_prog, read_json
 from evaluation_harness._runs import runs_on
@@ -49,12 +49,12 @@ def promoted_run(
     baselines = (data_dir / "baselines") if data_dir else BASELINES
     runs = runs_dir or RUNS
     best: tuple[str, Path, dict[str, Any]] | None = None
-    for f in sorted(baselines.glob("*.json")) if baselines.is_dir() else []:
+    for f in sorted(_store.glob(baselines, "*.json")) if _store.is_dir(baselines) else []:
         b = read_json(f)
         run = runs / str(b.get("promoted_from") or "")
         if (
             b.get("promoted_from")
-            and (run / "metrics.json").is_file()
+            and _store.is_file(run / "metrics.json")
             and read_json(run / "metrics.json").get("config_id") == config_id
             and (best is None or str(b.get("promoted_at")) > best[0])
         ):

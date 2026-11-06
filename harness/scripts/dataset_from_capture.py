@@ -29,9 +29,8 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import hashlib
-import shutil
 
-from evaluation_harness import _fields, _importers
+from evaluation_harness import _fields, _importers, _store
 from evaluation_harness._common import (
     CAPTURES,
     DATASETS,
@@ -62,13 +61,13 @@ def load_capture(capture_id: str, captures_dir: _Path | None = None) -> tuple[di
     """(capture.json, its records), every record checked against the hash the capture recorded; from the project's
     captures, or `captures_dir`."""
     base = (captures_dir or CAPTURES) / dataset_id_ok(capture_id)
-    if not (base / "capture.json").is_file():
+    if not _store.is_file(base / "capture.json"):
         die(f"no capture {capture_id!r} at {base}", "not-found")
     doc = read_json(base / "capture.json")
     recs, bad = [], []
     for entry in doc.get("records") or []:
         f = base / "records" / f"{entry['id']}.json"
-        if not f.is_file():
+        if not _store.is_file(f):
             bad.append(f"{entry['id']}: its record file is missing")
             continue
         rec = read_json(f)
@@ -162,7 +161,7 @@ def main() -> int:
     args = ap.parse_args()
 
     out = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
-    if out.exists() and not args.force:
+    if _store.exists(out) and not args.force:
         die(
             f"{out} already exists: a dataset is frozen. Make a new version (e.g. _v2), or --force if nothing cites it.",
             "would-overwrite",
@@ -182,9 +181,9 @@ def main() -> int:
         die("no record was kept: nothing to freeze", "not-enough")
 
     src = SOURCES / args.dataset_id
-    if src.exists():
-        shutil.rmtree(src)
-    src.mkdir(parents=True)
+    if _store.exists(src):
+        _store.rmtree(src)
+    _store.mkdir(src, parents=True)
     items, bad = [], []
     if args.from_:
         prev = load_dataset(args.from_)
@@ -193,12 +192,12 @@ def main() -> int:
             prev_src = ROOT / prev_src
         for it in prev.get("items") or []:
             p = prev_src / it.get("source_path", it["item_id"])
-            if not p.is_file():
+            if not _store.is_file(p):
                 die(
                     f"--from {args.from_}: no source file {p} for {it['item_id']}; fetch or materialize it first",
                     "not-materialized",
                 )
-            shutil.copyfile(p, src / it["source_path"])
+            _store.copy_file(p, src / it["source_path"])
             items.append(dict(it))
     # A field set keeps the fields it declares; --field narrows that to the ones named.
     keep_fields = list(args.field) or (list(_fields.declared(fieldset)) if fieldset else [])
@@ -215,9 +214,9 @@ def main() -> int:
         name = f"{r['id']}.{'txt' if isinstance(body, str) else 'json'}"
         if r["id"] in at:
             old = items[at[r["id"]]].get("source_path")
-            if old and old != name and (src / old).is_file():
-                (src / old).unlink()
-        (src / name).write_bytes(_importers.canonical(body))
+            if old and old != name and _store.is_file(src / old):
+                _store.unlink(src / old)
+        _store.write_bytes(src / name, _importers.canonical(body))
         item = {"item_id": r["id"], "source_path": name, "source_sha256": sha256(src / name)}
         if keep_fields:
             row = {f: dig(r.get("fields") or {}, f) for f in keep_fields}
@@ -235,7 +234,9 @@ def main() -> int:
     lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
     made_from = {
         "capture": args.capture,
-        "capture_sha256": hashlib.sha256((CAPTURES / args.capture / "capture.json").read_bytes()).hexdigest(),
+        "capture_sha256": hashlib.sha256(
+            _store.read_bytes(CAPTURES / args.capture / "capture.json")
+        ).hexdigest(),
         "query": doc.get("query") or {},
         "where": list(args.where),
         "one_per": args.one_per,
@@ -243,7 +244,7 @@ def main() -> int:
         "records": len(recs),
         "kept": len(kept),
     }
-    previous = read_json(out) if out.exists() else {}
+    previous = read_json(out) if _store.exists(out) else {}
     _write(
         out,
         args.dataset_id,

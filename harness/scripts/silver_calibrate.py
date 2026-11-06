@@ -47,7 +47,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _outputs
+from evaluation_harness import _outputs, _store
 from evaluation_harness._adapter import load_recorded_adapter, score_wants_source
 from evaluation_harness._common import (
     MATERIALIZED,
@@ -189,7 +189,7 @@ def main() -> int:
     # dataset whose early runs predate its gold set was "calibrated" against SILVER: a
     # proxy measured against a proxy, printed as if against ground truth. Found by writing
     # the tutorial (docs/GUIDE.md) and following it.
-    if not ref_id and (REFERENCES / "gold" / args.dataset_id).is_dir():
+    if not ref_id and _store.is_dir(REFERENCES / "gold" / args.dataset_id):
         ref_id = f"gold/{args.dataset_id}"
     if not ref_id:
         # In run order, not the filesystem's: which run names the reference was unsorted.
@@ -210,12 +210,12 @@ def main() -> int:
             "--reference-id, for a calibration."
         )
     trusted = {
-        os.path.basename(f)[:-4]: Path(f).read_text(encoding="utf-8").strip()
+        os.path.basename(f)[:-4]: _store.read_text(Path(f), encoding="utf-8").strip()
         for f in glob.glob(str(REFERENCES / ref_id / "*.txt"))
     }
     mat = MATERIALIZED / args.dataset_id
     sources = {
-        os.path.basename(f)[:-4]: Path(f).read_text(encoding="utf-8", errors="replace")
+        os.path.basename(f)[:-4]: _store.read_text(Path(f), encoding="utf-8", errors="replace")
         for f in glob.glob(str(mat / "*.txt"))
     }
     items = sorted(trusted)
