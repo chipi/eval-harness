@@ -1,4 +1,4 @@
-# UXS-005: The Workbench (sketches, round 1)
+# UXS-005: The Workbench (sketches, round 2)
 
 - **Status**: Draft — sketches for review (owner, 2026-11-06: "agree on the structure … see some sketches … then a
   mock-up"); 0.8.0
@@ -7,11 +7,14 @@
 - **Related UX specs**: [UXS-001](UXS-001-catalog.md) (the catalog: shell, tokens), [UXS-002](UXS-002-inspector.md)
   (the inspector), [UXS-003](UXS-003-cli-and-onboarding.md) (commands)
 
-These are low-fidelity sketches of the home and of W1 (run a round), the workflow that gets the most care, with the
-mock data model beside them. The examples are this repository's real triage goal (`triage_orrery`, rounds r1–r4,
-its baseline, its 65 items and r4's triage_cost 0.446 against 0.872); round r5, its new arms and their numbers are made
-up to show the screens.
-Once the structure here is agreed, the clickable mockup follows; it is the Workbench's first, static form.
+Low-fidelity sketches, in the order a person works (owner, round 1's review: "start from the beginning: you set a
+goal, you have a dataset for it, you do something with the dataset, and then you go into the experiment"): an empty
+project, the goal, its dataset, preparing the dataset, then models and the experiment. How often a step happens
+decides how much thought it gets, never its place in the order. One example runs through it: this repository's
+real CNN summaries goal (`news_summary_cnn`: its title, statement, decision and measure) and its dataset from Hugging
+Face (`abisee/cnn_dailymail`, the 3.0.0 test split's 11,490 rows, the first 200 the committed runs measured). Values
+not read from the project are left out rather than invented; the round sketched at the end is made up to show the
+screen.
 
 ## The shell
 
@@ -23,94 +26,139 @@ Once the structure here is agreed, the clickable mockup follows; it is the Workb
   link to it. Its menu is about doing: **Goals** (home), **Running** (jobs), **Models**, **Data** (datasets, labels,
   references). The catalog stays where results are read.
 
-## Home: the goals and their next step
+## 0 An empty project: one way in
 
 ```text
- Goals                                                                           [ + New goal ]
+ Workbench · my-project                                     Goals   Running   Models   Data   Catalog ↗
 
- ┌─ Triage decisions on Orrery's error signals ──────────────────────────────── triage_orrery ─┐
- │  decides triage_cost (lower is better) · frugal                                              │
- │  dataset  orrery_triage_v1_labelled_v2 · 65 items · gold reference                           │
- │  rounds   r1 r2 r3 r4 (closed 2026-11-04)        baseline  production's model (promoted)     │
- │  ▸ Next: open round r5  — r4's leader is not separated from noise_gate                       │
- │                                                   [ Open round r5 ]   [ Review outputs ]     │
- └──────────────────────────────────────────────────────────────────────────────────────────────┘
- ┌─ Short news summaries (CNN) ─────────────────────────────────────────── news_summary_cnn ─┐
- │  decides coverage (higher) · balanced    dataset cnn_dailymail_200 · 200 items · gold        │
- │  rounds r1 (closed)                       ▸ Next: no open round                              │
- └──────────────────────────────────────────────────────────────────────────────────────────────┘
-   … one card per goal …
+            What should this project help you decide?
 
- Running now:  run · triage_prompt_own_code_loads_v2 on orrery…v2 · 41 of 65 items · $0.62 so far  [watch]
+            An evaluation starts with a goal: the decision you need to make, and how
+            you will know which system is better for it.
+
+                                  [ Start with a goal ]
+
+            already have data or runs?  import a dataset · open the catalog
 ```
 
-- A goal card answers three questions: what it decides, what it has (dataset, reference, rounds, baseline), and what
-  to do next. The next step comes from the goal's state (no dataset → add one; no reference → label; an open round
-  with arms not run → run them; a closed round → open the next).
+- With no goal there is one thing to do. The menu is there, its pages empty with the same single way in.
 
-## W1 Run a round: the round board
-
-One place for a round, from its question to its decision. Three parts on one page, top to bottom.
+## 1 The goal
 
 ```text
- triage_orrery / round r5 · open                                        budget $4.00 · spent $0.00
- Question  Does filing the app's own load failures still lead once the noise gate is on?   [edit]
- Dataset   orrery_triage_v1_labelled_v2 · 65 items · gold      Baseline triage_baseline_pro_v2data_v1
+ New goal                                                                       step 1 of 5
+ ①Goal ─ ②Dataset ─ ③Prepare ─ ④Models ─ ⑤Experiment
 
- 1  ARMS                                                                        [ + Add arm ▾ ]
- ┌────────────────────────────────┬──────────────────┬──────────┬────────┬───────────────────┐
- │ arm                            │ model · prompt   │ status   │ cost   │                   │
- ├────────────────────────────────┼──────────────────┼──────────┼────────┼───────────────────┤
- │ triage_baseline_pro_v2data_v1  │ fleet-pro · c2ec │ carried  │ $1.09  │ baseline          │
- │ triage_prompt_own_code_loads   │ fleet-pro · 219b │ carried  │ $1.10  │                   │
- │ own_code_loads + noise_gate v2 │ fleet-pro · 3a41 │ ready    │ ~$1.05 │ smoke ✓  [clone]  │
- │ own_code_loads · qwen3.8-27b   │ qwen3.8 · 219b   │ new      │ ~$0.00 │ [smoke] [remove]  │
- └────────────────────────────────┴──────────────────┴──────────┴────────┴───────────────────┘
-   + Add arm ▾   ·  clone an arm and change one thing (prompt · model · a setting)
-                 ·  carry an arm from r4         ·  a new arm from an onboarded model
+ What is it?        [ Short news summaries (CNN)                                             ]
+ What is it for?    [ Pick a model that writes a short summary of a CNN-style news article, at ]
+                    [ a known cost, for a reader who wants the story's main points.            ]
+ The decision       [ Which models can be told apart on summary quality, and what each costs   ]
+                    [ per article.                                                             ]
+ How you'll judge   measure [ coverage           ▾ ]   (•) higher is better  ( ) lower is better
+ How a winner is    (•) balanced — not worse than the best, within its margin, then the cheapest
+ picked             ( ) frugal   ( ) quality first                         advanced ▸ (margins, axes)
 
- 2  RUN                                     estimate $2.10 for 2 arms × 3 repeats   [ Run 2 arms ]
-    while running:  ███████░░░░  2 jobs · 81 of 130 items · $1.21 · [watch log]
-
- 3  RESULTS AND DECISION                                    scored on gold · paired test vs leader
- ┌────────────────────────────────┬──────────────┬─────────────────────┬──────────────────────┐
- │ arm                            │ triage_cost  │ vs leader           │ contender (≤10%)     │
- │ own_code_loads + noise_gate v2 │ 0.431 ▲best  │ leader              │ yes                  │
- │ triage_prompt_own_code_loads   │ 0.446        │ p 0.44 not separated│ yes                  │
- │ triage_baseline_pro_v2data_v1  │ 0.872        │ p 0.001 worse       │ no                   │
- └────────────────────────────────┴──────────────┴─────────────────────┴──────────────────────┘
-   Inspect these arms ↗ (inspector)          Review their outputs → W2
-   Decide:  [ Retire … ]  [ Promote baseline … ]  [ Close round with a conclusion … ]
+                                                       [ Cancel ]   [ Save and add its dataset → ]
 ```
 
-- **Arms** are rows, not forms. Adding one is a small choice: clone and change one thing, carry from the last round,
-  or new from a model. Its settings open in a side panel with only what that arm varies; the rest is inherited and
-  shown greyed.
-- **Run** is one button for the arms that are ready, with the estimate first (the dry run) against the round's
-  budget; while running, one line per job, and the board stays usable. Each arm is smoked before it can run.
-- **Results** fill in as arms finish and are re-scored; the table is the goal's own comparison (the same numbers as
-  the catalog's goal page). Deciding is three actions, each asking for its reason in one line.
+- Five things, on one screen; everything else in a goal (axes, tie-breaks, guardrails, output contract, links) is
+  "advanced" or comes later from the steps that own it (datasets in step 2, references in step 3).
+- The id is made from the title and shown small (`news_summary_cnn`), changeable before saving.
+- The measure offers the metrics the project's scorers produce; a new one can be typed.
 
-### Add arm: clone and change one thing
+After saving, the goal's page is the hub of the journey: the same five steps, each with its state and its next action.
 
 ```text
- Clone  triage_prompt_own_code_loads  and change:   ( ) prompt   (•) model   ( ) a setting
-   model       [ qwen3.8-27b ▾ ]   onboarded ✓ · x3 · ollama 0.40 · $0
-   deployment  [ x3 ▾ ]
-   name        own_code_loads · qwen3.8-27b
-                                                    [ Cancel ]   [ Add arm and smoke it ]
+ Short news summaries (CNN)                                                  news_summary_cnn
+ decides coverage (higher is better) · balanced                                        [edit]
+
+ ①Goal ✓   ②Dataset ○   ③Prepare ○   ④Models ○   ⑤Experiment ○
+
+ ② Dataset   the items the goal is measured on                       [ Add a dataset → ]
 ```
 
-### The arm's side panel
+## 2 The dataset
 
 ```text
- own_code_loads · qwen3.8-27b                                   [ smoke ✓ 3/3 · read replies ]
- Varies from its source:   model qwen3.8-27b (was fleet-triage-pro)
- Inherits:  prompt 219b34bf · dataset v2 · temperature 0 · reasoning off · repeats 3
- advanced ▸  (every setting, from its config)
+ Add a dataset to news_summary_cnn                                              step 2 of 5
+
+  Use one you have      [ choose one of the project's datasets      ▾ ]           [ Use it ]
+  or make one from:
+   [ a folder of files ]  [ a table: CSV, JSON lines ]  [ Hugging Face ]  [ Croissant ]
+   [ Zenodo ]  [ OpenML ]  [ Kaggle ]  [ production: a capture ]
 ```
 
-## The mock data model (round 1)
+Making one is four short screens, one decision each:
+
+```text
+ a Where from     Hugging Face   repo [ abisee/cnn_dailymail ]  config [ 3.0.0 ]  split [ test ]
+                  pinned to the commit it reads (shown once read) · licence apache-2.0   [ Read it → ]
+
+ b What's in it   11,490 rows · columns: article (text), highlights (text), id (text)
+                  the item is   [ article ▾ ]   its reference is   [ highlights ▾ ]
+                  ┌──────────┬───────────────────────────────────────────┬──────────────────┐
+                  │ id       │ article                                   │ highlights        │
+                  │ (the first rows as read, not invented here)                                │
+                  └──────────┴───────────────────────────────────────────┴──────────────────┘
+                  take  (•) the first [ 200 ] rows   ( ) all   ( ) a seeded sample of [ 200 ]
+
+ c Its fields     proposed from the columns                       (a field is what you can slice by)
+                  ┌───────────┬────────┬──────────────────────┬──────────┐
+                  │ field     │ type   │ values               │ public   │
+                  │ (fields proposed from the columns, each with its type and values)    │
+                  └───────────┴────────┴──────────────────────┴──────────┘   + add a field
+
+ d Name it        [ cnn_dailymail_200 ]   role for this goal [ test ▾ ]
+                  description [ the first 200 test rows ]                 [ Create the dataset ]
+```
+
+- Each source asks only what it needs (a folder: its path and which files; a table: its file and columns; a
+  capture: which one). Preview before anything is written; fields are a table, proposed, never typed from nothing.
+- **Create** is a job (`dataset-create`): it freezes the items and their hashes. The goal's step 2 turns ✓.
+
+## 3 Prepare the dataset
+
+```text
+ ③ Prepare  cnn_dailymail_200                                                   step 3 of 5
+
+  a Fetch its items        ✓ materialized · 200 of 200 · hashes match        (dataset-materialize)
+  b Look inside            ✓ profiled: 200 items · words per item · each field's values
+                           [ open the items ↗ catalog ]
+  c Its reference          what an output is scored against
+                           ( ) it came with one: highlights → promote as  [ gold ▾ ]  [ Promote ]
+                           ( ) label it here                          [ Open the labelling screen ]
+                           ( ) import labels from a sheet (CSV)       [ Choose a file ]
+                           who [ you ]   why [ the dataset's own highlights, as published ]
+
+  Ready when: fetched ✓  looked at ✓  a reference ✓          [ Next: the models → ]
+```
+
+- One screen with the three things a dataset needs before an experiment; each is a job or a small choice, done in
+  order, each showing its result.
+- **Labelling here** opens the in-app labelling screen (W2, to sketch); a CSV round trip stays the other way in.
+- A reference's promotion records who and why (governance).
+
+## 4 Models (to sketch next)
+
+Bring in a model the experiment will use: what it is, where it runs, onboarded (the probes), approved. A project with
+models already onboarded picks from them and skips this step.
+
+## 5 The experiment: a round
+
+The experiment is a round on the goal and its dataset: its arms, their runs and scores, and the decision. This is
+where people spend most of their time, so it gets the most thought; round 1's sketch of its board stays as the
+starting point:
+
+```text
+ news_summary_cnn / round r2 · open (an example)                       budget $5.00 · spent $0.00
+ Question  Does a shorter prompt keep coverage at half the cost?                         [edit]
+
+ 1  ARMS      rows: clone and change one thing · carry from r1 · new from a model      [ + Add arm ▾ ]
+ 2  RUN       one button, the estimate first, then progress per job                     [ Run 2 arms ]
+ 3  RESULTS   the goal's comparison as arms finish; retire · promote baseline · close the round
+```
+
+## The mock data model (round 2: unchanged)
 
 What the screens above show and how it links; the files and the database keep it as they keep it today until the
 data-model RFC decides. Reviewed with the mockup (PRD-017, decision 5).
@@ -154,10 +202,11 @@ erDiagram
 
 ## To review in this round
 
-1. The shell's menu (Goals, Running, Models, Data) and the home as goal cards with a next step.
-2. The round board's three parts on one page (arms, run, results and decision), and arms as rows with a side panel.
-3. "Clone and change one thing" as the main way to add an arm.
-4. The data model's entities and links; in particular Prompt and Job as entities of their own, and Arm separate from
-   its config file.
+1. The order: an empty project, the goal (step 1), its dataset (2), preparing it (3), models (4), the experiment (5),
+   with the goal's page as the hub that shows the five steps and their state.
+2. The goal in five inputs, the rest advanced or owned by later steps.
+3. The dataset in four short screens (where from, what's in it, its fields, its name), preview before writing.
+4. Preparing as one screen of three things (fetch, look, reference), with the three ways to a reference.
+5. The data model (unchanged from round 1).
 
-Not sketched yet: W2 (review and labels: the in-app labelling screen), W3 (production), W4–W7, Running, Models, Data.
+Not sketched yet: step 4 (models), the experiment in detail, the labelling screen, production (W3).
