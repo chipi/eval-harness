@@ -193,6 +193,39 @@ try:
     )
     r = evh("capture-restore", "--capture", "nope")
     check("an unknown capture: refused", r.returncode != 0 and "no capture" in r.stderr, out(r))
+
+    # The same in a project whose data is in its database (RFC-025): the records are built in a folder on disk (the
+    # scrubber runs on real files), then written into the database; nothing is left on disk under data/. The folder
+    # used to be made under data/, which does not exist there (advisor review, 2026-11-06).
+    (proj / "config.yaml").write_text("store: sqlite\n")
+    env["EVAL_STORE"] = "sqlite"
+    r = evh("data-migrate", "--to", "sqlite")
+    check("setup: the project moved into its database", r.returncode == 0, out(r)[-300:])
+    sys.path.insert(0, str(HERE.parent))
+    os.environ.update(EVAL_HOME=str(proj), EVAL_STORE="sqlite")
+    from evaluation_harness import _store
+
+    def db_snapshot(d: Path) -> dict:
+        return {
+            p.relative_to(d).as_posix(): _store.read_bytes(p)
+            for p in sorted(_store.rglob(d, "*"))
+            if _store.is_file(p)
+        }
+
+    _store.rmtree(scap / "records")
+    _store.close()
+    r = evh("capture-restore", "--capture", "s1")
+    check(
+        "sqlite: a scrubbed capture read again into the database, scrubbed with its recorded command, the records match;"
+        " nothing left on disk",
+        r.returncode == 0
+        and db_snapshot(scap / "records") == want_s
+        and "scrubbed again" in r.stdout
+        and not _store.stray_files()
+        and not any((proj / ".build" / "staging").glob("*")),
+        out(r)[-400:],
+    )
+    _store.close()
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

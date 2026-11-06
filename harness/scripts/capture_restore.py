@@ -32,7 +32,6 @@ import hashlib
 import json
 import shlex
 import subprocess
-import tempfile
 from pathlib import Path
 
 from evaluation_harness import _importers, _store
@@ -178,7 +177,7 @@ def main() -> int:
             f"{code_note}{named(missing, 'not returned by the importer for this query')}; nothing written",
             "mismatch",
         )
-    tmp = Path(tempfile.mkdtemp(prefix=".records.partial-", dir=base))
+    tmp = _store.staging(records, ".records.partial-")
     try:
         for rid, rec in got.items():
             write_json(tmp / f"{rid}.json", rec)
@@ -215,7 +214,7 @@ def main() -> int:
             )
         if _store.exists(records):
             _store.rmtree(records)
-        tmp.rename(records)
+        _store.adopt(tmp, records)
     finally:
         _store.rmtree(tmp, ignore_errors=True)
     for dest, data in writes:

@@ -402,6 +402,51 @@ def rmtree(path: Any, ignore_errors: bool = False) -> None:
         raise _missing(path)
 
 
+def staging(dst: Any, prefix: str) -> Path:
+    """A new, empty directory on disk to build the directory `dst` in, then put in place with `adopt`: beside `dst`
+    for a path on disk (one rename, never a half directory), under the project's .build/staging/ for a path in the
+    database (whose directories are only keys). Always on disk, so a command the caller runs on it (a capture's
+    scrubber) sees real files; mode as a plain mkdir's."""
+    import tempfile  # noqa: PLC0415
+
+    if rel(dst) is None:
+        Path(dst).parent.mkdir(parents=True, exist_ok=True)
+        base = Path(dst).parent
+    else:
+        base = _common.ROOT / ".build" / "staging"
+        base.mkdir(parents=True, exist_ok=True)
+    d = Path(tempfile.mkdtemp(prefix=prefix, dir=base))
+    umask = os.umask(0)
+    os.umask(umask)
+    d.chmod(0o777 & ~umask)  # a plain mkdir's mode, not mkdtemp's private 0700
+    return d
+
+
+def adopt(src: Path, dst: Any) -> None:
+    """The directory `src` (from `staging`) becomes the directory `dst`, which must not exist or be empty: renamed on
+    disk; in the database every file under it written under `dst` in one transaction (all of it, or none), then `src`
+    removed."""
+    key = rel(dst)
+    if key is None:
+        if Path(dst).is_dir():
+            Path(dst).rmdir()  # empty: the rename needs the name free
+        Path(src).rename(dst)
+        return
+    files = sorted(p for p in Path(src).rglob("*") if p.is_file())
+    with _LOCK:
+        conn = connect()
+        assert conn is not None
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            for f in files:
+                _put(f"{key}/{f.relative_to(src).as_posix()}", f.read_bytes())
+            conn.execute("COMMIT")
+        except BaseException:
+            conn.execute("ROLLBACK")
+            raise
+    shutil.rmtree(src)
+
+
 def _per_item_tables(conn: sqlite3.Connection) -> list[tuple[str]]:
     """The DELETE statements for the per-item tables that exist (`_outputs` creates them on first use)."""
     have = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}

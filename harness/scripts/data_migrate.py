@@ -52,7 +52,9 @@ def _disk_files(data: Path) -> list[Path]:
 
 
 def _is_run(d: Path) -> bool:
-    return (d / "metrics.json").is_file() or (d / "run.json").is_file()
+    """Whether `d` is a run: its record is on disk, or already in the database (a migration a crash stopped after
+    moving the record, before the run's outputs and rows, is finished by the next one)."""
+    return any((d / n).is_file() or _store.is_file(d / n) for n in ("metrics.json", "run.json"))
 
 
 def _refusals(data: Path, files: list[Path]) -> None:

@@ -17,6 +17,7 @@ No module but the few named below does path I/O itself.
 
 import ast
 import contextlib
+import fnmatch
 import io
 import json
 import os
@@ -183,6 +184,35 @@ try:
             _store.read_text(Own()) == "its own" and _store.is_file(Own()) is True,
         )
 
+    # A label set written in the database: it was built in a folder made on disk under data/, which does not exist
+    # there (advisor review, 2026-11-06: FileNotFoundError on every label-import in SQLite mode).
+    from evaluation_harness import _label_sets
+
+    use("sqlite")
+    _store.write_text(
+        data / "datasets" / "lbl.json",
+        json.dumps({"dataset_id": "lbl", "items": [{"item_id": "i1", "input": "x"}]}),
+    )
+    try:
+        _label_sets.write_set("lbl", "s1", {"i1": "yes"}, {"kind": sorted(_label_sets.SOURCES)[0]})
+        said = ""
+    except (SystemExit, OSError) as exc:
+        said = f"{type(exc).__name__}: {exc}"
+    out = _label_sets.set_dir("lbl", "s1")
+    staged = _common.ROOT / ".build" / "staging"
+    check(
+        "sqlite: a label set is written into the database, listed, and nothing of it left on disk",
+        not said
+        and _store.is_file(out / "labels.json")
+        and _store.read_text(out / "i1.txt") == "yes\n"
+        and "s1" in [x.get("set") for x in _label_sets.sets()]
+        and not _store.stray_files()
+        and not (staged.is_dir() and any(staged.iterdir())),
+        said or _store.stray_files()[:3],
+    )
+    _store.rmtree(data / "labels", ignore_errors=True)
+    _store.unlink(data / "datasets" / "lbl.json")
+
     # data-migrate there and back.
     use("files")
     shutil.rmtree(data, ignore_errors=True)
@@ -259,6 +289,33 @@ try:
         "--to files: every file byte-identical, the database gone",
         r.returncode == 0 and after == before and not (data / _store.DB).exists(),
         ((r.stdout + r.stderr)[-300:], sorted(set(before) ^ set(after))),
+    )
+
+    # A migration a crash stopped after it had moved a run's record, before the run's outputs and rows: the next one
+    # finishes it, the outputs and rows into their own tables (advisor review, 2026-11-06: they went into the files
+    # table, and the run read empty).
+    use("sqlite")
+    for name in ("metrics.json", "run.json"):
+        _store.write_bytes(run / name, (run / name).read_bytes())
+        (run / name).unlink()
+    _store.close()
+    r = evh("data-migrate", "--to", "sqlite", store="sqlite")
+    use("sqlite")
+    check(
+        "--to sqlite resumed after a crash: the run's outputs and rows go to their tables, not the files",
+        r.returncode == 0
+        and _outputs.outputs(run) == {"i2": "two é\r\n", "i1": ""}
+        and _outputs.rows_text(run) == before["runs/arm_v1_x/predictions.jsonl"].decode()
+        and not _store.is_file(run / _outputs.FILE)
+        and not _store.is_file(run / _outputs.PREDICTIONS),
+        ((r.stdout + r.stderr)[-300:], _outputs.outputs(run)),
+    )
+    r = evh("data-migrate", "--to", "files", store="files")
+    use("files")
+    check(
+        "--to files after the resumed migration: every file byte-identical again",
+        r.returncode == 0 and {f: (data / f).read_bytes() for f in disk_files()} == before,
+        (r.stdout + r.stderr)[-300:],
     )
 
     old = data / "runs" / "arm_v1_old"
@@ -353,23 +410,68 @@ finally:
 
 # No module does path I/O itself but these: everything else goes through _store, which keeps a path under data/
 # in the project's store and any other path on the disk.
+#: The files that do path I/O themselves, and why: the store, and files that never touch a project's data/ (the site's
+#: own build, packaging, the file a person names to a source or an importer, code beside its prompts). Keyed by the
+#: path from the repository root; a `*` matches one name. Any other file must go through _store.
 ALLOWED = {
-    "_store.py": "the store",
-    "_outputs.py": "its files store is the disk by definition (data-migrate reads the disk through it)",
-    "data_migrate.py": "moves between the disk and the database",
-    "run_migrate.py": "reads the layout before 0.8.0 on disk",
-    "_common.py": "finds the project on disk (data/, .env, config.yaml) before any store exists",
-    "stats.py": "standard library only; its p cache is outside data/",
-    "skills_install.py": "copies the harness's own skill files, never data",
+    "harness/scripts/_store.py": "the store",
+    "harness/scripts/_outputs.py": "its files store is the disk by definition (data-migrate reads the disk through it)",
+    "harness/scripts/data_migrate.py": "moves between the disk and the database",
+    "harness/scripts/run_migrate.py": "reads the layout before 0.8.0 on disk",
+    "harness/scripts/_common.py": "finds the project on disk (data/, .env, config.yaml) before any store exists",
+    "harness/scripts/stats.py": "standard library only; its p cache is outside data/",
+    "harness/scripts/skills_install.py": "copies the harness's own skill files, never data",
+    "harness/scripts/_fetch.py": "its download cache is .cache/items, outside data/",
+    "harness/scripts/sources/*.py": "a dataset source reads the file or folder a person names to it, outside data/",
+    "harness/scripts/importers/*.py": "an importer reads the file a person names to it",
+    "harness/tools/_wheel.py": "packaging: copies the harness's own files",
+    "site/*.py": "the public site's own build and checks: its pages and the docs, never a project's data",
+    "examples/*/fetch.py": "an example's fetch writes its sources as files; in SQLite data-migrate moves them in (RFC-025)",
+    "examples/*/adapter.py": "an adapter reads its prompt file beside its code",
+    "examples/*/calibrate.py": "reads the example's arm configs beside its code",
+    "examples/_shared/classification.py": "reads a prompt file beside the example's code",
+    "examples/_shared/calibration.py": "writes docs/evidence/calibration, outside data/",
+    "examples/_shared/gateway.py": "reads examples/models.json beside the code",
+    "examples/_shared/hf_identity.py": "reads the Hugging Face cache, outside the project",
+    "examples/triage-fleet/*.py": "reads and writes the sheets and decision files a person names",
+    "examples/audit_locks.py": "checks the examples' lock files",
+    "examples/signal-fleet-dedup/test_dedup.py": "a test of the example's own fixtures",
 }
 METHODS = {"read_text", "read_bytes", "write_text", "write_bytes", "is_file", "is_dir", "exists", "glob", "rglob",
-           "iterdir", "unlink", "mkdir", "stat", "open"}  # fmt: skip
+           "iterdir", "unlink", "mkdir", "stat", "open", "rename", "rmdir", "chmod", "touch"}  # fmt: skip
+#: (`.replace()` is left out: a str's and a Path's cannot be told apart here.)
 FUNCS = (
     {("shutil", f) for f in ("rmtree", "copy", "copy2", "copyfile", "copytree", "move")}
-    | {("os", f) for f in ("replace", "rename", "remove", "unlink", "makedirs", "listdir", "walk", "scandir")}
+    | {
+        ("os", f)
+        for f in (
+            "replace",
+            "rename",
+            "remove",
+            "unlink",
+            "makedirs",
+            "listdir",
+            "walk",
+            "scandir",
+            "mkdir",
+            "rmdir",
+            "stat",
+            "lstat",
+            "chmod",
+            "utime",
+            "symlink",
+            "link",
+            "truncate",
+        )
+    }
     | {("os.path", f) for f in ("exists", "isfile", "isdir", "getmtime", "getsize")}
     | {(m, f) for m in ("glob", "_glob") for f in ("glob", "iglob")}
 )
+#: A temporary file or folder made in a given directory: under data/ in SQLite mode that directory does not exist
+#: (finding 2 of the 2026-11-06 review: label sets and capture restore did this). One made in the system's own
+#: temporary directory (no dir=) is not the project's data.
+TEMP = {"mkdtemp", "mkstemp", "NamedTemporaryFile", "TemporaryDirectory", "TemporaryFile"}
+REPO = HARNESS.parent
 
 
 def dotted(n):
@@ -381,9 +483,24 @@ def dotted(n):
     return None
 
 
+def allowed(rel: str) -> bool:
+    return any(fnmatch.fnmatchcase(rel, pat) and pat.count("/") == rel.count("/") for pat in ALLOWED)
+
+
+scanned = sorted(
+    f
+    for f in {
+        *HARNESS.glob("scripts/**/*.py"),
+        *HARNESS.glob("tools/**/*.py"),
+        *REPO.glob("site/**/*.py"),
+        *REPO.glob("examples/**/*.py"),
+    }
+    if not {".venv", "__pycache__", "node_modules"} & set(f.parts)
+)
 stray = []
-for f in sorted(HERE.glob("*.py")):
-    if f.name in ALLOWED:
+for f in scanned:
+    where = f.relative_to(REPO).as_posix()
+    if allowed(where):
         continue
     tree = ast.parse(f.read_text())
     mods = set()
@@ -397,17 +514,24 @@ for f in sorted(HERE.glob("*.py")):
             continue
         fn = n.func
         if isinstance(fn, ast.Name) and fn.id == "open":
-            stray.append(f"{f.name}:{n.lineno} open()")
+            stray.append(f"{where}:{n.lineno} open()")
         elif isinstance(fn, ast.Attribute):
             recv = dotted(fn.value)
             if (recv, fn.attr) in FUNCS:
-                stray.append(f"{f.name}:{n.lineno} {recv}.{fn.attr}")
+                stray.append(f"{where}:{n.lineno} {recv}.{fn.attr}")
+            elif recv == "tempfile" and fn.attr in TEMP and any(k.arg == "dir" for k in n.keywords):
+                stray.append(f"{where}:{n.lineno} tempfile.{fn.attr}(dir=)")
             # a module's own function (os.path.exists, glob.glob) is not path I/O; a path a module holds
             # (_common.DATASETS.glob) is
             elif fn.attr in METHODS and recv != "_store" and not (recv in mods or recv == "os.path"):
-                stray.append(f"{f.name}:{n.lineno} .{fn.attr}()")
+                stray.append(f"{where}:{n.lineno} .{fn.attr}()")
 check(
-    "no module but the store's own does path I/O itself (everything else through _store)",
+    f"the path-I/O guard reads {len(scanned)} files: scripts/ (with sources/ and importers/), tools/, site/, examples/",
+    len(scanned) > 150,
+    len(scanned),
+)
+check(
+    "no file but the store and the ones named above does path I/O itself (everything else through _store)",
     not stray,
     stray[:15],
 )

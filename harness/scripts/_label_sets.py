@@ -25,9 +25,7 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import hashlib
 import json
-import os
 import re
-import tempfile
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -302,11 +300,7 @@ def write_set(
     if rebuild:
         doc["redistributed"] = False
         doc["rebuild"] = rebuild
-    _store.mkdir(out.parent, parents=True, exist_ok=True)
-    tmp = Path(tempfile.mkdtemp(prefix=f".{name}.partial-", dir=out.parent))
-    umask = os.umask(0)
-    os.umask(umask)
-    tmp.chmod(0o777 & ~umask)  # a plain mkdir's mode, not mkdtemp's private 0700
+    tmp = _store.staging(out, f".{name}.partial-")
     try:
         for iid, text in texts.items():
             _store.write_text(tmp / f"{iid}.txt", text, encoding="utf-8")
@@ -316,9 +310,7 @@ def write_set(
                 "# the label texts are not redistributed (labels.json says how to rebuild them)\n*.txt\n",
             )
         write_json(tmp / "labels.json", doc)
-        if _store.exists(out):
-            out.rmdir()  # empty (checked above): the rename needs the name free
-        tmp.rename(out)
+        _store.adopt(tmp, out)  # out is empty or absent (checked above)
     except BaseException:
         _store.rmtree(tmp, ignore_errors=True)
         raise
