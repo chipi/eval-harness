@@ -1085,6 +1085,7 @@ DATA_STATUS = {
     "bad-argument": 400,
     "would-overwrite": 409,
     "invalid-file": 422,
+    "failed": 503,  # the project's check did not finish: the save could not be checked
 }
 
 

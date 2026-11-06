@@ -57,7 +57,23 @@ def _is_run(d: Path) -> bool:
     return any((d / n).is_file() or _store.is_file(d / n) for n in ("metrics.json", "run.json"))
 
 
+def _links(data: Path) -> list[Path]:
+    """Every symbolic link under data/, to a file or a folder: os.walk does not follow one into a folder."""
+    out = []
+    for root, dirs, files in os.walk(data):
+        out += [Path(root) / n for n in [*dirs, *files] if os.path.islink(os.path.join(root, n))]
+    return sorted(out)
+
+
 def _refusals(data: Path, files: list[Path]) -> None:
+    links = _links(data)
+    if links:
+        die(
+            "data/ holds symbolic links, which a migration would leave behind (a linked folder is not walked): put"
+            " what each points to in its place first:\n  "
+            + "\n  ".join(str(p.relative_to(data)) for p in links[:10]),
+            "not-allowed",
+        )
     code = [p for p in files if p.suffix == ".py"]
     if code:
         die(

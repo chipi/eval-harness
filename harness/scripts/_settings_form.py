@@ -485,15 +485,23 @@ def guarded_write(norm: str, f: Any, text: str) -> None:
     """Write a setting, then let the project's own check (`evh validate`) judge it: anything it says now that it did
     not say before is the change's, and the file is put back as it was (or removed, if it is new)."""
     before = _store.read_text(f) if _store.is_file(f) else None
-    was = project_check()
-    _store.mkdir(f.parent, parents=True, exist_ok=True)
-    _common.write_text_atomic(f, text)
-    new = project_check_since(was)
-    if new:
+    was = project_check()  # a check that does not finish refuses here, with nothing written
+
+    def put_back() -> None:
         if before is None:
             _store.unlink(f)
         else:
             _common.write_text_atomic(f, before)
+
+    _store.mkdir(f.parent, parents=True, exist_ok=True)
+    _common.write_text_atomic(f, text)
+    try:
+        new = project_check_since(was)
+    except _data_page.Refused:
+        put_back()
+        raise
+    if new:
+        put_back()
         raise ProjectRefused(new)
 
 
@@ -508,17 +516,37 @@ class ProjectRefused(_data_page.Refused):
         self.problems = [{"path": [], "message": p["message"]} for p in found]
 
 
+#: How long the project's check may take before a save is refused as unchecked.
+VALIDATE_TIMEOUT_S = 600
+
+
 def project_check() -> dict[str, list[str]]:
     """`evh validate` on the project as it is: each failing check (V1, V13, ...) with the lines it printed about it.
-    A child process: validate reads module state the server's own process must not share."""
+    A child process: validate reads module state the server's own process must not share. A validate that does not
+    finish (it crashed, or ran past VALIDATE_TIMEOUT_S) is no verdict, so it refuses: a save it cannot check is not
+    made (advisor review, 2026-11-06: a crashed validate let every save through)."""
     import os  # noqa: PLC0415
     import subprocess  # noqa: PLC0415  # nosec B404 - the package's own command, no shell
     import sys  # noqa: PLC0415
 
-    r = subprocess.run(  # nosec B603
-        [sys.executable, "-m", "evaluation_harness", "validate"],
-        cwd=_common.ROOT, capture_output=True, text=True, stdin=subprocess.DEVNULL, env=dict(os.environ), check=False,
-    )  # fmt: skip
+    try:
+        r = subprocess.run(  # nosec B603
+            [sys.executable, "-m", "evaluation_harness", "validate"],
+            cwd=_common.ROOT, capture_output=True, text=True, stdin=subprocess.DEVNULL, env=dict(os.environ),
+            check=False, timeout=VALIDATE_TIMEOUT_S,
+        )  # fmt: skip
+    except subprocess.TimeoutExpired:
+        raise _data_page.Refused(
+            f"not saved: evh validate did not finish in {VALIDATE_TIMEOUT_S} s, so the change cannot be checked",
+            "failed",
+        ) from None
+    if not any(line.startswith(("VALIDATION PASSED", "VALIDATION FAILED")) for line in r.stdout.splitlines()):
+        tail = ((r.stderr or "") + (r.stdout or "")).strip().splitlines()[-1:] or ["no output"]
+        raise _data_page.Refused(
+            f"not saved: evh validate stopped before its verdict (exit {r.returncode}: {tail[0][:200]}), so the change"
+            " cannot be checked; run evh validate to see why",
+            "failed",
+        )
     failing: dict[str, list[str]] = {}
     said: list[str] = []
     for line in r.stdout.splitlines():

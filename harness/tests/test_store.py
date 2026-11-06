@@ -155,15 +155,20 @@ try:
         _store.write_text(run / "metrics.json", "{}")
         _outputs.writer(run).add("i1", "old output")
         _outputs.write_rows(run, [{"item_id": "i1", "score": 1}])
+        # read first, as a running catalog-serve has: what it keeps must go with the run (advisor review,
+        # 2026-11-06: the same process kept answering with the deleted run's outputs and rows)
+        was = (_outputs.outputs(run), _outputs.rows_text(run))
         _store.rmtree(run)
         _store.mkdir(run, parents=True, exist_ok=True)
         _store.write_text(run / "run.json", "{}")
         check(
-            f"{store}: rmtree of a run takes its outputs and rows; made again, it starts empty",
-            _outputs.outputs(run) == {}
+            f"{store}: rmtree of a run read before takes its outputs and rows, in this process too; made again, it starts empty",
+            was[0] == {"i1": "old output"}
+            and was[1] is not None
+            and _outputs.outputs(run) == {}
             and _outputs.rows_text(run) is None
             and not _store.is_file(run / "metrics.json"),
-            (_outputs.outputs(run), _outputs.rows_text(run)),
+            (was, _outputs.outputs(run), _outputs.rows_text(run)),
         )
         missing = None
         try:
@@ -317,6 +322,31 @@ try:
         r.returncode == 0 and {f: (data / f).read_bytes() for f in disk_files()} == before,
         (r.stdout + r.stderr)[-300:],
     )
+
+    # A symbolic link under data/ (a big corpus kept elsewhere): os.walk does not follow it into a folder, so the
+    # migration reported success with the folder's files never in the database, and V23 saw nothing (advisor review,
+    # 2026-11-06). The migration refuses it by name; V23's files-on-disk check names it.
+    elsewhere = proj / "corpus-elsewhere"
+    elsewhere.mkdir()
+    (elsewhere / "big.txt").write_text("a corpus\n")
+    (data / "sources").mkdir(exist_ok=True)
+    (data / "sources" / "big").symlink_to(elsewhere, target_is_directory=True)
+    r = evh("data-migrate", "--to", "sqlite", store="sqlite")
+    use("sqlite")
+    linked = data / "sources" / "big"
+    check(
+        "--to sqlite refuses a symbolic link under data/, naming it; V23 names it on disk",
+        r.returncode != 0
+        and "symbolic links" in r.stderr
+        and "sources/big" in r.stderr
+        and linked in _store.stray_files(),
+        (r.stderr[-300:], _store.stray_files()[:3]),
+    )
+    use("files")
+    linked.unlink()
+    shutil.rmtree(elsewhere)
+    if not any((data / "sources").iterdir()):
+        (data / "sources").rmdir()
 
     old = data / "runs" / "arm_v1_old"
     (old / "outputs").mkdir(parents=True)

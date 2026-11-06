@@ -76,6 +76,8 @@ def refuse(exc: Refused) -> NoReturn:
         die(msg, "would-overwrite")
     if exc.kind == "invalid-file":
         die(msg, "invalid-file")
+    if exc.kind == "failed":
+        die(msg, "failed")
     die(msg, "bad-argument")
 
 

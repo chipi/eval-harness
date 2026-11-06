@@ -376,6 +376,11 @@ def unlink(path: Any, missing_ok: bool = False) -> None:
         raise _missing(path)
 
 
+#: Called with a directory's key after rmtree deletes it from the database: what a module keeps read of it goes too
+#: (_outputs forgets a deleted run's outputs and rows; a long-running catalog-serve kept answering with them).
+ON_REMOVE: list[Any] = []
+
+
 @_locked
 def rmtree(path: Any, ignore_errors: bool = False) -> None:
     """The directory and everything under it removed; in the database a run's outputs and rows go with it."""
@@ -398,6 +403,8 @@ def rmtree(path: Any, ignore_errors: bool = False) -> None:
             conn.execute("ROLLBACK")
             raise
         conn.execute("COMMIT")
+    for hook in ON_REMOVE:
+        hook(key)
     if not n and not ignore_errors:
         raise _missing(path)
 
@@ -538,6 +545,8 @@ def stray_files() -> list[Path]:
     out = []
     for root, dirs, files in os.walk(data):
         dirs.sort()
+        # a symbolic link to a folder is not walked into, but it is on disk all the same (advisor review, 2026-11-06)
+        out += [Path(root) / d for d in dirs if os.path.islink(os.path.join(root, d))]
         for f in sorted(files):
             q = Path(root) / f
             if not (q.parent == data and (f == DB or f.startswith(DB + "-"))):

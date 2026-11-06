@@ -124,6 +124,53 @@ def main() -> int:
     got = F.text_for("goals/g.yaml", values, goal)
     check("text_for: a list item added alone", got == goal + "  - dataset_id: b\n", got)
 
+    # A validate that does not reach its verdict decides nothing: the save is refused and the file left as it was
+    # (advisor review, 2026-11-06: a crashed validate let every save through). subprocess.run is faked; the file is
+    # a temporary one outside any project.
+    import subprocess  # noqa: PLC0415
+    import tempfile  # noqa: PLC0415
+
+    real_run = subprocess.run
+    tmp = Path(tempfile.mkdtemp(prefix="evh-guard-"))
+    target = tmp / "g.yaml"
+
+    def fake(*answers):
+        seq = iter(answers)
+
+        def run(*_a, **_k):
+            x = next(seq, "")  # any further run: crashed too
+            if x == "timeout":
+                raise subprocess.TimeoutExpired("validate", 1)
+            return subprocess.CompletedProcess(
+                [], 0 if "PASSED" in x else 1, stdout=x, stderr="Traceback: KeyError"
+            )
+
+        return run
+
+    outcomes = []
+    for answers, start in (
+        (("",), None),  # crashed before the write: nothing written
+        (("timeout",), None),  # hung before the write
+        (("\nVALIDATION PASSED", ""), "kept: 1\n"),  # crashed after the write: put back
+    ):
+        if start is None:
+            target.unlink(missing_ok=True)
+        else:
+            target.write_text(start)
+        subprocess.run = fake(*answers)
+        try:
+            F.guarded_write("goals/g.yaml", target, "changed: 2\n")
+            kind = None
+        except _data_page.Refused as exc:
+            kind = exc.kind
+        except Exception as exc:  # noqa: BLE001 - recorded: anything but a refusal is the failure
+            kind = type(exc).__name__
+        finally:
+            subprocess.run = real_run
+        outcomes.append((kind, target.read_text() if target.exists() else None, start))
+    check("a validate that crashes or hangs refuses the save (kind failed); the file stays as it was",
+          all(k == "failed" and now == was for k, now, was in outcomes), outcomes)  # fmt: skip
+
     v = {"params": {"a": 1}, "datasets": [{"dataset_id": "x"}]}
     out = F.set_values(
         v, [("params.b", True), ("datasets.1.dataset_id", "y"), ("context.usage", "u")], ["params.a"]

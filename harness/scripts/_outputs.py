@@ -338,6 +338,14 @@ class SqliteStore:
             self._rows.clear()
             self._version = v
 
+    def forget_under(self, key: str) -> None:
+        """What is kept of the run at `key`, and of every run under it, forgotten (_store.rmtree deleted them)."""
+        under = key + "/"
+        for k in [k for k in self._cache if k == key or k.startswith(under)]:
+            self._cache.pop(k, None)
+        for k in [k for k in self._rows if k[0] == key or k[0].startswith(under)]:
+            self._rows.pop(k, None)
+
     def _forget(self, k: str) -> None:
         self._cache.pop(k, None)
         self._rows.pop((k, False), None)
@@ -544,6 +552,7 @@ class SqliteStore:
 
 _FILES = FileStore()
 _SQLITE = SqliteStore()
+_store.ON_REMOVE.append(_SQLITE.forget_under)
 
 
 def store_named(name: str) -> Store:
