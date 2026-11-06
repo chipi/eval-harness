@@ -1,33 +1,33 @@
-# RFC-025: Runs in SQLite, a project's choice
+# RFC-025: A project's data in SQLite, a project's choice
 
-- **Status**: Accepted (2026-11-06), both phases in 0.8.0 S0 (owner: "All in 0.8"), and built. See "As built".
-  Owner, 2026-11-06: "project has file mode by default but easy to change to sqlite"; the go to write this RFC the
-  same day.
+- **Status**: Proposed, revised 2026-11-06. The first version (accepted the same day: "All in 0.8") moved only a run's
+  outputs and rows; that part is built and is now part of this one. Owner, 2026-11-06: "project has file mode by
+  default but easy to change to sqlite"; then "one database in project for all its data", "catalog reads from it all
+  data and inspector as well", "runs records also go to db", "data also goes to the same database".
 - **Authors**: Marko Dragoljevic
-- **Related**: [RFC-024](RFC-024-run-outputs-in-one-file.md) (one file of outputs, one reader, the store this RFC
-  swaps); [RFC-002](RFC-002-run-records-and-derived-runs.md) (the run directory); `research/internal/PLAN_0.8.0.md` S0
+- **Related**: [RFC-024](RFC-024-run-outputs-in-one-file.md) (one reader for outputs, the pattern this RFC repeats for
+  everything); [RFC-002](RFC-002-run-records-and-derived-runs.md) (run records, derived runs);
+  `research/internal/PLAN_0.8.0.md` S0
 
 ## Abstract
 
-A project keeps its runs as files, as today, unless it says otherwise: one key in its `config.yaml` puts a run's
-outputs, and then its per-item rows, in one SQLite database, `data/runs.sqlite`. The run directories stay, with
-`metrics.json` and `run.json`; what is per item moves. `evh run-migrate --to sqlite|files` moves a project either way,
-checked by the signatures RFC-024's migration checked. SQLite is in Python's standard library: no dependency.
+A project keeps its data as files, as today, unless it says otherwise. With one key in its `config.yaml` everything
+the harness keeps under `data/` (runs whole, datasets, sources and materialized copies, references, labels, judge
+verdicts, captures, profiles, rounds, models) lives in one SQLite database, `data/project.sqlite`, and nothing else
+under `data/`. The catalog, the inspector and every command read and write it through one module. `evh data-migrate
+--to sqlite|files` moves a project either way, every file checked by its sha256. SQLite is in Python's standard
+library: no dependency.
 
 ## Problem
 
-- **Per-item data is files.** After RFC-024 a run is a handful of files (outputs.jsonl, predictions.jsonl,
-  metrics.json, run.json); 10,000 items × 50 arms is a few hundred files, not 500,000. What files still cost: every
-  read of one item across arms opens and parses each arm's whole file (the sheet at 10,000 items × 50 arms reads 50
-  files of 10,000 lines to show one page), and concurrent writers (a sweep in parallel, the inspector reading while
-  a run writes) rely on each writer owning its own files.
-- **Readers.** RFC-024 left one module that reads and writes outputs, `_outputs.py`. The rows are not there yet: 18
-  modules name `predictions.jsonl` (some in messages), 7 read it through `_runs.item_rows()`, the rest open it
-  themselves (run, rescore, judge-score, sheet-import, import-run, family-test, holdout, leaderboard, cost-report,
-  deploy-sheet, label-from-run, the catalog adapter and views, release, validate).
-- **Who wants it.** A project whose runs are not committed (production-scale data, the triage fleet's) gains a single
-  file to back up and indexed reads; a project that commits its runs (this repository) keeps files, which git can
-  diff and review.
+- **Files at scale.** 10,000 items × 50 arms is hundreds of run directories, each read whole to show one item;
+  concurrent writers (a parallel sweep, the inspector reading while a run writes) rely on owning separate files; a
+  project's data is 12,000 files in 26 folders (this repository) that back up and move as 12,000 files.
+- **One place.** A project that does not keep its data in git (production-scale data, the triage fleet's) wants one
+  file to back up, copy and query, and the catalog and inspector reading it.
+- **Readers.** About 300 places in about 40 modules build paths under `data/` themselves (`DATASETS / f"{id}.json"`,
+  `glob("*/metrics.json")`, `DATA / "judge-verdicts"`). The first version of this RFC moved two kinds of file (outputs,
+  rows) behind one module; everything else still reads the disk.
 
 ## Design
 
@@ -35,119 +35,124 @@ checked by the signatures RFC-024's migration checked. SQLite is in Python's sta
 
 ```yaml
 # <project>/config.yaml
-runs:
-  store: sqlite        # files (the default) or sqlite
+store: sqlite        # files (the default) or sqlite
 ```
 
-or `EVAL_RUNS_STORE=sqlite`, which wins over the file. Every command reads the choice the same way (`_common`);
+or `EVAL_STORE=sqlite`, which wins over the file (this replaces the first version's `runs.store` and
+`EVAL_RUNS_STORE`, built today and unreleased). Every command reads the choice the same way (`_common.store()`);
 `evh init` writes no key, so a new project is files.
+
+### One module for the project's data
+
+`_store.py`: every file under `data/` is addressed by its path relative to `data/` (`datasets/tickets_v1.json`,
+`runs/arm_v1_x/metrics.json`, `judge-verdicts/s1/set/v.json`), with `read_bytes`, `read_text`, `read_json`,
+`write` (atomic), `exists`, `list(prefix)`, `glob(pattern)`, `delete`, `mtime`. The files store is the filesystem as
+today. Every module moves onto it, as RFC-024 moved outputs, and a test fails on a path under `data/` built anywhere
+else. A run's outputs and rows keep the interface the first version built (`_outputs`), which the files store
+answers from `outputs.jsonl` and `predictions.jsonl`.
 
 ### The database
 
-`data/runs.sqlite`, opened in write-ahead mode (`PRAGMA journal_mode=WAL`, `synchronous=FULL`), so readers never block
-the writer and a crash keeps every committed row:
+`data/project.sqlite`, write-ahead logged (`journal_mode=WAL`, `synchronous=FULL`): readers never block the writer, a
+crash keeps everything committed.
 
 ```sql
+CREATE TABLE files   (path TEXT PRIMARY KEY, data BLOB NOT NULL, sha256 TEXT NOT NULL, mtime REAL NOT NULL);
 CREATE TABLE outputs (run TEXT, item_id TEXT, text TEXT NOT NULL, sha256 TEXT NOT NULL, PRIMARY KEY (run, item_id));
-CREATE TABLE rows    (run TEXT, item_id TEXT, row TEXT NOT NULL, partial INTEGER NOT NULL DEFAULT 0,
-                      PRIMARY KEY (run, item_id, partial));
-CREATE TABLE meta    (key TEXT PRIMARY KEY, value TEXT);   -- the schema version, the store's own
+CREATE TABLE rows    (run TEXT, partial INTEGER, n INTEGER, item_id TEXT, row TEXT NOT NULL,
+                      PRIMARY KEY (run, partial, n));
+CREATE TABLE meta    (key TEXT PRIMARY KEY, value TEXT);
 ```
 
-- `run` is the run directory under `data/` (`runs/<id>`, `runs-judged/<scorer>/<id>`), the same key
-  `derived.from_dir` names; a derived run still has no outputs of its own and reads its source's.
-- An output is one row inserted and committed as it is produced (what one synced line is today); `finish()` is a
-  no-op, the order being the dataset's at read time.
-- `rows` with `partial = 1` is the pass's checkpoint (today `rows.partial.jsonl`); finishing writes the final rows
-  and deletes the partial ones in one transaction.
+- `files` holds every file that is not per item: a run's `metrics.json` and `run.json`, a dataset, a reference text, a
+  verdict, a label. Paths are what they are today, so every record that names one (`derived.from_dir`, a label set's
+  source, a manifest's files) is unchanged.
+- `outputs` and `rows` are a run's per-item data as built: one committed insert per output and row, each row line's
+  exact text, so `rows_text()` gives the same bytes in either store.
+- A run is its key (`runs/<id>`, `runs-judged/<scorer>/<id>`): it exists while `files` holds its `run.json` or
+  `metrics.json`. With no directories there is nothing to tie a run to; deleting one is `evh data-rm`, which removes
+  its files, outputs and rows in one transaction.
+- Listing (every run of a dataset, every verdict of a set) is a query on `path`, which is what a directory glob is
+  today.
 
-### Phase 1: outputs
+### Seeing and changing the data
 
-`_outputs.py` gains a store interface with two implementations, `files` (today's) and `sqlite`; its functions keep
-their signatures, so the twelve modules RFC-024 moved onto it change nothing. `run-migrate --to sqlite` copies each
-run's `outputs.jsonl` into the table (each text's sha256 checked) and removes the file; `--to files` writes them back.
+With the files store a person reads `data/` with any tool. With the sqlite store the same through `evh`, both stores
+(CLI parity): `evh data-ls [PREFIX]`, `evh data-cat PATH`, `evh data-put PATH FILE` (refuses a path the harness
+writes itself, such as a run record), `evh data-rm PATH|RUN`, `evh data-export DIR` (the files layout, for a review
+or a diff) and `evh data-import DIR`.
 
-### Phase 2: rows
+### Moving a project
 
-First the same step RFC-024 took for outputs: one reader for rows (`_runs.item_rows` and a writer beside it), every
-module that opens `predictions.jsonl` moved onto it, and a test that fails on one built anywhere else. Then the
-sqlite store under it, and `run-migrate` moves rows too. Queries across runs (one item's row in every arm of a goal)
-get their own function, which the files store answers by reading each file and the sqlite store by one query.
+`evh data-migrate --to sqlite` copies every file under `data/` into the database (outputs and rows into their
+tables), reads each back and compares its sha256, and only then removes the files; `--to files` writes them back
+byte for byte. It refuses while the project's store is not the target. A crash mid-move leaves both copies of what was
+not yet removed, and the next run finishes it. `evh run-migrate --to` (built in the first version) becomes part of it.
 
-### What stays files
+### Git, validate and a release
 
-`metrics.json` (the record, one per run, reviewed in git, read by every listing) and `run.json` (the run's identity,
-written before the first item). A run is still a directory: listing runs, `derived.from`, the catalog's arm ids and
-`--resume <run_id>` do not change.
+- With the sqlite store the data is not in git: the database is the project's record, and backing it up is copying one
+  file (SQLite's backup, consistent while a run writes: `evh data-backup PATH`). `evh init` ignores
+  `data/project.sqlite*`.
+- `validate`'s checks that ask git what is committed (V7, V9, V16's untracked texts, the release's refusal of an
+  untracked file) apply to the files store. With the sqlite store, what would be committed is what the database holds,
+  and those checks read it.
+- A release copies the database, a hidden dataset's text removed from the copy (outputs deleted, rows cut to the call,
+  reference texts and labels left out, with `secure_delete` and a `VACUUM`), and the deployment reads it with the
+  sqlite store.
 
-### A release
+## Open for the owner
 
-A release copies `data/`; with the sqlite store it copies `runs.sqlite` and, for a hidden dataset's runs, deletes
-their outputs and rows from the copy (what it does today by not copying `outputs.jsonl`).
+1. **The project's own settings and code.** Recommendation: they stay files in both stores, beside `data/` where they
+   are: `data/configs/*.yaml`, `data/goals/*.yaml`, `data/fields/*.yaml`, `data/validate.json`, and the Python the
+   harness imports (`data/scorers/`, `data/importers/`, `data/dataset_sources/`). A person writes them in an editor and
+   reviews them in git, and Python can only import a file. Everything the harness writes or fetches goes in the
+   database. The alternative, all of `data/` in it, means editing a config through `evh data-cat`/`data-put` and the
+   harness extracting a scorer to a temporary file to import it.
+
+## Build order
+
+1. `_store.py` and the setting; every module onto it (files store only, nothing changes for a project), the guard
+   test.
+2. The sqlite store under it; `data-migrate`, `data-ls/cat/put/rm/export/import/backup`.
+3. validate, the release and `evh init` for the sqlite store.
+4. The whole suite on both stores: this repository's data moved into a database in a separate copy, `make verify`
+   green there and here.
+5. S1's bench at 10,000 items × 50 arms on both stores, before S2.
 
 ## Not in scope
 
-- A server database, or a database for anything but per-item data.
-- Choosing per run: the store is the project's.
-- Committing `runs.sqlite`: a project that commits its runs keeps files.
+- A server database, or more than one database per project.
+- Choosing per folder or per run: the store is the project's.
 
 ## Alternatives considered
 
-- **Everything in SQLite, `metrics.json` too.** Every listing and the catalog would need the database; the records
-  are small and reviewable as they are.
-- **DuckDB or parquet.** Faster scans, but a dependency, and a single-file store with transactions is what the
-  writers need.
-- **A database per run.** As many files as runs again, and no query across runs.
+- **Runs only (this RFC's first version).** Built and tested; the owner wants the whole project in one database.
+- **A database per runs folder.** Built for a few hours on 2026-11-06 so git could ignore throwaway runs' database
+  like their folder; with the data out of git there is nothing to ignore, and it was not one database.
+- **DuckDB or parquet.** Faster scans, but a dependency, and the writers need a single file with transactions.
 
 ## Testing
 
-- The store interface's tests, run against both stores: append, a crash mid-pass, resume, a derived run reading its
-  source's, signatures.
-- `run-migrate --to sqlite` and back on a copy of this repository's runs: every output, row and V5 signature equal
-  after the round trip.
-- Two writers at once (a parallel sweep) and a reader during a run, on the sqlite store.
-- S1's bench at 10,000 items × 50 arms on both stores.
+- The store's tests against both stores: every operation, a crash mid-write, two writers and a reader at once.
+- `data-migrate --to sqlite` and back on a copy of this repository's `data/`: every file byte-identical.
+- The full suite (`make verify`) on both stores.
+- S1's bench on both stores.
 
-## Decided
+## As built so far (0.8.0)
 
-- Both phases in 0.8.0 (owner, 2026-11-06).
+The first version's outputs and rows, now step 1's per-item part:
 
-## As built (0.8.0)
-
-- **The setting.** `_common.runs_store()`: `EVAL_RUNS_STORE`, else `runs.store` in the project's `config.yaml`, else
-  `files`; any other value is refused (`bad-argument` from the variable, `invalid-file` from the file).
-- **One module.** `_outputs.py` holds both stores (`FileStore`, `SqliteStore`) behind one interface, for outputs and
-  for rows; `_runs.item_rows`, `_outputs.write_rows`, `rows_text`, `has_rows`, `append_partial` and `item_across`
-  are what every module calls. 14 modules that opened `predictions.jsonl` themselves (run, rescore, judge-score,
-  sheet-import, import-run, family-test, holdout, cost-report, deploy-sheet, label-from-run, the catalog adapter,
-  the inspector's `--items-out`, release, validate) now go through it; `tests/test_runs_store.py` fails on a
-  `predictions.jsonl` path built anywhere else, as `tests/test_outputs.py` does on an `outputs/` one.
-  `run_migrate.py` still reads the layout before 0.8.0 directly, to move it.
-- **The rows table differs from the sketch above:** `rows (run, partial, n, item_id, row)`, keyed on
-  `(run, partial, n)`. Each line is kept as written, its newline included, with `n = 0` marking that the rows were
-  written (an empty `predictions.jsonl` is a run's rows too), so `rows_text()` gives the same bytes in either store.
-  family-test's cache key, which hashes a run's rows, is therefore the same in both. `item_id` is parsed from each
-  line for the one-item query (an index on it).
-- **`finish()` is not a no-op:** the sqlite store rewrites a run's outputs in dataset order in one transaction, the
-  same as the files store, so `lines()` and the release read them in that order.
-- **The query across runs** (`item_across`, one item's row in many runs) is used by `evh inspect --items-out`, which
-  shows the filtered items only. The sheet itself needs every item of every arm and reads each run's rows whole.
-  In the files store `item_across` indexes each run's rows once.
-- **`run-migrate --to`** moves outputs, rows and the row checkpoint run by run: written, read back equal (each
-  output's text, sha256 and order; the rows' exact text), then removed from the old store. It refuses while the
-  configured store is not the target and on a run in both stores with different contents. A run left in both by a
-  crash is finished by the next `--to`.
-- **The release.** `runs.sqlite` is copied with SQLite's backup (consistent while a run writes), a hidden dataset's
-  outputs deleted and its rows cut to the call, with `secure_delete` on and a `VACUUM`. The SQLite here (3.53.4)
-  defaults `secure_delete` to on, so the test cannot fail without the explicit setting on this machine; the
-  setting is there for builds that default it off. A `runs.sqlite` that git does not track is refused, as an
-  untracked `outputs.jsonl` is: a release publishes what the repository commits. A project that does not commit its
-  runs does not release them.
-- **V23** also names outputs or rows left in the store the project does not use (`outputs.jsonl`,
-  `predictions.jsonl` or `rows.partial.jsonl` with the sqlite store; anything in `runs.sqlite` with files). V9
-  counts a sqlite project's rows from the database.
-- **Not moved:** `harness/tools/` (this repository's report scripts) and `examples/` read `predictions.jsonl`
-  directly; they read this repository's committed runs, which stay files.
-- **Tests:** `tests/test_outputs.py` runs against both stores (append, finish, a derived run, signatures, a real
-  run and its resume); `tests/test_runs_store.py` covers the setting, both moves, a stopped move, a conflict, V23,
-  the release, the query across runs and two writers with a reader at once.
+- `_outputs.py` holds both stores for a run's outputs and rows; `_runs.item_rows`, `_outputs.write_rows`, `rows_text`,
+  `has_rows`, `append_partial` and `item_across` are what every module calls, and a test fails on a `predictions.jsonl`
+  or `outputs/` path built anywhere else. `harness/tools/`, `examples/` and `site/figures.py` read through it too.
+- Rows keep each line's exact text (`rows (run, partial, n, item_id, row)`, `n = 0` marking that rows were written),
+  so a run's rows are the same bytes in either store and family-test's cache key does not move.
+- `run-migrate --to sqlite|files` moves outputs and rows, each read back equal before the old copy goes; on this
+  repository's 736 runs (46,800 outputs, 94,650 rows) the round trip gave back all 1,041 files byte for byte.
+- A release cuts a hidden dataset's outputs and rows in the database copy (`secure_delete`, `VACUUM`).
+- Two things built on the way are replaced by this revision: a database per runs folder, and a `.store-id` token in
+  each run directory that tied a directory to its entries (a deleted and recreated run read the deleted run's
+  outputs without it; with no run directories the case is gone).
+- The full suite on the sqlite store, second run: validate passes; 10 failures, 3 of them caused by the per-folder
+  databases, the rest test fixtures not yet moved and one not yet read.
