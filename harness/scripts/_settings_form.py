@@ -14,6 +14,7 @@ import datetime as _dt
 import io
 import json
 import re
+import threading
 from collections.abc import Sequence
 from pathlib import PurePosixPath
 from typing import Any
@@ -481,28 +482,63 @@ def save(rel: str, values: dict[str, Any], new: bool = False) -> dict[str, Any]:
     return {**_data_page.show(norm), "unchanged": False}
 
 
+#: One write at a time: a save checks the project, writes, and checks it again, and a delete must not land between those
+#: checks (the server answers on threads; architecture review, 2026-11-06: two saves interleaved their checks).
+WRITES = threading.RLock()
+#: The project's check as it stood after the last write this process made or saw: {"version", "result"}. A save's
+#: "before" is it, not a fresh `evh validate` (25.8 s each on this repository), while no other process has written
+#: since (`PRAGMA data_version` moves on another connection's commit). Stale, it could only make a save refuse
+#: wrongly, never let a wrong one through.
+_BASELINE: dict[str, Any] = {}
+
+
+def _data_version() -> int | None:
+    conn = _store.connect(create=False)
+    return int(conn.execute("PRAGMA data_version").fetchone()[0]) if conn is not None else None
+
+
+def baseline() -> dict[str, list[str]]:
+    """The project's check as it is now: the one kept, while nothing else has written; else a fresh one."""
+    v = _data_version()
+    if v is not None and _BASELINE.get("version") == v:
+        return dict(_BASELINE["result"])
+    result = project_check()
+    _BASELINE.update(version=_data_version(), result=result)
+    return result
+
+
+def forget_baseline() -> None:
+    """The kept check is no longer the project's (a delete, a run removed)."""
+    _BASELINE.clear()
+
+
 def guarded_write(norm: str, f: Any, text: str) -> None:
     """Write a setting, then let the project's own check (`evh validate`) judge it: anything it says now that it did
-    not say before is the change's, and the file is put back as it was (or removed, if it is new)."""
-    before = _store.read_text(f) if _store.is_file(f) else None
-    was = project_check()  # a check that does not finish refuses here, with nothing written
+    not say before is the change's, and the file is put back as it was (or removed, if it is new). One at a time."""
+    with WRITES:
+        before = _store.read_text(f) if _store.is_file(f) else None
+        was = baseline()  # a check that does not finish refuses here, with nothing written
 
-    def put_back() -> None:
-        if before is None:
-            _store.unlink(f)
-        else:
-            _common.write_text_atomic(f, before)
+        def put_back() -> None:
+            if before is None:
+                _store.unlink(f)
+            else:
+                _common.write_text_atomic(f, before)
 
-    _store.mkdir(f.parent, parents=True, exist_ok=True)
-    _common.write_text_atomic(f, text)
-    try:
-        new = project_check_since(was)
-    except _data_page.Refused:
-        put_back()
-        raise
-    if new:
-        put_back()
-        raise ProjectRefused(new)
+        _store.mkdir(f.parent, parents=True, exist_ok=True)
+        _common.write_text_atomic(f, text)
+        try:
+            now = project_check()
+        except _data_page.Refused:
+            put_back()
+            raise
+        new = since(was, now)
+        if new:
+            put_back()
+            raise ProjectRefused(new)
+        _BASELINE.update(
+            version=_data_version(), result=now
+        )  # the project as saved: the next save's "before"
 
 
 class ProjectRefused(_data_page.Refused):
@@ -564,7 +600,11 @@ def project_check() -> dict[str, list[str]]:
 def project_check_since(was: dict[str, list[str]]) -> list[dict[str, Any]]:
     """What `evh validate` says now that it did not say in `was`: a check newly failing, or a failing check's new lines.
     Any of it is the change's: the check ran on the project as it was, then again with the change written."""
-    now = project_check()
+    return since(was, project_check())
+
+
+def since(was: dict[str, list[str]], now: dict[str, list[str]]) -> list[dict[str, Any]]:
+    """What `now` says that `was` did not: a check newly failing, or a failing check's new lines."""
     out = []
     for label, lines in now.items():
         old = set(was.get(label, []))

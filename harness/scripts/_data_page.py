@@ -376,7 +376,18 @@ def deletable(rel: str) -> str:
 
 
 def remove(rel: str) -> dict[str, Any]:
-    """Delete a setting, or a whole run (its files, outputs and rows); anything else is refused."""
+    """Delete a setting, or a whole run (its files, outputs and rows); anything else is refused. Never while a save is
+    checking the project (one write at a time, `_settings_form.WRITES`)."""
+    from evaluation_harness import _settings_form  # noqa: PLC0415
+
+    with _settings_form.WRITES:
+        try:
+            return _remove(rel)
+        finally:
+            _settings_form.forget_baseline()
+
+
+def _remove(rel: str) -> dict[str, Any]:
     norm, f = resolve(rel)
     k = kind_of(norm)
     if k == "setting":
