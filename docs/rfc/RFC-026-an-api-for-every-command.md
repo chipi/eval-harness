@@ -60,7 +60,7 @@ the project's own code is refused, so `data-put` then `run` cannot run a file th
 
 A call's arguments are a JSON object keyed by the argument's name, checked against the registry before anything runs
 (kinds, types, choices, required, unknown names refused) and turned into the command's argv by the parser's own option
-strings, so the command receives exactly what `evh <command> …` would. A file the command reads (`data-put`'s,
+strings, so the command receives exactly what the same command typed after `evh` would. A file the command reads (`data-put`'s,
 `label-import`'s and `sheet-import`'s sheet) is uploaded with the call and kept under `.build/uploads/<sha256>` for
 the job.
 
@@ -93,7 +93,7 @@ This is PLAN_0.8.0's step 4.2 (background runs), as one command a job.
   `/dev/null`, its output to the job's `supervisor.log`, every other descriptor closed. Jobs do not depend on the
   server: it can restart, or stop, and they go on; on start it reads `.build/jobs/` for their state.
 - **Locks first.** The supervisor takes the job's locks (below), waiting while another job holds one (`queued`, with
-  which job holds it), then starts `evh <command> <argv> [--json]` in its own process group with the lock files' open
+  which job holds it), then starts the command (`evh`, its name, its argv, `--json` where it has it) in its own process group with the lock files' open
   descriptors passed to it. A `flock` belongs to the open file, so the command holds the locks for as long as it
   lives, even if the supervisor dies; the operating system frees them however the command ends.
 - **State** is `.build/jobs/<id>/state.json`, rewritten atomically: `queued`, `running` (with the command's process
