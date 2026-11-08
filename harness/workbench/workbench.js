@@ -3,7 +3,7 @@
 (() => {
   const M = window.MOCK, H = window.HELP, G = window.GLOSSARY;
   const KEY = "wb-mock-r1";
-  const fresh = () => ({ goal: null, draft: {}, dataset: null, hf: {}, fetched: false, looked: false, reference: null, hints: true });
+  const fresh = () => ({ goal: null, draft: {}, dataset: null, hf: {}, fetched: false, looked: false, reference: null, hints: true, models: [], checked: [], r4: null });
   let S = fresh();
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (_e) { /* no storage: start fresh */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_e) { /* per-viewer only */ } };
@@ -60,8 +60,8 @@
     { n: 5, id: "eval", name: "Eval" },
   ];
   const prepared = () => S.fetched && S.looked && !!S.reference;
-  const done = (id) => ({ goal: !!S.goal, dataset: !!S.dataset, prepare: prepared(), models: false, eval: false })[id];
-  const open = (id) => ({ goal: true, dataset: !!S.goal, prepare: !!S.dataset, models: prepared(), eval: false })[id];
+  const done = (id) => ({ goal: !!S.goal, dataset: !!S.dataset, prepare: prepared(), models: (S.checked || []).length >= 2, eval: !!(S.r4 && S.r4.closed) })[id];
+  const open = (id) => ({ goal: true, dataset: !!S.goal, prepare: !!S.dataset, models: prepared(), eval: prepared() })[id];
   function drawRail(route) {
     if (!S.goal) { layout.classList.add("no-rail"); rail.innerHTML = ""; return; }
     layout.classList.remove("no-rail");
@@ -164,8 +164,8 @@ success_criteria:
       { id: "goal", title: "Goal", what: "the decision, and how a winner is picked", status: "set", go: "#goal-edit", label: "Edit" },
       { id: "dataset", title: "Dataset", what: "the examples every system is tested on", status: ds() ? `${ds()} · ${S.dataset.items} items · ${S.dataset.role}` : "", go: "#dataset", label: ds() ? "Change" : "Add a dataset" },
       { id: "prepare", title: "Prepare", what: "fetch its items, look inside, its reference set", status: [S.fetched && "fetched", S.looked && "looked at", S.reference && "reference set"].filter(Boolean).join(" · "), go: "#prepare", label: prepared() ? "Open" : "Prepare it" },
-      { id: "models", title: "Models", what: "the systems you compare, each checked on three items first", status: "", go: "#models", label: "Next round" },
-      { id: "eval", title: "Eval", what: "the goal measured in rounds: arms, runs, scores, a decision", status: "", go: "#eval", label: "Later round" },
+      { id: "models", title: "Models", what: "the systems you compare, each checked on three items first", status: (S.checked || []).length ? `${S.checked.length} arms checked` : (S.models || []).length ? `${S.models.length} chosen` : "", go: "#models", label: (S.checked || []).length >= 2 ? "Open" : "Choose models" },
+      { id: "eval", title: "Eval", what: "the goal measured in rounds: arms, runs, scores, a decision", status: `${M.rounds.length} rounds closed${S.r4 ? ` · r4 ${S.r4.closed ? "closed" : "open"}` : ""}`, go: "#eval", label: "Open" },
     ];
     return `<div class="screen">
       <div class="goalhead"><div><div class="kicker">Goal · ${esc(g.goal_id)}</div><h1>${esc(g.title)}</h1>
@@ -178,7 +178,6 @@ success_criteria:
           <div><h3>${r.title}</h3><p>${esc(r.what)}</p>${r.status ? `<div class="status ${ok ? "ok" : ""}">${esc(r.status)}</div>` : ""}</div>
           ${can ? `<a class="btn ${!ok && can ? "primary" : ""}" href="${r.go}">${r.label}</a>` : `<span class="status">${i >= 3 && prepared() && r.id === "models" ? "" : "after the step before"}</span>`}</div>`;
       }).join("")}</div>
-      ${note("steps 4 and 5 are sketched in UXS-005 and mocked in the next rounds.")}
     </div>`;
   }
 
@@ -367,8 +366,192 @@ success_criteria:
     });
   }
 
-  // ── later rounds, and the glossary ───────────────────────────────────────
-  const later = (n, name, what) => `<div class="screen"><div class="kicker">Step ${n} of 5</div><h1>${name}</h1><p class="lead">${what}</p>${note("sketched in UXS-005, mocked in the next round.")}<div class="actions"><a class="btn" href="#hub">Back to the goal</a></div></div>`;
+  // ── step 4: models ───────────────────────────────────────────────────────
+  const ONB = { pass: "probed and passed", probed: "probed, not yet run on an arm", check: "a probe flagged something to read", none: "never probed (run before onboarding existed)" };
+  const armOf = (m) => M.arms.find((a) => a.rank === m.cnn_rank);
+  const usd = (x, d = 4) => (x == null ? "—" : x === 0 ? "$0" : `$${x.toFixed(d)}`);
+  const perM = (x) => (x == null ? "—" : x === 0 ? "$0" : `$${Math.round(x * 1e6).toLocaleString("en")}`);
+  const secs = (ms) => (ms == null ? "—" : ms < 100 ? `${(ms / 1000).toFixed(4)} s` : `${(ms / 1000).toFixed(1)} s`);
+  function screenModels() {
+    if (!prepared()) { location.hash = "#hub"; return ""; }
+    const all = !!S.allModels, chosen = new Set(S.models || []);
+    const list = M.models.filter((m) => all || m.cnn_rank).sort((a, b) => (a.cnn_rank ?? 999) - (b.cnn_rank ?? 999) || a.id.localeCompare(b.id));
+    const st = (m) => m.onboarding.split(" ")[0];
+    const checked = S.checked || [];
+    const a0 = M.arms[1];
+    const part = (letter, key, title, on, body, status) => `<section class="part ${on ? "" : "off"}">
+      <div class="parthead"><span class="letter">${letter}</span><h2>${esc(title)}</h2>${q(key)}<span class="grow"></span>${status ? `<span class="status ok">${esc(status)}</span>` : ""}</div>
+      ${on ? `<p class="hint">${esc(H[key].hint)}</p><div class="body">${body}</div>` : ""}</section>`;
+    const table = `<div class="inline" style="font-size:13px"><label class="choice"><input type="radio" name="mset" value="goal" ${all ? "" : "checked"}> run on this goal before (${M.models.filter((m) => m.cnn_rank).length})</label>
+        <label class="choice"><input type="radio" name="mset" value="all" ${all ? "checked" : ""}> every model in the project (${M.models.length})</label></div>
+      <div class="tablewrap"><table><thead><tr><th></th><th>model</th><th>kind</th><th>weights</th><th>${w("onboarding")}</th><th class="num">arms</th>${all ? "" : "<th class='num'>on this goal</th>"}</tr></thead><tbody>
+      ${list.map((m) => `<tr><td><input type="checkbox" data-model="${esc(m.id)}" aria-label="choose ${esc(m.id)}" ${chosen.has(m.id) ? "checked" : ""}></td>
+        <td class="mono">${esc(m.id)}</td><td>${esc(m.kind)}</td><td>${esc(m.weights)}</td>
+        <td><span class="tag onb-${st(m)}" title="${esc(ONB[st(m)])}">${esc(m.onboarding)}</span></td><td class="num">${m.arms}</td>
+        ${all ? "" : `<td class="num">#${m.cnn_rank} of ${M.arms.length}</td>`}</tr>`).join("")}</tbody></table></div>
+      <div class="inline"><span class="muted" style="font-size:13px">${chosen.size} chosen</span><span class="grow"></span>
+        <button class="btn" type="button" id="newmodel">Bring a model that isn't here</button></div>
+      <div id="newmodelbox"></div>`;
+    const settings = `<div class="field"><div class="name">The prompt</div><div><textarea rows="2" id="prompt">${esc(S.prompt ?? M.prompt)}</textarea><div class="hint" style="grid-column:auto">the same for every arm; the r1 arms used this one (${esc(a0.prompt_file)})</div></div></div>
+      <div class="field"><div class="name">Temperature</div><div class="inline"><input type="text" value="${a0.temperature}" style="width:80px"><span class="muted" style="font-size:13px">0: the same reply each time, so a rerun measures the same thing</span></div></div>
+      <div class="field"><div class="name">Most it may write</div><div class="inline"><input type="text" value="${a0.max_tokens}" style="width:80px"><span class="muted" style="font-size:13px">tokens; a reply cut off here is flagged</span></div></div>
+      ${note("ML models (BART) take no prompt; their arms carry their own settings.")}`;
+    const smoke = checked.length ? checked.map((id) => {
+      const m = M.models.find((x) => x.id === id), a = armOf(m);
+      if (!a) return `<div class="part"><div class="parthead"><h3 class="mono">${esc(id)}</h3><span class="grow"></span><span class="status">no replies to show</span></div>${note("this model has no CNN run, so the mockup has no real replies for it.")}</div>`;
+      const spent = a.replies.reduce((s, r) => s + (r.cost_usd || 0), 0);
+      return `<details class="part smokecard"><summary class="parthead"><h3 class="mono">${esc(id)}</h3><span class="muted" style="font-size:13px">arm ${esc(a.arm)}</span><span class="grow"></span>
+          <span class="status ok">3 replies · spent ${usd(spent, 5)} · all 200 ≈ ${usd(a.usd_per_item * 200, 2)}</span></summary>
+        <div class="body">${a.replies.map((r, i) => `<div class="reader"><div class="pane"><div class="kicker">item ${i + 1} · its reply · ${secs(r.latency_ms)}</div>${esc(r.text)}</div>
+          <div class="pane"><div class="kicker">the reference · ${w("coverage")} ${r.coverage == null ? "—" : r.coverage.toFixed(2)}</div>${esc(M.items[i].highlights)}</div></div>`).join("")}</div></details>`;
+    }).join("") + note("the replies, their cost and timing are the r1 run's real first three items.")
+      : `<div class="actions" style="margin-top:0"><button class="btn primary" id="smoke" type="button" ${chosen.size ? "" : "disabled"}>Check ${chosen.size || ""} arm${chosen.size === 1 ? "" : "s"} on 3 items</button><span class="muted" style="font-size:13px">a few cents; nothing is compared yet</span></div><div id="smokejob"></div>`;
+    const cfg = [...chosen].map((id) => armOf(M.models.find((x) => x.id === id))).filter(Boolean)[0];
+    return `<div class="screen wide">
+      <div class="kicker">Step 4 of 5 · ${esc(S.goal.goal_id)} · ${esc(ds())}</div>
+      <h1>Choose the models to compare</h1>
+      <p class="lead hintable">A model with its prompt and settings, run on this dataset, is an ${w("arm")}. Each is checked on three items before it costs anything. ${q("models")}</p>
+      ${part("a", "models.pick", "Pick the models", true, table, chosen.size ? `${chosen.size} chosen` : "")}
+      ${part("b", "models.settings", "Their settings", chosen.size > 0, settings, "")}
+      ${part("c", "models.smoke", "Check each on three items", chosen.size > 0, smoke, checked.length ? `${checked.length} checked` : "")}
+      <div class="actions"><span class="status ${checked.length >= 2 ? "ok" : ""}">Ready when: at least two arms checked (${checked.length})</span><span class="grow"></span>
+        <a class="btn ${checked.length >= 2 ? "primary" : ""}" href="${checked.length >= 2 ? "#eval" : "#hub"}">${checked.length >= 2 ? "Next: the eval →" : "Back to the goal"}</a></div>
+      ${cmd(`# once per model, for every goal\nevh model-onboard <model_id>\n# each arm, on the dataset's first three items\nevh arm-smoke --config ${cfg ? `examples/summarization-cnn-dailymail/configs/arm_${cfg.arm}_n200.yaml` : "<arm config>"} --items 3`)}
+    </div>`;
+  }
+  function wireModels() {
+    main.querySelectorAll("input[name=mset]").forEach((r) => r.addEventListener("change", () => { S.allModels = r.value === "all"; save(); render(); }));
+    main.querySelectorAll("[data-model]").forEach((c) => c.addEventListener("change", () => {
+      const s = new Set(S.models || []);
+      c.checked ? s.add(c.dataset.model) : s.delete(c.dataset.model);
+      S.models = [...s]; S.checked = []; save(); render();
+    }));
+    $("#prompt")?.addEventListener("input", (e) => { S.prompt = e.target.value; save(); });
+    $("#newmodel")?.addEventListener("click", () => { $("#newmodelbox").innerHTML = note("round 2 does not mock onboarding a new model: where it runs (hosted, this machine, the DGX), its id, then the probes as a job."); });
+    $("#smoke")?.addEventListener("click", (e) => {
+      e.target.disabled = true;
+      const n = (S.models || []).length * 3;
+      progress($("#smokejob"), `arm-smoke · ${(S.models || []).length} arms × 3 items`, n, "replies", () => { S.checked = [...(S.models || [])]; save(); render(); });
+    });
+  }
+
+  // ── step 5: the eval ─────────────────────────────────────────────────────
+  const VERD = (a) => (a.rank === 1 ? ["leader", "lead"] : a.verdict === "not significant" ? ["not significant", "ns"] : [a.verdict || "—", "worse"]);
+  function scatter(arms, sel) {
+    const W = 640, Hh = 252, l = 46, r = 16, t = 26, b = 34;
+    const ys = arms.map((a) => a.coverage), y0 = Math.floor(Math.min(...ys) * 50) / 50, y1 = Math.ceil(Math.max(...ys) * 50) / 50;
+    const paid = arms.filter((a) => a.usd_per_item > 0).map((a) => a.usd_per_item);
+    const lx0 = Math.log10(Math.min(...paid)) - 0.1, lx1 = Math.log10(Math.max(...paid)) + 0.1, zeroW = 56;
+    const X = (a) => (a.usd_per_item === 0 ? l + zeroW / 2 : l + zeroW + ((Math.log10(a.usd_per_item) - lx0) / (lx1 - lx0)) * (W - l - r - zeroW));
+    const Y = (v) => t + (1 - (v - y0) / (y1 - y0)) * (Hh - t - b);
+    const yt = []; for (let v = y0; v <= y1 + 1e-9; v += 0.02) yt.push(v);
+    const xt = [1e-4, 1e-3, 1e-2].filter((v) => Math.log10(v) >= lx0 && Math.log10(v) <= lx1);
+    const tx = (s, x, y, anchor = "middle") => `<text x="${x}" y="${y}" fill="var(--muted)" font-size="10" font-family="var(--mono)" text-anchor="${anchor}">${s}</text>`;
+    return `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="coverage against cost per article, one dot per arm" class="scatter">
+      ${yt.map((v) => `<line x1="${l}" x2="${W - r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--hair)"/>${tx(v.toFixed(2), l - 6, Y(v) + 3, "end")}`).join("")}
+      <line x1="${l + zeroW}" x2="${l + zeroW}" y1="${t}" y2="${Hh - b}" stroke="var(--axis)" stroke-dasharray="2 3"/>
+      ${tx("$0", l + zeroW / 2, Hh - b + 14)}
+      ${xt.map((v) => tx(`$${Math.round(v * 1e6).toLocaleString("en")}`, X({ usd_per_item: v }), Hh - b + 14)).join("")}
+      ${tx("cost per 1M articles (log) →", W - r, Hh - 4, "end")}${tx("coverage ↑", 4, 10, "start")}
+      ${arms.map((a) => { const [, k] = VERD(a); return `<circle cx="${X(a)}" cy="${Y(a.coverage)}" r="${a.config_id === sel ? 7 : 5}" class="dot-${k}" data-arm="${esc(a.config_id)}" tabindex="0"><title>${esc(a.arm)} · ${a.coverage.toFixed(3)} · ${perM(a.usd_per_item)} per 1M</title></circle>`; }).join("")}
+      ${arms.filter((a) => a.rank <= 2).map((a) => tx(a.arm, X(a) + 9, Y(a.coverage) - 7, "start")).join("")}
+    </svg>`;
+  }
+  function armPanel(a) {
+    if (!a) return "";
+    const [v] = VERD(a);
+    return `<section class="part armpanel"><div class="parthead"><h2 class="mono">${esc(a.arm)}</h2>${a.baseline ? '<span class="tag gold">baseline</span>' : ""}${a.recommended ? '<span class="tag new">recommended</span>' : ""}<span class="grow"></span><button type="button" class="round" data-closearm aria-label="Close">×</button></div>
+      <div class="stats" style="margin-top:12px"><div><b>${a.coverage.toFixed(3)}</b><span>coverage</span></div><div><b>${esc(v)}</b><span>${a.p ? `vs the leader, p ${esc(a.p)}` : "the best mean"}</span></div>
+        <div><b>${usd(a.total_usd, 2)}</b><span>for all 200</span></div><div><b>${secs(a.p50_ms)}</b><span>per article, median</span></div></div>
+      <div class="note mono" style="margin-top:12px">${esc(a.model || "a rule: the article's first three sentences")}${a.temperature != null ? ` · temperature ${a.temperature}` : ""}${a.max_tokens ? ` · max ${a.max_tokens} tokens` : ""}${a.prompt_file ? ` · ${esc(a.prompt_file)}` : ""} · run ${esc(a.run_id)}</div>
+      <div class="body">${a.replies.map((r, i) => `<div class="reader"><div class="pane"><div class="kicker">row ${M.items[i].row} · its summary · coverage ${r.coverage == null ? "—" : r.coverage.toFixed(2)}</div>${esc(r.text)}</div>
+        <div class="pane"><div class="kicker">the reference</div>${esc(M.items[i].highlights)}</div></div>`).join("")}</div></section>`;
+  }
+  function compareTable(arms, sel) {
+    const max = Math.max(...arms.map((a) => a.coverage));
+    return `<div class="tablewrap"><table class="cmp"><thead><tr><th class="num">#</th><th>arm</th><th>${w("measure", "coverage")}</th><th>vs the leader</th><th class="num">per 1M articles</th><th class="num">per article</th></tr></thead><tbody>
+      ${arms.map((a) => { const [v, k] = VERD(a); return `<tr data-arm="${esc(a.config_id)}" class="${a.config_id === sel ? "sel" : ""}" tabindex="0"><td class="num">${a.rank}</td>
+        <td><span class="mono">${esc(a.arm)}</span> ${a.baseline ? '<span class="tag gold">baseline</span>' : ""} ${a.recommended ? '<span class="tag new">recommended</span>' : ""}</td>
+        <td><div class="cov"><span class="num">${a.coverage.toFixed(3)}</span><i style="width:${(100 * a.coverage) / max}%"></i></div></td>
+        <td><span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted num">p ${esc(a.p)}</small>` : ""}</td>
+        <td class="num">${perM(a.usd_per_item)}</td><td class="num">${secs(a.p50_ms)}</td></tr>`; }).join("")}</tbody></table></div>`;
+  }
+  function screenEval() {
+    if (!S.goal) { location.hash = "#start"; return ""; }
+    const r4 = S.r4, tab = S.tab || (r4 ? "r4" : "r1");
+    const tabs = [...M.rounds.map((r) => [r.id, `${r.id} · ${r.status}`]), ...(r4 ? [["r4", `r4 · ${r4.closed ? "closed" : "open"}`]] : [])];
+    let body;
+    if (tab === "r4" && r4) body = roundOpen(r4);
+    else {
+      const r = M.rounds.find((x) => x.id === tab);
+      const arms = r.id === "r1" ? M.arms : [];
+      const shown = S.showAll ? arms : arms.filter((a) => a.verdict !== "significant: worse");
+      body = `<div class="roundhead"><div class="kicker">round ${esc(r.id)} · ${esc(r.status)} · ${esc((r.opened || "").slice(0, 10))}${r.closed ? ` → ${esc(r.closed.slice(0, 10))}` : ""}${r.from ? ` · from ${esc(r.from)}` : ""}</div>
+          <h2 class="question">${esc(r.question)}</h2></div>
+        ${arms.length ? `
+          <div class="parthead" style="margin-top:20px"><h3>The comparison</h3>${q("eval.compare")}<span class="grow"></span><span class="muted" style="font-size:13px">${arms.length} arms · 200 items · scored against gold/${esc(ds() || "cnn_dailymail_200")}</span></div>
+          <div class="cmpgrid"><div>${scatter(arms, S.arm)}<div class="legend"><span><i class="dot-lead"></i>leader</span><span><i class="dot-ns"></i>not significantly different</span><span><i class="dot-worse"></i>significantly worse</span></div></div>
+            <div class="note"><b>What the goal's rule picks.</b> Balanced: the arms not significantly different from the best <i>and</i> shown within 5% of it, then the cheapest. Here none could be shown within the margin, so the leader stands: <b>bart_l</b>.
+              <div style="margin-top:8px">${esc(M.detectable)} ${q("eval.detect")}</div></div></div>
+          ${armPanel(M.arms.find((a) => a.config_id === S.arm))}
+          ${compareTable(shown, S.arm)}
+          <div class="inline" style="margin-top:8px"><button type="button" class="btn" id="showall">${S.showAll ? "Hide" : "Show"} the ${arms.length - arms.filter((a) => a.verdict !== "significant: worse").length} significantly worse</button><span class="muted" style="font-size:13px">select an arm to read its summaries</span></div>`
+          : `<p class="muted">${r.retired} run${r.retired === 1 ? "" : "s"} retired in this round; no new arms.</p>`}
+        <div class="part" style="margin-top:20px"><div class="parthead"><h3>Its conclusion</h3><span class="grow"></span>${r.promoted ? `<span class="status ok">promoted ${esc(r.promoted.replace(/_\d{8}T\d{6}Z$/, ""))}</span>` : ""}</div><p style="margin:10px 0 0">${esc(r.conclusion)}</p></div>
+        ${cmd(`evh rounds --goal ${M.goal.goal_id} --round ${r.id}\nevh goals --goal ${M.goal.goal_id}`, "the commands that show this")}`;
+    }
+    return `<div class="screen wide">
+      <div class="kicker">Step 5 of 5 · ${esc(S.goal.goal_id)} · ${esc(ds() || "cnn_dailymail_200")}</div>
+      <h1>The eval</h1>
+      <p class="lead hintable">The goal measured on its dataset, in ${w("round", "rounds")}: each round asks one question, compares its ${w("arm", "arms")}, and ends in a decision kept with its reason. ${q("eval")}</p>
+      <div class="answer"><div class="kicker">the answer so far · baseline bart_l</div><p>${esc(M.answer)}</p></div>
+      <div class="tabs" role="tablist">${tabs.map(([id, label]) => `<button type="button" role="tab" data-tab="${id}" aria-selected="${id === tab}">${esc(label)}</button>`).join("")}
+        ${r4 ? "" : `<button type="button" class="btn primary" id="openr4" ${(S.checked || []).length >= 2 ? "" : "disabled"} title="${(S.checked || []).length >= 2 ? "" : "check two arms in step 4 first"}">Open round r4</button>`}</div>
+      ${note("r1 to r3 are this project's real rounds; r4 is the one this walk-through opens.")}
+      ${body}
+    </div>`;
+  }
+  function roundOpen(r4) {
+    const arms = (S.checked || []).map((id) => armOf(M.models.find((m) => m.id === id))).filter(Boolean);
+    const base = M.arms[0];
+    const est = arms.reduce((s, a) => s + a.usd_per_item * 200, 0);
+    const ran = !!r4.ran;
+    const shown = ran ? [base, ...arms.filter((a) => a !== base)].sort((a, b) => a.rank - b.rank) : [];
+    return `<div class="roundhead"><div class="kicker">round r4 · ${r4.closed ? "closed" : "open"} · from r1</div></div>
+      <div class="form" style="margin-top:12px">${field("eval.question", `<input type="text" id="r4q" value="${esc(r4.question || "")}" placeholder="e.g. ${esc(H["eval.question"].example)}" ${r4.closed ? "readonly" : ""}>`)}</div>
+      <div class="part" style="margin-top:18px"><div class="parthead"><span class="letter">1</span><h3>Its arms</h3><span class="grow"></span><span class="status">${arms.length} from step 4 · the baseline carried from r1</span></div>
+        <div class="body"><div class="tablewrap"><table><thead><tr><th>arm</th><th>model</th><th class="num">estimate, 200 items</th></tr></thead><tbody>
+          <tr><td class="mono">bart_l <span class="tag gold">baseline</span></td><td class="mono">${esc(base.model)}</td><td class="num">carried, not re-run</td></tr>
+          ${arms.filter((a) => a !== base).map((a) => `<tr><td class="mono">${esc(a.arm)}</td><td class="mono">${esc(a.model || "—")}</td><td class="num">${usd(a.usd_per_item * 200, 2)}</td></tr>`).join("")}</tbody></table></div>
+          <div class="muted" style="font-size:12px">The estimate is each arm's real r1 cost per item × 200.</div></div></div>
+      <div class="part"><div class="parthead"><span class="letter">2</span><h3>Run</h3><span class="grow"></span>${ran ? `<span class="status ok">${arms.length} runs · 200 items each</span>` : ""}</div>
+        <div class="body">${ran ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" id="runr4" type="button" ${r4.question ? "" : "disabled"}>Run ${arms.filter((a) => a !== base).length} arms · about ${usd(est, 2)}</button><span class="muted" style="font-size:13px">${r4.question ? "jobs on the server; you can close the page" : "write the round's question first"}</span></div><div id="runjob"></div>`}</div></div>
+      <div class="part ${ran ? "" : "off"}"><div class="parthead"><span class="letter">3</span><h3>Results</h3>${q("eval.compare")}</div>
+        ${ran ? `<div class="body">${note("r1's real scores stand in for these new runs.")}${compareTable(shown, S.arm)}${armPanel(M.arms.find((a) => a.config_id === S.arm))}
+          ${r4.closed ? `<div class="note"><b>Closed.</b> ${esc(r4.conclusion)}</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided"></textarea></div></div>
+          <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button">Close the round</button><span class="muted" style="font-size:13px">the baseline stays bart_l unless you promote a run</span></div>`}</div>` : ""}</div>
+      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --hypothesis "${r4.question || "<the question>"}"\n${arms.filter((a) => a !== base).map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml`).join("\n")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "<what it showed and decided>"`)}`;
+  }
+  function wireEval() {
+    main.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => { S.tab = b.dataset.tab; S.arm = null; save(); render(); }));
+    const pickArm = (id) => { S.arm = S.arm === id ? null : id; save(); render(); };
+    main.querySelectorAll("tr[data-arm], circle[data-arm]").forEach((el) => {
+      el.addEventListener("click", () => pickArm(el.dataset.arm));
+      el.addEventListener("keydown", (e) => { if (e.key === "Enter") pickArm(el.dataset.arm); });
+    });
+    $("[data-closearm]")?.addEventListener("click", () => { S.arm = null; save(); render(); });
+    $("#showall")?.addEventListener("click", () => { S.showAll = !S.showAll; save(); render(); });
+    $("#openr4")?.addEventListener("click", () => { S.r4 = { question: "" }; S.tab = "r4"; S.arm = null; save(); render(); });
+    $("#r4q")?.addEventListener("input", (e) => { S.r4.question = e.target.value; save(); const b = $("#runr4"); if (b) b.disabled = !e.target.value.trim(); });
+    $("#runr4")?.addEventListener("click", (e) => {
+      e.target.disabled = true;
+      const n = (S.checked || []).length * 200;
+      progress($("#runjob"), `run · ${(S.checked || []).length} arms`, n, "items", () => { S.r4.ran = true; save(); render(); });
+    });
+    $("#closer4")?.addEventListener("click", () => { S.r4.closed = true; S.r4.conclusion = $("#r4c").value || "(no conclusion written)"; save(); render(); });
+  }
+
+  // ── the glossary ─────────────────────────────────────────────────────────
   function screenGlossary() {
     return `<div class="screen"><div class="kicker">Words</div><h1>The harness's words</h1>
       <p class="lead">Every screen uses these, taught where they first appear. The same text as the ? panels.</p>
@@ -380,8 +563,7 @@ success_criteria:
   const ROUTES = {
     start: [screenStart], "goal-new": [() => screenGoal(false), () => wireGoal(false)], "goal-edit": [() => screenGoal(true), () => wireGoal(true)],
     hub: [screenHub], dataset: [screenDataset, wireDataset], "dataset-hf": [screenHF, wireHF], prepare: [screenPrepare, wirePrepare],
-    models: [() => later(4, "Models", "Bring in the models the eval will compare: each is checked on three items before it costs anything.")],
-    eval: [() => later(5, "The eval", "The goal measured on its dataset, in rounds: each round compares arms, their runs and scores, and ends in a decision.")],
+    models: [screenModels, wireModels], eval: [screenEval, wireEval],
     glossary: [screenGlossary], catalog: [() => outside("The catalog")], docs: [() => outside("The docs")],
   };
   function render() {

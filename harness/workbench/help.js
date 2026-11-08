@@ -118,6 +118,70 @@ window.HELP = {
     why: "Gold is checked by people; silver is a model's answers, consistent rather than correct: enough to rank systems against each other, not a claim about truth. Who and why are recorded.",
     more: "Reference sets",
   },
+  models: {
+    title: "Models",
+    hint: "The systems you compare. Each is checked on three items before it costs anything.",
+    what: "A model with its prompt and settings, run on this dataset, is an arm. The eval compares arms.",
+    why: "A model that fails on three items (an empty reply, a wrong format, a refusal) would fail on all of them, and you would pay for every one.",
+    more: "Models and arms",
+  },
+  "models.pick": {
+    title: "Pick the models",
+    hint: "Models already in this project are ready to use; a new one is onboarded once, for every goal.",
+    what: "Onboarding probes a model once: does it answer, how it counts tokens, what it costs, whether it thinks before it answers. The result is kept in its record and every goal reuses it.",
+    example: "pass: probed and passed. probed: probed, nothing flagged, not yet run on an arm. check: a probe flagged something to read. none: never probed (older records, run before onboarding existed).",
+    wrong: "A model with an unread check can fail mid-run, after it has cost money.",
+    more: "Model onboarding (RFC-020)",
+  },
+  "models.settings": {
+    title: "Their settings",
+    hint: "What every arm is given: the prompt, the temperature, the most it may write.",
+    what: "The same prompt and settings for every model, so a difference in the scores is the model's, not the prompt's.",
+    why: "Change one thing at a time: an arm that differs in model and prompt cannot tell you which one helped.",
+    more: "Arm configs",
+  },
+  "models.smoke": {
+    title: "Check each on three items",
+    hint: "Runs each arm on the dataset's first three items, the way the full run would, and shows the replies.",
+    what: "Read the replies: a reply that is empty, cut off, in the wrong format or in the wrong language shows here, for a few cents.",
+    why: "The cost of three items also projects the cost of all of them, before you commit.",
+    more: "arm-smoke",
+  },
+  eval: {
+    title: "The eval",
+    hint: "The goal measured on its dataset, in rounds.",
+    what: "Each round asks one question, runs its arms, compares them by the goal's measure and rule, and ends in a decision that is kept with its reason.",
+    why: "Rounds keep the history: what was tried, what it showed, why the current choice is the current choice.",
+    more: "Rounds",
+  },
+  "eval.question": {
+    title: "The round's question",
+    hint: "What this round should find out, in one sentence.",
+    example: "Does a shorter prompt keep coverage at half the cost?",
+    wrong: "A round without a question collects runs, not answers.",
+    more: "Rounds",
+  },
+  "eval.compare": {
+    title: "The comparison",
+    hint: "Every arm against the best, by the paired test, with what each costs and how fast it is.",
+    what: "Each arm is compared with the leader item by item (the same 200 articles). \"not significant\" means the difference may be noise; \"significant: worse\" means it holds up.",
+    why: "The goal's rule then picks among the arms that may still win (the contenders), by cost and then speed.",
+    wrong: "Reading the order of the means alone: most neighbours in this table are not significantly different.",
+    more: "Significance",
+  },
+  "eval.detect": {
+    title: "What this comparison can show",
+    hint: "How small a difference these items can tell apart, for this many arms.",
+    what: "With many arms on few items, only large differences can be shown. Here a contender can be shown only within about 0.036; the goal's margin is 0.017.",
+    why: "It says what to change: raise the margin, compare fewer arms, or add items.",
+    more: "Power",
+  },
+  "eval.close": {
+    title: "Close the round",
+    hint: "What the round showed and what it decided, and the run that becomes the baseline if one does.",
+    what: "The conclusion is kept with the round, and shown wherever its goal is.",
+    more: "Rounds",
+  },
 };
 
 window.GLOSSARY = {
@@ -139,5 +203,7 @@ window.GLOSSARY = {
   validation: "The dataset's role while you choose and tune.",
   test: "The dataset's role for the final answer, kept untouched until then.",
   gold: "A reference set checked by people.",
+  onboarding: "Probing a model once, for every goal: does it answer, how it counts tokens, what it costs. Kept in its record.",
+  coverage: "How much of the reference a summary covers, cut to the reference's own length, 0 to 1.",
   silver: "A reference set of a model's answers: enough to rank systems, not a claim about truth.",
 };
