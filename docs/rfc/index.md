@@ -34,6 +34,7 @@ Other statuses: **Rejected** and **Withdrawn**, each with the reason kept.
 | [RFC-023](RFC-023-labels-and-references.md) | Labels, and the reference sets promoted from them | [PRD-002](../prd/PRD-002-references.md) | Accepted, built (0.6.0) | A label says what is right for one item and who said it (a person, a model, a rule); a reference is labels promoted on purpose, the tier chosen then; evaluating what production did scores against labels and never makes a reference; production's recorded decisions as an arm |
 | [RFC-024](RFC-024-run-outputs-in-one-file.md) | A run's outputs in one file, read through one function | — | Accepted, built (0.8.0) | A run's outputs as one `outputs.jsonl` instead of a file per item; derived runs read their source's instead of copying them; one reader for every module; the committed runs migrated byte for byte |
 | [RFC-025](RFC-025-runs-in-sqlite.md) | A project's data in SQLite, a project's choice | — | Accepted, built (0.8.0) | Files stay the default; `store: sqlite` puts everything under `data/` in one database, `data/project.sqlite`, read and written through one module; never both; `data-migrate --to sqlite|files` either way |
+| [RFC-026](RFC-026-an-api-for-every-command.md) | An API for every command, long ones as jobs | — | Proposed (0.8.0) | `catalog-serve` answers `/api/v1/` for every command, made from its argparse parser: reads at once, the rest as detached jobs with a log, stop, resume and a lock per what they write; spending jobs need a cost cap; every served command answers `--json` |
 
 ## Completed RFCs
 
