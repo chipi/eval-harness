@@ -295,7 +295,8 @@ R3 to R5 start as example code; R1 and R2 are the core.
 ## NOT done or NOT verified
 
 - Pushed 2026-11-08 (owner's yes): S2 and S3, RFC-026 accepted, and the review's fixes, after `163b1b75d`.
-- S0b: RFC-026 is accepted, its four open questions still open; nothing of it is built.
+- S0b: RFC-026 is accepted and its four questions decided (2026-11-08: jobs wait for a held lock; uploads up to
+  50 MB; `evh jobs-*` commands; a round's budget enforced); nothing of it is built.
 - S2 below 10,000 units: `family-test`'s first run (about 37 s at 1,000 items) is not faster (above).
 - The deployed inspector was killed by its memory cap 337 times on 2026-10-26/27 (infra's report, 2026-11-08); not
   looked into from here (no access to the box): the owner's and the prod session's.

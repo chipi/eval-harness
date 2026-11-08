@@ -1,7 +1,8 @@
 # RFC-026: An API for every command, long ones as jobs
 
 - **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"); not built yet. Owner, 2026-11-06: "next RFC is
-  for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions (below) are still open.
+  for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions decided by the owner the same
+  day (below: "1 waiting, 2 [the proposed file size], 3 yes, 4 enforce").
 - **Authors**: Marko Dragoljevic
 - **Related**: [PRD-017](../prd/PRD-017-workbench.md) (the Workbench: one server, jobs, parity),
   [UXS-005](../uxs/UXS-005-workbench.md) (its screens), [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP
@@ -62,7 +63,7 @@ A call's arguments are a JSON object keyed by the argument's name, checked again
 (kinds, types, choices, required, unknown names refused) and turned into the command's argv by the parser's own option
 strings, so the command receives exactly what the same command typed after `evh` would. A file the command reads (`data-put`'s,
 `label-import`'s and `sheet-import`'s sheet) is uploaded with the call and kept under `.build/uploads/<sha256>` for
-the job.
+the job; a call carries at most 50 MB (owner, 2026-11-08), and a larger one is refused before anything is written.
 
 ### Who may call
 
@@ -86,7 +87,11 @@ process group, stdin closed, the same timeout, with the same options left out, a
 ### Jobs
 
 `POST /api/v1/jobs` with `{"command", "args", "by", "reason"}` starts a job and answers `202` with its id and state.
-This is PLAN_0.8.0's step 4.2 (background runs), as one command a job.
+This is PLAN_0.8.0's step 4.2 (background runs), as one command a job. The same jobs from the terminal (0.8.0, planned; owner,
+2026-11-08; CLI parity): `evh jobs-start <command> [args]` starts one through the same supervisor and prints its id,
+`evh jobs-status [id]` lists them or shows one, `evh jobs-logs <id> [--follow]` prints its log, `evh jobs-stop <id>`
+stops it, `evh jobs-resume <id>` resumes a run; each answers `--json`, and a job started in either place is seen in
+both.
 
 - **A job is one command.** The server writes `.build/jobs/<id>/job.json` (the command, its argv, who asked, when, the
   harness version) and starts `python -m evaluation_harness.jobs_supervisor <id>` detached: a new session, stdin from
@@ -157,7 +162,8 @@ until the job ends; the server then reads the project's store again (`_common.st
 `run`, `sweep`, `arm-smoke`, `judge`, `judge-score` and `model-onboard` call models. Today only `run` and
 `judge-score` read `EVAL_MAX_COST_USD`, and `run` counts it per pass (`--repeat 3` can spend three caps); `judge`
 stops at its config's `cost_cap_usd`; `arm-smoke`, and `model-onboard` through it, have no cap; `sweep` passes the
-variable to each arm's `run`, so its cap is per arm. A round's `budget_usd` is reported, not enforced. So:
+variable to each arm's `run`, so its cap is per arm. A round's `budget_usd` is reported, not enforced; the owner
+decided it is enforced (2026-11-08). So:
 
 - A spending job must carry `max_cost_usd`, the job's total.
 - The build moves the cap into the provider layer (ADR-0005's one layer every hosted call goes through), counted per
@@ -165,6 +171,14 @@ variable to each arm's `run`, so its cap is per arm. A round's `budget_usd` is r
 - A command that runs others (`sweep`, `model-onboard`) gives each the part of the job's cap still unspent, from the
   spend each child reports in its `--json` envelope.
 - `judge` keeps its config's cap as well; the lower of the two applies.
+- **A round's budget is enforced**, by the spending commands themselves, so a run from the terminal and a job
+  stop at the same place. A command that spends on a goal with an open round that has `budget_usd` takes, as its
+  cap, the least of its own cap and what the round has left: the budget, less what the round's runs have spent (as
+  `evh rounds` counts it), less what the round's running commands have reserved. It reserves that cap when it
+  starts, in the round's ledger (`.build/rounds/<goal>/<round>.json`, under the `goal:<goal>` lock for the moment it
+  writes), and gives back what it did not spend when it ends, however it ends (a lost job's reservation is freed
+  when it is found lost). Nothing left: the command is refused before it calls a model (`ERROR (over-budget)`). So
+  ten arms of one round started at once cannot overrun its budget together.
 
 `POST /api/v1/estimate` runs a command's `--dry-run` and returns what it prints, so the Workbench shows what a job
 will do and cost before it starts (PRD-017's functional requirement 3, Jobs, and its goal 4). 8 commands have one: `run`,
@@ -208,9 +222,11 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
 3. Jobs: the supervisor, locks passed to the command, state, logs, stop, unsupervised and lost, resume with the run
    id given up front.
 4. The server's own writes on the same locks; `catalog` as a swap; `data-migrate`'s `503`.
-5. The cap in the provider layer, per process; children given the rest; the estimate.
-6. `--json` for the 42 commands, in groups (datasets, labels and references, rounds, runs, the rest).
-7. The Workbench (PRD-017) on top, and the ADR that amends ADR-0027.
+5. The cap in the provider layer, per process; children given the rest; the round's budget and its ledger; the
+   estimate.
+6. (0.8.0, planned) `evh jobs-start`, `jobs-status`, `jobs-logs`, `jobs-stop`, `jobs-resume` over the same jobs.
+7. `--json` for the 42 commands, in groups (datasets, labels and references, rounds, runs, the rest).
+8. The Workbench (PRD-017) on top, and the ADR that amends ADR-0027.
 
 ## Testing
 
@@ -226,7 +242,12 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
   run together and the served pages never 404 during one; a migration waits for every job and every job for it;
   a server restart in the middle changes none of it.
 - Spending: a spending job without `max_cost_usd` refused; `run --repeat 3` stops at one cap in total; `arm-smoke` and
-  `sweep` stop at the job's cap.
+  `sweep` stop at the job's cap. A round's budget: a run that would pass it stops at it, from the terminal and as a
+  job alike; two runs started at once share what is left, never both all of it; a stopped or lost run gives back
+  what it did not spend; with nothing left a run is refused before its first call.
+- Uploads: 50 MB taken, one byte more refused, nothing kept of it.
+- The terminal's job commands: a job started with `jobs-start` is listed by the API and stopped by `jobs-stop`, and
+  one the Workbench started is followed by `jobs-logs`.
 - Both stores: the job and lock tests in each (`make stores-check`); `data-migrate` as a job with the server up.
 
 ## Alternatives considered
@@ -246,14 +267,15 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
   which is what a Workbench step is; phases and the ssh runner wait for the owner's decision on them (PLAN_0.8.0, open
   question 3).
 
-## Open for the owner
+## Decided by the owner (2026-11-08)
 
-1. A job whose lock is held: wait in a queue (proposed; `flock` gives no order, so "queued" says which job it waits
-   for, not its place), or be refused with which job holds it.
-2. Uploads: the largest file a call may carry (proposed: 50 MB, a sheet or a source table).
-3. Whether `evh` gets `jobs-status`, `jobs-logs`, `jobs-stop` over the same jobs. CLI parity (PRD-017's functional
-   requirement 8) and PLAN_0.8.0's step 4.2 both say yes; this RFC proposes them, as the same supervisor started from the terminal.
-4. A round's `budget_usd`: enforced by the jobs of that round (the API knows a job's round), or left as reported.
+1. **A job whose lock is held waits** in a queue and starts when the lock is free ("waiting"). `flock` gives no order,
+   so a queued job says which job it waits for, not its place.
+2. **An upload is at most 50 MB** (the proposed size).
+3. **The terminal gets the same jobs** ("yes") (0.8.0, planned): `evh jobs-start`, `jobs-status`, `jobs-logs`, `jobs-stop`,
+   `jobs-resume` (above).
+4. **A round's budget is enforced** ("enforce"), by the spending commands, from the terminal and as jobs alike, with
+   a reservation per running command so parallel runs cannot overrun it (Spending, above).
 
 ## The commands, and how the API serves them
 
