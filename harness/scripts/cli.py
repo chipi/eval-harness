@@ -270,10 +270,14 @@ def main(argv: list[str] | None = None) -> int:
     sys.argv = [str(script), *rest]
     # The scripts' "next, run this" hints read it: `evh …` here, `make …` in a checkout.
     os.environ["EVAL_VIA_EVH"] = "1"
-    from evaluation_harness._common import stray_home  # noqa: PLC0415
+    from evaluation_harness._common import project_root, stray_home  # noqa: PLC0415
 
     if note := stray_home():
         print(note, file=sys.stderr)
+    # Every estimated p kept in the project's ignored .cache/, as `evh mcp` keeps them: each command is a new
+    # process, and without it `goals` right after `catalog` drew every test again (PLAN_0.8.0 S1, 142 s at 1,000
+    # items). EVH_P_CACHE names another file; an empty value turns it off.
+    os.environ.setdefault("EVH_P_CACHE", str(project_root() / ".cache" / "evh-p.jsonl"))
     from evaluation_harness._common import EXIT_INTERNAL, EXIT_INTERRUPTED, EXIT_REFUSED  # noqa: PLC0415
 
     try:

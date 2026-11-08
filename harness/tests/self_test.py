@@ -816,6 +816,18 @@ def test_example_scorer_suites_pass() -> None:
             "a setting as a form (UXS-004): every setting of this repository checks, writes back byte for byte, and keeps its comments through one-value edits",
         ),
         (
+            "test_large_sample.py",
+            "the paired tests from 10,000 items: their normal limit (ADR-0028), resampled below as before",
+        ),
+        (
+            "test_item_index.py",
+            "an item's copy found once per item, the dataset record read once, read again when it changes",
+        ),
+        (
+            "test_items_paged.py",
+            "a dataset's catalog page at 10,000 items: its items paged, every item on one page",
+        ),
+        (
             "test_why_lines.py",
             "a goal page's reasons with many arms: the scorer named once, a long list of contenders or undecided as a count",
         ),

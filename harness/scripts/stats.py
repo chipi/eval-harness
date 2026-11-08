@@ -42,6 +42,11 @@ PERMUTATIONS = 20000
 SEED = 20260926
 ALPHA = 0.05
 EXACT_UP_TO = 30
+#: From this many units (items, or clusters when clustered) a test's p is its normal limit, not resampled
+#: (ADR-0028, PLAN_0.8.0 S2): tools/large_sample_check.py found the limit within the resampling's own Monte Carlo
+#: error for every kind of data at 10,000, and off for heavy-tailed or sparse data at 1,000 to 5,000. At 10,000 items
+#: a resampled p took 8 s (sign-flip) and 23 s (bootstrap-t), in pure Python.
+LARGE_SAMPLE = 10_000
 _EPS = 1e-12
 
 
@@ -120,7 +125,8 @@ def sign_flip_p(
     seed: int = SEED,
     rng: random.Random | None = None,
 ) -> float:
-    """Two-sided paired sign-flip p: exact up to EXACT_UP_TO items, else a seeded estimate.
+    """Two-sided paired sign-flip p: exact up to EXACT_UP_TO items, a seeded estimate below LARGE_SAMPLE, and from
+    LARGE_SAMPLE items the permutation distribution's normal limit (z = sum d / sqrt(sum d^2)).
 
     rng: a generator shared across calls, for callers whose published estimates drew every
     opponent from one stream (family_test.py); otherwise a fresh one seeded with `seed`.
@@ -129,6 +135,9 @@ def sign_flip_p(
         return 1.0
     if len(deltas) <= EXACT_UP_TO:
         return exact_p(deltas)
+    if len(deltas) >= LARGE_SAMPLE:
+        q = math.fsum(d * d for d in deltas)
+        return 1.0 if q == 0 else math.erfc(abs(math.fsum(deltas)) / math.sqrt(q) / math.sqrt(2))
     obs = statistics.fmean(deltas)
     if rng is None:
         # A fresh generator seeded with `seed` draws the same signs for every call with as many
@@ -450,12 +459,15 @@ def bootstrap_t_p(totals: list, sizes: list, margin: float, draws: int = NONINF_
     """One-sided p of the studentized bootstrap for H0: mean difference <= -margin (RFC-015's specification,
     resampling clusters when there are clusters). T = (m + margin)/se; t* = (m* - m)/se* over resamples, those
     with se* = 0 dropped; p = (1 + #{t* >= T})/(kept + 1). None when every unit's difference is the same (no
-    test is possible). Seeded by the data, so the same comparison always gives the same p."""
+    test is possible). Seeded by the data, so the same comparison always gives the same p. From LARGE_SAMPLE units,
+    1 - Phi(T): the limit the resamples estimate (ADR-0028)."""
     g = len(totals)
     m, se = _mean_se(totals, sizes)
     if se == 0:
         return None
     t_obs = (m + margin) / se
+    if g >= LARGE_SAMPLE:
+        return 0.5 * math.erfc(t_obs / math.sqrt(2))
     data = ",".join(f"{t.hex()}/{k}" for t, k in zip(totals, sizes, strict=True)) + f"|{float(margin).hex()}"
 
     def compute() -> float:

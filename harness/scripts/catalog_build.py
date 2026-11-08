@@ -77,6 +77,9 @@ ASSETS = (
 )
 #: Links that would put more arms than this in one inspector URL go to the picker instead.
 INSPECT_MAX = 40
+#: A dataset page's items, at most this many a page: the rest on pages of their own beside it. One page held them all,
+#: 13.8 MB at 10,000 items (S1), each row with an inspect link naming the arms.
+ITEMS_PER_PAGE = 200
 
 #: The theme is applied before first paint by assets/head.js, a file rather than an inline
 #: script, so the pages need no 'unsafe-inline' in a Content-Security-Policy.
@@ -1953,7 +1956,21 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
         key=lambda x: len(x[1]),
         default=("", []),
     )
-    body += block("02", "what's inside", render_inside(A, ds, biggest[1][:INSPECT_MAX], biggest[0]), "inside")
+    inside, item_pages = render_inside(A, ds, biggest[1][:INSPECT_MAX], biggest[0])
+    body += block("02", "what's inside", inside, "inside")
+    for rel, items_body in item_pages:  # the rest of the items, a page each, beside the dataset's page
+        write(
+            out,
+            rel,
+            page(
+                f"{ds}: {A.item_word}s",
+                block("02", "what's inside", items_body, "inside"),
+                1,
+                "",
+                nav=nav,
+                item=A.item_word,
+            ),
+        )
     if v.get("versions"):
         n += 1
         body += block(f"{n:02d}", "versions", v["versions"], "versions")
@@ -2275,11 +2292,14 @@ def _web(url) -> bool:
     return isinstance(url, str) and url.lower().startswith(("https://", "http://"))
 
 
-def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> str:
+def render_inside(
+    A: Adapter, ds: str, inspect_arms: list[str], metric: str
+) -> tuple[str, list[tuple[str, str]]]:
     """What is inside the dataset (data/profiles/<ds>.json): how many items and how long, the gold's
     shape, then one row per item with its length, its gold and where it can be read at its source.
     No item text unless the profile carries it, which `evh dataset-profile --with-text` allows only
-    for text git already tracks."""
+    for text git already tracks. More than ITEMS_PER_PAGE items: the first on the dataset's page, the rest on
+    pages of their own, returned as (path under the catalog, the body) for the caller to write."""
     from evaluation_harness import catalog_charts as ch  # noqa: PLC0415
 
     fn = getattr(A, "dataset_profile", None)
@@ -2289,7 +2309,7 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
             f'<p class="muted">No profile yet. Where the dataset is materialized, '
             f"<code>evh dataset-profile --dataset-id {e(ds)}</code> writes one: its {e(A.item_word)}s, how long "
             f"they are, the gold's shape and where each can be read.</p>"
-        )
+        ), []
     hide = _visibility.hidden(ds)
     if hide:
         p = _visibility.public_profile(p)
@@ -2362,15 +2382,46 @@ def render_inside(A: Adapter, ds: str, inspect_arms: list[str], metric: str) -> 
             )
         rows.append(cells)
     heads = [f"{e(A.item_word)}", *(["text"] if has_text else []), "words", "gold", "open"]
-    return (
+    foot = (
+        '<p class="small muted">Each row is the profile <code>evh dataset-items --dataset-id '
+        f"{e(ds)}</code> prints; <b>inspect</b> opens the {e(A.item_word)} in the inspector with the dataset's "
+        "largest group of comparable arms, and its text where the inspector runs on a machine that has it.</p>"
+    )
+    per = ITEMS_PER_PAGE
+    chunks = [rows[i : i + per] for i in range(0, len(rows), per)] or [[]]
+    names = [f"{slug(ds or 'none')}.html"] + [
+        f"{slug(ds or 'none')}-items-{k}.html" for k in range(2, len(chunks) + 1)
+    ]
+
+    def pager(k: int) -> str:
+        if len(chunks) == 1:
+            return ""
+        lo, hi = (k - 1) * per + 1, min(k * per, len(rows))
+        links = " ".join(
+            f"<b>{j}</b>" if j == k else f'<a href="{names[j - 1]}#inside">{j}</a>'
+            for j in range(1, len(chunks) + 1)
+        )
+        return (
+            f'<p class="small">{e(A.item_word)}s {lo}–{hi} of {len(rows)}, {per} a page: {links}. The filter reads '
+            f"this page's {e(A.item_word)}s; <code>evh dataset-items --dataset-id {e(ds)}</code> lists them all.</p>"
+        )
+
+    first = (
         head
         + chart
         + (f'<p class="eyebrow small">the gold</p>{golds}' if golds else "")
-        + table("inside-items", heads, rows, f"filter {A.item_word}s")
-        + '<p class="small muted">Each row is the profile <code>evh dataset-items --dataset-id '
-        + f"{e(ds)}</code> prints; <b>inspect</b> opens the {e(A.item_word)} in the inspector with the dataset's "
-        + "largest group of comparable arms, and its text where the inspector runs on a machine that has it.</p>"
+        + pager(1)
+        + table("inside-items", heads, chunks[0], f"filter {A.item_word}s")
+        + foot
     )
+    more = [
+        (
+            f"d/{names[k - 1]}",
+            pager(k) + table("inside-items", heads, chunks[k - 1], f"filter {A.item_word}s") + foot,
+        )
+        for k in range(2, len(chunks) + 1)
+    ]
+    return first, more
 
 
 def _texts_tracked(ds: str) -> bool:

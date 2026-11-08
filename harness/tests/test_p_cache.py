@@ -78,4 +78,42 @@ if not os.access(cache, os.R_OK):  # (as root every file is readable)
     check("an unreadable file is no cache: the p is computed", unread == plain, unread)
 cache.chmod(0o600)
 check("unset, nothing is stored", not list(tmp.glob("*.jsonl")))
+
+# An `evh` command keeps its p's in the project's .cache/ unless told otherwise (PLAN_0.8.0 S2: every new process
+# drew them again; `goals` right after `catalog` took as long again): EVH_P_CACHE names another file, an empty value
+# turns it off. A library import (an adapter, a notebook) stores nothing, as above.
+import contextlib  # noqa: E402
+import io  # noqa: E402
+
+from evaluation_harness import cli  # noqa: E402
+
+proj = tmp / "proj"
+(proj / "data").mkdir(parents=True)
+
+
+def via_evh(value: str | None) -> str | None:
+    saved = {k: os.environ.get(k) for k in ("EVH_P_CACHE", "EVAL_HOME")}
+    os.environ["EVAL_HOME"] = str(proj)
+    os.environ.pop("EVH_P_CACHE", None)
+    if value is not None:
+        os.environ["EVH_P_CACHE"] = value
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            cli.main(["licences"])
+        return os.environ.get("EVH_P_CACHE")
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+
+check(
+    "an evh command keeps its p's in the project's .cache/evh-p.jsonl",
+    via_evh(None) == str(proj / ".cache" / "evh-p.jsonl"),
+    via_evh(None),
+)
+check("EVH_P_CACHE= (empty) turns it off", via_evh("") == "", via_evh(""))
+check("EVH_P_CACHE names another file", via_evh(str(tmp / "mine.jsonl")) == str(tmp / "mine.jsonl"))
 sys.exit(summary())

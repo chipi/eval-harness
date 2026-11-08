@@ -1616,7 +1616,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_MODELS_FILE` | the alias to upstream-model table judges are routed by |
 | `EVAL_FETCH_HEADERS` | JSON `{"host": {"Header": "value"}}` for URL items behind a login |
 | `EVAL_NO_CACHE` | `1`: `family-test` recomputes instead of replaying an identical earlier run |
-| `EVH_P_CACHE` | a file that keeps every estimated p of the paired test between processes (one JSON line each, read back exactly); `evh mcp` sets it to `<project>/.cache/evh-p.jsonl`. Unset by default: nothing is stored. A file that cannot be read is no cache; a read-only one is read and never written |
+| `EVH_P_CACHE` | a file that keeps every estimated p of the paired test between processes (one JSON line each, read back exactly); every `evh` command (and `evh mcp`) uses `<project>/.cache/evh-p.jsonl` when it is unset; an empty value turns it off (ADR-0028). A library import (an adapter, a notebook) stores nothing unless it is set. A file that cannot be read is no cache; a read-only one is read and never written |
 | `OPENAI_API_KEY` (and `OPENAI_BASE_URL`) | `provider: openai`: OpenAI, or any OpenAI-compatible endpoint; an arm's `api_key_env` names another variable |
 | `OPENROUTER_API_KEY` | `provider: openrouter` (OpenRouter's address by default; an arm's `base_url` or `api_key_env` overrides it), and judges routed straight to OpenRouter |
 | `ANTHROPIC_API_KEY` | `provider: anthropic` |

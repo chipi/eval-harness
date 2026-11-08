@@ -209,6 +209,30 @@ sheet loads and parses the whole dataset record once per item (`_common.item_pat
 quadratic). Third: a run's own cost, 5.6 ms an item with an adapter that does nothing, not yet profiled. Files: a run
 is one file per item (RFC-024), and the 10,000-item project filled `/tmp`'s inodes on the first attempt.
 
+**S2 and S3 built (2026-11-08).** From 10,000 units both paired tests take their normal limit (ADR-0028; the
+simulation `tools/large_sample_check.py` found it off for heavy-tailed and sparse data at 1,000 to 5,000, so below
+10,000 they resample as before and no committed p moves). The p cache is on by default for every `evh` command
+(`<project>/.cache/evh-p.jsonl`), so a p is drawn once per project, not once per process. An item's copy is found from
+an index read once per dataset. A dataset page lists 200 items a page. The same bench, seconds:
+
+| step | 1,000 items, S1 | 1,000, now | 10,000 items, S1 | 10,000, now |
+| --- | --- | --- | --- | --- |
+| `catalog` (50 arms), p cache empty | 144 | 146 | 1,532 | 12.8 |
+| `goals --goal`, right after | 142 | 0.4 | 1,499 | 4.0 |
+| `goals --goal --json` | 144 | 0.6 | 1,516 | 4.0 |
+| `pair-test` | 0.8 | 0.1 | 7.2 | 0.1 |
+| `family-test` (49 against 1) | 35.5 | 38.5 | 332.5 | 1.6 |
+| `inspect --sheet --csv`, 5 arms | 13.0 | 2.7 | 175.3 | 2.3 |
+| largest catalog page | — | 0.30 MB | 13.8 MB | 0.32 MB |
+
+Not made faster: below 10,000 units the first catalog (146 s at 1,000 items, 47 bootstrap-t's of about 2 s each)
+and `family-test` (sign-flips; its p's are not kept in the cache). A bit-identical draw of the bootstrap's picks in C
+saved 15% (2.10 to 1.78 s a test) and was not kept. What would: the catalog's bootstrap-t's drawn in parallel (each is
+seeded by its data, so the p's stay the same), for the owner to decide. In Chromium the 10,000-item catalog's 117 pages
+loaded with no page error, the slowest in 39 ms (`arms.html`, 3,587 elements), the largest JS heap 2.0 MB, the
+largest file 0.32 MB (the dataset page, before S3 13.8 MB); measured from a local server, so no network time. Not
+measured: a phone, a slow network, the inspector's pages at 10,000 items.
+
 ## 4. The agent-ready pieces from the drafts
 
 | # | what |
@@ -254,8 +278,11 @@ R3 to R5 start as example code; R1 and R2 are the core.
 
 ## NOT done or NOT verified
 
-- Pushed: up to `01dea13f2` (A2). Committed, not pushed: A3/A4/A6, B and C, A5, D1. A push needs the owner's yes.
-- E, F, P, S, step 4, R, the fleet's feedback (6) and the release (7) are not built.
+- Pushed: up to `163b1b75d` (2026-11-08, CI green). Committed after it, not pushed: S2 and S3. A push needs the
+  owner's yes.
+- S0b: RFC-026 is Proposed, waiting for the owner; nothing of it is built.
+- S2 below 10,000 units: the first catalog (146 s at 1,000 items) and `family-test` are not faster (above).
+- Step 4, R, the fleet's feedback (6) and the release (7) are not built.
 - Sizes of every package are estimates, not measured.
 - The clustered bootstrap-t was simulated at 100 clusters of 3 only; other cluster sizes and shapes are not.
 - D1: modes are tagged by hand in a sheet; no agent was asked to tag, and no committed dataset has tags.

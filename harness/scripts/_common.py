@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys as _sys
+from collections import OrderedDict
 from pathlib import Path as _Path
 
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
@@ -614,18 +615,49 @@ def labels_reference(spec: str, dataset_id: str) -> str:
     return rid
 
 
-def item_path(dataset_id: str, item_id: str) -> Path | None:
-    """Where an item's materialized copy is, or None when it is not materialized here."""
+#: Each dataset's items by id ({item_id: its file under materialized/<dataset>/}), kept while its record is unchanged
+#: (path, mtime, size): a sheet asks for every item, and reading the record each time was quadratic (S1: 1,002 loads
+#: of a 1,000-item record for one sheet). A few datasets at a time.
+_ITEM_INDEX: OrderedDict[str, tuple[tuple, dict[str, str]]] = OrderedDict()
+_ITEM_INDEX_MAX = 16
+
+
+def _item_index(dataset_id: str) -> dict[str, str] | None:
     from evaluation_harness import _store  # noqa: PLC0415
 
+    try:
+        path = _paths()["DATASETS"] / f"{dataset_id_ok(dataset_id)}.json"
+    except SystemExit:
+        return None
+    if not _store.is_file(path):
+        return None
+    st = _store.stat(path)
+    stamp = (str(path), st.st_mtime_ns, st.st_size)
+    hit = _ITEM_INDEX.get(dataset_id)
+    if hit is not None and hit[0] == stamp:
+        _ITEM_INDEX.move_to_end(dataset_id)
+        return hit[1]
     try:
         ds = load_dataset(dataset_id)
     except SystemExit:
         return None
-    it = next((x for x in ds.get("items") or [] if x.get("item_id") == item_id), None)
-    if it is None:
+    index = {
+        x["item_id"]: x.get("source_path") or x["item_id"] for x in ds.get("items") or [] if x.get("item_id")
+    }
+    _ITEM_INDEX[dataset_id] = (stamp, index)
+    while len(_ITEM_INDEX) > _ITEM_INDEX_MAX:
+        _ITEM_INDEX.popitem(last=False)
+    return index
+
+
+def item_path(dataset_id: str, item_id: str) -> Path | None:
+    """Where an item's materialized copy is, or None when it is not materialized here."""
+    from evaluation_harness import _store  # noqa: PLC0415
+
+    index = _item_index(dataset_id)
+    if index is None or item_id not in index:
         return None
-    p = _paths()["MATERIALIZED"] / dataset_id / (it.get("source_path") or item_id)
+    p = _paths()["MATERIALIZED"] / dataset_id / index[item_id]
     return p if _store.is_file(p) else None
 
 
