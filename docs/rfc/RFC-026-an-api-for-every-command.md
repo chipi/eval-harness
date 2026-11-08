@@ -1,7 +1,7 @@
 # RFC-026: An API for every command, long ones as jobs
 
-- **Status**: Proposed (2026-11-08), for the owner's review. Owner, 2026-11-06: "next RFC is for this API" (S0b); the
-  Workbench (PRD-017) is its first user.
+- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"); not built yet. Owner, 2026-11-06: "next RFC is
+  for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions (below) are still open.
 - **Authors**: Marko Dragoljevic
 - **Related**: [PRD-017](../prd/PRD-017-workbench.md) (the Workbench: one server, jobs, parity),
   [UXS-005](../uxs/UXS-005-workbench.md) (its screens), [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP
@@ -189,7 +189,7 @@ on a served command without it. Until a command has it, its job's result is its 
 ### The data page's routes and ADR-0027
 
 PRD-017 retires the Configure page and its routes (its decision 4) and serves the Workbench in both stores (its
-functional requirement 5). The API is how the Workbench writes, so when it is accepted it amends ADR-0027 in two places, by an
+functional requirement 5). The API is how the Workbench writes, so, accepted, it amends ADR-0027 in two places, by an
 ADR of its own: writes are no longer SQLite only and need no `configure: true` (the token and the rules above gate
 them instead), and the seven `/api/data/` routes are removed when the Workbench's settings screen (W8) replaces the
 page. Until then they take the API's locks and token too.

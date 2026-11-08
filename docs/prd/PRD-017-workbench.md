@@ -6,7 +6,7 @@
   [PRD-016](PRD-016-managing-project-data.md) (the Configure page, retired: the Workbench replaces it),
   [PRD-005](PRD-005-goals-and-rounds.md) (goals and rounds), [PRD-014](PRD-014-datasets-from-production.md) (datasets
   from production), [PRD-015](PRD-015-models-onboarded-once.md) (models onboarded once)
-- **Related RFCs**: [RFC-026](../rfc/RFC-026-an-api-for-every-command.md) (an API for every command, with jobs: Proposed), RFC-025 (files or one database)
+- **Related RFCs**: [RFC-026](../rfc/RFC-026-an-api-for-every-command.md) (an API for every command, with jobs: Accepted), RFC-025 (files or one database)
 
 ## Summary
 

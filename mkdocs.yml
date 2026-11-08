@@ -88,7 +88,7 @@ nav:
           - "RFC-023: Labels, and the reference sets promoted from them (built, 0.6.0)": rfc/RFC-023-labels-and-references.md
           - "RFC-024: A run's outputs in one file, read through one function (built, 0.8.0)": rfc/RFC-024-run-outputs-in-one-file.md
           - "RFC-025: A project's data in SQLite, a project's choice (built, 0.8.0)": rfc/RFC-025-runs-in-sqlite.md
-          - "RFC-026: An API for every command, long ones as jobs (proposed, 0.8.0)": rfc/RFC-026-an-api-for-every-command.md
+          - "RFC-026: An API for every command, long ones as jobs (accepted, 0.8.0)": rfc/RFC-026-an-api-for-every-command.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md

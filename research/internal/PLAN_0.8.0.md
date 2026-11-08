@@ -176,7 +176,7 @@ times within a few percent (the 10,000-item catalog 1,576 s as files, 1,584 s in
 **S0b: an API for every command (owner, 2026-11-06: "next RFC is for this API").** Today outside the CLI: `evh
 mcp`'s 28 read tools, `catalog-serve`'s 4 read endpoints and the data page's 7 (which write settings and remove runs,
 ADR-0027); 52 of the CLI's 80 commands are reachable only from it.
-[RFC-026](../../docs/rfc/RFC-026-an-api-for-every-command.md) is Proposed (2026-11-08), for the owner; nothing of it
+[RFC-026](../../docs/rfc/RFC-026-an-api-for-every-command.md) is Accepted (owner, 2026-11-08); nothing of it
 is built.
 
 | # | what |
@@ -294,9 +294,8 @@ R3 to R5 start as example code; R1 and R2 are the core.
 
 ## NOT done or NOT verified
 
-- Pushed: up to `163b1b75d` (2026-11-08, CI green). Committed after it, not pushed: S2 and S3, RFC-026, and the
-  review's fixes (2026-11-08). A push needs the owner's yes.
-- S0b: RFC-026 is Proposed, waiting for the owner (its four open questions); nothing of it is built.
+- Pushed 2026-11-08 (owner's yes): S2 and S3, RFC-026 accepted, and the review's fixes, after `163b1b75d`.
+- S0b: RFC-026 is accepted, its four open questions still open; nothing of it is built.
 - S2 below 10,000 units: `family-test`'s first run (about 37 s at 1,000 items) is not faster (above).
 - The deployed inspector was killed by its memory cap 337 times on 2026-10-26/27 (infra's report, 2026-11-08); not
   looked into from here (no access to the box): the owner's and the prod session's.
