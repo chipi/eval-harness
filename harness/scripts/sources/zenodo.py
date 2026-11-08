@@ -1,7 +1,7 @@
 """The zenodo source: a table file of a Zenodo record (PLAN_0.8.0 P2).
 
     evh dataset-create --dataset-id D --source zenodo \\
-        --query '{"record": 6857505, "file": "comments.csv", "text": "comment", "fields": ["label"], "limit": 200}'
+        --query '{"record": 10157504, "file": "sts_gold_tweet.csv", "text": "tweet", "id": "id", "fields": ["polarity"], "limit": 200}'
 
 Query: `record` (the record id: Zenodo gives each version its own); `file` (its key; may be left out when the record
 has one readable file); `text`, `id`, `fields`, `offset`, `limit` as the other table sources. It reads one parquet,

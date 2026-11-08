@@ -1,4 +1,4 @@
-# UXS-005: The Workbench (sketches round 3, mockup round 3)
+# UXS-005: The Workbench (sketches round 3, mockup round 4)
 
 - **Status**: Draft — sketches and the clickable mockup for review (owner, 2026-11-06: "agree on the structure … see
   some sketches … then a mock-up"; 2026-11-08: "complete the mock-up really with everything we've been saying"); 0.8.0
@@ -25,10 +25,15 @@ just static"): `harness/workbench/` (`index.html`, `workbench.css`, `workbench.j
 - **Its data is read, never invented.** `harness/workbench/mock_data.py` writes `mock.js` from the project: the goals,
   datasets, models and their onboarding, the CNN source, items, references and profile, the rounds, every arm's
   scores, settings and first replies, the silver reference and who wrote it, the judge and its validation, and the
-  triage goal's capture and comparison. Two inputs are the harness's own printed answers, saved first (`evh models`,
-  `evh goals --goal news_summary_cnn`, `evh goals --goal triage_orrery`), because they take minutes to compute.
-- **What it pretends is labelled.** Jobs, saving, and the results of a round opened in the walk-through (round r1's
-  real scores stand in) are pretended; each place says so in a "mockup:" note, which a switch hides.
+  triage goal's capture and comparison, the rows where production was wrong, the label sheet, the local arms' re-runs
+  and their paired tests. Several inputs are the harness's own answers, saved first because they take minutes (`evh
+  models`, `evh goals`, `evh pair-test`, `evh inspect --sheet --wrong-against`, `evh label-sheet`; the list is at the
+  top of the script). `harness/workbench/read_sources.py` reads every other dataset source with the example its module
+  documents, through the harness's own source classes, writing nothing to the project.
+- **What it pretends is labelled.** Jobs and saving are pretended; each place says so in a "mockup:" note, which a
+  switch hides. In a round opened in the walk-through, a local arm shows its own real re-run (the project's Linux
+  re-runs, compared with bart_l's by `evh pair-test`); a hosted arm, which the project never re-ran, shows its r1 run
+  and says so; a clone has no run.
 - It walks from an empty project to a closed round and through every workflow below; state is kept per browser, and
   "start over" clears it.
 
@@ -160,6 +165,12 @@ Making one is four short screens, one decision each:
 - Preview before anything is written; fields are a table, proposed, never typed from nothing.
 - **New:** the expected answer's column (b). The Hugging Face source takes the item's column and its id today, not an
   answer column; the mockup marks it as new.
+- In the mockup each source is read for real with the example its module documents: a folder (`data/sources/
+  cnn_dailymail_20`), Zenodo (record 10157504, `sts_gold_tweet.csv`), Kaggle (`uciml/iris`), Hugging Face; OpenML
+  answered HTTP 503 on 2026-11-08 and the screen shows that answer; Croissant shows the refusal the source gives the
+  harness's own export (a text dataset's items are a FileSet, which the source does not read); the table source shows
+  that the project has no manifest to read. Reading them found that the Zenodo source documented a record without the
+  file it named; its example is now one that reads.
 - **Create** is a job (`dataset-create`): it freezes the items and their hashes. The goal's step 2 turns ✓.
 
 ## 3 Prepare the dataset
@@ -300,7 +311,9 @@ decision kept with its reason. This is where people spend most of their time (W1
   checks (the CNN adapter's narration, label, markdown, bullets, paragraphs, overlong, truncated).
 - **Labelling the items** (the expected answer) is the same screen's other half: the item, a box for its answer
   ("start from its highlights" when the data has one), save and next; or the sheet: download it, fill it elsewhere,
-  drop it back, checked before anything is kept (`label-sheet`, `label-import`). Labels then go to a reference set (W6).
+  drop it back, checked before anything is kept (`label-sheet`, `label-import`): its columns, each item id against the
+  dataset's, an answer per row; unknown ids are refused and named. Labels then go to a reference set (W6). The mockup
+  holds the real 200-row sheet and checks a dropped one in the page.
 
 ### W3 Production
 
@@ -314,8 +327,9 @@ decision kept with its reason. This is where people spend most of their time (W1
 ```
 
 - A goal that is not deployed says so and what will show once it is. The mockup shows production on this project's
-  deployed goal (triage): its capture, production's decisions scored like an arm against people's labels, the picks
-  (each with a reason) and the next dataset version made from them (`arm-from-capture`, `label-from-capture`,
+  deployed goal (triage): its capture, production's decisions scored like an arm against people's labels, the 30
+  decisions where production's model disagreed with the owner's labels (what it decided, what people decided, its
+  cost), the picks (checked rows, one reason) and the next dataset version made from them (`arm-from-capture`, `label-from-capture`,
   `inspect --wrong-against`, `pick`, `dataset-extend`).
 
 ### W5 Bring in a model
@@ -527,7 +541,6 @@ erDiagram
 8. The help layer: three layers, the words with a glossary, the command folded; the texts for steps 0 to 5.
 9. The data model, with captures, picks, failure modes and tags added.
 
-Not in the mockup yet: the other sources' parts b to d (they read nothing; Hugging Face shows them); judging a
-round's own new arms (the r4 results reuse r1's scores); which production rows were wrong (not computed); the files a
-sheet round trip moves (downloading and dropping are not mocked); the phone menu (on a phone the top bar shows only
-Home).
+Not in the mockup yet: a hosted arm's new run (the project has none; one would be a paid call, from about $0.04 for
+deepseek_m's 200 items); OpenML's rows (it answered HTTP 503 when read); a Croissant description the source can read
+(none in the project; the harness's own export is refused); a table source's rows (no manifest in the project).

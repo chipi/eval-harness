@@ -281,3 +281,20 @@ tr.retired td .mono, tr.retired td.num { text-decoration: line-through; }
 .reader.even { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 @media (max-width: 760px) { .reader.even { grid-template-columns: minmax(0, 1fr); } }
 .status.warn { color: var(--warn); }
+
+/* the phone menu: the nav folds behind a button */
+.menubtn { display: none; background: none; border: 1px solid var(--hair); border-radius: 6px; padding: 5px 10px; color: var(--ink-2); font: 500 12px/1 var(--mono); cursor: pointer; }
+@media (max-width: 720px) {
+  .menubtn { display: inline-block; }
+  .bar nav { display: none; position: absolute; top: 52px; right: 0; left: 0; flex-direction: column; align-items: flex-start; gap: 0;
+    background: var(--page); border-bottom: 1px solid var(--hair); padding: 8px 16px; }
+  .bar nav.open { display: flex; }
+  .bar nav a, .bar nav .toggle { padding: 10px 0; }
+  .bar nav .hide-sm { display: inline; }
+}
+.dropzone { display: block; cursor: pointer; }
+.dropzone.over { border-color: var(--accent); color: var(--accent); }
+textarea.mono { width: 100%; }
+.note .mono, .note code { overflow-wrap: anywhere; }
+table.r4res td:first-child { white-space: normal; min-width: 160px; }
+table.r4res td:nth-child(3) { white-space: normal; }

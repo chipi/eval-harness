@@ -2915,5 +2915,450 @@ window.MOCK = {
   "rouge1": {
    "direction": "higher"
   }
- }
+ },
+ "sources": {
+  "zenodo": {
+   "query": {
+    "record": 10157504,
+    "file": "sts_gold_tweet.csv",
+    "text": "tweet",
+    "id": "id",
+    "fields": [
+     "polarity"
+    ],
+    "limit": 4
+   },
+   "describe": {
+    "source": {
+     "provider": "zenodo",
+     "ref": "10157503",
+     "url": "https://doi.org/10.5281/zenodo.10157504",
+     "revision": "10157504",
+     "description_sha256": "18edb2d88e15078406f61c9cb33778ff34b1a32211ee23bfb7f10c5ae3dc8e61"
+    },
+    "description": "Datasets for Sentiment Analysis",
+    "licence": "CC-BY-4.0"
+   },
+   "rows": [
+    {
+     "id": "1467933112",
+     "text": "the angel is going to miss the athlete this weekend ",
+     "fields": {
+      "polarity": "0"
+     }
+    },
+    {
+     "id": "2323395086",
+     "text": "It looks as though Shaq is getting traded to Cleveland to play w/ LeBron... Too bad for Suns' fans. The Big Cactus is no more ",
+     "fields": {
+      "polarity": "0"
+     }
+    },
+    {
+     "id": "1467968979",
+     "text": "@clarianne APRIL 9TH ISN'T COMING SOON ENOUGH ",
+     "fields": {
+      "polarity": "0"
+     }
+    },
+    {
+     "id": "1990283756",
+     "text": "drinking a McDonalds coffee and not understanding why someone would hurt me for no apparent reason. ",
+     "fields": {
+      "polarity": "0"
+     }
+    }
+   ]
+  },
+  "openml": {
+   "query": {
+    "dataset": 61,
+    "text": "class",
+    "fields": [
+     "sepallength"
+    ],
+    "limit": 4
+   },
+   "error": "ValueError: https://data.openml.org/datasets/0000/0061/dataset_61.pq: HTTP Error 503: Service Temporarily Unavailable"
+  },
+  "kaggle": {
+   "query": {
+    "ref": "uciml/iris",
+    "version": 2,
+    "file": "Iris.csv",
+    "text": "Species",
+    "fields": [
+     "SepalLengthCm"
+    ],
+    "limit": 4
+   },
+   "describe": {
+    "source": {
+     "provider": "kaggle",
+     "ref": "uciml/iris",
+     "url": "https://www.kaggle.com/datasets/uciml/iris",
+     "revision": "2",
+     "description_sha256": "be7683bc621d244a0e3b6db9e69b59dc74b12b2da6379c850b72f556edec380c"
+    },
+    "description": "Iris Species",
+    "licence": "CC0-1.0"
+   },
+   "rows": [
+    {
+     "id": "row_0",
+     "text": "Iris-setosa",
+     "fields": {
+      "SepalLengthCm": "5.1"
+     }
+    },
+    {
+     "id": "row_1",
+     "text": "Iris-setosa",
+     "fields": {
+      "SepalLengthCm": "4.9"
+     }
+    },
+    {
+     "id": "row_2",
+     "text": "Iris-setosa",
+     "fields": {
+      "SepalLengthCm": "4.7"
+     }
+    },
+    {
+     "id": "row_3",
+     "text": "Iris-setosa",
+     "fields": {
+      "SepalLengthCm": "4.6"
+     }
+    }
+   ]
+  },
+  "croissant": {
+   "query": {
+    "path": "build/cnn_dailymail_20.croissant.json",
+    "text": "text",
+    "id": "item_id",
+    "limit": 4
+   },
+   "error": "ValueError: field text: only a column of one FileObject is read; this one is a FileSet of text/plain (which files it holds is the host's to say, and only the Hub lists a Hugging Face description's files)"
+  },
+  "folder": {
+   "query": {
+    "path": "data/sources/cnn_dailymail_20",
+    "glob": "*.txt"
+   },
+   "describe": {
+    "source": {
+     "provider": "folder",
+     "ref": "data/sources/cnn_dailymail_20"
+    }
+   },
+   "rows": [
+    {
+     "id": "0d3c8c276d079c4c225f034c69aa024cdab7869d",
+     "text": "(CNN)Andrew Getty, one of the heirs to billions of oil money, appears to have died of natural causes, a Los Angeles Police Department spokesman said. The coroner's preliminary assessment is there was no foul play involved in the death of Ge",
+     "fields": {}
+    },
+    {
+     "id": "1b2cc634e2bfc6f2595260e7ed9b42f77ecbb0ce",
+     "text": "(CNN)He's a blue chip college basketball recruit. She's a high school freshman with Down syndrome. At first glance Trey Moses and Ellie Meredith couldn't be more different. But all that changed Thursday when Trey asked Ellie to be his prom ",
+     "fields": {}
+    },
+    {
+     "id": "1dd00c89d71a5611797bb34da8a6eada8f058405",
+     "text": "(CNN)A year ago Bloomberg published a story with the following headline: Mike Pence, a Koch Favorite, Mulls 2016 Run for President. The story ticked off items on Pence's conservative things-to-do list while also noting his close ties to the",
+     "fields": {}
+    },
+    {
+     "id": "203886369feea77bbc35715e6d7e518b751f57de",
+     "text": "(CNN)Seventy years ago, Anne Frank died of typhus in a Nazi concentration camp at the age of 15. Just two weeks after her supposed death on March 31, 1945, the Bergen-Belsen concentration camp where she had been imprisoned was liberated -- ",
+     "fields": {}
+    }
+   ]
+  }
+ },
+ "reruns": {
+  "cnn_bart_l_n200_v1": {
+   "run_id": "cnn_bart_l_n200_v1_20260930T152617Z",
+   "coverage": 0.3461,
+   "p50_ms": 6265.427,
+   "created_at": "2026-09-30T15:48:17Z"
+  },
+  "cnn_bart_l_xsum_n200_v1": {
+   "run_id": "cnn_bart_l_xsum_n200_v1_20260930T150959Z",
+   "coverage": 0.2071,
+   "p50_ms": 3938.039,
+   "created_at": "2026-09-30T15:26:16Z",
+   "delta": -0.139,
+   "p": "<0.0001"
+  },
+  "cnn_bart_m_n200_v1": {
+   "run_id": "cnn_bart_m_n200_v1_20260930T145345Z",
+   "coverage": 0.3367,
+   "p50_ms": 4120.604,
+   "created_at": "2026-09-30T15:09:58Z",
+   "delta": -0.0095,
+   "p": "0.1607"
+  },
+  "cnn_bart_s_n200_v1": {
+   "run_id": "cnn_bart_s_n200_v1_20260930T144134Z",
+   "coverage": 0.3276,
+   "p50_ms": 3389.068,
+   "created_at": "2026-09-30T14:53:44Z",
+   "delta": -0.0186,
+   "p": "0.0158"
+  },
+  "cnn_lead3_n200_v1": {
+   "run_id": "cnn_lead3_n200_v1_20260930T144131Z",
+   "coverage": 0.2718,
+   "p50_ms": 0.063,
+   "created_at": "2026-09-30T14:41:34Z",
+   "delta": -0.0743,
+   "p": "<0.0001"
+  }
+ },
+ "wrong": [
+  {
+   "id": "orrery-ORRERY-J-2026-08-06T21:52:38Z",
+   "decided": "cleanup",
+   "people": "escalate or file",
+   "cost": "5.0",
+   "date": "2026-08-06",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-5-2026-08-18T18:38:10Z",
+   "decided": "dismiss",
+   "people": "escalate or file",
+   "cost": "5.0",
+   "date": "2026-08-18",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-7-2026-08-18T18:48:08Z",
+   "decided": "dismiss",
+   "people": "escalate or file",
+   "cost": "5.0",
+   "date": "2026-08-18",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-6-2026-08-18T18:48:08Z",
+   "decided": "dismiss",
+   "people": "escalate or file",
+   "cost": "5.0",
+   "date": "2026-08-18",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-5-2026-09-01T16:52:52Z",
+   "decided": "file",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-09-01",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-3-2026-09-03T10:42:29Z",
+   "decided": "cleanup",
+   "people": "escalate or file",
+   "cost": "5.0",
+   "date": "2026-09-03",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-8-2026-09-04T10:42:38Z",
+   "decided": "dismiss",
+   "people": "escalate or file",
+   "cost": "5.0",
+   "date": "2026-09-04",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-9-2026-09-10T06:35:05Z",
+   "decided": "escalate",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-09-10",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-H-2026-09-12T14:18:41Z",
+   "decided": "file",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-09-12",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-I-2026-09-12T14:19:18Z",
+   "decided": "file",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-09-12",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-J-2026-09-13T14:29:00Z",
+   "decided": "file",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-09-13",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-P-2026-09-28T14:29:20Z",
+   "decided": "escalate",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-09-28",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-O-2026-09-28T14:29:49Z",
+   "decided": "escalate",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-09-28",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-M-2026-09-28T14:30:34Z",
+   "decided": "escalate",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-09-28",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-L-2026-09-28T14:30:54Z",
+   "decided": "escalate",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-09-28",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-T-2026-09-28T22:39:04Z",
+   "decided": "file",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-09-28",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-S-2026-09-28T22:39:57Z",
+   "decided": "dismiss",
+   "people": "escalate or file",
+   "cost": "5.0",
+   "date": "2026-09-28",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-R-2026-09-28T22:49:15Z",
+   "decided": "file",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-09-28",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-1D-2026-10-16T13:02:46Z",
+   "decided": "file",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-10-16",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-U-2026-10-16T16:02:48Z",
+   "decided": "file",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-10-16",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-1F-2026-10-16T16:03:15Z",
+   "decided": "escalate",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-10-16",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-18-2026-10-16T16:03:49Z",
+   "decided": "escalate",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-10-16",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-13-2026-10-16T19:42:45Z",
+   "decided": "escalate",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-10-16",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-16-2026-10-19T08:12:37Z",
+   "decided": "escalate",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-10-19",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-1O-2026-10-20T10:43:08Z",
+   "decided": "dismiss",
+   "people": "file",
+   "cost": "5.0",
+   "date": "2026-10-20",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-17-2026-10-21T13:22:56Z",
+   "decided": "escalate",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-10-21",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-1T-2026-10-22T20:42:51Z",
+   "decided": "file",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-10-22",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-1U-2026-10-23T21:23:10Z",
+   "decided": "file",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-10-23",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-PROD-1V-2026-10-25T08:23:12Z",
+   "decided": "file",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-10-25",
+   "stage": "propose"
+  },
+  {
+   "id": "orrery-ORRERY-19-2026-10-26T03:02:55Z",
+   "decided": "escalate",
+   "people": "dismiss",
+   "cost": "1.0",
+   "date": "2026-10-26",
+   "stage": "propose"
+  }
+ ],
+ "sheet": "item_id,item,proposal,label,also right,note\n012819ffa2547138101055add33deebe7beaa3d4,\"(CNN)Mullah Mohammed Omar is \"\"still the leader\"\" of the Taliban's self-declared Islamic Emirate of Afghanistan. That appears to be the primary message of a biog…\",,,,\n04c28c2d6c524d96e046cadf32eb44803f83a98c,\"Charleston, South Carolina (CNN)Police officers Saturday accompanied the hearse carrying the body of Walter Scott to his South Carolina funeral service, where …\",,,,\n054ccc280767c3d59e7da55572425d2fdcb6e711,\"(CNN)A judge this week sentenced a former TSA agent to six months in jail for secretly videotaping a female co-worker while she was in the bathroom, prosecutor…\",,,,\n07f60889bcd1f3d2c48b715220f13df8d2c5e158,(CNN)There's an old saying which states the Cape Verde Islands are home to a greater number of musicians per square kilometer than any other country in the wor…,,,,\n0a6b027b3384e79929c19b94062882db8c7f91fc,(CNN)Arsenal kept their slim hopes of winning this season's English Premier League title alive by beating relegation threatened Burnley 1-0 at Turf Moor. A fir…,,,,\n0b66cb7ebcfd16de6d6d7623036c2dd9161f032b,(The Hollywood Reporter)The original cast of Twin Peaks is backing David Lynch in his salary standoff with Showtime. The stars have teamed together for a video…,,,,\n0d3c8c276d079c4c225f034c69aa024cdab7869d,\"(CNN)Andrew Getty, one of the heirs to billions of oil money, appears to have died of natural causes, a Los Angeles Police Department spokesman said. The coron…\",,,,\n0f39feebc34fee03b8c647d1557eb40bb20f4e8b,(CNN)The mother of a quadriplegic man who police say was left in the woods for days cannot be extradited to face charges in Philadelphia until she completes an…,,,,\n12a3eec84bff4a1cfa3391479c9a259ecca5741b,\"(CNN)Malala Yousafzai's stellar career has included a Nobel Peace Prize. Last week, she made it into outer space. A NASA astrophysicist has named an asteroid a…\",,,,\n12d18fce81557ef7d4e34874e709376defd1819d,\"(CNN)Gastrointestinal illness has gripped 100 people on the cruise ship Celebrity Infinity, according to a report from the Centers for Disease Control. Of the …\",,,,\n130663882dcf622a6069d2ab429acde689b9f428,\"(CNN)\"\"Star Wars\"\" is once again back in our lives, the Burger-King couple helped us believe love can be found in fast food, and Mindy Kaling's brother had a sho…\",,,,\n17412737648b2cad59669560765fcb5169fc8116,(CNN)The FBI charged a Philadelphia woman on Thursday with trying to travel overseas to fight for ISIS. She's one of three women arrested this week on terror c…,,,,\n18e1af12d67995d1f20580b30bf7a7c8379a9009,\"(CNN)HBO just whetted our appetite for a new season of \"\"True Detective.\"\" The network released a teaser video for season 2 of the critically acclaimed show, and…\",,,,\n192bf513d8adb0c0dd49d0dae337632838a1090e,\"(CNN)Authorities identified and charged a man Monday in connection with the discovery of human remains in a duffel bag in Cambridge, Massachusetts, over the we…\",,,,\n1b2cc634e2bfc6f2595260e7ed9b42f77ecbb0ce,(CNN)He's a blue chip college basketball recruit. She's a high school freshman with Down syndrome. At first glance Trey Moses and Ellie Meredith couldn't be mo…,,,,\n1c26bc664022ab5ffb8bca0d077c5d72cac7976f,\"(CNN)In 2013, \"\"The Bible\"\" broke ratings records on the History Channel, so of course, a sequel was ordered up -- and this one is on NBC. The new miniseries fro…\",,,,\n1dd00c89d71a5611797bb34da8a6eada8f058405,\"(CNN)A year ago Bloomberg published a story with the following headline: Mike Pence, a Koch Favorite, Mulls 2016 Run for President. The story ticked off items …\",,,,\n1ecb11d97cc3290881a814fa863c1b06b6b96502,\"(CNN)The new emojis are here! On Thursday, Apple released a new version of its mobile operating system that includes more diversity than ever when it comes to …\",,,,\n202a51397a4de6483e6a7427d1952c46fca69d81,\"(CNN)When singer Avril Lavigne went missing from the music scene, there was tons of speculation. Was she pregnant? In rehab? Going through a split from her hus…\",,,,\n203886369feea77bbc35715e6d7e518b751f57de,\"(CNN)Seventy years ago, Anne Frank died of typhus in a Nazi concentration camp at the age of 15. Just two weeks after her supposed death on March 31, 1945, the…\",,,,\n20a6b5894c4cd75e32f6f4946467854aeb539337,\"(CNN)Two Alabama college students are accused of gang raping a woman while on spring break at Florida's Panama City Beach. Ryan Calhoun and Delonte Martistee, …\",,,,\n230c522854991d053fe98a718b1defa077a8efef,\"(CNN)Never mind cats having nine lives. A stray pooch in Washington State has used up at least three of her own after being hit by a car, apparently whacked on…\",,,,\n23b01320d93bb8a0fce96fb0dc37bcebf3f179cb,\"(CNN)The FBI has confirmed that one of its most wanted terrorists, the Malaysian bomb maker known as Marwan, was killed in an otherwise disastrous raid in the …\",,,,\n2549d3c10d5bc8ede708af559dd095271e0225e1,\"(CNN)The outlines of a nuclear deal with Iran are in place. Unfortunately, it seems like too many in President Barack Obama's administration have forgotten tha…\",,,,\n25a52d1de3a385d6d1405272f7dff0813fcd3b2d,\"(CNN)This is the end. Beautiful friend, the end. For the 1960s, the end arrived with -- depending on your ideals and your tribe -- either the Rolling Stones' A…\",,,,\n2af3d5505559f8c3d1728dbfac48da66b81af909,(CNN)Anyone who has given birth -- or been an observer of the event -- knows how arduous it can be. But to do it live on the Internet? With two hooves sticking…,,,,\n2b1b6a434b171e198413479aaba118f0cd20c843,\"Durham, North Carolina (CNN)President Obama's nomination of Loretta Lynch to become the country's first African-American woman attorney general is a historic p…\",,,,\n2b4eb5a283f51b54e1b0318936ae9bcfa70ce243,\"Kabul, Afghanistan (CNN)Three people were killed and five others were wounded Thursday afternoon when a group of armed assailants stormed into the attorney gen…\",,,,\n2bd8ada1de6a7b02f59430cc82045eb8d29cf033,\"(CNN)For the first time in eight years, a TV legend returned to doing what he does best. Contestants told to \"\"come on down!\"\" on the April 1 edition of \"\"The Pri…\",,,,\n2c05ddcc2bf50bd20dfc8c16f124d32867075b32,\"(CNN)Blues legend B.B. King was hospitalized for dehydration, though the ailment didn't keep him out for long. King's dehydration was caused by his Type II dia…\",,,,\n2dac7b4a9ed9eb9cfcabae0e8e0eb07abc5b8860,\"(CNN)After two days of deliberation, jurors found Dzhokhar Tsarnaev guilty on all counts in the Boston Marathon bombing. The verdict isn't surprising. What mig…\",,,,\n2f6106809de41d59f422d527900a6b344174c5b2,\"(CNN)A trip to a former heavyweight champ's gaudy, abandoned mansion. The tallest and fastest \"\"giga-coaster\"\" in the world. A dramatic interview with a famed sp…\",,,,\n2ffe3bdf91bdd8e12fc00fa02267545d8a0cb6da,\"London (CNN)The Pentagon released a map this week showing coalition forces have taken back 25-30% of Iraqi territory seized by ISIS. The map, above, shows gain…\",,,,\n32655a04c9e4733a1ae4b210a045bc6e0d443d85,Atlanta (CNN)A passenger on an Atlanta-bound Air Canada flight told a CNN reporter on the plane Friday that a stranger sitting behind him tried to choke him. O…,,,,\n32a7125a655a052b3ea62350a8e02f0245cc220e,\"(CNN)When Hong Kong police answered a call in the early hours of a Saturday morning last November, they encountered a grisly scene and an alleged crime that sh…\",,,,\n32f8af7757d529a19067a7a375316a0f5440c037,\"(CNN)In her 40 years living in Rochelle, Illinois, Cathy Olson had never seen a tornado that big. \"\"I saw the top of the funnel cloud, and it was absolutely mas…\",,,,\n33cab1f129c3b1f6578e597ea1a278a0c8338965,\"(CNN)That's some rich \"\"American Pie.\"\" The lyrics to the famed Don McLean song sold for $1.2 million Tuesday morning at an auction held by Christie's. \"\"Don McLe…\",,,,\n346c39e1a89203f1035541a114e7406521ff8b4e,(CNN)The commissioner-general of the United Nations Relief and Works Agency will make an emergency visit to the Yarmouk Palestinian refugee camp in Syria on Sa…,,,,\n357a3c6ad7f5add7f35198fa68585da8195367b4,\"(CNN)Residents of central Sanaa, the Yemeni capital, have learned the hard way that key strategic bombing targets are located in their neighborhoods: Detonatin…\",,,,\n36ac591f1b7a4eb01b7301b50912c5791c38386a,\"(CNN)Former Australia cricket captain and legendary broadcaster Richie Benaud has died at the age of 84. Benaud, whose witty one-liners from the commentary box…\",,,,\n37477ed1fc065f438021ee3b6d3e2b827e270353,(CNN)Sky watchers in western North America are in for a treat: a nearly five-minute total lunar eclipse this morning. Here's how it's unfolding: . It started a…,,,,\n3783ef06d42f795f34533caf346c2cb9d3c844dd,\"(CNN)A federal grand jury has charged millionaire real estate heir Robert Durst, a convicted felon, with unlawful possession of a firearm. In this week's indic…\",,,,\n384175be1c8d41610fbeddbd9d9cb46e716e2529,(CNN)Paul Walker is hardly the first actor to die during a production. But Walker's death in November 2013 at the age of 40 after a car crash was especially ee…,,,,\n386b182672cd041d574a3fe0e9ccf2f16b751f2e,\"(CNN)What do we have for the contestant on \"\"The Price Is Right\"\"? A brand-new car! Whoops. That wasn't supposed to happen. On Thursday's edition of the popular …\",,,,\n38a207accfb31afc694f16531d23d2cda79ac85d,\"(CNN)\"\"Jake the dog and Finn the human. The fun will never end. Adventure Time.\"\" So begins the dreamy theme song intro to the strangely addictive Cartoon Networ…\",,,,\n3bfe27dc86f0424787f32deb16df09a902c6a8e6,\"(CNN)It was like a scene out of \"\"Make Way for Ducklings\"\" on Tuesday on a rainy street in Washington. CNN Situation Room correspondent Brian Todd and photojourn…\",,,,\n3cf7f404fef8bef1cc9dab35b6931647a83c7ccd,\"Marseille, France (CNN)Investigators have collected all the main evidence from the site where Germanwings Flight 9525 crashed, a French national police officia…\",,,,\n3fbdee096ce9d027da681c5f9c89eb319ff21a9f,\"Havana, Cuba (CNN)All eyes are going to be on the new kid finally allowed to play and the big kid who for so long wanted nothing to do with him -- Cuba and the…\",,,,\n41592d02ca324abe370ff063962b97ca5d976e73,\"(CNN)\"\"Sell all that you own and distribute the money to the poor, and you will have treasure in heaven; then come, follow me,\"\" Jesus tells the rich man in one …\",,,,\n41c6edecee127c396d17e2e9115a4a89252cc52b,(CNN)The California Public Utilities Commission on Thursday said it is ordering Pacific Gas & Electric Co. to pay a record $1.6 billion penalty for unsafe oper…,,,,\n42c49513463e57bfb455edac643d5c05724940e0,\"(CNN)Lauren Hill, who took her inspirational fight against brain cancer onto the basketball court and into the hearts of many, has died at age 19. The Indiana …\",,,,\n43f18fc9b20fe64405d7f18a08fb8d9ef932ed8b,\"(CNN)A mammoth fire broke out Friday morning in a Kentucky industrial park, sending plumes of thick smoke over the area as authorities worked to contain the da…\",,,,\n4495ba8f3a340d97a9df1476f8a35502bcce1f69,\"(CNN)If you've been following the news lately, there are certain things you doubtless know about Mohammad Javad Zarif. He is, of course, the Iranian foreign mi…\",,,,\n44d681105bcab063dfa0c80ce9cf96393677f9cc,\"(CNN)A Connecticut teen who has been forced to have chemotherapy to treat Hodgkin lymphoma will remain in temporary custody of the state for the time being, ac…\",,,,\n454434c7bf77d898feba8ff0e38a2d1dd68c44ba,\"(CNN)\"\"Hamlet.\"\" \"\"Romeo and Juliet.\"\" \"\"A Midsummer Night's Dream.\"\" For centuries, these plays and three dozen more by William Shakespeare have formed history's mo…\",,,,\n469c6ac05092ca5997728c9dfc19f9ab6b936e40,\"Marseille, France (CNN)The French prosecutor leading an investigation into the crash of Germanwings Flight 9525 insisted Wednesday that he was not aware of any…\",,,,\n4bd20bce9066eb3e0950299a340faa935026fe5a,\"(CNN)Emy Afalava is a loyal American and decorated veteran. He was born in American Samoa, a U.S. territory since 1900. He has been subject to American law his…\",,,,\n4cc5744a14d8a07414760b271c1801c670149f68,(CNN)Blue Bell ice cream has temporarily shut down one of its manufacturing plants over the discovery of listeria contamination in a serving of ice cream origi…,,,,\n4fbf675fb79046440d1cf01dd4fc2e505f2b5169,\"(CNN)The terrorist group Al-Shabaab has claimed an attack on Garissa University College in eastern Kenya, in which many people have been killed and still more …\",,,,\n5139ccfabee55ddb83e7937f5802c0a67aee8975,\"(CNN)After a Russian fighter jet intercepted a U.S. reconnaissance plane in an \"\"unsafe and unprofessional manner\"\" earlier this week, the United States is compl…\",,,,\n5231a93ff48e3dcdc22ea9df981237c26a474714,\"(CNN)A hooded angel with black wings appeared on Tuesday near the spot where Walter Scott was shot and killed by a police officer in North Charleston, South Ca…\",,,,\n5362f24162b3ed6f36037319ee66fbaaddc50650,(CNN)Eyewitness video showing white North Charleston police Officer Michael Slager shooting to death an unarmed black man has exposed discrepancies in the repo…,,,,\n5493b9481b00e8ca9d83320d00abe09266bbeaef,\"Irbil, Iraq (CNN)ISIS claimed it controlled part of Iraq's largest oil refinery Sunday, posting images online that purported to show the storming of the facili…\",,,,\n574767c29dfee14ea227639f45387c07437a55e5,\"(CNN)Recently, Nashville's district attorney banned prosecutors from offering female sterilization in plea deals. Believe it or not, Nashville prosecutors have…\",,,,\n578677b3280b0f5ab8b45fdd948707262c9ffed3,\"(CNN)Over the last year more than 25,000 people, a population about the size of Key West, Florida, have fought Ebola infections. More than 10,000 have not surv…\",,,,\n58b9fcb9a3537d014d3499b0ad4d4123cfd3eac0,\"(CNN)After years of making the case that the education of athletes is paramount, the NCAA now says it has no legal responsibility to make sure education is act…\",,,,\n599bf6f13bc8477d50aa7599baf53123a6e57708,\"Hong Kong (CNN)Six people were hurt after an explosion at a controversial chemical plant in China's southeastern Fujian province sparked a huge fire, provincia…\",,,,\n5a4f7f0a9cc7a0e70ec80fd9238ed98b531ecbbb,(CNN)I'm haunted by the video of Officer Michael Slager firing eight shots at Walter Scott as he fled his encounter with North Charleston police -- his back tu…,,,,\n5a650587a76e9eb9c03612c7064bbee9f552ebec,(CNN)The VII Summit of the Americas was supposed to be all about the symbolic handshake between the United States and Cuba. But insert Venezuela into the mix a…,,,,\n61a6105642804ffdb55a3b78f74380f8d099cde6,\"(CNN)A nuclear submarine being repaired at a Russian shipyard has caught on fire, according to a law enforcement source speaking to Russia's state-run news age…\",,,,\n6222f33c2c79b80be437335eeb3f488509e92cf5,(CNN)Filipinos are being warned to be on guard for flash floods and landslides as tropical storm Maysak approached the Asian island nation Saturday. Just a few…,,,,\n6302a6cf8564e4bb4753e2dc3dae328f13edae50,\"(CNN)Deion Sanders is such a dad. The NFL legend called out Deion Sanders Jr. on Twitter for saying he only eats \"\"hood doughnuts.\"\" In response, the elder Sande…\",,,,\n6344c9689865cf86da50fbe90acf13c3407d5429,\"(CNN)For 12 years Adelma Cifuentes felt worthless, frightened and alone, never knowing when her abusive husband would strike. But as a young mother in rural Gu…\",,,,\n63e19d477469e39e3fc4143919e6a5acb58dbc23,\"(CNN)Police in the Indian city of Malegaon, in the western state of Maharashtra, are requiring identity cards for an unusual group of residents: Cattle. Follow…\",,,,\n63ee59d69982f3f73bb33da9880747c8138dbea4,\"(CNN)Police in India are putting aside their batons in favor of an overhead solution to angry and unruly crowds: pepper-spraying drones. Yashasvi Yadav, Senior…\",,,,\n646cba2e8b30945a2079ec4c671740d5db5676e2,\"(CNN)\"\"A long, long, time ago...\"\" Those five words, when uttered or sung, makes baby boomers immediately think of Don McLean's pop masterpiece \"\"American Pie.\"\" I…\",,,,\n68382576e6999d52ff2d16777add23a5cea605f0,\"London (CNN)It wasn't messrs Clooney, Pitt and their nine accomplices who sailed down an elevator shaft and cracked open dozens of safety deposit boxes at a Lo…\",,,,\n695fecd970abb3f1679615e6d2cdd9d65f94f9f4,\"(CNN)Bring your own beaker, goblet or vase and slurp it up. 7-Eleven is hosting the first Bring-Your-Own-Cup Slurpee Day at United States stores from 11 a.m. t…\",,,,\n69af3b9fc4ba1fa6bd272c82d17ec318da5ff97a,\"(CNN)When I was elected to the Kentucky State Senate in 1967, I became the first woman and the first person of color to serve in the body. Five decades later, …\",,,,\n69e1f777e41bf67d5a22b7c69ae76f0ae873cf43,(CNN)What was supposed to be a fantasy sports car ride at Walt Disney World Speedway turned deadly when a Lamborghini crashed into a guardrail. The crash took …,,,,\n6c4ed9b048e05aebceee87dc492ef555e0dca128,(CNN)It took prosecutors months to present 131 witnesses to support their claim that former NFL star Aaron Hernandez killed semi-pro player Odin Lloyd. On Mond…,,,,\n6ce9f3ddbed94dc2223aea4b851ebedbb67f8c56,\"(CNN)Last month Wu Rongrong was taken into custody for planning to protest on International Women's Day against sexual harassment in China. Since then, the Chi…\",,,,\n6da088a4a4c512402649d361e95ac8b256ddf529,\"Des Moines, Iowa (CNN)Martin O'Malley told reporters in Iowa on Friday that inevitability -- a term bandied about regarding Democratic presidential frontrunner…\",,,,\n72610cfcc7b8bc1e90a08d8cac4f7b53a1e1389b,\"(CNN)Ursula Ward kept repeating her son's name -- Odin. She steadied herself against the podium in the Fall River, Massachusetts, courtroom and occasionally pa…\",,,,\n72df456684b62acd43db2ac9bb23f509b9b53942,\"Cedar Falls, Iowa (CNN)As aides politely tried to rush Ted Cruz from an event in Cedar Falls to one in Cedar Rapids, Iowa, on Thursday, the presidential candid…\",,,,\n74b24c60df8b6c07fc2714997a7cb0b59c4d2e2a,\"(CNN)For superhero fans, the cup runneth over. Most of us know the members of the Avengers by now: Iron Man, Captain America, Hulk and the rest, and the fact t…\",,,,\n74e99c26d8bb7ef87afa0784082c2918927e753e,\"(CNN)Desperate migrants from Africa and the Middle East keep heading to Europe, with 978 rescued Friday in the Mediterranean Sea, the Italian Coast Guard said …\",,,,\n76a518ad3aa590fbac1b9e6e68634fe4709270ed,(CNN)A French-language global television network regained control of one of its 11 channels Thursday after a cyberattack a day earlier crippled its broadcasts …,,,,\n78a670384c908a15617cab7f575fd50dc5999937,\"(CNN)Film director David Lynch has confirmed he will no longer direct the revival of \"\"Twin Peaks\"\" -- a cult 1990s television show that was set to return in 201…\",,,,\n7b8bb308a48e838c9d7f3fee08d4670efd305463,(CNN)The nation's top stories will be unfolding Tuesday in courthouses and political arenas across the country. Massachusetts is hosting two of the highest-pro…,,,,\n7d5b44afe30b34c03f77f0e5ebf5eb88498ee71c,(CNN)Tornado sirens blared Wednesday night in Kansas as several storms brought reports of twisters. Spotters reported a tornado about 6 miles northwest of Godd…,,,,\n7e4d197d5fe8272c0471199cf9987f3786a80c2b,(CNN)Jodi Arias was sentenced to life in prison Monday for the gruesome 2008 murder of her ex-boyfriend Travis Alexander. Maricopa County Judge Sherry Stephens…,,,,\n7fb513044e371fa3354fc08eaac50975cf65666a,\"(CNN)The presence of a harmful pesticide at a luxury villa in the U.S. Virgin Islands may have resulted in the illness of a Delaware family, the U.S. Environme…\",,,,\n8012ab9261e117ab47a2759b3c0b628f2a007a82,\"(CNN)According to an outside review by Columbia Journalism School professors, \"\"(a)n institutional failure at Rolling Stone resulted in a deeply flawed article …\",,,,\n82461522ee90f8f5be2ec226e2016ad40588866d,\"Atlanta (CNN)It was a scene worthy of any top cop show on TV -- bullets flying, banged-up cars and the FBI chasing an armed robbery suspect. In the end, two ag…\",,,,\n837970f6b544e927c6fe2261a81f74f8313f2bdf,(CNN)Getting caught napping on the job is never good. Getting caught napping on the job in the cargo hold of a plane takes it to a whole different level. Alask…,,,,\n84c9dd43080eba5a11a28798a570ccaea75ff42d,\"(CNN)Craig Hicks, who is charged in the deaths of three Muslim college students in Chapel Hill, North Carolina, earlier this year, can face the death penalty, …\",,,,\n84dabfdd73c25b81b7ea0ce23e74638cc6c559ce,\"(CNN)An Amnesty International report is calling for authorities to address the number of attacks on women's rights activists in Afghanistan. The report, entitl…\",,,,\n8610ead0a43054be202a1fc756620415a6d572fe,\"(CNN)Recently, a New York judge issued an opinion authorizing service of divorce papers on a husband completely via Facebook. What exactly is \"\"service of proce…\",,,,\n88e7dac40f3e6c159e4edc0747d0cc0f50886fbb,\"(CNN)The Rev. Robert H. Schuller, California televangelist and founder of the television ministry \"\"Hour of Power,\"\" died Thursday, according to his family. He w…\",,,,\n8911c07945c382306d5aba8cf6c513c0c8ce61d0,(CNN)Four workers died in a massive oil rig fire that raged for hours off the coast of Mexico Wednesday. Mexican state oil company Pemex said 45 workers were i…,,,,\n89daa80db49b6e36c1cd0bde9b253ca7fa143811,\"(CNN)A new Kansas law banning a common second-term abortion procedure is the first of its kind in the United States. The law, signed by Kansas Gov. Sam Brownba…\",,,,\n8ba20bec4358b39f84a8a07264f71566bb3c5e8e,(CNN)A popular Chinese television host known for impromptu satire is now the subject of controversy after being caught on camera cursing the late Chairman Mao …,,,,\n8be49747e364357d7c5d32fca516ec230e5083ed,\"(CNN)A University of Kentucky basketball player is apologizing for the \"\"poor choice of words\"\" he muttered under his breath after the team's stunning loss to Wi…\",,,,\n8ec9aabea31ae79f0d429e9ab2e4a1a4f8d1b605,\"(CNN)For those wondering if we would ever hear from the Bluth family again, the answer would appear to be yes. \"\"Arrested Development\"\" executive producer Brian …\",,,,\n934a2d9235022c9e8a6aeec5e7e941b127569b76,\"(CNN)The world's biggest and most powerful physics experiment is taking place as you read this. The Large Hadron Collider (LHC), a particle accelerator and the…\",,,,\n9378a8d4b9a6d21fed266f63692b1da961172363,\"Washington (CNN)An Iranian military observation aircraft flew within 50 yards of an armed U.S. Navy helicopter over the Persian Gulf this month, sparking conce…\",,,,\n947b339a524aac1f43384a8c68e5a3a624ed309f,\"Boston (CNN)Guilty across the board. But will he face death? After deliberating for 11½ hours, jurors found Dzhokhar Tsarnaev guilty on Wednesday of all 30 cou…\",,,,\n947eeb8bbfec54f46a6ee0dd066b7bd6007dc630,\"New Delhi, India (CNN)Police have arrested four employees of a popular Indian ethnic-wear chain after a minister spotted a security camera overlooking the chan…\",,,,\n970f75d6e5b23e11c15b05c59a109ccbb160b289,\"(CNN)Since Iran's Islamic Revolution in 1979, women have been barred from attending most sports events involving men. But the situation appears set to improve …\",,,,\n978a6fc6a910592f6be5add104474e7d9ba428c5,New Delhi (CNN)An Indian software pioneer and nine others have been sentenced to seven years in jail for their role in what has been dubbed India's biggest cor…,,,,\n97c0670cd614dc25fe1371f8c5e03b043f0efdc9,\"(CNN)All Elizabeth Sedway wanted was to leave paradise and head home. But she couldn't. Why? Because, according to her, she has cancer. That's what she said in…\",,,,\n996940764a066a9c16f622c873ad041ac5521fa3,\"(CNN)Kayahan, one of Turkey's best-loved singers and songwriters, died of cancer Friday at the age of 66. He had performed most recently in Istanbul on Valenti…\",,,,\n9a2ffa6ad643d52e6b99b0b08e497f41ba23b2b2,\"Washington (CNN)Israeli Prime Minister Benjamin Netanyahu criticized the deal six world powers struck to thwart Iran's nuclear ambitions, saying he sees better…\",,,,\n9b54bd1709bdcad40b3d57f57f59a7631868132b,Washington (CNN)Washington was rocked late Thursday by shootings -- one at the gates of the U.S. Census Bureau's headquarters and another in a popular area pac…,,,,\n9bea5cbe9a0184eec4086a08452066dead185173,\"(CNN)Imprisoned soldier Chelsea Manning can now communicate with the world -- in 140 characters or less. Manning, who is serving a 35-year prison sentence for …\",,,,\n9dc3325d901844d26713549fd93f7b42b70efe5b,\"(CNN)Hip-hop star Nelly has been arrested on drug charges in Tennessee after a state trooper pulled over the private bus in which he was traveling, authorities…\",,,,\n9eb7dd37e50b863e99b554ed340e7b766c1b6329,(CNN)A Delaware father is in stable condition and improving as his two boys remain in critical condition after they became sick -- perhaps from pesticide expos…,,,,\n9f051fe922a8f45b315a366a5af1aab58d93f050,\"(CNN)Just as mimeograph machines and photocopiers were in their day, online activity -- blogs, YouTube channels, even social media platforms like Facebook and …\",,,,\n9fbd984bd3a49c69074601a62d5d1d05bbeb2237,\"(CNN)Just kill it already. That was the sentiment of many \"\"Vampire Diaries\"\" fans on Tuesday after star Nina Dobrev announced she will be leaving the CW show at…\",,,,\na168d9139450678679e8dd7ddfa9fd5b8f8d1c7b,\"(CNN)Even in the horror of Syria's civil war, there are few places that showcase the scale of the destruction -- and the senselessness of the loss of life -- m…\",,,,\na2363d02185ba79b223bf7290b390cf65f81dd50,\"(CNN)Are we alone in the cosmos? Or might there be intelligent life elsewhere? Last week, NASA scientists discussed in very concrete terms the steps to discove…\",,,,\na2a2ac30f4650050ee114a48316e7451936692ca,\"(CNN)A 32-year-old Massachusetts man is facing murder charges, authorities said Wednesday, four days after another man's remains were found in a duffel bag. Th…\",,,,\na2b66e4376258cd41604d654a395f7540d2e8514,\"(CNN)Kanye West has settled a lawsuit with a paparazzi photographer he assaulted -- and the two have shaken on it. The photographer, Daniel Ramos, had filed th…\",,,,\na2ee2faeb2dc4e5eab43b1d14233c4ac658f0a8f,\"(CNN)President Barack Obama tied himself to the mast of a nuclear deal with Iran even before he became the Democratic candidate for president. Reaching a good,…\",,,,\na37f0005819d1973a72a8bac4cbee8bbb28c16dd,(CNN)It's a good thing -- a lucky thing -- that a bystander had the courage and presence of mind to record the shocking video that shows a white police officer…,,,,\na38e72fed88684ec8d60dd5856282e999dc8c0ca,\"(CNN)Five Americans who were monitored for three weeks at an Omaha, Nebraska, hospital after being exposed to Ebola in West Africa have been released, a Nebras…\",,,,\na43893ac704663476a285673392de84c0c17d4e5,\"(CNN)Mark Ronson's \"\"Uptown Funk!,\"\" featuring Bruno Mars, is the longest-leading Billboard Hot 100 of the 2010s, ruling the chart for a 13th week. It's also jus…\",,,,\na8c1b6fc67380b8b4a542a6a2512a2f3c2d07d45,\"(CNN)Pardon us, \"\"Lost\"\" fans, but April 8 wasn't only your day. Yes, we know the significance of April 8, 2015, and the alignment of 4:23.42 p.m. on that date t…\",,,,\nafd04a7bf645f376ba6d6ba5880a4725431793c1,\"(The Hollywood Reporter)\"\"Grace of Monaco,\"\" starring Nicole Kidman as star-turned-princess Grace Kelly, is heading straight to Lifetime. The critically-panned f…\",,,,\nb10db3ae83abe1eec4236126d9c195ed7db90cc3,\"(CNN)One of Tokyo's most prominent districts has taken a small, but potentially significant step to recognizing same-sex unions in Japan. The government of Shi…\",,,,\nb21cd549314996de79ba0ca2636c8ced66468267,\"Los Angeles (CNN)It's more than just one state's internal problem. The historic California drought hurts the rest of the union, too. That's because California …\",,,,\nb3619076f8eba9b3dcd53d10a5c54b590bfab1e2,\"(CNN)The University of Michigan has decided to proceed with a screening of the film \"\"American Sniper\"\" despite objections from some students. More than 200 stud…\",,,,\nb540aeae06b011f092bff5efc36df3bdc64215cb,\"(Billboard)From Channing Tatum twerking for Jennifer Lopez to host Amy Schumer's archery fail, there were plenty of highlights and misfires from the 2015 MTV M…\",,,,\nb7c282a0373913300e4cb1d5bb529c068b550618,(CNN)Those poor fish must have been wondering what the heck was happening to them. The Oregon Parks and Recreation Department has reported that a section of a …,,,,\nb882ed05925f8879660ec4f9efdcded1d5e45561,\"(CNN)One year after it was perpetrated, the kidnapping of nearly 300 schoolgirls by a jihadist group in Nigeria remains a crime almost too horrifying to compre…\",,,,\nb8e56b3cb5faa8d68341738b5708168e5cf18e2f,\"(CNN)Easter is unique on the Christian calendar, a major point in the cycle of the religious year, and one that has always been able to resist the commercializ…\",,,,\nbbdc0e58a203b016166f896936d9862ae9fd11be,\"Nairobi, Kenya (CNN)Kenya froze dozens of accounts linked to suspected terror supporters after militants massacred 147 people last week at a university in Gari…\",,,,\nbbe26fc38175793719dd50c23605f1c96c579b08,\"(CNN)What would you do if a complete stranger asked you for $100, or offered you an apple in a parking lot without explanation? These are only two of the 100 c…\",,,,\nbe5d8524bf21d485e203425d764ed60a3bf71b8d,\"(CNN)No prostitutes. No ifs, ands or buts -- and yes, that includes when and where prostitution is perfectly legal. That was the message Friday from Attorney G…\",,,,\nc0340e53445e1d38aaf9a2681c2ae2e950a98860,\"(CNN)The killing of an employee at Wayne Community College in Goldsboro, North Carolina, may have been a hate crime, authorities said Tuesday. Investigators ar…\",,,,\nc222979bd1cfbc7d3ff821e9c738e3dbd29b14f4,\"(CNN)On May 28, 2014, some 7,000 people gathered in a stadium in China's northwestern Xinjiang region. But they had not come to watch the local football team o…\",,,,\nc27cf1b136cc270023de959e7ab24638021bc43f,\"(CNN)A Duke student has admitted to hanging a noose made of rope from a tree near a student union, university officials said Thursday. The prestigious private …\",,,,\nc34d84d38ccfd021ba0b3712dc23feadd455af5b,\"(The Hollywood Reporter)Richard Dysart, the Emmy-winning actor who portrayed the cranky senior partner Leland McKenzie in the slick, long-running NBC drama \"\"L.…\",,,,\nc5390093fa60d62c4dc9013977ca09a8edf7c32b,\"(CNN)Easter is a cornerstone event in the Christian faith, but it's surrounded by interesting quirks. It celebrates the completion of Christ's mission of salva…\",,,,\nc67a5be9af71197193435ab7073e964298851089,(CNN)Comedian Chris Rock made light of racial disparities in police treatment of whites and blacks with a tongue-in-cheek guide to not being beaten by the poli…,,,,\nc71b08cede3b6edb662a2f2c95f8b543fa65e405,\"Atlanta (CNN)Robert Lewis Burns Jr., the original drummer in Southern rock band Lynyrd Skynyrd, died Friday night in a car crash, a Georgia State Patrol spokes…\",,,,\nc7a2fff8169408776d5f35229fb5c3fcb9b2523c,\"(CNN)#UporDown? That's the trending question on social media, thanks to a photo of a cat coming down some stairs. Or is it going up some stairs? (And you thoug…\",,,,\nc7caf9181c2e94a79d9102da6e11cde48c880aa5,\"(CNN)The United States and its negotiating partners reached a very strong framework agreement with Iran in Lausanne, Switzerland, on Thursday that limits Iran'…\",,,,\nc811d9ae87c9bfbf31481bf8a916dc0b8e083a60,(CNN)There was a larger message in the article about a purported gang rape that Rolling Stone retracted on Sunday night -- a part of the story that was never d…,,,,\nca1c3b587b7216654c8c719a66738de80d495179,\"(CNN)Chris Copeland of the Indiana Pacers was stabbed after leaving a trendy New York nightclub early Wednesday, and two Atlanta Hawks -- who had just finished…\",,,,\ncb56840e21bbf8a71cd0337b5908d3f783862ae0,\"(CNN)They're not gonna take it anymore. Really. Twisted Sister says that its 2016 tour will be its last, according to a press release. Next year marks the band…\",,,,\ncc86a588b4e4e038e2591c363b4b895e46edbeda,\"(CNN)Buzz has surrounded HBO's new documentary \"\"Going Clear: Scientology and the Prison of Belief,\"\" but Scientologist John Travolta is not a fan. Travolta told…\",,,,\ncd745b3c66da579d0538e668fde2922c0b3bc9f5,\"(CNN)Fans of the late actor Paul Walker knew that watching him in \"\"Furious 7\"\" would be bittersweet. Even so, many moviegoers said the final scenes of the new f…\",,,,\ncf3f7388c3b51980ead39a8e701c7a4860d9f77c,\"(CNN)Where do you go from here? The fourth season of \"\"Game of Thrones\"\" saw massive battles, major deaths (Tywin!) and White Walkers, but what can fans expect S…\",,,,\ncf7094270cbb4c8fad5029bd2c2da694f1411870,\"(CNN)It's the kind of thing you see in movies, like Robert Redford's role in \"\"All Is Lost\"\" or Ang Lee's \"\"Life of Pi.\"\" But, in real life, it's hard to swallow t…\",,,,\nd71e9a0213b10081afe70fa288f6fd351d942468,\"(CNN)\"\"Star Wars\"\" fans will get more than they bargained for when the saga comes to digital HD on Friday. The collection of the first six \"\"Star Wars\"\" movies wil…\",,,,\nd8aee1ae4b1130afbf0572a49afc2f5366b181c9,(CNN)Rebekah Gregory blinked back tears as she thought about the verdict. It had been almost two years since Dzhokhar Tsarnaev and his brother planted bombs at…,,,,\nd96576c5c5e667d33e2f2117584bf796bd66389a,\"Beijing (CNN)China's state prosecutors on Friday formally charged the country's former security czar with accepting bribes, making him the highest-ranking Chin…\",,,,\nda9588f556b1c3575e7ad2109967fa3156699813,\"(CNN)For more than four days, police say, a 21-year-old quadriplegic with cerebral palsy was left lying in the woods of Philadelphia's Cobbs Creek Park with on…\",,,,\ndc833f8b55e381011ce23f89ea909b9a141b5a66,\"(CNN)As goes Walmart, so goes the nation? Everyone from Apple CEO Tim Cook to the head of the NCAA slammed religious freedom laws being considered in several s…\",,,,\ndc8bb8429f624c4cceea3caae72874acb85e69b3,\"(CNN)I remember the day I stopped praying. It was the day after my little brother, Jimmy, died of cancer. He was 25. I was so angry at God. I was 27 at the tim…\",,,,\ndd4f726200355d742f631777aaa7b265533c0baf,\"(CNN)Their relationship led to jail time for her, but Mary Kay Letourneau Fualaau wants the world to know that she and her husband, Vili Fualaau, are still hap…\",,,,\ne21f3aefeb41b20bc197297ad55d2e2a8933fc45,(CNN)Hillary Clinton finally answered the question we've all been asking for years: Will she run for president in 2016? With official news of her candidacy jus…,,,,\ne2706dce6cf26bc61b082438188fdb6e130d9e40,\"(CNN)Governments around the world are using the threat of terrorism -- real or perceived -- to advance executions, Amnesty International alleges in its annual …\",,,,\ne2bccd4dec93c9bb7b327827dae004c2d494ec31,\"(CNN)The classic video game \"\"Space Invaders\"\" was developed in Japan back in the late 1970's -- and now their real-life counterparts are the topic of an earnest…\",,,,\ne30518a464ea7096b1aa5a17b45570631e3cf080,\"(CNN)Boston native Mark Wahlberg will star in a film about the Boston Marathon bombing and the manhunt that followed, Deadline reported Wednesday. Wahlberg's f…\",,,,\ne3f8ceb7a6271bb978b2bb47978054f58390852e,\"Waterloo, Iowa (CNN)Martin O'Malley and Jim Webb share little in common. Both Democrats are toying with a presidential run, both are facing long odds in that e…\",,,,\ne4fcad9e8cf8acbf076000d7232e9513dafb6743,\"(CNN)Nine British citizens were arrested in Turkey on Wednesday, suspected of trying to cross illegally into Syria, the Turkish military said on its website. T…\",,,,\ne65440d2469c8d9fc44b6121ca6e7fd25e272eab,\"(CNN)The United States Department of Justice has named a new defendant in the war on drugs, and the charges are serious indeed. A 15-count indictment filed in …\",,,,\ne67604ecb75aa21391e1d15a577d16b8db990de5,(CNN)One hundred and forty-seven victims. Many more families affected. Even more broken hopes and dreams. As Kenyans mourned those killed last week in one of t…,,,,\ne6c7c16699d2400824d9ea25f8dca04c575ba677,\"(CNN)When photographer Johan Bavman became a father for the first time, he took more than a passing wonder about how his native Sweden is said to be the most g…\",,,,\ne709f9942da05f8747aa6bc61952de27090512ac,\"Washington (CNN)President Barack Obama says he is \"\"absolutely committed to making sure\"\" Israel maintains a military advantage over Iran. His comments to The Ne…\",,,,\ne8c90d557031700caa1afb66dfc85358ef719108,\"(CNN)The United States has seemingly erupted this week about what it means to live your religion, especially in Indiana, where its new Religious Freedom Restor…\",,,,\neaf4a7864208468af3cdc858185b807d54110e95,\"(CNN)Five young Chinese feminists, whose detention has provoked an international outcry, may face up to five years in prison over their campaign for gender equ…\",,,,\neb39e1395ad10fd27f5688d5f7f589e1eac61738,\"(CNN)Tejano star Selena, who died 20 years ago, is coming back in a big way: with a hologram-like figure. Billboard reports that the singer's family is creatin…\",,,,\nec4b5fef725b4cc81545689603ff84c8e19bd6dc,\"(CNN)Michele Bachmann is comparing President Obama to the co-pilot of the doomed Germanwings flight. \"\"With his Iran deal, Barack Obama is for the 300 million s…\",,,,\necb2616fc4fbb5b42ee775ed80b21f08b6e304e8,\"(CNN)A year after its Cannes debut and finally seeing a theatrical release, \"\"Lost River\"\" is still causing quite a stir. Booed at its premiere and mocked by rev…\",,,,\nee17dfb574feca82ccac5689595e47483bd23f12,\"London (CNN)A 19-year-old man was charged Wednesday with terror offenses after he was arrested as he returned to Britain from Turkey, London's Metropolitan Pol…\",,,,\neeafdc8b2d8130cabda5aafe352eab1198d0b9f8,\"(CNN)If you're famous and performing the American national anthem, be prepared to become a national hero or a national disgrace. Facts are facts. Just ask Vinc…\",,,,\nef92201afc2d9a4aa64448a9f5ae8b6a712fa9e4,\"(CNN)The graffiti, written in a French chalk quarry and dating back almost 100 years, is plain and stark. \"\"HJ Leach. Merely a private. 13/7/16. SA Australia,\"\" …\",,,,\nf001ec5c4704938247d27a44948eebb37ae98d01,\"(CNN)The Palestinian Authority officially became the 123rd member of the International Criminal Court on Wednesday, a step that gives the court jurisdiction ov…\",,,,\nf1c555fe64f94df1f8c6afecf1ae4c0d78f6efa8,(CNN)Anthony Ray Hinton is thankful to be free after nearly 30 years on Alabama's death row for murders he says he didn't commit. And incredulous that it took …,,,,\nf309d4d0aabf03a015bb1125544d916aa6fe520d,\"(CNN)Danny Kahneman, my good friend and co-author who got a Nobel Prize in economics, once helped to run an experiment involving patients undergoing colonoscop…\",,,,\nf555b81fb888354a9a83ba9acc1bdb18791441ca,\"(CNN)Saturday at the Masters, like any PGA tournament, has been dubbed 'Moving Day'. It's the day after the fat has been cut and the big dogs make their move u…\",,,,\nf66c8ff2cad2a7c8fcfae64e5e00f0bce75334b2,\"New York (CNN)When Liana Barrientos was 23 years old, she got married in Westchester County, New York. A year later, she got married again in Westchester Count…\",,,,\nf78024d271fd21f0667f5da6843516314af71f8f,(CNN)Standing up for what you believe. What does it cost you? What do you gain? Memories Pizza in the Indiana town of Walkerton is finding out. The family-run …,,,,\nf78fb08d7ccc8bf7d4a376d5a885c5ab54026a6f,\"(CNN)You may know Mindy Kaling from Fox's cult hit comedy \"\"The Mindy Project,\"\" in which she plays Mindy Lahiri, a perky, quirky OB/GYN juggling her career and …\",,,,\nf7c2eb465479b965669b81535234e24735915ebf,(CNN)A high temperature of 63.5 degrees Fahrenheit might sound like a pleasant day in early spring -- unless you're in Antarctica. The chilly continent recorde…,,,,\nf8e429a6906f299a0925f6d70e2570834a7b8dc6,\"(CNN)Do you remember the talk about plans for Iraqi-led force to try to take back Mosul this spring? Well, you might want to forget it. Nearly three months aft…\",,,,\nf97442bee2acf684b1b8d5e653acea2307fc5dad,\"(CNN)Irish betting company Paddy Power is backtracking after tweeting that \"\"Newcastle have suffered more Kop beatings over the last 20 years than an unarmed Af…\",,,,\nf97b9b19e5a90dce0fc0b098f2a7f70ec36445fb,\"(CNN)Police added attempted murder to the list of charges against the mother of a quadriplegic man who was left in the woods for days, Philadelphia police spok…\",,,,\nf9f5d81bc74d6cf6d713d6fa6be4a30427b46e68,\"Seoul, South Korea (CNN)The man accused of stabbing U.S. Ambassador Mark Lippert in Seoul last month is now charged with attempted murder, a South Korean court…\",,,,\nfcd69b35b0bdae540d8357d0029369ab3cef1363,\"(CNN)The first daughter to be married from the hit reality show \"\"19 Kids and Counting\"\" has also become the first mother. People magazine reports that Jill (Dug…\",,,,\nfd0e8622b9ee38d1d6fff2fff59f0566f1a2f8f7,\"(CNN)Universal's \"\"Furious 7\"\" continues to build momentum at the Friday box office for a weekend debut in the $135 million-$138 million range, the largest openi…\",,,,\nff42fad959e8b522b562b7b715c8d558270a79f2,\"(CNN)Just as the agency begins to recover from a series of high-profile missteps, the Secret Service is facing yet another scandal. A female employee accused X…\",,,,\nff4cf78e837bd36ead5799c8051d22a8d7b9b178,(CNN)Hillary Clinton is finally announcing her candidacy for the 2016 presidential election. Although she has watched her standing in the polls sag in recent m…,,,,\nff866754ef03f2e2e4a2148c6a8ef2b8bda84832,(CNN)Change is coming to Ferguson. In the next few weeks the Department of Justice (DOJ) will begin to negotiate in earnest with the city to restructure the po…,,,,\nff9c1536bfa6ee669b800b6e9db04d9a9751dda1,\"Abu Dhabi, United Arab Emirates (CNN)Lost luggage after a long flight is a common, frustrating occurrence of modern air travel. And sometimes, airlines lose th…\",,,,\nffff11a2f44d731cd80c86819a89b7e227581415,\"Norfolk, Virginia (CNN)The second mate of the Houston Express probably couldn't believe what he was seeing. Hundreds of miles from land there was a small boat …\",,,,\n"
 };

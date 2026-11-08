@@ -7,9 +7,16 @@ Two inputs are the harness's own printed answers, saved first (both slow to comp
     evh models > build/models.txt
     evh goals --goal news_summary_cnn > build/goal_cnn.txt
     evh goals --goal triage_orrery > build/goal_triage.txt
+    python workbench/read_sources.py                            (build/source_previews.json)
+    evh pair-test --dataset-id cnn_dailymail_200 --a <arm> --b cnn_bart_l_n200_v1 --runs-dir data/runs-linux \
+        --metric coverage, each local arm, after a "== <arm>" line   (build/pair_linux.txt)
+    evh inspect --sheet --runs triage_baseline_pro_v2data_v1 --dataset-id orrery_triage_v1_labelled_v2 \
+        --wrong-against gold_orrery_triage_v1_labelled_v2 --csv build/prod_wrong.csv --fill label
+    evh label-sheet --dataset-id cnn_dailymail_200 --out build/label_sheet_cnn200.csv --items all
     python workbench/mock_data.py > workbench/mock.js          (all from harness/)
 """
 
+import csv
 import json
 import re
 from pathlib import Path
@@ -191,6 +198,36 @@ for key in ("fmt_narration", "fmt_label", "fmt_markdown", "fmt_bullets", "fmt_pa
     text = "".join(re.findall(r'"((?:[^"\\]|\\.)*)"', m)).replace('\\"', '"')
     modes.append({"id": key.removeprefix("fmt_"), "description": text})
 
+# the other sources as they answered (workbench/read_sources.py)
+sources = json.loads((H / "build" / "source_previews.json").read_text())
+
+# a round's own runs: the local arms re-run on one Linux machine, and the paired test against bart_l re-run there
+pairs, cur = {}, None
+for line in (H / "build" / "pair_linux.txt").read_text().splitlines():
+    if line.startswith("== "):
+        cur = line[3:].strip()
+    elif cur and "delta (A - B)" in line:
+        pairs.setdefault(cur, {})["delta"] = float(line.split()[-1])
+    elif cur and "sign-flip p" in line:
+        pairs.setdefault(cur, {})["p"] = line.split("sign-flip p")[1].split("(")[0].strip()
+reruns = {}
+for rd in sorted((D / "runs-linux").glob("cnn_*")):
+    met = json.loads((rd / "metrics.json").read_text())
+    lat = sorted(o.get("latency_ms") or 0 for o in map(json.loads, (rd / "predictions.jsonl").read_text().splitlines()))
+    reruns[met["config_id"]] = {"run_id": met["run_id"], "coverage": round(met["scores"]["coverage"], 4),
+                                "p50_ms": lat[len(lat) // 2], "created_at": met["created_at"], **pairs.get(met["config_id"], {})}
+
+# production's wrong decisions: `evh inspect --sheet --wrong-against` (build/prod_wrong.csv)
+with (H / "build" / "prod_wrong.csv").open(encoding="utf-8-sig", newline="") as fh:
+    wrong_rows = list(csv.DictReader(fh))
+prod_arm = "triage_baseline_pro_v2data_v1"
+wrong = [{"id": r["item_id"], "decided": r[prod_arm], "people": r["label: gold_orrery_triage_v1_labelled_v2 (person · owner)"],
+          "cost": r[f"{prod_arm}: triage_cost"], "date": r.get("field: decision_date"), "stage": r.get("field: stage")}
+         for r in wrong_rows]
+
+# the label sheet `evh label-sheet --dataset-id cnn_dailymail_200 --items all` writes
+sheet = (H / "build" / "label_sheet_cnn200.csv").read_text(encoding="utf-8-sig")
+
 out = {
     "goal": {k: goal.get(k) for k in ("goal_id", "title", "statement", "decision")}
     | {"measure": goal["success_criteria"]["primary"]["measure"],
@@ -219,6 +256,10 @@ out = {
     "production": production,
     "modes": modes,
     "axes": goal["success_criteria"].get("axes") or {},
+    "sources": sources,
+    "reruns": reruns,
+    "wrong": wrong,
+    "sheet": sheet,
 }
 print("// The Workbench mockup's data, read from this project by its extractor (never invented).")
 print("window.MOCK = " + json.dumps(out, indent=1, ensure_ascii=False) + ";")

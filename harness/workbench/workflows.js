@@ -50,34 +50,63 @@
   // ── step 2 from the other sources: the same four parts ────────────────────
   // what each source asks, with the example its own module documents (harness/evaluation_harness/sources/*.py)
   const SRC = {
-    folder: { name: "A folder of files", fields: [["path", "raw/tickets", "the folder, on the server"], ["glob", "*.txt", "which files are items"], ["recursive", "false", "also read the folders inside"]] },
+    folder: { name: "A folder of files", fields: [["path", "data/sources/cnn_dailymail_20", "the folder, on the server"], ["glob", "*.txt", "which files are items"]] },
     manifest: { name: "A table", fields: [["path", "items.csv", "a .csv or .jsonl: item_id and source_url per row; other columns are fields"]] },
-    croissant: { name: "Croissant", fields: [["url", "https://…/croissant.json", "the dataset's Croissant description"], ["record_set", "default", "which record set (default: the first)"], ["text", "text", "the field that is an item's text"], ["id", "id", "the field that is an item's id"]] },
-    zenodo: { name: "Zenodo", fields: [["record", "6857505", "the record id: each version has its own"], ["file", "comments.csv", "which file of the record"], ["text", "comment", "the column that is an item's text"]] },
+    croissant: { name: "Croissant", fields: [["path", "build/cnn_dailymail_20.croissant.json", "the dataset's Croissant description, a file or a url"], ["text", "text", "the field that is an item's text"], ["id", "item_id", "the field that is an item's id"]] },
+    zenodo: { name: "Zenodo", fields: [["record", "10157504", "the record id: each version has its own"], ["file", "sts_gold_tweet.csv", "which file of the record"], ["text", "tweet", "the column that is an item's text"], ["id", "id", "the column that is an item's id"]] },
     openml: { name: "OpenML", fields: [["dataset", "61", "its OpenML id: each version has its own"], ["text", "class", "the column that is an item's text"]] },
     kaggle: { name: "Kaggle", fields: [["ref", "uciml/iris", "owner/slug"], ["version", "2", "default: the current one, recorded either way"], ["file", "Iris.csv", "the file inside it"], ["text", "Species", "the column that is an item's text"]] },
   };
   function screenSource(kind) {
     if (!S().goal) { location.hash = "#start"; return ""; }
     if (kind === "capture") return screenFromCapture();
-    const src = SRC[kind], h = (S().src || {})[kind] || {};
-    const query = Object.fromEntries(src.fields.map(([k, ex]) => [k, h[k] ?? ex]));
+    const src = SRC[kind], st = S(), h = (st.src || {})[kind] || {}, got = M.sources[kind];
+    const query = Object.fromEntries(src.fields.map(([k, ex]) => [k, h[k] || ex]));
+    const read = !!h.read, cols = !!h.cols, flds = !!h.flds;
+    const rows = got && got.rows ? got.rows : [];
+    const fieldNames = rows.length ? Object.keys(rows[0].fields || {}) : [];
+    const d = (got && got.describe) || {}, sb = d.source || {};
+    const answered = !got ? `<p class="mocknote">mockup: this project has no ${esc(src.name.toLowerCase())} to read; the ${esc(kind)} source reads one with ${esc(src.fields.map((f) => f[0]).join(", "))}.</p>`
+      : got.error ? `<div class="note"><b>The source answered:</b> <span class="mono">${esc(got.error)}</span></div>${note(`read with the example it documents (${JSON.stringify(got.query)}); nothing else is shown rather than invented.`)}`
+      : `<div class="note">${esc(d.description || sb.ref || "")}${sb.revision ? ` · version <code>${esc(sb.revision)}</code>` : ""}${d.licence ? ` · licence ${esc(d.licence)}` : ""}${sb.url ? ` · <span class="mono">${esc(sb.url)}</span>` : ""}</div>
+        <div class="tablewrap"><table><thead><tr><th>id</th><th>text</th>${fieldNames.map((f) => `<th>${esc(f)}</th>`).join("")}</tr></thead><tbody>
+          ${rows.map((r) => `<tr><td class="mono">${esc(String(r.id).slice(0, 14))}</td><td class="clip"><div>${esc(r.text)}</div></td>${fieldNames.map((f) => `<td>${esc(r.fields[f])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+        ${note(`the first ${rows.length} rows as the ${kind} source read them, with the example it documents.`)}`;
+    const ok = got && !got.error && rows.length;
     return `<div class="screen wide">
       ${head(`Step 2 of 5 · ${esc(gid())} · from ${esc(src.name)}`, `A dataset from ${src.name.replace(/^A /, "a ")}`, "The same four parts for every source: where from, what's in it, its fields, its name.", "dataset.from")}
       ${part("a", "dataset.from", "Where from", true, `${src.fields.map(([k, ex, what]) => `<div class="field"><div class="name mono">${esc(k)}</div><div><input type="text" data-k="${esc(k)}" value="${esc(h[k] ?? "")}" placeholder="e.g. ${esc(ex)}"><div class="hint" style="grid-column:auto">${esc(what)}</div></div></div>`).join("")}
-        <div class="actions" style="margin-top:0"><button class="btn primary" type="button" disabled>Read it</button><span class="muted" style="font-size:13px">reads the description and the first rows; nothing is saved yet</span></div>
-        ${note(`the example values are the ones the ${kind} source documents; the mockup reads only Hugging Face, so parts b to d are on that screen.`)}`)}
-      ${part("b", "dataset.columns", "What's in it", false, "")}${part("c", "dataset.fields", "Its fields", false, "")}${part("d", "dataset.name", "Name it", false, "")}
-      <div class="actions"><a class="btn" href="#dataset">Other sources</a><a class="btn" href="#dataset-hf">See the four parts on Hugging Face</a></div>
-      ${cmd(`evh dataset-create --source ${kind} --dataset-id <id> \\\n  --query '${JSON.stringify(query)}'`)}
+        ${read ? answered : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="srcread">Read it</button><span class="muted" style="font-size:13px">reads the description and the first rows; nothing is saved yet</span></div>`}`, read && ok ? `read ${rows.length} rows` : "")}
+      ${part("b", "dataset.columns", "What's in it", read && ok, `<div class="field"><div class="name">The item</div><div class="mono">${esc(query.text || "the file's text")}</div></div>
+        <div class="field"><div class="name">The item's id</div><div class="mono">${esc(query.id || "the row number")}</div></div>
+        <div class="field"><div class="name">How many</div><div class="inline"><input type="text" id="srclimit" value="${esc(h.limit ?? 200)}" style="width:90px"><span class="muted" style="font-size:13px">the first rows, in order</span></div></div>
+        ${cols ? "" : '<div class="actions" style="margin-top:0"><button class="btn primary" id="srccols" type="button">Next</button></div>'}`, cols ? `${query.text || "text"} · ${h.limit ?? 200}` : "")}
+      ${part("c", "dataset.fields", "Its fields", cols, `${fieldNames.length ? `<div class="tablewrap"><table><thead><tr><th>field</th><th>values in the first rows</th><th>keep</th></tr></thead><tbody>
+          ${fieldNames.map((f) => `<tr><td class="mono">${esc(f)}</td><td>${esc([...new Set(rows.map((r) => r.fields[f]))].join(", "))}</td><td><input type="checkbox" checked aria-label="keep ${esc(f)}"></td></tr>`).join("")}</tbody></table></div>`
+        : '<p style="margin:0">No fields: the query keeps none.</p>'}${flds ? "" : '<div class="actions" style="margin-top:0"><button class="btn primary" id="srcflds" type="button">Next</button></div>'}`, flds ? `${fieldNames.length} kept` : "")}
+      ${part("d", "dataset.name", "Name it", flds, `<div class="field"><div class="name">Id</div><div><input type="text" id="srcid" value="${esc(h.id ?? `${kind}_${h.limit ?? 200}`)}"></div></div>
+        <div class="actions" style="margin-top:0"><button class="btn primary" id="srcmake" type="button">Make the dataset</button></div><div id="srcjob"></div>`)}
+      <div class="actions"><a class="btn" href="#dataset">Other sources</a></div>
+      ${cmd(`evh dataset-create --source ${kind} --dataset-id ${h.id ?? `${kind}_${h.limit ?? 200}`} \\\n  --query '${JSON.stringify({ ...query, ...(got && got.query && got.query.fields ? { fields: got.query.fields } : {}), limit: Number(h.limit ?? 200) })}'`)}
     </div>`;
   }
   function wireSource(kind) {
-    main.querySelectorAll("[data-k]").forEach((i) => i.addEventListener("input", () => {
-      const s = S(); s.src = s.src || {}; s.src[kind] = s.src[kind] || {}; s.src[kind][i.dataset.k] = i.value; save();
-      const src = SRC[kind], h = s.src[kind];
-      $(".cmd pre").textContent = `evh dataset-create --source ${kind} --dataset-id <id> \\\n  --query '${JSON.stringify(Object.fromEntries(src.fields.map(([k, ex]) => [k, h[k] || ex])))}'`;
-    }));
+    const st = S(); st.src = st.src || {}; st.src[kind] = st.src[kind] || {};
+    const h = st.src[kind];
+    main.querySelectorAll("[data-k]").forEach((i) => i.addEventListener("input", () => { h[i.dataset.k] = i.value; save(); }));
+    $("#srcread")?.addEventListener("click", (e) => { e.target.disabled = true; e.target.textContent = "Reading…"; setTimeout(() => { h.read = true; save(); WB.render(); }, 700); });
+    $("#srccols")?.addEventListener("click", () => { h.limit = $("#srclimit").value; h.cols = true; save(); WB.render(); });
+    $("#srcflds")?.addEventListener("click", () => { h.flds = true; save(); WB.render(); });
+    $("#srcid")?.addEventListener("input", (e) => { h.id = e.target.value; save(); });
+    $("#srcmake")?.addEventListener("click", (e) => {
+      e.target.disabled = true;
+      const n = Number(h.limit || 200);
+      progress($("#srcjob"), `dataset-create · ${h.id || `${kind}_${n}`}`, n, "items frozen", () => {
+        st.dataset = { id: h.id || `${kind}_${n}`, items: n, role: "validation", how: kind };
+        Object.assign(st, { fetched: false, looked: false, reference: null });
+        save(); location.hash = "#prepare";
+      });
+    });
   }
   function screenFromCapture() {
     const p = M.production;
@@ -143,15 +172,17 @@
   function screenLabel() {
     if (!S().dataset) { location.hash = "#hub"; return ""; }
     const s = S(), at = s.labelAt || 0, it = M.items[at], ans = (s.labels || {})[it.id] ?? "";
-    const n = Object.values(s.labels || {}).filter((x) => x.trim()).length;
+    const n = Object.values(s.labels || {}).filter((x) => String(x).trim()).length;
     return `<div class="screen wide">
       ${head(`Prepare · ${esc(dsid())} · its reference set`, "Label the items", "Write the expected answer for each item. Your answers are a label set; promoted, they become the reference set every output is scored against.", "prepare.reference")}
       <div class="tabs" role="tablist"><button type="button" role="tab" aria-selected="${!s.sheetMode}" data-mode="app">Here, an item at a time</button><button type="button" role="tab" aria-selected="${!!s.sheetMode}" data-mode="sheet">With a sheet (CSV)</button></div>
-      ${s.sheetMode ? `<div class="part"><div class="parthead"><span class="letter">1</span><h3>Get the sheet</h3></div><div class="body"><p style="margin:0">A CSV with a row per item: its id, its text, an empty answer. Fill it in a spreadsheet, or hand it to someone.</p>
-          <div class="actions" style="margin-top:0"><button class="btn" type="button" disabled>Download the sheet</button></div></div></div>
-        <div class="part"><div class="parthead"><span class="letter">2</span><h3>Bring it back</h3></div><div class="body"><p style="margin:0">Drop the filled sheet here. It is checked before anything is kept: the item ids, an answer per row, the label choices.</p>
-          <div class="dropzone">drop a .csv</div></div></div>
-        ${note("downloading and dropping files are not mocked.")}
+      ${s.sheetMode ? `<div class="part"><div class="parthead"><span class="letter">1</span><h3>Get the sheet</h3><span class="grow"></span><span class="status">${M.sheet.trim().split("\n").length - 1} rows</span></div><div class="body"><p style="margin:0">A CSV with a row per item: its id, its text, and columns to fill: <code>label</code>, <code>also right</code>, <code>note</code>. Fill it in a spreadsheet, or hand it to someone.</p>
+          <textarea id="sheettext" rows="6" readonly class="mono" style="font-size:12px">${esc(M.sheet)}</textarea>
+          <div class="actions" style="margin-top:0"><button class="btn" type="button" id="sheetcopy">Copy the sheet</button><span class="muted" style="font-size:13px" id="sheetcopied">the real Workbench downloads it as a file</span></div></div></div>
+        <div class="part"><div class="parthead"><span class="letter">2</span><h3>Bring it back</h3></div><div class="body"><p style="margin:0">Drop the filled sheet here, or choose it. It is checked before anything is kept: its columns, each item id, an answer per row.</p>
+          <label class="dropzone" id="dropzone">drop a .csv here, or <u>choose one</u><input type="file" id="sheetfile" accept=".csv,text/csv" hidden></label>
+          <div id="sheetcheck">${s.sheetCheck ? sheetReport(s.sheetCheck) : ""}</div></div></div>
+        ${note("the sheet is the one `evh label-sheet --dataset-id cnn_dailymail_200 --items all` writes; a dropped sheet is checked here in the page, the way label-import checks it.")}
         ${cmd(`evh label-sheet --dataset-id ${dsid()} --out sheet.csv --items unlabelled\nevh label-import sheet.csv --dataset-id ${dsid()} --set <name> --by you`)}`
       : `<div class="pager" style="margin:12px 0"><button type="button" data-lat="-1" aria-label="previous">‹</button><span>item ${at + 1} of ${M.items.length} shown · row ${it.row}</span><button type="button" data-lat="1" aria-label="next">›</button><span class="grow"></span><span>${n} labelled</span></div>
         <div class="reader"><div class="pane"><div class="kicker">${w("item", "the item")} · the article (first 600 characters)</div>${esc(it.article)}…</div>
@@ -159,17 +190,66 @@
             <div class="inline" style="margin-top:8px"><button class="btn" type="button" id="labhl">Start from its highlights</button><button class="btn primary" type="button" id="labnext">Save and next</button></div></div></div>
         ${note(`the dataset has ${M.profile.n} items; the mockup shows the first ${M.items.length}.`)}
         ${cmd(`# each answer is kept as it is saved, in a label set of yours\nevh label-import <answers> --dataset-id ${dsid()} --set ${dsid()}_mine --by you`)}`}
-      <div class="actions">${n ? `<a class="btn primary" href="#reference">Promote ${n} labels to a reference set →</a>` : ""}${back("#prepare", "Back to prepare")}</div>
+      <div class="actions">${n ? `<a class="btn primary" href="#reference">Promote ${n} label${n === 1 ? "" : "s"} to a reference set →</a>` : ""}${back("#prepare", "Back to prepare")}</div>
     </div>`;
   }
   function wireLabel() {
     const s = S();
+    $("#sheetcopy")?.addEventListener("click", () => {
+      const t = $("#sheettext");
+      const done = () => { $("#sheetcopied").textContent = "copied"; };
+      try { navigator.clipboard.writeText(M.sheet).then(done, () => { t.select(); }); } catch (_e) { t.select(); }
+    });
+    const take = (file) => { if (!file) return; file.text().then((txt) => { s.sheetCheck = checkSheet(txt); save(); WB.render(); }); };
+    $("#sheetfile")?.addEventListener("change", (e) => take(e.target.files[0]));
+    const dz = $("#dropzone");
+    if (dz) {
+      dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("over"); });
+      dz.addEventListener("dragleave", () => dz.classList.remove("over"));
+      dz.addEventListener("drop", (e) => { e.preventDefault(); dz.classList.remove("over"); take(e.dataTransfer.files[0]); });
+    }
+    $("#sheetkeep")?.addEventListener("click", () => { s.labels = { ...(s.labels || {}), ...s.sheetCheck.answers }; s.sheetCheck = null; save(); WB.render(); });
     main.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => { s.sheetMode = b.dataset.mode === "sheet"; save(); WB.render(); }));
     main.querySelectorAll("[data-lat]").forEach((b) => b.addEventListener("click", () => { s.labelAt = ((s.labelAt || 0) + Number(b.dataset.lat) + M.items.length) % M.items.length; save(); WB.render(); }));
     const keep = () => { s.labels = s.labels || {}; s.labels[M.items[s.labelAt || 0].id] = $("#lab").value; save(); };
     $("#lab")?.addEventListener("input", keep);
     $("#labhl")?.addEventListener("click", () => { $("#lab").value = M.items[s.labelAt || 0].highlights; keep(); });
     $("#labnext")?.addEventListener("click", () => { keep(); s.labelAt = ((s.labelAt || 0) + 1) % M.items.length; save(); WB.render(); });
+  }
+
+  // a CSV, as RFC 4180 writes it: quoted fields, doubled quotes, commas and newlines inside quotes
+  function parseCsv(text) {
+    const rows = []; let row = [], f = "", q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+      else if (c === '"') q = true;
+      else if (c === ",") { row.push(f); f = ""; }
+      else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
+      else f += c;
+    }
+    if (f !== "" || row.length) { row.push(f); rows.push(row); }
+    return rows.filter((r) => r.some((x) => x.trim() !== ""));
+  }
+  // what label-import would say about a sheet: its columns, its ids against the dataset's, an answer per row
+  function checkSheet(text) {
+    const rows = parseCsv(text.replace(/^﻿/, ""));
+    if (!rows.length) return { problems: ["the file is empty"] };
+    const head = rows[0].map((h) => h.trim()), body = rows.slice(1);
+    const need = ["item_id", "label"].filter((c) => !head.includes(c));
+    if (need.length) return { problems: [`the sheet has no ${need.join(" or ")} column`] };
+    const known = new Set(parseCsv(M.sheet.replace(/^﻿/, "")).slice(1).map((r) => r[0]));
+    const iId = head.indexOf("item_id"), iLab = head.indexOf("label");
+    const unknown = body.filter((r) => !known.has(r[iId])).map((r) => r[iId]);
+    const answered = body.filter((r) => known.has(r[iId]) && (r[iLab] || "").trim());
+    return { rows: body.length, answered: answered.length, empty: body.length - answered.length - unknown.length, unknown: unknown.slice(0, 5), unknownN: unknown.length,
+      answers: Object.fromEntries(answered.map((r) => [r[iId], r[iLab]])), problems: [] };
+  }
+  const pl = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  function sheetReport(c) {
+    if (c.problems.length) return `<div class="note"><b>Not kept:</b> ${c.problems.map(esc).join("; ")}.</div>`;
+    return `<div class="note"><b>${pl(c.answered, "answer", "answers")}</b> read · ${pl(c.empty, "row", "rows")} left empty${c.unknownN ? ` · <b>${pl(c.unknownN, "id", "ids")}</b> this dataset does not have (${c.unknown.map(esc).join(", ")}${c.unknownN > 5 ? ", …" : ""}): ${c.unknownN === 1 ? "that row is" : "those rows are"} refused` : ""}.
+      ${c.answered ? `<div class="actions" style="margin-top:8px"><button class="btn primary" type="button" id="sheetkeep">Keep ${pl(c.answered, "answer", "answers")} as your label set</button></div>` : ""}</div>`;
   }
 
   // ── W2: review outputs side by side, pick, tag, note ─────────────────────
@@ -302,16 +382,27 @@
         ${note("the arms and numbers are the triage goal's real comparison on its v2 dataset (evh goals --goal triage_orrery).")}`)}
       ${part("3", null, "Pick the rows for the next version", true, `<p style="margin:0">Rows where production was wrong, or saw something the dataset does not have yet. Each pick has a reason; picks wait until a new version is made.</p>
         <div class="choices row"><label class="choice"><input type="radio" name="pf" checked> wrong against the labels</label><label class="choice"><input type="radio" name="pf"> new since ${esc(p.dataset)}</label><label class="choice"><input type="radio" name="pf"> not labelled yet</label></div>
-        ${pr.picked ? `<div class="note">${pr.picked} rows picked, waiting for the next version.</div>` : `<div class="actions" style="margin-top:0"><button class="btn" type="button" id="pickrows">Pick 3 rows</button></div>`}
-        ${note("which rows were wrong is not computed in the mockup; the project has no picks waiting (evh picks).")}`, pr.picked ? `${pr.picked} picked` : "")}
+        <div class="tablewrap"><table><thead><tr><th></th><th>decision</th><th>production decided</th><th>people decided</th><th class="num">its cost</th><th>stage</th></tr></thead><tbody>
+          ${M.wrong.slice(0, pr.all ? M.wrong.length : 8).map((r) => `<tr><td><input type="checkbox" data-wpick="${esc(r.id)}" ${(pr.ids || []).includes(r.id) ? "checked" : ""} ${pr.picked ? "disabled" : ""} aria-label="pick ${esc(r.id)}"></td><td class="mono" style="font-size:12px">${esc(r.id)}</td><td><span class="verdict v-worse">${esc(r.decided)}</span></td><td>${esc(r.people)}</td><td class="num">${esc(r.cost)}</td><td>${esc(r.stage || "")}</td></tr>`).join("")}</tbody></table></div>
+        ${pr.all ? "" : `<button class="linkbtn" type="button" id="wrongall">all ${M.wrong.length} wrong decisions</button>`}
+        ${pr.picked ? `<div class="note">${pr.picked} rows picked (“${esc(pr.why)}”), waiting for the next version.</div>`
+          : `<div class="inline"><input type="text" id="pickwhy" placeholder="why these rows, recorded with each pick" style="width:340px"><button class="btn primary" type="button" id="pickrows">Pick the checked rows</button></div>`}
+        ${note(`the ${M.wrong.length} decisions where production's model disagreed with the owner's labels, as evh inspect --sheet --wrong-against finds them.`)}`, pr.picked ? `${pr.picked} picked` : "")}
       ${part("4", null, "The next dataset version", !!pr.picked, pr.extended ? `<div class="note">${esc(p.dataset)} + ${pr.picked} picks → the next version, recorded as made from it.</div>` : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="extend">Make the next version</button></div>`)}
       <div class="actions">${back("#home", "Home")}</div>
-      ${cmd(`evh capture … (the deployment's importer)\nevh arm-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --as production_<date>_v1\nevh label-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --map rules.yaml --set outcomes\nevh inspect --goal ${p.goal} --wrong-against gold_${p.dataset}\nevh pick --dataset-id ${p.dataset} --item <id> --note "<why>"\nevh dataset-extend ${p.dataset} --dataset-id <next> --picks`)}
+      ${cmd(`evh capture … (the deployment's importer)\nevh arm-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --as production_<date>_v1\nevh label-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --map rules.yaml --set outcomes\nevh inspect --goal ${p.goal} --wrong-against gold_${p.dataset}\nevh pick --dataset-id ${p.dataset} --item ${(pr.ids || [])[0] || "<id>"} --note "${pr.why || "<why>"}"\nevh dataset-extend ${p.dataset} --dataset-id <next> --picks`)}
     </div>`;
   }
   function wireProductionLive() {
     const s = S(); s.prod = s.prod || {};
-    $("#pickrows")?.addEventListener("click", () => { s.prod.picked = 3; save(); WB.render(); });
+    main.querySelectorAll("[data-wpick]").forEach((c) => c.addEventListener("change", () => { const t = new Set(s.prod.ids || []); c.checked ? t.add(c.dataset.wpick) : t.delete(c.dataset.wpick); s.prod.ids = [...t]; save(); }));
+    $("#wrongall")?.addEventListener("click", () => { s.prod.all = true; save(); WB.render(); });
+    $("#pickrows")?.addEventListener("click", () => {
+      const n = (s.prod.ids || []).length, why = $("#pickwhy").value.trim();
+      if (!n) { $("#pickrows").textContent = "check rows first"; return; }
+      if (!why) { $("#pickwhy").focus(); return; }
+      s.prod.picked = n; s.prod.why = why; save(); WB.render();
+    });
     $("#extend")?.addEventListener("click", () => { s.prod.extended = true; save(); WB.render(); });
   }
 

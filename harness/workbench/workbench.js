@@ -552,13 +552,14 @@ success_criteria:
       <div class="part"><div class="parthead"><span class="letter">2</span><h3>Run</h3><span class="grow"></span>${ran ? `<span class="status ok">${own.length + clones.length} runs · 200 items each</span>` : ""}</div>
         <div class="body">${ran ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" id="runr4" type="button" ${r4.question ? "" : "disabled"}>Run ${own.length + clones.length} arms · about ${usd(est, 2)}</button><span class="muted" style="font-size:13px">${r4.question ? "jobs on the server; you can close the page" : "write the round's question first"}</span></div><div id="runjob"></div>`}</div></div>
       <div class="part ${ran ? "" : "off"}"><div class="parthead"><span class="letter">3</span><h3>Results</h3>${q("eval.compare")}</div>
-        ${ran ? `<div class="body">${note("r1's real scores stand in for these new runs; a clone has no run in the project, so no scores.")}
-          <div class="tablewrap"><table class="cmp"><thead><tr><th>arm</th><th class="num">coverage</th><th>vs the leader</th><th class="num">per 1M articles</th><th></th></tr></thead><tbody>
-          ${results.map((a) => { const [v, k] = VERD(a); const rt = retired[a.config_id]; const isBase = promoted ? promoted === a.config_id : a === base;
-            return `<tr class="${rt ? "retired" : ""}"><td class="mono">${esc(a.arm)} ${isBase ? '<span class="tag gold">baseline</span>' : ""}${rt ? ` <small class="muted">retired: ${esc(rt)}</small>` : ""}</td><td class="num">${a.coverage.toFixed(3)}</td>
-              <td><span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}</td><td class="num">${perM(a.usd_per_item)}</td>
+        ${ran ? `<div class="body">${note("a local arm shows its own re-run (the project's Linux re-runs, compared with bart_l's by evh pair-test); a hosted arm has no re-run in the project, so its r1 run is shown and says so; a clone has no run, so no scores.")}
+          <div class="tablewrap"><table class="cmp r4res"><thead><tr><th>arm</th><th class="num">coverage</th><th>vs bart_l</th><th class="num">per 1M articles</th><th class="num">per article</th><th>its run</th><th></th></tr></thead><tbody>
+          ${results.map((a) => { const [v, k] = VERD(a); const rt = retired[a.config_id]; const isBase = promoted ? promoted === a.config_id : a === base; const rr = a !== base && M.reruns[a.config_id];
+            return `<tr class="${rt ? "retired" : ""}"><td class="mono">${esc(a.arm)} ${isBase ? '<span class="tag gold">baseline</span>' : ""}${rt ? `<div class="muted" style="font-size:12px">retired: ${esc(rt)}</div>` : ""}</td><td class="num">${(rr ? rr.coverage : a.coverage).toFixed(3)}</td>
+              <td>${rr ? `<span class="num">${rr.delta.toFixed(4)}</span> <small class="muted">p ${esc(rr.p)}, one pair, uncorrected</small>` : `<span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}`}</td><td class="num">${perM(a.usd_per_item)}</td>
+              <td class="num">${secs(rr ? rr.p50_ms : a.p50_ms)}</td><td class="muted" style="font-size:12px">${a === base ? "carried from r1" : rr ? `its own, ${esc(rr.created_at.slice(0, 10))}, Linux` : "r1's (no re-run)"}</td>
               <td>${r4.closed || rt ? "" : `<button class="linkbtn" type="button" data-retire="${esc(a.config_id)}" ${a === base ? "disabled" : ""}>Retire</button> ${isBase ? "" : `<button class="linkbtn" type="button" data-promote="${esc(a.config_id)}">Make baseline</button>`}`}</td></tr>`; }).join("")}
-          ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span></td><td class="num">—</td><td class="muted">no run in the project</td><td class="num">—</td><td></td></tr>`).join("")}</tbody></table></div>
+          ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span></td><td class="num">—</td><td class="muted">no run in the project</td><td class="num">—</td><td class="num">—</td><td class="muted" style="font-size:12px">not run</td><td></td></tr>`).join("")}</tbody></table></div>
           <div id="actbox"></div>
           ${armPanel(M.arms.find((a) => a.config_id === S.arm))}
           ${r4.closed ? `<div class="note"><b>Closed.</b> ${esc(r4.conclusion)}${promoted ? ` The baseline is now ${esc(M.arms.find((a) => a.config_id === promoted).arm)}.` : ""}</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided"></textarea></div></div>
@@ -634,5 +635,7 @@ success_criteria:
     const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === "dark" : !matchMedia("(prefers-color-scheme: light)").matches;
     r.dataset.theme = dark ? "light" : "dark";
   });
+  $("#menubtn").addEventListener("click", () => { const n = $("#nav"), o = n.classList.toggle("open"); $("#menubtn").setAttribute("aria-expanded", String(o)); });
+  window.addEventListener("hashchange", () => { $("#nav").classList.remove("open"); $("#menubtn").setAttribute("aria-expanded", "false"); });
   window.addEventListener("DOMContentLoaded", render);
 })();
