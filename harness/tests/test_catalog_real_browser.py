@@ -359,16 +359,19 @@ def drive(cat: Path, base: str) -> None:
             f"recommended {recs}; best {best[:3]}",
         )
 
-        # The triage goal page names its scorer once, not after each of 80 arms, gives its 51 contenders as a count
-        # (the same list again as "still undecided" was a screen at phone width), and prints the r3 conclusion once.
+        # The triage goal page names its scorer once, not after each of 80 arms (the baseline's gap sentence too), and
+        # prints the r3 conclusion once. It once listed 51 contenders twice; at 65 items the non-inferiority test now
+        # admits none ("too few ... needs 100"), so the page says none, and the folding of a long list is checked on a
+        # decision made for it (test_why_lines.py).
         page.goto(base + "g/triage_orrery.html")
         seen = page.locator("main").inner_text()
         concl = "Onboarding was the fix round 1 needed"
         check(
-            "triage goal page: the scorer named once, the contenders counted, round r3's conclusion shown once",
+            "triage goal page: the scorer named once, no contenders said as none, round r3's conclusion shown once",
             "rescored 5f2c057c" not in seen
             and "re-score by scorer 5f2c057c" in seen
-            and "Still undecided after the tie-break: all " in seen
+            and "Contenders beside it" in seen
+            and "): none." in seen
             and seen.count(concl) == 1,
             f"per-arm hashes {seen.count('rescored 5f2c057c')}, conclusion shown {seen.count(concl)}×",
         )

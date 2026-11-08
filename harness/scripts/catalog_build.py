@@ -3387,7 +3387,8 @@ def baseline_gap(A: Adapter, dec: dict, rows: list, gm: str) -> str:
     base = next((r for r in rows if r.get("baseline")), None)
     if not rec or base is None or base["arm"] == rec:
         return ""
-    labels = {r["arm"]: r["label"] for r in rows}
+    # as the page's other reasons name them: the scorer most arms are read through is named once, not after each
+    labels = shown_labels({r["arm"]: r["label"] for r in rows})[0]
     higher = dec["axes"][0]["direction"] == "higher"
     series = {a: (A.scores(a).get(gm) or {}).get("values") or {} for a in (rec, base["arm"])}
     clusters = goal_clusters(A, dec.get("goal") or {}, dec.get("dataset") or "")[0]

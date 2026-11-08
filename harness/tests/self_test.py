@@ -816,6 +816,10 @@ def test_example_scorer_suites_pass() -> None:
             "a setting as a form (UXS-004): every setting of this repository checks, writes back byte for byte, and keeps its comments through one-value edits",
         ),
         (
+            "test_why_lines.py",
+            "a goal page's reasons with many arms: the scorer named once, a long list of contenders or undecided as a count",
+        ),
+        (
             "test_settings_save.py",
             "a setting's save on a running server: one write at a time, a delete never between a save's checks, one evh validate a save",
         ),
