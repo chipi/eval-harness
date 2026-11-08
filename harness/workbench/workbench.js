@@ -62,8 +62,9 @@
   const prepared = () => S.fetched && S.looked && !!S.reference;
   const done = (id) => ({ goal: !!S.goal, dataset: !!S.dataset, prepare: prepared(), models: (S.checked || []).length >= 2, eval: !!(S.r4 && S.r4.closed) })[id];
   const open = (id) => ({ goal: true, dataset: !!S.goal, prepare: !!S.dataset, models: prepared(), eval: prepared() })[id];
+  const OUTSIDE = ["start", "home", "jobs", "settings", "glossary", "model-new", "production-live", "catalog", "docs"];
   function drawRail(route) {
-    if (!S.goal) { layout.classList.add("no-rail"); rail.innerHTML = ""; return; }
+    if (!S.goal || OUTSIDE.includes(route)) { layout.classList.add("no-rail"); rail.innerHTML = ""; return; }
     layout.classList.remove("no-rail");
     const cur = route.startsWith("dataset") ? "dataset" : route === "goal-edit" ? "goal" : route;
     rail.innerHTML = `<div class="label">Goal</div><div class="goalname">${esc(S.goal.title)}</div>
@@ -72,12 +73,14 @@
         const cls = done(s.id) ? "done" : open(s.id) ? (cur === s.id ? "now" : "") : "locked";
         const href = open(s.id) ? `#${s.id === "goal" ? "goal-edit" : s.id}` : "#hub";
         return `<a class="step ${cls}" href="${href}" ${cur === s.id ? 'aria-current="page"' : ""}><span class="dot">${done(s.id) ? "✓" : s.n}</span>${s.name}</a>`;
-      }).join("")}`;
+      }).join("")}
+      <div class="label" style="margin-top:18px">Day to day</div>
+      ${[["review", "Review and label"], ["production", "Production"], ["judge", "A judge"]].map(([id, name]) => `<a class="step" href="#${id}" ${route === id || route.startsWith(id + "-") ? 'aria-current="page"' : ""}><span class="dot">·</span>${name}</a>`).join("")}`;
   }
 
   // ── step 0: an empty project ─────────────────────────────────────────────
   function screenStart() {
-    if (S.goal) { location.hash = "#hub"; return ""; }
+    if (S.goal) { location.hash = "#home"; return ""; }
     return `<div class="screen empty">
       <div class="kicker">Project harness · no goals yet</div>
       <h1>Start with the decision you have to make.</h1>
@@ -117,7 +120,12 @@ success_criteria:
             <div class="choices row">${radio("direction", "higher", "higher is better")}${radio("direction", "lower", "lower is better")}</div></div>`)}
         ${field("goal.strategy", `<div class="choices">${radio("strategy", "balanced", "balanced", "not significantly different from the best and within 5% of it, then the cheapest")}
             ${radio("strategy", "quality_first", "quality first", "the same quality only")}${radio("strategy", "frugal", "frugal", "anything not significantly different, then the cheapest")}</div>
-            <details class="adv" style="margin-top:8px"><summary>advanced: margins, other axes (cost, speed)</summary>${note("not mocked in round 1")}</details>`)}
+            <details class="adv" style="margin-top:8px"><summary>advanced: the margin, the tie-break, other measures</summary>
+              <div class="form" style="gap:12px;margin-top:12px">
+                <div class="field"><div class="name">Margin</div><div class="inline"><input type="text" name="margin" value="${esc(d.margin ?? "")}" placeholder="default: 5% of the best (balanced), 10% (frugal)" style="width:300px"><span class="muted" style="font-size:13px">how much worse than the best an arm may be and still win, in the measure's units</span></div></div>
+                <div class="field"><div class="name">Then pick by</div><div class="inline"><select name="tie1" aria-label="first tie-break"><option>cost</option><option>speed</option><option>quality</option></select><select name="tie2" aria-label="second tie-break"><option>speed</option><option>cost</option><option>quality</option></select><span class="muted" style="font-size:13px">among the arms that may win</span></div></div>
+                <div class="field"><div class="name">Also show</div><div class="inline">${Object.entries(M.axes).map(([k, v]) => `<span class="tag">${esc(k)} · ${esc(v.direction)}</span>`).join(" ")}<button class="btn" type="button" disabled>+ a measure</button><span class="muted" style="font-size:13px">shown beside the deciding measure, never deciding</span></div></div>
+              </div>${note("the CNN goal's own extra measure is rouge1; margin and tie-break defaults are the goal schema's.")}</details>`)}
       </form>
       <div class="actions">
         <button class="btn primary" id="goalsave" type="button">${editing ? "Save the goal" : "Save the goal and continue"}</button>
@@ -178,6 +186,8 @@ success_criteria:
           <div><h3>${r.title}</h3><p>${esc(r.what)}</p>${r.status ? `<div class="status ${ok ? "ok" : ""}">${esc(r.status)}</div>` : ""}</div>
           ${can ? `<a class="btn ${!ok && can ? "primary" : ""}" href="${r.go}">${r.label}</a>` : `<span class="status">${i >= 3 && prepared() && r.id === "models" ? "" : "after the step before"}</span>`}</div>`;
       }).join("")}</div>
+      <h2 style="margin:28px 0 10px">Day to day</h2>
+      <div class="steps">${[["#review", "Review and label", "read outputs side by side, pick the better, tag what went wrong"], ["#production", "Production", "what the deployed choice decided, and the next dataset version from it"], ["#judge", "A judge", "a model that scores like a person, validated against people first"]].map(([h, t, d]) => `<div class="row"><span class="dot">·</span><div><h3>${t}</h3><p>${d}</p></div><a class="btn" href="${h}">Open</a></div>`).join("")}</div>
     </div>`;
   }
 
@@ -218,7 +228,7 @@ success_criteria:
       save(); location.hash = "#prepare";
     });
     main.querySelectorAll(".card").forEach((c) => c.addEventListener("click", () => {
-      if (c.dataset.source === "huggingface") { location.hash = "#dataset-hf"; return; }
+      location.hash = c.dataset.source === "huggingface" ? "#dataset-hf" : `#dataset-src-${c.dataset.source}`; return;
       main.querySelectorAll(".card").forEach((x) => x.setAttribute("aria-pressed", String(x === c)));
       $("#srcnote").innerHTML = note("round 1 mocks the Hugging Face path only; the others take the same four parts (where from, what's in it, its fields, name it).");
     }));
@@ -290,13 +300,17 @@ success_criteria:
   // a pretend job: the real one is a Workbench job (PRD-017), its progress read from the job's log
   function job(btn, ms, then) { btn.disabled = true; btn.textContent = "Reading…"; setTimeout(then, ms); }
   function progress(el, name, total, unit, then) {
+    S.jobs = S.jobs || [];
+    const rec = { name, total, unit, n: 0, status: "running", started: new Date().toTimeString().slice(0, 8) };
+    S.jobs.push(rec); save();
     el.innerHTML = `<div class="job"><span>${esc(name)}</span><span class="status num" data-n>0 / ${total} ${esc(unit)}</span><div class="bar-track"><div class="bar-fill"></div></div></div>${note("a pretend job; the real one runs on the server and survives closing the page.")}`;
     let k = 0;
     const t = setInterval(() => {
       k = Math.min(total, k + Math.ceil(total / 24));
       $(".bar-fill", el).style.width = `${(100 * k) / total}%`;
       $("[data-n]", el).textContent = `${k} / ${total} ${unit}`;
-      if (k >= total) { clearInterval(t); setTimeout(then, 350); }
+      rec.n = k;
+      if (k >= total) { clearInterval(t); rec.status = "done"; save(); setTimeout(then, 350); }
     }, 60);
   }
 
@@ -343,13 +357,14 @@ success_criteria:
         : `<div class="actions" style="margin-top:0"><button class="btn primary" id="fetch" type="button">Fetch ${n} items</button></div><div id="fetchjob"></div>${cmd(`evh dataset-materialize --dataset-id ${id}`)}`, S.fetched ? `${n} / ${n} checked` : "")}
       ${part("b", "prepare.look", "Look inside", S.fetched, look, S.looked ? "looked at" : "")}
       ${part("c", "prepare.reference", "Its reference set", S.fetched, ref ? `<div class="note"><span class="tag gold">${esc(ref.tier)}</span> <code>${esc(ref.id)}</code> · ${n} references · by ${esc(ref.by)} · “${esc(ref.why)}”</div>
+          <div class="actions" style="margin-top:0"><a class="btn" href="#reference">Change the reference set</a><a class="btn" href="#label">Label items yourself</a></div>
           ${cmd(`evh reference-promote --dataset-id ${id} --labels ${id}_highlights --tier ${ref.tier} \\\n  --by ${ref.by} --reason "${ref.why}"`)}`
         : `<div class="cards" role="radiogroup">${ways.map(([k, name, what]) => `<button type="button" class="card" data-way="${k}" aria-pressed="${S.way === k}"><b>${esc(name)}</b><span>${esc(what)}</span></button>`).join("")}</div>
           ${S.way === "promote" ? `<div class="field"><div class="name">Tier</div><div class="choices row"><label class="choice"><input type="radio" name="tier" value="gold" checked> ${w("gold")} <small>checked by people</small></label><label class="choice"><input type="radio" name="tier" value="silver"> ${w("silver")} <small>a model's answers</small></label></div></div>
             <div class="field"><div class="name">Who</div><div><input type="text" id="refby" value="you"></div></div>
             <div class="field"><div class="name">Why</div><div><input type="text" id="refwhy" value="the dataset's own highlights, as published"><div class="hint" style="grid-column:auto">recorded with the reference set, shown wherever it is used</div></div></div>
             <div class="actions" style="margin-top:0"><button class="btn primary" id="promote" type="button" ${cnn ? "" : "disabled"}>Promote ${n} answers</button></div>`
-            : S.way ? note(`round 1 mocks promoting; labelling here (W2) and the sheet come in a later round.`) : ""}`, ref ? `${ref.tier} · ${n}` : "")}
+            : S.way ? `<div class="actions" style="margin-top:0"><a class="btn primary" href="#label" id="tolabel">${S.way === "label" ? "Label the items" : "Use a sheet"} →</a></div>` : ""}`, ref ? `${ref.tier} · ${n}` : "")}
       <div class="actions"><span class="status ${prepared() ? "ok" : ""}">Ready when: fetched ${S.fetched ? "✓" : "○"} · looked at ${S.looked ? "✓" : "○"} · a reference set ${ref ? "✓" : "○"}</span>
         <span class="grow"></span><a class="btn ${prepared() ? "primary" : ""}" href="${prepared() ? "#models" : "#hub"}">${prepared() ? "Next: the models →" : "Back to the goal"}</a></div>
     </div>`;
@@ -427,7 +442,7 @@ success_criteria:
       S.models = [...s]; S.checked = []; save(); render();
     }));
     $("#prompt")?.addEventListener("input", (e) => { S.prompt = e.target.value; save(); });
-    $("#newmodel")?.addEventListener("click", () => { $("#newmodelbox").innerHTML = note("round 2 does not mock onboarding a new model: where it runs (hosted, this machine, the DGX), its id, then the probes as a job."); });
+    $("#newmodel")?.addEventListener("click", () => { location.hash = "#model-new"; });
     $("#smoke")?.addEventListener("click", (e) => {
       e.target.disabled = true;
       const n = (S.models || []).length * 3;
@@ -512,25 +527,44 @@ success_criteria:
     </div>`;
   }
   function roundOpen(r4) {
-    const arms = (S.checked || []).map((id) => armOf(M.models.find((m) => m.id === id))).filter(Boolean);
+    const picked = (S.checked || []).map((id) => armOf(M.models.find((m) => m.id === id))).filter(Boolean);
     const base = M.arms[0];
-    const est = arms.reduce((s, a) => s + a.usd_per_item * 200, 0);
-    const ran = !!r4.ran;
-    const shown = ran ? [base, ...arms.filter((a) => a !== base)].sort((a, b) => a.rank - b.rank) : [];
+    const own = picked.filter((a) => a !== base);
+    const clones = r4.clones || [];
+    const est = own.reduce((s, a) => s + a.usd_per_item * 200, 0) + clones.reduce((s, c) => s + (M.arms.find((a) => a.config_id === c.from) || {}).usd_per_item * 200, 0);
+    const ran = !!r4.ran, retired = r4.retired || {}, promoted = r4.promoted || null;
+    const results = ran ? [base, ...own].sort((a, b) => a.rank - b.rank) : [];
+    const CH = { prompt: "the prompt", model: "the model", temperature: "the temperature", max_tokens: "the most it may write" };
+    const runOf = (a) => a.run_id;
     return `<div class="roundhead"><div class="kicker">round r4 · ${r4.closed ? "closed" : "open"} · from r1</div></div>
       <div class="form" style="margin-top:12px">${field("eval.question", `<input type="text" id="r4q" value="${esc(r4.question || "")}" placeholder="e.g. ${esc(H["eval.question"].example)}" ${r4.closed ? "readonly" : ""}>`)}</div>
-      <div class="part" style="margin-top:18px"><div class="parthead"><span class="letter">1</span><h3>Its arms</h3><span class="grow"></span><span class="status">${arms.length} from step 4 · the baseline carried from r1</span></div>
-        <div class="body"><div class="tablewrap"><table><thead><tr><th>arm</th><th>model</th><th class="num">estimate, 200 items</th></tr></thead><tbody>
+      <div class="part" style="margin-top:18px"><div class="parthead"><span class="letter">1</span><h3>Its arms</h3><span class="grow"></span><span class="status">${own.length} from step 4${clones.length ? ` · ${clones.length} cloned` : ""} · the baseline carried from r1</span></div>
+        <div class="body"><div class="tablewrap"><table><thead><tr><th>arm</th><th>model</th><th class="num">dry run: 200 items</th></tr></thead><tbody>
           <tr><td class="mono">bart_l <span class="tag gold">baseline</span></td><td class="mono">${esc(base.model)}</td><td class="num">carried, not re-run</td></tr>
-          ${arms.filter((a) => a !== base).map((a) => `<tr><td class="mono">${esc(a.arm)}</td><td class="mono">${esc(a.model || "—")}</td><td class="num">${usd(a.usd_per_item * 200, 2)}</td></tr>`).join("")}</tbody></table></div>
-          <div class="muted" style="font-size:12px">The estimate is each arm's real r1 cost per item × 200.</div></div></div>
-      <div class="part"><div class="parthead"><span class="letter">2</span><h3>Run</h3><span class="grow"></span>${ran ? `<span class="status ok">${arms.length} runs · 200 items each</span>` : ""}</div>
-        <div class="body">${ran ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" id="runr4" type="button" ${r4.question ? "" : "disabled"}>Run ${arms.filter((a) => a !== base).length} arms · about ${usd(est, 2)}</button><span class="muted" style="font-size:13px">${r4.question ? "jobs on the server; you can close the page" : "write the round's question first"}</span></div><div id="runjob"></div>`}</div></div>
+          ${own.map((a) => `<tr><td class="mono">${esc(a.arm)}</td><td class="mono">${esc(a.model || "—")}</td><td class="num">${usd(a.usd_per_item * 200, 2)}</td></tr>`).join("")}
+          ${clones.map((c) => { const f = M.arms.find((a) => a.config_id === c.from); return `<tr><td class="mono">${esc(f.arm)} · ${esc(c.change)} <span class="tag new">clone</span></td><td class="mono">${esc(f.model || "—")}</td><td class="num">${usd(f.usd_per_item * 200, 2)}</td></tr>`; }).join("")}</tbody></table></div>
+          <div class="muted" style="font-size:12px">Each estimate is the arm's real r1 cost per item × 200 (a clone's, its source's).</div>
+          ${ran || r4.closed ? "" : `<details class="adv"><summary>Clone an arm and change one thing</summary><div class="inline" style="margin-top:10px">
+            <select id="clfrom" aria-label="the arm to clone">${[...own].map((a) => `<option value="${esc(a.config_id)}">${esc(a.arm)}</option>`).join("")}</select>
+            <select id="clwhat" aria-label="what changes">${Object.entries(CH).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select>
+            <input type="text" id="clto" placeholder="its new value" style="width:220px"><button class="btn" type="button" id="cladd">Add the clone</button></div>
+            <div class="hint" style="margin:6px 0 0">one change, so a difference in its score is that change's</div></details>`}</div></div>
+      <div class="part"><div class="parthead"><span class="letter">2</span><h3>Run</h3><span class="grow"></span>${ran ? `<span class="status ok">${own.length + clones.length} runs · 200 items each</span>` : ""}</div>
+        <div class="body">${ran ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" id="runr4" type="button" ${r4.question ? "" : "disabled"}>Run ${own.length + clones.length} arms · about ${usd(est, 2)}</button><span class="muted" style="font-size:13px">${r4.question ? "jobs on the server; you can close the page" : "write the round's question first"}</span></div><div id="runjob"></div>`}</div></div>
       <div class="part ${ran ? "" : "off"}"><div class="parthead"><span class="letter">3</span><h3>Results</h3>${q("eval.compare")}</div>
-        ${ran ? `<div class="body">${note("r1's real scores stand in for these new runs.")}${compareTable(shown, S.arm)}${armPanel(M.arms.find((a) => a.config_id === S.arm))}
-          ${r4.closed ? `<div class="note"><b>Closed.</b> ${esc(r4.conclusion)}</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided"></textarea></div></div>
-          <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button">Close the round</button><span class="muted" style="font-size:13px">the baseline stays bart_l unless you promote a run</span></div>`}</div>` : ""}</div>
-      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --hypothesis "${r4.question || "<the question>"}"\n${arms.filter((a) => a !== base).map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml`).join("\n")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "<what it showed and decided>"`)}`;
+        ${ran ? `<div class="body">${note("r1's real scores stand in for these new runs; a clone has no run in the project, so no scores.")}
+          <div class="tablewrap"><table class="cmp"><thead><tr><th>arm</th><th class="num">coverage</th><th>vs the leader</th><th class="num">per 1M articles</th><th></th></tr></thead><tbody>
+          ${results.map((a) => { const [v, k] = VERD(a); const rt = retired[a.config_id]; const isBase = promoted ? promoted === a.config_id : a === base;
+            return `<tr class="${rt ? "retired" : ""}"><td class="mono">${esc(a.arm)} ${isBase ? '<span class="tag gold">baseline</span>' : ""}${rt ? ` <small class="muted">retired: ${esc(rt)}</small>` : ""}</td><td class="num">${a.coverage.toFixed(3)}</td>
+              <td><span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}</td><td class="num">${perM(a.usd_per_item)}</td>
+              <td>${r4.closed || rt ? "" : `<button class="linkbtn" type="button" data-retire="${esc(a.config_id)}" ${a === base ? "disabled" : ""}>Retire</button> ${isBase ? "" : `<button class="linkbtn" type="button" data-promote="${esc(a.config_id)}">Make baseline</button>`}`}</td></tr>`; }).join("")}
+          ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span></td><td class="num">—</td><td class="muted">no run in the project</td><td class="num">—</td><td></td></tr>`).join("")}</tbody></table></div>
+          <div id="actbox"></div>
+          ${armPanel(M.arms.find((a) => a.config_id === S.arm))}
+          ${r4.closed ? `<div class="note"><b>Closed.</b> ${esc(r4.conclusion)}${promoted ? ` The baseline is now ${esc(M.arms.find((a) => a.config_id === promoted).arm)}.` : ""}</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided"></textarea></div></div>
+          <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button">Close the round</button><span class="muted" style="font-size:13px">${promoted ? `promotes ${esc(M.arms.find((a) => a.config_id === promoted).arm)} as the baseline` : "the baseline stays bart_l unless you make another one the baseline"}</span></div>`}</div>` : ""}</div>
+      <div class="actions"><a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a></div>
+      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --hypothesis "${r4.question || "<the question>"}"\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml --dry-run`).join("\n")}\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml`).join("\n")}${Object.entries(retired).map(([id, why]) => `\nevh round-retire --goal ${M.goal.goal_id} --round r4 --arm ${id} --reason "${why}"`).join("")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "<what it showed and decided>"${promoted ? ` \\\n  --promote ${runOf(M.arms.find((a) => a.config_id === promoted))}` : ""}`)}`;
   }
   function wireEval() {
     main.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => { S.tab = b.dataset.tab; S.arm = null; save(); render(); }));
@@ -549,6 +583,18 @@ success_criteria:
       progress($("#runjob"), `run · ${(S.checked || []).length} arms`, n, "items", () => { S.r4.ran = true; save(); render(); });
     });
     $("#closer4")?.addEventListener("click", () => { S.r4.closed = true; S.r4.conclusion = $("#r4c").value || "(no conclusion written)"; save(); render(); });
+    $("#cladd")?.addEventListener("click", () => {
+      const to = $("#clto").value.trim(); if (!to) { $("#clto").focus(); return; }
+      S.r4.clones = [...(S.r4.clones || []), { from: $("#clfrom").value, change: `${$("#clwhat").selectedOptions[0].text}: ${to}` }]; save(); render();
+    });
+    const ask = (label, then) => {
+      $("#actbox").innerHTML = `<div class="inline" style="margin-top:10px"><span>${esc(label)}</span><input type="text" id="actwhy" placeholder="the reason, recorded with it" style="width:320px"><button class="btn primary" type="button" id="actok">Confirm</button><button class="btn" type="button" id="actno">Cancel</button></div>`;
+      $("#actwhy").focus();
+      $("#actok").addEventListener("click", () => { const why = $("#actwhy").value.trim(); if (!why) { $("#actwhy").focus(); return; } then(why); });
+      $("#actno").addEventListener("click", () => { $("#actbox").innerHTML = ""; });
+    };
+    main.querySelectorAll("[data-retire]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); ask(`Retire ${b.dataset.retire}:`, (why) => { S.r4.retired = { ...(S.r4.retired || {}), [b.dataset.retire]: why }; save(); render(); }); }));
+    main.querySelectorAll("[data-promote]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); ask(`Make ${b.dataset.promote} the baseline:`, (why) => { S.r4.promoted = b.dataset.promote; S.r4.promoteWhy = why; save(); render(); }); }));
   }
 
   // ── the glossary ─────────────────────────────────────────────────────────
@@ -578,6 +624,8 @@ success_criteria:
     if (wire) wire();
     main.focus?.();
   }
+  const nextStep = () => (!S.dataset ? "add a dataset" : !prepared() ? "prepare the dataset" : (S.checked || []).length < 2 ? "choose the models" : !S.r4 ? "open a round" : S.r4.closed ? "review the outputs" : "finish round r4");
+  window.WB = { get S() { return S; }, M, H, G, esc, $, w, q, field, cmd, note, save, render, progress, usd, perM, secs, armOf, routes: ROUTES, nextStep };
   window.addEventListener("hashchange", () => { help.hidden = true; render(); window.scrollTo(0, 0); });
   $("#hints").addEventListener("change", (e) => { S.hints = e.target.checked; save(); render(); });
   $("#mocknotes").addEventListener("change", (e) => document.body.classList.toggle("mocknotes-off", !e.target.checked));
@@ -586,5 +634,5 @@ success_criteria:
     const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === "dark" : !matchMedia("(prefers-color-scheme: light)").matches;
     r.dataset.theme = dark ? "light" : "dark";
   });
-  render();
+  window.addEventListener("DOMContentLoaded", render);
 })();

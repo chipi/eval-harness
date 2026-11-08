@@ -1,7 +1,7 @@
-# UXS-005: The Workbench (sketches, round 3)
+# UXS-005: The Workbench (sketches round 3, mockup round 3)
 
-- **Status**: Draft — sketches for review (owner, 2026-11-06: "agree on the structure … see some sketches … then a
-  mock-up"); 0.8.0
+- **Status**: Draft — sketches and the clickable mockup for review (owner, 2026-11-06: "agree on the structure … see
+  some sketches … then a mock-up"; 2026-11-08: "complete the mock-up really with everything we've been saying"); 0.8.0
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-017](../prd/PRD-017-workbench.md) (the Workbench: workflows, decisions)
 - **Related UX specs**: [UXS-001](UXS-001-catalog.md) (the catalog: shell, tokens), [UXS-002](UXS-002-inspector.md)
@@ -16,15 +16,47 @@ Face (`abisee/cnn_dailymail`, the 1.0.0 test split's 11,490 rows, the first 200 
 not read from the project are left out rather than invented; the round sketched at the end is made up to show the
 screen.
 
+## The mockup
+
+The mockup is the Workbench's first, static form (owner: "the mock-up is already the workbench app you're starting,
+just static"): `harness/workbench/` (`index.html`, `workbench.css`, `workbench.js` for the shell and the five steps,
+`workflows.js` for the other workflows, `help.js` for every hint, `?` panel and word).
+
+- **Its data is read, never invented.** `harness/workbench/mock_data.py` writes `mock.js` from the project: the goals,
+  datasets, models and their onboarding, the CNN source, items, references and profile, the rounds, every arm's
+  scores, settings and first replies, the silver reference and who wrote it, the judge and its validation, and the
+  triage goal's capture and comparison. Two inputs are the harness's own printed answers, saved first (`evh models`,
+  `evh goals --goal news_summary_cnn`, `evh goals --goal triage_orrery`), because they take minutes to compute.
+- **What it pretends is labelled.** Jobs, saving, and the results of a round opened in the walk-through (round r1's
+  real scores stand in) are pretended; each place says so in a "mockup:" note, which a switch hides.
+- It walks from an empty project to a closed round and through every workflow below; state is kept per browser, and
+  "start over" clears it.
+
 ## The shell
 
 ```text
- [eval] Workbench · harness                       Goals   Running (1)   Models   Data   ·  Catalog ↗   ◐
+ evh workbench · project: harness          Home   Models   Jobs   Settings   Words   Catalog ↗   [x] hints   ◐
+
+ GOAL                       │
+ Short news summaries (CNN) │   (the screen)
+  ≡ Overview                │
+  ✓ Goal                    │
+  ✓ Dataset                 │
+  ✓ Prepare                 │
+  4 Models                  │
+  5 Eval                    │
+ DAY TO DAY                 │
+  · Review and label        │
+  · Production              │
+  · A judge                 │
 ```
 
-- The Workbench is its own app on the catalog's server (`/workbench/`), with the catalog's look (UXS-001) and a
-  link to it. Its menu is about doing: **Goals** (home), **Running** (jobs), **Models**, **Data** (datasets, labels,
-  references). The catalog stays where results are read.
+- The Workbench is its own app on the catalog's server (`/workbench/`), with the catalog's look (UXS-001, its tokens,
+  dark first) and a link to it. Its menu is about doing: **Home** (the goals), **Models** (bring one in), **Jobs**,
+  **Settings** (W8), **Words** (the glossary). The catalog stays where results are read.
+- Inside a goal a rail shows its five steps with their state, and under them the goal's day-to-day work: reviewing and
+  labelling (W2), production (W3), its judge (W7).
+- A `?` opens a side panel (a sheet at the bottom on a phone); "hints" hides the one-line hints for good.
 
 ## 0 An empty project: one way in
 
@@ -112,8 +144,22 @@ Making one is four short screens, one decision each:
                   description [ the first 200 test rows ]                 [ Create the dataset ]
 ```
 
-- Each source asks only what it needs (a folder: its path and which files; a table: its file and columns; a
-  capture: which one). Preview before anything is written; fields are a table, proposed, never typed from nothing.
+- Each source asks only what it needs, its own query (the sources' modules document them):
+
+  | Source | Where from asks |
+  | --- | --- |
+  | a folder | `path`, `glob` (which files), `recursive` |
+  | a table | `path`: a .csv or .jsonl with `item_id`, `source_url` and field columns |
+  | Hugging Face | `ref`, `config`, `split`, then `text`, `id`, `fields`, `limit` |
+  | Croissant | `url` or `path`, `record_set`, `text`, `id` |
+  | Zenodo | `record`, `file`, `text` |
+  | OpenML | `dataset`, `text` |
+  | Kaggle | `ref`, `version`, `file`, `text` |
+  | production | which capture, which records (`FIELD:VALUE`), one per a field (`dataset-from-capture`) |
+
+- Preview before anything is written; fields are a table, proposed, never typed from nothing.
+- **New:** the expected answer's column (b). The Hugging Face source takes the item's column and its id today, not an
+  answer column; the mockup marks it as new.
 - **Create** is a job (`dataset-create`): it freezes the items and their hashes. The goal's step 2 turns ✓.
 
 ## 3 Prepare the dataset
@@ -135,29 +181,170 @@ Making one is four short screens, one decision each:
 
 - One screen with the three things a dataset needs before an eval; each is a job or a small choice, done in
   order, each showing its result.
-- **Labelling here** opens the in-app labelling screen (W2, to sketch); a CSV round trip stays the other way in.
+- **Labelling here** opens the labelling screen (below, W2); a CSV round trip stays the other way in.
 - A reference set's promotion records who and why (governance).
+- Once there is one, **Change the reference set** (W6, below) shows what a new one moves before anything is re-scored.
 
-## 4 Models (to sketch next)
+## 4 Models
 
-Bring in a model the eval will use: what it is, where it runs, onboarded (the probes), approved. A project with
-models already onboarded picks from them and skips this step.
+```text
+ Choose the models to compare                                                  step 4 of 5
+
+ a Pick the models    (•) run on this goal before (28)   ( ) every model in the project (64)
+   [ ] model                 kind  weights      onboarding        arms  on this goal
+   [x] deepseek-4.1-flash    llm   open         pass 2026-10-31   19    #2 of 29
+   [x] eval-llama-maverick   llm   open         none              12    #3 of 29
+       …                                                   [ Bring a model that isn't here ]
+ b Their settings     the prompt (the same for every arm) · temperature 0 · at most 1200 tokens
+ c Check each on three items                                         [ Check 3 arms on 3 items ]
+   deepseek-4.1-flash  arm deepseek_m   3 replies · spent $0.00092 · all 200 ≈ $0.04       ▸
+     item 1 · its reply · 2.0 s          │ the reference · coverage 0.47
+
+ Ready when: at least two arms checked (3)                              [ Next: the eval → ]
+```
+
+- Models come from the project's records with their onboarding: **pass** (probed and passed), **probed** (nothing
+  flagged, not yet run on an arm), **check** (a probe flagged something to read), **none** (never probed: run before
+  onboarding existed). A model that is not there is brought in (W5).
+- One prompt and one set of settings for every arm, so a difference in the scores is the model's. ML models (BART)
+  carry their own settings.
+- The three-item check (`arm-smoke`) shows each arm's replies beside the reference, what they cost and what all items
+  would cost, before anything is compared. In the mockup the replies, cost and timing are the r1 run's real first
+  three items.
 
 ## 5 The eval: its rounds
 
-The eval is the goal measured on its dataset, in rounds: each round compares arms (their runs and scores) and ends in a
-decision. This is
-where people spend most of their time, so it gets the most thought; round 1's sketch of its board stays as the
-starting point:
+The eval is the goal measured on its dataset, in rounds: each round asks one question, compares its arms, and ends in a
+decision kept with its reason. This is where people spend most of their time (W1), so it gets the most thought.
 
 ```text
- news_summary_cnn / round r2 · open (an example)                       budget $5.00 · spent $0.00
- Question  Does a shorter prompt keep coverage at half the cost?                         [edit]
+ The eval                                            news_summary_cnn · cnn_dailymail_200
+ THE ANSWER SO FAR · baseline bart_l
+ bart_l (BART-large-CNN, MIT, $0 on a CPU) leads on coverage at 0.3461, not significantly different from
+ deepseek_m (0.3460, p = 0.99), for CNN-style text; rent deepseek_m if you need speed.
 
- 1  ARMS      rows: clone and change one thing · carry from r1 · new from a model      [ + Add arm ▾ ]
- 2  RUN       one button, the estimate first, then progress per job                     [ Run 2 arms ]
- 3  RESULTS   the goal's comparison as arms finish; retire · promote baseline · close the round
+ ( r1 · closed )  ( r2 · closed )  ( r3 · closed )                                   [ Open round r4 ]
+
+ Which of 24 hosted LLMs (8 vendors × 3 price tiers) and local BART summarisers covers a CNN article's
+ gold highlights best, and at what cost?
+ The comparison ?                       29 arms · 200 items · scored against gold/cnn_dailymail_200
+   coverage ↑  ●  bart_l      ● deepseek_m        │ What the goal's rule picks: balanced — none could be
+               ●●  ●  ● ●  ●   ●     ●     ●      │ shown within the margin, so the leader stands: bart_l.
+               $0      $100     $1,000   $10,000   │ Detectable: … only within about 0.0363; this goal's
+                     cost per 1M articles (log)    │ margin is 0.01731: raise it, compare fewer, add items.
+   #  arm          coverage      vs the leader             per 1M articles   per article
+   1  bart_l  baseline recommended  0.346  leader          $0                10.7 s
+   2  deepseek_m   0.346         not significant p 0.9923  $191              1.5 s
+   …                                              [ Show the 13 significantly worse ]
+ Its conclusion                                              promoted cnn_bart_l_n200_v1
 ```
+
+- **Reading a round:** the question, the comparison as a chart (coverage against cost) and a table (the paired test
+  against the leader, cost, speed), what the goal's rule picks and why, and what these items can show at all (the
+  harness's own "detectable" line). Selecting an arm opens its settings, cost and its summaries beside the reference.
+  The significantly worse are folded.
+- **A round of one's own (W1):**
+
+```text
+ round r4 · open · from r1
+ The round's question ?  [ Does a cheaper hosted model match bart_l's coverage on CNN?               ]
+ 1 Its arms      bart_l (baseline, carried, not re-run) · deepseek_m $0.04 · llama_l $0.04 · …
+                 ▸ Clone an arm and change one thing   [ deepseek_m ▾ ] [ the prompt ▾ ] [ its new value ]
+ 2 Run           [ Run 4 arms · about $0.35 ]          the dry run's estimate first; jobs on the server
+ 3 Results       arm  coverage  vs the leader  per 1M   retire · make baseline (each with its reason)
+                 The conclusion [ … ]                               [ Close the round ]
+```
+
+  The arms come from step 4; the baseline is carried, not re-run; a clone changes one thing so its difference is that
+  change's. The estimate is each arm's r1 cost per item × 200 in the mockup (`run --dry-run` in the real one).
+  Retiring and making a baseline each record a reason; closing records the conclusion and promotes the baseline's run.
+  From here: score with a judge (W7), review the outputs (W2).
+
+## The other workflows
+
+### Home
+
+```text
+ Your goals
+ Running now          Nothing is running.                                         every job →
+ goal                                  decides             datasets  rounds      reference sets  next
+ Short news summaries (CNN)            coverage (higher)   1         4           gold/…          review the outputs →
+ Triage decisions on Orrery's …  deployed  triage_cost (lower)  2   4 · last r4  2               learn from production →
+```
+
+- Every goal with where it stands and its next step, and what is running across goals (PRD-017, requirement 1). The
+  mockup lists the walk-through's goal, then this repository's seven goals as they stand.
+
+### Jobs
+
+- Every step that runs is a job: its cost first, then progress and the log, then its result. A job keeps running when
+  the page closes; it can be stopped, and resumed where its command allows (`run --resume`). The list shows each job,
+  its status, when it started and how far it is.
+
+### W2 Review and label
+
+```text
+ Review the outputs                                       compare [ bart_l ▾ ] with [ deepseek_m ▾ ]  [x] hide which is which
+ ‹ item 1 of 3 · row 0 ›                ▸ the article and its reference
+ A                                       │ B
+ The Palestinian Authority becomes …     │ The Palestinian Authority became …
+ Which is better   ( ) A  ( ) B  ( ) the same  ( ) neither is good
+ What went wrong   [narration] [label] [markdown] [bullets] [paragraphs] [overlong] [truncated]  + a mode
+ A note            [ anything a number would miss ]                                  [ Save and next ]
+```
+
+- Two arms' outputs on the same item; the sides are shuffled and the scores hidden while arms are hidden, so the pick
+  is not swayed. Picks, tags and notes are a label set with who made them (`inspect --sheet … --fill pick`,
+  `sheet-import`).
+- The failure modes are a named list, so tags are counted; the first list is proposed from the eval's own format
+  checks (the CNN adapter's narration, label, markdown, bullets, paragraphs, overlong, truncated).
+- **Labelling the items** (the expected answer) is the same screen's other half: the item, a box for its answer
+  ("start from its highlights" when the data has one), save and next; or the sheet: download it, fill it elsewhere,
+  drop it back, checked before anything is kept (`label-sheet`, `label-import`). Labels then go to a reference set (W6).
+
+### W3 Production
+
+```text
+ Triage decisions on Orrery's error signals · production
+ 1 What it decided         233 decisions captured · 2026-07-25 to 2026-10-29 · captured 2026-11-04
+ 2 Against people's labels  triage_prompt_own_code_loads_v1  0.446  recommended
+                            triage_baseline_pro_v2data_v1    0.872  production's model  +0.426, p 0.0014, worse
+ 3 Pick the rows for the next version   ( ) wrong against the labels  ( ) new since …  ( ) not labelled yet
+ 4 The next dataset version             [ Make the next version ]
+```
+
+- A goal that is not deployed says so and what will show once it is. The mockup shows production on this project's
+  deployed goal (triage): its capture, production's decisions scored like an arm against people's labels, the picks
+  (each with a reason) and the next dataset version made from them (`arm-from-capture`, `label-from-capture`,
+  `inspect --wrong-against`, `pick`, `dataset-extend`).
+
+### W5 Bring in a model
+
+- What it is and where it runs (a hosted gateway, a machine of ours, inside the harness), its address, weights and
+  licence; then **onboard**: the probes run as a job and their findings are shown, never typed (answers, thinks before
+  answering, with the chosen settings, speed, the same answer twice, valid JSON); then **approve** with who and why.
+  A **check** is read before approving. In the mockup the findings are `deepseek-4.1-flash`'s (pass) and
+  `ministral-3-14b`'s (check: "the JSON probe's answer is not valid JSON") real onboarding.
+
+### W6 Change the reference set
+
+- Choose the new reference set, see **what it moves** (the arms ranked on it beside their rank on the current one),
+  then promote it with who and why and re-score the arms ($0: stored outputs). In the mockup: the CNN silver set,
+  written by the arm `anthropic_l`, puts anthropic_m first (0.491) and makes deepseek_m significantly worse (p 0.0087);
+  the two arms that rise most are the author's own family, which the screen says before promoting.
+
+### W7 A judge
+
+- Its judges (two families at least, from onboarded models), how it judges (grade each, rank a block, pick the better
+  of two), its prompt, its guards and its cost cap; **does it agree with people** (its validation against the best free
+  scorer, and on a CNN set where people chose the best summary); then a dry run for the cost and the scoring as a job.
+  In the mockup: `judge-summ-v2` (openai_l, anthropic_l), tau 0.540 and 0.528 on SummEval against 0.372 for the best
+  free scorer, best pick on Goyal 2022's CNN set 0.52 and 0.54 against 0.33 by chance, at most $15.00.
+
+### W8 Settings
+
+- Rare, so terse, one row each with its command: where the project keeps its data (`data-migrate`), checking the
+  project (`validate`, a job), committed runs and their floors, the goal policy, budgets, publishing a dataset.
 
 ## Help, for someone who is new to this
 
@@ -214,7 +401,7 @@ person is an engineer and knows all this stuff, let's not make it too childish".
 - One file of help texts, keyed by step and field, written and reviewed like the docs; the screens read it.
 - A check fails when a field or a step has no hint or no `?` text, so help cannot fall behind the screens.
 
-### Help texts, steps 0 to 3 (first draft)
+### Help texts (first draft)
 
 | Where | Hint (always shown) | `?` panel (the explanation) |
 | --- | --- | --- |
@@ -224,7 +411,7 @@ person is an engineer and knows all this stuff, let's not make it too childish".
 | What is it for? | One sentence: what you want, for whom, so that what. | It keeps the evaluation honest: a system that is better at something you don't need does not win. Example: "Pick a model that writes a short summary of a CNN-style news article, at a known cost, for a reader who wants the story's main points." |
 | The decision | The choice you will make from the result. | "Which models can be told apart on summary quality, and what each costs per article." If the result cannot change this choice, the evaluation is measuring the wrong thing. |
 | How you'll judge | The number that decides which system is better, and which way is better. | A measure is one number per example (coverage: how much of the reference a summary covers, cut to the reference's own length, so writing more cannot buy it). Higher or lower is better depends on the measure: quality goes up, cost and time go down. |
-| How a winner is picked | Balanced suits most goals. | When systems are close, the rule decides: **balanced** takes the cheapest among those not significantly worse than the best and within its margin; **quality first** takes the best; **frugal** takes the cheapest not significantly worse. Margins and other axes (cost, speed) are under "advanced". |
+| How a winner is picked | Balanced suits most goals. | When systems are close, the rule decides who may still win beside the best (the contenders); among them the cheapest wins, then the fastest. **Balanced**: not significantly different from the best and within 5% of it. **Quality first**: the same quality only. **Frugal**: anything not significantly different by the paired test. The margin, the tie-break and other measures are under "advanced". |
 | Step 2, the dataset | The examples your systems will be tested on. | A dataset is a frozen list of items (an article, a question, a ticket), each with a hash, so every system sees exactly the same examples, now and later. Use one you have, or make one from a source. |
 | a Where from | Where the examples are now. | A folder of files, a table (CSV, JSON lines), a dataset on Hugging Face, Croissant, Zenodo, OpenML or Kaggle, or what your system decided in production (a capture). Public sources are read at one pinned version, so the dataset can be rebuilt exactly. |
 | b What's in it | Which column is the example, and which holds the expected answer if there is one. | The item is what a system receives (the article). The expected answer (the highlights) becomes the reference later, in step 3. Take a few hundred to start: enough to tell systems apart, cheap to run. |
@@ -234,6 +421,15 @@ person is an engineer and knows all this stuff, let's not make it too childish".
 | a Fetch its items | Downloads every item and checks it against its hash. | So a run reads exactly the frozen items, offline, every time. |
 | b Look inside | What the items are like: how many, how long, each field's values. | Read a few before running anything: most surprises (empty items, the wrong column, a skewed sample) show here. |
 | c Its reference set | The expected answer for each item, that outputs are scored against. | Three ways: the data came with answers (promote them), label them here, or bring a filled sheet (CSV). **Gold** is checked by people; **silver** is a model's answers, consistent rather than correct: enough to rank systems against each other, not a claim about truth. Who and why are recorded. |
+| Step 4, models | The systems you compare. Each is checked on three items before it costs anything. | A model with its prompt and settings, run on this dataset, is an arm. A model that fails on three items would fail on all of them, and you would pay for every one. |
+| Pick the models | Models already in this project are ready to use; a new one is onboarded once, for every goal. | Onboarding probes a model once: does it answer, how it counts tokens, what it costs, whether it thinks first. pass, probed, check, none. A model with an unread check can fail mid-run, after it has cost money. |
+| Their settings | What every arm is given: the prompt, the temperature, the most it may write. | The same for every model, so a difference in the scores is the model's. Change one thing at a time. |
+| Check each on three items | Runs each arm on the first three items, the way the full run would, and shows the replies. | An empty, cut-off or wrongly formatted reply shows here for a few cents; the cost of three projects the cost of all. |
+| Step 5, the eval | The goal measured on its dataset, in rounds. | Each round asks one question, runs its arms, compares them by the goal's measure and rule, and ends in a decision kept with its reason. |
+| The round's question | What this round should find out, in one sentence. | "Does a shorter prompt keep coverage at half the cost?" A round without a question collects runs, not answers. |
+| The comparison | Every arm against the best, by the paired test, with what each costs and how fast it is. | "not significant" means the difference may be noise; "significant: worse" means it holds up. Reading the order of the means alone misleads: most neighbours are not significantly different. |
+| What this comparison can show | How small a difference these items can tell apart, for this many arms. | With many arms on few items only large differences can be shown; it says what to change: raise the margin, compare fewer arms, or add items. |
+| Close the round | What the round showed and what it decided, and the run that becomes the baseline if one does. | The conclusion is kept with the round and shown wherever its goal is. |
 
 ### Glossary (first draft)
 
@@ -253,8 +449,17 @@ person is an engineer and knows all this stuff, let's not make it too childish".
 | baseline | The arm the others are measured against: the current choice, or the simplest one. |
 | significant | The difference holds up beyond chance, by the paired test (better or worse); "not significant" means it may be noise. |
 | contenders | The arms the goal's rule still lets win: not significantly worse than the best, within its margin. |
+| eval | The goal measured on its dataset, in rounds. |
+| validation, test | A dataset's role: validation while you choose and tune; test for the final answer, kept untouched until then. |
+| gold, silver | A reference set checked by people; one made of a model's answers, enough to rank systems, not a claim about truth. |
+| onboarding | Probing a model once, for every goal: does it answer, how it counts tokens, what it costs. Kept in its record. |
+| coverage | How much of the reference a summary covers, cut to the reference's own length, 0 to 1. |
+| capture | What a deployed system decided, kept as records with their hashes, to evaluate and learn from. |
+| pick | A production record chosen for the next version of a dataset, with the reason it was chosen. |
+| judge | A model that scores outputs the way a person would; it may decide only after agreeing with people's labels. |
+| failure mode | A named way an output can be wrong (overlong, narration), so tags are counted rather than re-invented in each note. |
 
-## The mock data model (round 2: unchanged)
+## The mock data model (round 3)
 
 What the screens above show and how it links; the files and the database keep it as they keep it today until the
 data-model RFC decides. Reviewed with the mockup (PRD-017, decision 5).
@@ -281,6 +486,12 @@ erDiagram
     SCORER ||--o{ JUDGE : "has (a judge scorer)"
     JUDGE }o--|| DEPLOYMENT : "calls"
     JOB }o--o| RUN : "makes"
+    CAPTURE ||--o{ DATASET : "is made into"
+    CAPTURE ||--o{ ARM : "is scored as (production)"
+    CAPTURE ||--o{ LABELSET : "gives rule labels"
+    DATASET ||--o{ PICK : "waits for (next version)"
+    LABELSET ||--o{ TAG : "holds (review)"
+    FAILUREMODES ||--o{ TAG : "names"
 ```
 
 | Entity | What a person sets | What commands write | Today it lives in |
@@ -295,18 +506,28 @@ erDiagram
 | Label set / Reference | labels (in the labelling screen), who and why for a promotion | hashes, counts | `labels/`, `references/` |
 | Scorer / Judge | which judges, prompt, mode | validation numbers, verdicts | `scorers/`, `judge-*/` |
 | Job | which step to run | status, progress, log, cost | — (new: RFC-026) |
+| Capture | which deployment, since when | its records and their hashes | `captures/<id>/` |
+| Pick | which record, for which dataset, why | when, by whom | the picks (`evh picks`) |
+| Failure modes / Tag | the list of modes; a tag on an output (in review) | counts per arm | `failure-modes/<id>.yaml`, a label set |
 
 ## To review in this round
 
 1. The order: an empty project, the goal (step 1), its dataset (2), preparing it (3), models (4), the eval (5),
    with the goal's page as the hub that shows the five steps and their state.
-2. The goal in five inputs, the rest advanced or owned by later steps.
-3. The dataset in four short screens (where from, what's in it, its fields, its name), preview before writing.
+2. The goal in five inputs, the rest advanced (the margin, the tie-break, other measures) or owned by later steps.
+3. The dataset in four parts (where from, what's in it, its fields, its name), the same for every source, preview
+   before writing.
 4. Preparing as one screen of three things (fetch, look, reference set), with the three ways to a reference set.
-5. The data model (unchanged from round 1).
-6. The help layer: three layers (the step's sentence, each field's hint, a `?` panel), the words taught with a
-   glossary, the command shown folded for someone who knows, and the first draft of the texts for steps 0 to 3.
-7. Step 5 is **Eval** (owner, round 3: "Eval"), the harness's word since 2026-11-02; a round is one comparison of
-   arms inside it.
+5. Models: pick with their onboarding, one set of settings, three items checked before anything is compared.
+6. The eval: the answer so far, its rounds, the comparison (chart, table, what the rule picks, what the items can
+   show), an arm's summaries; a round of one's own (question, arms from step 4 and clones, the dry run's estimate,
+   run, results, retire and make baseline with a reason, close).
+7. The day-to-day work under each goal: review and label (W2), production (W3), a judge (W7); and home, jobs,
+   bringing in a model (W5), changing the reference set (W6), settings (W8).
+8. The help layer: three layers, the words with a glossary, the command folded; the texts for steps 0 to 5.
+9. The data model, with captures, picks, failure modes and tags added.
 
-Not sketched yet: step 4 (models), the eval in detail, the labelling screen, production (W3).
+Not in the mockup yet: the other sources' parts b to d (they read nothing; Hugging Face shows them); judging a
+round's own new arms (the r4 results reuse r1's scores); which production rows were wrong (not computed); the files a
+sheet round trip moves (downloading and dropping are not mocked); the phone menu (on a phone the top bar shows only
+Home).

@@ -2243,5 +2243,677 @@ window.MOCK = {
   }
  ],
  "answer": "bart_l (BART-large-CNN, MIT, $0 on a CPU) leads on coverage at 0.3461, not significantly different from deepseek_m (0.3460, p = 0.99), for CNN-style text; rent deepseek_m if you need speed. REPORT_SUMMARIZATION, executive summary.",
- "detectable": "Detectable: with 28 candidate(s) on 200 items, a contender can be shown (80% of the time, if it is truly as good) only within a margin of about 0.0363 or more; this goal's is 0.01731: raise the margin, compare fewer arms, or add items."
+ "detectable": "Detectable: with 28 candidate(s) on 200 items, a contender can be shown (80% of the time, if it is truly as good) only within a margin of about 0.0363 or more; this goal's is 0.01731: raise the margin, compare fewer arms, or add items.",
+ "home": [
+  {
+   "id": "entities_few_nerd",
+   "title": "Named-entity extraction (Few-NERD)",
+   "measure": "f1",
+   "direction": "higher",
+   "strategy": "balanced",
+   "datasets": [
+    "few_nerd_280",
+    "few_nerd_56"
+   ],
+   "references": [],
+   "rounds": 1,
+   "open": [],
+   "last": "r1",
+   "deployed": false
+  },
+  {
+   "id": "entity_topic_dbpedia",
+   "title": "Encyclopedia topic classification (DBpedia)",
+   "measure": "correct",
+   "direction": "higher",
+   "strategy": "frugal",
+   "datasets": [
+    "dbpedia_280",
+    "dbpedia_56"
+   ],
+   "references": [],
+   "rounds": 2,
+   "open": [],
+   "last": "r2",
+   "deployed": false
+  },
+  {
+   "id": "news_summary_cnn",
+   "title": "Short news summaries (CNN)",
+   "measure": "coverage",
+   "direction": "higher",
+   "strategy": "balanced",
+   "datasets": [
+    "cnn_dailymail_200",
+    "cnn_dailymail_20",
+    "cnn_dailymail_dm200"
+   ],
+   "references": [
+    "gold/cnn_dailymail_200"
+   ],
+   "rounds": 3,
+   "open": [],
+   "last": "r3",
+   "deployed": false
+  },
+  {
+   "id": "news_topic_ag",
+   "title": "News topic classification (AG News)",
+   "measure": "correct",
+   "direction": "higher",
+   "strategy": "balanced",
+   "datasets": [
+    "ag_news_200",
+    "ag_news_20"
+   ],
+   "references": [
+    "gold/ag_news_200",
+    "gold/ag_news_200_adj1"
+   ],
+   "rounds": 2,
+   "open": [],
+   "last": "r2",
+   "deployed": false
+  },
+  {
+   "id": "scientific_retrieval_scifact",
+   "title": "Evidence retrieval for scientific claims (SciFact)",
+   "measure": "ndcg_10",
+   "direction": "higher",
+   "strategy": "frugal",
+   "datasets": [
+    "scifact_200",
+    "scifact_40"
+   ],
+   "references": [],
+   "rounds": 3,
+   "open": [],
+   "last": "r3",
+   "deployed": false
+  },
+  {
+   "id": "summary_judge_summeval",
+   "title": "A scorer that agrees with experts on summaries (SummEval)",
+   "measure": "tau",
+   "direction": "higher",
+   "strategy": "frugal",
+   "datasets": [
+    "summeval_100"
+   ],
+   "references": [],
+   "rounds": 2,
+   "open": [],
+   "last": "r2",
+   "deployed": false
+  },
+  {
+   "id": "triage_orrery",
+   "title": "Triage decisions on Orrery's error signals",
+   "measure": "triage_cost",
+   "direction": "lower",
+   "strategy": "frugal",
+   "datasets": [
+    "orrery_triage_v1_labelled",
+    "orrery_triage_v1_labelled_v2"
+   ],
+   "references": [
+    "gold/orrery_triage_v1_labelled",
+    "gold/orrery_triage_v1_labelled_v2"
+   ],
+   "rounds": 4,
+   "open": [],
+   "last": "r4",
+   "deployed": true
+  }
+ ],
+ "onboard": {
+  "pass": {
+   "id": "deepseek-4.1-flash",
+   "name": "DeepSeek 4.1 Flash",
+   "weights": "open",
+   "licence": "MIT",
+   "deployments": [
+    {
+     "id": "hosted",
+     "where": "homelab LiteLLM (the fleet's gateway)",
+     "endpoint": {
+      "provider": "litellm",
+      "base_url": "http://homelab:4001/v1",
+      "model": "eval-deepseek-41flash"
+     },
+     "onboarding": {
+      "status": "pass",
+      "at": "2026-10-31T14:09:01Z",
+      "flags": [],
+      "report": {
+       "endpoint": {
+        "provider": "litellm",
+        "base_url": "http://homelab:4001/v1",
+        "model": "eval-deepseek-41flash"
+       },
+       "digest_found": null,
+       "default": {
+        "s": 1.56,
+        "tokens_out": 43,
+        "reasoned": true,
+        "finish": "stop"
+       },
+       "chosen": {
+        "s": 0.66,
+        "tokens_out": 24,
+        "reasoned": false,
+        "finish": "stop",
+        "settings": {
+         "reasoning_effort": "none"
+        }
+       },
+       "tokens_per_s": 36.2,
+       "deterministic": true,
+       "json_valid": true
+      }
+     }
+    }
+   ],
+   "settings": {
+    "reasoning_effort": "none"
+   },
+   "settings_why": {
+    "reasoning_effort": "it reasoned by default on the onboarding probe (2026-10-31); off unless a task needs it (RUNBOOK §16): left at the server's default, one model reasons at length and the next not at all"
+   },
+   "accepted": {
+    "where it ran": "a hosted gateway serves the provider's current build; there is no digest, revision or hash to pin",
+    "determinism": "a hosted provider batches requests, so temperature 0 does not repeat exactly; repeats measure it"
+   }
+  },
+  "check": {
+   "id": "ministral-3-14b",
+   "name": "Ministral 3 14B",
+   "weights": "open",
+   "licence": "Apache-2.0",
+   "deployments": [
+    {
+     "id": "x3",
+     "where": "x3",
+     "endpoint": {
+      "provider": "openai",
+      "base_url": "http://127.0.0.1:11434/v1",
+      "model": "ministral-3:14b"
+     },
+     "onboarding": {
+      "status": "check",
+      "at": "2026-10-31T14:05:49Z",
+      "flags": [
+       "format: the JSON probe's answer is not valid JSON"
+      ],
+      "report": {
+       "endpoint": {
+        "provider": "openai",
+        "base_url": "http://127.0.0.1:11434/v1",
+        "model": "ministral-3:14b"
+       },
+       "digest_found": "4760c35aeb9d9e9c6174c2492562c0b999e80a222804fd96b1915ab72bbcdcf7",
+       "default": {
+        "s": 7.85,
+        "tokens_out": 92,
+        "reasoned": false,
+        "finish": "stop"
+       },
+       "chosen": {
+        "s": 3.84,
+        "tokens_out": 92,
+        "reasoned": false,
+        "finish": "stop",
+        "settings": {}
+       },
+       "tokens_per_s": 23.9,
+       "deterministic": true,
+       "json_valid": false
+      }
+     }
+    },
+    {
+     "id": "dgx",
+     "where": "dgx",
+     "endpoint": {
+      "provider": "openai",
+      "base_url": "http://100.69.49.126:11434/v1",
+      "model": "ministral-3:14b"
+     },
+     "onboarding": {
+      "status": "check",
+      "at": "2026-10-31T14:07:46Z",
+      "flags": [
+       "format: the JSON probe's answer is not valid JSON"
+      ],
+      "report": {
+       "endpoint": {
+        "provider": "openai",
+        "base_url": "http://100.69.49.126:11434/v1",
+        "model": "ministral-3:14b"
+       },
+       "digest_found": "4760c35aeb9d9e9c6174c2492562c0b999e80a222804fd96b1915ab72bbcdcf7",
+       "default": {
+        "s": 8.45,
+        "tokens_out": 85,
+        "reasoned": false,
+        "finish": "stop"
+       },
+       "chosen": {
+        "s": 3.42,
+        "tokens_out": 85,
+        "reasoned": false,
+        "finish": "stop",
+        "settings": {}
+       },
+       "tokens_per_s": 24.8,
+       "deterministic": true,
+       "json_valid": false
+      }
+     }
+    },
+    {
+     "id": "mac",
+     "where": "mac",
+     "endpoint": {
+      "provider": "openai",
+      "base_url": "http://127.0.0.1:11435/v1",
+      "model": "ministral-3:14b"
+     },
+     "onboarding": {
+      "status": "pass",
+      "at": "2026-10-31T13:55:45Z",
+      "flags": [],
+      "report": {
+       "endpoint": {
+        "provider": "openai",
+        "base_url": "http://127.0.0.1:11435/v1",
+        "model": "ministral-3:14b"
+       },
+       "digest_found": "4760c35aeb9d9e9c6174c2492562c0b999e80a222804fd96b1915ab72bbcdcf7",
+       "default": {
+        "s": 8.35,
+        "tokens_out": 32,
+        "reasoned": false,
+        "finish": "stop"
+       },
+       "chosen": {
+        "s": 1.37,
+        "tokens_out": 32,
+        "reasoned": false,
+        "finish": "stop",
+        "settings": {}
+       },
+       "tokens_per_s": 23.4,
+       "deterministic": true,
+       "json_valid": true
+      }
+     }
+    }
+   ],
+   "settings": null,
+   "settings_why": null,
+   "accepted": null
+  }
+ },
+ "silver": {
+  "rows": [
+   {
+    "arm": "anthropic_m",
+    "rank": 1,
+    "coverage": 0.491,
+    "verdict": "leader",
+    "p": null
+   },
+   {
+    "arm": "deepseek_m",
+    "rank": 2,
+    "coverage": 0.471,
+    "verdict": "significant: worse",
+    "p": "0.0087"
+   },
+   {
+    "arm": "anthropic_s",
+    "rank": 3,
+    "coverage": 0.469,
+    "verdict": "significant: worse",
+    "p": "0.0010"
+   },
+   {
+    "arm": "deepseek_l",
+    "rank": 4,
+    "coverage": 0.399,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "qwen_l",
+    "rank": 5,
+    "coverage": 0.398,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "glm_m",
+    "rank": 6,
+    "coverage": 0.389,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "llama_s",
+    "rank": 7,
+    "coverage": 0.388,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "deepseek_s",
+    "rank": 8,
+    "coverage": 0.388,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "openai_s",
+    "rank": 9,
+    "coverage": 0.384,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "mistral_s",
+    "rank": 10,
+    "coverage": 0.382,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "qwen_m",
+    "rank": 11,
+    "coverage": 0.381,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "glm_l",
+    "rank": 12,
+    "coverage": 0.375,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "openai_l",
+    "rank": 13,
+    "coverage": 0.371,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "llama_l",
+    "rank": 14,
+    "coverage": 0.37,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "openai_m",
+    "rank": 15,
+    "coverage": 0.359,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "llama_m",
+    "rank": 16,
+    "coverage": 0.358,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "gemma_s",
+    "rank": 17,
+    "coverage": 0.35,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "gemma_m",
+    "rank": 18,
+    "coverage": 0.342,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "gemma_l",
+    "rank": 19,
+    "coverage": 0.342,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "mistral_l",
+    "rank": 20,
+    "coverage": 0.337,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "qwen_s",
+    "rank": 21,
+    "coverage": 0.334,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "mistral_m",
+    "rank": 22,
+    "coverage": 0.32,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "bart_m",
+    "rank": 23,
+    "coverage": 0.32,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "bart_l",
+    "rank": 24,
+    "coverage": 0.317,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "bart_s",
+    "rank": 25,
+    "coverage": 0.306,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "glm_s",
+    "rank": 26,
+    "coverage": 0.303,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "lead3",
+    "rank": 27,
+    "coverage": 0.3,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "bart_l_xsum",
+    "rank": 28,
+    "coverage": 0.137,
+    "verdict": "significant: worse",
+    "p": "<0.0001"
+   },
+   {
+    "arm": "anthropic_l",
+    "rank": 29,
+    "coverage": 1.0,
+    "verdict": "leader",
+    "p": null
+   }
+  ],
+  "authored_by": "anthropic_l",
+  "cost_usd": 1.965235,
+  "caveat": "SILVER: promoted as silver from a model's run, its outputs (model · cnn_anthropic_l_n200_v1_20260926T063645Z): consistent, not a claim that any arm is right. Good enough to RANK arms against each other; say so wherever a number scored against it is published.",
+  "created_at": "2026-10-25T16:22:49Z"
+ },
+ "judge": {
+  "id": "judge-summ-v2",
+  "judges": [
+   {
+    "id": "openai_l",
+    "model": "eval-gpt-6sol",
+    "family": "openai"
+   },
+   {
+    "id": "anthropic_l",
+    "model": "eval-opus-5",
+    "family": "anthropic"
+   }
+  ],
+  "protocol": {
+   "listwise": true,
+   "outputs_per_call": 16,
+   "blinding": true,
+   "order_seed": 0,
+   "position_check_fraction": 0.1,
+   "noise_check_fraction": 0.1,
+   "contested_threshold": 0.5
+  },
+  "cost_cap_usd": 15.0,
+  "prompt": "examples/summeval-judging/prompt.txt",
+  "validation": {
+   "dataset": "summeval_100",
+   "metric": "tau",
+   "what": "mean Kendall tau-b against the mean of three expert annotators, over 4 dimensions and 100 articles",
+   "runs": [
+    {
+     "judge": "openai_l",
+     "run": "se_openai_l_n100_v1_20261018T114806Z",
+     "value": 0.539751,
+     "min_metric": 0.371714
+    },
+    {
+     "judge": "anthropic_l",
+     "run": "se_anthropic_l_n100_v1_20261018T115657Z",
+     "value": 0.528268,
+     "min_metric": 0.371714
+    }
+   ]
+  },
+  "checks": {
+   "goyal2022-cnn": {
+    "source": "Goyal, Li & Durrett 2022, cnn_human.json (CC BY 4.0)",
+    "articles": 100,
+    "judges": {
+     "openai_l": {
+      "best_pick_agreement": "35/82",
+      "billed_usd": 0.2717,
+      "rate": 0.5183,
+      "ci95": [
+       0.4118,
+       0.6232
+      ],
+      "chance": 0.3333
+     },
+     "anthropic_l": {
+      "best_pick_agreement": "37/82",
+      "billed_usd": 0.9468,
+      "rate": 0.5366,
+      "ci95": [
+       0.4294,
+       0.6404
+      ],
+      "chance": 0.3333
+     }
+    }
+   }
+  }
+ },
+ "production": {
+  "goal": "triage_orrery",
+  "title": "Triage decisions on Orrery's error signals",
+  "capture": "orrery_2026_10_v2",
+  "captured_at": "2026-11-04T13:30:45Z",
+  "records": 233,
+  "first": "2026-07-25T09:58:27.018946Z",
+  "last": "2026-10-29T16:33:47.779688Z",
+  "dataset": "orrery_triage_v1_labelled_v2",
+  "rows": [
+   {
+    "arm": "triage_prompt_own_code_loads_v1",
+    "triage_cost": 0.446,
+    "vs": "—",
+    "usd_per_item": "$0.004968"
+   },
+   {
+    "arm": "triage_noise_gate_v1",
+    "triage_cost": 0.503,
+    "vs": "+0.056, p 0.4425, not significant",
+    "usd_per_item": "$0.005516"
+   },
+   {
+    "arm": "triage_prompt_noise_classes_v1",
+    "triage_cost": 0.749,
+    "vs": "+0.303, p 0.0119, significant: worse",
+    "usd_per_item": "$0.005836"
+   },
+   {
+    "arm": "triage_baseline_pro_v2data_v1",
+    "triage_cost": 0.872,
+    "vs": "+0.426, p 0.0014, significant: worse",
+    "usd_per_item": "$0.005562"
+   }
+  ],
+  "labels": [
+   "gold_orrery_triage_v1_labelled",
+   "silver_orrery_triage_v1_labelled_hand",
+   "silver_orrery_triage_v1_labelled_outcomes"
+  ],
+  "decides": "triage_cost, lower is better"
+ },
+ "modes": [
+  {
+   "id": "narration",
+   "description": "1 when the output thinks out loud (\"the user wants\", \"let me draft\", think tags) instead of only summarising: its quality numbers describe something else."
+  },
+  {
+   "id": "label",
+   "description": "1 when the output opens with a label such as \"Summary:\" the prompt did not ask for."
+  },
+  {
+   "id": "markdown",
+   "description": "1 when the output opens with markdown (bold, a heading, a quote) the prompt did not ask for."
+  },
+  {
+   "id": "bullets",
+   "description": "1 when the output has bullet lines where the prompt asks for sentences."
+  },
+  {
+   "id": "paragraphs",
+   "description": "1 when the output has more than one paragraph where the prompt asks for 2-3 short sentences."
+  },
+  {
+   "id": "overlong",
+   "description": "1 when the output runs past 90 words where the prompt asks for 2-3 short sentences."
+  },
+  {
+   "id": "truncated",
+   "description": "1 when the provider cut the reply off at the token ceiling (finish_reason \"length\", and in most adapters a completion that reached 98% of max_tokens), else 0. An arm with truncated above 0 has scores that partly describe the ceiling, not the model."
+  }
+ ],
+ "axes": {
+  "rouge1": {
+   "direction": "higher"
+  }
+ }
 };
