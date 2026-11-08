@@ -11,6 +11,11 @@ The loop: **dataset → reference → arms → runs → comparison → decision.
 under `data/` that are frozen once written; a change is a new id. The project's `AGENTS.md`
 (written by `evh init`) holds the rules; read it first. This skill is the procedure.
 
+A project keeps `data/` as files, or in one database (`store: sqlite`, RFC-025). Put a setting in
+with `evh data-put <path under data/> <file>` and read one with `evh data-show --text <path>`, never
+with `cp` or `cat` on `data/`: those work in both stores, and they check a setting before it is
+kept. Edit a copy outside `data/` (here `drafts/`), then put it in.
+
 The blocks below run as written on the tutorial kit (`evh init --tutorial`: six support tickets,
 offline arms); use your own names in a real project. Every command takes `--help`.
 
@@ -52,26 +57,31 @@ An arm that is a change you expect to matter carries its prediction: a `hypothes
 config (`against` the config it is compared with, the `measure`, the `direction` better, worse or
 no-worse, and a `statement`), written before the run and committed with it. The run records it and
 whether it was committed first, and `pair-test` then reports "named in advance: yes". `evh validate`
-and `evh run` refuse a block that names no such config or measure.
+and `evh run` refuse a block that names no such config or measure. "Named in advance" is told from
+git, so it needs a project that keeps its data as files in git: in the database store a setting is
+not in git, and the run records it as not determinable.
 
 If your system's code lives outside this tree, pin its commit in the arm's params
 (`system_commit: <sha>`): the run records only this project's commit, and params are part of what
 was measured.
 
 ```evh
-cp tutorial/configs/tickets_*.yaml data/configs/
-cat >> data/configs/tickets_lead2.yaml <<'EOF'
+mkdir -p drafts && cp tutorial/configs/tickets_*.yaml drafts/
+cat >> drafts/tickets_lead2.yaml <<'EOF'
 hypothesis:
   against: tickets_lead1_v1
   measure: overlap_f1
   direction: better
   statement: "two leading sentences recover more of a ticket's gold summary than one"
 EOF
-git add -A && git commit -qm "tickets_v1: dataset and arms"
+for f in drafts/tickets_*.yaml; do evh data-put "configs/$(basename "$f")" "$f"; done
+rm -r drafts
+git add -A && git commit -qm "tickets_v1: dataset and arms" --allow-empty
 ```
 
 Commit before every run: a run records the commit it ran from, and one from a dirty tree is refused
-later.
+later. (In the database store the commit holds the project's code, not its data: `--allow-empty`
+keeps the step the same there.)
 
 ## 3. A reference
 
@@ -87,7 +97,7 @@ What each item is scored against. In order of strength:
 RUN=$(evh run --config data/configs/tickets_author.yaml --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["values"]["runs"][0]["run_id"])')
 evh label-from-run --run "$RUN" --set author_v1
 evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "the author arm ranks the others until a person writes gold" --by agent
-git add -A && git commit -qm "silver/tickets_v1"
+git add -A && git commit -qm "silver/tickets_v1" --allow-empty
 ```
 
 ## 4. Run each arm
@@ -104,7 +114,7 @@ beside `goal:`); an arm already run joins only when a round is opened with `--ke
 evh run --config data/configs/tickets_lead1.yaml --dry-run
 evh run --config data/configs/tickets_lead1.yaml --repeat 3
 evh run --config data/configs/tickets_lead2.yaml --repeat 3
-git add -A && git commit -qm "tickets_v1: runs"
+git add -A && git commit -qm "tickets_v1: runs" --allow-empty
 ```
 
 ## 5. Compare, then decide
@@ -145,8 +155,9 @@ the baseline was measured (the same dataset, reference and repeats) and test it 
 
 1. `evh goals --goal G --json`: `values.baseline` is the baseline arm; `evh arms --arm <that arm> --json`
    gives its config and how many repeats it has.
-2. Copy that config, give it a new `config_id`, make the one change, and add the `hypothesis:` block
-   (`against` the baseline's `config_id`). Commit.
+2. Copy that config (`evh data-show --text configs/<it>.yaml` into a draft), give it a new
+   `config_id`, make the one change, add the `hypothesis:` block (`against` the baseline's
+   `config_id`), and put it in with `evh data-put`. Commit.
 3. `evh run --config C --dry-run`, then `evh arm-smoke --config C` and read the replies, then
    `evh run --config C --repeat N` with the baseline's number of repeats.
 4. `evh pair-test --dataset-id D --a NEW --b BASELINE --json`, and read the items (step 5).
@@ -154,21 +165,23 @@ the baseline was measured (the same dataset, reference and repeats) and test it 
 The same on the tutorial kit, with `tickets_lead1_v1` standing as the baseline:
 
 ```evh
-cp tutorial/goals/tickets_summary.yaml data/goals/
+evh data-put goals/tickets_summary.yaml tutorial/goals/tickets_summary.yaml
 evh goals --goal tickets_summary --json
-sed -e 's/tickets_lead1_v1/tickets_lead3_v1/' -e 's/sentences: 1/sentences: 3/' data/configs/tickets_lead1.yaml > data/configs/tickets_lead3.yaml
-cat >> data/configs/tickets_lead3.yaml <<'EOF'
+mkdir -p drafts
+evh data-show --text configs/tickets_lead1.yaml | sed -e 's/tickets_lead1_v1/tickets_lead3_v1/' -e 's/sentences: 1/sentences: 3/' > drafts/tickets_lead3.yaml
+cat >> drafts/tickets_lead3.yaml <<'EOF'
 hypothesis:
   against: tickets_lead1_v1
   measure: overlap_f1
   direction: better
   statement: "three leading sentences recover more of the gold summary than one"
 EOF
-git add -A && git commit -qm "tickets_lead3_v1: one change against lead1, its hypothesis"
+evh data-put configs/tickets_lead3.yaml drafts/tickets_lead3.yaml && rm -r drafts
+git add -A && git commit -qm "tickets_lead3_v1: one change against lead1, its hypothesis" --allow-empty
 evh run --config data/configs/tickets_lead3.yaml --dry-run
 evh arm-smoke --config data/configs/tickets_lead3.yaml
 evh run --config data/configs/tickets_lead3.yaml --repeat 3
-git add -A && git commit -qm "tickets_lead3_v1: runs"
+git add -A && git commit -qm "tickets_lead3_v1: runs" --allow-empty
 evh pair-test --dataset-id tickets_v1 --a tickets_lead3_v1 --b tickets_lead1_v1 --json
 ```
 

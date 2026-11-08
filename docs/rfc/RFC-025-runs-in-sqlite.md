@@ -95,8 +95,9 @@ per run directory, `runs.store`/`EVAL_RUNS_STORE` and `run-migrate --to` (replac
   database, `validate` passes, `check_report_claims` verifies 200/200 claims, the site check is green, and the
   catalog's 928 pages equal the files catalog's but for the build time (one JSON file's keys in another order, equal
   content).
-- **Not covered**: the skills' command blocks on the sqlite store (`test_skills.py` fails there: the skills copy
-  settings into `data/` with `cp` and commit them with git, which in the database does neither; whether the skills
-  and "named in advance" serve a SQLite project is open); the browser tests and the inspector's budget run on files
-  only; the examples' `fetch.py` scripts write sources as files under `data/`, which in SQLite mode `data-migrate`
-  then moves in.
+- **The skills on both stores** (owner, 2026-11-08: "A"): their blocks put settings in with `evh data-put` and read
+  them with `evh data-show --text`, never `cp` on `data/`, and commit with `--allow-empty`; `test_skills.py` runs
+  them in both stores. "Named in advance" is told from git, so it needs a files project in git; in the database
+  store the run records it as not determinable, and the skill says so.
+- **Not covered**: the browser tests and the inspector's budget run on files only; the examples' `fetch.py`
+  scripts write sources as files under `data/`, which in SQLite mode `data-migrate` then moves in.

@@ -27,7 +27,7 @@ Find the run (its id from `evh run`, or the list), then promote it:
 ```evh
 RUN=$(evh runs-list --json | python3 -c 'import json,sys; rows=[r for b in json.load(sys.stdin)["result"]["blocks"] for r in b.get("rows", [])]; print(next(r["run_id"] for r in rows if r.get("config_id") == "tickets_lead2_v1"))')
 evh run-promote --run "$RUN" --reason "operator asked for a working baseline: lead2 is closest to the author's silver on all six tickets but not significantly different from lead1 at n=6 (pair-test p > 0.05); kept until the dataset grows"
-git add -A && git commit -qm "tickets_v1: baseline"
+git add -A && git commit -qm "tickets_v1: baseline" --allow-empty
 ```
 
 ## Check, then report
