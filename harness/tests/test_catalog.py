@@ -1125,6 +1125,41 @@ try:
         proc.returncode == 0 and (env_root / ".build/catalog/index.html").is_file(),
         proc.stderr[-300:],
     )
+    # The same data, the same pages, byte for byte, whatever the process's hash seed (a set's order follows it: the
+    # arms page's per-config rows came out in another order every build, found comparing two builds, 2026-11-08).
+    seeded = {}
+    seeds = [str(k) for k in range(1, 7)]
+    for seed in seeds:
+        out_s = env_root / f".build/catalog-seed{seed}"
+        subprocess.run(
+            [sys.executable, str(HERE / "cli.py"), "catalog", "--out", str(out_s)],
+            cwd=env_root,
+            capture_output=True,
+            text=True,
+            env={"EVAL_HOME": str(env_root), "PATH": "/usr/bin:/bin", "PYTHONHASHSEED": seed},
+        )
+        seeded[seed] = {
+            f.relative_to(out_s).as_posix(): re.sub(
+                rb"Built \d{4}-\d\d-\d\d \d\d:\d\d UTC", b"Built", f.read_bytes()
+            )
+            for f in out_s.rglob("*")
+            if f.is_file()
+        }
+    seed_differ = sorted(
+        {
+            k
+            for x in seeds[1:]
+            for k in set(seeded["1"]) | set(seeded[x])
+            if seeded["1"].get(k) != seeded[x].get(k)
+        }
+    )
+    configs = seeded["1"].get("arms-rows.js", b"").count(b'"c:')
+    check(
+        f"evh catalog: the same pages byte for byte under {len(seeds)} hash seeds (only the build minute differs; "
+        f"{configs} configs on the arms page, so their order shows)",
+        len(seeded["1"]) > 10 and configs >= 3 and not seed_differ,
+        (configs, seed_differ[:5]),
+    )
     # The deployment's options reach EVERY page when the builder runs as a command (the module is
     # __main__ then; arms.html was rendered by a second copy of it with the defaults: "eval
     # catalog", no switcher, no --head, /api/, found reviewing the 0.4.4 render).

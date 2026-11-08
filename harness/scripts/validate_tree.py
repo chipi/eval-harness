@@ -53,7 +53,8 @@ Each check exists because its absence let a real defect through somewhere:
                      that is not one of Croissant RAI's (E4)
                      (PLAN_0.8.0 E3; `evh dataset-migrate` brings old records to the format)
   V23 run outputs    a run still in the old layout (an outputs/ folder: `evh run-migrate`), or a derived
-                     run with no outputs of its own whose source run is not here (RFC-024)
+                     run with no outputs of its own whose source run is not here (RFC-024); a project in both
+                     stores, or a files project with `configure: true` (RFC-025)
 
 Exit 1 on any failure, so it can gate.
 

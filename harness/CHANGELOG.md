@@ -141,6 +141,27 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **The paired tests take their normal limit from 10,000 units** (ADR-0028). From 10,000 items (or clusters) the
+  sign-flip p is erfc(|z|/sqrt 2) with z = sum d / sqrt(sum d^2), and the contender test's bootstrap-t p is
+  1 - Phi(T), instead of 20,000 permutations and 9,999 resamples; a simulation over seven kinds of data
+  (`tools/large_sample_check.py`) found them within the resampling's own Monte Carlo error there, and not at 1,000
+  to 5,000 for heavy-tailed or sparse data, so below 10,000 nothing changes and no committed result moves.
+  `pair-test` and `family-test` say which (`method`: `exact`, `sampled`, `normal limit`, in the text and `--json`;
+  `family-test` a `p_method` per row). A p from the limit can be 0.0 (it prints `<0.0001`). A family that mixes
+  sizes keeps its other opponents' p's: the one random stream moves past a large opponent as if it were drawn.
+- **Every `evh` command keeps the p's it draws** in `<project>/.cache/evh-p.jsonl` (`EVH_P_CACHE`; an empty value
+  turns it off), as `evh mcp` did: `goals` right after `catalog` reads them instead of drawing them again (142 s to
+  0.4 s on a 1,000-item, 50-arm project).
+- **Resampled tests are drawn at once in child processes**: a catalog's, a goal's and a comparison's bootstrap-t's
+  and sign-flips are found first, drawn in parallel, and read back, the same p's bit for bit (each is seeded by its
+  data or its seed). The 1,000-item, 50-arm project's catalog took 16.3 s instead of 150.4 s, `goals --goal --json`
+  12.5 s instead of 147.7 s, with the same JSON and the same pages. Small projects are drawn as before, and so is
+  everything in a container under one whole CPU (the quota is read, as `cpus: 0.5` hides it from the core count);
+  `EVH_WORKERS` sets the number, `1` turns it off.
+- **A dataset page lists 200 items a page**, the rest on pages beside it (`d/<dataset>~items-2.html`, ...): the
+  10,000-item page was 13.8 MB, now 0.32 MB. The page's filter reads its own page; `evh dataset-items` lists all.
+- **The agent skills put a setting in with `evh data-put` and read one with `evh data-show --text`**, in a
+  temporary folder, so they work in either store and never touch a folder of the project's own.
 - **A run's outputs are one file** (RFC-024). `outputs.jsonl`, a line per item (`item_id`, `text`, `sha256`),
   appended as each output is produced and rewritten in dataset order when the run completes, replaces the `outputs/`
   folder of one file per item. Re-scores, judgings and sheet imports no longer copy their source's outputs: they read
@@ -186,6 +207,14 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **The inspector opens on large comparisons.** At 10,000 items and 40 arms it never showed its verdicts: its charts
+  took the least and greatest of 400,000 values with `Math.min(...values)`, which overflows the call stack. Past
+  500 items a run its charts now draw shaded bins instead of a dot each (they were 1.2 million dots), and its
+  per-item table draws only the rows it shows (10, then more on request; "show all" up to 1,000 items), where it
+  drew all of them and hid the rest (3.2 million elements). Found measuring S3 in a browser.
+- **The catalog's pages are the same whatever the process's hash seed.** The arms page's per-config rows came out in
+  another order every build, and on the models page a model's best rank, when two of its configs tied, could come
+  from either: both iterated a set. Found comparing two builds of one project; a test now builds under six seeds.
 - **A goal's dataset notes with a comma were cut short.** `notes: first 200 test rows, all CNN; ...` inside a
   `{...}` entry is YAML for `notes: first 200 test rows` and a stray key; seven goals (the tutorial's among them)
   showed half a note on their pages. The notes are quoted, and the goal schema now refuses a key a dataset entry

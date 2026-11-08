@@ -2390,7 +2390,7 @@ def render_inside(
     per = ITEMS_PER_PAGE
     chunks = [rows[i : i + per] for i in range(0, len(rows), per)] or [[]]
     names = [f"{slug(ds or 'none')}.html"] + [
-        f"{slug(ds or 'none')}-items-{k}.html" for k in range(2, len(chunks) + 1)
+        f"{slug(ds or 'none')}~items-{k}.html" for k in range(2, len(chunks) + 1)
     ]
 
     def pager(k: int) -> str:

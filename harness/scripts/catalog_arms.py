@@ -231,7 +231,7 @@ def period_arms(A, by_ds: dict, rows: list[dict]) -> dict:
             ),
             "made": r["first"],
         }
-    for cid in {r["config"] for r in rows}:
+    for cid in sorted({r["config"] for r in rows}):  # sorted: a set's order differs per process (hash seed)
         ids = {r["arm"] for r in rows if r["config"] == cid}
         runs = cp.runs_of([by_arm[a] for a in ids], idx)
         out[f"c:{cid}"] = {

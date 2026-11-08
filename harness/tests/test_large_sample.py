@@ -51,11 +51,55 @@ check(
     (pb, fast),
 )
 clustered = [sum(d[i : i + 3]) for i in range(0, 3 * (N // 3), 3)]
-pc = stats.bootstrap_t_p(clustered, [3] * len(clustered), 0.01)
+pc = stats.bootstrap_t_p(clustered, [3] * len(clustered), 0.01, draws=400)
+mc, sec = stats._mean_se(clustered, [3] * len(clustered))
 check(
     f"clusters are the units: {len(clustered)} clusters of 3 are below {N}, so they are resampled",
-    len(clustered) < N and pc is not None and pc != 0.5 * math.erfc(0),
+    len(clustered) < N
+    and pc == stats._bootstrap_draw(clustered, [3] * len(clustered), 0.01, 400)
+    and pc != 0.5 * math.erfc(((mc + 0.01) / sec) / math.sqrt(2)),
     pc,
+)
+pairs = [rng.gauss(0.01, 0.3) + rng.gauss(0.01, 0.3) for _ in range(N)]
+mp, sep = stats._mean_se(pairs, [2] * N)
+check(
+    f"{N} clusters of 2: the limit, with the cluster-robust se",
+    stats.bootstrap_t_p(pairs, [2] * N, 0.01) == 0.5 * math.erfc(((mp + 0.01) / sep) / math.sqrt(2)),
+)
+under = d[: N - 1]
+pu = stats.bootstrap_t_p(under, [1] * (N - 1), 0.01, draws=300)
+mu, seu = stats._mean_se(under, [1] * (N - 1))
+check(
+    f"bootstrap-t at {N - 1} units: resampled as before",
+    pu == stats._bootstrap_draw(under, [1] * (N - 1), 0.01, 300)
+    and pu != 0.5 * math.erfc(((mu + 0.01) / seu) / math.sqrt(2)),
+    pu,
+)
+check(
+    "p_method names the three ways at their edges",
+    [stats.p_method(n) for n in (stats.EXACT_UP_TO, stats.EXACT_UP_TO + 1, N - 1, N)]
+    == ["exact", "sampled", "sampled", "normal limit"],
+)
+
+# family-test's one stream: an opponent past the threshold first, then one that is resampled. The second's p must be
+# what it was when the first was resampled too (it drew after the first's draws).
+small = [rng.gauss(0.02, 0.3) for _ in range(500)]
+saved = stats.LARGE_SAMPLE
+stats.LARGE_SAMPLE = 10**18  # as before ADR-0028: the large opponent resampled
+r = random.Random(5)
+stats.sign_flip_p(d, permutations=200, rng=r)
+before = stats.sign_flip_p(small, permutations=200, rng=r)
+stats.LARGE_SAMPLE = saved
+r = random.Random(5)
+stats.sign_flip_p(d, permutations=200, rng=r)
+now = stats.sign_flip_p(small, permutations=200, rng=r)
+r = random.Random(5)
+stats.sign_flip_p(d, permutations=200, rng=r, advance=False)
+unmoved = stats.sign_flip_p(small, permutations=200, rng=r)
+check(
+    "one stream: the opponent after a large one gets the p it had (the stream moved past the large one)",
+    now == before and unmoved != before,
+    (before, now, unmoved),
 )
 check("no difference at all is still no test", stats.bootstrap_t_p([0.0] * N, [1] * N, 0.01) is None)
 check("all differences zero: p 1", stats.sign_flip_p([0.0] * N) == 1.0)

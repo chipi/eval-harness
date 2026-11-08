@@ -71,7 +71,7 @@ from evaluation_harness._common import (  # noqa: E402
     scored_against_dir,
 )
 from evaluation_harness._runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
-from evaluation_harness.stats import EXACT_UP_TO, clustered, fmt_p, sign_flip_p  # noqa: E402
+from evaluation_harness.stats import LARGE_SAMPLE, clustered, fmt_p, p_method, sign_flip_p  # noqa: E402
 from evaluation_harness.stats import noninferior as stats_noninferior  # noqa: E402
 
 
@@ -486,8 +486,12 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
         + (" (lower is better)" if lower else "")
         + (f" ({ties} exact tie(s))" if ties else "")
     )
-    exact = n_units <= EXACT_UP_TO
-    how = f"exact, all 2^{n_units} sign patterns" if exact else f"{args.permutations} permutations"
+    method = p_method(n_units)
+    how = {
+        "exact": f"exact, all 2^{n_units} sign patterns",
+        "sampled": f"{args.permutations} permutations",
+        "normal limit": f"the normal limit, from {LARGE_SAMPLE:,} units (ADR-0028)",
+    }[method]
     if args.cluster:
         print(f"    clusters           {n_units} by {args.cluster}: items that share a value count as one")
     print(f"    sign-flip p        {fmt_p(p)}  ({how})")
@@ -579,8 +583,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             "wins": wins,
             "ties": ties,
             "p": p,
-            "method": "exact" if exact else "sampled",
-            "permutations": None if exact else args.permutations,
+            "method": method,
+            "permutations": args.permutations if method == "sampled" else None,
             "seed": args.seed,
             "correction": "bonferroni" if args.family > 1 else "none",
             "family": args.family,

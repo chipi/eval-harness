@@ -13,6 +13,19 @@ correctness bugs, not just missing features.
   its folder is removed; nothing in a fingerprint moves. Then let git see the new files: a `.gitignore` that
   re-admits `outputs/**` in a run directory needs `!…/outputs.jsonl` instead (this repository's
   `harness/.gitignore` shows the pattern). The old layout is not read after the upgrade.
+- **Run `evh dataset-migrate` once** (E3; `--dry-run` first). Each dataset record's `version` is recomputed from its
+  lineage and a record without a `source` block gets the one its committed profile recorded; `validate` V22 then
+  holds the records to the 0.8.0 format. Item ids and hashes do not change, so no run or fingerprint moves.
+- **Three new dependencies** install with the package: `ruamel.yaml` (a setting saved keeps its comments),
+  `pyarrow` (tables and Hugging Face parquet) and `huggingface_hub` (Hub datasets in and out). `pip install` of the
+  new pin brings them; nothing to enable.
+- **Every `evh` command keeps the paired tests' p's** in `<project>/.cache/evh-p.jsonl`, as `evh mcp` already did:
+  keep `.cache/` ignored (`evh init`'s `.gitignore` does). `EVH_P_CACHE=` (empty) turns it off; set it to another
+  file to keep them elsewhere.
+- **Scripts reading a paired test's JSON:** from 10,000 items (or clusters) its p is the normal limit (ADR-0028):
+  `pair-test`'s `method` is `"normal limit"` (was `"sampled"`) and `permutations` is `null`; `family-test`'s
+  `method` can be `"normal limit"` or `"mixed"` and its rows have a `p_method`. Such a p can be `0.0`. Below 10,000
+  every p is what it was.
 - **A project's data can live in SQLite** (RFC-025), if you want it: nothing changes unless `config.yaml` says
   `store: sqlite` (or `EVAL_STORE=sqlite`). Then `evh data-migrate --to sqlite` moves everything under `data/` into
   `data/project.sqlite`; `--to files` moves it back. Python under `data/` moves out first (it is never in the

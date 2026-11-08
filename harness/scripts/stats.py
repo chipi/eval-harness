@@ -12,7 +12,8 @@ middle: two halves of at most 2^15 sums each, so it is instant). Before 0.4.0 th
 estimated it by Monte Carlo at every n, and near a threshold the estimate can land on either
 side: one pair is p 0.0254 exactly (26 of 1024 patterns, not significant at a 0.025 Holm
 step) against a 20,000-permutation estimate of 0.0237 (significant). Above 30 items it is the
-seeded estimate, unchanged: p = (hits + 1) / (permutations + 1).
+seeded estimate, unchanged: p = (hits + 1) / (permutations + 1). From LARGE_SAMPLE (10,000) units
+it is the permutation distribution's normal limit (ADR-0028), not a count over draws: it can be 0.0.
 
 Standard library only.
 """
@@ -33,6 +34,8 @@ import math
 import os
 import random
 import statistics
+import subprocess
+import sys
 from collections import OrderedDict
 from collections.abc import Callable
 from itertools import chain, compress
@@ -119,23 +122,36 @@ def exact_p(deltas: list) -> float:
     return hits / 2**n
 
 
+def p_method(units: int) -> str:
+    """How sign_flip_p finds the p for this many units: "exact", "sampled" (the seeded estimate) or "normal limit"."""
+    return "exact" if units <= EXACT_UP_TO else "sampled" if units < LARGE_SAMPLE else "normal limit"
+
+
 def sign_flip_p(
     deltas: list,
     permutations: int = PERMUTATIONS,
     seed: int = SEED,
     rng: random.Random | None = None,
+    advance: bool = True,
 ) -> float:
     """Two-sided paired sign-flip p: exact up to EXACT_UP_TO items, a seeded estimate below LARGE_SAMPLE, and from
     LARGE_SAMPLE items the permutation distribution's normal limit (z = sum d / sqrt(sum d^2)).
 
     rng: a generator shared across calls, for callers whose published estimates drew every
     opponent from one stream (family_test.py); otherwise a fresh one seeded with `seed`.
+    advance: with rng, from LARGE_SAMPLE items, move the stream on as if the signs were drawn (about 2 s at
+    10,000 items); a caller with no resampled opponent after this one passes False.
     """
     if not deltas:
         return 1.0
     if len(deltas) <= EXACT_UP_TO:
         return exact_p(deltas)
     if len(deltas) >= LARGE_SAMPLE:
+        if rng is not None and advance:
+            # The shared stream moves on as if the signs were drawn, so the opponents after this one draw what
+            # they drew before the limit (ADR-0028): a family that mixes sizes keeps its other p's.
+            for _ in range(permutations):
+                _draw(rng, len(deltas))
         q = math.fsum(d * d for d in deltas)
         return 1.0 if q == 0 else math.erfc(abs(math.fsum(deltas)) / math.sqrt(q) / math.sqrt(2))
     obs = statistics.fmean(deltas)
@@ -150,6 +166,15 @@ def sign_flip_p(
             _P.move_to_end(key)
             return _P[key]
         stored = _stored_p(key)
+        if stored is None and _COLLECT:
+
+            def hold(v: float, key: tuple = key) -> None:
+                _store_p(key, v)
+                _P[key] = v
+
+            job = {"kind": "sf", "d": [d.hex() for d in deltas], "n": permutations, "s": seed}
+            _COLLECT[-1].append((_disk_key(key), len(deltas) * permutations, job, hold))
+            return 1.0  # a stand-in: prefetch() throws away what it collects with
         if stored is None:
             n, a = len(deltas), abs(obs)
             neg = [-d for d in deltas]
@@ -318,7 +343,8 @@ def _signs(n: int, permutations: int, seed: int) -> list:
 
 def fmt_p(p: float) -> str:
     """A p-value as every command prints it: four decimals, and "<0.0001" for what would print
-    as 0.0000 (a p is never zero). Every other value prints exactly as it always has."""
+    as 0.0000 (a resampled p is never zero; one from the normal limit can be, ADR-0028). Every other value prints
+    exactly as it always has."""
     s = f"{p:.4f}"
     return "<0.0001" if s == "0.0000" else s
 
@@ -468,21 +494,179 @@ def bootstrap_t_p(totals: list, sizes: list, margin: float, draws: int = NONINF_
     t_obs = (m + margin) / se
     if g >= LARGE_SAMPLE:
         return 0.5 * math.erfc(t_obs / math.sqrt(2))
-    data = ",".join(f"{t.hex()}/{k}" for t, k in zip(totals, sizes, strict=True)) + f"|{float(margin).hex()}"
+    data = _bootstrap_data(totals, sizes, margin)
+    algo = f"bootstrap-t-1:{draws}"
+    if _COLLECT and not _known(algo, data):
+        k = hashlib.sha256(f"{algo}:".encode() + data.encode()).hexdigest()
+        job = {
+            "kind": "bt",
+            "t": [t.hex() for t in totals],
+            "k": list(sizes),
+            "m": float(margin).hex(),
+            "d": draws,
+        }
 
-    def compute() -> float:
-        rng = random.Random(int(hashlib.sha256(data.encode()).hexdigest()[:16], 16))
-        kept = beyond = 0
-        for _ in range(draws):
-            pick = [rng.randrange(g) for _ in range(g)]
-            ms, ses = _mean_se([totals[i] for i in pick], [sizes[i] for i in pick])
-            if ses == 0:
-                continue
-            kept += 1
-            beyond += (ms - m) / ses >= t_obs
-        return (1 + beyond) / (kept + 1)
+        def keep(v: float) -> None:
+            _keep(k, v)
+            _remember(k, v)
 
-    return kept(f"bootstrap-t-1:{draws}", data, compute)
+        _COLLECT[-1].append((k, g * draws, job, keep))
+        return 1.0  # a stand-in: prefetch() throws away what it collects with
+    return kept(algo, data, lambda: _bootstrap_draw(totals, sizes, margin, draws))
+
+
+def _bootstrap_data(totals: list, sizes: list, margin: float) -> str:
+    """A bootstrap-t's input exactly (floats as float.hex): its cache key and its generator's seed."""
+    return ",".join(f"{t.hex()}/{k}" for t, k in zip(totals, sizes, strict=True)) + f"|{float(margin).hex()}"
+
+
+def _bootstrap_draw(totals: list, sizes: list, margin: float, draws: int) -> float:
+    """bootstrap_t_p's resampled p, drawn: the same in a child process as here (prefetch)."""
+    g = len(totals)
+    m, se = _mean_se(totals, sizes)
+    t_obs = (m + margin) / se
+    rng = random.Random(
+        int(hashlib.sha256(_bootstrap_data(totals, sizes, margin).encode()).hexdigest()[:16], 16)
+    )
+    kept = beyond = 0
+    for _ in range(draws):
+        pick = [rng.randrange(g) for _ in range(g)]
+        ms, ses = _mean_se([totals[i] for i in pick], [sizes[i] for i in pick])
+        if ses == 0:
+            continue
+        kept += 1
+        beyond += (ms - m) / ses >= t_obs
+    return (1 + beyond) / (kept + 1)
+
+
+#: While prefetch() runs its calls: one list of the tests they would draw that are not yet kept, each (its key, its
+#: work in units x draws, its job for a child, how to keep its p).
+_COLLECT: list[list] = []
+#: Below this much resampling (units x draws, summed) the tests are drawn here, one after another: a child process
+#: costs about a second to start and import, a 1,000-item bootstrap-t about 2 s, a sign-flip about 0.6 s.
+PARALLEL_FROM = 20_000_000
+
+
+def _known(algo: str, data: str) -> bool:
+    k = hashlib.sha256(f"{algo}:".encode() + data.encode()).hexdigest()
+    return k in _KEPT or (bool(os.environ.get("EVH_P_CACHE")) and k in _disk())
+
+
+def workers_allowed() -> int:
+    """How many child processes prefetch may start: `EVH_WORKERS` when set (1 turns it off), else the CPUs this process
+    may run on, capped by its container's CPU quota (cgroup v2 `cpu.max`, v1 `cpu.cfs_quota_us`). A quota is not seen
+    by sched_getaffinity, which counts the host's cores: the deployment's inspector and MCP server run at `cpus: 0.5`
+    and `mem_limit: 384m`, where a worker per host core (about 20 MB each) would gain nothing and could overrun the
+    limit; under one whole CPU nothing is drawn in parallel."""
+    env = os.environ.get("EVH_WORKERS", "").strip()
+    if env:
+        try:
+            return max(1, int(env))
+        except ValueError:
+            pass
+    try:
+        n = len(os.sched_getaffinity(0))
+    except AttributeError:
+        n = os.cpu_count() or 1
+    v2 = _read("/sys/fs/cgroup/cpu.max").split()  # "50000 100000", or "max 100000"
+    v1 = [
+        _read("/sys/fs/cgroup/cpu/cpu.cfs_quota_us").strip(),
+        _read("/sys/fs/cgroup/cpu/cpu.cfs_period_us").strip(),
+    ]
+    quota, period = v2 if len(v2) == 2 else v1
+    if quota.isdigit() and period.isdigit() and int(period) > 0:
+        n = min(n, int(quota) // int(period))
+    return max(1, n)
+
+
+def _read(path: str) -> str:
+    try:
+        with open(path, encoding="ascii") as fh:
+            return fh.read()
+    except OSError:
+        return ""
+
+
+def prefetch(calls: Callable[[], Any]) -> int:
+    """Run `calls` once to learn which resampled tests it draws (bootstrap-t's, and sign-flips from a fresh
+    generator), then draw those not yet kept in child processes at once, and keep them: `calls` run again afterwards
+    reads every p back, the same p bit for bit (each is seeded by its data, or by its seed). What the first run
+    returns is thrown away (each p in it a stand-in). Nothing is drawn in parallel below PARALLEL_FROM, with one test,
+    or when a child fails: those are drawn as before, when asked. Returns how many were drawn in parallel.
+    PLAN_0.8.0 S2: a 50-arm catalog at 1,000 items drew 47 bootstrap-t's and 96 sign-flips one after another."""
+    if _COLLECT:  # inside another prefetch: its calls are collected there
+        calls()
+        return 0
+    _COLLECT.append([])
+    try:
+        calls()
+    except (Exception, SystemExit):  # noqa: BLE001 - a look ahead with stand-in p's never stops its caller:
+        pass  # what it collected is drawn, and the real run that follows meets the same error, if it is one
+    finally:
+        cases = list({c[0]: c for c in _COLLECT.pop()}.values())
+    if len(cases) < 2 or sum(c[1] for c in cases) < PARALLEL_FROM:
+        return 0
+    workers = min(workers_allowed(), len(cases))
+    if workers < 2:
+        return 0
+    # The longest first, each to the child with the least work so far: the children end about together.
+    chunks: list[list] = [[] for _ in range(workers)]
+    load = [0] * workers
+    for c in sorted(cases, key=lambda c: -c[1]):
+        w = load.index(min(load))
+        chunks[w].append(c)
+        load[w] += c[1]
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    env = dict(os.environ, PYTHONPATH=os.pathsep.join(x for x in (here, os.environ.get("PYTHONPATH")) if x))
+    env["EVH_P_CACHE"] = ""  # the children only draw; this process keeps
+    procs = []
+    for chunk in chunks:
+        job = [c[2] for c in chunk]
+        p = None
+        try:
+            p = subprocess.Popen(
+                [sys.executable, "-m", "evaluation_harness.stats", "--bootstrap-worker"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                env=env,
+            )
+            # Every child gets its input before any is read from, or they would run one after another.
+            p.stdin.write(json.dumps(job).encode())  # type: ignore[union-attr]
+            p.stdin.close()  # type: ignore[union-attr]
+        except OSError:
+            if p is not None:
+                p.kill()
+                p.wait()
+            continue  # this chunk is drawn here when asked
+        procs.append((p, chunk))
+    done = 0
+    for p, chunk in procs:
+        try:
+            out = p.stdout.read()  # type: ignore[union-attr]
+            ps = [float.fromhex(x) for x in json.loads(out)] if p.wait() == 0 else []
+        except (OSError, ValueError):
+            ps = []
+        if len(ps) != len(chunk):
+            continue  # drawn here when asked, as without prefetch
+        for c, v in zip(chunk, ps, strict=True):
+            c[3](v)
+            done += 1
+    return done
+
+
+def _bootstrap_worker() -> int:
+    """`python -m evaluation_harness.stats --bootstrap-worker`: prefetch's tests from stdin (JSON, floats as hex),
+    their p's to stdout in order: a bootstrap-t ("bt") or a sign-flip from a fresh generator ("sf")."""
+    out = []
+    for c in json.load(sys.stdin):
+        if c["kind"] == "bt":
+            v = _bootstrap_draw([float.fromhex(t) for t in c["t"]], c["k"], float.fromhex(c["m"]), c["d"])
+        else:
+            v = sign_flip_p([float.fromhex(d) for d in c["d"]], permutations=c["n"], seed=c["s"])
+        out.append(v.hex())
+    json.dump(out, sys.stdout)
+    return 0
 
 
 REDUCERS = ("mean", "majority", "at_least_K")
@@ -608,6 +792,14 @@ def compare(
     verdict, and with clusters "clusters".
     """
     base = arms.get(baseline) or {}
+    # The pairs' sign-flips drawn at once in child processes first, the same p's; only when one of them resamples
+    # (with clusters a pair's units can be fewer than its items, so any pair above EXACT_UP_TO items counts).
+    if not _COLLECT and any(
+        (k := len(set(s) & set(base))) > EXACT_UP_TO and (clusters is not None or k < LARGE_SAMPLE)
+        for a, s in arms.items()
+        if a != baseline
+    ):
+        prefetch(lambda: compare(arms, baseline, higher_is_better, neutral, family, threshold, clusters))
     rows, pvals = [], {}
     for arm, scores in arms.items():
         if arm == baseline:
@@ -695,3 +887,7 @@ def compare_by(
             thr, ok = verdicts.get((grp["group"], row["arm"]), (None, False))
             _set_verdict(row, thr, ok, higher_is_better, neutral)
     return {"groups": out, "family_size": max(len(pvals), family or 0)}
+
+
+if __name__ == "__main__" and sys.argv[1:] == ["--bootstrap-worker"]:
+    sys.exit(_bootstrap_worker())

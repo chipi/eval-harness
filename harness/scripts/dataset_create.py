@@ -394,8 +394,8 @@ def main() -> int:
         "--source",
         dest="source_name",
         metavar="NAME",
-        help="read the items from a dataset source: folder, manifest, the project's own (data/dataset_sources/NAME.py)"
-        " or path/to/source.py:Class",
+        help="read the items from a dataset source: folder, manifest, huggingface, kaggle, zenodo, openml, croissant,"
+        " the project's own (data/dataset_sources/NAME.py) or path/to/source.py:Class",
     )
     ap.add_argument(
         "--query", default="{}", help="with --source: what to read, as JSON (each source says its keys)"

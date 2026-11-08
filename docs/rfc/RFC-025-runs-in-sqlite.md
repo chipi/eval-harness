@@ -59,7 +59,8 @@ Anything else: no settings screen, no history, no export or import, no extra com
   no `data/` and still listed folders, a config's `adapter: ../../x.py` climbed through a folder that is only a key,
   and a release published the texts of a reference whose manifest says they are not redistributed (git kept them
   out for files; nothing did in the database).
-- S1's bench on both stores, before S2.
+- S1's bench on both stores, before S2 (2026-11-06; PLAN_0.8.0 S1): the same times within a few percent, the
+  10,000-item catalog 1,576 s as files and 1,584 s in the database.
 
 ## Built before this version, replaced by it
 

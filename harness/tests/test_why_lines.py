@@ -10,6 +10,7 @@ browser check cannot see the folding any more; this keeps it checked on a decisi
 
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
@@ -67,5 +68,36 @@ check(
     "a long undecided list that is not the contenders: a count, folded",
     any(x.startswith("Still undecided after the tie-break: 10 arms<details>") for x in other),
     other[-1:],
+)
+
+
+class Scores:
+    """An adapter with only what baseline_gap reads: each arm's per-item scores."""
+
+    def __init__(self, values: dict) -> None:
+        self.values = values
+
+    def scores(self, arm: str) -> dict:
+        return {"f1": {"values": self.values[arm]}}
+
+
+items = [f"i{k:02d}" for k in range(40)]
+A = Scores(
+    {"base": dict.fromkeys(items, 0.5), "rec": {i: 0.5 + 0.01 * (k % 7 + 1) for k, i in enumerate(items)}}
+)
+rows = [
+    {"arm": "base", "label": "base · rescored 5f2c057c", "baseline": True},
+    {"arm": "rec", "label": "rec · rescored 5f2c057c"},
+]
+gap = cb.baseline_gap(  # a stand-in adapter: only scores() is read
+    cast(Any, A),
+    {"recommended": "rec", "axes": [{"direction": "higher"}], "goal": {}, "dataset": "d"},
+    rows,
+    "f1",
+)
+check(
+    "the baseline's gap names both arms as the page does: the common scorer suffix dropped",
+    gap.startswith("Differs from the promoted baseline, base: rec is +") and "5f2c057c" not in gap,
+    gap,
 )
 sys.exit(summary())

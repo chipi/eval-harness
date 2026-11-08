@@ -71,7 +71,7 @@ from evaluation_harness._common import (  # noqa: E402
 )
 from evaluation_harness._fingerprint import measuring_modules  # noqa: E402
 from evaluation_harness._runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402 -- one implementation of "score per item"
-from evaluation_harness.stats import EXACT_UP_TO, clustered, fmt_p, holm, sign_flip_p  # noqa: E402 -- one implementation of the paired test
+from evaluation_harness.stats import EXACT_UP_TO, LARGE_SAMPLE, clustered, fmt_p, holm, p_method, sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
 
 def _opponents(runs: list, against: str, exclude: str) -> list[str]:
@@ -309,11 +309,16 @@ def _run(args) -> int:
                 "units": len(units),
                 "delta": statistics.fmean(deltas),
                 "wins": sum(1 for d in deltas if (d < 0 if lower else d > 0)),
-                "p": sign_flip_p(units, permutations=args.permutations, rng=rng),
+                "unit_values": units,
             }
         )
     if not rows:
         die("no opponents with enough shared items", "not-enough")
+    # In opponent order, from the one stream. An opponent past LARGE_SAMPLE takes the normal limit; the stream still
+    # moves past it when a later opponent is drawn from it, so that one's p is what it was (ADR-0028).
+    for j, r in enumerate(rows):
+        later = any(p_method(x["units"]) == "sampled" for x in rows[j + 1 :])
+        r["p"] = sign_flip_p(r.pop("unit_values"), permutations=args.permutations, rng=rng, advance=later)
 
     # HOLM STEP-DOWN. Sorted ascending, threshold alpha/(m-i), and the moment one fails
     # every larger p-value fails with it -- that carry-forward is the whole procedure, and
@@ -348,7 +353,19 @@ def _run(args) -> int:
     # pair-test or the inspector, which draw one per pair, can differ in the third decimal.
     # Per row: opponents can share different numbers of items, so one family can hold both.
     est = [r["units"] > EXACT_UP_TO for r in rows]
-    if any(est) and not all(est):
+    kinds = {p_method(r["units"]) for r in rows}
+    if "normal limit" in kinds:
+        parts = {
+            "exact": f"exact up to {EXACT_UP_TO} units",
+            "sampled": f"a seeded estimate below {LARGE_SAMPLE:,} ({args.permutations} permutations, one random "
+            "stream for the family) -- marked ~",
+            "normal limit": f"the permutation distribution's normal limit from {LARGE_SAMPLE:,} units (ADR-0028)"
+            + (" -- marked *" if len(kinds) > 1 else ""),
+        }
+        print(
+            "  p: " + "; ".join(parts[k] for k in ("exact", "sampled", "normal limit") if k in kinds) + "\n"
+        )
+    elif any(est) and not all(est):
         print(
             f"  p: exact up to {EXACT_UP_TO} shared items, a seeded estimate above ({args.permutations} "
             "permutations, one random stream for the family) -- marked ~\n"
@@ -372,7 +389,7 @@ def _run(args) -> int:
         r["p_holm"] = running
     width = max(len(r["opp"]) for r in rows) + 2
     if not _jsonout.table(
-        ["opponent", "n", "delta", "wins", "p", "p_exact", "p_holm", "threshold", "significant"],
+        ["opponent", "n", "delta", "wins", "p", "p_exact", "p_holm", "threshold", "significant", "p_method"],
         [
             [
                 r["opp"],
@@ -384,13 +401,16 @@ def _run(args) -> int:
                 r["p_holm"],
                 r["thresh"],
                 bool(r["sep"]),
+                p_method(r["units"]),
             ]
             for r in rows
         ],
     ):
         print(f"    {'opponent':{width}} {'delta':>9} {'A wins':>9} {'p':>8} {'thresh':>8}   verdict")
         for r in rows:
-            pv = ("~" if any(est) and not all(est) and r["units"] > EXACT_UP_TO else "") + fmt_p(r["p"])
+            how = p_method(r["units"])
+            mark = {"sampled": "~", "normal limit": "*"}.get(how, "") if len(kinds) > 1 else ""
+            pv = mark + fmt_p(r["p"])
             print(
                 f"    {r['opp']:{width}} {r['delta']:+9.4f} {r['wins']:>4}/{r['n']:<4} "
                 f"{pv:>8} {r['thresh']:8.4f}   {'SIGNIFICANT' if r['sep'] else '--'}"
@@ -410,8 +430,8 @@ def _run(args) -> int:
             "family_size": m,
             "alpha": args.alpha,
             "correction": "holm",
-            "method": "exact" if not any(est) else ("sampled" if all(est) else "mixed"),
-            "permutations": args.permutations if any(est) else None,
+            "method": next(iter(kinds)) if len(kinds) == 1 else "mixed",
+            "permutations": args.permutations if "sampled" in kinds else None,
             "seed": args.seed,
             "significant": sep,
             "ahead": ahead,

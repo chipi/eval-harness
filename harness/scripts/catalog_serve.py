@@ -5,7 +5,8 @@
     make catalog-serve
 
 Builds nothing: run `evh catalog` first. Static files are the built catalog and the data tree
-(its "files" links open run folders). Two JSON endpoints feed the inspector page:
+(its "files" links open run folders). Three JSON endpoints feed the inspector page (and GET /api/health says the
+server is up); the data page's seven, under /api/data/ (UXS-004, ADR-0027), answer on this machine only (DATA_ROUTES):
 
   GET /api/compare?runs=<arm|path>,...[&baseline=<arm>][&metric=<name>][&rescore=0]
       [&family=<m>][&threshold=<t>]

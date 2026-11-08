@@ -66,7 +66,7 @@ just static"): `harness/workbench/` (`index.html`, `workbench.css`, `workbench.j
 ## 0 An empty project: one way in
 
 ```text
- Workbench · my-project                                     Goals   Running   Models   Data   Catalog ↗
+ evh workbench · project: my-project       Home   Models   Jobs   Settings   Words   Catalog ↗   [x] hints   ◐
 
             What should this project help you decide?
 
@@ -425,7 +425,7 @@ person is an engineer and knows all this stuff, let's not make it too childish".
 | What is it for? | One sentence: what you want, for whom, so that what. | It keeps the evaluation honest: a system that is better at something you don't need does not win. Example: "Pick a model that writes a short summary of a CNN-style news article, at a known cost, for a reader who wants the story's main points." |
 | The decision | The choice you will make from the result. | "Which models can be told apart on summary quality, and what each costs per article." If the result cannot change this choice, the evaluation is measuring the wrong thing. |
 | How you'll judge | The number that decides which system is better, and which way is better. | A measure is one number per example (coverage: how much of the reference a summary covers, cut to the reference's own length, so writing more cannot buy it). Higher or lower is better depends on the measure: quality goes up, cost and time go down. |
-| How a winner is picked | Balanced suits most goals. | When systems are close, the rule decides who may still win beside the best (the contenders); among them the cheapest wins, then the fastest. **Balanced**: not significantly different from the best and within 5% of it. **Quality first**: the same quality only. **Frugal**: anything not significantly different by the paired test. The margin, the tie-break and other measures are under "advanced". |
+| How a winner is picked | Balanced suits most goals. | When systems are close, the rule decides who may still win beside the best (the contenders); among them the cheapest wins, then the fastest. **Balanced**: shown no worse than the best by more than 5% of it (a non-inferiority test). **Quality first**: the same quality only. **Frugal**: shown no worse by more than 10%. The margin, the tie-break and other measures are under "advanced". |
 | Step 2, the dataset | The examples your systems will be tested on. | A dataset is a frozen list of items (an article, a question, a ticket), each with a hash, so every system sees exactly the same examples, now and later. Use one you have, or make one from a source. |
 | a Where from | Where the examples are now. | A folder of files, a table (CSV, JSON lines), a dataset on Hugging Face, Croissant, Zenodo, OpenML or Kaggle, or what your system decided in production (a capture). Public sources are read at one pinned version, so the dataset can be rebuilt exactly. |
 | b What's in it | Which column is the example, and which holds the expected answer if there is one. | The item is what a system receives (the article). The expected answer (the highlights) becomes the reference later, in step 3. Take a few hundred to start: enough to tell systems apart, cheap to run. |

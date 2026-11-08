@@ -820,6 +820,10 @@ def test_example_scorer_suites_pass() -> None:
             "the paired tests from 10,000 items: their normal limit (ADR-0028), resampled below as before",
         ),
         (
+            "test_prefetch.py",
+            "resampled tests drawn at once in child processes: the same p's bit for bit, capped by a container's CPU quota",
+        ),
+        (
             "test_item_index.py",
             "an item's copy found once per item, the dataset record read once, read again when it changes",
         ),

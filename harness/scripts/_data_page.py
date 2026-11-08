@@ -346,16 +346,18 @@ def _not_edited(norm: str) -> str:
 
 
 def put(rel: str, text: str, new: bool = False) -> dict[str, Any]:
-    """Save a setting: checked first, nothing written on a problem; `new` refuses a name already taken."""
-    norm, f = resolve(rel)
-    problems = check(norm, text)
-    if new and _store.is_file(f):
-        raise Refused(f"{norm} exists: open it to edit it.", "would-overwrite")
-    if problems:
-        raise Refused(f"{norm} not saved:\n  " + "\n  ".join(problems), "invalid-file")
+    """Save a setting: checked first, nothing written on a problem; `new` refuses a name already taken. Under the
+    settings' one lock from the check of the name to the write (two new ones of one name: the second refused)."""
     from evaluation_harness import _settings_form  # noqa: PLC0415
 
-    _settings_form.guarded_write(norm, f, text)
+    norm, f = resolve(rel)
+    problems = check(norm, text)
+    with _settings_form.WRITES:
+        if new and _store.is_file(f):
+            raise Refused(f"{norm} exists: open it to edit it.", "would-overwrite")
+        if problems:
+            raise Refused(f"{norm} not saved:\n  " + "\n  ".join(problems), "invalid-file")
+        _settings_form.guarded_write(norm, f, text)
     return show(norm)
 
 

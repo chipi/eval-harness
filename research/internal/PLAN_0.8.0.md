@@ -1,6 +1,6 @@
 # 0.8.0: the plan
 
-**Status:** 2026-11-05. The one current plan for 0.8.0 (branch `080`, from v0.7.2). It brings together the
+**Status:** 2026-11-08 (first written 2026-11-05). The one current plan for 0.8.0 (branch `080`, from v0.7.2). It brings together the
 reconciliation of the agent-ready drafts with what 0.5.0 to 0.7.2 shipped, and the comparison with the field
 ([FIELD_ALIGNMENT_0.8.0.md](FIELD_ALIGNMENT_0.8.0.md), the evidence). Each package is built, tested and committed
 on its own; the owner decides scope and the open questions below.
@@ -25,8 +25,8 @@ on its own; the owner decides scope and the open questions below.
      the arms that ran it; listed in the catalog like models. The record side of R1 (an item names the code
      version its output came from).
 7. Release, validated in seven layers (owner, 2026-11-06), cheap first:
-   1. The full local gate once on the final tree: every `make` target CI runs (quality, verify, commands-check, docs,
-      guide-check, budget-check, browser-check, site-check), `validate`, and every example's data step fetched fresh
+   1. The full local gate once on the final tree: every `make` target CI runs (quality, verify, check, commands-check, docs,
+      guide-check, guard-check, budget-check, browser-check, browser-real-check, site-check, stores-check), `validate`, and every example's data step fetched fresh
       and hash-checked (`examples/reproduce.py data <exp>`).
    2. The committed results re-derived for $0 (the catalog, every goal's decision, the reports) and compared with
       0.7.2's: every number that moved has a named cause (A2's contender test, E3's versions, RFC-024's migration).
@@ -116,7 +116,7 @@ the modes of a hidden dataset's tags, never their notes. The design is in `_tags
 | --- | --- |
 | E1 | A `source` block: provider, ref, revision, config, split, gated, the description's sha256; no key belongs to one host |
 | E2 | Licence: optional; `evh licences` lists the common ones (SPDX ids, a line each), `--licence` checks against it; the list ships with the package |
-| E3 | The dataset version, designed: proposal below |
+| E3 | The dataset version, designed: accepted and built (below) |
 | E4 | A `card` block: the datasheet questions as a subset of Croissant's responsible-AI keys |
 | E5 | The source interface (`resolve`, `describe`, `items`, `item_url`, optional `publish`), resolved by name like the capture importers; the local folder and the URL manifest are its first two sources |
 | E6 | Croissant 1.1 out: `evh dataset-card --dataset-id D [--format croissant]` |
@@ -163,19 +163,21 @@ and private datasets on Kaggle and the Hub are not tried (no Kaggle credentials 
 
 ### S. Scale: 1,000 to 10,000 items
 
-**S0, in progress: a project's data in SQLite, minimal version (owner, 2026-11-06).** Files stay the default;
+**S0, built: a project's data in SQLite, minimal version (owner, 2026-11-06).** Files stay the default;
 `store: sqlite` in the project's `config.yaml` (or `EVAL_STORE`) puts everything under `data/` in one database,
 `data/project.sqlite`, which every command, the catalog and the inspector read and write; Python code never in it.
-`evh data-migrate --to sqlite|files`. Built so far: a run's outputs and rows behind one module in either store
-(f28f050e4, 6e8ed1842). Getting data in is `data-migrate` only until S0b's API (owner, 2026-11-06). Done when: the
-full suite is green on files; validate, catalog, site check and report checks green on this repository's data in a
-database; S1's bench on both stores (each bench project made as files, then moved). The full suite on sqlite comes
-with S0b.
+`evh data-migrate --to sqlite|files`. Built: a run's outputs and rows behind one module in either store
+(f28f050e4, 6e8ed1842), then every command, the data page and the skills in both stores (RFC-025's Testing
+section). The full suite runs on SQLite too (`make stores-check`, CI's `stores` job, bb20e4252); it found 5 product
+bugs, fixed. S1's bench ran on both stores (2026-11-06, each bench project made as files, then moved): the same
+times within a few percent (the 10,000-item catalog 1,576 s as files, 1,584 s in the database).
 [RFC-025](../../docs/rfc/RFC-025-runs-in-sqlite.md), minimal version accepted 2026-11-06.
 
-**S0b, next after S0: an API for every command (owner, 2026-11-06: "next RFC is for this API").** Today only the
-read side exists outside the CLI (`evh mcp`, 26 read tools; `catalog-serve`, 5 read endpoints); about 50 of the
-CLI's 75 commands are reachable only from it. RFC-026 first, written after S0 is green.
+**S0b: an API for every command (owner, 2026-11-06: "next RFC is for this API").** Today outside the CLI: `evh
+mcp`'s 28 read tools, `catalog-serve`'s 4 read endpoints and the data page's 7 (which write settings and remove runs,
+ADR-0027); 52 of the CLI's 80 commands are reachable only from it.
+[RFC-026](../../docs/rfc/RFC-026-an-api-for-every-command.md) is Proposed (2026-11-08), for the owner; nothing of it
+is built.
 
 | # | what |
 | --- | --- |
@@ -209,29 +211,43 @@ sheet loads and parses the whole dataset record once per item (`_common.item_pat
 quadratic). Third: a run's own cost, 5.6 ms an item with an adapter that does nothing, not yet profiled. Files: a run
 is one file per item (RFC-024), and the 10,000-item project filled `/tmp`'s inodes on the first attempt.
 
-**S2 and S3 built (2026-11-08).** From 10,000 units both paired tests take their normal limit (ADR-0028; the
-simulation `tools/large_sample_check.py` found it off for heavy-tailed and sparse data at 1,000 to 5,000, so below
-10,000 they resample as before and no committed p moves). The p cache is on by default for every `evh` command
-(`<project>/.cache/evh-p.jsonl`), so a p is drawn once per project, not once per process. An item's copy is found from
-an index read once per dataset. A dataset page lists 200 items a page. The same bench, seconds:
+**S2 and S3 built (2026-11-08).** From 10,000 units both paired tests take their normal limit (ADR-0028: the
+simulation `tools/large_sample_check.py`, resampling at every size, found the limit within the resampling's own error
+at 10,000 for all seven kinds of data and off for heavy-tailed and sparse data at 1,000 to 5,000). Below 10,000 they
+resample as before, the same p's, and what a catalog, a goal or a comparison needs is drawn at once in child
+processes (`stats.prefetch`; capped by a container's CPU quota). The p cache is on by default for every `evh` command.
+An item's copy is found from an index read once per dataset. A dataset page lists 200 items a page; the inspector's
+per-item table and its sheet draw only the rows shown, and its charts draw bins past 500 items a run. S1's bench
+(50 arms) again, p cache emptied first, seconds; S1 per store from 2026-11-06:
 
-| step | 1,000 items, S1 | 1,000, now | 10,000 items, S1 | 10,000, now |
+| step | files 1,000: S1 → now | SQLite 1,000 | files 10,000 | SQLite 10,000 |
 | --- | --- | --- | --- | --- |
-| `catalog` (50 arms), p cache empty | 144 | 146 | 1,532 | 12.8 |
-| `goals --goal`, right after | 142 | 0.4 | 1,499 | 4.0 |
-| `goals --goal --json` | 144 | 0.6 | 1,516 | 4.0 |
-| `pair-test` | 0.8 | 0.1 | 7.2 | 0.1 |
-| `family-test` (49 against 1) | 35.5 | 38.5 | 332.5 | 1.6 |
-| `inspect --sheet --csv`, 5 arms | 13.0 | 2.7 | 175.3 | 2.3 |
-| largest catalog page | — | 0.30 MB | 13.8 MB | 0.32 MB |
+| `catalog` | 144.9 → 16.0 | 145.6 → 13.8 | 1,575.9 → 14.1 | 1,584.4 → 13.5 |
+| `goals --goal --json`, after the catalog | 148.7 → 0.6 | 148.1 → 0.5 | 1,629.1 → 4.5 | 1,623.0 → 4.0 |
+| `pair-test` | 0.8 → 0.1 | 0.8 → 0.1 | 7.4 → 0.1 | 7.5 → 0.2 |
+| `family-test` (49 against 1), first run | 36.1 → 38.1 | 36.9 → 36.6 | 340.4 → 1.6 | 343.6 → 1.8 |
+| `inspect --sheet --csv`, 5 arms | 13.3 → 1.1 | 13.9 → 1.6 | 192.2 → 2.1 | 210.4 → 7.3 |
+| `inspect --sheet --csv`, 50 arms | 147.9 → 4.2 | 150.6 → 7.0 | 1,594.6 → 13.4 | 1,639.3 → 11.1 |
+| `/api/compare`, 5 arms (cold) | 2.6 → 0.9 | 2.5 → 0.9 | 25.1 → 0.3 | 25.1 → 0.5 |
+| `/api/compare`, 40 arms (cold) | 17.5 → 2.6 | 17.8 → 2.4 | 184.3 → 2.0 | 183.1 → 2.5 |
+| largest catalog page | 0.30 MB | 0.30 MB | 13.8 → 0.32 MB | 0.32 MB |
 
-Not made faster: below 10,000 units the first catalog (146 s at 1,000 items, 47 bootstrap-t's of about 2 s each)
-and `family-test` (sign-flips; its p's are not kept in the cache). A bit-identical draw of the bootstrap's picks in C
-saved 15% (2.10 to 1.78 s a test) and was not kept. What would: the catalog's bootstrap-t's drawn in parallel (each is
-seeded by its data, so the p's stay the same), for the owner to decide. In Chromium the 10,000-item catalog's 117 pages
-loaded with no page error, the slowest in 39 ms (`arms.html`, 3,587 elements), the largest JS heap 2.0 MB, the
-largest file 0.32 MB (the dataset page, before S3 13.8 MB); measured from a local server, so no network time. Not
-measured: a phone, a slow network, the inspector's pages at 10,000 items.
+With the p cache empty, the committed code's `goals --goal --json` on the 1,000-item project gave the same JSON as
+the new code (147.7 s against 12.5 s), and its catalog the same pages (150.4 s against 16.3 s; only the build minute
+differs, and the order of `arms-rows.js`, which followed the hash seed before and is sorted now).
+
+In Chromium (the 10,000-item catalog through `catalog-serve`): its 117 pages on a 390 px phone with the CPU slowed 4×
+and a slow 3G link (150 ms, 1.6 Mb/s) load in a median 0.4 s, the slowest 1.8 s (the dataset page), none wider than
+the screen, no page error. The inspector at 5 / 40 arms shows its verdicts in 0.4 / 2.9 s on a desktop (1,673 / 7,494
+elements; it never rendered 40 arms before: a stack overflow, and 3.2 million elements) and in 15.6 / 123.4 s on that
+phone, the time to download the comparison (2.7 / 23.6 MB uncompressed; the deployment's Caddy compresses it to 0.4
+/ 3.6 MB). The sheet at 40 arms: 11.7 s, 1,875 elements (940,935 before).
+
+Not made faster: `family-test`'s first run below 10,000 units (about 37 s at 1,000 items: one random stream for the
+family, which cannot be split without changing its p's; a second run replays its kept answer). The 50-arm sheet in
+a SQLite project at 10,000 items took 45.7 s, 121 s of a profiled 146 in looking up each output on its own; it reads each
+arm's outputs once now (11.1 s, the CSV byte for byte the same). Not measured: a real phone, a
+real mobile network, a machine with few cores (the parallel draws gain less there).
 
 ## 4. The agent-ready pieces from the drafts
 
@@ -278,10 +294,12 @@ R3 to R5 start as example code; R1 and R2 are the core.
 
 ## NOT done or NOT verified
 
-- Pushed: up to `163b1b75d` (2026-11-08, CI green). Committed after it, not pushed: S2 and S3. A push needs the
-  owner's yes.
-- S0b: RFC-026 is Proposed, waiting for the owner; nothing of it is built.
-- S2 below 10,000 units: the first catalog (146 s at 1,000 items) and `family-test` are not faster (above).
+- Pushed: up to `163b1b75d` (2026-11-08, CI green). Committed after it, not pushed: S2 and S3, RFC-026, and the
+  review's fixes (2026-11-08). A push needs the owner's yes.
+- S0b: RFC-026 is Proposed, waiting for the owner (its four open questions); nothing of it is built.
+- S2 below 10,000 units: `family-test`'s first run (about 37 s at 1,000 items) is not faster (above).
+- The deployed inspector was killed by its memory cap 337 times on 2026-10-26/27 (infra's report, 2026-11-08); not
+  looked into from here (no access to the box): the owner's and the prod session's.
 - Step 4, R, the fleet's feedback (6) and the release (7) are not built.
 - Sizes of every package are estimates, not measured.
 - The clustered bootstrap-t was simulated at 100 clusters of 3 only; other cluster sizes and shapes are not.

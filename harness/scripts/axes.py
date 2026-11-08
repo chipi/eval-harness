@@ -16,8 +16,9 @@ goal adds limits, a tie-break order and axes of its own under `success_criteria`
 THE RULE (ADR-0006). An arm over a limit is out, with the reason; so is an arm measured on fewer
 items than the group's most-measured arm, and one that shares fewer than two items with the
 leader. Among the rest, the leader is the best on quality, and the goal's strategy says who the
-contenders are (balanced: not significantly different from the leader by the paired test, Holm
-across them, and within the margin; identical scores are always contenders). Among the contenders,
+contenders are (ADR-0026: shown no worse than the leader by more than the strategy's margin by a
+one-sided non-inferiority test, Holm across them; balanced 5% of the leader, frugal 10%, quality_first 0;
+identical scores are always contenders). Among the contenders,
 the tie-break axes pick in order: the
 lowest cost, then the lowest latency (or the best value of a project's axis). It recommends;
 promoting stays a command. A number an arm does not record is "not recorded": never 0, never a
@@ -385,12 +386,27 @@ def decide(
         # happens when there are too few items to see a difference (Lakens 2017), so the smaller the dataset the
         # more arms tied, and frugal then picked the cheapest. Identical per-item scores are contenders anyway.
         lead_vals = (arms[reference]["scores"].get(quality["measure"]) or {}).get("values") or {}
-        tests = {}
-        for x in eligible:
-            if x in (leader, reference):
-                continue
+        others = [x for x in eligible if x not in (leader, reference)]
+
+        def test(x: str) -> dict:
             vals = (arms[x]["scores"].get(quality["measure"]) or {}).get("values") or {}
-            tests[x] = stats.noninferior(vals, lead_vals, margin, quality["direction"] == "higher", clusters)
+            return stats.noninferior(vals, lead_vals, margin, quality["direction"] == "higher", clusters)
+
+        # Their bootstrap-t's drawn at once in child processes first, the same p's (stats.prefetch); only when one of
+        # them resamples (with clusters, units can be fewer than items: any test above EXACT_UP_TO items counts).
+        def shared(x: str) -> int:
+            return len(
+                set((arms[x]["scores"].get(quality["measure"]) or {}).get("values") or {}) & set(lead_vals)
+            )
+
+        if any(
+            (k := shared(x)) > stats.EXACT_UP_TO and (clusters is not None or k < stats.LARGE_SAMPLE)
+            for x in others
+        ):
+            stats.prefetch(lambda: [test(x) for x in others])
+        tests = {}
+        for x in others:
+            tests[x] = test(x)
             rows[x]["quality"]["noninferior"] = tests[x]
         # One family at one level: a p tested at half the level (the bootstrap-t) counts twice.
         ni_p = {

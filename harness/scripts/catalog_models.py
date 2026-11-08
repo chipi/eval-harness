@@ -205,7 +205,8 @@ def model_rows(A, by_ds: dict, arms_rows: list[dict] | None = None) -> list[dict
         rec = x["record"]
         arms = [arm_rows[a] for a in x["arms"] if a in arm_rows]
         best: dict = {}
-        for cid in {r["config"] for r in arms}:
+        # sorted: on a tie the first wins, the same every build (a set's order differs per process)
+        for cid in sorted({r["config"] for r in arms}):
             for g, ds, i, n in ranks.get(cid, []):
                 k = (g["goal_id"], ds)
                 if k not in best or i < best[k][2]:

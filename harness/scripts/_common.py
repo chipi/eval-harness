@@ -641,9 +641,10 @@ def _item_index(dataset_id: str) -> dict[str, str] | None:
         ds = load_dataset(dataset_id)
     except SystemExit:
         return None
-    index = {
-        x["item_id"]: x.get("source_path") or x["item_id"] for x in ds.get("items") or [] if x.get("item_id")
-    }
+    index: dict[str, str] = {}
+    for x in ds.get("items") or []:
+        if x.get("item_id"):  # the first item with an id, as the search over the items found it
+            index.setdefault(x["item_id"], x.get("source_path") or x["item_id"])
     _ITEM_INDEX[dataset_id] = (stamp, index)
     while len(_ITEM_INDEX) > _ITEM_INDEX_MAX:
         _ITEM_INDEX.popitem(last=False)

@@ -118,8 +118,8 @@ success_criteria:
         ${field("goal.decision", `<textarea name="decision" rows="2" placeholder="e.g. ${esc(ex.decision)}">${esc(d.decision)}</textarea>`)}
         ${field("goal.measure", `<div class="inline"><select name="measure" aria-label="measure"><option value="">choose a ${"measure"}</option>${M.measures.map((m) => `<option ${d.measure === m ? "selected" : ""}>${esc(m)}</option>`).join("")}</select>
             <div class="choices row">${radio("direction", "higher", "higher is better")}${radio("direction", "lower", "lower is better")}</div></div>`)}
-        ${field("goal.strategy", `<div class="choices">${radio("strategy", "balanced", "balanced", "not significantly different from the best and within 5% of it, then the cheapest")}
-            ${radio("strategy", "quality_first", "quality first", "the same quality only")}${radio("strategy", "frugal", "frugal", "anything not significantly different, then the cheapest")}</div>
+        ${field("goal.strategy", `<div class="choices">${radio("strategy", "balanced", "balanced", "shown no worse than the best by more than 5% of it, then the cheapest")}
+            ${radio("strategy", "quality_first", "quality first", "the same quality only")}${radio("strategy", "frugal", "frugal", "shown no worse than the best by more than 10% of it, then the cheapest")}</div>
             <details class="adv" style="margin-top:8px"><summary>advanced: the margin, the tie-break, other measures</summary>
               <div class="form" style="gap:12px;margin-top:12px">
                 <div class="field"><div class="name">Margin</div><div class="inline"><input type="text" name="margin" value="${esc(d.margin ?? "")}" placeholder="default: 5% of the best (balanced), 10% (frugal)" style="width:300px"><span class="muted" style="font-size:13px">how much worse than the best an arm may be and still win, in the measure's units</span></div></div>
@@ -506,7 +506,7 @@ success_criteria:
         ${arms.length ? `
           <div class="parthead" style="margin-top:20px"><h3>The comparison</h3>${q("eval.compare")}<span class="grow"></span><span class="muted" style="font-size:13px">${arms.length} arms · 200 items · scored against gold/${esc(ds() || "cnn_dailymail_200")}</span></div>
           <div class="cmpgrid"><div>${scatter(arms, S.arm)}<div class="legend"><span><i class="dot-lead"></i>leader</span><span><i class="dot-ns"></i>not significantly different</span><span><i class="dot-worse"></i>significantly worse</span></div></div>
-            <div class="note"><b>What the goal's rule picks.</b> Balanced: the arms not significantly different from the best <i>and</i> shown within 5% of it, then the cheapest. Here none could be shown within the margin, so the leader stands: <b>bart_l</b>.
+            <div class="note"><b>What the goal's rule picks.</b> Balanced: the arms shown no worse than the best by more than 5% of it, then the cheapest. Here none could be shown within the margin, so the leader stands: <b>bart_l</b>.
               <div style="margin-top:8px">${esc(M.detectable)} ${q("eval.detect")}</div></div></div>
           ${armPanel(M.arms.find((a) => a.config_id === S.arm))}
           ${compareTable(shown, S.arm)}

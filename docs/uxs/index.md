@@ -56,7 +56,7 @@ algorithms. When a rule could live in either, it goes in the RFC and the UXS lin
 | [UXS-002](UXS-002-inspector.md) | The run inspector | Active | [PRD-004](../prd/PRD-004-catalog-and-inspector.md), [PRD-006](../prd/PRD-006-datasets-versions-fields.md); [RFC-003](../rfc/RFC-003-catalog-adapter.md) | Choosing arms, testing against a baseline, conditions, fields, the analysis charts, the per-item table, one item side by side |
 | [UXS-003](UXS-003-cli-and-onboarding.md) | The command line and the first evaluation | Active | [PRD-001](../prd/PRD-001-evals-and-comparison.md), [PRD-007](../prd/PRD-007-packaging-and-providers.md) | The onboarding path, how commands speak (refusals, hints, exit codes), the parity table, the round flow |
 | [UXS-004](UXS-004-data-page.md) | The data page | Active | [PRD-016](../prd/PRD-016-managing-project-data.md); [RFC-025](../rfc/RFC-025-runs-in-sqlite.md), [ADR-0027](../adr/ADR-0027-the-data-page-writes-locally.md) | Browsing a SQLite project's data, its Configure menu; editing, creating and deleting settings; deleting a run; `evh data-ls`, `data-show`, `data-put`, `data-rm` |
-| [UXS-005](UXS-005-workbench.md) | The Workbench | Draft (sketches) | [PRD-017](../prd/PRD-017-workbench.md) | The home, the round board (W1) and the mock data model; the rest to come |
+| [UXS-005](UXS-005-workbench.md) | The Workbench | Draft (sketches and the clickable mockup) | [PRD-017](../prd/PRD-017-workbench.md), [RFC-026](../rfc/RFC-026-an-api-for-every-command.md) | Steps 0 to 5, the home, jobs, models, the help layer and W2, W3, W5 to W8, each sketched and in the mockup (`harness/workbench/`) |
 
 ## Adding one
 

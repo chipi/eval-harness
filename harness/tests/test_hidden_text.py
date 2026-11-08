@@ -412,6 +412,21 @@ try:
             "not redistributed" in refused and "references/gold/tickets_s/" in refused,
             refused,
         )
+        for text, says in (
+            (json.dumps({**doc, "redistributed": "false"}), "'false', not true or false"),
+            ("{", "cannot be read"),
+        ):
+            _runstore.write_text(proj, man, text)
+            try:
+                copy_data(data, proj / ".release3")
+                refused = ""
+            except SystemExit as exc:
+                refused = str(exc)
+            check(
+                f"release: a manifest that cannot say ({says}): its texts refused, never published",
+                says in refused,
+                refused,
+            )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

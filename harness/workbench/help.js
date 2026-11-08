@@ -52,7 +52,7 @@ window.HELP = {
   "goal.strategy": {
     title: "How a winner is picked",
     hint: "Balanced suits most goals.",
-    what: "When systems are close, the rule decides who may still win beside the best (the contenders); among them the cheapest wins, then the fastest. Balanced: not significantly different from the best and within 5% of it. Quality first: the same quality only. Frugal: anything not significantly different by the paired test.",
+    what: "When systems are close, the rule decides who may still win beside the best (the contenders); among them the cheapest wins, then the fastest. Balanced: shown no worse than the best by more than 5% of it (a non-inferiority test). Quality first: the same quality only. Frugal: shown no worse by more than 10%.",
     why: "Two systems a hair apart on quality can be ten times apart on cost; the rule says which matters more to you.",
     more: "Goals: success criteria",
   },

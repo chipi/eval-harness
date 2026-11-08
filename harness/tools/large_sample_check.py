@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Does the normal approximation give the harness's resampled p's at 1,000 and 10,000 items (PLAN_0.8.0 S2)?
+"""Does the normal approximation give the harness's resampled p's at 1,000 and 10,000 units (PLAN_0.8.0 S2)?
 
     python tools/large_sample_check.py [--sizes 1000,10000] [--per 40] [--jobs 24] [--out FILE]
 
@@ -30,13 +30,17 @@ sys.path.insert(0, str(HARNESS))
 from evaluation_harness import _store, stats  # noqa: E402
 
 os.environ.pop("EVH_P_CACHE", None)  # every p computed, none read from a cache
+# This tool is the evidence for the threshold, so it never takes the limit itself: both tests resample at every size
+# (set again in each worker, which imports this file).
+stats.LARGE_SAMPLE = 10**18
 
 KINDS = ("continuous", "bounded", "binary", "heavy", "sparse", "clusters3", "clusters8")
 LEVELS = (0.05, 0.025, 0.01, 0.005)
 
 
 def deltas(kind: str, n: int, shift: float, rng: random.Random) -> tuple[list[float], list[int]]:
-    """Per-unit totals and sizes (one item per unit unless clustered) with the mean shifted by `shift` sds."""
+    """`n` units' totals and sizes (one item per unit; for the cluster kinds n clusters of 3 or 8 items) with the
+    mean shifted by `shift` sds."""
     if kind == "continuous":
         return [rng.gauss(shift * 0.2, 0.2) for _ in range(n)], [1] * n
     if kind == "bounded":  # coverage-like: two scores in [0, 1], their difference; a third of items tie at 0
@@ -60,7 +64,7 @@ def deltas(kind: str, n: int, shift: float, rng: random.Random) -> tuple[list[fl
     if kind == "sparse":  # 95% of items unchanged
         return [rng.gauss(shift * 0.2, 0.2) * 4 if rng.random() < 0.05 else 0.0 for _ in range(n)], [1] * n
     k = 3 if kind == "clusters3" else 8
-    g = n // k
+    g = n
     totals, sizes = [], []
     for _ in range(g):
         c = rng.gauss(0, 0.15)  # a shared effect per cluster: items in a cluster are not independent
@@ -86,13 +90,13 @@ def one(case: tuple) -> dict:
     totals = [t + shift_items * k for t, k in zip(totals, sizes, strict=True)]
     per_item = [t / k for t, k in zip(totals, sizes, strict=True)]
     row = {"kind": kind, "n": n, "case": i}
-    if all(k == 1 for k in sizes):  # the sign-flip test is per item
-        t0 = time.time()
-        p_res = stats.sign_flip_p(totals)
-        s, q = math.fsum(totals), math.fsum(d * d for d in totals)
-        p_apx = math.erfc(abs(s) / math.sqrt(q) / math.sqrt(2)) if q else 1.0
-        row["sign_flip"] = {"resampled": p_res, "approx": p_apx, "seconds": round(time.time() - t0, 2),
-                            "mc_se": math.sqrt(max(p_res * (1 - p_res), 1e-12) / stats.PERMUTATIONS)}  # fmt: skip
+    # The sign-flip per unit: an item, or a cluster's total as pair-test --cluster flips it.
+    t0 = time.time()
+    p_res = stats.sign_flip_p(totals)
+    s, q = math.fsum(totals), math.fsum(d * d for d in totals)
+    p_apx = math.erfc(abs(s) / math.sqrt(q) / math.sqrt(2)) if q else 1.0
+    row["sign_flip"] = {"resampled": p_res, "approx": p_apx, "seconds": round(time.time() - t0, 2),
+                        "mc_se": math.sqrt(max(p_res * (1 - p_res), 1e-12) / stats.PERMUTATIONS)}  # fmt: skip
     m, se = stats._mean_se(totals, sizes)
     t0 = time.time()
     p_bt = stats.bootstrap_t_p(totals, sizes, 0.0)  # T = m / se, drawn above to lie between 1 and 3.5

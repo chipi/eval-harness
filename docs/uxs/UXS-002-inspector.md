@@ -182,13 +182,17 @@ muted; the baseline `--baseline`) on every chart, never a colour by rank. A lege
   quality–cost or quality–tokens trade-off.
 
 Hovering a dot shows its arm, item and value. Below 700px the charts switch to a narrow layout
-(labels above each row) rather than scroll.
+(labels above each row) rather than scroll. Past 500 items a run, a row draws 60 shaded bins instead of a dot each (the
+darker, the more items; hovering one says how many, between what values), and past 2,000 points in all the scatter
+is a shaded grid with the averages' crosses on it (PLAN_0.8.0 S3: at 10,000 items and 40 arms the dots were 1.2
+million).
 
 ## 03 per item
 
 "per item · n": one row per item, one column per arm (the baseline's marked), each cell the
 score with ▲ or ▼ where it beats or trails the baseline on that item. Paged 10 at a time like
-every catalog table. A row opens on click, Enter or Space.
+every catalog table, and only the rows shown are drawn: "show 10 more", and "show all" up to 1,000 items (past that,
+"show 1000 more"); a link to an item (`?item=`) draws down to it. A row opens on click, Enter or Space.
 
 ## 04 the item view
 

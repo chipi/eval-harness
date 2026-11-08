@@ -363,11 +363,12 @@ project (the rules, the loop, what it may do: [CONCEPTS](CONCEPTS.md#an-agent-wo
 a team sharing one project.
 
 `evh mcp` serves the project's read commands to an agent over MCP (the official SDK): the
-catalog's views (`overview`, `datasets`, `dataset-items`, `arms`, `models`, `goals`, `references`, `metrics`,
-`activity`, `search`, `captures`, `labels`, `picks`, `deploy-sheet`), the inspector in the terminal (`inspect`, its
+catalog's views (`overview`, `datasets`, `dataset-items`, `dataset-card`, `licences`, `arms`, `models`, `goals`,
+`references`, `metrics`, `activity`, `search`, `captures`, `labels`, `tags`, `picks`, `deploy-sheet`), the project's
+files as the data page lists and shows them (`data-ls`, `data-show`), the inspector in the terminal (`inspect`, its
 sheet included, without the options that write a file: `--csv`, `--fill` and theirs), the ranking
 and the tests (`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`), `rounds`,
-`runs-list` and `validate`: 23 tools. Each call runs the command as a person would, with `--json`,
+`runs-list` and `validate`: 28 tools. Each call runs the command as a person would, with `--json`,
 so the agent sees the same numbers you do. No tool writes project data, spends or runs a model:
 running arms, promoting a baseline and closing a round stay commands. (What a call does write is
 computed answers in the project's ignored `.cache/`: the paired tests' p values and
@@ -413,7 +414,7 @@ evh mcp --http --bind 0.0.0.0 --port 8766 --allowed-host evals.team.example [--p
 
 `--allowed-host` is required beyond the loopback (the server checks the Host against DNS
 rebinding); `--public` leaves out the options that answer with an item's text (an item, the sheet), and the
-`validate` tool (22 tools), and the options that set how long a test runs (`--permutations`, `--draws`); `--rate` (per
+`validate`, `data-ls` and `data-show` tools (25 tools), and the options that set how long a test runs (`--permutations`, `--draws`); `--rate` (per
 caller), `--rate-total` (everyone together), `--concurrent` and `--timeout` bound the load, and a
 caller has one call running at a time; `--client-header` names the header your proxy sets for the
 caller's address (trust it only if nothing else can reach the port); `--hooks FILE` adds your error reporting, tracing

@@ -75,6 +75,14 @@ try:
         _common.item_path("big", "i_new") == data / "materialized" / "big" / "new.txt" and reads["n"] == 2,
         reads,
     )
+    dup = [*items, {"item_id": "i0000", "source_path": "other.txt", "source_sha256": "0" * 64}]
+    put(data / "datasets" / "big.json", json.dumps({"dataset_id": "big", "items": dup}))
+    put(data / "materialized" / "big" / "other.txt", "z")
+    check(
+        "two items with one id: the first one's file, as the search over the items found it",
+        _common.item_path("big", "i0000") == data / "materialized" / "big" / "i0000.txt",
+        _common.item_path("big", "i0000"),
+    )
     _common.read_json = real
 finally:
     shutil.rmtree(proj, ignore_errors=True)

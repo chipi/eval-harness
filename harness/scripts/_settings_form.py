@@ -11,8 +11,10 @@ from __future__ import annotations
 
 import copy
 import datetime as _dt
+import hashlib
 import io
 import json
+import os
 import re
 import threading
 from collections.abc import Sequence
@@ -464,7 +466,13 @@ def text_for(norm: str, values: dict[str, Any], before: str | None) -> str:
 
 def save(rel: str, values: dict[str, Any], new: bool = False) -> dict[str, Any]:
     """Save a setting's values: checked first, nothing written on a problem or when nothing changed; `new` refuses a
-    name already taken."""
+    name already taken. Under WRITES from the first read to the write: two saves of one file, or two new ones of one
+    name, never decide from the same "before"."""
+    with WRITES:
+        return _save(rel, values, new)
+
+
+def _save(rel: str, values: dict[str, Any], new: bool) -> dict[str, Any]:
     norm, f = _data_page.resolve(rel)
     if new and _store.is_file(f):
         raise _data_page.Refused(f"{norm} exists: open it to edit it.", "would-overwrite")
@@ -486,24 +494,53 @@ def save(rel: str, values: dict[str, Any], new: bool = False) -> dict[str, Any]:
 #: checks (the server answers on threads; architecture review, 2026-11-06: two saves interleaved their checks).
 WRITES = threading.RLock()
 #: The project's check as it stood after the last write this process made or saw: {"version", "result"}. A save's
-#: "before" is it, not a fresh `evh validate` (25.8 s each on this repository), while no other process has written
-#: since (`PRAGMA data_version` moves on another connection's commit). Stale, it could only make a save refuse
-#: wrongly, never let a wrong one through.
+#: "before" is it, not a fresh `evh validate` (25.8 s each on this repository), while nothing it reads has changed:
+#: the database (`PRAGMA data_version` moves on another connection's commit) and every file outside data/ (scorer
+#: code, .gitignore, git's HEAD and index: a checkout or an edit), each stamp read before the check it belongs to.
+#: A stale "before" could refuse a good save, or let a bad one through (a problem fixed outside, then brought back).
 _BASELINE: dict[str, Any] = {}
 
+#: Folders under the project the check never reads (or, .git, reads only through HEAD and the index).
+_NOT_READ = {".build", ".cache", ".git", ".venv", "node_modules", "__pycache__"}
 
-def _data_version() -> int | None:
+
+def _data_version() -> tuple | None:
+    """What the project's check reads, as it is now: the database's version and a hash of every file outside data/
+    (path, size, mtime). None in a files project, where everything is a file and a save always checks afresh."""
     conn = _store.connect(create=False)
-    return int(conn.execute("PRAGMA data_version").fetchone()[0]) if conn is not None else None
+    if conn is None:
+        return None
+    root = _common.project_root()
+    data = os.path.realpath(_common._paths()["DATA"])
+    h = hashlib.sha256()
+    todo = [root]
+    while todo:  # outside data/ every _store call is the disk's (the path-I/O guard)
+        top = todo.pop()
+        for path in sorted(_store.iterdir(top)):
+            if _store.is_dir(path):
+                if path.name not in _NOT_READ and os.path.realpath(path) != data:
+                    todo.append(path)
+                continue
+            try:
+                st = _store.stat(path)
+            except OSError:
+                continue
+            h.update(f"{os.path.relpath(path, root)}\0{st.st_size}\0{st.st_mtime_ns}\n".encode())
+    for name in ("HEAD", "index"):
+        try:
+            h.update(f"{name}\0{_store.stat(root / '.git' / name).st_mtime_ns}\n".encode())
+        except OSError:
+            pass
+    return (int(conn.execute("PRAGMA data_version").fetchone()[0]), h.hexdigest())
 
 
 def baseline() -> dict[str, list[str]]:
-    """The project's check as it is now: the one kept, while nothing else has written; else a fresh one."""
+    """The project's check as it is now: the one kept, while nothing it reads has changed; else a fresh one."""
     v = _data_version()
     if v is not None and _BASELINE.get("version") == v:
         return dict(_BASELINE["result"])
     result = project_check()
-    _BASELINE.update(version=_data_version(), result=result)
+    _BASELINE.update(version=v, result=result)
     return result
 
 
@@ -527,6 +564,9 @@ def guarded_write(norm: str, f: Any, text: str) -> None:
 
         _store.mkdir(f.parent, parents=True, exist_ok=True)
         _common.write_text_atomic(f, text)
+        stamp = (
+            _data_version()
+        )  # before the check: a write that lands during it makes the next save check afresh
         try:
             now = project_check()
         except _data_page.Refused:
@@ -536,9 +576,7 @@ def guarded_write(norm: str, f: Any, text: str) -> None:
         if new:
             put_back()
             raise ProjectRefused(new)
-        _BASELINE.update(
-            version=_data_version(), result=now
-        )  # the project as saved: the next save's "before"
+        _BASELINE.update(version=stamp, result=now)  # the project as saved: the next save's "before"
 
 
 class ProjectRefused(_data_page.Refused):

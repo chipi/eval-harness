@@ -14,7 +14,7 @@ under `data/` that are frozen once written; a change is a new id. The project's 
 A project keeps `data/` as files, or in one database (`store: sqlite`, RFC-025). Put a setting in
 with `evh data-put <path under data/> <file>` and read one with `evh data-show --text <path>`, never
 with `cp` or `cat` on `data/`: those work in both stores, and they check a setting before it is
-kept. Edit a copy outside `data/` (here `drafts/`), then put it in.
+kept. Edit a copy outside `data/` (here in a fresh temporary folder, `$D`), then put it in.
 
 The blocks below run as written on the tutorial kit (`evh init --tutorial`: six support tickets,
 offline arms); use your own names in a real project. Every command takes `--help`.
@@ -66,16 +66,16 @@ If your system's code lives outside this tree, pin its commit in the arm's param
 was measured.
 
 ```evh
-mkdir -p drafts && cp tutorial/configs/tickets_*.yaml drafts/
-cat >> drafts/tickets_lead2.yaml <<'EOF'
+D=$(mktemp -d) && cp tutorial/configs/tickets_*.yaml "$D"/
+cat >> "$D"/tickets_lead2.yaml <<'EOF'
 hypothesis:
   against: tickets_lead1_v1
   measure: overlap_f1
   direction: better
   statement: "two leading sentences recover more of a ticket's gold summary than one"
 EOF
-for f in drafts/tickets_*.yaml; do evh data-put "configs/$(basename "$f")" "$f"; done
-rm -r drafts
+for f in "$D"/tickets_*.yaml; do evh data-put "configs/$(basename "$f")" "$f"; done
+rm -r "$D"
 git add -A && git commit -qm "tickets_v1: dataset and arms" --allow-empty
 ```
 
@@ -167,16 +167,16 @@ The same on the tutorial kit, with `tickets_lead1_v1` standing as the baseline:
 ```evh
 evh data-put goals/tickets_summary.yaml tutorial/goals/tickets_summary.yaml
 evh goals --goal tickets_summary --json
-mkdir -p drafts
-evh data-show --text configs/tickets_lead1.yaml | sed -e 's/tickets_lead1_v1/tickets_lead3_v1/' -e 's/sentences: 1/sentences: 3/' > drafts/tickets_lead3.yaml
-cat >> drafts/tickets_lead3.yaml <<'EOF'
+D=$(mktemp -d)
+evh data-show --text configs/tickets_lead1.yaml | sed -e 's/tickets_lead1_v1/tickets_lead3_v1/' -e 's/sentences: 1/sentences: 3/' > "$D"/tickets_lead3.yaml
+cat >> "$D"/tickets_lead3.yaml <<'EOF'
 hypothesis:
   against: tickets_lead1_v1
   measure: overlap_f1
   direction: better
   statement: "three leading sentences recover more of the gold summary than one"
 EOF
-evh data-put configs/tickets_lead3.yaml drafts/tickets_lead3.yaml && rm -r drafts
+evh data-put configs/tickets_lead3.yaml "$D"/tickets_lead3.yaml && rm -r "$D"
 git add -A && git commit -qm "tickets_lead3_v1: one change against lead1, its hypothesis" --allow-empty
 evh run --config data/configs/tickets_lead3.yaml --dry-run
 evh arm-smoke --config data/configs/tickets_lead3.yaml

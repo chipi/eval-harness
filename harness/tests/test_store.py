@@ -372,6 +372,10 @@ try:
     (data / "datasets" / "ds.json").write_text(json.dumps({"dataset_id": "ds", "items": []}, indent=2))
     (data / "references" / "gold" / "ds").mkdir(parents=True)
     (data / "references" / "gold" / "ds" / "i1.txt").write_bytes("gold\r\nline\xa0".encode() + b"\x00\xff")
+    # A reference has a manifest (V16, ADR-0022); with no `redistributed: false` in it, a release publishes its texts.
+    (data / "references" / "gold" / "ds" / "manifest.json").write_text(
+        json.dumps({"dataset_id": "ds"}) + "\n"
+    )
     before = {f: (data / f).read_bytes() for f in disk_files()}
     # a file's time goes with it, both ways (advisor review, 2026-11-06: every file showed the migration's)
     old_ns = 1_600_000_000 * 10**9

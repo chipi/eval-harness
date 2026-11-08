@@ -750,16 +750,19 @@ into a *finding* is a separate verb: these are the tools behind the numbers in `
 | `evh silver-calibrate --dataset-id …` | does a model-authored reference rank arms the way the trusted one does |
 
 `pair-test` and `family-test` count the exact p over all 2^n sign patterns when a pair shares 30
-items or fewer, and estimate it from 20,000 permutations above that; both say which (`family-test`:
+items or fewer, estimate it from 20,000 permutations above that, and from 10,000 items (or clusters)
+take the permutation distribution's normal limit, which the estimate approaches (ADR-0028); both say
+which, in the text and in `--json`'s `method` (`exact`, `sampled`, `normal limit`; `family-test`:
 "p: exact, over all 2^6 sign patterns", or "p: a seeded estimate (20000 permutations, one random
-stream for the family)"). Up to 30 items every command, the inspector included, prints the same
+stream for the family)"). A p from the limit is not a count over draws: it can print `<0.0001`
+because it is 0.0. The contender test's bootstrap-t does the same from 10,000 units. Up to 30 items every command, the inspector included, prints the same
 p. Above that the estimate is seeded, so it repeats, but `family-test` draws one random stream
 for the whole family while `pair-test` and the inspector draw one per pair: the same pair's p can
 differ in the third decimal between them (32 items in the 2026-10-24 scenario: 0.0297 from
 `family-test`, 0.0327 from `pair-test` and the inspector). The verdicts are read against the same
 thresholds; a p that close to one is not a result either way. `pair-test` calls an arm significantly different from
 the baseline at `p ≤ threshold`, and `family-test` marks an estimated p with `~` when the family
-mixes exact and estimated rows. Every command prints p to four decimals, and `<0.0001` for what
+mixes exact and estimated rows (and a p from the normal limit with `*` when it mixes that in too). Every command prints p to four decimals, and `<0.0001` for what
 would print as 0.0000. `family-test`'s `A wins` column counts the items A wins; the inspector's
 `wins–losses` is each row's arm against the baseline.
 Without `--metric` they read the primary metric the runs recorded. Which way is better is
@@ -1606,6 +1609,8 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 |---|---|
 | `EVAL_HOME` | the project root (default: the nearest directory up from where you run that has `data/`) |
 | `EVAL_DATA_DIR` | the data root, when it is not `<project>/data` |
+| `EVAL_STORE` | `files` or `sqlite`: the project's store, over its `config.yaml`'s `store:` (RFC-025; above) |
+| `EVAL_CONFIGURE` | `1`: the Configure page in a SQLite project, as `configure: true` in its `config.yaml` (above) |
 | `EVAL_RUNS_DIR` | read and write runs here instead of `data/runs` (`validate` too) |
 | `EVAL_GOALS_DIR` | read goals here instead of `<data>/goals`, relative to the project (for goals kept outside the data root) |
 | `EVAL_MAX_COST_USD` | per-run ceiling on billed spend; the run stops, keeps its results, resumes |
@@ -1613,10 +1618,10 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_BUILD_REF` | the identity of the system under test (default: the git SHA) |
 | `EVAL_HOST_LABEL` | a name for this machine, the runner (fingerprint v5's `runner.label`, outside its hash): latency of a model run in process, and the network part of a remote one, is comparable across runs only from the same runner |
 | `EVAL_FINGERPRINT_WEIGHTS` | `1`: hash a local model's weight files into the fingerprint |
-| `EVAL_MODELS_FILE` | the alias to upstream-model table judges are routed by |
 | `EVAL_FETCH_HEADERS` | JSON `{"host": {"Header": "value"}}` for URL items behind a login |
 | `EVAL_NO_CACHE` | `1`: `family-test` recomputes instead of replaying an identical earlier run |
 | `EVH_P_CACHE` | a file that keeps every estimated p of the paired test between processes (one JSON line each, read back exactly); every `evh` command (and `evh mcp`) uses `<project>/.cache/evh-p.jsonl` when it is unset; an empty value turns it off (ADR-0028). A library import (an adapter, a notebook) stores nothing unless it is set. A file that cannot be read is no cache; a read-only one is read and never written |
+| `EVH_WORKERS` | how many child processes may draw a command's resampled tests at once (the same p's); default: the CPUs the process may use, capped by its container's CPU quota, so under one whole CPU none; `1` turns it off |
 | `OPENAI_API_KEY` (and `OPENAI_BASE_URL`) | `provider: openai`: OpenAI, or any OpenAI-compatible endpoint; an arm's `api_key_env` names another variable |
 | `OPENROUTER_API_KEY` | `provider: openrouter` (OpenRouter's address by default; an arm's `base_url` or `api_key_env` overrides it), and judges routed straight to OpenRouter |
 | `ANTHROPIC_API_KEY` | `provider: anthropic` |

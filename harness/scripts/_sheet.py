@@ -46,7 +46,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _store
+from evaluation_harness import _common, _outputs, _store
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     LABELS_PREFIX,
@@ -60,7 +60,7 @@ from evaluation_harness._common import (
 from evaluation_harness._label_sets import answers, label_line, labels_for, sets, source_line
 from evaluation_harness._runs import item_rows, lower_is_better_on, read_metrics, runs_on
 from evaluation_harness._sheets import ALSO, NOTE, label_header
-from evaluation_harness.label_sheet import output, run_dir, view
+from evaluation_harness.label_sheet import run_dir, view
 
 SIGNALS = ("wrong", "disagree", "split", "new", "unlabelled")
 #: --new-vs compares a field only when the governed dataset has at most this many values for it (a choice, an
@@ -427,11 +427,14 @@ def build(
     tag_arms = [a["token"] for a in arms if a["dir"].name in tagged]
     wanted = set(items) if items is not None else None
     out = []
+    # Each arm's outputs read once, not once an item: 50 arms on 10,000 items were 500,000 lookups, each finding the
+    # run's source again (in the SQLite store, 4 path resolutions a lookup: 121 of a 146 s sheet, PLAN_0.8.0 S3).
+    texts = {a["token"]: _outputs.outputs(a["dir"]) for a in arms}
     for it in ds.get("items") or []:
         i = it["item_id"]
         if wanted is not None and i not in wanted:
             continue
-        dec = {a["token"]: output(a["dir"], i) for a in arms}
+        dec = {t: (txt.strip() if (txt := texts[t].get(i)) is not None else None) for t in texts}
         mine = labels.get(i, [])
         sig: dict[str, str] = {}
         outs = [(n, o) for n, o in dec.items() if o is not None]

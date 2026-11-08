@@ -728,6 +728,114 @@ def drive(base: str, overview: str = "") -> None:
             phone.wait_for_selector(ready, timeout=15000)
             wide = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
             check(f"phone width: no sideways scroll on {path.split('?')[0]}", wide <= 1, f"{wide}px too wide")
+
+        # At scale (PLAN_0.8.0 S3): this comparison as the server answers it, stretched to 10,000 items and 40 arms.
+        # The page overflowed the call stack there (Math.min over 400,000 values: no verdicts, ever) and drew all
+        # 10,000 rows, 3.2 million elements; now it shows its verdicts and draws only the rows it shows.
+        def stretch(route) -> None:
+            got = route.fetch()
+            d = got.json()
+            base_arm = d["baseline"]
+            other = next(a for a in d["series"] if a != base_arm)
+            items = [f"x{k:05d}" for k in range(10000)]
+            row = next(r for r in d["rows"] if r["arm"] == other)
+            arm = next(x for x in d.get("arms") or [] if x.get("id") == other)
+            copies = [f"{other}~{j}" for j in range(39)]
+            d["items"] = items
+            d["series"] = {base_arm: {i: (k % 7) / 7 for k, i in enumerate(items)}}
+            for j, c in enumerate(copies):
+                d["series"][c] = {i: ((k + j) % 9) / 9 for k, i in enumerate(items)}
+            d["rows"] = [{**row, "arm": c, "n": len(items)} for c in copies]
+            d["arms"] = [x for x in d.get("arms") or [] if x.get("id") == base_arm] + [
+                {**arm, "id": c} for c in copies
+            ]
+            d["shape"] = {
+                "latency_ms": {a: {i: 100.0 + (k % 50) for k, i in enumerate(items)} for a in d["series"]}
+            }
+            route.fulfill(response=got, body=json.dumps(d))
+
+        big = browser.new_page()
+        big_errors: list = []
+        big.on("pageerror", lambda e: big_errors.append(str(e)))
+        big.route("**/api/compare**", stretch)
+        big.goto(base + f"inspect.html?runs={arms}")
+        big.wait_for_function(
+            "document.querySelectorAll('table.data')[0]?.querySelectorAll('tbody tr').length >= 39",
+            timeout=60000,
+        )
+        drawn = big.locator("table.eps tbody tr").count()
+        elements = big.evaluate("document.getElementsByTagName('*').length")
+        pager = big.locator("#eps-pager").inner_text()
+        check(
+            "inspector at 10,000 items and 40 arms: 39 verdicts, no page error, 10 rows of the per-item table drawn",
+            not big_errors and drawn == 10 and elements < 20000 and "Showing 10 of 10000" in pager,
+            (big_errors[:1], drawn, elements, pager),
+        )
+        bins, dots = big.locator("svg rect.bin").count(), big.locator("svg circle.dot").count()
+        check(
+            "... its charts drawn from bins (the spread, the differences, the scatter's grid), not 1.2 million dots",
+            bins > 100 and dots == 0 and big.locator("#scatterbox rect.bin").count() > 0,
+            (bins, dots),
+        )
+        big.locator("#eps-pager [data-more]").click()
+        check("... show 10 more draws ten more", big.locator("table.eps tbody tr").count() == 20)
+        bulk = big.locator("#eps-pager [data-bulk]").inner_text()
+        big.locator("#eps-pager [data-bulk]").click()
+        check(
+            "... past 1,000 items there is no show all, a thousand more instead",
+            bulk == "show 1000 more" and big.locator("table.eps tbody tr").count() == 1020,
+            (bulk, big.locator("table.eps tbody tr").count()),
+        )
+        big.goto(base + f"inspect.html?runs={arms}&item=x04321")
+        big.wait_for_selector("tr.eprow.on", timeout=60000)
+        check(
+            "... ?item= far down the list: the table is drawn down to it and it opens",
+            big.locator("tr.eprow.on").get_attribute("data-ep") == "x04321"
+            and big.locator("table.eps tbody tr").count() == 4322,
+            big.locator("table.eps tbody tr").count(),
+        )
+        big.close()
+
+        # The sheet at 10,000 rows: drawn on demand too (it was 940,000 elements at 40 arms); select all still takes
+        # every row of the sheet, and a sort orders all of them, not only the rows drawn.
+        def stretch_sheet(route) -> None:
+            got = route.fetch()
+            d = got.json()
+            row = d["rows"][0]
+            d["rows"] = [{**row, "item": f"x{k:05d}"} for k in range(10000)]
+            d["total"] = len(d["rows"])
+            route.fulfill(response=got, body=json.dumps(d))
+
+        sheet = browser.new_page()
+        sheet_errors: list = []
+        sheet.on("pageerror", lambda e: sheet_errors.append(str(e)))
+        sheet.route("**/api/sheet**", stretch_sheet)
+        sheet.goto(base + f"inspect.html?dataset=tickets_v1&sheet=1&runs={arms}")
+        sheet.wait_for_selector("#sheettable tbody tr", timeout=60000)
+        sheet_rows = sheet.locator("#sheettable tbody tr").count()
+        check(
+            "sheet at 10,000 rows: 10 drawn, the pager says how many, no page error",
+            sheet_rows == 10
+            and "Showing 10 of 10000" in sheet.locator("#sheet-pager").inner_text()
+            and not sheet_errors,
+            (sheet_rows, sheet_errors[:1]),
+        )
+        sheet.locator("#sall").check()
+        check(
+            "... select all takes every row of the sheet, drawn or not",
+            sheet.locator("#sn").inner_text() == "10000"
+            and "--item x09999" in sheet.locator("#spick").inner_text(),
+            sheet.locator("#sn").inner_text(),
+        )
+        sheet.locator("#sheettable thead th.item").click()
+        sheet.locator("#sheettable thead th.item").click()
+        top = sheet.locator("#sheettable tbody tr").first.get_attribute("data-ep")
+        check(
+            "... a sort orders all 10,000 rows, not the 10 drawn (descending: x09999 first)",
+            top == "x09999",
+            top,
+        )
+        sheet.close()
         check("no console errors", not errors, " | ".join(errors))
         browser.close()
 

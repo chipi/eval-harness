@@ -125,9 +125,10 @@ def plan_problems(src: Path) -> list[str]:
             ds = _manifest_dataset(f.parent)
             if hidden(ds, src / "datasets"):
                 continue
-            if in_db and _not_redistributed(f.parent):
+            why = _not_redistributed(f.parent) if in_db else None
+            if why:
                 # no git in the database to keep these out: the manifest's word is what says so (their licence)
-                bad.append(f"reference text not redistributed (its manifest): {f.relative_to(src)}")
+                bad.append(f"reference text {why}: {f.relative_to(src)}")
             elif str(f.relative_to(src)) not in tracked:
                 bad.append(f"reference text git does not track: {f.relative_to(src)}")
     for run in _run_dirs(src):
@@ -141,16 +142,26 @@ def plan_problems(src: Path) -> list[str]:
     return bad
 
 
-def _not_redistributed(ref_dir: Path) -> bool:
-    """Whether a reference set's manifest says its texts are not redistributed (reference-manifest
-    --not-redistributed, a promotion of such labels)."""
+def _not_redistributed(ref_dir: Path) -> str | None:
+    """Why a reference set's texts may not be published, or None: its manifest says they are not redistributed
+    (reference-manifest --not-redistributed, a promotion of such labels), or the manifest cannot say (missing, not
+    JSON, `redistributed` not true or false). In the database nothing else keeps them out, so what cannot be read
+    is refused, never published."""
     m = ref_dir / "manifest.json"
     if not _store.is_file(m):
-        return False
+        return "with no manifest to say it may be published"
     try:
-        return json.loads(_store.read_text(m, encoding="utf-8")).get("redistributed") is False
-    except ValueError:
-        return False
+        doc = json.loads(_store.read_text(m, encoding="utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return "whose manifest cannot be read"
+    if not isinstance(doc, dict):
+        return "whose manifest cannot be read"
+    r = doc.get("redistributed", True)
+    if r is False:
+        return "not redistributed (its manifest)"
+    if r is not True:
+        return f"whose manifest's redistributed is {r!r}, not true or false"
+    return None
 
 
 def _run_dirs(src: Path) -> list[Path]:
