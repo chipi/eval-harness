@@ -7,11 +7,12 @@ Copies the run directories (runs*) and the data the catalog and the inspector re
 COPIED_FILES), and refuses, before anything is written, a release that would carry text the
 repository does not publish:
   - reference texts git does not track (a gold reference is not committed; a working copy may have
-    fetched it), and run outputs git does not track (an outputs.jsonl, or a runs.sqlite holding a shown run's);
+    fetched it), and run outputs git does not track (an outputs.jsonl, or the project.sqlite holding a shown run's);
+    in the database, where no git says so, the texts of a reference whose manifest says they are not redistributed;
   - for a dataset marked `text: hidden` (RFC-019 §4): its arms' outputs and their predictions'
     `_meta` beyond the call (CALL_META), its references' texts (their manifests stay), the judge verdicts on it, its
     profile's text, labels and links, and its items' source URLs and text and URL field values.
-With the sqlite store (RFC-025) the copy's runs.sqlite is the project's without a hidden dataset's runs, rebuilt so
+With the sqlite store (RFC-025) the copy's project.sqlite is the project's without a hidden dataset's runs, rebuilt so
 their texts are in none of its pages. Captures are copied as their capture.json only: records never leave the project. Materialized items
 are never copied. render.sh calls this; the hidden-text test calls it directly.
 """
@@ -118,10 +119,16 @@ def plan_problems(src: Path) -> list[str]:
     if tracked is None:
         return [f"{src} is not in a git checkout: what the repository publishes cannot be told"]
     bad = []
+    in_db = _common.store() == "sqlite"
     for f in sorted(_store.glob(src / "references", "*/*/*")) if _store.is_dir(src / "references") else []:
         if _store.is_file(f) and f.name != "manifest.json":
             ds = _manifest_dataset(f.parent)
-            if not hidden(ds, src / "datasets") and str(f.relative_to(src)) not in tracked:
+            if hidden(ds, src / "datasets"):
+                continue
+            if in_db and _not_redistributed(f.parent):
+                # no git in the database to keep these out: the manifest's word is what says so (their licence)
+                bad.append(f"reference text not redistributed (its manifest): {f.relative_to(src)}")
+            elif str(f.relative_to(src)) not in tracked:
                 bad.append(f"reference text git does not track: {f.relative_to(src)}")
     for run in _run_dirs(src):
         f = run / _outputs.FILE
@@ -132,6 +139,18 @@ def plan_problems(src: Path) -> list[str]:
         ):
             bad.append(f"run output git does not track: {f.relative_to(src)}")
     return bad
+
+
+def _not_redistributed(ref_dir: Path) -> bool:
+    """Whether a reference set's manifest says its texts are not redistributed (reference-manifest
+    --not-redistributed, a promotion of such labels)."""
+    m = ref_dir / "manifest.json"
+    if not _store.is_file(m):
+        return False
+    try:
+        return json.loads(_store.read_text(m, encoding="utf-8")).get("redistributed") is False
+    except ValueError:
+        return False
 
 
 def _run_dirs(src: Path) -> list[Path]:

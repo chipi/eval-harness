@@ -31,9 +31,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 REPO = HERE.parent.parent  # the checkout (infra/ is not part of the package)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))  # _wheel, shared with the deploy
+import _runstore  # noqa: E402
+
+STORE = "sqlite" if _runstore.sqlite() else "files"
 import _wheel  # noqa: E402
+from evaluation_harness import _common, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
+
+
+def put(proj: Path, rel: str, content: bytes) -> None:
+    """A fixture file in the project's data/ (rel as under data/), in its store, its folder made where one exists."""
+    _common.project_root.cache_clear()  # this process resolved its own project on import; _runstore aims by EVAL_HOME
+    with _runstore._InProject(proj) as data:
+        _store.mkdir((data / rel).parent, parents=True, exist_ok=True)
+        _store.write_bytes(data / rel, content)
 
 
 def main() -> int:
@@ -104,8 +116,8 @@ def main() -> int:
             "2",
         )
         setup("dataset-materialize", "--dataset-id", "tickets_v1")
-        for f in (proj / "tutorial/configs").glob("tickets_*.yaml"):
-            shutil.copy(f, proj / "data/configs/")
+        for f in sorted((proj / "tutorial/configs").glob("tickets_*.yaml")):
+            put(proj, f"configs/{f.name}", f.read_bytes())
         setup(
             "label-import",
             "tutorial/gold",
@@ -130,21 +142,21 @@ def main() -> int:
             "owner",
         )
         # gold a script builds, for reference-manifest below: the texts where a fetch script would put them
-        fetched = proj / "data/references/gold/tickets_pilot_v1"
-        fetched.mkdir(parents=True)
         for f in sorted((proj / "tutorial/gold").glob("*.txt"))[:2]:
-            shutil.copy(f, fetched / f.name)
+            put(proj, f"references/gold/tickets_pilot_v1/{f.name}", f.read_bytes())
         for arm in ("lead1", "lead2", "lead2_noisy", "author"):
             setup("run", "--config", f"data/configs/tickets_{arm}.yaml", "--repeat", "2")
-        shutil.copytree(proj / "tutorial/scorers", proj / "data/scorers")
-        run_id = sorted(p.name for p in (proj / "data/runs").glob("tickets_lead2_v1_*"))[0]
-        base_id = sorted(p.name for p in (proj / "data/runs").glob("tickets_lead1_v1_*"))[0]
+        for f in sorted((proj / "tutorial/scorers").rglob("*")):
+            if f.is_file():
+                put(proj, f"scorers/{f.relative_to(proj / 'tutorial/scorers').as_posix()}", f.read_bytes())
+        run_names = _runstore.listdir(proj, "runs")
+        run_id = sorted(n for n in run_names if n.startswith("tickets_lead2_v1_"))[0]
+        base_id = sorted(n for n in run_names if n.startswith("tickets_lead1_v1_"))[0]
         (proj / "imported.jsonl").write_text(
             "".join(
                 json.dumps({"item_id": i, "acc": 1.0}) + "\n"
                 for i in (
-                    it["item_id"]
-                    for it in json.loads((proj / "data/datasets/tickets_v1.json").read_text())["items"]
+                    it["item_id"] for it in _runstore.read_json(proj, "datasets/tickets_v1.json")["items"]
                 )
             )
         )
@@ -282,8 +294,9 @@ def main() -> int:
             ("tags", [], "ok:No tag sets yet"),
             ("licences", ["--search", "share"], "ok:CC-BY-SA-4.0"),
             ("run-migrate", ["--dry-run"], "ok:run(s)"),
-            ("data-migrate", ["--to", "files", "--dry-run"], "ok:would move into the files store"),
-            ("data-ls", [], "ok:store: files"),
+            # the project's own store: data-migrate moves into the store the setting names, and data-ls says it
+            ("data-migrate", ["--to", STORE, "--dry-run"], f"ok:would move into the {STORE} store"),
+            ("data-ls", [], f"ok:store: {STORE}"),
             ("data-show", ["datasets/tickets_v1.json"], "ok:written by the dataset-* commands"),
             (
                 "data-put",
@@ -637,7 +650,8 @@ def main() -> int:
             and "fingerprint" in r.stderr,
             r.stdout[-300:] + r.stderr[-300:],
         )
-        shutil.rmtree(proj / "data" / "runs-smoke-ids", ignore_errors=True)
+        if _runstore.exists(proj, "runs-smoke-ids"):
+            _runstore.rmtree(proj, "runs-smoke-ids")
 
         # From a subfolder of the project, a command finds the project (the nearest directory
         # up with data/): from the current directory it read an empty project.

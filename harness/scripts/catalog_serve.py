@@ -106,7 +106,7 @@ def _arms_known(path: str) -> list:
 @lru_cache(maxsize=4096)
 def _scores(arm: str, rescore: bool) -> dict:
     # Re-scoring can be the slow part, and a baseline page asks for every arm on its dataset.
-    # Restart the server to see new runs.
+    # Forgotten by cache_clear (a data page write, a rebuild); a run another process makes shows after a restart.
     return A.scores(arm, rescore=rescore)
 
 
@@ -885,15 +885,19 @@ _HITS: defaultdict[str, list] = defaultdict(list)
 
 
 def cache_clear() -> None:
-    """Forget every answer (the tests; a server restarts instead)."""
+    """Forget every answer, and the scores and arms they were made from: after the data page writes or deletes, and
+    after a rebuild (the arms are the catalog's), so an answer never outlives what it was made from."""
     with _CACHE_LOCK:
         _CACHE.clear()
         _cache_size[0] = 0
+    _scores.cache_clear()
+    _known.cache_clear()
 
 
 def answer(path: str, query: str) -> tuple:
     """(status, the JSON body as bytes) for one API request; every answer cached by its exact
-    question (the data under a running server does not change: restart it to see new runs)."""
+    question until the data page changes the data or the catalog is rebuilt (`cache_clear`); a run made by another
+    process shows after a restart."""
     if len(query) > MAX_QUERY:
         return 400, json.dumps({"error": f"the question is over {MAX_QUERY} characters"}).encode()
     key = f"{path}?{'&'.join(sorted(query.split('&')))}"
@@ -1041,6 +1045,7 @@ def _rebuild(out: Path) -> None:
         _store.replace(nxt, out)
         _store.rmtree(old, ignore_errors=True)
         state = {"state": "done"}
+        cache_clear()
     else:
         _store.rmtree(nxt, ignore_errors=True)
         state = {"state": "failed", "tail": ((r.stdout or "") + (r.stderr or ""))[-1500:]}
@@ -1128,11 +1133,15 @@ def data_answer(method: str, path: str, query: str, body: bytes | None = None) -
             if found:
                 return 200, {"saved": False, "problems": found}
             try:
-                return 200, {"saved": True, **_settings_form.save(arg("path"), values, new=arg("new") == "1")}
+                saved = _settings_form.save(arg("path"), values, new=arg("new") == "1")
+                cache_clear()
+                return 200, {"saved": True, **saved}
             except _settings_form.ProjectRefused as exc:
                 return 200, {"saved": False, "problems": exc.problems}
         if method == "DELETE" and path == "/api/data/file":
-            return 200, _data_page.remove(arg("path"))
+            gone = _data_page.remove(arg("path"))
+            cache_clear()
+            return 200, gone
         return 405, {"error": f"{method} is not served at {path}"}
     except _data_page.Refused as exc:
         return DATA_STATUS.get(exc.kind, 400), {"error": str(exc), "kind": exc.kind}

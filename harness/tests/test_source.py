@@ -24,6 +24,9 @@ sys.path.insert(0, str(HARNESS))
 from evaluation_harness import _source  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-source-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-source")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -44,7 +47,7 @@ def evh(*args):
 
 
 def ds(i):
-    return json.loads((proj / "data" / "datasets" / f"{i}.json").read_text())
+    return _runstore.read_json(proj, f"datasets/{i}.json")
 
 
 def sha(p: Path) -> str:
@@ -72,6 +75,7 @@ try:
             }
         )
     )
+    _runstore.migrate_in(proj)
     r = evh("dataset-create", "--dataset-id", "s_v1", "--source-dir", "data/sources/s_v1")
     d = ds("s_v1") if r.returncode == 0 else {}
     by = {it["item_id"]: it for it in d.get("items") or []}
@@ -92,7 +96,7 @@ try:
     )
     r = evh("dataset-materialize", "--dataset-id", "s_v1")
     r = r if r.returncode else evh("dataset-profile", "--dataset-id", "s_v1")
-    prof = json.loads((proj / "data" / "profiles" / "s_v1.json").read_text()) if r.returncode == 0 else {}
+    prof = _runstore.read_json(proj, "profiles/s_v1.json") if r.returncode == 0 else {}
     links = {row["item_id"]: row.get("source_url") for row in prof.get("rows") or []}
     check(
         "the profile links an item from the block's template and its row; no row, no link",
@@ -110,19 +114,19 @@ try:
     )
     bad = dict(d)
     bad["source"] = {**d["source"], "hf_repo": "org/d", "item_url": "https://example.org/d"}
-    (proj / "data" / "datasets" / "s_v1.json").write_text(json.dumps(bad, indent=1))
+    _runstore.write_text(proj, "datasets/s_v1.json", json.dumps(bad, indent=1))
     r = evh("validate")
     check(
         "validate V22 refuses a key outside the block, and rows with no {row} to fill",
         r.returncode != 0 and "source.hf_repo is not a key" in r.stdout and "no {row}" in r.stdout,
         r.stdout[-600:],
     )
-    (proj / "data" / "datasets" / "s_v1.json").write_text(json.dumps(d, indent=1))
+    _runstore.write_text(proj, "datasets/s_v1.json", json.dumps(d, indent=1))
     # A record made before 0.8.0: no source, its profile carries the old shape and a page per item.
     old = {k: v for k, v in d.items() if k != "source"}
     old["dataset_id"] = "old_v1"
     old["items"] = [{k: v for k, v in it.items() if k != "source_row"} for it in d["items"]]
-    (proj / "data" / "datasets" / "old_v1.json").write_text(json.dumps(old, indent=1))
+    _runstore.write_text(proj, "datasets/old_v1.json", json.dumps(old, indent=1))
     legacy = {
         **prof,
         "dataset_id": "old_v1",
@@ -142,10 +146,10 @@ try:
             for n, it in enumerate(old["items"])
         ],
     }
-    (proj / "data" / "profiles" / "old_v1.json").write_text(json.dumps(legacy, indent=1))
+    _runstore.write_text(proj, "profiles/old_v1.json", json.dumps(legacy, indent=1))
     r = evh("dataset-migrate")
     m = ds("old_v1")
-    mp = json.loads((proj / "data" / "profiles" / "old_v1.json").read_text())
+    mp = _runstore.read_json(proj, "profiles/old_v1.json")
     check(
         "dataset-migrate: the block and each row from the old profile; the provider from its address; nothing guessed",
         r.returncode == 0

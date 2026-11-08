@@ -21,6 +21,9 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-refs-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-references")
 env.pop("EVAL_DATA_DIR", None)
@@ -34,6 +37,15 @@ def evh(*args):
     )
 
 
+def texts(rel):
+    """The .txt files of a folder under data/, by name, their bytes."""
+    return {
+        n: _runstore.read_bytes(proj, f"{rel}/{n}")
+        for n in _runstore.listdir(proj, rel)
+        if n.endswith(".txt")
+    }
+
+
 def v16():
     """The V16 line of a validate run."""
     r = evh("validate")
@@ -43,13 +55,14 @@ def v16():
 try:
     gold = proj / "data" / "references" / "gold" / "toy_v1"
     gold.mkdir(parents=True)
-    (gold / "a.txt").write_text("billing", encoding="utf-8")
-    (gold / "b.txt").write_text("shipping", encoding="utf-8")
+    GOLD = "references/gold/toy_v1"
+    _runstore.write_text(proj, f"{GOLD}/a.txt", "billing")
+    _runstore.write_text(proj, f"{GOLD}/b.txt", "shipping")
 
     r0 = evh("reference-manifest", "--reference-id", "gold/toy_v1", "--source", "fetch.py")
     check(
         "reference-manifest without a reason, who promotes and whose labels: refused (ADR-0022: a promotion)",
-        r0.returncode != 0 and not (gold / "manifest.json").exists(),
+        r0.returncode != 0 and not _runstore.exists(proj, f"{GOLD}/manifest.json"),
         r0.stdout + r0.stderr,
     )
     r = evh(
@@ -66,7 +79,11 @@ try:
         "--by",
         "owner",
     )
-    mf = json.loads((gold / "manifest.json").read_text()) if (gold / "manifest.json").is_file() else {}
+    mf = (
+        _runstore.read_json(proj, f"{GOLD}/manifest.json")
+        if _runstore.is_file(proj, f"{GOLD}/manifest.json")
+        else {}
+    )
     pf = mf.get("promoted_from") or {}
     check(
         "reference-manifest: the checksum of every item, how to rebuild it, not redistributed, and its promotion",
@@ -84,13 +101,13 @@ try:
     line = v16()
     check("V16: texts that match their manifest pass", line.startswith("  ok") and "1 checked" in line, line)
 
-    (gold / "b.txt").write_text("billing", encoding="utf-8")
+    _runstore.write_text(proj, f"{GOLD}/b.txt", "billing")
     line = v16()
     check("V16: a text that drifted from its checksum fails", "FAIL" in line, line)
-    (gold / "b.txt").write_text("shipping", encoding="utf-8")
+    _runstore.write_text(proj, f"{GOLD}/b.txt", "shipping")
 
-    for f in gold.glob("*.txt"):
-        f.unlink()
+    for n in texts(GOLD):
+        _runstore.unlink(proj, f"{GOLD}/{n}")
     line = v16()
     check(
         "V16: no texts, not redistributed: a reference fetched elsewhere, not a failure",
@@ -101,7 +118,8 @@ try:
     os.environ["EVAL_HOME"] = str(proj)
     from evaluation_harness.catalog_adapter import HarnessAdapter
 
-    refs = HarnessAdapter(proj / "data").references()
+    with _runstore._InProject(proj) as data:
+        refs = HarnessAdapter(data).references()
     check(
         "catalog: a manifest-only reference is listed, as fetched, with its item count",
         any(x["id"] == "gold/toy_v1" and x["fetched"] and x["items"] == 2 for x in refs),
@@ -109,14 +127,14 @@ try:
     )
 
     mf["redistributed"] = True
-    (gold / "manifest.json").write_text(json.dumps(mf))
+    _runstore.write_text(proj, f"{GOLD}/manifest.json", json.dumps(mf))
     line = v16()
     check("V16: committed (redistributed) texts that are missing fail", "FAIL" in line, line)
 
     # A second gold for one dataset has a name of its own; its manifest names the dataset.
-    adj = proj / "data" / "references" / "gold" / "toy_v1_adj1"
-    adj.mkdir(parents=True)
-    (adj / "a.txt").write_text("shipping", encoding="utf-8")
+    ADJ = "references/gold/toy_v1_adj1"
+    (proj / "data" / ADJ).mkdir(parents=True)
+    _runstore.write_text(proj, f"{ADJ}/a.txt", "shipping")
     r = evh(
         "reference-manifest",
         "--reference-id",
@@ -132,20 +150,21 @@ try:
         "--by",
         "owner",
     )
-    refs = HarnessAdapter(proj / "data").references()
+    with _runstore._InProject(proj) as data:
+        refs = HarnessAdapter(data).references()
     check(
         "--dataset-id: a reference named on its own is listed under the dataset its manifest names",
         r.returncode == 0
-        and json.loads((adj / "manifest.json").read_text()).get("dataset_id") == "toy_v1"
+        and _runstore.read_json(proj, f"{ADJ}/manifest.json").get("dataset_id") == "toy_v1"
         and any(x["id"] == "gold/toy_v1_adj1" and x["dataset"] == "toy_v1" for x in refs),
         str(refs) + r.stderr,
     )
-    shutil.rmtree(adj)
+    _runstore.rmtree(proj, ADJ)
 
-    shutil.rmtree(gold)
-    silver = proj / "data" / "references" / "silver" / "toy_v1"
-    silver.mkdir(parents=True)
-    (silver / "a.txt").write_text("billing", encoding="utf-8")
+    _runstore.rmtree(proj, GOLD)
+    SILVER = "references/silver/toy_v1"
+    (proj / "data" / SILVER).mkdir(parents=True)
+    _runstore.write_text(proj, f"{SILVER}/a.txt", "billing")
     r = evh("validate")
     check(
         "V16: a reference with no manifest fails (ADR-0022: made only by promoting labels), saying how to make one",
@@ -159,14 +178,13 @@ try:
     # The hand-made folder made right where it is: its texts imported as a person's labels, then promoted; the
     # promotion adopts the folder (its texts are the labels') and writes its manifest. A folder whose texts differ
     # from the labels is never overwritten.
-    src = proj / "data" / "sources" / "toy"
-    src.mkdir(parents=True)
-    (src / "a.txt").write_text("I was charged twice.", encoding="utf-8")
-    (src / "b.txt").write_text("Where is my parcel?", encoding="utf-8")
+    (proj / "data" / "sources" / "toy").mkdir(parents=True)
+    _runstore.write_text(proj, "sources/toy/a.txt", "I was charged twice.")
+    _runstore.write_text(proj, "sources/toy/b.txt", "Where is my parcel?")
     r = evh("dataset-create", "--dataset-id", "toy_v1", "--source-dir", "data/sources/toy")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "toy_v1")
-    (silver / "b.txt").write_text("shipping", encoding="utf-8")  # by hand: no newline at the end
-    before = {f.name: f.read_bytes() for f in silver.glob("*.txt")}
+    _runstore.write_text(proj, f"{SILVER}/b.txt", "shipping")  # by hand: no newline at the end
+    before = texts(SILVER)
     r = (
         r
         if r.returncode
@@ -198,7 +216,11 @@ try:
             "me",
         )
     )
-    mf = json.loads((silver / "manifest.json").read_text()) if (silver / "manifest.json").is_file() else {}
+    mf = (
+        _runstore.read_json(proj, f"{SILVER}/manifest.json")
+        if _runstore.is_file(proj, f"{SILVER}/manifest.json")
+        else {}
+    )
     check(
         "a hand-made folder, imported and promoted where it is: adopted, its manifest written, validate passes",
         r.returncode == 0
@@ -207,15 +229,14 @@ try:
         and "ok   V16" in evh("validate").stdout,
         (r.stdout + r.stderr)[-500:] + str(mf)[:200],
     )
-    after = {f.name: f.read_bytes() for f in silver.glob("*.txt")}
+    after = texts(SILVER)
     check(
         "the adopted folder's files keep their bytes (no newline added), so no run's reference digest moves",
         after == before,
         f"{before} -> {after}",
     )
-    other = proj / "data" / "references" / "gold" / "toy_v1"
-    other.mkdir(parents=True)
-    (other / "a.txt").write_text("refund", encoding="utf-8")
+    (proj / "data" / GOLD).mkdir(parents=True, exist_ok=True)
+    _runstore.write_text(proj, f"{GOLD}/a.txt", "refund")
     r = evh(
         "reference-promote",
         "--dataset-id",
@@ -233,8 +254,8 @@ try:
         "a folder whose texts are not the labels' is never overwritten",
         r.returncode != 0
         and "never overwritten" in (r.stdout + r.stderr)
-        and (other / "a.txt").read_text() == "refund"
-        and not (other / "manifest.json").exists(),
+        and _runstore.read_text(proj, f"{GOLD}/a.txt") == "refund"
+        and not _runstore.exists(proj, f"{GOLD}/manifest.json"),
         (r.stdout + r.stderr)[-400:],
     )
 finally:

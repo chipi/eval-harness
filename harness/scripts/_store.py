@@ -100,13 +100,23 @@ def _pathlike(x: Any) -> bool:
     return isinstance(x, (str, os.PathLike))
 
 
+_DATA_ABS: list[Any] = [None, ""]
+
+
+def _data_abs() -> str:
+    """data/'s absolute path, kept while `_common.DATA` is the same object (a test that moves the project replaces it)."""
+    if _DATA_ABS[0] is not _common.DATA:
+        _DATA_ABS[:] = [_common.DATA, os.path.abspath(_common.DATA)]
+    return str(_DATA_ABS[1])
+
+
 def rel(path: Any) -> str | None:
     """A path's key in the database (its place under data/, `/`-separated) when the store is the database and the
     path is under data/; None for a path the filesystem keeps."""
     if not sqlite() or not _pathlike(path):
         return None
     try:
-        key = Path(os.path.abspath(path)).relative_to(os.path.abspath(_common.DATA)).as_posix()
+        key = Path(os.path.abspath(path)).relative_to(_data_abs()).as_posix()
     except ValueError:
         return None
     if key in ("", ".") or key == DB or key.startswith(DB + "-"):
@@ -114,8 +124,20 @@ def rel(path: Any) -> str | None:
     return key
 
 
-def _like(prefix: str) -> str:
-    return prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "/%"
+#: The keys under a directory: every key that starts with `<dir>/` sorts in [`<dir>/`, `<dir>0`), since `0` follows
+#: `/`, so each query below takes that range on its primary key, a SEARCH of the index; the LIKE pattern it replaces
+#: scanned the whole table (11.6 ms for one glob against 0.045 ms on disk, architecture review 2026-11-06).
+def _under(key: str) -> tuple[str, str]:
+    return key + "/", key + "0"
+
+
+def _disk(path: Any) -> Path:
+    """A path the filesystem keeps, as the OS should find it. In the database's store a folder under data/ is only a
+    key, not on disk, so a path that climbs out through one (a config's `adapter: ../../bonus_adapter.py`, from
+    data/configs/) is normalised first instead of walked, which failed (the store matrix, 2026-11-08). On disk, as
+    given."""
+    p = Path(path)
+    return Path(os.path.abspath(p)) if ".." in p.parts and sqlite() else p
 
 
 # ── reading ──────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -138,7 +160,7 @@ def read_bytes(path: Any) -> bytes:
         return path.read_bytes()
     key = rel(path)
     if key is None:
-        return Path(path).read_bytes()
+        return _disk(path).read_bytes()
     got = _get(key)
     if got is None:
         raise _missing(path)
@@ -151,7 +173,7 @@ def read_text(path: Any, encoding: str = "utf-8", errors: str | None = None) -> 
         return path.read_text(encoding=encoding, errors=errors)
     key = rel(path)
     if key is None:
-        return Path(path).read_text(encoding=encoding, errors=errors)
+        return _disk(path).read_text(encoding=encoding, errors=errors)
     return read_bytes(path).decode(encoding, errors or "strict")
 
 
@@ -162,7 +184,7 @@ def is_file(path: Any) -> bool:
         return path.is_file()
     key = rel(path)
     if key is None:
-        return Path(path).is_file()
+        return _disk(path).is_file()
     conn = connect(create=False)
     return bool(conn and conn.execute("SELECT 1 FROM files WHERE path = ?", (key,)).fetchone())
 
@@ -174,14 +196,12 @@ def is_dir(path: Any) -> bool:
         return path.is_dir()
     key = rel(path)
     if key is None:
-        p = Path(path)
+        p = _disk(path)
         return p.is_dir() or (sqlite() and _is_data_root(p))
     conn = connect(create=False)
     return bool(
         conn
-        and conn.execute(
-            "SELECT 1 FROM files WHERE path LIKE ? ESCAPE '\\' LIMIT 1", (_like(key),)
-        ).fetchone()
+        and conn.execute("SELECT 1 FROM files WHERE path >= ? AND path < ? LIMIT 1", _under(key)).fetchone()
     )
 
 
@@ -212,7 +232,7 @@ def stat(path: Any) -> Any:
         return path.stat()
     key = rel(path)
     if key is None:
-        return Path(path).stat()
+        return _disk(path).stat()
     conn = connect(create=False)
     got = (
         conn.execute("SELECT length(data), mtime_ns FROM files WHERE path = ?", (key,)).fetchone()
@@ -236,7 +256,7 @@ def _keys_under(key: str) -> list[str]:
     return [
         r[0]
         for r in conn.execute(
-            "SELECT path FROM files WHERE path LIKE ? ESCAPE '\\' ORDER BY path", (_like(key),)
+            "SELECT path FROM files WHERE path >= ? AND path < ? ORDER BY path", _under(key)
         )
     ]
 
@@ -363,6 +383,12 @@ def mkdir(path: Any, parents: bool = False, exist_ok: bool = False) -> None:
         Path(path).mkdir(parents=parents, exist_ok=exist_ok)
 
 
+def data_folder(project: Any) -> None:
+    """A project's data/ made on disk, in either store: the database lives in it, and a command run from a subfolder
+    finds the project by it (init; `mkdir` makes no folder under data/ in the database, data/ itself included)."""
+    os.makedirs(Path(project) / "data", exist_ok=True)
+
+
 @_locked
 def unlink(path: Any, missing_ok: bool = False) -> None:
     """The file removed."""
@@ -399,9 +425,9 @@ def rmtree(path: Any, ignore_errors: bool = False) -> None:
     with _LOCK:
         conn.execute("BEGIN IMMEDIATE")
         try:
-            n = conn.execute("DELETE FROM files WHERE path LIKE ? ESCAPE '\\'", (_like(key),)).rowcount
+            n = conn.execute("DELETE FROM files WHERE path >= ? AND path < ?", _under(key)).rowcount
             for table in _per_item_tables(conn):
-                conn.execute(table[0], (key, _like(key)))
+                conn.execute(table[0], (key, *_under(key)))
             conn.execute("COMMIT")
         except BaseException:
             if conn.in_transaction:  # a failed COMMIT too: never leave the shared connection in a transaction
@@ -463,18 +489,47 @@ def _per_item_tables(conn: sqlite3.Connection) -> list[tuple[str]]:
     """The DELETE statements for the per-item tables that exist (`_outputs` creates them on first use)."""
     have = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
     stmts = {
-        "outputs": "DELETE FROM outputs WHERE run = ? OR run LIKE ? ESCAPE '\\'",
-        "rows": "DELETE FROM rows WHERE run = ? OR run LIKE ? ESCAPE '\\'",
+        "outputs": "DELETE FROM outputs WHERE run = ? OR (run >= ? AND run < ?)",
+        "rows": "DELETE FROM rows WHERE run = ? OR (run >= ? AND run < ?)",
     }
     return [(stmts[t],) for t in stmts if t in have]
 
 
+@_locked
+def _per_item_under(key: str) -> int:
+    """How many outputs and rows the database keeps for the run `key` or any run under it."""
+    conn = connect(create=False)
+    if conn is None:
+        return 0
+    have = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    count = {
+        "outputs": "SELECT count(*) FROM outputs WHERE run = ? OR (run >= ? AND run < ?)",
+        "rows": "SELECT count(*) FROM rows WHERE run = ? OR (run >= ? AND run < ?)",
+    }
+    return sum(conn.execute(count[t], (key, *_under(key))).fetchone()[0] for t in count if t in have)
+
+
+def _refuse_per_item(src: Any, what: str) -> None:
+    key = rel(src)
+    if key is not None and _per_item_under(key):
+        raise ValueError(
+            f"{src}: a run's outputs and rows are kept beside its files in the project's database, and {what} would"
+            " leave them behind; a release copies a run with them, a folder copy cannot"
+        )
+
+
 def replace(src: Any, dst: Any) -> None:
-    """os.replace: the file at `src` becomes the file at `dst`."""
+    """os.replace: the file at `src` becomes the file at `dst`; a directory in the database is refused (its files are
+    keys, a run's outputs and rows are rows: nothing moves them as one)."""
     ks, kd = rel(src), rel(dst)
     if ks is None and kd is None:
         os.replace(src, dst)
         return
+    if ks is not None and not is_file(src) and is_dir(src):
+        _refuse_per_item(src, "moving it")
+        raise ValueError(
+            f"{src}: a directory in the project's database is moved file by file (copy_tree, then rmtree)"
+        )
     data = read_bytes(src)
     write_bytes(dst, data)
     unlink(src)
@@ -492,11 +547,14 @@ def copy_file(src: Any, dst: Any) -> None:
     write_bytes(dst, read_bytes(src))
 
 
-def copy_tree(src: Any, dst: Any) -> None:
-    """shutil.copytree (into an existing tree too): every file under `src`, in or out of the database."""
+def copy_tree(src: Any, dst: Any, files_only: bool = False) -> None:
+    """shutil.copytree (into an existing tree too): every file under `src`, in or out of the database. A run's
+    outputs and rows are not files: copying a run is refused unless `files_only` says the caller copies them itself."""
     if rel(src) is None and rel(dst) is None:
         shutil.copytree(src, dst, dirs_exist_ok=True)
         return
+    if not files_only:
+        _refuse_per_item(src, "copying it")
     for f in rglob(src, "*"):
         if is_file(f):
             copy_file(f, Path(dst) / Path(f).relative_to(Path(src)))
@@ -532,7 +590,11 @@ def open_file(
             else path.open(mode)
         )
     if rel(path) is None:
-        return open(path, mode, buffering, encoding, errors, newline)
+        return open(_disk(path), mode, buffering, encoding, errors, newline)
+    if "+" in mode or "x" in mode or mode[:1] not in ("r", "w", "a"):
+        raise ValueError(
+            f"{path}: mode {mode!r} is not kept in the project's database: read (r), write (w) or append (a) only"
+        )
     text = "b" not in mode
     enc = encoding or "utf-8"
     if mode.startswith("r"):
@@ -541,6 +603,22 @@ def open_file(
     initial = (read_bytes(path) if is_file(path) else b"") if mode.startswith("a") else b""
     raw = _Writer(path, initial)
     return io.TextIOWrapper(raw, encoding=enc, errors=errors, write_through=True) if text else raw
+
+
+def held_elsewhere() -> bool:
+    """Whether another process has the project's database open. Closing the last connection removes its
+    `-wal` and `-shm` files; this process closes its own, opens and closes it once more (which also clears what a
+    crashed process left), and whatever remains is another process's."""
+    path = db_path()
+    if not path.is_file():
+        return False
+    close()
+    import sqlite3 as _sq  # noqa: PLC0415
+
+    c = _sq.connect(str(path), timeout=60)
+    c.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    c.close()
+    return any(Path(f"{path}{s}").exists() for s in ("-wal", "-shm"))
 
 
 def stray_files() -> list[Path]:

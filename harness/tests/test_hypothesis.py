@@ -19,6 +19,9 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+# named in advance asks git for the commit that last changed the config file; nothing in the sqlite store is in git (RFC-025)
+os.environ["EVAL_STORE"] = "files"
+
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 KIT = HERE.parent / "tutorial"

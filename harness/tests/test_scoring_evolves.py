@@ -23,6 +23,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-scoring-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-scoring")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
@@ -58,8 +61,8 @@ def set_bonus(b: float) -> None:
     (proj / "bonus_adapter.py").write_text(ADAPTER.format(bonus=b))
 
 
-def files_under(p: Path) -> set[str]:
-    return {str(x.relative_to(p)) for x in p.rglob("*") if x.is_file()}
+def files_under() -> set[str]:
+    return set(_runstore.files_under(proj))
 
 
 # A module edited within the second to a value of the same length is loaded as edited: a stale .pyc (trusted while
@@ -77,10 +80,13 @@ check("load_module: an edit within the same second, same length, is what runs", 
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
-    (data / "goals").mkdir()
+    if not _runstore.sqlite():
+        (data / "configs").mkdir(parents=True)
+        (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_text(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+    )
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     r = evh(
@@ -114,8 +120,8 @@ try:
     set_bonus(0.0)
     for arm in ("lead1", "lead2"):
         cfg = (KIT / "configs" / f"tickets_{arm}.yaml").read_text()
-        (data / "configs" / f"{arm}.yaml").write_text(
-            cfg + "adapter: ../../bonus_adapter.py\ngoal: tickets_summary\n"
+        _runstore.write_text(
+            proj, f"configs/{arm}.yaml", cfg + "adapter: ../../bonus_adapter.py\ngoal: tickets_summary\n"
         )
         r = evh("run", "--config", f"data/configs/{arm}.yaml")
     check("setup: two arms run through the project adapter", r.returncode == 0, out(r)[-400:])
@@ -131,7 +137,7 @@ try:
         "--hypothesis",
         "lead sentences",
     )
-    r1 = (data / "rounds" / "tickets_summary" / "r1.yaml").read_text() if r.returncode == 0 else ""
+    r1 = _runstore.read_text(proj, "rounds/tickets_summary/r1.yaml") if r.returncode == 0 else ""
     check(
         "round-open --adopt: r1 carries the arms already run for the goal",
         "tickets_lead1_v1" in r1 and "tickets_lead2_v1" in r1,
@@ -146,7 +152,7 @@ try:
 
     # preview a scoring change: nothing written
     set_bonus(0.5)
-    before = files_under(data)
+    before = files_under()
     r = evh("score-preview", "--goal", "tickets_summary")
     check(
         "score-preview: each arm before and after the change, and the decision",
@@ -156,14 +162,18 @@ try:
         and "nothing written" in r.stdout,
         out(r)[-900:],
     )
-    check("score-preview: writes nothing to the project", files_under(data) == before)
+    check("score-preview: writes nothing to the project", files_under() == before)
 
     # apply it to r1: the designated place, the round's record
     r = evh(
         "rescore", "--goal", "tickets_summary", "--round", "r1", "--why", "a bonus to see the scoring move"
     )
-    placed = sorted((data / "runs-rescored").glob("*/runs/*/metrics.json"))
-    r1 = (data / "rounds" / "tickets_summary" / "r1.yaml").read_text()
+    placed = [
+        p
+        for p in _runstore.files_under(proj, "runs-rescored")
+        if re.fullmatch(r"runs-rescored/[^/]+/runs/[^/]+/metrics\.json", p)
+    ]
+    r1 = _runstore.read_text(proj, "rounds/tickets_summary/r1.yaml")
     check(
         "rescore --round: writes runs-rescored/<scorer>/runs/, one re-score per run",
         r.returncode == 0 and len(placed) == 2,
@@ -251,8 +261,8 @@ try:
         "round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1", "--from", "r1", "--keep", "all",
         "--scoring", "a larger bonus, adopted from this round",
     )  # fmt: skip
-    r2 = (data / "rounds" / "tickets_summary" / "r2.yaml").read_text() if r.returncode == 0 else ""
-    scorers = sorted(p.name for p in (data / "runs-rescored").iterdir())
+    r2 = _runstore.read_text(proj, "rounds/tickets_summary/r2.yaml") if r.returncode == 0 else ""
+    scorers = _runstore.listdir(proj, "runs-rescored")
     check(
         "round-open --scoring: the carried arms re-scored by this tree's scorer, before and after printed",
         r.returncode == 0
@@ -287,8 +297,10 @@ try:
             .read_text()
             .replace("tickets_lead2_v1", f"tickets_{arm}_v1")
         )
-        (data / "configs" / f"{arm}.yaml").write_text(
-            cfg + "adapter: ../../bonus_adapter.py\ngoal: tickets_summary\nround: r2\n"
+        _runstore.write_text(
+            proj,
+            f"configs/{arm}.yaml",
+            cfg + "adapter: ../../bonus_adapter.py\ngoal: tickets_summary\nround: r2\n",
         )
         evh("run", "--config", f"data/configs/{arm}.yaml")
     v = evh("validate")

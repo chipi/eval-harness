@@ -28,7 +28,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from evaluation_harness import _store
+from evaluation_harness import _common, _store
 from evaluation_harness._common import die, evh_prog
 
 HERE = Path(__file__).resolve().parent
@@ -66,8 +66,12 @@ def main() -> int:
     root = Path(args.dir).resolve()
     _store.mkdir(root, parents=True, exist_ok=True)
     made, kept = [], []
+    # data/ is a folder on disk in either store: the database lives in it, and a command run from a subfolder finds
+    # the project by it. Its folders are folders only in the files store (in the database a folder is a key prefix).
+    _store.data_folder(root)
     for f in FOLDERS:
         _store.mkdir(root / f, parents=True, exist_ok=True)
+    in_db = _common.store() == "sqlite"
     gi = root / ".gitignore"
     if _store.exists(gi):
         kept.append(".gitignore")
@@ -101,7 +105,10 @@ def main() -> int:
             _store.copy_file(src, dst)
             made.append(rel.as_posix())
     print(f"project: {root}")
-    print(f"  folders  {', '.join(FOLDERS)}")
+    if in_db:
+        print("  store    sqlite: the project's data goes into data/project.sqlite, made on the first write")
+    else:
+        print(f"  folders  {', '.join(FOLDERS)}")
     if made:
         print(
             f"  wrote    {len(made)} file(s)"

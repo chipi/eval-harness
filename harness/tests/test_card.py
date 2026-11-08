@@ -22,6 +22,9 @@ sys.path.insert(0, str(HARNESS))
 from evaluation_harness._card import QUESTIONS  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-card-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-card")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -41,7 +44,7 @@ def evh(*args):
 
 
 def ds(i):
-    return json.loads((proj / "data" / "datasets" / f"{i}.json").read_text())
+    return _runstore.read_json(proj, f"datasets/{i}.json")
 
 
 try:
@@ -82,7 +85,7 @@ try:
     )
     doc = ds("c_v1")
     doc["card"]["purpose"] = "x"
-    (proj / "data" / "datasets" / "c_v1.json").write_text(json.dumps(doc, indent=1))
+    _runstore.write_text(proj, "datasets/c_v1.json", json.dumps(doc, indent=1))
     r = evh("validate")
     check(
         "validate V22 refuses a card key a hand edit put there",

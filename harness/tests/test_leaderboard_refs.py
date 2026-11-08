@@ -24,6 +24,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 KIT = HERE.parent / "tutorial"
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-lbrefs-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-lbrefs")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
@@ -44,7 +47,9 @@ try:
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
     for arm in ("lead1", "author"):
-        shutil.copy(KIT / "configs" / f"tickets_{arm}.yaml", data / "configs")
+        _runstore.write_bytes(
+            proj, f"configs/tickets_{arm}.yaml", (KIT / "configs" / f"tickets_{arm}.yaml").read_bytes()
+        )
     for cfg in ("lead1", "author"):  # no reference yet
         r = evh(
             "run",
@@ -54,8 +59,8 @@ try:
             f"tickets_{cfg}_v1_none",
         )
         check(f"setup: {cfg} runs with no reference", r.returncode == 0, (r.stdout + r.stderr)[-400:])
-    author = next((data / "runs").glob("tickets_author_v1_*"))
-    r = evh("label-from-run", "--run", author.name, "--set", "author_labels")
+    author = next(n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_"))
+    r = evh("label-from-run", "--run", author, "--set", "author_labels")
     r = (
         r
         if r.returncode
@@ -138,7 +143,9 @@ try:
     # A round whose arms are scored against different references is read against one of them;
     # the others are named, never silently dropped or compared across references.
     (data / "goals").mkdir(exist_ok=True)
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_bytes(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_bytes()
+    )
     r = evh(
         "round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1",
         "--hypothesis", "mixed references", "--keep", "tickets_lead1_v1,tickets_author_v1",

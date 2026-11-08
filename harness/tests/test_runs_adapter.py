@@ -4,6 +4,7 @@ Each case is a defect the holistic review found: a direction remembered only by 
 adapter registries that never saw each other, a panel that judged placeholder text.
 """
 
+import contextlib
 import json
 import os
 import subprocess
@@ -286,6 +287,17 @@ with tempfile.TemporaryDirectory() as top:
     )
 from evaluation_harness import _common, self_check  # noqa: E402
 
+
+@contextlib.contextmanager
+def aimed():
+    """_runstore re-aims the paths at a test project but not the project root, which _common caches."""
+    _common.project_root.cache_clear()
+    try:
+        yield
+    finally:
+        _common.project_root.cache_clear()
+
+
 check("checkout: in_checkout() is true here", _common.in_checkout())
 check("checkout: `evh self-test` finds the full suite in tests/", self_check.in_checkout())
 
@@ -343,6 +355,7 @@ with tempfile.TemporaryDirectory() as tmp:
         ),
         encoding="utf-8",
     )
+    _runstore.migrate_in(tmp)
     r = subprocess.run(
         [sys.executable, str(HERE / "validate_tree.py")],
         cwd=tmp,
@@ -367,6 +380,7 @@ with tempfile.TemporaryDirectory() as tmp:
     verdict = data / "judge-verdicts" / "s" / "set" / "j" / "i.primary.b0.json"
     verdict.parent.mkdir(parents=True)
     verdict.write_text(json.dumps({"set_id": "set", "judge": "j", "pass": "first"}), encoding="utf-8")
+    _runstore.migrate_in(tmp)
     r = subprocess.run(
         [sys.executable, str(HERE / "validate_tree.py")],
         cwd=tmp,
@@ -431,6 +445,7 @@ with tempfile.TemporaryDirectory() as tmp:
         ),
         encoding="utf-8",
     )
+    _runstore.migrate_in(tmp)
     env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""}
     subprocess.run(
         [
@@ -445,8 +460,9 @@ with tempfile.TemporaryDirectory() as tmp:
         capture_output=True,
         text=True,
     )
-    bl_path = Path(tmp) / "data" / "baselines" / "d_baseline.json"
-    bl = json.loads(bl_path.read_text(encoding="utf-8")) if bl_path.is_file() else {}
+    bl_rel = "baselines/d_baseline.json"
+    with aimed():
+        bl = _runstore.read_json(tmp, bl_rel) if _runstore.is_file(tmp, bl_rel) else {}
     check(
         "promote: the baseline carries the run's tier, adapter and fingerprint hash",
         (bl.get("reference_tier"), bl.get("adapter"), bl.get("fingerprint_hash"))
@@ -461,7 +477,8 @@ with tempfile.TemporaryDirectory() as tmp:
         return next((ln for ln in r.stdout.splitlines() if " V6 " in ln), r.stdout[-300:])
 
     as_promoted = _v6()
-    bl_path.write_text(json.dumps({**bl, "reference_tier": "silver"}), encoding="utf-8")
+    with aimed():
+        _runstore.write_text(tmp, bl_rel, json.dumps({**bl, "reference_tier": "silver"}))
     edited = _v6()
     check("V6: a baseline as promoted passes", as_promoted.startswith("  ok "), as_promoted)
     check("V6: a baseline whose tier no longer matches its run fails", edited.startswith("  FAIL "), edited)
@@ -476,6 +493,7 @@ with tempfile.TemporaryDirectory() as tmp:
         {"run_id": "r1", "config_id": "c", "dataset_id": "d", "scores": {}},
         [{"item_id": "i1"}],
     )
+    _runstore.migrate_in(tmp)
     files_before = sorted(p_.relative_to(tmp) for p_ in Path(tmp).rglob("*"))
     r = subprocess.run(
         [sys.executable, str(HERE / "rescore.py"), "--dataset-id", "d", "--out", str(runs_dir)],
@@ -496,7 +514,21 @@ with tempfile.TemporaryDirectory() as tmp:
 # A run record with a field no harness version writes now fails V1 (a 0.3.0 import's
 # primary_metric_asc was read by nothing and passed); EVAL_GOALS_DIR puts the goals outside the
 # data root, and V14 reads them there.
-with tempfile.TemporaryDirectory() as tmp:
+record = {
+    "run_id": "r1",
+    "config_id": "c",
+    "dataset_id": "d",
+    "goal": "g1",
+    "created_at": "2026-10-23",
+    "build": {"ref": "t"},
+    "scores": {"f1": 0.5},
+    "n_items": 1,
+    "metric_directions": {"f1": "lower"},
+}
+
+
+def _stats_project(tmp: str, rec: dict) -> None:
+    """A project whose data root is data/eval/stats and whose goals sit beside it, with one run `rec`."""
     data = Path(tmp) / "data" / "eval" / "stats"
     goals = Path(tmp) / "data" / "eval" / "goals"
     for d in (data / "runs" / "r1", data / "datasets", goals):
@@ -506,40 +538,49 @@ with tempfile.TemporaryDirectory() as tmp:
         src_goal.read_text(encoding="utf-8").replace("goal_id: entities_few_nerd", "goal_id: g1"),
         encoding="utf-8",
     )
-    record = {
-        "run_id": "r1",
-        "config_id": "c",
-        "dataset_id": "d",
-        "goal": "g1",
-        "created_at": "2026-10-23",
-        "build": {"ref": "t"},
-        "scores": {"f1": 0.5},
-        "n_items": 1,
-        "metric_directions": {"f1": "lower"},
-    }
-    (data / "runs" / "r1" / "metrics.json").write_text(json.dumps(record), encoding="utf-8")
-    env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "data/eval/stats", "EVAL_RUNS_DIR": ""}
-
-    def _validate(extra: dict) -> str:
-        r = subprocess.run(
-            [sys.executable, str(HERE / "validate_tree.py")],
-            env={**env, **extra},
+    (data / "runs" / "r1" / "metrics.json").write_text(json.dumps(rec), encoding="utf-8")
+    if _runstore.sqlite():  # the data root is not data/, so _runstore.migrate_in does not apply
+        env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "data/eval/stats", "EVAL_RUNS_DIR": ""}
+        env.pop("EVAL_GOALS_DIR", None)
+        moved = subprocess.run(
+            [sys.executable, "-m", "evaluation_harness", "data-migrate", "--to", "sqlite"],
+            env=env,
             capture_output=True,
             text=True,
+            stdin=subprocess.DEVNULL,
         )
-        return r.stdout
+        if moved.returncode != 0:
+            raise RuntimeError(f"data-migrate --to sqlite failed: {(moved.stdout + moved.stderr)[-500:]}")
 
-    elsewhere = _validate({"EVAL_GOALS_DIR": "data/eval/goals"})
-    unset = _validate({"EVAL_GOALS_DIR": ""})
+
+def _validate(tmp: str, extra: dict) -> str:
+    r = subprocess.run(
+        [sys.executable, str(HERE / "validate_tree.py")],
+        env={
+            **os.environ,
+            "EVAL_HOME": tmp,
+            "EVAL_DATA_DIR": "data/eval/stats",
+            "EVAL_RUNS_DIR": "",
+            **extra,
+        },
+        capture_output=True,
+        text=True,
+    )
+    return r.stdout
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    _stats_project(tmp, record)
+    elsewhere = _validate(tmp, {"EVAL_GOALS_DIR": "data/eval/goals"})
+    unset = _validate(tmp, {"EVAL_GOALS_DIR": ""})
     check(
         "EVAL_GOALS_DIR: V14 reads the goals there (and finds its contradiction)",
         "FAIL V14" in elsewhere and "f1 is higher-is-better" in elsewhere and "FAIL V14" not in unset,
         elsewhere[-400:],
     )
-    (data / "runs" / "r1" / "metrics.json").write_text(
-        json.dumps({**record, "primary_metric_asc": True}), encoding="utf-8"
-    )
-    old_field = _validate({"EVAL_GOALS_DIR": ""})
+with tempfile.TemporaryDirectory() as tmp:
+    _stats_project(tmp, {**record, "primary_metric_asc": True})
+    old_field = _validate(tmp, {"EVAL_GOALS_DIR": ""})
     check(
         "V1: a run record with a field no harness writes fails",
         "FAIL V1 schemas" in old_field and "primary_metric_asc" in old_field,

@@ -22,8 +22,12 @@ from pathlib import Path
 HARNESS = Path(__file__).resolve().parents[1]
 HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
+from evaluation_harness import _common  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.sources.huggingface import Source  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
 
 
 class Commit:
@@ -126,14 +130,15 @@ try:
         r.returncode == 1 and "not-materialized" in r.stderr and "dataset-materialize" in r.stderr,
         r.stderr[-300:],
     )
-    f = proj / "data" / "datasets" / "p_v1.json"
-    doc = json.loads(f.read_text())
-    f.write_text(json.dumps({**doc, "text": "hidden"}, indent=1))
+    # The Hub source above resolved this process's project; _runstore aims at the test project by EVAL_HOME.
+    _common.project_root.cache_clear()
+    doc = _runstore.read_json(proj, "datasets/p_v1.json")
+    _runstore.write_text(proj, "datasets/p_v1.json", json.dumps({**doc, "text": "hidden"}, indent=1))
     r = evh("dataset-publish", "--dataset-id", "p_v1", "--to", "huggingface", "--query", '{"repo": "ada/x"}')
     check(
         "a hidden dataset is never published", r.returncode == 1 and "not-public" in r.stderr, r.stderr[-300:]
     )
-    f.write_text(json.dumps(doc, indent=1))
+    _runstore.write_text(proj, "datasets/p_v1.json", json.dumps(doc, indent=1))
     r = evh("dataset-publish", "--dataset-id", "p_v1", "--to", "folder", "--query", "{}")
     check(
         "a source that cannot publish is refused",

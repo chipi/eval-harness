@@ -65,10 +65,16 @@ def evh(*args):
 
 
 def config(name, **params):
-    p = proj / "data" / "configs" / f"{name}.yaml"
     body = "".join(f"  {k}: {json.dumps(v)}\n" for k, v in params.items())
-    p.write_text(f"config_id: {name}_v1\ndataset_id: tickets_v1\nadapter: adapter.py\nparams:\n{body}")
+    text = f"config_id: {name}_v1\ndataset_id: tickets_v1\nadapter: adapter.py\nparams:\n{body}"
+    _runstore.write_text(proj, f"configs/{name}.yaml", text)
     return f"data/configs/{name}.yaml"
+
+
+def run_dir(config_id):
+    """The newest run directory of an arm, or None."""
+    names = [n for n in _runstore.listdir(proj, "runs") if n.startswith(config_id + "_")]
+    return proj / "data" / "runs" / names[-1] if names else None
 
 
 try:
@@ -80,8 +86,9 @@ try:
     check("setup: the tutorial dataset is frozen and materialized", r.returncode == 0, r.stderr[-300:])
 
     r = evh("run", "--config", config("plain"))
-    run = next((proj / "data" / "runs").glob("plain_v1_*"), None)
-    rows = _runstore.rows(run) if run else []
+    run = run_dir("plain_v1")
+    with _runstore._InProject(proj):
+        rows = _runstore.rows(run) if run else []
     rows_plain = rows
     check(
         "the core times every call: latency_ms on each row, from an adapter that reports none",
@@ -98,7 +105,7 @@ try:
 
     flag = proj / "provider-back"
     r = evh("run", "--config", config("flaky", fail_on="export", flag=str(flag)))
-    stopped = next((proj / "data" / "runs").glob("flaky_v1_*"), None)
+    stopped = run_dir("flaky_v1")
     out = r.stdout + r.stderr
     check(
         "a crashed pass names the run, how far it got, and how to resume or delete it",
@@ -109,17 +116,19 @@ try:
         and "or delete" in out,
         out[-600:],
     )
+    with _runstore._InProject(proj):
+        kept = (
+            stopped is not None
+            and _outputs.count(stopped) >= 1
+            and _outputs.rows_text(stopped, partial=True) is not None
+            and len(_runstore.rows(stopped, partial=True)) == _outputs.count(stopped)
+            and not _outputs.has_rows(stopped)
+        )
+        done = _outputs.count(stopped) if stopped else None
     check(
         "the stopped run keeps what its pass appended: the outputs done so far and their rows, no predictions.jsonl",
-        stopped is not None
-        and _outputs.count(stopped) >= 1
-        and _outputs.rows_text(stopped, partial=True) is not None
-        and len(_runstore.rows(stopped, partial=True)) == _outputs.count(stopped)
-        and not _outputs.has_rows(stopped),
-        (
-            _outputs.count(stopped) if stopped else None,
-            sorted(p.name for p in stopped.iterdir()) if stopped else None,
-        ),
+        kept,
+        (done, _runstore.listdir(proj, f"runs/{stopped.name}") if stopped else None),
     )
     flag.write_text("1")
     r = evh("run", "--config", "data/configs/flaky.yaml", "--resume", stopped.name if stopped else "")
@@ -127,8 +136,10 @@ try:
 
     back = proj / "server-back"
     r = evh("run", "--config", config("refused", refuse_on="export", flag=str(back)))
-    gone = next((proj / "data" / "runs").glob("refused_v1_*"), None)
+    gone = run_dir("refused_v1")
     out = r.stdout + r.stderr
+    with _runstore._InProject(proj):
+        said = "".join(_outputs.outputs(gone).values()) if gone is not None else ""
     check(
         "an item whose every model call was refused stops the run, unwritten, not scored as an answer",
         r.returncode != 0
@@ -137,17 +148,18 @@ try:
         and "every model call failed" in out
         and "Connection refused" in out
         and "Traceback" not in out
-        and not (gone / "metrics.json").exists()
-        and "no decision" not in "".join(_outputs.outputs(gone).values()),
+        and not _runstore.exists(proj, f"runs/{gone.name}/metrics.json")
+        and "no decision" not in said,
         out[-600:],
     )
     back.write_text("1")
     r = evh("run", "--config", "data/configs/refused.yaml", "--resume", gone.name if gone else "")
     # A resume is a run of its own (config id and the time it started), unless both start in the same second:
     # read the newest run of the arm, never assume it is the stopped one's directory.
-    resumed = sorted((proj / "data" / "runs").glob("refused_v1_*"))[-1]
-    rows = _runstore.rows(resumed)
-    answers = list(_outputs.outputs(resumed).values())
+    resumed = run_dir("refused_v1")
+    with _runstore._InProject(proj):
+        rows = _runstore.rows(resumed)
+        answers = list(_outputs.outputs(resumed).values())
     check(
         "resumed with the server back, the refused item is called again and every item is an answer",
         r.returncode == 0
@@ -157,10 +169,10 @@ try:
         ((r.stdout + r.stderr)[-300:], len(rows), len(rows_plain)),
     )
     r = evh("run", "--config", config("broken", model_error=True))
-    run = next((proj / "data" / "runs").glob("broken_v1_*"), None)
+    run = run_dir("broken_v1")
     check(
         "a model's own failed calls (not an unreachable server) are a measurement: the run completes",
-        r.returncode == 0 and run is not None and (run / "metrics.json").exists(),
+        r.returncode == 0 and run is not None and _runstore.exists(proj, f"runs/{run.name}/metrics.json"),
         (r.stdout + r.stderr)[-300:],
     )
 finally:

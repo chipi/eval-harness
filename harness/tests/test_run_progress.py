@@ -23,6 +23,7 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 KIT = HERE.parent / "tutorial"
+import _runstore  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.run import progress_every, progress_line  # noqa: E402
 
@@ -56,18 +57,18 @@ def evh(*args):
 
 
 def config(name, adapter=None, record=None, **params):
-    p = proj / "data" / "configs" / f"{name}.yaml"
     body = "".join(f"  {k}: {json.dumps(v)}\n" for k, v in params.items())
     head = f"config_id: {name}_v1\ndataset_id: tickets_v1\n"
     head += f"adapter: {adapter}\n" if adapter else ""
     head += f"model_record: {record}\n" if record else ""
-    p.write_text(head + "params:\n" + body)
+    _runstore.write_text(proj, f"configs/{name}.yaml", head + "params:\n" + body)
     return f"data/configs/{name}.yaml"
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
-    (proj / "data" / "models").mkdir()
+    if not _runstore.sqlite():
+        (proj / "data" / "configs").mkdir(parents=True)
+        (proj / "data" / "models").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     (proj / "calls_adapter.py").write_text(ADAPTER)
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
@@ -133,11 +134,13 @@ try:
     )
 
     # the dry run: a measured cost from an arm-smoke, read from the model record
-    (proj / "data" / "models" / "mrec.yaml").write_text(
+    _runstore.write_text(
+        proj,
+        "models/mrec.yaml",
         "model_id: mrec\nkind: llm\naliases: [mrec:1b]\nsmokes:\n  measured_v1:\n    status: pass\n"
         "    at: '2026-11-03T10:00:00Z'\n    flags: []\n    report:\n      items:\n"
         "      - {item: a, s: 1.0, cost_usd: 0.004}\n      - {item: b, s: 1.0, cost_usd: 0.008}\n"
-        "      projection: {items: 6, usd: 0.036}\n"
+        "      projection: {items: 6, usd: 0.036}\n",
     )
     r = evh(
         "run", "--config", config("measured", record="mrec", **priced), "--repeat", "3", "--dry-run", "--json"
@@ -213,30 +216,30 @@ try:
     # the same second shared one directory: the second wrote over the first, a committed run included. The
     # directories of the next few seconds are made first, each with a marker; the run must land in a new one.
     cid = "one_v1"
-    runs = proj / "data" / "runs"
     marked = []
     t0 = time.time()
     for s in range(4):
         stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(t0 + s))
-        (runs / f"{cid}_{stamp}").mkdir(parents=True, exist_ok=True)
-        (runs / f"{cid}_{stamp}" / "MARKER").write_text("an earlier run\n")
-        marked.append(runs / f"{cid}_{stamp}")
+        if not _runstore.sqlite():
+            (proj / "data" / "runs" / f"{cid}_{stamp}").mkdir(parents=True, exist_ok=True)
+        _runstore.write_text(proj, f"runs/{cid}_{stamp}/MARKER", "an earlier run\n")
+        marked.append(f"{cid}_{stamp}")
     r = evh("run", "--config", "data/configs/one.yaml", "--json")
     made = json.loads(r.stdout)["result"]["values"]["runs"][0]["run_id"] if r.returncode == 0 else ""
     check(
         "run: an id already taken (a run started in the same second) is never written into: the run takes a new one",
         r.returncode == 0
         and made
-        and all(m.name != made for m in marked)
-        and all(sorted(p.name for p in m.iterdir()) == ["MARKER"] for m in marked),
+        and all(m != made for m in marked)
+        and all(_runstore.listdir(proj, f"runs/{m}") == ["MARKER"] for m in marked),
         (r.stderr[-300:], made),
     )
-    r = evh("run", "--config", "data/configs/one.yaml", "--run-id", marked[0].name)
+    r = evh("run", "--config", "data/configs/one.yaml", "--run-id", marked[0])
     check(
         "run: --run-id naming a directory that exists is refused, and nothing is written into it",
         r.returncode != 0
         and "never written into another" in (r.stdout + r.stderr)
-        and sorted(p.name for p in marked[0].iterdir()) == ["MARKER"],
+        and _runstore.listdir(proj, f"runs/{marked[0]}") == ["MARKER"],
         (r.stdout + r.stderr)[-300:],
     )
 finally:

@@ -24,6 +24,9 @@ KIT = HARNESS / "tutorial"
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-tags-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-tags")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -60,14 +63,18 @@ try:
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     for arm in ("lead1", "lead2"):
-        (data / "configs" / f"{arm}.yaml").write_text((KIT / "configs" / f"tickets_{arm}.yaml").read_text())
+        _runstore.write_text(
+            proj, f"configs/{arm}.yaml", (KIT / "configs" / f"tickets_{arm}.yaml").read_text()
+        )
         r = r if r.returncode else evh("run", "--config", str(data / "configs" / f"{arm}.yaml"))
     check("setup: the dataset and two runs", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    (data / "failure-modes" / "summaries.yaml").write_text(
+    _runstore.write_text(
+        proj,
+        "failure-modes/summaries.yaml",
         "failure_modes_id: summaries\n"
         "modes:\n"
         "  - {id: misses-ask, description: does not say what the customer asks for}\n"
-        "  - {id: too-long, description: more than two sentences}\n"
+        "  - {id: too-long, description: more than two sentences}\n",
     )
     sheet = proj / "tags.csv"
     r = evh(
@@ -122,7 +129,7 @@ try:
     )
     check(
         "sheet-import --tags: the set is written",
-        r.returncode == 0 and (data / "tags" / "tickets_v1" / "first" / "tags.json").is_file(),
+        r.returncode == 0 and _runstore.is_file(proj, "tags/tickets_v1/first/tags.json"),
         (r.stdout + r.stderr)[-400:],
     )
     r = evh("tags", "--dataset-id", "tickets_v1", "--json")
@@ -224,7 +231,9 @@ try:
         r.stderr[-300:],
     )
     (data / "goals").mkdir()
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_text(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+    )
     r = evh("catalog", "--out", "cat")
     gp = proj / "cat" / "g" / "tickets_summary.html"
     html = gp.read_text() if gp.is_file() else ""
@@ -243,8 +252,8 @@ try:
         bool(v21) and v21[0].lstrip().startswith("ok"),
         "\n".join(v21) or r.stdout[-600:],
     )
-    (data / "failure-modes" / "summaries.yaml").write_text(
-        "failure_modes_id: summaries\nmodes:\n  - {id: misses-ask}\n"
+    _runstore.write_text(
+        proj, "failure-modes/summaries.yaml", "failure_modes_id: summaries\nmodes:\n  - {id: misses-ask}\n"
     )
     r = evh("validate")
     check(

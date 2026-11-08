@@ -4,7 +4,6 @@
 python tests/test_split.py
 """
 
-import json
 import os
 import subprocess
 import sys
@@ -14,6 +13,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-split-"))
 data = proj / "data"
@@ -33,17 +35,19 @@ def out(r):
 
 
 def ds(name):
-    return json.loads((data / "datasets" / f"{name}.json").read_text())
+    return _runstore.read_json(proj, f"datasets/{name}.json")
 
 
 def ids(name):
     return {it["item_id"] for it in ds(name)["items"]}
 
 
-(data / "fields" / "g.yaml").write_text(
+_runstore.write_text(
+    proj,
+    "fields/g.yaml",
     "fieldset_id: g\ndescription: test\nfields:\n"
     "  - {name: group, type: text, label: Group, description: a group}\n"
-    "  - {name: day, type: date, label: Day, description: a day}\n"
+    "  - {name: day, type: date, label: Day, description: a day}\n",
 )
 src = proj / "src"
 src.mkdir()

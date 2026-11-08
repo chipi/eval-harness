@@ -24,6 +24,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 KIT = HERE.parent / "tutorial"
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-smoke-report-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-smoke-report", EVAL_MAX_RETRIES="0")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -60,20 +63,19 @@ def evh(*args):
 
 
 def config(name, record=None, **params):
-    p = proj / "data" / "configs" / f"{name}.yaml"
     body = "".join(f"  {k}: {json.dumps(v)}\n" for k, v in params.items())
     head = f"config_id: {name}_v1\ndataset_id: tickets_v1\nadapter: smoke_adapter.py\n"
     head += f"model_record: {record}\n" if record else ""
-    p.write_text(head + "params:\n" + body)
+    _runstore.write_text(proj, f"configs/{name}.yaml", head + "params:\n" + body)
     return f"data/configs/{name}.yaml"
 
 
 try:
-    (proj / "data" / "configs").mkdir(parents=True)
-    (proj / "data" / "models").mkdir()
+    for d in () if _runstore.sqlite() else ("configs", "models"):
+        (proj / "data" / d).mkdir(parents=True)
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     (proj / "smoke_adapter.py").write_text(ADAPTER)
-    (proj / "data" / "models" / "mrec.yaml").write_text("model_id: mrec\nkind: llm\naliases: [mrec:1b]\n")
+    _runstore.write_text(proj, "models/mrec.yaml", "model_id: mrec\nkind: llm\naliases: [mrec:1b]\n")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset is frozen and materialized", r.returncode == 0, r.stderr[-300:])
@@ -103,7 +105,7 @@ try:
         and len(j.get("items", [])) == 3,
         (r.stdout[:500], r.stderr[-300:]),
     )
-    rec = (proj / "data" / "models" / "mrec.yaml").read_text()
+    rec = _runstore.read_text(proj, "models/mrec.yaml")
     check(
         "arm-smoke: the record's smoke carries the total spent, the determinism call included",
         "spent_usd: 0.008" in rec,

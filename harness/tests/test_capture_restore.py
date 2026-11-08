@@ -21,6 +21,9 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-capture-restore-"))
 env = dict(os.environ, EVAL_HOME=str(proj))
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
@@ -37,8 +40,8 @@ def out(r):
     return r.stdout + r.stderr
 
 
-def snapshot(d: Path) -> dict:
-    return {p.relative_to(d).as_posix(): p.read_bytes() for p in sorted(d.rglob("*")) if p.is_file()}
+def snapshot(rel: str) -> dict:
+    return {p[len(rel) + 1 :]: _runstore.read_bytes(proj, p) for p in _runstore.files_under(proj, rel)}
 
 
 rows: list[dict] = [
@@ -83,18 +86,18 @@ try:
     r = r if r.returncode else evh("dataset-from-capture", "c1", "--dataset-id", "c1_v1")
     check("setup: a capture and a dataset made from it", r.returncode == 0, out(r)[-400:])
     cap = proj / "data" / "captures" / "c1"
-    src = proj / "data" / "sources" / "c1_v1"
-    want_recs, want_items = snapshot(cap / "records"), snapshot(src)
+    cap_rel, src_rel = "captures/c1", "sources/c1_v1"
+    want_recs, want_items = snapshot(f"{cap_rel}/records"), snapshot(src_rel)
 
     # As a fresh clone has it: capture.json and the dataset file, no records and no item files.
-    shutil.rmtree(cap / "records")
-    shutil.rmtree(src)
+    _runstore.rmtree(proj, f"{cap_rel}/records")
+    _runstore.rmtree(proj, src_rel)
     r = evh("capture-restore", "--capture", "c1")
     check(
         "restore: the records and the dataset's item files come back byte for byte, and it says what it wrote",
         r.returncode == 0
-        and snapshot(cap / "records") == want_recs
-        and snapshot(src) == want_items
+        and snapshot(f"{cap_rel}/records") == want_recs
+        and snapshot(src_rel) == want_items
         and "3 records restored" in r.stdout
         and "hashes ok" in r.stdout
         and "c1_v1: 3 item file(s) to data/sources/c1_v1" in r.stdout,
@@ -106,17 +109,17 @@ try:
     # The source somewhere else: the recorded query no longer reaches it; --query points at the new place.
     (proj / "moved").mkdir()
     shutil.move(proj / "export" / "rows.jsonl", proj / "moved" / "rows.jsonl")
-    shutil.rmtree(cap / "records")
+    _runstore.rmtree(proj, f"{cap_rel}/records")
     r = evh("capture-restore", "--capture", "c1")
     check(
         "the recorded source gone: refused, the importer's failure named, nothing written",
-        r.returncode != 0 and "importer" in r.stderr and not (cap / "records").exists(),
+        r.returncode != 0 and "importer" in r.stderr and not _runstore.exists(proj, f"{cap_rel}/records"),
         out(r),
     )
     r = evh("capture-restore", "--capture", "c1", "--query", "path=moved/rows.jsonl")
     check(
         "--query KEY=VALUE replaces that key of the recorded query: restored, hashes ok",
-        r.returncode == 0 and snapshot(cap / "records") == want_recs,
+        r.returncode == 0 and snapshot(f"{cap_rel}/records") == want_recs,
         out(r),
     )
     r = evh("capture-restore", "--capture", "c1", "--query", "nokey")
@@ -125,38 +128,39 @@ try:
     # A source whose content changed: the record's hash no longer matches.
     changed = [dict(rows[0], body="first ticket, edited"), *rows[1:]]
     (proj / "moved" / "rows.jsonl").write_text("".join(json.dumps(x) + "\n" for x in changed))
-    shutil.rmtree(cap / "records")
-    shutil.rmtree(src)
+    _runstore.rmtree(proj, f"{cap_rel}/records")
+    _runstore.rmtree(proj, src_rel)
     r = evh("capture-restore", "--capture", "c1", "--query", "path=moved/rows.jsonl")
     check(
         "a source record that changed: refused, the record named, no records/ and no item files written",
         r.returncode != 0
         and "1 record(s) differ from what the capture recorded, e.g. r1" in r.stderr
-        and not (cap / "records").exists()
-        and not src.exists(),
+        and not _runstore.exists(proj, f"{cap_rel}/records")
+        and not _runstore.exists(proj, src_rel),
         out(r),
     )
+    names = _runstore.listdir(proj, cap_rel)
     check(
         "no partial folder is left beside records/ after a refusal",
-        not list(cap.glob(".records.partial-*")),
-        [p.name for p in cap.iterdir()],
+        not [n for n in names if n.startswith(".records.partial-")],
+        names,
     )
     # A records/ that does not match is replaced only with --force.
     (proj / "moved" / "rows.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows))
     evh("capture-restore", "--capture", "c1", "--query", "path=moved/rows.jsonl")
-    (cap / "records" / "r1.json").write_text('{"id": "r1", "body": "tampered"}\n')
+    _runstore.write_text(proj, f"{cap_rel}/records/r1.json", '{"id": "r1", "body": "tampered"}\n')
     r = evh("capture-restore", "--capture", "c1", "--query", "path=moved/rows.jsonl")
     check(
         "a records/ that does not match: refused without --force, the file left as it is",
         r.returncode != 0
         and "--force" in r.stderr
-        and "tampered" in (cap / "records" / "r1.json").read_text(),
+        and "tampered" in _runstore.read_text(proj, f"{cap_rel}/records/r1.json"),
         out(r),
     )
     r = evh("capture-restore", "--capture", "c1", "--query", "path=moved/rows.jsonl", "--force")
     check(
         "with --force: replaced by the records read again",
-        r.returncode == 0 and snapshot(cap / "records") == want_recs,
+        r.returncode == 0 and snapshot(f"{cap_rel}/records") == want_recs,
         out(r),
     )
 
@@ -178,15 +182,16 @@ try:
     r = r if r.returncode else evh("dataset-from-capture", "s1", "--dataset-id", "s1_v1")
     check("setup: a scrubbed capture and a dataset made after the scrub", r.returncode == 0, out(r)[-400:])
     scap, ssrc = proj / "data" / "captures" / "s1", proj / "data" / "sources" / "s1_v1"
-    want_s, want_si = snapshot(scap / "records"), snapshot(ssrc)
-    shutil.rmtree(scap / "records")
-    shutil.rmtree(ssrc)
+    scap_rel, ssrc_rel = "captures/s1", "sources/s1_v1"
+    want_s, want_si = snapshot(f"{scap_rel}/records"), snapshot(ssrc_rel)
+    _runstore.rmtree(proj, f"{scap_rel}/records")
+    _runstore.rmtree(proj, ssrc_rel)
     r = evh("capture-restore", "--capture", "s1")
     check(
         "scrubbed: read again, scrubbed again with the recorded command, the records and items match",
         r.returncode == 0
-        and snapshot(scap / "records") == want_s
-        and snapshot(ssrc) == want_si
+        and snapshot(f"{scap_rel}/records") == want_s
+        and snapshot(ssrc_rel) == want_si
         and "scrubbed again" in r.stdout
         and b"[email]" in want_s["r2.json"],
         out(r),

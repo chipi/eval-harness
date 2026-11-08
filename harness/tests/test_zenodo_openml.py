@@ -29,6 +29,9 @@ HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 CSV = b"comment,label\ngood,pos\nbad,neg\nfine,pos\n"
 buf = io.BytesIO()
 pq.write_table(
@@ -100,13 +103,15 @@ def evh(*args):
 
 
 def ds(i):
-    return json.loads((proj / "data" / "datasets" / f"{i}.json").read_text())
+    return _runstore.read_json(proj, f"datasets/{i}.json")
 
 
 try:
     (proj / "data" / "fields").mkdir(parents=True)
-    (proj / "data" / "fields" / "c.yaml").write_text(
-        "fieldset_id: c\nfields:\n  - {name: label, type: choice, values: [pos, neg]}\n"
+    _runstore.write_text(
+        proj,
+        "fields/c.yaml",
+        "fieldset_id: c\nfields:\n  - {name: label, type: choice, values: [pos, neg]}\n",
     )
     r = evh("dataset-create", "--dataset-id", "z_v1", "--source", "zenodo", "--fieldset", "c",
             "--query", json.dumps({"record": 42, "text": "comment", "fields": ["label"]}))  # fmt: skip
@@ -164,7 +169,7 @@ try:
     check(
         "openml: the parquet copy's rows as items; its version as revision, its page, no licence it cannot name",
         [it["item_id"] for it in d.get("items") or []] == ["row_0", "row_1"]
-        and (proj / "data" / "sources" / "o_v1" / "row_1.txt").read_text() == "versicolor"
+        and _runstore.read_text(proj, "sources/o_v1/row_1.txt") == "versicolor"
         and d["source"]["revision"] == "1"
         and d["source"]["url"] == f"{api}/d/61"
         and "licence" not in d,

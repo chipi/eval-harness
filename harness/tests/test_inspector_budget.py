@@ -32,6 +32,9 @@ import time
 import urllib.request
 from pathlib import Path
 
+# It measures this repository's own runs, its committed data, which is files.
+os.environ["EVAL_STORE"] = "files"
+
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402

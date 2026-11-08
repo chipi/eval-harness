@@ -23,7 +23,11 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 KIT = HERE.parent / "tutorial"
+from evaluation_harness import _common  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-rounds-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-rounds")
@@ -46,7 +50,9 @@ try:
     (data / "configs").mkdir(parents=True)
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_text(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+    )
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
@@ -79,7 +85,9 @@ try:
     )
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     for arm in ("lead1", "lead2"):
-        shutil.copy(KIT / "configs" / f"tickets_{arm}.yaml", data / "configs")
+        _runstore.write_text(
+            proj, f"configs/tickets_{arm}.yaml", (KIT / "configs" / f"tickets_{arm}.yaml").read_text()
+        )
         evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
 
     r = evh("rounds", "--goal", "tickets_summary")
@@ -94,7 +102,7 @@ try:
         "--hypothesis", "how many leading sentences summarise a ticket best",
         "--keep", "tickets_lead1_v1,tickets_lead2_v1",
     )  # fmt: skip
-    doc = (data / "rounds" / "tickets_summary" / "r1.yaml").read_text() if r.returncode == 0 else ""
+    doc = _runstore.read_text(proj, "rounds/tickets_summary/r1.yaml") if r.returncode == 0 else ""
     check(
         "round-open: writes r1, open, with the arms carried in",
         "status: open" in doc and "tickets_lead1_v1" in doc,
@@ -102,14 +110,17 @@ try:
     )
 
     cfg = (KIT / "configs" / "tickets_author.yaml").read_text()
-    (data / "configs" / "author.yaml").write_text(cfg + "goal: tickets_summary\nround: r1\n")
+    _runstore.write_text(proj, "configs/author.yaml", cfg + "goal: tickets_summary\nround: r1\n")
     r = evh("run", "--config", "data/configs/author.yaml")
-    run = next((data / "runs").glob("tickets_author_v1_*"), None)
+    run = next(
+        (data / "runs" / n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_")),
+        None,
+    )
     check(
         "a config naming the round runs in it, and the run records the round",
         r.returncode == 0
         and run is not None
-        and json.loads((run / "metrics.json").read_text()).get("round") == "r1",
+        and _runstore.read_json(proj, f"runs/{run.name}/metrics.json").get("round") == "r1",
         out(r)[-300:],
     )
 
@@ -238,7 +249,8 @@ try:
     )
     check(
         "round-retire: recorded with its reason",
-        r.returncode == 0 and "one sentence drops" in (data / "rounds/tickets_summary/r1.yaml").read_text(),
+        r.returncode == 0
+        and "one sentence drops" in _runstore.read_text(proj, "rounds/tickets_summary/r1.yaml"),
         out(r),
     )
     r = evh("leaderboard", "--dataset-id", "tickets_v1", "--round", "r1")
@@ -256,14 +268,14 @@ try:
         "round-close", "--goal", "tickets_summary", "--round", "r1",
         "--conclusion", "three sentences lead on the tutorial's six tickets", "--promote", run.name if run else "",
     )  # fmt: skip
-    doc = (data / "rounds/tickets_summary/r1.yaml").read_text()
-    base = data / "baselines" / "tickets_v1_baseline.json"
+    doc = _runstore.read_text(proj, "rounds/tickets_summary/r1.yaml")
+    base = "baselines/tickets_v1_baseline.json"
     check(
         "round-close: closed with its conclusion, and the run promoted with it as the reason",
         r.returncode == 0
         and "status: closed" in doc
-        and base.is_file()
-        and json.loads(base.read_text())["reason"].startswith("three sentences lead"),
+        and _runstore.is_file(proj, base)
+        and _runstore.read_json(proj, base)["reason"].startswith("three sentences lead"),
         out(r)[-300:],
     )
     r = evh("run", "--config", "data/configs/author.yaml", "--dry-run")
@@ -280,7 +292,7 @@ try:
         "--keep",
         "tickets_author_v1",
     )
-    doc2 = (data / "rounds/tickets_summary/r2.yaml").read_text() if r.returncode == 0 else ""
+    doc2 = _runstore.read_text(proj, "rounds/tickets_summary/r2.yaml") if r.returncode == 0 else ""
     check(
         "the next round continues the last, from its baseline",
         "from: r1" in doc2 and f"baseline: {run.name if run else None}" in doc2,
@@ -295,8 +307,10 @@ try:
         "2 round(s)" in r.stdout and "FAIL V14" not in r.stdout,
         r.stdout[-600:],
     )
-    (data / "rounds/tickets_summary/r3.yaml").write_text(
-        "round_id: r3\ngoal: tickets_summary\ndataset_id: nope\nstatus: closed\nopened_at: x\n"
+    _runstore.write_text(
+        proj,
+        "rounds/tickets_summary/r3.yaml",
+        "round_id: r3\ngoal: tickets_summary\ndataset_id: nope\nstatus: closed\nopened_at: x\n",
     )
     r = evh("validate")
     check(
@@ -306,22 +320,23 @@ try:
         and "closed without a conclusion" in r.stdout,
         r.stdout[-600:],
     )
-    (data / "rounds/tickets_summary/r3.yaml").unlink()
+    _runstore.unlink(proj, "rounds/tickets_summary/r3.yaml")
 
     # A re-timing of the same config on another machine (data/runs-linux) is its own arm in the
     # catalog; a round retires that copy alone, by naming its runs directory.
     assert run is not None, "a run of round r1 is needed to copy"
     linux = data / "runs-linux" / run.name
-    shutil.copytree(run, linux)
-    m = json.loads((linux / "metrics.json").read_text())
+    with _runstore._InProject(proj):
+        _runstore.copy_run(run, linux)
+    m = _runstore.read_json(proj, f"runs-linux/{run.name}/metrics.json")
     m["round"] = "r2"
-    (linux / "metrics.json").write_text(json.dumps(m))
+    _runstore.write_text(proj, f"runs-linux/{run.name}/metrics.json", json.dumps(m))
     cfg_id = m["config_id"]
     r = evh(
         "round-retire", "--goal", "tickets_summary", "--round", "r2", "--arm", cfg_id,
         "--runs-dir", "runs-linux", "--reason", "a re-timing of the same config on another machine",
     )  # fmt: skip
-    doc2 = (data / "rounds/tickets_summary/r2.yaml").read_text()
+    doc2 = _runstore.read_text(proj, "rounds/tickets_summary/r2.yaml")
     check(
         "round-retire --runs-dir: the retirement names the runs directory it applies to",
         r.returncode == 0 and "runs_dir: runs-linux" in doc2,
@@ -360,6 +375,10 @@ try:
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
+    # _runstore aimed this process at the test project; the checks below read this repository's committed data,
+    # which is files.
+    _common.project_root.cache_clear()
+    os.environ["EVAL_STORE"] = "files"
 
 # Promote only a leader the evidence puts ahead (the 2026-10-25 newcomer run: r2 suggested
 # promoting an arm not significantly different from the baseline, and r1's best was ahead of it).

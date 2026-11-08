@@ -56,6 +56,7 @@ try:
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     shutil.copytree(KIT / "fields", data / "fields")
+    _runstore.migrate_in(proj)
     ready = ok(
         evh(
             "dataset-create",
@@ -105,10 +106,12 @@ try:
         "{dataset_id: tickets_v1, role: validation,",
         "{dataset_id: tickets_v1, cluster: area, role: validation,",
     )
-    (data / "goals" / "tickets_summary.yaml").write_text(goal)
+    _runstore.write_text(proj, "goals/tickets_summary.yaml", goal)
     for arm in ("lead1", "lead2"):
-        (data / "configs" / f"{arm}.yaml").write_text(
-            (KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n"
+        _runstore.write_text(
+            proj,
+            f"configs/{arm}.yaml",
+            (KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n",
         )
         ready = ready and ok(evh("run", "--config", str(data / "configs" / f"{arm}.yaml")), f"run {arm}")
     if not ready:
@@ -130,8 +133,9 @@ try:
     # The expected p from the runs' own per-item scores: summed per area, five units.
     per = {}
     for arm in ("tickets_lead1_v1", "tickets_lead2_v1"):
-        run = next((data / "runs").glob(f"{arm}_*"))
-        rows = _runstore.rows(run)
+        run = data / "runs" / next(n for n in _runstore.listdir(proj, "runs") if n.startswith(f"{arm}_"))
+        with _runstore._InProject(proj):
+            rows = _runstore.rows(run)
         per[arm] = {x["item_id"]: x[v.get("metric", "overlap_f1")] for x in rows}
     area = {
         "t01_login": "account",
@@ -255,7 +259,7 @@ try:
         and worst.get("t01_login") == (1, 1),
         (r.stdout + r.stderr)[-500:],
     )
-    (data / "goals" / "tickets_summary.yaml").write_text(goal.replace("cluster: area", "cluster: araa"))
+    _runstore.write_text(proj, "goals/tickets_summary.yaml", goal.replace("cluster: area", "cluster: araa"))
     r = evh("validate")
     check(
         "validate: a goal whose cluster field no item carries fails V14",

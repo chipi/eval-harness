@@ -17,10 +17,29 @@ from evaluation_harness import _sources  # noqa: E402
 
 QUERIES = {
     "folder": {"path": "data/sources/cnn_dailymail_20", "glob": "*.txt"},
-    "zenodo": {"record": 10157504, "file": "sts_gold_tweet.csv", "text": "tweet", "id": "id", "fields": ["polarity"], "limit": 4},
+    "zenodo": {
+        "record": 10157504,
+        "file": "sts_gold_tweet.csv",
+        "text": "tweet",
+        "id": "id",
+        "fields": ["polarity"],
+        "limit": 4,
+    },
     "openml": {"dataset": 61, "text": "class", "fields": ["sepallength"], "limit": 4},
-    "kaggle": {"ref": "uciml/iris", "version": 2, "file": "Iris.csv", "text": "Species", "fields": ["SepalLengthCm"], "limit": 4},
-    "croissant": {"path": "build/cnn_dailymail_20.croissant.json", "text": "text", "id": "item_id", "limit": 4},
+    "kaggle": {
+        "ref": "uciml/iris",
+        "version": 2,
+        "file": "Iris.csv",
+        "text": "Species",
+        "fields": ["SepalLengthCm"],
+        "limit": 4,
+    },
+    "croissant": {
+        "path": "build/cnn_dailymail_20.croissant.json",
+        "text": "text",
+        "id": "item_id",
+        "limit": 4,
+    },
 }
 
 KEPT = H / "build" / "source_previews.json"
@@ -38,10 +57,16 @@ for name, query in QUERIES.items():
             text = it.get("text")
             if text is None and it.get("file"):
                 text = Path(it["file"]).read_text(errors="replace")
-            rows.append({"id": str(it.get("item_id")), "text": str(text or "")[:240], "fields": it.get("fields") or {}})
+            rows.append(
+                {
+                    "id": str(it.get("item_id")),
+                    "text": str(text or "")[:240],
+                    "fields": it.get("fields") or {},
+                }
+            )
         out[name] = {"query": query, "describe": json.loads(json.dumps(desc, default=str)), "rows": rows}
         print(name, "ok", len(rows))
-    except Exception as e:  # the mockup says what the source answered, whatever it was
+    except Exception as e:  # noqa: BLE001 - the mockup shows what the source answered, whatever it was
         out[name] = {"query": query, "error": f"{type(e).__name__}: {e}"}
         print(name, "error", type(e).__name__, str(e)[:200])
 KEPT.write_text(json.dumps(out, indent=1, ensure_ascii=False))

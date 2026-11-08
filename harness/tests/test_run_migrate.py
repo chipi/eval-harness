@@ -22,6 +22,8 @@ from pathlib import Path
 HARNESS = Path(__file__).resolve().parents[1]
 HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
+# the layout before 0.8.0 is files on disk by definition (data-migrate refuses a project that still has it)
+os.environ["EVAL_STORE"] = "files"
 proj = Path(tempfile.mkdtemp(prefix="evh-run-migrate-"))
 os.environ["EVAL_HOME"] = str(proj)
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):

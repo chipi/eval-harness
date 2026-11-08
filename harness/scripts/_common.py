@@ -776,14 +776,15 @@ def configure() -> bool:
 def store() -> str:
     """The project's store: `EVAL_STORE`, else `store` in its config.yaml, else `files`."""
     env = os.environ.get("EVAL_STORE", "").strip()
-    cfg = _paths()["ROOT"] / "config.yaml"
+    root = _paths()["ROOT"]
     # Asked for every path a reader touches (25,000 times a comparison), so the answer is kept for the process: a
-    # stat of config.yaml on each call was 8 ms of every inspector answer (budget-check, 2026-11-06). A project
-    # changes its store with data-migrate, between processes; a test that rewrites config.yaml calls
-    # _outputs.reset(), which forgets it.
-    key = (env, str(cfg))
-    if _STORE_SEEN and _STORE_SEEN[0] == key:
-        return _STORE_SEEN[1]
+    # stat of config.yaml on each call was 8 ms of every inspector answer (budget-check, 2026-11-06), and building the
+    # config's path to compare was most of the 2.4 µs a call still cost (architecture review): the key is the
+    # setting and the root object, which _paths keeps until the project moves. A project changes its store with
+    # data-migrate, between processes; a test that rewrites config.yaml calls _outputs.reset(), which forgets it.
+    if _STORE_SEEN and _STORE_SEEN[0] == env and _STORE_SEEN[1] is root:
+        return str(_STORE_SEEN[2])
+    cfg = root / "config.yaml"
     try:
         mtime = cfg.stat().st_mtime_ns if not env else None
     except OSError:
@@ -805,7 +806,7 @@ def store() -> str:
         if env:
             die(said, "bad-argument")
         die(said, "invalid-file")
-    _STORE_SEEN[:] = [key, chosen]
+    _STORE_SEEN[:] = [env, root, chosen]
     return chosen
 
 

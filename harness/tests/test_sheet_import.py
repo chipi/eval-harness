@@ -74,9 +74,24 @@ def write(name, head, rows):
 
 
 def tree():
-    return sorted(
-        str(p.relative_to(proj)) for p in proj.rglob("*") if p.is_file() and "runs-judged" in str(p)
+    return sorted(f"data/{p}" for p in _runstore.files_under(proj, "runs-judged"))
+
+
+def judged(scorer, cid):
+    """The judged run of a source run under data/runs-judged/<scorer>/ (its path under data/), or None."""
+    return next(
+        (
+            f"runs-judged/{scorer}/{n}"
+            for n in _runstore.listdir(proj, f"runs-judged/{scorer}")
+            if n.startswith(f"{cid}_")
+        ),
+        None,
     )
+
+
+def judged_rows(d):
+    with _runstore._InProject(proj) as data:
+        return _runstore.rows(data / d)
 
 
 def sha(b):
@@ -117,7 +132,7 @@ try:
     data = proj / "data"
     (data / "configs").mkdir(parents=True)
     (data / "fields").mkdir()
-    shutil.copy(KIT / "fields" / "tickets.yaml", data / "fields")
+    _runstore.write_text(proj, "fields/tickets.yaml", (KIT / "fields" / "tickets.yaml").read_text())
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh(
         "dataset-create", "--dataset-id", D, "--source-dir", "tutorial/tickets", "--fieldset", "tickets",
@@ -126,12 +141,14 @@ try:
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", D)
     check("setup: the tutorial dataset, materialized", r.returncode == 0, out(r)[-300:])
     for arm in ARMS:
-        shutil.copy(KIT / "configs" / f"tickets_{arm}.yaml", data / "configs")
+        _runstore.write_text(
+            proj, f"configs/tickets_{arm}.yaml", (KIT / "configs" / f"tickets_{arm}.yaml").read_text()
+        )
         r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
-    items = sorted(p.stem for p in (data / "materialized" / D).glob("*.txt")) or sorted(
-        p.stem for p in (KIT / "tickets").glob("*.txt")
-    )
+    items = sorted(
+        n[:-4] for n in _runstore.listdir(proj, f"materialized/{D}") if n.endswith(".txt")
+    ) or sorted(p.stem for p in (KIT / "tickets").glob("*.txt"))
     check("setup: six tickets", len(items) == 6, str(items))
 
     # ── labels: --fill label, then sheet-import --set ────────────────────────────────────────
@@ -154,11 +171,17 @@ try:
     mine.append({"item_id": "#a footer", col: "dismiss"})
     write("lab_f.csv", head, mine)
     r = evh("sheet-import", "lab_f.csv", "--dataset-id", D, "--by", "owner", "--set", "owner_sheet")
-    labels_dir = data / "labels" / D / "owner_sheet"
+    labels_dir = f"labels/{D}/owner_sheet"
     doc = (
-        json.loads((labels_dir / "labels.json").read_text()) if (labels_dir / "labels.json").is_file() else {}
+        _runstore.read_json(proj, f"{labels_dir}/labels.json")
+        if _runstore.is_file(proj, f"{labels_dir}/labels.json")
+        else {}
     )
-    got = {p.stem: p.read_text().strip() for p in labels_dir.glob("*.txt")}
+    got = {
+        n[:-4]: _runstore.read_text(proj, f"{labels_dir}/{n}").strip()
+        for n in _runstore.listdir(proj, labels_dir)
+        if n.endswith(".txt")
+    }
     check(
         "sheet-import: a filled label column becomes a person's label set (also right joined, an empty row and the # rows left out)",
         r.returncode == 0
@@ -183,7 +206,7 @@ try:
         "--set",
         "claude_sheet",
     )
-    doc = json.loads((data / "labels" / D / "claude_sheet" / "labels.json").read_text())
+    doc = _runstore.read_json(proj, f"labels/{D}/claude_sheet/labels.json")
     check(
         "sheet-import --kind model: the same sheet as a model's label set, the tool named",
         r.returncode == 0 and doc["source"]["kind"] == "model" and doc["source"]["by"] == "claude",
@@ -194,7 +217,7 @@ try:
     r = evh("sheet-import", "lab_bad.csv", "--dataset-id", D, "--by", "owner", "--set", "never")
     check(
         "refused: an answer outside the sheet's choices, nothing written",
-        refused(r, "not among the sheet's choices") and not (data / "labels" / D / "never").exists(),
+        refused(r, "not among the sheet's choices") and not _runstore.exists(proj, f"labels/{D}/never"),
         out(r)[-300:],
     )
     r = evh("sheet-import", "lab_f.csv", "--dataset-id", D, "--by", "owner")
@@ -272,20 +295,20 @@ try:
     filled("pick", pick_author)
     r = evh("sheet-import", "pick_f.csv", "--dataset-id", D, "--by", "owner", "--scorer", "owner_picks")
     after_import = tree()
-    jroot = data / "runs-judged" / "owner_picks"
     recs = {}
     metrics = {}
     for arm, cid in ARMS.items():
-        d = next(iter(jroot.glob(f"{cid}_*")), None)
+        d = judged("owner_picks", cid)
         if d is not None:
-            recs[arm] = {x["item_id"]: x for x in _runstore.rows(d)}
-            metrics[arm] = json.loads((d / "metrics.json").read_text())
+            recs[arm] = {x["item_id"]: x for x in judged_rows(d)}
+            metrics[arm] = _runstore.read_json(proj, f"{d}/metrics.json")
     check(
         "sheet-import pick: judged runs under data/runs-judged/<scorer>/, one per arm, named as the source run",
         r.returncode == 0
         and sorted(recs) == sorted(ARMS)
         and all(
-            m["derived"]["from"] == next((data / "runs").glob(f"{ARMS[a]}_*")).name
+            m["derived"]["from"]
+            == next(n for n in _runstore.listdir(proj, "runs") if n.startswith(f"{ARMS[a]}_"))
             for a, m in metrics.items()
         ),
         out(r)[-400:],
@@ -354,7 +377,7 @@ try:
         r_ = evh("sheet-import", "bad.csv", "--dataset-id", D, "--by", "owner", "--scorer", scorer)
         check(
             f"refused: {what}, nothing written",
-            refused(r_, text) and not (data / "runs-judged" / scorer).exists(),
+            refused(r_, text) and not _runstore.exists(proj, f"runs-judged/{scorer}"),
             out(r_)[-300:],
         )
 
@@ -432,14 +455,13 @@ try:
         "--scorer",
         "claude_scores",
     )
-    sroot = data / "runs-judged" / "claude_scores"
     srecs = {}
     smet = {}
     for arm, cid in ARMS.items():
-        d = next(iter(sroot.glob(f"{cid}_*")), None)
+        d = judged("claude_scores", cid)
         if d is not None:
-            srecs[arm] = {x["item_id"]: x["judge_score_unvalidated"] for x in _runstore.rows(d)}
-            smet[arm] = json.loads((d / "metrics.json").read_text())
+            srecs[arm] = {x["item_id"]: x["judge_score_unvalidated"] for x in judged_rows(d)}
+            smet[arm] = _runstore.read_json(proj, f"{d}/metrics.json")
     check(
         "sheet-import scores: judge_score_unvalidated per arm per item, mapped back through the shuffle; a comma decimal read; an empty cell skipped",
         r.returncode == 0
@@ -471,7 +493,7 @@ try:
         r_ = evh("sheet-import", "bad2.csv", "--dataset-id", D, "--by", "owner", "--scorer", scorer)
         check(
             f"refused: {what}, nothing written",
-            refused(r_, text) and not (data / "runs-judged" / scorer).exists(),
+            refused(r_, text) and not _runstore.exists(proj, f"runs-judged/{scorer}"),
             out(r_)[-300:],
         )
 
@@ -498,7 +520,7 @@ try:
     )
     check(
         "refused: picks with a scores key (the key says which fill made the sheet)",
-        refused(r, "--fill scores") and not (data / "runs-judged" / "mixed").exists(),
+        refused(r, "--fill scores") and not _runstore.exists(proj, "runs-judged/mixed"),
         out(r)[-300:],
     )
     r = evh("sheet-import", "sc_f.csv", "--dataset-id", "no_such_dataset", "--by", "owner", "--scorer", "s9")

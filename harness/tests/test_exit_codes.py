@@ -22,6 +22,9 @@ KIT = HERE.parent / "tutorial"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-exit-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-exit-codes")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -54,7 +57,11 @@ try:
         encoding="utf-8",
     )
     cfg = data / "configs" / "priced.yaml"
-    cfg.write_text("config_id: priced_v1\ndataset_id: tickets_v1\nadapter: priced_adapter.py\nparams: {}\n")
+    _runstore.write_text(
+        proj,
+        "configs/priced.yaml",
+        "config_id: priced_v1\ndataset_id: tickets_v1\nadapter: priced_adapter.py\nparams: {}\n",
+    )
 
     r = evh("run", "--config", str(cfg), EVAL_MAX_COST_USD="0.025")
     out = r.stdout + r.stderr
@@ -83,7 +90,7 @@ try:
     r = evh("datasets", "--dataset-id", "no_such_dataset")
     check("a refusal: exit 1 with its ERROR line", r.returncode == 1 and "ERROR" in r.stderr, r.stderr[-200:])
 
-    (data / "datasets" / "tickets_v1.json").write_text("{not json", encoding="utf-8")
+    _runstore.write_text(proj, "datasets/tickets_v1.json", "{not json")
     r = evh("validate")
     check(
         "validate over a broken tree: exit 6, the file named, every later check still run",

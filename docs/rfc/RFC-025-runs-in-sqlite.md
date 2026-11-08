@@ -48,7 +48,17 @@ Anything else: no settings screen, no history, no export or import, no extra com
   byte-identical.
 - The full suite (`make verify`) on the files store. On the sqlite store, what reads a project: this repository's
   `data/` moved into a database in a separate copy, through validate, the catalog, the site check and the report
-  checks. The whole suite on the sqlite store needs a way to put its fixtures in, so it comes with RFC-026.
+  checks.
+- Every test file on the sqlite store too: `make stores-check` (`tools/store_matrix.py`, the CI job `stores`), each
+  file in its own process with `EVAL_STORE=sqlite`. A test reads and writes its project's data through
+  `tests/_runstore.py`, so the same checks hold in both stores. A file that reads this repository's own committed
+  data, or a behaviour that is files by definition (git, the layout before 0.8.0), pins itself to files and says why
+  at its top. First run (2026-11-08): 61 of 97 files failed on sqlite only; converting them found five product bugs,
+  each fixed with the failing test first: `dataset-create --source-dir` listed a source folder in the database with
+  pathlib (nothing matched), `evh self-test` copied its fixtures onto a disk that has no `data/` folders, `init` made
+  no `data/` and still listed folders, a config's `adapter: ../../x.py` climbed through a folder that is only a key,
+  and a release published the texts of a reference whose manifest says they are not redistributed (git kept them
+  out for files; nothing did in the database).
 - S1's bench on both stores, before S2.
 
 ## Built before this version, replaced by it
@@ -85,5 +95,8 @@ per run directory, `runs.store`/`EVAL_RUNS_STORE` and `run-migrate --to` (replac
   database, `validate` passes, `check_report_claims` verifies 200/200 claims, the site check is green, and the
   catalog's 928 pages equal the files catalog's but for the build time (one JSON file's keys in another order, equal
   content).
-- **Not covered**: the full suite on the sqlite store (its fixtures need the way in RFC-026 brings); the examples'
-  `fetch.py` scripts write sources as files under `data/`, which in SQLite mode `data-migrate` then moves in.
+- **Not covered**: the skills' command blocks on the sqlite store (`test_skills.py` fails there: the skills copy
+  settings into `data/` with `cp` and commit them with git, which in the database does neither; whether the skills
+  and "named in advance" serve a SQLite project is open); the browser tests and the inspector's budget run on files
+  only; the examples' `fetch.py` scripts write sources as files under `data/`, which in SQLite mode `data-migrate`
+  then moves in.

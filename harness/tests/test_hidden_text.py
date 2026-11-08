@@ -37,6 +37,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from evaluation_harness import _store  # noqa: E402
 
 MARK = {"s": "Shownmarkerword", "h": "Hiddenmarkerword"}
 FIELDSET = """fieldset_id: notes
@@ -78,7 +79,7 @@ try:
     data = proj / "data"
     for d in ("configs", "goals", "fields"):
         (data / d).mkdir(parents=True)
-    (data / "fields" / "notes.yaml").write_text(FIELDSET)
+    _runstore.write_text(proj, "fields/notes.yaml", FIELDSET)
     for k, word in MARK.items():
         ds = f"tickets_{k}"
         src = proj / "tutorial" / ds
@@ -128,8 +129,10 @@ try:
         for c in ("tickets_lead1", "tickets_lead2"):
             cfg = data / "configs" / f"{c}_{k}.yaml"
             text = (KIT / "configs" / f"{c}.yaml").read_text()
-            cfg.write_text(
-                text.replace("tickets_v1", ds).replace(f"config_id: {c}_v1", f"config_id: {c}_{k}_v1")
+            _runstore.write_text(
+                proj,
+                f"configs/{c}_{k}.yaml",
+                text.replace("tickets_v1", ds).replace(f"config_id: {c}_v1", f"config_id: {c}_{k}_v1"),
             )
             r = evh("run", "--config", str(cfg))
             check(f"setup: {c} runs on {ds}", r.returncode == 0, said(r)[-300:])
@@ -144,11 +147,15 @@ try:
         "setup: both profiles are written with their text",
         r.returncode == 0
         and r2.returncode == 0
-        and MARK["h"] in (data / "profiles" / "tickets_h.json").read_text(),
+        and MARK["h"] in _runstore.read_text(proj, "profiles/tickets_h.json"),
         said(r)[-300:] + said(r2)[-300:],
     )
-    f = data / "datasets" / "tickets_h.json"
-    f.write_text(json.dumps({**json.loads(f.read_text()), "text": "hidden"}, indent=2) + "\n")
+    _runstore.write_text(
+        proj,
+        "datasets/tickets_h.json",
+        json.dumps({**_runstore.read_json(proj, "datasets/tickets_h.json"), "text": "hidden"}, indent=2)
+        + "\n",
+    )
     r = evh("dataset-profile", "--dataset-id", "tickets_h", "--with-text")
     check(
         "dataset-profile --with-text is refused on a hidden dataset",
@@ -240,9 +247,7 @@ try:
     # On a hidden dataset its label values are per-item labels (§4): a reference's text if a set is promoted.
     for k in MARK:
         ds = f"tickets_{k}"
-        ids = sorted(
-            x["item_id"] for x in json.loads((data / "datasets" / f"{ds}.json").read_text())["items"]
-        )
+        ids = sorted(x["item_id"] for x in _runstore.read_json(proj, f"datasets/{ds}.json")["items"])
         for name, extra in (("short_a", ""), ("short_b", " two")):
             folder = proj / f"{ds}_{name}"
             folder.mkdir()
@@ -281,11 +286,13 @@ try:
     from evaluation_harness._release import copy_data
 
     # A label set on the hidden dataset (RFC-023): its record is copied, its label text never.
-    lab = data / "labels" / "tickets_h" / "l1"
-    lab.mkdir(parents=True)
-    (lab / f"{item}.txt").write_text(f"a label quoting {MARK['h']}\n")
+    lab = "labels/tickets_h/l1"
+    _store.mkdir(data / lab, parents=True)
+    _runstore.write_text(proj, f"{lab}/{item}.txt", f"a label quoting {MARK['h']}\n")
     # Its record carries a person's notes from the sheet (free text: RFC-019 §4's adjudication notes).
-    (lab / "labels.json").write_text(
+    _runstore.write_text(
+        proj,
+        f"{lab}/labels.json",
         json.dumps(
             {
                 "dataset_id": "tickets_h",
@@ -293,12 +300,14 @@ try:
                 "n_items": 1,
                 "notes": {item: f"a note quoting {MARK['h']}"},
             }
-        )
+        ),
     )
     # A tag set on the hidden dataset (PLAN_0.8.0 D1): its modes are counted, a person's note on an output is its text.
-    tag = data / "tags" / "tickets_h" / "t1"
-    tag.mkdir(parents=True)
-    (tag / "tags.json").write_text(
+    tag = "tags/tickets_h/t1"
+    _store.mkdir(data / tag, parents=True)
+    _runstore.write_text(
+        proj,
+        f"{tag}/tags.json",
         json.dumps(
             {
                 "kind": "tag-set",
@@ -308,7 +317,7 @@ try:
                 "n_tagged": 1,
                 "runs": {"r1": {item: {"modes": ["too-long"], "note": f"it repeats {MARK['h']}"}}},
             }
-        )
+        ),
     )
     rc, out, err = run_command(proj, "tags", ["--dataset-id", "tickets_h", "--json"], public=True)
     check(
@@ -328,16 +337,16 @@ try:
     # row's `_meta`, which can quote the item: the release cuts them to the call too.
     hrun = next(
         d
-        for d in sorted((data / "runs").iterdir())
-        if (d / "metrics.json").is_file()
-        and json.loads((d / "metrics.json").read_text()).get("dataset_id") == "tickets_h"
+        for d in _runstore.listdir(proj, "runs")
+        if _runstore.is_file(proj, f"runs/{d}/metrics.json")
+        and _runstore.read_json(proj, f"runs/{d}/metrics.json").get("dataset_id") == "tickets_h"
     )
-    jdir = data / "runs-judged" / "j1" / hrun.name
-    jdir.mkdir(parents=True)
-    (jdir / "metrics.json").write_text(
-        json.dumps(
-            {"run_id": hrun.name, "dataset_id": "tickets_h", "derived": {"kind": "judge", "from": hrun.name}}
-        )
+    jdir = data / "runs-judged" / "j1" / hrun
+    _store.mkdir(jdir, parents=True)
+    _runstore.write_text(
+        proj,
+        f"runs-judged/j1/{hrun}/metrics.json",
+        json.dumps({"run_id": hrun, "dataset_id": "tickets_h", "derived": {"kind": "judge", "from": hrun}}),
     )
     _runstore.put_rows_text(
         jdir,
@@ -378,13 +387,31 @@ try:
         + " "
         + str(sorted(str(p.relative_to(rel)) for p in rel.rglob("*") if "runs" not in str(p))),
     )
-    (data / "references" / "gold" / "tickets_s" / "t99_extra.txt").write_text("untracked")
-    try:
-        copy_data(data, proj / ".release2")
-        refused = ""
-    except SystemExit as exc:
-        refused = str(exc)
-    check("release: a reference text git does not track is refused", "t99_extra.txt" in refused, refused)
+    if not _runstore.sqlite():
+        _runstore.write_text(proj, "references/gold/tickets_s/t99_extra.txt", "untracked")
+        try:
+            copy_data(data, proj / ".release2")
+            refused = ""
+        except SystemExit as exc:
+            refused = str(exc)
+        check("release: a reference text git does not track is refused", "t99_extra.txt" in refused, refused)
+    else:
+        # In the database there is no git to say what is published: a reference whose manifest says its texts are
+        # not redistributed (their licence) is what a release must refuse, as git refuses them when ignored.
+        man = "references/gold/tickets_s/manifest.json"
+        doc = _runstore.read_json(proj, man)
+        doc["redistributed"] = False
+        _runstore.write_text(proj, man, json.dumps(doc, indent=1))
+        try:
+            copy_data(data, proj / ".release2")
+            refused = ""
+        except SystemExit as exc:
+            refused = str(exc)
+        check(
+            "release: the texts of a reference not redistributed (its manifest) are refused, in the database too",
+            "not redistributed" in refused and "references/gold/tickets_s/" in refused,
+            refused,
+        )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

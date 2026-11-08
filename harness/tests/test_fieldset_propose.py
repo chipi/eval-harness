@@ -24,6 +24,9 @@ HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-propose-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-fieldset-propose")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -78,13 +81,13 @@ try:
         and by["words"]["type"] == "integer",
         (r.stdout + r.stderr)[-500:],
     )
-    check("nothing written without --write", not (proj / "data" / "fields" / "notes.yaml").exists())
+    check("nothing written without --write", not _runstore.exists(proj, "fields/notes.yaml"))
     r = evh("fieldset-propose", "--source", "croissant", "--query", q, "--fieldset-id", "notes", "--write")
     r2 = evh("fieldset-propose", "--source", "croissant", "--query", q, "--fieldset-id", "notes", "--write")
     check(
         "--write writes it; a second --write is refused",
         r.returncode == 0
-        and (proj / "data" / "fields" / "notes.yaml").is_file()
+        and _runstore.is_file(proj, "fields/notes.yaml")
         and r2.returncode == 1
         and "would-overwrite" in r2.stderr,
         r.stdout[-200:] + r2.stderr[-200:],
@@ -101,11 +104,7 @@ try:
         "--fieldset",
         "notes",
     )
-    items = (
-        json.loads((proj / "data" / "datasets" / "n_v1.json").read_text())["items"]
-        if r.returncode == 0
-        else []
-    )
+    items = _runstore.read_json(proj, "datasets/n_v1.json")["items"] if r.returncode == 0 else []
     check(
         "the accepted field set freezes a dataset with those fields, as it is",
         [it.get("fields") for it in items][:2] == [{"label": "a", "words": 2}, {"label": "b", "words": 2}],

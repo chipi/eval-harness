@@ -24,7 +24,7 @@ ARMS ?=
 CONFIG ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup verify list plan data reproduce compare site docs serve browser-check browser-real-check budget-check guard-check commands-check \
+.PHONY: help setup verify list plan data reproduce compare site docs serve browser-check browser-real-check budget-check guard-check commands-check stores-check \
 	quality-install quality lint format type security audit-locks deadcode docstrings spelling shell complexity
 
 help:
@@ -82,6 +82,9 @@ browser-real-check: $(PY)
 commands-check: $(PY)
 	$(MAKE) -C harness commands-check
 
+stores-check: $(PY)
+	$(MAKE) -C harness stores-check
+
 # The inspector's budgets: the harness alone, then with this deployment's hooks and their SDKs
 # (infra/inspector/), vendored into .build/vendor as render.sh vendors them for prod.
 budget-check: $(PY)
@@ -102,7 +105,7 @@ docs:
 # `complexity` reports. Ruff and codespell run from here (their config is at the root),
 # mypy and interrogate from harness/ (theirs is in harness/pyproject.toml).
 SPELLED := '*.py' '*.md' '*.sh' '*.yml' '*.yaml' '*.toml' '*.html' '*.js' '*.css' '*.txt' \
-	':!:harness/data/**' ':!:examples/*/data/**'
+	':!:harness/data/**' ':!:examples/*/data/**' ':!:harness/workbench/mock.js'
 
 quality-install: $(PY)
 	$(BIN)/pip install -q -r harness/requirements-dev.txt

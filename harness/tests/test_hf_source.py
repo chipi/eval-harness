@@ -29,6 +29,9 @@ HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 REF, REV = "acme/notes", "c0ffee" * 6 + "abcd"
 buf = io.BytesIO()
 pq.write_table(pa.table({"text": [f"note {n}" for n in range(6)], "label": [n % 2 for n in range(6)]}), buf)
@@ -111,6 +114,7 @@ try:
     (proj / "data" / "fields" / "notes.yaml").write_text(
         "fieldset_id: notes\nfields:\n  - {name: label, type: integer}\n"
     )
+    _runstore.migrate_in(proj)
     q = {"ref": REF, "split": "test", "text": "text", "fields": ["label"], "offset": 1, "limit": 3}
     r = evh(
         "dataset-create",
@@ -123,7 +127,7 @@ try:
         "--fieldset",
         "notes",
     )
-    d = json.loads((proj / "data" / "datasets" / "n_v1.json").read_text()) if r.returncode == 0 else {}
+    d = _runstore.read_json(proj, "datasets/n_v1.json") if r.returncode == 0 else {}
     src = d.get("source") or {}
     check(
         "the block pinned to the parquet conversion's commit, gated, the viewer page per row",
@@ -145,11 +149,12 @@ try:
         "rows by offset and limit, each with its row and kept field",
         [(it["item_id"], it.get("source_row"), it.get("fields")) for it in d.get("items") or []]
         == [("row_1", 1, {"label": 1}), ("row_2", 2, {"label": 0}), ("row_3", 3, {"label": 1})]
-        and (proj / "data" / "sources" / "n_v1" / "row_2.txt").read_text() == "note 2",
+        and _runstore.read_text(proj, "sources/n_v1/row_2.txt") == "note 2",
         json.dumps(d.get("items"))[:400],
     )
     STATE["oid"] = "0" * 64
-    shutil.rmtree(proj / "data" / "sources" / "n_v2", ignore_errors=True)
+    if _runstore.exists(proj, "sources/n_v2"):
+        _runstore.rmtree(proj, "sources/n_v2")
     r = evh(
         "dataset-create",
         "--dataset-id",
@@ -161,7 +166,7 @@ try:
     )
     check(
         "a file whose bytes are not the Hub's sha256 is refused",
-        r.returncode == 1 and "n_v2" not in str(list((proj / "data" / "datasets").glob("*"))),
+        r.returncode == 1 and "n_v2" not in str(_runstore.listdir(proj, "datasets")),
         r.stderr[-300:],
     )
     STATE["converts"] = False

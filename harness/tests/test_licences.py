@@ -22,6 +22,9 @@ HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-licences-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-licences")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -41,7 +44,7 @@ def evh(*args):
 
 
 def ds(i):
-    return json.loads((proj / "data" / "datasets" / f"{i}.json").read_text())
+    return _runstore.read_json(proj, f"datasets/{i}.json")
 
 
 try:
@@ -76,7 +79,7 @@ try:
         r.returncode != 0
         and "did you mean" in r.stderr
         and "CC-BY-SA-4.0" in r.stderr
-        and not (proj / "data" / "datasets" / "l_v2.json").exists(),
+        and not _runstore.exists(proj, "datasets/l_v2.json"),
         r.stderr[-300:],
     )
     r = evh("dataset-create", "--dataset-id", "l_v3", "--source-dir", "src")
@@ -109,7 +112,7 @@ try:
     check("--licence none takes it off", r.returncode == 0 and "licence" not in ds("l_v1"), r.stdout[-200:])
     doc = ds("l_v3")
     doc["licence"] = "free-ish"
-    (proj / "data" / "datasets" / "l_v3.json").write_text(json.dumps(doc, indent=1))
+    _runstore.write_text(proj, "datasets/l_v3.json", json.dumps(doc, indent=1))
     r = evh("validate")
     check(
         "validate V22 refuses a licence a hand edit put there",

@@ -168,6 +168,12 @@ def to_files(dry_run: bool) -> dict[str, int]:
     n = {"files": 0, "runs": 0, "outputs": 0, "rows": 0, "bytes": 0}
     if not path.is_file():
         return n
+    if not dry_run and _store.held_elsewhere():
+        die(
+            f"{path.name} is open in another process (a catalog-serve, a run): stop it first; moving back deletes the"
+            " database, and that process would go on writing to the deleted file",
+            "not-allowed",
+        )
     conn = sqlite3.connect(str(path), timeout=60)
     have = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
     disk = _outputs.store_named("files")

@@ -10,7 +10,6 @@ named by the leaderboard; a reference directory with no file for any item is ref
 single call. $0, offline (the tutorial's echo arms).
 """
 
-import json
 import os
 import shutil
 import subprocess
@@ -23,6 +22,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 KIT = HERE.parent / "tutorial"
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-coverage-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-coverage")
@@ -43,8 +45,10 @@ try:
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, r.stderr[-300:])
-    shutil.copy(KIT / "configs" / "tickets_lead1.yaml", data / "configs")
-    gold = data / "references" / "gold" / "tickets_v1"
+    _runstore.write_bytes(
+        proj, "configs/tickets_lead1.yaml", (KIT / "configs" / "tickets_lead1.yaml").read_bytes()
+    )
+    gold = "references/gold/tickets_v1"
     files = sorted((KIT / "gold").glob("*.txt"))
     two = proj / "gold_two"
     two.mkdir()
@@ -72,7 +76,7 @@ try:
 
     r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "partial")
     out = r.stdout + r.stderr
-    m = json.loads((data / "runs" / "partial" / "metrics.json").read_text()) if r.returncode == 0 else {}
+    m = _runstore.read_json(proj, "runs/partial/metrics.json") if r.returncode == 0 else {}
     check(
         "partial gold: the run warns how many items have a reference",
         r.returncode == 0 and f"only 2 of {len(files)} items have a gold reference" in out,
@@ -92,15 +96,15 @@ try:
     r = evh("validate")
     check("validate accepts the recorded coverage (schema)", r.returncode == 0, (r.stdout + r.stderr)[-400:])
 
-    for f in gold.iterdir():
-        f.unlink()
-    (gold / "not_an_item.txt").write_text("x")
+    for n in _runstore.listdir(proj, gold):
+        _runstore.unlink(proj, f"{gold}/{n}")
+    _runstore.write_text(proj, f"{gold}/not_an_item.txt", "x")
     r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--run-id", "none")
     check(
         "a reference directory with no file for any item is refused before a call",
         r.returncode != 0
         and "nothing would be scored" in (r.stdout + r.stderr)
-        and not (data / "runs" / "none").exists(),
+        and not _runstore.exists(proj, "runs/none"),
         (r.stdout + r.stderr)[-400:],
     )
 
@@ -115,18 +119,26 @@ try:
         '    return {"overlap_f1": 0.5} if reference is not None else {"output_words": 1.0}\n'
     )
     for f in files:
-        shutil.copy(f, gold / f.name)
-    (data / "configs" / "own.yaml").write_text(
-        "config_id: own_v1\ndataset_id: tickets_v1\nadapter: adapter.py\nparams:\n  provider: echo\n"
+        _runstore.write_bytes(proj, f"{gold}/{f.name}", f.read_bytes())
+    _runstore.write_text(
+        proj,
+        "configs/own.yaml",
+        "config_id: own_v1\ndataset_id: tickets_v1\nadapter: adapter.py\nparams:\n  provider: echo\n",
     )
     env["PYTHONPATH"] = str(HERE)
     r = evh("run", "--config", "data/configs/own.yaml", "--run-id", "own")
     r2 = evh("rescore", "--dataset-id", "tickets_v1", "--match", "own_v1")
     # where the tool designates a re-score (RFC-022): runs-rescored/<scorer>/<source>/
-    resc = (
-        next((data / "runs-rescored").glob("*/runs/own*/metrics.json"), None) if r2.returncode == 0 else None
-    )
-    mr = json.loads(resc.read_text()) if resc else {}
+    resc = next(
+        (
+            p
+            for p in _runstore.files_under(proj, "runs-rescored")
+            if len(p.split("/")) == 5 and p.split("/")[2] == "runs" and p.split("/")[3].startswith("own")
+            and p.endswith("/metrics.json")
+        ),
+        None,
+    ) if r2.returncode == 0 else None  # fmt: skip
+    mr = _runstore.read_json(proj, resc) if resc else {}
     check(
         "rescore keeps a project adapter's call-time extra, and reports nothing as dropped",
         r.returncode == 0

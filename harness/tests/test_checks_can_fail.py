@@ -25,6 +25,9 @@ import sys
 import tempfile
 from pathlib import Path
 
+# It plants defects in a copy of this repository's committed data, which is files.
+os.environ["EVAL_STORE"] = "files"
+
 HARNESS = Path(__file__).resolve().parents[1]
 REPO = HARNESS.parent
 sys.path.insert(0, str(HARNESS))  # the evaluation_harness package

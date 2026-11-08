@@ -7,7 +7,7 @@ The module: appended lines are read back, a torn last line is not an output, fin
 the row checkpoint, a derived run reads its source's outputs (followed along a chain), V5's signature is the value the
 per-item files gave. Through the commands: a run writes outputs.jsonl and no outputs/ folder; a run stopped mid-pass
 resumes, the done items not called again and the finished file whole; no module but _outputs builds an outputs/ path.
-All of it runs twice: the files store, then the sqlite store (data/runs.sqlite).
+All of it runs twice: the files store, then the sqlite store (data/project.sqlite).
 """
 
 import hashlib

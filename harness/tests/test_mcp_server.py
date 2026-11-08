@@ -23,6 +23,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 KIT = HERE.parent / "tutorial"
 from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
 from evaluation_harness.mcp_server import NOT_TOOLS, READ_TOOLS, tools_for  # noqa: E402
 
@@ -61,7 +64,9 @@ try:
     (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     # The tutorial's fields: area and plan are public, deadline is not.
-    shutil.copytree(KIT / "fields", data / "fields")
+    (data / "fields").mkdir()
+    for f in sorted((KIT / "fields").iterdir()):
+        _runstore.write_text(proj, f"fields/{f.name}", f.read_text())
     r = evh(
         "dataset-create",
         "--dataset-id",
@@ -103,9 +108,11 @@ try:
         )
     )
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_text(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+    )
     cfg = (KIT / "configs" / "tickets_lead2.yaml").read_text()
-    (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\n")
+    _runstore.write_text(proj, "configs/lead2.yaml", cfg + "goal: tickets_summary\n")
     r = evh("run", "--config", str(data / "configs" / "lead2.yaml"))
     check("setup: one run", r.returncode == 0, r.stderr[-300:])
     said = r.stdout.splitlines()
@@ -116,8 +123,10 @@ try:
         r.stdout[-300:],
     )
     # The second arm, through --json: progress on stderr, one envelope on stdout.
-    (data / "configs" / "lead1.yaml").write_text(
-        (KIT / "configs" / "tickets_lead1.yaml").read_text() + "goal: tickets_summary\n"
+    _runstore.write_text(
+        proj,
+        "configs/lead1.yaml",
+        (KIT / "configs" / "tickets_lead1.yaml").read_text() + "goal: tickets_summary\n",
     )
     dry = evh("run", "--config", str(data / "configs" / "lead1.yaml"), "--dry-run", "--json")
     dry_values = json.loads(dry.stdout)["result"]["values"] if dry.returncode == 0 else {}
@@ -127,7 +136,7 @@ try:
         and dry_values["dry_run"]["api_calls"] == 6
         and dry_values["dry_run"]["config_id"] == "tickets_lead1_v1"
         and "runs" not in dry_values
-        and len(list((data / "runs").glob("tickets_lead1_v1_*"))) == 0,
+        and not any(n.startswith("tickets_lead1_v1_") for n in _runstore.listdir(proj, "runs")),
         dry.stdout[-300:] + dry.stderr[-300:],
     )
     r = evh("run", "--config", str(data / "configs" / "lead1.yaml"), "--json")
@@ -144,7 +153,7 @@ try:
         == ("tickets_lead1_v1", "tickets_v1", 6)
         and made[0]["total_cost_usd"] in (0, 0.0, None)
         and made[0]["capped_at"] is None
-        and Path(made[0]["dir"]).is_dir()
+        and _runstore.exists(proj, Path(made[0]["dir"]).relative_to(proj / "data").as_posix())
         and "wrote 1 run(s) to" in r.stderr
         and f"  run {made[0]['run_id']}" in r.stderr,
         r.stdout[-300:] + r.stderr[-300:],

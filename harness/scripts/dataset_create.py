@@ -537,8 +537,10 @@ def main() -> int:
             return False
         return args.include_docs or p.name.lower() not in {"readme.md", "readme.txt", "readme"}
 
-    walk = args.source_dir.rglob if args.recursive else args.source_dir.glob
-    files = sorted(p for p in walk(args.glob) if is_item(p))
+    # through the store: a source folder under data/ is in the database in SQLite mode, where pathlib's glob found
+    # nothing ("no items matched", the store matrix, 2026-11-08)
+    walk = _store.rglob if args.recursive else _store.glob
+    files = sorted(p for p in walk(args.source_dir, args.glob) if is_item(p))
     if args.limit:
         files = files[: args.limit]
     if not files:

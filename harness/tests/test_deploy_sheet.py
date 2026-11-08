@@ -24,6 +24,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-deploy-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-deploy", PYTHONPATH=str(HERE))
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -70,15 +73,19 @@ try:
         "def call_system(text, params):\n"
         '    return Result(output=text.split(".")[0] + ".", cost_usd=0.0)\n'
     )
-    (data / "models" / "m-one.yaml").write_text(
+    _runstore.write_text(
+        proj,
+        "models/m-one.yaml",
         "model_id: m-one\nkind: llm\nname: Model one\naliases: [m-one-alias]\n"
         "deployments:\n- id: hosted\n  where: a gateway\n  tag: m-one-alias\n"
-        "settings:\n  temperature: 0\n"
+        "settings:\n  temperature: 0\n",
     )
     for cid, adapter in (("own_v1", "adapter.py"), ("own2_v1", "adapter.py"), ("plain_v1", "plain.py")):
-        (data / "configs" / f"{cid}.yaml").write_text(
+        _runstore.write_text(
+            proj,
+            f"configs/{cid}.yaml",
             f"config_id: {cid}\ndataset_id: tickets_v1\nadapter: {adapter}\n"
-            "params:\n  provider: echo\n  model: m-one-alias\n  usd_per_mtok_in: 1.0\n"
+            "params:\n  provider: echo\n  model: m-one-alias\n  usd_per_mtok_in: 1.0\n",
         )
         r = evh("run", "--config", f"data/configs/{cid}.yaml", "--run-id", cid.replace("_v1", ""))
         check(f"setup: {cid} runs", r.returncode == 0, out(r)[-300:])

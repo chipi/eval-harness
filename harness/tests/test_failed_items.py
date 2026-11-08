@@ -9,7 +9,6 @@ that ticket as an empty answer (0), marks its row `failed`, lists it in metrics.
 transient past its retries stops the run with exit 75, as an unreachable server does.
 """
 
-import json
 import os
 import shutil
 import subprocess
@@ -67,7 +66,8 @@ def call_system(text, params):
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
+    if not _runstore.sqlite():
+        (data / "configs").mkdir(parents=True)
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -98,14 +98,20 @@ try:
     check("setup: the tutorial dataset and its gold", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     (proj / "flaky.py").write_text(ADAPTER)
     for mode in ("one", "all", "weather"):
-        (data / "configs" / f"{mode}.yaml").write_text(
-            f"config_id: {mode}_v1\ndataset_id: tickets_v1\nadapter: flaky.py\nparams: {{mode: {mode}}}\n"
+        _runstore.write_text(
+            proj,
+            f"configs/{mode}.yaml",
+            f"config_id: {mode}_v1\ndataset_id: tickets_v1\nadapter: flaky.py\nparams: {{mode: {mode}}}\n",
         )
 
     r = evh("run", "--config", str(data / "configs" / "one.yaml"))
-    run = next((data / "runs").glob("one_v1_*"), None)
-    m = json.loads((run / "metrics.json").read_text()) if run else {}
-    rows = _runstore.rows(run) if run else []
+    name = next((n for n in _runstore.listdir(proj, "runs") if n.startswith("one_v1_")), None)
+    m = _runstore.read_json(proj, f"runs/{name}/metrics.json") if name else {}
+    with _runstore._InProject(proj) as pdata:
+        run = pdata / "runs" / name if name else None
+        rows = _runstore.rows(run) if run else []
+        out_bad = _outputs.output(run, "t02_invoice") if run else None
+        out_ok = _outputs.output(run, "t01_login") if run else None
     bad: dict = next((x for x in rows if x["failed"] == 1.0), {})
     check(
         "one ticket fails: the run finishes (exit 0) and lists it, with its error",
@@ -123,9 +129,7 @@ try:
     )
     check(
         "... and no output is written for it, so --resume calls it again",
-        run is not None
-        and _outputs.output(run, "t02_invoice") is None
-        and _outputs.output(run, "t01_login") is not None,
+        run is not None and out_bad is None and out_ok is not None,
     )
 
     r = evh("run", "--config", str(data / "configs" / "all.yaml"))

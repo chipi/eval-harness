@@ -83,10 +83,15 @@ def main() -> int:
             env,
         )
         if step("init --tutorial", [*evh, "init", "--tutorial"], tmp, env):
-            _store.copy_file(tmp / "tutorial/fields/tickets.yaml", tmp / "data/fields/")
-            for f in _store.glob(tmp / "tutorial/configs", "tickets_lead*.yaml"):
-                if "noisy" not in f.name:
-                    _store.copy_file(f, tmp / "data/configs/")
+            # The tutorial's settings put in with data-put, the project's own way in: into its files or its database,
+            # whichever store it has (a copy from this process wrote to the disk, where SQLite has no data/ folders).
+            puts = [("fields/tickets.yaml", "tutorial/fields/tickets.yaml")] + [
+                (f"configs/{f.name}", f"tutorial/configs/{f.name}")
+                for f in sorted(_store.glob(tmp / "tutorial/configs", "tickets_lead*.yaml"))
+                if "noisy" not in f.name
+            ]
+            for key, src in puts:
+                step(f"data-put {key}", [*evh, "data-put", key, src], tmp, env)
             steps = [
                 (
                     "dataset-create with fields",

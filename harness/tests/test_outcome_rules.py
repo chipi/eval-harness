@@ -23,6 +23,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness._outcome_rules import matches  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 KIT = HERE.parent / "tutorial"
 
 # ── the rule language ──────────────────────────────────────────────────────────────────────
@@ -99,14 +102,18 @@ try:
         )
     )
     check("setup: the owner's gold, promoted", r.returncode == 0, said(r)[-300:])
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_bytes(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_bytes()
+    )
     for c in ("tickets_lead1", "tickets_lead2"):
         cfg = data / "configs" / f"{c}.yaml"
-        cfg.write_text((KIT / "configs" / f"{c}.yaml").read_text() + "goal: tickets_summary\n")
+        _runstore.write_text(
+            proj, f"configs/{c}.yaml", (KIT / "configs" / f"{c}.yaml").read_text() + "goal: tickets_summary\n"
+        )
         r = evh("run", "--config", str(cfg))
         check(f"setup: {c} runs", r.returncode == 0, said(r)[-300:])
 
-    items = [it["item_id"] for it in json.loads((data / "datasets" / "tickets_v1.json").read_text())["items"]]
+    items = [it["item_id"] for it in _runstore.read_json(proj, "datasets/tickets_v1.json")["items"]]
     rows = [
         {"id": iid, "body": "x", "outcome": {"verdict": ["noise", "fixed", "open"][i % 3]}}
         for i, iid in enumerate(items)
@@ -127,16 +134,21 @@ try:
         "--set",
         "outcomes",
     )
-    lab = data / "labels" / "tickets_v1" / "outcomes"
-    doc = json.loads((lab / "labels.json").read_text()) if (lab / "labels.json").is_file() else {}
+    lab = "labels/tickets_v1/outcomes"
+    doc = (
+        _runstore.read_json(proj, f"{lab}/labels.json")
+        if _runstore.is_file(proj, f"{lab}/labels.json")
+        else {}
+    )
     src = doc.get("source") or {}
     check(
         "label-from-capture: skipped items have no label, the rest their rule's",
         r.returncode == 0
-        and sorted(p.stem for p in lab.glob("*.txt")) == sorted(i for n, i in enumerate(items) if n % 3 != 2)
+        and sorted(n[:-4] for n in _runstore.listdir(proj, lab) if n.endswith(".txt"))
+        == sorted(i for n, i in enumerate(items) if n % 3 != 2)
         and src.get("matched") == 4
         and src.get("skipped") == 2
-        and sorted({(lab / f"{i}.txt").read_text().strip() for i in doc.get("items", {})})
+        and sorted({_runstore.read_text(proj, f"{lab}/{i}.txt").strip() for i in doc.get("items", {})})
         == ["dismiss", "file"],
         said(r)[-300:] + json.dumps(src),
     )
@@ -161,15 +173,21 @@ try:
         "--set",
         "outcomes_two",
     )
-    two = data / "labels" / "tickets_v1" / "outcomes_two"
+    two = "labels/tickets_v1/outcomes_two"
     check(
         "label-from-capture: `label: [file, escalate]` is a label accepting both",
         r.returncode == 0
-        and sorted({p.read_text().strip() for p in two.glob("*.txt")})
+        and sorted(
+            {
+                _runstore.read_text(proj, f"{two}/{n}").strip()
+                for n in _runstore.listdir(proj, two)
+                if n.endswith(".txt")
+            }
+        )
         == ["dismiss", '{"accept": ["escalate", "file"]}'],
         said(r)[-300:],
     )
-    shutil.rmtree(two, ignore_errors=True)
+    _runstore.rmtree(proj, two)
     (proj / "map_empty.yaml").write_text("- {when: {verdict: fixed}, label: []}\n")
     r = evh(
         "label-from-capture",
@@ -201,8 +219,8 @@ try:
         "--by",
         "owner",
     )
-    man = data / "references" / "silver" / name / "manifest.json"
-    m = json.loads(man.read_text()) if man.is_file() else {}
+    man = f"references/silver/{name}/manifest.json"
+    m = _runstore.read_json(proj, man) if _runstore.is_file(proj, man) else {}
     check(
         "promoted to silver like any set: from the rule set, with its reason",
         r.returncode == 0
@@ -236,9 +254,13 @@ try:
     )
 
     # The views: a dataset's tags group and filter, and its origin is named (RFC-019 P7).
-    dsf = data / "datasets" / "tickets_v1.json"
-    dsf.write_text(
-        json.dumps({**json.loads(dsf.read_text()), "tags": {"source": "support"}}, indent=2) + "\n"
+    _runstore.write_text(
+        proj,
+        "datasets/tickets_v1.json",
+        json.dumps(
+            {**_runstore.read_json(proj, "datasets/tickets_v1.json"), "tags": {"source": "support"}}, indent=2
+        )
+        + "\n",
     )
     r = evh("datasets", "--tag", "source=support")
     check(
@@ -261,8 +283,8 @@ try:
     )
 
     # With no gold, the promoted rule set is a silver like any (ADR-0022): its group recommends.
-    shutil.move(str(data / "references" / "gold"), str(proj / "gold-aside"))
-    shutil.move(str(data / "runs"), str(proj / "runs-aside"))
+    _runstore.rmtree(proj, "references/gold")
+    _runstore.rmtree(proj, "runs")
     r = evh("goals", "--goal", "tickets_summary")
     check(
         "NO GOLD: the promoted rule set is governed like any silver: its group recommends",

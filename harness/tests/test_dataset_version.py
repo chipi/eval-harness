@@ -23,6 +23,9 @@ sys.path.insert(0, str(HARNESS))
 from evaluation_harness import _dataset_version as dv  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 check("1.9 and an added item: 1.10, not 2.0", dv.next_version("1.9", {"added": ["x"]}) == "1.10")
 check(
     "an item removed: MAJOR + 1, MINOR 0",
@@ -62,7 +65,7 @@ def evh(*args):
 
 
 def ds(i):
-    return json.loads((proj / "data" / "datasets" / f"{i}.json").read_text())
+    return _runstore.read_json(proj, f"datasets/{i}.json")
 
 
 try:
@@ -84,7 +87,11 @@ try:
         "then with items removed: 2.0", r.returncode == 0 and ds("t_v3")["version"] == "2.0", r.stderr[-300:]
     )
     r = evh("dataset-split", "t_v2", "--test", "0.4", "--seed", "1")
-    sides = [p.stem for p in (proj / "data" / "datasets").glob("t_v2_*.json")]
+    sides = [
+        n.removesuffix(".json")
+        for n in _runstore.listdir(proj, "datasets")
+        if n.startswith("t_v2_") and n.endswith(".json")
+    ]
     check(
         "a split's sides are 1.0, each naming its parent's version",
         r.returncode == 0
@@ -99,10 +106,9 @@ try:
         bool(v22) and v22[0].lstrip().startswith("ok"),
         "\n".join(v22) or r.stdout[-400:],
     )
-    f = proj / "data" / "datasets" / "t_v3.json"
     doc = ds("t_v3")
     doc["version"] = "1.2"
-    f.write_text(json.dumps(doc, indent=1))
+    _runstore.write_text(proj, "datasets/t_v3.json", json.dumps(doc, indent=1))
     r = evh("validate")
     check(
         "validate V22: a hand-edited version is caught, naming what the lineage gives",

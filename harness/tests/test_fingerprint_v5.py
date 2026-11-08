@@ -24,6 +24,9 @@ from evaluation_harness import fingerprint_migrate as mig  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import _flat_conditions  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 DATASET = {"dataset_id": "d1", "items": [{"item_id": "i1", "source_sha256": "aaa"}]}
 
 
@@ -683,11 +686,25 @@ check(
     "versions differ" in report(legacy, on_dgx),
 )
 
+
+def put_in(project, rel, text):
+    """A file of another project's data/ than this process's, in its store: project_root is kept per process, so it is
+    forgotten around the write (the library checks above have already asked it)."""
+    from evaluation_harness import _common  # noqa: PLC0415
+
+    _common.project_root.cache_clear()
+    try:
+        _runstore.write_text(project, rel, text)
+    finally:
+        _common.project_root.cache_clear()
+
+
 with tempfile.TemporaryDirectory() as td:
-    runs = Path(td) / "data" / "runs"
     for rid, f in (("run_a", on_dgx), ("run_b", on_mac)):
-        (runs / rid).mkdir(parents=True)
-        (runs / rid / "metrics.json").write_text(
+        (Path(td) / "data" / "runs" / rid).mkdir(parents=True, exist_ok=True)
+        put_in(
+            td,
+            f"runs/{rid}/metrics.json",
             json.dumps(
                 {
                     "run_id": rid,
@@ -696,7 +713,7 @@ with tempfile.TemporaryDirectory() as td:
                     "scores": {"f1": 0.5},
                     "fingerprint": f,
                 }
-            )
+            ),
         )
     run = subprocess.run(
         [
@@ -798,10 +815,17 @@ def evh(*args):
     )
 
 
+def metrics_of(prefix):
+    """The metrics.json of the first run in data/runs whose name starts with `prefix`, or {}."""
+    d = next((n for n in _runstore.listdir(proj, "runs") if n.startswith(prefix)), None)
+    return _runstore.read_json(proj, f"runs/{d}/metrics.json") if d else {}
+
+
 def config(name, extra):
-    f = proj / "data" / "configs" / f"{name}.yaml"
-    f.write_text(
-        f"config_id: {name}_v1\ndataset_id: tickets_v1\nadapter: adapter.py\n{extra}params:\n  max_tokens: 9\n"
+    _runstore.write_text(
+        proj,
+        f"configs/{name}.yaml",
+        f"config_id: {name}_v1\ndataset_id: tickets_v1\nadapter: adapter.py\n{extra}params:\n  max_tokens: 9\n",
     )
     return f"data/configs/{name}.yaml"
 
@@ -814,7 +838,9 @@ try:
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset is frozen and materialized", r.returncode == 0, r.stderr[-300:])
-    (proj / "data" / "models" / "gem.yaml").write_text(
+    _runstore.write_text(
+        proj,
+        "models/gem.yaml",
         yaml.safe_dump(
             {
                 "model_id": "gem",
@@ -831,11 +857,10 @@ try:
                     }
                 ],
             }
-        )
+        ),
     )
     r = evh("run", "--config", config("named", "model_record: gem\ndeployment: dgx\n"))
-    run_dir = next((proj / "data" / "runs").glob("named_v1_*"), None)
-    m = json.loads((run_dir / "metrics.json").read_text()) if run_dir else {}
+    m = metrics_of("named_v1_")
     d = (m.get("fingerprint") or {}).get("deployment") or {}
     check(
         "evh run: a config naming a record and a deployment fingerprints the deployment from the record",
@@ -851,7 +876,7 @@ try:
         m.get("model_record") == "gem" and m.get("deployment_id") == "dgx",
         {k: m.get(k) for k in ("model_record", "deployment_id")},
     )
-    rec = yaml.safe_load((proj / "data" / "models" / "gem.yaml").read_text())
+    rec = yaml.safe_load(_runstore.read_text(proj, "models/gem.yaml"))
     r = evh("run", "--config", config("rep0", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2")
     check(
         "evh run --repeat: no note while the deployment's own onboarding has not found it deterministic",
@@ -863,7 +888,7 @@ try:
         "at": "2026-10-31",
         "report": {"deterministic": True},
     }
-    (proj / "data" / "models" / "gem.yaml").write_text(yaml.safe_dump(rec))
+    _runstore.write_text(proj, "models/gem.yaml", yaml.safe_dump(rec))
     r = evh("run", "--config", config("rep", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2")
     check(
         "evh run --repeat: a model onboarded as deterministic, at temperature 0, is said to give identical passes",
@@ -871,8 +896,7 @@ try:
         r.stdout[-400:],
     )
     r = evh("run", "--config", config("plain", ""))
-    run_dir = next((proj / "data" / "runs").glob("plain_v1_*"), None)
-    m2 = json.loads((run_dir / "metrics.json").read_text()) if run_dir else {}
+    m2 = metrics_of("plain_v1_")
     check(
         "evh run: a config naming neither is the params source and records no deployment_id",
         r.returncode == 0
@@ -880,11 +904,13 @@ try:
         and "deployment_id" not in m2,
         (r.stdout + r.stderr)[-300:],
     )
-    (proj / "data" / "models" / "lead.yaml").write_text(
-        yaml.safe_dump({"model_id": "lead", "kind": "baseline", "aliases": ["lead-5"]})
+    _runstore.write_text(
+        proj,
+        "models/lead.yaml",
+        yaml.safe_dump({"model_id": "lead", "kind": "baseline", "aliases": ["lead-5"]}),
     )
     r = evh("model-onboard", "lead", "--config", config("lead", ""))
-    lead = yaml.safe_load((proj / "data" / "models" / "lead.yaml").read_text())
+    lead = yaml.safe_load(_runstore.read_text(proj, "models/lead.yaml"))
     dep = (lead.get("deployments") or [{}])[0]
     check(
         "model-onboard --config: a baseline (or an ML model) is onboarded through an arm that runs it, end to end",
@@ -912,7 +938,7 @@ try:
     )
     (proj / "arms").mkdir()
     (proj / "arms" / "elsewhere.yaml").write_text("config_id: elsewhere_v1\ndeployment: dgx\n")
-    (proj / "data" / "validate.json").write_text(json.dumps({"configs": ["arms/*.yaml"]}))
+    _runstore.write_text(proj, "validate.json", json.dumps({"configs": ["arms/*.yaml"]}))
     v = evh("validate")
     check(
         "V18: a config outside data/configs is read when validate.json's `configs` names it",

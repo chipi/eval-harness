@@ -25,6 +25,9 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 try:
     import anyio
     from mcp import ClientSession
@@ -171,7 +174,9 @@ check(
 # --rate-total: everyone together, whoever they are. And a profile written --with-text: a public
 # server serves its rows, never their text.
 (tmp / "data" / "profiles").mkdir(parents=True, exist_ok=True)
-(tmp / "data" / "profiles" / "p.json").write_text(
+_runstore.write_text(
+    tmp,
+    "profiles/p.json",
     json.dumps(
         {
             "dataset_id": "p",
@@ -179,7 +184,7 @@ check(
             "references": [],
             "rows": [{"item_id": "a", "words": 2, "reference": {}, "text": "SECRET ITEM TEXT"}],
         }
-    )
+    ),
 )
 with socket.socket() as s:
     s.bind(("127.0.0.1", 0))

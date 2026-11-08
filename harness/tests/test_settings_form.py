@@ -16,10 +16,13 @@ from __future__ import annotations
 
 import difflib
 import json
+import os
 import sys
 from pathlib import Path
 
 import yaml
+
+os.environ["EVAL_STORE"] = "files"  # reads this repository's committed settings, which are files
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))

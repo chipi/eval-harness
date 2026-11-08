@@ -52,7 +52,9 @@ for f in files:
     for i, line in enumerate(lines, 1):
         # `experiment` was this column's name before 0.6.0; the lab notes in research/internal/
         # keep it, and their tables are checked all the same.
-        if re.match(r"^\| *(eval|experiment) *\|", line, re.I):
+        # a header row is one the separator row follows: a glossary's `| eval | its meaning |` row is not one
+        nxt = lines[i] if i < len(lines) else ""
+        if re.match(r"^\| *(eval|experiment) *\|", line, re.I) and re.match(r"^\|[-: |]+\|$", nxt):
             in_exp = True
             seen_here = True
             continue

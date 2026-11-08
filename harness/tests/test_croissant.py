@@ -23,6 +23,9 @@ HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-croissant-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-croissant")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -43,8 +46,10 @@ def evh(*args):
 
 try:
     (proj / "data" / "fields").mkdir(parents=True)
-    (proj / "data" / "fields" / "notes.yaml").write_text(
-        "fieldset_id: notes\nfields:\n  - {name: words, type: integer}\n  - {name: channel, type: choice, values: [email, chat]}\n"
+    _runstore.write_text(
+        proj,
+        "fields/notes.yaml",
+        "fieldset_id: notes\nfields:\n  - {name: words, type: integer}\n  - {name: channel, type: choice, values: [email, chat]}\n",
     )
     (proj / "src").mkdir()
     for n in "abc":
@@ -80,7 +85,6 @@ try:
     )
     r = evh("dataset-card", "--dataset-id", "n_v2", "--format", "croissant")
     doc = json.loads(r.stdout) if r.returncode == 0 else {}
-    rec = proj / "data" / "datasets" / "n_v2.json"
     check(
         "Croissant 1.1: conformsTo, the licence's SPDX page, the version, the parent, the card as rai:",
         doc.get("conformsTo") == "http://mlcommons.org/croissant/1.1"
@@ -96,7 +100,8 @@ try:
     dist = {d["@id"]: d for d in doc.get("distribution") or []}
     check(
         "the record file is a FileObject with its real sha256; the items a FileSet",
-        dist.get("n_v2.json", {}).get("sha256") == hashlib.sha256(rec.read_bytes()).hexdigest()
+        dist.get("n_v2.json", {}).get("sha256")
+        == hashlib.sha256(_runstore.read_bytes(proj, "datasets/n_v2.json")).hexdigest()
         and dist.get("items-files", {}).get("@type") == "cr:FileSet",
         json.dumps(list(dist.values()))[:400],
     )

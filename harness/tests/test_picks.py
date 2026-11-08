@@ -22,6 +22,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-picks-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-picks")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -48,8 +51,8 @@ def picks():
 
 
 try:
-    data = proj / "data"
-    data.mkdir()
+    if not _runstore.sqlite():
+        (proj / "data").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tickets")
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tickets")
     check("setup: the governed dataset", r.returncode == 0, out(r)[-300:])
@@ -119,7 +122,7 @@ try:
     check("pick --drop: off the waiting list", r.returncode == 0 and "p2" not in picks(), out(r)[-200:])
     r = evh("pick", "--dataset-id", "prod_v1", "--item", "p2", "--drop")
     check("pick --drop of an item not waiting is refused", refused(r, "not waiting"), out(r)[-200:])
-    lines = (data / "picks.jsonl").read_text().splitlines()
+    lines = _runstore.read_text(proj, "picks.jsonl").splitlines()
     check(
         "the list is append-only: every action is a line (a refused one writes none)",
         len(lines) == 6,
@@ -151,7 +154,7 @@ try:
 
     # ── dataset-extend ─────────────────────────────────────────────────────────────────────
     r = evh("dataset-extend", "tickets_v1", "--dataset-id", "tickets_v2", "--picks")
-    v2 = json.loads((data / "datasets" / "tickets_v2.json").read_text()) if r.returncode == 0 else {}
+    v2 = _runstore.read_json(proj, "datasets/tickets_v2.json") if r.returncode == 0 else {}
     ids = [it["item_id"] for it in v2.get("items", [])]
     check(
         "dataset-extend --picks: V1's items and the picks waiting for it, where each came from recorded",
@@ -164,7 +167,7 @@ try:
                 {"item_id": "p1", "from": "prod_v1", "capture": "prod_c1", "note": "nothing like it in v1"}
             ],
         }
-        and (data / "sources" / "tickets_v2" / "p1.txt").is_file(),
+        and _runstore.is_file(proj, "sources/tickets_v2/p1.txt"),
         out(r)[-400:],
     )
     check(
@@ -176,7 +179,7 @@ try:
     cov = {s["set"]: s["items"] for s in json.loads(r.stdout)["sets"]} if r.returncode == 0 else {}
     check("a picked item's labels follow it into V2", cov.get("owner_p") == ["p1"], r.stdout[-300:])
     r = evh("dataset-extend", "tickets_v2", "--dataset-id", "tickets_v3", "--pick", "prod_v1:p4")
-    v3 = json.loads((data / "datasets" / "tickets_v3.json").read_text()) if r.returncode == 0 else {}
+    v3 = _runstore.read_json(proj, "datasets/tickets_v3.json") if r.returncode == 0 else {}
     check(
         "dataset-extend --pick DATASET:ITEM: one pick, whatever its target",
         [p["item_id"] for p in v3.get("extended_from", {}).get("picks", [])] == ["p4"]
@@ -187,11 +190,11 @@ try:
     check("dataset-extend: an existing dataset is never overwritten", refused(r, "exists"), out(r)[-200:])
     r = evh("dataset-extend", "tickets_v1", "--dataset-id", "tickets_v4", "--pick", "no_such")
     check("dataset-extend --pick of an item not waiting is refused", refused(r, "not waiting"), out(r)[-200:])
-    (data / "sources" / "prod_v1" / "p3.txt").write_text("changed after it was picked")
+    _runstore.write_text(proj, "sources/prod_v1/p3.txt", "changed after it was picked")
     r = evh("dataset-extend", "tickets_v1", "--dataset-id", "tickets_v5", "--pick", "p3")
     check(
         "dataset-extend: a picked item whose file changed since is refused",
-        refused(r, "not the one picked") and not (data / "datasets" / "tickets_v5.json").exists(),
+        refused(r, "not the one picked") and not _runstore.exists(proj, "datasets/tickets_v5.json"),
         out(r)[-200:],
     )
     r = evh("validate")

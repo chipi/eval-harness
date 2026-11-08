@@ -22,6 +22,9 @@ HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-sources-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-sources")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -60,7 +63,19 @@ def evh(*args):
 
 
 def ds(i):
-    return json.loads((proj / "data" / "datasets" / f"{i}.json").read_text())
+    return _runstore.read_json(proj, f"datasets/{i}.json")
+
+
+def own_source(name, text):
+    """The --source naming a project's own source. In the sqlite store a project's code is never under data/ and is
+    named by path (RFC-025); in the files store it is data/dataset_sources/NAME.py, named by NAME."""
+    if _runstore.sqlite():
+        (proj / "own_sources").mkdir(exist_ok=True)
+        (proj / "own_sources" / f"{name}.py").write_text(text)
+        return f"own_sources/{name}.py:Source"
+    (proj / "data" / "dataset_sources").mkdir(parents=True, exist_ok=True)
+    (proj / "data" / "dataset_sources" / f"{name}.py").write_text(text)
+    return name
 
 
 def ident(d):
@@ -91,9 +106,8 @@ try:
         and len(ident(ds("fold_v1"))) == 3,
         (r2.stdout + r2.stderr)[-300:],
     )
-    (proj / "data" / "dataset_sources").mkdir(parents=True)
-    (proj / "data" / "dataset_sources" / "mine.py").write_text(MINE)
-    r = evh("dataset-create", "--dataset-id", "mine_v1", "--source", "mine", "--query", '{"n": 3}')
+    mine = own_source("mine", MINE)
+    r = evh("dataset-create", "--dataset-id", "mine_v1", "--source", mine, "--query", '{"n": 3}')
     d = ds("mine_v1") if r.returncode == 0 else {}
     check(
         "a project's own source: its block, rows, licence and card on the record",
@@ -107,13 +121,13 @@ try:
     r = evh("dataset-materialize", "--dataset-id", "mine_v1")
     check("its items materialize, their hashes checked", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     (proj / "data" / "sources" / "x_v1").mkdir(parents=True)
-    (proj / "data" / "sources" / "x_v1" / "old.txt").write_text("someone's\n")
-    r = evh("dataset-create", "--dataset-id", "x_v1", "--source", "mine")
+    _runstore.write_text(proj, "sources/x_v1/old.txt", "someone's\n")
+    r = evh("dataset-create", "--dataset-id", "x_v1", "--source", mine)
     check(
         "a fetch into an items folder that has files is refused without --force; nothing overwritten",
         r.returncode == 1
         and "would-overwrite" in r.stderr
-        and (proj / "data" / "sources" / "x_v1" / "old.txt").read_text() == "someone's\n",
+        and _runstore.read_text(proj, "sources/x_v1/old.txt") == "someone's\n",
         r.stderr[-200:],
     )
     (proj / "m.csv").write_text(
@@ -140,13 +154,13 @@ try:
         and "manifest" in r.stderr,
         r.stderr[-300:],
     )
-    (proj / "data" / "dataset_sources" / "escape.py").write_text(MINE.replace('f"note_{n}"', '"../../etc/x"'))
-    r = evh("dataset-create", "--dataset-id", "e_v1", "--source", "escape")
+    escape = own_source("escape", MINE.replace('f"note_{n}"', '"../../etc/x"'))
+    r = evh("dataset-create", "--dataset-id", "e_v1", "--source", escape)
     check(
         "an item id that would leave the items folder is refused, and nothing is frozen",
         r.returncode == 1
         and "a path out of the folder" in r.stderr
-        and not (proj / "data" / "datasets" / "e_v1.json").exists(),
+        and not _runstore.exists(proj, "datasets/e_v1.json"),
         r.stderr[-300:],
     )
 finally:

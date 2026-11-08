@@ -23,12 +23,15 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 KIT = HERE.parent / "tutorial"
+import _runstore  # noqa: E402
+from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-goals-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-goals")
 env.pop("EVAL_DATA_DIR", None)
 env.pop("EVAL_RUNS_DIR", None)
+GOAL = "goals/tickets_summary.yaml"
 
 
 def evh(*args):
@@ -50,8 +53,9 @@ def validate():
 
 try:
     data = proj / "data"
-    (data / "configs").mkdir(parents=True)
-    (data / "goals").mkdir()
+    if not _runstore.sqlite():
+        (data / "configs").mkdir(parents=True)
+        (data / "goals").mkdir()
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")  # sources live inside the project
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
@@ -84,32 +88,36 @@ try:
         )
     )
     check("setup: the kit's gold, imported and promoted", r.returncode == 0, (r.stdout + r.stderr)[-300:])
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_text(proj, GOAL, (KIT / "goals" / "tickets_summary.yaml").read_text())
 
     cfg = (KIT / "configs" / "tickets_lead2.yaml").read_text()
-    (data / "configs" / "bad.yaml").write_text(cfg + "goal: no_such_goal\n")
+    _runstore.write_text(proj, "configs/bad.yaml", cfg + "goal: no_such_goal\n")
     r = evh("run", "--config", str(data / "configs" / "bad.yaml"))
     check(
         "run: a config naming an unknown goal is refused before it runs",
-        r.returncode != 0 and "no_such_goal" in (r.stdout + r.stderr) and not (data / "runs").exists(),
+        r.returncode != 0 and "no_such_goal" in (r.stdout + r.stderr) and not _runstore.exists(proj, "runs"),
         (r.stdout + r.stderr)[-200:],
     )
-    (data / "configs" / "bad.yaml").unlink()
-    (data / "configs" / "keyed.yaml").write_text(
-        cfg.replace("params:\n", "params:\n  api_key: sk-LITERAL-0001\n", 1)
+    _runstore.unlink(proj, "configs/bad.yaml")
+    _runstore.write_text(
+        proj, "configs/keyed.yaml", cfg.replace("params:\n", "params:\n  api_key: sk-LITERAL-0001\n", 1)
     )
     r = evh("run", "--config", str(data / "configs" / "keyed.yaml"))
     check(
         "run: a config with a key written into its params is refused before it runs, and says how instead",
-        r.returncode != 0 and "api_key_env" in (r.stdout + r.stderr) and not (data / "runs").exists(),
+        r.returncode != 0 and "api_key_env" in (r.stdout + r.stderr) and not _runstore.exists(proj, "runs"),
         (r.stdout + r.stderr)[-300:],
     )
-    (data / "configs" / "keyed.yaml").unlink()
+    _runstore.unlink(proj, "configs/keyed.yaml")
 
-    (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\nformat: paragraph\n")
+    _runstore.write_text(proj, "configs/lead2.yaml", cfg + "goal: tickets_summary\nformat: paragraph\n")
     r = evh("run", "--config", str(data / "configs" / "lead2.yaml"))
-    runs = sorted((data / "runs").glob("*/metrics.json"))
-    m = json.loads(runs[0].read_text()) if runs else {}
+    runs = [
+        f"runs/{n}/metrics.json"
+        for n in _runstore.listdir(proj, "runs")
+        if _runstore.is_file(proj, f"runs/{n}/metrics.json")
+    ]
+    m = _runstore.read_json(proj, runs[0]) if runs else {}
     check(
         "run: the goal and format are recorded on the run",
         m.get("goal") == "tickets_summary" and m.get("format") == "paragraph",
@@ -127,11 +135,8 @@ try:
         "--reason",
         "lead2 answers the triage goal on six tickets",
     )
-    b = (
-        json.loads(next((data / "baselines").glob("*.json")).read_text())
-        if (data / "baselines").is_dir()
-        else {}
-    )
+    baselines = [n for n in _runstore.listdir(proj, "baselines") if n.endswith(".json")]
+    b = _runstore.read_json(proj, f"baselines/{baselines[0]}") if baselines else {}
     check(
         "promote: the baseline carries the goal and the format",
         b.get("goal") == "tickets_summary" and b.get("format") == "paragraph",
@@ -145,51 +150,51 @@ try:
         line,
     )
 
-    (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\nformat: bullets\n")
+    _runstore.write_text(proj, "configs/lead2.yaml", cfg + "goal: tickets_summary\nformat: bullets\n")
     r, line = validate()
     check(
         "V14: fails a format the goal's output contract does not accept",
         "FAIL" in line and "bullets" in r.stdout,
         line,
     )
-    (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summray\n")
+    _runstore.write_text(proj, "configs/lead2.yaml", cfg + "goal: tickets_summray\n")
     r, line = validate()
     check(
         "V14: fails a config naming a goal that does not exist",
         "FAIL" in line and "tickets_summray" in r.stdout,
         line,
     )
-    (data / "configs" / "lead2.yaml").write_text(cfg + "goal: tickets_summary\n")
+    _runstore.write_text(proj, "configs/lead2.yaml", cfg + "goal: tickets_summary\n")
 
-    g = data / "goals" / "tickets_summary.yaml"
-    shutil.copy(g, data / "goals" / "renamed.yaml")
+    _runstore.write_text(proj, "goals/renamed.yaml", _runstore.read_text(proj, GOAL))
     r, line = validate()
     check(
         "V14: fails a goal_id that is not its file name", "FAIL" in line and "renamed.yaml" in r.stdout, line
     )
-    (data / "goals" / "renamed.yaml").unlink()
+    _runstore.unlink(proj, "goals/renamed.yaml")
 
-    (data / "goals" / "policy.yaml").write_text("required_from: 2000-01-01\n")
+    _runstore.write_text(proj, "goals/policy.yaml", "required_from: 2000-01-01\n")
     m.pop("goal", None)
-    runs[0].write_text(json.dumps(m))
+    _runstore.write_text(proj, runs[0], json.dumps(m))
     r, line = validate()
     check(
         "V14: with required_from set, a run created since then that names no goal fails",
         "FAIL" in line and "names no goal" in r.stdout,
         line,
     )
-    (data / "goals" / "policy.yaml").write_text("required_from: 2999-01-01\n")
+    _runstore.write_text(proj, "goals/policy.yaml", "required_from: 2999-01-01\n")
     r, line = validate()
     check("V14: a run created before required_from is not held to it", "ok" in line, line)
-    (data / "goals" / "policy.yaml").unlink()
+    _runstore.unlink(proj, "goals/policy.yaml")
     m["goal"] = "tickets_summary"
-    runs[0].write_text(json.dumps(m))
+    _runstore.write_text(proj, runs[0], json.dumps(m))
 
-    gy = data / "goals" / "tickets_summary.yaml"
-    gy.write_text(
-        gy.read_text().rstrip("\n")
+    _runstore.write_text(
+        proj,
+        GOAL,
+        _runstore.read_text(proj, GOAL).rstrip("\n")
         + "\nlinks:\n  - {url: https://findings.example/tickets.html, note: the findings}\n"
-        + "  - {url: notes/TRIAGE.md, note: the notes}\n"
+        + "  - {url: notes/TRIAGE.md, note: the notes}\n",
     )
     r = evh("catalog")
     page = proj / ".build" / "catalog" / "g" / "tickets_summary.html"
@@ -302,11 +307,13 @@ try:
     # A goal with many arms (evh goals --goal G --arms/--top): the table can be cut down, never the decision.
     lead1 = (KIT / "configs" / "tickets_lead1.yaml").read_text()
     for i in range(1, 7):
-        (data / "configs" / f"x{i:02d}.yaml").write_text(
+        _runstore.write_text(
+            proj,
+            f"configs/x{i:02d}.yaml",
             lead1.replace("tickets_lead1_v1", f"tickets_x{i:02d}_v1").replace(
                 "sentences: 1", f"sentences: {1 + i % 3}"
             )
-            + "goal: tickets_summary\n"
+            + "goal: tickets_summary\n",
         )
         evh("run", "--config", f"data/configs/x{i:02d}.yaml")
     full = evh("goals", "--goal", "tickets_summary")
@@ -390,18 +397,23 @@ try:
         r.stderr[-300:],
     )
     for i in range(1, 7):
-        (data / "configs" / f"x{i:02d}.yaml").unlink()
-        shutil.rmtree(next((data / "runs").glob(f"tickets_x{i:02d}_v1_*")))
+        _runstore.unlink(proj, f"configs/x{i:02d}.yaml")
+        _runstore.rmtree(
+            proj,
+            "runs/"
+            + next(n for n in _runstore.listdir(proj, "runs") if n.startswith(f"tickets_x{i:02d}_v1_")),
+        )
 
-    goal_path = data / "goals" / "tickets_summary.yaml"
-    original = goal_path.read_text()
-    goal_path.write_text(
+    original = _runstore.read_text(proj, GOAL)
+    _runstore.write_text(
+        proj,
+        GOAL,
         original.replace(
             "  min_items: 6\n",
             "  min_items: 6\n  strategy: frugal\n  tie_break: [speed, cost]\n"
             "  axes: {speed: {limit: 60000}}\n"
             "  guardrails:\n    - {name: no PII, rule: summaries never quote an email address, source: privacy review}\n",
-        )
+        ),
     )
     r, line = validate()
     check(
@@ -427,8 +439,8 @@ try:
         r.returncode == 0 and "leader" in r.stdout and "no arm matches" not in r.stdout,
         r.stdout[-500:] + r.stderr[-300:],
     )
-    goal_path.write_text(
-        original.replace("  min_items: 6\n", "  min_items: 6\n  axes: {quality: {limit: 0.99}}\n")
+    _runstore.write_text(
+        proj, GOAL, original.replace("  min_items: 6\n", "  min_items: 6\n  axes: {quality: {limit: 0.99}}\n")
     )
     evh("catalog")
     arms_page = (proj / ".build/catalog/arms.html").read_text()
@@ -438,7 +450,7 @@ try:
         '<span class="role">over a limit</span>' in arms_page and "over a limit" in r.stdout,
         r.stdout[-500:] + r.stderr[-300:],
     )
-    goal_path.write_text(original)
+    _runstore.write_text(proj, GOAL, original)
     for bad, why in (
         ("  secondary:\n    - {measure: rouge1, direction: higher}\n", "the old secondary key (now axes)"),
         ("  tie_break: [carbon]\n", "a tie-break naming an axis the goal does not weigh"),
@@ -446,14 +458,16 @@ try:
         ("  axes: {quality: {measure: x}}\n", "a quality axis given a measure (it is the primary)"),
         ("  axes: {cost: {margin: 0.1}}\n", "a margin on an axis other than quality"),
     ):
-        goal_path.write_text(original.replace("  min_items: 6\n", "  min_items: 6\n" + bad))
+        _runstore.write_text(proj, GOAL, original.replace("  min_items: 6\n", "  min_items: 6\n" + bad))
         r, line = validate()
         check(f"V14: fails {why}", "FAIL" in line, line)
-    goal_path.write_text(original)
+    _runstore.write_text(proj, GOAL, original)
 
     # A dataset the goal never decides on (a pilot slice, a generalization check): its groups keep
     # their leader, never a recommendation, and the home page's glance leaves it out.
-    goal_path.write_text(original.replace("role: validation,", "role: validation, decides: false,"))
+    _runstore.write_text(
+        proj, GOAL, original.replace("role: validation,", "role: validation, decides: false,")
+    )
     r = evh("goals", "--goal", "tickets_summary")
     check(
         "decides: false: the goal page says it does not decide there, and recommends nothing",
@@ -463,25 +477,29 @@ try:
     r = evh("overview")
     glance = r.stdout.split("goals at a glance", 1)[-1].split("activity", 1)[0]
     check("decides: false: the glance leaves the dataset out", "tickets_v1" not in glance, glance)
-    goal_path.write_text(original)
+    _runstore.write_text(proj, GOAL, original)
 
     # Gold this checkout does not hold (not redistributed): the group is still gold by its id, so
     # the glance does not call it "no gold".
-    shutil.move(str(data / "references" / "gold"), str(proj / "gold-aside"))
+    with _runstore._InProject(proj) as pdata:
+        _store.copy_tree(pdata / "references" / "gold", proj / "gold-aside")
+        _store.rmtree(pdata / "references" / "gold")
     r = evh("overview")
     check(
         "evh overview: a gold reference the checkout does not hold is still read as gold",
         r.returncode == 0 and "no gold" not in r.stdout and "tickets_summary" in r.stdout,
         r.stdout[:600] + r.stderr[-300:],
     )
-    shutil.move(str(proj / "gold-aside"), str(data / "references" / "gold"))
+    with _runstore._InProject(proj) as pdata:
+        _store.copy_tree(proj / "gold-aside", pdata / "references" / "gold")
 
     # An engineering goal checked by a gate: no dataset, and a guard, not a ranking direction.
-    (data / "goals" / "no_drop.yaml").write_text(
+    _runstore.write_text(
+        proj,
+        "goals/no_drop.yaml",
         "goal_id: no_drop\ntitle: No regression\nstatement: Nothing drops between builds.\n"
         "decision: Block a build.\ndatasets: []\n"
         "success_criteria:\n  primary: {measure: score, direction: non_inferior}\n",
-        encoding="utf-8",
     )
     r, line = validate()
     check(

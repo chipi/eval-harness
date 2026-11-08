@@ -27,6 +27,9 @@ HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 STATE: dict[str, Any] = {"licence": "CC0: Public Domain", "two": False, "asked": []}
 
 
@@ -86,7 +89,7 @@ def evh(*args):
 
 
 def ds(i):
-    return json.loads((proj / "data" / "datasets" / f"{i}.json").read_text())
+    return _runstore.read_json(proj, f"datasets/{i}.json")
 
 
 try:
@@ -98,7 +101,7 @@ try:
         STATE["asked"] == [3]
         and d.get("source", {}).get("revision") == "3"
         and [it["item_id"] for it in d.get("items") or []] == ["1", "2"]
-        and (proj / "data" / "sources" / "k_v1" / "2.txt").read_text() == "second v3"
+        and _runstore.read_text(proj, "sources/k_v1/2.txt") == "second v3"
         and d.get("licence") == "CC0-1.0",
         (r.stdout + r.stderr)[-400:],
     )
@@ -116,7 +119,7 @@ try:
     check(
         "a named version is the one downloaded; a licence name we cannot map is left out",
         STATE["asked"][-1] == 1 and d.get("source", {}).get("revision") == "1" and "licence" not in d
-        and (proj / "data" / "sources" / "k_v2" / "1.txt").read_text() == "first v1",
+        and _runstore.read_text(proj, "sources/k_v2/1.txt") == "first v1",
         (r.stdout + r.stderr)[-400:],
     )  # fmt: skip
     STATE["two"] = True

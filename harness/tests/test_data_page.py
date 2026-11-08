@@ -449,11 +449,20 @@ def run_case(store: str) -> None:
                     code == 200 and n_out and body.get("rows"),
                     (code, body),
                 )
+                # asked before the delete, so the server keeps the answer (architecture review, 2026-11-06: nothing
+                # cleared it, and a deleted run stayed in the inspector's comparisons until a restart)
+                was = http(port, "GET", "/api/compare?runs=" + run)
                 code, body = http(port, "DELETE", "/api/data/file?path=" + run, None, W)
                 check(
                     f"{store}: DELETE deletes a whole run with its outputs and rows",
                     code == 200 and body.get("outputs") == n_out,
                     (code, body),
+                )
+                now = http(port, "GET", "/api/compare?runs=" + run)
+                check(
+                    f"{store}: the inspector forgets the deleted run: its comparison is asked again, not answered from memory",
+                    was[0] == 200 and now != was,
+                    (was[0], now[0], str(now[1])[:200]),
                 )
                 code, body = http(port, "GET", "/api/data/file?path=" + f"{run}/metrics.json")
                 check(f"{store}: the deleted run is gone", code == 404, code)

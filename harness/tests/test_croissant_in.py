@@ -23,6 +23,9 @@ HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-croissant-in-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-croissant-in")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
@@ -101,7 +104,7 @@ def description(sha: str, fmt: str = "text/csv") -> dict:
 
 
 def ds(i):
-    return json.loads((proj / "data" / "datasets" / f"{i}.json").read_text())
+    return _runstore.read_json(proj, f"datasets/{i}.json")
 
 
 try:
@@ -109,8 +112,10 @@ try:
     sha = hashlib.sha256(CSV.encode()).hexdigest()
     (proj / "croissant.json").write_text(json.dumps(description(sha)))
     (proj / "data" / "fields").mkdir(parents=True)
-    (proj / "data" / "fields" / "notes.yaml").write_text(
-        "fieldset_id: notes\nfields:\n  - {name: label, type: choice, values: [a, b]}\n"
+    _runstore.write_text(
+        proj,
+        "fields/notes.yaml",
+        "fieldset_id: notes\nfields:\n  - {name: label, type: choice, values: [a, b]}\n",
     )
     q = {"path": "croissant.json", "text": "text", "id": "id", "fields": ["label"]}
     r = evh(
@@ -129,7 +134,7 @@ try:
         "the record set's rows become items: id, row, a kept field; their text in the items folder",
         [(it["item_id"], it.get("source_row"), it.get("fields")) for it in d.get("items") or []]
         == [("n1", 0, {"label": "a"}), ("n2", 1, {"label": "b"}), ("n3", 2, {"label": "a"})]
-        and (proj / "data" / "sources" / "c_v1" / "n2.txt").read_text() == "second note",
+        and _runstore.read_text(proj, "sources/c_v1/n2.txt") == "second note",
         (r.stdout + r.stderr)[-400:],
     )
     check(
@@ -198,7 +203,7 @@ try:
         "a parquet FileObject is read: the same items as the CSV",
         r.returncode == 0
         and [it["item_id"] for it in ds("c_v4")["items"]] == ["n1", "n2", "n3"]
-        and (proj / "data" / "sources" / "c_v4" / "n3.txt").read_text() == "third note",
+        and _runstore.read_text(proj, "sources/c_v4/n3.txt") == "third note",
         (r.stdout + r.stderr)[-300:],
     )
     fsdoc = description(sha)

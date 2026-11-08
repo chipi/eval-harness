@@ -21,8 +21,30 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))  # _wheel
+import _runstore
 import _wheel
+from evaluation_harness import _common
 from evaluation_harness._check import check, summary
+
+
+def aim(proj: Path) -> Path:
+    """The project, for _runstore: this process caches the project it resolved first, and this test has several."""
+    _common.project_root.cache_clear()
+    return proj
+
+
+def kit_config(proj: Path, name: str) -> None:
+    """A tutorial config copied from the project's kit into its configs."""
+    _runstore.write_text(aim(proj), f"configs/{name}", (proj / "tutorial/configs" / name).read_text())
+
+
+def config_paths(proj: Path) -> list[str]:
+    """The tickets_lead*.yaml configs of the project, as paths under its data/configs."""
+    return sorted(
+        str(proj / "data/configs" / n)
+        for n in _runstore.listdir(aim(proj), "configs")
+        if n.startswith("tickets_lead") and n.endswith(".yaml")
+    )
 
 
 def evh_run(
@@ -65,14 +87,27 @@ def test_init(tmp: Path) -> None:
 
     # Basic init
     r = evh_run("init", cwd=proj, env=env)
+    if _runstore.sqlite():
+        # In the database a directory is the files it holds: init makes data/ (where the database will be, and how a
+        # command run in the project finds it) and says the store, never folders it did not make.
+        made = "store    sqlite" in r.stdout and "folders" not in r.stdout
+    else:
+        made = (proj / "data/sources").is_dir() and (proj / "data/configs").is_dir()
     check(
-        "init (no args): exit 0, creates folders",
+        "init (no args): exit 0, makes data/ and the store's folders",
         r.returncode == 0
         and "project:" in r.stdout
-        and (proj / "data/sources").is_dir()
-        and (proj / "data/configs").is_dir()
+        and (proj / "data").is_dir()
+        and made
         and (proj / ".gitignore").is_file(),
         r.stdout[:200],
+    )
+    found = evh_run("data-ls", cwd=proj, env=env)
+    store_now = "sqlite" if _runstore.sqlite() else "files"
+    check(
+        "after init, a command run in the project finds it (its data/ folder), in its store",
+        found.returncode == 0 and f"store: {store_now}" in found.stdout,
+        (found.stdout + found.stderr)[-300:],
     )
 
     # Init with --tutorial
@@ -133,7 +168,7 @@ def test_list_runs(tmp: Path) -> None:
         env=env,
     )
     r = evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
-    shutil.copy(proj / "tutorial/configs/tickets_lead1.yaml", proj / "data/configs/")
+    kit_config(proj, "tickets_lead1.yaml")
     r = evh_run("run", "--config", "data/configs/tickets_lead1.yaml", cwd=proj, env=env)
     check("evh run: succeeds", r.returncode == 0, r.stderr[:200])
 
@@ -201,10 +236,10 @@ def test_sweep(tmp: Path) -> None:
     )
     evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
     for arm in ("lead1", "lead2"):
-        shutil.copy(proj / f"tutorial/configs/tickets_{arm}.yaml", proj / "data/configs/")
+        kit_config(proj, f"tickets_{arm}.yaml")
 
     # Dry run: costs nothing
-    config_files = sorted(str(p) for p in (proj / "data/configs").glob("tickets_lead*.yaml"))
+    config_files = config_paths(proj)
     r = evh_run(
         "sweep",
         "--configs",
@@ -220,7 +255,7 @@ def test_sweep(tmp: Path) -> None:
     )
 
     # Real sweep
-    config_files = sorted(str(p) for p in (proj / "data/configs").glob("tickets_lead*.yaml"))
+    config_files = config_paths(proj)
     r = evh_run(
         "sweep",
         "--configs",
@@ -260,7 +295,7 @@ def test_judge_panel(tmp: Path) -> None:
         env=env,
     )
     evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
-    shutil.copy(proj / "tutorial/configs/tickets_lead1.yaml", proj / "data/configs/")
+    kit_config(proj, "tickets_lead1.yaml")
     evh_run(
         "label-import",
         "tutorial/gold",
@@ -322,7 +357,7 @@ def test_judge_panel(tmp: Path) -> None:
         "tag": "v1",
     }
     cfg_path = proj / "data/configs/judge_panel.yaml"
-    cfg_path.write_text(yaml.dump(judge_cfg))
+    _runstore.write_text(aim(proj), "configs/judge_panel.yaml", yaml.dump(judge_cfg))
 
     # Run judge with fake judge
     r = evh_run(
@@ -343,8 +378,8 @@ def test_judge_panel(tmp: Path) -> None:
     # Check that report was written
     check(
         "judge: writes report to output_root/tag",
-        (proj / "data/reports/v1").is_dir() and (proj / "data/reports/v1/report.md").is_file(),
-        str(list((proj / "data/reports").glob("*")) if (proj / "data/reports").is_dir() else []),
+        _runstore.exists(aim(proj), "reports/v1") and _runstore.is_file(proj, "reports/v1/report.md"),
+        str(_runstore.listdir(proj, "reports")),
     )
 
 
@@ -367,7 +402,7 @@ def test_cost_report(tmp: Path) -> None:
         env=env,
     )
     evh_run("dataset-materialize", "--dataset-id", "tickets_v1", cwd=proj, env=env)
-    shutil.copy(proj / "tutorial/configs/tickets_lead1.yaml", proj / "data/configs/")
+    kit_config(proj, "tickets_lead1.yaml")
     evh_run("run", "--config", "data/configs/tickets_lead1.yaml", cwd=proj, env=env)
 
     # cost-report with no runs (nothing billed yet)

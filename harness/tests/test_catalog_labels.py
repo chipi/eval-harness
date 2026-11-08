@@ -25,6 +25,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KIT = HERE.parent / "tutorial"
 from evaluation_harness._check import check, summary  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
 proj = Path(tempfile.mkdtemp(prefix="evh-catlabels-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-catalog-labels")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_PUBLIC"):
@@ -59,13 +62,15 @@ try:
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset", r.returncode == 0, out(r)[-300:])
     (data / "goals").mkdir()
-    shutil.copy(KIT / "goals" / "tickets_summary.yaml", data / "goals")
+    _runstore.write_text(
+        proj, "goals/tickets_summary.yaml", (KIT / "goals" / "tickets_summary.yaml").read_text()
+    )
     for arm in ("lead1", "author"):
-        cfg = data / "configs" / f"tickets_{arm}.yaml"
-        cfg.write_text((KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n")
+        text = (KIT / "configs" / f"tickets_{arm}.yaml").read_text() + "goal: tickets_summary\n"
+        _runstore.write_text(proj, f"configs/tickets_{arm}.yaml", text)
         r = evh("run", "--config", f"data/configs/tickets_{arm}.yaml")
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
-    author = next(p.name for p in (data / "runs").glob("tickets_author_v1_*"))
+    author = next(n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_"))
     r = evh("label-from-run", "--run", author, "--set", "author_v1")
     check("setup: a model's label set", r.returncode == 0, out(r)[-300:])
     with (proj / "sheet.csv").open("w", newline="") as f:
@@ -145,7 +150,7 @@ try:
         "owner",
     )
     check("setup: a pick waiting", r.returncode == 0, out(r)[-300:])
-    lead = sorted(p.name for p in (data / "runs").glob("tickets_lead1_v1_*"))[0]
+    lead = sorted(n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_lead1_v1_"))[0]
     r = evh("run-promote", "--run", lead, "--reason", "The lead sentence is enough, for the catalog's test.")
     check("setup: a baseline promoted", r.returncode == 0, out(r)[-300:])
     r = evh("catalog", "--out", "cat")

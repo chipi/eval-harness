@@ -19,6 +19,9 @@ import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 
+# Reads this repository's committed data (scorers, runs, verdicts), which is files.
+os.environ["EVAL_STORE"] = "files"
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(1, str(Path(__file__).resolve().parents[1] / "tools"))  # validate_judge_*

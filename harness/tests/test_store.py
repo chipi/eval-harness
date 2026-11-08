@@ -232,6 +232,97 @@ try:
             _store.read_text(Own()) == "its own" and _store.is_file(Own()) is True,
         )
 
+    # A directory is a key prefix: listed, found and deleted by a range on the primary key, which the index serves
+    # (a LIKE pattern scanned the whole table: 11.6 ms against 0.045 ms on disk for one glob, architecture review
+    # 2026-11-06), and only the keys under it, whatever the name holds (_ and % are LIKE's wildcards; . and 0 sort
+    # either side of /).
+    use("sqlite")
+    for k in ("p/a/s", "p/a_b/x", "p/aXb/y", "p/a%b/z", "p/a.b/q", "p/a0/r"):
+        _store.write_text(data / k, k)
+    conn = _store.connect()
+    assert conn is not None
+    seen_sql: list[str] = []
+    conn.set_trace_callback(seen_sql.append)
+    try:
+        listed = (
+            _store.is_dir(data / "p" / "a"),
+            _store.is_dir(data / "p" / "a_"),
+            sorted(x.name for x in _store.iterdir(data / "p" / "a")),
+            sorted(x.name for x in _store.iterdir(data / "p" / "a_b")),
+            sorted(str(x.relative_to(data)) for x in _store.glob(data / "p", "a*/*")),
+        )
+        _store.rmtree(data / "p" / "a")
+        left = sorted(str(x.relative_to(data)) for x in _store.rglob(data / "p", "*") if _store.is_file(x))
+    finally:
+        conn.set_trace_callback(None)
+    check(
+        "sqlite: a directory is exactly the keys under it: _ and % are not wildcards, a.b and a0 are other folders",
+        listed == (True, False, ["s"], ["x"], ["p/a%b/z", "p/a.b/q", "p/a/s", "p/a0/r", "p/aXb/y", "p/a_b/x"])
+        and left == ["p/a%b/z", "p/a.b/q", "p/a0/r", "p/aXb/y", "p/a_b/x"],
+        (listed, left),
+    )
+    under = [q for q in seen_sql if " path >" in q or " run >" in q or "LIKE" in q]
+    plans = {q: " ".join(r[3] for r in conn.execute("EXPLAIN QUERY PLAN " + q)) for q in under}
+    check(
+        "sqlite: every prefix query is a SEARCH on the index, none a LIKE or a SCAN of the table",
+        under and all("LIKE" not in q for q in under) and all("SCAN" not in v for v in plans.values()),
+        plans or seen_sql[:6],
+    )
+    _store.rmtree(data / "p", ignore_errors=True)
+
+    # A path relative to a setting climbs out through a folder that is only a key in the database (a config's
+    # `adapter: ../../bonus_adapter.py`): found on disk all the same (the store matrix, 2026-11-08: "adapter not found").
+    (proj / "beside.py").write_text("x = 1\n")
+    via = data / "configs" / ".." / ".." / "beside.py"
+    check(
+        "sqlite: a file outside data/ reached through a folder in the database (data/configs/../../x.py) is found",
+        _store.is_file(via)
+        and _store.exists(via)
+        and _store.read_text(via) == "x = 1\n"
+        and _store.stat(via).st_size == 6,
+        (_store.is_file(via), (data / "configs").exists()),
+    )
+    (proj / "beside.py").unlink()
+
+    # What the database cannot do is refused out loud, never done half (architecture review, 2026-11-06).
+    refused: list[str | None] = []
+    for mode in ("r+", "w+", "x", "rb+"):
+        try:
+            _store.open_file(data / "x.txt", mode).close()
+            refused.append(None)
+        except Exception as e:  # noqa: BLE001 - the check reports whatever was raised
+            refused.append(f"{type(e).__name__}: {e}")
+    check(
+        "sqlite: open in r+, w+, x refused (a read-only copy lost every write before)",
+        all(x and x.startswith("ValueError") and "the project's database" in x for x in refused),
+        refused,
+    )
+    run = data / "runs" / "arm_v9_y"
+    _store.write_text(run / "metrics.json", "{}")
+    _outputs.writer(run).add("i1", "kept")
+    try:
+        _store.copy_tree(run, data / "runs" / "arm_v9_copy")
+        copied = None
+    except Exception as e:  # noqa: BLE001
+        copied = f"{type(e).__name__}: {e}"
+    try:
+        _store.replace(run, data / "runs" / "arm_v9_moved")
+        moved = None
+    except Exception as e:  # noqa: BLE001
+        moved = f"{type(e).__name__}: {e}"
+    check(
+        "sqlite: a run is not copied or moved without its outputs and rows: refused, and nothing written",
+        copied
+        and copied.startswith("ValueError")
+        and "outputs" in copied
+        and moved
+        and moved.startswith("ValueError")
+        and not _store.exists(data / "runs" / "arm_v9_copy")
+        and not _store.exists(data / "runs" / "arm_v9_moved"),
+        (copied, moved),
+    )
+    _store.rmtree(run)
+
     # A label set written in the database: it was built in a folder made on disk under data/, which does not exist
     # there (advisor review, 2026-11-06: FileNotFoundError on every label-import in SQLite mode).
     from evaluation_harness import _label_sets
@@ -334,6 +425,20 @@ try:
     problems, out = v23()
     check("V23 passes on the database", not problems, out)
 
+    # Moving back unlinks the database: refused while another process has it open (a running catalog-serve kept
+    # writing to the unlinked file, architecture review 2026-11-06). This process is that other process here.
+    _store.connect()
+    held = evh("data-migrate", "--to", "files", store="files")
+    check(
+        "--to files refused while another process has the database open, nothing moved",
+        held.returncode == 1
+        and "ERROR (not-allowed)" in held.stderr
+        and "open" in held.stderr
+        and (data / _store.DB).is_file()
+        and all(f.startswith(_store.DB) for f in disk_files()),
+        (held.stderr[-300:], disk_files()[:5]),
+    )
+    _store.close()
     r = evh("data-migrate", "--to", "files", store="files")
     use("files")
     after = {f: (data / f).read_bytes() for f in disk_files()}
@@ -365,6 +470,7 @@ try:
         and not _store.is_file(run / _outputs.PREDICTIONS),
         ((r.stdout + r.stderr)[-300:], _outputs.outputs(run)),
     )
+    _store.close()  # this process read the database just now: moving back is refused while it has it open
     r = evh("data-migrate", "--to", "files", store="files")
     use("files")
     check(
@@ -505,6 +611,7 @@ ALLOWED = {
     "harness/scripts/sources/*.py": "a dataset source reads the file or folder a person names to it, outside data/",
     "harness/scripts/importers/*.py": "an importer reads the file a person names to it",
     "harness/tools/_wheel.py": "packaging: copies the harness's own files",
+    "harness/tools/store_matrix.py": "writes the test runs' logs under .build/, never data/",
     "site/*.py": "the public site's own build and checks: its pages and the docs, never a project's data",
     "examples/*/fetch.py": "an example's fetch writes its sources as files; in SQLite data-migrate moves them in (RFC-025)",
     "examples/*/adapter.py": "an adapter reads its prompt file beside its code",

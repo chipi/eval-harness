@@ -5,11 +5,14 @@ and a round's leader tested against its baseline as one of the round's arms (Hol
 
 from __future__ import annotations
 
+import os
+
+os.environ["EVAL_STORE"] = "files"  # reads this repository's committed runs, which are files
+
 import contextlib
 import io
 import json
 import math
-import os
 import shutil
 import subprocess
 import sys
