@@ -2,7 +2,9 @@
 
 - **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"); not built yet. Owner, 2026-11-06: "next RFC is
   for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions decided by the owner the same
-  day (below: "1 waiting, 2 [the proposed file size], 3 yes, 4 enforce").
+  day (below: "1 waiting, 2 [the proposed file size], 3 yes, 4 enforce"). Revision 2 (2026-11-09), after an
+  independent review (Fable) and aligned with [RFC-027](RFC-027-who-acted-and-baselines-per-goal.md): 82 commands,
+  path arguments, the cap where spend is counted, the round ledger, who acted, locks; one question open (below).
 - **Authors**: Marko Dragoljevic
 - **Related**: [PRD-017](../prd/PRD-017-workbench.md) (the Workbench: one server, jobs, parity),
   [UXS-005](../uxs/UXS-005-workbench.md) (its screens), [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP
@@ -14,7 +16,7 @@
 ## Abstract
 
 `catalog-serve` answers one HTTP API for the `evh` commands, so a person in the Workbench can do what an agent does
-with the command line: 73 of the 80, all but the servers themselves, the ones that set up a project or check the
+with the command line: 75 of the 82, all but the servers themselves, the ones that set up a project or check the
 installation, and `capture-scrub`, which runs a program it is given. A command that only reads is answered at once,
 run as the MCP server runs it. Every other is a **job**: a detached process running that same `evh` command, which
 keeps running when the page closes, writes its log as it goes, can be stopped, and is resumed where the command can
@@ -24,15 +26,19 @@ does not, or miss what it adds; every command it serves answers `--json`.
 
 ## What exists today (measured 2026-11-08)
 
-- 80 commands (`evh --help`). 31 answer `--json`; 8 take `--dry-run`, 1 takes `--resume` (`run`), 8 take `--by`
-  (who acted) and 5 `--reason`.
-- `evh mcp` serves 28 of them as read-only tools; each of the other 52 is listed with why it is not a tool
+- 82 commands (`evh --help`, 2026-11-09). 8 take `--dry-run`, 1 takes `--resume` (`run`). `--by` means who acted
+  on 5 (`label-import`, `sheet-import`, `pick`, `reference-manifest`, `reference-promote`); on `dataset-split` it is
+  the split rule (renamed `--split-by` by RFC-027) and on `inspect` a breakdown field. `--reason` is why on
+  `run-promote`, `reference-promote`, `reference-manifest`, `round-retire` and `dataset-unseal`; on `round-open` it is
+  why the `--retire` arms are dropped; `round-close` takes `--conclusion`.
+- `evh mcp` serves 29 of them as read-only tools; each of the other 53 is listed with why it is not a tool
   (`mcp_server.NOT_TOOLS`: it writes, spends, or reaches outside the project). Its `parser_of(command)` reads a
   command's argparse parser without running it, and its tools' schemas are made from those parsers, leaving out the
   options a read must not have (`HIDDEN`: `--adapter`, which loads code; `TOOL_HIDDEN`: per command, the options that
   write a file or read outside the project, e.g. `inspect --csv`, `--fill`, `pair-test --runs-dir`).
   `mcp_server.run_command` runs each call in its own process group, stdin closed, with a timeout, adding `--json`
-  for the 24 tools whose command has it (`JSON`); `validate`, `dataset-card`, `data-ls` and `data-show` answer text.
+  for the tools listed in `JSON`. 27 of the 29 read commands have `--json`; `validate` and `dataset-card` answer
+  text. (`JSON` lists 24: `data-ls`, `data-show` and `label-coverage` have `--json` and are added to it in step 2.)
 - `catalog-serve` answers 11 routes: the inspector's 4 (`/api/health`, `/api/compare`, `/api/item`, `/api/sheet`) and
   the data page's 7 under `/api/data/` (UXS-004, ADR-0027: settings written through `_settings_form.guarded_write`,
   one at a time in the server, with `evh validate` before and after; a run removed whole). Those 7 answer only a
@@ -59,6 +65,20 @@ id, a goal), a value (type and choices from the parser), or a file the call uplo
 setting saved through the API is checked as `data-put` checks it, and a config whose `adapter:` names a file outside
 the project's own code is refused, so `data-put` then `run` cannot run a file the project does not hold.
 
+**Every path argument has a kind.** A command's file arguments are served as one of three, and step 2 lists every
+served command's path arguments with theirs (a test fails on a `Path` argument with none):
+
+- **a name the server maps to a file**: `run --config`, `arm-smoke --config`, `model-onboard --config`, `sweep
+  --configs` take config ids (`data/configs/<id>.yaml`, or the project's configured config globs);
+- **an upload**: `data-put`'s file, `label-import`'s and `sheet-import`'s sheet, `sheet-import --key`,
+  `import-run --scores`, `label-coverage --map`, `dataset-create --fields`, `capture --query @file`;
+- **a job artifact**: `label-sheet --out`, the one output file a served command writes outside the project's data,
+  is written under `.build/jobs/<id>/` and fetched with `GET /api/v1/jobs/<id>/files/<name>` (owner, 2026-11-09: the
+  sheet is offered as a download);
+- not served as a path, so the command's default applies: `judge-score --out` and `rescore --out` (the project's own
+  judged and re-scored runs directories), `rescore --config-dir`, `--source-dir`, `arm-from-capture --like`,
+  `bootstrap-test --items` (each is left to the command line).
+
 A call's arguments are a JSON object keyed by the argument's name, checked against the registry before anything runs
 (kinds, types, choices, required, unknown names refused) and turned into the command's argv by the parser's own option
 strings, so the command receives exactly what the same command typed after `evh` would. A file the command reads (`data-put`'s,
@@ -73,20 +93,30 @@ server starts, written to `.build/api-token` (mode 600, the project owner's only
 Workbench's address, as `http://127.0.0.1:PORT/workbench/?token=…`. The page trades it for a cookie (`HttpOnly`,
 `SameSite=Strict`, this host only) on the first load; a script sends `Authorization: Bearer …`. Also: the Host must be
 the server's own (DNS rebinding), a foreign `Origin` is refused, and every call that is not a read carries
-`X-EVH-Data: 1`. A server started with `--public` answers none of `/api/v1/`. This is more than ADR-0027 asked of the
+`X-EVH-Data: 1`. A server started with `--public` answers none of `/api/v1/`. **Proposed, the owner's decision
+pending (open question 5):** nor does one started with `--behind-proxy`, which serves the inspector to a team's
+proxy (and whose `allowed()` accepts the proxy's Host names, so "the Host must be the server's own" does not hold
+there); the data routes are already refused in both modes. Every job runs as the server's operating-system user, so
+an API reached by a team would let each member run any command as the project's owner, and the actor (RFC-027) is a
+typed claim; several people sharing one project is PRD-017's "later question".
+
+After the page has traded the token for the cookie it removes `?token=` from its address
+(`history.replaceState`), so the token does not stay in the browser's history. This is more than ADR-0027 asked of the
 data page (a header and the Host): the API runs any command, so it is the new floor for the data routes too while
 they live (below).
 
 ### Reads
 
-`POST /api/v1/read/<command>` runs one of the 28 read commands as `mcp_server.run_command` runs a tool call: its own
+`POST /api/v1/read/<command>` runs one of the 29 read commands as `mcp_server.run_command` runs a tool call: its own
 process group, stdin closed, the same timeout, with the same options left out, and returns its envelope
-(`{"command", "version", "result"}`). The 24 that have `--json` answer it; the other 4 answer their text as
-`{"command", "version", "text"}` until step 5 gives them `--json`.
+(`{"command", "version", "result"}`). The 27 that have `--json` answer it; `validate` and `dataset-card` answer
+their text as `{"command", "version", "text"}` until step 7 gives them `--json`.
 
 ### Jobs
 
 `POST /api/v1/jobs` with `{"command", "args", "by", "reason"}` starts a job and answers `202` with its id and state.
+`by` is RFC-027's actor (`person:NAME`, or `agent:NAME` with `for: person:NAME`); a decision (`run-promote`,
+`baseline-rollback`, `round-close`, `dataset-unseal`) without it is refused here, before a job exists.
 This is PLAN_0.8.0's step 4.2 (background runs), as one command a job. The same jobs from the terminal (0.8.0, planned; owner,
 2026-11-08; CLI parity): `evh jobs-start <command> [args]` starts one through the same supervisor and prints its id,
 `evh jobs-status [id]` lists them or shows one, `evh jobs-logs <id> [--follow]` prints its log, `evh jobs-stop <id>`
@@ -96,14 +126,20 @@ both.
 - **A job is one command.** The server writes `.build/jobs/<id>/job.json` (the command, its argv, who asked, when, the
   harness version) and starts `python -m evaluation_harness.jobs_supervisor <id>` detached: a new session, stdin from
   `/dev/null`, its output to the job's `supervisor.log`, every other descriptor closed. Jobs do not depend on the
-  server: it can restart, or stop, and they go on; on start it reads `.build/jobs/` for their state.
+  server: it can restart, or stop, and they go on; it reads `.build/jobs/` on every `GET /api/v1/jobs`, so a job
+  started from the terminal (`jobs-start`, 0.8.0, planned) is seen at once.
+- **Who acted.** The supervisor sets `EVH_ACTOR` (and `EVH_FOR`) from the job's `by` for every command, since a job
+  has no terminal and RFC-027 would otherwise record it `unknown`; it passes `--by` only to the commands where `--by`
+  means who acted, and `reason` as each command names it (`--reason`, `--conclusion` for `round-close`).
 - **Locks first.** The supervisor takes the job's locks (below), waiting while another job holds one (`queued`, with
   which job holds it), then starts the command (`evh`, its name, its argv, `--json` where it has it) in its own process group with the lock files' open
   descriptors passed to it. A `flock` belongs to the open file, so the command holds the locks for as long as it
   lives, even if the supervisor dies; the operating system frees them however the command ends.
 - **State** is `.build/jobs/<id>/state.json`, rewritten atomically: `queued`, `running` (with the command's process
   group id), `succeeded`, `failed` (the exit code and the refusal kind, `ERROR (<kind>)`), `cancelled`, `lost`;
-  started and ended. The supervisor holds an exclusive `flock` on `supervisor.lock` for its life. A free
+  started and ended. The supervisor holds an exclusive `flock` on `supervisor.lock` for its life. The command gets
+  the job's lock files' descriptors (`pass_fds`) and never `supervisor.lock`'s, or a dead supervisor's lock would
+  stay held by the command and the job would never read as unsupervised. A free
   `supervisor.lock` on a `running` job means the supervisor is gone: if the process group still lives the job reads
   `running (unsupervised)`, its locks still held and `stop` still works; if not, `lost`.
 - **Output**: stdout and stderr go to the job's `log`, the envelope (when the command prints one) to `result.json`.
@@ -132,8 +168,11 @@ call's arguments, or from the file they name, read by the supervisor before it s
 | `arm-smoke`, `model-onboard` | `model:<model>` | the config `--config` names: its model (the record also has its own `flock`) |
 | `sweep` | each arm's as `run` | its configs |
 | the `dataset-*` commands that write (`create`, `extend`, `split`, `materialize`, `describe`, `migrate`, `from-capture`), `reference-*`, `label-*`, `sheet-import` | `dataset:<dataset_id>` (a split: the parent and each side) | `--dataset-id`, the positional dataset, `--reference-id`'s dataset, the run `--run` names (its `metrics.json`) |
-| `rescore`, `judge-score` | `dataset:<dataset_id>`, and with `--round` `goal:<goal>` | `--dataset-id`; `--goal` |
-| `round-open`, `round-retire`, `round-close`, `run-promote` | `goal:<goal>` | `--goal`, or the run's goal (`run-promote --run`) |
+| `rescore`, `judge-score` | `dataset:<dataset_id>`, and with `--round` `goal:<goal>` | `--dataset-id`, or the round's `dataset_id`; `--goal` |
+| `round-open`, `round-retire`, `round-close` | `goal:<goal>` | `--goal` |
+| `run-promote`, `baseline-rollback` | `baselines:<goal>/<dataset_id>` (RFC-027: one version line per goal and dataset; `_dataset` for a run with no goal) | `--goal` or the run's goal, `--no-goal`; the run's `dataset_id` |
+| `dataset-unseal` | `dataset:<dataset_id>` | the positional dataset |
+| `baselines-migrate` | `project` | always |
 | `pick`, `dataset-extend --picks` | `picks:<dataset_id>` | `--dataset-id` |
 | `capture`, `capture-restore` | `captures` | always |
 | `arm-from-capture`, `dataset-from-capture` | `captures` shared; `config:<config_id>` (`arm-from-capture`); `dataset:<dataset_id>` | `--as`, `--dataset-id` |
@@ -142,7 +181,8 @@ call's arguments, or from the file they name, read by the supervisor before it s
 | `data-migrate`, `run-migrate`, `dataset-migrate`, `fingerprint-migrate` | `project` | always |
 
 Every job also holds `project` shared, so a migration waits for every job and every job for it. A command not in the
-table holds only `project` shared, and a test fails on a served writing command missing from it. A read takes no lock,
+table holds only `project` shared, and a test fails on a served writing command missing from it. Two promotions
+from the terminal are not under these locks; RFC-027 makes a baseline version's write exclusive in itself. A read takes no lock,
 so a write must not be seen half done: SQLite commits each file whole; in a files project `_store.write_text` is
 `Path.write_text` today (it empties the file, then writes), so the build makes `_store`'s writes go through
 `_common.write_text_atomic` (a temporary file, then `os.replace`), as `write_json` already does. The guarantee is per
@@ -166,18 +206,23 @@ variable to each arm's `run`, so its cap is per arm. A round's `budget_usd` is r
 decided it is enforced (2026-11-08). So:
 
 - A spending job must carry `max_cost_usd`, the job's total.
-- The build moves the cap into the provider layer (ADR-0005's one layer every hosted call goes through), counted per
-  process across passes, so every command that calls a hosted model stops at it, `arm-smoke` included.
+- **The cap is enforced where spend is counted**: in each command's item loop, from the `cost_usd` the adapter
+  reports (as `run` does today), counted per process across passes (`--repeat`), and added to `arm-smoke`. A
+  project's own adapter may call its model with a client of its own, never through the provider layer, so the
+  provider layer (ADR-0005) enforces the same cap only as a second net, for the bundled provider.
 - A command that runs others (`sweep`, `model-onboard`) gives each the part of the job's cap still unspent, from the
-  spend each child reports in its `--json` envelope.
+  spend each child reports in its `--json` envelope: `sweep` captures each child's output (today it does not) and
+  streams it to the job's log as it comes.
 - `judge` keeps its config's cap as well; the lower of the two applies.
 - **A round's budget is enforced**, by the spending commands themselves, so a run from the terminal and a job
   stop at the same place. A command that spends on a goal with an open round that has `budget_usd` takes, as its
   cap, the least of its own cap and what the round has left: the budget, less what the round's runs have spent (as
   `evh rounds` counts it), less what the round's running commands have reserved. It reserves that cap when it
   starts, in the round's ledger (`.build/rounds/<goal>/<round>.json`, under the `goal:<goal>` lock for the moment it
-  writes), and gives back what it did not spend when it ends, however it ends (a lost job's reservation is freed
-  when it is found lost). Nothing left: the command is refused before it calls a model (`ERROR (over-budget)`). So
+  writes), and records what it spent when it ends. A stopped or crashed run writes no `metrics.json` and so is not
+  among the runs `rounds` counts, though its items were paid for: the supervisor, not the command, closes the
+  reservation, reading the run's written items for what was actually spent. The budget left is the budget, less the
+  round's visible runs, less the ledger's closed entries whose run is not visible, less the open reservations. Nothing left: the command is refused before it calls a model (`ERROR (over-budget)`). So
   ten arms of one round started at once cannot overrun its budget together.
 
 `POST /api/v1/estimate` runs a command's `--dry-run` and returns what it prints, so the Workbench shows what a job
@@ -188,16 +233,15 @@ cap instead of an estimate until they get one.
 
 ### Who acted
 
-Every job records who asked for it and why (`by`, `reason`) and passes each to the command where the command takes
-it: 8 commands take `--by`, 5 take `--reason` (`reference-manifest`, `reference-promote`, `round-open`,
-`round-retire`, `run-promote`). A promotion, a reference set or a round opened or retired then records the person as
-it does from the command line; the commands that act and take neither get them with step 4.1 (who acted on every
-record).
+Every job records who asked for it and why (`by`, `reason`). Its actor reaches every command through `EVH_ACTOR`
+/ `EVH_FOR`, set by the supervisor (Jobs, above), so every record a job writes names it as RFC-027 records the
+command line's; `--by` and the reason's own option are passed only where they mean that. The MCP server stays
+read-only (RFC-027): an agent acts through the command line or a job.
 
 ### Every command answers `--json`
 
-The Workbench shows a job's result as data, not as text to scrape. 42 of the commands the API serves have no `--json`
-today (the table below), the 4 read commands among them. Each gets it, with the envelope the others use; a test fails
+The Workbench shows a job's result as data, not as text to scrape. 43 of the commands the API serves have no `--json`
+today (the table below), 2 read commands among them. Each gets it, with the envelope the others use; a test fails
 on a served command without it. Until a command has it, its job's result is its exit code and its log.
 
 ### The data page's routes and ADR-0027
@@ -225,7 +269,9 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
 5. The cap in the provider layer, per process; children given the rest; the round's budget and its ledger; the
    estimate.
 6. (0.8.0, planned) `evh jobs-start`, `jobs-status`, `jobs-logs`, `jobs-stop`, `jobs-resume` over the same jobs.
-7. `--json` for the 42 commands, in groups (datasets, labels and references, rounds, runs, the rest).
+   They are commands like the rest, classified in the registry as not served (the API has its own job routes) and
+   in `NOT_TOOLS`.
+7. `--json` for the 43 commands, in groups (datasets, labels and references, rounds, runs, the rest).
 8. The Workbench (PRD-017) on top, and the ADR that amends ADR-0027.
 
 ## Testing
@@ -233,7 +279,9 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
 - Parity: every read command through the API and through the command line give the same JSON.
 - Refusals: no token, a wrong token, another Host, a foreign Origin, a non-read without the header, an option the
   registry does not list (`--adapter`, `--runs-dir`, `--command`), a path as an argument, a config whose adapter is
-  outside the project: each refused before anything runs. `--public` answers no `/api/v1/` call.
+  outside the project: each refused before anything runs. `--public` (and, if the owner decides so,
+  `--behind-proxy`) answers no `/api/v1/` call. A decision job without `by`; a job's records name its `by`.
+  Every served `Path` argument has a kind; `label-sheet` as a job gives its sheet as a download.
 - A job's life: started, followed by offset, succeeded with its result; a failing command reports its refusal kind; a
   stopped job's process group is gone; a killed supervisor shows `running (unsupervised)` and keeps its locks while
   the command lives, `lost` after; `run` resumed continues the run id it was given.
@@ -242,9 +290,9 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
   run together and the served pages never 404 during one; a migration waits for every job and every job for it;
   a server restart in the middle changes none of it.
 - Spending: a spending job without `max_cost_usd` refused; `run --repeat 3` stops at one cap in total; `arm-smoke` and
-  `sweep` stop at the job's cap. A round's budget: a run that would pass it stops at it, from the terminal and as a
-  job alike; two runs started at once share what is left, never both all of it; a stopped or lost run gives back
-  what it did not spend; with nothing left a run is refused before its first call.
+  `sweep` stop at the job's cap, with a project adapter that never calls the provider layer. A round's budget: a run that would pass it stops at it, from the terminal and as a
+  job alike; two runs started at once share what is left, never both all of it; a stopped or lost run's paid items
+  count against the budget; with nothing left a run is refused before its first call.
 - Uploads: 50 MB taken, one byte more refused, nothing kept of it.
 - The terminal's job commands: a job started with `jobs-start` is listed by the API and stopped by `jobs-stop`, and
   one the Workbench started is followed by `jobs-logs`.
@@ -264,7 +312,7 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
 - **Writes through the MCP server**: MCP is the agents' protocol and stays read-only (RFC-018); a browser needs HTTP and
   jobs it can follow and stop.
 - **RFC-011's job sets as they were drafted** (a set of runs with phases and an ssh runner): a job here is one command,
-  which is what a Workbench step is; phases and the ssh runner wait for the owner's decision on them (PLAN_0.8.0, open
+  which is what a Workbench step is; phases and the ssh runner were dropped (owner, 2026-11-09; PLAN_0.8.0, open
   question 3).
 
 ## Decided by the owner (2026-11-08)
@@ -277,10 +325,18 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
 4. **A round's budget is enforced** ("enforce"), by the spending commands, from the terminal and as jobs alike, with
    a reservation per running command so parallel runs cannot overrun it (Spending, above).
 
+## Open (2026-11-09)
+
+5. **Is the API served behind a proxy?** Proposed: no (Who may call, above): local only in 0.8.0, so a team reads
+   through `--behind-proxy` and each person writes as themselves, with their own account or clone; a shared write
+   API needs real identities and permissions, a design of its own (PRD-017's "later question").
+
 ## The commands, and how the API serves them
 
-Generated from `evh --help` and `mcp_server.READ_TOOLS` / `NOT_TOOLS` on 2026-11-08: 28 read, 39 jobs, 6 jobs that
-spend, 7 not served (`capture-scrub` runs a program it is given).
+Generated from `evh --help` and `mcp_server.READ_TOOLS` / `NOT_TOOLS` on 2026-11-08, updated 2026-11-09: 29 read,
+40 jobs, 6 jobs that spend, 7 not served (`capture-scrub` runs a program it is given). RFC-027 adds `baselines`
+(read), `baseline-rollback` and `baselines-migrate` (jobs); the table is generated again from `cli.COMMANDS` at the
+build, and its test fails on a command it does not classify.
 
 | command | served as | `--json` | why |
 | --- | --- | --- | --- |
@@ -301,6 +357,7 @@ spend, 7 not served (`capture-scrub` runs a program it is given).
 | `data-put` | job | yes | writes a setting |
 | `data-rm` | job | yes | deletes a setting or a run |
 | `data-show` | read | yes | reads only (an MCP tool) |
+| `dataset-unseal` | job | **no** | a decision: recorded with who acted (RFC-027) |
 | `dataset-card` | read | **no** | reads only (an MCP tool) |
 | `dataset-create` | job | **no** | writes |
 | `dataset-describe` | job | **no** | writes a dataset record |
@@ -326,6 +383,7 @@ spend, 7 not served (`capture-scrub` runs a program it is given).
 | `inspect` | read | yes | reads only (an MCP tool) |
 | `judge` | job, spends | **no** | calls models and spends |
 | `judge-score` | job, spends | **no** | calls models and spends |
+| `label-coverage` | read | yes | reads only (an MCP tool) |
 | `label-from-capture` | job | **no** | writes a label set |
 | `label-from-run` | job | **no** | writes a label set |
 | `label-import` | job | **no** | writes a label set |
@@ -346,14 +404,14 @@ spend, 7 not served (`capture-scrub` runs a program it is given).
 | `reference-promote` | job | **no** | writes a reference |
 | `references` | read | yes | reads only (an MCP tool) |
 | `rescore` | job | **no** | writes runs |
-| `round-close` | job | **no** | a decision: a person's |
-| `round-open` | job | **no** | a decision: a person's |
-| `round-retire` | job | **no** | a decision: a person's |
+| `round-close` | job | **no** | a decision: recorded with who acted (RFC-027) |
+| `round-open` | job | **no** | a decision: recorded with who acted (RFC-027) |
+| `round-retire` | job | **no** | a decision: recorded with who acted (RFC-027) |
 | `rounds` | read | yes | reads only (an MCP tool) |
 | `run` | job, spends | yes | runs a system and may spend |
 | `run-compare` | read | yes | reads only (an MCP tool) |
 | `run-migrate` | job | **no** | rewrites the run directories |
-| `run-promote` | job | **no** | a decision: a person's |
+| `run-promote` | job | **no** | a decision: recorded with who acted (RFC-027) |
 | `runs-list` | read | yes | reads only (an MCP tool) |
 | `score-preview` | job | **no** | runs the project's own scoring code |
 | `search` | read | yes | reads only (an MCP tool) |
