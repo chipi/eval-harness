@@ -314,6 +314,12 @@ runs read like any others: `leaderboard`, `pair-test` and `family-test` work on 
 through `EVAL_RUNS_DIR`. The fake judges' numbers mean nothing, and the test says so: no
 detectable arm effect.
 
+Commit what the judging wrote, as everything under `data/`:
+
+```bash
+git add data/judging-sets data/judge-verdicts data/runs-judged && git commit -qm "tickets_v1: judged by tickets-judge-v1"
+```
+
 **When a real judge's scores disagree with your primary metric**, nothing changes until you
 decide it should. The primary metric stays what it was; making a judge's score primary is a
 recorded decision, with the old score kept beside it. Why the gate exists:
@@ -361,7 +367,8 @@ the log line names that file: read it before you retry, to see why the reply fai
 judges above set `reasoning: {enabled: false}`. In the fifth newcomer run, a judge without it at
 `max_tokens: 400` returned empty replies, and 1 item of 20 parsed. Each unparsed line says why
 ("empty, cut off at the token limit (finish_reason length)"), and the pass ends with a `HINT` line when
-it happens. Fix it in a new scorer version (a new `scorer_id`): turn the judge's reasoning off, or raise
+it happens. A judge whose first 3 replies all come back that way stops the pass there (`STOPPED EARLY`),
+so the rest is not paid for; what it stored is kept. Fix it in a new scorer version (a new `scorer_id`): turn the judge's reasoning off, or raise
 its `max_tokens`. Either changes the judge, so the old verdicts are not mixed with the new. The
 `reasoning` key is sent for `provider: openai`, `openrouter` and `litellm`; `provider: anthropic`
 refuses it. A tree with such verdicts from before 0.7.1 fails `evh validate`'s V12, and the message

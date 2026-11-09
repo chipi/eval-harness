@@ -215,6 +215,12 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A judge that runs out of `max_tokens` is stopped after 3 calls, not after the whole pass.** A reasoning judge
+  that spends its tokens thinking replies with nothing, every time; judge-score said so only at the end, after every
+  call was paid for (the 0.7.1 newcomer run: tutorial 3's judge at 400 tokens). Now a judge whose first 3 replies all
+  come back empty at the token limit stops the pass (`STOPPED EARLY`), keeps what it stored, and prints the hint.
+- **The newcomer scenario and tutorial 3 commit what judging writes** (`data/runs-silver`, `data/judging-sets`,
+  `data/judge-verdicts`, `data/runs-judged`), which they left untracked.
 - **The inspector opens on large comparisons.** At 10,000 items and 40 arms it never showed its verdicts: its charts
   took the least and greatest of 400,000 values with `Math.min(...values)`, which overflows the call stack. Past
   500 items a run its charts now draw shaded bins instead of a dot each (they were 1.2 million dots), and its

@@ -198,6 +198,14 @@ def unparsed_cause(output: str | None, finish_reason: Any, mode: str) -> str:
     return f"JSON, but not the expected {VERDICT_KEY[mode]} (the shape the prompt asks for), {n} chars"
 
 
+#: A judge whose first this-many replies all come back empty at the token limit stops the pass (JudgeCutOff).
+EARLY_CUTOFF = 3
+
+
+class JudgeCutOff(Exception):
+    """A judge's first replies all came back empty at the token limit: the rest would too."""
+
+
 def cutoff_hint(cut_empty: int, calls: int, sc: dict[str, Any]) -> str:
     """One line for a run whose replies came back empty at the token limit: a reasoning model
     spent its max_tokens thinking. Empty when none did."""
@@ -775,6 +783,7 @@ def run_judging(
         "billed_this_run": 0.0,
     }
     cut_empty = 0
+    first_replies: dict[str, list[bool]] = {}  # per judge: its first replies, empty at the token limit
     work = tasks(manifest)
     try:
         for item, pass_name, block in work:
@@ -895,15 +904,38 @@ def run_judging(
                 if all(v is None for v in answer.values()):
                     fr = meta.get("finish_reason")
                     cut_empty += 1 if (not res.output and fr == "length") else 0
+                    # A judge whose first replies all come back empty at the token limit will do so for the whole
+                    # pass (a reasoning model spending its max_tokens thinking): stop after EARLY_CUTOFF calls, not
+                    # after paying for every one (the 0.7.1 newcomer run: tutorial 3's thinking judge at 400).
+                    first = first_replies.setdefault(j["id"], [])
+                    if len(first) < EARLY_CUTOFF:
+                        first.append(not res.output and fr == "length")
+                        if len(first) == EARLY_CUTOFF and all(first):
+                            raise JudgeCutOff(
+                                f"{j['id']}: its first {EARLY_CUTOFF} replies came back empty at the token limit"
+                            )
                     log(
                         f"    unparsed reply: {j['id']} {item['item_id'][:8]} {pass_name} b{block}: "
                         f"{unparsed_cause(res.output, fr, mode_of(manifest))}"
                     )
-                elif stats["calls"] % 25 == 0:
-                    log(f"    {stats['calls']} calls, ${spent:.4f}")
+                else:
+                    parsed = first_replies.setdefault(j["id"], [])
+                    if len(parsed) < EARLY_CUTOFF:
+                        parsed.append(
+                            False
+                        )  # a reply that parsed: this judge is not one that always runs out
+                    if stats["calls"] % 25 == 0:
+                        log(f"    {stats['calls']} calls, ${spent:.4f}")
     except CostCapExceeded as exc:
         stats["aborted"] = True
         log(f"  COST CAP: {exc}. Stopping; every stored verdict is kept and re-read for $0.")
+    except JudgeCutOff as exc:
+        stats["aborted"] = True
+        stats["cut_off_early"] = str(exc)
+        log(
+            f"  STOPPED EARLY: {exc}, so the rest of the pass would too. Every stored verdict is kept; "
+            "fix the judge (below) and run again."
+        )
     except JudgeCallFailed as exc:
         stats["aborted"] = True
         stats["call_failed"] = str(exc)

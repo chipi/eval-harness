@@ -267,13 +267,14 @@ The fleet's log (agentic-ai-homelab docs/wip/eval-harness-feedback-fleet.md) to 
 | homelab | the fleet's private catalog behind Caddy on the tailnet | `catalog-serve --behind-proxy HOST[,HOST]`: the full local inspector, only the named Hosts |
 | 19, 26 | how to evaluate plain code is not written down | a "your system is plain code" page: the item holds its world at decision time, k=1, a correctness goal and a regression guard, the item as the judged unit, links folded into an outcome, outcomes joined by time and order |
 | 17 | new harness code taken mid-round splits a round's instrument | a round records the harness version it was opened on and says when a run differs, and how to run an arm on it |
-| 16 | a dataset version already cited cannot gain a lineage link | a command adding lineage without touching items: waits for the owner |
+| 16 | a dataset version already cited cannot gain a lineage link | a command adding lineage without touching items (owner, 2026-11-09: yes) |
 | 20 | no run-level metric | a hook given all of a run's outputs and references, returning named metrics that pair-test treats as any metric; the fleet's case: pairwise precision and recall of a grouping (B-cubed per item answered it meanwhile, so not blocking) |
 | 29 | no held-out split: the fleet split by time by hand, nothing stops a run or a label import on the test side | a dataset split at a time boundary with a sealed side the harness refuses to run, score or label until an unseal names the candidate config and its committed hypothesis; a check that the open side matches its manifest (with 4.4's test-set looks) |
 | 31 | no label coverage report before labelling | `evh label-coverage --rules RULESET`: per rule, labelled now, left out, not yet mature (with the date each matures) |
 | 33 | k runs of a temperature-0 model are not k samples (3 runs, 23 firings, 9 distinct items) | pair-test and the run summary report distinct items beside item-runs, and the item as the unit when an arm's runs are near-duplicates |
 | 30 | no counterfactual arm from recorded outputs | an arm kind `derived`: a base run plus transform code, a required verify step (the transform at the base's code reproduces the base's outputs) before it counts: entry 23's faithfulness applied to post-processing, so with R |
 | 32 | (for R) a recorded-lookups format that works | the fleet's: every external call in order {method, path, payload, response or error}, the clock readings, the keys, the matched state row, the result; a stand-in that serves calls in order and fails on any other; compare the state afterwards, not what was passed to the writer (a mutant survived that); schema in signal-fleet/mvp/callrec.py (b4f4019) |
+| 0.7.1 | the remaining candidates of the 0.7.1 newcomer run (audit, 2026-11-09; owner: fix them) | the scenario's step 5 commits what judging writes; a judge that will run out of `max_tokens` is caught before the pass is paid; the inspector's `disagree`, `threshold` and `family` parameters documented; UXS-002's sheet paging line |
 | 21 | labels across items | not needed now (the fleet, 2026-11-09): kept "if hit" |
 | 23, 24 | faithfulness; the code version per item | R (section 5) |
 
@@ -317,8 +318,7 @@ R3 to R5 start as example code; R1 and R2 are the core.
 
 1. (none for A-D: A5 (a) and D1 approved by the owner, 2026-11-05)
 2. (decided 2026-11-09: step 4 after step 6, the Workbench last)
-3. Keep or drop the drafts' ssh runner and phases, stages and OTLP import, the process adapter: nothing asks for
-   them.
+3. (decided 2026-11-09: dropped) the drafts' ssh runner and phases, stages and OTLP import, the process adapter.
 
 ## NOT done or NOT verified
 

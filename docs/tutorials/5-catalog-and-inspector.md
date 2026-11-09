@@ -324,6 +324,11 @@ and what it defaults to:
 - `where=FIELD:VALUE` (`--where`), once per filter: `?runs=…&where=area:account&where=deadline:true`.
 - `item=ITEM_ID` (`--item`): one item, each arm's output beside the reference.
 - `rescore=0` (`--no-rescore`): only what is on record, the page's re-score box unticked.
+- `disagree=1` (`--disagree`): only the items where the arms decided differently, the page's "only where they
+  disagree" box ticked.
+- `family=N` and `threshold=T`: set by a goal page's links, so the verdicts match the page the pair came from (the
+  Holm family it was tested in, or that row's threshold); the page says so under its table. They have no flag: the
+  command tests the arms you name as their own family.
 - The sheet: `sheet=1&dataset=DATASET_ID` (`--sheet --dataset-id`) with `runs=`; `only=` once per signal
   (`disagree`, `split`, `unlabelled`, `wrong`, `new`), `wrong=SET` (`--wrong-against`), `new=DATASET`
   (`--new-vs`) and `scores=only` (`--scores-only`).

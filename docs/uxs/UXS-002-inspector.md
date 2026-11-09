@@ -249,8 +249,10 @@ browser, the same model.
   `evh pick --dataset-id <id> --item … --item … --for <dataset> --tag <key=value> --note "…"` (the target, tags
   and note typed in the panel fill the command) and `evh label-sheet --dataset-id <id> --item … --out sheet.csv`,
   with "download these rows (CSV)" beside it.
-- Paged 10 at a time like every catalog table; the counts above the table ("412 items · 9 wrong · 31 disagree ·
-  4 new") and the metric it is read on.
+- Paged 10 at a time like every catalog table, and only the rows shown are drawn: "show 10 more", and "show all" up
+  to 1,000 rows (past that, "show 1000 more"); a sort orders every row, and "select all shown" takes every row of the
+  sheet, drawn or not. The counts above the table ("412 items · 9 wrong · 31 disagree · 4 new") and the metric it is
+  read on.
 
 ## Checklist for a change to the inspector
 

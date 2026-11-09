@@ -140,6 +140,7 @@ evh reference-promote --dataset-id intents_v1 --labels opus_v1 --tier silver --r
 git add data/labels data/references && git commit -qm "silver from the frontier arm's labels"
 evh rescore --dataset-id briefs_v1 --reference-id silver/briefs_v1 --out data/runs-silver
 evh rescore --dataset-id intents_v1 --reference-id silver/intents_v1 --out data/runs-silver
+git add data/runs-silver && git commit -qm "the runs re-scored against silver"
 EVAL_RUNS_DIR=data/runs-silver evh leaderboard --dataset-id briefs_v1    # the author's row is marked
 evh silver-calibrate --dataset-id briefs_v1                              # silver authors vs your gold
 ```
@@ -173,7 +174,13 @@ evh judge-score --dataset-id briefs_v1 --scorer briefs-judge-v1 --unvalidated --
 EVAL_RUNS_DIR=data/runs-judged/briefs-judge-v1 evh leaderboard --dataset-id briefs_v1
 ```
 
-The same for `intents_v1` with its scorer. A reply that did not parse and is not bare JSON is
+The same for `intents_v1` with its scorer, then commit what the judging wrote:
+
+```bash
+git add data/judging-sets data/judge-verdicts data/runs-judged && git commit -qm "the judged runs"
+```
+
+A reply that did not parse and is not bare JSON is
 committed only as its hash; its text is in the `.withheld/` file the log names, so read why it
 failed before `--retry-unparsed`. The judged leaderboard prints the judging pass's agreement and
 its position and noise checks under its table: read them before the ranking.
