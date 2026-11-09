@@ -47,7 +47,7 @@ WRITERS: dict[str, tuple[str, str]] = {
     "captures": ("captures", "evh capture"),
     "profiles": ("dataset profiles", "evh dataset-profile"),
     "rounds": ("rounds", "the round-* commands (round-open, round-retire, round-close)"),
-    "baselines": ("baselines", "evh run-promote"),
+    "baselines": ("baselines", "evh run-promote, evh baseline-rollback"),
     "tags": ("tag sets", "evh sheet-import"),
     "corpora": ("corpora", "the example's fetch.py"),
 }

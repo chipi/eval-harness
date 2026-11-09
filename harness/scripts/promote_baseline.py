@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Promote a run to a baseline.
 
-A baseline is never edited: promoting another run replaces it, and git keeps the one it
-replaced. It is the number future work is judged against, so promoting one is a decision,
-not a copy.
+A baseline belongs to a goal on a dataset (or, for a run with no goal, to the dataset alone), in
+versions written once (RFC-027): promoting writes the next version beside the current one, with
+the comparison that justified it (the paired test against the version it replaces) frozen in.
+It is the number future work is judged against, so promoting one is a decision, not a copy.
 
 Two things are refused, because both produce a baseline nobody can act on:
 
@@ -13,6 +14,8 @@ Two things are refused, because both produce a baseline nobody can act on:
     has no answer, and the number gets cargo-culted
 
     python scripts/promote_baseline.py --run <run_id> --reason "beat prev by 4% on n=40"
+    evh run-promote --run <run_id> --reason "..." --goal G      # another of the dataset's goals
+    evh run-promote --run <run_id> --reason "..." --no-goal     # the dataset's own baselines
 """
 
 from __future__ import annotations
@@ -24,19 +27,22 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import json
 import os
+import subprocess
+import sys
+from typing import Any
 
-from evaluation_harness import _store
+from evaluation_harness import _baselines, _common, _store
 from evaluation_harness._common import (
-    BASELINES,
     BOOKKEEPING_PREFIXES,
     RUNS,
     die,
     evh_prog,
     how,
+    load_goals,
     now,
     read_json,
-    write_json,
 )
 
 
@@ -80,6 +86,82 @@ def carried(m: dict) -> dict:
     return {k: v for k, v in out.items() if v}
 
 
+def _config_of(run_id: str) -> str | None:
+    f = RUNS / run_id / "metrics.json"
+    return read_json(f).get("config_id") if _store.is_file(f) else None
+
+
+def evidence(m: dict, cur: dict | None, goal: dict | None, round_id: str | None) -> dict[str, Any]:
+    """The comparison that justifies the promotion (RFC-027 D3), as `pair-test` answers it: the promoted run's arm
+    against the current version's, on the goal's primary measure (else the run's), with the goal's cluster and
+    reducer, pooled as pair-test pools them; with a round, as `pair-test --round` reads it. Frozen: never recomputed."""
+    if cur is None:
+        return {"compared_to": None}
+    out: dict[str, Any] = {"compared_to": cur["version"]}
+    if round_id:
+        out["round"] = round_id
+    a, b = m["config_id"], _config_of(cur["promoted_from"])
+    prim = ((goal or {}).get("success_criteria") or {}).get("primary") or {}
+    measure = prim.get("measure") or m.get("primary_metric")
+    out["measure"] = measure
+    if b is None:
+        out |= {"verdict": None, "not_comparable": ["the current version's run is gone"]}
+        return out
+    if a == b:
+        out |= {"verdict": None, "not_comparable": ["the same arm (another run of it)"]}
+        return out
+    argv = ["pair-test", "--dataset-id", m["dataset_id"], "--a", a, "--b", b, "--json"]
+    if measure:
+        argv += ["--metric", measure]
+    if goal:
+        cl = _common.goal_cluster(goal, m["dataset_id"])
+        argv += ["--cluster", cl] if cl else []
+        if isinstance(prim, dict) and prim.get("reduce"):
+            argv += ["--reduce", str(prim["reduce"])]
+        if prim.get("direction") in ("lower", "higher"):
+            argv += ["--asc"] if prim["direction"] == "lower" else ["--desc"]
+        if round_id:
+            argv += ["--round", round_id, "--goal", goal["goal_id"]]
+    r = subprocess.run(
+        [sys.executable, str(_Path(__file__).resolve().parent / "cli.py"), *argv],
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+    )
+    if r.returncode != 0:
+        why = (r.stderr.strip().splitlines() or ["pair-test refused"])[-1]
+        out |= {"verdict": None, "not_comparable": [why]}
+        return out
+    v = (json.loads(r.stdout).get("result") or {}).get("values") or {}
+    out |= {
+        "n": v.get("n"),
+        "items_sha256": v.get("items_sha256"),
+        "verdict": {
+            "outcome": v.get("verdict"),
+            "delta": v.get("delta"),
+            "p": v.get("p"),
+            "method": v.get("method"),
+            "direction": v.get("direction"),
+        },
+        "computed_with": {
+            "harness": _version(),
+            "runs_a": v.get("run_ids_a"),
+            "runs_b": v.get("run_ids_b"),
+            "reduce": v.get("reduce"),
+            "cluster": v.get("cluster"),
+            "permutations": v.get("permutations"),
+            "seed": v.get("seed"),
+        },
+    }
+    return out
+
+
+def _version() -> str:
+    from evaluation_harness._version import __version__  # noqa: PLC0415
+
+    return __version__
+
+
 def main() -> int:
     """Promote a run to baseline status."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
@@ -95,7 +177,15 @@ def main() -> int:
         help="take the reason from $EVAL_PROMOTE_REASON (what `make "
         "run-promote` does, so the shell never re-parses it)",
     )
-    ap.add_argument("--baseline-id", help="default: <dataset_id>_baseline")
+    ap.add_argument("--goal", help="the goal it is the baseline of (default: the run's own goal)")
+    ap.add_argument(
+        "--no-goal",
+        action="store_true",
+        help="the dataset's own baselines, not a goal's (a run with no goal goes there)",
+    )
+    ap.add_argument(
+        "--round", help="the round whose conclusion this is: the evidence reads the arms as it does"
+    )
     ap.add_argument("--allow-dirty", action="store_true", help="promote from a dirty tree anyway")
     ap.add_argument(
         "--allow-unknown-build",
@@ -152,30 +242,56 @@ def main() -> int:
     # repeats, while a baseline is promoted from one run. Record which runs the arm has and their
     # mean beside the run's own scores (V6 keeps comparing `scores` with the run), and say so.
     repeats = _repeats(m)
-    baseline_id = args.baseline_id or f"{m['dataset_id']}_baseline"
-    out = BASELINES / f"{baseline_id}.json"
-    if _store.is_file(out):
-        print(f"  replaces the baseline promoted from {read_json(out).get('promoted_from')} (git keeps it)")
+    if args.goal and args.no_goal:
+        die("--goal and --no-goal: one or the other", "bad-argument")
+    goal_id = None if args.no_goal else (args.goal or m.get("goal"))
+    goal = None
+    if goal_id:
+        goal = load_goals().get(goal_id)
+        if goal is None:
+            die(f"no goal {goal_id!r} (data/goals/)", "not-found")
+        if m["dataset_id"] not in {d.get("dataset_id") for d in goal.get("datasets") or []}:
+            die(
+                f"goal {goal_id} does not name dataset {m['dataset_id']}: --goal another, or --no-goal",
+                "mismatch",
+            )
 
-    write_json(
-        out,
-        {
-            "baseline_id": baseline_id,
+    def make(cur: dict | None, n: int) -> dict:
+        ev = evidence(m, cur, goal, args.round)
+        doc = {
             "dataset_id": m["dataset_id"],
+            "goal": goal_id,
             "promoted_from": m["run_id"],
             "promoted_at": now(),
             "actor": who,
             "reason": args.reason,
+            "replaces": cur["version"] if cur else None,
+            "evidence": ev,
             "scores": m["scores"],
             "build": build,
             # Carried from the run: what the number means. A baseline is compared against, and
             # a silver baseline beside a gold run, or one scored by another adapter, is not the
             # same number.
-            **carried(m),
+            **{k: v for k, v in carried(m).items() if k != "goal"},
             **({"repeats": repeats} if repeats else {}),
-        },
-    )
-    print(f"{out}")
+        }
+        return doc
+
+    doc = _baselines.write_next(goal_id, m["dataset_id"], make)
+    line = f"{goal_id or 'the dataset'}'s baseline on {m['dataset_id']}"
+    out = _baselines.folder(goal_id, m["dataset_id"]) / f"{doc['version']}.json"
+    print(f"{out}  version {doc['version']} of {line}")
+    ev = doc["evidence"]
+    if ev.get("compared_to") is not None:
+        vd = ev.get("verdict")
+        print(
+            f"  against version {ev['compared_to']}: "
+            + (
+                f"{vd['outcome']}, delta {vd['delta']:+.4f}, p {vd['p']:.4g} on {ev.get('measure')} (n={ev.get('n')})"
+                if vd
+                else "no test (" + "; ".join(ev.get("not_comparable") or []) + ")"
+            )
+        )
     # The scores it reads by, not the bookkeeping (`resumed`, `self_family_*`): the baseline file
     # keeps every key, as its run has them (V6 compares the two).
     shown = {k: v for k, v in m["scores"].items() if not k.startswith(BOOKKEEPING_PREFIXES)}

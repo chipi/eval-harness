@@ -81,11 +81,15 @@ opened_at: '2026-10-31T13:18:37Z'
 closed_at: '2026-10-31T13:19:25Z'
 conclusion:
   text: 'Nothing is decided at n = 65: on the combined cost the paired test finds no arm under the false-alarm
-    ceiling significantly different from the leader, the arm that always dismisses among them; the ceiling (production''s 4-pass
-    mean, 21.25 of 31) was set after the results and sits within one or two false alarms of 18 rows; a
-    no-decision scored as an escalation, a path production does not have. Production''s own model is promoted
-    as the baseline the next round measures against (owner, 2026-10-31). Next: a no-decision counts as
-    wrong on both sides, the ceiling becomes no worse than this baseline by the paired test, and the gold
-    grows to the 93 owner-labelled decisions before machines are booked.'
+    ceiling significantly different from the leader, the arm that always dismisses among them; the ceiling
+    (production''s 4-pass mean, 21.25 of 31) was set after the results and sits within one or two false
+    alarms of 18 rows; a no-decision scored as an escalation, a path production does not have. Production''s
+    own model is promoted as the baseline the next round measures against (owner, 2026-10-31). Next: a
+    no-decision counts as wrong on both sides, the ceiling becomes no worse than this baseline by the
+    paired test, and the gold grows to the 93 owner-labelled decisions before machines are booked.'
   promoted_run: triage_baseline_pro_v1_20261030T132352Z
 baseline: null
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

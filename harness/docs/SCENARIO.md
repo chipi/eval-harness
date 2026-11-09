@@ -396,7 +396,7 @@ fixed in 0.7.1:
   0ms" for arms with nothing to load; the dry run counts the config's prompt; `arm-smoke` prints each reply
   and what it spent, and the overview and the catalog count smoke spend.
 - Leaderboards fit the terminal (`--wide` for every column), and "dominated" says what it means;
-  `cost-report` names each repeat; `runs-list --baselines` shows the repeats' mean; `evh rounds` prints a
+  `cost-report` names each repeat; `evh baselines` shows the repeats' mean; `evh rounds` prints a
   round's conclusion whole; the `inspect` conditions table and `evh goals --goal` headers no longer cut or
   misalign.
 - Step 0: `uv venv` makes a venv with no pip; `--seed` adds it.

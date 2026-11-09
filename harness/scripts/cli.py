@@ -196,6 +196,18 @@ COMMANDS = {
         "make a dataset version from a capture: choose records, freeze their bodies as items",
     ),
     "run-compare": ("compare_runs.py", "diff two runs, fingerprint first"),
+    "baselines": (
+        "view_baselines.py",
+        "the baselines: each goal's on each dataset, and each dataset's own, with evidence and history (--json: the export)",
+    ),
+    "baseline-rollback": (
+        "baseline_rollback.py",
+        "roll a baseline back to an earlier version, as a new version with its own evidence",
+    ),
+    "baselines-migrate": (
+        "baselines_migrate.py",
+        "bring the records to 0.8.0: baselines per goal in versions, an actor on every record",
+    ),
     "run-promote": ("promote_baseline.py", "promote a run to a baseline, with a reason"),
     "round-open": (
         "round_open.py",

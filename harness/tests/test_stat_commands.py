@@ -1070,21 +1070,21 @@ def test_json_runs_list() -> int:
         all(r["run_id"] in text.stdout for r in rows) and len(rows) == len(rows_of_text(text.stdout)),
         text.stdout,
     )
-    none = parsed(run_script("scripts/list_runs.py", "--baselines", "--json", env=env, cwd=tmp))
+    none = parsed(run_script("scripts/view_baselines.py", "--json", env=env, cwd=tmp))
     check(
-        "runs-list --baselines --json: no baselines is an empty table and a count of 0",
-        none["result"]["values"] == {"kind": "baselines", "count": 0}
-        and table_rows(none, "baseline_id") == [],
+        "evh baselines --json: no baselines is an empty list",
+        none == {"schema": "evh-baselines/1", "baselines": []},
         none,
     )
     if not _runstore.sqlite():
-        (meta["data"] / "baselines").mkdir()
+        (meta["data"] / "baselines" / "_dataset" / "dsj").mkdir(parents=True)
     _runstore.write_text(
         project(meta),
-        "baselines/dsj_baseline.json",
+        "baselines/_dataset/dsj/1.json",
         json.dumps(
             {
-                "baseline_id": "dsj_baseline",
+                "version": 1,
+                "goal": None,
                 "dataset_id": "dsj",
                 "promoted_from": "run_arm_a",
                 "build": {"ref": "abc123def456"},
@@ -1095,12 +1095,12 @@ def test_json_runs_list() -> int:
             }
         ),
     )
-    bl = parsed(run_script("scripts/list_runs.py", "--baselines", "--json", env=env, cwd=tmp))
-    brow = table_rows(bl, "baseline_id")
-    bl_text = run_script("scripts/list_runs.py", "--baselines", env=env, cwd=tmp).stdout
+    bl = parsed(run_script("scripts/view_baselines.py", "--json", env=env, cwd=tmp))
+    brow = bl["baselines"]
+    bl_text = run_script("scripts/view_baselines.py", env=env, cwd=tmp).stdout
     check(
-        "runs-list --baselines --json: a row per baseline, its scores as numbers, the text unchanged",
-        bl["result"]["values"] == {"kind": "baselines", "count": 1}
+        "evh baselines --json: one entry per baseline, its scores as numbers; the text says the same",
+        len(brow) == 1
         and (brow[0]["promoted_from"], brow[0]["reason"], brow[0]["scores"]["acc"])
         == ("run_arm_a", "the best of four", 1.0)
         and "why      the best of four" in bl_text

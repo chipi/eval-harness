@@ -344,6 +344,33 @@ def _put(key: str, data: bytes, mtime_ns: int | None = None) -> None:
     )
 
 
+def create_new(path: Any, data: bytes) -> bool:
+    """Write `path` only if nothing is there yet; False when it exists (another writer got there first). A record
+    written once (a baseline version, RFC-027) is created this way, so two writers never overwrite each other: on
+    disk an exclusive create (O_EXCL), in the database a plain INSERT that the primary key refuses."""
+    key = rel(path)
+    if key is None:
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        try:
+            fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+        except FileExistsError:
+            return False
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(bytes(data))
+        return True
+    with _LOCK:
+        conn = connect()
+        assert conn is not None
+        try:
+            conn.execute(
+                "INSERT INTO files VALUES (?, ?, ?, ?)",
+                (key, sqlite3.Binary(bytes(data)), hashlib.sha256(bytes(data)).hexdigest(), time.time_ns()),
+            )
+        except sqlite3.IntegrityError:
+            return False
+    return True
+
+
 def write_bytes(path: Any, data: bytes, mtime_ns: int | None = None) -> None:
     """The file written whole (atomically in the database: one committed statement); `mtime_ns` keeps a moved file's
     time (data-migrate), else it is now."""

@@ -26,7 +26,7 @@ like a model without needing one. A real model, local or hosted, is the
                                               │
                          leaderboard · pair-test · family-test
                                               │
-                              run-promote ──▶ baselines/<id>_baseline.json  (a decision + why)
+                    run-promote ──▶ baselines/<goal>/<id>/<n>.json  (a decision + why + its test)
 ```
 
 | term | what it is | lives in | edited? |
@@ -323,7 +323,7 @@ reason. The reason has to say what the tests showed, not what you hoped:
 ```bash
 evh run-promote --run <the tickets_lead2_v1 run_id> \
   --reason "lead2 is closest to the author's silver on all six tickets but differs significantly from neither arm at n=6; working baseline until the dataset grows"
-evh runs-list --baselines
+evh baselines
 ```
 ```text
   NOTE: tickets_lead2_v1 has 3 repeats; the catalog, the inspector and the tests read their mean.
@@ -331,18 +331,19 @@ evh runs-list --baselines
     ...
     overlap_f1     0.900088   (mean of 3: 0.900088)
     ...
-tickets_v1_baseline
-    dataset  tickets_v1
+tickets_summary's baseline on tickets_v1: version 1
     ...
-    scored   silver references, adapter scripts/adapter.py
     why      lead2 is closest to the author's silver on all six tickets but differs significantly from neither arm at n=6; working baseline until the dataset grows
+    scores (mean of 3 repeats)   ...
+    evidence the first version: nothing to compare with
 ```
 
 `lead2` ran three times; any of its repeats can be promoted, and the baseline records every
 repeat and their mean under `repeats`, the number the catalog, the inspector and the tests read.
 Refused if the run came from a dirty tree, if its build is unknown, or if the reason is under
-three words: six months from now, "why is this the baseline?" must have an answer. The next
-promotion replaces this baseline, and git keeps it.
+three words: six months from now, "why is this the baseline?" must have an answer. The baseline
+is the goal's (`tickets_summary`), version 1; the next promotion writes version 2 beside it, with
+the paired test of the new arm against this one frozen in, and `evh baseline-rollback` goes back.
 
 Last, check that everything recorded still holds together. Run it in CI; it exits non-zero:
 

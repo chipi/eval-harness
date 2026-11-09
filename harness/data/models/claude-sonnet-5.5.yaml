@@ -41,3 +41,7 @@ deployments:
 capabilities:
   reasons: false
   json_mode: true
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

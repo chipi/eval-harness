@@ -269,7 +269,7 @@ try:
         "--conclusion", "three sentences lead on the tutorial's six tickets", "--promote", run.name if run else "",
     )  # fmt: skip
     doc = _runstore.read_text(proj, "rounds/tickets_summary/r1.yaml")
-    base = "baselines/tickets_v1_baseline.json"
+    base = "baselines/tickets_summary/tickets_v1/1.json"
     check(
         "round-close: closed with its conclusion, and the run promoted with it as the reason",
         r.returncode == 0

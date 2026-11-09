@@ -1,4 +1,9 @@
 {
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
   "created_at": "2026-09-28T05:58:19Z",
   "dataset_id": "few_nerd_56",
   "description": "56 item(s) from few_nerd_56/",

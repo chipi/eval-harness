@@ -43,6 +43,13 @@ correctness bugs, not just missing features.
   unreachable server `75` (was `1`), and a check that found problems `6` (was `1`) for `validate`, `self-test`,
   `env-check`, `importer-check`, `arm-smoke`, `model-onboard` and `deploy-sheet --capture`; a partly failed
   `sweep` is `5`. A check for "non-zero" needs no change. The table: RUNBOOK, Exit codes.
+- **Run `evh baselines-migrate` once** (RFC-027; `--dry-run` first). Each `data/baselines/<dataset>_baseline.json`
+  becomes version 1 of the goal it names (`data/baselines/<goal>/<dataset>/1.json`), or of the dataset's own
+  (`_dataset/`) when it names none, marked "promoted before 0.8.0, evidence not recorded"; every record without an
+  actor gets `before 0.8.0`; a split side's `split.by` becomes `split.split_by`. No fingerprint moves. Then: a
+  promotion, `round-close` and `dataset-unseal` need a named actor off a terminal (`--by person:NAME`, or
+  `EVH_ACTOR`; an agent `EVH_ACTOR=agent:NAME` with `EVH_FOR=person:NAME`); `runs-list --baselines` is now
+  `evh baselines`; `dataset-split --by hash|time` is `--split-by`.
 - **Scripts matching a refusal's text:** the line is `ERROR (<kind>): <why>` (was `ERROR: <why>`). Match the
   kind (RUNBOOK, Refusals), not the wording. A project's `AGENTS.md` written by `evh init` before 0.8.0 lacks
   the "When a command stops" section; copy it from a new `evh init` if your agents read the file.

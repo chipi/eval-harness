@@ -718,6 +718,16 @@ def references_digest(root: Path, reference_id: str | None, data_dir: Path | Non
                 continue
             if doc is not None:
                 data = json.dumps(doc, sort_keys=True).encode()
+        elif f.name == "labels.json" and b'"actor"' in data:
+            # Who acted (RFC-027) is outside every fingerprint: hashed as the set was written before it had one
+            # (write_json's bytes), so recording the actor moves no run's hash.
+            try:
+                doc = json.loads(data)
+            except ValueError:
+                doc = None
+            if isinstance(doc, dict) and "actor" in doc:
+                rest = {k: v for k, v in doc.items() if k != "actor"}
+                data = (json.dumps(rest, indent=2, sort_keys=True) + "\n").encode()
         h.update(f.name.encode())
         h.update(b"\x00")
         h.update(data)

@@ -210,8 +210,11 @@ def datasets(argv) -> int:
     if v["refs"]:
         print("\nreferences: " + ", ".join(f"{r['id']} ({r['tier']})" for r in v["refs"]))
     _fields_block(A, args.dataset_id)
-    for b in v.get("baselines", [])[-1:]:
-        print(f"\nbaseline: {b.get('arm') or b['run']} (promoted {(b['promoted_at'] or '')[:10]})")
+    for b in v.get("baselines", []):
+        of = f"{b['goal']}'s baseline" if b.get("goal") else "the dataset's own baseline"
+        print(
+            f"\n{of}, version {b.get('version')}: {b.get('arm') or b['run']} (promoted {(b['promoted_at'] or '')[:10]})"
+        )
         print(textwrap.fill(b["reason"], width=92, initial_indent="  ", subsequent_indent="  "))
     tiers = {r["id"]: r["tier"] for r in v["refs"]}
     arms = sorted(
@@ -1108,11 +1111,7 @@ def goals(argv) -> int:
     print("\nthe answer so far:")
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id", "")
-        bl = [
-            b
-            for b in (by_ds.get(ds) or {}).get("baselines", [])
-            if not b.get("goal") or b.get("goal") == g["goal_id"]
-        ]
+        bl = [b for b in (by_ds.get(ds) or {}).get("baselines", []) if b.get("goal") == g["goal_id"]]
         if bl:
             b = bl[-1]
             print(f"  {ds}: baseline {b.get('arm') or b['run']} (promoted {(b['promoted_at'] or '')[:10]})")

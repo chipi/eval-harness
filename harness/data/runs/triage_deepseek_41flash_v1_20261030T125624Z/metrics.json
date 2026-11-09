@@ -1,4 +1,9 @@
 {
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
   "adapter": "examples/triage-fleet/adapter.py",
   "build": {
     "dirty": false,

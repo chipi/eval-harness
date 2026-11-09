@@ -326,7 +326,7 @@ def test_no_committed_artifact_depends_on_an_ignored_one() -> None:
     """
     import subprocess  # noqa: PLC0415
 
-    baselines = sorted((ROOT / "data" / "baselines").glob("*.json"))
+    baselines = sorted((ROOT / "data" / "baselines").glob("*/*/*.json"))  # RFC-027: <goal>/<dataset>/<n>.json
     check("consistency: a baseline ships", bool(baselines), "none found")
     for b in baselines:
         promoted_from = json.loads(b.read_text()).get("promoted_from")
@@ -2473,7 +2473,9 @@ def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
 
     base = HERE.parent / "data"
     # The worked example the repository ships: the run its demo baseline was promoted from.
-    shipped = _json.loads((base / "baselines" / "smoke_v1_baseline.json").read_text())["promoted_from"]
+    shipped = _json.loads((base / "baselines" / "_dataset" / "smoke_v1" / "1.json").read_text())[
+        "promoted_from"
+    ]
     src = base / "runs" / shipped
     check("rescore/reference-id: the committed fixture run exists", src.is_dir())
     if not src.is_dir():
@@ -3129,7 +3131,7 @@ def test_hints_name_the_command_the_user_has() -> None:
             return r.stdout + r.stderr
 
         created = evh("dataset-create", "--dataset-id", "h_v1", "--source-dir", "data/sources/h_v1")
-        base = evh("runs-list", "--baselines")
+        base = evh("baselines")
         none = evh("runs-list")
         missing = evh("leaderboard", "--dataset-id", "nope_v1")
         direct = script(

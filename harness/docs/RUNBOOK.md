@@ -44,7 +44,7 @@ further. This page is the reference for each step.
 | pilot-slice-free result | `evh holdout --dataset-id … --exclude-dataset …` |
 | scores made elsewhere | `evh import-run --dataset-id … --config-id … --scores … --scorer-file …` |
 | billed cost | `evh cost-report` |
-| baseline | `evh run-promote --run … --reason "…"` · `evh runs-list --baselines` |
+| baseline | `evh run-promote --run … --reason "…"` · `evh baselines` · `evh baseline-rollback --goal G --dataset D --to N --reason "…"` |
 | what it is for | `data/goals/<goal_id>.yaml` (every field: [§4c](#4c-the-goal-file-field-by-field)), and `goal:` on each config |
 | rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh rounds --goal …` |
 | browse and inspect | `evh catalog` · `evh catalog-serve` · `evh dataset-profile` · `evh dataset-items` |
@@ -822,10 +822,24 @@ Refused if the run came from a dirty tree, if its build is unknown, or if the
 reason is under three words. Those refusals exist for the same reason: in six months, *"why is this the
 baseline?"* must have an answer.
 
-The baseline carries what its number means, from the run: the reference tier it was scored
-against, the adapter that scored it, its fingerprint hash, and its goal and format
-(`validate` V6 fails a baseline that no longer matches its run). Promoting another run
-replaces the baseline, and git keeps the one it replaced; a baseline is never edited.
+**A baseline is a goal's, in versions** (RFC-027). It lives at `data/baselines/<goal>/<dataset>/<n>.json`: the
+run's own goal by default (its config's `goal:`), another of the dataset's goals with `--goal G`, and the dataset's
+own (`_dataset/<dataset>/`, goal null) for a run with no goal or with `--no-goal`, for ad-hoc experiments no goal
+reads. Promoting writes the next version beside the current one, never over it; two promotions at once land as
+n + 1 and n + 2. `evh baseline-rollback --goal G --dataset D --to N --reason "…"` goes back, as one more version
+that restores N. A goal reads its own line; the inspector's comparison, with no goal named, the dataset's own.
+
+**The evidence is frozen in.** Each version records the paired test that justified it, against the version it
+replaced, on the goal's primary measure, exactly as `pair-test` answers it (the two arms, their runs pooled and
+repeats reduced as pair-test does, the goal's cluster; with `round-close --promote`, read as the round reads them):
+the verdict, delta, p, n, a hash of the items compared and what it was computed with. It is never recomputed: a
+later `pair-test` answers a later question. A promotion is not refused for a "not significant" or "worse" verdict;
+the record and the pages show it. The first version has nothing to compare with; another run of the same arm
+records no test, and says why.
+
+The baseline also carries what its number means, from the run: the reference tier it was scored against, the
+adapter that scored it, its fingerprint hash and its format (`validate` V6 fails a version that no longer matches
+its run, and a line whose versions do not run 1..n).
 
 **An arm run with `--repeat`.** You promote one run, and the arm has several. Promote any of
 its repeats (`_r1` is as good as `_r3`): the baseline records that run's own `scores` (V6 compares
@@ -842,7 +856,9 @@ the two side by side:
 ```
 
 ```bash
-evh runs-list --baselines
+evh baselines                         # each goal's line, and each dataset's own: current, why, evidence
+evh baselines --goal G --all-versions # the history
+evh baselines --json                  # the export a production system reads: the same bytes until a promotion
 ```
 
 `evh round-close --promote <run_id>` promotes too, with the round's conclusion as the reason
@@ -1201,8 +1217,8 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
   round's other arms (none `not significant` against it after Holm); and with the round's arms
   measured by the same scorer. Otherwise it says why it promotes nothing. A closed round suggests
   nothing, in its text and in `--json`. It decides nothing.
-- **`round-close --promote <run_id>`** promotes that run to the dataset's baseline, with the
-  conclusion as its reason. A closed round refuses new runs; one round per goal is open at a
+- **`round-close --promote <run_id>`** promotes that run to the goal's baseline on the round's dataset, with the
+  conclusion as its reason and the evidence read as the round reads its arms. A closed round refuses new runs; one round per goal is open at a
   time.
 - A round compares arms scored against one reference: when gold arrives mid-way, new runs are
   scored against gold while carried arms were scored against silver, so re-score them first.

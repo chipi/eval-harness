@@ -14,7 +14,8 @@ Each check exists because its absence let a real defect through somewhere:
                      suspicious on a discrete metric; agreeing per item is. A run
                      whose config says `expect_identical_to: <config>` (a regression
                      guard) is expected to agree, and fails V5 when it does not
-  V6  baselines      a baseline pointing at a run that no longer exists
+  V6  baselines      a baseline pointing at a run that no longer exists; a version that no longer matches its run, a
+                     line whose versions do not run 1..n, or the old one-per-dataset layout (RFC-027)
   V7  readable       a committed run with no metrics.json
   V8  config_ids     two run directories claiming the same (dataset_id, config_id)
   V9  present        a committed run deleted from disk, or a directory below its floor
@@ -205,7 +206,7 @@ def v1_schemas() -> None:
             (r / "metrics.json" for _, r in all_runs() if _store.is_file(r / "metrics.json")),
             "metrics.schema.json",
         ),
-        (_store.glob(BASELINES, "*.json"), "baseline.schema.json"),
+        (_store.glob(BASELINES, "*/*/*.json"), "baseline.schema.json"),
         (_store.glob(CONFIGS, "*.yaml"), "config.schema.json"),
         (_store.glob(DATA / "scorers", "*.yaml"), "scorer.schema.json"),
         (_store.glob(DATA / "judging-sets", "*.json"), "judging-set.schema.json"),
@@ -493,12 +494,32 @@ def _v5_guards(base: Path) -> tuple[int, list[str]]:
 
 
 def v6_baselines() -> None:
-    """V6: every baseline's promoted_from run still exists, and the baseline still says what
-    it says: the tier, adapter, fingerprint, goal and format it carried from that run."""
+    """V6: every baseline version's promoted_from run still exists, and the version still says what it carried from
+    it (the tier, adapter, fingerprint and format); each line's versions run 1..n, each replacing the one before
+    and a rollback restoring an earlier one (RFC-027). A baseline still in the old layout (one file per dataset)
+    fails it, with the command that moves it."""
+    from evaluation_harness import _baselines  # noqa: PLC0415
     from evaluation_harness.promote_baseline import carried  # noqa: PLC0415
 
-    broken = []
-    for b in sorted(_store.glob(BASELINES, "*.json")):
+    broken = [
+        f"{b.name}: the old layout, one baseline per dataset: evh baselines-migrate moves it"
+        for b in sorted(_store.glob(BASELINES, "*.json"))
+    ]
+    for g, ds in _baselines.lines():
+        vs = _baselines.versions(g, ds)
+        line = f"{g or _baselines.NO_GOAL}/{ds}"
+        if [v["version"] for v in vs] != list(range(1, len(vs) + 1)):
+            broken.append(f"{line}: versions {[v['version'] for v in vs]}, not 1..{len(vs)}")
+        for v in vs[1:]:
+            if v.get("replaces") != v["version"] - 1:
+                broken.append(
+                    f"{line}/{v['version']}: replaces {v.get('replaces')!r}, not {v['version'] - 1}"
+                )
+            if v.get("restores") is not None and not (1 <= int(v["restores"]) < v["version"]):
+                broken.append(
+                    f"{line}/{v['version']}: restores {v.get('restores')!r}, not an earlier version"
+                )
+    for b in sorted(_store.glob(BASELINES, "*/*/*.json")):
         d = parsed(b)
         if not isinstance(d, dict):
             continue  # V1 names it
@@ -510,15 +531,24 @@ def v6_baselines() -> None:
             ),
             None,
         )
+        name = b.relative_to(BASELINES).as_posix()
         if src is None:
-            broken.append(f"{b.name} -> {d.get('promoted_from')}: no such run")
+            broken.append(f"{name} -> {d.get('promoted_from')}: no such run")
             continue
         m = (parsed(src / "metrics.json") or {}) if _store.is_file(src / "metrics.json") else {}
+        # The goal is the line's, not the run's: a run may be promoted as another goal's baseline (--goal).
         for k, v in carried(m).items():
-            if d.get(k) != v:
-                broken.append(f"{b.name}: {k} is {d.get(k)!r}, its run records {v!r}")
+            if k != "goal" and d.get(k) != v:
+                broken.append(f"{name}: {k} is {d.get(k)!r}, its run records {v!r}")
     for x in broken:
         print(f"       {x}")
+    # WHO ACTED (RFC-027): a record from before 0.8.0 names nobody until baselines-migrate writes "before 0.8.0".
+    # A note, not a failure: picks are append-only, and a record a test or a person wrote by hand is not wrong.
+    from evaluation_harness.baselines_migrate import plan  # noqa: PLC0415
+
+    missing = sum(1 for what, _f, _n in plan() if what.startswith("actor"))
+    if missing:
+        print(f"  note: {missing} record(s) name no actor (who made them): evh baselines-migrate writes one")
     check(
         "V6 every baseline's source run still exists and matches what the baseline carries",
         not broken,
@@ -1175,9 +1205,9 @@ def v14_goals() -> None:
             filed[str(m["goal"])].append((run, m))
         if since and not m.get("goal") and str(m.get("created_at", ""))[:10] >= since:
             unnamed.append(label)
-    for b in sorted(_store.glob(BASELINES, "*.json")):
-        if isinstance(doc := parsed(b), dict):
-            named(f"baselines/{b.name}", doc)
+    for b in sorted(_store.glob(BASELINES, "*/*/*.json")):
+        if isinstance(doc := parsed(b), dict) and doc.get("goal"):
+            named(f"baselines/{b.relative_to(BASELINES).as_posix()}", doc)
     bad += [f"runs/{r}: created on or after {since} and names no goal" for r in unnamed]
     # THE GOAL DECIDES DIRECTION (_runs.lower_is_better_on), so it must not contradict what its
     # runs record (the adapter's METRIC_DIRECTIONS, import-run --asc) or a metric known to go

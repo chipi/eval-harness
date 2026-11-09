@@ -497,8 +497,14 @@ def compare(params: dict) -> dict:
     # With no baseline named, a promoted baseline is the natural reference point.
     # The arm of a promoted baseline when one is selected, else the first.
     bfn = getattr(A, "baselines", None)
-    promoted = {b.get("arm") for b in (bfn() if callable(bfn) else []) if b.get("arm")}
-    fallback = next((a for a in series if a in promoted or a.startswith("baselines/")), next(iter(series)))
+    current_bl = [b for b in (bfn() if callable(bfn) else []) if b.get("arm")]
+    # The dataset's own baseline first (arms that answer no goal), then any goal's (RFC-027).
+    own = {b["arm"] for b in current_bl if not b.get("goal")}
+    promoted = {b["arm"] for b in current_bl}
+    fallback = next(
+        (a for a in series if a in own),
+        next((a for a in series if a in promoted or a.startswith("baselines/")), next(iter(series))),
+    )
     baseline = asked if asked in series else fallback
     other_ref = _other_reference(series, baseline, metric, rescore, dataset)
     for a in other_ref:

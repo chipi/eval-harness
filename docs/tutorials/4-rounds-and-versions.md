@@ -87,7 +87,7 @@ tickets_lead1_v1 retired from r1: one sentence is behind two on every ticket
 round r1 of tickets_summary closed
 ```
 
-`--promote <run_id>` on `round-close` would also promote that run to the dataset's baseline, with
+`--promote <run_id>` on `round-close` would also promote that run to the goal's baseline, with
 the conclusion as its reason; `lead2` already is the baseline, so `evh rounds` suggests closing
 without it.
 A closed round refuses new runs.

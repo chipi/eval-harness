@@ -140,3 +140,7 @@ capabilities:
   reasons: true
   reasoning_off: 'reasoning_effort: none'
   json_mode: true
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

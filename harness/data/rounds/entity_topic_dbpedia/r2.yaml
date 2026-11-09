@@ -15,3 +15,7 @@ conclusion:
   text: bert_base_fy runs at 87 ms per item on a 4-core Linux CPU (438 MB, $0 marginal). (REPORT_CLASSIFICATION,
     the decision table.)
   promoted_run: null
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

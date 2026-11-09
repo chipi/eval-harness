@@ -1,4 +1,9 @@
 {
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
   "created_at": "2026-09-27T11:58:24Z",
   "dataset_id": "dbpedia_280",
   "description": "280 item(s) from dbpedia_280/",

@@ -53,7 +53,7 @@ on every change, comparing each quoted output. Its order is the order a newcomer
 | 5 | optional: make its outputs the reference (its outputs become a model's labels, which you promote) | `evh label-from-run --run <run_id> --set author_v1`, then `evh reference-promote --dataset-id tickets_v1 --labels author_v1 --tier silver --reason "…" --by <you>` |
 | 6 | run the other arms, three times each | `evh run --config … --repeat 3` |
 | 7 | compare | `evh leaderboard`, `evh pair-test`, `evh family-test` |
-| 8 | choose: promote a baseline, then validate | `evh run-promote --run … --reason "…"`, `evh runs-list --baselines`, `evh validate` |
+| 8 | choose: promote a baseline, then validate | `evh run-promote --run … --reason "…"`, `evh baselines`, `evh validate` |
 
 The [tutorials](../tutorials/1-local-model.md) take it on from there: a local model and its own
 adapter (1), a hosted model with the user's own key (2), gold, `silver-calibrate` and an LLM judge

@@ -1,17 +1,24 @@
 {
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
   "adapter": "examples/ner-few-nerd/adapter.py",
-  "baseline_id": "few_nerd_280_baseline",
   "build": {
     "dirty": true,
     "ref": "b3cc5d861cf2807c51172aa0b09fe3d2d97f739d",
     "source": "git"
   },
   "dataset_id": "few_nerd_280",
+  "evidence": null,
   "goal": "entities_few_nerd",
+  "migrated": true,
   "promoted_at": "2026-10-25T14:08:48Z",
   "promoted_from": "fn_span_marker_n200_v1_20260928T070856Z",
   "reason": "span_marker (0.7674, $0, 499 MB on a CPU) differs significantly from all 27 other arms: with labelled data in a fixed taxonomy, fine-tune a small tagger. REPORT_NER, executive summary. Promoted with --allow-dirty: this rescore was written from a dirty tree on 2026-10-01; on 2026-10-25 today's clean code re-scored it from its stored outputs identically, item by item.",
   "reference_tier": "gold",
+  "replaces": null,
   "scores": {
     "cost_usd": 0.0,
     "f1": 0.767387609,
@@ -30,5 +37,6 @@
     "untyped_fn": 0.3607142857,
     "untyped_fp": 0.4142857143,
     "untyped_tp": 2.375
-  }
+  },
+  "version": 1
 }

@@ -471,9 +471,12 @@ v_bl = {
     ],
 }
 check(
-    "glance baseline: a re-scored baseline is read from its re-score; one never re-scored is itself; none is None",
+    "glance baseline: a re-scored baseline is read from its re-score; one never re-scored is itself; a dataset's own "
+    "baseline (no goal) is no goal's (RFC-027); none is None",
     baseline_read(v_bl, "g1")[1] == "runs-rescored/s1/runs/ds/b_v1"
-    and baseline_read({**v_bl, "baselines": v_bl["baselines"][:1]}, "g1")[1] == "runs/ds/old_v1"
+    and baseline_read({**v_bl, "baselines": [{"arm": "runs/ds/old_v1", "goal": "g1"}]}, "g1")[1]
+    == "runs/ds/old_v1"
+    and baseline_read({**v_bl, "baselines": v_bl["baselines"][:1]}, "g1") == ([], None)
     and baseline_read({"arms": []}, "g1") == ([], None),
 )
 

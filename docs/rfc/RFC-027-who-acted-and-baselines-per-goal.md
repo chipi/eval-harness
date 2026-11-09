@@ -1,6 +1,6 @@
 # RFC-027: Who acted on every record, and baselines per goal
 
-- **Status**: Accepted (owner, 2026-11-09: "mark both as accepted and start building"); not built yet. Revision 2 the same day, after an independent review
+- **Status**: Accepted (owner, 2026-11-09: "mark both as accepted and start building"); built 2026-11-09. Revision 2 the same day, after an independent review
   (Fable) and the owner's answers to it. Its questions decided by the owner ("1 no, 2 run without goal is OK", 3:
   "drop it"; then "2 go with recommendation, 4 agree, 5 yes"). Step 4.1 of `research/internal/PLAN_0.8.0.md`.
 - **Authors**: Marko Dragoljevic
@@ -15,7 +15,7 @@
 Every record a command writes says who acted: a person, or an agent and the person it acted for. A baseline belongs
 to a goal on a dataset (or, for a run with no goal, to the dataset alone); promoting writes a new version beside the
 old ones, never over them; the comparison that justified it is frozen into that version; a rollback is another
-version. `baselines` (0.8.0, planned) lists them with how to reproduce each (the `deploy-sheet` block) and their history, and with
+version. `evh baselines` lists them with how to reproduce each (the `deploy-sheet` block) and their history, and with
 `--json` is the export a production system reads.
 
 ## Problem statement
@@ -62,7 +62,7 @@ version. `baselines` (0.8.0, planned) lists them with how to reproduce each (the
   CONCEPTS "What an agent may do" replaces "Consent recorded by the harness itself … is 0.8.0's to design" with this
   section's rule.
 
-### D2. Baselines per goal, versioned (0.8.0, planned)
+### D2. Baselines per goal, versioned
 
 - A baseline is `data/baselines/<goal_id>/<dataset_id>/<n>.json`, `n` from 1, written once. The current one is the
   highest `n` (compared as numbers: `10` after `9`). A rollback is a new version that names the version it restores
@@ -126,11 +126,11 @@ replaces, on the goal's primary measure, exactly as `pair-test` answers it (owne
   writing. A promotion is not refused for a verdict that is "not significant" or "worse": the record and the
   catalog show it. Test-set looks (whether this comparison spent one) come with 4.4; until then the field is absent.
 
-### D4. `evh baselines [--goal G | --no-goal] [--dataset D] [--all-versions] [--json]` (0.8.0, planned)
+### D4. `evh baselines [--goal G | --no-goal] [--dataset D] [--all-versions] [--json]`
 
 Per goal and dataset: the current version, who promoted it and why, its evidence, how to reproduce it (the block
 `deploy-sheet` prints for its run, one definition), and its history (each version: when, by whom, why, what it
-replaced or restored). `--json` is the export a production system reads: deterministic (sorted, no timestamp of its
+replaced or restored). `--json` is the export a production system reads, on one line as every `--json`: deterministic (sorted, no timestamp of its
 own, no harness version in a header), so two outputs with no new promotion are byte-identical; the goal's context and
 decision ride along as the intended use. It replaces `runs-list --baselines`, which goes. The goal page shows the
 same. It is a read tool of `evh mcp` (`READ_TOOLS`, `JSON`); `baseline-rollback` and `baselines-migrate` are in
@@ -140,10 +140,11 @@ same. It is a read tool of `evh mcp` (`READ_TOOLS`, `JSON`); `baseline-rollback`
 
 V6 (baselines) checks each version: its run exists and its scores match; the `replaces` chain is contiguous (each
 version replaces the one before it, a rollback included); `restores` names an earlier version; the evidence's
-`items_sha256` is the hash of the items its `n` counts. A new check names records with no `actor`, after the
-migration has written one on every record.
+`items_sha256` is the hash of the items its `n` counts. Records with no `actor` are named in a note (built
+2026-11-09), not a failure: picks are an append-only list the migration does not rewrite, and a record written by
+hand is not wrong for lacking one.
 
-## Migration, no backward compatibility (0.8.0, planned)
+## Migration (no backward compatibility)
 
 One command, `evh baselines-migrate` (or a step of `data-migrate`, which the project already runs for format
 changes), with `--dry-run`:
@@ -153,8 +154,9 @@ changes), with `--dry-run`:
   ("promoted before 0.8.0, evidence not recorded"), `baseline_id` dropped. This repository's eight: seven name a goal
   and move under it; `smoke_v1`'s moves to the dataset's own baselines;
 - every existing record gets `actor: {"type": "unknown", "name": "before 0.8.0", "from": "migration"}`: runs in every
-  runs directory (`runs*`), baselines, references, label sets, rounds, picks, dataset records, model records;
-  label sets' and references' `source.by` stays;
+  runs directory (`runs*`), baselines, references, label sets, rounds, dataset records, model records;
+  label sets' and references' `source.by` stays. Picks are an append-only list and are not rewritten: a pick made
+  before 0.8.0 keeps its `by` and no actor;
 - `split.by` becomes `split.split_by` on every split side;
 - the schemas that refuse unknown keys (`additionalProperties: false`: metrics, round, reference, dataset, baseline,
   label set, model, pick and the rest) gain `actor`; baseline gains `version`, `goal` null, `replaces`, `restores`,

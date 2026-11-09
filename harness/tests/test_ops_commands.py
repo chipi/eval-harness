@@ -151,9 +151,9 @@ def test_list_runs(tmp: Path) -> None:
     )
 
     # No baselines yet
-    r = evh_run("runs-list", "--baselines", cwd=proj, env=env)
+    r = evh_run("baselines", cwd=proj, env=env)
     check(
-        "runs-list --baselines (none): exit 0, says 'no baselines yet'",
+        "evh baselines (none): exit 0, says 'no baselines yet'",
         r.returncode == 0 and "no baselines" in r.stdout,
         r.stdout[:200],
     )

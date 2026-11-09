@@ -291,3 +291,7 @@ smokes:
         reasoning_effort: none
         max_tokens: 1024
         call_timeout_s: 600
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

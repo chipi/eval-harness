@@ -466,7 +466,7 @@ with tempfile.TemporaryDirectory() as tmp:
         capture_output=True,
         text=True,
     )
-    bl_rel = "baselines/d_baseline.json"
+    bl_rel = "baselines/_dataset/d/1.json"
     with aimed():
         bl = _runstore.read_json(tmp, bl_rel) if _runstore.is_file(tmp, bl_rel) else {}
     check(

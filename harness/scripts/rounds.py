@@ -132,8 +132,10 @@ def open_round(argv: list[str]) -> int:
         )
     if args.retire and len(args.reason.split()) < 3:
         die("--retire needs --reason, a sentence: why are these arms dropped?", "bad-argument")
-    base = _common.BASELINES / f"{args.dataset}_baseline.json"
-    start = read_json(base).get("promoted_from") if _store.is_file(base) else None
+    from evaluation_harness import _baselines  # noqa: PLC0415
+
+    cur = _baselines.current(args.goal, args.dataset)  # the goal's own baseline on the dataset (RFC-027)
+    start = cur.get("promoted_from") if cur else None
     if args.baseline:
         # Fleet feedback 22: a round opened with --keep carried its baseline arm in but recorded no baseline, and
         # `pair-test --round` then refused ("records no other baseline run").
@@ -286,7 +288,7 @@ def close(argv: list[str]) -> int:
     ap.add_argument(
         "--promote",
         metavar="RUN_ID",
-        help="promote this run to the dataset's baseline, the conclusion as its reason",
+        help="promote this run to the goal's baseline on the round's dataset, the conclusion as its reason",
     )
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
@@ -307,6 +309,10 @@ def close(argv: list[str]) -> int:
                 args.promote,
                 "--reason",
                 args.conclusion,
+                "--goal",
+                args.goal,
+                "--round",
+                args.round,
             ],
             capture_output=True,
             text=True,

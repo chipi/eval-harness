@@ -32,7 +32,7 @@ from typing import Any
 
 from evaluation_harness import _models, _runs, _store
 from evaluation_harness._adapter import adapter_module
-from evaluation_harness._common import BASELINES, DATA, EXIT_PROBLEMS, RUNS, die, evh_prog, read_json
+from evaluation_harness._common import DATA, EXIT_PROBLEMS, RUNS, die, evh_prog, read_json
 from evaluation_harness._runs import runs_on
 from evaluation_harness.dataset_from_capture import load_capture
 
@@ -44,13 +44,14 @@ FEW = 3
 def promoted_run(
     config_id: str, data_dir: Path | None = None, runs_dir: Path | None = None
 ) -> tuple[Path, dict[str, Any] | None]:
-    """(the run, the baseline it was promoted as, or None): the latest baseline whose run is this arm's, else the
-    arm's latest run. The project's directories, or `data_dir` and `runs_dir` (the catalog's)."""
-    baselines = (data_dir / "baselines") if data_dir else BASELINES
+    """(the run, the baseline it was promoted as, or None): of the current baselines of every goal and every
+    dataset's own (RFC-027), the latest whose run is this arm's, else the arm's latest run. The project's
+    directories, or `data_dir` and `runs_dir` (the catalog's)."""
+    from evaluation_harness import _baselines  # noqa: PLC0415
+
     runs = runs_dir or RUNS
     best: tuple[str, Path, dict[str, Any]] | None = None
-    for f in sorted(_store.glob(baselines, "*.json")) if _store.is_dir(baselines) else []:
-        b = read_json(f)
+    for b in _baselines.all_current(data_dir):
         run = runs / str(b.get("promoted_from") or "")
         if (
             b.get("promoted_from")
@@ -106,7 +107,7 @@ def sheet(config_id: str, data_dir: Path | None = None, runs_dir: Path | None = 
         "run_id": run.name,
         "promoted": None
         if base is None
-        else {k: base.get(k) for k in ("baseline_id", "dataset_id", "promoted_at", "reason")},
+        else {k: base.get(k) for k in ("goal", "version", "dataset_id", "promoted_at", "reason")},
         "dataset_id": data.get("dataset_id") or m.get("dataset_id"),
         "reference": {"id": data.get("reference_id"), "tier": data.get("reference_tier")},
         "model": {
@@ -199,7 +200,8 @@ def main() -> int:
     against = f"{ref['id']} ({ref.get('tier') or 'no tier'})" if ref.get("id") else "no reference"
     print(f"  measured by   {s['run_id']} on {s['dataset_id']}, against {against}")
     print(
-        f"  promoted      as {p['baseline_id']} on {p['dataset_id']}, {p['promoted_at']}"
+        f"  promoted      as {p['goal'] or 'the dataset'}'s baseline on {p['dataset_id']}, version {p['version']},"
+        f" {p['promoted_at']}"
         if p
         else "  promoted      no: this is the arm's latest run, not a baseline"
     )

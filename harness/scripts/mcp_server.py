@@ -69,6 +69,7 @@ READ_TOOLS = (
     "dataset-card",
     "picks",
     "label-coverage",
+    "baselines",
     "deploy-sheet",
     "data-ls",
     "data-show",
@@ -120,6 +121,8 @@ NOT_TOOLS = {
     "capture-scrub": "runs a project's command and writes",
     "capture-restore": "reads a source and writes records and item files",
     "run-promote": "a decision, recorded with who acted",
+    "baseline-rollback": "a decision, recorded with who acted",
+    "baselines-migrate": "rewrites the project's records",
     "round-open": "a decision, recorded with who acted",
     "round-retire": "a decision, recorded with who acted",
     "round-close": "a decision, recorded with who acted",
@@ -144,6 +147,7 @@ JSON = {
 }
 JSON |= {"dataset-items", "captures", "labels", "tags", "licences", "picks", "deploy-sheet"}
 JSON |= {"runs-list", "rounds", "leaderboard", "pair-test", "family-test", "rank-stability", "run-compare"}
+JSON |= {"label-coverage", "baselines"}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
 HIDDEN = {"--adapter", "--json", "--help"}

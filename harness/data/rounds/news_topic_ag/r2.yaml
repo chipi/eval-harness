@@ -21,6 +21,10 @@ retired:
   at: '2026-09-30T14:40:24Z'
 conclusion:
   text: 'Re-timed together on the Linux machine (medians): bert_base_ta 49 ms, bert_base_fy 55 ms, bert_mini
-    4.3 ms. bert_mini is 11× faster than bert_base_ta, at accuracy not significantly different from it (p = 0.55). (REPORT_CLASSIFICATION
-    §3.1.)'
+    4.3 ms. bert_mini is 11× faster than bert_base_ta, at accuracy not significantly different from it
+    (p = 0.55). (REPORT_CLASSIFICATION §3.1.)'
   promoted_run: null
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

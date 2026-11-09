@@ -201,8 +201,9 @@ class Adapter(Protocol):
     # `machine.*` is the runner (where evh ran, outside the fingerprint's hash), `deployment.*` where
     # the system under test ran.
     # def conditions(self, arm: str) -> dict[str, str]: ...
-    # Optional: the promoted baselines (run-promote), [{"baseline_id", "dataset", "run", "arm",
-    # "reason", "promoted_at", "tier", "goal"}]; the pages lead with them, the answer so far.
+    # Optional: the current baselines (run-promote, RFC-027), one per goal and dataset (goal None: the dataset's own),
+    # [{"version", "dataset", "run", "arm", "reason", "promoted_at", "tier", "goal", "actor", "evidence"}], oldest
+    # promotion first; the pages lead with them, the answer so far.
     # def baselines(self) -> list[dict]: ...
     # Optional: the arm id of a config on a dataset (`evh rounds`, `evh inspect --round` and the
     # round pages build arm ids with it): `runs/<dataset>/<config_id>` when absent.
@@ -1027,10 +1028,12 @@ class HarnessAdapter:
 
     @_memo
     def baselines(self) -> list[dict]:
-        """The promoted baselines (data/baselines/*.json), each with the arm its run belongs to."""
+        """The current baseline of every goal on every dataset, and of every dataset's own (a run with no goal: goal
+        None) (RFC-027), oldest promotion first, each with the arm its run belongs to."""
+        from evaluation_harness import _baselines  # noqa: PLC0415
+
         out = []
-        for f in sorted(_store.glob(self.data_dir / "baselines", "*.json")):
-            b = _json(f) or {}
+        for b in sorted(_baselines.all_current(self.data_dir), key=lambda x: str(x.get("promoted_at") or "")):
             run = b.get("promoted_from")
             if not run or not b.get("dataset_id"):
                 continue
@@ -1039,7 +1042,7 @@ class HarnessAdapter:
             arm = next((a for a in hits if a.startswith("runs/")), hits[0] if hits else None)
             out.append(
                 {
-                    "baseline_id": b.get("baseline_id", f.stem),
+                    "version": b.get("version"),
                     "dataset": b["dataset_id"],
                     "run": run,
                     "arm": arm,
@@ -1047,9 +1050,18 @@ class HarnessAdapter:
                     "promoted_at": b.get("promoted_at", ""),
                     "tier": b.get("reference_tier"),
                     "goal": b.get("goal"),
+                    "actor": b.get("actor"),
+                    "evidence": b.get("evidence"),
+                    "migrated": bool(b.get("migrated")),
                 }
             )
         return out
+
+    def baseline_versions(self, goal: str | None, dataset: str) -> list[dict]:
+        """Every version of one baseline line, oldest first (RFC-027): the history the goal page folds."""
+        from evaluation_harness import _baselines  # noqa: PLC0415
+
+        return _baselines.versions(goal, dataset, self.data_dir)
 
     def datasets(self) -> list[str]:
         """Every frozen dataset, run or not: a new version has a page before its first run."""

@@ -163,12 +163,13 @@ try:
         lb.stdout[-900:],
     )
 
-    # runs-list --baselines: the mean over the baseline's repeats, as the other views show it
-    (syn / "data" / "baselines").mkdir(parents=True)
-    (syn / "data" / "baselines" / "dsv_baseline.json").write_text(
+    # evh baselines: the mean over the baseline's repeats, as the other views show it
+    (syn / "data" / "baselines" / "_dataset" / "dsv").mkdir(parents=True)
+    (syn / "data" / "baselines" / "_dataset" / "dsv" / "1.json").write_text(
         json.dumps(
             {
-                "baseline_id": "dsv_baseline",
+                "version": 1,
+                "goal": None,
                 "dataset_id": "dsv",
                 "promoted_from": "rep_x_r1",
                 "build": {"ref": "abc123def456"},
@@ -181,16 +182,16 @@ try:
             }
         )
     )
-    bl = evh(syn, "runs-list", "--baselines")
+    bl = evh(syn, "baselines")
     check(
-        "runs-list --baselines: the scores are the mean over the repeats, and the line says it is one",
+        "evh baselines: the scores are the mean over the repeats, and the line says it is one",
         re.search(r"scores \(mean of 3 repeats\)\s+acc=0\.6\s+cost_usd=0\.002", bl.stdout) is not None,
         bl.stdout,
     )
-    blj = json.loads(evh(syn, "runs-list", "--baselines", "--json").stdout)["result"]
-    row = blj["blocks"][0]["rows"][0]
+    blj = json.loads(evh(syn, "baselines", "--json").stdout)
+    row = blj["baselines"][0]
     check(
-        "runs-list --baselines --json: the same mean, and the number of repeats beside it",
+        "evh baselines --json: the same mean, and the number of repeats beside it",
         row.get("scores", {}).get("acc") == 0.6 and row.get("repeats") == 3,
         blj,
     )

@@ -688,7 +688,7 @@ def period_goals(A: Adapter, by_ds: dict) -> dict:
                 [bl["promoted_at"][:10], "baseline " + arm_link(bl["arm"], _label_of(by_ds, d, bl["arm"]))]
                 for d in on
                 for bl in (by_ds.get(d) or {}).get("baselines") or []
-                if bl.get("promoted_at") and bl.get("arm")
+                if bl.get("promoted_at") and bl.get("arm") and bl.get("goal") == g["goal_id"]
             ]
             + [
                 [r[stamp][:10], f"round {e(r['round_id'])} {verb}"]
@@ -1212,7 +1212,7 @@ def ref_tier(tiers: dict, key: str) -> str:
 def baseline_read(v: dict, goal_id: str) -> tuple[list, str | None]:
     """A dataset's baselines for a goal, and the arm the goal reads for the latest one: its latest re-score when
     it was re-scored (RFC-022), as the goal page reads it, else the promoted arm itself."""
-    bl = [x for x in v.get("baselines", []) if not x.get("goal") or x.get("goal") == goal_id]
+    bl = [x for x in v.get("baselines", []) if x.get("goal") == goal_id]
     base = bl[-1]["arm"] if bl and bl[-1].get("arm") else None
     moved = next((a.get("superseded_by") for a in v.get("arms", []) if base and a["arm"] == base), None)
     return bl, moved or base
@@ -1906,11 +1906,13 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
     q = f"dataset={quote(ds, safe='')}&sheet=1" + (f"&runs={quote(','.join(rec), safe=',/')}" if rec else "")
     btns.append(f'<a class="btn" href="../inspect.html?{q}">Open its sheet</a>')
     btn = f'<p class="btns">{"".join(btns)}</p>' if btns else ""
-    for b in v.get("baselines", [])[-1:]:
+    for b in v.get("baselines", []):
         label = next((a["label"] for a in arms if a["arm"] == b.get("arm")), b["run"])
         who = arm_link(b["arm"], label, "../") if b.get("arm") else e(label)
+        of = f"{b['goal']}'s baseline" if b.get("goal") else "the dataset's own baseline"
         btn = (
-            f'<div class="answer"><p class="small muted">baseline, promoted {e((b["promoted_at"] or "")[:10])}</p>'
+            f'<div class="answer"><p class="small muted">{e(of)}, version {e(b.get("version"))}, promoted '
+            f"{e((b['promoted_at'] or '')[:10])}</p>"
             f'<p class="lead"><b>{who}</b></p><p>{e(b["reason"])}</p></div>'
         ) + btn
     goals = _goals_of(A).get(ds, [])
@@ -2741,7 +2743,7 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id", "")
         v = by_ds.get(ds) or {}
-        bl = [b for b in v.get("baselines", []) if not b.get("goal") or b.get("goal") == g["goal_id"]]
+        bl = [b for b in v.get("baselines", []) if b.get("goal") == g["goal_id"]]
         label = {a["arm"]: a["label"] for a in v.get("arms", [])}
         head = dataset_link(ds, "../")
         if bl and latest and str(latest.get("closed_at") or "") > str(bl[-1].get("promoted_at") or ""):
@@ -2755,6 +2757,7 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
                 f'<p class="small">baseline: <b>{who}</b>, promoted {e(_when(b["promoted_at"]))}'
                 + (f" · scored against {tier_pill(b['tier'])}" if b.get("tier") else "")
                 + f'</p><details class="inline small"><summary>why it was promoted</summary>{e(b["reason"])}</details>'
+                + _baseline_facts(A, b)
                 + _sheet_fold(A, b)
                 + (
                     f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
@@ -2771,6 +2774,7 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
                 f'<div class="answer"><p class="small muted">{head} · baseline promoted {e(_when(b["promoted_at"]))}'
                 + (f" · scored against {tier_pill(b['tier'])}" if b.get("tier") else "")
                 + f'</p><p class="lead"><b>{who}</b></p><p>{e(b["reason"])}</p>'
+                + _baseline_facts(A, b)
                 + _sheet_fold(A, b)
                 + (
                     f'<p><a class="btn small" href="{inspect_url([b["arm"]], "../", metric=measure)}">inspect it</a></p>'
@@ -2786,6 +2790,48 @@ def _answer(A: Adapter, g: dict, by_ds: dict, measure: str) -> str:
                 '<code>evh run-promote --run &lt;run_id&gt; --reason "…"</code></p></div>'
             )
     return "".join(parts) or '<p class="muted">The goal names no dataset.</p>'
+
+
+def _baseline_facts(A: Adapter, b: dict) -> str:
+    """What a baseline version says beyond its run (RFC-027): its number, who promoted it, the evidence frozen in
+    at promotion, and the line's history, folded."""
+    who = b.get("actor") or {}
+    by = (e(who.get("name") or "") + (f" for {e(who['for'])}" if who.get("for") else "")) if who else ""
+    ev = b.get("evidence") or {}
+    vd = ev.get("verdict")
+    if b.get("migrated"):
+        said = "promoted before 0.8.0: its evidence was not recorded"
+    elif ev.get("compared_to") is None:
+        said = "the first version: nothing to compare with"
+    elif vd:
+        said = (
+            f"against version {e(ev['compared_to'])}: {e(vd.get('outcome'))}, Δ {vd.get('delta', 0):+.4f}, "
+            f"p {fmt_p(vd.get('p'))} on {e(ev.get('measure'))} (n={e(ev.get('n'))})"
+        )
+    else:
+        said = f"against version {e(ev['compared_to'])}: no test ({e('; '.join(ev.get('not_comparable') or []))})"
+    fn = getattr(A, "baseline_versions", None)
+    older = [
+        v
+        for v in (fn(b.get("goal"), b["dataset"]) if callable(fn) else [])
+        if v.get("version") != b.get("version")
+    ]
+    hist = "".join(
+        f"<li>v{e(v['version'])} · {e(str(v.get('promoted_at') or '')[:10])} · <code>{e(v.get('promoted_from'))}</code>"
+        + (f" (restores {e(v['restores'])})" if v.get("restores") else "")
+        + f": {e(v.get('reason') or '')}</li>"
+        for v in reversed(older)
+    )
+    return (
+        f'<p class="small">version {e(b.get("version"))}'
+        + (f", promoted by {by}" if by else "")
+        + f" · {said}</p>"
+        + (
+            f'<details class="inline small"><summary>history ({len(older)})</summary><ul>{hist}</ul></details>'
+            if older
+            else ""
+        )
+    )
 
 
 def _fold(text: str, at: int = 200) -> str:
@@ -4015,7 +4061,10 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             )
         )
     dl = "".join(f"<dt>{e(k)}</dt><dd>{x}</dd>" for k, x in facts if x)
-    base = (v.get("baselines") or [None])[-1]
+    # The baseline of the arm's own goal (RFC-027), else the dataset's own.
+    base = next(
+        (b for b in reversed(v.get("baselines") or []) if b.get("goal") == (a.get("goal") or None)), None
+    )
     btns = [f'<a class="btn" href="{inspect_url([a["arm"]], "../")}">Inspect it</a>']
     group = [
         x["arm"]

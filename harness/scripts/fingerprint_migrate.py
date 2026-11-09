@@ -169,7 +169,9 @@ def main() -> int:
             write_text_atomic(f, _dump(doc))
 
     baselines = 0
-    for b in sorted(_store.glob(data / "baselines", "*.json")) if _store.is_dir(data / "baselines") else []:
+    for b in (
+        sorted(_store.glob(data / "baselines", "*/*/*.json")) if _store.is_dir(data / "baselines") else []
+    ):
         doc = json.loads(_store.read_text(b, encoding="utf-8"))
         runs = [
             f

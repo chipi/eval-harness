@@ -29,3 +29,7 @@ conclusion:
     over e5_base alone (p 0.0001): one run, under a different adapter from the main table. (REPORT_RETRIEVAL
     §3.4.)'
   promoted_run: null
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

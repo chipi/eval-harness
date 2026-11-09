@@ -571,11 +571,11 @@ with tempfile.TemporaryDirectory() as td:
             "fingerprint": v4(declared, {"model": "org/span"}, derived=True),
         },
     )
-    (data / "baselines").mkdir()
-    b = data / "baselines" / "b.json"
+    (data / "baselines" / "_dataset" / "d").mkdir(parents=True)
+    b = data / "baselines" / "_dataset" / "d" / "1.json"
     b.write_text(
         json.dumps(
-            {"baseline_id": "b", "promoted_from": "r1", "fingerprint_hash": "0" * 64},
+            {"version": 1, "goal": None, "promoted_from": "r1", "fingerprint_hash": "0" * 64},
             indent=2,
             sort_keys=True,
         )

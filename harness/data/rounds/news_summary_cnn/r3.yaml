@@ -15,3 +15,7 @@ conclusion:
   text: bart_s re-ran 200 of 200 outputs byte-identical on the same machine (three times, counting the
     resumed run). (REPORT_SUMMARIZATION.)
   promoted_run: null
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

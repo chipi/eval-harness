@@ -172,3 +172,7 @@ smokes:
     - 'determinism: item 1 twice gave different outputs (repeats will vary)'
     - 'where it ran: the build is not pinned (no digest, revision or hash in the model
       record''s deployment)'
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

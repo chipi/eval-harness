@@ -1,4 +1,9 @@
 {
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
   "created_at": "2026-10-14T13:39:36Z",
   "dataset_id": "cnn_dailymail_dm200",
   "description": "200 item(s) from cnn_dailymail_dm200/",

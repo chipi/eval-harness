@@ -135,8 +135,8 @@ try:
         "--reason",
         "lead2 answers the triage goal on six tickets",
     )
-    baselines = [n for n in _runstore.listdir(proj, "baselines") if n.endswith(".json")]
-    b = _runstore.read_json(proj, f"baselines/{baselines[0]}") if baselines else {}
+    rel = "baselines/tickets_summary/tickets_v1/1.json"  # the goal's own baseline line (RFC-027)
+    b = _runstore.read_json(proj, rel) if _runstore.is_file(proj, rel) else {}
     check(
         "promote: the baseline carries the goal and the format",
         b.get("goal") == "tickets_summary" and b.get("format") == "paragraph",

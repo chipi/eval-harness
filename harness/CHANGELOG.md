@@ -13,6 +13,14 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Baselines per goal, in versions, with their evidence** (RFC-027 D2-D4): a baseline is a goal's on a dataset
+  (`data/baselines/<goal>/<dataset>/<n>.json`), or a dataset's own for a run with no goal (`_dataset/`). Promoting
+  writes the next version, never over the last (exclusively: two at once both land), with the paired test against
+  the version it replaces frozen in, as `pair-test` answers it (`pair-test --json` now also gives `items_sha256`,
+  `reduce` and the run ids it pooled). `evh baseline-rollback` restores an earlier version as a new one. `evh
+  baselines` lists each line with who promoted it, why, the evidence, how to reproduce it (the deploy sheet's block)
+  and the history; `--json` is the export, the same bytes until a promotion. `evh baselines-migrate` brings 0.7
+  records over; this repository's are migrated. V6 holds each line's chain.
 - **Who acted, on every record** (RFC-027 D1): runs, references, label sets, rounds, picks, dataset and model records
   and baselines carry `actor`: a person, or an agent and the person it acted for (`EVH_ACTOR`, `EVH_FOR`), from
   `--by` (now on every writing command), the environment or the terminal's login, with where it came from. A
@@ -191,6 +199,9 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **`runs-list --baselines` is now `evh baselines`** (RFC-027); `run-promote --baseline-id` is gone (a baseline is
+  named by goal, dataset and version); `round-close --promote` promotes into the round's goal, read as the round
+  reads its arms. A goal page reads only its own baselines, no longer a dataset baseline with no goal.
 - **`dataset-split --by hash|time` is now `--split-by`** (and a split side records `split.split_by`), so `--by` means
   who acted on every command that writes (RFC-027).
 - **The paired tests take their normal limit from 10,000 units** (ADR-0028). From 10,000 items (or clusters) the

@@ -20,3 +20,7 @@ conclusion:
     significant); routed to SambaNova it scored 0.5510 and billed 3.7× as much: consistent with a provider
     effect, one run per provider. (REPORT_SUMMEVAL §3.3.)'
   promoted_run: null
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration

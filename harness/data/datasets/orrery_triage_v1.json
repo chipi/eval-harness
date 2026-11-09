@@ -1,4 +1,9 @@
 {
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
   "created_at": "2026-10-30T12:23:39Z",
   "dataset_id": "orrery_triage_v1",
   "description": "The triage fleet's 233 Orrery decisions, 2026-07-25 to 2026-10-29 (test signals removed).",

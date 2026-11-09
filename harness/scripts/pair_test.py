@@ -605,6 +605,18 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             "metric": args.metric,
             "dataset_id": args.dataset_id,
             "n": len(items),
+            # What the answer was computed on, so a promotion that freezes it (RFC-027 D3) can say: the items
+            # compared, the runs pooled for each arm, how repeats were reduced.
+            "items_sha256": hashlib.sha256("\n".join(sorted(items)).encode()).hexdigest(),
+            "reduce": args.reduce or "mean",
+            **(
+                {}
+                if cross
+                else {
+                    "run_ids_a": sorted(d.name for d, m in runs if m.get("config_id") == args.a),
+                    "run_ids_b": sorted(d.name for d, m in runs if m.get("config_id") == args.b),
+                }
+            ),
             "repeats": agree or None,
             "cluster": args.cluster or None,
             "clusters": n_units if args.cluster else None,
