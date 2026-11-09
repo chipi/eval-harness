@@ -718,6 +718,73 @@ try:
     )
     srv.shutdown()
 
+    # BEHIND A PROXY (--behind-proxy, the homelab fleet's private catalog): the whole local inspector, for the
+    # named Host as well as this machine's, nothing withheld; another Host refused; the data page's writes never.
+    cs.LIMITS["proxy_hosts"] = ("fleet.tailnet.example",)
+    cs.CONFIGURE_ON[:] = [True]  # a project that deploys the data page: still not served through the proxy
+    cs.Handler.prefixes = prefixes
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(cs.Handler, directory=str(tmp)))
+    port = srv.server_address[1]
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        prox = "fleet.tailnet.example"
+        st, body = get("/api/compare?runs=runs/ds1/arm_a,runs/ds1/arm_b", prox)
+        check(
+            "behind a proxy: the named Host gets the catalog, the data tree and the comparison",
+            get("/.build/catalog/index.html", prox)[0] == 200
+            and get("/data/runs/a_1/metrics.json", prox)[0] == 200
+            and st == 200
+            and json.loads(body)["metric"] == "acc",
+            st,
+        )
+        check(
+            "behind a proxy: this machine still answers (a health check in the container)",
+            get("/.build/catalog/index.html")[0] == 200,
+        )
+        check(
+            "behind a proxy: another Host is refused",
+            get("/.build/catalog/index.html", "evil.example")[0] == 403,
+        )
+        check(
+            "behind a proxy: the data page's routes are not served, even in a project that deploys them",
+            all(get(r, prox)[0] == 404 for r in cs.DATA_ROUTES),
+            [(r, get(r, prox)[0]) for r in cs.DATA_ROUTES],
+        )
+        writes = []
+        for method in ("PUT", "DELETE"):
+            c = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+            c.request(
+                method,
+                "/api/data/form?path=goals/x.yaml",
+                body=b"{}",
+                headers={"Host": prox, "X-EVH-Data": "1"},
+            )
+            writes.append(c.getresponse().status)
+            c.close()
+        check(
+            "behind a proxy: a write (PUT, DELETE) to the data page is refused", writes == [404, 404], writes
+        )
+        both = subprocess.run(
+            [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--public", "a.example", "--behind-proxy", prox],
+            cwd=tmp, capture_output=True, text=True, timeout=120,
+        )  # fmt: skip
+        wide = subprocess.run(
+            [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--bind", "0.0.0.0"],  # noqa: S104 - the refusal under test  # nosec B104
+            cwd=tmp, capture_output=True, text=True, timeout=120,
+        )  # fmt: skip
+        check(
+            "behind a proxy: refused with --public (two deployments); --bind 0.0.0.0 alone names both modes",
+            both.returncode != 0
+            and "one at a time" in both.stderr
+            and wide.returncode != 0
+            and "--behind-proxy" in wide.stderr,
+            (both.stderr[-200:], wide.stderr[-200:]),
+        )
+    finally:
+        srv.shutdown()
+        cs.LIMITS["proxy_hosts"] = ()
+        cs.CONFIGURE_ON[:] = [False]
+
     # PUBLIC mode: the API only, to the named host, rate-limited, arms capped, answers cached
     cs.LIMITS.update(hosts=("catalog.example.org",), rate=5, max_arms=2)
     cs.Handler.prefixes = ()

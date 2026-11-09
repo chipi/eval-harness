@@ -13,6 +13,10 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **A private inspector behind a proxy** (homelab, 2026-11-05): `evh catalog-serve --behind-proxy HOST[,HOST]`
+  serves the whole local inspector (pages, items, outputs, references) to the named Hosts as well as this machine,
+  with `--bind 0.0.0.0` in a container behind a team's own proxy; no rate limit and nothing withheld, unlike
+  `--public`. The data page's writes are not served through it.
 - **A round's baseline can be named** (the fleet's feedback 22): `evh round-open … --baseline <config_id or run id>`
   records the run the round starts from when the dataset has no promoted baseline (arms carried in with `--keep`), so
   `pair-test --round` and `evh rounds` read its arms against it instead of refusing ("records no other baseline

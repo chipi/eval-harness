@@ -870,7 +870,7 @@ def sheet(params: dict) -> dict:
 
 
 #: Set by main(): the public mode's limits. max_arms applies locally too (a URL is not a query).
-LIMITS: dict = {"max_arms": 40, "rate": 0, "hosts": ()}
+LIMITS: dict = {"max_arms": 40, "rate": 0, "hosts": (), "proxy_hosts": ()}
 #: Each answer kept as the bytes it is sent as, bounded by their total: a 40-arm comparison is
 #: ~1.8 MB, so a count bound (1024) let a hundred distinct questions take a 256 MiB container
 #: past its limit (an independent review, 2026-10-29). Least recently used out first.
@@ -1162,14 +1162,14 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     from the project root, keys included.
     """
     local = (f"127.0.0.1:{port}", f"localhost:{port}", "127.0.0.1", "localhost")
-    if host not in (LIMITS["hosts"] or local):
+    if host not in (LIMITS["hosts"] or (*local, *LIMITS.get("proxy_hosts", ()))):
         return 403
     p = unquote(urlparse(path).path)
     if ".." in p.split("/"):
         return 404
     if p.startswith("/api/"):
         if p in DATA_ROUTES:  # this machine's only (ADR-0027), and only for a project that deploys them
-            return 404 if LIMITS["hosts"] or not CONFIGURE_ON[0] else 0
+            return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not CONFIGURE_ON[0] else 0
         return 0 if p in API_ROUTES else 404
     prefix = next((x for x in prefixes if p.startswith(x)), None)
     if prefix is None:
@@ -1324,7 +1324,7 @@ class Handler(SimpleHTTPRequestHandler):
         url = urlparse(self.path)
         if self._refuse():
             return
-        if url.path not in DATA_ROUTES or LIMITS["hosts"] or not CONFIGURE_ON[0]:
+        if url.path not in DATA_ROUTES or LIMITS["hosts"] or LIMITS["proxy_hosts"] or not CONFIGURE_ON[0]:
             self.send_error(404)
             return
         if self.headers.get(DATA_HEADER) != "1":
@@ -1479,6 +1479,13 @@ def main() -> int:
         help="serve the API only, to these Host names, behind a reverse proxy",
     )
     ap.add_argument(
+        "--behind-proxy",
+        metavar="HOST[,HOST]",
+        help="the whole local inspector (pages, items, outputs, references) for these Host names too, behind a "
+        "private proxy (a tailnet's Caddy); with --bind 0.0.0.0 in a container. No rate limit and nothing withheld, "
+        "unlike --public; the data page's writes stay this machine's own",
+    )
+    ap.add_argument(
         "--bind",
         default="127.0.0.1",
         help="address to listen on (0.0.0.0 inside a container whose port is published on loopback)",
@@ -1510,6 +1517,8 @@ def main() -> int:
         help="answer every comparison this built catalog links to, in the background",
     )
     args = ap.parse_args()
+    if args.public and args.behind_proxy:
+        die("--public and --behind-proxy are two deployments: one at a time", "bad-argument")
     if args.port is None:
         from evaluation_harness._common import project_port  # noqa: PLC0415
 
@@ -1528,8 +1537,16 @@ def main() -> int:
             die(f"--publish takes outputs and/or references, not {', '.join(sorted(bad))}", "bad-argument")
         Handler.prefixes = ()
     else:
-        if args.bind != "127.0.0.1":
-            die("--bind other than 127.0.0.1 needs --public (and a proxy in front)", "not-allowed")
+        if args.behind_proxy:
+            # The homelab fleet's private catalog (2026-11-05): Caddy on the tailnet in front, no published port.
+            LIMITS["proxy_hosts"] = tuple(h.strip() for h in args.behind_proxy.split(",") if h.strip())
+            if not LIMITS["proxy_hosts"]:
+                die("--behind-proxy needs at least one Host name", "bad-argument")
+        elif args.bind != "127.0.0.1":
+            die(
+                "--bind other than 127.0.0.1 needs --public or --behind-proxy (and a proxy in front)",
+                "not-allowed",
+            )
         if not _store.is_file(args.build_dir / "index.html"):
             die(f"no catalog at {args.build_dir}: run `evh catalog` first", "not-found")
         Handler.prefixes = served(args.build_dir, A.data_dir, tuple(getattr(A, "served_dirs", ())))
@@ -1557,6 +1574,12 @@ def main() -> int:
         print(
             f"inspector API on {args.bind}:{args.port} for {', '.join(LIMITS['hosts'])} "
             f"({LIMITS['rate']}/min per client, {LIMITS['max_arms']} arms max)",
+            flush=True,
+        )
+    elif LIMITS.get("proxy_hosts"):
+        print(
+            f"catalog on {args.bind}:{args.port} for {', '.join(LIMITS['proxy_hosts'])} (behind a proxy) and this "
+            f"machine, at {Handler.prefixes[0]}; the data page's writes are not served",
             flush=True,
         )
     else:

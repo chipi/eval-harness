@@ -327,6 +327,14 @@ which references exist, what one arm wrote for one item.
   and a reference can be text a project may not redistribute, so a public deployment publishes
   neither until it says so.
 
+  A private deployment for a team behind its own proxy (a tailnet's Caddy, a VPN) is the local
+  inspector, not a public one: `evh catalog-serve --behind-proxy HOST[,HOST] --bind 0.0.0.0` in a
+  container serves the pages, the data tree and every item, output and reference, to requests
+  whose Host is one it names (and to this machine's, for a health check), with no rate limit and
+  nothing withheld. Everyone who can reach the proxy reads everything, so put it behind what
+  already decides who that is. The data page's writes stay this machine's own and are not served
+  through it.
+
   `item_fields` is optional: without it the pages show no fields. With it, the dataset page
   lists each field and its coverage, and summarises the values of a field marked `public`
   only; the local inspector shows every value, filters a comparison by a field and breaks it
