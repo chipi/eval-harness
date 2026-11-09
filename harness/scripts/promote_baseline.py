@@ -91,7 +91,9 @@ def _config_of(run_id: str) -> str | None:
     return read_json(f).get("config_id") if _store.is_file(f) else None
 
 
-def evidence(m: dict, cur: dict | None, goal: dict | None, round_id: str | None) -> dict[str, Any]:
+def evidence(
+    m: dict, cur: dict | None, goal: dict | None, round_id: str | None, look: dict | None = None
+) -> dict[str, Any]:
     """The comparison that justifies the promotion (RFC-027 D3), as `pair-test` answers it: the promoted run's arm
     against the current version's, on the goal's primary measure (else the run's), with the goal's cluster and
     reducer, pooled as pair-test pools them; with a round, as `pair-test --round` reads it. Frozen: never recomputed."""
@@ -122,6 +124,8 @@ def evidence(m: dict, cur: dict | None, goal: dict | None, round_id: str | None)
             argv += ["--asc"] if prim["direction"] == "lower" else ["--desc"]
         if round_id:
             argv += ["--round", round_id, "--goal", goal["goal_id"]]
+    if look is not None:  # a look at a test set (RFC-029): one-sided at its level
+        argv += ["--look-level", repr(look["level"])]
     r = subprocess.run(
         [sys.executable, str(_Path(__file__).resolve().parent / "cli.py"), *argv],
         capture_output=True,
@@ -133,6 +137,20 @@ def evidence(m: dict, cur: dict | None, goal: dict | None, round_id: str | None)
         out |= {"verdict": None, "not_comparable": [why]}
         return out
     v = (json.loads(r.stdout).get("result") or {}).get("values") or {}
+    if look is not None:
+        lv = v.get("look") or {}
+        if not lv.get("can_reach") and not look.get("override"):
+            die(
+                f"{m['dataset_id']} is a test set: this promotion is look {look['number']}, tested one-sided at "
+                f"{look['level']:.4%}, and these {v.get('n')} items reach p {lv.get('attainable_p')} at best: it could "
+                "never be shown. Fresh items are the way out; --override-no-evidence (the person) promotes it labelled "
+                "inconclusive",
+                "not-enough",
+            )
+        out["look"] = {k: x for k, x in look.items() if k not in ("reused", "override")}
+        out["look"]["verdict"] = lv.get("verdict") if lv.get("can_reach") else "INCONCLUSIVE"
+        out["look"]["p_one_sided"] = lv.get("p_one_sided")
+        out["look"]["attainable_p"] = lv.get("attainable_p")
     out |= {
         "n": v.get("n"),
         "items_sha256": v.get("items_sha256"),
@@ -187,6 +205,16 @@ def main() -> int:
         "--round", help="the round whose conclusion this is: the evidence reads the arms as it does"
     )
     ap.add_argument("--allow-dirty", action="store_true", help="promote from a dirty tree anyway")
+    ap.add_argument(
+        "--confirm-extra-look",
+        action="store_true",
+        help="on a test set past its limit of looks (RFC-029): the person's consent to look again (an agent cannot)",
+    )
+    ap.add_argument(
+        "--override-no-evidence",
+        action="store_true",
+        help="on a test set whose items could never show the comparison: promote anyway, labelled inconclusive",
+    )
     ap.add_argument(
         "--allow-unknown-build",
         action="store_true",
@@ -262,8 +290,10 @@ def main() -> int:
                     "mismatch",
                 )
 
+        look_ctx: dict = {}
+
         def make(cur: dict | None, n: int) -> dict:
-            ev = evidence(m, cur, goal, args.round)
+            ev = evidence(m, cur, goal, args.round, look_ctx.get("look"))
             doc = {
                 "dataset_id": m["dataset_id"],
                 "goal": goal_id,
@@ -283,7 +313,25 @@ def main() -> int:
             }
             return doc
 
-        doc = _baselines.write_next(goal_id, m["dataset_id"], make)
+        # A promotion on a test set compared with its current version is a look (RFC-029): numbered under the set's
+        # lock while the version is written, tested one-sided at the look's level; one question is one look.
+        from evaluation_harness import _looks  # noqa: PLC0415
+
+        cur = _baselines.current(goal_id, m["dataset_id"])
+        b_cfg = _config_of(cur["promoted_from"]) if cur else None
+        if cur and b_cfg and b_cfg != m["config_id"] and _looks.is_test_set(m["dataset_id"]):
+            prim = ((goal or {}).get("success_criteria") or {}).get("primary") or {}
+            measure = prim.get("measure") or m.get("primary_metric")
+            k = _looks.key(m["dataset_id"], m["config_id"], b_cfg, measure, "superiority")
+            with _looks.taking(m["dataset_id"], k, consent=args.confirm_extra_look) as look:
+                look_ctx["look"] = {**look, "override": args.override_no_evidence}
+                print(
+                    f"  look {look['number']} at test set {m['dataset_id']}, one-sided at {look['level']:.4%}"
+                    + (" (the same question as before: its look reused)" if look["reused"] else "")
+                )
+                doc = _baselines.write_next(goal_id, m["dataset_id"], make)
+        else:
+            doc = _baselines.write_next(goal_id, m["dataset_id"], make)
         line = f"{goal_id or 'the dataset'}'s baseline on {m['dataset_id']}"
         out = _baselines.folder(goal_id, m["dataset_id"]) / f"{doc['version']}.json"
         print(f"{out}  version {doc['version']} of {line}")

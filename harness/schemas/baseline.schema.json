@@ -162,6 +162,7 @@
             "null"
           ]
         },
+        "look": {"type": "object", "description": "A look at a test set (RFC-029): its question's key, its number and one-sided level, the set's items digest, the harness version; on a promotion, its verdict and p.", "required": ["key", "number", "level", "set"], "properties": {"key": {"type": "string"}, "number": {"type": "integer", "minimum": 1}, "level": {"type": "number"}, "set": {"type": "string"}, "dataset_id": {"type": "string"}, "harness": {"type": "string"}, "beyond_limit": {"type": "boolean"}, "verdict": {"type": ["string", "null"]}, "p_one_sided": {"type": ["number", "null"]}, "attainable_p": {"type": ["number", "null"]}}},
         "round": {
           "type": "string"
         },

@@ -1719,6 +1719,30 @@ def v24_prompt_versions() -> None:
         print("  --   V24 prompt versions (none)")
 
 
+def v25_looks() -> None:
+    """V25 (RFC-029): no look number on a test set taken by two different questions (two clones deciding at once)."""
+    from evaluation_harness import _looks  # noqa: PLC0415
+
+    bad, sets = [], 0
+    for p in _store.glob(DATASETS, "*.json") if _store.is_dir(DATASETS) else []:
+        if not _looks.is_test_set(p.stem):
+            continue
+        sets += 1
+        for n, keys in _looks.double_spent(p.stem):
+            bad.append(
+                f"{p.stem}: look {n} was taken by {len(keys)} questions ({', '.join(keys)}): a double spend"
+            )
+    if bad:
+        problems.append("V25")
+        print(f"  FAIL V25 test-set looks — {len(bad)} problem(s):")
+        for b in bad:
+            print(f"       {b}")
+    elif sets:
+        print(f"  ok   V25 test-set looks — {sets} test set(s), no look number taken twice")
+    else:
+        print("  --   V25 test-set looks (no test sets)")
+
+
 def v23_run_outputs() -> None:
     """V23: every run's outputs can be read (RFC-024): none is left in the old layout (an outputs/ folder), and a
     derived run without outputs of its own finds its source's. And the project is files or its database, never both
@@ -1910,6 +1934,7 @@ def main() -> int:
             v22_dataset_records,
             v23_run_outputs,
             v24_prompt_versions,
+            v25_looks,
             note_uncommitted_runs,
             note_round_scorers,
         ):

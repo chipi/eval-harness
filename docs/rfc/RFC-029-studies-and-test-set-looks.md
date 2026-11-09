@@ -18,7 +18,7 @@
   counted from decisions, not stored; use before the release not counted; aggregate-only measures allow the point
   rule only and cannot be confirmed.
 
-## Abstract (0.8.0, planned: being built)
+## Abstract (0.8.0, planned: being built; the looks are built)
 
 A **study** is research: a spec and an append-only log. `evh study-run` opens a round and repeats ask/tell: a
 **sampler** proposes a **trial** (parameter values or prompt versions, with a hypothesis), the harness runs the
@@ -46,7 +46,7 @@ looking again and again cannot manufacture a result; a check refuses a look that
 - Loops live outside the harness (the podcast project's `program_*.md` agents and its parameter sweep; Karpathy's
   autoresearch), with results in TSV files the catalog cannot read.
 
-## Design: test-set looks (0.8.0, planned)
+## Design: test-set looks
 
 - **A test set** is a dataset a goal declares with `role: test`, or the sealed side of a split. Its looks are owned
   by its items' digest (`_seal.items_digest`), so a run on part of it spends the same budget and dropping an item does
@@ -54,10 +54,11 @@ looking again and again cannot manufacture a result; a check refuses a look that
 - **A look is a decision written on it** (owner, 2026-11-09): a `dataset-unseal`, a `study-confirm`, and a
   `run-promote` or `round-close --promote` whose evidence is computed on it. Reads (`pair-test`, `rounds`, the pages)
   never take one: on a test set they show the nominal result labelled "nominal, not a look" and the next look's level.
-- **One look per question, whatever records it**: a look is keyed by (the set's digest, the two arms' fingerprint
-  hashes, the measure, the rule). A confirmation writes an unseal entry, its `confirm` line and, when promoted, a
-  baseline version whose evidence carries the same key: one look. A decision whose key is already recorded reuses its
-  number and verdict. A first promotion on a set (`compared_to: null`, nothing compared) is not a look.
+- **One look per question, whatever records it**: a look is keyed by (the set's digest, the two configs, the
+  measure, the rule). Configs, not the runs' fingerprints: an unseal is a look and comes before any run (built,
+  2026-11-09). An unseal for a candidate and a later promotion of that candidate against the same arm are one look; a
+  confirmation's unseal, its `confirm` line and its promotion likewise. A decision whose key is already recorded reuses
+  its number. A first promotion on a set (`compared_to: null`, nothing compared) is not a look.
 - **Levels**: one-sided α = 2.5% per test set, spent front-loaded: look k at α·6/(π²k²) (1.52%, 0.38%, 0.17%,
   0.095%, ...; the sum over every look is α). Comparisons within one look share its level by Holm. The tests a look
   uses are one-sided at that level: the sign-flip and exact tests in the declared direction (`stats` gains the
@@ -77,7 +78,8 @@ looking again and again cannot manufacture a result; a check refuses a look that
   the look's level divided by the family's size. Superiority: 1/2^n′ one-sided (n′ the non-zero paired differences;
   before any run, all items). Non-inferiority on 0/1: Tango's p in the best case (every discordant item favouring the
   arm). Non-inferiority on a continuous measure: below 100 units "too few" (the contender test's rule), refused at
-  once. A look that could never meet its rule is refused (`no-possible-evidence`), unless the person overrides; the
+  once. A look that could never meet its rule is refused (`ERROR (not-enough)`), unless the person overrides
+  (`--override-no-evidence`); the
   outcome is then labelled inconclusive. `stats.min_attainable_p` takes the differences and the test, not only n.
 - `evh looks [--dataset D]` lists each test set's looks (number, level, key, who, verdict) and the next level; the goal
   page and the dataset page show the same.
@@ -213,7 +215,7 @@ the "nominal, not a look" label on test sets; a goal's recommendation does not c
 
 - `tests/test_looks.py`: levels 1.52%, 0.38%, ... from decisions; one confirmation and its promotion are one look; a
   read takes no look; a part of the set spends its budget; past the limit refused, an agent's consent refused, the
-  person's taken; a double-spent look reported; `no-possible-evidence` on 5 items for a one-sided 1.52% look, and for
+  person's taken; a double-spent look reported; the refusal on 5 items for a one-sided 1.52% look, and for
   continuous non-inferiority below 100 units; an unseal from before 0.8.0 shown as prior use.
 - `tests/test_study.py` (a fake adapter, $0, both stores): a planted real gain kept and confirmed better; a chance gain
   on a tiny set dropped or not confirmed; a cheaper equal arm non-inferior to the baseline; a chain of small

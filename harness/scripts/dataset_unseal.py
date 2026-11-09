@@ -40,6 +40,11 @@ def main() -> int:
     ap.add_argument("dataset_id", help="the sealed dataset (a split's test side)")
     ap.add_argument("--config", required=True, help="the candidate's config_id: it runs on this dataset")
     ap.add_argument("--reason", required=True, help="why this candidate, and why now: a sentence")
+    ap.add_argument(
+        "--confirm-extra-look",
+        action="store_true",
+        help="past the set's limit of looks (RFC-029): the person's consent to look again (an agent cannot)",
+    )
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
@@ -92,17 +97,27 @@ def main() -> int:
                     "not-allowed",
                 )
         opened = sorted({args.config, str(hyp["against"])} - _seal.opened_for(doc))
-        look = {
-            "config_id": args.config,
-            "at": now(),
-            "reason": args.reason,
-            "hypothesis": hyp,
-            "commit": named.get("commit") or "not determinable",
-            "actor": who,
-        }
-        doc["unsealed"] = [*(doc.get("unsealed") or []), look]
-        write_json(DATASETS / f"{ds_id}.json", doc)
-        n = len(doc["unsealed"])
+        # Each unseal is a look at the set (RFC-029): numbered under the set's lock while it is written, its level
+        # the look's; the question is the candidate against its hypothesis's arm, on its measure, in its direction.
+        from evaluation_harness import _looks  # noqa: PLC0415
+
+        rule = "noninferiority" if hyp.get("direction") == "no-worse" else "superiority"
+        k = _looks.key(ds_id, args.config, str(hyp["against"]), hyp.get("measure"), rule)
+        with _looks.taking(ds_id, k, consent=args.confirm_extra_look) as taken:
+            doc = load_dataset(ds_id)
+            entry = {
+                "config_id": args.config,
+                "at": now(),
+                "reason": args.reason,
+                "hypothesis": hyp,
+                "commit": named.get("commit") or "not determinable",
+                "actor": who,
+                "look": {x: v for x, v in taken.items() if x != "reused"},
+            }
+            doc["unsealed"] = [*(doc.get("unsealed") or []), entry]
+            write_json(DATASETS / f"{ds_id}.json", doc)
+        n = taken["number"]
+        print(f"  look {n}: decisions on it are tested one-sided at {taken['level']:.4%} (evh looks)")
         print(
             f"data/datasets/{ds_id}.json  unsealed for {args.config} against {hyp['against']} "
             + (

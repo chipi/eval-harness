@@ -216,6 +216,10 @@ COMMANDS = {
     "round-retire": ("round_retire.py", "drop an arm from the open round, with the reason"),
     "round-close": ("round_close.py", "close a round with its conclusion, promoting the run it chose"),
     "rounds": ("round_status.py", "a goal's rounds, and what the evidence suggests next"),
+    "looks": (
+        "view_looks.py",
+        "the looks each test set allows: its looks so far, the next one's level, its limit",
+    ),
     "prompts": (
         "view_prompts.py",
         "prompt versions: every name, or one's versions, lineage and the runs that used each",

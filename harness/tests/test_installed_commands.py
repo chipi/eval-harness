@@ -469,6 +469,7 @@ def main() -> int:
             # The terminal's jobs (RFC-026): installed, each answers in words; the flow is test_jobs.py.
             # Prompt versions (RFC-028): installed, each answers in words; the flow is test_prompts.py.
             ("prompts", [], "ok:no prompt versions yet"),
+            ("looks", ["--dataset", "no_such_v1"], "not a test set"),
             ("prompt-diff", ["a/0123456789abcdef", "b/0123456789abcdef"], "no prompt version"),
             ("prompt-version", ["bad name!", "--text", "x", "--note", "n"], "prompt name"),
             ("prompt-export", ["a/0123456789abcdef", "--to", "x.txt"], "no prompt version"),

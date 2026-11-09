@@ -604,6 +604,17 @@ code: {path: ../podcast_scraper}  # the system's own checkout
   written once), `evh prompt-export ID --to PATH`. The catalog's Prompts page shows names and versions; their text
   only with `catalog: {publish: [prompts]}` in `config.yaml`. `validate` V24 checks every version against its bytes.
 
+**Test sets and their looks** (RFC-029). A test set is a goal's dataset with `role: test`, or a split's sealed side.
+Each decision written on it is a look: an unseal (`dataset-unseal`), or a promotion compared with its current
+baseline there. Look k decides one-sided at 2.5%·6/(π²k²): 1.52%, 0.38%, 0.17%, ..., so looking again and again
+cannot manufacture a result. One question (the two configs, the measure, the rule) is one look however often it is
+asked: an unseal for a candidate and its later promotion against the same arm share it. Past 10 looks (or a goal's
+`test_looks: K`) a look needs the person's own `--confirm-extra-look` (an agent cannot give it); fresh items are the
+better way out. A promotion whose items could never reach its look's level (5 items reach 1/32 at best, above 1.52%)
+is refused, or with the person's `--override-no-evidence` recorded inconclusive. `pair-test` on a test set labels its
+answer "nominal, not a look"; `evh looks` lists each test set's looks and the next level; V25 reports a number two
+decisions took (two clones deciding at once).
+
 **Where runs go.** Measured runs go in `data/runs`: leave `EVAL_RUNS_DIR` unset, on every
 machine, so a run made on a laptop and one made on a GPU box land in the same place. An
 ignored run is not committed, so a fresh clone, CI and the published catalog never see it.

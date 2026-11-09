@@ -299,6 +299,13 @@ def main() -> int:
         help="also test whether A is no worse than B by more than this, in the metric's units: the contender test "
         "goals use (one-sided non-inferiority; ADR-0026), for this one pair, uncorrected",
     )
+    ap.add_argument(
+        "--look-level",
+        type=float,
+        metavar="L",
+        help="decide one-sided at this level, as a look at a test set does (RFC-029; run-promote passes the look's "
+        "level): A better than B; with --margin, non-inferiority at L too. Reports the smallest p these items can reach",
+    )
     ap.add_argument("--permutations", type=int, default=20000)
     ap.add_argument(
         "--family",
@@ -540,6 +547,44 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
         )
         label = f"within {args.margin:g} of B"
         print(f"    {label:<19}{ni['verdict']}" + (f", {said}" if said else ""))
+    look: dict | None = None
+    if args.look_level is not None:
+        # A look (RFC-029): one-sided, A better than B, at the look's level; the differences in the better direction.
+        from evaluation_harness.stats import min_attainable_p_one_sided, sign_flip_p_one_sided  # noqa: PLC0415
+
+        better = [-u for u in units] if lower else list(units)
+        p1 = sign_flip_p_one_sided(better, permutations=args.permutations, seed=args.seed)
+        reach = min_attainable_p_one_sided(better)
+        look = {
+            "level": args.look_level,
+            "p_one_sided": p1,
+            "attainable_p": reach,
+            "verdict": "SIGNIFICANT" if p1 <= args.look_level else "NOT-SIGNIFICANT",
+            "can_reach": reach is not None and reach <= args.look_level,
+        }
+        if args.margin is not None:
+            ni_look = stats_noninferior(
+                {i: A[i] for i in items},
+                {i: B[i] for i in items},
+                args.margin,
+                higher_is_better=not lower,
+                clusters=item_clusters(args.dataset_id, args.cluster) if args.cluster else None,
+                level=args.look_level,
+            )
+            look["noninferior"] = ni_look
+        print(
+            f"    as a look          one-sided p {fmt_p(p1)} at {args.look_level:.4%} -> {look['verdict']}"
+            + ("" if look["can_reach"] else f" (these items reach {reach:.4g} at best: they cannot show it)")
+        )
+    else:
+        from evaluation_harness import _looks  # noqa: PLC0415
+
+        if not cross and _looks.is_test_set(args.dataset_id):
+            nxt, _ = _looks.next_number(args.dataset_id)
+            print(
+                f"    test set           nominal, not a look: a decision here is look {nxt} of {args.dataset_id}, "
+                f"tested one-sided at {_looks.level(nxt):.4%} (evh looks)"
+            )
     hyp = None if cross else _hypothesis_of(args, runs)
     in_advance = bool(hyp and hyp["named"] is True)
     chosen_note = (
@@ -635,6 +680,7 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             "verdict": verdict,
             "selection": "leader" if chose else "named",
             "noninferior": ni,
+            "look": look,
             "candidates": candidates if chose else None,
             "hypothesis": {
                 "against": hyp["against"],

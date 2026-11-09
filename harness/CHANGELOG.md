@@ -13,6 +13,13 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Test-set looks** (RFC-029, its first part): a goal's `role: test` dataset or a sealed split side is a test set,
+  and each decision written on it (a `dataset-unseal`, a `run-promote` compared on it) is a look, keyed by its question
+  (the configs, the measure, the rule) so asking again reuses it. Look k decides one-sided at 2.5%·6/(π²k²) (1.52%,
+  0.38%, ...); past the limit (10, or a goal's `test_looks`) only the person's `--confirm-extra-look` allows another,
+  never an agent's. A promotion whose items could never reach its look's level is refused unless the person passes
+  `--override-no-evidence` (recorded inconclusive). `pair-test --look-level`; `pair-test` on a test set says
+  "nominal, not a look"; `evh looks`; V25 reports a look number two questions took.
 - **Prompt versions, and the code a system runs** (RFC-028): a config declares `prompts:` (files, wherever they live)
   or a `prompt_root:`; each run records the version it used in `data/prompts/` and its hash in the fingerprint's
   settings, and gives the adapter the text and a per-run copy of the root. `code:` records the system's checkout

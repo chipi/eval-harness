@@ -836,6 +836,10 @@ def test_example_scorer_suites_pass() -> None:
             "what a command may spend (RFC-026): one cap across passes, the provider's net, sweep, a round's budget",
         ),
         (
+            "test_looks.py",
+            "test-set looks (RFC-029): levels from decisions, one look per question, the limit and consent, V25",
+        ),
+        (
             "test_prompts.py",
             "prompt versions and code_ref (RFC-028): recorded once by content, given to the adapter, in the settings' hash",
         ),

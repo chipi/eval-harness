@@ -369,6 +369,65 @@ def min_attainable_p(n: int) -> float:
     return 2 / 2**n if n else 1.0
 
 
+def exact_p_one_sided(deltas: list) -> float:
+    """Exact one-sided sign-flip p (RFC-029): the share of the 2^n sign patterns whose sum is at least the observed
+    one, the deltas taken in the better direction (positive: the arm is better). Computed directly, not by halving
+    the two-sided p, which differs from it when the observed sum is negative or the distribution has ties."""
+    n = len(deltas)
+    if n == 0:
+        return 1.0
+    total = math.fsum(deltas)
+    obs = total - _EPS * max(1.0, abs(total))
+    half = n // 2
+    left = _signed_sums(deltas[:half])
+    right = sorted(_signed_sums(deltas[half:]))
+    hits = sum(len(right) - bisect.bisect_left(right, obs - x) for x in left)
+    return hits / 2**n
+
+
+def sign_flip_p_one_sided(deltas: list, permutations: int = PERMUTATIONS, seed: int = SEED) -> float:
+    """One-sided paired sign-flip p, H1: the mean difference is above 0 (RFC-029's looks decide one-sided): exact up
+    to EXACT_UP_TO items, a seeded estimate below LARGE_SAMPLE, the normal limit from LARGE_SAMPLE."""
+    if not deltas:
+        return 1.0
+    if len(deltas) <= EXACT_UP_TO:
+        return exact_p_one_sided(deltas)
+    q = math.fsum(d * d for d in deltas)
+    if len(deltas) >= LARGE_SAMPLE:
+        return 1.0 if q == 0 else 0.5 * math.erfc(math.fsum(deltas) / math.sqrt(q) / math.sqrt(2))
+    n, obs = len(deltas), math.fsum(deltas) / len(deltas)
+    neg = [-d for d in deltas]
+    hits = sum(
+        1
+        for keep in _signs(n, permutations, seed)
+        if math.fsum(chain(compress(deltas, keep), compress(neg, keep.translate(_FLIP)))) / n >= obs - _EPS
+    )
+    return (hits + 1) / (permutations + 1)
+
+
+def min_attainable_p_one_sided(
+    deltas: list | None = None,
+    n: int | None = None,
+    rule: str = "superiority",
+    binary: bool = False,
+    margin: float = 0.0,
+) -> float | None:
+    """The smallest p a look's one-sided test can reach on these items (RFC-029): before any run, from `n` (every
+    item may differ); after, from the paired `deltas`. Superiority: 1/2^n' over the non-zero differences.
+    Non-inferiority on 0/1: Tango's p with every discordant item favouring the arm. Non-inferiority on a continuous
+    measure: None below NONINF_MIN_UNITS items ("too few": the contender test does not answer there)."""
+    if deltas is not None:
+        nonzero = sum(1 for d in deltas if d != 0)
+        total = len(deltas)
+    else:
+        nonzero = total = int(n or 0)
+    if rule == "superiority":
+        return 1 / 2**nonzero if nonzero else 1.0
+    if binary:
+        return tango_p(nonzero, 0, total, margin)
+    return None if total < NONINF_MIN_UNITS else 1 / (NONINF_DRAWS + 1)
+
+
 def exact_ci(deltas: list, alpha: float = ALPHA):
     """A 95% interval for the mean paired difference: `cluster_ci` with every item its own cluster.
 

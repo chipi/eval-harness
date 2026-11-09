@@ -13,6 +13,7 @@
     "superseded_by": {"type": "string"},
     "context": {"type": "object", "properties": {"audience": {"type": "string"}, "usage": {"type": "string"}}},
     "decision": {"type": "string", "description": "The decision an answer to this goal informs."},
+    "test_looks": {"type": "integer", "minimum": 1, "description": "The protective limit of looks on this goal's test sets (RFC-029; default 10): past it a decision there needs the person's --confirm-extra-look. The smallest of the goals sharing a set applies."},
     "output_contract": {
       "type": "array",
       "description": "Every output shape the goal accepts. A run that declares a `format` must match one.",
