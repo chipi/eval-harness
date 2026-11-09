@@ -283,9 +283,9 @@ each with its tests in both stores (status column); 30 and 32 wait for R, 21 is 
 | # | what |
 | --- | --- |
 | 4.1 | Who acted on every record (a person, or an agent its operator asked; the owner's rule of 2026-11-04), then baselines per goal: versions, the evidence frozen, rollback, `evidence-check`; the reproduce block reuses `deploy-sheet` |
-| 4.2 | Background runs: a job set with a detached supervisor, `jobs-status`, `jobs-logs` |
-| 4.3 | Prompt versions; a standard `code_ref` in the fingerprint hook (item failures moved to A5) |
-| 4.4 | Studies (spec, ask/tell, samplers, stop rules) and test-set looks (the look budget, attainable p); they need 4.1 and 4.2 |
+| 4.2 | Background runs: a job set with a detached supervisor, `jobs-status`, `jobs-logs` (built as RFC-026 steps 1 to 7, 2026-11-09; step 8 is the Workbench, last) |
+| 4.3 | Prompt versions; a standard `code_ref` in the fingerprint hook (item failures moved to A5) (RFC-028, draft for the owner, 2026-11-09) |
+| 4.4 | Studies (spec, ask/tell, samplers, stop rules) and test-set looks (the look budget, attainable p); they need 4.1 and 4.2 (RFC-029, draft for the owner, 2026-11-09) |
 
 Dropped from the drafts (superseded by what shipped): their fingerprint v5 design and migration script, `arm.system`,
 prompts in the arm's hash, the "prefer MCP" rule, the study and job skills.
@@ -324,7 +324,7 @@ R3 to R5 start as example code; R1 and R2 are the core.
 
 - Pushed 2026-11-08 (owner's yes): S2 and S3, RFC-026 accepted, and the review's fixes, after `163b1b75d`.
 - S0b: RFC-026 is accepted and its four questions decided (2026-11-08: jobs wait for a held lock; uploads up to
-  50 MB; `evh jobs-*` commands; a round's budget enforced); nothing of it is built.
+  50 MB; `evh jobs-*` commands; a round's budget enforced). Steps 1 to 7 built 2026-11-09; step 8 (the Workbench) not.
 - S2 below 10,000 units: `family-test`'s first run (about 37 s at 1,000 items) is not faster (above).
 - The deployed inspector was killed by its memory cap 337 times on 2026-10-26/27 (infra's report, 2026-11-08); not
   looked into from here (no access to the box): the owner's and the prod session's.
