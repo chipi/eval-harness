@@ -2436,6 +2436,29 @@ def test_v5_tells_a_tie_from_a_copy() -> None:
         dupes = vt._v5_in(root)
         check("V5: all items right, the same outputs -> flagged", len(dupes) == 1, str(dupes)[:200])
 
+        # A regression guard (fleet feedback 28): the same code at another commit declares
+        # `expect_identical_to`, so the identical pair is what was asked for, not an inert knob; and a
+        # guard that does NOT reproduce its config fails.
+        m = json.loads((root / "arm_b" / "metrics.json").read_text())
+        m["expect_identical_to"] = "arm_a"
+        (root / "arm_b" / "metrics.json").write_text(json.dumps(m))
+        dupes = vt._v5_in(root)
+        n, bad = vt._v5_guards(root)
+        check(
+            "V5: the same outputs, one declaring expect_identical_to the other -> not flagged, the guard holds",
+            not dupes and n == 1 and not bad,
+            (dupes, n, bad),
+        )
+        _outputs.write_all(
+            root / "arm_b", {f"i{i}": "label: refund" for i in range(4)}, [f"i{i}" for i in range(4)]
+        )
+        n, bad = vt._v5_guards(root)
+        check(
+            "V5: a guard whose outputs differ from the config it must reproduce -> failed, named",
+            n == 1 and len(bad) == 1 and "must reproduce arm_a" in bad[0] and "outputs differ" in bad[0],
+            bad,
+        )
+
 
 def test_rescore_can_move_runs_onto_a_new_reference_set() -> None:
     """Gold that arrives after the runs: `rescore --reference-id` re-scores stored outputs

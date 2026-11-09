@@ -1226,6 +1226,7 @@ def _run(args: argparse.Namespace) -> int:
             model_record=cfg.get("model_record") or None,
             deployment_id=cfg.get("deployment") or None,
             format=cfg.get("format") or None,
+            expect_identical_to=cfg.get("expect_identical_to") or None,
             **hypothesis,
             reference_tier=result["reference_tier"] or None,
             reference_coverage=coverage

@@ -11,7 +11,9 @@ Each check exists because its absence let a real defect through somewhere:
   V4  materialized   a dataset whose materialized copy drifted from its hashes
   V5  duplicates     two runs reporting byte-identical scores AND identical
                      per-item results on the same dataset. Agreeing MEANS are not
-                     suspicious on a discrete metric; agreeing per item is
+                     suspicious on a discrete metric; agreeing per item is. A run
+                     whose config says `expect_identical_to: <config>` (a regression
+                     guard) is expected to agree, and fails V5 when it does not
   V6  baselines      a baseline pointing at a run that no longer exists
   V7  readable       a committed run with no metrics.json
   V8  config_ids     two run directories claiming the same (dataset_id, config_id)
@@ -367,16 +369,26 @@ def v5_duplicate_scores() -> None:
     Within a directory: a rescore that left a run's scores as they were is identical to its
     source in runs/ by design."""
     dupes: list[list] = []
+    broken: list[str] = []
+    guards = 0
     for base in run_bases():
         dupes += _v5_in(base)
+        n, bad = _v5_guards(base)
+        guards += n
+        broken += bad
     for group in dupes:
         print(
             f"       identical scores AND identical per-item results: {', '.join(str(n) for n, _, _ in group)}"
         )
+    for x in broken:
+        print(f"       {x}")
     check(
-        "V5 no two configs report byte-identical scores",
-        not dupes,
-        f"{len(dupes)} suspicious group(s) — differing params produced identical output",
+        "V5 no two configs report byte-identical scores"
+        + (f"; {guards} regression guard(s) reproduce what they must" if guards else ""),
+        not dupes and not broken,
+        f"{len(dupes)} suspicious group(s) — differing params produced identical output"
+        if dupes
+        else f"{len(broken)} regression guard(s) differ from the config they must reproduce",
     )
 
 
@@ -398,6 +410,10 @@ def _v5_in(base: Path) -> list[list]:
     dupes: list[list] = []
     for group in by_key.values():
         known = group
+        # A regression guard (fleet feedback 28): the same code at two commits MUST agree; a group joined by
+        # `expect_identical_to` declarations is the agreement asked for, not an inert knob.
+        if _declared_together(base, {c for _, c, _ in known}):
+            continue
         if len({c for _, c, _ in known}) > 1 and len({p for _, _, p in known}) > 1:
             # AGREEING MEANS IS NOT AGREEING MEASUREMENT. The check's premise -- "independent
             # arms do not agree to full float precision" -- holds for a continuous metric and
@@ -421,6 +437,58 @@ def _v5_in(base: Path) -> list[list]:
                 continue
             dupes.append([(f"{base.name}/{n.name}", c, p) for n, c, p in known])
     return dupes
+
+
+def _declared_together(base: Path, configs: set) -> bool:
+    """Whether every config of a V5 group is joined to the others by `expect_identical_to` declarations."""
+    if len(configs) < 2:
+        return False
+    edges = {(c, t) for c, t, _r in _guards_in(base) if c in configs and t in configs}
+    reach, todo = set(), [next(iter(configs))]
+    while todo:
+        c = todo.pop()
+        if c in reach:
+            continue
+        reach.add(c)
+        todo += [b for a, b in edges if a == c] + [a for a, b in edges if b == c]
+    return reach == configs
+
+
+def _guards_in(base: Path) -> list[tuple]:
+    """(config_id, the config it must reproduce, its run directory) for every run in `base` that declares one."""
+    out = []
+    for run in sorted(_store.iterdir(base)):
+        m = run / "metrics.json"
+        if _store.is_file(m) and (d := parsed(m)) is not None and d.get("expect_identical_to"):
+            out.append((d.get("config_id"), d["expect_identical_to"], run))
+    return out
+
+
+def _v5_guards(base: Path) -> tuple[int, list[str]]:
+    """Every regression guard in `base` against the latest run of the config it names on the same dataset: the
+    per-item results and the outputs must be the same. A guard whose config has no run there yet is not counted."""
+    checked, bad = 0, []
+    for cfg, target, run in _guards_in(base):
+        d = parsed(run / "metrics.json") or {}
+        theirs = sorted(
+            r for r in _store.iterdir(base)
+            if _store.is_file(r / "metrics.json")
+            and (m := parsed(r / "metrics.json") or {}).get("config_id") == target
+            and m.get("dataset_id") == d.get("dataset_id")
+        )  # fmt: skip
+        if not theirs:
+            continue
+        checked += 1
+        other = theirs[-1]
+        if _per_item_signature(run) != _per_item_signature(other):
+            bad.append(
+                f"{base.name}/{run.name} ({cfg}) must reproduce {target}: its per-item results differ from {other.name}"
+            )
+        elif _outputs_signature(run) != _outputs_signature(other):
+            bad.append(
+                f"{base.name}/{run.name} ({cfg}) must reproduce {target}: its outputs differ from {other.name}"
+            )
+    return checked, bad
 
 
 def v6_baselines() -> None:

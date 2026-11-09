@@ -15,6 +15,7 @@
     "model_record": {"type": "string", "description": "The model record this arm runs (RFC-020, optional): data/models/<id>.yaml. Its settings go under the config's params (the config wins); `model` comes from its first alias when params give none."},
     "deployment": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$", "description": "Which of the model record's deployments this arm runs (RFC-021, optional; needs `model_record`): the id of an entry in the record's `deployments`. The run's fingerprint takes the deployment's weights, server and hardware from it."},
     "format": {"type": "string", "minLength": 1, "description": "The output shape, matched against the goal's output_contract."},
+    "expect_identical_to": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$", "description": "A regression guard (fleet feedback 28): the config_id whose runs this arm must reproduce item for item, output for output (the same code at another commit). validate V5 then reads the pair as expected, not as an inert knob, and fails it when they differ. Outside the fingerprint."},
     "hypothesis": {
       "type": "object",
       "description": "What this arm is expected to do, written before its run (ADR-0025, optional). A run records it and whether it was committed before the run; pair-test says so. Not part of the fingerprint. Its keys (against, measure, direction better|worse|no-worse, statement, optional items) are checked by validate V20 and by evh run, which say what is wrong in words.",

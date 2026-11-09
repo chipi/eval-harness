@@ -324,6 +324,19 @@ stated direction (`yes`, `no`, `not shown`); a hypothesis found in A's config th
 reads `no` (added after the run). `evh goals --goal G` shows it in a `hypothesis` column beside the arm.
 [ADR-0025](../../docs/adr/ADR-0025-a-hypothesis-lives-in-the-arm-config.md).
 
+**A regression guard (optional).** An arm that must give exactly what another gives (the same code at a newer
+commit, a refactor, a dependency bump) says so in its config:
+
+```yaml
+expect_identical_to: my_config_v1   # its runs must reproduce that config's, item for item, output for output
+```
+
+`evh validate` (V5) otherwise reads two configs with identical outputs as a result that was not measured or a knob
+with no effect; with the declaration it reads them as the agreement asked for, and fails the guard instead when its
+per-item results or its outputs differ from the latest run of the config it names on the same dataset ("must
+reproduce my_config_v1: its outputs differ from …"). The run records the key in `metrics.json`; it is not part of
+the fingerprint.
+
 **What a run records as its cost.** Each call's `cost_usd` is the provider's bill when the
 response carries one (`usage.cost`), and otherwise the config's price table, tokens ×
 `usd_per_mtok_in` / `usd_per_mtok_out`. With no price table and no bill the cost is unknown, not
@@ -1125,7 +1138,7 @@ commands are its only writers, and a project that never opens one sees none of i
 
 ```bash
 evh round-open --goal my_goal --dataset my_v1 --hypothesis "what this round sets out to learn" \
-    --keep arm_a_v1,arm_b_v1                       # round 1: carry in arms already run
+    --keep arm_a_v1,arm_b_v1 --baseline arm_a_v1   # round 1: carry in arms already run, one as the baseline
 evh rounds --goal my_goal                          # the evidence, and the next decisions as commands
 evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --reason "why it is dropped"
 evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --runs-dir runs-linux --reason "..."  # one copy only
@@ -1139,6 +1152,10 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
   already count, and `round-open` says so ("Carried in as they are, their runs already count: …
   (their configs need no change and they need not run again)"). Commit the round file before
   the runs.
+- **The run a round starts from** is the dataset's promoted baseline when it has one. Without one (a goal's first
+  rounds, or arms carried in with `--keep`), name it: `--baseline <config_id>` takes that config's latest measured
+  run on the dataset, or give a run id. `round-open` says which run the round starts from; `pair-test --round` and
+  `evh rounds` read the round's arms against it.
 - **`evh rounds` never suggests promoting the run that already is the baseline**: its close
   suggestion then reads "close the round with what it showed (<arm> is already the baseline)",
   with no `--promote`. `leaderboard --round` does not warn about two versions of one arm (`_v1`,

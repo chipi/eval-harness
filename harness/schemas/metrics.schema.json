@@ -91,6 +91,7 @@
     "model_record": {"type": "string", "description": "The model record its config named (RFC-020, optional): data/models/<id>.yaml, whose settings it ran with."},
     "deployment_id": {"type": "string", "description": "The deployment of that record its config named (RFC-021, optional): an id in the record's `deployments`."},
     "format": {"type": "string", "description": "The output format the config asked for; must be one the goal's output_contract accepts (validate V14)."},
+    "expect_identical_to": {"type": "string", "description": "The config this run must reproduce item for item, from its config (a regression guard): validate V5 checks it does."},
     "hypothesis": {"type": "object", "description": "The hypothesis block of the run's config (ADR-0025): what the arm was expected to do against which config on which measure. Outside the fingerprint."},
     "hypothesis_in_advance": {
       "type": "object",

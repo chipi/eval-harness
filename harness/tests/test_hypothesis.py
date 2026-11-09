@@ -109,6 +109,25 @@ try:
     r = evh("run", "--config", "data/configs/lead1.yaml", extra_env={"EVAL_BUILD_REF": "no-git-test"})
     check("setup: the arm it is compared with has run", r.returncode == 0, out(r)[-300:])
 
+    # ── a regression guard (fleet feedback 28): the same settings under another config id, expected identical ──
+    write_cfg("guard.yaml", "tickets_guard_v1", 1)
+    cfgs = proj / "data" / "configs"
+    (cfgs / "guard.yaml").write_text(
+        (cfgs / "guard.yaml").read_text() + "expect_identical_to: tickets_lead1_v1\n"
+    )
+    r = evh("run", "--config", "data/configs/guard.yaml", extra_env={"EVAL_BUILD_REF": "no-git-test"})
+    v = evh("validate")
+    check(
+        "run: expect_identical_to is recorded on the run; validate V5 reads the pair as a guard that holds",
+        r.returncode == 0
+        and metrics_of("tickets_guard_v1").get("expect_identical_to") == "tickets_lead1_v1"
+        and "1 regression guard(s) reproduce what they must" in v.stdout,
+        out(r)[-300:] + v.stdout[-600:],
+    )
+    for f in (proj / "data" / "runs").glob("tickets_guard_v1_*"):
+        shutil.rmtree(f)
+    (cfgs / "guard.yaml").unlink()
+
     # ── outside git: not determinable ─────────────────────────────────────────────────────────────────
     write_cfg("nogit.yaml", "tickets_nogit_v1", 2, HYP)
     r = evh("run", "--config", "data/configs/nogit.yaml", extra_env={"EVAL_BUILD_REF": "no-git-test"})

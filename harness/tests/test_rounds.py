@@ -351,6 +351,48 @@ try:
         "\n".join(rows) or r.stdout[-800:],
     )
 
+    # Fleet feedback 22: a round opened with --keep carried its baseline arm in but recorded no baseline, and
+    # `pair-test --round` refused. --baseline names it, by config id or run id.
+    r = evh(
+        "round-close",
+        "--goal",
+        "tickets_summary",
+        "--round",
+        "r2",
+        "--conclusion",
+        "closed to open r3 in the test",
+    )
+    r = evh(
+        "round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1",
+        "--keep", "tickets_lead1_v1", "--baseline", "nope_v1",
+    )  # fmt: skip
+    check(
+        "round-open --baseline: a config with no measured run on the dataset is refused, nothing written",
+        r.returncode != 0
+        and "no measured run" in out(r)
+        and not _runstore.exists(proj, "rounds/tickets_summary/r3.yaml"),
+        out(r),
+    )
+    lead1 = sorted(n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_lead1_v1_"))
+    r = evh(
+        "round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1",
+        "--keep", "tickets_lead1_v1,tickets_lead2_v1", "--baseline", "tickets_lead1_v1",
+    )  # fmt: skip
+    doc3 = _runstore.read_text(proj, "rounds/tickets_summary/r3.yaml") if r.returncode == 0 else ""
+    check(
+        "round-open --baseline <config>: the round records that config's latest run, and says so",
+        bool(lead1) and f"baseline: {lead1[-1]}" in doc3 and f"It starts from {lead1[-1]}" in r.stdout,
+        out(r) + doc3,
+    )
+    r = evh("pair-test", "--dataset-id", "tickets_v1", "--goal", "tickets_summary", "--round", "r3")
+    check(
+        "pair-test --round on that round: its leader against the named baseline, no --b needed",
+        r.returncode == 0
+        and "records no other baseline" not in out(r)
+        and "against tickets_lead1_v1" in out(r),
+        out(r)[-400:],
+    )
+
     evh("catalog")
     page = (proj / ".build/catalog/g/tickets_summary.html").read_text()
     check(

@@ -13,6 +13,14 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **A round's baseline can be named** (the fleet's feedback 22): `evh round-open … --baseline <config_id or run id>`
+  records the run the round starts from when the dataset has no promoted baseline (arms carried in with `--keep`), so
+  `pair-test --round` and `evh rounds` read its arms against it instead of refusing ("records no other baseline
+  run"). `round-open` says which run the round starts from.
+- **A regression guard** (the fleet's feedback 28): `expect_identical_to: <config_id>` in an arm's config says its
+  runs must reproduce that config's, item for item and output for output (the same code at another commit).
+  `evh validate` V5 reads such a pair as the agreement asked for, not as an inert knob, and fails the guard when they
+  differ. Recorded on the run, outside the fingerprint.
 - **A project's data in SQLite, a project's choice** (RFC-025). Files stay the default; `store: sqlite` in
   `config.yaml`, or `EVAL_STORE=sqlite`, keeps everything under `data/` in one database, `data/project.sqlite`
   (write-ahead logged; a run's outputs and rows committed as they are produced), and nothing under `data/` on disk

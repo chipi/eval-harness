@@ -1,7 +1,7 @@
 """Eval rounds (ADR-0004), optional: open, retire, close, and the status with suggestions.
 
     evh round-open   --goal G --dataset D [--from rN] [--hypothesis "..."] [--change "..."]...
-                     [--keep cfg,...] [--retire cfg,... --reason "..."] [--budget-usd N]
+                     [--keep cfg,...] [--retire cfg,... --reason "..."] [--budget-usd N] [--baseline cfg|run]
     evh round-retire --goal G --round rN --arm cfg [--runs-dir DIR] --reason "..."
     evh round-close  --goal G --round rN --conclusion "..." [--promote <run_id>]
     evh rounds       --goal G [--round rN]
@@ -89,6 +89,11 @@ def open_round(argv: list[str]) -> int:
     ap.add_argument("--retire", help="config ids from earlier rounds dropped here")
     ap.add_argument("--reason", default="", help="why the --retire arms are dropped")
     ap.add_argument("--budget-usd", type=float, help="what the round may spend")
+    ap.add_argument(
+        "--baseline",
+        help="the run the round starts from, by its config id (its latest measured run on --dataset) or its run id; "
+        "default: the dataset's promoted baseline. What `pair-test --round` and `rounds` read the round's arms against",
+    )
     args = ap.parse_args(argv)
     _goal(args.goal)
     if not _store.is_file(_common.DATASETS / f"{args.dataset}.json"):
@@ -124,6 +129,20 @@ def open_round(argv: list[str]) -> int:
     if args.retire and len(args.reason.split()) < 3:
         die("--retire needs --reason, a sentence: why are these arms dropped?", "bad-argument")
     base = _common.BASELINES / f"{args.dataset}_baseline.json"
+    start = read_json(base).get("promoted_from") if _store.is_file(base) else None
+    if args.baseline:
+        # Fleet feedback 22: a round opened with --keep carried its baseline arm in but recorded no baseline, and
+        # `pair-test --round` then refused ("records no other baseline run").
+        runs = rs.measured_runs(args.dataset)
+        named = [d for d, m in runs if d.name == args.baseline] or sorted(
+            (d for d, m in runs if m.get("config_id") == args.baseline), key=lambda d: d.name
+        )
+        if not named:
+            die(
+                f"--baseline {args.baseline}: no measured run of that config or with that run id on {args.dataset}",
+                "not-found",
+            )
+        start = named[-1].name
     rid = _rounds.next_id(args.goal)
     doc = {
         "round_id": rid,
@@ -132,7 +151,7 @@ def open_round(argv: list[str]) -> int:
         "from": args.from_,
         "hypothesis": args.hypothesis,
         "changes": args.change,
-        "baseline": read_json(base).get("promoted_from") if _store.is_file(base) else None,
+        "baseline": start,
         "budget_usd": args.budget_usd,
         "carried": carried,
         "status": "open",
@@ -144,6 +163,11 @@ def open_round(argv: list[str]) -> int:
     p = _rounds.save(doc)
     print(
         f"{p.relative_to(_common.ROOT) if p.is_relative_to(_common.ROOT) else p}: round {rid} of {args.goal}, open"
+    )
+    print(
+        f"  It starts from {start}."
+        if start
+        else "  It starts from no baseline run (none promoted; --baseline names one)."
     )
     if carried:
         print(
