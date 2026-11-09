@@ -1,6 +1,6 @@
 # RFC-027: Who acted on every record, and baselines per goal
 
-- **Status**: Draft (0.8.0, 2026-11-09), for the owner's review; revision 2 the same day, after an independent review
+- **Status**: Accepted (owner, 2026-11-09: "mark both as accepted and start building"); not built yet. Revision 2 the same day, after an independent review
   (Fable) and the owner's answers to it. Its questions decided by the owner ("1 no, 2 run without goal is OK", 3:
   "drop it"; then "2 go with recommendation, 4 agree, 5 yes"). Step 4.1 of `research/internal/PLAN_0.8.0.md`.
 - **Authors**: Marko Dragoljevic

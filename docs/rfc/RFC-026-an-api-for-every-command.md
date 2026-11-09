@@ -1,6 +1,6 @@
 # RFC-026: An API for every command, long ones as jobs
 
-- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"); not built yet. Owner, 2026-11-06: "next RFC is
+- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); not built yet. Owner, 2026-11-06: "next RFC is
   for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions decided by the owner the same
   day (below: "1 waiting, 2 [the proposed file size], 3 yes, 4 enforce"). Revision 2 (2026-11-09), after an
   independent review (Fable) and aligned with [RFC-027](RFC-027-who-acted-and-baselines-per-goal.md): 82 commands,
