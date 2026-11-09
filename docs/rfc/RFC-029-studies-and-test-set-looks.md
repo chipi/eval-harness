@@ -1,7 +1,7 @@
 # RFC-029: Studies, and the looks a test set allows
 
-- **Status**: Draft (0.8.0), revision 2 (2026-11-09): the owner's answers to four questions, and an independent
-  review's findings (Fable), each checked against the code; two questions left. Revision 1 the same day. Step 4.4 of
+- **Status**: Draft (0.8.0), revision 2 (2026-11-09): the owner's answers to its six questions, and an independent
+  review's findings (Fable), each checked against the code; for the owner's acceptance. Revision 1 the same day. Step 4.4 of
   `research/internal/PLAN_0.8.0.md`. It reworks the 0.5.0 drafts' RFC-010 (studies, revision 3), RFC-015's heldout
   looks and attainable p, and PRD-009 FR2-FR5 (not merged; on `backup/050-pre-rebase-20261028`) onto what shipped
   since: rounds, the sealed side of a split and its looks (the fleet's feedback 29), the contender test (A2), who
@@ -98,7 +98,10 @@ looking again and again cannot manufacture a result; a check refuses a look that
   failed or no effect with the reason, the cost, the items shown to the sampler), `end` (the stop rule, a summary),
   `confirm`. The study's state is read from the log, never stored apart. Every write to it is under the study's lock
   (`study:<goal>/<study_id>`, RFC-026), since in the SQLite store an append is a read and a rewrite.
-- **A trial's config**: see question 1.
+- **A trial's config** is written once as a record, `data/studies/<goal>/<study_id>/t<k>.yaml` (config id
+  `<study_id>-t<k>`, `round:` the study's round), and config discovery (`_common.arm_config_files`) reads
+  `data/studies/*/*/*.yaml` too, so `run`, `validate`, the catalog and `dataset-unseal` see a trial as any config
+  (owner, 2026-11-09).
 - **The round**: `study-run` opens one with `study: <study_id>`; it closes when the study ends, never by hand, and does
   not count against the one-open-round rule. Each trial is an arm; a dropped trial is retired with its reason.
 - **V5**: a trial that measures exactly as the best so far (a change the system does not read) is a finding: V5 notes
@@ -155,14 +158,15 @@ append end; close the round
    count is recorded; none left refuses. `run` gains `--items FILE` (the item ids to run; the fingerprint's
    `items_sha256` is then the part's, and the look is still the whole set's, by its digest).
 3. The configs: the trial's and the baseline's, each with `dataset_id` the test set (config ids `<id>-on-<test>`,
-   written as the trial configs are, question 1); a sealed set is unsealed for exactly these two, as this look.
+   written as the trial configs are); a sealed set is unsealed for exactly these two, as this look.
 4. The look: its key, number and level; past the limit, the person's `--confirm-extra-look`; a look that could never
    meet the rule is refused.
 5. The two run once on those items (jobs). The verdict at the look's level, one-sided: superiority, or
    non-inferiority by the goal's margin; the limits as non-inferiority in the same Holm family; a failed limit caps the
    outcome at inconclusive. Shown beside the trial's validation effect, so the optimizer's curse is visible.
-6. The verdict is added to the `confirm` line; promotion is suggested only when the outcome meets the rule: see
-   question 2.
+6. The verdict is added to the `confirm` line; promotion is suggested only when the outcome meets the rule: the
+   trial's run on the test set, as the goal's baseline on the test set, its evidence the confirmation (the same
+   look); the validation set's baseline is left alone (owner, 2026-11-09).
 
 ### Commands (each with `--json`; RFC-026 serves them)
 
@@ -224,16 +228,5 @@ the "nominal, not a look" label on test sets; a goal's recommendation does not c
 2. **The agent sampler**: `study-ask` and `study-tell` on the command line, the API, and as MCP tools.
 3. **Looks**: an unseal, a confirmation and a promotion on a test set each take one (one per key).
 4. **The protective limit**: 10.
-
-## Questions for the owner
-
-1. **A trial's config: a file, or only a line in the log?** `run`, `validate`, the catalog and `dataset-unseal` find
-   configs in `data/configs/` (`_common.arm_config_files`). The drafts' revision 2 kept a trial only as a line in the
-   study's log, to be read back as a config. Proposed: write each trial's config once as a record,
-   `data/studies/<goal>/<study_id>/t<k>.yaml`, and have config discovery read `data/studies/*/*/*.yaml` too: every
-   command then sees a trial as any config, at the cost of one small file per trial beside the log. The other way:
-   teach each command to build a config from a log line.
-2. **What a confirmed trial promotes.** Baselines are a goal's on one dataset (RFC-027). Proposed: the trial's run on
-   the test set (from the confirmation) is promoted on the test set, its evidence the confirmation (the same look),
-   so the goal's baseline on its test set is the confirmed trial; the validation set's baseline is left alone. The
-   other way: promote the trial's validation run, with the confirmation attached as its evidence.
+5. **A trial's config**: a file per trial, found by config discovery.
+6. **What a confirmed trial promotes**: its run on the test set, on the test set, the confirmation its evidence.
