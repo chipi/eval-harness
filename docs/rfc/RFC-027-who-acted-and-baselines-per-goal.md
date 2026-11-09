@@ -1,7 +1,7 @@
 # RFC-027: Who acted on every record, and baselines per goal
 
-- **Status**: Draft (0.8.0, 2026-11-09), for the owner's review; three open questions below. Step 4.1 of
-  `research/internal/PLAN_0.8.0.md`.
+- **Status**: Draft (0.8.0, 2026-11-09), for the owner's review. Open questions 1 and 2 decided by the owner the same
+  day ("1 no, 2 run without goal is OK"); 3 open. Step 4.1 of `research/internal/PLAN_0.8.0.md`.
 - **Authors**: Marko Dragoljevic
 - **Related**: the 0.5.0 drafts it reworks (PRD-011 and RFC-012, the evidence registry; PRD-012 and RFC-013 D5/D8, the
   actor and consent; not merged), [RFC-026](RFC-026-an-api-for-every-command.md) (its jobs pass `by` and `reason` to
@@ -46,8 +46,10 @@ or round that does not exist, or a file that is gone.
   command or once per shell. RFC-026's job passes its `by` the same way.
 - **No consent machinery.** The drafts refused an agent's promotion and made the person rerun it with `--confirm`.
   The owner's rule is the opposite: an agent acts when its operator asked. So the harness records, it does not
-  refuse: an agent's decision carries `for` (whose decision it was) and its `--reason` says what was asked. Open
-  question 1 is whether an `unknown` actor may make a decision.
+  refuse: an agent's decision carries `for` (whose decision it was) and its `--reason` says what was asked.
+- **A decision needs a named actor** (owner, 2026-11-09): `run-promote`, `baseline-rollback`, `round-close` and
+  `dataset-unseal` refuse an `unknown` actor, saying how to name one (`--by`, or `EVH_ACTOR` with `EVH_FOR`). Runs,
+  labels and every other record take `unknown` and go ahead.
 
 ### D2. Baselines per goal, versioned
 
@@ -56,7 +58,11 @@ or round that does not exist, or a file that is gone.
   rest stay as they are; new: `version`, `goal`, `actor`, `reason` (required), `replaces` (the version it replaced,
   none for the first), `evidence` (D3).
 - `evh run-promote --run R --reason "…"` promotes into the run's own goal (its config's `goal:`); `--goal G` names
-  another of the dataset's goals. A run with no goal: open question 2.
+  another of the dataset's goals.
+- **A baseline with no goal** (owner, 2026-11-09: ad-hoc experiments need not be tied to a goal): a run whose config
+  names none is promoted into the dataset's own baselines, `data/baselines/_dataset/<dataset_id>/<n>.json`, versioned,
+  evidenced and rolled back the same way; `--no-goal` puts a goal's run there too. A goal never reads them; a command
+  asked about the dataset without a goal (`pair-test` with no `--goal`) does.
 - `evh baseline-rollback --goal G --dataset D --to N --reason "…"` writes the next version restoring N, with its own
   evidence (N against what is current now).
 - Readers move to `_baselines.current(goal, dataset)`: `pair-test` (its default B), `rounds` (the round's starting
@@ -122,7 +128,8 @@ records with no `actor`, after the migration has written one on every record.
 `data/baselines/<dataset>_baseline.json` to `<goal>/<dataset>/1.json` under the goal its record names, with `evidence:
 null` and `migrated: true` ("promoted before 0.8.0, evidence not recorded"), and writes `actor: {"type": "unknown",
 "name": "before 0.8.0"}` on every existing record, the label sets' `by` becoming the actor's name. This repository's
-eight baselines: seven name a goal; `smoke_v1`'s does not (open question 2). No reader keeps the old path.
+eight baselines: seven name a goal and move under it; `smoke_v1`'s names none and moves to the dataset's own
+baselines. No reader keeps the old path.
 
 ## Alternatives considered
 
@@ -151,13 +158,13 @@ eight baselines: seven name a goal; `smoke_v1`'s does not (open question 2). No 
 
 ## Open questions (the owner's)
 
-1. **May an `unknown` actor make a decision?** (promote, rollback, round-close, unseal). Recommended: no, refused with
-   how to name it (`--by`, or `EVH_ACTOR` and `EVH_FOR`); runs, labels and the rest record `unknown` and go ahead.
-2. **A run with no goal** (the tutorial promotes before it has goals; `smoke_v1` here). Recommended: promotion asks
-   for a goal: `--goal G`, or the run's config names one; `smoke_v1`'s baseline is migrated under a goal written for
-   it, or dropped if nothing reads it.
-3. **`evidence-check` in 0.8.0**, or when the podcast project asks? Recommended: in 0.8.0; it is small and the
-   per-goal versions are what make a replaced citation detectable.
+1. ~~May an `unknown` actor make a decision?~~ Decided: no (D1).
+2. ~~A run with no goal?~~ Decided: promoted into the dataset's own baselines (D2).
+3. **`evidence-check` in 0.8.0**, or when a project cites harness ids? Recommended (revised 2026-11-09, after reading
+   the file): not in 0.8.0. The podcast project's citation file (`podcast-scraper-eval-data/data/eval/registry_refs.yaml`,
+   62 lines) cites eval reports by path, never a harness id, and its own script already checks those paths; so today
+   the command would only repeat that. The versioned baselines and `evh baselines --json` (D2, D4) are what a
+   later citation of a harness id needs, and they stay.
 
 ## Decisions (ADR candidates)
 
