@@ -13,6 +13,13 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **What a command may spend, and a round's budget enforced** (RFC-026 step 5): `EVAL_MAX_COST_USD` caps the
+  whole command (`run --repeat 3` stops at one cap, not three); `arm-smoke` stops at it; the bundled provider layer
+  counts the calls too, a second net under an adapter that reports less; `sweep` and `model-onboard` give each child
+  what is left; `judge` takes the lower of its config's cap and this one. A run or smoke of a round with
+  `budget_usd` reserves its share in the round's ledger before its first call and is refused (`over-budget`, a new
+  refusal kind) when nothing is left; a stopped or killed run's paid items count; `evh rounds` shows what is left.
+  `POST /api/v1/estimate` answers a job command's `--dry-run`.
 - **The server's writes on the jobs' locks** (RFC-026 step 4): the data page's save, delete and rebuild take the
   locks a job takes (a save while a job writes the settings is refused, `409 busy`, naming the job); the data page's
   routes need the server's token, set by the **Configure** link `catalog-serve` now prints. While a migration holds

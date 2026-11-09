@@ -615,6 +615,7 @@ ALLOWED = {
     "harness/scripts/_api.py": "the API's token and a job's uploads, under .build/, outside data/ (RFC-026)",
     "harness/scripts/_jobs.py": "jobs and their lock files, under .build/, outside data/ (RFC-026)",
     "harness/scripts/jobs_supervisor.py": "a job's own folder under .build/jobs, outside data/ (RFC-026)",
+    "harness/scripts/_spend.py": "a round's ledger under .build/rounds and a child's spend in a temp file, outside data/ (RFC-026)",
     "harness/scripts/sources/*.py": "a dataset source reads the file or folder a person names to it, outside data/",
     "harness/scripts/importers/*.py": "an importer reads the file a person names to it",
     "harness/tools/_wheel.py": "packaging: copies the harness's own files",

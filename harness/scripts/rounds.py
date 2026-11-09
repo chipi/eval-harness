@@ -520,6 +520,15 @@ def evidence(goal: str, rnd: dict) -> dict:
     out["spent"] = spent
     if rnd.get("budget_usd") is not None:
         line = f"spent ${spent:.4f} of ${rnd['budget_usd']:.2f}"
+        if rnd.get("status") != "closed":
+            # What a spending command would be given now (RFC-026 step 5): running commands' reservations and a
+            # stopped run's paid items counted, as the commands count them.
+            from evaluation_harness import _spend  # noqa: PLC0415
+
+            left = _spend.round_left(rnd)
+            out["left"] = None if left is None else round(left, 8)
+            if left is not None and abs(rnd["budget_usd"] - spent - left) > 1e-9:
+                line += f"; ${max(left, 0):.4f} left, counting what running or stopped commands hold"
         out["notes"].append(line + (" — over budget" if spent > rnd["budget_usd"] else ""))
     leader = _best(A, arms, metric, lower)
     out["leader"] = leader

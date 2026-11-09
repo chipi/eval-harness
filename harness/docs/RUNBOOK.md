@@ -682,6 +682,21 @@ estimate. While a run goes it prints one line per finished item,
 once there is one, flushed as it is written even when stdout is a log file or a pipe (a detached job is watched
 through its log). Above 2,000 items it prints every k-th item and the last, and says so once.
 
+**What a command may spend** (RFC-026). `EVAL_MAX_COST_USD` (a job's `max_cost_usd`) is the most one command
+spends, in all: `run --repeat 3` stops at one cap, not three, and `arm-smoke` stops at it too (flagged `cost:
+stopped at the cap`). The commands count what each call reports; the bundled provider layer counts the same calls
+again, so an adapter that reports less than its calls cost is still stopped at the cap. `sweep` and `model-onboard`
+give each child what the ones before it left (a child that is killed before it can say what it spent is counted at
+all it was given); `judge` takes the lower of its config's `cost_cap_usd` and the cap.
+
+**A round's budget is enforced.** A run (or a smoke) of an arm whose config names an open round with `budget_usd`
+reserves, before its first call, the least of its own cap and what the round has left, in the round's ledger
+(`.build/rounds/<goal>/<round>.json`); it spends at most that. What a round has left is its budget, less what its
+runs spent, less what running commands reserved, less what a stopped or killed run's items paid (its run is not
+listed, its items were paid for). So arms started at once share the budget: give each its own
+`EVAL_MAX_COST_USD`, or the first takes all that is left. With nothing left a run is refused before any call
+(`ERROR (over-budget)`); `evh rounds` shows what is left beside what was spent.
+
 `evh run` warns, naming the items, when outputs stop at `max_tokens` (the provider's
 `finish_reason`, or tokens out reaching the cap): they are scored as if complete. The harness
 times every call (`latency_ms`) unless the adapter reports its own.
@@ -1357,6 +1372,9 @@ server restarts, in `.build/jobs/<id>/` (its record, its state, its `log`, its e
 (a config, a dataset, a goal's baselines, the captures, the catalog; the whole project for a migration), and one
 whose lock is held waits, `queued`, saying which job holds it. The command holds its locks itself, so they outlive
 the supervisor: a job whose supervisor died reads `running (unsupervised)` while its command lives, `lost` after.
+`POST /api/v1/estimate` with `{"command", "args"}` runs a job command's own `--dry-run` (`run`, `sweep`,
+`judge-score` and the migrations have one) and answers what it printed; a stopped run job's round reservation is
+closed by its supervisor with what the run's items paid.
 The server's own writes (the data page's) take the same locks. `evh catalog` builds beside the served folder and
 swaps it in, from the terminal or as a job, so a server keeps serving the old pages until the new ones are whole (the
 swap is two renames: for the time of one system call between them the folder is absent). While a migration holds the
@@ -1718,6 +1736,7 @@ the rest.
 | `not-configured` | a key, a cost cap, a build ref or an endpoint is not set |
 | `failed` | something outside the command failed: an importer, a server, a hook, the warm-up |
 | `missing-dependency` | a package or a part of the installation is missing |
+| `over-budget` | a round's budget is spent (what its runs spent and its running commands reserved) |
 
 ## Environment variables
 
@@ -1740,7 +1759,7 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVAL_CONFIGURE` | `1`: the Configure page in a SQLite project, as `configure: true` in its `config.yaml` (above) |
 | `EVAL_RUNS_DIR` | read and write runs here instead of `data/runs` (`validate` too) |
 | `EVAL_GOALS_DIR` | read goals here instead of `<data>/goals`, relative to the project (for goals kept outside the data root) |
-| `EVAL_MAX_COST_USD` | per-run ceiling on billed spend; the run stops, keeps its results, resumes |
+| `EVAL_MAX_COST_USD` | the most one command spends, every pass of `--repeat` together; the run stops, keeps its results, resumes |
 | `EVAL_MAX_RETRIES`, `EVAL_RETRY_MAX_DELAY` | retries around every provider call |
 | `EVAL_BUILD_REF` | the identity of the system under test (default: the git SHA) |
 | `EVAL_HOST_LABEL` | a name for this machine, the runner (fingerprint v5's `runner.label`, outside its hash): latency of a model run in process, and the network part of a remote one, is comparable across runs only from the same runner |

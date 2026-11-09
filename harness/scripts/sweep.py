@@ -25,8 +25,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from evaluation_harness import _store
-from evaluation_harness._common import CODE, EXIT_PARTLY, ROOT, die, evh_prog
+from evaluation_harness import _spend, _store
+from evaluation_harness._common import CODE, EXIT_PARTLY, EXIT_STOPPED, ROOT, die, evh_prog
 
 try:
     import yaml
@@ -75,8 +75,27 @@ def main() -> int:
         cmd = [py, str(CODE / "run.py"), "--config", str(c), "--repeat", str(args.repeat)]
         if args.dry_run:
             cmd.append("--dry-run")
-        r = subprocess.run(cmd, cwd=ROOT)
-        if r.returncode != 0:
+        left = _spend.left()
+        if not args.dry_run and left is not None and left <= 0:
+            # The sweep's cap is spent (RFC-026 step 5): the arms after this one are not run.
+            print(f"   NOT RUN — the cap is spent (${_spend.spent():.4f} of ${_spend.cap():.4f})")
+            failed.append(c.name)
+            continue
+        if args.dry_run:
+            r = subprocess.run(cmd, cwd=ROOT)
+        else:
+            # Each arm gets what the arms before it left of the cap, from what each wrote it spent.
+            r, paid = _spend.run_child(cmd, cwd=ROOT)
+            if paid:
+                print(
+                    f"   spent ${paid:.4f}"
+                    + (f", ${_spend.left():.4f} left" if _spend.left() is not None else "")
+                )
+        if r.returncode == EXIT_STOPPED:
+            # Stopped at the cap (the sweep's, or the round's): its partial run is kept and resumable.
+            failed.append(c.name)
+            print(f"   ARM STOPPED at the cost cap (exit {r.returncode}) — its partial run is kept")
+        elif r.returncode != 0:
             # Keep going: one provider's outage should not discard the arms
             # that already succeeded and were paid for.
             failed.append(c.name)

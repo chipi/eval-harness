@@ -481,7 +481,13 @@ def main(argv: list[str]) -> int:
         die("judging.primary_judge is required: name the judge that scores every finalist", "invalid-file")
     cross = build_judge(cfg["judging"].get("cross_judge"), use_fake=args.use_fake_judge)
     dims = cfg["judging"]["dimensions"]
+    # The config's cap, and EVAL_MAX_COST_USD (a job's max_cost_usd) when lower (RFC-026 step 5).
+    from evaluation_harness import _spend  # noqa: PLC0415
+
+    own = _spend.own_cap()
     cost_remaining = float(cfg["judging"]["cost_cap_usd"])
+    if own is not None and own < cost_remaining:
+        cost_remaining = own
     max_items = int(cfg["judging"]["max_items_per_finalist"])
 
     aggregates: list[FinalistAggregate] = []

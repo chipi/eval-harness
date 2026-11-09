@@ -32,7 +32,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _jsonout, _models, _store
+from evaluation_harness import _common, _jsonout, _models, _store
 from evaluation_harness._adapter import load_adapter, score_wants_source
 from evaluation_harness._common import DATA, EXIT_PROBLEMS, MATERIALIZED, die, evh_prog, load_dataset, now
 
@@ -236,6 +236,12 @@ def _smoke(args: argparse.Namespace) -> int:
     from evaluation_harness import _seal  # noqa: PLC0415
 
     _seal.refuse_if_sealed(cfg["dataset_id"], "a smoke test", cfg.get("config_id"))
+    from evaluation_harness import _rounds, _spend  # noqa: PLC0415
+
+    # A smoke of a round's arm spends on the round (RFC-026 step 5): its budget's share reserved before the first call.
+    rnd = _rounds.find(cfg["goal"], cfg["round"]) if cfg.get("round") and cfg.get("goal") else None
+    if rnd is not None and rnd.get("status") != "closed":
+        _spend.reserve(rnd, "arm-smoke")
     mat = MATERIALIZED / ds["dataset_id"]
     params = dict(cfg.get("params") or {})
     rec = _models.find(DATA, cfg["model_record"]) if cfg.get("model_record") else None
@@ -282,18 +288,29 @@ def _smoke(args: argparse.Namespace) -> int:
             unpriced += 1
             return
         spent += cost
+        _spend.add(cost)
         bill = bill_of(res)
         billed += min(bill, cost) if bill is not None else 0.0
 
+    capped = None
     for n, item in enumerate(ds["items"][: args.items]):
         text = _store.read_text(
             mat / (item.get("source_path") or item["item_id"]), encoding="utf-8", errors="replace"
         )
         row: dict[str, Any] = {"item": item["item_id"]}
+        left = _spend.left()
+        if (
+            left is not None and left <= 0
+        ):  # the cap (EVAL_MAX_COST_USD, or the round's share): no further call
+            capped = item["item_id"]
+            break
         t0 = time.perf_counter()
         try:
             res = call_system(text, params)
             wall = time.perf_counter() - t0
+        except _common.CostCapExceeded:  # the provider layer's own count reached the cap
+            capped = item["item_id"]
+            break
         except Exception as exc:  # noqa: BLE001  (a smoke reports a failure, it does not stop on it)
             row.update(s=round(time.perf_counter() - t0, 2), error=f"{type(exc).__name__}: {exc}")
             items.append(row)
@@ -317,7 +334,10 @@ def _smoke(args: argparse.Namespace) -> int:
         facts = {k: v for k, v in (getattr(res, "meta", None) or {}).items() if k in ML_FACTS}
         if n == 0:
             first_output = res.output
+            left = _spend.left()
             try:
+                if left is not None and left <= 0:
+                    raise _common.CostCapExceeded("the cap is reached: item 1 is not called twice")
                 again = call_system(text, params)
                 pay(again)
                 row["deterministic"] = again.output == res.output
@@ -349,6 +369,11 @@ def _smoke(args: argparse.Namespace) -> int:
     flags, accepted = _models.split_accepted(
         rec, flags_for(items, calls, params_for_flags), cfg.get("deployment")
     )
+    if capped:
+        print(
+            f"  COST CAP: stopped before item {capped} (${_spend.spent():.4f} spent of ${_spend.cap() or 0:.4f})"
+        )
+        flags.append(f"cost: stopped at the cap before item {capped}; the smoke saw {len(items)} item(s)")
     status = "pass" if not flags else "check"
     basis = "none" if spent <= 0 else "bill" if billed >= spent else "price" if billed <= 0 else "mixed"
     cost = {"spent_usd": round(spent, 8), "cost_basis": basis, "calls": n_calls, "calls_unpriced": unpriced}

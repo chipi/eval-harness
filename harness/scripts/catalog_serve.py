@@ -1223,6 +1223,39 @@ def api_read(command: str, arguments: Any) -> tuple[int, dict]:
     return 200, {"command": command, "version": __version__, "text": out}
 
 
+def api_estimate(command: str, arguments: Any) -> tuple[int, dict]:
+    """POST /api/v1/estimate: a job command's own --dry-run, run now as a read (it calls nothing and writes nothing),
+    and what it printed: what the job would do and, for a command that spends, cost (RFC-026 step 5)."""
+    from evaluation_harness import _api  # noqa: PLC0415
+    from evaluation_harness import mcp_server as ms  # noqa: PLC0415
+
+    try:
+        reg = _api.registry().get(command)
+        if reg is None or reg["served"] != "job":
+            raise _api.Refused(f"{command}: not a job command the API serves", 404)
+        parser = ms.parser_of(command)
+        if not any("--dry-run" in a.option_strings for a in parser._actions):
+            raise _api.Refused(
+                f"{command} has no --dry-run: there is nothing to estimate (a spending job shows its cap)",
+                404,
+            )
+        checked = _api.checked_args(command, {k: v for k, v in (arguments or {}).items() if k != "dry-run"})
+        argv = [*ms.argv_of(parser, checked), "--dry-run"]
+    except _api.Refused as exc:
+        return exc.status, {"error": str(exc)}
+    except (ValueError, AttributeError) as exc:
+        return 400, {"error": str(exc)}
+    code, out, err = ms.run_command(ROOT, command, argv)
+    from evaluation_harness._version import __version__  # noqa: PLC0415
+
+    return (200 if code == 0 else 400), {
+        "command": command,
+        "version": __version__,
+        "exit": code,
+        "text": out + err,
+    }
+
+
 def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     """0 if the request may be served, else the HTTP status to refuse it with.
 
@@ -1493,6 +1526,22 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(code, answer_body, cache=False)
         if url.path == "/api/v1/jobs" or url.path.startswith("/api/v1/jobs/"):
             return self._jobs_route(method, url)
+        if method == "POST" and url.path == "/api/v1/estimate":
+            n = int(self.headers.get("Content-Length") or 0)
+            if n > API_MAX_BODY:
+                return self._json(
+                    413, {"error": f"an estimate is at most {API_MAX_BODY:,} bytes"}, cache=False
+                )
+            try:
+                body = json.loads(self.rfile.read(n) or b"{}") if n else {}
+            except ValueError:
+                return self._json(
+                    400, {"error": 'the body is a JSON object: {"command": ..., "args": {...}}'}, cache=False
+                )
+            if not isinstance(body, dict):
+                return self._json(400, {"error": "the body is a JSON object"}, cache=False)
+            code, answer_body = api_estimate(str(body.get("command") or ""), body.get("args", {}))
+            return self._json(code, answer_body, cache=False)
         if self.headers.get(DATA_HEADER) != "1":
             return self._json(
                 403, {"error": f"a call that is not a read needs the {DATA_HEADER}: 1 header"}, cache=False

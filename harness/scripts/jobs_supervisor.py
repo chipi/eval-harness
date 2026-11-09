@@ -55,6 +55,8 @@ def main(job_id: str) -> int:
     env = {**os.environ, **{k: str(v) for k, v in (job.get("env") or {}).items()}}
     # The command knows it runs as a job (data-migrate waits for the server to let go of the database).
     env["EVH_JOB"] = job_id
+    # The locks it holds (passed to it), so a command that takes one for a moment does not wait on itself.
+    env["EVH_LOCKS"] = ",".join(k for k, _ex in job["locks"])
     by = job.get("by")
     if by:  # who acted (RFC-027): a job has no terminal, so the actor comes from the call
         env["EVH_ACTOR"] = by if ":" in by else f"person:{by}"
@@ -81,6 +83,11 @@ def main(job_id: str) -> int:
         except ValueError:
             with open(d / "log", "a", encoding="utf-8") as log_text:
                 log_text.write(text)
+    from evaluation_harness import _spend  # noqa: PLC0415
+
+    # A round's reservation the command could not close (stopped, killed): closed with what its runs' items say it
+    # paid, so the round's budget counts the items a stopped run paid for (RFC-026 step 5).
+    _spend.close_for_job(job_id)
     stopped = (d / "stop").exists()
     end = "cancelled" if stopped else ("succeeded" if code == 0 else "failed")
     log_tail = (d / "log").read_text(encoding="utf-8", errors="replace")[-20000:]

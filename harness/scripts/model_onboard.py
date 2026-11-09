@@ -69,10 +69,12 @@ def ollama_digest(base_url: str, tag: str) -> str | None:
 
 
 def _call(params: dict[str, Any]) -> tuple[Any, float]:
+    from evaluation_harness import _spend  # noqa: PLC0415
     from evaluation_harness._providers import complete  # noqa: PLC0415
 
     t0 = time.perf_counter()
     c = complete(PROBE, params, role="arm", max_tokens=int(params.get("max_tokens") or PROBE_MAX_TOKENS))
+    _spend.add(c.cost_usd)
     return c, time.perf_counter() - t0
 
 
@@ -246,7 +248,6 @@ def main() -> int:
                 f"{args.model_id} is {rec.get('kind')}: onboard it through an arm that runs it (--config <arm.yaml>)",
                 "bad-argument",
             )
-        import subprocess  # noqa: PLC0415
 
         cmd = [
             _sys.executable,
@@ -257,7 +258,9 @@ def main() -> int:
             "2",
             "--no-record",
         ]
-        out = subprocess.run(cmd, capture_output=True, text=True)
+        from evaluation_harness import _spend  # noqa: PLC0415
+
+        out, _paid = _spend.run_child(cmd, capture_output=True, text=True)  # given what is left of the cap
         print(out.stdout.rstrip())
         flags = [ln.strip()[2:] for ln in out.stdout.splitlines() if ln.startswith("  - ")]
         report = {"via_arm": str(args.config), "smoke": out.stdout[-4000:]}

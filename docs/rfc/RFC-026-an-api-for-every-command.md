@@ -1,6 +1,6 @@
 # RFC-026: An API for every command, long ones as jobs
 
-- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 4 built (2026-11-09). Owner, 2026-11-06: "next RFC is
+- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 5 built (2026-11-09). Owner, 2026-11-06: "next RFC is
   for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions decided by the owner the same
   day (below: "1 waiting, 2 [the proposed file size], 3 yes, 4 enforce"). Revision 2 (2026-11-09), after an
   independent review (Fable) and aligned with [RFC-027](RFC-027-who-acted-and-baselines-per-goal.md): 82 commands,
@@ -227,6 +227,13 @@ decided it is enforced (2026-11-08). So:
   spend each child reports in its `--json` envelope: `sweep` captures each child's output (today it does not) and
   streams it to the job's log as it comes.
 - `judge` keeps its config's cap as well; the lower of the two applies.
+- Built (step 5) with one change: a child says what it spent in a file its parent names (`EVH_SPENT_TO`), written
+  at exit however it ends (a refusal before any call writes 0), not in its `--json` envelope, which a crash or a
+  refusal never prints; a child killed before it writes is counted at all it was given. Its output is not
+  captured: it goes where the parent's goes, a job's log as it comes. The round budget applies where a command
+  spends on a round: `run` (and `sweep`'s arms) and `arm-smoke` of a config that names one; `judge-score` and
+  `judge` take no round. A command that writes no run and dies without closing its reservation is counted at all
+  it reserved, since what it paid cannot be read back.
 - **A round's budget is enforced**, by the spending commands themselves, so a run from the terminal and a job
   stop at the same place. A command that spends on a goal with an open round that has `budget_usd` takes, as its
   cap, the least of its own cap and what the round has left: the budget, less what the round's runs have spent (as

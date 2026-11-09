@@ -386,4 +386,11 @@ def complete(prompt: str, params: dict[str, Any], *, role: str, max_tokens: int)
             "not-configured",
         )
     params = {**params, "max_tokens": params.get("max_tokens", max_tokens)}
-    return _SHAPES[SPECS[params["provider"]].shape](prompt, params, route(params, role))
+    from evaluation_harness import _spend  # noqa: PLC0415
+
+    # A second net under the command's own cap (RFC-026 step 5): counted here too, so an adapter that reports less
+    # than its calls cost is stopped at the cap all the same (CostCapExceeded before the call).
+    _spend.net_check()
+    done = _SHAPES[SPECS[params["provider"]].shape](prompt, params, route(params, role))
+    _spend.net(done.cost_usd)
+    return done

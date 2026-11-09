@@ -247,6 +247,23 @@ def data_rel(path: Path) -> str:
         return str(Path(path).resolve())
 
 
+def _report_spent() -> None:
+    from evaluation_harness import _spend  # noqa: PLC0415
+
+    _spend._report()
+
+
+#: Where this process writes what it spent at exit, when a command that runs others (sweep, model-onboard) asked;
+#: taken out of the environment so a process this one starts does not write over it.
+SPENT_TO = os.environ.pop("EVH_SPENT_TO", "")
+if SPENT_TO:
+    # Said however the command ends, a refusal before any call included (RFC-026 step 5): 0 then, not all it was
+    # given.
+    import atexit
+
+    atexit.register(_report_spent)
+
+
 class CostCapExceeded(RuntimeError):
     """Raised mid-run when EVAL_MAX_COST_USD is reached.
 
@@ -765,6 +782,7 @@ REFUSALS = {
     "not-configured": "a key, a cost cap, a build ref or an endpoint is not set",
     "failed": "something outside the command failed: an importer, a server, a hook, the warm-up",
     "missing-dependency": "a package or a part of the installation is missing",
+    "over-budget": "a round's budget is spent (what its runs spent and its running commands reserved)",
 }
 
 

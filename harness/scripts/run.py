@@ -38,7 +38,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _jsonout, _outputs, _store
+from evaluation_harness import _common, _jsonout, _outputs, _spend, _store
 from evaluation_harness._adapter import (
     calls_per_item,
     load_adapter,
@@ -391,7 +391,9 @@ def one_pass(
     by_run = score_run
     run_items: list[dict[str, Any]] = []
     spent = 0.0
-    cap = env_float("EVAL_MAX_COST_USD")
+    # What this process may still spend (RFC-026 step 5): EVAL_MAX_COST_USD, or what the round left it, less what the
+    # passes before this one spent, so `--repeat 3` stops at one cap in total, not three.
+    cap = _spend.left()
     capped_at: str | None = None
     n_replayed = 0
     failed_items: list[dict[str, str]] = []
@@ -461,6 +463,11 @@ def one_pass(
                 )
             except SystemExit:
                 raise
+            except _common.CostCapExceeded:
+                # The provider layer's own count reached the cap (an adapter that reported less than it paid):
+                # stopped as at the cap, before this item's output is written, so --resume calls it again.
+                capped_at = item["item_id"]
+                break
             except Exception as exc:  # an item's failure is recorded, not raised (A5)
                 if is_transient(exc, extra_transient):
                     # The provider kept failing past every retry: weather, not this item. Stop, as for an
@@ -482,6 +489,7 @@ def one_pass(
                 res = Result(output="", cost_usd=None)
             if res.cost_usd:
                 spent += res.cost_usd
+                _spend.add(res.cost_usd)
             unreachable = _unreachable(res)
             if unreachable:
                 # Before the output is written, so `--resume` calls this item again.
@@ -955,7 +963,7 @@ def _run(args: argparse.Namespace) -> int:
     # when the round does not exist, is closed, or runs on another dataset.
     from evaluation_harness._rounds import config_round  # noqa: PLC0415
 
-    config_round(cfg, args.config)
+    rnd = config_round(cfg, args.config)
     # A hypothesis (ADR-0025, optional) is refused with the same words validate V20 uses.
     from evaluation_harness import _hypothesis  # noqa: PLC0415
 
@@ -1158,9 +1166,16 @@ def _run(args: argparse.Namespace) -> int:
                 f"{runs}: every run id for {cfg['config_id']} in the last 30 seconds is taken; run again",
                 "failed",
             )
+    if rnd is not None and recorded is None:
+        # A round with a budget (RFC-026 step 5): what it has left, reserved before the first call; refused when
+        # nothing is left. Two arms started at once share what is left, never both all of it.
+        share = _spend.reserve(rnd, "run")
+        if share is not None:
+            print(f"  round {rnd['round_id']}: ${share:.4f} of its budget reserved for this run")
     for i in range(args.repeat):
         run_id = base_id if args.repeat == 1 else f"{base_id}_r{i + 1}"
         run_dir = runs / run_id
+        _spend.add_run(run_id)
         # The output directory exists BEFORE the pass starts, so each item lands on disk
         # as it is produced and a crash leaves something to resume from.
         #
@@ -1293,7 +1308,8 @@ def _run(args: argparse.Namespace) -> int:
             capped = True
             print(
                 f"\n  COST CAP HIT at item {result['capped_at']} — "
-                f"spent ${result['spent_usd']:.4f} of EVAL_MAX_COST_USD.\n"
+                f"spent ${result['spent_usd']:.4f} this pass, ${_spend.spent():.4f} in all, of the cap "
+                f"(${_spend.cap() or 0:.4f}: EVAL_MAX_COST_USD, or what the round left this run).\n"
                 f"  Partial results kept. Raise the cap and resume without paying twice:\n"
                 f"    "
                 + how(
