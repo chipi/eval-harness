@@ -665,6 +665,31 @@ TEMP = {"mkdtemp", "mkstemp", "NamedTemporaryFile", "TemporaryDirectory", "Tempo
 REPO = HARNESS.parent
 
 
+# A file on disk is written whole (RFC-026 step 1): a reader sees the old file or the new one, never a half.
+with tempfile.TemporaryDirectory() as td:
+    target = Path(td) / "a.json"
+    _store._replace(target, b"old\n")
+    umask_now = os.umask(0o022)
+    os.umask(umask_now)
+    file_mode = target.stat().st_mode & 0o777
+    from unittest import mock
+
+    with mock.patch("os.replace", side_effect=OSError("disk full")):
+        try:
+            _store._replace(target, b"new, and long enough to be cut half way\n")
+            raised = False
+        except OSError:
+            raised = True
+    check(
+        "a whole-file write: the mode a plain write gives; a write that fails leaves the old file and no temp file",
+        file_mode == 0o666 & ~umask_now
+        and raised
+        and target.read_bytes() == b"old\n"
+        and sorted(Path(td).iterdir()) == [target],
+        (oct(file_mode), raised, sorted(x.name for x in Path(td).iterdir())),
+    )
+
+
 def dotted(n):
     if isinstance(n, ast.Name):
         return n.id

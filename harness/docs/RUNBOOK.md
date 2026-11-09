@@ -874,6 +874,23 @@ and goes ahead. `dataset-split`'s split rule is `--split-by hash|time`.
 
 ---
 
+### What another reader sees while a command writes
+
+A command can be read from while it writes: a second terminal, a job (RFC-026), the catalog server. Every file is
+written whole (a new file renamed over the old one on disk, one committed statement in the database), so a reader
+never sees one cut short. What a command writes in several files, it writes in an order that keeps what the harness
+lists whole (`tests/test_write_order.py` checks the three that matter by stopping each partway):
+
+| command | writes, in order | a reader partway sees |
+| --- | --- | --- |
+| `run` | `run.json` (that it started), its outputs item by item, `predictions.jsonl`, then `metrics.json` last | no run until `metrics.json`: a run stopped partway is not listed, and `--resume` continues it |
+| `rescore`, `judge-score` | the rows, then `metrics.json` last | no re-scored or judged run until its `metrics.json` |
+| `reference-promote`, `label-import`, `sheet-import`, `label-from-*` | the whole set in a hidden folder beside its place, moved in at once | no reference or label set, then the whole one |
+| `capture`, `capture-restore` | the records (a restore in a hidden folder, moved in), then `capture.json` last | no capture until `capture.json` |
+| `run-promote`, `baseline-rollback` | one new version file, created exclusively | the previous version as current, then the new one |
+| `dataset-split` | the validation side's record, then the test side's | the validation side alone for a moment, then both |
+| `dataset-create`, `dataset-unseal`, and every other single record | one file, whole | the old record or the new one |
+
 ## 9. Validate before you trust anything
 
 ```bash

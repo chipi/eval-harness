@@ -371,15 +371,43 @@ def create_new(path: Any, data: bytes) -> bool:
     return True
 
 
+def _replace(path: Path, data: bytes) -> None:
+    """A file on disk written whole (RFC-026 step 1): into a new file beside it, then renamed over it, so a reader
+    (a job's, the server's) sees the old file or the new one, never a half. The new file is made with the mode a
+    plain write would give (0666 less the umask), not mkstemp's 0600; no fsync: this is about what a reader sees,
+    not about surviving a power cut, and the path writes thousands of item files."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    for n in range(100):
+        tmp = path.parent / f".{path.name}.{os.getpid()}.{threading.get_ident()}.{n}.tmp"
+        try:
+            fd = os.open(str(tmp), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
+            break
+        except FileExistsError:
+            continue
+    else:  # pragma: no cover - 100 leftovers of this very process and thread
+        raise FileExistsError(f"no free temporary name beside {path}")
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 def write_bytes(path: Any, data: bytes, mtime_ns: int | None = None) -> None:
-    """The file written whole (atomically in the database: one committed statement); `mtime_ns` keeps a moved file's
-    time (data-migrate), else it is now."""
+    """The file written whole: renamed into place on disk, one committed statement in the database (atomic either
+    way: a reader sees the old file or the new one); `mtime_ns` keeps a moved file's time (data-migrate), else it is
+    now."""
     if not _pathlike(path):
         path.write_bytes(data)
         return
     key = rel(path)
     if key is None:
-        Path(path).write_bytes(data)
+        _replace(Path(path), bytes(data))
         if mtime_ns:
             os.utime(path, ns=(mtime_ns, mtime_ns))
         return
@@ -391,10 +419,6 @@ def write_text(path: Any, text: str, encoding: str = "utf-8", newline: str | Non
     """The file written whole; `newline` as Path.write_text takes it (None or "\n" keeps "\n" on POSIX)."""
     if not _pathlike(path):
         path.write_text(text, encoding=encoding, newline=newline)
-        return
-    key = rel(path)
-    if key is None:
-        Path(path).write_text(text, encoding=encoding, newline=newline)
         return
     if newline not in (None, "", "\n"):
         text = text.replace("\n", newline)

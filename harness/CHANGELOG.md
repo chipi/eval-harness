@@ -270,6 +270,11 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A file could be read cut short while it was written over** (RFC-026 step 1): `_store` wrote a file on disk by
+  truncating it and writing again, so a second reader (another terminal, the catalog server) could see half of it.
+  Every write is now a new file renamed into place. And `reference-promote` wrote its texts before its manifest:
+  it now builds the reference in a hidden folder and moves it in whole, as label sets already were. The RUNBOOK's
+  "What another reader sees while a command writes" lists each command's order.
 - **The comparison swapped an asked metric in silence**: `inspect --metric M` (and the inspector's `metric=`) on
   runs with no per-item score of `M` compared another metric and did not say so. It now says `M` cannot be tested,
   gives each arm's recorded value, and names the metric compared instead.

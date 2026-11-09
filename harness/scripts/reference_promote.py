@@ -40,6 +40,50 @@ CAVEAT = {
 }
 
 
+def _write_reference(
+    into, chosen, mine, hand_made, source, args, doc, not_here, set_ds, set_name, name
+) -> None:
+    """The reference's texts (unless adopted), its manifest and, when its texts are not redistributed, its
+    .gitignore, written into `into`."""
+    for iid in [] if hand_made else chosen:
+        _store.write_text(into / f"{iid}.txt", mine[iid]["text"] + "\n", encoding="utf-8")
+    authorship = {}
+    if source.get("kind") == "model":
+        # Who authored the texts is part of a reference's identity (the fingerprint hashes it): a run scored against
+        # a model's answers is graded against that model.
+        authorship = {
+            "authored_by": source.get("config_id"),
+            "model": source.get("model"),
+            "from_run": {k: source.get(k) for k in ("run_id", "config_id", "fingerprint_hash", "build")},
+        }
+    write_manifest(
+        into,
+        args.tier,
+        args.dataset_id,
+        caveat=CAVEAT[args.tier].format(set=f"{set_ds}/{set_name}", source=source_line(source)),
+        created_at=now(),
+        promoted_from={"labels": set_name, "dataset_id": set_ds, "source": source},
+        reason=args.reason,
+        promoted_by=args.by,
+        **authorship,
+        **(
+            {
+                "redistributed": False,
+                "source": f"{doc.get('rebuild')}, then evh reference-promote --dataset-id {args.dataset_id} --labels "
+                f"{set_ds}/{set_name} --tier {args.tier} --reason … --by …"
+                + (f" --name {name}" if args.name else ""),
+            }
+            if not_here
+            else {}
+        ),
+    )
+    if not_here:
+        _store.write_text(
+            into / ".gitignore",
+            "# the reference set's texts are not redistributed (see manifest.json)\n*.txt\n",
+        )
+
+
 def main() -> int:
     """Promote a label set's labels to a reference set."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
@@ -123,46 +167,19 @@ def main() -> int:
             )
     doc = next((d for d in sets() if d["dataset_id"] == set_ds and d["set"] == set_name), {})
     not_here = doc.get("redistributed") is False
-    _store.mkdir(ref_dir, parents=True, exist_ok=True)
-    # An adopted folder keeps its files byte for byte: they are the labels already, and the reference digest every run
-    # scored against it recorded is of these bytes (a newline added to each moved it).
-    for iid in [] if hand_made else chosen:
-        _store.write_text(ref_dir / f"{iid}.txt", mine[iid]["text"] + "\n", encoding="utf-8")
-    authorship = {}
-    if source.get("kind") == "model":
-        # Who authored the texts is part of a reference's identity (the fingerprint hashes it): a run scored against
-        # a model's answers is graded against that model.
-        authorship = {
-            "authored_by": source.get("config_id"),
-            "model": source.get("model"),
-            "from_run": {k: source.get(k) for k in ("run_id", "config_id", "fingerprint_hash", "build")},
-        }
-    write_manifest(
-        ref_dir,
-        args.tier,
-        args.dataset_id,
-        caveat=CAVEAT[args.tier].format(set=f"{set_ds}/{set_name}", source=source_line(source)),
-        created_at=now(),
-        promoted_from={"labels": set_name, "dataset_id": set_ds, "source": source},
-        reason=args.reason,
-        promoted_by=args.by,
-        **authorship,
-        **(
-            {
-                "redistributed": False,
-                "source": f"{doc.get('rebuild')}, then evh reference-promote --dataset-id {args.dataset_id} --labels "
-                f"{set_ds}/{set_name} --tier {args.tier} --reason … --by …"
-                + (f" --name {name}" if args.name else ""),
-            }
-            if not_here
-            else {}
-        ),
-    )
-    if not_here:
-        _store.write_text(
-            ref_dir / ".gitignore",
-            "# the reference set's texts are not redistributed (see manifest.json)\n*.txt\n",
-        )
+    # A new reference is built in a staging folder and moved into place whole (RFC-026 step 1): a reader (a run
+    # starting, a job, the catalog) never sees its texts without its manifest. An adopted folder keeps its files byte
+    # for byte: they are the labels already, and the reference digest every run scored against it recorded is of
+    # these bytes (a newline added to each moved it); only its manifest is written, one file, whole.
+    into = ref_dir if hand_made else _store.staging(ref_dir, f".{ref_dir.name}.partial-")
+    try:
+        _write_reference(into, chosen, mine, hand_made, source, args, doc, not_here, set_ds, set_name, name)
+        if not hand_made:
+            _store.adopt(into, ref_dir)
+    except BaseException:
+        if not hand_made:
+            _store.rmtree(into, ignore_errors=True)
+        raise
     print(
         f"{ref_dir}: {len(chosen)} of {len(ids)} item(s), {args.tier}, promoted from {set_ds}/{set_name} "
         f"({source_line(source)})"
