@@ -1331,6 +1331,17 @@ each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
   gets the tool, its arguments' names, how it ended, its time, and the caller's address and user
   agent. The log line on stderr, one JSON line per call, carries neither.
 
+**The API** (RFC-026; the Workbench's, PRD-017): a local `evh catalog-serve` also answers `/api/v1/` for the
+commands, made from their own argument parsers. Every call needs the token the server writes at start to
+`.build/api-token` (readable by you only): `Authorization: Bearer <token>`, or the cookie `GET
+/api/v1/session?token=<token>` sets; another Host or a foreign Origin is refused, and a call that is not a read needs
+`X-EVH-Data: 1`. `GET /api/v1/commands` lists what it serves: each command as a `read` or a `job`, whether it spends,
+and its arguments with a kind (a value; a `name` that must exist, a config id for `--config`; an `upload`; an
+`artifact` a job writes); what loads code or names a path of the server's (`--adapter`, `--runs-dir`, output folders)
+is never taken. `POST /api/v1/read/<command>` with `{"args": {...}}` answers exactly what the command answers with
+`--json`. Jobs (everything that writes) come next (0.8.0, planned). A server started `--public` or `--behind-proxy`
+answers no `/api/v1/` call: the API is this machine's only.
+
 **The run inspector** is a local server (`evh catalog-serve`) that tests chosen arms against a
 baseline with the same paired test as the command line, and shows outputs beside references.
 Its "re-score" box (shown when the adapter can re-score) scores what is not on record; `evh

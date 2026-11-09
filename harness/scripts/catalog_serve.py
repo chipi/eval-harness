@@ -56,6 +56,7 @@ from collections import Counter, OrderedDict, defaultdict
 from functools import lru_cache, partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
 
 HERE = Path(__file__).resolve().parent
@@ -1172,6 +1173,45 @@ def data_answer(method: str, path: str, query: str, body: bytes | None = None) -
         return 400, {"error": str(exc)}
 
 
+#: The API's token (RFC-026), made when a local server starts; empty: the API answers nothing.
+API_TOKEN: list[str] = []
+API_COOKIE = "evh_token"
+API_MAX_BODY = 64 * 1024
+
+
+def api_read(command: str, arguments: Any) -> tuple[int, dict]:
+    """POST /api/v1/read/<command>: the read command run as the MCP server runs a tool call, its envelope back (or
+    its text, for the read commands with no --json yet)."""
+    from evaluation_harness import _api  # noqa: PLC0415
+    from evaluation_harness import mcp_server as ms  # noqa: PLC0415
+
+    try:
+        reg = _api.registry().get(command)
+        if reg is None or reg["served"] != "read":
+            raise _api.Refused(
+                f"{command}: not a read command the API serves (a job: POST /api/v1/jobs)", 404
+            )
+        checked = _api.checked_args(command, arguments)
+        argv = ms.argv_of(ms.parser_of(command), checked)
+    except _api.Refused as exc:
+        return exc.status, {"error": str(exc)}
+    except ValueError as exc:
+        return 400, {"error": str(exc)}
+    code, out, err = ms.run_command(ROOT, command, argv)
+    if code != 0:
+        lines = [ln for ln in (err or out).splitlines() if ln.strip()]
+        msg = next((ln for ln in reversed(lines) if ln.startswith("ERROR")), lines[-1] if lines else "")
+        return (400 if code in (1, 2) else 500), {"error": msg, "exit": code}
+    if command in ms.JSON:
+        try:
+            return 200, json.loads(out)
+        except ValueError:
+            return 500, {"error": f"{command} --json printed no JSON"}
+    from evaluation_harness._version import __version__  # noqa: PLC0415
+
+    return 200, {"command": command, "version": __version__, "text": out}
+
+
 def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     """0 if the request may be served, else the HTTP status to refuse it with.
 
@@ -1187,6 +1227,10 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     p = unquote(urlparse(path).path)
     if ".." in p.split("/"):
         return 404
+    if p.startswith(
+        "/api/v1/"
+    ):  # RFC-026: this machine's only, never behind a proxy or public (owner, 2026-11-09)
+        return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not API_TOKEN else 0
     if p.startswith("/api/"):
         if p in DATA_ROUTES:  # this machine's only (ADR-0027), and only for a project that deploys them
             return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not CONFIGURE_ON[0] else 0
@@ -1327,8 +1371,73 @@ class Handler(SimpleHTTPRequestHandler):
         return False
 
     def do_POST(self):
-        """The data page's check (UXS-004), observed by the hooks."""
+        """The API's calls (RFC-026) and the data page's check (UXS-004), observed by the hooks."""
+        if urlparse(self.path).path.startswith("/api/v1/"):
+            self._observed(lambda: self._api("POST"))
+            return
         self._observed(lambda: self._write("POST"))
+
+    def _api_authorized(self) -> bool:
+        """The token, from `Authorization: Bearer` or the cookie the session route sets (RFC-026)."""
+        import hmac  # noqa: PLC0415
+
+        auth = self.headers.get("Authorization") or ""
+        given = auth[len("Bearer ") :].strip() if auth.startswith("Bearer ") else None
+        if given is None:
+            for part in (self.headers.get("Cookie") or "").split(";"):
+                k, _, v = part.strip().partition("=")
+                if k == API_COOKIE:
+                    given = v
+        return bool(given and API_TOKEN and hmac.compare_digest(given, API_TOKEN[0]))
+
+    def _api(self, method: str) -> None:
+        """/api/v1/: the token on every call, this machine's Host (`_refuse`), no foreign Origin, and the data header on
+        every call that is not a read (RFC-026, Who may call)."""
+        from evaluation_harness import _api  # noqa: PLC0415
+
+        url = urlparse(self.path)
+        if self._refuse():
+            return
+        port = int(self.server.server_address[1])  # type: ignore[index]  # an AF_INET (host, port)
+        origin = self.headers.get("Origin")
+        if origin is not None and origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"):
+            return self._json(403, {"error": "a call from another origin is refused"}, cache=False)
+        if method == "GET" and url.path == "/api/v1/session":
+            # The Workbench's first load trades the token in its address for a cookie (HttpOnly, SameSite=Strict).
+            import hmac  # noqa: PLC0415
+
+            tok = (parse_qs(url.query).get("token") or [""])[0]
+            if not (tok and API_TOKEN and hmac.compare_digest(tok, API_TOKEN[0])):
+                return self._json(401, {"error": "no valid token"}, cache=False)
+            self.send_response(204)
+            self.send_header("Set-Cookie", f"{API_COOKIE}={tok}; HttpOnly; SameSite=Strict; Path=/api/v1/")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            return
+        if not self._api_authorized():
+            return self._json(
+                401, {"error": "the API needs the server's token (.build/api-token)"}, cache=False
+            )
+        if method == "GET" and url.path == "/api/v1/commands":
+            return self._json(200, {"commands": _api.registry()}, cache=False)
+        if method == "POST" and url.path.startswith("/api/v1/read/"):
+            n = int(self.headers.get("Content-Length") or 0)
+            if n > API_MAX_BODY:
+                return self._json(
+                    413, {"error": f"a read call is at most {API_MAX_BODY:,} bytes"}, cache=False
+                )
+            try:
+                body = json.loads(self.rfile.read(n) or b"{}") if n else {}
+            except ValueError:
+                return self._json(400, {"error": 'the body is a JSON object: {"args": {...}}'}, cache=False)
+            args = body.get("args", {}) if isinstance(body, dict) else None
+            code, answer_body = api_read(url.path[len("/api/v1/read/") :], args)
+            return self._json(code, answer_body, cache=False)
+        if self.headers.get(DATA_HEADER) != "1":
+            return self._json(
+                403, {"error": f"a call that is not a read needs the {DATA_HEADER}: 1 header"}, cache=False
+            )
+        return self._json(404, {"error": f"no API route {method} {url.path}"}, cache=False)
 
     def do_PUT(self):
         """The data page's save (UXS-004), observed by the hooks."""
@@ -1375,6 +1484,8 @@ class Handler(SimpleHTTPRequestHandler):
 
     def _get(self):
         url = urlparse(self.path)
+        if url.path.startswith("/api/v1/"):
+            return self._api("GET")
         hook_route = _hook_routes().get(url.path)
         if hook_route is not None:
             code, ctype, data = hook_route(url.query)
@@ -1603,7 +1714,15 @@ def main() -> int:
             flush=True,
         )
     else:
+        from evaluation_harness import _api  # noqa: PLC0415
+
+        API_TOKEN[:] = [_api.new_token()]
         print(f"catalog: http://127.0.0.1:{args.port}{Handler.prefixes[0]}   (Ctrl-C to stop)", flush=True)
+        print(
+            f"  API: http://127.0.0.1:{args.port}/api/v1/  (token in {_api.token_path()}: "
+            f"Authorization: Bearer <token>, or GET /api/v1/session?token=<token> for a cookie)",
+            flush=True,
+        )
         print(f"  the project {ROOT}, on a port of its own", flush=True)
         print("  it reads the runs once: restart it to see runs made after it started", flush=True)
     try:

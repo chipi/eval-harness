@@ -13,6 +13,12 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The API, its read side** (RFC-026 step 2): a local `catalog-serve` answers `/api/v1/` behind a token written to
+  `.build/api-token` (bearer, or a cookie from `/api/v1/session`), this machine's Host and no foreign Origin. `GET
+  /api/v1/commands` is the registry, made from the commands' own parsers: each served as a read or a job, its
+  arguments with a kind, the ones that load code or name a server path never taken (a test fails on a path argument
+  given no kind). `POST /api/v1/read/<command>` answers what the command's `--json` answers. Not served under
+  `--public` or `--behind-proxy`.
 - **Baselines per goal, in versions, with their evidence** (RFC-027 D2-D4): a baseline is a goal's on a dataset
   (`data/baselines/<goal>/<dataset>/<n>.json`), or a dataset's own for a run with no goal (`_dataset/`). Promoting
   writes the next version, never over the last (exclusively: two at once both land), with the paired test against
