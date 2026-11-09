@@ -63,7 +63,13 @@ from evaluation_harness._common import (
     write_json,
 )
 from evaluation_harness._fingerprint import references_digest, seal
-from evaluation_harness._record import aggregate_scores, cut_off_items, derived_record
+from evaluation_harness._record import (
+    aggregate_scores,
+    cut_off_items,
+    derived_record,
+    run_level_scores,
+    run_scorer,
+)
 from evaluation_harness._runs import runs_on
 
 #: Carried across from the original run rather than recomputed: these describe the CALL,
@@ -450,6 +456,28 @@ def rescore_one(
     _check_references(d, m, ref_dir, rows, refs_found)
 
     scores = aggregate_scores(rows)
+    # The adapter's score_run(), over the stored outputs and the references read again: a run-level metric is
+    # recomputed like every per-item one, never carried from the source.
+    by_run = run_scorer(adapter_path)
+    run_metrics: list[str] = []
+    if by_run is not None and rows:
+        items = []
+        for row in rows:
+            iid = row["item_id"]
+            rf = ref_dir / f"{iid}.txt" if ref_dir else None
+            items.append(
+                {
+                    "item_id": iid,
+                    "output": _outputs.output(d, iid),
+                    "reference": _store.read_text(rf, encoding="utf-8", errors="replace")
+                    if rf is not None and _store.is_file(rf)
+                    else None,
+                    "scores": {k: v for k, v in row.items() if k != "item_id" and not k.startswith("_")},
+                }
+            )
+        whole = run_level_scores(by_run, items, scores)
+        scores.update(whole)
+        run_metrics = sorted(whole)
 
     run_dir = out_dir / d.name
     _store.mkdir(
@@ -481,6 +509,10 @@ def rescore_one(
         metric_directions=_directions(adapter_path) or m.get("metric_directions"),
         reference_tier=tier if reference_id else None,
     )
+    if run_metrics:
+        new["run_metrics"] = run_metrics
+    else:
+        new.pop("run_metrics", None)  # the source's: this scorer computed none of them
     if isinstance(new.get("fingerprint"), dict):
         new["fingerprint"] = _rescored_fingerprint(
             new["fingerprint"], adapter_id, adapter_path, reference_id, tier, d.name

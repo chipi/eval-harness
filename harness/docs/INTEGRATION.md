@@ -166,6 +166,25 @@ estimate; without it the dry run counts one per item, and says so. It does not m
 (a conversation that grows costs more than four first calls), so set a cost cap from what `evh arm-smoke`
 measured. The adapter file is hashed into a run's fingerprint: adding the line is an edit like any other.
 
+**A metric of the whole run**, which no mean of per-item scores can be (precision and recall over the pairs a
+grouping makes, a calibration error, a coverage of distinct answers): define `score_run(items)` beside `score()`.
+It is called once, after every item is scored, with each item's `item_id`, `output`, `reference` (or None) and
+`scores` (what `score()` returned for it), and returns named numbers:
+
+```python
+def score_run(items: list[dict]) -> dict[str, float]:
+    pairs = same_group_pairs(items)  # yours: which items the outputs put together, against the references
+    return {"pair_precision": pairs.precision, "pair_recall": pairs.recall}
+```
+
+They go into the run's `scores` beside the means, and the record names them in `run_metrics`. A name must be its
+own (not one `score()` returns), every value a finite number; a `score_run` that raises fails the run. `METRIC_KINDS`,
+`METRIC_DIRECTIONS` and `METRIC_DESCRIPTIONS` describe them like any metric. The leaderboard shows them, with
+their spread over an arm's runs; `evh rescore` computes them again from the stored outputs; `inspect` and the
+comparison show each arm's recorded value but never test one, and `pair-test` and `family-test` refuse them by
+name: with one number per run there is no item to pair. To test an arm against another on one, run each arm
+several times and read the spread.
+
 **Optional, for evaluating what production did** (RFC-023, [RUNBOOK §15b](RUNBOOK.md#15b-evaluating-what-production-did)),
 in the same file:
 

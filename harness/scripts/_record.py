@@ -48,6 +48,58 @@ def aggregate_scores(rows: list[dict[str, Any]], digits: int = 10) -> dict[str, 
     return scores
 
 
+def run_scorer(adapter_path: Path | None) -> Any:
+    """The adapter's optional `score_run(items)`, beside its `score()` (the fleet's feedback 20): a metric of the
+    run as a whole, such as precision and recall over the pairs a grouping makes, which no mean of per-item scores
+    can be. Read from the adapter's own module (its `score` may be the default one, imported). None when it has
+    none."""
+    from evaluation_harness._adapter import _module_or_none  # noqa: PLC0415
+
+    fn = getattr(_module_or_none(adapter_path), "score_run", None)
+    return fn if callable(fn) else None
+
+
+def run_level_scores(fn: Any, items: list[dict[str, Any]], per_item: dict[str, float]) -> dict[str, float]:
+    """`score_run(items)` called once over every item ({item_id, output, reference, scores}), checked: a dict of
+    finite numbers whose names are new (a per-item metric's name would be overwritten by a number of another
+    kind). Refused, naming what is wrong, otherwise."""
+    import math  # noqa: PLC0415
+
+    from evaluation_harness._common import die  # noqa: PLC0415
+
+    try:
+        got = fn(items)
+    except Exception as exc:  # noqa: BLE001
+        die(f"the adapter's score_run() raised: {type(exc).__name__}: {exc}", "failed")
+    if not isinstance(got, dict):
+        die(f"the adapter's score_run() returned {type(got).__name__}, not a dict of named numbers", "failed")
+    bad = [
+        k
+        for k, v in got.items()
+        if not isinstance(k, str)
+        or k.startswith("_")
+        or isinstance(v, bool)
+        or not isinstance(v, (int, float))
+        or not math.isfinite(v)
+    ]
+    if bad:
+        die(f"score_run(): not a name and a finite number: {', '.join(map(str, bad))}", "failed")
+    clash = sorted(set(got) & set(per_item))
+    if clash:
+        die(
+            f"score_run(): {', '.join(clash)} is also a per-item metric of score(); a run-level metric needs its own "
+            "name",
+            "failed",
+        )
+    return {k: round(float(v), 10) for k, v in got.items()}
+
+
+def run_level_names(m: dict[str, Any]) -> list[str]:
+    """The metrics a run's record holds as one number for the whole run (`run_metrics`), not a mean of items."""
+    names = m.get("run_metrics")
+    return [str(x) for x in names] if isinstance(names, list) else []
+
+
 def cut_off_items(predictions: list[dict[str, Any]], cap: Any) -> list[str]:
     """The items whose output stopped at max_tokens: the provider's finish_reason says so when the adapter records
     it; tokens_out reaching the cap says so otherwise. A row replayed on a resume is not counted (it was not called)."""

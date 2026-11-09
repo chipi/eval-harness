@@ -70,7 +70,14 @@ from evaluation_harness._common import (  # noqa: E402
     item_selection,
 )
 from evaluation_harness._fingerprint import measuring_modules  # noqa: E402
-from evaluation_harness._runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402 -- one implementation of "score per item"
+from evaluation_harness._runs import (  # noqa: E402 -- one implementation of "score per item"
+    default_metric,
+    direction,
+    per_item,
+    refuse_run_level,
+    runs_on,
+    warn_on_ambiguous_runs,
+)
 from evaluation_harness.stats import EXACT_UP_TO, LARGE_SAMPLE, clustered, fmt_p, holm, p_method, sign_flip_p  # noqa: E402 -- one implementation of the paired test
 
 
@@ -262,6 +269,7 @@ def _run(args) -> int:
     warn_on_ambiguous_runs(runs_dir, args.dataset_id, label=runs_dir.name)
     args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
     runs = runs_on(args.dataset_id, runs_dir=runs_dir)
+    refuse_run_level(runs, args.metric, "family-test")
     values = None
     if args.round:
         from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415

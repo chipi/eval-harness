@@ -564,10 +564,13 @@ class HarnessAdapter:
         return tuple(k for k, _ in c.most_common() if k)
 
     def recorded_means(self, arm: str) -> dict[str, float]:
-        """Return run-level averages for arms with no per-item scores."""
+        """Return run-level averages for arms with no per-item scores, and an arm's run-level metrics (score_run():
+        one number per run) whatever it has."""
+        m = self._metrics(arm)
+        sc = _numeric(m.get("scores") or {})
         if any(_outputs.has_rows(d) for d in self._dirs(arm)):
-            return {}
-        return _numeric(self._metrics(arm).get("scores") or {})
+            return {k: sc[k] for k in m.get("run_metrics") or [] if k in sc}
+        return sc
 
     def input_hashes(self, arm: str) -> dict[str, str]:
         """Return per-item input hashes where recorded."""

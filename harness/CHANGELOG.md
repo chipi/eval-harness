@@ -25,6 +25,11 @@ that can move a result is never a patch release without saying so under **Change
   serves the whole local inspector (pages, items, outputs, references) to the named Hosts as well as this machine,
   with `--bind 0.0.0.0` in a container behind a team's own proxy; no rate limit and nothing withheld, unlike
   `--public`. The data page's writes are not served through it.
+- **A metric of the whole run** (the fleet's feedback 20): an adapter's optional `score_run(items)`, called once
+  with every item's output, reference and scores, returns named numbers (pairwise precision and recall of a grouping,
+  say) that no mean of items can be. They are recorded in `scores` and named in `run_metrics`; the leaderboard shows
+  them, `rescore` recomputes them, the comparison shows each arm's value untested, and `pair-test`/`family-test`
+  refuse them by name.
 - **How far outcome rules label a dataset** (the fleet's feedback 31): `evh label-coverage --dataset-id D --capture
   C --map rules.yaml` applies `label-from-capture`'s rules without writing: labelled now, skipped by design, not yet
   mature (with each item's maturing date), matched by no rule (with the outcome fields they lack), not in the
@@ -241,6 +246,9 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **The comparison swapped an asked metric in silence**: `inspect --metric M` (and the inspector's `metric=`) on
+  runs with no per-item score of `M` compared another metric and did not say so. It now says `M` cannot be tested,
+  gives each arm's recorded value, and names the metric compared instead.
 - **`dataset-create --update-fields` kept only part of the record**: it rewrote the dataset with its items,
   description, source, licence and lineage, and dropped its card, tags, split block, hidden-text flag,
   `extended_from` and `made_from`. Every key it does not set is now kept.

@@ -74,6 +74,7 @@ from evaluation_harness._runs import (  # noqa: E402
     default_metric,
     direction,
     per_item,
+    refuse_run_level,
     repeat_agreement,
     runs_on,
     say_agreement,
@@ -361,6 +362,7 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
         args.family = 1
     _named_metric = bool(args.metric)
     args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
+    refuse_run_level([*runs, *runs_b], args.metric, "pair-test")
     if cross and not _named_metric:
         other = default_metric(args.b_dataset, runs_dir=runs_dir)
         if other != args.metric:

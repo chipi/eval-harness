@@ -465,8 +465,21 @@ def compare(params: dict) -> dict:
     counts = Counter(k for s in per_arm.values() for k in s)
     notes = [n.rstrip(".") + "." for n in dict.fromkeys(n for a in arms for n in A.notes(a))]
     metric = params.get("metric", [""])[0]
+    instead = None
     if metric not in counts:
+        # A metric asked for by name that no arm scores per item (a run-level one, score_run()'s, or one these runs
+        # do not record) cannot be the one compared: said, with the values the arms record for it, never swapped
+        # in silence.
+        if metric:
+            had = {a: v for a in arms if (v := A.recorded_means(a).get(metric)) is not None}
+            instead = f"{metric} has no score per {A.item_word} for these runs, so it cannot be tested" + (
+                ": recorded per run as " + ", ".join(f"{_label(a)} {v:.4g}" for a, v in had.items())
+                if had
+                else ": no arm records it"
+            )
         metric = _default_metric(counts, per_arm, arms, asked, dataset) if counts else ""
+        if instead:
+            instead += f". Compared on {metric} instead."
     if not counts or (metric in A.shape_metrics and not params.get("metric", [""])[0]):
         return {
             "state": "not scorable",
@@ -590,6 +603,7 @@ def compare(params: dict) -> dict:
                 if clusters is not None
                 else []
             ),
+            *([instead] if instead else []),
             *_warnings(ctx),
         ],
         "cluster": cluster or None,

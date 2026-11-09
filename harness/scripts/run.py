@@ -75,7 +75,13 @@ from evaluation_harness._common import (
 )
 from evaluation_harness._fingerprint import build_fingerprint
 from evaluation_harness._providers import secret_params
-from evaluation_harness._record import aggregate_scores, cut_off_items, run_record
+from evaluation_harness._record import (
+    aggregate_scores,
+    cut_off_items,
+    run_level_scores,
+    run_record,
+    run_scorer,
+)
 from evaluation_harness._retry import call_with_retries, is_transient
 
 try:
@@ -357,6 +363,7 @@ def one_pass(
     recorded: dict[str, str] | None = None,
     primary: str | None = None,
     score_failure: Any = None,
+    score_run: Any = None,
 ) -> dict[str, Any]:
     """One pass over the dataset. ``score_failure`` is the adapter's optional score_failure(reference): what an item
     whose call failed scores (A5); without it, an empty answer's score. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
@@ -381,6 +388,8 @@ def one_pass(
 
     predictions: list[dict[str, Any]] = []
     outputs: dict[str, str] = {}
+    by_run = score_run
+    run_items: list[dict[str, Any]] = []
     spent = 0.0
     cap = env_float("EVAL_MAX_COST_USD")
     capped_at: str | None = None
@@ -506,6 +515,10 @@ def one_pass(
                 else score(res.output, reference)
             )
         row: dict[str, Any] = {"item_id": item["item_id"], **scored}
+        if by_run is not None:
+            run_items.append(
+                {"item_id": item["item_id"], "output": res.output, "reference": reference, "scores": scored}
+            )
         # 0/1 on every row: its mean is the share of the pass that failed.
         row["failed"] = 1.0 if failed else 0.0
         # On EVERY row, not just the resumed ones: the aggregate averages only the rows
@@ -566,6 +579,11 @@ def one_pass(
             )
 
     scores = aggregate_scores(predictions, digits=6)
+    run_metrics: list[str] = []
+    if by_run is not None and run_items:
+        whole = run_level_scores(by_run, run_items, scores)
+        scores.update(whole)
+        run_metrics = sorted(whole)
     # WAS THIS ARM ONE SYSTEM? A gateway can serve the same model from several hosts and
     # switch between calls. If it did, the arm's 20 items were not produced by one system
     # and its mean mixes two -- which is exactly the confound the fingerprint exists to
@@ -597,6 +615,7 @@ def one_pass(
     return {
         "predictions": predictions,
         "scores": scores,
+        "run_metrics": run_metrics,
         "resume": resume_note,
         "providers_seen": providers,
         "outputs": outputs,
@@ -1165,6 +1184,7 @@ def _run(args: argparse.Namespace) -> int:
                 score=score,
                 extra_transient=transient_markers(adapter_path),
                 score_failure=_score_failure_of(adapter_path),
+                score_run=run_scorer(adapter_path),
                 scored_against=(ref_dir, ref_tier),
                 recorded=recorded,
                 primary=primary_metric(adapter_path, cfg.get("params") or {}),
@@ -1195,6 +1215,8 @@ def _run(args: argparse.Namespace) -> int:
             build=build,
             scores=result["scores"],
             n_items=len(result["predictions"]),
+            # The metrics score_run() computed over the whole run: one number each, no per-item values to test.
+            run_metrics=result.get("run_metrics") or None,
             # The knobs this run ACTUALLY used, not just the config's name. A config_id
             # names a file, and a file can be edited after the run — so without this a run
             # cannot say what produced it, only which YAML was pointed at. It also lets V5

@@ -134,6 +134,20 @@ def per_item(
     return {i: statistics.fmean(v) for i, v in acc.items() if v}
 
 
+def refuse_run_level(runs: Iterable[Run], metric: str | None, command: str) -> None:
+    """Refuse a per-item test of a run-level metric (the adapter's score_run(): one number per run), by name,
+    instead of finding no items and saying "nothing to test"."""
+    from evaluation_harness._record import run_level_names  # noqa: PLC0415
+
+    if metric and any(metric in run_level_names(m) for _d, m in runs):
+        _common.die(
+            f"{metric} is a run-level metric (the adapter's score_run(): one number for each run, no per-item "
+            f"values), so {command} cannot test it item by item. The leaderboard shows it per arm, with its spread "
+            "over the arm's runs; name a per-item metric with --metric to test.",
+            "bad-argument",
+        )
+
+
 def repeat_agreement(runs: Iterable[Run], metric: str, items: Iterable[str] | None = None) -> dict | None:
     """How far an arm's runs (its repeats) agree, item by item (the fleet's feedback 33: three runs of a
     temperature-0 model gave 23 gate firings on 9 distinct items). {"runs", "items", "same", "item_runs"}: the
