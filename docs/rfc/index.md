@@ -35,6 +35,7 @@ Other statuses: **Rejected** and **Withdrawn**, each with the reason kept.
 | [RFC-024](RFC-024-run-outputs-in-one-file.md) | A run's outputs in one file, read through one function | — | Accepted, built (0.8.0) | A run's outputs as one `outputs.jsonl` instead of a file per item; derived runs read their source's instead of copying them; one reader for every module; the committed runs migrated byte for byte |
 | [RFC-025](RFC-025-runs-in-sqlite.md) | A project's data in SQLite, a project's choice | — | Accepted, built (0.8.0) | Files stay the default; `store: sqlite` puts everything under `data/` in one database, `data/project.sqlite`, read and written through one module; never both; `data-migrate --to sqlite|files` either way |
 | [RFC-026](RFC-026-an-api-for-every-command.md) | An API for every command, long ones as jobs | — | Accepted (0.8.0), not built | `catalog-serve` answers `/api/v1/` for every command, made from its argparse parser: reads at once, the rest as detached jobs with a log, stop, resume and a lock per what they write; spending jobs need a cost cap; every served command answers `--json` |
+| [RFC-027](RFC-027-who-acted-and-baselines-per-goal.md) | Who acted on every record, and baselines per goal | — | Draft (0.8.0, planned) | every record names who acted (a person, or an agent and the person it acted for); a baseline is a goal's, in write-once versions with the comparison that justified it frozen in; rollback; `evh baselines --json` as the export; `evh evidence-check` |
 
 ## Completed RFCs
 
