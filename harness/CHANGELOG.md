@@ -13,6 +13,10 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **"If your system is plain code"** (INTEGRATION, the fleet's feedback 19 and 26): what an item holds for code that
+  reads external state (its world at decision time), why one run is enough, a correctness goal beside a regression
+  guard, the item as the unit judged, links between items folded into an outcome, and outcomes joined by time and
+  order rather than by a key the outcome may not carry.
 - **A private inspector behind a proxy** (homelab, 2026-11-05): `evh catalog-serve --behind-proxy HOST[,HOST]`
   serves the whole local inspector (pages, items, outputs, references) to the named Hosts as well as this machine,
   with `--bind 0.0.0.0` in a container behind a team's own proxy; no rate limit and nothing withheld, unlike

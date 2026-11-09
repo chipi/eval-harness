@@ -80,6 +80,37 @@ If calling one stage in isolation turns out to be hard, that is worth knowing
 on its own. A stage you cannot invoke without booting everything is a stage you
 cannot measure, and that is a design finding, not an eval problem.
 
+### If your system is plain code
+
+A filter, a router, a de-duplicator, a scheduler: code that decides, with no model in it. It is evaluated
+like any arm; six things are different. (The triage fleet's questions, 2026-11-05; its log is the worked case.)
+
+- **The item holds the world the code read when it decided.** Code that reads external state (an issue
+  tracker, a database, the clock) is measured on what it saw then, not what is there now. Freeze it into the
+  item's body (one canonical JSON document per item, hashed like any item), and let the adapter answer the
+  code's reads from it. Keys you filter or split by go in the item's fields (a field set, ADR-0003), not in
+  the body.
+- **One run is enough.** Deterministic code gives the same output every time, so k=1: `--repeat` adds
+  nothing. (A temperature-0 model is not deterministic enough to skip repeats, but its repeats are not
+  independent either: read the distinct items, not the item-runs.)
+- **Two goals, two questions.** *Is it right?* is a goal against gold (labels from outcomes, below).
+  *Did it change?* is a regression guard: the same dataset scored against a silver reference made from the
+  current code's own run (`evh label-from-run`, `evh reference-promote --tier silver`), and the changed items
+  read with `evh inspect --runs A,B --items-out --disagree`. An arm that must give exactly what another gives
+  (the same code at a newer commit) says `expect_identical_to: <config_id>` in its config, and `evh validate`
+  fails it when it does not (RUNBOOK §4). [`examples/signal-fleet-dedup/`](../../examples/signal-fleet-dedup/README.md)
+  is one, on the fleet's real signals.
+- **The item is the unit judged.** `score()` sees one item, and a run's metric is the mean of its items'. A
+  decision that depends on the ones before it (filing a signal into an issue opened by an earlier one) is
+  one item whose body is the whole history, replayed in order, so the order effects are inside the item.
+- **Links between items go into an outcome.** `evh label-from-capture` labels an item from its own record, so
+  "A is a duplicate of B" is written into the item's outcome (B's id, or the group it joined), not as a label
+  spanning two items.
+- **Outcomes are joined by time and order, not by a key the outcome may not carry.** Match what production
+  wrote to the decision that wrote it by the window between the cycle's previous decision and this one: a
+  reopened issue need not name the fingerprint that reopened it. Measure the clock slack between the hosts
+  involved before trusting a timestamp join: the fleet's host ran 1.6 s behind GitHub's for an hour.
+
 ---
 
 ## The second function
