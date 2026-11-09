@@ -1177,6 +1177,7 @@ def data_answer(method: str, path: str, query: str, body: bytes | None = None) -
 API_TOKEN: list[str] = []
 API_COOKIE = "evh_token"
 API_MAX_BODY = 64 * 1024
+API_MAX_JOB_BODY = 70 * 1024 * 1024  # 50 MB of files, base64 (RFC-026: owner, 2026-11-08)
 
 
 def api_read(command: str, arguments: Any) -> tuple[int, dict]:
@@ -1433,11 +1434,80 @@ class Handler(SimpleHTTPRequestHandler):
             args = body.get("args", {}) if isinstance(body, dict) else None
             code, answer_body = api_read(url.path[len("/api/v1/read/") :], args)
             return self._json(code, answer_body, cache=False)
+        if url.path == "/api/v1/jobs" or url.path.startswith("/api/v1/jobs/"):
+            return self._jobs_route(method, url)
         if self.headers.get(DATA_HEADER) != "1":
             return self._json(
                 403, {"error": f"a call that is not a read needs the {DATA_HEADER}: 1 header"}, cache=False
             )
         return self._json(404, {"error": f"no API route {method} {url.path}"}, cache=False)
+
+    def _jobs_route(self, method: str, url) -> None:
+        """The jobs (RFC-026 step 3): list, read, follow the log, fetch an artifact (GET); start, stop, resume (POST,
+        with the data header)."""
+        from evaluation_harness import _api, _jobs  # noqa: PLC0415
+
+        parts = url.path[len("/api/v1/jobs") :].strip("/").split("/") if url.path != "/api/v1/jobs" else []
+        q = parse_qs(url.query)
+        try:
+            if method == "GET":
+                if not parts:
+                    state = (q.get("state") or [None])[0]
+                    return self._json(200, {"jobs": _jobs.list_jobs(state)}, cache=False)
+                job_id = parts[0]
+                if len(parts) == 1:
+                    return self._json(200, _jobs.read(job_id), cache=False)
+                if parts[1:] == ["log"]:
+                    data, nxt = _jobs.log_from(job_id, int((q.get("from") or ["0"])[0]))
+                    return self._json(200, {"log": data.decode("utf-8", "replace"), "next": nxt}, cache=False)
+                if len(parts) == 3 and parts[1] == "files":
+                    f = _jobs.job_dir(job_id) / _api._safe_name(parts[2])
+                    if parts[2] in ("job.json", "state.json", "supervisor.lock") or not f.is_file():
+                        return self._json(
+                            404, {"error": f"no file {parts[2]!r} in job {job_id}"}, cache=False
+                        )
+                    body = f.read_bytes()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/octet-stream")
+                    self.send_header("Content-Disposition", f'attachment; filename="{f.name}"')
+                    self.send_header("Content-Length", str(len(body)))
+                    self.send_header("Cache-Control", "no-store")
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return None
+                return self._json(404, {"error": f"no API route GET {url.path}"}, cache=False)
+            if self.headers.get(DATA_HEADER) != "1":
+                return self._json(
+                    403,
+                    {"error": f"a call that is not a read needs the {DATA_HEADER}: 1 header"},
+                    cache=False,
+                )
+            if not parts:
+                n = int(self.headers.get("Content-Length") or 0)
+                if n > API_MAX_JOB_BODY:
+                    return self._json(
+                        413, {"error": "a job call carries at most 50 MB of files"}, cache=False
+                    )
+                try:
+                    body = json.loads(self.rfile.read(n) or b"{}") if n else {}
+                except ValueError:
+                    return self._json(400, {"error": "the body is a JSON object"}, cache=False)
+                if not isinstance(body, dict):
+                    return self._json(400, {"error": "the body is a JSON object"}, cache=False)
+                j = _api.start_job(
+                    str(body.get("command") or ""), body.get("args", {}), body.get("by"), body.get("reason"),
+                    body.get("max_cost_usd"),
+                )  # fmt: skip
+                return self._json(202, j, cache=False)
+            if len(parts) == 2 and parts[1] == "stop":
+                return self._json(200, _jobs.stop(parts[0]), cache=False)
+            if len(parts) == 2 and parts[1] == "resume":
+                return self._json(202, _api.resume_job(parts[0]), cache=False)
+            return self._json(404, {"error": f"no API route POST {url.path}"}, cache=False)
+        except _api.Refused as exc:
+            return self._json(exc.status, {"error": str(exc)}, cache=False)
+        except (FileNotFoundError, ValueError) as exc:
+            return self._json(404, {"error": f"no such job: {exc}"}, cache=False)
 
     def do_PUT(self):
         """The data page's save (UXS-004), observed by the hooks."""

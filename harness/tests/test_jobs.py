@@ -1,0 +1,300 @@
+#!/usr/bin/env python3
+"""Jobs (RFC-026 step 3): one command each, detached, with locks, a log, stop, resume, and a supervisor that may die.
+
+    python tests/test_jobs.py
+
+Every job command has its locks named. Then a real `evh catalog-serve` in a throwaway tutorial project ($0,
+offline; a slow arm sleeps per item): a run job without `max_cost_usd`, a decision without `by`, a read asked as a
+job and a call without the data header are refused before a job exists; a run job ends `succeeded`, its envelope in
+the result and its actor the job's `by`; a second run of the same config waits (`queued`, naming the lock and the
+job holding it) and starts when the first is stopped (`cancelled`, its process group gone); a stopped run is resumed
+by a new job; a job whose supervisor is killed reads `running (unsupervised)` while its command lives and `lost`
+after; an artifact (label-sheet's sheet) is fetched from the job; an upload (import-run's scores) reaches the job;
+a new server lists the jobs the old one started.
+"""
+
+import base64
+import json
+import os
+import shutil
+import signal
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+KIT = HERE.parent / "tutorial"
+from evaluation_harness import _api, _jobs  # noqa: E402
+from evaluation_harness._check import check, summary  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runstore  # noqa: E402
+
+jobs = {c for c, v in _api.registry().items() if v["served"] == "job"}
+named = set(_jobs.LOCK_RULES) | _jobs.MIGRATIONS | _jobs.PROJECT_ONLY
+check(
+    "every job command has its locks named (a rule, a migration, or the project only)",
+    jobs <= named,
+    sorted(jobs - named),
+)
+
+proj = Path(tempfile.mkdtemp(prefix="evh-jobs-"))
+env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-jobs")
+for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_FOR"):
+    env.pop(k, None)
+
+SLOW = """import time
+from evaluation_harness.adapter import Result, score  # noqa: F401
+def call_system(text, params):
+    time.sleep(float(params.get("sleep", 1.5)))
+    return Result(output=text.split(".")[0] + ".", cost_usd=0.0)
+"""
+
+
+def evh(*args):
+    return subprocess.run(
+        [sys.executable, str(HERE / "cli.py"), *args],
+        cwd=proj,
+        env=env,
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+    )
+
+
+def serve():
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    p = subprocess.Popen(
+        [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)],
+        cwd=proj, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
+    )  # fmt: skip
+    for _ in range(200):
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.2):
+                break
+        except OSError:
+            time.sleep(0.1)
+    return p, port, (proj / ".build" / "api-token").read_text().strip()
+
+
+def call(method, path, body=None, data_header=True):
+    h = {"Host": f"127.0.0.1:{PORT}", "Authorization": f"Bearer {TOKEN}"}
+    if data_header:
+        h["X-EVH-Data"] = "1"
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(f"http://127.0.0.1:{PORT}{path}", data=data, headers=h, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:  # noqa: S310 — the test's own server  # nosec B310
+            raw = r.read()
+            try:
+                return r.status, json.loads(raw)
+            except ValueError:
+                return r.status, raw
+    except urllib.error.HTTPError as exc:
+        return exc.code, json.loads(exc.read() or b"{}")
+
+
+def job(command, args, **extra):
+    return call("POST", "/api/v1/jobs", {"command": command, "args": args, **extra})
+
+
+def until(job_id, states, seconds=120):
+    end = time.monotonic() + seconds
+    j = {}
+    while time.monotonic() < end:
+        _st, j = call("GET", f"/api/v1/jobs/{job_id}")
+        if j.get("state") in states:
+            return j
+        time.sleep(0.2)
+    return j
+
+
+try:
+    (proj / "data" / "configs").mkdir(parents=True)
+    shutil.copytree(KIT / "tickets", proj / "tickets")
+    (proj / "slow.py").write_text(SLOW)
+    r = evh("dataset-create", "--dataset-id", "tk_v1", "--source-dir", "tickets")
+    r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tk_v1")
+    r = (
+        r
+        if r.returncode
+        else evh("label-import", str(KIT / "gold"), "--dataset-id", "tk_v1", "--set", "g", "--by", "t")
+    )
+    r = (
+        r
+        if r.returncode
+        else evh(
+            "reference-promote", "--dataset-id", "tk_v1", "--labels", "g", "--tier", "gold",
+            "--reason", "the kit's summaries, for the jobs test", "--by", "t",
+        )
+    )  # fmt: skip
+    _runstore.write_text(
+        proj, "configs/fast.yaml", "config_id: fast_v1\ndataset_id: tk_v1\nparams:\n  provider: echo\n"
+    )
+    _runstore.write_text(
+        proj,
+        "configs/slow.yaml",
+        "config_id: slow_v1\ndataset_id: tk_v1\nadapter: slow.py\nparams:\n  provider: echo\n  sleep: 1.5\n",
+    )
+    r = r if r.returncode else evh("catalog")
+    check(
+        "setup: a project with gold, a fast arm and a slow one",
+        r.returncode == 0,
+        (r.stdout + r.stderr)[-300:],
+    )
+    srv, PORT, TOKEN = serve()
+
+    st, j = job("run", {"config": "fast_v1"}, by="person:ana")
+    st2, _j = job("run-promote", {"run": "x"}, reason="no one named")
+    st3, _j = job("leaderboard", {"dataset-id": "tk_v1"})
+    st4, _j = call(
+        "POST",
+        "/api/v1/jobs",
+        {"command": "dataset-profile", "args": {"dataset-id": "tk_v1"}},
+        data_header=False,
+    )
+    check(
+        "refused before a job exists: a spending job without max_cost_usd, a decision without by, a read, no data header",
+        (st, st2, st3, st4) == (400, 400, 400, 403) and "max_cost_usd" in j.get("error", ""),
+        (st, st2, st3, st4, j),
+    )
+    st, j = job("run", {"config": "fast_v1"}, by="person:ana", max_cost_usd=1)
+    done = until(j.get("id"), ("succeeded", "failed")) if st == 202 else {}
+    run_id = (done.get("run_id") or "") if done else ""
+    m = (
+        _runstore.read_json(proj, f"runs/{run_id}/metrics.json")
+        if run_id and _runstore.exists(proj, f"runs/{run_id}/metrics.json")
+        else {}
+    )
+    check(
+        "a run job: 202, then succeeded, its envelope in the result, its run named up front, its actor the job's by",
+        st == 202
+        and done.get("state") == "succeeded"
+        and (done.get("result") or {}).get("command") == "run"
+        and m.get("actor", {}).get("name") == "ana",
+        (st, {k: done.get(k) for k in ("state", "exit", "refusal", "run_id")}),
+    )
+    st, lg = call("GET", f"/api/v1/jobs/{j.get('id')}/log?from=0")
+    check(
+        "its log, followed from an offset",
+        st == 200 and lg.get("next", 0) > 0 and "fast_v1" in lg.get("log", ""),
+        lg,
+    )
+
+    # Locks: a second run of one config waits for the first.
+    st, a = job("run", {"config": "slow_v1"}, by="person:ana", max_cost_usd=1)
+    until(a["id"], ("running",), 30)
+    st, b = job("run", {"config": "slow_v1"}, by="person:ana", max_cost_usd=1)
+    time.sleep(1.5)
+    _st, bq = call("GET", f"/api/v1/jobs/{b['id']}")
+    check(
+        "a second run of the same config waits: queued, naming the lock and the job that holds it",
+        bq.get("state") == "queued"
+        and (bq.get("waiting_for") or {}).get("job") == a["id"]
+        and "slow_v1" in (bq.get("waiting_for") or {}).get("lock", ""),
+        bq,
+    )
+    end = time.monotonic() + 60
+    while time.monotonic() < end and "[2/6]" not in call("GET", f"/api/v1/jobs/{a['id']}/log")[1].get(
+        "log", ""
+    ):
+        time.sleep(0.2)  # two items written: something for the resume to continue from
+    _st, stopped = call("POST", f"/api/v1/jobs/{a['id']}/stop")
+    pgid = stopped.get("pgid")
+    try:
+        os.killpg(pgid, 0)
+        gone = False
+    except (ProcessLookupError, TypeError):
+        gone = True
+    check(
+        "stop: cancelled, its process group gone",
+        stopped.get("state") == "cancelled" and gone,
+        (stopped.get("state"), pgid),
+    )
+    bdone = until(b["id"], ("succeeded", "failed"), 120)
+    check(
+        "the waiting job starts when the lock is free, and ends",
+        bdone.get("state") == "succeeded",
+        (bdone.get("state"), call("GET", f"/api/v1/jobs/{b['id']}/log")[1].get("log", "")[-700:]),
+    )
+    st, res = call("POST", f"/api/v1/jobs/{a['id']}/resume")
+    rdone = until(res.get("id"), ("succeeded", "failed"), 120) if st == 202 else {}
+    check(
+        "a stopped run is resumed by a new job (run --resume its run id)",
+        st == 202
+        and rdone.get("state") == "succeeded"
+        and "--resume" in rdone.get("argv", [])
+        and a.get("run_id") in rdone.get("argv", []),
+        (
+            st,
+            rdone.get("state"),
+            rdone.get("argv"),
+            call("GET", f"/api/v1/jobs/{res.get('id')}/log")[1].get("log", "")[-600:],
+        ),
+    )
+    st, _x = call("POST", f"/api/v1/jobs/{bdone['id']}/resume")
+    check("a succeeded job is not resumed", st == 409, st)
+
+    # A supervisor that dies.
+    st, e = job("run", {"config": "slow_v1"}, by="person:ana", max_cost_usd=1)
+    run_e = until(e["id"], ("running",), 30)
+    os.kill(run_e["supervisor_pid"], signal.SIGKILL)
+    time.sleep(0.5)
+    _st, unsup = call("GET", f"/api/v1/jobs/{e['id']}")
+    check(
+        "a job whose supervisor is killed reads running (unsupervised) while its command lives",
+        unsup.get("state") == "running (unsupervised)",
+        unsup.get("state"),
+    )
+    lost = until(e["id"], ("lost",), 120)
+    check("and lost once its command is gone", lost.get("state") == "lost", lost.get("state"))
+
+    # An artifact, and an upload.
+    st, ls = job("label-sheet", {"dataset-id": "tk_v1", "out": "sheet.csv"}, by="person:ana")
+    lsd = until(ls.get("id"), ("succeeded", "failed"), 120) if st == 202 else {}
+    st2, body = call("GET", f"/api/v1/jobs/{ls.get('id')}/files/sheet.csv")
+    check(
+        "an artifact: the job writes it in its folder, and it is fetched from there",
+        lsd.get("state") == "succeeded" and st2 == 200 and isinstance(body, bytes) and b"item_id" in body,
+        (lsd.get("state"), lsd.get("refusal"), st2),
+    )
+    scores = "".join(
+        json.dumps({"item_id": i, "acc": 1.0}) + "\n"
+        for i in sorted(p.stem for p in (proj / "tickets").glob("*.txt"))
+    )
+    st, imp = job(
+        "import-run",
+        {
+            "dataset-id": "tk_v1", "config-id": "imported_v1", "primary-metric": "acc", "source": "a test",
+            "scorer-id": "test", "build-ref": "test", "scores": {"name": "scores.jsonl", "content_base64": base64.b64encode(scores.encode()).decode()},
+        },
+        by="person:ana",
+    )  # fmt: skip
+    impd = until(imp.get("id"), ("succeeded", "failed"), 120) if st == 202 else {}
+    check(
+        "an upload: the file reaches the job, kept under .build/uploads",
+        impd.get("state") == "succeeded" and any(".build/uploads/" in x for x in impd.get("argv", [])),
+        (st, imp, impd.get("state"), impd.get("refusal")),
+    )
+    srv.terminate()
+    srv.wait(timeout=10)
+    srv, PORT, TOKEN = serve()
+    _st, lj = call("GET", "/api/v1/jobs")
+    check(
+        "a new server lists the jobs the old one started",
+        len(lj.get("jobs", [])) >= 7,
+        len(lj.get("jobs", [])),
+    )
+    srv.terminate()
+    srv.wait(timeout=10)
+finally:
+    shutil.rmtree(proj, ignore_errors=True)
+sys.exit(summary())

@@ -1,6 +1,6 @@
 # RFC-026: An API for every command, long ones as jobs
 
-- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 and 2 built (2026-11-09). Owner, 2026-11-06: "next RFC is
+- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 3 built (2026-11-09). Owner, 2026-11-06: "next RFC is
   for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions decided by the owner the same
   day (below: "1 waiting, 2 [the proposed file size], 3 yes, 4 enforce"). Revision 2 (2026-11-09), after an
   independent review (Fable) and aligned with [RFC-027](RFC-027-who-acted-and-baselines-per-goal.md): 82 commands,
@@ -148,7 +148,8 @@ both.
   (the log from an offset, so a page follows it).
 - **Stopping**: `POST /api/v1/jobs/<id>/stop` sends SIGTERM to the recorded process group, SIGKILL after 10 s, and
   marks the job `cancelled`.
-- **Resuming**: the supervisor gives `run` its run id up front (`--run-id <config_id>_<timestamp>`), so a stopped or
+- **Resuming**: the supervisor gives `run` its run id up front (`--run-id <config_id>_<job id>`: a timestamp alone
+  gave two runs of one config started in the same second one id, found building it), so a stopped or
   lost run job knows what to resume; `POST /api/v1/jobs/<id>/resume` starts a new job with `run --resume <run id>`.
   It is refused (`not-allowed`) for any other command, and for a run with `--repeat` above 1, which `run` itself
   refuses to resume.

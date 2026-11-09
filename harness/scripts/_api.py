@@ -248,3 +248,149 @@ def new_token() -> str:
         fh.write(tok + "\n")
     os.chmod(p, 0o600)  # the server's, never project data: on disk, not through the store
     return tok
+
+
+# ── jobs (RFC-026 step 3) ──────────────────────────────────────────────────────────────────────────────────────────
+
+#: The decisions (RFC-027): a job of one needs `by`, refused at the call before a job exists.
+DECISIONS = {"run-promote", "baseline-rollback", "round-close", "dataset-unseal"}
+MAX_UPLOAD = 50 * 1024 * 1024  # owner, 2026-11-08
+#: Where `by` and the reason go on the command line, for the commands that take them as who acted and why.
+BY_FLAG = {"label-import", "sheet-import", "pick", "reference-manifest", "reference-promote"}
+REASON_FLAG = {
+    "run-promote": "reason",
+    "reference-promote": "reason",
+    "reference-manifest": "reason",
+    "round-retire": "reason",
+    "dataset-unseal": "reason",
+    "baseline-rollback": "reason",
+    "round-close": "conclusion",
+}
+
+
+def _safe_name(name: str) -> str:
+    import re  # noqa: PLC0415
+
+    base = Path(str(name)).name
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,120}", base):
+        raise Refused(f"a file name of letters, digits, '.', '_' or '-', not {name!r}")
+    return base
+
+
+def _upload(value: Any, budget: list[int]) -> str:
+    """An uploaded file, {"name", "content_base64"}, kept under .build/uploads/<sha256>/<name>: its path for the job."""
+    import base64  # noqa: PLC0415
+    import binascii  # noqa: PLC0415
+    import hashlib  # noqa: PLC0415
+
+    if not isinstance(value, dict) or set(value) != {"name", "content_base64"}:
+        raise Refused('an upload is {"name": "<file name>", "content_base64": "<the bytes, base64>"}')
+    try:
+        data = base64.b64decode(value["content_base64"], validate=True)
+    except (binascii.Error, ValueError, TypeError) as exc:
+        raise Refused("content_base64: not base64") from exc
+    budget[0] += len(data)
+    if budget[0] > MAX_UPLOAD:
+        raise Refused(f"a call carries at most {MAX_UPLOAD // (1024 * 1024)} MB", 413)
+    name = _safe_name(value["name"])
+    d = _common.project_root() / ".build" / "uploads" / hashlib.sha256(data).hexdigest()
+    d.mkdir(parents=True, exist_ok=True)
+    (d / name).write_bytes(data)
+    return str((d / name).relative_to(_common.project_root()))
+
+
+def job_argv(command: str, arguments: Any, job_id: str) -> tuple[list[str], dict[str, Any]]:
+    """A job call's argv, its arguments checked against the registry (a name mapped, an upload kept, an artifact
+    placed in the job's folder), and the checked arguments by name (what the locks read)."""
+    from evaluation_harness import _jobs  # noqa: PLC0415
+    from evaluation_harness import mcp_server as ms  # noqa: PLC0415
+
+    reg = registry().get(command)
+    if reg is None:
+        raise Refused(f"{command}: not a command the API serves", 404)
+    if reg["served"] != "job":
+        raise Refused(f"{command}: a read (POST /api/v1/read/{command}), not a job")
+    if not isinstance(arguments, dict):
+        raise Refused("args: a JSON object keyed by the argument's name")
+    files = {a["name"]: a["kind"] for a in reg["arguments"] if a["kind"] in (UPLOAD, ARTIFACT)}
+    budget = [0]
+    plain = {k: v for k, v in arguments.items() if k not in files}
+    checked = checked_args(command, plain)
+    for k, v in arguments.items():
+        if k not in files:
+            continue
+        if files[k] == UPLOAD:
+            checked[k] = _upload(v, budget)
+        else:
+            checked[k] = str((_jobs.job_dir(job_id) / _safe_name(str(v))).relative_to(_common.project_root()))
+    try:
+        return ms.argv_of(ms.parser_of(command), checked), checked
+    except ValueError as exc:
+        raise Refused(str(exc)) from exc
+
+
+def start_job(command: str, arguments: Any, by: Any, reason: Any, max_cost_usd: Any = None) -> dict[str, Any]:
+    """POST /api/v1/jobs: checked, written, and started (202). Refused before a job exists when it cannot run."""
+    from evaluation_harness import _jobs  # noqa: PLC0415
+
+    if by is not None and not isinstance(by, str):
+        raise Refused("by: person:NAME, or agent:NAME with for (RFC-027)")
+    if command in DECISIONS and not by:
+        raise Refused(f"{command} is a decision: name who made it (by: person:NAME)")
+    env: dict[str, str] = {}
+    if command in SPENDS:
+        if not isinstance(max_cost_usd, (int, float)) or isinstance(max_cost_usd, bool) or max_cost_usd <= 0:
+            raise Refused(f"{command} spends: a job of it carries max_cost_usd, the most it may spend")
+        env["EVAL_MAX_COST_USD"] = str(max_cost_usd)
+    job_id = _jobs.new_id()
+    argv, checked = job_argv(command, arguments, job_id)
+    if by and command in BY_FLAG and "by" not in checked:
+        argv = ["--by", str(by), *argv]
+    if reason and command in REASON_FLAG and REASON_FLAG[command] not in checked:
+        argv = [f"--{REASON_FLAG[command]}", str(reason), *argv]
+    run_id = None
+    if command == "run" and "run-id" not in checked:
+        cid = _jobs._config(str(checked.get("config"))).get("config_id") or "run"
+        run_id = f"{cid}_{job_id}"  # the job's id: unique, where a second's timestamp is not (two runs started at once)
+        argv = ["--run-id", run_id, *argv]
+    elif command == "run":
+        run_id = str(checked["run-id"])
+    _jobs.create(command, argv, by, reason, _jobs.locks_for(command, checked), env, run_id, job_id=job_id)
+    _jobs.start(job_id)
+    return _jobs.read(job_id)
+
+
+def resume_job(job_id: str) -> dict[str, Any]:
+    """POST /api/v1/jobs/<id>/resume: a stopped or lost run, continued by a new job (`run --resume <its run id>`)."""
+    from evaluation_harness import _jobs  # noqa: PLC0415
+
+    j = _jobs.read(job_id)
+    if j["command"] != "run" or not j.get("run_id"):
+        raise Refused(f"only a run is resumed; {job_id} is {j['command']}", 409)
+    argv = list(j["argv"])
+    if "--repeat" in argv and argv[argv.index("--repeat") + 1] not in ("1",):
+        raise Refused("a run with --repeat above 1 is not resumed (run refuses it)", 409)
+    if j["state"] in ("queued", "running", "running (unsupervised)", "succeeded"):
+        raise Refused(f"{job_id} is {j['state']}: nothing to resume", 409)
+    if "--run-id" in argv:
+        i = argv.index("--run-id")
+        del argv[i : i + 2]
+    new_id = _jobs.new_id()
+    cid = (
+        _jobs._config(argv[argv.index("--config") + 1] if "--config" in argv else None).get("config_id")
+        or "run"
+    )
+    new_run = f"{cid}_{new_id}"
+    argv = ["--run-id", new_run, "--resume", j["run_id"], *argv]
+    _jobs.create(
+        "run",
+        argv,
+        j.get("by"),
+        j.get("reason"),
+        [(k, bool(x)) for k, x in j["locks"]],
+        j.get("env"),
+        new_run,
+        job_id=new_id,
+    )
+    _jobs.start(new_id)
+    return _jobs.read(new_id)

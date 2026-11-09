@@ -1339,8 +1339,20 @@ commands, made from their own argument parsers. Every call needs the token the s
 and its arguments with a kind (a value; a `name` that must exist, a config id for `--config`; an `upload`; an
 `artifact` a job writes); what loads code or names a path of the server's (`--adapter`, `--runs-dir`, output folders)
 is never taken. `POST /api/v1/read/<command>` with `{"args": {...}}` answers exactly what the command answers with
-`--json`. Jobs (everything that writes) come next (0.8.0, planned). A server started `--public` or `--behind-proxy`
-answers no `/api/v1/` call: the API is this machine's only.
+`--json`. A server started `--public` or `--behind-proxy` answers no `/api/v1/` call: the API is this machine's only.
+
+**Jobs.** `POST /api/v1/jobs` with `{"command", "args", "by", "reason"}` (and `max_cost_usd` for a command that
+spends) starts one command as a job and answers `202`: a detached process that goes on when the page closes or the
+server restarts, in `.build/jobs/<id>/` (its record, its state, its `log`, its envelope as `result`). A decision
+(`run-promote`, `round-close`, `dataset-unseal`, `baseline-rollback`) needs `by`; a file argument is sent as
+`{"name", "content_base64"}` (at most 50 MB a call) or, for a file the job writes, named and fetched with `GET
+/api/v1/jobs/<id>/files/<name>`. `GET /api/v1/jobs` (`?state=`), `GET /api/v1/jobs/<id>`, `GET
+/api/v1/jobs/<id>/log?from=<byte>`; `POST /api/v1/jobs/<id>/stop` (SIGTERM to its process group, SIGKILL after 10 s:
+`cancelled`) and `.../resume` (a stopped run, continued with `run --resume`; a run job is given its run id up front,
+`<config_id>_<job id>`). Two jobs that write the same thing never run at once: each takes a lock per thing it writes
+(a config, a dataset, a goal's baselines, the captures, the catalog; the whole project for a migration), and one
+whose lock is held waits, `queued`, saying which job holds it. The command holds its locks itself, so they outlive
+the supervisor: a job whose supervisor died reads `running (unsupervised)` while its command lives, `lost` after.
 
 **The run inspector** is a local server (`evh catalog-serve`) that tests chosen arms against a
 baseline with the same paired test as the command line, and shows outputs beside references.
