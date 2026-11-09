@@ -134,6 +134,40 @@ def per_item(
     return {i: statistics.fmean(v) for i, v in acc.items() if v}
 
 
+def repeat_agreement(runs: Iterable[Run], metric: str, items: Iterable[str] | None = None) -> dict | None:
+    """How far an arm's runs (its repeats) agree, item by item (the fleet's feedback 33: three runs of a
+    temperature-0 model gave 23 gate firings on 9 distinct items). {"runs", "items", "same", "item_runs"}: the
+    items scored in two runs or more, how many of them got the same score in every run, and the item-runs
+    behind them. None below two runs, or when no item was scored twice."""
+    runs = list(runs)
+    if len(runs) < 2:
+        return None
+    keep = set(items) if items is not None else None
+    acc: dict[str, list[float]] = {}
+    for d, _m in runs:
+        for row in item_rows(d, strict=False):
+            v = score_of(row, metric)
+            if v is not None and (keep is None or row["item_id"] in keep):
+                acc.setdefault(row["item_id"], []).append(v)
+    twice = {i: v for i, v in acc.items() if len(v) > 1}
+    if not twice:
+        return None
+    return {
+        "runs": len(runs),
+        "items": len(twice),
+        "same": sum(1 for v in twice.values() if len(set(v)) == 1),
+        "item_runs": sum(len(v) for v in twice.values()),
+    }
+
+
+def say_agreement(label: str, ag: dict) -> str:
+    """One arm's repeat agreement in words, with the unit it implies."""
+    near = ag["same"] >= 0.9 * ag["items"]
+    return f"{label}: {ag['runs']} runs, the same score on {ag['same']} of {ag['items']} items" + (
+        " (near-copies, not independent samples)" if near else ""
+    )
+
+
 def matrix(
     runs: Iterable[Run], metric: str, *, keep: set[str] | None = None, raw: list[float] | None = None
 ) -> dict[str, dict[str, float]]:

@@ -1290,6 +1290,17 @@ def _run(args: argparse.Namespace) -> int:
             else:
                 verdict = "deterministic" if spread == 0 else f"treat deltas below {spread:.6f} as noise"
             print(f"    {k:{w}} spread={spread:.6f}   {verdict}")
+        # The arm-level spread can be 0 while items move (or move while the mean stays): say how many ITEMS
+        # every repeat scored the same, so k repeats are read as k samples only when they are (feedback 33).
+        from evaluation_harness._runs import repeat_agreement, say_agreement  # noqa: PLC0415
+
+        prim = read_json(made[-1] / "metrics.json").get("primary_metric") if made else None
+        ag = repeat_agreement([(d, {}) for d in made], prim) if prim else None
+        if ag:
+            print(
+                f"    {say_agreement(f'per item, on {prim}', ag)}; read {ag['items']} items, "
+                f"not {ag['item_runs']} item-runs (pair-test counts each item once)"
+            )
 
     print(f"\nwrote {len(made)} run(s) to {runs}")
     for d in made:

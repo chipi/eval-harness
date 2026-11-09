@@ -446,6 +446,29 @@ try:
         and '<h4 class="rc-h">suggested next</h4>' in page,
         page[page.find('<details class="roundcard') :][:600],
     )
+
+    # The fleet's feedback 33: k runs of a deterministic arm are near-copies, not k samples.
+    r = evh("run", "--config", "data/configs/tickets_lead1.yaml", "--repeat", "2")
+    check(
+        "run --repeat: the summary says how many items every repeat scored the same, and items, not item-runs",
+        r.returncode == 0
+        and "the same score on 6 of 6 items (near-copies, not independent samples)" in r.stdout
+        and "read 6 items, not 12 item-runs" in r.stdout,
+        out(r)[-600:],
+    )
+    r = evh(
+        "pair-test", "--dataset-id", "tickets_v1", "--a", "tickets_lead1_v1", "--b", "tickets_lead2_v1",
+        "--metric", "overlap_f1", "--json",
+    )  # fmt: skip
+    pj = json.loads(r.stdout) if r.returncode == 0 else {}
+    rep = ((pj.get("result") or {}).get("values") or pj).get("repeats") or {}
+    check(
+        "pair-test: an arm's repeats are named with their agreement, each item counted once",
+        r.returncode == 0
+        and (rep.get("tickets_lead1_v1") or {}).get("same") == 6
+        and "tickets_lead2_v1" not in rep,
+        r.stdout[-800:] + r.stderr[-300:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
     # _runstore aimed this process at the test project; the checks below read this repository's committed data,

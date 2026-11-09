@@ -70,7 +70,15 @@ from evaluation_harness._common import (  # noqa: E402
     read_item_ids,
     scored_against_dir,
 )
-from evaluation_harness._runs import default_metric, direction, per_item, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
+from evaluation_harness._runs import (  # noqa: E402
+    default_metric,
+    direction,
+    per_item,
+    repeat_agreement,
+    runs_on,
+    say_agreement,
+    warn_on_ambiguous_runs,
+)
 from evaluation_harness.stats import LARGE_SAMPLE, clustered, fmt_p, p_method, sign_flip_p  # noqa: E402
 from evaluation_harness.stats import noninferior as stats_noninferior  # noqa: E402
 
@@ -480,6 +488,25 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     for ln in cross_note:
         print(ln)
     print(f"  {args.a}  vs  {args.b}    metric={args.metric}  N={len(items)}")
+    # THE ITEM IS THE UNIT. An arm's runs are averaged per item, so N counts items, never item-runs; runs that
+    # agree on nearly every item (a temperature-0 model) are near-copies, and counting their item-runs would
+    # multiply one observation (the fleet's feedback 33).
+    agree = {}
+    for label, cid, pool in (
+        (args.a, args.a, arm_a if cross else runs),
+        (args.b, args.b, arm_b if cross else runs),
+    ):
+        ag = repeat_agreement([r for r in pool if r[1]["config_id"] == cid], args.metric, items)
+        if ag:
+            agree[label] = ag
+    if agree:
+        print(
+            "    repeats            "
+            + "; ".join(say_agreement(k, v) for k, v in agree.items())
+            + f". Each item counts once (N={len(items)}), not each item-run ("
+            + ", ".join(f"{k}: {v['item_runs']}" for k, v in agree.items())
+            + ")"
+        )
     print(f"    delta (A - B)      {obs:+.4f}")
     print(
         f"    items A wins       {wins}/{len(items)}"
@@ -576,6 +603,7 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             "metric": args.metric,
             "dataset_id": args.dataset_id,
             "n": len(items),
+            "repeats": agree or None,
             "cluster": args.cluster or None,
             "clusters": n_units if args.cluster else None,
             "direction": "lower" if lower else "higher",

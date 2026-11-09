@@ -92,7 +92,8 @@ like any arm; seven things are different. (The triage fleet's questions, 2026-11
   the body.
 - **One run is enough.** Deterministic code gives the same output every time, so k=1: `--repeat` adds
   nothing. (A temperature-0 model is not deterministic enough to skip repeats, but its repeats are not
-  independent either: read the distinct items, not the item-runs.)
+  independent either: read the distinct items, not the item-runs; `run --repeat` and `pair-test` say how many
+  items the repeats scored the same.)
 - **Two goals, two questions.** *Is it right?* is a goal against gold (labels from outcomes, below).
   *Did it change?* is a regression guard: the same dataset scored against a silver reference made from the
   current code's own run (`evh label-from-run`, `evh reference-promote --tier silver`), and the changed items

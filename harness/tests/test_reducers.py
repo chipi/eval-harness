@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness import axes, stats
 from evaluation_harness._check import check, summary
-from evaluation_harness._runs import per_item
+from evaluation_harness._runs import per_item, repeat_agreement, say_agreement
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore
@@ -74,8 +74,21 @@ with tempfile.TemporaryDirectory() as tmp:
         _runstore.put_rows_text(d, "".join(json.dumps(x) + "\n" for x in rows))
         runs.append((d, {}))
     m = per_item(runs, "correct")
+    ag = repeat_agreement(runs, "correct")
+    one_run = repeat_agreement(runs[:1], "correct")
     mj = per_item(runs, "correct", reduce="majority")
     one = per_item(runs, "correct", reduce="at_least_1")
+check(
+    "repeat_agreement: items scored the same in every run (x0 only), and the item-runs behind them (feedback 33)",
+    ag == {"runs": 3, "items": 3, "same": 1, "item_runs": 9} and one_run is None,
+    ag,
+)
+check(
+    "say_agreement: near-copies named only when nearly every item agrees",
+    "near-copies" not in say_agreement("A", ag or {})
+    and "near-copies" in say_agreement("A", {"runs": 3, "items": 10, "same": 9, "item_runs": 30}),
+)
+
 check(
     "per_item: the mean by default; majority and at_least_1 from the same repeats",
     m == {"x0": 1.0, "x1": 1 / 3, "x2": 1 / 3}

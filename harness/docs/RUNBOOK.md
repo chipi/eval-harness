@@ -543,6 +543,12 @@ Write the number down; you need it in step 7. Cost and speed have a spread too, 
 say what they are (`latency_ms   spread=0.003833   speed, not a quality metric`): they move
 with the tokens and the machine, and say nothing about whether the arm is deterministic.
 
+The last line is per item: `per item, on overlap_f1: 3 runs, the same score on 38 of 40 items (near-copies, not
+independent samples); read 40 items, not 120 item-runs`. The arm's spread can be 0 while items move, and repeats
+that score nearly every item the same are one observation, not three: count items, never item-runs (the triage fleet
+counted 23 gate firings on 9 distinct items across 3 runs). `pair-test` does: an arm's repeats are averaged per item,
+and its `repeats` line (JSON `repeats`) names each arm's runs and how many items they agree on.
+
 When the command spent anything it prints the total over every run it wrote, so nobody adds
 up `total_cost_usd` by hand across repeats (§4 says where the number comes from):
 

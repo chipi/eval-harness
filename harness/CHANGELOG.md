@@ -25,6 +25,10 @@ that can move a result is never a patch release without saying so under **Change
   serves the whole local inspector (pages, items, outputs, references) to the named Hosts as well as this machine,
   with `--bind 0.0.0.0` in a container behind a team's own proxy; no rate limit and nothing withheld, unlike
   `--public`. The data page's writes are not served through it.
+- **Items, not item-runs** (the fleet's feedback 33): `run --repeat` ends with how many items every repeat scored the
+  same on the primary metric, named near-copies when nearly all are, and the items to read against the item-runs;
+  `pair-test` names each arm's runs and their per-item agreement (`repeats`, in JSON too) and says each item counts
+  once.
 - **A dataset already cited gains its lineage** (the fleet's feedback 16): `evh dataset-create --dataset-id D
   --from P --lineage-only` records the dataset D was made from and what changed, recomputing its version, with its
   items and the rest of its record untouched; a second parent, a split side and a loop are refused.
