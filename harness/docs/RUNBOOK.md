@@ -58,6 +58,7 @@ further. This page is the reference for each step.
 | a capture's records again (a fresh clone) | `evh capture-restore --capture c1 [--query path=…]` |
 | a dataset from a capture | `evh dataset-from-capture c1 --dataset-id … [--where F:V] [--one-per F] [--tag K=V]` |
 | labels from what happened afterwards | `evh label-from-capture --dataset-id … --capture c1 --map rules.yaml --set …` |
+| how far outcome rules label a dataset now | `evh label-coverage --dataset-id … --capture c1 --map rules.yaml` |
 | validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
 | production's own decisions as an arm | `evh arm-from-capture --dataset-id … --capture c1 --as production_v1 [--like CONFIG]` ([§15b](#15b-evaluating-what-production-did)) |
 | where arms decided differently | `evh inspect --runs A,B --disagree` |
@@ -1242,10 +1243,10 @@ run it wrote; with `--json` its progress goes to stderr and `values.runs` lists 
 **For an agent without one**, `evh mcp` serves the same read commands as MCP tools; how to connect
 each client is in [the integration guide](INTEGRATION.md#for-an-agent-evh-mcp).
 
-- **The tools** (23) are `overview`, `datasets`, `dataset-items`, `arms`, `models`, `goals`, `references`,
+- **The tools** (29) are `overview`, `datasets`, `dataset-items`, `arms`, `models`, `goals`, `references`,
   `metrics`, `activity`, `search`, `inspect`, `leaderboard`, `pair-test`, `family-test`,
-  `rank-stability`, `run-compare`, `rounds`, `runs-list`, `validate`, `captures`, `labels`,
-  `picks` and `deploy-sheet`. Each takes the
+  `rank-stability`, `run-compare`, `rounds`, `runs-list`, `validate`, `captures`, `labels`, `tags`,
+  `licences`, `dataset-card`, `picks`, `label-coverage`, `deploy-sheet`, `data-ls` and `data-show`. Each takes the
   command's own options, named as on the command line (`dataset-id`, `period`), except those
   that name a server path (`--runs-dir`, `--items` on `pair-test` and `family-test`). Each call runs
   the command as a child process, with `--json`, so the answer is what you would
@@ -1390,6 +1391,7 @@ evh dataset-from-capture prod_2026_10 --dataset-id prod_v1 --one-per fingerprint
 evh dataset-materialize --dataset-id prod_v1
 evh label-from-capture --dataset-id prod_v1 --capture prod_2026_10 --map rules.yaml \
     --set prod_outcomes                                                # a rule set: what happened afterwards
+evh label-coverage --dataset-id prod_v1 --capture prod_2026_10 --map rules.yaml   # how far the rules label it now
 evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_validation, prod_v1_test
 ```
 
@@ -1423,6 +1425,12 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   the earlier capture never saw, listed as `late`). A continued capture never re-reads a record it holds,
   so for newer outcomes take a fresh capture of the same query and run `label-from-capture --capture`
   on it into a new set: the dataset stays as frozen, only the labels move (tutorial 6 §5).
+- **How far the rules label it, before writing a set.** `evh label-coverage --dataset-id D --capture C --map
+  rules.yaml` applies the same rules and writes nothing: each item is labelled now, skipped by design, not yet
+  mature (a rule fits it but for `min_age_days`, and the date it matures is named), matched by no rule (with the
+  outcome fields those items lack) or not in the capture; per rule, the items it takes now and when mature.
+  `--items` lists every item; `--json` gives all of it. A rule waiting to mature that comes before the one that
+  labels an item today counts the item as not yet mature, with today's label beside it: that label can change.
 - **The catalog's Captures page** lists every capture (records, importer, the time its records span,
   what it continues) with the datasets made from each; a dataset's origin links to it.
 - **Only the body becomes the item.** Fields are typed by a field set: `--fieldset S` keeps every field

@@ -166,6 +166,10 @@ COMMANDS = {
         "label_from_capture.py",
         "rules over a capture's recorded outcomes as a rule label set",
     ),
+    "label-coverage": (
+        "label_coverage.py",
+        "how far an outcome rule set labels a dataset now: labelled, skipped, not yet mature (and when), unmatched",
+    ),
     "pick": ("pick.py", "pick production items for the next version of governed datasets, or drop a pick"),
     "picks": (
         "view_picks.py",

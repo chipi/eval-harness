@@ -408,7 +408,8 @@ a team sharing one project.
 
 `evh mcp` serves the project's read commands to an agent over MCP (the official SDK): the
 catalog's views (`overview`, `datasets`, `dataset-items`, `dataset-card`, `licences`, `arms`, `models`, `goals`,
-`references`, `metrics`, `activity`, `search`, `captures`, `labels`, `tags`, `picks`, `deploy-sheet`), the project's
+`references`, `metrics`, `activity`, `search`, `captures`, `labels`, `tags`, `picks`, `label-coverage`,
+`deploy-sheet`), the project's
 files as the data page lists and shows them (`data-ls`, `data-show`), the inspector in the terminal (`inspect`, its
 sheet included, without the options that write a file: `--csv`, `--fill` and theirs), the ranking
 and the tests (`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`), `rounds`,

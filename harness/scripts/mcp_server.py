@@ -68,6 +68,7 @@ READ_TOOLS = (
     "licences",
     "dataset-card",
     "picks",
+    "label-coverage",
     "deploy-sheet",
     "data-ls",
     "data-show",
@@ -390,6 +391,7 @@ PUBLIC_DROPPED = {
     "validate": "a public copy is not a whole project: validate fails by design",
     "data-ls": "the project's files are this machine's (the data page, UXS-004)",
     "data-show": "a file's text is this machine's: a hidden dataset's items too (the data page, UXS-004)",
+    "label-coverage": "it reads a rules file by path and the captures, which are this machine's",
 }
 
 

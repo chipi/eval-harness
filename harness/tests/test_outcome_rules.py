@@ -203,6 +203,61 @@ try:
     check(
         "a rule's empty label list is refused", r.returncode != 0 and "label list" in said(r), said(r)[-300:]
     )
+    # The fleet's feedback 31: how far a rule set labels the dataset now, and what it waits for.
+    import datetime as _dt
+
+    ago = lambda d: (_dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(days=d)).isoformat()  # noqa: E731
+    outs = [
+        {"verdict": "fixed"},  # old enough: labelled now
+        {"verdict": "fixed"},  # 3 days old: matures in 11 days
+        {"verdict": "open"},  # skipped by design
+        {},  # no verdict yet: matches no rule
+        {"verdict": "noise"},  # labelled now
+    ]
+    ages = [30, 3, 30, 30, 30]
+    recs = [
+        {"id": iid, "body": "x", "created_at": ago(a), "outcome": o}
+        for iid, o, a in zip(items[:5], outs, ages, strict=True)
+    ]  # items[5] is not in the capture
+    (proj / "out2.jsonl").write_text("".join(json.dumps(r) + "\n" for r in recs))
+    evh("capture", "--importer", "jsonl", "--query", json.dumps({"path": "out2.jsonl"}), "--capture", "oc2")
+    (proj / "map_age.yaml").write_text(
+        "- {when: {verdict: open}, skip: true}\n- {when: {verdict: fixed}, min_age_days: 14, label: file}\n"
+        "- {when: {verdict: noise}, label: dismiss}\n"
+    )
+    r = evh(
+        "label-coverage", "--dataset-id", "tickets_v1", "--capture", "oc2", "--map", "map_age.yaml", "--json"
+    )
+    cov = (json.loads(r.stdout).get("result") or {}).get("values") or {} if r.returncode == 0 else {}
+    by = {x["item_id"]: x for x in cov.get("by_item") or []}
+    young = by.get(items[1]) or {}
+    check(
+        "label-coverage: labelled now, skipped, not yet mature (with its date), unmatched (and what they lack), "
+        "not in the capture",
+        cov.get("counts") == {"labelled": 2, "skipped": 1, "not_mature": 1, "unmatched": 1, "no_record": 1}
+        and young.get("rule") == 2
+        and str(young.get("matures", ""))[:10] == ago(3 - 14)[:10]
+        and young.get("today") is None
+        and cov.get("lacking") == {"verdict": 1},
+        said(r)[-800:],
+    )
+    check(
+        "label-coverage: per rule, the items it takes now and when mature",
+        [(x["now"], x["when_mature"]) for x in cov.get("rules") or []] == [(1, 0), (1, 1), (1, 0)],
+        json.dumps(cov.get("rules")),
+    )
+    r = evh(
+        "label-coverage", "--dataset-id", "tickets_v1", "--capture", "oc2", "--map", "map_age.yaml", "--items"
+    )
+    check(
+        "label-coverage (text): the classes, the rules, and each item with its maturing date; nothing written",
+        r.returncode == 0
+        and "not yet mature" in r.stdout
+        and "the unmatched lack: verdict (1)" in r.stdout
+        and f"matures {ago(3 - 14)[:10]}" in r.stdout
+        and not _runstore.exists(proj, "labels/tickets_v1/oc2"),
+        said(r)[-800:],
+    )
     name = "tickets_v1_outcomes"
     r = evh(
         "reference-promote",
