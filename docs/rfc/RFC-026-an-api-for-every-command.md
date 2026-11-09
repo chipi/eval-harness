@@ -1,6 +1,6 @@
 # RFC-026: An API for every command, long ones as jobs
 
-- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 3 built (2026-11-09). Owner, 2026-11-06: "next RFC is
+- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 4 built (2026-11-09). Owner, 2026-11-06: "next RFC is
   for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions decided by the owner the same
   day (below: "1 waiting, 2 [the proposed file size], 3 yes, 4 enforce"). Revision 2 (2026-11-09), after an
   independent review (Fable) and aligned with [RFC-027](RFC-027-who-acted-and-baselines-per-goal.md): 82 commands,
@@ -193,11 +193,22 @@ file. Between the files of one command a reader can see some written and some no
 
 `catalog` builds into the folder `catalog-serve` serves (`.build/catalog`, `build()` empties it first): as a job it
 builds beside it and swaps it in, as the server's own **Rebuild the catalog** already does, so the pages never
-disappear, and holds `catalog` so two builds never empty each other's folder.
+disappear, and holds `catalog` so two builds never empty each other's folder. Built (step 4): the command itself
+builds beside (a folder of its own per process) and swaps, from the terminal too; the swap is two renames, so for the
+time of one system call the folder is absent (an atomic exchange needs a platform call Python does not offer).
+
+The server's own writes do not wait: a data page save whose lock a job holds is refused (`409`, kind `busy`, naming
+the job), since a request cannot wait hours for a run; its rebuild, in a thread, waits. Until the Workbench replaces
+the data page, its routes need the API's token too: the Configure link `catalog-serve` prints carries it
+(`/api/v1/session?token=…&next=<the page>`, which sets the cookie, now for `/api/`, and opens the page).
 
 `data-migrate` refuses while another process holds the database (`_store.held_elsewhere`), and the server does. A
 `data-migrate` job therefore has the server close its connections and answer `503` with `Retry-After` to every call
 until the job ends; the server then reads the project's store again (`_common.store()` is kept per process).
+Built (step 4): the server looks before every call and every half second; a move short enough to begin and end
+between two looks is seen by the mark it leaves (the `project` lock's holder file, written at each exclusive take).
+As a job (`EVH_JOB` set by the supervisor), `data-migrate` asks for up to 30 s whether the database is still open
+elsewhere before refusing, the time the server takes to let go.
 
 ### Spending
 

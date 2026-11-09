@@ -70,6 +70,22 @@ def drive(store: str, base: str, proj: Path, shots: Path | None) -> None:
         page.on("response", lambda r: failed.append(f"{r.status} {r.url}") if r.status >= 400 else None)
 
         try:
+            # Without the server's token (RFC-026) the page says how to get in; the printed Configure link sets it.
+            anon = browser.new_page()
+            anon.goto(base + "data.html")
+            anon.wait_for_selector(".dm-notice")
+            check(f"{store}: without the token, the page names the Configure link catalog-serve prints",
+                  "Configure link" in anon.locator(".dm-notice").inner_text())  # fmt: skip
+            anon.close()
+            token = (proj / ".build" / "api-token").read_text().strip()
+            root = base.split("/.build/")[0]
+            page.goto(f"{root}/api/v1/session?token={token}&next=/.build/catalog/data.html")
+            page.wait_for_selector(".dm-tile")
+            check(
+                f"{store}: the Configure link sets the token's cookie and opens the page",
+                page.url == base + "data.html",
+                page.url,
+            )
             page.goto(base + "index.html")
             page.wait_for_function("document.body.classList.contains('local-data')", timeout=10000)
             link = page.locator("nav.nav > a[href$='data.html']")

@@ -2,7 +2,8 @@
    server's /api/data/; a project's settings created, changed and deleted there. State in the URL:
    ?path=<folder or file>, &edit=1 (the setting's form), &new=1 (a new setting in a settings folder). A setting is
    shown and entered as a form (data_form.js), never as YAML text. Writes carry the
-   X-EVH-Data header (ADR-0027); the server takes them on this machine only. */
+   X-EVH-Data header (ADR-0027); the server takes them on this machine only, with its token (RFC-026), a cookie set
+   by the Configure link `evh catalog-serve` prints. */
 (function () {
   const API = document.body.dataset.api || '/api/';
   const SERVE = document.body.dataset.serve || 'evh catalog-serve';
@@ -246,7 +247,7 @@
   // ── the router ───────────────────────────────────────────────────────────────────────────────────────────────
   async function main() {
     let o;
-    try { o = await get('store'); } catch (e) { app.innerHTML = NEEDS; return; }
+    try { o = await get('store'); } catch (e) { app.innerHTML = e.status === 401 ? fail(e) : NEEDS; return; }
     if (badge) badge.innerHTML = o.store === 'sqlite'
       ? `store: SQLite · <code>${esc(o.database)}</code> · ${size(o.database_bytes)}` : 'store: files';
     const path = (P.get('path') || '').replace(/^\/+|\/+$/g, '');

@@ -628,10 +628,14 @@ type. A setting is saved only after it passes the check: it matches its schema, 
 config) its id is its file name; each problem is shown at its field. A save keeps the file's comments
 and every line it does not change (ruamel.yaml), and only when `evh validate` passes on the project
 with it (a change validate refuses is put back, its reasons shown). **Rebuild the catalog** on the page
-runs `evh catalog` into a folder beside the served one and swaps it in, so the other pages show a
+runs `evh catalog`, which builds beside the served folder and swaps it in, so the other pages show a
 change without a terminal. Harness-written data is shown
 read-only with the command that writes it; a run is the one kind of data it deletes, whole. It writes
-on this machine only: a public server answers no `/api/data` call (ADR-0027). Each view and action is
+on this machine only: a public server answers no `/api/data` call (ADR-0027). Its calls need the server's token
+(RFC-026), as the API's do: open the **Configure** link `evh catalog-serve` prints when it starts (it carries the
+token and sets the cookie), not the page's bare address, which says so. A save, a delete or a rebuild takes the
+same locks a job does: while a job writes the settings (or the run being deleted), the page's save is refused
+(`409`, naming the job) rather than queued, and a rebuild waits for a `catalog` job. Each view and action is
 a command:
 
 ```bash
@@ -1353,6 +1357,12 @@ server restarts, in `.build/jobs/<id>/` (its record, its state, its `log`, its e
 (a config, a dataset, a goal's baselines, the captures, the catalog; the whole project for a migration), and one
 whose lock is held waits, `queued`, saying which job holds it. The command holds its locks itself, so they outlive
 the supervisor: a job whose supervisor died reads `running (unsupervised)` while its command lives, `lost` after.
+The server's own writes (the data page's) take the same locks. `evh catalog` builds beside the served folder and
+swaps it in, from the terminal or as a job, so a server keeps serving the old pages until the new ones are whole (the
+swap is two renames: for the time of one system call between them the folder is absent). While a migration holds the
+project (`data-migrate` and the other `*-migrate` jobs), the server answers every call `503` with `Retry-After: 5`
+and lets go of the project's database, so `data-migrate --to files` runs as a job with the server up; when it ends,
+the server reads the project's store again.
 
 **The run inspector** is a local server (`evh catalog-serve`) that tests chosen arms against a
 baseline with the same paired test as the command line, and shows outputs beside references.

@@ -70,8 +70,10 @@ are what they are without it. Two deployments:
 | **catalog only** (the default; every files project) | no Configure item, no `data.html`, no `data.js` / `data_form.js` | no `/api/data` route (404) |
 | **catalog and Configure** (`configure: true`, SQLite) | the item, the page and its scripts | `/api/data` by a local `catalog-serve` only |
 
-Even when built, the item is shown only when a local `catalog-serve` answers `/api/data/store`: on a public
-deployment or a page opened from disk it stays hidden, and a public server answers no `/api/data` call.
+Even when built, the item is shown only when a local `catalog-serve` answers `/api/data/store` (with the data, or
+asking for its token): on a public deployment or a page opened from disk it stays hidden, and a public server answers
+no `/api/data` call. Since RFC-026 the routes need the server's token: the page is opened from the **Configure** link
+`catalog-serve` prints, which sets it as a cookie.
 
 To try it: `make serve STORE=sqlite CONFIGURE=1` serves this repository's data from a SQLite copy
 (`.build/serve-sqlite/`, made once; `FRESH=1` makes it again), so the tracked files are never touched; without
@@ -214,6 +216,8 @@ data.**
 | --- | --- |
 | Opened from disk, or the server is not local | **Managing data needs `evh catalog-serve` on this machine.** |
 | A public server | the link is hidden; a direct visit says the above |
+| Opened without the server's token (RFC-026) | **this page needs the server's token: open the Configure link `evh catalog-serve` printed when it started** |
+| A job writes the same settings (RFC-026) | **not now: `<lock>` is held by `<job id>`; try again when it ends** (nothing is written) |
 | A check fails | each problem at its field and in the list above the buttons; nothing is written |
 | A write to a harness-written file | **`<path>` is written by `<the command that writes it>`; it is not edited here.** (for a dataset, `the dataset-* commands`) |
 | A path outside data/ | **That path is outside the project's data.** |

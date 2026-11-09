@@ -87,4 +87,4 @@ box.addEventListener('change',ev=>{if(ev.target.classList.contains('cmdsel'))upd
    a page opened from disk) */
 {const api=document.body.dataset.api||'/api/';
 if(location.protocol.startsWith('http')&&document.querySelector('.local-only'))fetch(api+'data/store',{cache:'no-store'})
-.then(r=>{if(r.ok)document.body.classList.add('local-data');}).catch(()=>{});}
+.then(r=>{if(r.ok||r.status===401)document.body.classList.add('local-data');}).catch(()=>{});}

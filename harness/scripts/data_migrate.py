@@ -161,6 +161,19 @@ def to_sqlite(dry_run: bool) -> dict[str, int]:
     return n
 
 
+def _held_elsewhere() -> bool:
+    """Whether another process has the database open. As a job (RFC-026), a server on this project lets go of it once
+    it sees the migration hold the project (within a second): asked again for up to 30 s before refusing."""
+    import time  # noqa: PLC0415
+
+    end = time.monotonic() + (30 if os.environ.get("EVH_JOB") else 0)
+    while _store.held_elsewhere():
+        if time.monotonic() >= end:
+            return True
+        time.sleep(0.5)
+    return False
+
+
 def to_files(dry_run: bool) -> dict[str, int]:
     """Everything in the database back to files, byte for byte; counts of what moved."""
     data = _common.DATA
@@ -168,7 +181,7 @@ def to_files(dry_run: bool) -> dict[str, int]:
     n = {"files": 0, "runs": 0, "outputs": 0, "rows": 0, "bytes": 0}
     if not path.is_file():
         return n
-    if not dry_run and _store.held_elsewhere():
+    if not dry_run and _held_elsewhere():
         die(
             f"{path.name} is open in another process (a catalog-serve, a run): stop it first; moving back deletes the"
             " database, and that process would go on writing to the deleted file",

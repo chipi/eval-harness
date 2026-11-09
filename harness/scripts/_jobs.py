@@ -255,11 +255,22 @@ def _lock_file(key: str) -> Path:
     )
 
 
-def take_locks(locks: list[tuple[str, bool]], job_id: str, waiting: Callable[[str, str], None]) -> list[int]:
-    """Take the locks in key order, waiting for each held one (`waiting(key, holder job id)` is told), and return
-    their descriptors: whoever holds a descriptor holds the lock (flock belongs to the open file)."""
+class Busy(Exception):
+    """A lock is held by someone else (a job, or the server) and the caller does not wait."""
+
+    def __init__(self, key: str, holder: str) -> None:
+        super().__init__(f"{key} is held by {holder or 'another process'}")
+        self.key, self.holder = key, holder
+
+
+def take_locks(
+    locks: list[tuple[str, bool]], job_id: str, waiting: Callable[[str, str], None] | None = None
+) -> list[int]:
+    """Take the locks in key order and return their descriptors: whoever holds a descriptor holds the lock (flock
+    belongs to the open file). A held one is waited for (`waiting(key, holder)` is told first), or, with no `waiting`,
+    every lock taken so far is let go and `Busy` raised."""
     locks_dir().mkdir(parents=True, exist_ok=True)
-    fds = []
+    fds: list[int] = []
     for key, exclusive in sorted(locks):
         f = _lock_file(key)
         fd = os.open(str(f), os.O_RDWR | os.O_CREAT, 0o644)
@@ -270,12 +281,56 @@ def take_locks(locks: list[tuple[str, bool]], job_id: str, waiting: Callable[[st
             holder = ""
             with contextlib.suppress(OSError):
                 holder = f.with_suffix(".holder").read_text().strip()
+            if waiting is None:
+                for x in (*fds, fd):
+                    os.close(x)
+                raise Busy(key, holder) from None
             waiting(key, holder)
             fcntl.flock(fd, mode)
         if exclusive:
             f.with_suffix(".holder").write_text(job_id + "\n")
         fds.append(fd)
     return fds
+
+
+@contextlib.contextmanager
+def holding(locks: list[tuple[str, bool]], who: str, waiting: Callable[[str, str], None] | None = None):
+    """The server's own writes (RFC-026 step 4): these locks and `project` shared, for the block; `Busy` at once when
+    one is held and `waiting` is None."""
+    keys = dict(locks)
+    keys["project"] = keys.get("project", False)
+    fds = take_locks(sorted(keys.items()), who, waiting)
+    try:
+        yield
+    finally:
+        for fd in fds:
+            os.close(fd)
+
+
+def migration_mark() -> int | None:
+    """When a migration last took the whole project (the `project` holder file is written at each exclusive take):
+    a server that polls sees a migration that began and ended between two looks."""
+    try:
+        return _lock_file("project").with_suffix(".holder").stat().st_mtime_ns
+    except OSError:
+        return None
+
+
+def migrating() -> bool:
+    """Whether a migration holds the whole project (`project` exclusive): what the server answers 503 for."""
+    try:
+        fd = os.open(str(_lock_file("project")), os.O_RDONLY)
+    except OSError:
+        return False
+    try:
+        fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
+    except BlockingIOError:
+        return True
+    else:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        return False
+    finally:
+        os.close(fd)
 
 
 # ── a job's life ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -345,7 +400,24 @@ def start(job_id: str) -> int:
                 ),
             },
         )
+    (d / "supervisor.pid").write_text(f"{p.pid}\n")
     return p.pid
+
+
+def _starting(d: Path, st: dict[str, Any]) -> bool:
+    """A job whose supervisor is started but has not yet taken its lock (it has written no state of its own): the
+    process `start` began is alive and not a zombie."""
+    if st.get("supervisor_pid"):
+        return False
+    try:
+        pid = int((d / "supervisor.pid").read_text().strip())
+        stat = Path(f"/proc/{pid}/stat")
+        if stat.exists():
+            return stat.read_text().rsplit(")", 1)[1].split()[0] != "Z"
+        os.kill(pid, 0)
+    except (OSError, ValueError):
+        return False
+    return True
 
 
 def _held(path: Path) -> bool:
@@ -385,7 +457,7 @@ def read(job_id: str) -> dict[str, Any]:
     if not job:
         raise FileNotFoundError(job_id)
     st = _read_json(d / "state.json")
-    if st.get("state") in ("queued", "running") and not _held(d / "supervisor.lock"):
+    if st.get("state") in ("queued", "running") and not _held(d / "supervisor.lock") and not _starting(d, st):
         st = {**st, "state": "running (unsupervised)" if _alive(st.get("pgid")) else "lost"}
     res = _read_json(d / "result.json") or None
     return {**job, **st, "result": res}

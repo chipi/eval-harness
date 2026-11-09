@@ -1047,29 +1047,29 @@ _REBUILD_LOCK = threading.Lock()
 
 
 def _rebuild(out: Path) -> None:
-    """`evh catalog` into a folder beside the served one, in a child process (a build is CPU work: in this process
-    it would starve the server's answers), then the new folder swapped in, so the pages are served throughout."""
+    """`evh catalog` in a child process (a build is CPU work: in this process it would starve the server's answers),
+    under the `catalog` lock a catalog job takes too (RFC-026 step 4), so two builds never run at once; the command
+    builds beside the served folder and swaps it in, so the pages are served throughout."""
     import subprocess  # noqa: PLC0415  # nosec B404 - our own command, no shell
 
-    from evaluation_harness import _store  # noqa: PLC0415
+    from evaluation_harness import _jobs, _store  # noqa: PLC0415
 
-    nxt, old = out.with_name(out.name + ".next"), out.with_name(out.name + ".old")
-    for d in (nxt, old):
-        _store.rmtree(d, ignore_errors=True)
+    def waiting(key: str, holder: str) -> None:
+        with _REBUILD_LOCK:
+            REBUILD.update(waiting_for={"lock": key, "job": holder or None})
+
     t0 = time.time()
-    r = subprocess.run(  # nosec B603 - this interpreter and the package's own command
-        [sys.executable, "-m", "evaluation_harness", "catalog", "--out", str(nxt)],
-        cwd=ROOT, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
-    )  # fmt: skip
-    if r.returncode == 0 and _store.is_file(nxt / "index.html"):
-        if _store.exists(out):
-            _store.replace(out, old)
-        _store.replace(nxt, out)
-        _store.rmtree(old, ignore_errors=True)
+    with _jobs.holding([("catalog", True)], "catalog-serve", waiting):
+        with _REBUILD_LOCK:
+            REBUILD.pop("waiting_for", None)
+        r = subprocess.run(  # nosec B603 - this interpreter and the package's own command
+            [sys.executable, "-m", "evaluation_harness", "catalog", "--out", str(out)],
+            cwd=ROOT, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
+        )  # fmt: skip
+    if r.returncode == 0 and _store.is_file(out / "index.html"):
         state = {"state": "done"}
         cache_clear()
     else:
-        _store.rmtree(nxt, ignore_errors=True)
         state = {"state": "failed", "tail": ((r.stdout or "") + (r.stderr or ""))[-1500:]}
     with _REBUILD_LOCK:
         REBUILD.clear()
@@ -1103,6 +1103,11 @@ def start_rebuild() -> dict:
 #: The header every data write must carry: a page from another origin cannot send it without a CORS preflight,
 #: which this server never grants (ADR-0027).
 DATA_HEADER = "X-EVH-Data"
+#: A data route asked without the server's token (RFC-026: the data page's routes take the API's token too).
+DATA_401 = (
+    "this page needs the server's token: open the Configure link `evh catalog-serve` printed when it started "
+    "(it carries the token, from .build/api-token)"
+)
 #: The largest setting a write takes, in bytes.
 DATA_MAX_BODY = 2_000_000
 #: A refusal's kind (`_data_page.Refused`) as its HTTP status.
@@ -1120,7 +1125,7 @@ def data_answer(method: str, path: str, query: str, body: bytes | None = None) -
     """The data page's API (UXS-004): (status, JSON body). Reads: GET store, list, file, find, run, form (a setting's
     form: its schema, values and suggestions). Writes: PUT form (a setting's values, checked first: the problems come
     back and nothing is written, or it is saved), DELETE file (a setting, or a whole run)."""
-    from evaluation_harness import _data_page, _settings_form  # noqa: PLC0415
+    from evaluation_harness import _data_page, _jobs, _settings_form  # noqa: PLC0415
 
     q = parse_qs(query)
 
@@ -1155,18 +1160,23 @@ def data_answer(method: str, path: str, query: str, body: bytes | None = None) -
             if found:
                 return 200, {"saved": False, "problems": found}
             try:
-                saved = _settings_form.save(arg("path"), values, new=arg("new") == "1")
+                with _jobs.holding([("settings", True)], "catalog-serve"):
+                    saved = _settings_form.save(arg("path"), values, new=arg("new") == "1")
                 cache_clear()
                 return 200, {"saved": True, **saved}
             except _settings_form.ProjectRefused as exc:
                 return 200, {"saved": False, "problems": exc.problems}
         if method == "DELETE" and path == "/api/data/file":
-            gone = _data_page.remove(arg("path"))
+            with _jobs.holding(_jobs.LOCK_RULES["data-rm"]({"path": arg("path")}), "catalog-serve"):
+                gone = _data_page.remove(arg("path"))
             cache_clear()
             return 200, gone
         return 405, {"error": f"{method} is not served at {path}"}
     except _data_page.Refused as exc:
         return DATA_STATUS.get(exc.kind, 400), {"error": str(exc), "kind": exc.kind}
+    # A job writes the same thing (RFC-026 step 4): the page's save waits for no job.
+    except _jobs.Busy as exc:
+        return 409, {"error": f"not now: {exc}; try again when it ends", "kind": "busy"}
     except UnicodeDecodeError:
         return 400, {"error": "a setting is UTF-8 text"}
     except ValueError as exc:
@@ -1242,6 +1252,38 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     if any(seg.startswith(".") for seg in p[len(prefix) :].split("/")):
         return 404
     return 0
+
+
+#: Whether a migration holds the whole project (RFC-026 step 4): every call is answered 503 until it ends.
+MIGRATING: list[bool] = [False]
+MIGRATION_POLL_S = 0.5
+_MIGRATION_SEEN: list = []  # the migration mark last acted on (unset until the first look)
+_MIGRATION_LOCK = threading.Lock()
+
+
+def migration_check() -> bool:
+    """Whether a migration holds the project now. A migration that began (or ended) since the last look closes this
+    server's hold on the store and makes it read the store again: `data-migrate` finds the database free, and an answer
+    after the move reads the new store. Asked before every call and every half second (watch_migrations)."""
+    from evaluation_harness import _jobs, _outputs  # noqa: PLC0415
+
+    with _MIGRATION_LOCK:
+        now, mark = _jobs.migrating(), _jobs.migration_mark()
+        if not _MIGRATION_SEEN:
+            _MIGRATION_SEEN.append(mark)
+        # A short move can begin and end between two looks: the mark says one did.
+        if now != MIGRATING[0] or mark != _MIGRATION_SEEN[0]:
+            MIGRATING[0], _MIGRATION_SEEN[0] = now, mark
+            _outputs.reset()
+            cache_clear()
+        return now
+
+
+def watch_migrations() -> None:
+    """migration_check every half second, so a server nobody asks anything still lets go of the database."""
+    while True:
+        migration_check()
+        time.sleep(MIGRATION_POLL_S)
 
 
 #: A deployment's hooks (--hooks), or None. The harness calls them and knows nothing of what they
@@ -1331,6 +1373,16 @@ class Handler(SimpleHTTPRequestHandler):
         t0, self._status = time.monotonic(), 0
         path = urlparse(self.path).path
         try:
+            if migration_check():
+                self.send_response(503)
+                self.send_header("Retry-After", "5")
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Cache-Control", "no-store")
+                body = json.dumps({"error": "a migration holds the project; try again when it ends"}).encode()
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             serve()
         except Exception as exc:
             if HOOKS is None:
@@ -1410,8 +1462,13 @@ class Handler(SimpleHTTPRequestHandler):
             tok = (parse_qs(url.query).get("token") or [""])[0]
             if not (tok and API_TOKEN and hmac.compare_digest(tok, API_TOKEN[0])):
                 return self._json(401, {"error": "no valid token"}, cache=False)
-            self.send_response(204)
-            self.send_header("Set-Cookie", f"{API_COOKIE}={tok}; HttpOnly; SameSite=Strict; Path=/api/v1/")
+            nxt = (parse_qs(url.query).get("next") or [""])[0]
+            local_page = nxt.startswith("/") and not nxt.startswith("//") and "\\" not in nxt
+            self.send_response(303 if local_page else 204)
+            # The printed Configure link: the cookie, then the page itself (this server's only).
+            if local_page:
+                self.send_header("Location", nxt)
+            self.send_header("Set-Cookie", f"{API_COOKIE}={tok}; HttpOnly; SameSite=Strict; Path=/api/")
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
             return
@@ -1462,11 +1519,16 @@ class Handler(SimpleHTTPRequestHandler):
                     return self._json(200, {"log": data.decode("utf-8", "replace"), "next": nxt}, cache=False)
                 if len(parts) == 3 and parts[1] == "files":
                     f = _jobs.job_dir(job_id) / _api._safe_name(parts[2])
-                    if parts[2] in ("job.json", "state.json", "supervisor.lock") or not f.is_file():
+                    if parts[2] in (
+                        "job.json",
+                        "state.json",
+                        "supervisor.lock",
+                        "supervisor.pid",
+                    ) or not _store.is_file(f):
                         return self._json(
                             404, {"error": f"no file {parts[2]!r} in job {job_id}"}, cache=False
                         )
-                    body = f.read_bytes()
+                    body = _store.read_bytes(f)
                     self.send_response(200)
                     self.send_header("Content-Type", "application/octet-stream")
                     self.send_header("Content-Disposition", f'attachment; filename="{f.name}"')
@@ -1536,6 +1598,8 @@ class Handler(SimpleHTTPRequestHandler):
         port = int(self.server.server_address[1])  # type: ignore[index]  # an AF_INET (host, port)
         if origin is not None and origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"):
             return self._json(403, {"error": "a write from another origin is refused"}, cache=False)
+        if not self._api_authorized():
+            return self._json(401, {"error": DATA_401}, cache=False)
         n = int(self.headers.get("Content-Length") or 0)
         if n > DATA_MAX_BODY:
             return self._json(413, {"error": f"a setting is at most {DATA_MAX_BODY:,} bytes"}, cache=False)
@@ -1583,6 +1647,8 @@ class Handler(SimpleHTTPRequestHandler):
             self.wfile.write(data)
             return
         if url.path in DATA_ROUTES:
+            if not self._api_authorized():
+                return self._json(401, {"error": DATA_401}, cache=False)
             code, body = data_answer("GET", url.path, url.query)
             return self._json(code, body, cache=False)
         if url.path in ("/api/compare", "/api/item", "/api/sheet"):
@@ -1753,6 +1819,8 @@ def main() -> int:
         Handler.prefixes = served(args.build_dir, A.data_dir, tuple(getattr(A, "served_dirs", ())))
         CATALOG_DIR[:] = [args.build_dir.resolve()]
         CONFIGURE_ON[:] = [_common.configure()]
+    migration_check()
+    threading.Thread(target=watch_migrations, daemon=True).start()
     if args.warm:
         threading.Thread(
             target=lambda: print(f"warm: {warm(args.warm)} comparison(s) cached", flush=True), daemon=True
@@ -1793,6 +1861,12 @@ def main() -> int:
             f"Authorization: Bearer <token>, or GET /api/v1/session?token=<token> for a cookie)",
             flush=True,
         )
+        if CONFIGURE_ON[0]:
+            page = f"{Handler.prefixes[0]}data.html"
+            print(
+                f"  Configure: http://127.0.0.1:{args.port}/api/v1/session?token={API_TOKEN[0]}&next={page}",
+                flush=True,
+            )
         print(f"  the project {ROOT}, on a port of its own", flush=True)
         print("  it reads the runs once: restart it to see runs made after it started", flush=True)
     try:

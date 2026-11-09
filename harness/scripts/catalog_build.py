@@ -4947,6 +4947,27 @@ def _common_prog() -> str | None:
     return evh_prog()
 
 
+def build_beside(A: Adapter, out: Path, sections: tuple = ()) -> dict:
+    """`build` into a folder beside `out`, then swapped in (RFC-026 step 4): a server serving `out` keeps serving the
+    old pages until the new ones are whole, a failed build leaves them as they were, and two builds at once never
+    empty each other's folder (each has its own). The swap is two renames: between them, for the time of one system
+    call, `out` is absent."""
+    import os  # noqa: PLC0415
+
+    tag = f"{os.getpid()}"
+    nxt, old = out.with_name(f"{out.name}.next-{tag}"), out.with_name(f"{out.name}.old-{tag}")
+    try:
+        counts = build(A, nxt, sections)
+    except BaseException:
+        _store.rmtree(nxt, ignore_errors=True)
+        raise
+    if _store.exists(out):
+        _store.replace(out, old)
+    _store.replace(nxt, out)
+    _store.rmtree(old, ignore_errors=True)
+    return counts
+
+
 def main() -> int:
     """Build the catalog and write static pages to output directory."""
     global API, HEAD, BRAND, ABOUT, REPO, MCP, MCP_HOWTO, CARD
@@ -5044,7 +5065,7 @@ def main() -> int:
         sections.append((label, url))
     if sections and not any(u == "." for _, u in sections):
         sections.insert(0, ("Catalog", "."))
-    counts = build(load_catalog_adapter(args.adapter), args.out, tuple(sections))
+    counts = build_beside(load_catalog_adapter(args.adapter), args.out, tuple(sections))
     print(f"catalog: {args.out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
     print("inspect: evh catalog-serve, then open the address it prints")
     return 0

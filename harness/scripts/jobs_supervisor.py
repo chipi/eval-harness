@@ -53,6 +53,8 @@ def main(job_id: str) -> int:
     cmd = [sys.executable, str(Path(__file__).resolve().parent / "cli.py"), command]
     cmd += [*(["--json"] if has_json else []), *job["argv"]]
     env = {**os.environ, **{k: str(v) for k, v in (job.get("env") or {}).items()}}
+    # The command knows it runs as a job (data-migrate waits for the server to let go of the database).
+    env["EVH_JOB"] = job_id
     by = job.get("by")
     if by:  # who acted (RFC-027): a job has no terminal, so the actor comes from the call
         env["EVH_ACTOR"] = by if ":" in by else f"person:{by}"

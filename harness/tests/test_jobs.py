@@ -10,10 +10,13 @@ the result and its actor the job's `by`; a second run of the same config waits (
 job holding it) and starts when the first is stopped (`cancelled`, its process group gone); a stopped run is resumed
 by a new job; a job whose supervisor is killed reads `running (unsupervised)` while its command lives and `lost`
 after; an artifact (label-sheet's sheet) is fetched from the job; an upload (import-run's scores) reaches the job;
-a new server lists the jobs the old one started.
+a new server lists the jobs the old one started. Step 4: a catalog job swaps its pages in with every page served
+throughout; while a migration holds the project the server answers 503; data-migrate runs as a job with the server
+up, and the server then reads the new store.
 """
 
 import base64
+import fcntl
 import json
 import os
 import shutil
@@ -292,6 +295,103 @@ try:
         "a new server lists the jobs the old one started",
         len(lj.get("jobs", [])) >= 7,
         len(lj.get("jobs", [])),
+    )
+
+    # Step 4: a catalog job builds beside the served folder and swaps it in; the pages are served throughout.
+    st, cj = job("catalog", {}, by="person:ana")
+    check("a job just started reads queued, not lost, before its supervisor takes its lock",
+          st == 202 and cj.get("state") in ("queued", "running"), (st, cj.get("state")))  # fmt: skip
+    codes = []
+    end = time.monotonic() + 180
+    while time.monotonic() < end:
+        try:
+            with urllib.request.urlopen(
+                f"http://127.0.0.1:{PORT}/.build/catalog/index.html", timeout=30
+            ) as r:  # nosec B310
+                codes.append(r.status)
+        except urllib.error.HTTPError as exc:
+            codes.append(exc.code)
+        _st, cjs = call("GET", f"/api/v1/jobs/{cj.get('id')}")
+        if cjs.get("state") in ("succeeded", "failed", "lost"):
+            break
+    left = sorted(p.name for p in (proj / ".build").iterdir() if p.name.startswith("catalog."))
+    check(
+        "a catalog job: built beside and swapped in, every page asked for during it served (200), nothing left over",
+        cjs.get("state") == "succeeded" and codes and set(codes) == {200} and not left,
+        (cjs.get("state"), cjs.get("refusal"), sorted(set(codes)), len(codes), left),
+    )
+
+    # Step 4: a migration holds the whole project; the server answers 503 (Retry-After) to every call until it ends.
+    locks = proj / ".build" / "locks"
+    fd = os.open(str(locks / "project.lock"), os.O_RDWR | os.O_CREAT, 0o644)
+    fcntl.flock(fd, fcntl.LOCK_EX)
+    try:
+        seen = None
+        for _ in range(40):
+            req = urllib.request.Request(f"http://127.0.0.1:{PORT}/api/health")
+            try:
+                with urllib.request.urlopen(req, timeout=10):  # noqa: S310  # nosec B310
+                    pass
+            except urllib.error.HTTPError as exc:
+                if exc.code == 503:
+                    seen = exc.headers.get("Retry-After")
+                    break
+            time.sleep(0.1)
+    finally:
+        os.close(fd)
+    back = None
+    for _ in range(40):
+        time.sleep(0.1)
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{PORT}/api/health", timeout=10) as r:  # nosec B310
+                back = r.status
+                break
+        except urllib.error.HTTPError:
+            continue
+    check("while a migration holds the project: 503 with Retry-After; 200 again once it ends",
+          seen == "5" and back == 200, (seen, back))  # fmt: skip
+    srv.terminate()
+    srv.wait(timeout=10)
+
+    # Step 4: data-migrate as a job with the server up. The store comes from config.yaml here (no EVAL_STORE), so the
+    # server reads the new store once the move ends; moving out of the database proves the server let go of it.
+    cur = env.get("EVAL_STORE", "files")
+    target = "files" if cur == "sqlite" else "sqlite"
+    env.pop("EVAL_STORE", None)
+    (proj / "config.yaml").write_text(f"store: {cur}\n")
+    srv, PORT, TOKEN = serve()
+    st, before = call("POST", "/api/v1/read/datasets", {"args": {}})
+
+    def served_file():  # the server itself reads it (from the database, in a sqlite project): it holds the store
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{PORT}/data/datasets/tk_v1.json", timeout=30) as r:  # nosec B310
+                return r.status
+        except urllib.error.HTTPError as exc:
+            return exc.code
+
+    file_before = served_file()
+    (proj / "config.yaml").write_text(f"store: {target}\n")
+    st2, mj = job("data-migrate", {"to": target}, by="person:ana")
+    mjd = until(mj.get("id"), ("succeeded", "failed", "lost"), 180) if st2 == 202 else {}
+    after = {}
+    for _ in range(40):
+        st3, after = call("POST", "/api/v1/read/datasets", {"args": {}})
+        if st3 == 200:
+            break
+        time.sleep(0.25)
+    ids = lambda b: sorted(  # noqa: E731
+        r.get("dataset") for blk in (b.get("result") or {}).get("blocks", []) for r in blk.get("rows", [])
+    )
+    file_after = served_file()
+    check(
+        f"data-migrate --to {target} as a job with the server up: it succeeds, and the server reads the new store",
+        st == 200
+        and mjd.get("state") == "succeeded"
+        and st3 == 200
+        and ids(after) == ids(before)
+        and ids(after)
+        and (file_before, file_after) == (200, 200),
+        (st, mjd.get("state"), mjd.get("refusal"), st3, ids(before), ids(after), file_before, file_after),
     )
     srv.terminate()
     srv.wait(timeout=10)

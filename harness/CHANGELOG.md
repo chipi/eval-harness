@@ -13,6 +13,11 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The server's writes on the jobs' locks** (RFC-026 step 4): the data page's save, delete and rebuild take the
+  locks a job takes (a save while a job writes the settings is refused, `409 busy`, naming the job); the data page's
+  routes need the server's token, set by the **Configure** link `catalog-serve` now prints. While a migration holds
+  the project the server answers `503` with `Retry-After` and lets go of the database, so `data-migrate` runs as a
+  job with the server up, and the server reads the new store after.
 - **Jobs** (RFC-026 step 3): `POST /api/v1/jobs` runs one command as a detached job with a supervisor, its state, log
   and envelope in `.build/jobs/<id>/`; listed, read, followed from a byte offset, stopped (its process group,
   `cancelled`) and, for a run, resumed. Locks per thing written (`.build/locks/`, taken in key order, held by the
@@ -283,6 +288,10 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **`evh catalog` emptied the served folder before building** (RFC-026 step 4): a server showed missing pages for the
+  whole build, and a failed build left none. It now builds beside the folder and swaps it in.
+- **A job just started read `lost`** until its supervisor took its lock (found building step 4): it reads `queued`
+  while the supervisor process it started is alive.
 - **A file could be read cut short while it was written over** (RFC-026 step 1): `_store` wrote a file on disk by
   truncating it and writing again, so a second reader (another terminal, the catalog server) could see half of it.
   Every write is now a new file renamed into place. And `reference-promote` wrote its texts before its manifest:

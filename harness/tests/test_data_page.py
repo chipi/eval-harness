@@ -23,6 +23,7 @@ In a tutorial project with a dataset, two runs, a goal, kept as files and then m
 from __future__ import annotations
 
 import atexit
+import fcntl
 import json
 import os
 import shutil
@@ -95,6 +96,10 @@ def cli(proj: Path, env: dict, *args: str, stdin: str | None = None) -> subproce
                           capture_output=True, text=True, input=stdin)  # fmt: skip
 
 
+#: Each local server's token, by port (`serve` reads it; `http` sends it).
+TOKEN: dict[int, str] = {}
+
+
 def serve(proj: Path, env: dict, *extra: str) -> tuple:
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
@@ -111,6 +116,9 @@ def serve(proj: Path, env: dict, *extra: str) -> tuple:
             if p.poll() is not None:
                 raise SystemExit(f"catalog-serve exited:\n{log.read_text()}") from None
             time.sleep(0.1)
+    tok = proj / ".build" / "api-token"
+    if tok.is_file():
+        TOKEN[port] = tok.read_text().strip()
     return p, port
 
 
@@ -122,8 +130,13 @@ def http(
     headers: dict | None = None,
     host: str | None = None,
 ):
+    headers = dict(headers or {})
+    if route.startswith("/api/") and TOKEN.get(port) and "Authorization" not in headers:
+        headers["Authorization"] = (
+            f"Bearer {TOKEN[port]}"  # the server's token (RFC-026), unless a test sends its own
+        )
     req = urllib.request.Request(f"http://127.0.0.1:{port}{route}", data=body.encode() if body is not None else None,
-                                 method=method, headers=headers or {})  # fmt: skip
+                                 method=method, headers=headers)  # fmt: skip
     if host:
         req.add_header("Host", host)
     try:
@@ -364,6 +377,25 @@ def run_case(store: str) -> None:
                     {**W, "Origin": "http://evil.example"},
                 )
                 check(f"{store}: a write from another origin is refused", code == 403, (code, body))
+                code, _b = http(port, "GET", "/api/data/store", headers={"Authorization": "Bearer nope"})
+                code2, body = http(port, "PUT", "/api/data/form?path=" + goal, json.dumps(changed),
+                                   {**W, "Authorization": "Bearer nope"})  # fmt: skip
+                check(f"{store}: without the server's token (RFC-026) a read and a write are refused, naming the link",
+                      code == 401 and code2 == 401 and "Configure link" in body.get("error", ""), (code, code2, body))  # fmt: skip
+                # A job writing the settings holds `settings` (RFC-026 step 4): the page's save is refused, not queued.
+                locks = proj / ".build" / "locks"
+                locks.mkdir(parents=True, exist_ok=True)
+                (locks / "settings.holder").write_text("20261109T120000-abc123\n")
+                fd = os.open(str(locks / "settings.lock"), os.O_RDWR | os.O_CREAT, 0o644)
+                fcntl.flock(fd, fcntl.LOCK_EX)
+                try:
+                    code, body = http(port, "PUT", "/api/data/form?path=" + goal, json.dumps(changed), W)
+                    code2, body2 = http(port, "DELETE", "/api/data/file?path=" + goal, None, W)
+                finally:
+                    os.close(fd)
+                check(f"{store}: while a job holds settings, a save and a delete are refused (409 busy, naming the job)",
+                      code == 409 and body.get("kind") == "busy" and "20261109T120000-abc123" in body.get("error", "")
+                      and code2 == 409, (code, body, code2, body2))  # fmt: skip
                 bad = json.loads(json.dumps(values))
                 del bad["decision"]
                 bad["datasets"][0]["notes"] = 3
