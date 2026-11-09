@@ -230,6 +230,9 @@ def _smoke(args: argparse.Namespace) -> int:
         die(f"{args.config}: {exc}", "invalid-file")
     call_system, score, *_ = load_adapter(cfg.get("adapter"), args.config)
     ds = load_dataset(cfg["dataset_id"])
+    from evaluation_harness import _seal  # noqa: PLC0415
+
+    _seal.refuse_if_sealed(cfg["dataset_id"], "a smoke test", cfg.get("config_id"))
     mat = MATERIALIZED / ds["dataset_id"]
     params = dict(cfg.get("params") or {})
     rec = _models.find(DATA, cfg["model_record"]) if cfg.get("model_record") else None

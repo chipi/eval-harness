@@ -242,6 +242,9 @@ def write_set(
     `rebuild`: the texts are kept out of git (a .gitignore beside them), and this command writes them again."""
     if source.get("kind") not in SOURCES:
         die(f"a label's source is one of {', '.join(SOURCES)}, not {source.get('kind')!r}", "invalid-file")
+    from evaluation_harness import _seal  # noqa: PLC0415
+
+    _seal.refuse_if_sealed(dataset_id, "a label set")
     out = set_dir(dataset_id, name)
     if _store.exists(out) and any(_store.iterdir(out)):
         die(

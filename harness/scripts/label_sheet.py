@@ -115,6 +115,9 @@ def main() -> int:
     if _store.exists(args.out):
         die(f"{args.out} exists: a sheet is not overwritten (you may have filled it)", "would-overwrite")
     choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
+    from evaluation_harness import _seal  # noqa: PLC0415
+
+    _seal.refuse_if_sealed(args.dataset_id, "a label sheet")
     header, rows, n = build(args.dataset_id, args.items, args.item, args.runs, args.propose, choices)
     write_csv(header, rows, args.out)
     print(f"{args.out}: {len(rows)} item(s) of {n} to label")

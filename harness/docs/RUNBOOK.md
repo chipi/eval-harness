@@ -60,6 +60,7 @@ further. This page is the reference for each step.
 | labels from what happened afterwards | `evh label-from-capture --dataset-id … --capture c1 --map rules.yaml --set …` |
 | how far outcome rules label a dataset now | `evh label-coverage --dataset-id … --capture c1 --map rules.yaml` |
 | validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
+| a sealed held-out side | `evh dataset-split … --by time --key F --at T --seal` · `evh dataset-unseal …_test --config C --reason "…"` |
 | production's own decisions as an arm | `evh arm-from-capture --dataset-id … --capture c1 --as production_v1 [--like CONFIG]` ([§15b](#15b-evaluating-what-production-did)) |
 | where arms decided differently | `evh inspect --runs A,B --disagree` |
 | the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh inspect --sheet --dataset-id … --runs A,B [--wrong-against SET] [--new-vs V] [--csv FILE [--fill label\|pick\|scores]]` |
@@ -1445,6 +1446,16 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   read it beside a person's labels; promoted, it is a reference like any (ADR-0022).
 - **`text: hidden`** (`dataset-from-capture --hide-text`) keeps a dataset's text, and every text derived
   from it, off every public surface, for data a project may measure but not publish.
+- **A held-out side, sealed.** `evh dataset-split prod_v1 --by time --key opened --at 2026-11-07T00:00:00Z
+  --seal` puts every item at or after the boundary on the test side and seals it: no run, label, label sheet,
+  reference, rescore or judging is written onto it, refused before anything is called. Tune on the validation
+  side; when one candidate is ready, write its config for the test side with a hypothesis (`against`, `measure`,
+  `direction`, `statement`, ADR-0025), commit it, and `evh dataset-unseal prod_v1_test --config cand_test_v1
+  --reason "..."`: the side opens to that config and the one its hypothesis is against, and the look is recorded
+  (when, why, the hypothesis, the commit). Every other config is still refused; each unseal is one more look.
+  `validate` (V22) fails when the validation side's items changed after the seal, or a run on the sealed side has
+  no unseal behind it. In the project's database the configs are not in git: there the unseal itself, timestamped
+  before any run it allows, is the naming in advance, and the look records the commit as not determinable.
 
 ## 15b. Evaluating what production did
 

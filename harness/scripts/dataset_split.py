@@ -4,6 +4,7 @@
     evh dataset-split triage_v1 --test 0.3 --seed 7
     evh dataset-split triage_v1 --test 0.3 --seed 7 --key fingerprint
     evh dataset-split triage_v1 --test 0.3 --by time --key decision_date
+    evh dataset-split triage_v1 --by time --key decision_date --at 2026-11-07T00:00:00Z --seal
 
 Writes <D>_validation and <D>_test. They point at the parent's own source files (nothing is copied),
 record the parent as `derived_from` (with the items each leaves out) and the rule as `split`, and a
@@ -12,7 +13,9 @@ goal names them with the roles it has today.
 --by hash (default): an item goes to test when the hash of (seed, its key) falls below the share.
 The key is the item id, or with --key an item field, so all items sharing a value (one fingerprint)
 land on one side. Items keep their side in every later version, and new items fall in proportion.
---by time: the newest share by --key (a date or time field) is test.
+--by time: the newest share by --key (a date or time field) is test, or with --at every item at or after
+that time. --seal holds the test side out (_seal): nothing runs, is scored or labelled on it until
+`evh dataset-unseal` names a candidate config whose hypothesis is committed.
 """
 
 from __future__ import annotations
@@ -26,8 +29,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import hashlib
 
-from evaluation_harness import _fields, _store
-from evaluation_harness._common import DATASETS, dataset_id_ok, die, evh_prog, load_dataset, read_json
+from evaluation_harness import _fields, _seal, _store
+from evaluation_harness._common import DATASETS, dataset_id_ok, die, evh_prog, load_dataset, now, read_json
+from evaluation_harness._importers import parse_time
 from evaluation_harness.dataset_create import _lineage, _write
 
 
@@ -41,7 +45,7 @@ def main() -> int:
     """Split a dataset into <D>_validation and <D>_test."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("dataset_id", help="the dataset to split")
-    ap.add_argument("--test", type=float, required=True, help="the test share, between 0 and 1")
+    ap.add_argument("--test", type=float, help="the test share, between 0 and 1 (or --at with --by time)")
     ap.add_argument("--by", choices=("hash", "time"), default="hash")
     ap.add_argument(
         "--key",
@@ -49,11 +53,28 @@ def main() -> int:
     )
     ap.add_argument("--seed", type=int, default=0, help="with --by hash: the seed (default 0)")
     ap.add_argument(
+        "--at",
+        help="with --by time: the boundary, an ISO time; items at or after it are the test side (instead of --test)",
+    )
+    ap.add_argument(
+        "--seal",
+        action="store_true",
+        help="seal the test side: no run, score or label on it until evh dataset-unseal names a candidate config "
+        "with a committed hypothesis",
+    )
+    ap.add_argument(
         "--force", action="store_true", help="overwrite the two datasets if nothing cites them yet"
     )
     args = ap.parse_args()
-    if not 0 < args.test < 1:
+    if args.at is not None and args.by != "time":
+        die("--at is a time boundary: with --by time", "bad-argument")
+    if (args.test is None) == (args.at is None):
+        die("one of --test (a share) or --at (a time boundary, with --by time)", "bad-argument")
+    if args.test is not None and not 0 < args.test < 1:
         die("--test is a share between 0 and 1", "bad-argument")
+    boundary = parse_time(args.at) if args.at is not None else None
+    if args.at is not None and boundary is None:
+        die(f"--at {args.at!r}: not an ISO time (2026-11-07T00:00:00Z)", "bad-argument")
     if args.by == "time" and not args.key:
         die("--by time needs --key: the item field holding each item's date or time", "bad-argument")
     parent = load_dataset(dataset_id_ok(args.dataset_id))
@@ -69,6 +90,12 @@ def main() -> int:
 
     if args.by == "hash":
         assign = {it["item_id"]: side(args.seed, key_of(it), args.test) for it in items}
+    elif boundary is not None:
+        when = {it["item_id"]: parse_time(key_of(it)) for it in items}
+        bad = [i for i, t in when.items() if t is None]
+        if bad:
+            die(f"--key {args.key}: not an ISO time on {len(bad)} item(s), e.g. {bad[0]}", "invalid-file")
+        assign = {i: "test" if t >= boundary else "validation" for i, t in when.items()}  # type: ignore[operator]
     else:
         order = sorted(items, key=lambda it: (key_of(it), it["item_id"]))
         n_held = round(len(order) * args.test)
@@ -76,10 +103,18 @@ def main() -> int:
         assign = {it["item_id"]: "test" if it["item_id"] in newest else "validation" for it in items}
 
     fieldset = _fields.load_fieldset(parent["fieldset"]) if parent.get("fieldset") else None
-    rule = {"from": args.dataset_id, "test": args.test, "by": args.by, "key": args.key}
+    share = (
+        args.test
+        if args.test is not None
+        else round(sum(1 for v in assign.values() if v == "test") / len(items), 6)
+    )
+    rule = {"from": args.dataset_id, "test": share, "by": args.by, "key": args.key}
+    if args.at is not None:
+        rule["at"] = args.at
     if args.by == "hash":
         rule["seed"] = args.seed
     written = []
+    open_items = [dict(it) for it in items if assign[it["item_id"]] == "validation"]
     for part in ("validation", "test"):
         out_id = f"{args.dataset_id}_{part}"
         out = DATASETS / f"{dataset_id_ok(out_id)}.json"
@@ -101,13 +136,31 @@ def main() -> int:
             + (f" on {args.key}" if args.key else ""),
             parent.get("source_dir", ""),
             _lineage(args.dataset_id, out_id, mine),
-            {"split": {**rule, "part": part}},
+            {"split": {**rule, "part": part}}
+            | (
+                {
+                    "sealed": {
+                        "at": now(),
+                        "open_side": f"{args.dataset_id}_validation",
+                        "open_sha256": _seal.items_digest(open_items),
+                    }
+                }
+                if args.seal and part == "test"
+                else {}
+            ),
             licence=parent.get("licence"),
             source=parent.get("source") or {},
         )
         written.append((out_id, len(mine)))
     for out_id, n in written:
-        print(f"data/datasets/{out_id}.json  ({n} item(s))")
+        print(
+            f"data/datasets/{out_id}.json  ({n} item(s))"
+            + (
+                "  SEALED: no run, score or label until evh dataset-unseal"
+                if args.seal and out_id.endswith("_test")
+                else ""
+            )
+        )
     return 0
 
 

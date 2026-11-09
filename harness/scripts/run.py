@@ -960,6 +960,11 @@ def _run(args: argparse.Namespace) -> int:
     if bad_hypothesis:
         die(f"{args.config}: " + "; ".join(bad_hypothesis), "invalid-file")
     ds = load_dataset(cfg["dataset_id"])
+    # A SEALED SIDE IS HELD OUT (the fleet's feedback 29): refused before a cent is spent, unless an unseal named
+    # this config in advance.
+    from evaluation_harness import _seal  # noqa: PLC0415
+
+    _seal.refuse_if_sealed(cfg["dataset_id"], "a run", cfg["config_id"])
     stamp = now().replace(":", "").replace("-", "")
     base_id = args.run_id or f"{cfg['config_id']}_{stamp}"
     build = build_info()

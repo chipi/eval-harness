@@ -77,6 +77,9 @@ def main() -> int:
             "would-overwrite",
         )
     ds = load_dataset(args.dataset_id)
+    from evaluation_harness import _seal  # noqa: PLC0415
+
+    _seal.refuse_if_sealed(args.dataset_id, "a reference")
     ids = [it["item_id"] for it in ds.get("items") or []]
     mine = {
         iid: r

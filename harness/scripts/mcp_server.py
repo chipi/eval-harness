@@ -116,6 +116,7 @@ NOT_TOOLS = {
     "pick": "writes the pick list",
     "dataset-extend": "writes a dataset",
     "dataset-split": "writes",
+    "dataset-unseal": "a decision: a person's",
     "capture-scrub": "runs a project's command and writes",
     "capture-restore": "reads a source and writes records and item files",
     "run-promote": "a decision: a person's",

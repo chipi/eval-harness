@@ -25,6 +25,12 @@ that can move a result is never a patch release without saying so under **Change
   serves the whole local inspector (pages, items, outputs, references) to the named Hosts as well as this machine,
   with `--bind 0.0.0.0` in a container behind a team's own proxy; no rate limit and nothing withheld, unlike
   `--public`. The data page's writes are not served through it.
+- **A sealed held-out side** (the fleet's feedback 29): `evh dataset-split D --by time --key F --at T --seal` splits
+  at a time boundary and seals the test side: runs, labels, label sheets, references, rescores and judging onto it
+  are refused until `evh dataset-unseal D_test --config C --reason "..."` names a candidate whose hypothesis is
+  committed; it opens to that config and the one it is against, and records the look. `validate` (V22) fails when
+  the open side changed after the seal or a run on the sealed side has no unseal. The look budget comes with the
+  test-set looks (plan 4.4).
 - **A metric of the whole run** (the fleet's feedback 20): an adapter's optional `score_run(items)`, called once
   with every item's output, reference and scores, returns named numbers (pairwise precision and recall of a grouping,
   say) that no mean of items can be. They are recorded in `scores` and named in `run_metrics`; the leaderboard shows

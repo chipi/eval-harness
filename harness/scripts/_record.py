@@ -128,6 +128,9 @@ def run_record(
     """A measured run's record. `fields` are the optional core fields (params, adapter,
     metric_kinds, metric_directions, primary_metric, fingerprint, reference_tier, goal,
     format, ...); one passed as None is left out rather than recorded as null."""
+    from evaluation_harness import _seal  # noqa: PLC0415
+
+    _seal.refuse_if_sealed(dataset_id, "a run record", config_id)
     record: dict[str, Any] = {
         "run_id": run_id,
         "dataset_id": dataset_id,
@@ -163,6 +166,9 @@ def derived_record(
     same name (RFC-024)."""
     if kind not in DERIVED_KINDS:
         raise ValueError(f"unknown derivation {kind!r}; one of {', '.join(DERIVED_KINDS)}")
+    from evaluation_harness import _seal  # noqa: PLC0415
+
+    _seal.refuse_if_sealed(source.get("dataset_id"), f"a {kind}", source.get("config_id"))
     when = at or now()
     record = json.loads(json.dumps(source))
     for key in drop:

@@ -52,7 +52,8 @@ Each check exists because its absence let a real defect through somewhere:
                      changed ones), a split side naming a parent version that is not its parent's, or
                      a licence not on evh licences' list (E2), a source block with a key or value
                      outside its form, item rows without an item_url to fill (E1), or a card key
-                     that is not one of Croissant RAI's (E4)
+                     that is not one of Croissant RAI's (E4); a sealed side whose open side changed
+                     since it was sealed, or a run on it no unseal named (the fleet's feedback 29)
                      (PLAN_0.8.0 E3; `evh dataset-migrate` brings old records to the format)
   V23 run outputs    a run still in the old layout (an outputs/ folder: `evh run-migrate`), or a derived
                      run with no outputs of its own whose source run is not here (RFC-024); a project in both
@@ -1608,12 +1609,26 @@ def v22_dataset_records() -> None:
                 f"datasets/{i}.json: split.from_version {sp.get('from_version')!r}, but {sp['from']} is "
                 f"{version_of(sp['from'])}"
             )
+    # A sealed side (the fleet's feedback 29): its open side unchanged since the seal, and no run on it by a config
+    # no unseal named, or from before its unseal.
+    from evaluation_harness import _seal  # noqa: PLC0415
+
+    sealed = _seal.problems(docs)
+    if any(d.get("sealed") for d in docs.values()):
+        runs = [(r, m) for _label, r in all_runs() if isinstance(m := parsed(r / "metrics.json"), dict)]
+        sealed += _seal.runs_on_sealed(docs, runs)
+    bad += sealed
     for b in bad[:10]:
         print(f"       {b}")
-    if bad:
+    if bad and len(bad) > len(sealed):
         print("       evh dataset-migrate writes the versions the lineage gives (--dry-run shows them first)")
     check(
-        f"V22 dataset records — {len(docs)} dataset(s), each version its lineage's",
+        f"V22 dataset records — {len(docs)} dataset(s), each version its lineage's"
+        + (
+            f", {sum(1 for d in docs.values() if d.get('sealed'))} sealed side(s) held"
+            if any(d.get("sealed") for d in docs.values())
+            else ""
+        ),
         not bad,
         f"{len(bad)} problem(s)",
     )

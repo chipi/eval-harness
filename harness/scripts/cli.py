@@ -132,6 +132,10 @@ COMMANDS = {
         "dataset_split.py",
         "split a dataset into <id>_validation and <id>_test, stable across versions",
     ),
+    "dataset-unseal": (
+        "dataset_unseal.py",
+        "open a sealed test side to one candidate config whose hypothesis is committed (one look)",
+    ),
     "capture-restore": (
         "capture_restore.py",
         "read a capture's records again from its source, and the items of the datasets made from it, every hash checked",

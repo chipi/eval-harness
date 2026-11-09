@@ -286,6 +286,11 @@ def main() -> int:
             ),
             ("capture-scrub", ["c1", "--command", "true {records}"], "ok:0 of"),
             ("dataset-split", ["tickets_v1", "--test", "0.5", "--seed", "3"], "ok:tickets_v1_test"),
+            (
+                "dataset-unseal",
+                ["tickets_v1_test", "--config", "nope_v1", "--reason", "only to read the arguments"],
+                "is not sealed",
+            ),
             ("captures", ["--capture", "c1"], "ok:c1:"),
             ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
             ("capture-restore", ["--capture", "c1"], "ok:records restored"),
