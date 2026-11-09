@@ -13,6 +13,8 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **The jobs from the terminal** (RFC-026 step 6): `evh jobs-start`, `jobs-status`, `jobs-logs [--follow]`,
+  `jobs-stop`, `jobs-resume`, over the same jobs as the API, with no server.
 - **What a command may spend, and a round's budget enforced** (RFC-026 step 5): `EVAL_MAX_COST_USD` caps the
   whole command (`run --repeat 3` stops at one cap, not three); `arm-smoke` stops at it; the bundled provider layer
   counts the calls too, a second net under an adapter that reports less; `sweep` and `model-onboard` give each child

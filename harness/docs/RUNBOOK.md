@@ -48,6 +48,7 @@ further. This page is the reference for each step.
 | what it is for | `data/goals/<goal_id>.yaml` (every field: [§4c](#4c-the-goal-file-field-by-field)), and `goal:` on each config |
 | rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh rounds --goal …` |
 | browse and inspect | `evh catalog` · `evh catalog-serve` · `evh dataset-profile` · `evh dataset-items` |
+| background jobs (the Workbench's) | `evh jobs-start run --arg config=ID --max-cost-usd N` · `evh jobs-status` · `evh jobs-logs JOB --follow` · `evh jobs-stop JOB` · `evh jobs-resume JOB` |
 | ask from an agent | `evh mcp` |
 | the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--configs`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh goals --goal G [--arms PATTERN] [--top N]` (a goal with many arms: only the arms matching, or the first N, always with the baseline, the leader and the recommended arm; each arm's paired test against the leader) · `evh search …` · `evh inspect --runs …` (`--analysis`, `--item …`) · `evh inspect --sheet --dataset-id … --runs …`; every list takes `--period P` |
 | consistency | `evh validate` |
@@ -1372,6 +1373,10 @@ server restarts, in `.build/jobs/<id>/` (its record, its state, its `log`, its e
 (a config, a dataset, a goal's baselines, the captures, the catalog; the whole project for a migration), and one
 whose lock is held waits, `queued`, saying which job holds it. The command holds its locks itself, so they outlive
 the supervisor: a job whose supervisor died reads `running (unsupervised)` while its command lives, `lost` after.
+The terminal has the same jobs, no server needed: `evh jobs-start COMMAND --arg NAME=VALUE ...` (names as `GET
+/api/v1/commands` lists them; repeated for a list, `@FILE` uploads a file; `--max-cost-usd`, `--reason`, `--by`),
+`evh jobs-status [JOB]`, `evh jobs-logs JOB [--follow]`, `evh jobs-stop JOB`, `evh jobs-resume JOB`. A job started
+there is listed and stopped by the API, and one the Workbench started is followed there.
 `POST /api/v1/estimate` with `{"command", "args"}` runs a job command's own `--dry-run` (`run`, `sweep`,
 `judge-score` and the migrations have one) and answers what it printed; a stopped run job's round reservation is
 closed by its supervisor with what the run's items paid.

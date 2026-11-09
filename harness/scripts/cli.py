@@ -216,6 +216,14 @@ COMMANDS = {
     "round-retire": ("round_retire.py", "drop an arm from the open round, with the reason"),
     "round-close": ("round_close.py", "close a round with its conclusion, promoting the run it chose"),
     "rounds": ("round_status.py", "a goal's rounds, and what the evidence suggests next"),
+    "jobs-start": (
+        "jobs_start.py",
+        "start a command as a job: detached, with its locks, log and state (RFC-026)",
+    ),
+    "jobs-status": ("jobs_status.py", "the jobs, or one job: its state, what it waits for, how it ended"),
+    "jobs-logs": ("jobs_logs.py", "a job's log, from a byte on, or followed until it ends"),
+    "jobs-stop": ("jobs_stop.py", "stop a job: its process group, cancelled"),
+    "jobs-resume": ("jobs_resume.py", "resume a stopped or lost run job, as a new job"),
     "overview": (
         "view_overview.py",
         "the catalog's home page: goals at a glance, activity, spend, coverage, what was recorded",

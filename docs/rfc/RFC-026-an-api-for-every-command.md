@@ -1,6 +1,6 @@
 # RFC-026: An API for every command, long ones as jobs
 
-- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 5 built (2026-11-09). Owner, 2026-11-06: "next RFC is
+- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 6 built (2026-11-09). Owner, 2026-11-06: "next RFC is
   for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions decided by the owner the same
   day (below: "1 waiting, 2 [the proposed file size], 3 yes, 4 enforce"). Revision 2 (2026-11-09), after an
   independent review (Fable) and aligned with [RFC-027](RFC-027-who-acted-and-baselines-per-goal.md): 82 commands,
@@ -118,7 +118,7 @@ their text as `{"command", "version", "text"}` until step 7 gives them `--json`.
 `POST /api/v1/jobs` with `{"command", "args", "by", "reason"}` starts a job and answers `202` with its id and state.
 `by` is RFC-027's actor (`person:NAME`, or `agent:NAME` with `for: person:NAME`); a decision (`run-promote`,
 `baseline-rollback`, `round-close`, `dataset-unseal`) without it is refused here, before a job exists.
-This is PLAN_0.8.0's step 4.2 (background runs), as one command a job. The same jobs from the terminal (0.8.0, planned; owner,
+This is PLAN_0.8.0's step 4.2 (background runs), as one command a job. The same jobs from the terminal (built, step 6; owner,
 2026-11-08; CLI parity): `evh jobs-start <command> [args]` starts one through the same supervisor and prints its id,
 `evh jobs-status [id]` lists them or shows one, `evh jobs-logs <id> [--follow]` prints its log, `evh jobs-stop <id>`
 stops it, `evh jobs-resume <id>` resumes a run; each answers `--json`, and a job started in either place is seen in
@@ -128,7 +128,7 @@ both.
   harness version) and starts `python -m evaluation_harness.jobs_supervisor <id>` detached: a new session, stdin from
   `/dev/null`, its output to the job's `supervisor.log`, every other descriptor closed. Jobs do not depend on the
   server: it can restart, or stop, and they go on; it reads `.build/jobs/` on every `GET /api/v1/jobs`, so a job
-  started from the terminal (`jobs-start`, 0.8.0, planned) is seen at once.
+  started from the terminal (`jobs-start`) is seen at once.
 - **Who acted.** The supervisor sets `EVH_ACTOR` (and `EVH_FOR`) from the job's `by` for every command, since a job
   has no terminal and RFC-027 would otherwise record it `unknown`; it passes `--by` only to the commands where `--by`
   means who acted, and `reason` as each command names it (`--reason`, `--conclusion` for `round-close`).
@@ -288,7 +288,7 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
 4. The server's own writes on the same locks; `catalog` as a swap; `data-migrate`'s `503`.
 5. The cap in the provider layer, per process; children given the rest; the round's budget and its ledger; the
    estimate.
-6. (0.8.0, planned) `evh jobs-start`, `jobs-status`, `jobs-logs`, `jobs-stop`, `jobs-resume` over the same jobs.
+6. `evh jobs-start`, `jobs-status`, `jobs-logs`, `jobs-stop`, `jobs-resume` over the same jobs.
    They are commands like the rest, classified in the registry as not served (the API has its own job routes) and
    in `NOT_TOOLS`.
 7. `--json` for the 43 commands, in groups (datasets, labels and references, rounds, runs, the rest).
@@ -340,7 +340,7 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
 1. **A job whose lock is held waits** in a queue and starts when the lock is free ("waiting"). `flock` gives no order,
    so a queued job says which job it waits for, not its place.
 2. **An upload is at most 50 MB** (the proposed size).
-3. **The terminal gets the same jobs** ("yes") (0.8.0, planned): `evh jobs-start`, `jobs-status`, `jobs-logs`, `jobs-stop`,
+3. **The terminal gets the same jobs** ("yes"), built: `evh jobs-start`, `jobs-status`, `jobs-logs`, `jobs-stop`,
    `jobs-resume` (above).
 4. **A round's budget is enforced** ("enforce"), by the spending commands, from the terminal and as jobs alike, with
    a reservation per running command so parallel runs cannot overrun it (Spending, above).

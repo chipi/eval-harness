@@ -12,7 +12,8 @@ by a new job; a job whose supervisor is killed reads `running (unsupervised)` wh
 after; an artifact (label-sheet's sheet) is fetched from the job; an upload (import-run's scores) reaches the job;
 a new server lists the jobs the old one started. Step 4: a catalog job swaps its pages in with every page served
 throughout; while a migration holds the project the server answers 503; data-migrate runs as a job with the server
-up, and the server then reads the new store.
+up, and the server then reads the new store. Step 6: jobs-start, jobs-status, jobs-logs and jobs-stop work on the
+same jobs as the API.
 """
 
 import base64
@@ -295,6 +296,42 @@ try:
         "a new server lists the jobs the old one started",
         len(lj.get("jobs", [])) >= 7,
         len(lj.get("jobs", [])),
+    )
+
+    # Step 6: the terminal's jobs are the same jobs. Started with jobs-start, listed by the API, stopped by jobs-stop;
+    # one the API started, followed by jobs-logs.
+    r = evh("jobs-start", "run", "--arg", "config=slow_v1", "--max-cost-usd", "1", "--json")
+    tj = (
+        (json.loads(r.stdout).get("result") or {}).get("values", {}).get("job", {})
+        if r.returncode == 0
+        else {}
+    )
+    _st, lj = call("GET", "/api/v1/jobs")
+    listed = any(x.get("id") == tj.get("id") for x in lj.get("jobs", []))
+    until(tj.get("id"), ("running",), 60)
+    r2 = evh("jobs-stop", tj.get("id", "none"))
+    _st, after = call("GET", f"/api/v1/jobs/{tj.get('id')}")
+    check(
+        "jobs-start: a job the API lists (its actor this process's); jobs-stop stops it (cancelled)",
+        r.returncode == 0 and listed and tj.get("by") == "person:test" and r2.returncode == 0
+        and after.get("state") == "cancelled",
+        (r.returncode, r.stderr[-300:], listed, tj.get("by"), r2.stderr[-200:], after.get("state")),
+    )  # fmt: skip
+    st, aj = job("run", {"config": "fast_v1"}, by="person:ana", max_cost_usd=1)
+    r3 = evh("jobs-logs", aj.get("id", "none"), "--follow")
+    r4 = evh("jobs-status", aj.get("id", "none"))
+    check(
+        "jobs-logs --follow: a job the API started, followed to its end; jobs-status reads it",
+        r3.returncode == 0 and f"[{aj.get('id')} succeeded]" in r3.stdout and "[6/6]" in r3.stdout
+        and "succeeded" in r4.stdout,
+        (st, r3.stdout[-300:], r3.stderr[-200:], r4.stdout[-200:]),
+    )  # fmt: skip
+    r5 = evh("jobs-start", "round-close", "--arg", "goal=g")
+    r6 = evh("jobs-start", "datasets")
+    check(
+        "jobs-start refuses as the API does: a read is not a job; and needs no server",
+        r6.returncode != 0 and "not a job" in r6.stderr and r5.returncode != 0,
+        (r5.stderr[-200:], r6.stderr[-200:]),
     )
 
     # Step 4: a catalog job builds beside the served folder and swaps it in; the pages are served throughout.

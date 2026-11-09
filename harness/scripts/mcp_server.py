@@ -75,6 +75,11 @@ READ_TOOLS = (
     "data-show",
 )
 NOT_TOOLS = {
+    "jobs-start": "starts a job: the agents act through the command line or the API (RFC-026)",
+    "jobs-status": "the jobs of this machine's project, not its data",
+    "jobs-logs": "a job's log, which can hold anything its command printed",
+    "jobs-stop": "stops a job",
+    "jobs-resume": "starts a job",
     "run-migrate": "rewrites the run directories",
     "data-migrate": "moves the project's data between files and its database",
     "data-put": "writes a setting",

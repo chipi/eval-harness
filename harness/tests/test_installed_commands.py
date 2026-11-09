@@ -466,6 +466,12 @@ def main() -> int:
             ("round-open", ["--goal", "no_such_goal", "--dataset", "tickets_v1"], "no goal 'no_such_goal'"),
             ("round-retire", ["--goal", "g", "--round", "r1", "--arm", "a", "--reason", "x y z"], "no round"),
             ("round-close", ["--goal", "g", "--round", "r1", "--conclusion", "x y z"], "no round"),
+            # The terminal's jobs (RFC-026): installed, each answers in words; the flow is test_jobs.py.
+            ("jobs-status", [], "ok:no jobs"),
+            ("jobs-start", ["datasets"], "not a job"),
+            ("jobs-logs", ["20990101T000000-abcdef"], "no job"),
+            ("jobs-stop", ["20990101T000000-abcdef"], "no job"),
+            ("jobs-resume", ["20990101T000000-abcdef"], "no job"),
             ("catalog", [], "ok"),
             ("catalog-serve", [], "ok"),  # started, its address read, stopped
             # A stdio server: --help here; tests/test_mcp_server.py talks to it through the SDK.

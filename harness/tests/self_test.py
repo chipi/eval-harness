@@ -811,13 +811,22 @@ def test_example_scorer_suites_pass() -> None:
             "test_store.py",
             "the project's store (RFC-025): the setting, _store on both, data-migrate there and back, never both (V23), concurrent writers, the release, the path-I/O guard",
         ),
-        ("test_actor.py", "who acted (RFC-027): --by, EVH_ACTOR, EVH_FOR, the terminal user; decisions need a name"),
+        (
+            "test_actor.py",
+            "who acted (RFC-027): --by, EVH_ACTOR, EVH_FOR, the terminal user; decisions need a name",
+        ),
         (
             "test_baselines.py",
             "baselines per goal, in versions (RFC-027): the evidence frozen in, rollback, the migration, evh baselines",
         ),
-        ("test_write_order.py", "what a reader sees while a command writes (RFC-026 step 1): whole files, the order"),
-        ("test_api.py", "the API (RFC-026): the registry, the token, refusals, every read equal to its --json"),
+        (
+            "test_write_order.py",
+            "what a reader sees while a command writes (RFC-026 step 1): whole files, the order",
+        ),
+        (
+            "test_api.py",
+            "the API (RFC-026): the registry, the token, refusals, every read equal to its --json",
+        ),
         (
             "test_jobs.py",
             "jobs (RFC-026): locks, queue, stop, resume, unsupervised and lost; catalog as a swap, a migration's 503",

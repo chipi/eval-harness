@@ -33,6 +33,10 @@ NOT_SERVED = {
     "env-check": "the server's own environment",
     "self-test": "checks the installed package",
     "capture-scrub": "runs a program it is given",
+    **dict.fromkeys(
+        ("jobs-start", "jobs-status", "jobs-logs", "jobs-stop", "jobs-resume"),
+        "the terminal's jobs; the API has its own job routes",
+    ),
 }
 #: The commands that call models and spend: a job of one must carry max_cost_usd (step 5).
 SPENDS = {"run", "sweep", "arm-smoke", "judge", "judge-score", "model-onboard"}
