@@ -130,6 +130,60 @@ try:
         and "0 changed: already in this format" in r2.stdout,
         r.stdout[-300:] + r2.stdout[-200:],
     )
+
+    # The fleet's feedback 16: a version made (and cited by runs) without --from gains its lineage afterwards,
+    # its items untouched.
+    evh("dataset-create", "--dataset-id", "t_v4", "--source-dir", "src/b", "--tag", "x")
+    _runstore.write_text(
+        proj, "datasets/t_v4.json", json.dumps({**ds("t_v4"), "tags": {"purpose": "tuning"}})
+    )
+    before = ds("t_v4")
+    r = evh("dataset-create", "--dataset-id", "t_v4", "--from", "t_v1", "--lineage-only")
+    after = ds("t_v4")
+    check(
+        "dataset-create --lineage-only: the lineage recorded, the version follows (1.0 -> 1.1), says so",
+        r.returncode == 0
+        and after["derived_from"]["dataset_id"] == "t_v1"
+        and len(after["derived_from"]["added"]) == 1
+        and not after["derived_from"]["removed"] + after["derived_from"]["changed"]
+        and after["version"] == "1.1"
+        and "version 1.0 -> 1.1" in r.stdout,
+        (r.stdout + r.stderr)[-400:],
+    )
+    check(
+        "dataset-create --lineage-only: items, created_at and the record's other keys untouched",
+        after["items"] == before["items"]
+        and after["created_at"] == before["created_at"]
+        and after.get("tags") == {"purpose": "tuning"},
+    )
+    refusals = {
+        "no --from": evh("dataset-create", "--dataset-id", "t_v4", "--lineage-only"),
+        "another parent": evh("dataset-create", "--dataset-id", "t_v4", "--from", "t_v2", "--lineage-only"),
+        "a loop": evh("dataset-create", "--dataset-id", "t_v1", "--from", "t_v4", "--lineage-only"),
+        "a split side": evh("dataset-create", "--dataset-id", sides[0], "--from", "t_v1", "--lineage-only")
+        if sides
+        else evh("nope"),
+        "no such dataset": evh("dataset-create", "--dataset-id", "t_v9", "--from", "t_v1", "--lineage-only"),
+    }
+    said = {k: (x.stdout + x.stderr) for k, x in refusals.items()}
+    check(
+        "dataset-create --lineage-only refuses: no --from, another parent, a loop, a split side, no such dataset",
+        all(x.returncode != 0 for x in refusals.values())
+        and "needs --from" in said["no --from"]
+        and "already records it was made from t_v1" in said["another parent"]
+        and "(a loop)" in said["a loop"]
+        and "side of a split" in said["a split side"]
+        and "no dataset at" in said["no such dataset"]
+        and "derived_from" not in ds("t_v1"),
+        {k: v[-200:] for k, v in said.items()},
+    )
+    r = evh("validate")
+    v22 = [ln for ln in r.stdout.splitlines() if "V22" in ln]
+    check(
+        "validate V22 after --lineage-only: the version is its lineage's",
+        bool(v22) and v22[0].lstrip().startswith("ok"),
+        "\n".join(v22) or r.stdout[-400:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

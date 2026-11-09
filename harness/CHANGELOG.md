@@ -25,6 +25,9 @@ that can move a result is never a patch release without saying so under **Change
   serves the whole local inspector (pages, items, outputs, references) to the named Hosts as well as this machine,
   with `--bind 0.0.0.0` in a container behind a team's own proxy; no rate limit and nothing withheld, unlike
   `--public`. The data page's writes are not served through it.
+- **A dataset already cited gains its lineage** (the fleet's feedback 16): `evh dataset-create --dataset-id D
+  --from P --lineage-only` records the dataset D was made from and what changed, recomputing its version, with its
+  items and the rest of its record untouched; a second parent, a split side and a loop are refused.
 - **A round records its harness code** (the fleet's feedback 17): `round-open` records the harness version, commit
   and measuring-code hash it opened on and says so; `evh rounds` shows it and names each run of the round that ran on
   other harness code, with how to run it on the round's (a worktree at its commit, or its version pinned).
@@ -230,6 +233,9 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **`dataset-create --update-fields` kept only part of the record**: it rewrote the dataset with its items,
+  description, source, licence and lineage, and dropped its card, tags, split block, hidden-text flag,
+  `extended_from` and `made_from`. Every key it does not set is now kept.
 - **A judge that runs out of `max_tokens` is stopped after 3 calls, not after the whole pass.** A reasoning judge
   that spends its tokens thinking replies with nothing, every time; judge-score said so only at the end, after every
   call was paid for (the 0.7.1 newcomer run: tutorial 3's judge at 400 tokens). Now a judge whose first 3 replies all

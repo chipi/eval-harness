@@ -119,6 +119,10 @@ its parent and the item ids it adds, removes and changes (`derived_from` in the 
 and `validate` V2 fails a version whose parent is gone. "What did the new version change for this
 arm?" is `evh pair-test --dataset-id my_v1 --a ARM_v1 --b ARM_v2 --b-dataset my_v2`: the arm's runs
 on each version, paired by item id (below, under `pair-test`).
+A version made without `--from`, and already cited by runs, gains the link afterwards:
+`evh dataset-create --dataset-id my_v2 --from my_v1 --lineage-only` records the parent and what changed, and
+recomputes the version from it; the items, `created_at` and the rest of the record are untouched, so no run moves.
+It refuses a dataset that already names another parent, a split side (its split is its lineage) and a loop.
 
 **The version number** in the dataset file says how far the items moved; the id stays the identity. It is
 MAJOR.MINOR, two integers (1.10 follows 1.9), and the harness computes it: a first dataset is 1.0; one made `--from`
@@ -221,7 +225,7 @@ evh dataset-create --dataset-id my_v1 --update-fields --fields fixes.csv     # l
 A column the field set does not declare, a value of the wrong type or outside a
 choice, and a required field left empty are refused. With `--update-fields`, a value in
 the file replaces that value, an empty cell clears it, and every column and item the file
-leaves out is kept. Fields are not the dataset's
+leaves out is kept. The rest of the record (its card, tags, split, hidden-text flag) is kept too. Fields are not the dataset's
 identity: runs hash the items' bytes, so correcting a field invalidates no run, and
 `fields_sha256` records that the fields changed. `--update-fields --fieldset tickets` attaches
 a field set to a dataset that had none. `evh validate` (V15) checks every

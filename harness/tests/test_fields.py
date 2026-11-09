@@ -220,6 +220,28 @@ try:
         out(r)[-200:],
     )
 
+    # The record's other keys are not the fields: an update that rewrites the record keeps every one of them
+    # (it kept only the description, source, licence and lineage, so a card, tags, a hidden-text flag or a
+    # split block vanished on the first field fix).
+    rec = _runstore.read_json(proj, "datasets/tk_v1.json")
+    kept = {
+        "tags": {"purpose": "tuning"},
+        "text": "hidden",
+        "card": {"summary": "the tutorial's tickets"},
+        "made_from": {"capture": "c1"},
+    }
+    _runstore.write_text(proj, "datasets/tk_v1.json", json.dumps({**rec, **kept}))
+    (proj / "fix2.csv").write_text("item_id,product,priority\nt3,export,2\n")
+    r = evh("dataset-create", "--dataset-id", "tk_v1", "--update-fields", "--fields", "fix2.csv")
+    ds_k = _runstore.read_json(proj, "datasets/tk_v1.json")
+    check(
+        "update-fields: the record's other keys (tags, text, card, made_from) are kept",
+        r.returncode == 0 and all(ds_k.get(k) == v for k, v in kept.items()),
+        (out(r)[-200:], {k: ds_k.get(k) for k in kept}),
+    )
+    _runstore.write_text(
+        proj, "datasets/tk_v1.json", json.dumps({k: v for k, v in ds_k.items() if k not in kept})
+    )
     (proj / "clear.csv").write_text("item_id,opened,priority\nt1,,1\n")
     r = evh("dataset-create", "--dataset-id", "tk_v1", "--update-fields", "--fields", "clear.csv")
     ds3 = _runstore.read_json(proj, "datasets/tk_v1.json")

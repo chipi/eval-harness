@@ -289,6 +289,13 @@ def parent_version(dataset_id: str | None) -> str | None:
     return read_json(path).get("version") if path and _store.is_file(path) else None
 
 
+# The keys _write sets itself; an update passes the record's others through as they are.
+_OWN = frozenset(
+    ("dataset_id", "version", "description", "created_at", "licence", "source", "source_dir", "fieldset",
+     "fields_sha256", "derived_from", "items")
+)  # fmt: skip
+
+
 def _write(
     out: Path,
     dataset_id: str,
@@ -348,6 +355,61 @@ def _write(
     write_json(out, doc)
 
 
+def _lineage_only(args: argparse.Namespace, out: Path, previous: dict, fieldset) -> int:
+    """--from P --lineage-only: an existing dataset gains the record of the one it was made from (the fleet's
+    feedback 16: a version made, and cited by runs, before anyone recorded its parent). Its items, created_at and
+    every other key stay as they are; its version is recomputed from the lineage (V22)."""
+    if not previous:
+        die(f"--lineage-only: no dataset at {out}", "not-found")
+    if not args.from_:
+        die("--lineage-only needs --from DATASET_ID: the dataset this one was made from", "bad-argument")
+    if args.update_fields or args.fields or args.manifest or args.source_name or args.force:
+        die(
+            "--lineage-only changes the lineage alone: no --fields, --manifest, --source or --force",
+            "bad-argument",
+        )
+    if previous.get("split"):
+        die(
+            f"{args.dataset_id} is a side of a split of {previous['split'].get('from')}: that is its lineage",
+            "not-allowed",
+        )
+    had = (previous.get("derived_from") or {}).get("dataset_id")
+    if had and had != args.from_:
+        die(f"{args.dataset_id} already records it was made from {had}, not {args.from_}", "not-allowed")
+    seen, at = {args.dataset_id}, args.from_
+    while at:  # a lineage is a chain back to a first version, never a loop
+        if at in seen:
+            die(
+                f"--from {args.from_}: {at} is already derived from {args.dataset_id} (a loop)",
+                "bad-argument",
+            )
+        seen.add(at)
+        path = DATASETS / f"{at}.json"
+        at = (read_json(path).get("derived_from") or {}).get("dataset_id") if _store.is_file(path) else None
+    lineage = _lineage(args.from_, args.dataset_id, previous.get("items") or [])
+    before = previous.get("version")
+    _write(
+        out,
+        args.dataset_id,
+        [dict(it) for it in previous.get("items") or []],
+        previous,
+        fieldset,
+        previous.get("description", ""),
+        previous.get("source_dir", ""),
+        lineage,
+        extra={k: v for k, v in previous.items() if k not in _OWN},
+        licence=previous.get("licence"),
+        source=previous.get("source") or {},
+    )
+    now_v = read_json(out).get("version")
+    print(
+        f"{out.relative_to(DATASETS.parents[1])}  lineage recorded; the items, and so every run measured on them, "
+        f"are unchanged" + (f"; version {before} -> {now_v}" if before != now_v else f"; version {now_v}")
+    )
+    _say_lineage(lineage)
+    return 0
+
+
 def main() -> int:
     """Freeze a dataset from source items."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
@@ -405,6 +467,12 @@ def main() -> int:
         action="store_true",
         help="replace the field values of an existing dataset; its items must be unchanged",
     )
+    ap.add_argument(
+        "--lineage-only",
+        action="store_true",
+        help="with --from: record which dataset an existing one was made from, its items untouched (a dataset "
+        "already cited by runs gains the link; its version follows from it)",
+    )
     args = ap.parse_args()
     why = _licences.problem(args.licence) if args.licence is not None else None
     if why:
@@ -418,12 +486,17 @@ def main() -> int:
             previous = read_json(out)
         except Exception:  # noqa: BLE001 — an unreadable previous file is simply replaced
             previous = {}
-    fieldset = _fieldset(args.fieldset or (previous.get("fieldset") if args.update_fields else None))
+    fieldset = _fieldset(
+        args.fieldset or (previous.get("fieldset") if args.update_fields or args.lineage_only else None)
+    )
     if args.fields and not fieldset:
         die(
             "field values need a field set: pass --fieldset <id> (data/fields/<id>.yaml declares them)",
             "bad-argument",
         )
+
+    if args.lineage_only:
+        return _lineage_only(args, out, previous, fieldset)
 
     if args.update_fields:
         if not previous:
@@ -442,6 +515,8 @@ def main() -> int:
             previous.get("description", ""),
             previous.get("source_dir", ""),
             previous.get("derived_from"),
+            # Every other key of the record (card, tags, text, split, made_from …) is not the fields: kept.
+            extra={k: v for k, v in previous.items() if k not in _OWN},
             licence=previous.get("licence"),
             source=previous.get("source") or {},
         )
