@@ -104,13 +104,41 @@ def _installed_versions() -> dict[str, str]:
     return out
 
 
-def _git(root: Path, *args: str) -> str | None:
-    """A git command's stdout, or None when git/repo is absent. Never raises."""
+def _git(root: Path, *args: str, strip: bool = True) -> str | None:
+    """A git command's stdout, or None when git/repo is absent. Never raises. `strip=False` for `status
+    --porcelain`, whose first line starts with a space that is part of its two-letter status: stripped, its path
+    lost a letter (" M app.py" read as "pp.py")."""
     try:
         r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=10)
     except (OSError, subprocess.SubprocessError):
         return None
-    return r.stdout.strip() if r.returncode == 0 else None
+    if r.returncode != 0:
+        return None
+    return r.stdout.strip() if strip else r.stdout
+
+
+CODE_KEYS = ("repo", "commit", "dirty", "path")
+
+
+def _strip_credentials(url: str | None) -> str | None:
+    """A remote's address without a user or token in it (https://user:token@host/... -> https://host/...)."""
+    import re  # noqa: PLC0415
+
+    return re.sub(r"^([a-z+]+://)[^/@]+@", r"\1", url) if url else url
+
+
+def code_ref_of(path: Path) -> dict[str, Any]:
+    """The code a system runs (RFC-028), read from its checkout: its remote (no credentials), commit, the files that
+    differ from it, and the path (provenance, outside the hash)."""
+    status = _git(path, "status", "--porcelain", strip=False)
+    return {
+        "repo": _strip_credentials(_git(path, "remote", "get-url", "origin")),
+        "commit": _git(path, "rev-parse", "HEAD"),
+        "dirty": sorted(line[3:].strip() for line in (status or "").splitlines())
+        if status is not None
+        else None,
+        "path": str(path),
+    }
 
 
 def filter_dirt(status: str, data_rel: str | None) -> list:
@@ -123,7 +151,8 @@ def filter_dirt(status: str, data_rel: str | None) -> list:
     "commit after every run". All six local ML arms of 2026-09-30 needed
     `EVAL_RUNS_DIR` pointed outside the tree to get an honest flag.
 
-    Run output is not code. An UNTRACKED path under `<data_rel>runs*` is ignored;
+    Run output is not code. An UNTRACKED path under `<data_rel>runs*` is ignored, and under `<data_rel>prompts/` (the
+    prompt versions runs record, RFC-028);
     anything else still counts -- a modified tracked file anywhere (a committed run
     included), and untracked files outside the runs directories, which could be code.
     Pure, so the rule is tested without a git tree.
@@ -135,7 +164,7 @@ def filter_dirt(status: str, data_rel: str | None) -> list:
             line.startswith("?? ")
             and data_rel
             and path.startswith(data_rel)
-            and path[len(data_rel) :].startswith("runs")
+            and path[len(data_rel) :].startswith(("runs", "prompts/"))
         ):
             continue
         dirt.append(line)
@@ -146,7 +175,7 @@ def tree_dirt(root: Path, data_dir: Path | None = None) -> list | None:
     """The lines that make `root`'s git tree dirty, or None when git cannot say. Untracked
     run output under `data_dir` (the project's data root, `EVAL_DATA_DIR`; default
     `<root>/data`) does not count."""
-    status = _git(root, "status", "--porcelain")
+    status = _git(root, "status", "--porcelain", strip=False)
     if status is None:
         return None
     top = _git(root, "rev-parse", "--show-toplevel")
@@ -579,6 +608,9 @@ def hashed_view(part: str, value: Any) -> Any:
     `code_sha256` and the adapter's `sha256`. The commit, a dirty tree, the version string, an installed
     copy and the adapter's path are provenance, recorded beside it: two runs of the same code made on
     different days are the same instrument. Every other part is hashed whole."""
+    if part == "deployment" and isinstance(value, dict) and isinstance(value.get("code"), dict):
+        # The system's code is its repository, commit and changes; where its checkout sits is provenance (RFC-028).
+        return {**value, "code": {k: v for k, v in value["code"].items() if k != "path"}}
     if part != "instrument" or not isinstance(value, dict):
         return value
     harness = value.get("harness") or {}
@@ -617,6 +649,7 @@ def build_fingerprint(
     data_dir: Path | None = None,
     adapter_sha256: str | None = None,
     cfg: dict[str, Any] | None = None,
+    prompt_settings: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The full fingerprint, with a sha256 per hashed part and one hash over the four. `data_dir` is
     the project's data root (`_common.DATA`, which honours EVAL_DATA_DIR); it defaults to
@@ -669,7 +702,31 @@ def build_fingerprint(
         "arm": {"config_id": config_id, "labels": labels_of(params) or None},
     }
     split_declared(fp["deployment"], fp["settings"])
+    if prompt_settings:  # the config's declared prompts (RFC-028): only when declared, so no other run moves
+        fp["settings"].update(prompt_settings)
+    code = code_of(cfg, fp["deployment"], root)
+    if code is not None:
+        fp["deployment"]["code"] = code
     return seal(fp)
+
+
+def code_of(cfg: dict[str, Any] | None, deployment: dict[str, Any], root: Path) -> dict[str, Any] | None:
+    """`deployment.code` (RFC-028): the config's `code: {path}` read from the checkout, else the adapter hook's
+    `code_ref` (taken out of `declared`); the config's wins, and a hook's that differs is kept as `hook_code_ref`."""
+    declared = deployment.get("declared") or {}
+    hook = declared.pop("code_ref", None) if isinstance(declared, dict) else None
+    if isinstance(declared, dict):
+        deployment["declared"] = declared or None
+    spec = (cfg or {}).get("code")
+    if isinstance(spec, dict) and spec.get("path"):
+        p = Path(str(spec["path"]))
+        found = code_ref_of(p if p.is_absolute() else root / p)
+        if isinstance(hook, dict) and hook.get("commit") not in (None, found.get("commit")):
+            found["hook_code_ref"] = {k: hook.get(k) for k in CODE_KEYS}
+        return found
+    if isinstance(hook, dict):
+        return {k: hook.get(k) for k in CODE_KEYS}
+    return None
 
 
 #: The manifest fields a reference's identity depends on: who (or what) authored its texts.

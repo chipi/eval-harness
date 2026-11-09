@@ -1048,6 +1048,16 @@ def _run(args: argparse.Namespace) -> int:
     #
     # Once per ARM, not per repeat: REPEAT exists to measure the arm's own jitter, and
     # letting load variance into that measures the wrong thing.
+    # The prompts the config declares (RFC-028): each file's version found or recorded, the adapter given their text
+    # (and a per-run copy of a prompt root), the fingerprint their hashes. The run record keeps the config's params.
+    from evaluation_harness import _prompts  # noqa: PLC0415
+
+    resolved = _prompts.resolve(cfg, args.config, cfg["config_id"])
+    if resolved is not None:
+        import atexit  # noqa: PLC0415
+
+        atexit.register(_prompts.remove_copy, resolved)
+    call_cfg = {**cfg, "params": {**dict(cfg.get("params") or {}), **(resolved or {}).get("params", {})}}
     warmup_ms: float | None = None
     if warmup is not None:
         started = time.perf_counter()
@@ -1057,7 +1067,7 @@ def _run(args: argparse.Namespace) -> int:
             # invents a new way to lose a run is not a safety check.
             call_with_retries(
                 warmup,
-                (dict(cfg.get("params") or {}),),
+                (dict(call_cfg["params"]),),
                 label="warm-up",
                 extra_transient=transient_markers(adapter_path),
             )
@@ -1085,6 +1095,7 @@ def _run(args: argparse.Namespace) -> int:
         adapter_path=adapter_path,
         model_hook=model_fingerprint,
         cfg=cfg,
+        prompt_settings=(resolved or {}).get("settings"),
     )
     print(f"  fingerprint {fingerprint['hash'][:12]}")
     # A DIRTY TREE IS NOT A VERSION. The fingerprint records it, but a field nobody reads
@@ -1198,7 +1209,7 @@ def _run(args: argparse.Namespace) -> int:
         try:
             result = one_pass(
                 ds,
-                cfg,
+                call_cfg,
                 i,
                 resume_dir=resume_dir,
                 prior_rows=prior_rows,

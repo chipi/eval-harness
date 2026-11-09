@@ -13,6 +13,11 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Prompt versions, and the code a system runs** (RFC-028): a config declares `prompts:` (files, wherever they live)
+  or a `prompt_root:`; each run records the version it used in `data/prompts/` and its hash in the fingerprint's
+  settings, and gives the adapter the text and a per-run copy of the root. `code:` records the system's checkout
+  (remote, commit, changed files) as `deployment.code`; a hook's `code_ref` lands there too. `evh prompts`,
+  `prompt-diff`, `prompt-version`, `prompt-export`; a Prompts page (the text only when published); V24.
 - **Every command the API serves answers `--json`** (RFC-026 step 7): the 43 job commands that wrote or reported only in text
   (`dataset-create`, `catalog`, the label, reference, round and migration commands, `bootstrap-test`, `holdout`,
   `cost-report`, ...) and `validate` and `dataset-card`; text to stderr as it goes, the envelope on stdout. A job's

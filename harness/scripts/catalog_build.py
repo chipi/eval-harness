@@ -125,6 +125,7 @@ NAV = [
             ("arms", "arms.html", "Arms"),
             ("configs", "arms.html#configs", "Configs"),
             ("models", "models.html", "Models"),
+            ("prompts", "prompts.html", "Prompts"),
             ("metrics", "metrics.html", "Metrics"),
         ],
         "Arms",
@@ -4560,6 +4561,83 @@ def render_captures(A: Adapter, by_ds: dict, out: Path, nav: list) -> None:
     )
 
 
+def render_prompts(A: Adapter, out: Path, nav: list) -> None:
+    """prompts.html (RFC-028): every prompt name with its versions (lineage, notes, who made each) and the runs that
+    used each, with their score. The text and the diffs only when the project publishes them
+    (`catalog: {publish: [prompts]}`); otherwise hashes and sizes, and `evh prompt-diff` shows the text."""
+    import difflib  # noqa: PLC0415
+
+    from evaluation_harness import _prompt_cmd, _prompts  # noqa: PLC0415
+
+    show = _prompts.published()
+    used = _prompt_cmd._runs_of()
+    names = _prompts.names()
+    rows, sections = [], []
+    for name in names:
+        vs = _prompts.versions(name)
+        n_runs = sum(len(used.get((name, v["sha256"]), [])) for v in vs)
+        anchor = "prompt-" + re.sub(r"[^A-Za-z0-9_-]", "-", name)
+        rows.append([f'<a class="cell-link" href="#{e(anchor)}">{e(name)}</a>', str(len(vs)), str(n_runs)])
+        items, prev = [], None
+        for v in vs:
+            runs = used.get((name, v["sha256"]), [])
+            who = (v.get("actor") or {}).get("name") or "?"
+            text = ""
+            if show:
+                try:
+                    cur = _prompts.text_of(v["id"]).decode("utf-8", "replace")
+                except FileNotFoundError:
+                    cur = ""
+                if prev is None:
+                    text = f"<details><summary>text</summary><pre>{e(cur)}</pre></details>"
+                else:
+                    diff = "".join(
+                        difflib.unified_diff(prev.splitlines(True), cur.splitlines(True), "before", "after")
+                    )
+                    text = f"<details><summary>the change from v{v['n'] - 1}</summary><pre>{e(diff)}</pre></details>"
+                prev = cur
+            run_list = ", ".join(
+                f"{arm_link('runs/' + r['dataset_id'] + '/' + r['config_id'], r['config_id']) if r.get('dataset_id') else e(r['run_id'])}"
+                + (
+                    f' <small class="muted">{e(str(r["metric"]))} {e(str(r["score"]))}</small>'
+                    if r.get("score") is not None
+                    else ""
+                )
+                for r in runs
+            )
+            items.append(
+                f'<li><b>v{v["n"]}</b> <code>{e(v["id"])}</code> <small class="muted">{e(str(v.get("created_at")))} by '
+                f"{e(who)}, {int(v.get('bytes') or 0)} bytes"
+                + (f", from <code>{e(str(v['parent']))}</code>" if v.get("parent") else "")
+                + f"</small><br>{e(str(v.get('note') or ''))}"
+                + (f"<br><small>runs: {run_list}</small>" if run_list else "")
+                + text
+                + "</li>"
+            )
+        sections.append(f'<h3 id="{e(anchor)}">{e(name)}</h3><ul class="plain">{"".join(items)}</ul>')
+    body = hero(
+        "prompts",
+        "Prompts",
+        "The prompt files the arms declare, each version kept by its content, with who made it, from which, and the runs "
+        "that used it. "
+        + ("" if show else "The text is not published here: <code>evh prompt-diff</code> shows it, and "
+           "<code>catalog: {publish: [prompts]}</code> in config.yaml puts it on these pages."),
+    )  # fmt: skip
+    body += block(
+        "01",
+        "prompts",
+        (table("prompts", ["prompt", "versions", "runs"], rows, "filter prompts") + "".join(sections))
+        if rows
+        else '<p class="muted">No prompt versions yet: declare <code>prompts:</code> in an arm config and its next run '
+        "records them (<code>evh prompts</code>).</p>",
+    )
+    write(
+        out,
+        "prompts.html",
+        page("Prompts", body, 0, "prompts", nav=nav, item=A.item_word, elsewhere=(("prompts", {}),)),
+    )
+
+
 def _sets_on(A: Adapter, ds: str) -> str:
     """The label sets made on a dataset, as source chips with their names, under it."""
     sets = [x for x in _label_sets_of(A) if x["dataset"] == ds]
@@ -4888,6 +4966,7 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
         render_metric(A, m, where, by_ds, project, out, nav)
     render_references(A, by_ds, out, nav)
     render_captures(A, by_ds, out, nav)
+    render_prompts(A, out, nav)
     render_labels(A, by_ds, out, nav)
     render_reference_index(A, by_ds, out, nav)
     write_search(A, by_ds, out)

@@ -467,6 +467,11 @@ def main() -> int:
             ("round-retire", ["--goal", "g", "--round", "r1", "--arm", "a", "--reason", "x y z"], "no round"),
             ("round-close", ["--goal", "g", "--round", "r1", "--conclusion", "x y z"], "no round"),
             # The terminal's jobs (RFC-026): installed, each answers in words; the flow is test_jobs.py.
+            # Prompt versions (RFC-028): installed, each answers in words; the flow is test_prompts.py.
+            ("prompts", [], "ok:no prompt versions yet"),
+            ("prompt-diff", ["a/0123456789abcdef", "b/0123456789abcdef"], "no prompt version"),
+            ("prompt-version", ["bad name!", "--text", "x", "--note", "n"], "prompt name"),
+            ("prompt-export", ["a/0123456789abcdef", "--to", "x.txt"], "no prompt version"),
             ("jobs-status", [], "ok:no jobs"),
             ("jobs-start", ["datasets"], "not a job"),
             ("jobs-logs", ["20990101T000000-abcdef"], "no job"),

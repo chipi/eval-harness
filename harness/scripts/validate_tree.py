@@ -214,6 +214,10 @@ def v1_schemas() -> None:
         (_store.glob(DATA / "models", "*.yaml"), "model.schema.json"),
         (_store.glob(DATA / "profiles", "*.json"), "profile.schema.json"),
         (_store.glob(CAPTURES, "*/capture.json"), "capture.schema.json"),
+        (
+            _store.rglob(DATA / "prompts", "*.json") if _store.is_dir(DATA / "prompts") else [],
+            "prompt-version.schema.json",
+        ),
     ]
     bad = 0
     n = 0
@@ -1664,6 +1668,57 @@ def v22_dataset_records() -> None:
     )
 
 
+def v24_prompt_versions() -> None:
+    """V24 (RFC-028): every prompt version's bytes hash to its name and its record, its parent exists, and every
+    run's `settings.prompts` names a recorded version; a run's `deployment.code` has its four keys."""
+    from evaluation_harness import _prompts, _runs  # noqa: PLC0415
+
+    bad: list[str] = []
+    known: set[tuple[str, str]] = set()
+    n = 0
+    for name in _prompts.names():
+        for v in _prompts.versions(name):
+            n += 1
+            sha16 = str(v.get("sha256", ""))[:16]
+            try:
+                data = _prompts.text_of(f"{name}/{sha16}")
+            except (FileNotFoundError, ValueError):
+                bad.append(f"{name}/{sha16}: its text file is missing")
+                continue
+            if _prompts.sha256(data) != v.get("sha256") or v.get("id") != f"{name}/{sha16}":
+                bad.append(f"{name}/{sha16}: its bytes do not hash to its name and record")
+            known.add((name, str(v.get("sha256"))))
+            parent = v.get("parent")
+            if parent:
+                try:
+                    _prompts.text_of(parent)
+                except (FileNotFoundError, ValueError):
+                    bad.append(f"{v.get('id')}: its parent {parent} is not recorded")
+    runs = 0
+    for d, m in _runs.runs_on():
+        fp = m.get("fingerprint") or {}
+        used = (fp.get("settings") or {}).get("prompts") or {}
+        if used:
+            runs += 1
+        for name, sha in used.items() if isinstance(used, dict) else []:
+            if (name, str(sha)) not in known:
+                bad.append(f"{d.name}: prompt {name} {str(sha)[:16]} is not a recorded version")
+        code = (fp.get("deployment") or {}).get("code")
+        if code is not None and not (
+            isinstance(code, dict) and {"repo", "commit", "dirty", "path"} <= set(code)
+        ):
+            bad.append(f"{d.name}: deployment.code lacks repo, commit, dirty or path")
+    if bad:
+        problems.append("V24")
+        print(f"  FAIL V24 prompt versions — {len(bad)} problem(s):")
+        for b in bad[:20]:
+            print(f"       {b}")
+    elif n or runs:
+        print(f"  ok   V24 prompt versions — {n} version(s), {runs} run(s) naming them")
+    else:
+        print("  --   V24 prompt versions (none)")
+
+
 def v23_run_outputs() -> None:
     """V23: every run's outputs can be read (RFC-024): none is left in the old layout (an outputs/ folder), and a
     derived run without outputs of its own finds its source's. And the project is files or its database, never both
@@ -1854,6 +1909,7 @@ def main() -> int:
             v21_failure_modes,
             v22_dataset_records,
             v23_run_outputs,
+            v24_prompt_versions,
             note_uncommitted_runs,
             note_round_scorers,
         ):

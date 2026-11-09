@@ -576,6 +576,34 @@ clean the first time. Re-running an arm into `data/runs` after the fact leaves t
 measurements of one config, which `evh validate` refuses (V8); explore in a scratch
 directory instead (`EVAL_RUNS_DIR=data/runs-smoke`).
 
+**Prompt files, and the system's code** (RFC-028). An arm whose system reads its prompts from files declares them,
+wherever they live, and every run records the version it used:
+
+```yaml
+prompts:
+  summary/user: {file: prompts/summary_user.j2}
+prompt_root:                     # or the directory the system loads prompts from
+  name: lib
+  path: ../podcast_scraper/src/podcast_scraper/prompts
+  vary: [openai/summarization/long_v1.j2]
+code: {path: ../podcast_scraper}  # the system's own checkout
+```
+
+- Each run hashes the declared files, records any bytes not seen before as a version in `data/prompts/<name>/` (once:
+  named by its content, so runs at once write one), and records the hashes under the fingerprint's `settings`, so two
+  arms that differ only in a prompt differ there and nowhere else. Untracked versions do not make a tree dirty.
+- The adapter gets `params["prompts"]` (`{name: {text, path, version, sha256}}`) and, for a root,
+  `params["prompt_root"]`: a copy of the directory made for this run under `.build/prompt-roots/`, removed after.
+  A system run as a subprocess takes it as its prompt directory (`PROMPT_DIR=<copy>`); a library in the same process
+  is pointed at it and its template cache cleared.
+- `code:` records the checkout's remote, commit and changed files as `deployment.code` (its path outside the hash);
+  an adapter's `fingerprint()` hook may return `code_ref` with the same keys instead, for a system the harness cannot
+  read.
+- `evh prompts [NAME]` (versions, lineage, the runs that used each), `evh prompt-diff A B`, `evh prompt-version NAME
+  --from-file F --parent ID --note "..."` (a version with its lineage: record it before a run does, since a version is
+  written once), `evh prompt-export ID --to PATH`. The catalog's Prompts page shows names and versions; their text
+  only with `catalog: {publish: [prompts]}` in `config.yaml`. `validate` V24 checks every version against its bytes.
+
 **Where runs go.** Measured runs go in `data/runs`: leave `EVAL_RUNS_DIR` unset, on every
 machine, so a run made on a laptop and one made on a GPU box land in the same place. An
 ignored run is not committed, so a fresh clone, CI and the published catalog never see it.

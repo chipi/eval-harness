@@ -73,8 +73,12 @@ READ_TOOLS = (
     "deploy-sheet",
     "data-ls",
     "data-show",
+    "prompts",
+    "prompt-diff",
 )
 NOT_TOOLS = {
+    "prompt-version": "records a prompt version",
+    "prompt-export": "writes a file",
     "jobs-start": "starts a job: the agents act through the command line or the API (RFC-026)",
     "jobs-status": "the jobs of this machine's project, not its data",
     "jobs-logs": "a job's log, which can hold anything its command printed",
@@ -153,7 +157,7 @@ JSON = {
 JSON |= {"dataset-items", "captures", "labels", "tags", "licences", "picks", "deploy-sheet"}
 JSON |= {"runs-list", "rounds", "leaderboard", "pair-test", "family-test", "rank-stability", "run-compare"}
 JSON |= {"label-coverage", "baselines"}
-JSON |= {"dataset-card", "validate"}
+JSON |= {"dataset-card", "validate", "prompts", "prompt-diff"}
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
 HIDDEN = {"--adapter", "--json", "--help"}

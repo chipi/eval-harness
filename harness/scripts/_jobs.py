@@ -227,6 +227,8 @@ LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
 MIGRATIONS = {"data-migrate", "run-migrate", "dataset-migrate", "fingerprint-migrate", "baselines-migrate"}
 #: Job commands that write nothing another job writes (reports, checks, estimates): `project` shared only.
 PROJECT_ONLY = {
+    "prompt-version",  # a version is written once, named by its content (RFC-028): two at once write one
+    "prompt-export",  # into the job's own folder
     "bootstrap-test",
     "holdout",
     "cost-report",

@@ -1,6 +1,6 @@
 # RFC-029: Studies, and the looks a test set allows
 
-- **Status**: Draft (0.8.0), revision 2 (2026-11-09): the owner's answers to its six questions, and an independent
+- **Status**: Accepted (owner, 2026-11-09: "accept and build"), revision 2 (2026-11-09): the owner's answers to its six questions, and an independent
   review's findings (Fable), each checked against the code; for the owner's acceptance. Revision 1 the same day. Step 4.4 of
   `research/internal/PLAN_0.8.0.md`. It reworks the 0.5.0 drafts' RFC-010 (studies, revision 3), RFC-015's heldout
   looks and attainable p, and PRD-009 FR2-FR5 (not merged; on `backup/050-pre-rebase-20261028`) onto what shipped
@@ -18,7 +18,7 @@
   counted from decisions, not stored; use before the release not counted; aggregate-only measures allow the point
   rule only and cannot be confirmed.
 
-## Abstract
+## Abstract (0.8.0, planned: being built)
 
 A **study** is research: a spec and an append-only log. `evh study-run` opens a round and repeats ask/tell: a
 **sampler** proposes a **trial** (parameter values or prompt versions, with a hypothesis), the harness runs the
@@ -46,7 +46,7 @@ looking again and again cannot manufacture a result; a check refuses a look that
 - Loops live outside the harness (the podcast project's `program_*.md` agents and its parameter sweep; Karpathy's
   autoresearch), with results in TSV files the catalog cannot read.
 
-## Design: test-set looks
+## Design: test-set looks (0.8.0, planned)
 
 - **A test set** is a dataset a goal declares with `role: test`, or the sealed side of a split. Its looks are owned
   by its items' digest (`_seal.items_digest`), so a run on part of it spends the same budget and dropping an item does
@@ -82,7 +82,7 @@ looking again and again cannot manufacture a result; a check refuses a look that
 - `evh looks [--dataset D]` lists each test set's looks (number, level, key, who, verdict) and the next level; the goal
   page and the dataset page show the same.
 
-## Design: studies
+## Design: studies (0.8.0, planned)
 
 ### Files (both stores, through `_store`)
 
@@ -209,7 +209,7 @@ the "nominal, not a look" label on test sets; a goal's recommendation does not c
 - **A look file or reservation**: two clones would each hold one; counting from decisions under a lock, and reporting
   a double spend across clones, is honest about what files can do.
 
-## Testing
+## Testing (0.8.0, planned)
 
 - `tests/test_looks.py`: levels 1.52%, 0.38%, ... from decisions; one confirmation and its promotion are one look; a
   read takes no look; a part of the set spends its budget; past the limit refused, an agent's consent refused, the

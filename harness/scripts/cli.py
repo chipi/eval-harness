@@ -216,6 +216,19 @@ COMMANDS = {
     "round-retire": ("round_retire.py", "drop an arm from the open round, with the reason"),
     "round-close": ("round_close.py", "close a round with its conclusion, promoting the run it chose"),
     "rounds": ("round_status.py", "a goal's rounds, and what the evidence suggests next"),
+    "prompts": (
+        "view_prompts.py",
+        "prompt versions: every name, or one's versions, lineage and the runs that used each",
+    ),
+    "prompt-diff": (
+        "prompt_diff.py",
+        "two prompt versions compared: their text as a diff, and the runs of each",
+    ),
+    "prompt-version": (
+        "prompt_version.py",
+        "record a prompt version from a file or text, with its parent and a note",
+    ),
+    "prompt-export": ("prompt_export.py", "write a prompt version out, for a person to commit"),
     "jobs-start": (
         "jobs_start.py",
         "start a command as a job: detached, with its locks, log and state (RFC-026)",

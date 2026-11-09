@@ -90,8 +90,8 @@ nav:
           - "RFC-025: A project's data in SQLite, a project's choice (built, 0.8.0)": rfc/RFC-025-runs-in-sqlite.md
           - "RFC-026: An API for every command, long ones as jobs (accepted, 0.8.0)": rfc/RFC-026-an-api-for-every-command.md
           - "RFC-027: Who acted on every record, and baselines per goal (built, 0.8.0)": rfc/RFC-027-who-acted-and-baselines-per-goal.md
-          - "RFC-028: Prompt versions, and the code a system runs (accepted, 0.8.0)": rfc/RFC-028-prompt-versions-and-code-ref.md
-          - "RFC-029: Studies, and the looks a test set allows (draft, 0.8.0)": rfc/RFC-029-studies-and-test-set-looks.md
+          - "RFC-028: Prompt versions, and the code a system runs (built, 0.8.0)": rfc/RFC-028-prompt-versions-and-code-ref.md
+          - "RFC-029: Studies, and the looks a test set allows (accepted, 0.8.0)": rfc/RFC-029-studies-and-test-set-looks.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md

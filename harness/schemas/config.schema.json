@@ -12,6 +12,35 @@
     "adapter": {"type": "string", "minLength": 1, "description": "The adapter file, relative to the config, then the project. Absent: <project>/adapter.py, else the bundled one."},
     "goal": {"type": "string", "minLength": 1, "description": "The goal_id this arm is measured for (ADR-0002)."},
     "round": {"type": "string", "pattern": "^r[0-9]+$", "description": "The round of its goal this arm belongs to (ADR-0004, optional): data/rounds/<goal>/<round>.yaml. Needs `goal`."},
+    "prompts": {
+      "type": "object",
+      "description": "The prompt files the system reads (RFC-028): a name and its file. Each run records the file's version in data/prompts/<name>/ and its hash in the fingerprint's settings; the adapter gets params.prompts.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["file"],
+        "properties": {"file": {"type": "string", "minLength": 1}}
+      }
+    },
+    "prompt_root": {
+      "type": "object",
+      "description": "The directory the system loads prompts from (RFC-028): the files in `vary` are versioned; the adapter gets params.prompt_root, a per-run copy of the directory.",
+      "additionalProperties": false,
+      "required": ["name", "path"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "include": {"type": "array", "items": {"type": "string"}},
+        "vary": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "code": {
+      "type": "object",
+      "description": "The system's own code (RFC-028): a git checkout whose remote, commit and changed files each run records as deployment.code.",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {"path": {"type": "string", "minLength": 1}}
+    },
     "model_record": {"type": "string", "description": "The model record this arm runs (RFC-020, optional): data/models/<id>.yaml. Its settings go under the config's params (the config wins); `model` comes from its first alias when params give none."},
     "deployment": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$", "description": "Which of the model record's deployments this arm runs (RFC-021, optional; needs `model_record`): the id of an entry in the record's `deployments`. The run's fingerprint takes the deployment's weights, server and hardware from it."},
     "format": {"type": "string", "minLength": 1, "description": "The output shape, matched against the goal's output_contract."},

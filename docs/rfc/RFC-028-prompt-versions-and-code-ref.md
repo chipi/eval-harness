@@ -1,6 +1,6 @@
 # RFC-028: Prompt versions, and the code a system runs
 
-- **Status**: Accepted (owner, 2026-11-09: "accept and build"), revision 2 (2026-11-09): the owner's answers to its three questions, and an independent
+- **Status**: Accepted (owner, 2026-11-09: "accept and build"), built 2026-11-09 (one Prompts page with a section per name, not a page per name). Revision 2 (2026-11-09): the owner's answers to its three questions, and an independent
   review's findings (Fable), each checked against the code. Revision 1 the same day. Step 4.3 of `research/internal/PLAN_0.8.0.md`. It
   reworks the 0.5.0 drafts' RFC-009 (prompt versions, revision 3 of 2026-10-27) and PRD-009 FR1 (not merged; on
   `backup/050-pre-rebase-20261028`) onto what shipped since: fingerprint v5 (RFC-021), the store in files or SQLite
@@ -11,7 +11,7 @@
   (the commands as reads and jobs), RFC-029 (studies make versions), PLAN R1 (the code version per item extends
   `code_ref`), the fleet's feedback 27 (a record for code under test: R's)
 
-## Abstract (0.8.0, planned: being built)
+## Abstract
 
 A config may declare the prompt files its system reads, wherever they live: by name, or a prompt **root** (the
 directory the system loads prompts from) and the files in it that may change. At each run the harness hashes them,
@@ -117,7 +117,7 @@ code: {path: ../podcast_scraper}                # the system's checkout, read at
 - R1 extends this per item (the code version a recorded output came from); the fleet's `kind: code` record (feedback
   27) is R's.
 
-### Commands (each with `--json`; RFC-026 serves them) (0.8.0, planned)
+### Commands (each with `--json`; RFC-026 serves them)
 
 | command | what | served |
 | --- | --- | --- |
@@ -126,7 +126,7 @@ code: {path: ../podcast_scraper}                # the system's checkout, read at
 | `evh prompt-version NAME (--from-file F \| --text T) [--parent ID] --note "…" [--by]` | records a version; a hash already recorded is named, not duplicated | job, `--from-file` an upload |
 | `evh prompt-export ID --to PATH` | writes a version's bytes; refuses a path inside an installed package and a tracked file with uncommitted changes | job, `--to` an artifact (a download) |
 
-### The catalog (0.8.0, planned)
+### The catalog
 
 A prompts page (every name, its versions, the baseline that uses each) and a page per name: the versions as a lineage
 with notes and actors, and per version its runs and scores. A prompt's text and the diffs go into the static pages only

@@ -63,6 +63,8 @@ PATH_KINDS: dict[tuple[str, str], str] = {
     ("sheet-import", "--key"): UPLOAD,
     ("sheet-import", "--guideline"): UPLOAD,
     ("label-sheet", "--out"): ARTIFACT,
+    ("prompt-version", "--from-file"): UPLOAD,
+    ("prompt-export", "--to"): ARTIFACT,
     ("dataset-card", "--out"): ARTIFACT,
 }
 #: Path-typed arguments never taken, each a decision (RFC-026 revision 2): another runs folder or output folder,
