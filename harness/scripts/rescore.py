@@ -582,6 +582,9 @@ def main() -> int:
         "--round", dest="round_id", help="the round whose arms (its own and those it carried) to re-score"
     )
     ap.add_argument("--why", default="", help="with --round: why the scoring changed, recorded on the round")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     if args.labels:
         if args.reference_id or args.round_id:

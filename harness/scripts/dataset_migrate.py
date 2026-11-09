@@ -94,6 +94,9 @@ def main() -> int:
     """Migrate every dataset record under data/datasets/."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dry-run", action="store_true", help="print what would change; write nothing")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     files = {f.stem: f for f in sorted(_store.glob(DATASETS, "*.json"))} if _store.is_dir(DATASETS) else {}
     docs = {i: read_json(f) for i, f in files.items()}

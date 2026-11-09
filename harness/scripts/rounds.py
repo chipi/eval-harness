@@ -33,6 +33,7 @@ from typing import Any
 
 from evaluation_harness import _common, _jsonout, _rounds, _store
 from evaluation_harness import catalog_serve as cs
+from evaluation_harness._actor import actor, require_named
 from evaluation_harness._common import die, load_goals, now, read_json
 from evaluation_harness.catalog_adapter import load_catalog_adapter
 from evaluation_harness.stats import fmt_p
@@ -94,6 +95,9 @@ def open_round(argv: list[str]) -> int:
         help="the run the round starts from, by its config id (its latest measured run on --dataset) or its run id; "
         "default: the dataset's promoted baseline. What `pair-test --round` and `rounds` read the round's arms against",
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args(argv)
     _goal(args.goal)
     if not _store.is_file(_common.DATASETS / f"{args.dataset}.json"):
@@ -157,7 +161,10 @@ def open_round(argv: list[str]) -> int:
         "carried": carried,
         "status": "open",
         "opened_at": now(),
-        "retired": [{"config_id": c, "reason": args.reason, "at": now()} for c in _ids(args.retire)],
+        "actor": actor(),
+        "retired": [
+            {"config_id": c, "reason": args.reason, "at": now(), "actor": actor()} for c in _ids(args.retire)
+        ],
     }
     if args.scoring:
         _adopt_scoring(doc, args.scoring, rs)
@@ -235,6 +242,9 @@ def retire(argv: list[str]) -> int:
         "of the same config on another machine); default: the project's runs directory",
     )
     ap.add_argument("--reason", required=True)
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args(argv)
     rnd = _round(args.goal, args.round)
     if rnd.get("status") == "closed":
@@ -250,13 +260,14 @@ def retire(argv: list[str]) -> int:
             f"{args.arm!r} is not in play in {args.round}: {', '.join(in_play) or '(no arms yet)'}",
             "not-found",
         )
-    entry = {"config_id": args.arm, "reason": args.reason, "at": now()}
+    entry = {"config_id": args.arm, "reason": args.reason, "at": now(), "actor": actor()}
     if args.runs_dir:
         entry = {
             "config_id": args.arm,
             "runs_dir": _rounds.runs_dir_name(where),
             "reason": args.reason,
             "at": now(),
+            "actor": actor(),
         }
     rnd.setdefault("retired", []).append(entry)
     _rounds.save(rnd)
@@ -277,12 +288,16 @@ def close(argv: list[str]) -> int:
         metavar="RUN_ID",
         help="promote this run to the dataset's baseline, the conclusion as its reason",
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args(argv)
     rnd = _round(args.goal, args.round)
     if rnd.get("status") == "closed":
         die(f"round {args.round} is already closed", "not-allowed")
     if len(args.conclusion.split()) < 3:
         die("--conclusion must be a sentence: what did the round show?", "bad-argument")
+    who = require_named("round-close")
     if args.promote:
         r = subprocess.run(
             [
@@ -302,7 +317,7 @@ def close(argv: list[str]) -> int:
             die("the round stays open: promotion was refused (above)", "not-allowed")
     rnd["status"] = "closed"
     rnd["closed_at"] = now()
-    rnd["conclusion"] = {"text": args.conclusion, "promoted_run": args.promote}
+    rnd["conclusion"] = {"text": args.conclusion, "promoted_run": args.promote, "actor": who}
     _rounds.save(rnd)
     print(
         f"round {args.round} of {args.goal} closed" + (f"; {args.promote} promoted" if args.promote else "")

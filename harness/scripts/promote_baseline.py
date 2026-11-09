@@ -103,6 +103,9 @@ def main() -> int:
         help="promote a run whose build could not be identified — a DIFFERENT and worse "
         "problem than a dirty tree, so it takes its own flag",
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     if args.reason_from_env:
         args.reason = os.environ.get("EVAL_PROMOTE_REASON", "")
@@ -111,6 +114,9 @@ def main() -> int:
             'a reason is required: --reason "..." or --reason-from-env with EVAL_PROMOTE_REASON set',
             "bad-argument",
         )
+    from evaluation_harness._actor import require_named  # noqa: PLC0415
+
+    who = require_named("run-promote")
 
     src = RUNS / args.run / "metrics.json"
     if not _store.is_file(src):
@@ -158,6 +164,7 @@ def main() -> int:
             "dataset_id": m["dataset_id"],
             "promoted_from": m["run_id"],
             "promoted_at": now(),
+            "actor": who,
             "reason": args.reason,
             "scores": m["scores"],
             "build": build,

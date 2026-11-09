@@ -446,7 +446,13 @@ with tempfile.TemporaryDirectory() as tmp:
         encoding="utf-8",
     )
     _runstore.migrate_in(tmp)
-    env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""}
+    env = {
+        **os.environ,
+        "EVAL_HOME": tmp,
+        "EVAL_DATA_DIR": "",
+        "EVAL_RUNS_DIR": "",
+        "EVH_ACTOR": "person:test",
+    }
     subprocess.run(
         [
             sys.executable,

@@ -7,6 +7,7 @@
   "required": ["run_id", "dataset_id", "config_id", "build", "created_at", "scores", "n_items"],
   "properties": {
     "run_id": {"type": "string"},
+    "actor": {"type": "object", "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.", "required": ["type", "name"], "additionalProperties": false, "properties": {"type": {"enum": ["person", "agent", "unknown"]}, "name": {"type": "string"}, "for": {"type": "string", "description": "the person an agent acted for"}, "from": {"enum": ["flag", "environment", "terminal", "migration"]}}},
     "dataset_id": {"type": "string"},
     "config_id": {"type": "string"},
     "created_at": {"type": "string", "description": "When this record's scores were computed: the measurement, or for a derived run the derivation."},

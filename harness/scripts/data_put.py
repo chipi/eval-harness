@@ -46,6 +46,9 @@ def main() -> int:
     ap.add_argument("--check", action="store_true", help="only check it; save nothing")
     ap.add_argument("--new", action="store_true", help="refuse a setting that exists already")
     ap.add_argument("--json", action="store_true", help="the answer as one JSON object")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     if (args.file is None) == (not (args.set or args.unset)):
         die("give a FILE, or fields with --set / --unset (not both)", "bad-argument")

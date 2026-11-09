@@ -43,6 +43,9 @@ def main() -> int:
     ap.add_argument(
         "--query", default="{}", help='where to write it, as JSON (huggingface: {"repo": "owner/name"})'
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     f = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
     if not _store.is_file(f):

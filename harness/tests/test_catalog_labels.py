@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-catlabels-"))
-env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-catalog-labels")
+env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-catalog-labels")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_PUBLIC"):
     env.pop(k, None)
 

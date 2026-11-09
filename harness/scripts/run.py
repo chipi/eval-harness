@@ -895,6 +895,9 @@ def main() -> int:
         "run written (run_id, config_id, dataset_id, dir, n_items, total_cost_usd, capped_at); with "
         "--dry-run, result.values.dry_run. Exit codes as without it (1: nothing measured, 2: cost cap)",
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     # Redirected to a log, stdout is block-buffered and a watcher saw nothing for minutes (stderr, where --json sends
     # the progress, can be as well): a line is written when it is printed, whatever the stream is.

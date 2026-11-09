@@ -41,6 +41,9 @@ def main() -> int:
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--dry-run", action="store_true", help="cost it without calling anything")
     ap.add_argument("--sort", help="leaderboard metric")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
 
     configs = [c for c in args.configs if _store.is_file(c)]

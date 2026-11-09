@@ -15,6 +15,9 @@ by the next promotion and never edited. Promoting is a decision with a consequen
 - **The reason carries the evidence and who asked**: the measure, the test and its result, the
   number of items, and the operator's request. A reader of the baseline file must be able to tell
   why without asking you.
+- **Name yourself, and the operator you act for.** A promotion is a decision and records who made it: set
+  `EVH_ACTOR=agent:<your name>` and `EVH_FOR=person:<the operator who asked>` (RFC-027). Without them, off a
+  terminal, `run-promote` refuses.
 - **A tie is a decision too.** When the test does not separate the arms, say so in the reason and
   why this one (cheaper, faster, the incumbent); never write that it won.
 
@@ -26,7 +29,7 @@ Find the run (its id from `evh run`, or the list), then promote it:
 
 ```evh
 RUN=$(evh runs-list --json | python3 -c 'import json,sys; rows=[r for b in json.load(sys.stdin)["result"]["blocks"] for r in b.get("rows", [])]; print(next(r["run_id"] for r in rows if r.get("config_id") == "tickets_lead2_v1"))')
-evh run-promote --run "$RUN" --reason "operator asked for a working baseline: lead2 is closest to the author's silver on all six tickets but not significantly different from lead1 at n=6 (pair-test p > 0.05); kept until the dataset grows"
+EVH_ACTOR=agent:assistant EVH_FOR=person:operator evh run-promote --run "$RUN" --reason "operator asked for a working baseline: lead2 is closest to the author's silver on all six tickets but not significantly different from lead1 at n=6 (pair-test p > 0.05); kept until the dataset grows"
 git add -A && git commit -qm "tickets_v1: baseline" --allow-empty
 ```
 

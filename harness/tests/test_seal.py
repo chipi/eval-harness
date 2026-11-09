@@ -4,7 +4,7 @@
     python tests/test_seal.py
 
 In a throwaway git project ($0, offline): the tutorial's tickets with an `opened` date, split at a time boundary
-(`dataset-split --by time --at`) with the test side sealed. Every run, label and reference written onto the sealed
+(`dataset-split --split-by time --at`) with the test side sealed. Every run, label and reference written onto the sealed
 side is refused; `dataset-unseal` refuses a config with no hypothesis or an uncommitted one, then opens the side to
 the candidate and the config its hypothesis is against (one look, recorded). Another config is still refused.
 validate holds the seal: the open side changed after sealing fails it.
@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-seal-"))
-env = dict(os.environ, EVAL_HOME=str(proj))
+env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj))
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_BUILD_REF"):
     env.pop(k, None)
 
@@ -92,18 +92,35 @@ try:
     check("setup: a dataset whose items carry an opened date", r.returncode == 0, out(r)[-300:])
 
     r = evh(
-        "dataset-split", "tk_v1", "--test", "0.5", "--by", "time", "--key", "opened", "--at", "2026-11-07"
+        "dataset-split",
+        "tk_v1",
+        "--test",
+        "0.5",
+        "--split-by",
+        "time",
+        "--key",
+        "opened",
+        "--at",
+        "2026-11-07",
     )
     check("dataset-split: --test and --at together are refused", refused(r, "one of --test"), out(r)[-300:])
     r = evh("dataset-split", "tk_v1", "--at", "2026-11-07")
-    check("dataset-split: --at needs --by time", refused(r, "--at is a time boundary"), out(r)[-300:])
+    check("dataset-split: --at needs --split-by time", refused(r, "--at is a time boundary"), out(r)[-300:])
     r = evh(
-        "dataset-split", "tk_v1", "--by", "time", "--key", "opened", "--at", "2026-11-07T00:00:00Z", "--seal"
+        "dataset-split",
+        "tk_v1",
+        "--split-by",
+        "time",
+        "--key",
+        "opened",
+        "--at",
+        "2026-11-07T00:00:00Z",
+        "--seal",
     )
     test = _runstore.read_json(proj, "datasets/tk_v1_test.json") if r.returncode == 0 else {}
     val = _runstore.read_json(proj, "datasets/tk_v1_validation.json") if r.returncode == 0 else {}
     check(
-        "dataset-split --by time --at --seal: items at or after the boundary are the sealed test side",
+        "dataset-split --split-by time --at --seal: items at or after the boundary are the sealed test side",
         sorted(it["item_id"] for it in test.get("items") or []) == names[3:]
         and sorted(it["item_id"] for it in val.get("items") or []) == names[:3]
         and (test.get("sealed") or {}).get("open_side") == "tk_v1_validation"

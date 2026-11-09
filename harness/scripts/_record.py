@@ -141,6 +141,9 @@ def run_record(
         "n_items": n_items,
     }
     record.update({k: v for k, v in fields.items() if v is not None})
+    from evaluation_harness._actor import actor  # noqa: PLC0415
+
+    record["actor"] = actor()  # who ran it (RFC-027): outside the fingerprint, as goal and round are
     return record
 
 
@@ -193,6 +196,11 @@ def derived_record(
         }
     )
     record.update({k: v for k, v in changes.items() if v is not None})
+    from evaluation_harness._actor import actor  # noqa: PLC0415
+
+    record["actor"] = (
+        actor()
+    )  # who derived it, not who ran the source (that stays in the source's own record)
     return record
 
 

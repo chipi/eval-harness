@@ -297,6 +297,9 @@ def write_set(
         "n_items": len(rows),
         "items": rows,
     }
+    from evaluation_harness._actor import actor  # noqa: PLC0415
+
+    doc["actor"] = actor()  # who ran the command; source.by is who labelled
     kept = {k: v for k, v in sorted((notes or {}).items()) if k in rows and v}
     if kept:
         doc["notes"] = kept

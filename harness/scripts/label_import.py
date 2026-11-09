@@ -81,7 +81,9 @@ def main() -> int:
     )
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--set", required=True, dest="name", help="the label set's name (lowercase, _ . -)")
-    ap.add_argument("--by", required=True, help="who labelled")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap, required=True, help="who labelled, and so who acted (person:NAME, or a bare name)")
     ap.add_argument(
         "--guideline",
         type=Path,

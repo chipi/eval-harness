@@ -75,6 +75,9 @@ def main() -> int:
     ap.add_argument(
         "--write", action="store_true", help="write data/fields/<id>.yaml; refused when it exists"
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     if not re.fullmatch(r"[a-z0-9_]+", args.fieldset_id):
         die("--fieldset-id: lowercase letters, digits and _", "bad-argument")

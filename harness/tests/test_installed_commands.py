@@ -56,6 +56,7 @@ def main() -> int:
         proj.mkdir()
         env = {
             **os.environ,
+            "EVH_ACTOR": "person:test",
             "PYTHONPATH": str(site),
             "PYTHONDONTWRITEBYTECODE": "1",
             "EVAL_BUILD_REF": "test-commands",

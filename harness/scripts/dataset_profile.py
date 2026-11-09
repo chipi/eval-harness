@@ -313,6 +313,9 @@ def main_profile(argv: list[str] | None = None) -> int:
         action="store_true",
         help='the profile written, as JSON: {"command", "version", "result": <the profile>}',
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args(argv)
     p = profile(args.dataset_id, args.with_text)
     out = _common.DATA / "profiles" / f"{_common.dataset_id_ok(args.dataset_id)}.json"
@@ -334,6 +337,9 @@ def main_items(argv: list[str] | None = None) -> int:
         action="store_true",
         help='the profile as JSON: {"command", "version", "result": <the profile>}',
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args(argv)
     p = load_profile(args.dataset_id)
     hide = _visibility.public_env() and _visibility.hidden(args.dataset_id)

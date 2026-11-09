@@ -43,6 +43,9 @@ def main() -> int:
     )
     ap.add_argument("--goal", help="the goal the arm is for (default: --like's)")
     ap.add_argument("--labels", metavar="SET", help="score against this label set of the dataset (RFC-023)")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
 
     load_dataset(args.dataset_id)

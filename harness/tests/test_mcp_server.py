@@ -40,7 +40,7 @@ except ImportError as exc:  # the package depends on mcp; a checkout's venv may 
     sys.exit(1)
 
 proj = Path(tempfile.mkdtemp(prefix="evh-mcp-"))
-env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-mcp")
+env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-mcp")
 env.pop("EVAL_DATA_DIR", None)
 env.pop("EVAL_RUNS_DIR", None)
 

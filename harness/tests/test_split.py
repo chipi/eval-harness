@@ -104,7 +104,7 @@ check(
     == {
         "from": "base_v2",
         "test": 0.3,
-        "by": "hash",
+        "split_by": "hash",
         "key": None,
         "seed": 7,
         "part": "test",
@@ -126,10 +126,10 @@ groups = {it["item_id"]: it["fields"]["group"] for it in ds("base_v2")["items"]}
 gd = {groups[i] for i in ids("base_v2_validation")}
 gh = {groups[i] for i in ids("base_v2_test")}
 check("split --key: no group on both sides", r.returncode == 0 and not gd & gh and gd and gh, out(r)[-200:])
-r = evh("dataset-split", "base_v1", "--test", "0.25", "--by", "time", "--key", "day", "--force")
+r = evh("dataset-split", "base_v1", "--test", "0.25", "--split-by", "time", "--key", "day", "--force")
 days = {it["item_id"]: it["fields"]["day"] for it in ds("base_v1")["items"]}
 check(
-    "split --by time: the newest quarter is test",
+    "split --split-by time: the newest quarter is test",
     r.returncode == 0
     and len(ids("base_v1_test")) == 25
     and min(days[i] for i in ids("base_v1_test")) >= max(days[i] for i in ids("base_v1_validation")),
@@ -139,8 +139,8 @@ r = evh("dataset-split", "base_v1", "--test", "0.25", "--seed", "1")
 check("split: never overwrites without --force", r.returncode != 0 and "frozen" in out(r))
 r = evh("dataset-split", "base_v1", "--test", "1.5")
 check("split: a share outside (0, 1) is refused", r.returncode != 0)
-r = evh("dataset-split", "base_v1", "--test", "0.5", "--by", "time")
-check("split --by time without --key is refused", r.returncode != 0 and "--key" in out(r))
+r = evh("dataset-split", "base_v1", "--test", "0.5", "--split-by", "time")
+check("split --split-by time without --key is refused", r.returncode != 0 and "--key" in out(r))
 for name in ("base_v2_validation", "base_v2_test"):
     r = evh("dataset-materialize", "--dataset-id", name)
     check(f"split: {name} materializes from the parent's source files", r.returncode == 0, out(r)[-200:])

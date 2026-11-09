@@ -109,6 +109,8 @@ def setup(tmp: Path) -> tuple:
     proj.mkdir()
     env = {
         **os.environ,
+        # The guide is typed by a person at a terminal; run here it has none, so it names that person.
+        "EVH_ACTOR": "person:reader",
         "PATH": f"{bindir}{os.pathsep}{os.environ.get('PATH', '')}",
         "PYTHONPATH": str(site),
         "PYTHONDONTWRITEBYTECODE": "1",

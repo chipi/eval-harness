@@ -459,6 +459,9 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(prog=evh_prog())
     ap.add_argument("--config", required=True)
     ap.add_argument("--use-fake-judge", action="store_true")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args(argv)
 
     cfg = yaml.safe_load(_store.read_text(Path(args.config)))

@@ -110,6 +110,9 @@ def main() -> int:
         help="the project's data root (default: this project's, EVAL_DATA_DIR)",
     )
     ap.add_argument("--dry-run", action="store_true", help="count what would change; write nothing")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     data = args.data_dir.resolve()
 

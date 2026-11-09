@@ -30,6 +30,9 @@ def main() -> int:
     )
     ap.add_argument("--dry-run", action="store_true", help="say what would go; delete nothing")
     ap.add_argument("--json", action="store_true", help="the answer as one JSON object")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     try:
         with _jsonout.collect("data-rm", args.json):

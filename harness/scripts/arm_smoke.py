@@ -213,6 +213,9 @@ def main() -> int:
         help="one JSON object on stdout when done (the text goes to stderr): result.values has status, flags, "
         "spent_usd, cost_basis (bill, price, mixed or none), calls, projection and items (with each reply)",
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     with _jsonout.collect("arm-smoke", args.json, live=sys.stderr):
         return _smoke(args)

@@ -1629,6 +1629,9 @@ def main() -> int:
         "arms (a subset is its own judging set id)",
     )
     ap.add_argument("--out", type=Path, default=JUDGED)
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     # Piped or redirected to a log, stdout is block-buffered and the progress lines came all at once at the end
     # (as in `evh run`): a line is written when it is printed.

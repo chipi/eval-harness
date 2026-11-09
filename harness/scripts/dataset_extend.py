@@ -56,6 +56,9 @@ def main() -> int:
     pick.add_argument("--picks", action="store_true", help="every pick waiting for V1")
     pick.add_argument("--pick", action="append", help="one pick: ITEM, or DATASET:ITEM (repeatable)")
     ap.add_argument("--description", help="what this version is")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
 
     v1 = load_dataset(args.dataset)

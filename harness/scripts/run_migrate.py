@@ -213,6 +213,9 @@ def main() -> int:
     """Migrate every run under data/runs* to one outputs file."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dry-run", action="store_true", help="count what would change; write nothing")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     n = migrate(args.dry_run)
     after = n["own_file"] + n["kept_checkpoint"]

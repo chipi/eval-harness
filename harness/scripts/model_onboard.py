@@ -173,6 +173,9 @@ def main() -> int:
         "--deployment", help="the deployment to probe and write: an `id` in the record's deployments"
     )
     ap.add_argument("--config", type=Path, help="an arm that runs the model (an ML model or a baseline)")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
 
     rec = _models.find(DATA, args.model_id)

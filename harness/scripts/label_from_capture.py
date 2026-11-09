@@ -38,6 +38,9 @@ def main() -> int:
     ap.add_argument("--capture", required=True, help="the capture whose records hold the outcomes")
     ap.add_argument("--map", required=True, type=Path, help="the mapping: YAML rules")
     ap.add_argument("--set", required=True, dest="name", help="the label set's name (lowercase, _ . -)")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
 
     rules = load_rules(args.map)

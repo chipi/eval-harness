@@ -128,6 +128,9 @@ def main() -> int:
         help="replace one key of the recorded query (repeatable), e.g. path=exports/decisions.jsonl",
     )
     ap.add_argument("--force", action="store_true", help="replace a records/ whose files do not match")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
 
     base = CAPTURES / dataset_id_ok(args.capture)

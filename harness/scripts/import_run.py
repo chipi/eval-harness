@@ -118,6 +118,9 @@ def main() -> int:
         help="accept scores for only part of the dataset, recorded as coverage",
     )
     ap.add_argument("--run-id", help="default: <config-id>_<timestamp>")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
 
     ds_file = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"

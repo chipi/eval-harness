@@ -35,7 +35,9 @@ The procedures are skills: `evh skills-install` copies them into `.claude/skills
 5. **What you may do** (the owner's rule for agents, 2026-11-04): run arms, make labels and
    references, and promote a baseline **when your operator asked for that task**, within the
    cap. A promotion's `--reason` says who asked and why. Closing a round, and anything past the
-   cap, stay your operator's: hand over the exact command.
+   cap, stay your operator's: hand over the exact command. **Name yourself and your operator**:
+   `export EVH_ACTOR=agent:<your name> EVH_FOR=person:<your operator>`. Every record you write
+   then says an agent made it, for whom; without them, off a terminal, a promotion is refused.
 6. **Labels say who made them.** `evh label-import` records a set as **a person's**: never use it
    for labels you made. Your labels go in a sheet read back with
    `evh sheet-import --kind model`; outcomes your system's production recorded become labels

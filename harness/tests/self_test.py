@@ -2201,7 +2201,7 @@ def test_promote_reads_its_reason_from_the_env() -> None:
         "--reason-from-env",
         "--run",
         "_no_such_run_selftest_",
-        env={"EVAL_PROMOTE_REASON": "a reason"},
+        env={"EVAL_PROMOTE_REASON": "a reason", "EVH_ACTOR": "person:test"},
     )
     out = (r.stderr or "") + (r.stdout or "")
     check(

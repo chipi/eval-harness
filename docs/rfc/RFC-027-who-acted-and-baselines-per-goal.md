@@ -15,7 +15,7 @@
 Every record a command writes says who acted: a person, or an agent and the person it acted for. A baseline belongs
 to a goal on a dataset (or, for a run with no goal, to the dataset alone); promoting writes a new version beside the
 old ones, never over them; the comparison that justified it is frozen into that version; a rollback is another
-version. `evh baselines` lists them with how to reproduce each (the `deploy-sheet` block) and their history, and with
+version. `baselines` (0.8.0, planned) lists them with how to reproduce each (the `deploy-sheet` block) and their history, and with
 `--json` is the export a production system reads.
 
 ## Problem statement
@@ -62,7 +62,7 @@ version. `evh baselines` lists them with how to reproduce each (the `deploy-shee
   CONCEPTS "What an agent may do" replaces "Consent recorded by the harness itself … is 0.8.0's to design" with this
   section's rule.
 
-### D2. Baselines per goal, versioned
+### D2. Baselines per goal, versioned (0.8.0, planned)
 
 - A baseline is `data/baselines/<goal_id>/<dataset_id>/<n>.json`, `n` from 1, written once. The current one is the
   highest `n` (compared as numbers: `10` after `9`). A rollback is a new version that names the version it restores
@@ -126,7 +126,7 @@ replaces, on the goal's primary measure, exactly as `pair-test` answers it (owne
   writing. A promotion is not refused for a verdict that is "not significant" or "worse": the record and the
   catalog show it. Test-set looks (whether this comparison spent one) come with 4.4; until then the field is absent.
 
-### D4. `evh baselines [--goal G | --no-goal] [--dataset D] [--all-versions] [--json]`
+### D4. `evh baselines [--goal G | --no-goal] [--dataset D] [--all-versions] [--json]` (0.8.0, planned)
 
 Per goal and dataset: the current version, who promoted it and why, its evidence, how to reproduce it (the block
 `deploy-sheet` prints for its run, one definition), and its history (each version: when, by whom, why, what it
@@ -143,7 +143,7 @@ version replaces the one before it, a rollback included); `restores` names an ea
 `items_sha256` is the hash of the items its `n` counts. A new check names records with no `actor`, after the
 migration has written one on every record.
 
-## Migration (no backward compatibility)
+## Migration, no backward compatibility (0.8.0, planned)
 
 One command, `evh baselines-migrate` (or a step of `data-migrate`, which the project already runs for format
 changes), with `--dry-run`:
@@ -178,10 +178,10 @@ No reader keeps the old path or the old key.
 - **Rename `source.by` to the actor.** Rejected: who labelled and who ran the command are two facts.
 - **A record store with an id grammar for every kind (the drafts' RFC-017).** Not needed: baselines are addressed by
   goal, dataset and version.
-- **`evh evidence-check FILE`** (the drafts' RFC-012): checking that a project's own citation file names baselines,
+- **An evidence check** (the drafts' RFC-012, `evidence-check FILE`): checking that a project's own citation file names baselines,
   runs and rounds that exist and are current. Dropped from 0.8.0 (owner, 2026-11-09): no project cites a harness id
   today (the podcast project's `registry_refs.yaml` cites eval reports by path, and its own script checks them), so it
-  would only repeat that check. Added when a project cites harness ids; the versioned baselines and `evh baselines
+  would only repeat that check. Added when a project cites harness ids; the versioned baselines and `baselines
   --json` it would read are built here.
 
 ## Testing
@@ -202,7 +202,7 @@ No reader keeps the old path or the old key.
 ## Open questions (the owner's, decided 2026-11-09)
 
 1. May an `unknown` actor make a decision? No (D1).
-2. A run with no goal? Promoted into the dataset's own baselines (D2), read by `evh baselines`, the comparison and
+2. A run with no goal? Promoted into the dataset's own baselines (D2), read by `baselines`, the comparison and
    `deploy-sheet`.
 3. `evidence-check` in 0.8.0? Dropped (Alternatives considered).
 4. The evidence? `pair-test`'s arm comparison, as a round reads it (D3).

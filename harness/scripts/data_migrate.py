@@ -251,6 +251,9 @@ def main() -> int:
         "--to", required=True, choices=_common.STORES, help="the store to move the project's data into"
     )
     ap.add_argument("--dry-run", action="store_true", help="count what would move; move nothing")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     configured = _common.store()
     if configured != args.to:

@@ -102,7 +102,7 @@ data/datasets/tickets_desk_v1_test.json  (1 item(s))
 
 Each item goes to test when the hash of the seed and its key falls below the share, so it keeps its side in
 every later version. `--key F` keeps every item sharing a field value on one side (one fingerprint, one
-customer); `--by time --key F` makes the newest share test.
+customer); `--split-by time --key F` makes the newest share test.
 
 `evh validate` checks the capture too (V17): every record against the hash it was captured with.
 

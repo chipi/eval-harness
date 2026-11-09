@@ -65,6 +65,7 @@ def project_env(proj: Path, site: Path) -> dict:
     """Environment for evh in a project (installed from wheel)."""
     env = {
         **os.environ,
+        "EVH_ACTOR": "person:test",
         "PYTHONPATH": str(site),
         "PYTHONDONTWRITEBYTECODE": "1",
         "EVAL_BUILD_REF": "test-ops",

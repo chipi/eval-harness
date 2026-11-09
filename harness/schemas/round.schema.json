@@ -7,6 +7,7 @@
   "additionalProperties": false,
   "properties": {
     "round_id": {"type": "string", "pattern": "^r[0-9]+$", "description": "r1, r2, ...: equals the file name."},
+    "actor": {"type": "object", "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.", "required": ["type", "name"], "additionalProperties": false, "properties": {"type": {"enum": ["person", "agent", "unknown"]}, "name": {"type": "string"}, "for": {"type": "string", "description": "the person an agent acted for"}, "from": {"enum": ["flag", "environment", "terminal", "migration"]}}},
     "goal": {"type": "string", "description": "The goal_id it answers."},
     "dataset_id": {"type": "string", "description": "The dataset its arms run on."},
     "from": {"type": "string", "pattern": "^r[0-9]+$", "description": "The round it continues."},
@@ -24,7 +25,8 @@
           "config_id": {"type": "string"},
           "runs_dir": {"type": "string", "description": "The runs directory, relative to data/, whose copy of the config is retired (runs-linux: a re-timing of the same config on another machine). Absent: the project's runs directory."},
           "reason": {"type": "string"},
-          "at": {"type": "string"}
+          "at": {"type": "string"},
+          "actor": {"$ref": "#/properties/actor"}
         }
       }
     },
@@ -54,7 +56,7 @@
       "type": "object",
       "required": ["text"],
       "additionalProperties": false,
-      "properties": {"text": {"type": "string"}, "promoted_run": {"type": ["string", "null"]}}
+      "properties": {"text": {"type": "string"}, "promoted_run": {"type": ["string", "null"]}, "actor": {"$ref": "#/properties/actor"}}
     }
   }
 }

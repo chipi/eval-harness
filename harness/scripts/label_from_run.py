@@ -186,6 +186,9 @@ def main() -> int:
         action="store_true",
         help="keep the texts out of git (a .gitignore beside them); labels.json says how to rebuild them",
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
 
     m = RUNS / args.run / "metrics.json"

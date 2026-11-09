@@ -58,6 +58,9 @@ def main() -> int:
         "--card", type=_Path, help="a YAML or JSON card (from --card-template): it replaces the card"
     )
     ap.add_argument("--card-template", action="store_true", help="print the card's questions as YAML to fill")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     if args.card_template:
         print(_card.template(), end="")

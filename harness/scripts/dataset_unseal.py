@@ -39,9 +39,15 @@ def main() -> int:
     ap.add_argument("dataset_id", help="the sealed dataset (a split's test side)")
     ap.add_argument("--config", required=True, help="the candidate's config_id: it runs on this dataset")
     ap.add_argument("--reason", required=True, help="why this candidate, and why now: a sentence")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
 
     ds_id = dataset_id_ok(args.dataset_id)
+    from evaluation_harness._actor import require_named  # noqa: PLC0415
+
+    who = require_named("dataset-unseal")
     doc = load_dataset(ds_id)
     if not doc.get("sealed"):
         die(f"{ds_id} is not sealed (dataset-split --seal seals a test side)", "not-allowed")
@@ -82,6 +88,7 @@ def main() -> int:
         "reason": args.reason,
         "hypothesis": hyp,
         "commit": named.get("commit") or "not determinable",
+        "actor": who,
     }
     doc["unsealed"] = [*(doc.get("unsealed") or []), look]
     write_json(DATASETS / f"{ds_id}.json", doc)

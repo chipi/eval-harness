@@ -158,6 +158,9 @@ def main() -> int:
     )
     ap.add_argument("--description", default="")
     ap.add_argument("--force", action="store_true", help="overwrite an existing dataset nothing cites yet")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
 
     out = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"

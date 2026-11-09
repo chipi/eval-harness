@@ -51,7 +51,9 @@ def main() -> int:
         "--items", action="append", default=[], help="only this item (repeatable; default all labelled)"
     )
     ap.add_argument("--name", help="the reference set's name under its tier (default: the dataset's id)")
-    ap.add_argument("--by", required=True, help="who promotes (recorded in the manifest)")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap, required=True, help="who promotes (recorded in the manifest)")
     args = ap.parse_args()
 
     if len(args.reason.split()) < 3:

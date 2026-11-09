@@ -28,7 +28,7 @@ from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-goals-"))
-env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-goals")
+env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-goals")
 env.pop("EVAL_DATA_DIR", None)
 env.pop("EVAL_RUNS_DIR", None)
 GOAL = "goals/tickets_summary.yaml"

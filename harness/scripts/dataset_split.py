@@ -3,17 +3,17 @@
 
     evh dataset-split triage_v1 --test 0.3 --seed 7
     evh dataset-split triage_v1 --test 0.3 --seed 7 --key fingerprint
-    evh dataset-split triage_v1 --test 0.3 --by time --key decision_date
-    evh dataset-split triage_v1 --by time --key decision_date --at 2026-11-07T00:00:00Z --seal
+    evh dataset-split triage_v1 --test 0.3 --split-by time --key decision_date
+    evh dataset-split triage_v1 --split-by time --key decision_date --at 2026-11-07T00:00:00Z --seal
 
 Writes <D>_validation and <D>_test. They point at the parent's own source files (nothing is copied),
 record the parent as `derived_from` (with the items each leaves out) and the rule as `split`, and a
 goal names them with the roles it has today.
 
---by hash (default): an item goes to test when the hash of (seed, its key) falls below the share.
+--split-by hash (default): an item goes to test when the hash of (seed, its key) falls below the share.
 The key is the item id, or with --key an item field, so all items sharing a value (one fingerprint)
 land on one side. Items keep their side in every later version, and new items fall in proportion.
---by time: the newest share by --key (a date or time field) is test, or with --at every item at or after
+--split-by time: the newest share by --key (a date or time field) is test, or with --at every item at or after
 that time. --seal holds the test side out (_seal): nothing runs, is scored or labelled on it until
 `evh dataset-unseal` names a candidate config whose hypothesis is committed.
 """
@@ -45,16 +45,18 @@ def main() -> int:
     """Split a dataset into <D>_validation and <D>_test."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("dataset_id", help="the dataset to split")
-    ap.add_argument("--test", type=float, help="the test share, between 0 and 1 (or --at with --by time)")
-    ap.add_argument("--by", choices=("hash", "time"), default="hash")
+    ap.add_argument(
+        "--test", type=float, help="the test share, between 0 and 1 (or --at with --split-by time)"
+    )
+    ap.add_argument("--split-by", choices=("hash", "time"), default="hash", help="the split rule")
     ap.add_argument(
         "--key",
-        help="an item field: hash all items with one value to one side, or the time field for --by time",
+        help="an item field: hash all items with one value to one side, or the time field for --split-by time",
     )
-    ap.add_argument("--seed", type=int, default=0, help="with --by hash: the seed (default 0)")
+    ap.add_argument("--seed", type=int, default=0, help="with --split-by hash: the seed (default 0)")
     ap.add_argument(
         "--at",
-        help="with --by time: the boundary, an ISO time; items at or after it are the test side (instead of --test)",
+        help="with --split-by time: the boundary, an ISO time; items at or after it are the test side (instead of --test)",
     )
     ap.add_argument(
         "--seal",
@@ -65,18 +67,21 @@ def main() -> int:
     ap.add_argument(
         "--force", action="store_true", help="overwrite the two datasets if nothing cites them yet"
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
-    if args.at is not None and args.by != "time":
-        die("--at is a time boundary: with --by time", "bad-argument")
+    if args.at is not None and args.split_by != "time":
+        die("--at is a time boundary: with --split-by time", "bad-argument")
     if (args.test is None) == (args.at is None):
-        die("one of --test (a share) or --at (a time boundary, with --by time)", "bad-argument")
+        die("one of --test (a share) or --at (a time boundary, with --split-by time)", "bad-argument")
     if args.test is not None and not 0 < args.test < 1:
         die("--test is a share between 0 and 1", "bad-argument")
     boundary = parse_time(args.at) if args.at is not None else None
     if args.at is not None and boundary is None:
         die(f"--at {args.at!r}: not an ISO time (2026-11-07T00:00:00Z)", "bad-argument")
-    if args.by == "time" and not args.key:
-        die("--by time needs --key: the item field holding each item's date or time", "bad-argument")
+    if args.split_by == "time" and not args.key:
+        die("--split-by time needs --key: the item field holding each item's date or time", "bad-argument")
     parent = load_dataset(dataset_id_ok(args.dataset_id))
     items = parent["items"]
 
@@ -88,7 +93,7 @@ def main() -> int:
             die(f"--key {args.key}: item {it['item_id']} has no value for it", "not-found")
         return str(v)
 
-    if args.by == "hash":
+    if args.split_by == "hash":
         assign = {it["item_id"]: side(args.seed, key_of(it), args.test) for it in items}
     elif boundary is not None:
         when = {it["item_id"]: parse_time(key_of(it)) for it in items}
@@ -108,10 +113,10 @@ def main() -> int:
         if args.test is not None
         else round(sum(1 for v in assign.values() if v == "test") / len(items), 6)
     )
-    rule = {"from": args.dataset_id, "test": share, "by": args.by, "key": args.key}
+    rule = {"from": args.dataset_id, "test": share, "split_by": args.split_by, "key": args.key}
     if args.at is not None:
         rule["at"] = args.at
-    if args.by == "hash":
+    if args.split_by == "hash":
         rule["seed"] = args.seed
     written = []
     open_items = [dict(it) for it in items if assign[it["item_id"]] == "validation"]
@@ -132,7 +137,7 @@ def main() -> int:
             mine,
             read_json(out) if _store.exists(out) else {},
             fieldset,
-            f"{part} of {args.dataset_id}: {len(mine)} of {len(items)} item(s), split by {args.by}"
+            f"{part} of {args.dataset_id}: {len(mine)} of {len(items)} item(s), split by {args.split_by}"
             + (f" on {args.key}" if args.key else ""),
             parent.get("source_dir", ""),
             _lineage(args.dataset_id, out_id, mine),

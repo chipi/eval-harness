@@ -71,6 +71,9 @@ def update_record(data_dir: Path, model_id: str, change: Any) -> dict[str, Any]:
         try:
             doc = find(data_dir, model_id) or {}
             change(doc)
+            from evaluation_harness._actor import actor  # noqa: PLC0415
+
+            doc["actor"] = actor()  # who changed the record last (RFC-027)
             _store.write_text(f, yaml.safe_dump(doc, sort_keys=False, allow_unicode=True), encoding="utf-8")
         finally:
             fcntl.flock(fh, fcntl.LOCK_UN)

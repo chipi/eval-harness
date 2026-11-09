@@ -13,6 +13,11 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Who acted, on every record** (RFC-027 D1): runs, references, label sets, rounds, picks, dataset and model records
+  and baselines carry `actor`: a person, or an agent and the person it acted for (`EVH_ACTOR`, `EVH_FOR`), from
+  `--by` (now on every writing command), the environment or the terminal's login, with where it came from. A
+  decision (`run-promote`, `round-close`, `dataset-unseal`) refuses an `unknown` actor; everything else records it.
+  A label set keeps who labelled (`source.by`) beside it. Agents: the project's AGENTS.md says to name themselves.
 - **"If your system is plain code"** (INTEGRATION, the fleet's feedback 19 and 26): what an item holds for code that
   reads external state (its world at decision time), why one run is enough, a correctness goal beside a regression
   guard, the item as the unit judged, links between items folded into an outcome, and outcomes joined by time and
@@ -186,6 +191,8 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **`dataset-split --by hash|time` is now `--split-by`** (and a split side records `split.split_by`), so `--by` means
+  who acted on every command that writes (RFC-027).
 - **The paired tests take their normal limit from 10,000 units** (ADR-0028). From 10,000 items (or clusters) the
   sign-flip p is erfc(|z|/sqrt 2) with z = sum d / sqrt(sum d^2), and the contender test's bootstrap-t p is
   1 - Phi(T), instead of 20,000 permutations and 9,999 resamples; a simulation over seven kinds of data

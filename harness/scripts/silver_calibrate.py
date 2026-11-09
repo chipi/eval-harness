@@ -138,6 +138,9 @@ def main() -> int:
     )
     ap.add_argument("--metric", default=None, help="default: the adapter's PRIMARY_METRIC")
     ap.add_argument("--group-by", default="family", help="params key for the sibling-bias report; '' to skip")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.

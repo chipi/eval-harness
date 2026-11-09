@@ -29,6 +29,8 @@ from evaluation_harness._picks import append, state
 
 def main() -> int:
     """Pick items, or drop picks."""
+    from evaluation_harness._actor import actor  # noqa: PLC0415
+
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument(
         "--dataset-id", required=True, help="the dataset the items are in (usually a production one)"
@@ -39,7 +41,9 @@ def main() -> int:
     )
     ap.add_argument("--tag", action="append", default=[], help="KEY=VALUE, to group candidates (repeatable)")
     ap.add_argument("--note", default="", help="why it is worth keeping")
-    ap.add_argument("--by", default="", help="who picks")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap, default="", help="who picks")
     ap.add_argument("--drop", action="store_true", help="take these items off the waiting list")
     args = ap.parse_args()
 
@@ -56,7 +60,16 @@ def main() -> int:
         if missing:
             die(f"not waiting, so nothing to drop: {', '.join(missing[:8])} (evh picks)", "not-found")
         append(
-            [{"action": "drop", "item": i, "from": args.dataset_id, "by": args.by or None} for i in args.item]
+            [
+                {
+                    "action": "drop",
+                    "item": i,
+                    "from": args.dataset_id,
+                    "by": args.by or None,
+                    "actor": actor(),
+                }
+                for i in args.item
+            ]
         )
         print(f"dropped {len(args.item)} pick(s) of {args.dataset_id}")
         return 0
@@ -82,6 +95,7 @@ def main() -> int:
                 "tags": tags,
                 "note": args.note or None,
                 "by": args.by or None,
+                "actor": actor(),
             }
             for i in args.item
         ]

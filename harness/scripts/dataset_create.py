@@ -292,7 +292,7 @@ def parent_version(dataset_id: str | None) -> str | None:
 # The keys _write sets itself; an update passes the record's others through as they are.
 _OWN = frozenset(
     ("dataset_id", "version", "description", "created_at", "licence", "source", "source_dir", "fieldset",
-     "fields_sha256", "derived_from", "items")
+     "fields_sha256", "derived_from", "items", "actor")
 )  # fmt: skip
 
 
@@ -351,6 +351,10 @@ def _write(
     if doc.get("split"):
         doc["split"] = {**doc["split"], "from_version": parent_version(doc["split"]["from"])}
     doc["version"] = _dataset_version.expected(doc, parent_version)
+    from evaluation_harness._actor import actor  # noqa: PLC0415
+
+    # Who wrote this record (RFC-027); a re-create that selects the same items keeps it, as it keeps created_at.
+    doc["actor"] = previous["actor"] if unchanged and previous.get("actor") else actor()
     doc["items"] = items
     write_json(out, doc)
 
@@ -473,6 +477,9 @@ def main() -> int:
         help="with --from: record which dataset an existing one was made from, its items untouched (a dataset "
         "already cited by runs gains the link; its version follows from it)",
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
     why = _licences.problem(args.licence) if args.licence is not None else None
     if why:

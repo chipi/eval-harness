@@ -75,7 +75,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("sheet", type=Path, help="the filled sheet (.csv)")
     ap.add_argument("--dataset-id", required=True)
-    ap.add_argument("--by", required=True, help="who filled it: a person, or the tool")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap, required=True, help="who filled it: a person, or the tool; also who acted")
     ap.add_argument(
         "--kind", choices=("person", "model"), default="person", help="who filled it (default: person)"
     )

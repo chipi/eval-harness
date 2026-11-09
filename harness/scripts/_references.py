@@ -55,6 +55,9 @@ def write_manifest(
         "items_sha256": hashes,
         "caveat": caveat or CAVEATS[tier],
     }
+    from evaluation_harness._actor import actor  # noqa: PLC0415
+
+    doc["actor"] = actor()
     write_json(ref_dir / "manifest.json", doc)
     return doc
 

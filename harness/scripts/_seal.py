@@ -1,6 +1,6 @@
 """A sealed side of a split (the fleet's feedback 29): held out until a candidate is named in advance.
 
-    evh dataset-split triage_v1 --by time --key created_at --at 2026-11-07T00:00:00Z --seal
+    evh dataset-split triage_v1 --split-by time --key created_at --at 2026-11-07T00:00:00Z --seal
     evh dataset-unseal triage_v1_test --config candidate_v3 --reason "the tuned filter, frozen"
 
 `dataset-split --seal` writes `sealed` on the test side's record: when, and a digest of the open (validation) side's

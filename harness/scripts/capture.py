@@ -77,6 +77,9 @@ def main() -> int:
     ap.add_argument(
         "--seed", type=int, help="with --sample-rate: the seed, so the same sample is drawn again"
     )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
 
     out = CAPTURES / dataset_id_ok(args.capture)

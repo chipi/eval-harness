@@ -56,7 +56,9 @@ def main() -> int:
         "--kind", choices=("person", "model", "rule"), default="person", help="the labels' source"
     )
     ap.add_argument("--reason", required=True, help="why these labels are the yardstick (a sentence)")
-    ap.add_argument("--by", required=True, help="who promotes (recorded in the manifest)")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap, required=True, help="who promotes (recorded in the manifest)")
     args = ap.parse_args()
     if len(args.reason.split()) < 3:
         die(

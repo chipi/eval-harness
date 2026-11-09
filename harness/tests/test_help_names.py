@@ -21,7 +21,7 @@ from evaluation_harness.cli import COMMANDS  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-help-"))
 (proj / "data").mkdir()
-env = dict(os.environ, EVAL_HOME=str(proj))
+env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj))
 env.pop("EVAL_DATA_DIR", None)
 env.pop("EVAL_RUNS_DIR", None)
 

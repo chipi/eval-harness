@@ -285,8 +285,10 @@ promotion's reason says who asked and why, so the record shows whose decision it
 round fixes its evidence, and anything past the cap spends what was not agreed: those stay the
 operator's, and the agent hands over the exact command. `evh mcp` writes no project data: its tools read. (What a call does write is
 computed answers in the project's ignored `.cache/`: the paired tests' p values and `family-test`'s results.)
-Consent recorded by the harness itself, rather than by the operator's instruction, is 0.8.0's to
-design.
+Every record also says who acted (RFC-027): a person, or an agent and the person it acted for
+(`EVH_ACTOR=agent:NAME`, `EVH_FOR=person:NAME`, or `--by`). It is a recorded claim, not an
+identity, and the harness records rather than asks for consent: a decision (promoting, closing a
+round, unsealing) only needs a named actor, never an `unknown` one.
 
 A shared server answers anyone who can reach it, so `--public` holds back what a project may not
 redistribute (an item's text), and the rates bound what a script can cost the machine.

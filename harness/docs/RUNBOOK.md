@@ -60,7 +60,7 @@ further. This page is the reference for each step.
 | labels from what happened afterwards | `evh label-from-capture --dataset-id … --capture c1 --map rules.yaml --set …` |
 | how far outcome rules label a dataset now | `evh label-coverage --dataset-id … --capture c1 --map rules.yaml` |
 | validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
-| a sealed held-out side | `evh dataset-split … --by time --key F --at T --seal` · `evh dataset-unseal …_test --config C --reason "…"` |
+| a sealed held-out side | `evh dataset-split … --split-by time --key F --at T --seal` · `evh dataset-unseal …_test --config C --reason "…"` |
 | production's own decisions as an arm | `evh arm-from-capture --dataset-id … --capture c1 --as production_v1 [--like CONFIG]` ([§15b](#15b-evaluating-what-production-did)) |
 | where arms decided differently | `evh inspect --runs A,B --disagree` |
 | the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh inspect --sheet --dataset-id … --runs A,B [--wrong-against SET] [--new-vs V] [--csv FILE [--fill label\|pick\|scores]]` |
@@ -848,6 +848,14 @@ evh runs-list --baselines
 `evh round-close --promote <run_id>` promotes too, with the round's conclusion as the reason
 (§13).
 
+**Who acted.** Every record a command writes names its actor (`actor` in the record): a person, or
+an agent and the person it acted for. From a terminal it is your login; `--by person:NAME` (every
+writing command takes it) or `EVH_ACTOR` names someone else, and an agent sets
+`EVH_ACTOR=agent:NAME` with `EVH_FOR=person:NAME`, the operator who asked. It is a recorded claim,
+not an identity. A decision (`run-promote`, `round-close`, `dataset-unseal`) refuses an actor it
+cannot name (no terminal, no `--by`, no `EVH_ACTOR`); every other command records it as `unknown`
+and goes ahead. `dataset-split`'s split rule is `--split-by hash|time`.
+
 ---
 
 ## 9. Validate before you trust anything
@@ -1446,7 +1454,7 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   read it beside a person's labels; promoted, it is a reference like any (ADR-0022).
 - **`text: hidden`** (`dataset-from-capture --hide-text`) keeps a dataset's text, and every text derived
   from it, off every public surface, for data a project may measure but not publish.
-- **A held-out side, sealed.** `evh dataset-split prod_v1 --by time --key opened --at 2026-11-07T00:00:00Z
+- **A held-out side, sealed.** `evh dataset-split prod_v1 --split-by time --key opened --at 2026-11-07T00:00:00Z
   --seal` puts every item at or after the boundary on the test side and seals it: no run, label, label sheet,
   reference, rescore or judging is written onto it, refused before anything is called. Tune on the validation
   side; when one candidate is ready, write its config for the test side with a hypothesis (`against`, `measure`,
@@ -1659,6 +1667,8 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | Variable | What it does |
 |---|---|
 | `EVAL_HOME` | the project root (default: the nearest directory up from where you run that has `data/`) |
+| `EVH_ACTOR` | who acts (RFC-027): `person:NAME`, or `agent:NAME` with `EVH_FOR`; recorded on every record a command writes (`--by` wins) |
+| `EVH_FOR` | `person:NAME`: the operator an agent acts for (required with `EVH_ACTOR=agent:…`) |
 | `EVAL_DATA_DIR` | the data root, when it is not `<project>/data` |
 | `EVAL_STORE` | `files` or `sqlite`: the project's store, over its `config.yaml`'s `store:` (RFC-025; above) |
 | `EVAL_CONFIGURE` | `1`: the Configure page in a SQLite project, as `configure: true` in its `config.yaml` (above) |

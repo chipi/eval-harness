@@ -14,6 +14,7 @@
       "pattern": "^[a-z0-9][a-z0-9._-]*$",
       "description": "The record's id: its file's name."
     },
+    "actor": {"type": "object", "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.", "required": ["type", "name"], "additionalProperties": false, "properties": {"type": {"enum": ["person", "agent", "unknown"]}, "name": {"type": "string"}, "for": {"type": "string", "description": "the person an agent acted for"}, "from": {"enum": ["flag", "environment", "terminal", "migration"]}}},
     "kind": {
       "enum": [
         "llm",

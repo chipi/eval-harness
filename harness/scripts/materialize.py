@@ -40,6 +40,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
     ap.add_argument("--dataset-id", required=True)
     ap.add_argument("--force", action="store_true", help="rebuild even if it exists")
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
     args = ap.parse_args()
 
     ds = load_dataset(args.dataset_id)
