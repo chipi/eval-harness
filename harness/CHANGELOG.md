@@ -25,6 +25,9 @@ that can move a result is never a patch release without saying so under **Change
   serves the whole local inspector (pages, items, outputs, references) to the named Hosts as well as this machine,
   with `--bind 0.0.0.0` in a container behind a team's own proxy; no rate limit and nothing withheld, unlike
   `--public`. The data page's writes are not served through it.
+- **A round records its harness code** (the fleet's feedback 17): `round-open` records the harness version, commit
+  and measuring-code hash it opened on and says so; `evh rounds` shows it and names each run of the round that ran on
+  other harness code, with how to run it on the round's (a worktree at its commit, or its version pinned).
 - **A round's baseline can be named** (the fleet's feedback 22): `evh round-open … --baseline <config_id or run id>`
   records the run the round starts from when the dataset has no promoted baseline (arms carried in with `--keep`), so
   `pair-test --round` and `evh rounds` read its arms against it instead of refusing ("records no other baseline

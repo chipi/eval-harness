@@ -153,6 +153,7 @@ def open_round(argv: list[str]) -> int:
         "changes": args.change,
         "baseline": start,
         "budget_usd": args.budget_usd,
+        "harness": _rounds.harness_now(),
         "carried": carried,
         "status": "open",
         "opened_at": now(),
@@ -168,6 +169,12 @@ def open_round(argv: list[str]) -> int:
         f"  It starts from {start}."
         if start
         else "  It starts from no baseline run (none promoted; --baseline names one)."
+    )
+    h = doc["harness"]
+    print(
+        f"  On harness {h['version']}"
+        + (f" at {h['commit']}" if h.get("commit") and not h.get("installed") else "")
+        + f" (code {str(h['code_sha256'])[:12]}): a run of the round on other harness code is named in evh rounds."
     )
     if carried:
         print(
@@ -455,6 +462,19 @@ def evidence(goal: str, rnd: dict) -> dict:
             else []
         ),
     }
+    # ONE INSTRUMENT PER ROUND (the fleet's feedback 17): harness code taken mid-round measures some arms with
+    # other code than the rest. Named, never refused: the change may not touch what was measured.
+    split = _rounds.off_harness(rnd)
+    if split:
+        had = (rnd.get("harness") or {}).get("version")
+        out["notes"].append(
+            f"{len(split)} run(s) ran on other harness code than the round opened on ({had}, code "
+            f"{str(rnd['harness']['code_sha256'])[:12]}): "
+            + ", ".join(
+                f"{rid} ({h.get('version')}, code {str(h.get('code_sha256'))[:12]})" for rid, h in split
+            )
+            + f"; to compare like with like, {_rounds.how_to_run_on(rnd)}"
+        )
     # ONE REFERENCE PER ROUND: a silver mean beside a gold mean is not a comparison. The round is
     # read against the reference most of its arms are scored against (gold before silver on a
     # tie); an arm on another one is named and left out, never silently.
@@ -669,6 +689,13 @@ def _status(args: argparse.Namespace) -> int:
         print(textwrap.fill(str(ch), 100, initial_indent="  changed: ", subsequent_indent="           "))
     for x in rnd.get("retired") or []:
         print(f"  retired: {x['config_id']} ({x['reason']})")
+    if rnd.get("harness"):
+        h = rnd["harness"]
+        print(
+            f"  harness: {h.get('version')}"
+            + (f" at {h['commit']}" if h.get("commit") and not h.get("installed") else "")
+            + f" (code {str(h.get('code_sha256'))[:12]})"
+        )
     if rnd.get("scorer"):
         print(f"  judged by: {rnd['scorer']}")
     for sc in rnd.get("scoring") or []:
@@ -701,7 +728,16 @@ def _status(args: argparse.Namespace) -> int:
             "goal": args.goal,
             "round": {
                 k: rnd.get(k)
-                for k in ("round_id", "status", "dataset_id", "from", "hypothesis", "scorer", "baseline")
+                for k in (
+                    "round_id",
+                    "status",
+                    "dataset_id",
+                    "from",
+                    "hypothesis",
+                    "scorer",
+                    "baseline",
+                    "harness",
+                )
             }
             | {
                 "changes": rnd.get("changes") or [],

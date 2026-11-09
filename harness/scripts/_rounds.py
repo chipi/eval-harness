@@ -96,6 +96,7 @@ def save(doc: dict[str, Any]) -> Path:
         "changes",
         "baseline",
         "budget_usd",
+        "harness",
         "carried",
         "scorer",
         "scoring",
@@ -117,6 +118,41 @@ def runs_of(rnd: dict[str, Any], runs_dir: Path | None = None) -> list[tuple[Pat
         for d, m in runs_on(rnd.get("dataset_id"), runs_dir=runs_dir)
         if m.get("round") == rnd["round_id"] and m.get("goal") == rnd["goal"]
     ]
+
+
+def harness_now() -> dict[str, Any]:
+    """The harness code a round is opened on: its version, the project's commit, and the hash of the code that
+    can change a measurement (the same `instrument.harness` a run records)."""
+    from evaluation_harness import _fingerprint  # noqa: PLC0415
+
+    h = _fingerprint._harness_identity(_common.ROOT, _common.DATA)
+    return {k: h.get(k) for k in ("version", "commit", "code_sha256", "installed")}
+
+
+def off_harness(rnd: dict[str, Any], runs_dir: Path | None = None) -> list[tuple[str, dict]]:
+    """The round's runs that ran on other harness code than it opened on (the fleet's feedback 17: code taken
+    mid-round splits the round's instrument), as (run id, the harness it recorded). Empty for a round
+    opened before rounds recorded it."""
+    want = (rnd.get("harness") or {}).get("code_sha256")
+    if not want:
+        return []
+    out = []
+    for d, m in runs_of(rnd, runs_dir):
+        h = ((m.get("fingerprint") or {}).get("instrument") or {}).get("harness") or {}
+        if h.get("code_sha256") and h["code_sha256"] != want:
+            out.append((d.name, h))
+    return out
+
+
+def how_to_run_on(rnd: dict[str, Any]) -> str:
+    """How to run an arm on the harness code a round opened on."""
+    h = rnd.get("harness") or {}
+    if h.get("installed"):
+        return f"pin the harness to {h.get('version')} (pip install evaluation-harness=={h.get('version')}) and run it again"
+    return (
+        f"run it from a worktree at the round's commit (git worktree add ../{rnd['round_id']}-harness "
+        f"{h.get('commit')}), or open a new round on the new code"
+    )
 
 
 def arms_of(rnd: dict[str, Any], runs_dir: Path | None = None) -> list[str]:

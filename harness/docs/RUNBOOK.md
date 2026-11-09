@@ -1156,6 +1156,11 @@ evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed a
   rounds, or arms carried in with `--keep`), name it: `--baseline <config_id>` takes that config's latest measured
   run on the dataset, or give a run id. `round-open` says which run the round starts from; `pair-test --round` and
   `evh rounds` read the round's arms against it.
+- **A round records the harness code it opened on** (its version, the project's commit and the hash of the code
+  that can change a measurement, as every run records it). Harness code taken mid-round measures some arms with other
+  code than the rest: `evh rounds` names each run of the round that recorded other code (`NOTE: N run(s) ran on other
+  harness code than the round opened on …`) and how to run it on the round's code: a worktree at the round's commit,
+  or the round's version pinned when the harness is installed. Or open a new round on the new code.
 - **`evh rounds` never suggests promoting the run that already is the baseline**: its close
   suggestion then reads "close the round with what it showed (<arm> is already the baseline)",
   with no `--promote`. `leaderboard --round` does not warn about two versions of one arm (`_v1`,

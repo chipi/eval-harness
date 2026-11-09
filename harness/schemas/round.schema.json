@@ -29,6 +29,7 @@
       }
     },
     "budget_usd": {"type": "number", "minimum": 0, "description": "What the round may spend; its billed cost is shown against it."},
+    "harness": {"type": "object", "additionalProperties": false, "description": "The harness code the round was opened on (round-open): a run of the round recording other code (instrument.harness.code_sha256) is named by evh rounds, with how to run it on this code.", "properties": {"version": {"type": ["string", "null"]}, "commit": {"type": ["string", "null"], "description": "The project's commit; in a checkout of the harness, the harness's own."}, "code_sha256": {"type": ["string", "null"], "description": "The hash of the harness code that can change a measurement, as runs record it."}, "installed": {"type": ["boolean", "null"], "description": "True when the harness is an installed dependency, not a checkout."}}},
     "scorer": {"type": "string", "description": "The scorer the round is judged by (RFC-022): 12 characters of its code's sha256, recorded by round-open --scoring."},
     "scoring": {
       "type": "array",

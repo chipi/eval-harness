@@ -384,6 +384,37 @@ try:
         bool(lead1) and f"baseline: {lead1[-1]}" in doc3 and f"It starts from {lead1[-1]}" in r.stdout,
         out(r) + doc3,
     )
+    check(
+        "round-open records the harness code it opened on, and says so (the fleet's feedback 17)",
+        "harness:" in doc3 and "code_sha256:" in doc3 and "On harness " in r.stdout,
+        out(r) + doc3,
+    )
+    _runstore.write_text(proj, "configs/author3.yaml", cfg + "goal: tickets_summary\nround: r3\n")
+    evh("run", "--config", "data/configs/author3.yaml")
+    r3run = next(
+        (n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_")
+         and _runstore.read_json(proj, f"runs/{n}/metrics.json").get("round") == "r3"),
+        None,
+    )  # fmt: skip
+    r = evh("rounds", "--goal", "tickets_summary", "--round", "r3")
+    check(
+        "rounds: a run on the round's own harness code gets no split note",
+        r3run is not None and "other harness code" not in r.stdout and "harness: " in r.stdout,
+        out(r)[-600:],
+    )
+    if r3run:
+        m = _runstore.read_json(proj, f"runs/{r3run}/metrics.json")
+        m["fingerprint"]["instrument"]["harness"]["code_sha256"] = "0" * 64
+        m["fingerprint"]["instrument"]["harness"]["version"] = "9.9.9"
+        _runstore.write_text(proj, f"runs/{r3run}/metrics.json", json.dumps(m))
+    r = evh("rounds", "--goal", "tickets_summary", "--round", "r3")
+    check(
+        "rounds: a run on other harness code than the round opened on is named, with how to run it on the round's",
+        "1 run(s) ran on other harness code" in r.stdout
+        and f"{r3run} (9.9.9, code 000000000000)" in r.stdout
+        and ("git worktree add ../r3-harness" in r.stdout or "pip install evaluation-harness==" in r.stdout),
+        out(r)[-800:],
+    )
     r = evh("pair-test", "--dataset-id", "tickets_v1", "--goal", "tickets_summary", "--round", "r3")
     check(
         "pair-test --round on that round: its leader against the named baseline, no --b needed",
