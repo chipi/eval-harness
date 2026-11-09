@@ -1,7 +1,7 @@
 # RFC-027: Who acted on every record, and baselines per goal
 
-- **Status**: Draft (0.8.0, 2026-11-09), for the owner's review. Open questions 1 and 2 decided by the owner the same
-  day ("1 no, 2 run without goal is OK"); 3 open. Step 4.1 of `research/internal/PLAN_0.8.0.md`.
+- **Status**: Draft (0.8.0, 2026-11-09), for the owner's review. Its three open questions decided by the owner the
+  same day ("1 no, 2 run without goal is OK", 3: "drop it"). Step 4.1 of `research/internal/PLAN_0.8.0.md`.
 - **Authors**: Marko Dragoljevic
 - **Related**: the 0.5.0 drafts it reworks (PRD-011 and RFC-012, the evidence registry; PRD-012 and RFC-013 D5/D8, the
   actor and consent; not merged), [RFC-026](RFC-026-an-api-for-every-command.md) (its jobs pass `by` and `reason` to
@@ -15,8 +15,7 @@ Every record a command writes says who acted: a person, or an agent and the pers
 to a goal on a dataset, not to the dataset alone; promoting writes a new version beside the old ones, never over them;
 the comparison that justified it is frozen into that version; a rollback is another version. `evh baselines` lists them
 with how to reproduce each (the `deploy-sheet` block) and their history, and with `--json` is the export a production
-system reads. `evh evidence-check FILE` fails when a project's own registry cites a baseline that was replaced, a run
-or round that does not exist, or a file that is gone.
+system reads.
 
 ## Problem statement
 
@@ -27,8 +26,6 @@ or round that does not exist, or a file that is gone.
   ("git keeps it", `promote_baseline.py:141`). There is no history in the project, no rollback but `git revert`, and
   nothing of the comparison that justified a promotion: re-running `pair-test` later reads new runs under today's
   rules, so the evidence drifts.
-- **A production registry cites by hand.** The podcast project checks its citations (reports, rationale files) with a
-  230-line script of its own; a replaced baseline it still cites is caught by nothing.
 
 ## Design
 
@@ -100,23 +97,7 @@ replaced or restored). `--json` is the export a production system reads: determi
 own, no harness version in a header), so two outputs with no new promotion are byte-identical; the goal's context and
 decision ride along as the intended use. It replaces `runs-list --baselines`, which goes. The goal page shows the same.
 
-### D5. `evh evidence-check FILE [--root DIR] [--key-paths KEY=DIR …] [--allow-replaced] [--json]`
-
-Reads any YAML or JSON citation file and checks every string value that is one of the harness's ids, and every
-relative path with an extension:
-
-- `baseline:<goal>/<dataset>/<n>` must exist, and be current unless `--allow-replaced` (then a warning naming the
-  current one); `baseline:<goal>/<dataset>` means the current one and always resolves while one exists;
-  `run:<run_id>` must exist, and a run of a retired arm is an error naming the round and reason; `round:<goal>/<rN>`
-  must exist.
-- A path must exist under `--root` (default: the project root); `--key-paths rationale=DIR` also checks that every key
-  of the top-level `rationale` mapping is a file in DIR.
-- Any other string is the project's vocabulary and is listed as not checked, never an error.
-
-Exit 0 when everything resolves, 1 with each failing citation and its key path. Joining citations to the project's
-own registry (every option has evidence) stays the project's.
-
-### D6. Validation
+### D5. Validation
 
 V6 (baselines) checks each version: its run exists and its scores match; `replaces` is the version current when it
 was written; `restores` names an earlier version; the evidence's `items_sha256` is the dataset's. A new check names
@@ -140,8 +121,13 @@ baselines. No reader keeps the old path.
   was made.
 - **The drafts' consent (`--confirm` by a person).** Rejected by the owner's rule: an agent acts when asked, and the
   record names whose decision it was.
-- **A record store with an id grammar for every kind (the drafts' RFC-017).** Not needed for this: three id kinds for
-  `evidence-check`, parsed where they are read.
+- **A record store with an id grammar for every kind (the drafts' RFC-017).** Not needed: baselines are addressed by
+  goal, dataset and version.
+- **`evh evidence-check FILE`** (the drafts' RFC-012): checking that a project's own citation file names baselines,
+  runs and rounds that exist and are current. Dropped from 0.8.0 (owner, 2026-11-09): no project cites a harness id
+  today (the podcast project's `registry_refs.yaml` cites eval reports by path, and its own script checks them), so it
+  would only repeat that check. Added when a project cites harness ids; the versioned baselines and `evh baselines
+  --json` it would read are built here.
 
 ## Testing
 
@@ -151,20 +137,13 @@ baselines. No reader keeps the old path.
   evidence is the `pair-test` verdict at promotion and stays when new runs arrive; not comparable records the fields;
   rollback restores and compares; readers (pair-test, rounds, A6, deploy-sheet) read the goal's current version;
   `baselines --json` is byte-identical twice; the migration moves this repository's baselines.
-- `test_evidence_check.py`: a file shaped like the podcast project's `registry_refs.yaml` passes, then fails on a
-  replaced baseline, a missing round, a retired arm's run and a missing report; `--allow-replaced` warns; other
-  strings are listed as not checked.
 - All of it in both stores.
 
-## Open questions (the owner's)
+## Open questions (the owner's, decided 2026-11-09)
 
-1. ~~May an `unknown` actor make a decision?~~ Decided: no (D1).
-2. ~~A run with no goal?~~ Decided: promoted into the dataset's own baselines (D2).
-3. **`evidence-check` in 0.8.0**, or when a project cites harness ids? Recommended (revised 2026-11-09, after reading
-   the file): not in 0.8.0. The podcast project's citation file (`podcast-scraper-eval-data/data/eval/registry_refs.yaml`,
-   62 lines) cites eval reports by path, never a harness id, and its own script already checks those paths; so today
-   the command would only repeat that. The versioned baselines and `evh baselines --json` (D2, D4) are what a
-   later citation of a harness id needs, and they stay.
+1. May an `unknown` actor make a decision? No (D1).
+2. A run with no goal? Promoted into the dataset's own baselines (D2).
+3. `evidence-check` in 0.8.0? Dropped (Alternatives considered).
 
 ## Decisions (ADR candidates)
 
