@@ -4,7 +4,8 @@
   for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions decided by the owner the same
   day (below: "1 waiting, 2 [the proposed file size], 3 yes, 4 enforce"). Revision 2 (2026-11-09), after an
   independent review (Fable) and aligned with [RFC-027](RFC-027-who-acted-and-baselines-per-goal.md): 82 commands,
-  path arguments, the cap where spend is counted, the round ledger, who acted, locks; one question open (below).
+  path arguments, the cap where spend is counted, the round ledger, who acted, locks; its fifth question decided
+  by the owner the same day (local only: "I am OK with the proposed way for a team to work").
 - **Authors**: Marko Dragoljevic
 - **Related**: [PRD-017](../prd/PRD-017-workbench.md) (the Workbench: one server, jobs, parity),
   [UXS-005](../uxs/UXS-005-workbench.md) (its screens), [RFC-018](RFC-018-read-only-mcp-server.md) (the MCP
@@ -93,8 +94,8 @@ server starts, written to `.build/api-token` (mode 600, the project owner's only
 Workbench's address, as `http://127.0.0.1:PORT/workbench/?token=…`. The page trades it for a cookie (`HttpOnly`,
 `SameSite=Strict`, this host only) on the first load; a script sends `Authorization: Bearer …`. Also: the Host must be
 the server's own (DNS rebinding), a foreign `Origin` is refused, and every call that is not a read carries
-`X-EVH-Data: 1`. A server started with `--public` answers none of `/api/v1/`. **Proposed, the owner's decision
-pending (open question 5):** nor does one started with `--behind-proxy`, which serves the inspector to a team's
+`X-EVH-Data: 1`. A server started with `--public` answers none of `/api/v1/`, and (owner, 2026-11-09) nor does
+one started with `--behind-proxy`, which serves the inspector to a team's
 proxy (and whose `allowed()` accepts the proxy's Host names, so "the Host must be the server's own" does not hold
 there); the data routes are already refused in both modes. Every job runs as the server's operating-system user, so
 an API reached by a team would let each member run any command as the project's owner, and the actor (RFC-027) is a
@@ -279,8 +280,8 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
 - Parity: every read command through the API and through the command line give the same JSON.
 - Refusals: no token, a wrong token, another Host, a foreign Origin, a non-read without the header, an option the
   registry does not list (`--adapter`, `--runs-dir`, `--command`), a path as an argument, a config whose adapter is
-  outside the project: each refused before anything runs. `--public` (and, if the owner decides so,
-  `--behind-proxy`) answers no `/api/v1/` call. A decision job without `by`; a job's records name its `by`.
+  outside the project: each refused before anything runs. `--public` and `--behind-proxy` answer no `/api/v1/`
+  call. A decision job without `by`; a job's records name its `by`.
   Every served `Path` argument has a kind; `label-sheet` as a job gives its sheet as a download.
 - A job's life: started, followed by offset, succeeded with its result; a failing command reports its refusal kind; a
   stopped job's process group is gone; a killed supervisor shows `running (unsupervised)` and keeps its locks while
@@ -325,11 +326,12 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
 4. **A round's budget is enforced** ("enforce"), by the spending commands, from the terminal and as jobs alike, with
    a reservation per running command so parallel runs cannot overrun it (Spending, above).
 
-## Open (2026-11-09)
+## Decided by the owner (2026-11-09)
 
-5. **Is the API served behind a proxy?** Proposed: no (Who may call, above): local only in 0.8.0, so a team reads
-   through `--behind-proxy` and each person writes as themselves, with their own account or clone; a shared write
-   API needs real identities and permissions, a design of its own (PRD-017's "later question").
+5. **The API is not served behind a proxy** (Who may call, above): local only in 0.8.0. A team reads through
+   `--behind-proxy` and each person writes as themselves, with their own account on the machine or their own clone,
+   recorded as RFC-027's actor; a shared write API needs real identities and permissions, a design of its own
+   (PRD-017's "later question").
 
 ## The commands, and how the API serves them
 
