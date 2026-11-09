@@ -138,7 +138,7 @@ def resolve(cfg: dict[str, Any], data_dir: Path) -> dict[str, Any]:
 
 def problems(data_dir: Path) -> list[str]:
     """What a record set gets wrong beyond its schema: a file named other than its id, an alias two records
-    claim, a deployment id used twice in one record."""
+    claim, a deployment id used twice in one record, a code record's version listed twice."""
     out = []
     seen: dict[str, str] = {}
     base = records_dir(data_dir)
@@ -156,4 +156,7 @@ def problems(data_dir: Path) -> list[str]:
         ids = [d.get("id") for d in doc.get("deployments") or []]
         for dep in sorted({i for i in ids if ids.count(i) > 1}, key=str):
             out.append(f"{f.name}: deployment id {dep!r} is used more than once")
+        commits = [v.get("commit") for v in doc.get("versions") or [] if isinstance(v, dict)]
+        for c in sorted({c for c in commits if commits.count(c) > 1}, key=str):
+            out.append(f"{f.name}: version {c!r} is listed more than once")
     return out

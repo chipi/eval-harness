@@ -811,6 +811,10 @@ def arms(argv) -> int:
 
 
 def _onboarding(r: dict) -> str:
+    if r["kind"] == "code":  # code under test is replayed, not onboarded: its versions, as the page says
+        vs = [x for x in r["record"].get("versions") or [] if isinstance(x, dict)]
+        checked = sum(1 for x in vs if (x.get("faithfulness") or {}).get("items"))
+        return f"{len(vs)} version(s), {checked} checked for faithfulness"
     if r["status"] == "none":
         return "none"
     return f"{ {'vetted': 'pass', 'onboarded': 'probed'}.get(r['status'], 'check') } {r['onboarded']}"
@@ -888,16 +892,29 @@ def models(argv) -> int:
     rec = r["record"]
     print(r["name"] + f"  [{r['kind']}]")
     for k, x in (
-        ("weights", r["weights"] or "—"),
-        ("licence", r["licence"] or "—"),
-        ("aliases", ", ".join(rec.get("aliases") or [])),
-        ("where", r["hosting"] or "—"),
-        ("onboarding", _onboarding(r)),
+        ()
+        if rec.get("kind") == "code"
+        else (
+            ("weights", r["weights"] or "—"),
+            ("licence", r["licence"] or "—"),
+            ("aliases", ", ".join(rec.get("aliases") or [])),
+            ("where", r["hosting"] or "—"),
+            ("onboarding", _onboarding(r)),
+        )
     ):
         print(f"  {k:15} {x}")
     why = rec.get("settings_why") or {}
     for k, x in (rec.get("settings") or {}).items():
         print(f"  setting {k:12} {x}" + (f"  ({why[k]})" if why.get(k) else ""))
+    if rec.get("kind") == "code":  # code under test (the fleet's feedback 27): its versions, not deployments
+        print(f"  {'repository':15} {rec.get('repo') or '—'}")
+        print("\nversions:")
+        vrows = cm.version_rows(rec)
+        if vrows:
+            _table(["version", "in production", "what changed", "faithfulness"], vrows)
+        else:
+            print("  none recorded: list its commits under `versions`")
+        return 0
     print("\ndeployments:")
     if r["deployments"]:
         _table(

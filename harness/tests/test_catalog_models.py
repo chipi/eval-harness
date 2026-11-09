@@ -545,4 +545,93 @@ with tempfile.TemporaryDirectory() as td:
     )
     check("evh models: every committed record listed", len(view(A, ["models"]).splitlines()) == n + 2)
 
+# Code under test as a record of its own (the fleet's feedback 27): kind code, its repo and versions, no aliases;
+# an arm names it with model_record like any record; its page and `evh models --model` show the versions.
+import jsonschema  # noqa: E402
+from evaluation_harness import _models  # noqa: E402
+
+SCHEMA = json.loads((Path(__file__).resolve().parents[1] / "schemas" / "model.schema.json").read_text())
+fleet = {
+    "model_id": "triage-fleet",
+    "kind": "code",
+    "name": "The triage fleet",
+    "repo": "https://github.com/chipi/agentic-ai-homelab",
+    "versions": [
+        {
+            "commit": "f07efa9",
+            "deployed": [{"from": "2026-10-02T00:00:00Z", "to": "2026-10-20T00:00:00Z"}],
+            "note": "the dedup key",
+        },
+        {
+            "commit": "9a318e61",
+            "deployed": [{"from": "2026-10-20T00:00:00Z"}],
+            "faithfulness": {
+                "agreed": 133,
+                "items": 135,
+                "exceptions": ["clock slack", "a reopen"],
+                "at": "2026-11-05",
+            },
+        },
+    ],
+}
+check(
+    "code record: valid without aliases", not list(jsonschema.Draft202012Validator(SCHEMA).iter_errors(fleet))
+)
+check(
+    "code record: an llm without aliases is still refused",
+    any(
+        "aliases" in x.message
+        for x in jsonschema.Draft202012Validator(SCHEMA).iter_errors({"model_id": "m", "kind": "llm"})
+    ),
+)
+with tempfile.TemporaryDirectory() as td:
+    data = Path(td) / "data"
+    (data / "runs").mkdir(parents=True)
+    record(data, fleet)
+    run(data, "fleet_guard_v1_20261105", "fleet_guard_v1", {"repo": "signal-fleet"}, record="triage-fleet")
+    A = HarnessAdapter(data)
+    out = Path(td) / "site"
+    cb.build(A, out)
+    page = (out / "models" / "triage-fleet.html").read_text()
+    check(
+        "code record page: its repo and its versions, newest first, faithfulness where a replay checked it",
+        "chipi/agentic-ai-homelab" in page
+        and page.find("9a318e61") < page.find("f07efa9")
+        and "133 of 135 agreed, 2 named" in page
+        and "not checked" in page
+        and "2026-10-20 to now" in page
+        and "model-onboard" not in page,
+        page[page.find("versions") :][:600],
+    )
+    models = (out / "models.html").read_text()
+    row = rows_of(models, "triage-fleet")
+    check(
+        "code record: listed on the Models page with its latest version and versions checked, its arm counted, never 'not onboarded'",
+        'href="models/triage-fleet.html"' in models
+        and "9a318e61" in row
+        and "2 version(s)" in row
+        and "1 checked for faithfulness" in row
+        and 'href="arms.html?q=triage-fleet"' in row
+        and "not onboarded" not in row,
+        row,
+    )
+    cli = view(A, ["models", "--model", "triage-fleet"])
+    check(
+        "evh models --model: a code record's repository and versions, no onboarding",
+        "repository" in cli and "9a318e61" in cli and "133 of 135 agreed" in cli and "onboarding" not in cli,
+        cli,
+    )
+    listed = view(A, ["models"])
+    check(
+        "evh models: the code record's row says its versions, never that it was not onboarded",
+        "2 version(s), 1 checked for faithfulness" in listed,
+        listed,
+    )
+    dup = {**fleet, "versions": [*fleet["versions"], {"commit": "f07efa9"}]}
+    record(data, dup)
+    check(
+        "code record: a version listed twice is named (V18)",
+        any("version 'f07efa9' is listed more than once" in x for x in _models.problems(data)),
+    )
+
 sys.exit(summary())

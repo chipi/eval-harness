@@ -83,7 +83,7 @@ cannot measure, and that is a design finding, not an eval problem.
 ### If your system is plain code
 
 A filter, a router, a de-duplicator, a scheduler: code that decides, with no model in it. It is evaluated
-like any arm; six things are different. (The triage fleet's questions, 2026-11-05; its log is the worked case.)
+like any arm; seven things are different. (The triage fleet's questions, 2026-11-05; its log is the worked case.)
 
 - **The item holds the world the code read when it decided.** Code that reads external state (an issue
   tracker, a database, the clock) is measured on what it saw then, not what is there now. Freeze it into the
@@ -110,6 +110,10 @@ like any arm; six things are different. (The triage fleet's questions, 2026-11-0
   wrote to the decision that wrote it by the window between the cycle's previous decision and this one: a
   reopened issue need not name the fingerprint that reopened it. Measure the clock slack between the hosts
   involved before trusting a timestamp join: the fleet's host ran 1.6 s behind GitHub's for an hour.
+- **The code is a record of its own.** `data/models/<id>.yaml` with `kind: code` holds its `repo` and its
+  `versions`: each a `commit`, when it was `deployed` (`from`, `to`), and the `faithfulness` a replay measured
+  (`agreed` of `items`, the named `exceptions`). It needs no `aliases`; an arm names it with `model_record` like
+  any record, and its Models page and `evh models --model <id>` list the versions instead of an onboarding.
 
 ---
 
