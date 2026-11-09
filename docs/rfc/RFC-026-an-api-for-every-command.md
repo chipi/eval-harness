@@ -1,6 +1,6 @@
 # RFC-026: An API for every command, long ones as jobs
 
-- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 6 built (2026-11-09). Owner, 2026-11-06: "next RFC is
+- **Status**: Accepted (owner, 2026-11-08: "update rfc26 to approved"; revision 2 accepted 2026-11-09: "mark both as accepted"); building: steps 1 to 7 built (2026-11-09). Owner, 2026-11-06: "next RFC is
   for this API" (S0b); the Workbench (PRD-017) is its first user. Its four open questions decided by the owner the same
   day (below: "1 waiting, 2 [the proposed file size], 3 yes, 4 enforce"). Revision 2 (2026-11-09), after an
   independent review (Fable) and aligned with [RFC-027](RFC-027-who-acted-and-baselines-per-goal.md): 82 commands,
@@ -194,8 +194,10 @@ file. Between the files of one command a reader can see some written and some no
 `catalog` builds into the folder `catalog-serve` serves (`.build/catalog`, `build()` empties it first): as a job it
 builds beside it and swaps it in, as the server's own **Rebuild the catalog** already does, so the pages never
 disappear, and holds `catalog` so two builds never empty each other's folder. Built (step 4): the command itself
-builds beside (a folder of its own per process) and swaps, from the terminal too; the swap is two renames, so for the
-time of one system call the folder is absent (an atomic exchange needs a platform call Python does not offer).
+builds beside (a folder of its own per process) and swaps, from the terminal too. The swap is one system call on
+Linux (`renameat2`, `RENAME_EXCHANGE`) and macOS (`renamex_np`, `RENAME_SWAP`), through ctypes: two renames left the
+folder absent between them, and a page asked for in that gap was answered 404 (1 of 187 requests under the full
+suite's load, found by the self-test; owner, 2026-11-09: "atomic exchange"). Elsewhere it is still two renames.
 
 The server's own writes do not wait: a data page save whose lock a job holds is refused (`409`, kind `busy`, naming
 the job), since a request cannot wait hours for a run; its rebuild, in a thread, waits. Until the Workbench replaces
@@ -357,89 +359,90 @@ has, except a migration's `503` above, so it works the same in either (RFC-025).
 Generated from `evh --help` and `mcp_server.READ_TOOLS` / `NOT_TOOLS` on 2026-11-08, updated 2026-11-09: 29 read,
 40 jobs, 6 jobs that spend, 7 not served (`capture-scrub` runs a program it is given). RFC-027 adds `baselines`
 (read), `baseline-rollback` and `baselines-migrate` (jobs); the table is generated again from `cli.COMMANDS` at the
-build, and its test fails on a command it does not classify.
+build, and its test fails on a command it does not classify. Step 7 (built) gave every served command `--json`
+(`test_api` fails on one without it); the `jobs-*` commands of step 6 are not served.
 
 | command | served as | `--json` | why |
 | --- | --- | --- | --- |
 | `activity` | read | yes | reads only (an MCP tool) |
-| `arm-from-capture` | job | **no** | writes a config and a run |
+| `arm-from-capture` | job | yes | writes a config and a run |
 | `arm-smoke` | job, spends | yes | runs a system on a few items, may spend, and writes the model record |
 | `arms` | read | yes | reads only (an MCP tool) |
-| `bootstrap-test` | job | **no** | a statistics command; not yet a tool |
-| `capture` | job | **no** | reads a production system and writes |
-| `capture-restore` | job | **no** | reads a source and writes records and item files |
+| `bootstrap-test` | job | yes | a statistics command; not yet a tool |
+| `capture` | job | yes | reads a production system and writes |
+| `capture-restore` | job | yes | reads a source and writes records and item files |
 | `capture-scrub` | not served | **no** | runs a project's command and writes |
 | `captures` | read | yes | reads only (an MCP tool) |
-| `catalog` | job | **no** | writes the pages |
+| `catalog` | job | yes | writes the pages |
 | `catalog-serve` | not served | **no** | it is the server |
-| `cost-report` | job | **no** | a report tool; not yet a tool |
+| `cost-report` | job | yes | a report tool; not yet a tool |
 | `data-ls` | read | yes | reads only (an MCP tool) |
-| `data-migrate` | job | **no** | moves the project's data between files and its database |
+| `data-migrate` | job | yes | moves the project's data between files and its database |
 | `data-put` | job | yes | writes a setting |
 | `data-rm` | job | yes | deletes a setting or a run |
 | `data-show` | read | yes | reads only (an MCP tool) |
-| `dataset-unseal` | job | **no** | a decision: recorded with who acted (RFC-027) |
-| `dataset-card` | read | **no** | reads only (an MCP tool) |
-| `dataset-create` | job | **no** | writes |
-| `dataset-describe` | job | **no** | writes a dataset record |
-| `dataset-extend` | job | **no** | writes a dataset |
-| `dataset-from-capture` | job | **no** | writes |
+| `dataset-unseal` | job | yes | a decision: recorded with who acted (RFC-027) |
+| `dataset-card` | read | yes | reads only (an MCP tool) |
+| `dataset-create` | job | yes | writes |
+| `dataset-describe` | job | yes | writes a dataset record |
+| `dataset-extend` | job | yes | writes a dataset |
+| `dataset-from-capture` | job | yes | writes |
 | `dataset-items` | read | yes | reads only (an MCP tool) |
-| `dataset-materialize` | job | **no** | writes |
-| `dataset-migrate` | job | **no** | writes the dataset records |
+| `dataset-materialize` | job | yes | writes |
+| `dataset-migrate` | job | yes | writes the dataset records |
 | `dataset-profile` | job | yes | writes |
-| `dataset-publish` | job | **no** | writes to an outside service (a new Hub repo) |
-| `dataset-split` | job | **no** | writes |
+| `dataset-publish` | job | yes | writes to an outside service (a new Hub repo) |
+| `dataset-split` | job | yes | writes |
 | `datasets` | read | yes | reads only (an MCP tool) |
 | `deploy-sheet` | read | yes | reads only (an MCP tool) |
 | `env-check` | not served | **no** | the server's own environment |
 | `family-test` | read | yes | reads only (an MCP tool) |
-| `fieldset-propose` | job | **no** | reads a source (it can fetch from the network) and can write a field set |
-| `fingerprint-migrate` | job | **no** | rewrites the committed runs' fingerprints |
+| `fieldset-propose` | job | yes | reads a source (it can fetch from the network) and can write a field set |
+| `fingerprint-migrate` | job | yes | rewrites the committed runs' fingerprints |
 | `goals` | read | yes | reads only (an MCP tool) |
-| `holdout` | job | **no** | a statistics command; not yet a tool |
-| `import-run` | job | **no** | writes runs |
-| `importer-check` | job | **no** | reads a production system, not the project |
+| `holdout` | job | yes | a statistics command; not yet a tool |
+| `import-run` | job | yes | writes runs |
+| `importer-check` | job | yes | reads a production system, not the project |
 | `init` | not served | **no** | makes a project; the Workbench opens one |
 | `inspect` | read | yes | reads only (an MCP tool) |
-| `judge` | job, spends | **no** | calls models and spends |
-| `judge-score` | job, spends | **no** | calls models and spends |
+| `judge` | job, spends | yes | calls models and spends |
+| `judge-score` | job, spends | yes | calls models and spends |
 | `label-coverage` | read | yes | reads only (an MCP tool) |
-| `label-from-capture` | job | **no** | writes a label set |
-| `label-from-run` | job | **no** | writes a label set |
-| `label-import` | job | **no** | writes a label set |
-| `label-sheet` | job | **no** | writes a sheet |
+| `label-from-capture` | job | yes | writes a label set |
+| `label-from-run` | job | yes | writes a label set |
+| `label-import` | job | yes | writes a label set |
+| `label-sheet` | job | yes | writes a sheet |
 | `labels` | read | yes | reads only (an MCP tool) |
 | `leaderboard` | read | yes | reads only (an MCP tool) |
 | `licences` | read | yes | reads only (an MCP tool) |
 | `mcp` | not served | **no** | the agents' server |
 | `metrics` | read | yes | reads only (an MCP tool) |
-| `model-onboard` | job, spends | **no** | calls a model and writes the model record |
+| `model-onboard` | job, spends | yes | calls a model and writes the model record |
 | `models` | read | yes | reads only (an MCP tool) |
 | `overview` | read | yes | reads only (an MCP tool) |
 | `pair-test` | read | yes | reads only (an MCP tool) |
-| `pick` | job | **no** | writes the pick list |
+| `pick` | job | yes | writes the pick list |
 | `picks` | read | yes | reads only (an MCP tool) |
 | `rank-stability` | read | yes | reads only (an MCP tool) |
-| `reference-manifest` | job | **no** | writes |
-| `reference-promote` | job | **no** | writes a reference |
+| `reference-manifest` | job | yes | writes |
+| `reference-promote` | job | yes | writes a reference |
 | `references` | read | yes | reads only (an MCP tool) |
-| `rescore` | job | **no** | writes runs |
-| `round-close` | job | **no** | a decision: recorded with who acted (RFC-027) |
-| `round-open` | job | **no** | a decision: recorded with who acted (RFC-027) |
-| `round-retire` | job | **no** | a decision: recorded with who acted (RFC-027) |
+| `rescore` | job | yes | writes runs |
+| `round-close` | job | yes | a decision: recorded with who acted (RFC-027) |
+| `round-open` | job | yes | a decision: recorded with who acted (RFC-027) |
+| `round-retire` | job | yes | a decision: recorded with who acted (RFC-027) |
 | `rounds` | read | yes | reads only (an MCP tool) |
 | `run` | job, spends | yes | runs a system and may spend |
 | `run-compare` | read | yes | reads only (an MCP tool) |
-| `run-migrate` | job | **no** | rewrites the run directories |
-| `run-promote` | job | **no** | a decision: recorded with who acted (RFC-027) |
+| `run-migrate` | job | yes | rewrites the run directories |
+| `run-promote` | job | yes | a decision: recorded with who acted (RFC-027) |
 | `runs-list` | read | yes | reads only (an MCP tool) |
-| `score-preview` | job | **no** | runs the project's own scoring code |
+| `score-preview` | job | yes | runs the project's own scoring code |
 | `search` | read | yes | reads only (an MCP tool) |
 | `self-test` | not served | **no** | checks the installed package |
-| `sheet-import` | job | **no** | writes a label set or judged runs |
-| `silver-calibrate` | job | **no** | writes |
+| `sheet-import` | job | yes | writes a label set or judged runs |
+| `silver-calibrate` | job | yes | writes |
 | `skills-install` | not served | **no** | writes the agents' skills into a project |
-| `sweep` | job, spends | **no** | runs systems and may spend |
+| `sweep` | job, spends | yes | runs systems and may spend |
 | `tags` | read | yes | reads only (an MCP tool) |
-| `validate` | read | **no** | reads only (an MCP tool) |
+| `validate` | read | yes | reads only (an MCP tool) |

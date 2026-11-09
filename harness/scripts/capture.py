@@ -37,8 +37,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import sys
 
-from evaluation_harness import _importers, _store
+from evaluation_harness import _importers, _jsonout, _store
 from evaluation_harness._common import CAPTURES, dataset_id_ok, die, evh_prog, now, read_json, write_json
 from evaluation_harness.importer_check import query_of
 
@@ -80,122 +81,129 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-
-    out = CAPTURES / dataset_id_ok(args.capture)
-    sample = None
-    if args.sample_rate is not None:
-        if not 0 < args.sample_rate <= 1:
-            die("--sample-rate is a share: more than 0, at most 1", "bad-argument")
-        if args.seed is None:
-            die("--sample-rate needs --seed, so the same sample can be drawn again", "bad-argument")
-        sample = {"rate": args.sample_rate, "seed": args.seed}
-    elif args.seed is not None:
-        die("--seed goes with --sample-rate", "bad-argument")
-    if _store.exists(out / "capture.json") and not args.force:
-        die(
-            f"{out} exists: a capture is not overwritten. Name a new one, or pass --force if nothing is made from it.",
-            "would-overwrite",
-        )
-    query = query_of(args.query)
-    seen: set = set()
-    if args.since_capture:
-        end, seen, rule = earlier(args.since_capture)
-        if end:
-            query = {**query, "since": end}
-        if sample and rule and sample != rule:
+    with _jsonout.collect("capture", args.json, live=sys.stderr):
+        out = CAPTURES / dataset_id_ok(args.capture)
+        sample = None
+        if args.sample_rate is not None:
+            if not 0 < args.sample_rate <= 1:
+                die("--sample-rate is a share: more than 0, at most 1", "bad-argument")
+            if args.seed is None:
+                die("--sample-rate needs --seed, so the same sample can be drawn again", "bad-argument")
+            sample = {"rate": args.sample_rate, "seed": args.seed}
+        elif args.seed is not None:
+            die("--seed goes with --sample-rate", "bad-argument")
+        if _store.exists(out / "capture.json") and not args.force:
             die(
-                f"{args.since_capture} was captured with the sample {rule}: a continued capture keeps it",
-                "mismatch",
+                f"{out} exists: a capture is not overwritten. Name a new one, or pass --force if nothing is made from it.",
+                "would-overwrite",
             )
-        sample = sample or rule
-    n_read = 0
-    try:
-        recs, path = _importers.read(args.importer, query, {"sample": sample} if sample else None)
-        raw = []
-        for r in recs:
-            n_read += 1
-            if sample and not _importers.sampled(r.get("id") if isinstance(r, dict) else None, **sample):
-                continue
-            raw.append(r)
-    except SystemExit:
-        raise
-    except Exception as exc:  # noqa: BLE001 — the importer's own failure, named
-        die(f"--importer {args.importer}: reading failed: {type(exc).__name__}: {exc}", "failed")
-    bad = [p for r in raw for p in _importers.problems(r)]
-    if bad:
-        die(
-            f"{len(bad)} malformed record(s), nothing written; `evh importer-check` says more:\n  "
-            + "\n  ".join(bad[:10]),
-            "invalid-file",
-        )
-    norm = [_importers.normalise(r) for r in raw if r["id"] not in seen]
-    ids = [r["id"] for r in norm]
-    if len(ids) != len(set(ids)):
-        die("the importer yielded the same id twice; nothing written", "invalid-file")
-    window = _importers.window_of(query)
-    why = {r["id"]: _importers.outside(window, r["created_at"]) for r in norm}
-    late = [i for i, w in why.items() if w == "before since"] if args.late else []
-    out_of = {i: w for i, w in why.items() if w and i not in late}
-    if out_of:
-        die(
-            f"{len(out_of)} record(s) outside the window {window}, nothing written: the importer must keep to "
-            "since/until (evh importer-check tests it)"
+        query = query_of(args.query)
+        seen: set = set()
+        if args.since_capture:
+            end, seen, rule = earlier(args.since_capture)
+            if end:
+                query = {**query, "since": end}
+            if sample and rule and sample != rule:
+                die(
+                    f"{args.since_capture} was captured with the sample {rule}: a continued capture keeps it",
+                    "mismatch",
+                )
+            sample = sample or rule
+        n_read = 0
+        try:
+            recs, path = _importers.read(args.importer, query, {"sample": sample} if sample else None)
+            raw = []
+            for r in recs:
+                n_read += 1
+                if sample and not _importers.sampled(r.get("id") if isinstance(r, dict) else None, **sample):
+                    continue
+                raw.append(r)
+        except SystemExit:
+            raise
+        except Exception as exc:  # noqa: BLE001 — the importer's own failure, named
+            die(f"--importer {args.importer}: reading failed: {type(exc).__name__}: {exc}", "failed")
+        bad = [p for r in raw for p in _importers.problems(r)]
+        if bad:
+            die(
+                f"{len(bad)} malformed record(s), nothing written; `evh importer-check` says more:\n  "
+                + "\n  ".join(bad[:10]),
+                "invalid-file",
+            )
+        norm = [_importers.normalise(r) for r in raw if r["id"] not in seen]
+        ids = [r["id"] for r in norm]
+        if len(ids) != len(set(ids)):
+            die("the importer yielded the same id twice; nothing written", "invalid-file")
+        window = _importers.window_of(query)
+        why = {r["id"]: _importers.outside(window, r["created_at"]) for r in norm}
+        late = [i for i, w in why.items() if w == "before since"] if args.late else []
+        out_of = {i: w for i, w in why.items() if w and i not in late}
+        if out_of:
+            die(
+                f"{len(out_of)} record(s) outside the window {window}, nothing written: the importer must keep to "
+                "since/until (evh importer-check tests it)"
+                + (
+                    "; --late keeps the ones before since"
+                    if any(w == "before since" for w in out_of.values())
+                    else ""
+                )
+                + ":\n  "
+                + "\n  ".join(f"{i}: {w}" for i, w in list(out_of.items())[:10]),
+                "invalid-file",
+            )
+
+        if _store.exists(out):
+            _store.rmtree(out)
+        _store.mkdir(out / "records", parents=True)
+        for r in norm:
+            write_json(out / "records" / f"{r['id']}.json", r)
+        doc = {
+            "capture_id": args.capture,
+            "importer": args.importer,
+            "importer_sha256": _importers.code_sha256(path),
+            "query": query,
+            "window": window,
+            "captured_at": now(),
+            "n_records": len(norm),
+            "skipped_as_already_captured": len(raw) - len(norm),
+            **({"sample": {**sample, "read": n_read, "kept": len(raw)}} if sample else {}),
+            "continues": args.since_capture,
+            **({"late": late} if late else {}),
+            "records": [
+                {
+                    "id": r["id"],
+                    "created_at": r["created_at"],
+                    "url": (r["source"] or {}).get("url"),
+                    "sha256": _importers.record_sha256(r),
+                    "body_sha256": _importers.body_sha256(r),
+                }
+                for r in norm
+            ],
+        }
+        write_json(out / "capture.json", doc)
+        print(
+            f"{out}: {len(norm)} record(s) from {args.importer}"
             + (
-                "; --late keeps the ones before since"
-                if any(w == "before since" for w in out_of.values())
+                f" ({doc['skipped_as_already_captured']} already in {args.since_capture})"
+                if args.since_capture
                 else ""
             )
-            + ":\n  "
-            + "\n  ".join(f"{i}: {w}" for i, w in list(out_of.items())[:10]),
-            "invalid-file",
+            + (f"; {len(late)} late (older than since)" if late else "")
+            + (
+                f"; a sample of {len(raw)} from {n_read} read (rate {sample['rate']}, seed {sample['seed']})"
+                if sample
+                else ""
+            )
         )
-
-    if _store.exists(out):
-        _store.rmtree(out)
-    _store.mkdir(out / "records", parents=True)
-    for r in norm:
-        write_json(out / "records" / f"{r['id']}.json", r)
-    doc = {
-        "capture_id": args.capture,
-        "importer": args.importer,
-        "importer_sha256": _importers.code_sha256(path),
-        "query": query,
-        "window": window,
-        "captured_at": now(),
-        "n_records": len(norm),
-        "skipped_as_already_captured": len(raw) - len(norm),
-        **({"sample": {**sample, "read": n_read, "kept": len(raw)}} if sample else {}),
-        "continues": args.since_capture,
-        **({"late": late} if late else {}),
-        "records": [
-            {
-                "id": r["id"],
-                "created_at": r["created_at"],
-                "url": (r["source"] or {}).get("url"),
-                "sha256": _importers.record_sha256(r),
-                "body_sha256": _importers.body_sha256(r),
-            }
-            for r in norm
-        ],
-    }
-    write_json(out / "capture.json", doc)
-    print(
-        f"{out}: {len(norm)} record(s) from {args.importer}"
-        + (
-            f" ({doc['skipped_as_already_captured']} already in {args.since_capture})"
-            if args.since_capture
-            else ""
+        print(
+            "  commit it (and what you make from it) before any billed run: untracked data marks runs dirty"
         )
-        + (f"; {len(late)} late (older than since)" if late else "")
-        + (
-            f"; a sample of {len(raw)} from {n_read} read (rate {sample['rate']}, seed {sample['seed']})"
-            if sample
-            else ""
-        )
-    )
-    print("  commit it (and what you make from it) before any billed run: untracked data marks runs dirty")
-    return 0
+        return 0
 
 
 if __name__ == "__main__":

@@ -13,6 +13,10 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Every command the API serves answers `--json`** (RFC-026 step 7): the 43 job commands that wrote or reported only in text
+  (`dataset-create`, `catalog`, the label, reference, round and migration commands, `bootstrap-test`, `holdout`,
+  `cost-report`, ...) and `validate` and `dataset-card`; text to stderr as it goes, the envelope on stdout. A job's
+  result is its envelope.
 - **The jobs from the terminal** (RFC-026 step 6): `evh jobs-start`, `jobs-status`, `jobs-logs [--follow]`,
   `jobs-stop`, `jobs-resume`, over the same jobs as the API, with no server.
 - **What a command may spend, and a round's budget enforced** (RFC-026 step 5): `EVAL_MAX_COST_USD` caps the

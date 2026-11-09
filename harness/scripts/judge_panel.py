@@ -30,7 +30,7 @@ import yaml
 
 # The harness's own run reading, so the panel finds runs where every command does (the
 # project, EVAL_RUNS_DIR) and picks the metric the same way.
-from evaluation_harness import _outputs, _store
+from evaluation_harness import _jsonout, _outputs, _store
 from evaluation_harness._common import ROOT, RUNS, die, evh_prog
 from evaluation_harness._runs import default_metric, direction, item_rows, runs_on
 from evaluation_harness.panel_judges import ItemScore, build_judge
@@ -462,83 +462,90 @@ def main(argv: list[str]) -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
-    args = ap.parse_args(argv)
-
-    cfg = yaml.safe_load(_store.read_text(Path(args.config)))
-
-    candidates = _candidates_from(cfg)
-    promoted, promo_summary = promote_finalists(
-        candidates,
-        per_stratum_top_k=cfg["promotion"]["per_stratum_top_k"],
-        floor_fraction=cfg["promotion"]["floor_fraction"],
-        overall_cap=cfg["promotion"]["overall_cap"],
-        carte_blanche=cfg["promotion"].get("carte_blanche", []),
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    logger.info("Promoted %d finalists across %d strata", len(promoted), len(promo_summary))
+    args = ap.parse_args(argv)
+    with _jsonout.collect("judge", args.json, live=sys.stderr):
+        cfg = yaml.safe_load(_store.read_text(Path(args.config)))
 
-    primary = build_judge(cfg["judging"]["primary_judge"], use_fake=args.use_fake_judge)
-    if primary is None:
-        die("judging.primary_judge is required: name the judge that scores every finalist", "invalid-file")
-    cross = build_judge(cfg["judging"].get("cross_judge"), use_fake=args.use_fake_judge)
-    dims = cfg["judging"]["dimensions"]
-    # The config's cap, and EVAL_MAX_COST_USD (a job's max_cost_usd) when lower (RFC-026 step 5).
-    from evaluation_harness import _spend  # noqa: PLC0415
-
-    own = _spend.own_cap()
-    cost_remaining = float(cfg["judging"]["cost_cap_usd"])
-    if own is not None and own < cost_remaining:
-        cost_remaining = own
-    max_items = int(cfg["judging"]["max_items_per_finalist"])
-
-    aggregates: list[FinalistAggregate] = []
-    for finalist in promoted:
-        items = _items_of(finalist, n=max_items)
-
-        primary_scores, primary_cost, _ = judge_finalist(
-            finalist=finalist,
-            judge=primary,
-            items=items,
-            dimensions=dims,
-            cost_budget_remaining=cost_remaining,
+        candidates = _candidates_from(cfg)
+        promoted, promo_summary = promote_finalists(
+            candidates,
+            per_stratum_top_k=cfg["promotion"]["per_stratum_top_k"],
+            floor_fraction=cfg["promotion"]["floor_fraction"],
+            overall_cap=cfg["promotion"]["overall_cap"],
+            carte_blanche=cfg["promotion"].get("carte_blanche", []),
         )
-        cost_remaining -= primary_cost
+        logger.info("Promoted %d finalists across %d strata", len(promoted), len(promo_summary))
 
-        cross_scores = None
-        if cross is not None and cost_remaining > 0:
-            cross_scores, cross_cost, _ = judge_finalist(
+        primary = build_judge(cfg["judging"]["primary_judge"], use_fake=args.use_fake_judge)
+        if primary is None:
+            die(
+                "judging.primary_judge is required: name the judge that scores every finalist", "invalid-file"
+            )
+        cross = build_judge(cfg["judging"].get("cross_judge"), use_fake=args.use_fake_judge)
+        dims = cfg["judging"]["dimensions"]
+        # The config's cap, and EVAL_MAX_COST_USD (a job's max_cost_usd) when lower (RFC-026 step 5).
+        from evaluation_harness import _spend  # noqa: PLC0415
+
+        own = _spend.own_cap()
+        cost_remaining = float(cfg["judging"]["cost_cap_usd"])
+        if own is not None and own < cost_remaining:
+            cost_remaining = own
+        max_items = int(cfg["judging"]["max_items_per_finalist"])
+
+        aggregates: list[FinalistAggregate] = []
+        for finalist in promoted:
+            items = _items_of(finalist, n=max_items)
+
+            primary_scores, primary_cost, _ = judge_finalist(
                 finalist=finalist,
-                judge=cross,
+                judge=primary,
                 items=items,
                 dimensions=dims,
                 cost_budget_remaining=cost_remaining,
             )
-            cost_remaining -= cross_cost
+            cost_remaining -= primary_cost
 
-        aggregates.append(
-            aggregate_finalist(
-                finalist=finalist,
-                primary_judge_name=primary.name,
-                primary_scores=primary_scores,
-                cross_judge_name=cross.name if cross else None,
-                cross_scores=cross_scores,
-                contested_threshold=cfg["aggregation"]["contested_threshold"],
-                agreement_tolerance=cfg["aggregation"]["agreement_tolerance"],
-                dimensions=dims,
+            cross_scores = None
+            if cross is not None and cost_remaining > 0:
+                cross_scores, cross_cost, _ = judge_finalist(
+                    finalist=finalist,
+                    judge=cross,
+                    items=items,
+                    dimensions=dims,
+                    cost_budget_remaining=cost_remaining,
+                )
+                cost_remaining -= cross_cost
+
+            aggregates.append(
+                aggregate_finalist(
+                    finalist=finalist,
+                    primary_judge_name=primary.name,
+                    primary_scores=primary_scores,
+                    cross_judge_name=cross.name if cross else None,
+                    cross_scores=cross_scores,
+                    contested_threshold=cfg["aggregation"]["contested_threshold"],
+                    agreement_tolerance=cfg["aggregation"]["agreement_tolerance"],
+                    dimensions=dims,
+                )
             )
-        )
-        if cost_remaining <= 0:
-            logger.warning("Global cost cap hit after %d/%d finalists", len(aggregates), len(promoted))
-            break
+            if cost_remaining <= 0:
+                logger.warning("Global cost cap hit after %d/%d finalists", len(aggregates), len(promoted))
+                break
 
-    # The project's, as runs are: relative to the shell's directory it landed wherever evh ran.
-    output_dir = ROOT / cfg["output_root"] / cfg["tag"]
-    write_report(
-        output_dir=output_dir,
-        finalists=aggregates,
-        promotion_summary=promo_summary,
-        config=cfg,
-    )
-    return 0
+        # The project's, as runs are: relative to the shell's directory it landed wherever evh ran.
+        output_dir = ROOT / cfg["output_root"] / cfg["tag"]
+        write_report(
+            output_dir=output_dir,
+            finalists=aggregates,
+            promotion_summary=promo_summary,
+            config=cfg,
+        )
+        return 0
 
 
 if __name__ == "__main__":

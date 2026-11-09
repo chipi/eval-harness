@@ -199,18 +199,16 @@ try:
             "--hypothesis", "after the kill", "--budget-usd", "0.1")  # fmt: skip
     check("setup: round r2, a $0.10 budget", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     k = config("rk", "rk_v1", goal="tickets_summary", round="r2", sleep=1.0)
-    pk = evh("run", "--config", k, background=True)
-    rows = None
-    for _ in range(200):
+    log = proj / "killed.log"
+    with open(log, "w") as fh:
+        e = dict(env)
+        pk = subprocess.Popen([sys.executable, str(HERE / "cli.py"), "run", "--config", k], cwd=proj, env=e,
+                              stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)  # fmt: skip
+    # Killed once two items are paid and written (its progress line says so, in either store).
+    for _ in range(600):
         time.sleep(0.1)
-        found = list((proj / "data" / "runs").glob("rk_v1_*/rows.partial.jsonl"))
-        if found and len(found[0].read_text().splitlines()) >= 2:
-            rows = found[0]
+        if "[2/6]" in log.read_text():
             break
-        if _runstore.sqlite():
-            break
-    if rows is None:  # the sqlite store keeps the rows in the database: wait for the same two items by time
-        time.sleep(2.5)
     os.killpg(pk.pid, signal.SIGKILL)
     pk.wait(timeout=30)
     rv = evh("rounds", "--goal", "tickets_summary")

@@ -28,12 +28,13 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import json
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _fingerprint as fpmod
-from evaluation_harness import _store
+from evaluation_harness import _jsonout, _store
 from evaluation_harness._common import DATA, evh_prog, write_text_atomic
 
 DEPLOYMENT_PARTS = ("deployment", "settings", "runner")
@@ -113,85 +114,91 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-    data = args.data_dir.resolve()
+    with _jsonout.collect("fingerprint-migrate", args.json, live=sys.stderr):
+        data = args.data_dir.resolve()
 
-    docs: dict[Path, dict[str, Any]] = {}
-    before: Counter[str] = Counter()
-    for f in run_files(data):
-        text = _store.read_text(f, encoding="utf-8")
-        doc = json.loads(text)
-        docs[f] = doc
-        fp = doc.get("fingerprint")
-        before["no fingerprint" if not isinstance(fp, dict) else f"v{fp.get('version')}"] += 1
-        if isinstance(fp, dict) and _dump(doc) != text:
-            before["not in the harness's JSON layout (rewritten in it)"] += 1
-
-    migrated: dict[Path, dict[str, Any]] = {}
-    old_hash: dict[Path, str | None] = {}
-    for derived in (False, True):
-        by_name: dict[str, list[Path]] = {}
-        for f in migrated:
-            by_name.setdefault(f.parent.name, []).append(f)
-        for f, doc in docs.items():
+        docs: dict[Path, dict[str, Any]] = {}
+        before: Counter[str] = Counter()
+        for f in run_files(data):
+            text = _store.read_text(f, encoding="utf-8")
+            doc = json.loads(text)
+            docs[f] = doc
             fp = doc.get("fingerprint")
-            if (
-                not isinstance(fp, dict)
-                or fp.get("version") not in (4, 5)
-                or bool(doc.get("derived")) != derived
-            ):
-                continue
-            new = migrate_fingerprint(fp, doc.get("params"))
-            if fp.get("version") == 5:
-                if new != fp:
-                    old_hash[f] = fp.get("hash")
-                    migrated[f] = {**doc, "fingerprint": new}
-                continue
-            if derived:
-                sources = by_name.get((doc.get("derived") or {}).get("from", ""), [])
-                if len(sources) == 1:
-                    src = migrated[sources[0]]["fingerprint"]
-                    for part in DEPLOYMENT_PARTS:
-                        new[part] = src[part]
-                    fpmod.seal(new, whole=fp.get("hash") is not None)
-            old_hash[f] = fp.get("hash")
-            migrated[f] = {**doc, "fingerprint": new}
+            before["no fingerprint" if not isinstance(fp, dict) else f"v{fp.get('version')}"] += 1
+            if isinstance(fp, dict) and _dump(doc) != text:
+                before["not in the harness's JSON layout (rewritten in it)"] += 1
 
-    after: Counter[str] = Counter()
-    by_source: Counter[str] = Counter()
-    for f, doc in docs.items():
-        fp = (migrated.get(f) or doc).get("fingerprint")
-        after["no fingerprint" if not isinstance(fp, dict) else f"v{fp.get('version')}"] += 1
-        if f in migrated:
-            by_source[migrated[f]["fingerprint"]["deployment"]["source"]] += 1
-    if not args.dry_run:
-        for f, doc in migrated.items():
-            write_text_atomic(f, _dump(doc))
+        migrated: dict[Path, dict[str, Any]] = {}
+        old_hash: dict[Path, str | None] = {}
+        for derived in (False, True):
+            by_name: dict[str, list[Path]] = {}
+            for f in migrated:
+                by_name.setdefault(f.parent.name, []).append(f)
+            for f, doc in docs.items():
+                fp = doc.get("fingerprint")
+                if (
+                    not isinstance(fp, dict)
+                    or fp.get("version") not in (4, 5)
+                    or bool(doc.get("derived")) != derived
+                ):
+                    continue
+                new = migrate_fingerprint(fp, doc.get("params"))
+                if fp.get("version") == 5:
+                    if new != fp:
+                        old_hash[f] = fp.get("hash")
+                        migrated[f] = {**doc, "fingerprint": new}
+                    continue
+                if derived:
+                    sources = by_name.get((doc.get("derived") or {}).get("from", ""), [])
+                    if len(sources) == 1:
+                        src = migrated[sources[0]]["fingerprint"]
+                        for part in DEPLOYMENT_PARTS:
+                            new[part] = src[part]
+                        fpmod.seal(new, whole=fp.get("hash") is not None)
+                old_hash[f] = fp.get("hash")
+                migrated[f] = {**doc, "fingerprint": new}
 
-    baselines = 0
-    for b in (
-        sorted(_store.glob(data / "baselines", "*/*/*.json")) if _store.is_dir(data / "baselines") else []
-    ):
-        doc = json.loads(_store.read_text(b, encoding="utf-8"))
-        runs = [
-            f
-            for f in migrated
-            if f.parent.name == doc.get("promoted_from") and old_hash[f] == doc.get("fingerprint_hash")
-        ]
-        new_hash = migrated[runs[0]]["fingerprint"]["hash"] if len(runs) == 1 else None
-        if new_hash:
-            baselines += 1
-            if not args.dry_run:
-                write_text_atomic(b, _dump({**doc, "fingerprint_hash": new_hash}))
+        after: Counter[str] = Counter()
+        by_source: Counter[str] = Counter()
+        for f, doc in docs.items():
+            fp = (migrated.get(f) or doc).get("fingerprint")
+            after["no fingerprint" if not isinstance(fp, dict) else f"v{fp.get('version')}"] += 1
+            if f in migrated:
+                by_source[migrated[f]["fingerprint"]["deployment"]["source"]] += 1
+        if not args.dry_run:
+            for f, doc in migrated.items():
+                write_text_atomic(f, _dump(doc))
 
-    print(f"fingerprint v5 migration of {data}{' (dry run: nothing written)' if args.dry_run else ''}")
-    print("  before:", ", ".join(f"{n} {k}" for k, n in sorted(before.items())) or "no runs")
-    print("  after: ", ", ".join(f"{n} {k}" for k, n in sorted(after.items())) or "no runs")
-    print(f"  runs migrated: {len(migrated)}")
-    for src in ("record", "adapter", "params"):
-        print(f"    deployment source {src}: {by_source.get(src, 0)}")
-    print(f"  baselines whose fingerprint_hash was updated: {baselines}")
-    return 0
+        baselines = 0
+        for b in (
+            sorted(_store.glob(data / "baselines", "*/*/*.json")) if _store.is_dir(data / "baselines") else []
+        ):
+            doc = json.loads(_store.read_text(b, encoding="utf-8"))
+            runs = [
+                f
+                for f in migrated
+                if f.parent.name == doc.get("promoted_from") and old_hash[f] == doc.get("fingerprint_hash")
+            ]
+            new_hash = migrated[runs[0]]["fingerprint"]["hash"] if len(runs) == 1 else None
+            if new_hash:
+                baselines += 1
+                if not args.dry_run:
+                    write_text_atomic(b, _dump({**doc, "fingerprint_hash": new_hash}))
+
+        print(f"fingerprint v5 migration of {data}{' (dry run: nothing written)' if args.dry_run else ''}")
+        print("  before:", ", ".join(f"{n} {k}" for k, n in sorted(before.items())) or "no runs")
+        print("  after: ", ", ".join(f"{n} {k}" for k, n in sorted(after.items())) or "no runs")
+        print(f"  runs migrated: {len(migrated)}")
+        for src in ("record", "adapter", "params"):
+            print(f"    deployment source {src}: {by_source.get(src, 0)}")
+        print(f"  baselines whose fingerprint_hash was updated: {baselines}")
+        return 0
 
 
 if __name__ == "__main__":

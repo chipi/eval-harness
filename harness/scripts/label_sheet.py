@@ -27,9 +27,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
-from evaluation_harness import _common, _outputs, _store
+from evaluation_harness import _common, _jsonout, _outputs, _store
 from evaluation_harness._common import die, evh_prog, item_path, load_dataset, read_json
 from evaluation_harness._label_sets import labels_for, sets, text_of
 from evaluation_harness._runs import runs_on
@@ -111,21 +112,27 @@ def main() -> int:
         help="the allowed answers, comma-separated (e.g. file,dismiss,escalate): written into the label column's "
         "header; label-import refuses any other",
     )
-    args = ap.parse_args()
-    if _store.exists(args.out):
-        die(f"{args.out} exists: a sheet is not overwritten (you may have filled it)", "would-overwrite")
-    choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
-    from evaluation_harness import _seal  # noqa: PLC0415
-
-    _seal.refuse_if_sealed(args.dataset_id, "a label sheet")
-    header, rows, n = build(args.dataset_id, args.items, args.item, args.runs, args.propose, choices)
-    write_csv(header, rows, args.out)
-    print(f"{args.out}: {len(rows)} item(s) of {n} to label")
-    print(
-        "  fill `label` (or `yes` for the proposal; answers just as right in `also right`, separated by |), "
-        f"then: evh label-import {args.out} --dataset-id {args.dataset_id} --set <name> --by <you>"
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    return 0
+    args = ap.parse_args()
+    with _jsonout.collect("label-sheet", args.json, live=sys.stderr):
+        if _store.exists(args.out):
+            die(f"{args.out} exists: a sheet is not overwritten (you may have filled it)", "would-overwrite")
+        choices = [c.strip() for c in (args.choices or "").split(",") if c.strip()] or None
+        from evaluation_harness import _seal  # noqa: PLC0415
+
+        _seal.refuse_if_sealed(args.dataset_id, "a label sheet")
+        header, rows, n = build(args.dataset_id, args.items, args.item, args.runs, args.propose, choices)
+        write_csv(header, rows, args.out)
+        print(f"{args.out}: {len(rows)} item(s) of {n} to label")
+        print(
+            "  fill `label` (or `yes` for the proposal; answers just as right in `also right`, separated by |), "
+            f"then: evh label-import {args.out} --dataset-id {args.dataset_id} --set <name> --by <you>"
+        )
+        return 0
 
 
 def build(

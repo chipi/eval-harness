@@ -42,7 +42,7 @@ from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common, _fields, _store, _visibility  # noqa: E402
+from evaluation_harness import _common, _fields, _jsonout, _store, _visibility  # noqa: E402
 from evaluation_harness._common import ROOT, die  # noqa: E402
 from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
@@ -4947,11 +4947,32 @@ def _common_prog() -> str | None:
     return evh_prog()
 
 
+def _exchange(a: Path, b: Path) -> bool:
+    """Swap two directories in one system call, so no reader ever finds `b` absent: Linux's renameat2 with
+    RENAME_EXCHANGE, macOS's renamex_np with RENAME_SWAP (both through ctypes, the standard library). False where
+    neither exists or the call fails (an older kernel, another filesystem): the caller then renames twice."""
+    import ctypes  # noqa: PLC0415
+    import ctypes.util  # noqa: PLC0415
+    import sys as _s  # noqa: PLC0415
+
+    try:
+        libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+        if _s.platform.startswith("linux") and hasattr(libc, "renameat2"):
+            at_fdcwd, rename_exchange = -100, 2
+            return libc.renameat2(at_fdcwd, bytes(a), at_fdcwd, bytes(b), rename_exchange) == 0
+        if _s.platform == "darwin" and hasattr(libc, "renamex_np"):
+            rename_swap = 0x2
+            return libc.renamex_np(bytes(a), bytes(b), rename_swap) == 0
+    except (OSError, AttributeError, TypeError):
+        return False
+    return False
+
+
 def build_beside(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     """`build` into a folder beside `out`, then swapped in (RFC-026 step 4): a server serving `out` keeps serving the
     old pages until the new ones are whole, a failed build leaves them as they were, and two builds at once never
-    empty each other's folder (each has its own). The swap is two renames: between them, for the time of one system
-    call, `out` is absent."""
+    empty each other's folder (each has its own). The swap is one system call where the platform has one (Linux,
+    macOS), so `out` is never absent; elsewhere it is two renames, absent for the time between them."""
     import os  # noqa: PLC0415
 
     tag = f"{os.getpid()}"
@@ -4961,6 +4982,9 @@ def build_beside(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     except BaseException:
         _store.rmtree(nxt, ignore_errors=True)
         raise
+    if _store.exists(out) and _exchange(nxt, out):
+        _store.rmtree(nxt, ignore_errors=True)  # the old pages, swapped out
+        return counts
     if _store.exists(out):
         _store.replace(out, old)
     _store.replace(nxt, out)
@@ -5028,47 +5052,54 @@ def main() -> int:
         metavar="URL",
         help="--mcp: where to read how to connect an agent (default: the harness's INTEGRATION guide)",
     )
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-    for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto), ("--card", args.card)):
-        if url and not url.startswith(("https://", "http://")):
-            die(f"{flag} {url!r}: expected https://...", "bad-argument")
-    MCP = args.mcp or ""
-    CARD = args.card or ""
-    MCP_HOWTO = args.mcp_howto or MCP_HOWTO
-    if not args.api.startswith("/") or not args.api.endswith("/"):
-        die(
-            f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/",
-            "bad-argument",
-        )
-    API = args.api
-    BRAND = args.brand
-    if args.head:
-        if not _store.is_file(args.head):
-            die(f"--head {args.head}: no such file", "not-found")
-        HEAD = _store.read_text(args.head, encoding="utf-8").strip() + "\n"
-    if args.repo:
-        if not args.repo.startswith(("https://", "http://")):
+    with _jsonout.collect("catalog", args.json, live=sys.stderr):
+        for flag, url in (("--mcp", args.mcp), ("--mcp-howto", args.mcp_howto), ("--card", args.card)):
+            if url and not url.startswith(("https://", "http://")):
+                die(f"{flag} {url!r}: expected https://...", "bad-argument")
+        MCP = args.mcp or ""
+        CARD = args.card or ""
+        MCP_HOWTO = args.mcp_howto or MCP_HOWTO
+        if not args.api.startswith("/") or not args.api.endswith("/"):
             die(
-                f"--repo {args.repo!r}: expected https://..., where the project's files can be read",
+                f"--api {args.api!r}: expected a path that starts and ends with /, e.g. /catalog/api/",
                 "bad-argument",
             )
-        REPO = args.repo if args.repo.endswith("/") else args.repo + "/"
-    if args.about:
-        if not _store.is_file(args.about):
-            die(f"--about {args.about}: no such file", "not-found")
-        ABOUT = _store.read_text(args.about, encoding="utf-8").strip()
-    sections = []
-    for spec in args.link:
-        label, _, url = spec.partition("=")
-        if not label or not (url == "." or url.startswith(("https://", "http://"))):
-            die(f"--link {spec!r}: expected LABEL=https://... or LABEL=. for the catalog", "bad-argument")
-        sections.append((label, url))
-    if sections and not any(u == "." for _, u in sections):
-        sections.insert(0, ("Catalog", "."))
-    counts = build_beside(load_catalog_adapter(args.adapter), args.out, tuple(sections))
-    print(f"catalog: {args.out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
-    print("inspect: evh catalog-serve, then open the address it prints")
-    return 0
+        API = args.api
+        BRAND = args.brand
+        if args.head:
+            if not _store.is_file(args.head):
+                die(f"--head {args.head}: no such file", "not-found")
+            HEAD = _store.read_text(args.head, encoding="utf-8").strip() + "\n"
+        if args.repo:
+            if not args.repo.startswith(("https://", "http://")):
+                die(
+                    f"--repo {args.repo!r}: expected https://..., where the project's files can be read",
+                    "bad-argument",
+                )
+            REPO = args.repo if args.repo.endswith("/") else args.repo + "/"
+        if args.about:
+            if not _store.is_file(args.about):
+                die(f"--about {args.about}: no such file", "not-found")
+            ABOUT = _store.read_text(args.about, encoding="utf-8").strip()
+        sections = []
+        for spec in args.link:
+            label, _, url = spec.partition("=")
+            if not label or not (url == "." or url.startswith(("https://", "http://"))):
+                die(f"--link {spec!r}: expected LABEL=https://... or LABEL=. for the catalog", "bad-argument")
+            sections.append((label, url))
+        if sections and not any(u == "." for _, u in sections):
+            sections.insert(0, ("Catalog", "."))
+        counts = build_beside(load_catalog_adapter(args.adapter), args.out, tuple(sections))
+        print(f"catalog: {args.out} — " + ", ".join(f"{v} {k}" for k, v in counts.items()))
+        _jsonout.values({"out": str(args.out), "counts": counts})
+        print("inspect: evh catalog-serve, then open the address it prints")
+        return 0
 
 
 if __name__ == "__main__":

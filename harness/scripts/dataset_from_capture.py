@@ -29,8 +29,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import hashlib
+import sys
 
-from evaluation_harness import _fields, _importers, _store
+from evaluation_harness import _fields, _importers, _jsonout, _store
 from evaluation_harness._common import (
     CAPTURES,
     DATASETS,
@@ -161,120 +162,127 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
+    with _jsonout.collect("dataset-from-capture", args.json, live=sys.stderr):
+        out = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
+        if _store.exists(out) and not args.force:
+            die(
+                f"{out} already exists: a dataset is frozen. Make a new version (e.g. _v2), or --force if nothing cites it.",
+                "would-overwrite",
+            )
+        tags = {}
+        for t in args.tag:
+            k, sep, v = t.partition("=")
+            if not sep or not k.strip():
+                die(f"--tag {t!r}: KEY=VALUE", "bad-argument")
+            tags[k.strip()] = v.strip()
+        fieldset = _fieldset(args.fieldset)
+        if args.field and not fieldset:
+            die("--field needs --fieldset: a field set declares what an item may carry", "bad-argument")
+        doc, recs = load_capture(args.capture)
+        kept = select(recs, args)
+        if not kept and not args.from_:
+            die("no record was kept: nothing to freeze", "not-enough")
 
-    out = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
-    if _store.exists(out) and not args.force:
-        die(
-            f"{out} already exists: a dataset is frozen. Make a new version (e.g. _v2), or --force if nothing cites it.",
-            "would-overwrite",
-        )
-    tags = {}
-    for t in args.tag:
-        k, sep, v = t.partition("=")
-        if not sep or not k.strip():
-            die(f"--tag {t!r}: KEY=VALUE", "bad-argument")
-        tags[k.strip()] = v.strip()
-    fieldset = _fieldset(args.fieldset)
-    if args.field and not fieldset:
-        die("--field needs --fieldset: a field set declares what an item may carry", "bad-argument")
-    doc, recs = load_capture(args.capture)
-    kept = select(recs, args)
-    if not kept and not args.from_:
-        die("no record was kept: nothing to freeze", "not-enough")
-
-    src = SOURCES / args.dataset_id
-    if _store.exists(src):
-        _store.rmtree(src)
-    _store.mkdir(src, parents=True)
-    items, bad = [], []
-    if args.from_:
-        prev = load_dataset(args.from_)
-        prev_src = _Path(prev.get("source_dir") or SOURCES)
-        if not prev_src.is_absolute():
-            prev_src = ROOT / prev_src
-        for it in prev.get("items") or []:
-            p = prev_src / it.get("source_path", it["item_id"])
-            if not _store.is_file(p):
-                die(
-                    f"--from {args.from_}: no source file {p} for {it['item_id']}; fetch or materialize it first",
-                    "not-materialized",
+        src = SOURCES / args.dataset_id
+        if _store.exists(src):
+            _store.rmtree(src)
+        _store.mkdir(src, parents=True)
+        items, bad = [], []
+        if args.from_:
+            prev = load_dataset(args.from_)
+            prev_src = _Path(prev.get("source_dir") or SOURCES)
+            if not prev_src.is_absolute():
+                prev_src = ROOT / prev_src
+            for it in prev.get("items") or []:
+                p = prev_src / it.get("source_path", it["item_id"])
+                if not _store.is_file(p):
+                    die(
+                        f"--from {args.from_}: no source file {p} for {it['item_id']}; fetch or materialize it first",
+                        "not-materialized",
+                    )
+                _store.copy_file(p, src / it["source_path"])
+                items.append(dict(it))
+        # A field set keeps the fields it declares; --field narrows that to the ones named.
+        keep_fields = list(args.field) or (list(_fields.declared(fieldset)) if fieldset else [])
+        # A record in this capture replaces the earlier version's item of the same id: the capture is what
+        # the item is now (a corrected body is a change, counted as one), and the earlier items it does not
+        # hold stay as they were.
+        at = {it["item_id"]: i for i, it in enumerate(items)}
+        seen: set = set()
+        for r in kept:
+            if r["id"] in seen:
+                continue
+            seen.add(r["id"])
+            body = r["body"] if r.get("body") is not None else r["fields"]
+            name = f"{r['id']}.{'txt' if isinstance(body, str) else 'json'}"
+            if r["id"] in at:
+                old = items[at[r["id"]]].get("source_path")
+                if old and old != name and _store.is_file(src / old):
+                    _store.unlink(src / old)
+            _store.write_bytes(src / name, _importers.canonical(body))
+            item = {"item_id": r["id"], "source_path": name, "source_sha256": sha256(src / name)}
+            if keep_fields:
+                row = {f: dig(r.get("fields") or {}, f) for f in keep_fields}
+                vals, errs = _fields.values_from(
+                    fieldset, {k: str(v) for k, v in row.items() if v is not None}
                 )
-            _store.copy_file(p, src / it["source_path"])
-            items.append(dict(it))
-    # A field set keeps the fields it declares; --field narrows that to the ones named.
-    keep_fields = list(args.field) or (list(_fields.declared(fieldset)) if fieldset else [])
-    # A record in this capture replaces the earlier version's item of the same id: the capture is what
-    # the item is now (a corrected body is a change, counted as one), and the earlier items it does not
-    # hold stay as they were.
-    at = {it["item_id"]: i for i, it in enumerate(items)}
-    seen: set = set()
-    for r in kept:
-        if r["id"] in seen:
-            continue
-        seen.add(r["id"])
-        body = r["body"] if r.get("body") is not None else r["fields"]
-        name = f"{r['id']}.{'txt' if isinstance(body, str) else 'json'}"
-        if r["id"] in at:
-            old = items[at[r["id"]]].get("source_path")
-            if old and old != name and _store.is_file(src / old):
-                _store.unlink(src / old)
-        _store.write_bytes(src / name, _importers.canonical(body))
-        item = {"item_id": r["id"], "source_path": name, "source_sha256": sha256(src / name)}
-        if keep_fields:
-            row = {f: dig(r.get("fields") or {}, f) for f in keep_fields}
-            vals, errs = _fields.values_from(fieldset, {k: str(v) for k, v in row.items() if v is not None})
-            bad += [f"{r['id']}: {e}" for e in errs]
-            if vals:
-                item["fields"] = vals
-        if r["id"] in at:
-            items[at[r["id"]]] = item
-        else:
-            at[r["id"]] = len(items)
-            items.append(item)
-    if bad:
-        die(f"{len(bad)} field problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
-    lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
-    made_from = {
-        "capture": args.capture,
-        "capture_sha256": hashlib.sha256(
-            _store.read_bytes(CAPTURES / args.capture / "capture.json")
-        ).hexdigest(),
-        "query": doc.get("query") or {},
-        "where": list(args.where),
-        "one_per": args.one_per,
-        "dedup": args.dedup,
-        "records": len(recs),
-        "kept": len(kept),
-    }
-    previous = read_json(out) if _store.exists(out) else {}
-    _write(
-        out,
-        args.dataset_id,
-        items,
-        previous,
-        fieldset,
-        args.description or f"{len(kept)} record(s) from capture {args.capture}",
-        _relative_source_dir(src),
-        lineage,
-        {
-            "made_from": made_from,
-            **({"tags": tags} if tags else {}),
-            **({"text": "hidden"} if args.hide_text else {}),
-        },
-    )
-    print(
-        f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s); {len(kept)} of {len(recs)} records kept)"
-    )
-    _say_lineage(lineage)
-    print(
-        "Next: "
-        + how(
-            f"evh dataset-materialize --dataset-id {args.dataset_id}",
-            f"make dataset-materialize DATASET_ID={args.dataset_id}",
+                bad += [f"{r['id']}: {e}" for e in errs]
+                if vals:
+                    item["fields"] = vals
+            if r["id"] in at:
+                items[at[r["id"]]] = item
+            else:
+                at[r["id"]] = len(items)
+                items.append(item)
+        if bad:
+            die(f"{len(bad)} field problem(s)\n  " + "\n  ".join(bad[:15]), "invalid-file")
+        lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
+        made_from = {
+            "capture": args.capture,
+            "capture_sha256": hashlib.sha256(
+                _store.read_bytes(CAPTURES / args.capture / "capture.json")
+            ).hexdigest(),
+            "query": doc.get("query") or {},
+            "where": list(args.where),
+            "one_per": args.one_per,
+            "dedup": args.dedup,
+            "records": len(recs),
+            "kept": len(kept),
+        }
+        previous = read_json(out) if _store.exists(out) else {}
+        _write(
+            out,
+            args.dataset_id,
+            items,
+            previous,
+            fieldset,
+            args.description or f"{len(kept)} record(s) from capture {args.capture}",
+            _relative_source_dir(src),
+            lineage,
+            {
+                "made_from": made_from,
+                **({"tags": tags} if tags else {}),
+                **({"text": "hidden"} if args.hide_text else {}),
+            },
         )
-    )
-    return 0
+        print(
+            f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s); {len(kept)} of {len(recs)} records kept)"
+        )
+        _say_lineage(lineage)
+        print(
+            "Next: "
+            + how(
+                f"evh dataset-materialize --dataset-id {args.dataset_id}",
+                f"make dataset-materialize DATASET_ID={args.dataset_id}",
+            )
+        )
+        return 0
 
 
 if __name__ == "__main__":

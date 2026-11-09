@@ -39,7 +39,7 @@ import textwrap
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _outputs, _runs, _store
+from evaluation_harness import _jsonout, _outputs, _runs, _store
 from evaluation_harness._adapter import load_recorded_adapter, score_wants_source
 from evaluation_harness._common import (
     DATA,
@@ -585,78 +585,88 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-    if args.labels:
-        if args.reference_id or args.round_id:
-            die("--labels is its own target: not with --reference-id or --round", "bad-argument")
-        if not args.dataset_id:
-            die("--labels needs --dataset-id", "bad-argument")
-        args.reference_id = labels_reference(args.labels, args.dataset_id)
-        if args.out is None:
-            args.out = DATA / f"runs-labels-{args.dataset_id}-{args.reference_id.rsplit('/', 1)[1]}"
-    elif args.reference_id and not _store.is_dir(REFERENCES / args.reference_id):
-        die(f"no reference set at data/references/{args.reference_id}", "not-found")
-    rnd = None
-    if args.round_id:
-        if not args.goal:
-            die("--round needs --goal", "bad-argument")
-        if len(args.why.split()) < 3:
-            die("--round needs --why, a sentence: what changed in the scoring, and why?", "bad-argument")
-        from evaluation_harness import _rounds  # noqa: PLC0415
+    with _jsonout.collect("rescore", args.json, live=sys.stderr):
+        if args.labels:
+            if args.reference_id or args.round_id:
+                die("--labels is its own target: not with --reference-id or --round", "bad-argument")
+            if not args.dataset_id:
+                die("--labels needs --dataset-id", "bad-argument")
+            args.reference_id = labels_reference(args.labels, args.dataset_id)
+            if args.out is None:
+                args.out = DATA / f"runs-labels-{args.dataset_id}-{args.reference_id.rsplit('/', 1)[1]}"
+        elif args.reference_id and not _store.is_dir(REFERENCES / args.reference_id):
+            die(f"no reference set at data/references/{args.reference_id}", "not-found")
+        rnd = None
+        if args.round_id:
+            if not args.goal:
+                die("--round needs --goal", "bad-argument")
+            if len(args.why.split()) < 3:
+                die("--round needs --why, a sentence: what changed in the scoring, and why?", "bad-argument")
+            from evaluation_harness import _rounds  # noqa: PLC0415
 
-        rnd = _rounds.find(args.goal, args.round_id)
-        if rnd is None:
-            die(f"no round {args.round_id} of {args.goal}", "not-found")
-        args.dataset_id = rnd["dataset_id"]
-        todo = measured_runs(args.dataset_id, set(_rounds.arms_of(rnd)))
-    elif not args.dataset_id:
-        die("--dataset-id, or --goal with --round", "bad-argument")
-    elif args.out is None:
-        todo = [
-            (d, m)
-            for d, m in measured_runs(args.dataset_id)
-            if not args.match or args.match in m["config_id"]
-        ]
-    else:
-        todo = runs_on(args.dataset_id, match=args.match)
-    if not todo:
-        die(
-            f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""),
-            "not-found",
+            rnd = _rounds.find(args.goal, args.round_id)
+            if rnd is None:
+                die(f"no round {args.round_id} of {args.goal}", "not-found")
+            args.dataset_id = rnd["dataset_id"]
+            todo = measured_runs(args.dataset_id, set(_rounds.arms_of(rnd)))
+        elif not args.dataset_id:
+            die("--dataset-id, or --goal with --round", "bad-argument")
+        elif args.out is None:
+            todo = [
+                (d, m)
+                for d, m in measured_runs(args.dataset_id)
+                if not args.match or args.match in m["config_id"]
+            ]
+        else:
+            todo = runs_on(args.dataset_id, match=args.match)
+        if not todo:
+            die(
+                f"no runs on {args.dataset_id!r}" + (f" matching {args.match!r}" if args.match else ""),
+                "not-found",
+            )
+        # Refused before anything is written, whatever the runs record (rescore_one checks each run again).
+        if args.out and any(d.parent.resolve() == args.out.resolve() for d, _m in todo):
+            die(
+                f"--out {args.out} is where the runs being rescored are read from; a rescore writes "
+                "new records beside them, so give it another directory (or none: the tool designates one)",
+                "bad-argument",
+            )
+        print(f"rescoring {len(todo)} run(s)" + (f" -> {args.out}" if args.out else ""))
+        if args.out:
+            _store.mkdir(args.out, parents=True, exist_ok=True)
+        done = rescore_runs(todo, out=args.out, reference_id=args.reference_id)
+        dirs = sorted(
+            {
+                str(d.parent.relative_to(DATA)) if d.parent.is_relative_to(DATA) else str(d.parent)
+                for d, _ in done
+            }
         )
-    # Refused before anything is written, whatever the runs record (rescore_one checks each run again).
-    if args.out and any(d.parent.resolve() == args.out.resolve() for d, _m in todo):
-        die(
-            f"--out {args.out} is where the runs being rescored are read from; a rescore writes "
-            "new records beside them, so give it another directory (or none: the tool designates one)",
-            "bad-argument",
-        )
-    print(f"rescoring {len(todo)} run(s)" + (f" -> {args.out}" if args.out else ""))
-    if args.out:
-        _store.mkdir(args.out, parents=True, exist_ok=True)
-    done = rescore_runs(todo, out=args.out, reference_id=args.reference_id)
-    dirs = sorted(
-        {str(d.parent.relative_to(DATA)) if d.parent.is_relative_to(DATA) else str(d.parent) for d, _ in done}
-    )
-    print(f"\n{len(done)} run(s) rescored into {', '.join(dirs)}")
-    if rnd is not None and done:
-        from evaluation_harness import _rounds  # noqa: PLC0415
+        print(f"\n{len(done)} run(s) rescored into {', '.join(dirs)}")
+        _jsonout.values({"rescored": [str(d) for d, _ in done], "into": dirs})
+        if rnd is not None and done:
+            from evaluation_harness import _rounds  # noqa: PLC0415
 
-        sha = (done[0][1].get("derived") or {}).get("with", {}).get("sha256", "")
-        rnd.setdefault("scoring", []).append(
-            {"at": now(), "scorer": sha[:12], "why": args.why, "written": dirs, "runs": len(done)}
+            sha = (done[0][1].get("derived") or {}).get("with", {}).get("sha256", "")
+            rnd.setdefault("scoring", []).append(
+                {"at": now(), "scorer": sha[:12], "why": args.why, "written": dirs, "runs": len(done)}
+            )
+            _rounds.save(rnd)
+            print(f"  round {rnd['round_id']} of {rnd['goal']} records the scoring: {args.why}")
+        for line in cut_off_lines(todo, done):
+            print(line)
+        next_cmd = f"evh goals --goal {rnd['goal']}" if rnd else "evh goals"
+        src_ref = {d.name: _reference_of(m) for d, m in todo}
+        print(
+            closing_line([(src_ref.get(d.name), _reference_of(m)) for d, m in done])
+            + how(next_cmd, "make catalog")
         )
-        _rounds.save(rnd)
-        print(f"  round {rnd['round_id']} of {rnd['goal']} records the scoring: {args.why}")
-    for line in cut_off_lines(todo, done):
-        print(line)
-    next_cmd = f"evh goals --goal {rnd['goal']}" if rnd else "evh goals"
-    src_ref = {d.name: _reference_of(m) for d, m in todo}
-    print(
-        closing_line([(src_ref.get(d.name), _reference_of(m)) for d, m in done])
-        + how(next_cmd, "make catalog")
-    )
-    return 0
+        return 0
 
 
 def cut_off_lines(todo: list[tuple[Path, dict]], done: list[tuple[Path, dict]]) -> list[str]:

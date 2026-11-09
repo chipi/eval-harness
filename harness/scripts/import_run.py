@@ -45,9 +45,10 @@ import argparse
 import hashlib
 import json
 import math
+import sys
 from pathlib import Path
 
-from evaluation_harness import _outputs, _store
+from evaluation_harness import _jsonout, _outputs, _store
 from evaluation_harness._common import (
     DATA,
     DATASETS,
@@ -121,140 +122,151 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
+    with _jsonout.collect("import-run", args.json, live=sys.stderr):
+        ds_file = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
+        if not _store.is_file(ds_file):
+            die(
+                f"dataset {args.dataset_id} is not frozen: {ds_file} does not exist. "
+                f"Freeze the items first (evh dataset-create).",
+                "not-found",
+            )
+        dataset = read_json(ds_file)
+        known = {it["item_id"] for it in dataset["items"]}
 
-    ds_file = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
-    if not _store.is_file(ds_file):
-        die(
-            f"dataset {args.dataset_id} is not frozen: {ds_file} does not exist. "
-            f"Freeze the items first (evh dataset-create).",
-            "not-found",
+        rows = _rows(args.scores)
+        seen, metrics = set(), set()
+        for row in rows:
+            iid = row["item_id"]
+            if iid in seen:
+                die(f"item {iid!r} is scored twice in {args.scores}", "invalid-file")
+            if iid not in known:
+                die(f"item {iid!r} is not in dataset {args.dataset_id}", "not-found")
+            seen.add(iid)
+            for k, v in row.items():
+                if k == "item_id" or k.startswith("_"):
+                    continue
+                if isinstance(v, bool) or not isinstance(v, (int, float)) or math.isnan(v):
+                    die(f"item {iid!r}: {k}={v!r} is not a number", "invalid-file")
+                metrics.add(k)
+        if args.primary_metric not in metrics:
+            die(
+                f"--primary-metric {args.primary_metric!r} is not among the scored metrics: {sorted(metrics)}",
+                "bad-argument",
+            )
+        missing = sorted(known - seen)
+        if missing and not args.allow_subset:
+            die(
+                f"{len(missing)} of {len(known)} items have no scores (first: {missing[0]}). "
+                f"Pass --allow-subset to import anyway; the coverage is recorded on the run.",
+                "not-enough",
+            )
+
+        kinds = {}
+        for spec in args.metric_kind:
+            k, _, v = spec.partition("=")
+            if v not in ("quality", "descriptive", "cost", "speed"):
+                die(
+                    f"--metric-kind {spec!r}: kind must be quality, descriptive, cost or speed",
+                    "bad-argument",
+                )
+            kinds[k] = v
+
+        scores = {}
+        for m in sorted(metrics):
+            vals = [r[m] for r in rows if m in r]
+            scores[m] = round(sum(vals) / len(vals), 6)
+
+        run_id = args.run_id or f"{args.config_id}_{now().replace('-', '').replace(':', '')}"
+        run_dir = RUNS / run_id
+        if _store.exists(run_dir):
+            die(f"{run_dir} already exists", "would-overwrite")
+
+        scorer_sha256 = None
+        if args.scorer_file:
+            from evaluation_harness._codeid import file_sha256  # noqa: PLC0415
+
+            parts = []
+            for f in args.scorer_file:
+                h = file_sha256(f)
+                if h is None:
+                    die(f"cannot read --scorer-file {f}", "not-found")
+                parts.append(h)
+            # One file: its own hash. Several: one hash over theirs, in the order given.
+            scorer_sha256 = (
+                parts[0] if len(parts) == 1 else hashlib.sha256("\n".join(parts).encode()).hexdigest()
+            )
+        imported = {
+            "source": args.source,
+            "scorer_id": args.scorer_id,
+            "scorer_sha256": scorer_sha256,
+            "scores_file": args.scores.name,
+            # The exact bytes imported: a name can be reused, a hash cannot.
+            "scores_sha256": sha256(args.scores),
+            "items_scored": len(seen),
+            "items_in_dataset": len(known),
+        }
+        params = {"imported": True, "source": args.source}
+        fingerprint = build_fingerprint(
+            root=ROOT,
+            data_dir=DATA,
+            dataset=dataset,
+            reference_id=args.reference_id,
+            reference_tier=args.reference_tier,
+            config_id=args.config_id,
+            params=params,
+            adapter_id=f"imported:{args.scorer_id}",
+            adapter_path=None,
+            # The scoring code is the instrument: inside the hash, so two imports scored by different
+            # versions of it are not "the same conditions". `imported` (added below) stays outside:
+            # its scores_sha256 is the result, unique to every run.
+            adapter_sha256=scorer_sha256,
         )
-    dataset = read_json(ds_file)
-    known = {it["item_id"] for it in dataset["items"]}
+        fingerprint["imported"] = imported
 
-    rows = _rows(args.scores)
-    seen, metrics = set(), set()
-    for row in rows:
-        iid = row["item_id"]
-        if iid in seen:
-            die(f"item {iid!r} is scored twice in {args.scores}", "invalid-file")
-        if iid not in known:
-            die(f"item {iid!r} is not in dataset {args.dataset_id}", "not-found")
-        seen.add(iid)
-        for k, v in row.items():
-            if k == "item_id" or k.startswith("_"):
-                continue
-            if isinstance(v, bool) or not isinstance(v, (int, float)) or math.isnan(v):
-                die(f"item {iid!r}: {k}={v!r} is not a number", "invalid-file")
-            metrics.add(k)
-    if args.primary_metric not in metrics:
-        die(
-            f"--primary-metric {args.primary_metric!r} is not among the scored metrics: {sorted(metrics)}",
-            "bad-argument",
+        _store.mkdir(run_dir, parents=True)
+        write_json(
+            run_dir / "run.json",
+            {
+                "config_id": args.config_id,
+                "dataset_id": args.dataset_id,
+                "run_id": run_id,
+                "started_at": now(),
+                "imported": True,
+            },
         )
-    missing = sorted(known - seen)
-    if missing and not args.allow_subset:
-        die(
-            f"{len(missing)} of {len(known)} items have no scores (first: {missing[0]}). "
-            f"Pass --allow-subset to import anyway; the coverage is recorded on the run.",
-            "not-enough",
+        _outputs.write_rows(run_dir, rows)
+        metrics_doc = run_record(
+            run_id=run_id,
+            dataset_id=args.dataset_id,
+            config_id=args.config_id,
+            build={"ref": args.build_ref, "dirty": None, "source": "import-run --build-ref"},
+            scores=scores,
+            n_items=len(rows),
+            params=params,
+            adapter=f"imported:{args.scorer_id}",
+            metric_kinds=kinds,
+            # --asc is the importer's way of saying what an adapter says with METRIC_DIRECTIONS.
+            metric_directions={args.primary_metric: "lower"} if args.asc else None,
+            primary_metric=args.primary_metric,
+            fingerprint=fingerprint,
+            imported=imported,
+            reference_tier=args.reference_tier or None,
         )
-
-    kinds = {}
-    for spec in args.metric_kind:
-        k, _, v = spec.partition("=")
-        if v not in ("quality", "descriptive", "cost", "speed"):
-            die(f"--metric-kind {spec!r}: kind must be quality, descriptive, cost or speed", "bad-argument")
-        kinds[k] = v
-
-    scores = {}
-    for m in sorted(metrics):
-        vals = [r[m] for r in rows if m in r]
-        scores[m] = round(sum(vals) / len(vals), 6)
-
-    run_id = args.run_id or f"{args.config_id}_{now().replace('-', '').replace(':', '')}"
-    run_dir = RUNS / run_id
-    if _store.exists(run_dir):
-        die(f"{run_dir} already exists", "would-overwrite")
-
-    scorer_sha256 = None
-    if args.scorer_file:
-        from evaluation_harness._codeid import file_sha256  # noqa: PLC0415
-
-        parts = []
-        for f in args.scorer_file:
-            h = file_sha256(f)
-            if h is None:
-                die(f"cannot read --scorer-file {f}", "not-found")
-            parts.append(h)
-        # One file: its own hash. Several: one hash over theirs, in the order given.
-        scorer_sha256 = parts[0] if len(parts) == 1 else hashlib.sha256("\n".join(parts).encode()).hexdigest()
-    imported = {
-        "source": args.source,
-        "scorer_id": args.scorer_id,
-        "scorer_sha256": scorer_sha256,
-        "scores_file": args.scores.name,
-        # The exact bytes imported: a name can be reused, a hash cannot.
-        "scores_sha256": sha256(args.scores),
-        "items_scored": len(seen),
-        "items_in_dataset": len(known),
-    }
-    params = {"imported": True, "source": args.source}
-    fingerprint = build_fingerprint(
-        root=ROOT,
-        data_dir=DATA,
-        dataset=dataset,
-        reference_id=args.reference_id,
-        reference_tier=args.reference_tier,
-        config_id=args.config_id,
-        params=params,
-        adapter_id=f"imported:{args.scorer_id}",
-        adapter_path=None,
-        # The scoring code is the instrument: inside the hash, so two imports scored by different
-        # versions of it are not "the same conditions". `imported` (added below) stays outside:
-        # its scores_sha256 is the result, unique to every run.
-        adapter_sha256=scorer_sha256,
-    )
-    fingerprint["imported"] = imported
-
-    _store.mkdir(run_dir, parents=True)
-    write_json(
-        run_dir / "run.json",
-        {
-            "config_id": args.config_id,
-            "dataset_id": args.dataset_id,
-            "run_id": run_id,
-            "started_at": now(),
-            "imported": True,
-        },
-    )
-    _outputs.write_rows(run_dir, rows)
-    metrics_doc = run_record(
-        run_id=run_id,
-        dataset_id=args.dataset_id,
-        config_id=args.config_id,
-        build={"ref": args.build_ref, "dirty": None, "source": "import-run --build-ref"},
-        scores=scores,
-        n_items=len(rows),
-        params=params,
-        adapter=f"imported:{args.scorer_id}",
-        metric_kinds=kinds,
-        # --asc is the importer's way of saying what an adapter says with METRIC_DIRECTIONS.
-        metric_directions={args.primary_metric: "lower"} if args.asc else None,
-        primary_metric=args.primary_metric,
-        fingerprint=fingerprint,
-        imported=imported,
-        reference_tier=args.reference_tier or None,
-    )
-    write_json(run_dir / "metrics.json", metrics_doc)
-    cover = f"{len(seen)}/{len(known)} items" + (" (subset)" if missing else "")
-    print(
-        f"imported {run_id}: {cover}, {len(metrics)} metric(s), "
-        f"{args.primary_metric}={scores[args.primary_metric]}"
-    )
-    print(f"  {run_dir}")
-    return 0
+        write_json(run_dir / "metrics.json", metrics_doc)
+        cover = f"{len(seen)}/{len(known)} items" + (" (subset)" if missing else "")
+        print(
+            f"imported {run_id}: {cover}, {len(metrics)} metric(s), "
+            f"{args.primary_metric}={scores[args.primary_metric]}"
+        )
+        print(f"  {run_dir}")
+        _jsonout.values({"run_id": run_id, "dir": str(run_dir), "items": len(seen), "scores": scores})
+        return 0
 
 
 if __name__ == "__main__":

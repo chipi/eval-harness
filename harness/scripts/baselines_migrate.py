@@ -24,10 +24,11 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import sys
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _baselines, _common, _store
+from evaluation_harness import _baselines, _common, _jsonout, _store
 from evaluation_harness._common import evh_prog, write_json
 from evaluation_harness._common import read_json as _read_json
 
@@ -123,26 +124,32 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-    changes = plan()
-    if not changes:
-        print("0 changed: already in this format")
+    with _jsonout.collect("baselines-migrate", args.json, live=sys.stderr):
+        changes = plan()
+        if not changes:
+            print("0 changed: already in this format")
+            return 0
+        for what, _f, _new in changes:
+            print(("would: " if args.dry_run else "") + what)
+        if args.dry_run:
+            print(f"{len(changes)} change(s); nothing written (--dry-run)")
+            return 0
+        for _what, f, new in changes:
+            if new is None:
+                _store.unlink(f)
+            elif isinstance(new, str):
+                _store.write_text(f, new, encoding="utf-8")
+            else:
+                _store.mkdir(f.parent, parents=True, exist_ok=True)
+                write_json(f, new)
+        print(f"{len(changes)} change(s) written")
         return 0
-    for what, _f, _new in changes:
-        print(("would: " if args.dry_run else "") + what)
-    if args.dry_run:
-        print(f"{len(changes)} change(s); nothing written (--dry-run)")
-        return 0
-    for _what, f, new in changes:
-        if new is None:
-            _store.unlink(f)
-        elif isinstance(new, str):
-            _store.write_text(f, new, encoding="utf-8")
-        else:
-            _store.mkdir(f.parent, parents=True, exist_ok=True)
-            write_json(f, new)
-    print(f"{len(changes)} change(s) written")
-    return 0
 
 
 if __name__ == "__main__":

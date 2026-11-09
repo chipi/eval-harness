@@ -19,8 +19,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import sys
 
-from evaluation_harness import _common, _store
+from evaluation_harness import _common, _jsonout, _store
 from evaluation_harness._common import die, now
 from evaluation_harness._label_sets import source_line
 from evaluation_harness._references import write_manifest
@@ -59,36 +60,44 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap, required=True, help="who promotes (recorded in the manifest)")
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-    if len(args.reason.split()) < 3:
-        die(
-            'REFUSED: --reason must be a sentence, not a word. It answers "why is this the yardstick?" later.',
-            "bad-argument",
+    with _jsonout.collect("reference-manifest", args.json, live=sys.stderr):
+        if len(args.reason.split()) < 3:
+            die(
+                'REFUSED: --reason must be a sentence, not a word. It answers "why is this the yardstick?" later.',
+                "bad-argument",
+            )
+        tier, _, name = args.reference_id.partition("/")
+        if tier not in ("gold", "silver") or not name:
+            die(
+                f"--reference-id {args.reference_id!r}: expected gold/<name> or silver/<name>", "bad-argument"
+            )
+        dataset_id = args.dataset_id or name
+        ref_dir = _common.DATA / "references" / tier / name
+        if not any(_store.glob(ref_dir, "*.txt")):
+            die(f"{ref_dir} has no reference texts: build them first ({args.source})", "not-found")
+        source = {"kind": args.kind, "by": args.labelled_by, "via": args.source}
+        doc = write_manifest(
+            ref_dir,
+            tier,
+            dataset_id,
+            caveat=CAVEAT[tier].format(set="the labels its script fetches", source=source_line(source)),
+            source=args.source,
+            redistributed=not args.not_redistributed,
+            created_at=now(),
+            promoted_from={"labels": None, "dataset_id": dataset_id, "source": source},
+            reason=args.reason,
+            promoted_by=args.by,
         )
-    tier, _, name = args.reference_id.partition("/")
-    if tier not in ("gold", "silver") or not name:
-        die(f"--reference-id {args.reference_id!r}: expected gold/<name> or silver/<name>", "bad-argument")
-    dataset_id = args.dataset_id or name
-    ref_dir = _common.DATA / "references" / tier / name
-    if not any(_store.glob(ref_dir, "*.txt")):
-        die(f"{ref_dir} has no reference texts: build them first ({args.source})", "not-found")
-    source = {"kind": args.kind, "by": args.labelled_by, "via": args.source}
-    doc = write_manifest(
-        ref_dir,
-        tier,
-        dataset_id,
-        caveat=CAVEAT[tier].format(set="the labels its script fetches", source=source_line(source)),
-        source=args.source,
-        redistributed=not args.not_redistributed,
-        created_at=now(),
-        promoted_from={"labels": None, "dataset_id": dataset_id, "source": source},
-        reason=args.reason,
-        promoted_by=args.by,
-    )
-    print(
-        f"{ref_dir / 'manifest.json'}  ({doc['n_items']} item(s), {tier}, promoted from {source_line(source)})"
-    )
-    return 0
+        print(
+            f"{ref_dir / 'manifest.json'}  ({doc['n_items']} item(s), {tier}, promoted from {source_line(source)})"
+        )
+        return 0
 
 
 if __name__ == "__main__":

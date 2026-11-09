@@ -22,8 +22,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import sys
 
-from evaluation_harness import _card, _licences, _store
+from evaluation_harness import _card, _jsonout, _licences, _store
 from evaluation_harness._common import DATASETS, dataset_id_ok, die, evh_prog, read_json, write_json
 
 
@@ -61,48 +62,54 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
-    args = ap.parse_args()
-    if args.card_template:
-        print(_card.template(), end="")
-        return 0
-    if not args.dataset_id:
-        die("name the dataset: --dataset-id", "bad-argument")
-    if args.licence is None and args.description is None and args.card is None:
-        die("nothing to change: name --licence, --description or --card", "bad-argument")
-    card = _read_card(args.card) if args.card is not None else None
-    f = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
-    if not _store.is_file(f):
-        die(f"no dataset {args.dataset_id!r} (evh datasets lists them)", "not-found")
-    doc = read_json(f)
-    said = []
-    if args.licence is not None:
-        if args.licence.strip().lower() == "none":
-            if "licence" in doc:
-                said.append(f"licence {doc.pop('licence')} taken off")
-        else:
-            why = _licences.problem(args.licence)
-            if why:
-                die(why, "bad-argument")
-            lic = _licences.canonical(args.licence)
-            if doc.get("licence") != lic:
-                said.append(f"licence {doc.get('licence') or '(none)'} -> {lic}")
-                doc["licence"] = lic
-    if args.description is not None and doc.get("description") != args.description:
-        said.append("description changed")
-        doc["description"] = args.description
-    if card is not None and doc.get("card") != card:
-        said.append(f"card: {len(card)} of {len(_card.QUESTIONS)} questions answered")
-        doc["card"] = card
-        if not card:
-            doc.pop("card")
-    if not said:
-        print(f"{args.dataset_id}: already so, nothing written")
-        return 0
-    write_json(f, doc)
-    print(
-        f"data/datasets/{args.dataset_id}.json: {'; '.join(said)}; the items and version {doc.get('version')} unchanged"
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    return 0
+    args = ap.parse_args()
+    with _jsonout.collect("dataset-describe", args.json, live=sys.stderr):
+        if args.card_template:
+            print(_card.template(), end="")
+            return 0
+        if not args.dataset_id:
+            die("name the dataset: --dataset-id", "bad-argument")
+        if args.licence is None and args.description is None and args.card is None:
+            die("nothing to change: name --licence, --description or --card", "bad-argument")
+        card = _read_card(args.card) if args.card is not None else None
+        f = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
+        if not _store.is_file(f):
+            die(f"no dataset {args.dataset_id!r} (evh datasets lists them)", "not-found")
+        doc = read_json(f)
+        said = []
+        if args.licence is not None:
+            if args.licence.strip().lower() == "none":
+                if "licence" in doc:
+                    said.append(f"licence {doc.pop('licence')} taken off")
+            else:
+                why = _licences.problem(args.licence)
+                if why:
+                    die(why, "bad-argument")
+                lic = _licences.canonical(args.licence)
+                if doc.get("licence") != lic:
+                    said.append(f"licence {doc.get('licence') or '(none)'} -> {lic}")
+                    doc["licence"] = lic
+        if args.description is not None and doc.get("description") != args.description:
+            said.append("description changed")
+            doc["description"] = args.description
+        if card is not None and doc.get("card") != card:
+            said.append(f"card: {len(card)} of {len(_card.QUESTIONS)} questions answered")
+            doc["card"] = card
+            if not card:
+                doc.pop("card")
+        if not said:
+            print(f"{args.dataset_id}: already so, nothing written")
+            return 0
+        write_json(f, doc)
+        print(
+            f"data/datasets/{args.dataset_id}.json: {'; '.join(said)}; the items and version {doc.get('version')} unchanged"
+        )
+        return 0
 
 
 if __name__ == "__main__":

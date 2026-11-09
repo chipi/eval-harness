@@ -22,10 +22,11 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import json
 import re
+import sys
 from typing import Any
 
 import yaml
-from evaluation_harness import _fields, _sources, _store
+from evaluation_harness import _fields, _jsonout, _sources, _store
 from evaluation_harness._common import FIELDS, die, evh_prog, write_text_atomic
 
 #: A source's feature types (schema.org's, Hugging Face's and Python's spellings) as the field set's types.
@@ -78,54 +79,64 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-    if not re.fullmatch(r"[a-z0-9_]+", args.fieldset_id):
-        die("--fieldset-id: lowercase letters, digits and _", "bad-argument")
-    try:
-        query = json.loads(args.query)
-    except ValueError as e:
-        die(f"--query is not JSON: {e}", "bad-argument")
-    # The text is the item and the id its identity: neither is a field of it.
-    skip = {query.get("text"), query.get("id")} - {None}
-    cls, _path = _sources.resolve(args.source)
-    src = cls({})
-    try:
-        features = (src.describe(query) or {}).get("features") or {}
-        samples = []
-        if features:
-            names = {NAME.sub("_", str(k).rsplit("/", 1)[-1].lower()).strip("_") for k in features}
-            keep = sorted(names - skip)
-            for n, it in enumerate(src.items({**query, "fields": keep})):
-                if n >= args.sample:
-                    break
-                samples.append(it.get("fields") or {})
-    except (ValueError, OSError) as e:
-        die(f"--source {args.source}: {e}", "invalid-file")
-    if not features:
-        die(f"--source {args.source}: it describes no features to propose fields from", "not-enough")
-    fields = propose(features, samples, skip, args.max_choices)
-    doc = {
-        "fieldset_id": args.fieldset_id,
-        "description": f"proposed from source {args.source}; read before accepting",
-        "fields": fields,
-    }
-    problems = _fields.fieldset_problems(args.fieldset_id, doc)
-    if problems:
-        die("the proposal is not a valid field set: " + "; ".join(problems[:5]), "invalid-file")
-    text = yaml.safe_dump(doc, sort_keys=False, allow_unicode=True)
-    if not args.write:
-        print(text, end="")
-        print(
-            f"# {len(fields)} field(s). Read it; to accept: the same command with --write", file=_sys.stderr
-        )
+    with _jsonout.collect("fieldset-propose", args.json, live=sys.stderr):
+        if not re.fullmatch(r"[a-z0-9_]+", args.fieldset_id):
+            die("--fieldset-id: lowercase letters, digits and _", "bad-argument")
+        try:
+            query = json.loads(args.query)
+        except ValueError as e:
+            die(f"--query is not JSON: {e}", "bad-argument")
+        # The text is the item and the id its identity: neither is a field of it.
+        skip = {query.get("text"), query.get("id")} - {None}
+        cls, _path = _sources.resolve(args.source)
+        src = cls({})
+        try:
+            features = (src.describe(query) or {}).get("features") or {}
+            samples = []
+            if features:
+                names = {NAME.sub("_", str(k).rsplit("/", 1)[-1].lower()).strip("_") for k in features}
+                keep = sorted(names - skip)
+                for n, it in enumerate(src.items({**query, "fields": keep})):
+                    if n >= args.sample:
+                        break
+                    samples.append(it.get("fields") or {})
+        except (ValueError, OSError) as e:
+            die(f"--source {args.source}: {e}", "invalid-file")
+        if not features:
+            die(f"--source {args.source}: it describes no features to propose fields from", "not-enough")
+        fields = propose(features, samples, skip, args.max_choices)
+        doc = {
+            "fieldset_id": args.fieldset_id,
+            "description": f"proposed from source {args.source}; read before accepting",
+            "fields": fields,
+        }
+        problems = _fields.fieldset_problems(args.fieldset_id, doc)
+        if problems:
+            die("the proposal is not a valid field set: " + "; ".join(problems[:5]), "invalid-file")
+        text = yaml.safe_dump(doc, sort_keys=False, allow_unicode=True)
+        if not args.write:
+            print(text, end="")
+            print(
+                f"# {len(fields)} field(s). Read it; to accept: the same command with --write",
+                file=_sys.stderr,
+            )
+            return 0
+        out = FIELDS / f"{args.fieldset_id}.yaml"
+        if _store.exists(out):
+            die(
+                f"{out} exists: a field set is not overwritten (name another --fieldset-id)",
+                "would-overwrite",
+            )
+        _store.mkdir(out.parent, parents=True, exist_ok=True)
+        write_text_atomic(out, text)
+        print(f"wrote {out}: {len(fields)} field(s); use it: dataset-create … --fieldset {args.fieldset_id}")
         return 0
-    out = FIELDS / f"{args.fieldset_id}.yaml"
-    if _store.exists(out):
-        die(f"{out} exists: a field set is not overwritten (name another --fieldset-id)", "would-overwrite")
-    _store.mkdir(out.parent, parents=True, exist_ok=True)
-    write_text_atomic(out, text)
-    print(f"wrote {out}: {len(fields)} field(s); use it: dataset-create … --fieldset {args.fieldset_id}")
-    return 0
 
 
 if __name__ == "__main__":

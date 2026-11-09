@@ -18,10 +18,11 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import sys
 from pathlib import Path
 
 import yaml
-from evaluation_harness import _hypothesis, _seal, _store
+from evaluation_harness import _hypothesis, _jsonout, _seal, _store
 from evaluation_harness._common import DATASETS, dataset_id_ok, die, evh_prog, load_dataset, now, write_json
 
 
@@ -42,68 +43,77 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
+    with _jsonout.collect("dataset-unseal", args.json, live=sys.stderr):
+        ds_id = dataset_id_ok(args.dataset_id)
+        from evaluation_harness._actor import require_named  # noqa: PLC0415
 
-    ds_id = dataset_id_ok(args.dataset_id)
-    from evaluation_harness._actor import require_named  # noqa: PLC0415
-
-    who = require_named("dataset-unseal")
-    doc = load_dataset(ds_id)
-    if not doc.get("sealed"):
-        die(f"{ds_id} is not sealed (dataset-split --seal seals a test side)", "not-allowed")
-    if len(args.reason.split()) < 3:
-        die("--reason is a sentence: why this candidate, and why now?", "bad-argument")
-    ids = _hypothesis.config_ids()
-    path = ids.get(args.config)
-    if path is None:
-        die(f"--config {args.config}: no arm config with that config_id", "not-found")
-    cfg = yaml.safe_load(_store.read_text(path, encoding="utf-8")) or {}
-    if cfg.get("dataset_id") != ds_id:
-        die(f"{args.config} runs on {cfg.get('dataset_id')}, not on {ds_id}", "mismatch")
-    hyp = _hypothesis.of(cfg)
-    if not hyp:
-        die(
-            f"{args.config} names no hypothesis: write one in its config (against, measure, direction, statement; "
-            "ADR-0025) and commit it, so the comparison is named before the held-out side is read",
-            "not-allowed",
-        )
-    bad = _hypothesis.problems(cfg, path, ids)
-    if bad:
-        die(f"{args.config}: " + "; ".join(bad), "invalid-file")
-    # The project's database keeps its configs out of git (RFC-025): no commit can speak for one, so the unseal
-    # itself, timestamped before any run it allows, is the naming in advance, and the look says so.
-    if _store.sqlite() and _store.rel(path) is not None:
-        named = {"named": None, "commit": None, "why": "the config is in the project's database, not in git"}
-    else:
-        named = _hypothesis.named_before(path, hyp, _head(path), now())
-        if named.get("named") is not True:
+        who = require_named("dataset-unseal")
+        doc = load_dataset(ds_id)
+        if not doc.get("sealed"):
+            die(f"{ds_id} is not sealed (dataset-split --seal seals a test side)", "not-allowed")
+        if len(args.reason.split()) < 3:
+            die("--reason is a sentence: why this candidate, and why now?", "bad-argument")
+        ids = _hypothesis.config_ids()
+        path = ids.get(args.config)
+        if path is None:
+            die(f"--config {args.config}: no arm config with that config_id", "not-found")
+        cfg = yaml.safe_load(_store.read_text(path, encoding="utf-8")) or {}
+        if cfg.get("dataset_id") != ds_id:
+            die(f"{args.config} runs on {cfg.get('dataset_id')}, not on {ds_id}", "mismatch")
+        hyp = _hypothesis.of(cfg)
+        if not hyp:
             die(
-                f"{args.config}'s hypothesis is not committed: {named.get('why')}. Commit the config first.",
+                f"{args.config} names no hypothesis: write one in its config (against, measure, direction, statement; "
+                "ADR-0025) and commit it, so the comparison is named before the held-out side is read",
                 "not-allowed",
             )
-    opened = sorted({args.config, str(hyp["against"])} - _seal.opened_for(doc))
-    look = {
-        "config_id": args.config,
-        "at": now(),
-        "reason": args.reason,
-        "hypothesis": hyp,
-        "commit": named.get("commit") or "not determinable",
-        "actor": who,
-    }
-    doc["unsealed"] = [*(doc.get("unsealed") or []), look]
-    write_json(DATASETS / f"{ds_id}.json", doc)
-    n = len(doc["unsealed"])
-    print(
-        f"data/datasets/{ds_id}.json  unsealed for {args.config} against {hyp['against']} "
-        + (
-            f"(look {n} at this held-out side; hypothesis committed {str(named.get('commit'))[:8]})"
-            if named.get("commit")
-            else f"(look {n} at this held-out side; {named.get('why')}: this unseal names it in advance)"
+        bad = _hypothesis.problems(cfg, path, ids)
+        if bad:
+            die(f"{args.config}: " + "; ".join(bad), "invalid-file")
+        # The project's database keeps its configs out of git (RFC-025): no commit can speak for one, so the unseal
+        # itself, timestamped before any run it allows, is the naming in advance, and the look says so.
+        if _store.sqlite() and _store.rel(path) is not None:
+            named = {
+                "named": None,
+                "commit": None,
+                "why": "the config is in the project's database, not in git",
+            }
+        else:
+            named = _hypothesis.named_before(path, hyp, _head(path), now())
+            if named.get("named") is not True:
+                die(
+                    f"{args.config}'s hypothesis is not committed: {named.get('why')}. Commit the config first.",
+                    "not-allowed",
+                )
+        opened = sorted({args.config, str(hyp["against"])} - _seal.opened_for(doc))
+        look = {
+            "config_id": args.config,
+            "at": now(),
+            "reason": args.reason,
+            "hypothesis": hyp,
+            "commit": named.get("commit") or "not determinable",
+            "actor": who,
+        }
+        doc["unsealed"] = [*(doc.get("unsealed") or []), look]
+        write_json(DATASETS / f"{ds_id}.json", doc)
+        n = len(doc["unsealed"])
+        print(
+            f"data/datasets/{ds_id}.json  unsealed for {args.config} against {hyp['against']} "
+            + (
+                f"(look {n} at this held-out side; hypothesis committed {str(named.get('commit'))[:8]})"
+                if named.get("commit")
+                else f"(look {n} at this held-out side; {named.get('why')}: this unseal names it in advance)"
+            )
         )
-    )
-    if opened:
-        print(f"  now open to: {', '.join(sorted(_seal.opened_for(doc) | set(opened)))}")
-    return 0
+        if opened:
+            print(f"  now open to: {', '.join(sorted(_seal.opened_for(doc) | set(opened)))}")
+        return 0
 
 
 if __name__ == "__main__":

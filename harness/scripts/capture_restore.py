@@ -32,9 +32,10 @@ import hashlib
 import json
 import shlex
 import subprocess
+import sys
 from pathlib import Path
 
-from evaluation_harness import _importers, _store
+from evaluation_harness import _importers, _jsonout, _store
 from evaluation_harness._common import (
     CAPTURES,
     DATASETS,
@@ -131,106 +132,111 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
-    args = ap.parse_args()
-
-    base = CAPTURES / dataset_id_ok(args.capture)
-    if not _store.is_file(base / "capture.json"):
-        die(f"no capture {args.capture!r} at {base}", "not-found")
-    doc = read_json(base / "capture.json")
-    entries = doc.get("records") or []
-    records = base / "records"
-    if (
-        _store.is_dir(records)
-        and any(_store.iterdir(records))
-        and mismatched(records, entries)
-        and not args.force
-    ):
-        die(
-            f"{records} exists and does not match capture.json ({named(mismatched(records, entries), 'differ')}). "
-            "Pass --force to replace it with the records read again.",
-            "would-overwrite",
-        )
-
-    query = {**(doc.get("query") or {}), **overrides(args.query)}
-    rule = doc.get("sample")
-    sample = {"rate": rule["rate"], "seed": rule["seed"]} if isinstance(rule, dict) else None
-    try:
-        recs, path = _importers.read(doc["importer"], query, {"sample": sample} if sample else None)
-        wanted = {e["id"] for e in entries}
-        got = {}
-        for r in recs:
-            if isinstance(r, dict) and r.get("id") in wanted and r["id"] not in got:
-                got[r["id"]] = _importers.normalise(r)
-    except SystemExit:
-        raise
-    except Exception as exc:  # noqa: BLE001 — the importer's own failure, named
-        die(
-            f"--capture {args.capture}: the importer {doc['importer']} failed: {type(exc).__name__}: {exc}",
-            "failed",
-        )
-    code_note = (
-        ""
-        if _importers.code_sha256(path) == doc.get("importer_sha256")
-        else f"  note: {path} is not the code that captured it (sha256 differs); the record hashes decide\n"
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-
-    missing = sorted(wanted - set(got))
-    if missing:
-        die(
-            f"{code_note}{named(missing, 'not returned by the importer for this query')}; nothing written",
-            "mismatch",
-        )
-    tmp = _store.staging(records, ".records.partial-")
-    try:
-        for rid, rec in got.items():
-            write_json(tmp / f"{rid}.json", rec)
-        bad = mismatched(tmp, entries, "sha256_before_scrub")
-        if bad:
+    args = ap.parse_args()
+    with _jsonout.collect("capture-restore", args.json, live=sys.stderr):
+        base = CAPTURES / dataset_id_ok(args.capture)
+        if not _store.is_file(base / "capture.json"):
+            die(f"no capture {args.capture!r} at {base}", "not-found")
+        doc = read_json(base / "capture.json")
+        entries = doc.get("records") or []
+        records = base / "records"
+        if (
+            _store.is_dir(records)
+            and any(_store.iterdir(records))
+            and mismatched(records, entries)
+            and not args.force
+        ):
             die(
-                f"{code_note}{named(bad, 'differ from what the capture recorded')}; nothing written",
+                f"{records} exists and does not match capture.json ({named(mismatched(records, entries), 'differ')}). "
+                "Pass --force to replace it with the records read again.",
+                "would-overwrite",
+            )
+
+        query = {**(doc.get("query") or {}), **overrides(args.query)}
+        rule = doc.get("sample")
+        sample = {"rate": rule["rate"], "seed": rule["seed"]} if isinstance(rule, dict) else None
+        try:
+            recs, path = _importers.read(doc["importer"], query, {"sample": sample} if sample else None)
+            wanted = {e["id"] for e in entries}
+            got = {}
+            for r in recs:
+                if isinstance(r, dict) and r.get("id") in wanted and r["id"] not in got:
+                    got[r["id"]] = _importers.normalise(r)
+        except SystemExit:
+            raise
+        except Exception as exc:  # noqa: BLE001 — the importer's own failure, named
+            die(
+                f"--capture {args.capture}: the importer {doc['importer']} failed: {type(exc).__name__}: {exc}",
+                "failed",
+            )
+        code_note = (
+            ""
+            if _importers.code_sha256(path) == doc.get("importer_sha256")
+            else f"  note: {path} is not the code that captured it (sha256 differs); the record hashes decide\n"
+        )
+
+        missing = sorted(wanted - set(got))
+        if missing:
+            die(
+                f"{code_note}{named(missing, 'not returned by the importer for this query')}; nothing written",
                 "mismatch",
             )
-        scrub = (doc.get("scrubbed") or {}).get("command")
-        if scrub:
-            argv = [a.replace("{records}", str(tmp)) for a in shlex.split(scrub)]
-            proc = subprocess.run(argv, capture_output=True, text=True)
-            if proc.returncode != 0:
-                die(
-                    f"the recorded scrubber exited {proc.returncode}: {(proc.stderr or proc.stdout).strip()[-300:]}",
-                    "failed",
-                )
-            bad = mismatched(tmp, entries)
+        tmp = _store.staging(records, ".records.partial-")
+        try:
+            for rid, rec in got.items():
+                write_json(tmp / f"{rid}.json", rec)
+            bad = mismatched(tmp, entries, "sha256_before_scrub")
             if bad:
                 die(
-                    f"{named(bad, 'differ from what the capture recorded after its scrubber ran')}; nothing written",
+                    f"{code_note}{named(bad, 'differ from what the capture recorded')}; nothing written",
                     "mismatch",
                 )
-        # The datasets were cut from the records as kept (scrubbed, when they were): checked from those,
-        # every one before anything is written.
-        final = {e["id"]: read_json(tmp / f"{e['id']}.json") for e in entries}
-        writes, bad_items, said = dataset_files(args.capture, final)
-        if bad_items:
-            die(
-                f"{len(bad_items)} dataset item(s) differ from their dataset's hashes, e.g. "
-                f"{', '.join(bad_items[:5])}; nothing written",
-                "mismatch",
-            )
-        if _store.exists(records):
-            _store.rmtree(records)
-        _store.adopt(tmp, records)
-    finally:
-        _store.rmtree(tmp, ignore_errors=True)
-    for dest, data in writes:
-        _store.mkdir(dest.parent, parents=True, exist_ok=True)
-        _store.write_bytes(dest, data)
-    print(
-        f"{code_note}capture {args.capture}: {len(entries)} records restored to {records}, hashes ok"
-        + (" (scrubbed again with the recorded command)" if scrub else "")
-    )
-    print("\n".join(said) if said else "  no dataset is made from it")
-    if said:
-        print("next: evh dataset-materialize --dataset-id <each>")
-    return 0
+            scrub = (doc.get("scrubbed") or {}).get("command")
+            if scrub:
+                argv = [a.replace("{records}", str(tmp)) for a in shlex.split(scrub)]
+                proc = subprocess.run(argv, capture_output=True, text=True)
+                if proc.returncode != 0:
+                    die(
+                        f"the recorded scrubber exited {proc.returncode}: {(proc.stderr or proc.stdout).strip()[-300:]}",
+                        "failed",
+                    )
+                bad = mismatched(tmp, entries)
+                if bad:
+                    die(
+                        f"{named(bad, 'differ from what the capture recorded after its scrubber ran')}; nothing written",
+                        "mismatch",
+                    )
+            # The datasets were cut from the records as kept (scrubbed, when they were): checked from those,
+            # every one before anything is written.
+            final = {e["id"]: read_json(tmp / f"{e['id']}.json") for e in entries}
+            writes, bad_items, said = dataset_files(args.capture, final)
+            if bad_items:
+                die(
+                    f"{len(bad_items)} dataset item(s) differ from their dataset's hashes, e.g. "
+                    f"{', '.join(bad_items[:5])}; nothing written",
+                    "mismatch",
+                )
+            if _store.exists(records):
+                _store.rmtree(records)
+            _store.adopt(tmp, records)
+        finally:
+            _store.rmtree(tmp, ignore_errors=True)
+        for dest, data in writes:
+            _store.mkdir(dest.parent, parents=True, exist_ok=True)
+            _store.write_bytes(dest, data)
+        print(
+            f"{code_note}capture {args.capture}: {len(entries)} records restored to {records}, hashes ok"
+            + (" (scrubbed again with the recorded command)" if scrub else "")
+        )
+        print("\n".join(said) if said else "  no dataset is made from it")
+        if said:
+            print("next: evh dataset-materialize --dataset-id <each>")
+        return 0
 
 
 if __name__ == "__main__":

@@ -22,7 +22,6 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import contextlib
 import io
-import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -86,11 +85,12 @@ def _set_of(arm: str) -> str:
 
 def main() -> int:
     """Print what the scorer in this tree would change in a goal's decision; write nothing."""
-    argv, as_json = _jsonout.take_flag(sys.argv[1:])
     ap = argparse.ArgumentParser(prog="evh score-preview", description=__doc__.splitlines()[0])
     ap.add_argument("--goal", required=True)
     ap.add_argument("--round", dest="round_id", help="only this round's arms (its own and those it carried)")
-    args = ap.parse_args(argv)
+    ap.add_argument("--json", action="store_true", help="the preview as one JSON object on stdout")
+    args = ap.parse_args()
+    as_json = args.json
     goal = load_goals().get(args.goal)
     if goal is None:
         die(f"no goal {args.goal!r}", "not-found")

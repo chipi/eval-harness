@@ -24,9 +24,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import sys
 from collections import Counter
 
-from evaluation_harness import _store
+from evaluation_harness import _jsonout, _store
 from evaluation_harness._common import REFERENCES, die, evh_prog, load_dataset, now, read_json
 from evaluation_harness._label_sets import answers, label_line, label_text, labels_for, sets, source_line
 from evaluation_harness._references import write_manifest
@@ -98,105 +99,116 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap, required=True, help="who promotes (recorded in the manifest)")
-    args = ap.parse_args()
-
-    if len(args.reason.split()) < 3:
-        die(
-            'REFUSED: --reason must be a sentence, not a word. It answers "why is this the yardstick?" later.',
-            "bad-argument",
-        )
-    set_ds, _, set_name = args.labels.rpartition("/")
-    set_ds = set_ds or args.dataset_id
-    name = args.name or args.dataset_id
-    if "/" in name or name.startswith(".") or not name:
-        die(f"--name {name!r}: one name, no path", "bad-argument")
-    ref_dir = REFERENCES / args.tier / name
-    kept_out = _store.is_file(ref_dir / "manifest.json") and not any(_store.glob(ref_dir, "*.txt"))
-    hand_made = (
-        _store.is_dir(ref_dir)
-        and not _store.exists(ref_dir / "manifest.json")
-        and any(_store.glob(ref_dir, "*.txt"))
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    if _store.exists(ref_dir) and any(_store.iterdir(ref_dir)) and not kept_out and not hand_made:
-        die(
-            f"{ref_dir} exists: a reference set is never overwritten. Name another with --name.",
-            "would-overwrite",
-        )
-    ds = load_dataset(args.dataset_id)
-    from evaluation_harness import _seal  # noqa: PLC0415
-
-    _seal.refuse_if_sealed(args.dataset_id, "a reference")
-    ids = [it["item_id"] for it in ds.get("items") or []]
-    mine = {
-        iid: r
-        for iid, rows in labels_for(args.dataset_id).items()
-        for r in rows
-        if r["dataset_id"] == set_ds and r["set"] == set_name
-    }
-    if not mine:
-        die(
-            f"no labels of {set_ds}/{set_name} on {args.dataset_id}'s items (evh labels --dataset-id {args.dataset_id})",
-            "not-found",
-        )
-    if args.items:
-        unknown = sorted(set(args.items) - set(ids))
-        if unknown:
-            die(f"--items: not in {args.dataset_id}: {', '.join(unknown[:8])}", "not-found")
-        missing = sorted(set(args.items) - set(mine))
-        if missing:
-            die(f"--items: {set_ds}/{set_name} has no label for {', '.join(missing[:8])}", "not-enough")
-        chosen = [i for i in ids if i in set(args.items)]
-    else:
-        chosen = [i for i in ids if i in mine]
-    source = next(iter(mine.values()))["source"]
-    if kept_out:
-        return _rebuild(ref_dir, mine, set_ds, set_name)
-    if hand_made:
-        # A folder made by hand, with no manifest (ADR-0022): adopted only when it holds exactly these labels, so a
-        # reference is still never overwritten; it then gets the promotion record it never had.
-        here = {f.stem: _store.read_text(f, encoding="utf-8").strip() for f in _store.glob(ref_dir, "*.txt")}
-        if set(here) != set(chosen) or any(
-            label_text(answers(here[i])) != mine[i]["text"].strip() for i in chosen
-        ):
+    args = ap.parse_args()
+    with _jsonout.collect("reference-promote", args.json, live=sys.stderr):
+        if len(args.reason.split()) < 3:
             die(
-                f"{ref_dir} exists, made by hand with no manifest, and its texts are not {set_ds}/{set_name}'s: a "
-                f"reference is never overwritten. To keep it, import it as the labels first (evh label-import "
-                f"{ref_dir} --dataset-id {args.dataset_id} --set S --by WHO) and promote those; or name another with "
-                "--name.",
+                'REFUSED: --reason must be a sentence, not a word. It answers "why is this the yardstick?" later.',
+                "bad-argument",
+            )
+        set_ds, _, set_name = args.labels.rpartition("/")
+        set_ds = set_ds or args.dataset_id
+        name = args.name or args.dataset_id
+        if "/" in name or name.startswith(".") or not name:
+            die(f"--name {name!r}: one name, no path", "bad-argument")
+        ref_dir = REFERENCES / args.tier / name
+        kept_out = _store.is_file(ref_dir / "manifest.json") and not any(_store.glob(ref_dir, "*.txt"))
+        hand_made = (
+            _store.is_dir(ref_dir)
+            and not _store.exists(ref_dir / "manifest.json")
+            and any(_store.glob(ref_dir, "*.txt"))
+        )
+        if _store.exists(ref_dir) and any(_store.iterdir(ref_dir)) and not kept_out and not hand_made:
+            die(
+                f"{ref_dir} exists: a reference set is never overwritten. Name another with --name.",
                 "would-overwrite",
             )
-    doc = next((d for d in sets() if d["dataset_id"] == set_ds and d["set"] == set_name), {})
-    not_here = doc.get("redistributed") is False
-    # A new reference is built in a staging folder and moved into place whole (RFC-026 step 1): a reader (a run
-    # starting, a job, the catalog) never sees its texts without its manifest. An adopted folder keeps its files byte
-    # for byte: they are the labels already, and the reference digest every run scored against it recorded is of
-    # these bytes (a newline added to each moved it); only its manifest is written, one file, whole.
-    into = ref_dir if hand_made else _store.staging(ref_dir, f".{ref_dir.name}.partial-")
-    try:
-        _write_reference(into, chosen, mine, hand_made, source, args, doc, not_here, set_ds, set_name, name)
-        if not hand_made:
-            _store.adopt(into, ref_dir)
-    except BaseException:
-        if not hand_made:
-            _store.rmtree(into, ignore_errors=True)
-        raise
-    print(
-        f"{ref_dir}: {len(chosen)} of {len(ids)} item(s), {args.tier}, promoted from {set_ds}/{set_name} "
-        f"({source_line(source)})"
-    )
-    print("  commit it before the next run: an untracked reference marks every run scored against it dirty")
-    several = Counter(label_line(mine[i]["text"]) for i in chosen if len(answers(mine[i]["text"])) > 1)
-    if several:
+        ds = load_dataset(args.dataset_id)
+        from evaluation_harness import _seal  # noqa: PLC0415
+
+        _seal.refuse_if_sealed(args.dataset_id, "a reference")
+        ids = [it["item_id"] for it in ds.get("items") or []]
+        mine = {
+            iid: r
+            for iid, rows in labels_for(args.dataset_id).items()
+            for r in rows
+            if r["dataset_id"] == set_ds and r["set"] == set_name
+        }
+        if not mine:
+            die(
+                f"no labels of {set_ds}/{set_name} on {args.dataset_id}'s items (evh labels --dataset-id {args.dataset_id})",
+                "not-found",
+            )
+        if args.items:
+            unknown = sorted(set(args.items) - set(ids))
+            if unknown:
+                die(f"--items: not in {args.dataset_id}: {', '.join(unknown[:8])}", "not-found")
+            missing = sorted(set(args.items) - set(mine))
+            if missing:
+                die(f"--items: {set_ds}/{set_name} has no label for {', '.join(missing[:8])}", "not-enough")
+            chosen = [i for i in ids if i in set(args.items)]
+        else:
+            chosen = [i for i in ids if i in mine]
+        source = next(iter(mine.values()))["source"]
+        if kept_out:
+            return _rebuild(ref_dir, mine, set_ds, set_name)
+        if hand_made:
+            # A folder made by hand, with no manifest (ADR-0022): adopted only when it holds exactly these labels, so a
+            # reference is still never overwritten; it then gets the promotion record it never had.
+            here = {
+                f.stem: _store.read_text(f, encoding="utf-8").strip() for f in _store.glob(ref_dir, "*.txt")
+            }
+            if set(here) != set(chosen) or any(
+                label_text(answers(here[i])) != mine[i]["text"].strip() for i in chosen
+            ):
+                die(
+                    f"{ref_dir} exists, made by hand with no manifest, and its texts are not {set_ds}/{set_name}'s: a "
+                    f"reference is never overwritten. To keep it, import it as the labels first (evh label-import "
+                    f"{ref_dir} --dataset-id {args.dataset_id} --set S --by WHO) and promote those; or name another with "
+                    "--name.",
+                    "would-overwrite",
+                )
+        doc = next((d for d in sets() if d["dataset_id"] == set_ds and d["set"] == set_name), {})
+        not_here = doc.get("redistributed") is False
+        # A new reference is built in a staging folder and moved into place whole (RFC-026 step 1): a reader (a run
+        # starting, a job, the catalog) never sees its texts without its manifest. An adopted folder keeps its files byte
+        # for byte: they are the labels already, and the reference digest every run scored against it recorded is of
+        # these bytes (a newline added to each moved it); only its manifest is written, one file, whole.
+        into = ref_dir if hand_made else _store.staging(ref_dir, f".{ref_dir.name}.partial-")
+        try:
+            _write_reference(
+                into, chosen, mine, hand_made, source, args, doc, not_here, set_ds, set_name, name
+            )
+            if not hand_made:
+                _store.adopt(into, ref_dir)
+        except BaseException:
+            if not hand_made:
+                _store.rmtree(into, ignore_errors=True)
+            raise
         print(
-            f"  {sum(several.values())} label(s) accept more than one answer ("
-            + ", ".join(f"{k}: {v}" for k, v in sorted(several.items()))
-            + "): an output matching any of them scores as right, so each must be fully right, not a guess"
+            f"{ref_dir}: {len(chosen)} of {len(ids)} item(s), {args.tier}, promoted from {set_ds}/{set_name} "
+            f"({source_line(source)})"
         )
-    if not_here:
         print(
-            "  its texts are kept out of git, as its label set's are: commit the manifest and the .gitignore"
+            "  commit it before the next run: an untracked reference marks every run scored against it dirty"
         )
-    return 0
+        several = Counter(label_line(mine[i]["text"]) for i in chosen if len(answers(mine[i]["text"])) > 1)
+        if several:
+            print(
+                f"  {sum(several.values())} label(s) accept more than one answer ("
+                + ", ".join(f"{k}: {v}" for k, v in sorted(several.items()))
+                + "): an output matching any of them scores as right, so each must be fully right, not a guess"
+            )
+        if not_here:
+            print(
+                "  its texts are kept out of git, as its label set's are: commit the manifest and the .gitignore"
+            )
+        return 0
 
 
 def _rebuild(ref_dir, mine: dict, set_ds: str, set_name: str) -> int:

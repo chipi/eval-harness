@@ -25,10 +25,11 @@ import argparse
 import hashlib
 import json
 import shutil
+import sys
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _outputs
+from evaluation_harness import _common, _jsonout, _outputs
 from evaluation_harness._common import die, evh_prog, write_json
 
 
@@ -216,21 +217,27 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
-    args = ap.parse_args()
-    n = migrate(args.dry_run)
-    after = n["own_file"] + n["kept_checkpoint"]
-    verb = "would become" if args.dry_run else "became"
-    print(
-        f"{n['runs']} run(s) with an outputs/ folder: {n['own_file']} {verb} one outputs.jsonl each, "
-        f"{n['reads_source']} derived read their source's; {n['files_before']} file(s) {verb} {after}"
-        + ("" if n["runs"] else " (already in this format)")
-        + (
-            f"; {n['from_dir']} derived run(s) {'would record' if args.dry_run else 'recorded'} their source's directory"
-            if n["from_dir"]
-            else ""
-        )
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    return 0
+    args = ap.parse_args()
+    with _jsonout.collect("run-migrate", args.json, live=sys.stderr):
+        n = migrate(args.dry_run)
+        after = n["own_file"] + n["kept_checkpoint"]
+        verb = "would become" if args.dry_run else "became"
+        print(
+            f"{n['runs']} run(s) with an outputs/ folder: {n['own_file']} {verb} one outputs.jsonl each, "
+            f"{n['reads_source']} derived read their source's; {n['files_before']} file(s) {verb} {after}"
+            + ("" if n["runs"] else " (already in this format)")
+            + (
+                f"; {n['from_dir']} derived run(s) {'would record' if args.dry_run else 'recorded'} their source's directory"
+                if n["from_dir"]
+                else ""
+            )
+        )
+        return 0
 
 
 if __name__ == "__main__":

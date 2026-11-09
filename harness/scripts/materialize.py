@@ -21,9 +21,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import sys
 from pathlib import Path
 
-from evaluation_harness import _fetch, _store
+from evaluation_harness import _fetch, _jsonout, _store
 from evaluation_harness._common import (
     MATERIALIZED,
     die,
@@ -43,73 +44,78 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
+    with _jsonout.collect("dataset-materialize", args.json, live=sys.stderr):
+        ds = load_dataset(args.dataset_id)
+        src_root = Path(ds.get("source_dir", "data/sources"))
+        out = MATERIALIZED / args.dataset_id
 
-    ds = load_dataset(args.dataset_id)
-    src_root = Path(ds.get("source_dir", "data/sources"))
-    out = MATERIALIZED / args.dataset_id
+        if _store.exists(out) and not args.force:
+            print(f"{out} exists — nothing to do (--force to rebuild)")
+            return 0
+        if _store.exists(out):
+            _store.rmtree(out)
+        _store.mkdir(out, parents=True)
 
-    if _store.exists(out) and not args.force:
-        print(f"{out} exists — nothing to do (--force to rebuild)")
-        return 0
-    if _store.exists(out):
-        _store.rmtree(out)
-    _store.mkdir(out, parents=True)
-
-    drifted, missing, unfetched = [], [], []
-    for item in ds["items"]:
-        rel = item.get("source_path") or item["item_id"]
-        if item.get("source_url"):
-            # A URL item (ADR-0003): fetched once into the cache, and refused unless its bytes
-            # are the pinned ones. A changed file at the URL is the same failure as a changed
-            # file under sources/.
-            try:
-                src, _ = _fetch.fetch(item["source_url"], item["source_sha256"])
-            except _fetch.FetchError as exc:
-                unfetched.append((rel, str(exc)))
+        drifted, missing, unfetched = [], [], []
+        for item in ds["items"]:
+            rel = item.get("source_path") or item["item_id"]
+            if item.get("source_url"):
+                # A URL item (ADR-0003): fetched once into the cache, and refused unless its bytes
+                # are the pinned ones. A changed file at the URL is the same failure as a changed
+                # file under sources/.
+                try:
+                    src, _ = _fetch.fetch(item["source_url"], item["source_sha256"])
+                except _fetch.FetchError as exc:
+                    unfetched.append((rel, str(exc)))
+                    continue
+                dst = out / rel
+                _store.mkdir(dst.parent, parents=True, exist_ok=True)
+                _store.copy_file(src, dst)
+                continue
+            src = src_root / rel
+            if not _store.is_file(src):
+                missing.append(rel)
+                continue
+            actual = sha256(src)
+            if actual != item["source_sha256"]:
+                drifted.append((rel, item["source_sha256"][:12], actual[:12]))
                 continue
             dst = out / rel
             _store.mkdir(dst.parent, parents=True, exist_ok=True)
             _store.copy_file(src, dst)
-            continue
-        src = src_root / rel
-        if not _store.is_file(src):
-            missing.append(rel)
-            continue
-        actual = sha256(src)
-        if actual != item["source_sha256"]:
-            drifted.append((rel, item["source_sha256"][:12], actual[:12]))
-            continue
-        dst = out / rel
-        _store.mkdir(dst.parent, parents=True, exist_ok=True)
-        _store.copy_file(src, dst)
 
-    if missing or drifted or unfetched:
-        for rel in missing:
-            print(f"  MISSING  {rel}")
-        for rel, was, now_ in drifted:
-            print(f"  CHANGED  {rel}  frozen={was} actual={now_}")
-        for rel, why in unfetched:
-            print(f"  FETCH    {rel}  {why}")
-        die(
-            f"{len(missing)} missing, {len(drifted)} changed, {len(unfetched)} not fetched as pinned "
-            "since the dataset was frozen.\n"
-            "  sources/ is immutable. If an input genuinely changed, that is a NEW\n"
-            "  dataset (_v2) — every number already published was measured on the old bytes.",
-            "not-materialized",
+        if missing or drifted or unfetched:
+            for rel in missing:
+                print(f"  MISSING  {rel}")
+            for rel, was, now_ in drifted:
+                print(f"  CHANGED  {rel}  frozen={was} actual={now_}")
+            for rel, why in unfetched:
+                print(f"  FETCH    {rel}  {why}")
+            die(
+                f"{len(missing)} missing, {len(drifted)} changed, {len(unfetched)} not fetched as pinned "
+                "since the dataset was frozen.\n"
+                "  sources/ is immutable. If an input genuinely changed, that is a NEW\n"
+                "  dataset (_v2) — every number already published was measured on the old bytes.",
+                "not-materialized",
+            )
+
+        write_json(
+            out / "meta.json",
+            {
+                "dataset_id": args.dataset_id,
+                "materialized_at": now(),
+                "n_items": len(ds["items"]),
+                "verified": "every item matched its frozen sha256",
+            },
         )
-
-    write_json(
-        out / "meta.json",
-        {
-            "dataset_id": args.dataset_id,
-            "materialized_at": now(),
-            "n_items": len(ds["items"]),
-            "verified": "every item matched its frozen sha256",
-        },
-    )
-    print(f"{out}  ({len(ds['items'])} item(s), all hashes verified)")
-    return 0
+        print(f"{out}  ({len(ds['items'])} item(s), all hashes verified)")
+        return 0
 
 
 if __name__ == "__main__":

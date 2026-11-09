@@ -1288,10 +1288,11 @@ page shows what is inside it once `evh dataset-profile` has written its profile 
 dataset is materialized: the items' lengths, the gold's labels or shape, and each item's link to
 its source when one is recorded; commit `data/profiles/` and a catalog built anywhere shows it.
 
-**For an agent with a shell**, these read commands take `--json`: the views, `inspect`,
-`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`, `rounds` and `runs-list`
-(not yet `bootstrap-test`, `holdout` or `cost-report`)
-(and `evh run`, below). Stdout is then exactly one object,
+**For an agent with a shell**, every command the API serves takes `--json` (RFC-026): the views, `inspect`,
+`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`, `rounds`, `runs-list`, `validate`, and
+every command that writes (`evh run`, below; a command that writes prints its text to stderr as it goes, and its
+envelope last; `catalog`, `dataset-create`, `import-run`, `run-promote`, `rescore` and `sweep` name their results in
+`values`). Stdout is then exactly one object,
 `{"command", "version", "result": {"blocks": [...], "values": {...}}}`: `blocks` is what the
 command prints, each table as `columns` and `rows` with its raw numbers (NaN as null), and
 `values` its key results by name (`pair-test`'s `delta`, `p`, `method`, `verdict`;
@@ -1382,7 +1383,7 @@ there is listed and stopped by the API, and one the Workbench started is followe
 closed by its supervisor with what the run's items paid.
 The server's own writes (the data page's) take the same locks. `evh catalog` builds beside the served folder and
 swaps it in, from the terminal or as a job, so a server keeps serving the old pages until the new ones are whole (the
-swap is two renames: for the time of one system call between them the folder is absent). While a migration holds the
+swap is one system call on Linux and macOS; elsewhere two renames, with the folder absent between them). While a migration holds the
 project (`data-migrate` and the other `*-migrate` jobs), the server answers every call `503` with `Retry-After: 5`
 and lets go of the project's database, so `data-migrate --to files` runs as a job with the server up; when it ends,
 the server reads the project's store again.

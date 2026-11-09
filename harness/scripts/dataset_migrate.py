@@ -23,9 +23,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import sys
 from typing import Any
 
-from evaluation_harness import _dataset_version, _source, _store
+from evaluation_harness import _dataset_version, _jsonout, _source, _store
 from evaluation_harness._common import DATA, DATASETS, evh_prog, read_json, write_json
 
 PROFILES = DATA / "profiles"
@@ -97,22 +98,33 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-    files = {f.stem: f for f in sorted(_store.glob(DATASETS, "*.json"))} if _store.is_dir(DATASETS) else {}
-    docs = {i: read_json(f) for i, f in files.items()}
-    pfiles = {i: PROFILES / f"{i}.json" for i in docs if _store.is_file(PROFILES / f"{i}.json")}
-    profiles = {i: read_json(p) for i, p in pfiles.items()}
-    before = {i: dict(p).get("source") for i, p in profiles.items()}
-    changes = migrate(docs, profiles)
-    for i, said in changes.items():
-        print(f"{i}: {'; '.join(said)}")
-        if not args.dry_run:
-            write_json(files[i], docs[i])
-            if i in profiles and profiles[i].get("source") != before[i]:
-                write_json(pfiles[i], profiles[i])
-    verb = "would change" if args.dry_run else "changed"
-    print(f"{len(files)} dataset(s), {len(changes)} {verb}" + ("" if changes else ": already in this format"))
-    return 0
+    with _jsonout.collect("dataset-migrate", args.json, live=sys.stderr):
+        files = (
+            {f.stem: f for f in sorted(_store.glob(DATASETS, "*.json"))} if _store.is_dir(DATASETS) else {}
+        )
+        docs = {i: read_json(f) for i, f in files.items()}
+        pfiles = {i: PROFILES / f"{i}.json" for i in docs if _store.is_file(PROFILES / f"{i}.json")}
+        profiles = {i: read_json(p) for i, p in pfiles.items()}
+        before = {i: dict(p).get("source") for i, p in profiles.items()}
+        changes = migrate(docs, profiles)
+        for i, said in changes.items():
+            print(f"{i}: {'; '.join(said)}")
+            if not args.dry_run:
+                write_json(files[i], docs[i])
+                if i in profiles and profiles[i].get("source") != before[i]:
+                    write_json(pfiles[i], profiles[i])
+        verb = "would change" if args.dry_run else "changed"
+        print(
+            f"{len(files)} dataset(s), {len(changes)} {verb}"
+            + ("" if changes else ": already in this format")
+        )
+        return 0
 
 
 if __name__ == "__main__":

@@ -25,11 +25,12 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _outputs  # noqa: E402
+from evaluation_harness import _jsonout, _outputs  # noqa: E402
 from evaluation_harness import leaderboard as lb  # noqa: E402
 from evaluation_harness._common import RUNS, dataset_item_ids, die, evh_prog  # noqa: E402
 from evaluation_harness._runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
@@ -44,31 +45,37 @@ def main() -> int:
     ap.add_argument("--match", help="only config_ids containing this substring")
     ap.add_argument("--asc", action="store_true", help="lower is better (default: inferred)")
     ap.add_argument("--desc", action="store_true", help="higher is better, whatever the runs declare")
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-    # Two runs sharing a config_id are averaged together below without
-    # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    with _jsonout.collect("holdout", args.json, live=sys.stderr):
+        # Two runs sharing a config_id are averaged together below without
+        # saying so. See _runs.warn_on_ambiguous_runs.
+        warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
 
-    args.metric = args.metric or default_metric(args.dataset_id, args.match)
-    keep = None
-    if args.exclude_dataset:
-        prior = dataset_item_ids(args.exclude_dataset)
-        all_items = dataset_item_ids(args.dataset_id)
-        keep = all_items - prior
-        print(
-            f"  {args.dataset_id}: {len(all_items)} items, "
-            f"{len(prior & all_items)} shared with {args.exclude_dataset}, "
-            f"{len(keep)} held out"
-        )
+        args.metric = args.metric or default_metric(args.dataset_id, args.match)
+        keep = None
+        if args.exclude_dataset:
+            prior = dataset_item_ids(args.exclude_dataset)
+            all_items = dataset_item_ids(args.dataset_id)
+            keep = all_items - prior
+            print(
+                f"  {args.dataset_id}: {len(all_items)} items, "
+                f"{len(prior & all_items)} shared with {args.exclude_dataset}, "
+                f"{len(keep)} held out"
+            )
 
-    runs = [r for r in runs_on(args.dataset_id, match=args.match) if _outputs.has_rows(r[0])]
-    raw: list[float] = []
-    M = matrix(runs, args.metric, keep=keep, raw=raw)
-    if not M:
-        die("no runs matched", "not-found")
-    print(f"  {len(runs)} run(s), {len(M)} arm(s)")
-    lb.significance(M, args.metric, asc=direction(runs, args.metric, args.asc, args.desc), raw_values=raw)
-    return 0
+        runs = [r for r in runs_on(args.dataset_id, match=args.match) if _outputs.has_rows(r[0])]
+        raw: list[float] = []
+        M = matrix(runs, args.metric, keep=keep, raw=raw)
+        if not M:
+            die("no runs matched", "not-found")
+        print(f"  {len(runs)} run(s), {len(M)} arm(s)")
+        lb.significance(M, args.metric, asc=direction(runs, args.metric, args.asc, args.desc), raw_values=raw)
+        return 0
 
 
 if __name__ == "__main__":

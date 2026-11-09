@@ -21,8 +21,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import hashlib
 import json
+import sys
 
-from evaluation_harness import _sources, _store
+from evaluation_harness import _jsonout, _sources, _store
 from evaluation_harness._common import (
     DATASETS,
     dataset_id_ok,
@@ -46,52 +47,58 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
-    args = ap.parse_args()
-    f = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
-    if not _store.is_file(f):
-        die(f"no dataset {args.dataset_id!r} (evh datasets lists them)", "not-found")
-    record = read_json(f)
-    if record.get("text") == "hidden":
-        die(f"{args.dataset_id}: its text is hidden; a hidden dataset is never published", "not-public")
-    try:
-        query = json.loads(args.query)
-    except ValueError as e:
-        die(f"--query is not JSON: {e}", "bad-argument")
-    cls, _path = _sources.resolve(args.to)
-    if not callable(getattr(cls, "publish", None)):
-        die(f"--to {args.to}: that source cannot publish (it has no publish())", "bad-argument")
-    items, bad = [], []
-    for it in record.get("items") or []:
-        p = item_path(args.dataset_id, it["item_id"])
-        if p is None:
-            bad.append(f"{it['item_id']}: not materialized here")
-            continue
-        data = _store.read_bytes(p)
-        if hashlib.sha256(data).hexdigest() != it["source_sha256"]:
-            bad.append(f"{it['item_id']}: its bytes are not its sha256")
-            continue
-        items.append((it, data))
-    if bad:
-        die(
-            f"{len(bad)} item(s) cannot be published: "
-            + "; ".join(bad[:5])
-            + f" (evh dataset-materialize --dataset-id {args.dataset_id} first)",
-            "not-materialized",
-        )
-    try:
-        got = cls({}).publish(record, items, query)
-    except Exception as e:  # noqa: BLE001 — every failure of the publish (the Hub's own errors too) is the same refusal
-        if "exists" in str(e):
-            die(f"--to {args.to}: {e}", "would-overwrite")
-        die(f"--to {args.to}: {e}", "failed")
-    record.setdefault("published", []).append({**got, "at": now()})
-    write_json(f, record)
-    print(
-        f"{args.dataset_id}: published to {got['repo']} at {got['revision']} "
-        f"({'private' if got.get('private') else 'public'}), {len(items)} item(s), every file read back and matching"
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    print(f"  {got['url']}")
-    return 0
+    args = ap.parse_args()
+    with _jsonout.collect("dataset-publish", args.json, live=sys.stderr):
+        f = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
+        if not _store.is_file(f):
+            die(f"no dataset {args.dataset_id!r} (evh datasets lists them)", "not-found")
+        record = read_json(f)
+        if record.get("text") == "hidden":
+            die(f"{args.dataset_id}: its text is hidden; a hidden dataset is never published", "not-public")
+        try:
+            query = json.loads(args.query)
+        except ValueError as e:
+            die(f"--query is not JSON: {e}", "bad-argument")
+        cls, _path = _sources.resolve(args.to)
+        if not callable(getattr(cls, "publish", None)):
+            die(f"--to {args.to}: that source cannot publish (it has no publish())", "bad-argument")
+        items, bad = [], []
+        for it in record.get("items") or []:
+            p = item_path(args.dataset_id, it["item_id"])
+            if p is None:
+                bad.append(f"{it['item_id']}: not materialized here")
+                continue
+            data = _store.read_bytes(p)
+            if hashlib.sha256(data).hexdigest() != it["source_sha256"]:
+                bad.append(f"{it['item_id']}: its bytes are not its sha256")
+                continue
+            items.append((it, data))
+        if bad:
+            die(
+                f"{len(bad)} item(s) cannot be published: "
+                + "; ".join(bad[:5])
+                + f" (evh dataset-materialize --dataset-id {args.dataset_id} first)",
+                "not-materialized",
+            )
+        try:
+            got = cls({}).publish(record, items, query)
+        except Exception as e:  # noqa: BLE001 — every failure of the publish (the Hub's own errors too) is the same refusal
+            if "exists" in str(e):
+                die(f"--to {args.to}: {e}", "would-overwrite")
+            die(f"--to {args.to}: {e}", "failed")
+        record.setdefault("published", []).append({**got, "at": now()})
+        write_json(f, record)
+        print(
+            f"{args.dataset_id}: published to {got['repo']} at {got['revision']} "
+            f"({'private' if got.get('private') else 'public'}), {len(items)} item(s), every file read back and matching"
+        )
+        print(f"  {got['url']}")
+        return 0
 
 
 if __name__ == "__main__":

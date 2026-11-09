@@ -34,10 +34,21 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import sys
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _card, _dataset_version, _fetch, _fields, _licences, _source, _sources, _store
+from evaluation_harness import (
+    _card,
+    _dataset_version,
+    _fetch,
+    _fields,
+    _jsonout,
+    _licences,
+    _source,
+    _sources,
+    _store,
+)
 from evaluation_harness._common import (
     DATASETS,
     ROOT,
@@ -480,109 +491,178 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
-    args = ap.parse_args()
-    why = _licences.problem(args.licence) if args.licence is not None else None
-    if why:
-        die(why, "bad-argument")
-    licence = _licences.canonical(args.licence) if args.licence else None
-
-    out = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
-    previous = {}
-    if _store.exists(out):
-        try:
-            previous = read_json(out)
-        except Exception:  # noqa: BLE001 — an unreadable previous file is simply replaced
-            previous = {}
-    fieldset = _fieldset(
-        args.fieldset or (previous.get("fieldset") if args.update_fields or args.lineage_only else None)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    if args.fields and not fieldset:
-        die(
-            "field values need a field set: pass --fieldset <id> (data/fields/<id>.yaml declares them)",
-            "bad-argument",
-        )
+    args = ap.parse_args()
+    with _jsonout.collect("dataset-create", args.json, live=sys.stderr):
+        why = _licences.problem(args.licence) if args.licence is not None else None
+        if why:
+            die(why, "bad-argument")
+        licence = _licences.canonical(args.licence) if args.licence else None
 
-    if args.lineage_only:
-        return _lineage_only(args, out, previous, fieldset)
-
-    if args.update_fields:
-        if not previous:
-            die(f"--update-fields: no dataset at {out} to update", "not-found")
-        if not args.fields:
-            die("--update-fields needs --fields FILE", "bad-argument")
-        # Merged: a value in the file replaces that value; every other value is kept.
-        items = [dict(it) for it in previous["items"]]
-        _attach(items, fieldset, args.fields)
-        _write(
-            out,
-            args.dataset_id,
-            items,
-            previous,
-            fieldset,
-            previous.get("description", ""),
-            previous.get("source_dir", ""),
-            previous.get("derived_from"),
-            # Every other key of the record (card, tags, text, split, made_from …) is not the fields: kept.
-            extra={k: v for k, v in previous.items() if k not in _OWN},
-            licence=previous.get("licence"),
-            source=previous.get("source") or {},
+        out = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
+        previous = {}
+        if _store.exists(out):
+            try:
+                previous = read_json(out)
+            except Exception:  # noqa: BLE001 — an unreadable previous file is simply replaced
+                previous = {}
+        fieldset = _fieldset(
+            args.fieldset or (previous.get("fieldset") if args.update_fields or args.lineage_only else None)
         )
-        print(
-            f"{out.relative_to(DATASETS.parents[1])}  fields updated on {len(items)} item(s); "
-            "the items, and so every run measured on them, are unchanged"
-        )
-        return 0
-
-    if _store.exists(out) and not args.force:
-        die(
-            f"{out} already exists.\n"
-            "  A dataset is FROZEN — runs cite it by id and were measured on these bytes.\n"
-            "  Make a new version (e.g. _v2) instead, or pass --force if nothing cites it yet.\n"
-            "  To correct its fields only, pass --update-fields --fields FILE.",
-            "would-overwrite",
-        )
-
-    if args.source_name:
-        if args.manifest:
-            die("--source and --manifest: one way to name the items", "bad-argument")
-        items, said = _from_source(args.source_name, args.query, args.dataset_id, fieldset, args.force)
-        lic = licence or (_licences.canonical(said["licence"]) if said.get("licence") else None)
-        if said.get("licence") and not lic:
-            die(f"--source {args.source_name}: {_licences.problem(said['licence'])}", "invalid-file")
-        lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
-        _write(
-            out,
-            args.dataset_id,
-            items,
-            previous,
-            fieldset,
-            args.description
-            or said.get("description")
-            or f"{len(items)} item(s) from source {args.source_name}",
-            _relative_source_dir(SOURCES / args.dataset_id),
-            lineage,
-            {"card": said["card"]} if said.get("card") else None,
-            licence=lic,
-            source=said["source"],
-        )
-        print(
-            f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s) from {said['source']['provider']})"
-        )
-        _say_lineage(lineage)
-        print(
-            "Next: "
-            + how(
-                f"evh dataset-materialize --dataset-id {args.dataset_id}",
-                f"make dataset-materialize DATASET_ID={args.dataset_id}",
+        if args.fields and not fieldset:
+            die(
+                "field values need a field set: pass --fieldset <id> (data/fields/<id>.yaml declares them)",
+                "bad-argument",
             )
-        )
-        return 0
 
-    if args.manifest:
-        items = _from_manifest(args.manifest, fieldset, args.source_dir, args.tag)
+        if args.lineage_only:
+            return _lineage_only(args, out, previous, fieldset)
+
+        if args.update_fields:
+            if not previous:
+                die(f"--update-fields: no dataset at {out} to update", "not-found")
+            if not args.fields:
+                die("--update-fields needs --fields FILE", "bad-argument")
+            # Merged: a value in the file replaces that value; every other value is kept.
+            items = [dict(it) for it in previous["items"]]
+            _attach(items, fieldset, args.fields)
+            _write(
+                out,
+                args.dataset_id,
+                items,
+                previous,
+                fieldset,
+                previous.get("description", ""),
+                previous.get("source_dir", ""),
+                previous.get("derived_from"),
+                # Every other key of the record (card, tags, text, split, made_from …) is not the fields: kept.
+                extra={k: v for k, v in previous.items() if k not in _OWN},
+                licence=previous.get("licence"),
+                source=previous.get("source") or {},
+            )
+            print(
+                f"{out.relative_to(DATASETS.parents[1])}  fields updated on {len(items)} item(s); "
+                "the items, and so every run measured on them, are unchanged"
+            )
+            return 0
+
+        if _store.exists(out) and not args.force:
+            die(
+                f"{out} already exists.\n"
+                "  A dataset is FROZEN — runs cite it by id and were measured on these bytes.\n"
+                "  Make a new version (e.g. _v2) instead, or pass --force if nothing cites it yet.\n"
+                "  To correct its fields only, pass --update-fields --fields FILE.",
+                "would-overwrite",
+            )
+
+        if args.source_name:
+            if args.manifest:
+                die("--source and --manifest: one way to name the items", "bad-argument")
+            items, said = _from_source(args.source_name, args.query, args.dataset_id, fieldset, args.force)
+            lic = licence or (_licences.canonical(said["licence"]) if said.get("licence") else None)
+            if said.get("licence") and not lic:
+                die(f"--source {args.source_name}: {_licences.problem(said['licence'])}", "invalid-file")
+            lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
+            _write(
+                out,
+                args.dataset_id,
+                items,
+                previous,
+                fieldset,
+                args.description
+                or said.get("description")
+                or f"{len(items)} item(s) from source {args.source_name}",
+                _relative_source_dir(SOURCES / args.dataset_id),
+                lineage,
+                {"card": said["card"]} if said.get("card") else None,
+                licence=lic,
+                source=said["source"],
+            )
+            print(
+                f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s) from {said['source']['provider']})"
+            )
+            _say_lineage(lineage)
+            print(
+                "Next: "
+                + how(
+                    f"evh dataset-materialize --dataset-id {args.dataset_id}",
+                    f"make dataset-materialize DATASET_ID={args.dataset_id}",
+                )
+            )
+            return 0
+
+        if args.manifest:
+            items = _from_manifest(args.manifest, fieldset, args.source_dir, args.tag)
+            if args.fields:
+                _attach(items, fieldset, args.fields)
+            desc = args.description or f"{len(items)} item(s) from {args.manifest.name}"
+            lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
+            _write(
+                out,
+                args.dataset_id,
+                items,
+                previous,
+                fieldset,
+                desc,
+                _relative_source_dir(args.source_dir) if _store.is_dir(args.source_dir) else "",
+                lineage,
+                licence=licence,
+            )
+            print(f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s))")
+            _jsonout.values({"dataset_id": args.dataset_id, "items": len(items), "path": str(out)})
+            _say_lineage(lineage)
+            print(
+                "Next: "
+                + how(
+                    f"evh dataset-materialize --dataset-id {args.dataset_id}",
+                    f"make dataset-materialize DATASET_ID={args.dataset_id}",
+                )
+            )
+            return 0
+
+        if not _store.is_dir(args.source_dir):
+            die(f"no source dir at {args.source_dir} — put your raw inputs there first", "not-found")
+
+        # Skip the directory's own documentation and dotfiles. Every data dir here
+        # ships a README explaining what belongs in it, and the first cold drop-in
+        # of this skeleton froze `sources/README.md` as a data item — "1 item, all
+        # hashes verified" — which is exactly the kind of quiet wrong answer this
+        # tooling exists to prevent.
+        def is_item(p: Path) -> bool:
+            if not _store.is_file(p) or p.name.startswith("."):
+                return False
+            return args.include_docs or p.name.lower() not in {"readme.md", "readme.txt", "readme"}
+
+        # through the store: a source folder under data/ is in the database in SQLite mode, where pathlib's glob found
+        # nothing ("no items matched", the store matrix, 2026-11-08)
+        walk = _store.rglob if args.recursive else _store.glob
+        files = sorted(p for p in walk(args.source_dir, args.glob) if is_item(p))
+        if args.limit:
+            files = files[: args.limit]
+        if not files:
+            die(
+                f"no items matched {args.glob!r} under {args.source_dir}\n"
+                "  Put your inputs in that directory first. READMEs are skipped by\n"
+                "  design — pass --include-docs if documentation really is your data.",
+                "not-found",
+            )
+
+        items = [
+            {
+                "item_id": p.relative_to(args.source_dir).as_posix().rsplit(".", 1)[0],
+                "source_path": p.relative_to(args.source_dir).as_posix(),
+                "source_sha256": sha256(p),
+                **({"tags": list(args.tag)} if args.tag else {}),
+            }
+            for p in files
+        ]
         if args.fields:
             _attach(items, fieldset, args.fields)
-        desc = args.description or f"{len(items)} item(s) from {args.manifest.name}"
+
         lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
         _write(
             out,
@@ -590,12 +670,18 @@ def main() -> int:
             items,
             previous,
             fieldset,
-            desc,
-            _relative_source_dir(args.source_dir) if _store.is_dir(args.source_dir) else "",
+            args.description or f"{len(items)} item(s) from {args.source_dir.name}/",
+            # Relative to the harness root when it sits inside it. `as_posix()` on the
+            # resolved arg wrote an ABSOLUTE path into a committed file — every dataset in
+            # this repo carries "/Users/<name>/projects/..." today. That leaks whoever ran
+            # it into a public repo, and makes the file describe a machine rather than a
+            # selection. The item hashes are what freeze a dataset; this field is a label.
+            _relative_source_dir(args.source_dir),
             lineage,
             licence=licence,
         )
         print(f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s))")
+        _jsonout.values({"dataset_id": args.dataset_id, "items": len(items), "path": str(out)})
         _say_lineage(lineage)
         print(
             "Next: "
@@ -605,73 +691,6 @@ def main() -> int:
             )
         )
         return 0
-
-    if not _store.is_dir(args.source_dir):
-        die(f"no source dir at {args.source_dir} — put your raw inputs there first", "not-found")
-
-    # Skip the directory's own documentation and dotfiles. Every data dir here
-    # ships a README explaining what belongs in it, and the first cold drop-in
-    # of this skeleton froze `sources/README.md` as a data item — "1 item, all
-    # hashes verified" — which is exactly the kind of quiet wrong answer this
-    # tooling exists to prevent.
-    def is_item(p: Path) -> bool:
-        if not _store.is_file(p) or p.name.startswith("."):
-            return False
-        return args.include_docs or p.name.lower() not in {"readme.md", "readme.txt", "readme"}
-
-    # through the store: a source folder under data/ is in the database in SQLite mode, where pathlib's glob found
-    # nothing ("no items matched", the store matrix, 2026-11-08)
-    walk = _store.rglob if args.recursive else _store.glob
-    files = sorted(p for p in walk(args.source_dir, args.glob) if is_item(p))
-    if args.limit:
-        files = files[: args.limit]
-    if not files:
-        die(
-            f"no items matched {args.glob!r} under {args.source_dir}\n"
-            "  Put your inputs in that directory first. READMEs are skipped by\n"
-            "  design — pass --include-docs if documentation really is your data.",
-            "not-found",
-        )
-
-    items = [
-        {
-            "item_id": p.relative_to(args.source_dir).as_posix().rsplit(".", 1)[0],
-            "source_path": p.relative_to(args.source_dir).as_posix(),
-            "source_sha256": sha256(p),
-            **({"tags": list(args.tag)} if args.tag else {}),
-        }
-        for p in files
-    ]
-    if args.fields:
-        _attach(items, fieldset, args.fields)
-
-    lineage = _lineage(args.from_, args.dataset_id, items) if args.from_ else None
-    _write(
-        out,
-        args.dataset_id,
-        items,
-        previous,
-        fieldset,
-        args.description or f"{len(items)} item(s) from {args.source_dir.name}/",
-        # Relative to the harness root when it sits inside it. `as_posix()` on the
-        # resolved arg wrote an ABSOLUTE path into a committed file — every dataset in
-        # this repo carries "/Users/<name>/projects/..." today. That leaks whoever ran
-        # it into a public repo, and makes the file describe a machine rather than a
-        # selection. The item hashes are what freeze a dataset; this field is a label.
-        _relative_source_dir(args.source_dir),
-        lineage,
-        licence=licence,
-    )
-    print(f"{out.relative_to(DATASETS.parents[1])}  ({len(items)} item(s))")
-    _say_lineage(lineage)
-    print(
-        "Next: "
-        + how(
-            f"evh dataset-materialize --dataset-id {args.dataset_id}",
-            f"make dataset-materialize DATASET_ID={args.dataset_id}",
-        )
-    )
-    return 0
 
 
 if __name__ == "__main__":

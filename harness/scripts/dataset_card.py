@@ -22,8 +22,9 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import json
+import sys
 
-from evaluation_harness import _card, _croissant, _fields, _hf_readme, _licences, _store
+from evaluation_harness import _card, _croissant, _fields, _hf_readme, _jsonout, _licences, _store
 from evaluation_harness._common import DATASETS, dataset_id_ok, die, evh_prog, read_json, write_text_atomic
 
 
@@ -61,32 +62,38 @@ def main() -> int:
         "--creator", help="with --format croissant: who made the dataset (a record has no creator)"
     )
     ap.add_argument("--out", type=_Path, help="write to this file instead of stdout")
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-    f = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
-    if not _store.is_file(f):
-        die(f"no dataset {args.dataset_id!r} (evh datasets lists them)", "not-found")
-    record = read_json(f)
-    if args.format == "text":
-        out = _text(record)
-    elif args.format == "hf-readme":
-        out = _hf_readme.readme(record)
-    else:
-        fs = _fields.load_fieldset(record["fieldset"]) if record.get("fieldset") else None
-        types = {x["name"]: x["type"] for x in (fs or {}).get("fields") or []}
-        doc, missing = _croissant.export(record, f, record.get("source_dir") or "", types, args.creator)
-        out = json.dumps(doc, indent=2, ensure_ascii=False) + "\n"
-        if missing:
-            print(
-                f"{args.dataset_id}: Croissant asks for {', '.join(missing)}, which the record does not give: left out"
-                + (" (--creator names who made it)" if "creator" in missing else ""),
-                file=_sys.stderr,
-            )
-    if args.out:
-        write_text_atomic(args.out, out)
-        print(f"wrote {args.out}")
-    else:
-        print(out, end="")
-    return 0
+    with _jsonout.collect("dataset-card", args.json, live=sys.stderr):
+        f = DATASETS / f"{dataset_id_ok(args.dataset_id)}.json"
+        if not _store.is_file(f):
+            die(f"no dataset {args.dataset_id!r} (evh datasets lists them)", "not-found")
+        record = read_json(f)
+        if args.format == "text":
+            out = _text(record)
+        elif args.format == "hf-readme":
+            out = _hf_readme.readme(record)
+        else:
+            fs = _fields.load_fieldset(record["fieldset"]) if record.get("fieldset") else None
+            types = {x["name"]: x["type"] for x in (fs or {}).get("fields") or []}
+            doc, missing = _croissant.export(record, f, record.get("source_dir") or "", types, args.creator)
+            out = json.dumps(doc, indent=2, ensure_ascii=False) + "\n"
+            if missing:
+                print(
+                    f"{args.dataset_id}: Croissant asks for {', '.join(missing)}, which the record does not give: left out"
+                    + (" (--creator names who made it)" if "creator" in missing else ""),
+                    file=_sys.stderr,
+                )
+        if args.out:
+            write_text_atomic(args.out, out)
+            print(f"wrote {args.out}")
+        else:
+            print(out, end="")
+        return 0
 
 
 if __name__ == "__main__":

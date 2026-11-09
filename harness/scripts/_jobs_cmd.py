@@ -22,7 +22,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _jsonout
+from evaluation_harness import _jsonout, _store
 from evaluation_harness._common import die, evh_prog
 
 TERMINAL = ("succeeded", "failed", "cancelled", "lost")
@@ -32,9 +32,9 @@ def _value(raw: str) -> Any:
     """A value as JSON when it reads as JSON (3, true, 0.5), else the text; `@FILE` is the file, uploaded."""
     if raw.startswith("@"):
         p = Path(raw[1:])
-        if not p.is_file():
+        if not _store.is_file(p):
             die(f"--arg ...=@{p}: no such file", "not-found")
-        return {"name": p.name, "content_base64": base64.b64encode(p.read_bytes()).decode()}
+        return {"name": p.name, "content_base64": base64.b64encode(_store.read_bytes(p)).decode()}
     try:
         return json.loads(raw)
     except ValueError:
@@ -68,8 +68,13 @@ def _who() -> str:
 
 
 def _refused(exc: Exception) -> None:
+    """An API refusal as the command line's: its status as the refusal kind."""
     status = getattr(exc, "status", 400)
-    die(str(exc), "not-found" if status == 404 else "not-allowed" if status == 409 else "bad-argument")
+    if status == 404:
+        die(str(exc), "not-found")
+    if status == 409:
+        die(str(exc), "not-allowed")
+    die(str(exc), "bad-argument")
 
 
 def _line(j: dict[str, Any]) -> str:

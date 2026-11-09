@@ -24,9 +24,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import hashlib
+import sys
 from pathlib import Path
 
-from evaluation_harness import _outputs, _runs, _store
+from evaluation_harness import _jsonout, _outputs, _runs, _store
 from evaluation_harness._common import RUNS, die, evh_prog, load_dataset, read_json
 from evaluation_harness._label_sets import set_dir, write_set
 
@@ -189,36 +190,41 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-
-    m = RUNS / args.run / "metrics.json"
-    if not _store.is_file(m):
-        die(f"no finished run {args.run!r} under {RUNS}", "not-found")
-    dataset_id = read_json(m).get("dataset_id")
-    if not dataset_id:
-        die(f"run {args.run} names no dataset", "invalid-file")
-    rows, meta = _from_run(args.run, dataset_id, load_dataset(dataset_id)["items"], args)
-    if _rebuild(dataset_id, args.name, rows):
+    with _jsonout.collect("label-from-run", args.json, live=sys.stderr):
+        m = RUNS / args.run / "metrics.json"
+        if not _store.is_file(m):
+            die(f"no finished run {args.run!r} under {RUNS}", "not-found")
+        dataset_id = read_json(m).get("dataset_id")
+        if not dataset_id:
+            die(f"run {args.run} names no dataset", "invalid-file")
+        rows, meta = _from_run(args.run, dataset_id, load_dataset(dataset_id)["items"], args)
+        if _rebuild(dataset_id, args.name, rows):
+            return 0
+        source = {"kind": "model", **meta["from_run"], "model": meta.get("model")}
+        rebuild = (
+            f"evh label-from-run --run {args.run} --set {args.name} --not-redistributed"
+            if args.not_redistributed
+            else None
+        )
+        doc = write_set(
+            dataset_id,
+            args.name,
+            {item: text for item, text, _ in rows},
+            source,
+            args.guideline,
+            rebuild=rebuild,
+        )
+        print(f"data/labels/{dataset_id}/{args.name}: {doc['n_items']} label(s), source model · {args.run}")
+        if rebuild:
+            print(f"  its texts are kept out of git; commit labels.json. They are rebuilt with: {rebuild}")
+        print(f"  every set on it: evh labels --dataset-id {dataset_id}")
         return 0
-    source = {"kind": "model", **meta["from_run"], "model": meta.get("model")}
-    rebuild = (
-        f"evh label-from-run --run {args.run} --set {args.name} --not-redistributed"
-        if args.not_redistributed
-        else None
-    )
-    doc = write_set(
-        dataset_id,
-        args.name,
-        {item: text for item, text, _ in rows},
-        source,
-        args.guideline,
-        rebuild=rebuild,
-    )
-    print(f"data/labels/{dataset_id}/{args.name}: {doc['n_items']} label(s), source model · {args.run}")
-    if rebuild:
-        print(f"  its texts are kept out of git; commit labels.json. They are rebuilt with: {rebuild}")
-    print(f"  every set on it: evh labels --dataset-id {dataset_id}")
-    return 0
 
 
 if __name__ == "__main__":

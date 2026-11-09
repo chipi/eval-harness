@@ -20,10 +20,11 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import hashlib
+import sys
 from collections import Counter
 from pathlib import Path
 
-from evaluation_harness import _store
+from evaluation_harness import _jsonout, _store
 from evaluation_harness._common import CAPTURES, die, evh_prog, load_dataset
 from evaluation_harness._importers import parse_time
 from evaluation_harness._label_sets import label_text, write_set
@@ -41,54 +42,59 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
-    args = ap.parse_args()
-
-    rules = load_rules(args.map)
-    ds = load_dataset(args.dataset_id)
-    doc, recs = load_capture(args.capture)
-    by_id = {r["id"]: r for r in recs}
-    captured = parse_time(doc.get("captured_at"))
-    labels: dict[str, str] = {}
-    counts: Counter[str] = Counter()
-    for it in ds["items"]:
-        rec = by_id.get(it["item_id"])
-        if rec is None:
-            counts["no_record"] += 1
-            continue
-        out = rec.get("outcome") if isinstance(rec.get("outcome"), dict) else {}
-        t = parse_time(rec.get("created_at"))
-        age = (captured - t).total_seconds() / 86400 if captured and t else None
-        rule = next((r for r in rules if matches(r, out, age)), None)
-        if rule is None:
-            counts["unmatched"] += 1
-        elif rule.get("skip"):
-            counts["skipped"] += 1
-        else:
-            counts["matched"] += 1
-            labels[it["item_id"]] = (
-                label_text([str(a) for a in rule["label"]])
-                if isinstance(rule["label"], list)
-                else str(rule["label"])
-            )
-    if not labels:
-        die(f"no item got a label ({dict(counts)}): nothing written", "not-enough")
-    source = {
-        "kind": "rule",
-        "capture": args.capture,
-        "capture_sha256": hashlib.sha256(
-            _store.read_bytes(CAPTURES / args.capture / "capture.json")
-        ).hexdigest(),
-        "captured_at": doc.get("captured_at"),
-        "mapping": args.map.as_posix(),
-        "mapping_sha256": hashlib.sha256(_store.read_bytes(args.map)).hexdigest(),
-        **{k: counts[k] for k in ("matched", "skipped", "unmatched", "no_record")},
-    }
-    out = write_set(args.dataset_id, args.name, labels, source, args.map)
-    print(
-        f"data/labels/{args.dataset_id}/{args.name}: {out['n_items']} of {len(ds['items'])} item(s) labelled "
-        f"({counts['skipped']} skipped, {counts['unmatched']} matched no rule, {counts['no_record']} not in the capture)"
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    return 0
+    args = ap.parse_args()
+    with _jsonout.collect("label-from-capture", args.json, live=sys.stderr):
+        rules = load_rules(args.map)
+        ds = load_dataset(args.dataset_id)
+        doc, recs = load_capture(args.capture)
+        by_id = {r["id"]: r for r in recs}
+        captured = parse_time(doc.get("captured_at"))
+        labels: dict[str, str] = {}
+        counts: Counter[str] = Counter()
+        for it in ds["items"]:
+            rec = by_id.get(it["item_id"])
+            if rec is None:
+                counts["no_record"] += 1
+                continue
+            out = rec.get("outcome") if isinstance(rec.get("outcome"), dict) else {}
+            t = parse_time(rec.get("created_at"))
+            age = (captured - t).total_seconds() / 86400 if captured and t else None
+            rule = next((r for r in rules if matches(r, out, age)), None)
+            if rule is None:
+                counts["unmatched"] += 1
+            elif rule.get("skip"):
+                counts["skipped"] += 1
+            else:
+                counts["matched"] += 1
+                labels[it["item_id"]] = (
+                    label_text([str(a) for a in rule["label"]])
+                    if isinstance(rule["label"], list)
+                    else str(rule["label"])
+                )
+        if not labels:
+            die(f"no item got a label ({dict(counts)}): nothing written", "not-enough")
+        source = {
+            "kind": "rule",
+            "capture": args.capture,
+            "capture_sha256": hashlib.sha256(
+                _store.read_bytes(CAPTURES / args.capture / "capture.json")
+            ).hexdigest(),
+            "captured_at": doc.get("captured_at"),
+            "mapping": args.map.as_posix(),
+            "mapping_sha256": hashlib.sha256(_store.read_bytes(args.map)).hexdigest(),
+            **{k: counts[k] for k in ("matched", "skipped", "unmatched", "no_record")},
+        }
+        out = write_set(args.dataset_id, args.name, labels, source, args.map)
+        print(
+            f"data/labels/{args.dataset_id}/{args.name}: {out['n_items']} of {len(ds['items'])} item(s) labelled "
+            f"({counts['skipped']} skipped, {counts['unmatched']} matched no rule, {counts['no_record']} not in the capture)"
+        )
+        return 0
 
 
 if __name__ == "__main__":

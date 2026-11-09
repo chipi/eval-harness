@@ -40,10 +40,11 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _outputs, _store, _tags
+from evaluation_harness import _common, _jsonout, _outputs, _store, _tags
 from evaluation_harness._codeid import file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -97,82 +98,93 @@ def main() -> int:
         type=Path,
         help="with --set, a file: the instructions the labeller followed (its path and sha256 are recorded)",
     )
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-
-    if not _store.is_file(args.sheet):
-        die(f"no sheet {args.sheet}", "not-found")
-    load_dataset(args.dataset_id)
-    rows, choices = read_csv(args.sheet)
-    if not rows or "item_id" not in rows[0]:
-        die(
-            f"{args.sheet}: a sheet has the column item_id (evh inspect --sheet … --csv writes one)",
-            "invalid-file",
-        )
-    head = list(rows[0])
-    rows = [r for r in rows if not r["item_id"].startswith(NOT_AN_ITEM)]
-    sha = hashlib.sha256(_store.read_bytes(args.sheet)).hexdigest()
-
-    def filled(col: str) -> bool:
-        return any((r.get(col) or "").strip() for r in rows)
-
-    score_cols = [h for h in head if h.startswith("score: ")]
-    has_label = "label" in head and filled("label")
-    has_pick = "pick" in head and filled("pick")
-    has_scores = any(filled(h) for h in score_cols)
-    if any(h.startswith(_tags.COLUMN) for h in head):
-        return _import_tags(args, rows, sha, any(filled(h) for h in head if h.startswith(_tags.COLUMN)))
-    if args.tags or args.modes:
-        die(
-            f"{args.sheet}: --tags and --modes read `failure_modes:` columns, and the sheet has none",
-            "bad-argument",
-        )
-    if not (has_label or has_pick or has_scores):
-        die(f"{args.sheet}: nothing filled: no `label`, `pick` or `score:` cell has an answer", "not-enough")
-    if has_pick and has_scores:
-        die(f"{args.sheet}: both `pick` and `score:` are filled: a sheet is judged one way", "invalid-file")
-    if has_label and not args.name:
-        die("the sheet has labels: name the label set with --set", "bad-argument")
-    if (has_pick or has_scores) and not args.scorer:
-        die(
-            "the sheet has judgements: name the judged runs with --scorer (data/runs-judged/<scorer>/)",
-            "bad-argument",
-        )
-
-    labels: dict[str, str] = {}
-    notes: dict[str, str] = {}
-    if has_label:
-        labels, notes = labels_from_rows(rows, choices)
-        out = set_dir(args.dataset_id, args.name)
-        if _store.exists(out) and any(_store.iterdir(out)):
+    with _jsonout.collect("sheet-import", args.json, live=sys.stderr):
+        if not _store.is_file(args.sheet):
+            die(f"no sheet {args.sheet}", "not-found")
+        load_dataset(args.dataset_id)
+        rows, choices = read_csv(args.sheet)
+        if not rows or "item_id" not in rows[0]:
             die(
-                f"{out} exists: a label set is never edited. A correction is a new set: name another.",
-                "would-overwrite",
+                f"{args.sheet}: a sheet has the column item_id (evh inspect --sheet … --csv writes one)",
+                "invalid-file",
             )
-    judged: dict[str, Any] | None = None
-    if has_pick or has_scores:
-        if not NAME.match(args.scorer):
+        head = list(rows[0])
+        rows = [r for r in rows if not r["item_id"].startswith(NOT_AN_ITEM)]
+        sha = hashlib.sha256(_store.read_bytes(args.sheet)).hexdigest()
+
+        def filled(col: str) -> bool:
+            return any((r.get(col) or "").strip() for r in rows)
+
+        score_cols = [h for h in head if h.startswith("score: ")]
+        has_label = "label" in head and filled("label")
+        has_pick = "pick" in head and filled("pick")
+        has_scores = any(filled(h) for h in score_cols)
+        if any(h.startswith(_tags.COLUMN) for h in head):
+            return _import_tags(args, rows, sha, any(filled(h) for h in head if h.startswith(_tags.COLUMN)))
+        if args.tags or args.modes:
             die(
-                f"--scorer {args.scorer!r}: letters, digits, _ . - (at most 100), starting with a letter or digit",
+                f"{args.sheet}: --tags and --modes read `failure_modes:` columns, and the sheet has none",
                 "bad-argument",
             )
-        target = _common.DATA / "runs-judged" / args.scorer
-        if _store.exists(target) and any(_store.iterdir(target)):
+        if not (has_label or has_pick or has_scores):
             die(
-                f"{target} exists: judged runs are never overwritten. Name another --scorer.",
-                "would-overwrite",
+                f"{args.sheet}: nothing filled: no `label`, `pick` or `score:` cell has an answer",
+                "not-enough",
             )
-        judged = _judgements(args, rows, has_pick)
+        if has_pick and has_scores:
+            die(
+                f"{args.sheet}: both `pick` and `score:` are filled: a sheet is judged one way",
+                "invalid-file",
+            )
+        if has_label and not args.name:
+            die("the sheet has labels: name the label set with --set", "bad-argument")
+        if (has_pick or has_scores) and not args.scorer:
+            die(
+                "the sheet has judgements: name the judged runs with --scorer (data/runs-judged/<scorer>/)",
+                "bad-argument",
+            )
 
-    if has_label:
-        source = {"kind": args.kind, "by": args.by, "sheet": args.sheet.name, "sheet_sha256": sha}
-        doc = write_set(args.dataset_id, args.name, labels, source, args.guideline, notes)
-        print(
-            f"data/labels/{args.dataset_id}/{args.name}: {doc['n_items']} label(s) of {len(rows)} row(s), "
-            f"source {args.kind} · {args.by}"
-        )
-    if judged is not None:
-        _write(args, judged, sha)
-    return 0
+        labels: dict[str, str] = {}
+        notes: dict[str, str] = {}
+        if has_label:
+            labels, notes = labels_from_rows(rows, choices)
+            out = set_dir(args.dataset_id, args.name)
+            if _store.exists(out) and any(_store.iterdir(out)):
+                die(
+                    f"{out} exists: a label set is never edited. A correction is a new set: name another.",
+                    "would-overwrite",
+                )
+        judged: dict[str, Any] | None = None
+        if has_pick or has_scores:
+            if not NAME.match(args.scorer):
+                die(
+                    f"--scorer {args.scorer!r}: letters, digits, _ . - (at most 100), starting with a letter or digit",
+                    "bad-argument",
+                )
+            target = _common.DATA / "runs-judged" / args.scorer
+            if _store.exists(target) and any(_store.iterdir(target)):
+                die(
+                    f"{target} exists: judged runs are never overwritten. Name another --scorer.",
+                    "would-overwrite",
+                )
+            judged = _judgements(args, rows, has_pick)
+
+        if has_label:
+            source = {"kind": args.kind, "by": args.by, "sheet": args.sheet.name, "sheet_sha256": sha}
+            doc = write_set(args.dataset_id, args.name, labels, source, args.guideline, notes)
+            print(
+                f"data/labels/{args.dataset_id}/{args.name}: {doc['n_items']} label(s) of {len(rows)} row(s), "
+                f"source {args.kind} · {args.by}"
+            )
+        if judged is not None:
+            _write(args, judged, sha)
+        return 0
 
 
 def _import_tags(

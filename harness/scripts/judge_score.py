@@ -67,7 +67,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Callable
 
-from evaluation_harness import _outputs, _providers, _runs, _store
+from evaluation_harness import _jsonout, _outputs, _providers, _runs, _store
 from evaluation_harness._codeid import content_sha256, file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
@@ -1632,168 +1632,174 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
     args = ap.parse_args()
-    # Piped or redirected to a log, stdout is block-buffered and the progress lines came all at once at the end
-    # (as in `evh run`): a line is written when it is printed.
-    for stream in (sys.stdout, sys.stderr):
-        if not stream.isatty() and hasattr(stream, "reconfigure"):
-            stream.reconfigure(line_buffering=True)
+    with _jsonout.collect("judge-score", args.json, live=sys.stderr):
+        # Piped or redirected to a log, stdout is block-buffered and the progress lines came all at once at the end
+        # (as in `evh run`): a line is written when it is printed.
+        for stream in (sys.stdout, sys.stderr):
+            if not stream.isatty() and hasattr(stream, "reconfigure"):
+                stream.reconfigure(line_buffering=True)
 
-    sc = load_scorer(SCORERS / f"{args.scorer}.yaml")
-    if sc["dataset_id"] != args.dataset_id:
-        die(
-            f"scorer {sc['scorer_id']} is for dataset {sc['dataset_id']!r}, not {args.dataset_id!r}",
-            "mismatch",
-        )
-    problems = validation_problems(sc)
-    validated = not problems
-    if problems and not args.unvalidated:
-        print(f"REFUSED: judge scorer {sc['scorer_id']} is not validated:", file=sys.stderr)
-        for p in problems:
-            print(f"  - {p}", file=sys.stderr)
-        print(
-            "  Fix the `validation` block, or pass --unvalidated to run it labelled 'unvalidated judge'.",
-            file=sys.stderr,
-        )
-        return EXIT_UNVALIDATED
-    label = validated_label(sc) if validated else "unvalidated judge"
-    if not validated:
-        print(f"WARNING: UNVALIDATED JUDGE. Every number is labelled; {len(problems)} problem(s):")
-        for p in problems:
-            print(f"  - {p}")
-
-    ds_file = DATA / "datasets" / f"{dataset_id_ok(args.dataset_id)}.json"
-    if not _store.is_file(ds_file):
-        die(f"no dataset {args.dataset_id}", "not-found")
-    ds = read_json(ds_file)
-    items = ds["items"]
-    item_ids = [it["item_id"] for it in items]
-    mat = MATERIALIZED / args.dataset_id
-    articles = {}
-    for it in items:
-        f = mat / (it.get("source_path") or f"{it['item_id']}.txt")
-        if not _store.is_file(f):
+        sc = load_scorer(SCORERS / f"{args.scorer}.yaml")
+        if sc["dataset_id"] != args.dataset_id:
             die(
-                f"{f} is missing: materialize the dataset first "
-                f"({how(f'evh dataset-materialize --dataset-id {args.dataset_id}', f'make dataset-materialize DATASET_ID={args.dataset_id}')})",
-                "not-materialized",
+                f"scorer {sc['scorer_id']} is for dataset {sc['dataset_id']!r}, not {args.dataset_id!r}",
+                "mismatch",
             )
-        articles[it["item_id"]] = _store.read_text(f, encoding="utf-8", errors="replace")
-    arms = discover_arms(args.dataset_id, args.match or sc.get("arms_match", ""))
-    if args.arms:
-        arms = select_arms(arms, args.arms)
-    if len(arms) < 2:
-        die(f"found {len(arms)} arm run(s) on {args.dataset_id} in {RUNS}", "not-enough")
-    vers = config_versions(arms)
-    if len(vers) > 1:
-        print(
-            f"WARNING: the arm set mixes config versions {', '.join(vers)}: v1 and v2 of one arm are "
-            "judged as two arms. Narrow it with --match _v2 (or the scorer's arms_match) if that "
-            "is not what you mean."
-        )
-    outputs = {a["config_id"]: read_outputs(a, item_ids) for a in arms}
-    base = prompt_text(sc)
-    items_sha = (
-        read_json(RUNS / arms[0]["run"] / "metrics.json")
-        .get("fingerprint", {})
-        .get("data", {})
-        .get("items_sha256")
-    )
-    manifest = build_manifest(sc, args.dataset_id, items_sha, item_ids, arms, articles, outputs, base)
-    sid = manifest["judging_set_id"]
-    vdir = VERDICTS / sc["scorer_id"] / sid
-    cap = effective_cap(sc)
-    print(f"judging set  {sid}")
-    mode = mode_of(manifest)
-    per_item = {
-        "grade": f"blocks per item {manifest['protocol']['block_sizes']}",
-        "pick": "one pick of all the arms per item",
-        "pairwise": f"{len(arms) * (len(arms) - 1) // 2} pair calls per item",
-    }[mode]
-    print(
-        f"  arms {len(arms)}, items {len(item_ids)}, "
-        + (f"mode {mode}, " if mode != DEFAULT_MODE else "")
-        + f"{per_item}, position items {len(manifest['position_items'])}, "
-        f"noise items {len(manifest['noise_items'])}"
-    )
-    blocked = False
-    for jid, where, found in judge_access(sc):
-        print(f"  judge {jid:8s} {where}")
-        # --no-calls reads stored verdicts only: a key it never uses is not missing.
-        for p in [] if args.no_calls else found:
-            print(f"    MISSING: {p}")
-        blocked = blocked or bool(found)
-
-    if args.dry_run:
-        est = estimate(manifest, sc, base, articles, outputs, vdir)
-        print(
-            f"DRY RUN (nothing called; tokens are chars/{CHARS_PER_TOKEN} estimates, cost from "
-            f"the scorer's price table)"
-        )
-        tc = tt_in = tt_out = 0
-        tcost = 0.0
-        for jid, e in est.items():
+        problems = validation_problems(sc)
+        validated = not problems
+        if problems and not args.unvalidated:
+            print(f"REFUSED: judge scorer {sc['scorer_id']} is not validated:", file=sys.stderr)
+            for p in problems:
+                print(f"  - {p}", file=sys.stderr)
             print(
-                f"  judge {jid:8s} calls {e['calls']:5d} (stored {e['stored']})  "
-                f"tokens in {e['tokens_in']:>10,}  out {e['tokens_out']:>8,}  "
-                f"est ${e['est_cost_usd']:.4f}"
+                "  Fix the `validation` block, or pass --unvalidated to run it labelled 'unvalidated judge'.",
+                file=sys.stderr,
             )
-            tc += e["calls"]
-            tt_in += e["tokens_in"]
-            tt_out += e["tokens_out"]
-            tcost += e["est_cost_usd"]
-        print(
-            f"  TOTAL        calls {tc:5d}  tokens in {tt_in:>10,}  out {tt_out:>8,}  "
-            f"est ${tcost:.4f}   cap {(f'${cap:.2f}') if cap is not None else 'NONE'}"
+            return EXIT_UNVALIDATED
+        label = validated_label(sc) if validated else "unvalidated judge"
+        if not validated:
+            print(f"WARNING: UNVALIDATED JUDGE. Every number is labelled; {len(problems)} problem(s):")
+            for p in problems:
+                print(f"  - {p}")
+
+        ds_file = DATA / "datasets" / f"{dataset_id_ok(args.dataset_id)}.json"
+        if not _store.is_file(ds_file):
+            die(f"no dataset {args.dataset_id}", "not-found")
+        ds = read_json(ds_file)
+        items = ds["items"]
+        item_ids = [it["item_id"] for it in items]
+        mat = MATERIALIZED / args.dataset_id
+        articles = {}
+        for it in items:
+            f = mat / (it.get("source_path") or f"{it['item_id']}.txt")
+            if not _store.is_file(f):
+                die(
+                    f"{f} is missing: materialize the dataset first "
+                    f"({how(f'evh dataset-materialize --dataset-id {args.dataset_id}', f'make dataset-materialize DATASET_ID={args.dataset_id}')})",
+                    "not-materialized",
+                )
+            articles[it["item_id"]] = _store.read_text(f, encoding="utf-8", errors="replace")
+        arms = discover_arms(args.dataset_id, args.match or sc.get("arms_match", ""))
+        if args.arms:
+            arms = select_arms(arms, args.arms)
+        if len(arms) < 2:
+            die(f"found {len(arms)} arm run(s) on {args.dataset_id} in {RUNS}", "not-enough")
+        vers = config_versions(arms)
+        if len(vers) > 1:
+            print(
+                f"WARNING: the arm set mixes config versions {', '.join(vers)}: v1 and v2 of one arm are "
+                "judged as two arms. Narrow it with --match _v2 (or the scorer's arms_match) if that "
+                "is not what you mean."
+            )
+        outputs = {a["config_id"]: read_outputs(a, item_ids) for a in arms}
+        base = prompt_text(sc)
+        items_sha = (
+            read_json(RUNS / arms[0]["run"] / "metrics.json")
+            .get("fingerprint", {})
+            .get("data", {})
+            .get("items_sha256")
         )
+        manifest = build_manifest(sc, args.dataset_id, items_sha, item_ids, arms, articles, outputs, base)
+        sid = manifest["judging_set_id"]
+        vdir = VERDICTS / sc["scorer_id"] / sid
+        cap = effective_cap(sc)
+        print(f"judging set  {sid}")
+        mode = mode_of(manifest)
+        per_item = {
+            "grade": f"blocks per item {manifest['protocol']['block_sizes']}",
+            "pick": "one pick of all the arms per item",
+            "pairwise": f"{len(arms) * (len(arms) - 1) // 2} pair calls per item",
+        }[mode]
+        print(
+            f"  arms {len(arms)}, items {len(item_ids)}, "
+            + (f"mode {mode}, " if mode != DEFAULT_MODE else "")
+            + f"{per_item}, position items {len(manifest['position_items'])}, "
+            f"noise items {len(manifest['noise_items'])}"
+        )
+        blocked = False
+        for jid, where, found in judge_access(sc):
+            print(f"  judge {jid:8s} {where}")
+            # --no-calls reads stored verdicts only: a key it never uses is not missing.
+            for p in [] if args.no_calls else found:
+                print(f"    MISSING: {p}")
+            blocked = blocked or bool(found)
+
+        if args.dry_run:
+            est = estimate(manifest, sc, base, articles, outputs, vdir)
+            print(
+                f"DRY RUN (nothing called; tokens are chars/{CHARS_PER_TOKEN} estimates, cost from "
+                f"the scorer's price table)"
+            )
+            tc = tt_in = tt_out = 0
+            tcost = 0.0
+            for jid, e in est.items():
+                print(
+                    f"  judge {jid:8s} calls {e['calls']:5d} (stored {e['stored']})  "
+                    f"tokens in {e['tokens_in']:>10,}  out {e['tokens_out']:>8,}  "
+                    f"est ${e['est_cost_usd']:.4f}"
+                )
+                tc += e["calls"]
+                tt_in += e["tokens_in"]
+                tt_out += e["tokens_out"]
+                tcost += e["est_cost_usd"]
+            print(
+                f"  TOTAL        calls {tc:5d}  tokens in {tt_in:>10,}  out {tt_out:>8,}  "
+                f"est ${tcost:.4f}   cap {(f'${cap:.2f}') if cap is not None else 'NONE'}"
+            )
+            return 0
+
+        call = None if args.no_calls else real_call
+        if call and blocked:
+            die(
+                "a judge cannot be called (MISSING above): nothing was sent. `evh env-check` shows what each role reads.",
+                "not-configured",
+            )
+        freeze(manifest)
+        if call and cap is None:
+            die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD", "not-configured")
+        stats = run_judging(
+            manifest, sc, base, articles, outputs, vdir, call, cap, retry_unparsed=args.retry_unparsed
+        )
+        scores = load_scores(manifest, sc, vdir)
+        proj = project(sc, scores, item_ids)
+        out_root = args.out / sc["scorer_id"]
+        if not proj:
+            print("no item has a complete verdict from every judge; nothing to project")
+            return EXIT_STOPPED if stats["aborted"] else EXIT_NOTHING
+        if sc.get("supersedes"):
+            print(f"  {sc['scorer_id']} supersedes {sc['supersedes']}: {sc.get('why')}")
+        words = {c: {i: len(str(t).split()) for i, t in o.items()} for c, o in outputs.items()}
+        summ = summarise(manifest, sc, arms, scores, proj, stats, label, validated, vdir, lengths=words)
+        written = write_scored_runs(manifest, sc, arms, proj, out_root, label, validated)
+        write_json(out_root / "summary.json", summ)
+        for j, lb in (summ.get("length_bias") or {}).items():
+            if lb:
+                print(
+                    f"  judge {j}: its score against the output's length in words, Spearman {lb['spearman_length']:+.2f} over {lb['n']}"
+                )
+        print(f"\n{len(written)} scored run(s) -> {out_root}  ({len(proj)}/{len(item_ids)} items, {label})")
+        if mode != DEFAULT_MODE:
+            print_win_summary(summ)
+        print(
+            f"  calls {stats['calls']}, spent this run ${stats['billed_this_run']:.4f}, "
+            f"stored total ${stats['spent_usd']:.4f}  (the provider's bill where it reports one, else the price table)"
+        )
+        print(
+            f"  EVAL_RUNS_DIR={out_root} "
+            + how(
+                f"evh leaderboard --dataset-id {args.dataset_id}",
+                f"make leaderboard DATASET_ID={args.dataset_id}",
+            )
+        )
+        if stats["aborted"]:
+            return EXIT_STOPPED
         return 0
-
-    call = None if args.no_calls else real_call
-    if call and blocked:
-        die(
-            "a judge cannot be called (MISSING above): nothing was sent. `evh env-check` shows what each role reads.",
-            "not-configured",
-        )
-    freeze(manifest)
-    if call and cap is None:
-        die("no cost cap: set cost_cap_usd in the scorer or EVAL_MAX_COST_USD", "not-configured")
-    stats = run_judging(
-        manifest, sc, base, articles, outputs, vdir, call, cap, retry_unparsed=args.retry_unparsed
-    )
-    scores = load_scores(manifest, sc, vdir)
-    proj = project(sc, scores, item_ids)
-    out_root = args.out / sc["scorer_id"]
-    if not proj:
-        print("no item has a complete verdict from every judge; nothing to project")
-        return EXIT_STOPPED if stats["aborted"] else EXIT_NOTHING
-    if sc.get("supersedes"):
-        print(f"  {sc['scorer_id']} supersedes {sc['supersedes']}: {sc.get('why')}")
-    words = {c: {i: len(str(t).split()) for i, t in o.items()} for c, o in outputs.items()}
-    summ = summarise(manifest, sc, arms, scores, proj, stats, label, validated, vdir, lengths=words)
-    written = write_scored_runs(manifest, sc, arms, proj, out_root, label, validated)
-    write_json(out_root / "summary.json", summ)
-    for j, lb in (summ.get("length_bias") or {}).items():
-        if lb:
-            print(
-                f"  judge {j}: its score against the output's length in words, Spearman {lb['spearman_length']:+.2f} over {lb['n']}"
-            )
-    print(f"\n{len(written)} scored run(s) -> {out_root}  ({len(proj)}/{len(item_ids)} items, {label})")
-    if mode != DEFAULT_MODE:
-        print_win_summary(summ)
-    print(
-        f"  calls {stats['calls']}, spent this run ${stats['billed_this_run']:.4f}, "
-        f"stored total ${stats['spent_usd']:.4f}  (the provider's bill where it reports one, else the price table)"
-    )
-    print(
-        f"  EVAL_RUNS_DIR={out_root} "
-        + how(
-            f"evh leaderboard --dataset-id {args.dataset_id}",
-            f"make leaderboard DATASET_ID={args.dataset_id}",
-        )
-    )
-    if stats["aborted"]:
-        return EXIT_STOPPED
-    return 0
 
 
 if __name__ == "__main__":

@@ -81,7 +81,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _store
+from evaluation_harness import _jsonout, _store
 from evaluation_harness._common import (
     BASELINES,
     CAPTURES,
@@ -1825,45 +1825,47 @@ def main() -> int:
     # made self_test's `validate_tree.py --help` check assert "the tree is valid" instead
     # of "the CLI responds" — so the one script whose failure matters most had a self-test
     # that could only pass when it had nothing to report.
-    no_options(__doc__)
-    problems.clear()
-    notes.clear()
-    print(f"eval tree: {DATA}\n")
-    for fn in (
-        v1_schemas,
-        v2_dataset_ids,
-        v3_provenance,
-        v4_materialized,
-        v5_duplicate_scores,
-        v6_baselines,
-        v7_committed_runs_are_readable,
-        v8_no_duplicate_config_ids,
-        v9_no_committed_evidence_is_missing,
-        v10_derived_runs_carry_the_current_scorer,
-        v11_judging_sets_match_their_hash,
-        v12_verdicts_belong_to_their_set,
-        v13_judge_scorers_are_well_formed,
-        v14_goals,
-        v15_item_fields,
-        v16_references,
-        v17_captures,
-        v18_model_records,
-        v19_label_sets,
-        v20_hypotheses,
-        v21_failure_modes,
-        v22_dataset_records,
-        v23_run_outputs,
-        note_uncommitted_runs,
-        note_round_scorers,
-    ):
-        fn()
-    for n in notes:
-        print(f"\n  note: {n}")
-    if problems:
-        print(f"\nVALIDATION FAILED — {len(problems)} check(s): {', '.join(problems)}")
-        return EXIT_PROBLEMS
-    print("\nVALIDATION PASSED")
-    return 0
+    opts = no_options(__doc__, "--json")
+    with _jsonout.collect("validate", opts.json, live=sys.stderr):
+        problems.clear()
+        notes.clear()
+        print(f"eval tree: {DATA}\n")
+        for fn in (
+            v1_schemas,
+            v2_dataset_ids,
+            v3_provenance,
+            v4_materialized,
+            v5_duplicate_scores,
+            v6_baselines,
+            v7_committed_runs_are_readable,
+            v8_no_duplicate_config_ids,
+            v9_no_committed_evidence_is_missing,
+            v10_derived_runs_carry_the_current_scorer,
+            v11_judging_sets_match_their_hash,
+            v12_verdicts_belong_to_their_set,
+            v13_judge_scorers_are_well_formed,
+            v14_goals,
+            v15_item_fields,
+            v16_references,
+            v17_captures,
+            v18_model_records,
+            v19_label_sets,
+            v20_hypotheses,
+            v21_failure_modes,
+            v22_dataset_records,
+            v23_run_outputs,
+            note_uncommitted_runs,
+            note_round_scorers,
+        ):
+            fn()
+        for n in notes:
+            print(f"\n  note: {n}")
+        _jsonout.values({"passed": not problems, "failed": list(problems), "notes": list(notes)})
+        if problems:
+            print(f"\nVALIDATION FAILED — {len(problems)} check(s): {', '.join(problems)}")
+            return EXIT_PROBLEMS
+        print("\nVALIDATION PASSED")
+        return 0
 
 
 if __name__ == "__main__":

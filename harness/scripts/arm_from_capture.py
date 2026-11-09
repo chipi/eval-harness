@@ -22,10 +22,11 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
+import sys
 from pathlib import Path
 
 import yaml
-from evaluation_harness import _store
+from evaluation_harness import _jsonout, _store
 from evaluation_harness._common import CAPTURES, CONFIGS, ROOT, dataset_id_ok, die, evh_prog, load_dataset
 
 
@@ -46,61 +47,69 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
-    args = ap.parse_args()
-
-    load_dataset(args.dataset_id)
-    if not _store.is_file(CAPTURES / dataset_id_ok(args.capture) / "capture.json"):
-        die(f"no capture {args.capture} (evh captures)", "not-found")
-    out = CONFIGS / f"{dataset_id_ok(args.config_id)}.yaml"
-    if _store.exists(out):
-        die(f"{out} exists: a config is not overwritten. Name the arm another way (--as).", "would-overwrite")
-    cfg: dict = {"config_id": args.config_id, "dataset_id": args.dataset_id}
-    if args.like:
-        if not _store.is_file(args.like):
-            die(f"--like: no config {args.like}", "not-found")
-        like = yaml.safe_load(_store.read_text(args.like, encoding="utf-8")) or {}
-        if like.get("adapter"):
-            # Written relative to the project (the new config is elsewhere than the one it is like).
-            a = (args.like.parent / like["adapter"]).resolve()
-            try:
-                cfg["adapter"] = str(a.relative_to(ROOT))
-            except ValueError:
-                cfg["adapter"] = str(a)
-        if like.get("goal"):
-            cfg["goal"] = like["goal"]
-    if args.goal:
-        cfg["goal"] = args.goal
-    if not args.field:
-        # Checked before anything is written: a config left behind by a refused run would block the next try.
-        from evaluation_harness._adapter import _module_or_none  # noqa: PLC0415
-
-        spec = cfg.get("adapter")
-        mod = _module_or_none(
-            Path(spec) if spec and Path(spec).is_absolute() else ROOT / spec if spec else None
-        )
-        if not callable(getattr(mod, "recorded_output", None)):
-            die(
-                "a recorded arm reads each output with the adapter's recorded_output(record) or from the record's "
-                f"field named by --field; {spec or 'the bundled adapter'} has no recorded_output: pass --field, or --like "
-                "the deployed arm's config",
-                "bad-argument",
-            )
-    cfg["params"] = {
-        "provider": "recorded",
-        "capture": args.capture,
-        **({"field": args.field} if args.field else {}),
-    }
-    _store.mkdir(out.parent, parents=True, exist_ok=True)
-    _store.write_text(
-        out,
-        "# Production's recorded decisions as an arm (evh arm-from-capture, RFC-023): no system is called.\n"
-        + yaml.safe_dump(cfg, sort_keys=False),
-        encoding="utf-8",
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    print(f"{out}: the recorded arm {args.config_id}, from the capture {args.capture}")
-    from evaluation_harness.cli import main as evh  # noqa: PLC0415
+    args = ap.parse_args()
+    with _jsonout.collect("arm-from-capture", args.json, live=sys.stderr):
+        load_dataset(args.dataset_id)
+        if not _store.is_file(CAPTURES / dataset_id_ok(args.capture) / "capture.json"):
+            die(f"no capture {args.capture} (evh captures)", "not-found")
+        out = CONFIGS / f"{dataset_id_ok(args.config_id)}.yaml"
+        if _store.exists(out):
+            die(
+                f"{out} exists: a config is not overwritten. Name the arm another way (--as).",
+                "would-overwrite",
+            )
+        cfg: dict = {"config_id": args.config_id, "dataset_id": args.dataset_id}
+        if args.like:
+            if not _store.is_file(args.like):
+                die(f"--like: no config {args.like}", "not-found")
+            like = yaml.safe_load(_store.read_text(args.like, encoding="utf-8")) or {}
+            if like.get("adapter"):
+                # Written relative to the project (the new config is elsewhere than the one it is like).
+                a = (args.like.parent / like["adapter"]).resolve()
+                try:
+                    cfg["adapter"] = str(a.relative_to(ROOT))
+                except ValueError:
+                    cfg["adapter"] = str(a)
+            if like.get("goal"):
+                cfg["goal"] = like["goal"]
+        if args.goal:
+            cfg["goal"] = args.goal
+        if not args.field:
+            # Checked before anything is written: a config left behind by a refused run would block the next try.
+            from evaluation_harness._adapter import _module_or_none  # noqa: PLC0415
 
-    return evh(["run", "--config", str(out), *(["--labels", args.labels] if args.labels else [])])
+            spec = cfg.get("adapter")
+            mod = _module_or_none(
+                Path(spec) if spec and Path(spec).is_absolute() else ROOT / spec if spec else None
+            )
+            if not callable(getattr(mod, "recorded_output", None)):
+                die(
+                    "a recorded arm reads each output with the adapter's recorded_output(record) or from the record's "
+                    f"field named by --field; {spec or 'the bundled adapter'} has no recorded_output: pass --field, or --like "
+                    "the deployed arm's config",
+                    "bad-argument",
+                )
+        cfg["params"] = {
+            "provider": "recorded",
+            "capture": args.capture,
+            **({"field": args.field} if args.field else {}),
+        }
+        _store.mkdir(out.parent, parents=True, exist_ok=True)
+        _store.write_text(
+            out,
+            "# Production's recorded decisions as an arm (evh arm-from-capture, RFC-023): no system is called.\n"
+            + yaml.safe_dump(cfg, sort_keys=False),
+            encoding="utf-8",
+        )
+        print(f"{out}: the recorded arm {args.config_id}, from the capture {args.capture}")
+        from evaluation_harness.cli import main as evh  # noqa: PLC0415
+
+        return evh(["run", "--config", str(out), *(["--labels", args.labels] if args.labels else [])])
 
 
 if __name__ == "__main__":

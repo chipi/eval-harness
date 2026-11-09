@@ -25,9 +25,10 @@ import argparse
 import hashlib
 import os
 import sqlite3
+import sys
 from pathlib import Path
 
-from evaluation_harness import _common, _outputs, _store
+from evaluation_harness import _common, _jsonout, _outputs, _store
 from evaluation_harness._common import die, evh_prog
 
 #: A run's per-item files: kept in the database's per-item tables, not as files.
@@ -267,22 +268,28 @@ def main() -> int:
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
-    args = ap.parse_args()
-    configured = _common.store()
-    if configured != args.to:
-        die(
-            f"the project's store is {configured}: set `store: {args.to}` in config.yaml (or EVAL_STORE={args.to})"
-            " first, so nothing writes to the old place after the move",
-            "not-allowed",
-        )
-    n = to_sqlite(args.dry_run) if args.to == "sqlite" else to_files(args.dry_run)
-    _outputs.reset()
-    verb = "would move" if args.dry_run else "moved"
-    print(
-        f"{n['files']} file(s) ({n['bytes']:,} bytes) and {n['runs']} run(s)' {n['outputs']} output(s) and "
-        f"{n['rows']} row(s) {verb} into the {args.to} store"
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    return 0
+    args = ap.parse_args()
+    with _jsonout.collect("data-migrate", args.json, live=sys.stderr):
+        configured = _common.store()
+        if configured != args.to:
+            die(
+                f"the project's store is {configured}: set `store: {args.to}` in config.yaml (or EVAL_STORE={args.to})"
+                " first, so nothing writes to the old place after the move",
+                "not-allowed",
+            )
+        n = to_sqlite(args.dry_run) if args.to == "sqlite" else to_files(args.dry_run)
+        _outputs.reset()
+        verb = "would move" if args.dry_run else "moved"
+        print(
+            f"{n['files']} file(s) ({n['bytes']:,} bytes) and {n['runs']} run(s)' {n['outputs']} output(s) and "
+            f"{n['rows']} row(s) {verb} into the {args.to} store"
+        )
+        return 0
 
 
 if __name__ == "__main__":

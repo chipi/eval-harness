@@ -45,6 +45,14 @@ check(
     _api.unkinded_paths() == [],
     _api.unkinded_paths(),
 )
+from evaluation_harness import mcp_server as _ms  # noqa: E402
+
+no_json = sorted(
+    c
+    for c in reg
+    if c not in _ms.JSON and not any("--json" in a.option_strings for a in _ms.parser_of(c)._actions)
+)
+check("every command the API serves answers --json (RFC-026 step 7)", not no_json, no_json)
 names = {c: {a["name"] for a in v["arguments"]} for c, v in reg.items()}
 check(
     "never taken: --adapter, --runs-dir, a sweep or rescore output folder, a source folder",
@@ -208,7 +216,9 @@ try:
         )
         st, body, _h = call(port, "POST", "/api/v1/read/validate", {"args": {}}, bearer)
         check(
-            "a read with no --json yet answers its text", st == 200 and "text" in json.loads(body), body[:200]
+            "validate through the API: its envelope, with whether it passed",
+            st == 200 and json.loads(body).get("result", {}).get("values", {}).get("passed") is True,
+            body[:300],
         )
         refusals = {
             "a job asked as a read": call(

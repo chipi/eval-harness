@@ -25,9 +25,10 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 
 import argparse
 import hashlib
+import sys
 from pathlib import Path
 
-from evaluation_harness import _store
+from evaluation_harness import _jsonout, _store
 from evaluation_harness._common import die, evh_prog
 from evaluation_harness._label_sets import answers, label_text, write_set
 from evaluation_harness._sheets import ALSO, read_csv
@@ -89,30 +90,35 @@ def main() -> int:
         type=Path,
         help="a file: the instructions the labeller followed (its path and sha256 are recorded)",
     )
-    args = ap.parse_args()
-
-    if _store.is_dir(args.sheet):
-        return _folder(args)
-    if not _store.is_file(args.sheet):
-        die(f"no sheet {args.sheet}", "not-found")
-    rows, choices = read_csv(args.sheet)
-    if not rows or "item_id" not in rows[0] or "label" not in rows[0]:
-        die(
-            f"{args.sheet}: a sheet has the columns item_id and label (evh label-sheet writes one)",
-            "invalid-file",
-        )
-    labels, notes = labels_from_rows(rows, choices)
-    source = {
-        "kind": "person",
-        "by": args.by,
-        "sheet": args.sheet.name,
-        "sheet_sha256": hashlib.sha256(_store.read_bytes(args.sheet)).hexdigest(),
-    }
-    doc = write_set(args.dataset_id, args.name, labels, source, args.guideline, notes)
-    print(
-        f"data/labels/{args.dataset_id}/{args.name}: {doc['n_items']} label(s) of {len(rows)} row(s), source person · {args.by}"
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    return 0
+    args = ap.parse_args()
+    with _jsonout.collect("label-import", args.json, live=sys.stderr):
+        if _store.is_dir(args.sheet):
+            return _folder(args)
+        if not _store.is_file(args.sheet):
+            die(f"no sheet {args.sheet}", "not-found")
+        rows, choices = read_csv(args.sheet)
+        if not rows or "item_id" not in rows[0] or "label" not in rows[0]:
+            die(
+                f"{args.sheet}: a sheet has the columns item_id and label (evh label-sheet writes one)",
+                "invalid-file",
+            )
+        labels, notes = labels_from_rows(rows, choices)
+        source = {
+            "kind": "person",
+            "by": args.by,
+            "sheet": args.sheet.name,
+            "sheet_sha256": hashlib.sha256(_store.read_bytes(args.sheet)).hexdigest(),
+        }
+        doc = write_set(args.dataset_id, args.name, labels, source, args.guideline, notes)
+        print(
+            f"data/labels/{args.dataset_id}/{args.name}: {doc['n_items']} label(s) of {len(rows)} row(s), source person · {args.by}"
+        )
+        return 0
 
 
 def _folder(args: argparse.Namespace) -> int:
