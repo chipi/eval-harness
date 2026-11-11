@@ -1874,9 +1874,22 @@ def main() -> int:
         threading.Thread(
             target=lambda: print(f"warm: {warm(args.warm)} comparison(s) cached", flush=True), daemon=True
         ).start()
+    # Bound, then the token written, then listening: a client that waits for the port to open and reads
+    # .build/api-token then reads this server's token. Listening first left a moment in which it read the previous
+    # server's (a 401; test_jobs met it under load). A port that cannot be bound leaves a running server's token as is.
+    server = ThreadingHTTPServer(
+        (args.bind, args.port), partial(Handler, directory=str(ROOT)), bind_and_activate=False
+    )
     try:
-        server = ThreadingHTTPServer((args.bind, args.port), partial(Handler, directory=str(ROOT)))
+        server.server_bind()
+        local = not args.public and not LIMITS.get("proxy_hosts")
+        if local:
+            from evaluation_harness import _api  # noqa: PLC0415
+
+            API_TOKEN[:] = [_api.new_token()]
+        server.server_activate()
     except OSError as exc:
+        server.server_close()
         why = (
             f"port {args.port} is in use. Stop what holds it, or pass --port N."
             if exc.errno == errno.EADDRINUSE
@@ -1903,7 +1916,6 @@ def main() -> int:
     else:
         from evaluation_harness import _api  # noqa: PLC0415
 
-        API_TOKEN[:] = [_api.new_token()]
         print(f"catalog: http://127.0.0.1:{args.port}{Handler.prefixes[0]}   (Ctrl-C to stop)", flush=True)
         print(
             f"  API: http://127.0.0.1:{args.port}/api/v1/  (token in {_api.token_path()}: "

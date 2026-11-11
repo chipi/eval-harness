@@ -203,6 +203,29 @@ try:
         "V1" in out(r) and "dataset" in out(r) and "FAIL V1 " not in out(r) and "FAIL V2 " not in out(r),
         out(r)[-600:],
     )
+    # E3's version rule end to end (PLAN_0.8.0): a dataset made from another by adding items is its parent's MINOR + 1,
+    # and validate (V22) recomputes it from the lineage, so a version written by hand that disagrees is caught.
+    versions = {
+        d: _runstore.read_json(proj, f"datasets/{d}.json").get("version")
+        for d in ("tickets_v1", "tickets_v2", "tickets_v3")
+    }
+    check(
+        "dataset-extend follows E3's version rule: V1 1.0, V2 (V1 and its picks) 1.1, V3 (V2 and one pick) 1.2; V22 agrees",
+        versions == {"tickets_v1": "1.0", "tickets_v2": "1.1", "tickets_v3": "1.2"}
+        and "FAIL V22" not in out(r),
+        (versions, out(r)[-400:]),
+    )
+    doc = _runstore.read_json(proj, "datasets/tickets_v3.json")
+    _runstore.write_text(
+        proj, "datasets/tickets_v3.json", json.dumps({**doc, "version": "2.0"}, indent=2) + "\n"
+    )
+    r = evh("validate")
+    _runstore.write_text(proj, "datasets/tickets_v3.json", json.dumps(doc, indent=2) + "\n")
+    check(
+        "a version written by hand that its lineage does not give fails V22, naming the one it gives",
+        "FAIL V22" in out(r) and "its lineage gives 1.2" in out(r),
+        out(r)[-500:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

@@ -337,6 +337,15 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A client could read the previous server's API token** (RFC-026): `catalog-serve` listened before it wrote
+  `.build/api-token`, so a script that waited for the port and read the file at once got the old token and a 401
+  (the store matrix met it under load), and the file was truncated and then written, so it could read it empty. The
+  port is now bound, the token written (beside and renamed into place), then listened on; a port that cannot be bound
+  leaves a running server's token alone.
+- **`family-test`'s first run below 10,000 units took 37.6 s at 1,000 items** (49 opponents): its opponents share
+  one random stream, so they were summed one after another. They are now summed in child processes, each from the
+  stream state its opponent starts at, and each sum is exact on integers: 6.7 s on the same project, every p bit for
+  bit what it was (the S2 bench, PLAN_0.8.0). Under one CPU it is drawn in order as before, still faster.
 - **Items with the same text got each other's labels**: labels follow an item by its text's hash, so on one dataset
   every item with the same text (the same alert twice) took the label of the last of them, and a reference promoted
   from the set held that label for all. Found by RFC-030's example, where 13 of 20 decisions share their text with

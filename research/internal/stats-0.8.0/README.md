@@ -13,6 +13,7 @@ time. Monte Carlo error is about ±0.003 at 3000 runs and ±0.004 at 1500.
 | `signflip_continuous.py` | the shifted sign-flip test on continuous differences: normal, long tail of gains, long tail of losses | 2000 |
 | `ttest_bootstrap_continuous.py` | the paired t-test and the studentized bootstrap on the same shapes | 1500 |
 | `bootstrap_skew_guard.py` | the bootstrap at half the level when the skewness is below −1 | 1500 |
+| `bootstrap_clusters.py` | the contender test with clusters (`stats.noninferior` itself: its floors, the bootstrap-t at half the level) over cluster sizes and shapes | 2000 (4000 near the floor) |
 
 ## Results (2026-10-26)
 
@@ -444,3 +445,47 @@ worst error 0.023
 ```
 
 - The validation suite in `harness/tests/test_stats_validity.py` (RFC-015, Testing) reruns a smaller fixed grid.
+
+## Clusters (2026-11-11)
+
+Until then the clustered bootstrap-t was simulated at 100 clusters of 3 only (`test_noninferiority.py`), with one
+unequal-size case behind the 250-effective floor (`stats.py`). `bootstrap_clusters.py` runs the harness's own
+`stats.noninferior` (B = 1,999) at a true difference of exactly −margin, so every "non-inferior" is a type I error,
+and a valid test keeps it at or below 0.025. 2,000 runs each (the giant cluster's rows 4,000), 95% Monte Carlo interval:
+
+```text
+shape                    units shift noise                       eff  too few  type I  95% MC interval
+equal 2                    100  0.01 normal                      100    0.000  0.0110  [0.0064, 0.0156]
+equal 2                    100  0.05 normal                      100    0.000  0.0125  [0.0076, 0.0174]
+equal 2                    300  0.01 normal                      300    0.000  0.0100  [0.0056, 0.0144]
+equal 2                    300  0.05 normal                      300    0.000  0.0155  [0.0101, 0.0209]
+equal 3                    100  0.01 normal                      100    0.000  0.0090  [0.0049, 0.0131]
+equal 3                    100  0.05 normal                      100    0.000  0.0105  [0.0060, 0.0150]
+equal 3                    300  0.01 normal                      300    0.000  0.0135  [0.0084, 0.0186]
+equal 3                    300  0.05 normal                      300    0.000  0.0110  [0.0064, 0.0156]
+equal 8                    100  0.01 normal                      100    0.000  0.0120  [0.0072, 0.0168]
+equal 8                    100  0.05 normal                      100    0.000  0.0150  [0.0097, 0.0203]
+equal 8                    300  0.01 normal                      300    0.000  0.0160  [0.0105, 0.0215]
+equal 8                    300  0.05 normal                      300    0.000  0.0100  [0.0056, 0.0144]
+equal 20                   100  0.01 normal                      100    0.000  0.0085  [0.0045, 0.0125]
+equal 20                   100  0.05 normal                      100    0.000  0.0090  [0.0049, 0.0131]
+equal 20                   300  0.01 normal                      300    0.000  0.0150  [0.0097, 0.0203]
+equal 20                   300  0.05 normal                      300    0.000  0.0155  [0.0101, 0.0209]
+equal 3                    150  0.05 normal                      150    0.000  0.0125  [0.0076, 0.0174]
+uniform 1-20               400  0.03 normal                      307    0.000  0.0095  [0.0052, 0.0138]
+uniform 1-20               500  0.03 normal                      382    0.000  0.0135  [0.0084, 0.0186]
+geometric, mean 5          500  0.03 normal                      292    0.003  0.0145  [0.0093, 0.0197]
+geometric, mean 5          800  0.03 normal                      474    0.000  0.0165  [0.0109, 0.0221]
+one of 100, the rest 2    1000  0.03 normal                      314    0.000  0.0175  [0.0134, 0.0216]
+one of 100, the rest 2    1500  0.03 normal                      600    0.000  0.0168  [0.0128, 0.0207]
+equal 3                    100  0.03 losses with a long tail     100    0.000  0.0160  [0.0105, 0.0215]
+equal 3                    300  0.03 losses with a long tail     300    0.000  0.0090  [0.0049, 0.0131]
+uniform 1-20               400  0.03 losses with a long tail     307    0.000  0.0080  [0.0041, 0.0119]
+equal 5                    100  0.05 0/1                         100    0.000  0.0130  [0.0080, 0.0180]
+equal 5                    300  0.05 0/1                         300    0.000  0.0125  [0.0076, 0.0174]
+```
+
+No scenario's interval lies above 0.025; the highest rates are the unequal shapes (one cluster of 100 among pairs:
+0.0175 at an effective 314, just above the floor). Not simulated: fewer clusters than the floors (the test answers "too
+few" there, so it has no error to measure), clusters correlated with each other, and a cluster effect that differs
+between the two arms beyond a shift of the arm's mean.

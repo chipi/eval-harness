@@ -265,10 +265,14 @@ def new_token() -> str:
     tok = secrets.token_urlsafe(32)
     p = token_path()
     p.parent.mkdir(parents=True, exist_ok=True)
-    fd = os.open(str(p), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    # Written beside and renamed into place: a reader sees the old token or the new one, never an empty file (a
+    # truncate and then a write left a moment between).
+    tmp = p.with_name(f".{p.name}.{os.getpid()}")
+    fd = os.open(str(tmp), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w") as fh:
         fh.write(tok + "\n")
-    os.chmod(p, 0o600)  # the server's, never project data: on disk, not through the store
+    os.chmod(tmp, 0o600)  # the server's, never project data: on disk, not through the store
+    os.replace(tmp, p)
     return tok
 
 

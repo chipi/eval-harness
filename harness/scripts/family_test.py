@@ -44,7 +44,6 @@ import hashlib
 import io
 import json
 import os
-import random
 import statistics
 import sys
 from pathlib import Path
@@ -78,7 +77,15 @@ from evaluation_harness._runs import (  # noqa: E402 -- one implementation of "s
     runs_on,
     warn_on_ambiguous_runs,
 )
-from evaluation_harness.stats import EXACT_UP_TO, LARGE_SAMPLE, clustered, fmt_p, holm, p_method, sign_flip_p  # noqa: E402 -- one implementation of the paired test
+from evaluation_harness.stats import (  # noqa: E402 -- one implementation of the paired test
+    EXACT_UP_TO,
+    LARGE_SAMPLE,
+    clustered,
+    fmt_p,
+    holm,
+    p_method,
+    sign_flip_family,
+)
 
 
 def _opponents(runs: list, against: str, exclude: str) -> list[str]:
@@ -289,7 +296,6 @@ def _run(args) -> int:
 
     drop, keep = item_selection(args.exclude_dataset, args.items)
 
-    rng = random.Random(args.seed)
     keys = item_clusters(args.dataset_id, args.cluster) if args.cluster else None
     rows: list[dict] = []
     for opp in _opponents(runs, args.against, args.a):
@@ -324,9 +330,13 @@ def _run(args) -> int:
         die("no opponents with enough shared items", "not-enough")
     # In opponent order, from the one stream. An opponent past LARGE_SAMPLE takes the normal limit; the stream still
     # moves past it when a later opponent is drawn from it, so that one's p is what it was (ADR-0028).
-    for j, r in enumerate(rows):
-        later = any(p_method(x["units"]) == "sampled" for x in rows[j + 1 :])
-        r["p"] = sign_flip_p(r.pop("unit_values"), permutations=args.permutations, rng=rng, advance=later)
+    # The sampled ones are summed in child processes at once, each from the stream state it starts at: the same p's.
+    for r, p in zip(
+        rows,
+        sign_flip_family([r.pop("unit_values") for r in rows], args.permutations, args.seed),
+        strict=True,
+    ):
+        r["p"] = p
 
     # HOLM STEP-DOWN. Sorted ascending, threshold alpha/(m-i), and the moment one fails
     # every larger p-value fails with it -- that carry-forward is the whole procedure, and

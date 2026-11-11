@@ -72,12 +72,12 @@ def evh(*args):
     )
 
 
-def serve():
+def serve(*extra):
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         port = s.getsockname()[1]
     p = subprocess.Popen(
-        [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port)],
+        [sys.executable, str(HERE / "cli.py"), "catalog-serve", "--port", str(port), *extra],
         cwd=proj, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
     )  # fmt: skip
     for _ in range(200):
@@ -389,6 +389,21 @@ try:
           seen == "5" and back == 200, (seen, back))  # fmt: skip
     srv.terminate()
     srv.wait(timeout=10)
+
+    # The token is on disk before the port listens. A client waits for the port and reads .build/api-token at once:
+    # the server listened first and wrote its token after, so for a moment the file held the previous server's token
+    # (a 401 in the store matrix under load). A start hook that sleeps makes that moment 1.5 s; an old token is there.
+    (proj / "slow_start.py").write_text("import time\n\ndef start(info):\n    time.sleep(1.5)\n")
+    (proj / ".build" / "api-token").write_text("the-previous-servers-token\n")
+    srv, PORT, TOKEN = serve("--hooks", "slow_start.py")
+    first, _ = call("GET", "/api/v1/commands")
+    srv.terminate()
+    srv.wait(timeout=10)
+    check(
+        "a client that reads the token as soon as the port opens has this server's token (written before it listens)",
+        first == 200 and TOKEN != "the-previous-servers-token",
+        (first, TOKEN[:8]),
+    )
 
     # Step 4: data-migrate as a job with the server up. The store comes from config.yaml here (no EVAL_STORE), so the
     # server reads the new store once the move ends; moving out of the database proves the server let go of it.

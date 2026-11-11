@@ -176,14 +176,7 @@ def sign_flip_p(
             _COLLECT[-1].append((_disk_key(key), len(deltas) * permutations, job, hold))
             return 1.0  # a stand-in: prefetch() throws away what it collects with
         if stored is None:
-            n, a = len(deltas), abs(obs)
-            neg = [-d for d in deltas]
-            hits = sum(
-                1
-                for keep in _signs(n, permutations, seed)
-                if abs(math.fsum(chain(compress(deltas, keep), compress(neg, keep.translate(_FLIP)))) / n)
-                >= a
-            )
+            hits = _count_hits(deltas, abs(obs), _signs(len(deltas), permutations, seed))
             stored = (hits + 1) / (permutations + 1)
             _store_p(key, stored)
         _P[key] = stored
@@ -193,14 +186,169 @@ def sign_flip_p(
     # The shared stream: the signs fmean(d if rng.random() < 0.5 else -d ...) drew, from _draw,
     # summed as above (fmean is fsum / n). The same p, and the same generator state after, so the
     # next opponent's draws are unchanged too.
-    n, a = len(deltas), abs(obs)
-    neg = [-d for d in deltas]
-    hits = 0
-    for _ in range(permutations):
-        keep = _draw(rng, n)
-        if abs(math.fsum(chain(compress(deltas, keep), compress(neg, keep.translate(_FLIP)))) / n) >= a:
-            hits += 1
+    n = len(deltas)
+    hits = _count_hits(deltas, abs(obs), (_draw(rng, n) for _ in range(permutations)))
     return (hits + 1) / (permutations + 1)
+
+
+def _count_hits(deltas: list, a: float, signs: Any) -> int:
+    """How many sign patterns give a mean at least as far from 0 as `a`: for each pattern (1 keeps an item's delta, 0
+    flips it), `abs(fsum(the kept deltas and the flipped ones negated) / n) >= a`, bit for bit.
+
+    Every finite float is an integer over a power of two, so with every delta over the largest denominator the sum of a
+    pattern is the integer 2·(the kept ones) − (all of them), exact; an int divided by an int is correctly rounded, as
+    fsum is, so (that integer / the denominator) is the float fsum gave. One C-level sum of small ints a pattern, no
+    chain of two compresses into fsum: about four times faster (PLAN_0.8.0, family-test). A delta that is not finite
+    is summed the old way."""
+    n = len(deltas)
+    try:
+        ratios = [d.as_integer_ratio() for d in deltas]
+    except (OverflowError, ValueError):
+        neg = [-d for d in deltas]
+        return sum(
+            1
+            for keep in signs
+            if abs(math.fsum(chain(compress(deltas, keep), compress(neg, keep.translate(_FLIP)))) / n) >= a
+        )
+    den = max(q for _, q in ratios)
+    ints = [num * (den // q) for num, q in ratios]
+    total = sum(ints)
+    return sum(1 for keep in signs if abs(((2 * sum(compress(ints, keep)) - total) / den) / n) >= a)
+
+
+def sign_flip_family(units: list, permutations: int = PERMUTATIONS, seed: int = SEED) -> list[float]:
+    """Each list's p as `sign_flip_p(units[j], rng=r, advance=...)` gives it in order with one `r = Random(seed)` shared
+    by the family (family_test.py), bit for bit, the sampled ones summed in child processes at once.
+
+    The stream is one, so opponent j draws where opponent j-1 stopped. Walking the stream is cheap next to the sums
+    (0.11 s against 0.6 s an opponent of 1,000 items at 20,000 draws): here the stream is walked past each sampled
+    opponent, the state it starts at handed to a child at once, and the children, started first, sum while the walk
+    goes on. 49 opponents at 1,000 items took 44 s one after another. With fewer than two workers, below
+    PARALLEL_FROM, or for an opponent whose child failed, it is summed here."""
+    sampled = [j for j, u in enumerate(units) if p_method(len(u)) == "sampled"]
+    work = sum(len(units[j]) for j in sampled) * permutations
+    pool = (
+        _Feed(min(workers_allowed(), len(sampled))) if work >= PARALLEL_FROM and len(sampled) >= 2 else None
+    )
+    if pool is not None and len(pool.procs) < 2:  # no children to speak of: drawn here, in order
+        for proc in pool.procs:
+            proc.kill()
+            proc.wait()
+        pool = None
+    rng = random.Random(seed)
+    out: list[float | None] = [None] * len(units)
+    starts: dict[int, Any] = {}
+    for j, u in enumerate(units):
+        if (
+            pool is None or p_method(len(u)) != "sampled"
+        ):  # drawn here, in order, as family_test always drew them
+            later = any(p_method(len(x)) == "sampled" for x in units[j + 1 :])
+            out[j] = sign_flip_p(u, permutations=permutations, rng=rng, advance=later)
+            continue
+        starts[j] = rng.getstate()
+        if pool is not None:
+            pool.send(
+                j,
+                {"kind": "sfr", "d": [float(d).hex() for d in u], "n": permutations, "state": starts[j]},
+                len(u),
+            )
+        for _ in range(permutations):  # the words _draw takes, in its order; their signs are the child's
+            rng.getrandbits(64 * len(u))
+    got = pool.results() if pool is not None else {}
+    for j, state in starts.items():
+        v = got.get(j)
+        out[j] = v if v is not None else _sampled_from_state(units[j], permutations, state)
+    return [float(x) for x in out]  # type: ignore[arg-type]
+
+
+class _Feed:
+    """Child processes started at once (`--family-worker`), each sent jobs as they are known (one JSON line each) and
+    answering one line each, "<id> <p as hex>". A child reads its input on a thread of its own, so a parent writing to
+    a busy child never waits for it."""
+
+    def __init__(self, workers: int) -> None:
+        here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        env = dict(
+            os.environ, PYTHONPATH=os.pathsep.join(x for x in (here, os.environ.get("PYTHONPATH")) if x)
+        )
+        env["EVH_P_CACHE"] = ""
+        self.procs: list[Any] = []
+        self.load: list[int] = []
+        for _ in range(max(0, workers)):
+            try:
+                self.procs.append(
+                    subprocess.Popen(
+                        [sys.executable, "-m", "evaluation_harness.stats", "--family-worker"],
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,
+                        env=env,
+                    )
+                )
+                self.load.append(0)
+            except OSError:
+                break
+
+    def send(self, key: int, job: dict, weight: int) -> None:
+        while self.procs:
+            w = self.load.index(min(self.load))
+            try:
+                self.procs[w].stdin.write((json.dumps({"id": key, **job}) + "\n").encode())
+                self.procs[w].stdin.flush()
+                self.load[w] += weight
+                return
+            except (
+                OSError
+            ):  # a child that died: the rest share its work; this job is summed by the caller if none is left
+                self.procs[w].kill()
+                del self.procs[w], self.load[w]
+
+    def results(self) -> dict[int, float]:
+        got: dict[int, float] = {}
+        for p in self.procs:
+            try:
+                p.stdin.close()
+                for line in p.stdout:
+                    key, hexp = line.decode().split()
+                    got[int(key)] = float.fromhex(hexp)
+            except (OSError, ValueError):
+                pass  # what it did not answer is summed by the caller
+            p.wait()
+        return got
+
+
+def _family_worker() -> int:
+    """`python -m evaluation_harness.stats --family-worker`: sign_flip_family's jobs, one JSON line each on stdin, read
+    on a thread as they come; one "<id> <p hex>" line each on stdout, as each is summed."""
+    import queue  # noqa: PLC0415
+    import threading  # noqa: PLC0415
+
+    lines: queue.Queue = queue.Queue()
+
+    def read() -> None:
+        for line in sys.stdin.buffer:
+            lines.put(line)
+        lines.put(None)
+
+    threading.Thread(target=read, daemon=True).start()
+    while (line := lines.get()) is not None:
+        c = json.loads(line)
+        v = _sampled_from_state([float.fromhex(d) for d in c["d"]], c["n"], c["state"])
+        sys.stdout.write(f"{c['id']} {v.hex()}\n")
+        sys.stdout.flush()
+    return 0
+
+
+def _sampled_from_state(units: list, permutations: int, state: Any) -> float:
+    r = random.Random()
+    r.setstate(_as_state(state))
+    return sign_flip_p(list(units), permutations=permutations, rng=r)
+
+
+def _as_state(state: Any) -> tuple:
+    """A generator state back from JSON (lists for its tuples)."""
+    version, words, gauss = state
+    return (version, tuple(words), gauss)
 
 
 #: Estimated p by (deltas, permutations, seed): a page and the glance test the same pairs.
@@ -665,22 +813,34 @@ def prefetch(calls: Callable[[], Any]) -> int:
         cases = list({c[0]: c for c in _COLLECT.pop()}.values())
     if len(cases) < 2 or sum(c[1] for c in cases) < PARALLEL_FROM:
         return 0
-    workers = min(workers_allowed(), len(cases))
+    got = _in_children([c[2] for c in cases], [c[1] for c in cases])
+    done = 0
+    for c, v in zip(cases, got, strict=False):
+        if v is not None:
+            c[3](v)
+            done += 1
+    return done
+
+
+def _in_children(jobs: list[dict], weights: list[int]) -> list[float | None]:
+    """Each job's p, drawn in child processes at once (the worker's kinds), None for a job whose child failed; [] when
+    fewer than two workers are allowed or there are fewer than two jobs (the caller draws them itself)."""
+    workers = min(workers_allowed(), len(jobs))
     if workers < 2:
-        return 0
+        return []
     # The longest first, each to the child with the least work so far: the children end about together.
-    chunks: list[list] = [[] for _ in range(workers)]
+    chunks: list[list[int]] = [[] for _ in range(workers)]
     load = [0] * workers
-    for c in sorted(cases, key=lambda c: -c[1]):
+    for i in sorted(range(len(jobs)), key=lambda i: -weights[i]):
         w = load.index(min(load))
-        chunks[w].append(c)
-        load[w] += c[1]
+        chunks[w].append(i)
+        load[w] += weights[i]
     here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     env = dict(os.environ, PYTHONPATH=os.pathsep.join(x for x in (here, os.environ.get("PYTHONPATH")) if x))
     env["EVH_P_CACHE"] = ""  # the children only draw; this process keeps
     procs = []
     for chunk in chunks:
-        job = [c[2] for c in chunk]
+        job = [jobs[i] for i in chunk]
         p = None
         try:
             p = subprocess.Popen(
@@ -699,7 +859,7 @@ def prefetch(calls: Callable[[], Any]) -> int:
                 p.wait()
             continue  # this chunk is drawn here when asked
         procs.append((p, chunk))
-    done = 0
+    got: list[float | None] = [None] * len(jobs)
     for p, chunk in procs:
         try:
             out = p.stdout.read()  # type: ignore[union-attr]
@@ -707,11 +867,10 @@ def prefetch(calls: Callable[[], Any]) -> int:
         except (OSError, ValueError):
             ps = []
         if len(ps) != len(chunk):
-            continue  # drawn here when asked, as without prefetch
-        for c, v in zip(chunk, ps, strict=True):
-            c[3](v)
-            done += 1
-    return done
+            continue  # drawn by the caller, as without children
+        for i, v in zip(chunk, ps, strict=True):
+            got[i] = v
+    return got
 
 
 def _bootstrap_worker() -> int:
@@ -721,6 +880,8 @@ def _bootstrap_worker() -> int:
     for c in json.load(sys.stdin):
         if c["kind"] == "bt":
             v = _bootstrap_draw([float.fromhex(t) for t in c["t"]], c["k"], float.fromhex(c["m"]), c["d"])
+        elif c["kind"] == "sfr":  # one opponent of a family, from the stream state it starts at
+            v = _sampled_from_state([float.fromhex(d) for d in c["d"]], c["n"], c["state"])
         else:
             v = sign_flip_p([float.fromhex(d) for d in c["d"]], permutations=c["n"], seed=c["s"])
         out.append(v.hex())
@@ -948,5 +1109,7 @@ def compare_by(
     return {"groups": out, "family_size": max(len(pvals), family or 0)}
 
 
+if __name__ == "__main__" and sys.argv[1:] == ["--family-worker"]:
+    sys.exit(_family_worker())
 if __name__ == "__main__" and sys.argv[1:] == ["--bootstrap-worker"]:
     sys.exit(_bootstrap_worker())

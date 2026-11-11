@@ -247,8 +247,8 @@ elements; it never rendered 40 arms before: a stack overflow, and 3.2 million el
 phone, the time to download the comparison (2.7 / 23.6 MB uncompressed; the deployment's Caddy compresses it to 0.4
 / 3.6 MB). The sheet at 40 arms: 11.7 s, 1,875 elements (940,935 before).
 
-Not made faster: `family-test`'s first run below 10,000 units (about 37 s at 1,000 items: one random stream for the
-family, which cannot be split without changing its p's; a second run replays its kept answer). The 50-arm sheet in
+`family-test`'s first run below 10,000 units (about 37 s at 1,000 items: one random stream for the family) was left
+then and done on 2026-11-11 (6.7 s, the same p's: "NOT done" below says how). The 50-arm sheet in
 a SQLite project at 10,000 items took 45.7 s, 121 s of a profiled 146 in looking up each output on its own; it reads each
 arm's outputs once now (11.1 s, the CSV byte for byte the same). Not measured: a real phone, a
 real mobile network, a machine with few cores (the parallel draws gain less there).
@@ -329,14 +329,28 @@ record (a first build had added a second record, `data/code/`, and was redone on
 - Pushed 2026-11-08 (owner's yes): S2 and S3, RFC-026 accepted, and the review's fixes, after `163b1b75d`.
 - S0b: RFC-026 is accepted and its four questions decided (2026-11-08: jobs wait for a held lock; uploads up to
   50 MB; `evh jobs-*` commands; a round's budget enforced). Steps 1 to 7 built 2026-11-09; step 8 (the Workbench) not.
-- S2 below 10,000 units: `family-test`'s first run (about 37 s at 1,000 items) is not faster (above).
-- The deployed inspector was killed by its memory cap 337 times on 2026-10-26/27 (infra's report, 2026-11-08); not
-  looked into from here (no access to the box): the owner's and the prod session's.
+- S2 below 10,000 units, `family-test`'s first run: done 2026-11-11. The 49 opponents of one stream are summed in
+  child processes, each from the stream state its opponent starts at (the parent walks the stream, which is cheap), and
+  each sum is exact on integers: 37.6 s to 6.7 s on the 1,000-item, 50-arm project, the same JSON (the committed code
+  in a worktree against the tree); every p bit for bit the committed code's on seven kinds of data (continuous, 0/1,
+  tenths, ints, magnitudes 1e-12 to 1e6, ties, a family mixing exact, sampled and normal-limit sizes). With one worker
+  (the deployment's 0.5 CPU) 44 s to 25 s in the bench.
+- The deployed inspector's kills on 2026-10-26/27: closed 2026-11-11 from production's metrics (VictoriaMetrics,
+  cadvisor, read-only). The cause was fixed on 2026-10-27 (`c91d48b01`, bounded sign-table and p caches; deployed
+  11:52Z): the one container before it peaked at its 256 MiB limit; none since came near its limit (214 of 256 MiB
+  the highest, then at most 173 of 384 MiB after the limit was raised on 10-29; the one running since 11-04T23:09
+  peaked at 128 MiB in seven days). Each later container started before the one it replaced was last seen: redeploys,
+  not kills. cadvisor's OOM counter read 0 even on 10-26, so it is no evidence either way; `budget-check`'s memory peak
+  is the regression guard.
 - Built: step 6 (the fleet's feedback), step 4 (RFC-026 steps 1 to 7, RFC-027, RFC-028, RFC-029) and R (RFC-030),
   pushed to origin/080 by 2026-11-11 (52571970a). Not built: the Workbench (RFC-026 step 8, PRD-017, with the ADR
   amending ADR-0027) and the release (7).
 - Sizes of every package are estimates, not measured.
-- The clustered bootstrap-t was simulated at 100 clusters of 3 only; other cluster sizes and shapes are not.
+- The clustered bootstrap-t over sizes and shapes: done 2026-11-11, `research/internal/stats-0.8.0/bootstrap_clusters.py`
+  (equal clusters of 2 to 20, uniform, geometric and one-giant unequal sizes near and above the floors, a long tail of
+  losses, 0/1 scores): every type I error at or below 0.025 within its Monte Carlo interval (the README there). Not
+  simulated: clusters correlated with each other, or a cluster effect that differs between the arms.
 - D1: modes are tagged by hand in a sheet; no agent was asked to tag, and no committed dataset has tags.
-- `dataset-extend` (picks) is not run through E3's version rule end to end; its lineage is the same `derived_from`.
+- `dataset-extend` (picks) through E3's version rule: done 2026-11-11, `test_picks.py` (V1 1.0, its extension 1.1,
+  the next 1.2; a version written by hand that the lineage does not give fails V22).
 - Nothing here has been checked against the fleet's feedback still to come.

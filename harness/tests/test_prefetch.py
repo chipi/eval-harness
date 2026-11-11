@@ -9,15 +9,19 @@ Checked: the p's equal the ones drawn here one by one, bit for bit, items and cl
 time (each child's input is written before any output is read); a test already kept is not drawn again; nothing runs
 in parallel below PARALLEL_FROM, inside another prefetch, or with one test; a child that cannot start or fails leaves
 the tests to be drawn here as before; sign-flips from a fresh generator are drawn the same way; an error in
-the look ahead stays in it. A goal's decision with and without it: the S2 bench (PLAN_0.8.0).
+the look ahead stays in it. A goal's decision with and without it: the S2 bench (PLAN_0.8.0). A family's sign-flips
+(family_test's one stream) summed in children from the states each opponent starts at: the same p's as in order.
 """
 
+import math
 import os
 import random
 import shutil
+import statistics
 import sys
 import tempfile
 import time
+from itertools import chain, compress
 from pathlib import Path
 
 HARNESS = Path(__file__).resolve().parents[1]
@@ -166,6 +170,112 @@ try:
     )
 finally:
     stats._read = real_read
+
+
+# ── a sign-flip's hits on exact integers: the count the fsum formula gives, pattern for pattern ──────────────────────
+def fsum_hits(deltas, a, signs):
+    """The formula sign_flip_p used before (2026-11-11): the kept deltas and the flipped ones negated, fsum, / n."""
+    neg = [-d for d in deltas]
+    flip = bytes.maketrans(b"\x00\x01", b"\x01\x00")
+    return sum(
+        1
+        for k in signs
+        if abs(math.fsum(chain(compress(deltas, k), compress(neg, k.translate(flip)))) / len(deltas)) >= a
+    )
+
+
+hr = random.Random(5)
+kinds = {
+    "gaussian": [hr.gauss(0, 1) for _ in range(301)],
+    "0/1 steps (ties at the threshold)": [float(hr.choice((-1, 0, 1))) for _ in range(64)],
+    "tenths": [round(hr.uniform(-1, 1), 1) for _ in range(97)],
+    "1e-12 to 1e6": [hr.gauss(0, 1) * 10 ** hr.randint(-12, 6) for _ in range(80)],
+    "halves, all the same size": [hr.choice((0.5, -0.5)) for _ in range(40)],
+    "ints": [hr.randint(-3, 3) for _ in range(120)],
+}
+bad_counts = {}
+for name, d in kinds.items():
+    sr = random.Random(9)
+    signs = [stats._draw(sr, len(d)) for _ in range(4000)]
+    a = abs(statistics.fmean(d))
+    if stats._count_hits(d, a, iter(signs)) != fsum_hits(d, a, signs):
+        bad_counts[name] = (stats._count_hits(d, a, iter(signs)), fsum_hits(d, a, signs))
+check(
+    "a sign-flip's hits on exact integers: the fsum formula's count, for every kind of data",
+    not bad_counts,
+    bad_counts,
+)
+
+# ── a family's sign-flips (family_test.py): one stream, its sampled opponents summed in children ─────────────────────
+fam_rng = random.Random(23)
+family: list[list] = [
+    [fam_rng.gauss(0.05, 1) for _ in range(20)],  # exact: draws nothing
+    [fam_rng.gauss(0.1, 1) for _ in range(400)],  # sampled
+    [float(fam_rng.choice((-1, 0, 0, 1))) for _ in range(300)],  # sampled, 0/1 differences
+    [fam_rng.gauss(0, 1) for _ in range(stats.LARGE_SAMPLE)],  # the normal limit; the stream moves past it
+    [round(fam_rng.uniform(-1, 1), 1) for _ in range(250)],  # sampled, after the large one
+    [fam_rng.randint(-3, 3) for _ in range(200)],  # sampled, ints
+]
+PERMS = 3000
+
+
+def serial() -> list:
+    """The loop family_test.py ran before: one generator, each opponent in order."""
+    r = random.Random(stats.SEED)
+    out = []
+    for j, u in enumerate(family):
+        later = any(stats.p_method(len(x)) == "sampled" for x in family[j + 1 :])
+        out.append(stats.sign_flip_p(u, permutations=PERMS, rng=r, advance=later))
+    return out
+
+
+fam_want = serial()
+os.environ["EVH_WORKERS"] = "4"
+real_from, real_popen, real_floor = stats._sampled_from_state, stats.subprocess.Popen, stats.PARALLEL_FROM
+here_drawn: list = []
+
+
+def counted(*a):
+    here_drawn.append(1)
+    return real_from(*a)
+
+
+stats._sampled_from_state = counted
+stats.PARALLEL_FROM = 1
+try:
+    fam_got = stats.sign_flip_family(family, PERMS, stats.SEED)
+    check(
+        "a family in children: every p the one-stream loop gives, bit for bit (exact, sampled, 0/1, ints, a normal "
+        "limit between), and the children summed every sampled one",
+        [x.hex() for x in fam_got] == [x.hex() for x in fam_want] and not here_drawn,
+        (fam_got, fam_want, len(here_drawn)),
+    )
+
+    def no_child(*_a, **_k):
+        raise OSError("no fork")
+
+    stats.subprocess.Popen = no_child  # type: ignore[misc,assignment]
+    here_drawn.clear()
+    fam_got = stats.sign_flip_family(family, PERMS, stats.SEED)
+    check(
+        "no child can start: the family is drawn here, in order, the same p's (no pool left)",
+        [x.hex() for x in fam_got] == [x.hex() for x in fam_want],
+        fam_got,
+    )
+    stats.subprocess.Popen = real_popen  # type: ignore[misc]
+    stats.PARALLEL_FROM = 10**12  # this file runs at 0 above
+    fam_got = stats.sign_flip_family(family, PERMS, stats.SEED)
+    check(
+        "below PARALLEL_FROM: drawn here, the same p's",
+        [x.hex() for x in fam_got] == [x.hex() for x in fam_want],
+        fam_got,
+    )
+finally:
+    stats._sampled_from_state = real_from
+    stats.subprocess.Popen = real_popen  # type: ignore[misc]
+    stats.PARALLEL_FROM = real_floor
+    del os.environ["EVH_WORKERS"]
+
 for value, want in (("1", 1), ("3", 3), ("x", 0)):  # 0: not a number, ignored
     os.environ["EVH_WORKERS"] = value
     got = stats.workers_allowed()
