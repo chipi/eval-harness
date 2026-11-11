@@ -62,11 +62,9 @@ that can move a result is never a patch release without saying so under **Change
   `budget_usd` reserves its share in the round's ledger before its first call and is refused (`over-budget`, a new
   refusal kind) when nothing is left; a stopped or killed run's paid items count; `evh rounds` shows what is left.
   `POST /api/v1/estimate` answers a job command's `--dry-run`.
-- **The server's writes on the jobs' locks** (RFC-026 step 4): the data page's save, delete and rebuild take the
-  locks a job takes (a save while a job writes the settings is refused, `409 busy`, naming the job); the data page's
-  routes need the server's token, set by the **Configure** link `catalog-serve` now prints. While a migration holds
-  the project the server answers `503` with `Retry-After` and lets go of the database, so `data-migrate` runs as a
-  job with the server up, and the server reads the new store after.
+- **A migration holds the server too** (RFC-026 step 4): while a migration holds the project the server answers
+  `503` with `Retry-After` and lets go of the database, so `data-migrate` runs as a job with the server up, and the
+  server reads the new store after.
 - **Jobs** (RFC-026 step 3): `POST /api/v1/jobs` runs one command as a detached job with a supervisor, its state, log
   and envelope in `.build/jobs/<id>/`; listed, read, followed from a byte offset, stopped (its process group,
   `cancelled`) and, for a run, resumed. Locks per thing written (`.build/locks/`, taken in key order, held by the
@@ -104,7 +102,7 @@ that can move a result is never a patch release without saying so under **Change
 - **A private inspector behind a proxy** (homelab, 2026-11-05): `evh catalog-serve --behind-proxy HOST[,HOST]`
   serves the whole local inspector (pages, items, outputs, references) to the named Hosts as well as this machine,
   with `--bind 0.0.0.0` in a container behind a team's own proxy; no rate limit and nothing withheld, unlike
-  `--public`. The data page's writes are not served through it.
+  `--public`.
 - **A sealed held-out side** (the fleet's feedback 29): `evh dataset-split D --by time --key F --at T --seal` splits
   at a time boundary and seals the test side: runs, labels, label sheets, references, rescores and judging onto it
   are refused until `evh dataset-unseal D_test --config C --reason "..."` names a candidate whose hypothesis is
@@ -145,29 +143,17 @@ that can move a result is never a patch release without saying so under **Change
   path I/O anywhere else. `evh data-migrate --to sqlite|files` moves a project either way, every file read back by
   its sha256; on this repository's data the round trip gives back every file byte for byte. `validate` V23 names a
   project in both. Python code is never in the database.
-- **The Configure page** (PRD-016, UXS-004, ADR-0027), for a SQLite project that sets `configure: true`: a menu
-  item of its own after Inspector, served by a local `catalog-serve`. Without it the catalog is built and served
-  with no Configure part at all; a files project cannot turn it on (it is edited in its files; `validate` V23 names
-  it). `make serve [STORE=sqlite] [CONFIGURE=1]` stands the whole thing up on 127.0.0.1, in SQLite from a copy of
-  this repository's data. The page: everything a project keeps under `data/` and its settings (arm configs, goals,
-  fieldsets, judge scorers, model records, failure-mode lists, `validate.json`) created, edited and deleted there,
-  in a form built from each kind's schema: a field per key, the right control for its type, the project's datasets,
-  goals and model records suggested; no YAML to type. A setting is saved only after it passes the check (it matches
-  its schema, its id is its file name but for an arm config), each problem shown at its field; a save keeps the
-  file's comments and every line it does not change (every setting in this repository written back unchanged is the
-  same file, and 5,159 one-value edits kept every comment). Harness-written data is shown read-only with the
-  command that writes it; a run is deleted whole.
-  It is the one catalog page that writes, on this machine only: a public server answers no `/api/data` call. The
-  same in the terminal: `evh data-ls`, `data-show [--fields]`, `data-put [--set KEY=VALUE] [--unset KEY]`, `data-rm`.
-  A save runs `evh validate` before and after it: what the project's own check newly refuses (a scorer with judges
-  of one family, a config naming a goal that does not exist) puts the file back and comes back as the save's
-  problems. **Rebuild the catalog** on the page rebuilds the other pages beside the served ones and swaps them in.
-  Every kind of setting can be created, changed and deleted through the page alone, so a project in SQLite needs
-  no terminal to manage its settings. In SQLite mode it is how a person's settings get into the database without
-  `data-migrate`. New dependency:
-  `ruamel.yaml` (owner yes, 2026-11-06), which writes a setting back with its comments.
+- **A project's data from the terminal** (PRD-016): `evh data-ls`, `data-show [--fields]`, `data-put [--set
+  KEY=VALUE] [--unset KEY] [--new] [--check]`, `data-rm [--dry-run]`, in either store. A setting is saved only after
+  it passes the check (its schema; its id is its file name, but for an arm config), keeping the file's comments and
+  every line it does not change (every setting in this repository written back unchanged is the same file, and
+  5,159 one-value edits kept every comment), and only when `evh validate` passes with it; harness-written data is
+  refused, and a run is deleted whole. In SQLite mode it is how a person's settings get into the database without
+  `data-migrate`. New dependency: `ruamel.yaml` (owner yes, 2026-11-06), which writes a setting back with its
+  comments. A catalog page for the same (the Configure page) was built during 0.8.0 and retired before the
+  release (PRD-017 decision 4): the Workbench takes its place.
 - **`schemas/validate.schema.json`** and **`schemas/goal-policy.schema.json`**: the validate policy's keys and the goal
-  policy's `required_from`, written from what `validate` and `goal_policy` read; the data page builds their forms from
+  policy's `required_from`, written from what `validate` and `goal_policy` read; `data-put` checks a setting against
   them. A judge's `params.family`, which `judge_score` requires two of, is in the scorer schema.
 - **Tests that know when items are related.** `--cluster FIELD` on `pair-test`, `family-test` and
   `bootstrap-test`, and `cluster: FIELD` on a goal's dataset (used by the goal page, `evh goals`, the inspector,

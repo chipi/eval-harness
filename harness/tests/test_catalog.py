@@ -722,7 +722,6 @@ try:
     # BEHIND A PROXY (--behind-proxy, the homelab fleet's private catalog): the whole local inspector, for the
     # named Host as well as this machine's, nothing withheld; another Host refused; the data page's writes never.
     cs.LIMITS["proxy_hosts"] = ("fleet.tailnet.example",)
-    cs.CONFIGURE_ON[:] = [True]  # a project that deploys the data page: still not served through the proxy
     cs.Handler.prefixes = prefixes
     srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(cs.Handler, directory=str(tmp)))
     port = srv.server_address[1]
@@ -747,9 +746,9 @@ try:
             get("/.build/catalog/index.html", "evil.example")[0] == 403,
         )
         check(
-            "behind a proxy: the data page's routes are not served, even in a project that deploys them",
-            all(get(r, prox)[0] == 404 for r in cs.DATA_ROUTES),
-            [(r, get(r, prox)[0]) for r in cs.DATA_ROUTES],
+            "behind a proxy: no /api/data route is served (the Configure page is retired, PRD-017)",
+            all(get(r, prox)[0] == 404 for r in ("/api/data/store", "/api/data/form", "/api/data/file")),
+            [(r, get(r, prox)[0]) for r in ("/api/data/store", "/api/data/form", "/api/data/file")],
         )
         writes = []
         for method in ("PUT", "DELETE"):
@@ -784,7 +783,6 @@ try:
     finally:
         srv.shutdown()
         cs.LIMITS["proxy_hosts"] = ()
-        cs.CONFIGURE_ON[:] = [False]
 
     # PUBLIC mode: the API only, to the named host, rate-limited, arms capped, answers cached
     cs.LIMITS.update(hosts=("catalog.example.org",), rate=5, max_arms=2)

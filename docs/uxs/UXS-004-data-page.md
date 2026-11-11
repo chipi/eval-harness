@@ -1,6 +1,8 @@
 # UXS-004: The data page
 
-- **Status**: Active (built in 0.8.0, 2026-11-06)
+- **Status**: Retired (2026-11-11, before 0.8.0's release): [PRD-017](../prd/PRD-017-workbench.md) decision 4 retires
+  the page and throws away its pages, forms and routes; the terminal's `data-ls`, `data-show`, `data-put`, `data-rm`
+  stay. Kept as the record of what was built and why (built 2026-11-06).
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-016](../prd/PRD-016-managing-project-data.md) (managing a project's data)
 - **Related ADR**: [ADR-0027](../adr/ADR-0027-the-data-page-writes-locally.md) (the one page that writes, locally)
@@ -75,7 +77,7 @@ asking for its token): on a public deployment or a page opened from disk it stay
 no `/api/data` call. Since RFC-026 the routes need the server's token: the page is opened from the **Configure** link
 `catalog-serve` prints, which sets it as a cookie.
 
-To try it: `make serve STORE=sqlite CONFIGURE=1` serves this repository's data from a SQLite copy
+To try it (while it existed): make serve with STORE=sqlite and CONFIGURE=1 served this repository's data from a SQLite copy
 (`.build/serve-sqlite/`, made once; `FRESH=1` makes it again), so the tracked files are never touched; without
 `CONFIGURE` the same copy is served as the catalog only; `make serve` alone is the files catalog.
 

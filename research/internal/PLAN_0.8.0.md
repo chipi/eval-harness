@@ -351,6 +351,9 @@ record (a first build had added a second record, `data/code/`, and was redone on
   losses, 0/1 scores): every type I error at or below 0.025 within its Monte Carlo interval (the README there). Not
   simulated: clusters correlated with each other, or a cluster effect that differs between the arms.
 - D1: modes are tagged by hand in a sheet; no agent was asked to tag, and no committed dataset has tags.
+- The Configure page retired (PRD-017 decision 4) on 2026-11-11, before the release: its page, scripts, form builder,
+  `/api/data/` routes, the `configure:` setting, V23's rule and `make serve CONFIGURE=1` removed; the `data-*`
+  commands and what they share (the check, the save that keeps comments) kept.
 - `dataset-extend` (picks) through E3's version rule: done 2026-11-11, `test_picks.py` (V1 1.0, its extension 1.1,
   the next 1.2; a version written by hand that the lineage does not give fails V22).
 - Nothing here has been checked against the fleet's feedback still to come.

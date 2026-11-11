@@ -6,7 +6,7 @@
 
 Builds nothing: run `evh catalog` first. Static files are the built catalog and the data tree
 (its "files" links open run folders). Three JSON endpoints feed the inspector page (and GET /api/health says the
-server is up); the data page's seven, under /api/data/ (UXS-004, ADR-0027), answer on this machine only (DATA_ROUTES):
+server is up); a local server also answers the API (/api/v1/, RFC-026):
 
   GET /api/compare?runs=<arm|path>,...[&baseline=<arm>][&metric=<name>][&rescore=0]
       [&family=<m>][&threshold=<t>]
@@ -1026,163 +1026,9 @@ def served(build_dir: Path, data_dir: Path, also: tuple = ()) -> tuple:
 
 #: The API's endpoints. Anything else under /api/ is 404: it is not a way into the files.
 API_ROUTES = ("/api/health", "/api/compare", "/api/item", "/api/sheet")
-#: The data page's endpoints (UXS-004, ADR-0027): this machine's only; a public server answers none of them.
-DATA_ROUTES = (
-    "/api/data/store",
-    "/api/data/list",
-    "/api/data/file",
-    "/api/data/find",
-    "/api/data/run",
-    "/api/data/form",
-    "/api/data/rebuild",
-)
-#: Whether this server answers the Configure pages' routes (main sets it): a local server of a project that deploys
-#: them (`configure: true`, SQLite only). Off, they are 404, as on a public server.
-CONFIGURE_ON: list[bool] = [False]
-#: The catalog this server serves (main sets it), which the data page can rebuild after a setting changes.
-CATALOG_DIR: list[Path] = []
-#: The one rebuild at a time: its state, when it started and ended, and the end of its output when it failed.
-REBUILD: dict = {"state": "idle"}
-_REBUILD_LOCK = threading.Lock()
-
-
-def _rebuild(out: Path) -> None:
-    """`evh catalog` in a child process (a build is CPU work: in this process it would starve the server's answers),
-    under the `catalog` lock a catalog job takes too (RFC-026 step 4), so two builds never run at once; the command
-    builds beside the served folder and swaps it in, so the pages are served throughout."""
-    import subprocess  # noqa: PLC0415  # nosec B404 - our own command, no shell
-
-    from evaluation_harness import _jobs, _store  # noqa: PLC0415
-
-    def waiting(key: str, holder: str) -> None:
-        with _REBUILD_LOCK:
-            REBUILD.update(waiting_for={"lock": key, "job": holder or None})
-
-    t0 = time.time()
-    with _jobs.holding([("catalog", True)], "catalog-serve", waiting):
-        with _REBUILD_LOCK:
-            REBUILD.pop("waiting_for", None)
-        r = subprocess.run(  # nosec B603 - this interpreter and the package's own command
-            [sys.executable, "-m", "evaluation_harness", "catalog", "--out", str(out)],
-            cwd=ROOT, capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False,
-        )  # fmt: skip
-    if r.returncode == 0 and _store.is_file(out / "index.html"):
-        state = {"state": "done"}
-        cache_clear()
-    else:
-        state = {"state": "failed", "tail": ((r.stdout or "") + (r.stderr or ""))[-1500:]}
-    with _REBUILD_LOCK:
-        REBUILD.clear()
-        REBUILD.update(state, started=t0, seconds=round(time.time() - t0, 1))
-
-
-def rebuild_state() -> dict:
-    """The rebuild's state, and when the served catalog was built."""
-    with _REBUILD_LOCK:
-        out = dict(REBUILD)
-    from evaluation_harness import _store  # noqa: PLC0415
-
-    index = CATALOG_DIR[0] / "index.html" if CATALOG_DIR else None
-    built = _store.stat(index).st_mtime if index is not None and _store.is_file(index) else None
-    out["built"] = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(built)) if built else None
-    return out
-
-
-def start_rebuild() -> dict:
-    """Start a rebuild unless one is running; the state either way."""
-    if not CATALOG_DIR:
-        return {"state": "failed", "tail": "this server serves no catalog it can rebuild"}
-    with _REBUILD_LOCK:
-        if REBUILD.get("state") != "running":
-            REBUILD.clear()
-            REBUILD.update(state="running", started=time.time())
-            threading.Thread(target=_rebuild, args=(CATALOG_DIR[0],), daemon=True).start()
-    return rebuild_state()
-
-
-#: The header every data write must carry: a page from another origin cannot send it without a CORS preflight,
-#: which this server never grants (ADR-0027).
+#: The header every API call that is not a read must carry: a page from another origin cannot send it without a CORS
+#: preflight, which this server never grants (ADR-0027).
 DATA_HEADER = "X-EVH-Data"
-#: A data route asked without the server's token (RFC-026: the data page's routes take the API's token too).
-DATA_401 = (
-    "this page needs the server's token: open the Configure link `evh catalog-serve` printed when it started "
-    "(it carries the token, from .build/api-token)"
-)
-#: The largest setting a write takes, in bytes.
-DATA_MAX_BODY = 2_000_000
-#: A refusal's kind (`_data_page.Refused`) as its HTTP status.
-DATA_STATUS = {
-    "not-found": 404,
-    "not-allowed": 403,
-    "bad-argument": 400,
-    "would-overwrite": 409,
-    "invalid-file": 422,
-    "failed": 503,  # the project's check did not finish: the save could not be checked
-}
-
-
-def data_answer(method: str, path: str, query: str, body: bytes | None = None) -> tuple:
-    """The data page's API (UXS-004): (status, JSON body). Reads: GET store, list, file, find, run, form (a setting's
-    form: its schema, values and suggestions). Writes: PUT form (a setting's values, checked first: the problems come
-    back and nothing is written, or it is saved), DELETE file (a setting, or a whole run)."""
-    from evaluation_harness import _data_page, _jobs, _settings_form  # noqa: PLC0415
-
-    q = parse_qs(query)
-
-    def arg(name: str, default: str = "") -> str:
-        return q.get(name, [default])[0]
-
-    try:
-        if method == "GET":
-            if path == "/api/data/store":
-                return 200, _data_page.overview()
-            if path == "/api/data/list":
-                norm = _data_page.resolve(arg("path"))[0]
-                if _data_page.is_file(norm):  # a file, not a folder: the page opens it (no failed request)
-                    return 200, {"path": norm, "file": True}
-                return 200, _data_page.listing(norm, int(arg("offset", "0") or 0))
-            if path == "/api/data/file":
-                return 200, _data_page.show(arg("path"))
-            if path == "/api/data/find":
-                return 200, _data_page.search(arg("q"))
-            if path == "/api/data/form":
-                return 200, _settings_form.form(arg("path"), new_in=arg("new") or None)
-            if path == "/api/data/rebuild":
-                return 200, rebuild_state()
-            if path == "/api/data/run":
-                return 200, _data_page.run_summary(arg("path"))
-            return 405, {"error": "use POST, PUT or DELETE for this"}
-        if method == "POST" and path == "/api/data/rebuild":
-            return 200, start_rebuild()
-        if method == "PUT" and path == "/api/data/form":
-            values = json.loads((body or b"").decode("utf-8") or "null")
-            found = _settings_form.problems(arg("path"), values)
-            if found:
-                return 200, {"saved": False, "problems": found}
-            try:
-                with _jobs.holding([("settings", True)], "catalog-serve"):
-                    saved = _settings_form.save(arg("path"), values, new=arg("new") == "1")
-                cache_clear()
-                return 200, {"saved": True, **saved}
-            except _settings_form.ProjectRefused as exc:
-                return 200, {"saved": False, "problems": exc.problems}
-        if method == "DELETE" and path == "/api/data/file":
-            with _jobs.holding(_jobs.LOCK_RULES["data-rm"]({"path": arg("path")}), "catalog-serve"):
-                gone = _data_page.remove(arg("path"))
-            cache_clear()
-            return 200, gone
-        return 405, {"error": f"{method} is not served at {path}"}
-    except _data_page.Refused as exc:
-        return DATA_STATUS.get(exc.kind, 400), {"error": str(exc), "kind": exc.kind}
-    # A job writes the same thing (RFC-026 step 4): the page's save waits for no job.
-    except _jobs.Busy as exc:
-        return 409, {"error": f"not now: {exc}; try again when it ends", "kind": "busy"}
-    except UnicodeDecodeError:
-        return 400, {"error": "a setting is UTF-8 text"}
-    except ValueError as exc:
-        return 400, {"error": str(exc)}
-
-
 #: The API's token (RFC-026), made when a local server starts; empty: the API answers nothing.
 API_TOKEN: list[str] = []
 API_COOKIE = "evh_token"
@@ -1276,8 +1122,6 @@ def allowed(path: str, host: str, port: int, prefixes: tuple) -> int:
     ):  # RFC-026: this machine's only, never behind a proxy or public (owner, 2026-11-09)
         return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not API_TOKEN else 0
     if p.startswith("/api/"):
-        if p in DATA_ROUTES:  # this machine's only (ADR-0027), and only for a project that deploys them
-            return 404 if LIMITS["hosts"] or LIMITS.get("proxy_hosts") or not CONFIGURE_ON[0] else 0
         return 0 if p in API_ROUTES else 404
     prefix = next((x for x in prefixes if p.startswith(x)), None)
     if prefix is None:
@@ -1457,11 +1301,11 @@ class Handler(SimpleHTTPRequestHandler):
         return False
 
     def do_POST(self):
-        """The API's calls (RFC-026) and the data page's check (UXS-004), observed by the hooks."""
+        """The API's calls (RFC-026), observed by the hooks; nothing else is written to."""
         if urlparse(self.path).path.startswith("/api/v1/"):
             self._observed(lambda: self._api("POST"))
             return
-        self._observed(lambda: self._write("POST"))
+        self._observed(self._no_write)
 
     def _api_authorized(self) -> bool:
         """The token, from `Authorization: Bearer` or the cookie the session route sets (RFC-026)."""
@@ -1621,40 +1465,16 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(404, {"error": f"no such job: {exc}"}, cache=False)
 
     def do_PUT(self):
-        """The data page's save (UXS-004), observed by the hooks."""
-        self._observed(lambda: self._write("PUT"))
+        """Nothing is written by PUT (the Configure page's save is retired, PRD-017)."""
+        self._observed(self._no_write)
 
     def do_DELETE(self):
-        """The data page's delete (UXS-004), observed by the hooks."""
-        self._observed(lambda: self._write("DELETE"))
+        """Nothing is deleted by DELETE (the Configure page's delete is retired, PRD-017; `evh data-rm` deletes)."""
+        self._observed(self._no_write)
 
-    def _write(self, method: str) -> None:
-        """A data write: only to a data route, on this machine (`_refuse`), with the data header, and from no other
-        origin (ADR-0027)."""
-        url = urlparse(self.path)
-        if self._refuse():
-            return
-        if url.path not in DATA_ROUTES or LIMITS["hosts"] or LIMITS["proxy_hosts"] or not CONFIGURE_ON[0]:
+    def _no_write(self) -> None:
+        if not self._refuse():
             self.send_error(404)
-            return
-        if self.headers.get(DATA_HEADER) != "1":
-            return self._json(
-                403,
-                {"error": f"a write needs the {DATA_HEADER}: 1 header (the data page sends it)"},
-                cache=False,
-            )
-        origin = self.headers.get("Origin")
-        port = int(self.server.server_address[1])  # type: ignore[index]  # an AF_INET (host, port)
-        if origin is not None and origin not in (f"http://127.0.0.1:{port}", f"http://localhost:{port}"):
-            return self._json(403, {"error": "a write from another origin is refused"}, cache=False)
-        if not self._api_authorized():
-            return self._json(401, {"error": DATA_401}, cache=False)
-        n = int(self.headers.get("Content-Length") or 0)
-        if n > DATA_MAX_BODY:
-            return self._json(413, {"error": f"a setting is at most {DATA_MAX_BODY:,} bytes"}, cache=False)
-        body = self.rfile.read(n) if n else b""
-        code, answer_body = data_answer(method, url.path, url.query, body)
-        self._json(code, answer_body, cache=False)
 
     def do_HEAD(self):
         """Handle HEAD requests with access checks."""
@@ -1695,11 +1515,6 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
-        if url.path in DATA_ROUTES:
-            if not self._api_authorized():
-                return self._json(401, {"error": DATA_401}, cache=False)
-            code, body = data_answer("GET", url.path, url.query)
-            return self._json(code, body, cache=False)
         if url.path in ("/api/compare", "/api/item", "/api/sheet"):
             # A client-supplied header is trusted only when named (--client-header): behind a
             # proxy that sets it, with the origin reachable only through that proxy. Otherwise
@@ -1866,8 +1681,6 @@ def main() -> int:
         if not _store.is_file(args.build_dir / "index.html"):
             die(f"no catalog at {args.build_dir}: run `evh catalog` first", "not-found")
         Handler.prefixes = served(args.build_dir, A.data_dir, tuple(getattr(A, "served_dirs", ())))
-        CATALOG_DIR[:] = [args.build_dir.resolve()]
-        CONFIGURE_ON[:] = [_common.configure()]
     migration_check()
     threading.Thread(target=watch_migrations, daemon=True).start()
     if args.warm:
@@ -1922,12 +1735,6 @@ def main() -> int:
             f"Authorization: Bearer <token>, or GET /api/v1/session?token=<token> for a cookie)",
             flush=True,
         )
-        if CONFIGURE_ON[0]:
-            page = f"{Handler.prefixes[0]}data.html"
-            print(
-                f"  Configure: http://127.0.0.1:{args.port}/api/v1/session?token={API_TOKEN[0]}&next={page}",
-                flush=True,
-            )
         print(f"  the project {ROOT}, on a port of its own", flush=True)
         print("  it reads the runs once: restart it to see runs made after it started", flush=True)
     try:

@@ -7,8 +7,7 @@
 #   make reproduce EXP=scifact LEVEL=local      (local | baselines | hosted | all)
 #   make compare   EXP=scifact           the replication card: does every finding hold?
 #   make reproduce EXP=scifact CONFIG=path/to/your_arm.yaml    add a model of your own
-#   make serve [STORE=sqlite] [CONFIGURE=1]   the catalog and inspector on 127.0.0.1 (a SQLite copy of the data;
-#                                        with CONFIGURE=1 its Configure pages)
+#   make serve [STORE=sqlite]   the catalog and inspector on 127.0.0.1 (in SQLite, a copy of the data)
 #   make browser-check                   the inspector and the public site in headless Chromium
 #   make guard-check                     the checks can fail: each checker catches its planted defects
 #   make quality                         lint, types, security, dead code, docstrings, spelling, shell
@@ -67,7 +66,7 @@ site: $(PY)
 # Both front ends in headless Chromium: the catalog and run inspector, then the public site
 # served with production's headers. Needs `make -C harness browser-install` once.
 serve: $(PY)
-	$(MAKE) -C harness serve STORE=$(STORE) CONFIGURE=$(CONFIGURE) FRESH=$(FRESH) ARGS="$(ARGS)"
+	$(MAKE) -C harness serve STORE=$(STORE) FRESH=$(FRESH) ARGS="$(ARGS)"
 
 browser-check: $(PY)
 	$(MAKE) -C harness browser-check

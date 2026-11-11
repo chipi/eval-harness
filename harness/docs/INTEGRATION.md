@@ -389,8 +389,7 @@ which references exist, what one arm wrote for one item.
   container serves the pages, the data tree and every item, output and reference, to requests
   whose Host is one it names (and to this machine's, for a health check), with no rate limit and
   nothing withheld. Everyone who can reach the proxy reads everything, so put it behind what
-  already decides who that is. The data page's writes stay this machine's own and are not served
-  through it.
+  already decides who that is. Nothing is written through it.
 
   `item_fields` is optional: without it the pages show no fields. With it, the dataset page
   lists each field and its coverage, and summarises the values of a field marked `public`
@@ -431,7 +430,7 @@ a team sharing one project.
 catalog's views (`overview`, `datasets`, `dataset-items`, `dataset-card`, `licences`, `arms`, `models`, `goals`,
 `references`, `metrics`, `activity`, `search`, `captures`, `labels`, `tags`, `picks`, `label-coverage`,
 `deploy-sheet`), the project's
-files as the data page lists and shows them (`data-ls`, `data-show`), the inspector in the terminal (`inspect`, its
+files as `data-ls` and `data-show` list and show them, the inspector in the terminal (`inspect`, its
 sheet included, without the options that write a file: `--csv`, `--fill` and theirs), the ranking
 and the tests (`leaderboard`, `pair-test`, `family-test`, `rank-stability`, `run-compare`), `rounds`,
 `runs-list` and `validate`: 28 tools. Each call runs the command as a person would, with `--json`,

@@ -796,39 +796,6 @@ STORES = ("files", "sqlite")
 _STORE_SEEN: list[Any] = []
 
 
-def configure_setting() -> tuple[bool, str | None]:
-    """Whether the project deploys its Configure pages (the data page, UXS-004): `EVAL_CONFIGURE` (1, true, yes),
-    else `configure: true` in its config.yaml; and what is wrong with it, if anything. The pages edit the database,
-    so they need `store: sqlite`: a files project is edited in its files."""
-    env = os.environ.get("EVAL_CONFIGURE", "").strip().lower()
-    if env:
-        on, where = env in ("1", "true", "yes"), "EVAL_CONFIGURE"
-    else:
-        cfg, on, where = _paths()["ROOT"] / "config.yaml", False, "configure in config.yaml"
-        if cfg.is_file():
-            import yaml  # noqa: PLC0415
-
-            try:
-                doc = yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}
-            except yaml.YAMLError:
-                doc = {}
-            on = isinstance(doc, dict) and doc.get("configure") is True
-    if on and store() != "sqlite":
-        return (
-            False,
-            f"{where} turns on the Configure pages, which need store: sqlite (this project's store is {store()})",
-        )
-    return on, None
-
-
-def configure() -> bool:
-    """Whether the Configure pages are deployed; refused (not-allowed) when they are asked for without SQLite."""
-    on, problem = configure_setting()
-    if problem:
-        die(problem, "not-allowed")
-    return on
-
-
 def store() -> str:
     """The project's store: `EVAL_STORE`, else `store` in its config.yaml, else `files`."""
     env = os.environ.get("EVAL_STORE", "").strip()

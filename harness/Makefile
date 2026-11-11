@@ -84,8 +84,7 @@ help:
 	@echo "INSPECT / GATE"
 	@echo "  make runs-list | baselines-list | validate | judge (the panel)"
 	@echo "  make catalog | catalog-serve   pages over the runs; the run inspector on 127.0.0.1"
-	@echo "  make serve [STORE=sqlite] [CONFIGURE=1] [FRESH=1]   the catalog on 127.0.0.1; in SQLite a copy of data/,"
-	@echo "                                  and with CONFIGURE=1 its Configure pages (SQLite only)"
+	@echo "  make serve [STORE=sqlite] [FRESH=1]   the catalog on 127.0.0.1; in SQLite a copy of data/"
 	@echo ""
 	@echo "SCOPING  (a dataset accumulates arms across config versions)"
 	@echo "  make leaderboard DATASET_ID=my_v1 MATCH=_v2   only v2 arms"
@@ -116,7 +115,6 @@ budget-check:
 
 browser-check:
 	$(PYTHON) tests/test_inspector_browser.py
-	$(PYTHON) tests/test_data_page_browser.py
 
 # The catalog of this repository's own runs in Chromium (tests/test_catalog_real_browser.py): the
 # pages at the size the deployment serves. Reuses budget-check's catalog, else builds it.
@@ -417,21 +415,18 @@ catalog-serve: catalog
 
 # The whole thing on 127.0.0.1, to try it: the catalog and the run inspector over this project's data. STORE=sqlite
 # serves a SQLite copy of data/ (.build/serve-sqlite/data/project.sqlite, made once by data-migrate; FRESH=1 makes it
-# again), so trying it never touches the tracked files; CONFIGURE=1 adds the Configure pages (UXS-004), which edit the
-# database and so need STORE=sqlite. Without CONFIGURE the catalog is built and served without them.
+# again), so trying it never touches the tracked files.
 SERVE_COPY := .build/serve-sqlite
 serve:
 ifeq ($(STORE),sqlite)
 	@if [ -n "$(FRESH)" ] || [ ! -f $(SERVE_COPY)/data/project.sqlite ]; then \
 	  rm -rf $(SERVE_COPY) && mkdir -p $(SERVE_COPY) && cp -r data $(SERVE_COPY)/data && \
 	  EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/data_migrate.py --to sqlite; fi
-	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite EVAL_CONFIGURE=$(if $(CONFIGURE),1,0) \
-	  $(PYTHON) scripts/catalog_build.py --out $(SERVE_COPY)/catalog
-	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite EVAL_CONFIGURE=$(if $(CONFIGURE),1,0) \
-	  $(PYTHON) scripts/catalog_serve.py --build-dir $(SERVE_COPY)/catalog $(ARGS)
+	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/catalog_build.py --out $(SERVE_COPY)/catalog
+	EVAL_DATA_DIR=$(SERVE_COPY)/data EVAL_STORE=sqlite $(PYTHON) scripts/catalog_serve.py --build-dir $(SERVE_COPY)/catalog $(ARGS)
 else
-	EVAL_CONFIGURE=$(if $(CONFIGURE),1,0) $(PYTHON) scripts/catalog_build.py
-	EVAL_CONFIGURE=$(if $(CONFIGURE),1,0) $(PYTHON) scripts/catalog_serve.py $(ARGS)
+	$(PYTHON) scripts/catalog_build.py
+	$(PYTHON) scripts/catalog_serve.py $(ARGS)
 endif
 
 # The read commands as MCP tools, for an agent (RFC-018): stdio, or ARGS="--http ..." for a team.

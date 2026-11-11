@@ -1,6 +1,7 @@
 # PRD-016: Managing a project's data from the catalog
 
-- **Status**: Built for 0.8.0 (2026-11-06). Asked for by the owner, 2026-11-06: "build simple CRUD UI for this",
+- **Status**: Built for 0.8.0 (2026-11-06); its page retired before the release ([PRD-017](PRD-017-workbench.md)
+  decision 4, 2026-11-11), its commands (`data-ls`, `data-show`, `data-put`, `data-rm`) kept. Asked for by the owner, 2026-11-06: "build simple CRUD UI for this",
   "do UXS and all you need to get it right"
 - **Authors**: Marko Dragoljevic
 - **Related RFCs**: [RFC-025](../rfc/RFC-025-runs-in-sqlite.md) (a project's data in files or one database, read and

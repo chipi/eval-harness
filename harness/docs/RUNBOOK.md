@@ -681,31 +681,16 @@ evh data-migrate --to files              # back, byte for byte, after setting st
 `data-migrate` refuses while the project's store is not the target, while `data/` holds Python, and
 while a run is still in the layout before 0.8.0 (`evh run-migrate` first); a move a crash stopped is
 finished by the next one. In SQLite mode a setting you write (a goal, a config) gets in through the
-data page or `evh data-put` (below), and a folder of files through `data-migrate`. `validate` V23 names a database beside files, or files beside the database; V7 and V9, which
+`evh data-put` (below), and a folder of files through `data-migrate`. `validate` V23 names a database beside files, or files beside the database; V7 and V9, which
 read git, say why they do not apply. A release reads the database and writes the same files layout
 as a files project, a hidden dataset's text left out.
 
-**The Configure page** (UXS-004). A SQLite project that sets `configure: true` in its
-`config.yaml` (or `EVAL_CONFIGURE=1`) gets a **Configure** item in the catalog's header, after
-Inspector; `evh catalog-serve` on this machine serves it. Without it the catalog is built and served
-with no Configure part; with `store: files` it is refused (a files project is edited in its files).
-`make serve STORE=sqlite CONFIGURE=1` tries it on a SQLite copy of this repository's data. The page
-shows everything under `data/` and the project's settings (arm
-configs, goals, fieldsets, judge scorers, model records, failure-mode lists, `validate.json`), which
-it creates, edits and deletes in a form built from each kind's schema: a field per key, no YAML to
-type. A setting is saved only after it passes the check: it matches its schema, and (all but an arm
-config) its id is its file name; each problem is shown at its field. A save keeps the file's comments
-and every line it does not change (ruamel.yaml), and only when `evh validate` passes on the project
-with it (a change validate refuses is put back, its reasons shown). **Rebuild the catalog** on the page
-runs `evh catalog`, which builds beside the served folder and swaps it in, so the other pages show a
-change without a terminal. Harness-written data is shown
-read-only with the command that writes it; a run is the one kind of data it deletes, whole. It writes
-on this machine only: a public server answers no `/api/data` call (ADR-0027). Its calls need the server's token
-(RFC-026), as the API's do: open the **Configure** link `evh catalog-serve` prints when it starts (it carries the
-token and sets the cookie), not the page's bare address, which says so. A save, a delete or a rebuild takes the
-same locks a job does: while a job writes the settings (or the run being deleted), the page's save is refused
-(`409`, naming the job) rather than queued, and a rebuild waits for a `catalog` job. Each view and action is
-a command:
+**The project's data, in either store** (PRD-016): the settings (arm configs, goals, fieldsets, judge scorers,
+model records, failure-mode lists, `validate.json`) are created, changed and deleted with these commands; a setting
+is saved only after it passes the check (it matches its schema, and, but for an arm config, its id is its file
+name), keeping the file's comments and every line it does not change, and only when `evh validate` passes on the
+project with it (a change validate refuses is put back, its reasons shown). Harness-written data is read-only; a run
+is the one kind of data `data-rm` deletes, whole:
 
 ```bash
 evh data-ls [PATH] [--find TEXT]          # the overview, a folder, or every file whose path holds TEXT
@@ -1449,7 +1434,7 @@ there is listed and stopped by the API, and one the Workbench started is followe
 `POST /api/v1/estimate` with `{"command", "args"}` runs a job command's own `--dry-run` (`run`, `sweep`,
 `judge-score` and the migrations have one) and answers what it printed; a stopped run job's round reservation is
 closed by its supervisor with what the run's items paid.
-The server's own writes (the data page's) take the same locks. `evh catalog` builds beside the served folder and
+`evh catalog` builds beside the served folder and
 swaps it in, from the terminal or as a job, so a server keeps serving the old pages until the new ones are whole (the
 swap is one system call on Linux and macOS; elsewhere two renames, with the folder absent between them). While a migration holds the
 project (`data-migrate` and the other `*-migrate` jobs), the server answers every call `503` with `Retry-After: 5`
@@ -1871,7 +1856,6 @@ notebook) reads no `.env`, and the project's paths are resolved on first use, so
 | `EVH_FOR` | `person:NAME`: the operator an agent acts for (required with `EVH_ACTOR=agent:…`) |
 | `EVAL_DATA_DIR` | the data root, when it is not `<project>/data` |
 | `EVAL_STORE` | `files` or `sqlite`: the project's store, over its `config.yaml`'s `store:` (RFC-025; above) |
-| `EVAL_CONFIGURE` | `1`: the Configure page in a SQLite project, as `configure: true` in its `config.yaml` (above) |
 | `EVAL_RUNS_DIR` | read and write runs here instead of `data/runs` (`validate` too) |
 | `EVAL_GOALS_DIR` | read goals here instead of `<data>/goals`, relative to the project (for goals kept outside the data root) |
 | `EVAL_MAX_COST_USD` | the most one command spends, every pass of `--repeat` together; the run stops, keeps its results, resumes |

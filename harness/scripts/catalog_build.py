@@ -71,8 +71,6 @@ ASSETS = (
     "overview.js",
     "arms.js",
     "group.js",
-    "data_form.js",
-    "data.js",
     "icon.svg",
 )
 #: Links that would put more arms than this in one inspector URL go to the picker instead.
@@ -133,11 +131,7 @@ NAV = [
     ("activity", "activity.html", "Activity"),
     ("inspect", "inspect.html", "Inspector"),
 ]
-#: The Configure pages (UXS-004): a menu of their own, built only for a project that deploys them (`configure: true`,
-#: SQLite only); even then shown only by a local catalog-serve, which catalog.js asks.
-CONFIGURE_NAV = ("configure", "data.html", "Configure", "local-only")
-#: The Configure pages' own scripts, copied only when they are built.
-CONFIGURE_ASSETS = ("data_form.js", "data.js")
+
 
 #: What the harness's own metrics measure; a project describes its own with METRIC_DESCRIPTIONS.
 BUILTIN_METRICS = {
@@ -774,12 +768,10 @@ def inspect_url(arms: list, up: str = "", **params) -> str:
     return f"{up}inspect.html?runs=" + quote(",".join(arms), safe=",/") + (f"&{q}" if q else "")
 
 
-def copy_assets(out: Path, configure: bool = False) -> None:
-    """Copy CSS, JS, and SVG assets to output directory (the Configure pages' scripts only when they are built)."""
+def copy_assets(out: Path) -> None:
+    """Copy CSS, JS, and SVG assets to output directory."""
     _store.mkdir(out / "assets", parents=True, exist_ok=True)
     for a in ASSETS:
-        if a in CONFIGURE_ASSETS and not configure:
-            continue
         _store.copy_file(ASSET_DIR / a, out / "assets" / a)
     _store.write_text(out / "assets" / "head.js", HEAD_JS_SRC, encoding="utf-8")
 
@@ -4817,36 +4809,6 @@ def write_pick(A: Adapter, by_ds: dict, out: Path, rows: list[dict]) -> None:
     )
 
 
-def render_data(A: Adapter, out: Path, page_fn=page, serve: str = "evh catalog-serve", **page_kw) -> None:
-    """The Configure page (UXS-004), built only for a project that deploys it; assets/data.js fills it from the local
-    server's /api/data/. The one page
-    that writes, and only through a server on this machine (ADR-0027)."""
-    body = (
-        '<section class="hero slim"><div class="wrap"><p class="kicker">configure</p>'
-        "<h1>Project data</h1><p class=dek>What this project keeps under data/: its settings, which you can "
-        "create, change and delete here, and the data the harness wrote, shown read-only.</p>"
-        '<p class="dm-store small" id="store"></p></div></section>'
-        '<section class="block tight"><div class="wrap" id="app">'
-        f'<p class="muted">Loading… (this page needs <code>{e(serve)}</code> on this machine; opened from disk it '
-        "cannot read the project's data.)</p></div></section>"
-    )
-    write(
-        out,
-        "data.html",
-        page_fn(
-            "Project data",
-            body,
-            0,
-            "configure",
-            ("assets/data_form.js", "assets/data.js"),
-            item=A.item_word,
-            serve=serve,
-            elsewhere=(("data-ls", {}),),
-            **page_kw,
-        ),
-    )
-
-
 def render_inspect(
     A: Adapter,
     out: Path,
@@ -5003,11 +4965,10 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     the catalog belongs to, (label, url) each, "." for the catalog itself: the header's switcher."""
     global SECTIONS
     SECTIONS = tuple(sections)
-    configure = _common.configure()
-    nav = [*NAV, CONFIGURE_NAV] if configure else NAV
+    nav = NAV
     if _store.exists(out):
         _store.rmtree(out)
-    copy_assets(out, configure)
+    copy_assets(out)
     A = scores_once(A)  # one build: each arm's scores read once, not for every page that asks
     by_ds = collect(A)
     write_periods(A, by_ds, out)
@@ -5039,8 +5000,6 @@ def build(A: Adapter, out: Path, sections: tuple = ()) -> dict:
     write_search(A, by_ds, out)
     write_pick(A, by_ds, out, arms_rows)
     render_inspect(A, out, nav=nav, pages=True, pick=True)
-    if configure:
-        render_data(A, out, nav=nav)
     return {
         "goals": n_goals,
         "datasets": len(by_ds),
