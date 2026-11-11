@@ -284,8 +284,8 @@ each with its tests in both stores (status column); 30 and 32 wait for R, 21 is 
 | --- | --- |
 | 4.1 | Who acted on every record (a person, or an agent its operator asked; the owner's rule of 2026-11-04), then baselines per goal: versions, the evidence frozen, rollback, `evidence-check`; the reproduce block reuses `deploy-sheet` |
 | 4.2 | Background runs: a job set with a detached supervisor, `jobs-status`, `jobs-logs` (built as RFC-026 steps 1 to 7, 2026-11-09; step 8 is the Workbench, last) |
-| 4.3 | Prompt versions; a standard `code_ref` in the fingerprint hook (item failures moved to A5) (RFC-028, draft for the owner, 2026-11-09) |
-| 4.4 | Studies (spec, ask/tell, samplers, stop rules) and test-set looks (the look budget, attainable p); they need 4.1 and 4.2 (RFC-029, draft for the owner, 2026-11-09) |
+| 4.3 | Prompt versions; a standard `code_ref` in the fingerprint hook (item failures moved to A5) (RFC-028, built 2026-11-09) |
+| 4.4 | Studies (spec, ask/tell, samplers, stop rules) and test-set looks (the look budget, attainable p); they need 4.1 and 4.2 (RFC-029: looks built 2026-11-09, studies 2026-11-11) |
 
 Dropped from the drafts (superseded by what shipped): their fingerprint v5 design and migration script, `arm.system`,
 prompts in the arm's hash, the "prefer MCP" rule, the study and job skills.
@@ -332,7 +332,9 @@ record (a first build had added a second record, `data/code/`, and was redone on
 - S2 below 10,000 units: `family-test`'s first run (about 37 s at 1,000 items) is not faster (above).
 - The deployed inspector was killed by its memory cap 337 times on 2026-10-26/27 (infra's report, 2026-11-08); not
   looked into from here (no access to the box): the owner's and the prod session's.
-- Step 4, R, the fleet's feedback (6) and the release (7) are not built.
+- Built: step 6 (the fleet's feedback), step 4 (RFC-026 steps 1 to 7, RFC-027, RFC-028, RFC-029) and R (RFC-030),
+  pushed to origin/080 by 2026-11-11 (52571970a). Not built: the Workbench (RFC-026 step 8, PRD-017, with the ADR
+  amending ADR-0027) and the release (7).
 - Sizes of every package are estimates, not measured.
 - The clustered bootstrap-t was simulated at 100 clusters of 3 only; other cluster sizes and shapes are not.
 - D1: modes are tagged by hand in a sheet; no agent was asked to tag, and no committed dataset has tags.
