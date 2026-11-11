@@ -244,17 +244,42 @@ def resolve(cfg: dict[str, Any], config_path: Any, run_label: str) -> dict[str, 
                 f"{config_path}: prompt_root.path {root_spec['path']}: no such directory", "not-found"
             )
         include = list(root_spec.get("include") or [])
+        # A study's trial names versions for some varied files (RFC-029): those bytes go into this run's copy.
+        versions = root_spec.get("versions") or {}
+        swapped: dict[str, bytes] = {}
         for rel in root_spec.get("vary") or []:
             if not (root / rel).is_file():
                 _common.die(
                     f"{config_path}: prompt_root.vary {rel}: not in {root_spec['path']} (the copy never adds a file)",
                     "not-found",
                 )
-            take(f"{root_spec['name']}/{rel}", root / rel, f"{root_spec['path']}/{rel}")
+            name = f"{root_spec['name']}/{rel}"
+            if rel in versions:
+                try:
+                    data = text_of(str(versions[rel]))
+                except (FileNotFoundError, ValueError):
+                    _common.die(
+                        f"{config_path}: prompt_root.versions.{rel}: no recorded version {versions[rel]}",
+                        "not-found",
+                    )
+                swapped[rel] = data
+                shas[name] = sha256(data)
+                given[name] = {"text": data.decode("utf-8", errors="replace"), "path": None,
+                               "version": str(versions[rel]), "sha256": shas[name]}  # fmt: skip
+                continue
+            take(name, root / rel, f"{root_spec['path']}/{rel}")
+        unknown = sorted(set(versions) - set(root_spec.get("vary") or []))
+        if unknown:
+            _common.die(
+                f"{config_path}: prompt_root.versions names files not in vary: {', '.join(unknown)}",
+                "invalid-file",
+            )
         import secrets  # noqa: PLC0415
 
         copy = _common.ROOT / ".build" / "prompt-roots" / f"{run_label}-{secrets.token_hex(3)}"
         shutil.copytree(root, copy, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"))
+        for rel, data in swapped.items():
+            (copy / rel).write_bytes(data)
         settings["prompt_root_sha256"] = root_digest(copy, include)
         params["prompt_root"] = str(copy)
         settings["prompts"] = shas

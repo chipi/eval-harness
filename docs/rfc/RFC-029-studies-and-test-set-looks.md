@@ -1,6 +1,6 @@
 # RFC-029: Studies, and the looks a test set allows
 
-- **Status**: Accepted (owner, 2026-11-09: "accept and build"); built 2026-11-11 but for what "Not built" below names. Revision 2 (2026-11-09): the owner's answers to its six questions, and an independent
+- **Status**: Accepted (owner, 2026-11-09: "accept and build"); built 2026-11-11. Revision 2 (2026-11-09): the owner's answers to its six questions, and an independent
   review's findings (Fable), each checked against the code; for the owner's acceptance. Revision 1 the same day. Step 4.4 of
   `research/internal/PLAN_0.8.0.md`. It reworks the 0.5.0 drafts' RFC-010 (studies, revision 3), RFC-015's heldout
   looks and attainable p, and PRD-009 FR2-FR5 (not merged; on `backup/050-pre-rebase-20261028`) onto what shipped
@@ -239,17 +239,20 @@ the "nominal, not a look" label on test sets; a goal's recommendation does not c
 - `_rounds.save` now keeps `study` and `actor`: it had dropped the actor `round-open` records since RFC-027 (a bug
   found here; `test_actor` now checks a round).
 
-## Not built
+## The gaps of the first build, closed (owner, 2026-11-11: "finish building studies, no need to have gaps")
 
-- The goal page's table of a study's trials (hypothesis, change, outcome, cost): a study's round shows as any round
-  does, its trials as arms and its dropped trials as retirements; `evh study-status` has the table.
-- Items shown to a sampler: no sampler is shown items (the state carries scores, not items), so `shown` is always empty
-  and a confirmation leaves out the validation set's items only.
-- A trial changing a prompt root's varied files (`prompt_root.vary`): trials change `prompts:` names only.
-- The scorer's code in the start hashes: the spec, its frozen files and the references are checked; a scorer changed
-  mid-study is not caught unless its file is listed under `frozen`.
-- `study-run --resume` after a crash is not tested; the loop continues after the last trial line, which a crash
-  mid-trial may leave without (that trial is then run again under the next number).
+- **The goal page** has a section per study: its trials as a table (the change, the hypothesis, kept or dropped and
+  why, the delta against the best so far, the cost), its stop reason, and its confirmations with their looks; `evh goals
+  --goal G` prints the same.
+- **What a sampler is shown**: the best so far's weakest validation items (`show_items`, default 5: their ids, scores
+  and text), recorded on the ask (or the command sampler's trial) by id and content hash; a confirmation leaves out every
+  item any study of the goal showed, by either.
+- **A prompt root's varied files** change in a trial: the proposal names `<root>/<file>`, the trial's config records
+  `prompt_root.versions`, and that version goes into the run's copy of the root (RFC-028's `_prompts.resolve`).
+- **The scoring code** (the harness's, and the baseline's adapter file by behaviour) is hashed at the start and checked
+  before every trial: a scorer changed mid-study stops it.
+- **Resume after a crash**: `study-run --resume` records a trial whose config was written but whose line never was as
+  failed and interrupted, then goes on; tested by killing a study mid-trial.
 
 ## Decided by the owner (2026-11-09)
 

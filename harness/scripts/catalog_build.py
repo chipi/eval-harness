@@ -3053,6 +3053,41 @@ def _rounds_block(
     )
 
 
+def _studies_block(g: dict) -> str:
+    """A goal's studies (RFC-029): each one's trials as a table (the change, the hypothesis, kept or dropped and why,
+    the delta against the best so far, the cost), its stop reason, and its confirmations with their looks."""
+    from evaluation_harness import _study  # noqa: PLC0415
+
+    parts = []
+    for s in _study.of_goal(g["goal_id"]):
+        rows = [
+            [
+                f"t{r['k']}",
+                e(r["change"]),
+                e(r["hypothesis"]),
+                f'<b>{e(str(r["outcome"]))}</b><br><small class="muted">{e(r["reason"])}</small>',
+                f"{r['delta']:+.4g}" if isinstance(r["delta"], (int, float)) else "—",
+                f"${r['cost_usd']:.4f}" if isinstance(r["cost_usd"], (int, float)) else "—",
+            ]
+            for r in s["rows"]
+        ]
+        conf = "".join(
+            f"<li>confirmed on {e(str(c.get('test')))}: <b>{e(str(c.get('outcome')))}</b> ({e(str(c.get('rule')))}, look "
+            f"{(c.get('look') or {}).get('number')} at {float((c.get('look') or {}).get('level') or 0):.4%}; delta "
+            f"{c.get('delta')} on the test items, {c.get('validation_delta')} on validation)</li>"
+            for c in s["confirms"]
+        )
+        parts.append(
+            f'<h3 id="study-{e(s["study"])}">{e(s["study"])}</h3>'
+            f'<p class="small muted">{e(s["status"])}, from {e(str(s["baseline"]))}, round {e(str(s["round"]))}, '
+            f"${s['spent_usd']:.4f} spent" + (f"; ended: {e(str(s['end']))}" if s["end"] else "") + ". Research: its "
+            "p values are nominal; only a confirmation on a test set is evidence.</p>"
+            + (table(f"study-{s['study']}", ["trial", "change", "hypothesis", "outcome", "vs best", "cost"], rows) if rows else "")
+            + (f"<ul>{conf}</ul>" if conf else "")
+        )  # fmt: skip
+    return "".join(parts)
+
+
 def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     """One goal: what it is for, its answer so far (the promoted baselines), how it got there (its rounds), then on
     each of its datasets the arms that record its measure, grouped by what they are scored
@@ -3125,6 +3160,10 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     rounds_html = _rounds_block(A, g, measure, prim.get("direction") == "lower", by_ds, answer)
     if rounds_html:
         body += block(f"{n:02d}", "how we got here: rounds", rounds_html, "rounds")
+        n += 1
+    studies_html = _studies_block(g)
+    if studies_html:
+        body += block(f"{n:02d}", "studies: research, then one confirmation", studies_html, "studies")
         n += 1
     retired_in = retired_in_of(A, g)
     explained = (

@@ -226,6 +226,7 @@ def state(goal: str, sid: str) -> dict[str, Any]:
         "baseline": (start or {}).get("baseline"),
         "trials": trials,
         "best": kept[-1] if kept else None,
+        "start": start,
         "spent_usd": round(sum(float(t.get("cost_usd") or 0) for t in trials), 8),
         "open_ask": open_ask,
         "end": end,
@@ -283,15 +284,32 @@ def write_trial_config(
     params = cfg.setdefault("params", {})
     for path, value in (proposal.get("params") or {}).items():
         _set_path(params, str(path), value)
+    root = cfg.get("prompt_root") or {}
     for name, text in (proposal.get("prompts") or {}).items():
+        rel = (
+            str(name)[len(str(root.get("name"))) + 1 :]
+            if root and str(name).startswith(f"{root.get('name')}/")
+            else None
+        )
+        in_root = rel is not None and rel in (root.get("vary") or [])
+        before = (
+            (root.get("versions") or {}).get(rel)
+            if in_root
+            else ((cfg.get("prompts") or {}).get(name) or {}).get("version")
+        )
         doc, _new = _prompts.record(
             str(name),
             str(text).encode("utf-8"),
             source={"study": f"{goal}/{sid}", "trial": k},
             note=str(proposal.get("hypothesis") or f"trial {k} of {sid}"),
-            parent=((cfg.get("prompts") or {}).get(name) or {}).get("version"),
+            parent=before,
         )
-        cfg.setdefault("prompts", {})[str(name)] = {"version": doc["id"]}
+        if in_root:
+            # A varied file of the prompt root (RFC-028): this version goes into the trial's run copy of the root.
+            cfg["prompt_root"] = {**root, "versions": {**(root.get("versions") or {}), rel: doc["id"]}}
+            root = cfg["prompt_root"]
+        else:
+            cfg.setdefault("prompts", {})[str(name)] = {"version": doc["id"]}
     path = folder(goal, sid) / f"t{k}.yaml"
     try:
         _store.create_new(path, yaml.safe_dump(cfg, sort_keys=False).encode("utf-8"))
@@ -410,8 +428,16 @@ def lower_is_better(goal: str, metric: str) -> bool:
     return prim.get("measure") == metric and prim.get("direction") == "lower"
 
 
-def trial(goal: str, sid: str, k: int, proposal: dict[str, Any], ask_id: str | None = None) -> dict[str, Any]:
-    """Run trial k from a proposal, decide it, and append its line. Returns the line."""
+def trial(
+    goal: str,
+    sid: str,
+    k: int,
+    proposal: dict[str, Any],
+    ask_id: str | None = None,
+    shown: list | None = None,
+) -> dict[str, Any]:
+    """Run trial k from a proposal, decide it, and append its line (with the items its sampler was shown). Returns
+    the line."""
     s, st = spec(goal, sid), state(goal, sid)
     base_cid = st["baseline"]
     best_cid = (st["best"] or {}).get("config_id") or base_cid
@@ -429,7 +455,7 @@ def trial(goal: str, sid: str, k: int, proposal: dict[str, Any], ask_id: str | N
         "rationale": proposal.get("rationale"),
         "runs": runs,
         "cost_usd": round(paid, 8),
-        "shown": [],
+        "shown": list(shown or []),
         **({"ask_id": ask_id} if ask_id else {}),
     }
     if code != 0 or not runs:
@@ -473,15 +499,47 @@ def _runs_of(cid: str) -> list[str]:
 # ── samplers ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
 
+def weakest(goal: str, sid: str, best_cid: str, n: int) -> list[dict[str, Any]]:
+    """The best so far's n weakest validation items on the measure: each one's id, score, text and content hash,
+    what a sampler is shown so it can see where the arm fails (and what a confirmation then leaves out)."""
+    from evaluation_harness import _runs  # noqa: PLC0415
+    from evaluation_harness._common import MATERIALIZED, load_dataset  # noqa: PLC0415
+
+    if n <= 0:
+        return []
+    s = spec(goal, sid)
+    metric = str(s["measure"])
+    lower = lower_is_better(goal, metric) or s.get("direction") == "lower"
+    runs = _runs.runs_on(s["dataset"], config_id=best_cid)
+    if not runs:
+        return []
+    scores: dict[str, list[float]] = {}
+    for d, _m in runs:
+        for row in _runs.item_rows(d, strict=False):
+            v = row.get(metric)
+            if isinstance(v, (int, float)):
+                scores.setdefault(row["item_id"], []).append(float(v))
+    items = {it["item_id"]: it for it in load_dataset(s["dataset"]).get("items") or []}
+    ranked = sorted(((sum(v) / len(v), i) for i, v in scores.items() if i in items), reverse=lower)[:n]
+    out = []
+    for score, iid in ranked:
+        it = items[iid]
+        path = MATERIALIZED / s["dataset"] / (it.get("source_path") or iid)
+        text = _store.read_text(path, encoding="utf-8", errors="replace") if _store.is_file(path) else ""
+        out.append({"item_id": iid, "sha256": it.get("source_sha256"), metric: score, "text": text[:4000]})
+    return out
+
+
 def sampler_state(goal: str, sid: str) -> dict[str, Any]:
-    """What a sampler sees: the baseline, the best so far, the history, the space, the money left, the directions.
-    Never a test set's items."""
+    """What a sampler sees: the baseline, the best so far with its weakest validation items (`show_items`, default 5;
+    each shown item is recorded), the history, the space, the money left, the directions. Never a test set's items."""
     from evaluation_harness import _spend  # noqa: PLC0415
 
     s, st = spec(goal, sid), state(goal, sid)
     best_cid = (st["best"] or {}).get("config_id") or st["baseline"]
     _p, best_cfg = config_of(best_cid)
     return {
+        "weakest_items": weakest(goal, sid, best_cid, int(s.get("show_items", 5))),
         "study": f"{goal}/{sid}",
         "measure": s.get("measure"),
         "baseline": st["baseline"],
@@ -600,14 +658,30 @@ class CommandSampler:
 # ── the loop ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
 
+def scorer_hash(s: dict[str, Any]) -> str:
+    """The scoring code a study's trials are measured by: the harness's code and the baseline config's adapter file,
+    by behaviour (_codeid). Checked before every trial: a scorer changed mid-study stops it."""
+    from evaluation_harness._adapter import load_adapter  # noqa: PLC0415
+    from evaluation_harness._codeid import file_sha256  # noqa: PLC0415
+    from evaluation_harness._fingerprint import harness_code_sha256  # noqa: PLC0415
+
+    p, cfg = config_of(s["baseline"]["config"])
+    adapter_path = load_adapter(cfg.get("adapter"), p)[3]
+    return hashlib.sha256(
+        (harness_code_sha256() + ((file_sha256(adapter_path) or "") if adapter_path else "")).encode()
+    ).hexdigest()
+
+
 def stop_reason(goal: str, sid: str, started: float, start_hash: str) -> str | None:
-    """Why the study stops now, or None: a frozen file or the spec changed, a stop asked for, trials, dollars, wall
-    time, patience."""
+    """Why the study stops now, or None: the spec, a file it freezes or the scorer changed, a stop asked for, trials,
+    dollars, wall time, patience."""
     from evaluation_harness import _spend  # noqa: PLC0415
 
     s, st = spec(goal, sid), state(goal, sid)
     if frozen_hash(s, goal, sid) != start_hash:
         return "the spec or a file it freezes changed"
+    if (st["start"] or {}).get("scorer_sha256") not in (None, scorer_hash(s)):
+        return "the scoring code changed (the harness or the baseline's adapter)"
     if st["status"] == "stopping":
         return "stopped (study-stop)"
     stop = s.get("stop") or {}
@@ -668,6 +742,7 @@ def open_study(goal: str, sid: str) -> dict[str, Any]:
             "round": rid,
             "baseline": s["baseline"]["config"],
             "spec_sha256": frozen_hash(s, goal, sid),
+            "scorer_sha256": scorer_hash(s),
             "references_sha256": _references(s),
             "instruction": s.get("directions"),
         },
@@ -724,15 +799,18 @@ def run_loop(goal: str, sid: str, sampler: Any) -> str:
             return why
         st = state(goal, sid)
         k = len(st["trials"]) + 1
+        shown: list = []
         if sampler == "grid":
             proposal = grid_next(goal, sid)
         else:
-            proposal = sampler.ask(sampler_state(goal, sid))
+            seen = sampler_state(goal, sid)
+            shown = [{"item_id": x["item_id"], "sha256": x.get("sha256")} for x in seen["weakest_items"]]
+            proposal = sampler.ask(seen)
         if proposal is None:
             return "the space is exhausted" if sampler == "grid" else "the sampler stopped"
         group = proposal.pop("group", None)
         print(f"  trial {k}: {proposal.get('hypothesis') or proposal.get('params')}", flush=True)
-        line = trial(goal, sid, k, proposal)
+        line = trial(goal, sid, k, proposal, shown=shown)
         if group:
             line["group"] = group
             _tag_group(goal, sid, k, group)
@@ -746,6 +824,53 @@ def _tag_group(goal: str, sid: str, k: int, group: str) -> None:
     append(goal, sid, {"event": "group", "k": k, "group": group})
 
 
+def mark_interrupted(goal: str, sid: str) -> list[int]:
+    """On resume: a trial whose config was written but whose line never was (the study stopped mid-trial) gets a line,
+    failed and interrupted, so the numbering goes on after it. Returns those trials' numbers."""
+    st = state(goal, sid)
+    have = {t.get("k") for t in st["trials"]}
+    out = []
+    for p in sorted(
+        _store.glob(folder(goal, sid), "t*.yaml"),
+        key=lambda q: int(q.stem[1:]) if q.stem[1:].isdigit() else 0,
+    ):
+        k = int(p.stem[1:]) if p.stem[1:].isdigit() else None
+        if k is None or k in have:
+            continue
+        append(goal, sid, {"event": "trial", "k": k, "config_id": f"{sid}-t{k}", "change": {"params": {}, "prompts": []},
+                           "outcome": "failed", "reason": "interrupted: the study stopped during this trial", "runs": [],
+                           "cost_usd": 0, "shown": []})  # fmt: skip
+        out.append(k)
+    return out
+
+
 def new_ask_id() -> str:
     """An ask's id."""
     return secrets.token_hex(4)
+
+
+def of_goal(goal: str) -> list[dict[str, Any]]:
+    """A goal's studies as its page and `evh goals` show them: each one's state, its trials in rows, its confirms."""
+    out = []
+    base = root() / goal
+    for p in sorted(_store.glob(base, "*.events.jsonl")) if _store.is_dir(base) else []:
+        sid = p.name[: -len(".events.jsonl")]
+        st = state(goal, sid)
+        rows = []
+        for t in st["trials"]:
+            ch = t.get("change") or {}
+            what = ", ".join(f"{k} = {v!r}" for k, v in (ch.get("params") or {}).items())
+            what = "; ".join(
+                x for x in (what, ", ".join(f"prompt {n}" for n in ch.get("prompts") or [])) if x
+            )
+            rows.append({
+                "k": t.get("k"), "hypothesis": t.get("hypothesis") or "", "change": what or ("imported" if t.get("imported") else ""),
+                "outcome": t.get("outcome"), "reason": t.get("reason") or "",
+                "delta": (t.get("vs_best") or {}).get("delta"), "cost_usd": t.get("cost_usd"),
+            })  # fmt: skip
+        out.append({
+            "study": sid, "status": st["status"], "round": st["round"], "baseline": st["baseline"], "rows": rows,
+            "spent_usd": st["spent_usd"], "end": (st["end"] or {}).get("reason"),
+            "confirms": [c for c in st["confirms"] if c.get("phase") == "verdict"],
+        })  # fmt: skip
+    return out

@@ -1108,6 +1108,17 @@ def goals(argv) -> int:
     for x in g.get("links") or []:
         if x.get("url"):
             print(f"  link       {x['note'] + ': ' if x.get('note') else ''}{x['url']}")
+    from evaluation_harness import _study  # noqa: PLC0415
+
+    for s in _study.of_goal(g["goal_id"]):
+        print(f"\nstudy {s['study']}: {s['status']}, from {s['baseline']}, ${s['spent_usd']:.4f} spent"
+              + (f"; ended: {s['end']}" if s["end"] else ""))  # fmt: skip
+        for r in s["rows"]:
+            print(f"  t{r['k']}  {r['outcome']!s:<9} {r['change'] or r['hypothesis']}  — {r['reason']}")
+        for c in s["confirms"]:
+            print(
+                f"  confirmed on {c.get('test')}: {c.get('outcome')} (look {(c.get('look') or {}).get('number')})"
+            )
     print("\nthe answer so far:")
     for d in g.get("datasets") or []:
         ds = d.get("dataset_id", "")

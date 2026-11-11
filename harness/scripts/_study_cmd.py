@@ -86,6 +86,12 @@ def run_study(argv: list[str]) -> int:
             )
         if st["status"] in ("running", "stopping") and not a.resume:
             die(f"study {goal}/{sid} was started: --resume continues it after its last trial", "not-allowed")
+        if a.resume:
+            lost = _study.mark_interrupted(goal, sid)
+            if lost:
+                print(
+                    f"  trial(s) {', '.join(map(str, lost))} stopped mid-way: recorded as interrupted; going on after them"
+                )
         if st["status"] == "not started":
             ev = _study.open_study(goal, sid)
             print(f"study {goal}/{sid}: round {ev['round']} opened, from {ev['baseline']}")
@@ -127,12 +133,13 @@ def ask(argv: list[str]) -> int:
             end = _study.close_study(goal, sid, why)
             die(f"study {goal}/{sid} ended: {why}. {end['summary']}", "not-allowed")
         open_ask = st["open_ask"]
+        state = _study.sampler_state(goal, sid)
+        shown = [{"item_id": x["item_id"], "sha256": x.get("sha256")} for x in state["weakest_items"]]
         if open_ask and _age(open_ask) < timeout:
             ask_id = open_ask["ask_id"]
         else:
             ask_id = _study.new_ask_id()
-            _study.append(goal, sid, {"event": "ask", "ask_id": ask_id})
-        state = _study.sampler_state(goal, sid)
+            _study.append(goal, sid, {"event": "ask", "ask_id": ask_id, "shown": shown})
         print(json.dumps({"ask_id": ask_id, **state}, indent=2, default=str))
         _jsonout.values({"ask_id": ask_id, "state": state})
     return 0
@@ -204,7 +211,9 @@ def tell(argv: list[str]) -> int:
         with _study.loop_lock(goal, sid):
             if _study.state(goal, sid)["open_ask"] != o:
                 die(f"ask {a.ask} was told while this call waited: study-ask again", "not-allowed")
-            line = _study.trial(goal, sid, len(st["trials"]) + 1, proposal, ask_id=a.ask)
+            line = _study.trial(
+                goal, sid, len(st["trials"]) + 1, proposal, ask_id=a.ask, shown=o.get("shown")
+            )
         print(f"trial {line['k']}: {line['outcome']}: {line.get('reason')}")
         _jsonout.values({"trial": line})
     return 0
@@ -361,9 +370,15 @@ def _confirm(a: argparse.Namespace, require_named: Any) -> int:
     seen = {it["item_id"] for it in val.get("items") or []} | {
         it.get("source_sha256") for it in val.get("items") or [] if it.get("source_sha256")
     }
-    shown = {i for x in st["trials"] for i in x.get("shown") or []}
+    # Every item shown to a sampler in any study of the goal, by id and by content (a test item with a shown item's
+    # bytes is the same text).
+    shown: set = set()
+    for p in _store.glob(_study.root() / goal, "*.events.jsonl"):
+        for ev in _study.events(goal, p.name[: -len(".events.jsonl")]):
+            for x in ev.get("shown") or []:
+                shown |= {x.get("item_id"), x.get("sha256")} - {None}
     items = [it["item_id"] for it in test.get("items") or []
-             if it["item_id"] not in seen and it.get("source_sha256") not in seen and it["item_id"] not in shown]  # fmt: skip
+             if not {it["item_id"], it.get("source_sha256")} & (seen | shown)]  # fmt: skip
     excluded = len(test.get("items") or []) - len(items)
     if not items:
         die(

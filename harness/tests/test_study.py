@@ -251,6 +251,116 @@ try:
         (d.stdout[-300:], c.stderr[-500:], conf, looks.get("next")),
     )  # fmt: skip
 
+    # ── what a sampler is shown, recorded ─────────────────────────────────────────────────────────────────────────
+    evs = [json.loads(x) for x in _runstore.read_text(proj, "studies/g/s5.events.jsonl").splitlines()]
+    ask_ev = next(e for e in evs if e.get("event") == "ask")
+    tr_ev = next(e for e in evs if e.get("event") == "trial")
+    st_seen = values(evh("study-ask", "g/s3", "--json"))  # an ended study: refused, nothing shown
+    shown_state = json.loads(asked.content[0].text)["result"]["values"]["state"]
+    check(
+        "the agent is shown the best's 5 weakest validation items (their text); the ask and its trial record them",
+        len(shown_state["weakest_items"]) == 5 and all(x["text"] for x in shown_state["weakest_items"])
+        and len(ask_ev.get("shown") or []) == 5 and tr_ev.get("shown") == ask_ev.get("shown") and not st_seen,
+        (len(shown_state.get("weakest_items") or []), ask_ev.get("shown"), tr_ev.get("shown")),
+    )  # fmt: skip
+
+    # ── a prompt root's varied file changed by a trial ────────────────────────────────────────────────────────────
+    lib = proj / "lib"
+    (lib / "sub").mkdir(parents=True)
+    (lib / "sub" / "b.txt").write_text("system v1\n")
+    (lib / "a.txt").write_text("fixed\n")
+    _runstore.write_text(proj, "configs/root_v1.yaml", "config_id: root_v1\ndataset_id: tk_val\ngoal: g\n"
+                         "prompt_root: {name: lib, path: lib, vary: [sub/b.txt]}\nparams:\n  provider: echo\n  sentences: 1\n")  # fmt: skip
+    rr = evh("run", "--config", "data/configs/root_v1.yaml")
+    rspec = spec("rootspec", "dataset: tk_val\nbaseline: {config: root_v1}\nmeasure: overlap_f1\nsampler: agent\n"
+                 "accept: {point: {min_gain: -1}}\nstop: {trials: 3}\n")  # fmt: skip
+    evh("study-run", "g/s6", "--spec", rspec)
+    a6 = values(evh("study-ask", "g/s6", "--json")).get("ask_id")
+    t6 = evh("study-tell", "g/s6", "--ask", str(a6), "--proposal-json",
+             json.dumps({"prompts": {"lib/sub/b.txt": "system v2\n"}, "hypothesis": "a new system prompt"}), "--json")  # fmt: skip
+    import yaml
+
+    tcfg = (
+        yaml.safe_load(_runstore.read_text(proj, "studies/g/s6/t1.yaml"))
+        if _runstore.exists(proj, "studies/g/s6/t1.yaml")
+        else {}
+    )
+    trial_run = next((n for n in _runstore.listdir(proj, "runs") if n.startswith("s6-t1_")), None)
+    tfp = (
+        (_runstore.read_json(proj, f"runs/{trial_run}/metrics.json").get("fingerprint") or {})
+        if trial_run
+        else {}
+    )
+    import hashlib
+
+    check(
+        "a trial changes a prompt root's varied file: its version in the trial's config, and in the run's settings",
+        rr.returncode == 0 and t6.returncode == 0 and "sub/b.txt" in ((tcfg.get("prompt_root") or {}).get("versions") or {})
+        and (tfp.get("settings") or {}).get("prompts", {}).get("lib/sub/b.txt") == hashlib.sha256(b"system v2\n").hexdigest(),
+        (rr.stderr[-200:], t6.stderr[-300:], tcfg.get("prompt_root"), (tfp.get("settings") or {}).get("prompts")),
+    )  # fmt: skip
+
+    # ── the scorer changed mid-study stops it ─────────────────────────────────────────────────────────────────────
+    (proj / "wrap.py").write_text(
+        "import time\nfrom evaluation_harness.adapter import Result, score  # noqa: F401\n"
+        "from evaluation_harness.adapter import call_system as _call\n"
+        "def call_system(text, params):\n    time.sleep(float(params.get('sleep', 0)))\n    return _call(text, params)\n"
+    )  # fmt: skip
+    _runstore.write_text(proj, "configs/wrap_v1.yaml", "config_id: wrap_v1\ndataset_id: tk_val\ngoal: g\nadapter: wrap.py\n"
+                         "params:\n  provider: echo\n  sentences: 1\n")  # fmt: skip
+    evh("run", "--config", "data/configs/wrap_v1.yaml")
+    wspec = spec("wrapspec", "dataset: tk_val\nbaseline: {config: wrap_v1}\nmeasure: overlap_f1\nsampler: agent\n"
+                 "accept: {point: {min_gain: 0}}\nstop: {trials: 3}\n")  # fmt: skip
+    evh("study-run", "g/s7", "--spec", wspec)
+    (proj / "wrap.py").write_text((proj / "wrap.py").read_text() + "LIMIT = 3\n")
+    sc = evh("study-ask", "g/s7")
+    st7 = values(evh("study-status", "g/s7", "--json")).get("study") or {}
+    check("the scoring code changed mid-study (the baseline's adapter): the study stops, saying so",
+          sc.returncode != 0 and "scoring code changed" in str((st7.get("end") or {}).get("reason")), (sc.stderr[-300:], st7.get("end")))  # fmt: skip
+
+    # ── a study killed mid-trial, resumed ─────────────────────────────────────────────────────────────────────────
+    import signal
+    import time
+
+    _runstore.write_text(proj, "configs/slow_v1.yaml", "config_id: slow_v1\ndataset_id: tk_val\ngoal: g\nadapter: wrap.py\n"
+                         "params:\n  provider: echo\n  sentences: 1\n  sleep: 0.4\n")  # fmt: skip
+    evh("run", "--config", "data/configs/slow_v1.yaml")
+    kspec = spec("killspec", "dataset: tk_val\nbaseline: {config: slow_v1}\nmeasure: overlap_f1\nsampler: grid\n"
+                 "accept: {point: {min_gain: 0}}\nstop: {trials: 3}\n"
+                 "space:\n  groups:\n    - {name: length, reason: how much, params: {sentences: [2, 3]}}\n")  # fmt: skip
+    log = proj / "s8.log"
+    with open(log, "w") as fh:
+        pk = subprocess.Popen([sys.executable, str(HERE / "cli.py"), "study-run", "g/s8", "--spec", kspec], cwd=proj, env=env,
+                              stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)  # fmt: skip
+    for _ in range(300):
+        time.sleep(0.1)
+        if _runstore.exists(proj, "studies/g/s8/t1.yaml") and any(
+            n.startswith("s8-t1_") for n in _runstore.listdir(proj, "runs")
+        ):
+            break
+    os.killpg(pk.pid, signal.SIGKILL)
+    pk.wait(timeout=30)
+    res = evh("study-run", "g/s8", "--resume")
+    st8 = values(evh("study-status", "g/s8", "--json")).get("study") or {}
+    outs8 = [(t.get("k"), t.get("outcome")) for t in st8.get("trials", [])]
+    check(
+        "a study killed mid-trial and resumed: the interrupted trial recorded as such, the grid tried again after it",
+        res.returncode == 0 and "interrupted" in res.stdout and outs8[:2] == [(1, "failed"), (2, "kept")]
+        and st8.get("status") == "ended",
+        (res.stdout[-400:], res.stderr[-300:], outs8),
+    )  # fmt: skip
+
+    # ── the goal's page and evh goals show the studies ────────────────────────────────────────────────────────────
+    gv = evh("goals", "--goal", "g")
+    cat = evh("catalog")
+    page = (proj / ".build" / "catalog" / "g" / "g.html").read_text() if cat.returncode == 0 else ""
+    check(
+        "the goal's page: each study's trials (change, hypothesis, outcome, why), its confirmation; evh goals too",
+        "studies: research, then one confirmation" in page and "sentences = 2" in page and "confirmed on tk_test" in page
+        and "study s1: ended" in gv.stdout and "confirmed on tk_test: better" in gv.stdout,
+        (cat.stderr[-300:], gv.stdout[-600:]),
+    )  # fmt: skip
+
     # ── results.tsv ───────────────────────────────────────────────────────────────────────────────────────────────
     (proj / "results.tsv").write_text(
         "commit\tval_bpb\tmemory_gb\tstatus\tdescription\n"
@@ -262,7 +372,7 @@ try:
     check(
         "results.tsv: a closed study of 3 trials (2 kept, 1 dropped), listed with the others",
         imp.returncode == 0 and [t["outcome"] for t in st4.get("trials", [])] == ["kept", "kept", "dropped"]
-        and st4.get("status") == "ended" and len(ls) == 5,
+        and st4.get("status") == "ended" and len(ls) == 8,
         (imp.stderr[-300:], len(ls)),
     )  # fmt: skip
 finally:
