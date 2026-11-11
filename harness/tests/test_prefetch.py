@@ -206,6 +206,32 @@ check(
     bad_counts,
 )
 
+# ── whole-number scores (an adapter's 1-5 rating, a 0/1 as int): the floats' answers, and drawn in children ──────────
+ir = random.Random(3)
+ref_i = {i: ir.randint(1, 5) for i in range(150)}
+arm_i = {i: max(1, min(5, ref_i[i] + ir.choice((-1, 0, 0, 1)))) for i in range(150)}
+as_float = {k: float(v) for k, v in arm_i.items()}, {k: float(v) for k, v in ref_i.items()}
+try:
+    v_int = stats.noninferior(arm_i, ref_i, 0.2, True, None)
+except AttributeError as exc:  # the contender test raised on ints before 2026-11-11
+    v_int = {"verdict": f"raised {exc}"}
+v_float = stats.noninferior(*as_float, 0.2, True, None)
+check(
+    "the contender test on whole-number scores: the floats' verdict and p (it raised AttributeError on ints)",
+    (v_int.get("verdict"), v_int.get("p")) == (v_float["verdict"], v_float["p"]),
+    (v_int, v_float),
+)
+int_deltas = [[ir.choice((-1, 0, 0, 1)) for _ in range(400)] for _ in range(4)]
+fresh()
+n_children = stats.prefetch(lambda: [stats.sign_flip_p(d, permutations=3000) for d in int_deltas])
+check(
+    "whole-number deltas are drawn in children like floats (the look-ahead dropped them, drawing them one by one)",
+    n_children == len(int_deltas)
+    and [stats.sign_flip_p(d, permutations=3000) for d in int_deltas]
+    == [stats.sign_flip_p([float(x) for x in d], permutations=3000) for d in int_deltas],
+    n_children,
+)
+
 # ── a family's sign-flips (family_test.py): one stream, its sampled opponents summed in children ─────────────────────
 fam_rng = random.Random(23)
 family: list[list] = [

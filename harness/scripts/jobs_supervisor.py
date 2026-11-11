@@ -52,7 +52,10 @@ def main(job_id: str) -> int:
     has_json = any("--json" in a.option_strings for a in parser_of(command)._actions)
     cmd = [sys.executable, str(Path(__file__).resolve().parent / "cli.py"), command]
     cmd += [*(["--json"] if has_json else []), *job["argv"]]
-    env = {**os.environ, **{k: str(v) for k, v in (job.get("env") or {}).items()}}
+    # Who acted comes from the job alone (RFC-027): the server's or terminal's own EVH_ACTOR / EVH_FOR never reach it,
+    # or every agent job would be recorded for whoever the server ran as.
+    inherited = {k: v for k, v in os.environ.items() if k not in ("EVH_ACTOR", "EVH_FOR")}
+    env = {**inherited, **{k: str(v) for k, v in (job.get("env") or {}).items()}}
     # The command knows it runs as a job (data-migrate waits for the server to let go of the database).
     env["EVH_JOB"] = job_id
     # The locks it holds (passed to it), so a command that takes one for a moment does not wait on itself.

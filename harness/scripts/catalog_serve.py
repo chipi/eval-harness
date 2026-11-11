@@ -1607,7 +1607,7 @@ class Handler(SimpleHTTPRequestHandler):
                     return self._json(400, {"error": "the body is a JSON object"}, cache=False)
                 j = _api.start_job(
                     str(body.get("command") or ""), body.get("args", {}), body.get("by"), body.get("reason"),
-                    body.get("max_cost_usd"),
+                    body.get("max_cost_usd"), body.get("for"),
                 )  # fmt: skip
                 return self._json(202, j, cache=False)
             if len(parts) == 2 and parts[1] == "stop":

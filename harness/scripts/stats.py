@@ -172,7 +172,7 @@ def sign_flip_p(
                 _store_p(key, v)
                 _P[key] = v
 
-            job = {"kind": "sf", "d": [d.hex() for d in deltas], "n": permutations, "s": seed}
+            job = {"kind": "sf", "d": [float(d).hex() for d in deltas], "n": permutations, "s": seed}
             _COLLECT[-1].append((_disk_key(key), len(deltas) * permutations, job, hold))
             return 1.0  # a stand-in: prefetch() throws away what it collects with
         if stored is None:
@@ -707,7 +707,7 @@ def bootstrap_t_p(totals: list, sizes: list, margin: float, draws: int = NONINF_
         k = hashlib.sha256(f"{algo}:".encode() + data.encode()).hexdigest()
         job = {
             "kind": "bt",
-            "t": [t.hex() for t in totals],
+            "t": [float(t).hex() for t in totals],
             "k": list(sizes),
             "m": float(margin).hex(),
             "d": draws,
@@ -724,7 +724,12 @@ def bootstrap_t_p(totals: list, sizes: list, margin: float, draws: int = NONINF_
 
 def _bootstrap_data(totals: list, sizes: list, margin: float) -> str:
     """A bootstrap-t's input exactly (floats as float.hex): its cache key and its generator's seed."""
-    return ",".join(f"{t.hex()}/{k}" for t, k in zip(totals, sizes, strict=True)) + f"|{float(margin).hex()}"
+    # float(t): an adapter's whole-number scores are ints (a 1-5 rating); t.hex() raised on them, and the contender
+    # test with it. A float's key and seed are unchanged.
+    return (
+        ",".join(f"{float(t).hex()}/{k}" for t, k in zip(totals, sizes, strict=True))
+        + f"|{float(margin).hex()}"
+    )
 
 
 def _bootstrap_draw(totals: list, sizes: list, margin: float, draws: int) -> float:

@@ -362,8 +362,12 @@ def job_argv(command: str, arguments: Any, job_id: str) -> tuple[list[str], dict
         raise Refused(str(exc)) from exc
 
 
-def start_job(command: str, arguments: Any, by: Any, reason: Any, max_cost_usd: Any = None) -> dict[str, Any]:
-    """POST /api/v1/jobs: checked, written, and started (202). Refused before a job exists when it cannot run."""
+def start_job(
+    command: str, arguments: Any, by: Any, reason: Any, max_cost_usd: Any = None, for_: Any = None
+) -> dict[str, Any]:
+    """POST /api/v1/jobs: checked, written, and started (202). Refused before a job exists when it cannot run. An agent
+    (`by: agent:NAME`) names the person it acts for (`for: person:NAME`, RFC-027): refused here without it, where the
+    job's command would fail only when it first records who acted (a run: after its last item)."""
     from evaluation_harness import _jobs  # noqa: PLC0415
 
     if by is not None and not isinstance(by, str):
@@ -371,6 +375,16 @@ def start_job(command: str, arguments: Any, by: Any, reason: Any, max_cost_usd: 
     if command in DECISIONS and not by:
         raise Refused(f"{command} is a decision: name who made it (by: person:NAME)")
     env: dict[str, str] = {}
+    agent = isinstance(by, str) and by.startswith("agent:")
+    if for_ is not None and (not isinstance(for_, str) or not for_.strip()):
+        raise Refused("for: person:NAME, the person an agent acts for")
+    if agent and not for_:
+        raise Refused(f"{by} is an agent: name the person it acts for (for: person:NAME, RFC-027)")
+    if for_ and not agent:
+        raise Refused("for names the person an agent acts for; by is not an agent")
+    if agent:
+        whom = str(for_).strip()
+        env["EVH_FOR"] = whom if whom.startswith("person:") else f"person:{whom}"
     if command in SPENDS:
         if not isinstance(max_cost_usd, (int, float)) or isinstance(max_cost_usd, bool) or max_cost_usd <= 0:
             raise Refused(f"{command} spends: a job of it carries max_cost_usd, the most it may spend")

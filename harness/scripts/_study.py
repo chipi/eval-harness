@@ -106,7 +106,7 @@ def locked(goal: str, sid: str):
     if key in (os.environ.get("EVH_LOCKS") or "").split(","):
         yield
         return
-    with _jobs.holding([(key, True)], os.environ.get("EVH_JOB") or f"pid {os.getpid()}", lambda k, h: None):
+    with _jobs.holding([(key, True)], os.environ.get("EVH_JOB") or f"pid {os.getpid()}", _jobs.say_waiting):
         yield
 
 

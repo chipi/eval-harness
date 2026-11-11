@@ -253,7 +253,7 @@ def to_files(dry_run: bool) -> dict[str, int]:
     conn.close()
     if not dry_run:
         _store.close()
-        for f in (path, Path(f"{path}-wal"), Path(f"{path}-shm")):
+        for f in (path, Path(f"{path}-wal"), Path(f"{path}-shm"), Path(f"{path}-setup-lock")):
             f.unlink(missing_ok=True)
     return n
 

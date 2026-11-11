@@ -223,6 +223,65 @@ try:
         stopped.get("state") == "cancelled" and gone,
         (stopped.get("state"), pgid),
     )
+    # Stopping a QUEUED job: its supervisor waits in flock for the next lock and holds the ones it took before; it is
+    # ended, and those locks are free again (it read `cancelled` while still holding them, a review found).
+    os.environ["EVAL_HOME"] = str(proj)
+    from evaluation_harness import _common as _c
+
+    _c.project_root.cache_clear()
+    held = _jobs.take_locks([("dataset:hold_x", True)], "the test")
+    qid = _jobs.new_id()
+    _jobs.create("prompt-version", ["who_q", "--text", "x", "--note", "n"], "person:ana", None,
+                 [("aaa:first", True), ("dataset:hold_x", True)], job_id=qid)  # fmt: skip
+    _jobs.start(qid)
+    end = time.monotonic() + 30
+    while (
+        time.monotonic() < end and (_jobs.read(qid).get("waiting_for") or {}).get("lock") != "dataset:hold_x"
+    ):
+        time.sleep(0.1)
+    spid = _jobs.read(qid).get("supervisor_pid")
+    stopped_q = _jobs.stop(qid)
+    stat = Path(f"/proc/{spid}/stat")
+    # Ended: no such process, or a zombie this test (its parent) has not reaped.
+    sup_gone = not stat.exists() or stat.read_text().rsplit(")", 1)[1].split()[0] == "Z"
+    try:
+        fds = _jobs.take_locks([("aaa:first", True)], "the test")
+        first_free = True
+        for fd in fds:
+            os.close(fd)
+    except _jobs.Busy:
+        first_free = False
+    for fd in held:
+        os.close(fd)
+    check(
+        "stop on a queued job: cancelled, its supervisor ended, the lock it had taken free again",
+        stopped_q.get("state") == "cancelled" and sup_gone and first_free,
+        (stopped_q.get("state"), sup_gone, first_free),
+    )
+    # A command that waits for a lock says so (it waited in silence; a review, 2026-11-11), and no script waits mutely.
+    held = _jobs.take_locks([("goal:wait_g", True)], "job 2026-the-holder")
+    waiter_py = proj / "waiter.py"
+    waiter_py.write_text(
+        "from evaluation_harness import _jobs\n"
+        "with _jobs.holding([('goal:wait_g', True)], 'the waiter', _jobs.say_waiting):\n    print('got it')\n"
+    )
+    w = subprocess.Popen([sys.executable, str(waiter_py)], cwd=proj, env={**env, "PYTHONPATH": str(HERE.parent)},
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)  # fmt: skip
+    time.sleep(1.5)
+    for fd in held:
+        os.close(fd)
+    w_out, w_err = w.communicate(timeout=30)
+    silent = [
+        f"{f.name}:{n}"
+        for f in sorted(HERE.glob("*.py"))
+        for n, line in enumerate(f.read_text().splitlines(), 1)
+        if "holding(" in line and "lambda" in line and ": None" in line
+    ]
+    check(
+        "a command waiting for a lock says which and who holds it, then goes on; no script waits in silence",
+        "waiting for goal:wait_g, held by job 2026-the-holder" in w_err and "got it" in w_out and not silent,
+        (w_err[-300:], w_out[-100:], silent),
+    )
     bdone = until(b["id"], ("succeeded", "failed"), 120)
     check(
         "the waiting job starts when the lock is free, and ends",
@@ -404,6 +463,36 @@ try:
         first == 200 and TOKEN != "the-previous-servers-token",
         (first, TOKEN[:8]),
     )
+
+    # Who acted, through the API (RFC-027): an agent names the person it acts for, refused before a job exists without
+    # it (a run would have spent its cap and then failed to write its record); and a job's actor is the job's alone,
+    # never the server's own EVH_ACTOR / EVH_FOR (every agent job was recorded for whoever the server ran as).
+    env["EVH_ACTOR"], env["EVH_FOR"] = "agent:server-shell", "person:mallory"
+    srv, PORT, TOKEN = serve()
+    no_for, _ = job("prompt-version", {"name": "who_p", "text": "a", "note": "n"}, by="agent:bot")
+    st_a, ja = job(
+        "prompt-version", {"name": "who_p", "text": "b", "note": "n"}, by="agent:bot", **{"for": "person:ana"}
+    )
+    st_p, jp = job("prompt-version", {"name": "who_p", "text": "c", "note": "n"}, by="person:bea")
+    da = until(ja.get("id"), ("succeeded", "failed"), 60) if st_a == 202 else {}
+    dp = until(jp.get("id"), ("succeeded", "failed"), 60) if st_p == 202 else {}
+    srv.terminate()
+    srv.wait(timeout=10)
+    env.pop("EVH_ACTOR")
+    env.pop("EVH_FOR")
+    actors = {}
+    for f in _runstore.listdir(proj, "prompts/who_p") if _runstore.exists(proj, "prompts/who_p") else []:
+        if f.endswith(".json"):
+            rec = _runstore.read_json(proj, f"prompts/who_p/{f}")
+            actors[rec.get("note") + rec["sha256"][:4]] = rec.get("actor")
+    got = sorted((a.get("type"), a.get("name"), a.get("for")) for a in actors.values())
+    check(
+        "through the API an agent names the person it acts for (refused before a job exists without it), and a job's "
+        "actor is its own, never the server's EVH_ACTOR / EVH_FOR",
+        no_for == 400 and da.get("state") == "succeeded" and dp.get("state") == "succeeded"
+        and got == [("agent", "bot", "ana"), ("person", "bea", None)],
+        (no_for, da.get("state"), dp.get("state"), got),
+    )  # fmt: skip
 
     # Step 4: data-migrate as a job with the server up. The store comes from config.yaml here (no EVAL_STORE), so the
     # server reads the new store once the move ends; moving out of the database proves the server let go of it.

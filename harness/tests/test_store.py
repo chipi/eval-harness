@@ -535,8 +535,8 @@ try:
         "    for i in range(n):\n"
         "        w.add(f'c{i:04d}', f'text {i} ' * 20)\n"
         "else:\n"
-        "    seen = 0\n"
-        "    for _ in range(400):\n"
+        "    seen, end = 0, time.monotonic() + 30\n"  # until all n are seen: a fixed 0.8 s missed slow writers (2026-11-11)
+        "    while seen < n and time.monotonic() < end:\n"
         "        seen = max(seen, _outputs.count(d))\n"
         "        time.sleep(0.002)\n"
         "    print(seen)\n"
@@ -550,7 +550,7 @@ try:
         for c in (c1, c2)
     ]
     reader = subprocess.Popen(
-        [sys.executable, str(worker), str(c1), "0", "read"],
+        [sys.executable, str(worker), str(c1), "300", "read"],
         env=wenv,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

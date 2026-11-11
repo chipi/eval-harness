@@ -61,7 +61,7 @@ def main() -> int:
 
         key = f"faithfulness:{args.model}"
         with _jobs.holding(
-            [(key, True)], os.environ.get("EVH_JOB") or f"pid {os.getpid()}", lambda k, h: None
+            [(key, True)], os.environ.get("EVH_JOB") or f"pid {os.getpid()}", _jobs.say_waiting
         ):
             p = _faith.records_dir(args.model) / f"{n}.exceptions.jsonl"
             before = _store.read_text(p, encoding="utf-8") if _store.is_file(p) else ""

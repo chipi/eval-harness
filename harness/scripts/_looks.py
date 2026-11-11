@@ -163,7 +163,7 @@ def taking(dataset_id: str, k: str, consent: bool = False):
     ctx = (
         contextlib.nullcontext()
         if held
-        else _jobs.holding([(lock, True)], f"pid {os.getpid()}", lambda a, b: None)
+        else _jobs.holding([(lock, True)], f"pid {os.getpid()}", _jobs.say_waiting)
     )
     with ctx:
         number, reused = next_number(dataset_id, k)

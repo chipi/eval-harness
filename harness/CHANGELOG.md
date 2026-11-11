@@ -90,7 +90,7 @@ that can move a result is never a patch release without saying so under **Change
   records over; this repository's are migrated. V6 holds each line's chain.
 - **Who acted, on every record** (RFC-027 D1): runs, references, label sets, rounds, picks, dataset and model records
   and baselines carry `actor`: a person, or an agent and the person it acted for (`EVH_ACTOR`, `EVH_FOR`), from
-  `--by` (now on every writing command), the environment or the terminal's login, with where it came from. A
+  `--by` (on every command that writes a record), the environment or the terminal's login, with where it came from. A
   decision (`run-promote`, `round-close`, `dataset-unseal`) refuses an `unknown` actor; everything else records it.
   A label set keeps who labelled (`source.by`) beside it. Agents: the project's AGENTS.md says to name themselves.
 - **"If your system is plain code"** (INTEGRATION, the fleet's feedback 19 and 26): what an item holds for code that
@@ -337,6 +337,23 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **An agent could not act through the API, and the server's own actor reached every job** (RFC-026, RFC-027; an
+  independent review): a job had no `for`, so an agent's job failed when its command first recorded who acted (a run:
+  after its last item, its cap spent), and every job inherited the server's `EVH_ACTOR` / `EVH_FOR`. A job call now
+  carries `for: person:NAME`, refused before a job exists for an agent without it; a job's actor is its own alone.
+- **Stopping a queued job left its supervisor holding the locks it had taken**, behind a job that read `cancelled`:
+  the supervisor is now ended with it.
+- **A command waiting for a lock a job held waited in silence** (`run-promote` on a test set, a run in a budgeted
+  round, a study's log, `faithfulness-name`): it now says which lock and who holds it.
+- **The pick list could lose lines, and a new SQLite project's database could fail to open, under writers at once**:
+  the list is one per project, but `pick` locked per dataset and `dataset-extend` not at all, and in the SQLite store
+  an append is a read and a rewrite (eight writers kept 21 of 200 lines); and setting a new database's journal mode
+  while another process did raised "database is locked". The list now has one project-wide lock, and a database is
+  set up by one process at a time.
+- **The contender test raised on whole-number scores passed to `stats` directly** (an int has no `.hex()`); `evh`
+  reads every score as a float, so no command met it. Its look-ahead dropped them too.
+- **Test files left their temporary projects in /tmp** (6,762 of them, filling its inodes on a shared machine): the
+  self-test and the store matrix give each test file a temporary folder of its own, removed when it ends.
 - **A client could read the previous server's API token** (RFC-026): `catalog-serve` listened before it wrote
   `.build/api-token`, so a script that waited for the port and read the file at once got the old token and a 401
   (the store matrix met it under load), and the file was truncated and then written, so it could read it empty. The

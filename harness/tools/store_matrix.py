@@ -12,6 +12,8 @@ The log of each run is kept in --log (default .build/store-matrix/).
 import argparse
 import fnmatch
 import os
+import secrets
+import shutil
 import subprocess
 import sys
 import time
@@ -30,6 +32,12 @@ def run(test: Path, store: str, log: Path) -> tuple[str, str, int, float]:
     """One test file in one store, its output kept in `log`: (file, store, exit code, seconds)."""
     env = {k: v for k, v in os.environ.items() if k != "EVAL_STORE"}
     env["EVAL_STORE"] = store
+    # A TMPDIR of its own, removed after, whatever the test leaves (leaked test projects filled /tmp's inodes, shared by
+    # every session, 2026-11-11): on the main disk and outside any git checkout (a project inside one reads only the runs
+    # git keeps); a short name, since a test's Unix sockets live under it.
+    own = Path.home() / ".cache" / "evh-tests" / secrets.token_hex(3)
+    own.mkdir(parents=True)
+    env["TMPDIR"] = str(own)
     t0 = time.time()
     try:
         r = subprocess.run(  # nosec B603 - this interpreter and our own test files
@@ -43,6 +51,8 @@ def run(test: Path, store: str, log: Path) -> tuple[str, str, int, float]:
             return x.decode(errors="replace") if isinstance(x, bytes) else (x or "")
 
         code, out = 124, f"{text(e.stdout)}{text(e.stderr)}\nTIMEOUT after 1800 s"
+    finally:
+        shutil.rmtree(own, ignore_errors=True)
     (log / f"{test.stem}.{store}.log").write_text(out if isinstance(out, str) else str(out))
     return test.name, store, code, time.time() - t0
 

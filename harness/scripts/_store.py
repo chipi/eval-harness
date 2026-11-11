@@ -74,14 +74,25 @@ def connect(create: bool = True) -> sqlite3.Connection | None:
             return None
         path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(str(path), timeout=60, isolation_level=None, check_same_thread=False)
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=FULL")
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS files (path TEXT PRIMARY KEY, data BLOB NOT NULL, sha256 TEXT NOT NULL,"
-            " mtime_ns INTEGER NOT NULL)"
-        )
-        conn.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
-        conn.execute("INSERT OR IGNORE INTO meta VALUES ('schema_version', ?)", (SCHEMA_VERSION,))
+        # One process at a time sets the database up: SQLite answers "database is locked" at once, without waiting
+        # out the timeout, to a journal-mode change another connection races, and eight processes opening a new
+        # project's database together crashed (2026-11-11). The lock file is the database's own (its name starts with
+        # the database's, as its -wal does), never project data.
+        import fcntl  # noqa: PLC0415
+
+        with open(path.with_name(f"{DB}-setup-lock"), "a") as fh:
+            fcntl.flock(fh, fcntl.LOCK_EX)
+            try:
+                conn.execute("PRAGMA journal_mode=WAL")
+                conn.execute("PRAGMA synchronous=FULL")
+                conn.execute(
+                    "CREATE TABLE IF NOT EXISTS files (path TEXT PRIMARY KEY, data BLOB NOT NULL, sha256 TEXT NOT NULL,"
+                    " mtime_ns INTEGER NOT NULL)"
+                )
+                conn.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
+                conn.execute("INSERT OR IGNORE INTO meta VALUES ('schema_version', ?)", (SCHEMA_VERSION,))
+            finally:
+                fcntl.flock(fh, fcntl.LOCK_UN)
         _CONN[key] = conn
         return conn
 

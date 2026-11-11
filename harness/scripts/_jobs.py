@@ -188,7 +188,6 @@ LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
     **dict.fromkeys(
         (
             "dataset-create",
-            "dataset-extend",
             "dataset-materialize",
             "dataset-describe",
             "dataset-profile",
@@ -213,7 +212,9 @@ LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
     "round-close": lambda a: [(f"goal:{a['goal']}", True)] if a.get("goal") else [],
     "run-promote": _promote_locks,
     "baseline-rollback": _promote_locks,
-    "pick": lambda a: [(f"picks:{_first(a.get('dataset-id'))}", True)] if a.get("dataset-id") else [],
+    # The pick list is one per project (data/picks.jsonl): one lock for it, whichever dataset a pick is from.
+    "pick": lambda a: [("picks", True)],
+    "dataset-extend": lambda a: [*_ds(a), *([("picks", True)] if a.get("picks") or a.get("pick") else [])],
     "capture": lambda a: [("captures", True)],
     "capture-restore": lambda a: [("captures", True)],
     "dataset-from-capture": _capture_ds_locks,
@@ -301,6 +302,16 @@ def take_locks(
             f.with_suffix(".holder").write_text(job_id + "\n")
         fds.append(fd)
     return fds
+
+
+def say_waiting(key: str, holder: str) -> None:
+    """What a command prints when it waits for a lock (on stderr): a command waiting in silence on a job that holds its
+    lock for an hour looked hung (a review, 2026-11-11)."""
+    print(
+        f"  waiting for {key}, held by {holder or 'another process'}: it goes on when that lets go",
+        file=sys.stderr,
+        flush=True,
+    )
 
 
 @contextlib.contextmanager
@@ -497,12 +508,25 @@ def log_from(job_id: str, offset: int = 0) -> tuple[bytes, int]:
 
 
 def stop(job_id: str, grace: float = STOP_GRACE_S) -> dict[str, Any]:
-    """Stop a job: SIGTERM to its command's process group, SIGKILL after `grace` seconds; it ends `cancelled`."""
+    """Stop a job: SIGTERM to its command's process group, SIGKILL after `grace` seconds; a queued job's supervisor is
+    ended (the locks it took go with it); it ends `cancelled`."""
     d = job_dir(job_id)
     j = read(job_id)
     if j["state"] in ("succeeded", "failed", "cancelled", "lost"):
         return j
     (d / "stop").write_text(_common.now() + "\n")
+    st0 = _read_json(d / "state.json")
+    spid = st0.get("supervisor_pid")
+    if not st0.get("pgid") and st0.get("state") == "queued" and spid:
+        # A queued job's supervisor waits for a lock in flock and holds every lock it took before it: stopping only the
+        # command it has not started left those held, behind a job that read `cancelled`. It is ended; its descriptors,
+        # and so its locks, go with it.
+        with contextlib.suppress(ProcessLookupError, PermissionError):
+            os.kill(int(spid), signal.SIGTERM)
+        end = time.monotonic() + grace
+        while _held(d / "supervisor.lock") and time.monotonic() < end:
+            time.sleep(0.05)
+        j = read(job_id)  # it may have started the command just before: that is stopped below
     pgid = j.get("pgid")
     if pgid and _alive(pgid):
         with contextlib.suppress(ProcessLookupError, PermissionError):

@@ -170,12 +170,12 @@ call's arguments, or from the file they name, read by the supervisor before it s
 | `arm-smoke`, `model-onboard` | `model:<model>` | the config `--config` names: its model (the record also has its own `flock`) |
 | `sweep` | each arm's as `run` | its configs |
 | the `dataset-*` commands that write (`create`, `extend`, `split`, `materialize`, `describe`, `migrate`, `from-capture`), `reference-*`, `label-*`, `sheet-import` | `dataset:<dataset_id>` (a split: the parent and each side) | `--dataset-id`, the positional dataset, `--reference-id`'s dataset, the run `--run` names (its `metrics.json`) |
-| `rescore`, `judge-score` | `dataset:<dataset_id>`, and with `--round` `goal:<goal>` | `--dataset-id`, or the round's `dataset_id`; `--goal` |
+| `rescore`, `judge-score` | `dataset:<dataset_id>`, and for `rescore --round` `goal:<goal>` | `--dataset-id`, or the round's `dataset_id`; `--goal` (`judge-score` takes `--dataset-id` only) |
 | `round-open`, `round-retire`, `round-close` | `goal:<goal>` | `--goal` |
 | `run-promote`, `baseline-rollback` | `baselines:<goal>/<dataset_id>` (RFC-027: one version line per goal and dataset; `_dataset` for a run with no goal) | `--goal` or the run's goal, `--no-goal`; the run's `dataset_id` |
 | `dataset-unseal` | `dataset:<dataset_id>` | the positional dataset |
 | `baselines-migrate` | `project` | always |
-| `pick`, `dataset-extend --picks` | `picks:<dataset_id>` | `--dataset-id` |
+| `pick`, `dataset-extend --picks` / `--pick` | `picks` (the project's one pick list, data/picks.jsonl; `dataset-extend` also `dataset:<its new id>`); a pick written outside a job takes it too | always |
 | `capture`, `capture-restore` | `captures` | always |
 | `arm-from-capture`, `dataset-from-capture` | `captures` shared; `config:<config_id>` (`arm-from-capture`); `dataset:<dataset_id>` | `--as`, `--dataset-id` |
 | `catalog` | `catalog` | always (below) |

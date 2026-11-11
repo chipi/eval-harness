@@ -50,6 +50,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 
 
+def run_own_tmp(script: str) -> subprocess.CompletedProcess:
+    """A test file run with a TMPDIR of its own, removed when it ends, whatever the file leaves there: temporary
+    projects test files did not remove filled /tmp's inodes, shared by every session on a machine (6,762 projects,
+    222,380 inodes, 2026-11-11). Under ~/.cache/evh-tests/: on the main disk, and outside any git checkout (a project
+    inside one reads only the runs git keeps, so one under the harness's ignored .build/ had no arms). The name is
+    short: a test's Unix sockets live under it."""
+    import secrets  # noqa: PLC0415
+    import shutil  # noqa: PLC0415
+
+    own = Path.home() / ".cache" / "evh-tests" / secrets.token_hex(3)
+    own.mkdir(parents=True)
+    try:
+        return run(script, env={"TMPDIR": str(own)})
+    finally:
+        shutil.rmtree(own, ignore_errors=True)
+
+
 def run(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
     """Run a harness script. `env` adds to the inherited environment, it does not
     replace it -- a test that needs EVAL_RUNS_DIR still needs PATH and HOME."""
@@ -844,6 +861,10 @@ def test_example_scorer_suites_pass() -> None:
             "test-set looks (RFC-029): levels from decisions, one look per question, the limit and consent, V25",
         ),
         (
+            "test_picks_concurrent.py",
+            "the one pick list under writers at once, both stores: every line kept (the SQLite store's setup serialised)",
+        ),
+        (
             "test_replay.py",
             "replay and faithfulness (RFC-030): each item at the commit that ran it, the gate, coverage, the example's mutants",
         ),
@@ -988,7 +1009,7 @@ def test_example_scorer_suites_pass() -> None:
     )
     present = [script for script, _ in suites if (ROOT / at(script)).is_file()]
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
-        ran = dict(zip(present, pool.map(lambda script: run(at(script)), present)))
+        ran = dict(zip(present, pool.map(lambda script: run_own_tmp(at(script)), present)))
     for script, subject in suites:
         # A MISSING CHECKER IS A FAILURE, NOT A SKIP. `continue` here meant deleting
         # test_retrieval_scorer.py removed it from `make ci` silently -- the suite went

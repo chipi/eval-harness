@@ -67,6 +67,14 @@ def _who() -> str:
     return f"{a['type']}:{a['name']}" if a["type"] != "unknown" else ""
 
 
+def _for() -> str:
+    """The person an agent acts for (EVH_FOR, RFC-027), as this process's actor carries it; "" for a person."""
+    from evaluation_harness import _actor  # noqa: PLC0415
+
+    whom = _actor.actor().get("for")
+    return f"person:{whom}" if whom else ""
+
+
 def _refused(exc: Exception) -> None:
     """An API refusal as the command line's: its status as the refusal kind."""
     status = getattr(exc, "status", 400)
@@ -103,7 +111,9 @@ def start(argv: list[str]) -> int:
 
     with _jsonout.collect("jobs-start", a.json):
         try:
-            j = _api.start_job(a.command, args_of(a.arg), _who() or None, a.reason, a.max_cost_usd)
+            j = _api.start_job(
+                a.command, args_of(a.arg), _who() or None, a.reason, a.max_cost_usd, _for() or None
+            )
         except _api.Refused as exc:
             _refused(exc)
         print(_line(j))
