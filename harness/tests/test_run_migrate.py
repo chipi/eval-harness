@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""`evh run-migrate`: runs in the old layout (an outputs/ folder of <item>.txt) to one outputs.jsonl (RFC-024).
+"""`evh migrate`'s runs step: runs in the old layout (an outputs/ folder of <item>.txt) to one outputs.jsonl (RFC-024).
 
     python tests/test_run_migrate.py
 
@@ -88,7 +88,7 @@ try:
     )
     before = sorted(str(p.relative_to(data)) for p in data.rglob("*") if p.is_file())
 
-    d = evh("run-migrate", "--dry-run")
+    d = evh("migrate", "--dry-run")
     check(
         "--dry-run: says what it would do, changes nothing",
         d.returncode == 0
@@ -97,7 +97,7 @@ try:
         and sorted(str(p.relative_to(data)) for p in data.rglob("*") if p.is_file()) == before,
         d.stdout[-400:] + d.stderr[-300:],
     )
-    a = evh("run-migrate")
+    a = evh("migrate")
     rows = (
         [json.loads(x) for x in (m / _outputs.FILE).read_text().splitlines()]
         if (m / _outputs.FILE).is_file()
@@ -128,7 +128,7 @@ try:
         a.stdout[-400:],
     )
     check("the row checkpoint predictions.jsonl covers is dropped", not (m / _outputs.ROWS).exists())
-    a2 = evh("run-migrate")
+    a2 = evh("migrate")
     check(
         "a second run changes nothing",
         a2.returncode == 0 and "already in this format" in a2.stdout,
@@ -153,10 +153,10 @@ try:
     v = evh("validate")
     check(
         "validate V23: a run left in the old layout is named, with the command",
-        "evh run-migrate" in v.stdout,
+        "evh migrate" in v.stdout,
         v.stdout[-400:],
     )
-    a3 = evh("run-migrate")
+    a3 = evh("migrate")
     check(
         "an output that is not UTF-8 is refused, naming it, before its run changes",
         a3.returncode == 1

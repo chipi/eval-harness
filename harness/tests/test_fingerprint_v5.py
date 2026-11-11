@@ -581,8 +581,10 @@ with tempfile.TemporaryDirectory() as td:
         )
         + "\n"
     )
-    cmd = [sys.executable, str(HERE / "scripts" / "fingerprint_migrate.py"), "--data-dir", str(data)]
-    first = subprocess.run(cmd, capture_output=True, text=True)
+    cmd = [sys.executable, str(HERE / "scripts" / "migrate.py")]
+    # the fixture is a files project, whatever store the suite runs in
+    menv = {**os.environ, "EVAL_HOME": td, "EVAL_DATA_DIR": "data", "EVAL_STORE": "files"}
+    first = subprocess.run(cmd, capture_output=True, text=True, env=menv)
     docs = {
         p.parent.name + "/" + p.parent.parent.name: json.loads(p.read_text())
         for p in data.glob("runs*/*/metrics.json")
@@ -613,7 +615,7 @@ with tempfile.TemporaryDirectory() as td:
         json.loads(b.read_text())["fingerprint_hash"] == r1["hash"],
     )
     before_bytes = {p: p.read_bytes() for p in [*data.glob("runs*/*/metrics.json"), b]}
-    second = subprocess.run(cmd, capture_output=True, text=True)
+    second = subprocess.run(cmd, capture_output=True, text=True, env=menv)
     check(
         "migration tool: idempotent, a v5 fingerprint is left as it is",
         "runs migrated: 0" in second.stdout and before_bytes == {p: p.read_bytes() for p in before_bytes},

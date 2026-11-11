@@ -134,7 +134,7 @@ MAJOR.MINOR, two integers (1.10 follows 1.9), and the harness computes it: a fir
 another (or by `dataset-extend`) that only adds items is the parent's MAJOR with MINOR + 1; one that removes or
 changes any item is MAJOR + 1, MINOR 0; the same items under a new id keep the parent's. Each side of a split is a
 new dataset at 1.0 and names its parent's version (`split.from_version`). A licence or description change is not a
-new version. `validate` (V22) recomputes the number; `evh dataset-migrate` writes it for records made before 0.8.0.
+new version. `validate` (V22) recomputes the number; `evh migrate` writes it for records made before 0.8.0.
 A source's own version (a Hub revision) is never this number.
 
 **A licence** is optional: `--licence ID` on `dataset-create`, or `evh dataset-describe --dataset-id D --licence ID`
@@ -679,7 +679,7 @@ evh data-migrate --to files              # back, byte for byte, after setting st
 ```
 
 `data-migrate` refuses while the project's store is not the target, while `data/` holds Python, and
-while a run is still in the layout before 0.8.0 (`evh run-migrate` first); a move a crash stopped is
+while a run is still in the layout before 0.8.0 (`evh migrate` first); a move a crash stopped is
 finished by the next one. In SQLite mode a setting you write (a goal, a config) gets in through the
 `evh data-put` (below), and a folder of files through `data-migrate`. `validate` V23 names a database beside files, or files beside the database; V7 and V9, which
 read git, say why they do not apply. A release reads the database and writes the same files layout

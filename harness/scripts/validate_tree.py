@@ -55,8 +55,8 @@ Each check exists because its absence let a real defect through somewhere:
                      outside its form, item rows without an item_url to fill (E1), or a card key
                      that is not one of Croissant RAI's (E4); a sealed side whose open side changed
                      since it was sealed, or a run on it no unseal named (the fleet's feedback 29)
-                     (PLAN_0.8.0 E3; `evh dataset-migrate` brings old records to the format)
-  V23 run outputs    a run still in the old layout (an outputs/ folder: `evh run-migrate`), or a derived
+                     (PLAN_0.8.0 E3; `evh migrate` brings old records to the format)
+  V23 run outputs    a run still in the old layout (an outputs/ folder: `evh migrate`), or a derived
                      run with no outputs of its own whose source run is not here (RFC-024); a project in both
                      stores (RFC-025)
 
@@ -533,7 +533,7 @@ def v6_baselines() -> None:
     from evaluation_harness.promote_baseline import carried  # noqa: PLC0415
 
     broken = [
-        f"{b.name}: the old layout, one baseline per dataset: evh baselines-migrate moves it"
+        f"{b.name}: the old layout, one baseline per dataset: evh migrate moves it"
         for b in sorted(_store.glob(BASELINES, "*.json"))
     ]
     for g, ds in _baselines.lines():
@@ -573,13 +573,13 @@ def v6_baselines() -> None:
                 broken.append(f"{name}: {k} is {d.get(k)!r}, its run records {v!r}")
     for x in broken:
         print(f"       {x}")
-    # WHO ACTED (RFC-027): a record from before 0.8.0 names nobody until baselines-migrate writes "before 0.8.0".
+    # WHO ACTED (RFC-027): a record from before 0.8.0 names nobody until `evh migrate` writes "before 0.8.0".
     # A note, not a failure: picks are append-only, and a record a test or a person wrote by hand is not wrong.
     from evaluation_harness.baselines_migrate import plan  # noqa: PLC0415
 
     missing = sum(1 for what, _f, _n in plan() if what.startswith("actor"))
     if missing:
-        print(f"  note: {missing} record(s) name no actor (who made them): evh baselines-migrate writes one")
+        print(f"  note: {missing} record(s) name no actor (who made them): evh migrate writes one")
     check(
         "V6 every baseline's source run still exists and matches what the baseline carries",
         not broken,
@@ -1633,7 +1633,7 @@ def v21_failure_modes() -> None:
 
 def v22_dataset_records() -> None:
     """V22: each dataset's stored version is the one its lineage gives (PLAN_0.8.0 E3), so a hand-edited or
-    pre-0.8.0 version is caught; `evh dataset-migrate` writes the right ones."""
+    pre-0.8.0 version is caught; `evh migrate` writes the right ones."""
     from evaluation_harness import _card, _dataset_version, _licences, _source  # noqa: PLC0415
 
     docs = (
@@ -1682,7 +1682,7 @@ def v22_dataset_records() -> None:
     for b in bad[:10]:
         print(f"       {b}")
     if bad and len(bad) > len(sealed):
-        print("       evh dataset-migrate writes the versions the lineage gives (--dry-run shows them first)")
+        print("       evh migrate writes the versions the lineage gives (--dry-run shows them first)")
     check(
         f"V22 dataset records — {len(docs)} dataset(s), each version its lineage's"
         + (
@@ -1853,7 +1853,7 @@ def v23_run_outputs() -> None:
     for d in runs:
         rel = d.relative_to(DATA)
         if _outputs.old_layout(d):
-            bad.append(f"{rel}: an outputs/ folder (the layout before 0.8.0): evh run-migrate")
+            bad.append(f"{rel}: an outputs/ folder (the layout before 0.8.0): evh migrate")
             continue
         if _outputs.own(d):
             continue

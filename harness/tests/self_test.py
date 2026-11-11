@@ -774,7 +774,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_dataset_version.py",
-            "a dataset's version MAJOR.MINOR from its lineage: 1.10 after 1.9, splits 1.0, V22, dataset-migrate",
+            "a dataset's version MAJOR.MINOR from its lineage: 1.10 after 1.9, splits 1.0, V22, evh migrate",
         ),
         (
             "test_licences.py",
@@ -782,7 +782,7 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_source.py",
-            "where items came from: a fetcher's rows file as the source block, item links, V22, dataset-migrate",
+            "where items came from: a fetcher's rows file as the source block, item links, V22, evh migrate",
         ),
         (
             "test_card.py",
@@ -902,11 +902,11 @@ def test_example_scorer_suites_pass() -> None:
         ),
         (
             "test_data_page.py",
-            "the data page's server and evh data-*: list, show, check, put, rm on both stores; the header, Origin and public refusals; 80 concurrent requests",
+            "evh data-*: list, show, check, put, rm on both stores; no /api/data route (the Configure page retired); 80 concurrent requests",
         ),
         (
             "test_run_migrate.py",
-            "run-migrate: outputs/ to outputs.jsonl byte for byte, derived copies dropped, idempotent, non-UTF-8 refused",
+            "evh migrate's runs step: outputs/ to outputs.jsonl byte for byte, derived copies dropped, idempotent, non-UTF-8 refused",
         ),
         (
             "test_tags.py",

@@ -230,7 +230,7 @@ LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
     "data-rm": _data_rm_locks,
 }
 #: Migrations: the whole project, exclusive (every other job holds it shared, so each waits for the other).
-MIGRATIONS = {"data-migrate", "run-migrate", "dataset-migrate", "fingerprint-migrate", "baselines-migrate"}
+MIGRATIONS = {"data-migrate", "migrate"}
 #: Job commands that write nothing another job writes (reports, checks, estimates): `project` shared only.
 PROJECT_ONLY = {
     "study-ask",  # its ask is appended under the study's own lock, briefly

@@ -5,7 +5,7 @@
 
 In a throwaway project: a fetcher's rows file beside the items becomes the record's source block and each item's
 `source_row`, but only for items whose bytes are the ones the fetcher wrote; the profile links each item from the
-block; `validate` V22 refuses a key outside the block and rows with no template to fill; `dataset-migrate` brings a
+block; `validate` V22 refuses a key outside the block and rows with no template to fill; `evh migrate` brings a
 record made before 0.8.0 to the block from its committed profile, nothing unrecorded guessed, and is idempotent.
 """
 
@@ -147,11 +147,11 @@ try:
         ],
     }
     _runstore.write_text(proj, "profiles/old_v1.json", json.dumps(legacy, indent=1))
-    r = evh("dataset-migrate")
+    r = evh("migrate")
     m = ds("old_v1")
     mp = _runstore.read_json(proj, "profiles/old_v1.json")
     check(
-        "dataset-migrate: the block and each row from the old profile; the provider from its address; nothing guessed",
+        "migrate: the block and each row from the old profile; the provider from its address; nothing guessed",
         r.returncode == 0
         and m.get("source", {}).get("provider") == "huggingface"
         and m["source"]["ref"] == "org/d"
@@ -161,8 +161,12 @@ try:
         and mp["source"] == m["source"],
         r.stdout[-400:] + json.dumps(m.get("source")),
     )
-    r = evh("dataset-migrate")
-    check("a second run changes nothing", r.returncode == 0 and "0 changed" in r.stdout, r.stdout[-200:])
+    r = evh("migrate")
+    check(
+        "a second run changes nothing",
+        r.returncode == 0 and "dataset(s), 0 changed" in r.stdout,
+        r.stdout[-200:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

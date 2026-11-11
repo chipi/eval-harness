@@ -56,7 +56,10 @@ COMMANDS = {
         "a dataset's card: what, where from, the datasheet's answers; or it as Croissant 1.1",
     ),
     "licences": ("view_licences.py", "the licences a dataset can name (SPDX ids), a line each"),
-    "run-migrate": ("run_migrate.py", "bring the runs to one outputs file each (RFC-024), once (idempotent)"),
+    "migrate": (
+        "migrate.py",
+        "bring the project's data to this release's formats: runs, datasets, records, fingerprints, once (idempotent)",
+    ),
     "data-migrate": (
         "data_migrate.py",
         "move the project's data/ into its SQLite database or back (RFC-025)",
@@ -65,10 +68,6 @@ COMMANDS = {
     "data-show": ("data_show.py", "show one file of the project's data"),
     "data-put": ("data_put.py", "create or change a setting (config, goal, fieldset, ...), checked first"),
     "data-rm": ("data_rm.py", "delete a setting, or a whole run"),
-    "dataset-migrate": (
-        "dataset_migrate.py",
-        "bring the dataset records to this release's format, once (idempotent)",
-    ),
     "dataset-materialize": ("materialize.py", "hash-checked working copy of a dataset"),
     "dataset-profile": (
         "dataset_profile.py",
@@ -94,10 +93,6 @@ COMMANDS = {
     "model-onboard": (
         "model_onboard.py",
         "onboard a model once: probe a deployment, write what was found into its record",
-    ),
-    "fingerprint-migrate": (
-        "fingerprint_migrate.py",
-        "migrate the committed runs' fingerprints to version 5, once (idempotent)",
     ),
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
     "runs-list": ("list_runs.py", "list runs (or baselines)"),
@@ -203,10 +198,6 @@ COMMANDS = {
     "baseline-rollback": (
         "baseline_rollback.py",
         "roll a baseline back to an earlier version, as a new version with its own evidence",
-    ),
-    "baselines-migrate": (
-        "baselines_migrate.py",
-        "bring the records to 0.8.0: baselines per goal in versions, an actor on every record",
     ),
     "run-promote": ("promote_baseline.py", "promote a run to a baseline, with a reason"),
     "round-open": (

@@ -1,8 +1,6 @@
-#!/usr/bin/env python3
 """Bring the project's runs to one outputs file each, once (idempotent; RFC-024).
 
-    evh run-migrate --dry-run     what would change: runs, files before and after
-    evh run-migrate               write it
+The runs step of `evh migrate` (`--dry-run`: what would change, runs and files before and after).
 
 For every run directory under data/runs* that still has an `outputs/` folder: its `outputs/<item>.txt` become one
 `outputs.jsonl`, in the dataset's order, each line checked against the bytes of the file it came from. A derived run
@@ -15,22 +13,14 @@ held; any difference stops the migration with nothing of that run changed.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
 import hashlib
 import json
 import shutil
-import sys
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _jsonout, _outputs
-from evaluation_harness._common import die, evh_prog, write_json
+from evaluation_harness import _common, _outputs
+from evaluation_harness._common import die, write_json
 
 
 def _old_signature(texts: dict[str, bytes]) -> str:
@@ -210,35 +200,18 @@ def _checkpoint_needed(rows: Path, predictions: Path) -> bool:
     return not ids(rows) <= ids(predictions)
 
 
-def main() -> int:
-    """Migrate every run under data/runs* to one outputs file."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--dry-run", action="store_true", help="count what would change; write nothing")
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("run-migrate", args.json, live=sys.stderr):
-        n = migrate(args.dry_run)
-        after = n["own_file"] + n["kept_checkpoint"]
-        verb = "would become" if args.dry_run else "became"
-        print(
-            f"{n['runs']} run(s) with an outputs/ folder: {n['own_file']} {verb} one outputs.jsonl each, "
-            f"{n['reads_source']} derived read their source's; {n['files_before']} file(s) {verb} {after}"
-            + ("" if n["runs"] else " (already in this format)")
-            + (
-                f"; {n['from_dir']} derived run(s) {'would record' if args.dry_run else 'recorded'} their source's directory"
-                if n["from_dir"]
-                else ""
-            )
+def step(dry_run: bool) -> None:
+    """`evh migrate`'s runs step: every run under data/runs* to one outputs file."""
+    n = migrate(dry_run)
+    after = n["own_file"] + n["kept_checkpoint"]
+    verb = "would become" if dry_run else "became"
+    print(
+        f"{n['runs']} run(s) with an outputs/ folder: {n['own_file']} {verb} one outputs.jsonl each, "
+        f"{n['reads_source']} derived read their source's; {n['files_before']} file(s) {verb} {after}"
+        + ("" if n["runs"] else " (already in this format)")
+        + (
+            f"; {n['from_dir']} derived run(s) {'would record' if dry_run else 'recorded'} their source's directory"
+            if n["from_dir"]
+            else ""
         )
-        return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    )

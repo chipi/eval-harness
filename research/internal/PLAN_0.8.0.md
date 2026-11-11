@@ -39,7 +39,7 @@ the Workbench (PRD-017) last. The fleet was asked for feedback beyond entry 28 t
    4. The newcomer scenario (`harness/docs/SCENARIO.md`, RELEASING step 5) on the release candidate, as for every
       release, extended with what 0.8.0 adds (a dataset from a source, the card, tags, the contender test); an agent
       playing a newcomer, the published docs only, a friction log; one CPU model, under $1.
-   5. The triage fleet's data repo on 0.8.0: `run-migrate`, `dataset-migrate`, `validate`, its catalog, its decisions
+   5. The triage fleet's data repo on 0.8.0: `migrate`, `validate`, its catalog, its decisions
       equal to 0.7.2's or each change named; its session runs it and reports.
    6. Scale: S1's bench again at 10,000 items × 50 arms after S2, the table before and after.
    7. CI on the pushed commit, `ci-watch` to GREEN, the rerun workflow included.

@@ -146,8 +146,8 @@ hand is not wrong for lacking one.
 
 ## Migration (no backward compatibility)
 
-One command, `evh baselines-migrate` (or a step of `data-migrate`, which the project already runs for format
-changes), with `--dry-run`:
+One command, `baselines-migrate` (or a step of `data-migrate`, which the project already runs for format
+changes), with `--dry-run`. As built it is the records step of `evh migrate`, one command for every 0.8.0 format:
 
 - each `data/baselines/<dataset>_baseline.json` moves to `<goal>/<dataset>/1.json` under the goal its record names,
   or to `_dataset/<dataset>/1.json` with `goal: null` when it names none, with `evidence: null` and `migrated: true`

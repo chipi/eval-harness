@@ -307,7 +307,6 @@ def main() -> int:
                 ],
                 "no versions",
             ),
-            ("baselines-migrate", ["--dry-run"], "ok:"),
             ("captures", ["--capture", "c1"], "ok:c1:"),
             ("dataset-from-capture", ["c1", "--dataset-id", "captured_v1"], "ok:records kept"),
             ("capture-restore", ["--capture", "c1"], "ok:records restored"),
@@ -315,7 +314,7 @@ def main() -> int:
             ("labels", [], "ok:tickets_v1/installed_from_run: model"),
             ("tags", [], "ok:No tag sets yet"),
             ("licences", ["--search", "share"], "ok:CC-BY-SA-4.0"),
-            ("run-migrate", ["--dry-run"], "ok:run(s)"),
+            ("migrate", ["--dry-run"], "ok:fingerprints:"),
             # the project's own store: data-migrate moves into the store the setting names, and data-ls says it
             ("data-migrate", ["--to", STORE, "--dry-run"], f"ok:would move into the {STORE} store"),
             ("data-ls", [], f"ok:store: {STORE}"),
@@ -333,7 +332,6 @@ def main() -> int:
                 "describes no features",
             ),
             ("dataset-card", ["--dataset-id", "tickets_v1", "--format", "croissant"], "ok:croissant/1.1"),
-            ("dataset-migrate", ["--dry-run"], "ok:dataset(s)"),
             (
                 "dataset-create",
                 [
@@ -443,7 +441,6 @@ def main() -> int:
             ("models", [], "ok:no model records"),
             ("model-onboard", ["no_such_model"], "no model record 'no_such_model'"),
             ("arm-smoke", ["--config", "no_such.yaml"], "no config at no_such.yaml"),
-            ("fingerprint-migrate", ["--dry-run"], "ok:after:"),
             # Scoring that evolves (RFC-022): the flow is test_scoring_evolves.py.
             ("score-preview", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
             ("search", ["lead2"], "ok:evh inspect --runs runs/tickets_v1/tickets_lead2_v1"),

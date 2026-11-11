@@ -7,15 +7,26 @@ correctness bugs, not just missing features.
 
 ## From 0.7.2 to 0.8.0 (unreleased)
 
-- **Run `evh run-migrate` once** (RFC-024; `--dry-run` first shows what it will do). A run's outputs become one
-  `outputs.jsonl` instead of an `outputs/` folder of `<item>.txt`, a derived run whose outputs are byte copies of its
-  source's keeps none of its own, and the leftover row checkpoint goes. Each run is checked byte for byte before
-  its folder is removed; nothing in a fingerprint moves. Then let git see the new files: a `.gitignore` that
-  re-admits `outputs/**` in a run directory needs `!…/outputs.jsonl` instead (this repository's
-  `harness/.gitignore` shows the pattern). The old layout is not read after the upgrade.
-- **Run `evh dataset-migrate` once** (E3; `--dry-run` first). Each dataset record's `version` is recomputed from its
-  lineage and a record without a `source` block gets the one its committed profile recorded; `validate` V22 then
-  holds the records to the 0.8.0 format. Item ids and hashes do not change, so no run or fingerprint moves.
+- **Run `evh migrate` once** (`--dry-run` first shows what each step will do; a second run changes nothing). Its
+  steps, in order:
+  - *runs* (RFC-024): a run's outputs become one `outputs.jsonl` instead of an `outputs/` folder of `<item>.txt`,
+    a derived run whose outputs are byte copies of its source's keeps none of its own, and the leftover row
+    checkpoint goes. Each run is checked byte for byte before its folder is removed; nothing in a fingerprint
+    moves. Then let git see the new files: a `.gitignore` that re-admits `outputs/**` in a run directory needs
+    `!…/outputs.jsonl` instead (this repository's `harness/.gitignore` shows the pattern). The old layout is not
+    read after the upgrade.
+  - *datasets* (E3): each dataset record's `version` is recomputed from its lineage and a record without a
+    `source` block gets the one its committed profile recorded; `validate` V22 then holds the records to the
+    0.8.0 format. Item ids and hashes do not change, so no run or fingerprint moves.
+  - *records* (RFC-027): each `data/baselines/<dataset>_baseline.json` becomes version 1 of the goal it names
+    (`data/baselines/<goal>/<dataset>/1.json`), or of the dataset's own (`_dataset/`) when it names none, marked
+    "promoted before 0.8.0, evidence not recorded"; every record without an actor gets `before 0.8.0`; a split
+    side's `split.by` becomes `split.split_by`. No fingerprint moves.
+  - *fingerprints* (RFC-021): a run still at version 4 moves to 5 (none left once `fingerprint-migrate` ran on 0.6.0).
+
+  `run-migrate`, `dataset-migrate` and `baselines-migrate` (built during 0.8.0, never released) and
+  `fingerprint-migrate` (0.6.0 to 0.7.2) are this one command now. Moving the data into SQLite is
+  `data-migrate`, not a format step.
 - **Three new dependencies** install with the package: `ruamel.yaml` (a setting saved keeps its comments),
   `pyarrow` (tables and Hugging Face parquet) and `huggingface_hub` (Hub datasets in and out). `pip install` of the
   new pin brings them; nothing to enable.
@@ -43,10 +54,7 @@ correctness bugs, not just missing features.
   unreachable server `75` (was `1`), and a check that found problems `6` (was `1`) for `validate`, `self-test`,
   `env-check`, `importer-check`, `arm-smoke`, `model-onboard` and `deploy-sheet --capture`; a partly failed
   `sweep` is `5`. A check for "non-zero" needs no change. The table: RUNBOOK, Exit codes.
-- **Run `evh baselines-migrate` once** (RFC-027; `--dry-run` first). Each `data/baselines/<dataset>_baseline.json`
-  becomes version 1 of the goal it names (`data/baselines/<goal>/<dataset>/1.json`), or of the dataset's own
-  (`_dataset/`) when it names none, marked "promoted before 0.8.0, evidence not recorded"; every record without an
-  actor gets `before 0.8.0`; a split side's `split.by` becomes `split.split_by`. No fingerprint moves. Then: a
+- **Who acted** (RFC-027), after `evh migrate`'s records step: a
   promotion, `round-close` and `dataset-unseal` need a named actor off a terminal (`--by person:NAME`, or
   `EVH_ACTOR`; an agent `EVH_ACTOR=agent:NAME` with `EVH_FOR=person:NAME`); `runs-list --baselines` is now
   `evh baselines`; `dataset-split --by hash|time` is `--split-by`.
@@ -119,8 +127,8 @@ Change the pin to `@v0.6.0`. Two formats change, and both are migrated by a scri
 - **Fingerprints are version 5** (RFC-021): `instrument`, `data`, `deployment`, `settings`, each hashed, and the
   machine `evh` ran on as `runner`, outside the hash. A run made with 0.6.0 compares with a v4 run on no hash. Move
   your committed runs once, from your project's root:
-  `evh fingerprint-migrate` (`--dry-run` counts first; it is idempotent and prints its counts; a
-  baseline's `fingerprint_hash` follows its run). Code that read `fingerprint.host` reads `fingerprint.runner`;
+  `fingerprint-migrate` in 0.6.0 to 0.7.2, the fingerprints step of `evh migrate` from 0.8.0 (`--dry-run`
+  counts first; it is idempotent and prints its counts; a baseline's `fingerprint_hash` follows its run). Code that read `fingerprint.host` reads `fingerprint.runner`;
   `fingerprint.system_under_test.model` is `fingerprint.deployment` (an adapter's `fingerprint(params)` hook keeps
   its vocabulary; what it declares about the prompt is now `settings.declared`).
 - **`data/models.yaml` is replaced by `data/models/<model_id>.yaml`** (RFC-020): one record per model, its key in

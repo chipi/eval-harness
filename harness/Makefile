@@ -19,7 +19,7 @@ TIER ?= silver
         overview activity datasets arms references metrics goals inspect round-open round-retire round-close rounds \
         dataset-create dataset-materialize dataset-profile dataset-items reference-manifest \
         mcp search self-test \
-        reference-promote arm-smoke model-onboard fingerprint-migrate score-preview importer-check capture \
+        reference-promote arm-smoke model-onboard score-preview importer-check capture \
         dataset-split capture-scrub captures labels label-sheet label-import sheet-import label-from-run label-from-capture pick \
         picks dataset-extend deploy-sheet arm-from-capture dataset-from-capture models \
         holdout pair-test rank-stability \
@@ -201,10 +201,6 @@ arm-smoke:
 # onboard a model once: probe a deployment, write what was found into its record
 model-onboard:
 	$(PYTHON) scripts/model_onboard.py $(ARGS)
-
-# migrate the committed runs' fingerprints to version 5, once (idempotent)
-fingerprint-migrate:
-	$(PYTHON) scripts/fingerprint_migrate.py $(ARGS)
 
 # what the scorer in this tree would move in a goal's decision; writes nothing
 score-preview:

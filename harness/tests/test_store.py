@@ -514,8 +514,8 @@ try:
     (old / "outputs" / "i1.txt").write_text("x")
     r = evh("data-migrate", "--to", "sqlite", store="sqlite")
     check(
-        "--to sqlite refuses a run in the layout before 0.8.0 (evh run-migrate first)",
-        r.returncode != 0 and "run-migrate" in r.stderr and (old / "outputs" / "i1.txt").is_file(),
+        "--to sqlite refuses a run in the layout before 0.8.0 (evh migrate first)",
+        r.returncode != 0 and "evh migrate first" in r.stderr and (old / "outputs" / "i1.txt").is_file(),
         r.stderr[-300:],
     )
     shutil.rmtree(old)

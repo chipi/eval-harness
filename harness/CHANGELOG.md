@@ -84,7 +84,7 @@ that can move a result is never a patch release without saying so under **Change
   the version it replaces frozen in, as `pair-test` answers it (`pair-test --json` now also gives `items_sha256`,
   `reduce` and the run ids it pooled). `evh baseline-rollback` restores an earlier version as a new one. `evh
   baselines` lists each line with who promoted it, why, the evidence, how to reproduce it (the deploy sheet's block)
-  and the history; `--json` is the export, the same bytes until a promotion. `evh baselines-migrate` brings 0.7
+  and the history; `--json` is the export, the same bytes until a promotion. `evh migrate` brings 0.7
   records over; this repository's are migrated. V6 holds each line's chain.
 - **Who acted, on every record** (RFC-027 D1): runs, references, label sets, rounds, picks, dataset and model records
   and baselines carry `actor`: a person, or an agent and the person it acted for (`EVH_ACTOR`, `EVH_FOR`), from
@@ -199,7 +199,7 @@ that can move a result is never a patch release without saying so under **Change
   `url`, `revision` (the source's own version), `config`, `split`, `gated`, `description_sha256` and `item_url` (one
   item's page, with `{row}` or `{item_id}`); each item its `source_row`. `dataset-create` reads it from a fetcher's
   `data/sources/<id>.rows.json`; the profile and the catalog link items from the record, no longer from that file.
-  `validate` V22 checks it. The committed Hub datasets and their profiles were migrated by `evh dataset-migrate`
+  `validate` V22 checks it. The committed Hub datasets and their profiles were migrated by `evh migrate`
   from what their profiles recorded; `revision` and `gated` were never recorded for them and are null.
 
 - **A dataset card.** The datasheet questions, answered in a `card` block under Croissant RAI 1.0's property names
@@ -252,6 +252,10 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Changed
 
+- **One `evh migrate` brings a project to 0.8.0's formats**, in four steps (runs, datasets, records, fingerprints),
+  idempotent, `--dry-run` first. `fingerprint-migrate` (0.6.0 to 0.7.2) is its fingerprints step; the per-format
+  commands built during 0.8.0 were folded into it before the release. `data-migrate` (files and SQLite) stays its
+  own command.
 - **`runs-list --baselines` is now `evh baselines`** (RFC-027); `run-promote --baseline-id` is gone (a baseline is
   named by goal, dataset and version); `round-close --promote` promotes into the round's goal, read as the round
   reads its arms. A goal page reads only its own baselines, no longer a dataset baseline with no goal.
@@ -281,7 +285,7 @@ that can move a result is never a patch release without saying so under **Change
 - **A run's outputs are one file** (RFC-024). `outputs.jsonl`, a line per item (`item_id`, `text`, `sha256`),
   appended as each output is produced and rewritten in dataset order when the run completes, replaces the `outputs/`
   folder of one file per item. Re-scores, judgings and sheet imports no longer copy their source's outputs: they read
-  them through `derived.from`. Every module reads outputs through one function. `evh run-migrate` moves a project's
+  them through `derived.from`. Every module reads outputs through one function. `evh migrate` moves a project's
   runs (`--dry-run` first); in this repository it turned 94,796 files into 305 (`harness/data/` from 106,492 files
   to 12,001), every output and V5 signature checked equal before and after. A derived run records its source's
   directory (`derived.from_dir`) and reads only that run; `validate` V23 names a run left in the old layout or a
@@ -292,7 +296,7 @@ that can move a result is never a patch release without saying so under **Change
   the lineage when the dataset is made: 1.0 for a first dataset and for each side of a split (which names its
   parent's version, `split.from_version`); from a parent (`--from`, `dataset-extend`), MINOR + 1 when items were only
   added, MAJOR + 1 and MINOR 0 when any was removed or changed. A licence or description change is no new version.
-  `validate` (V22) recomputes it; `evh dataset-migrate` writes it for records made before (every committed dataset
+  `validate` (V22) recomputes it; `evh migrate` writes it for records made before (every committed dataset
   is 1.0 by the rule, as it was). Neither key is in a run's fingerprint: no run moves.
 
 - **One failed item no longer stops a run** (owner, 2026-11-05). An item whose call fails (not transiently) is

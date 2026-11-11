@@ -1,8 +1,6 @@
-#!/usr/bin/env python3
 """Bring the project's dataset records to this release's format, once (idempotent).
 
-    evh dataset-migrate --dry-run     what would change, per dataset
-    evh dataset-migrate               write it
+The datasets step of `evh migrate` (`--dry-run`: what would change, per dataset).
 
 0.8.0 (PLAN_0.8.0 E3): each record's `version` is recomputed from its lineage (MAJOR.MINOR: 1.0 made from
 nothing or a side of a split; from a parent, MINOR + 1 when items were only added, MAJOR + 1 when any was removed or
@@ -16,18 +14,10 @@ holds the records to the format.
 
 from __future__ import annotations
 
-import sys as _sys
-from pathlib import Path as _Path
-
-if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
-
-import argparse
-import sys
 from typing import Any
 
-from evaluation_harness import _dataset_version, _jsonout, _source, _store
-from evaluation_harness._common import DATA, DATASETS, evh_prog, read_json, write_json
+from evaluation_harness import _dataset_version, _source, _store
+from evaluation_harness._common import DATA, DATASETS, read_json, write_json
 
 PROFILES = DATA / "profiles"
 
@@ -91,41 +81,19 @@ def migrate(
     return changes
 
 
-def main() -> int:
-    """Migrate every dataset record under data/datasets/."""
-    ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
-    ap.add_argument("--dry-run", action="store_true", help="print what would change; write nothing")
-    from evaluation_harness._actor import add_by  # noqa: PLC0415
-
-    add_by(ap)
-    ap.add_argument(
-        "--json",
-        action="store_true",
-        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
-    )
-    args = ap.parse_args()
-    with _jsonout.collect("dataset-migrate", args.json, live=sys.stderr):
-        files = (
-            {f.stem: f for f in sorted(_store.glob(DATASETS, "*.json"))} if _store.is_dir(DATASETS) else {}
-        )
-        docs = {i: read_json(f) for i, f in files.items()}
-        pfiles = {i: PROFILES / f"{i}.json" for i in docs if _store.is_file(PROFILES / f"{i}.json")}
-        profiles = {i: read_json(p) for i, p in pfiles.items()}
-        before = {i: dict(p).get("source") for i, p in profiles.items()}
-        changes = migrate(docs, profiles)
-        for i, said in changes.items():
-            print(f"{i}: {'; '.join(said)}")
-            if not args.dry_run:
-                write_json(files[i], docs[i])
-                if i in profiles and profiles[i].get("source") != before[i]:
-                    write_json(pfiles[i], profiles[i])
-        verb = "would change" if args.dry_run else "changed"
-        print(
-            f"{len(files)} dataset(s), {len(changes)} {verb}"
-            + ("" if changes else ": already in this format")
-        )
-        return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+def step(dry_run: bool) -> None:
+    """`evh migrate`'s datasets step: every dataset record under data/datasets/."""
+    files = {f.stem: f for f in sorted(_store.glob(DATASETS, "*.json"))} if _store.is_dir(DATASETS) else {}
+    docs = {i: read_json(f) for i, f in files.items()}
+    pfiles = {i: PROFILES / f"{i}.json" for i in docs if _store.is_file(PROFILES / f"{i}.json")}
+    profiles = {i: read_json(p) for i, p in pfiles.items()}
+    before = {i: dict(p).get("source") for i, p in profiles.items()}
+    changes = migrate(docs, profiles)
+    for i, said in changes.items():
+        print(f"{i}: {'; '.join(said)}")
+        if not dry_run:
+            write_json(files[i], docs[i])
+            if i in profiles and profiles[i].get("source") != before[i]:
+                write_json(pfiles[i], profiles[i])
+    verb = "would change" if dry_run else "changed"
+    print(f"{len(files)} dataset(s), {len(changes)} {verb}" + ("" if changes else ": already in this format"))

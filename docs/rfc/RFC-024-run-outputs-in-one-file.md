@@ -79,13 +79,13 @@ the new check names the missing source). A release copies the source of every de
 
 ### Migration
 
-`evh run-migrate` (idempotent, `--dry-run`): for each run directory, `outputs/*.txt` into `outputs.jsonl` in dataset
+`run-migrate` (idempotent, `--dry-run`; before the release it became the runs step of `evh migrate`): for each run directory, `outputs/*.txt` into `outputs.jsonl` in dataset
 order, each line's sha256 checked against the file it came from; a derived run whose outputs are byte copies of its
 source's loses them (refused, naming the items, when any differs: then the derived run keeps its own file); the
 checkpoint `outputs/_rows.jsonl` deleted when `predictions.jsonl` has the same rows. Before and after, for every run:
 V5's signature, each judging set's `outputs_sha256`, and the catalog's per-item outputs are the same, checked by the
 migration itself and by a test. No shim reads the old layout afterwards (no backward compatibility): a project upgrading
-to 0.8.0 runs `evh run-migrate` once, as UPGRADING will say.
+to 0.8.0 runs `evh migrate` once, as UPGRADING says.
 
 ### A store behind the reader: a future opportunity (owner, 2026-11-05: no release planned)
 
@@ -135,7 +135,7 @@ the fleet's), not this repository's. Not planned for any release; the reader's i
   that kept different outputs) was read in the source's place when the source was gone (found by the migration test).
   A record without it is found by name, a measured run first. The migration wrote `from_dir` for the 431 committed
   derived runs that read their source's outputs.
-- `evh run-migrate` on this repository: 736 run directories, 305 with an outputs file, 431 derived reading their
+- `run-migrate` on this repository: 736 run directories, 305 with an outputs file, 431 derived reading their
   source's (54 derived runs keep their own: their source is not committed); 94,796 files became 305. Checked
   independently against a checkout of the commit before: 736 runs, 94,795 outputs, texts and V5 signatures, 0
   different.

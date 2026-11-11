@@ -36,7 +36,7 @@ from typing import Any, Protocol
 from evaluation_harness import _common, _store
 
 FILE = "outputs.jsonl"
-#: The folder of <item>.txt a run had before 0.8.0 (`evh run-migrate` moves it into FILE).
+#: The folder of <item>.txt a run had before 0.8.0 (`evh migrate` moves it into FILE).
 OLD_DIR = "outputs"
 #: The checkpoint of rows a pass appends as it goes (a crashed run has no predictions.jsonl yet); deleted by finish().
 ROWS = "rows.partial.jsonl"
@@ -681,7 +681,7 @@ def output(run_dir: Path, item_id: str) -> str | None:
 
 
 def old_layout(run_dir: Path) -> bool:
-    """Whether a run is still in the layout before 0.8.0 (an `outputs/` folder of <item>.txt): `evh run-migrate` moves it."""
+    """Whether a run is still in the layout before 0.8.0 (an `outputs/` folder of <item>.txt): `evh migrate` moves it."""
     return _store.is_dir(Path(run_dir) / OLD_DIR)
 
 

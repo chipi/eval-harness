@@ -10,7 +10,7 @@ sha256; a run's outputs by item, text, sha256 and order; its rows by their exact
 any difference stops the move with that file in its old place. A move a crash stopped is finished by the next one.
 Refused while the project's store (`store` in config.yaml, or EVAL_STORE) is not the target, while data/ holds Python
 (code is never in the database: keep it outside data/ and name it by path), and while a run is still in the layout
-before 0.8.0 (`evh run-migrate` first).
+before 0.8.0 (`evh migrate` first).
 """
 
 from __future__ import annotations
@@ -85,7 +85,7 @@ def _refusals(data: Path, files: list[Path]) -> None:
     old = sorted({p.parent.parent for p in files if p.parent.name == "outputs" and _is_run(p.parent.parent)})
     if old:
         die(
-            f"{len(old)} run(s) in the layout before 0.8.0 (an outputs/ folder): evh run-migrate first",
+            f"{len(old)} run(s) in the layout before 0.8.0 (an outputs/ folder): evh migrate first",
             "not-allowed",
         )
 

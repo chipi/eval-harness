@@ -6,7 +6,7 @@
 The rule on its own (1.10 follows 1.9; added only is MINOR + 1; removed or changed is MAJOR + 1; the same items keep
 the parent's), then through the commands in a throwaway project: a first dataset is 1.0, one made `--from` it with an
 item added 1.1, with one removed 2.0, a split's sides 1.0 naming the parent's version; `validate` V22 agrees, then
-catches a hand-edited version; `dataset-migrate` writes it back and a second run changes nothing.
+catches a hand-edited version; `evh migrate` writes it back and a second run changes nothing.
 """
 
 import json
@@ -115,16 +115,16 @@ try:
         r.returncode != 0 and "version '1.2', its lineage gives 2.0" in r.stdout,
         r.stdout[-500:],
     )
-    r = evh("dataset-migrate", "--dry-run")
+    r = evh("migrate", "--dry-run")
     check(
-        "dataset-migrate --dry-run says what it would write, and writes nothing",
+        "migrate --dry-run says what it would write, and writes nothing",
         r.returncode == 0 and "t_v3: version '1.2' -> 2.0" in r.stdout and ds("t_v3")["version"] == "1.2",
         r.stdout[-300:],
     )
-    r = evh("dataset-migrate")
-    r2 = evh("dataset-migrate")
+    r = evh("migrate")
+    r2 = evh("migrate")
     check(
-        "dataset-migrate writes it; a second run changes nothing",
+        "migrate writes it; a second run changes nothing",
         r.returncode == 0
         and ds("t_v3")["version"] == "2.0"
         and "0 changed: already in this format" in r2.stdout,
