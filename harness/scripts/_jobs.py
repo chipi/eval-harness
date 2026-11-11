@@ -362,6 +362,14 @@ def new_id() -> str:
     return time.strftime("%Y%m%dT%H%M%S", time.gmtime()) + "-" + secrets.token_hex(3)
 
 
+def spent(job_id: str) -> float:
+    """What a job's command counted as spent, as it went (0 when it made no paid call)."""
+    try:
+        return float(_read_json(job_dir(job_id) / "spent.json").get("spent_usd") or 0)
+    except (OSError, ValueError, TypeError):
+        return 0.0
+
+
 def create(
     command: str,
     argv: list[str],

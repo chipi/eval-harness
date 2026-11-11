@@ -55,6 +55,11 @@ def add(cost: float | None) -> None:
     """A call's cost, as the command's item loop counts it."""
     if cost:
         _SPENT[0] += float(cost)
+        if _common.SPENT_LIVE:
+            with contextlib.suppress(OSError):
+                tmp = Path(_common.SPENT_LIVE + ".tmp")
+                tmp.write_text(json.dumps({"spent_usd": round(_SPENT[0], 8)}) + "\n")
+                os.replace(tmp, _common.SPENT_LIVE)
 
 
 def _report() -> None:

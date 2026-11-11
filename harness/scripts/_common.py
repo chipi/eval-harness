@@ -263,6 +263,11 @@ if SPENT_TO:
 
     atexit.register(_report_spent)
 
+#: Where a job's command keeps what it has spent so far, rewritten at each counted call: a job stopped by a signal says
+#: nothing at exit, and `jobs-resume` gives the next job what this one left (RFC-026 step 5). Taken out of the
+#: environment like EVH_SPENT_TO: a sweep's arms report to the sweep, which counts them here.
+SPENT_LIVE = os.environ.pop("EVH_SPENT_LIVE", "")
+
 
 class CostCapExceeded(RuntimeError):
     """Raised mid-run when EVAL_MAX_COST_USD is reached.

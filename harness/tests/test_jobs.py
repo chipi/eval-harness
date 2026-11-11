@@ -57,7 +57,7 @@ SLOW = """import time
 from evaluation_harness.adapter import Result, score  # noqa: F401
 def call_system(text, params):
     time.sleep(float(params.get("sleep", 1.5)))
-    return Result(output=text.split(".")[0] + ".", cost_usd=0.0)
+    return Result(output=text.split(".")[0] + ".", cost_usd=float(params.get("cost", 0.0)))
 """
 
 
@@ -146,7 +146,7 @@ try:
     _runstore.write_text(
         proj,
         "configs/slow.yaml",
-        "config_id: slow_v1\ndataset_id: tk_v1\nadapter: slow.py\nparams:\n  provider: echo\n  sleep: 1.5\n",
+        "config_id: slow_v1\ndataset_id: tk_v1\nadapter: slow.py\nparams:\n  provider: echo\n  sleep: 1.5\n  cost: 0.01\n",
     )
     r = r if r.returncode else evh("catalog")
     check(
@@ -305,6 +305,23 @@ try:
     )
     st, _x = call("POST", f"/api/v1/jobs/{bdone['id']}/resume")
     check("a succeeded job is not resumed", st == 409, st)
+    paid = json.loads((proj / ".build/jobs" / a["id"] / "spent.json").read_text())["spent_usd"]
+    rjob = json.loads((proj / ".build/jobs" / res["id"] / "job.json").read_text()) if res.get("id") else {}
+    check(
+        "the resumed job is given what the stopped one left of its cap, not the cap again",
+        paid > 0 and abs(float(rjob.get("env", {}).get("EVAL_MAX_COST_USD", "nan")) - (1 - paid)) < 1e-6,
+        (paid, rjob.get("env")),
+    )
+    st, f = job("run", {"config": "slow_v1"}, by="person:ana", max_cost_usd=0.01)
+    fdone = until(f.get("id"), ("succeeded", "failed", "cancelled"), 120) if st == 202 else {}
+    st, refusal = call("POST", f"/api/v1/jobs/{f.get('id')}/resume")
+    check(
+        "a job that spent all its cap is not resumed: nothing is left",
+        fdone.get("state") == "failed"
+        and st == 409
+        and "nothing is left to resume with" in refusal.get("error", ""),
+        (fdone.get("state"), st, refusal),
+    )
 
     # A supervisor that dies.
     st, e = job("run", {"config": "slow_v1"}, by="person:ana", max_cost_usd=1)

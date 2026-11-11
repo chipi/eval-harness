@@ -54,7 +54,8 @@ that can move a result is never a patch release without saying so under **Change
   `cost-report`, ...) and `validate` and `dataset-card`; text to stderr as it goes, the envelope on stdout. A job's
   result is its envelope.
 - **The jobs from the terminal** (RFC-026 step 6): `evh jobs-start`, `jobs-status`, `jobs-logs [--follow]`,
-  `jobs-stop`, `jobs-resume`, over the same jobs as the API, with no server.
+  `jobs-stop`, `jobs-resume`, over the same jobs as the API, with no server. A resumed run job is given what the
+  stopped one left of its cap, not the cap again; one that spent it all is not resumed.
 - **What a command may spend, and a round's budget enforced** (RFC-026 step 5): `EVAL_MAX_COST_USD` caps the
   whole command (`run --repeat 3` stops at one cap, not three); `arm-smoke` stops at it; the bundled provider layer
   counts the calls too, a second net under an adapter that reports less; `sweep` and `model-onboard` give each child

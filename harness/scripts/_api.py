@@ -408,7 +408,9 @@ def start_job(
 
 
 def resume_job(job_id: str) -> dict[str, Any]:
-    """POST /api/v1/jobs/<id>/resume: a stopped or lost run, continued by a new job (`run --resume <its run id>`)."""
+    """POST /api/v1/jobs/<id>/resume: a stopped or lost run, continued by a new job (`run --resume <its run id>`), with
+    what the stopped job left of its cap (a call in flight when it was killed is not counted: its cost was never
+    reported)."""
     from evaluation_harness import _jobs  # noqa: PLC0415
 
     j = _jobs.read(job_id)
@@ -422,6 +424,17 @@ def resume_job(job_id: str) -> dict[str, Any]:
     if "--run-id" in argv:
         i = argv.index("--run-id")
         del argv[i : i + 2]
+    # The cap is the job's, not each attempt's: the new job is given what this one left.
+    env = dict(j.get("env") or {})
+    if env.get("EVAL_MAX_COST_USD") is not None:
+        given, paid = float(env["EVAL_MAX_COST_USD"]), _jobs.spent(job_id)
+        if given - paid <= 0:
+            raise Refused(
+                f"{job_id} spent ${paid:.4f} of its ${given:.4f}: nothing is left to resume with "
+                "(start a new job with a cap of its own)",
+                409,
+            )
+        env["EVAL_MAX_COST_USD"] = f"{given - paid:.8f}"
     new_id = _jobs.new_id()
     cid = (
         _jobs._config(argv[argv.index("--config") + 1] if "--config" in argv else None).get("config_id")
@@ -435,7 +448,7 @@ def resume_job(job_id: str) -> dict[str, Any]:
         j.get("by"),
         j.get("reason"),
         [(k, bool(x)) for k, x in j["locks"]],
-        j.get("env"),
+        env,
         new_run,
         job_id=new_id,
     )

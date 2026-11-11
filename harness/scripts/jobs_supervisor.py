@@ -60,6 +60,8 @@ def main(job_id: str) -> int:
     env["EVH_JOB"] = job_id
     # The locks it holds (passed to it), so a command that takes one for a moment does not wait on itself.
     env["EVH_LOCKS"] = ",".join(k for k, _ex in job["locks"])
+    # What it has spent so far, kept as it goes: a resumed job is given what this one left.
+    env["EVH_SPENT_LIVE"] = str(d / "spent.json")
     by = job.get("by")
     if by:  # who acted (RFC-027): a job has no terminal, so the actor comes from the call
         env["EVH_ACTOR"] = by if ":" in by else f"person:{by}"

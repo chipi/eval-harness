@@ -1461,7 +1461,9 @@ server restarts, in `.build/jobs/<id>/` (its record, its state, its `log`, its e
 /api/v1/jobs/<id>/files/<name>`. `GET /api/v1/jobs` (`?state=`), `GET /api/v1/jobs/<id>`, `GET
 /api/v1/jobs/<id>/log?from=<byte>`; `POST /api/v1/jobs/<id>/stop` (SIGTERM to its process group, SIGKILL after 10 s:
 `cancelled`) and `.../resume` (a stopped run, continued with `run --resume`; a run job is given its run id up front,
-`<config_id>_<job id>`). Two jobs that write the same thing never run at once: each takes a lock per thing it writes
+`<config_id>_<job id>`). The cap is the job's, not each attempt's: the new job is given what the stopped one left of
+its `max_cost_usd` (the job keeps what it spent as it goes, in `spent.json` in its folder; a call in flight when it
+was killed was never reported and is not counted), and a job that spent it all is not resumed. Two jobs that write the same thing never run at once: each takes a lock per thing it writes
 (a config, a dataset, a goal's baselines, the captures, the catalog; the whole project for a migration), and one
 whose lock is held waits, `queued`, saying which job holds it. The command holds its locks itself, so they outlive
 the supervisor: a job whose supervisor died reads `running (unsupervised)` while its command lives, `lost` after.

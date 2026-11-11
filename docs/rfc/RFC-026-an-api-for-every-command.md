@@ -154,7 +154,9 @@ both.
   gave two runs of one config started in the same second one id, found building it), so a stopped or
   lost run job knows what to resume; `POST /api/v1/jobs/<id>/resume` starts a new job with `run --resume <run id>`.
   It is refused (`not-allowed`) for any other command, and for a run with `--repeat` above 1, which `run` itself
-  refuses to resume.
+  refuses to resume. The new job is given what the stopped one left of its cap, not the cap again (the review of
+  2026-11-11, finding 6): the command keeps its spend as it goes (`EVH_SPENT_LIVE`, the job's `spent.json`), since a
+  stop's SIGTERM ends it before any exit hook; a job with nothing left is refused.
 - A stopped command leaves what its own write rules leave: a run is listed only once its `metrics.json` is written
   (at a clean end), so a stopped run is resumable and invisible; other commands are run again.
 - Jobs are not project data: they live in `.build/` (gitignored), the same in either store.
