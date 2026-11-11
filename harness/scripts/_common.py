@@ -465,6 +465,11 @@ def arm_config_files() -> list[Path]:
 
     p = _paths()
     found = set(_store.glob(p["CONFIGS"], "*.yaml"))
+    # A study's trials (RFC-029): written once under data/studies/<goal>/<study>/, found like any config.
+    studies = p["DATA"] / "studies"
+    if _store.is_dir(studies):
+        found |= {f for f in _store.glob(studies, "*/*/t*.yaml") if _store.is_file(f)}
+        found |= {f for f in _store.glob(studies, "*/*/confirm/*.yaml") if _store.is_file(f)}
     policy_file = p["DATA"] / "validate.json"
     for pattern in (read_json(policy_file).get("configs") or []) if _store.is_file(policy_file) else []:
         found |= {f for f in _store.glob(p["ROOT"], pattern) if _store.is_file(f)}

@@ -163,6 +163,31 @@ try:
         side.get("split", {}).get("split_by") == "hash" and side.get("actor", {}).get("name") == "ana",
         out(r)[-300:],
     )
+    _runstore.write_text(
+        proj,
+        "goals/g.yaml",
+        "goal_id: g\ntitle: t\nstatement: s\ndecision: d\n"
+        "success_criteria: {primary: {measure: overlap_f1, direction: higher}}\ndatasets:\n  - {dataset_id: tk_v1}\n",
+    )
+    r = evh(
+        "round-open",
+        "--goal",
+        "g",
+        "--dataset",
+        "tk_v1",
+        "--hypothesis",
+        "the actor test",
+        "--by",
+        "person:eve",
+    )
+    import yaml
+
+    rnd = yaml.safe_load(_runstore.read_text(proj, "rounds/g/r1.yaml")) if r.returncode == 0 else {}
+    check(
+        "round-open: the round names who opened it",
+        (rnd.get("actor") or {}).get("name") == "eve",
+        out(r)[-300:] + json.dumps(rnd.get("actor")),
+    )
     r = evh("validate")
     check(
         "validate: records with an actor pass the schemas",

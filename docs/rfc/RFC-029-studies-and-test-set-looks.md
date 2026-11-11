@@ -1,6 +1,6 @@
 # RFC-029: Studies, and the looks a test set allows
 
-- **Status**: Accepted (owner, 2026-11-09: "accept and build"), revision 2 (2026-11-09): the owner's answers to its six questions, and an independent
+- **Status**: Accepted (owner, 2026-11-09: "accept and build"); built 2026-11-11 but for what "Not built" below names. Revision 2 (2026-11-09): the owner's answers to its six questions, and an independent
   review's findings (Fable), each checked against the code; for the owner's acceptance. Revision 1 the same day. Step 4.4 of
   `research/internal/PLAN_0.8.0.md`. It reworks the 0.5.0 drafts' RFC-010 (studies, revision 3), RFC-015's heldout
   looks and attainable p, and PRD-009 FR2-FR5 (not merged; on `backup/050-pre-rebase-20261028`) onto what shipped
@@ -18,7 +18,7 @@
   counted from decisions, not stored; use before the release not counted; aggregate-only measures allow the point
   rule only and cannot be confirmed.
 
-## Abstract (0.8.0, planned: being built; the looks are built)
+## Abstract
 
 A **study** is research: a spec and an append-only log. `evh study-run` opens a round and repeats ask/tell: a
 **sampler** proposes a **trial** (parameter values or prompt versions, with a hypothesis), the harness runs the
@@ -84,7 +84,7 @@ looking again and again cannot manufacture a result; a check refuses a look that
 - `evh looks [--dataset D]` lists each test set's looks (number, level, key, who, verdict) and the next level; the goal
   page and the dataset page show the same.
 
-## Design: studies (0.8.0, planned)
+## Design: studies
 
 ### Files (both stores, through `_store`)
 
@@ -211,7 +211,7 @@ the "nominal, not a look" label on test sets; a goal's recommendation does not c
 - **A look file or reservation**: two clones would each hold one; counting from decisions under a lock, and reporting
   a double spend across clones, is honest about what files can do.
 
-## Testing (0.8.0, planned)
+## Testing
 
 - `tests/test_looks.py`: levels 1.52%, 0.38%, ... from decisions; one confirmation and its promotion are one look; a
   read takes no look; a part of the set spends its budget; past the limit refused, an agent's consent refused, the
@@ -223,6 +223,33 @@ the "nominal, not a look" label on test sets; a goal's recommendation does not c
   change mid-study stops it; the cap stops it; resume continues without re-running; `--dry-run` calls nothing; the
   agent ask/tell (a second tell of one ask refused, a lapsed ask refused) through the CLI and the MCP tools;
   `results.tsv` imported; V5 notes a no-effect trial.
+
+## As built (2026-11-11)
+
+- **Two locks per study**: `study-loop:<goal>/<study>` is held by the loop (`study-run`, `study-tell`) for as long as it
+  runs, refused at once when held, and `study:<goal>/<study>` only for the moment an event is appended, so
+  `study-stop` can always write while a loop runs.
+- **A trial's prompts** are named by version in its config (`prompts: {name: {version: <id>}}`, RFC-028 gained it);
+  the agent's or a command sampler's text is recorded as a version first.
+- **The spec's bytes** are hashed, so an edit that only changes a comment stops a study too: the spec is its record.
+- **`study-tell --proposal-json TEXT`** beside `--proposal FILE`, since an MCP tool call sends no file.
+- **`study-confirm`** writes its `confirm` line (phase `named`) before any test item runs, opens a sealed set to its two
+  configs as the same look, runs them on the items no study saw with `run --items`, and appends the verdict.
+- V5 notes, instead of failing, configs that each belong to a study and measure the same item by item.
+- `_rounds.save` now keeps `study` and `actor`: it had dropped the actor `round-open` records since RFC-027 (a bug
+  found here; `test_actor` now checks a round).
+
+## Not built
+
+- The goal page's table of a study's trials (hypothesis, change, outcome, cost): a study's round shows as any round
+  does, its trials as arms and its dropped trials as retirements; `evh study-status` has the table.
+- Items shown to a sampler: no sampler is shown items (the state carries scores, not items), so `shown` is always empty
+  and a confirmation leaves out the validation set's items only.
+- A trial changing a prompt root's varied files (`prompt_root.vary`): trials change `prompts:` names only.
+- The scorer's code in the start hashes: the spec, its frozen files and the references are checked; a scorer changed
+  mid-study is not caught unless its file is listed under `frozen`.
+- `study-run --resume` after a crash is not tested; the loop continues after the last trial line, which a crash
+  mid-trial may leave without (that trial is then run again under the next number).
 
 ## Decided by the owner (2026-11-09)
 

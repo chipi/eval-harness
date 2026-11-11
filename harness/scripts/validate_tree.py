@@ -441,8 +441,35 @@ def _v5_in(base: Path) -> list[list]:
             # params are the copied result or the inert knob this check is for.
             if len({_outputs_signature(n) for n, _, _ in known}) > 1:
                 continue
+            # A STUDY'S TRIAL THAT CHANGED NOTHING THE SYSTEM READS measures as the arm it came from: a finding of the
+            # study (RFC-029), noted, not a copied result.
+            study = _one_study({c for _, c, _ in known})
+            if study:
+                notes.append(
+                    f"V5 study {study}: {', '.join(sorted({str(c) for _, c, _ in known}))} measured the same, item by "
+                    "item: no effect"
+                )
+                continue
             dupes.append([(f"{base.name}/{n.name}", c, p) for n, c, p in known])
     return dupes
+
+
+def _one_study(configs: set) -> str | None:
+    """The studies these configs belong to, when every one is a study's trial or the baseline a study started from
+    (trials of several studies that land on the same settings measure the same too), or None."""
+    from evaluation_harness import _study  # noqa: PLC0415
+
+    root = _study.root()
+    found: set[str] = set()
+    covered: set = set()
+    for p in _store.glob(root, "*/*.events.jsonl") if _store.is_dir(root) else []:
+        goal, sid = p.parent.name, p.name[: -len(".events.jsonl")]
+        st = _study.state(goal, sid)
+        members = ({t.get("config_id") for t in st["trials"]} | {st["baseline"]}) & configs
+        if members - {st["baseline"]}:
+            found.add(f"{goal}/{sid}")
+            covered |= members
+    return ", ".join(sorted(found)) if found and configs <= covered else None
 
 
 def _declared_together(base: Path, configs: set) -> bool:

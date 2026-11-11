@@ -836,6 +836,10 @@ def test_example_scorer_suites_pass() -> None:
             "what a command may spend (RFC-026): one cap across passes, the provider's net, sweep, a round's budget",
         ),
         (
+            "test_study.py",
+            "studies (RFC-029): grid, agent (CLI and MCP) and command samplers, the round, a changed spec, the confirmation, results.tsv",
+        ),
+        (
             "test_looks.py",
             "test-set looks (RFC-029): levels from decisions, one look per question, the limit and consent, V25",
         ),

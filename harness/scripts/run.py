@@ -887,6 +887,13 @@ def main() -> int:
     ap.add_argument("--repeat", type=int, default=1, help="run N times to measure the arm's spread")
     ap.add_argument("--run-id", help="default: <config_id>_<timestamp>")
     ap.add_argument(
+        "--items",
+        type=Path,
+        metavar="FILE",
+        help="run only these item ids (one per line) of the dataset: a study's confirmation leaves out the items its "
+        "study saw (RFC-029). The fingerprint's items are then these; a test set's looks are still the whole set's",
+    )
+    ap.add_argument(
         "--dry-run",
         action="store_true",
         help="cost and shape the sweep WITHOUT calling anything",
@@ -971,6 +978,24 @@ def _run(args: argparse.Namespace) -> int:
     if bad_hypothesis:
         die(f"{args.config}: " + "; ".join(bad_hypothesis), "invalid-file")
     ds = load_dataset(cfg["dataset_id"])
+    if args.items is not None:
+        if not _store.is_file(args.items):
+            die(f"--items {args.items}: no such file", "not-found")
+        wanted = [
+            ln.strip() for ln in _store.read_text(args.items, encoding="utf-8").splitlines() if ln.strip()
+        ]
+        known_ids = {it["item_id"] for it in ds.get("items") or []}
+        missing = sorted(set(wanted) - known_ids)
+        if missing:
+            die(
+                f"--items: {len(missing)} id(s) not in {cfg['dataset_id']}: {', '.join(missing[:5])}",
+                "not-found",
+            )
+        if not wanted:
+            die(f"--items {args.items}: no item ids in it", "not-enough")
+        keep = set(wanted)
+        ds = {**ds, "items": [it for it in ds["items"] if it["item_id"] in keep]}
+        print(f"  --items: {len(ds['items'])} of {len(known_ids)} items of {cfg['dataset_id']}")
     # A SEALED SIDE IS HELD OUT (the fleet's feedback 29): refused before a cent is spent, unless an unseal named
     # this config in advance.
     from evaluation_harness import _seal  # noqa: PLC0415

@@ -18,8 +18,11 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["file"],
-        "properties": {"file": {"type": "string", "minLength": 1}}
+        "oneOf": [{"required": ["file"]}, {"required": ["version"]}],
+        "properties": {
+          "file": {"type": "string", "minLength": 1},
+          "version": {"type": "string", "pattern": "/[0-9a-f]{16}$", "description": "a recorded version by its id (a study's trial, RFC-029)"}
+        }
       }
     },
     "prompt_root": {

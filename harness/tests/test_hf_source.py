@@ -30,6 +30,7 @@ sys.path.insert(0, str(HARNESS))
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _child  # noqa: E402
 import _runstore  # noqa: E402
 
 REF, REV = "acme/notes", "c0ffee" * 6 + "abcd"
@@ -98,12 +99,11 @@ for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_FETCH_HEA
 
 
 def evh(*args):
-    return subprocess.run(
+    # A hang prints the child's stacks (_child): one was seen under load and not repeated since.
+    return _child.run(
         [sys.executable, str(HERE / "cli.py"), *args],
         cwd=proj,
         env=env,
-        capture_output=True,
-        text=True,
         stdin=subprocess.DEVNULL,
         timeout=300,
     )

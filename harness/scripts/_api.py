@@ -39,7 +39,17 @@ NOT_SERVED = {
     ),
 }
 #: The commands that call models and spend: a job of one must carry max_cost_usd (step 5).
-SPENDS = {"run", "sweep", "arm-smoke", "judge", "judge-score", "model-onboard"}
+SPENDS = {
+    "run",
+    "sweep",
+    "arm-smoke",
+    "judge",
+    "judge-score",
+    "model-onboard",
+    "study-run",
+    "study-tell",
+    "study-confirm",
+}
 #: Every path-typed argument a served command has, and its kind. Absent from this table: never taken.
 NAME = "name"
 UPLOAD = "upload"
@@ -64,6 +74,10 @@ PATH_KINDS: dict[tuple[str, str], str] = {
     ("sheet-import", "--guideline"): UPLOAD,
     ("label-sheet", "--out"): ARTIFACT,
     ("prompt-version", "--from-file"): UPLOAD,
+    ("study-run", "--spec"): UPLOAD,
+    ("run", "--items"): UPLOAD,
+    ("study-tell", "--proposal"): UPLOAD,
+    ("study-import", "file"): UPLOAD,
     ("prompt-export", "--to"): ARTIFACT,
     ("dataset-card", "--out"): ARTIFACT,
 }
@@ -259,7 +273,7 @@ def new_token() -> str:
 # ── jobs (RFC-026 step 3) ──────────────────────────────────────────────────────────────────────────────────────────
 
 #: The decisions (RFC-027): a job of one needs `by`, refused at the call before a job exists.
-DECISIONS = {"run-promote", "baseline-rollback", "round-close", "dataset-unseal"}
+DECISIONS = {"run-promote", "baseline-rollback", "round-close", "dataset-unseal", "study-confirm"}
 MAX_UPLOAD = 50 * 1024 * 1024  # owner, 2026-11-08
 #: Where `by` and the reason go on the command line, for the commands that take them as who acted and why.
 BY_FLAG = {"label-import", "sheet-import", "pick", "reference-manifest", "reference-promote"}

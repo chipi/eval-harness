@@ -76,8 +76,17 @@ READ_TOOLS = (
     "prompts",
     "prompt-diff",
     "looks",
+    "studies",
+    "study-status",
 )
+#: Tools that write, for the agent sampler of a study alone (owner, 2026-11-09, RFC-029): offered by a local server
+#: only, never a public one, and named as not read-only. Every other write is the command line's or a job's.
+AGENT_TOOLS = ("study-ask", "study-tell")
 NOT_TOOLS = {
+    "study-run": "runs a study's loop and spends: a job (the agent sampler's own steps are tools)",
+    "study-stop": "stops a study",
+    "study-confirm": "a decision that spends a look and money: a person's command or a job",
+    "study-import": "writes a study",
     "prompt-version": "records a prompt version",
     "prompt-export": "writes a file",
     "jobs-start": "starts a job: the agents act through the command line or the API (RFC-026)",
@@ -158,7 +167,8 @@ JSON = {
 JSON |= {"dataset-items", "captures", "labels", "tags", "licences", "picks", "deploy-sheet"}
 JSON |= {"runs-list", "rounds", "leaderboard", "pair-test", "family-test", "rank-stability", "run-compare"}
 JSON |= {"label-coverage", "baselines"}
-JSON |= {"dataset-card", "validate", "prompts", "prompt-diff", "looks"}
+JSON |= {"dataset-card", "validate", "prompts", "prompt-diff", "looks", "studies", "study-status"}
+JSON |= set(AGENT_TOOLS)
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
 HIDDEN = {"--adapter", "--json", "--help"}
@@ -374,6 +384,7 @@ TOOL_HIDDEN = {
     "inspect": {"--csv", "--fill", "--choices", "--seed", "--rubric", "--scale"},
     # Both name a path of the server's: another runs folder, a file of item ids.
     "pair-test": {"--runs-dir", "--items"},
+    "study-tell": {"--proposal"},  # a path of the server's: a call sends --proposal-json
     "family-test": {"--runs-dir", "--items"},
 }
 #: In --public mode, the options that would answer with an item's text, an arm's output or a label (the
@@ -413,7 +424,9 @@ PUBLIC_DROPPED = {
 
 def tools_for(public: bool) -> tuple:
     """The tools this server offers."""
-    return tuple(c for c in READ_TOOLS if not (public and c in PUBLIC_DROPPED))
+    return tuple(c for c in READ_TOOLS if not (public and c in PUBLIC_DROPPED)) + (
+        () if public else AGENT_TOOLS
+    )
 
 
 #: The tools whose answer with no argument depends on today's date (a period counted from today, by default):
@@ -430,7 +443,7 @@ def answerable_ahead(public: bool) -> list[str]:
     of several options (NEEDS_ONE_OF)."""
     out = []
     for c in tools_for(public):
-        if c in DATED or c in NEEDS_ONE_OF:
+        if c in DATED or c in NEEDS_ONE_OF or c in AGENT_TOOLS:
             continue
         try:
             argv_of(parser_of(c), {})
@@ -644,7 +657,10 @@ def build_server(
             + (f" {parsers[c].description}" if parsers[c].description else ""),
             input_schema=input_schema(parsers[c]),
             annotations=types.ToolAnnotations(
-                read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False
+                read_only_hint=c not in AGENT_TOOLS,
+                destructive_hint=False,
+                idempotent_hint=c not in AGENT_TOOLS,
+                open_world_hint=False,
             ),
         )
         for c in tools_for(public)

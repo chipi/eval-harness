@@ -216,6 +216,26 @@ COMMANDS = {
     "round-retire": ("round_retire.py", "drop an arm from the open round, with the reason"),
     "round-close": ("round_close.py", "close a round with its conclusion, promoting the run it chose"),
     "rounds": ("round_status.py", "a goal's rounds, and what the evidence suggests next"),
+    "studies": (
+        "view_studies.py",
+        "every study, by goal: its status, trials, what it kept and spent (RFC-029)",
+    ),
+    "study-status": (
+        "study_status.py",
+        "one study as its log says: each trial, the best so far, its confirmations",
+    ),
+    "study-run": (
+        "study_run.py",
+        "open a study and run its loop on validation items: research, never evidence",
+    ),
+    "study-ask": ("study_ask.py", "a study's state for the agent sampler, with an ask id"),
+    "study-tell": ("study_tell.py", "the agent sampler's proposal, run as the study's next trial"),
+    "study-stop": ("study_stop.py", "stop a study after its current trial"),
+    "study-confirm": (
+        "study_confirm.py",
+        "a study's best trial against its baseline on a test set: one look, the evidence",
+    ),
+    "study-import": ("study_import.py", "a past loop's results.tsv as a closed study (not confirmable)"),
     "looks": (
         "view_looks.py",
         "the looks each test set allows: its looks so far, the next one's level, its limit",

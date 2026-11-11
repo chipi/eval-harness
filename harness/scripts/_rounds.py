@@ -101,7 +101,9 @@ def save(doc: dict[str, Any]) -> Path:
         "scorer",
         "scoring",
     ]
-    order += ["status", "opened_at", "closed_at", "retired", "conclusion"]
+    # `actor` (RFC-027) and `study` (RFC-029) were left out of this list, so a round opened by round-open lost its actor
+    # on save (found building RFC-029, 2026-11-11).
+    order += ["study", "status", "opened_at", "closed_at", "actor", "retired", "conclusion"]
     body = {k: doc[k] for k in order if k in doc and doc[k] not in (None, [], "")}
     if doc.get("baseline") is None and "baseline" in doc:
         body["baseline"] = None

@@ -616,6 +616,32 @@ answer "nominal, not a look"; `evh looks` lists each test set's looks and the ne
 `evh goals` say it under each test set; `round-close --promote` takes the same two flags. V25 reports a number two
 decisions took (two clones deciding at once).
 
+**Studies** (RFC-029): research by ask/tell, then one confirmation. A spec names the validation dataset, the arm it
+starts from, the measure, the sampler and when to stop:
+
+```yaml
+dataset: tickets_val
+baseline: {config: lead1_v1}
+measure: overlap_f1
+sampler: grid                       # or agent, or {command: "python my_sampler.py"}
+accept: {point: {min_gain: 0}}      # or test (separated as better); limits: [{metric, direction, limit}]
+stop: {trials: 20, usd: 5, patience: 5}
+space:
+  groups:
+    - {name: length, reason: how much to keep, params: {sentences: [2, 3, 4]}}
+```
+
+`evh study-run <goal>/<id> --spec spec.yaml` writes the spec, opens the study's round (it holds no other round back
+and closes with the study) and runs the loop: each trial is the best so far with one change, run on the validation
+set, kept or dropped by the rule (its p values nominal: this is research), its limits checked against the baseline so
+concessions cannot add up. With `sampler: agent` the agent asks and tells: `evh study-ask <study>` gives the state and an
+ask id, `evh study-tell <study> --ask ID --proposal-json '{"params": {...}, "prompts": {...}, "hypothesis": "..."}'`
+runs it (both also MCP tools, for an agent with `EVH_ACTOR=agent:NAME` and `EVH_FOR=person:NAME`). `evh study-status`,
+`evh studies`, `evh study-stop`. A study never promotes: `evh study-confirm <study> --test <test set> --rule superiority`
+runs the best trial and the baseline once on the test items no study saw, as one look at the set's next level, and
+suggests the promotion only when the outcome meets the rule. `evh study-import results.tsv --goal G --study ID` brings
+a past autoresearch loop in, closed and not confirmable.
+
 **Where runs go.** Measured runs go in `data/runs`: leave `EVAL_RUNS_DIR` unset, on every
 machine, so a run made on a laptop and one made on a GPU box land in the same place. An
 ignored run is not committed, so a fresh clone, CI and the published catalog never see it.

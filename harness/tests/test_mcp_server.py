@@ -27,7 +27,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 from evaluation_harness.cli import COMMANDS  # noqa: E402
-from evaluation_harness.mcp_server import NOT_TOOLS, READ_TOOLS, tools_for  # noqa: E402
+from evaluation_harness.mcp_server import AGENT_TOOLS, NOT_TOOLS, READ_TOOLS, tools_for  # noqa: E402
 
 try:
     import anyio
@@ -51,11 +51,13 @@ def evh(*args):
     )
 
 
+TOOLS = set(READ_TOOLS) | set(AGENT_TOOLS)
 check(
-    "every evh command is a tool or not one, with a reason; none is both",
-    set(READ_TOOLS) | set(NOT_TOOLS) == set(COMMANDS) and not set(READ_TOOLS) & set(NOT_TOOLS),
-    f"neither: {sorted(set(COMMANDS) - set(READ_TOOLS) - set(NOT_TOOLS))}; "
-    f"unknown: {sorted((set(READ_TOOLS) | set(NOT_TOOLS)) - set(COMMANDS))}",
+    "every evh command is a tool (a read, or the agent sampler's two) or not one, with a reason; none is both",
+    TOOLS | set(NOT_TOOLS) == set(COMMANDS)
+    and not TOOLS & set(NOT_TOOLS)
+    and not set(READ_TOOLS) & set(AGENT_TOOLS),
+    f"neither: {sorted(set(COMMANDS) - TOOLS - set(NOT_TOOLS))}; unknown: {sorted((TOOLS | set(NOT_TOOLS)) - set(COMMANDS))}",
 )
 
 try:
@@ -199,10 +201,18 @@ try:
             await s.initialize()
             tools = (await s.list_tools()).tools
             by = {t.name: t for t in tools}
-            check("tools: exactly the read commands", sorted(by) == sorted(READ_TOOLS), sorted(by))
             check(
-                "tools: each read-only, not destructive",
-                all(t.annotations.read_only_hint and not t.annotations.destructive_hint for t in tools),
+                "tools: the read commands, and the agent sampler's study-ask and study-tell (a local server)",
+                sorted(by) == sorted(TOOLS),
+                sorted(by),
+            )
+            check(
+                "tools: each read-only but the agent sampler's two (RFC-029), none destructive",
+                all(
+                    bool(t.annotations.read_only_hint) == (t.name not in AGENT_TOOLS)
+                    and not t.annotations.destructive_hint
+                    for t in tools
+                ),
             )
             check(
                 "tools: no schema takes --adapter or --json",

@@ -214,8 +214,23 @@ def resolve(cfg: dict[str, Any], config_path: Any, run_label: str) -> dict[str, 
         }
 
     for name, spec in prompts.items():
+        if isinstance(spec, dict) and spec.get("version"):
+            # A recorded version by its id (a study's trial, RFC-029): its bytes from data/prompts/.
+            check_name(name, str(config_path))
+            try:
+                data = text_of(str(spec["version"]))
+            except (FileNotFoundError, ValueError):
+                _common.die(
+                    f"{config_path}: prompts.{name}: no recorded version {spec['version']}", "not-found"
+                )
+            shas[name] = sha256(data)
+            given[name] = {"text": data.decode("utf-8", errors="replace"), "path": None,
+                           "version": str(spec["version"]), "sha256": shas[name]}  # fmt: skip
+            continue
         if not isinstance(spec, dict) or not spec.get("file"):
-            _common.die(f"{config_path}: prompts.{name}: {{file: <path>}}", "invalid-file")
+            _common.die(
+                f"{config_path}: prompts.{name}: {{file: <path>}} or {{version: <id>}}", "invalid-file"
+            )
         take(name, _project_path(spec["file"]), str(spec["file"]))
     settings: dict[str, Any] = {"prompts": shas} if shas else {}
     params: dict[str, Any] = {"prompts": given} if given else {}

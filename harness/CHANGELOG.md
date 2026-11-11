@@ -13,6 +13,15 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Studies** (RFC-029): a study is research on a validation set, a spec and an append-only log under
+  `data/studies/<goal>/`. `evh study-run` opens its round and runs ask/tell over trials: a grid over the spec's space,
+  a program speaking JSON lines (`sampler: {command: ...}`, Optuna's ask/tell plugs in), or the calling agent
+  (`study-ask`, `study-tell`, also MCP tools: the only tools that write). Each trial's config is written once and found
+  like any config; it is kept or dropped by the spec's rule against the best so far, its limits against the baseline,
+  every p labelled nominal. Stop rules: trials, dollars, wall time, patience, a changed spec. `evh study-confirm` is
+  the one step to evidence: the trial and the baseline on a test set's items no study saw (`run --items`), one look
+  at the set's next level, the rule given first. `study-stop`, `studies`, `study-status`, and `study-import` for
+  Karpathy's `results.tsv`.
 - **Test-set looks** (RFC-029, its first part): a goal's `role: test` dataset or a sealed split side is a test set,
   and each decision written on it (a `dataset-unseal`, a `run-promote` compared on it) is a look, keyed by its question
   (the configs, the measure, the rule) so asking again reuses it. Look k decides one-sided at 2.5%·6/(π²k²) (1.52%,
@@ -315,6 +324,8 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **A round opened with `round-open` lost its actor**: `_rounds.save` writes a fixed list of fields and `actor`
+  (RFC-027) was not among them. Found building studies; `test_actor` now checks a round.
 - **`evh catalog` emptied the served folder before building** (RFC-026 step 4): a server showed missing pages for the
   whole build, and a failed build left none. It now builds beside the folder and swaps it in.
 - **A job just started read `lost`** until its supervisor took its lock (found building step 4): it reads `queued`

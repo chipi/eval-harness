@@ -7,6 +7,7 @@
   "additionalProperties": false,
   "properties": {
     "round_id": {"type": "string", "pattern": "^r[0-9]+$", "description": "r1, r2, ...: equals the file name."},
+    "study": {"type": "string", "description": "The study this round belongs to (RFC-029): opened by study-run, closed when the study ends, never by hand; it does not count against the one open round of a goal."},
     "actor": {"type": "object", "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.", "required": ["type", "name"], "additionalProperties": false, "properties": {"type": {"enum": ["person", "agent", "unknown"]}, "name": {"type": "string"}, "for": {"type": "string", "description": "the person an agent acted for"}, "from": {"enum": ["flag", "environment", "terminal", "migration"]}}},
     "goal": {"type": "string", "description": "The goal_id it answers."},
     "dataset_id": {"type": "string", "description": "The dataset its arms run on."},

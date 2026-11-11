@@ -130,7 +130,12 @@ def open_round(argv: list[str]) -> int:
             carried = _rounds.arms_of(_round(args.goal, args.from_))
         if args.scoring and len(args.scoring.split()) < 3:
             die("--scoring needs a sentence: what changed in the scoring, and why?", "bad-argument")
-        open_ones = [r["round_id"] for r in _rounds.load_rounds(args.goal) if r.get("status") == "open"]
+        # A study's round (RFC-029) opens and closes with its study: it holds no other round back.
+        open_ones = [
+            r["round_id"]
+            for r in _rounds.load_rounds(args.goal)
+            if r.get("status") == "open" and not r.get("study")
+        ]
         if open_ones:
             die(
                 f'round {open_ones[0]} of {args.goal} is still open: close it first (evh round-close --goal {args.goal} --round {open_ones[0]} --conclusion "...")',
@@ -326,6 +331,12 @@ def close(argv: list[str]) -> int:
         rnd = _round(args.goal, args.round)
         if rnd.get("status") == "closed":
             die(f"round {args.round} is already closed", "not-allowed")
+        if rnd.get("study"):
+            die(
+                f"round {args.round} is study {rnd['study']}'s: it closes when the study ends (evh study-stop "
+                f"{args.goal}/{rnd['study']})",
+                "not-allowed",
+            )
         if len(args.conclusion.split()) < 3:
             die("--conclusion must be a sentence: what did the round show?", "bad-argument")
         who = require_named("round-close")

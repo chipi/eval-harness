@@ -470,6 +470,19 @@ def main() -> int:
             # Prompt versions (RFC-028): installed, each answers in words; the flow is test_prompts.py.
             ("prompts", [], "ok:no prompt versions yet"),
             ("looks", ["--dataset", "no_such_v1"], "not a test set"),
+            # Studies (RFC-029): installed, each answers in words; the flow is test_study.py.
+            ("studies", [], "ok:no studies"),
+            ("study-status", ["g/no_such"], "no study"),
+            ("study-run", ["g/no_such"], "no spec at"),
+            ("study-ask", ["g/no_such"], "no study"),
+            ("study-tell", ["g/no_such", "--ask", "x", "--proposal-json", "{}"], "no study"),
+            ("study-stop", ["g/no_such"], "no study"),
+            (
+                "study-confirm",
+                ["g/no_such", "--test", "x", "--rule", "superiority", "--by", "person:t"],
+                "no study",
+            ),
+            ("study-import", ["no_such.tsv", "--goal", "no_such_goal", "--study", "s"], "no goal"),
             ("prompt-diff", ["a/0123456789abcdef", "b/0123456789abcdef"], "no prompt version"),
             ("prompt-version", ["bad name!", "--text", "x", "--note", "n"], "prompt name"),
             ("prompt-export", ["a/0123456789abcdef", "--to", "x.txt"], "no prompt version"),
