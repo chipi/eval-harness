@@ -342,17 +342,32 @@ def text_of(doc: dict[str, Any], item_id: str) -> str | None:
 
 
 def labels_for(dataset_id: str) -> dict[str, list[dict[str, Any]]]:
-    """{item_id: [{set, dataset_id, source, text}]}: every label any set gives an item of this dataset, matched by
-    the item's sha256, so labels made on another dataset with the same item count (they follow the item)."""
+    """{item_id: [{set, dataset_id, source, text}]}: every label any set gives an item of this dataset. A set made on
+    this dataset labels its items by id (while the item's sha256 is still the one labelled); a set made on another
+    follows the item by its sha256, unless two of its items share that text and their labels differ (ambiguous: none
+    is carried). By sha256 alone, two items with the same text (the same alert twice) got each other's labels."""
     ds = load_dataset(dataset_id)
     by_sha: dict[str, list[str]] = {}
+    sha_of: dict[str, str] = {}
     for it in ds.get("items") or []:
         if it.get("source_sha256"):
             by_sha.setdefault(it["source_sha256"], []).append(it["item_id"])
+            sha_of[it["item_id"]] = it["source_sha256"]
     out: dict[str, list[dict[str, Any]]] = {}
     for doc in sets():
-        for iid, row in (doc.get("items") or {}).items():
-            for mine in by_sha.get(row.get("item_sha256") or "", []):
+        items = doc.get("items") or {}
+        here = doc.get("dataset_id") == dataset_id
+        texts: dict[str, set] = {}
+        if not here:
+            for iid, row in items.items():
+                texts.setdefault(row.get("item_sha256") or "", set()).add(text_of(doc, iid))
+        for iid, row in items.items():
+            sha = row.get("item_sha256") or ""
+            if here:
+                targets = [iid] if sha and sha_of.get(iid) == sha else []
+            else:
+                targets = by_sha.get(sha, []) if len(texts.get(sha) or ()) == 1 else []
+            for mine in targets:
                 text = text_of(doc, iid)
                 if text is not None:
                     out.setdefault(mine, []).append(

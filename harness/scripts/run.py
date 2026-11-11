@@ -364,13 +364,17 @@ def one_pass(
     primary: str | None = None,
     score_failure: Any = None,
     score_run: Any = None,
+    per_item: Any = None,
+    once: bool = False,
 ) -> dict[str, Any]:
     """One pass over the dataset. ``score_failure`` is the adapter's optional score_failure(reference): what an item
     whose call failed scores (A5); without it, an empty answer's score. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
     --labels; by default the dataset's gold, else its silver. ``recorded`` ({item_id: output}) is a recorded arm's
     outputs, read from a capture: no system is called for them (RFC-023). ``call_system``/``score`` are INJECTED rather than
     imported at module scope, because which adapter runs is a property of the arm now. ``primary`` names the metric
-    each item's progress line shows."""
+    each item's progress line shows. ``per_item(item)`` gives params added to an item's call (a replay's item and code,
+    RFC-030); with ``once`` each item is called exactly once, a failure recorded and never retried (a retry would
+    repeat a replay's side effects)."""
     mat = MATERIALIZED / ds["dataset_id"]
     if not _store.is_dir(mat):
         die(
@@ -455,11 +459,16 @@ def one_pass(
             # already paid for.
             n_called += 1
             try:
-                res = call_with_retries(
-                    _timed(call_system),
-                    (source_text, params),
-                    extra_transient=extra_transient,
-                    label=f"item {item['item_id'][:8]}",
+                call_params = {**params, **per_item(item)} if per_item is not None else params
+                res = (
+                    _timed(call_system)(source_text, call_params)
+                    if once
+                    else call_with_retries(
+                        _timed(call_system),
+                        (source_text, call_params),
+                        extra_transient=extra_transient,
+                        label=f"item {item['item_id'][:8]}",
+                    )
                 )
             except SystemExit:
                 raise
@@ -469,7 +478,7 @@ def one_pass(
                 capped_at = item["item_id"]
                 break
             except Exception as exc:  # an item's failure is recorded, not raised (A5)
-                if is_transient(exc, extra_transient):
+                if not once and is_transient(exc, extra_transient):
                     # The provider kept failing past every retry: weather, not this item. Stop, as for an
                     # unreachable server, so --resume calls it again later.
                     raise ServerUnreachable(
@@ -780,6 +789,49 @@ def _dry_run(
     return 0
 
 
+def _faithfulness_gate(
+    plan: Any, ds: dict[str, Any], adapter_id: str, adapter_path: Path | None, ref_tier: str | None, args: Any
+) -> dict[str, Any]:
+    """A replay's faithfulness (RFC-030), as the run records it: refused when it is scored (a reference or a label
+    set) and the latest record does not let it be, unless a person passes --unfaithful."""
+    from evaluation_harness import _coderec, _faith, _replay  # noqa: PLC0415
+    from evaluation_harness._fingerprint import items_digest  # noqa: PLC0415
+
+    state = _faith.gate(
+        plan.model_id,
+        ds["dataset_id"],
+        items_digest(ds),
+        _coderec.versions_sha256(plan.record),
+        _replay.adapter_identity(adapter_id, adapter_path, plan)["sha256"],
+    )
+    commits = plan.commits()
+    print(
+        f"  replay of {plan.model_id}: {len(plan.items)} items at "
+        + (f"the candidate {plan.candidate[:12]}" if plan.candidate else f"{len(commits)} recorded commit(s)")
+    )
+    print(f"  {_faith.said(state)}")
+    if state["faithful"] or not ref_tier or args.dry_run:
+        return state
+    if not args.unfaithful:
+        die(
+            f"{_faith.said(state)}.\n  A replay is scored against a reference only once it reproduces production "
+            f"(RFC-030): evh faithfulness --config {args.config} --production <production's arm>, then name each "
+            f"disagreement whose cause is outside the system (evh faithfulness-name --model {plan.model_id} --item "
+            "ITEM --cause ...), or score it anyway as a person with --unfaithful.",
+            "not-allowed",
+        )
+    from evaluation_harness._actor import require_named  # noqa: PLC0415
+
+    who = require_named("scoring an unfaithful replay")
+    if who["type"] != "person":
+        die(
+            "an agent cannot score an unfaithful replay; a person passes --unfaithful (RFC-030)",
+            "not-allowed",
+        )
+    print("  WARNING: scored with --unfaithful: this run and every page showing it say so")
+    return {**state, "unfaithful_by": who}
+
+
 def _resume_source(
     resume: str | None, cfg: dict[str, Any], runs: Path = RUNS
 ) -> tuple[Path | None, dict[str, dict[str, Any]]]:
@@ -910,6 +962,12 @@ def main() -> int:
         "run written (run_id, config_id, dataset_id, dir, n_items, total_cost_usd, capped_at); with "
         "--dry-run, result.values.dry_run. Exit codes as without it (1: nothing measured, 2: cost cap)",
     )
+    ap.add_argument(
+        "--unfaithful",
+        action="store_true",
+        help="a replay (RFC-030) whose faithfulness record does not agree with production is scored anyway, by a "
+        "person (an agent is refused); the run and every page showing it say so",
+    )
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
@@ -978,6 +1036,17 @@ def _run(args: argparse.Namespace) -> int:
     if bad_hypothesis:
         die(f"{args.config}: " + "; ".join(bad_hypothesis), "invalid-file")
     ds = load_dataset(cfg["dataset_id"])
+    # A replay (RFC-030): the system's own code at the commit each item came from, items in order, each called once.
+    from evaluation_harness import _replay  # noqa: PLC0415
+
+    if _replay.is_replay(cfg):
+        _replay.refuse_flags(args)
+        if recorded is not None:
+            die(
+                f"{args.config}: a replay calls the system's code; provider recorded calls nothing",
+                "invalid-file",
+            )
+    plan = _replay.prepare(cfg, args.config, ds, adapter_path)
     if args.items is not None:
         if not _store.is_file(args.items):
             die(f"--items {args.items}: no such file", "not-found")
@@ -1057,6 +1126,9 @@ def _run(args: argparse.Namespace) -> int:
         )
     if build["ref"] == "unknown":
         print("  WARNING: could not identify the build — this run is not attributable")
+    faith = (
+        _faithfulness_gate(plan, ds, adapter_id, adapter_path, ref_tier, args) if plan is not None else None
+    )
 
     if args.dry_run:
         return _dry_run(ds, cfg, args.repeat, adapter_path, args.config)
@@ -1083,6 +1155,8 @@ def _run(args: argparse.Namespace) -> int:
 
         atexit.register(_prompts.remove_copy, resolved)
     call_cfg = {**cfg, "params": {**dict(cfg.get("params") or {}), **(resolved or {}).get("params", {})}}
+    if plan is not None:
+        _replay.environment()
     warmup_ms: float | None = None
     if warmup is not None:
         started = time.perf_counter()
@@ -1121,6 +1195,7 @@ def _run(args: argparse.Namespace) -> int:
         model_hook=model_fingerprint,
         cfg=cfg,
         prompt_settings=(resolved or {}).get("settings"),
+        replay=plan,
     )
     print(f"  fingerprint {fingerprint['hash'][:12]}")
     # A DIRTY TREE IS NOT A VERSION. The fingerprint records it, but a field nobody reads
@@ -1233,7 +1308,7 @@ def _run(args: argparse.Namespace) -> int:
         )
         try:
             result = one_pass(
-                ds,
+                {**ds, "items": plan.items} if plan is not None else ds,
                 call_cfg,
                 i,
                 resume_dir=resume_dir,
@@ -1247,6 +1322,8 @@ def _run(args: argparse.Namespace) -> int:
                 scored_against=(ref_dir, ref_tier),
                 recorded=recorded,
                 primary=primary_metric(adapter_path, cfg.get("params") or {}),
+                per_item=_replay.item_params(plan) if plan is not None else None,
+                once=plan is not None,
             )
         except BaseException as exc:
             _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)
@@ -1319,6 +1396,7 @@ def _run(args: argparse.Namespace) -> int:
             resume=result.get("resume") or None,
             failed_items=result.get("failed_items") or None,
             repeat_index=(i + 1) if args.repeat > 1 else None,
+            faithfulness=faith,
         )
         write_json(run_dir / "metrics.json", metrics)
         made.append(run_dir)

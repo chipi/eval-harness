@@ -314,6 +314,10 @@ scored by its repo) are test cases R2 must catch by itself.
 
 R3 to R5 start as example code; R1 and R2 are the core.
 
+**Built 2026-11-11** (RFC-030, accepted with the owner's four answers): R1 and R2 in the core, R3 to R5 as
+`examples/replay-filing/`, run end to end by `tests/test_replay.py`. R1 is built on feedback 27's `kind: code` model
+record (a first build had added a second record, `data/code/`, and was redone on the existing one the same day).
+
 ## Open for the owner
 
 1. (none for A-D: A5 (a) and D1 approved by the owner, 2026-11-05)

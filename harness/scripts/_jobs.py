@@ -223,6 +223,8 @@ LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
     "study-run": lambda a: [(f"study-loop:{_first(a.get('study'))}", True)] if a.get("study") else [],
     "study-tell": lambda a: [(f"study-loop:{_first(a.get('study'))}", True)] if a.get("study") else [],
     "study-confirm": lambda a: [(f"dataset:{_first(a.get('test'))}", True)] if a.get("test") else [],
+    "faithfulness": _model_locks,  # writes its versions' summaries into the code record
+    "faithfulness-name": lambda a: [(f"model:{_first(a.get('model'))}", True)] if a.get("model") else [],
     "data-put": lambda a: [("settings", True)],
     "data-rm": _data_rm_locks,
 }

@@ -38,6 +38,7 @@ Other statuses: **Rejected** and **Withdrawn**, each with the reason kept.
 | [RFC-027](RFC-027-who-acted-and-baselines-per-goal.md) | Who acted on every record, and baselines per goal | — | Accepted (0.8.0), built | every record names who acted (a person, or an agent and the person it acted for); a baseline is a goal's (or, with no goal, the dataset's), in write-once versions with the comparison that justified it frozen in; rollback; `evh baselines --json` as the export |
 | [RFC-028](RFC-028-prompt-versions-and-code-ref.md) | Prompt versions, and the code a system runs | — | Accepted (0.8.0), built | declared prompt files versioned by their content, given to the adapter, recorded in the fingerprint's settings; `code_ref` (a checkout's repository, commit and dirty state) in the deployment |
 | [RFC-029](RFC-029-studies-and-test-set-looks.md) | Studies, and the looks a test set allows | — | Accepted (0.8.0) | a study is research (ask/tell over trials on a validation set); evidence only from `study-confirm` on a test set, at that set's next look level (front-loaded, a protective limit), refused when it could never succeed |
+| [RFC-030](RFC-030-replay-and-faithfulness.md) | Replay the code that ran, and prove the replay faithful | — | Accepted, built (0.8.0) | a system's own code replayed over its history, each item at the version deployed then (a `kind: code` record's versions, a `git archive` copy per commit); a faithfulness gate against production's recorded arm, with coverage, before any replay is scored against gold |
 
 ## Completed RFCs
 

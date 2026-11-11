@@ -240,6 +240,18 @@ COMMANDS = {
         "view_looks.py",
         "the looks each test set allows: its looks so far, the next one's level, its limit",
     ),
+    "faithfulness": (
+        "faithfulness.py",
+        "replay a system at the commits production ran and compare it with production's arm, item by item",
+    ),
+    "faithfulness-name": (
+        "faithfulness_name.py",
+        "name a replay's disagreement whose cause is outside the system (a person's decision)",
+    ),
+    "faithfulness-show": (
+        "faithfulness_show.py",
+        "a faithfulness record: counts, disagreements and who named which, coverage",
+    ),
     "prompts": (
         "view_prompts.py",
         "prompt versions: every name, or one's versions, lineage and the runs that used each",

@@ -143,6 +143,7 @@
       "type": "boolean",
       "description": "Promoted before 0.8.0: its evidence was not recorded."
     },
+    "faithfulness": {"type": "object", "description": "A replay's faithfulness when it was promoted (RFC-030): the record, whether it agreed with production, and who promoted it anyway with --unfaithful."},
     "evidence": {
       "type": [
         "object",

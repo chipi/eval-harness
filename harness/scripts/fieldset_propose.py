@@ -35,7 +35,7 @@ TYPES = {
     "sc:integer": "integer", "integer": "integer", "int": "integer", "int32": "integer", "int64": "integer",
     "sc:float": "number", "float": "number", "float32": "number", "float64": "number", "number": "number",
     "sc:boolean": "boolean", "boolean": "boolean", "bool": "boolean",
-    "sc:date": "date", "sc:datetime": "date", "date": "date", "datetime": "date", "timestamp": "date",
+    "sc:date": "date", "date": "date", "sc:datetime": "datetime", "datetime": "datetime", "timestamp": "datetime",
     "sc:url": "url", "url": "url",
 }  # fmt: skip
 NAME = re.compile(r"[^a-z0-9_]+")
@@ -54,6 +54,17 @@ def propose(
         field: dict[str, Any] = {"name": name, "type": kind}
         seen = [s[name] for s in samples if s.get(name) not in (None, "")]
         values = sorted({str(v) for v in seen})
+        if kind in ("date", "datetime") and seen:
+            # A source's date type says nothing of its values' shape (a timestamp with no offset is no `datetime`): the
+            # type is kept only when every sampled value reads as it, else text, and the description says why.
+            from evaluation_harness import _fields  # noqa: PLC0415
+
+            try:
+                for v in seen:
+                    _fields.parse({"type": kind}, v)
+            except (ValueError, TypeError):
+                field["type"] = kind = "text"
+                t = f"{t}, whose sampled values do not read as a {TYPES.get(str(t).lower())}"
         if kind == "text" and seen and len(values) <= max_choices and len(values) < len(seen):
             field.update(type="choice", values=values)
         field["description"] = f"from the source's {raw} ({t})" + (

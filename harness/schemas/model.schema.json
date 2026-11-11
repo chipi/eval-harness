@@ -289,6 +289,10 @@
       "type": "string",
       "description": "kind code: where the code lives (a git URL or a path), as a person would clone it."
     },
+    "checkout": {
+      "type": "string",
+      "description": "kind code: a local git checkout of `repo` a replay reads its versions from with git archive (relative to the project; RFC-030), when `repo` is a URL. Never written to."
+    },
     "versions": {
       "type": "array",
       "description": "kind code: the versions of the code under test, oldest first.",

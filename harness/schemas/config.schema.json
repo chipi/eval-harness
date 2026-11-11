@@ -45,6 +45,19 @@
       "required": ["path"],
       "properties": {"path": {"type": "string", "minLength": 1}}
     },
+    "replay": {
+      "type": "object",
+      "description": "A replay (RFC-030; `model_record` names a kind: code record): items run in `order`, each at the version deployed when its `time_field` (a datetime field) falls, or the commit its `version_field` names, or every item at `commit` (a candidate); each called once. `support` lists the adapter's own modules beside it, hashed with it.",
+      "additionalProperties": false,
+      "required": ["order"],
+      "properties": {
+        "order": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "time_field": {"type": "string"},
+        "version_field": {"type": "string"},
+        "support": {"type": "array", "items": {"type": "string"}},
+        "commit": {"type": "string", "minLength": 4}
+      }
+    },
     "model_record": {"type": "string", "description": "The model record this arm runs (RFC-020, optional): data/models/<id>.yaml. Its settings go under the config's params (the config wins); `model` comes from its first alias when params give none."},
     "deployment": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$", "description": "Which of the model record's deployments this arm runs (RFC-021, optional; needs `model_record`): the id of an entry in the record's `deployments`. The run's fingerprint takes the deployment's weights, server and hardware from it."},
     "format": {"type": "string", "minLength": 1, "description": "The output shape, matched against the goal's output_contract."},

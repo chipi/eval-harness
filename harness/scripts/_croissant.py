@@ -67,6 +67,7 @@ DATA_TYPES = {
     "integer": "sc:Integer",
     "boolean": "sc:Boolean",
     "date": "sc:Date",
+    "datetime": "sc:DateTime",
     "duration": "sc:Float",
     "url": "sc:URL",
     "choice": "sc:Text",

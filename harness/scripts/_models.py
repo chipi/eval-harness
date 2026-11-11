@@ -162,4 +162,9 @@ def problems(data_dir: Path) -> list[str]:
         commits = [v.get("commit") for v in doc.get("versions") or [] if isinstance(v, dict)]
         for c in sorted({c for c in commits if commits.count(c) > 1}, key=str):
             out.append(f"{f.name}: version {c!r} is listed more than once")
+        if doc.get("kind") == "code":
+            # A replay runs each item at the version deployed then (RFC-030): no two versions at one moment.
+            from evaluation_harness import _coderec  # noqa: PLC0415
+
+            out += [f"{f.name}: {x}" for x in _coderec.periods(doc)[1]]
     return out

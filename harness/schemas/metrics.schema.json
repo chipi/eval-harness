@@ -106,6 +106,20 @@
         "why": {"type": "string"}
       }
     },
+    "faithfulness": {
+      "type": "object",
+      "description": "A replay's faithfulness when it ran (RFC-030): the latest record of its code record on its dataset, whether it lets the replay be scored, and who scored it anyway with --unfaithful.",
+      "required": ["faithful", "record"],
+      "properties": {
+        "faithful": {"type": "boolean"},
+        "record": {"type": ["string", "null"], "description": "<code_id>/<n>, or null when none was made"},
+        "counts": {"type": ["object", "null"]},
+        "unnamed": {"type": "integer"},
+        "named": {"type": "integer"},
+        "why": {"type": "string"},
+        "unfaithful_by": {"type": "object"}
+      }
+    },
     "repeat_index": {"type": "integer", "description": "Which repetition this is, when measuring an arm's own variance."}
   }
 }

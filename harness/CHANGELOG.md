@@ -13,6 +13,17 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Added
 
+- **Replay the code that ran, and prove the replay faithful** (RFC-030): a config with `replay:` names a `kind: code`
+  model record (the fleet's feedback 27: its versions, when each was deployed; `checkout` for a local clone) and runs
+  the system's own code over a dataset in order, each item at the version deployed when it happened (unpacked once
+  with `git archive` under `.build/code/`), each call made once, `--resume`/`--items`/`--repeat` refused; a candidate
+  (`replay.commit`) runs every item at one commit. `evh faithfulness` replays the recorded versions and compares each
+  item with production's recorded arm by the adapter's `same()`, recording the disagreements and the coverage (the
+  functions no item reached), and writes each version's summary into the code record. A replay is scored against a
+  reference (`run`, `rescore`, `run-promote`) only when the newest record made with its adapter and support modules
+  agrees, its disagreements named by a person (`faithfulness-name`), or a person's `--unfaithful`, said everywhere.
+  `faithfulness-show`, V26, overlapping deployed periods refused (V18), and a `datetime` field type. `examples/replay-filing/`: a filing system with three commits, its frozen history, the stand-in world, the
+  write join that makes production's arm, and mutants (three killed, one survivor explained by coverage).
 - **Studies** (RFC-029): a study is research on a validation set, a spec and an append-only log under
   `data/studies/<goal>/`. `evh study-run` opens its round and runs ask/tell over trials: a grid over the spec's space,
   a program speaking JSON lines (`sampler: {command: ...}`, Optuna's ask/tell plugs in), or the calling agent
@@ -326,6 +337,14 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **Items with the same text got each other's labels**: labels follow an item by its text's hash, so on one dataset
+  every item with the same text (the same alert twice) took the label of the last of them, and a reference promoted
+  from the set held that label for all. Found by RFC-030's example, where 13 of 20 decisions share their text with
+  another: its faithful replay scored 0.6 against gold instead of 0.95. A label made on the item's own dataset now
+  follows its id; on another dataset a text its set labels two ways carries neither. The catalog's label views read
+  the same way.
+- **`fieldset-propose` proposed `date` for a timestamp**, whose values `dataset-create` then refused; a date or
+  datetime type is proposed only when every sampled value reads as it, else text.
 - **A round opened with `round-open` lost its actor**: `_rounds.save` writes a fixed list of fields and `actor`
   (RFC-027) was not among them. Found building studies; `test_actor` now checks a round.
 - **`evh catalog` emptied the served folder before building** (RFC-026 step 4): a server showed missing pages for the

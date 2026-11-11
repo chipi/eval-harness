@@ -72,6 +72,8 @@ further. This page is the reference for each step.
 | pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
 | the next version of a dataset | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) |
 | what production must match | `evh deploy-sheet --config ARM [--capture C]` |
+| replay the code that ran, item by item | `evh run --config REPLAY` (a config with `replay:` and `model_record:` a `kind: code` record) · `evh models --model …` ([§15c](#15c-replaying-the-code-that-ran)) |
+| is the replay faithful to production | `evh faithfulness --config REPLAY --production RUN` · `evh faithfulness-show --model …` · `evh faithfulness-name --model … --item … --cause "…"` |
 
 ---
 
@@ -1704,6 +1706,47 @@ evh deploy-sheet --config deployed_v1 --capture prod_2026_11           # did pro
 - **Several projects at once**: each serves its catalog on a port of its own (18000–18999) and its MCP
   server on another (19000–19999), the same every time, the next free one if taken; a local catalog names
   its project in its header.
+
+## 15c. Replaying the code that ran
+
+Some systems under test are code with state and side effects: a filing stage that reads an issue tracker and its own
+ledger, and writes. To measure a change to it on production's own history, the harness replays the **real code**,
+each item at the commit that ran it, and scores the replay only once it is shown to reproduce production
+([RFC-030](../../docs/rfc/RFC-030-replay-and-faithfulness.md); worked end to end in `examples/replay-filing/`, $0).
+
+- **The code record** is a model record of `kind: code` (`data/models/<id>.yaml`, [§16](#16-set-up-a-model-before-you-test-it)):
+  its `repo`, `checkout` (a local clone to read versions from, when `repo` is a URL) and `versions`, each a `commit`
+  and when it was `deployed` (`[{from, to}]`, date-times with an offset; no two versions at one moment, V18). Each
+  commit a replay needs is unpacked once with `git archive` under `.build/code/<id>/<commit>/`.
+- **A replay config** names it, `model_record: <id>`, and adds `replay: {order: [fields], time_field: F,
+  version_field: F, support: [modules]}`. Items run in `order` (item fields; `datetime` is a field type), each at the
+  version deployed when its `time_field` falls (or the commit its `version_field` names). The adapter gets `params["item"]` (its id
+  and fields) and `params["code"]` (`record`, `commit`, `path` of the copy, `changed` on the first item at a new
+  commit). At a change it imports the version with `_codeload.use(path, [modules])`, which drops every module of
+  another version first, and sets its seams again; state kept across items lives in files or the adapter, never in
+  the system's modules. `support` names the adapter's own modules beside it (a stand-in world), hashed with it.
+- **A replay run** calls each item once (a retry would repeat side effects) and refuses `--resume`, `--items` and
+  `--repeat` above 1. It sets `EVH_REPLAY=1`, so a system can refuse real calls under it. Its fingerprint's
+  `deployment.code` names the record, the deployments' hash and each commit with its item count.
+- **A candidate**: `replay: {…, commit: <sha>}` runs every item at that commit; the arm a change is measured as.
+- **Faithfulness**: `evh faithfulness --config REPLAY --production RUN` replays every item at the recorded commits and
+  compares each with production's arm (a recorded arm, §15b) by the adapter's `same(a, b)`. It writes
+  `data/faithfulness/<id>/<n>.json` once: the counts, each disagreement with both sides, and the coverage (per
+  commit, the functions of the system the replay entered and those it never did: a rule no item reaches is named).
+  Each version's summary goes into the code record's `faithfulness` (agreed of items, the named exceptions, the
+  record), which the Models page and `evh models --model <id>` show.
+- **The gate**: a replay, or a candidate made from it, is scored against a reference or label set (`run`, `rescore`,
+  `run-promote`) only when the newest faithfulness record made with its adapter and support modules agrees on every
+  item, on the same items and deployments. A disagreement whose cause is outside the system is named with
+  `evh faithfulness-name --model ID --item I --cause "…"` (a person's decision, kept beside the record). Otherwise a
+  person may pass `--unfaithful`: the run, its re-scores and baselines say "unfaithful replay" and who chose it, and
+  the catalog marks the arm. An agent is refused both.
+- **Not covered by the gate**: the config's `params` (a system's own setting a candidate may vary) and any data the
+  adapter reads that is not one of its `support` files (a frozen world under the project): change those and run
+  `evh faithfulness` again yourself. A system with compiled extensions cannot switch versions in one process and is
+  refused.
+- `evh faithfulness-show --model ID [--n N]` prints a record whole (the disagreements, who named which, the
+  coverage); a replay's arm page names its code record and its faithfulness. `validate` V26 checks the records.
 
 ## 16. Set up a model before you test it
 

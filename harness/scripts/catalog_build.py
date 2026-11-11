@@ -819,6 +819,7 @@ def collect(A: Adapter) -> dict:
                 "wrote": bool(d.get("wrote_reference")),
                 "labels_source": d.get("labels_source", ""),
                 "recorded": d.get("recorded", ""),
+                "replay": d.get("replay"),
                 "machine": _machine(A, arm),
                 "goal": d.get("goal", ""),
                 "format": d.get("format", ""),
@@ -4094,6 +4095,27 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         facts.append(
             ("note", "wrote the reference it is scored against: its row measures agreement with itself")
         )
+    rp = a.get("replay")
+    if rp:
+        from evaluation_harness import _faith  # noqa: PLC0415
+        from evaluation_harness.catalog_models import model_link  # noqa: PLC0415
+
+        state = rp.get("faithfulness") or {}
+        by = (state.get("unfaithful_by") or {}).get("name")
+        facts.append(
+            (
+                "replay",
+                model_link(rp["record"], up="../")
+                + " "
+                + (
+                    f"at the candidate <code>{e(str(rp['candidate'])[:12])}</code>"
+                    if rp.get("candidate")
+                    else f"at the {rp['commits']} commit(s) production ran"
+                )
+                + f"; {e(_faith.said(state) or 'no faithfulness recorded')}"
+                + (f" <b>scored anyway by {e(by)} (--unfaithful)</b>" if by else ""),
+            )
+        )
     if a.get("superseded_by"):
         facts.append(
             (
@@ -4126,7 +4148,12 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         "arm",
         e(a["label"])
         + (' <span class="tag-base">baseline</span>' if a.get("baseline") else "")
-        + (' <span class="badge recorded">recorded</span>' if a.get("recorded") else ""),
+        + (' <span class="badge recorded">recorded</span>' if a.get("recorded") else "")
+        + (
+            ' <span class="badge unfaithful">unfaithful replay</span>'
+            if a.get("replay") and not ((a["replay"].get("faithfulness") or {}).get("faithful"))
+            else ""
+        ),
         (
             f"Production's decisions, from the capture "
             f'<a class="cell-link" href="../captures.html#capture-{e(a["recorded"])}">{e(a["recorded"])}</a>; '

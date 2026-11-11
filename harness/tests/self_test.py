@@ -844,6 +844,10 @@ def test_example_scorer_suites_pass() -> None:
             "test-set looks (RFC-029): levels from decisions, one look per question, the limit and consent, V25",
         ),
         (
+            "test_replay.py",
+            "replay and faithfulness (RFC-030): each item at the commit that ran it, the gate, coverage, the example's mutants",
+        ),
+        (
             "test_prompts.py",
             "prompt versions and code_ref (RFC-028): recorded once by content, given to the adapter, in the settings' hash",
         ),

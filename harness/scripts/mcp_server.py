@@ -78,6 +78,7 @@ READ_TOOLS = (
     "looks",
     "studies",
     "study-status",
+    "faithfulness-show",
 )
 #: Tools that write, for the agent sampler of a study alone (owner, 2026-11-09, RFC-029): offered by a local server
 #: only, never a public one, and named as not read-only. Every other write is the command line's or a job's.
@@ -88,6 +89,8 @@ NOT_TOOLS = {
     "study-confirm": "a decision that spends a look and money: a person's command or a job",
     "study-import": "writes a study",
     "prompt-version": "records a prompt version",
+    "faithfulness": "replays a system's code and spends: a job",
+    "faithfulness-name": "a decision that lets a replay be scored: a person's command or a job",
     "prompt-export": "writes a file",
     "jobs-start": "starts a job: the agents act through the command line or the API (RFC-026)",
     "jobs-status": "the jobs of this machine's project, not its data",
@@ -168,6 +171,7 @@ JSON |= {"dataset-items", "captures", "labels", "tags", "licences", "picks", "de
 JSON |= {"runs-list", "rounds", "leaderboard", "pair-test", "family-test", "rank-stability", "run-compare"}
 JSON |= {"label-coverage", "baselines"}
 JSON |= {"dataset-card", "validate", "prompts", "prompt-diff", "looks", "studies", "study-status"}
+JSON |= {"faithfulness-show"}
 JSON |= set(AGENT_TOOLS)
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.

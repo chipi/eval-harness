@@ -514,6 +514,7 @@ def version_rows(rec: dict) -> list[list[str]]:
         faith = (
             f"{f.get('agreed')} of {f.get('items')} agreed"
             + (f", {len(f['exceptions'])} named" if f.get("exceptions") else "")
+            + (f", {f['run']}" if f.get("run") else "")
             + (f" ({day(f.get('at'))})" if f.get("at") else "")
             if f.get("items")
             else "not checked"

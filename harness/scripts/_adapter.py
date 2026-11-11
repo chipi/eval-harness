@@ -110,7 +110,15 @@ def same_of(adapter_spec: str | None) -> Any:
     """`same(a, b)` from the adapter a run recorded (RFC-023): whether two outputs are one decision, for agreement and
     `--disagree`; else, when the adapter says what an output's decision is (`decision`), the same decision; else the
     same text (also when the adapter cannot be imported here)."""
-    module = adapter_module(adapter_spec)
+    return _same_in(adapter_module(adapter_spec))
+
+
+def same_at(adapter_path: Path | None) -> Any:
+    """`same(a, b)` from the adapter file at `adapter_path`, as `same_of` reads it (RFC-030's faithfulness)."""
+    return _same_in(_module_or_none(adapter_path))
+
+
+def _same_in(module: Any) -> Any:
     fn = getattr(module, "same", None)
     if callable(fn):
         return fn

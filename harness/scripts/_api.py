@@ -49,6 +49,7 @@ SPENDS = {
     "study-run",
     "study-tell",
     "study-confirm",
+    "faithfulness",
 }
 #: Every path-typed argument a served command has, and its kind. Absent from this table: never taken.
 NAME = "name"
@@ -56,6 +57,7 @@ UPLOAD = "upload"
 ARTIFACT = "artifact"
 PATH_KINDS: dict[tuple[str, str], str] = {
     ("run", "--config"): NAME,
+    ("faithfulness", "--config"): NAME,
     ("arm-smoke", "--config"): NAME,
     ("model-onboard", "--config"): NAME,
     ("sweep", "--configs"): NAME,
@@ -273,7 +275,14 @@ def new_token() -> str:
 # ── jobs (RFC-026 step 3) ──────────────────────────────────────────────────────────────────────────────────────────
 
 #: The decisions (RFC-027): a job of one needs `by`, refused at the call before a job exists.
-DECISIONS = {"run-promote", "baseline-rollback", "round-close", "dataset-unseal", "study-confirm"}
+DECISIONS = {
+    "run-promote",
+    "baseline-rollback",
+    "round-close",
+    "dataset-unseal",
+    "study-confirm",
+    "faithfulness-name",
+}
 MAX_UPLOAD = 50 * 1024 * 1024  # owner, 2026-11-08
 #: Where `by` and the reason go on the command line, for the commands that take them as who acted and why.
 BY_FLAG = {"label-import", "sheet-import", "pick", "reference-manifest", "reference-promote"}

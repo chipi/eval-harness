@@ -114,7 +114,9 @@ like any arm; seven things are different. (The triage fleet's questions, 2026-11
 - **The code is a record of its own.** `data/models/<id>.yaml` with `kind: code` holds its `repo` and its
   `versions`: each a `commit`, when it was `deployed` (`from`, `to`), and the `faithfulness` a replay measured
   (`agreed` of `items`, the named `exceptions`). It needs no `aliases`; an arm names it with `model_record` like
-  any record, and its Models page and `evh models --model <id>` list the versions instead of an onboarding.
+  any record, and its Models page and `evh models --model <id>` list the versions instead of an onboarding. A replay
+  (`replay:` in the config, RFC-030) runs each item at the version deployed then, read from `checkout` (a local clone)
+  or `repo` when it is a path; `evh faithfulness` writes each version's `faithfulness` (RUNBOOK §15c).
 
 ---
 

@@ -41,7 +41,7 @@ import statistics
 import sys
 from functools import wraps
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 HERE = Path(__file__).resolve().parent
 
@@ -97,6 +97,19 @@ def scores_once(adapter):
 
     adapter.scores = scores
     return adapter
+
+
+def _replay_of(m: dict) -> dict | None:
+    """A run's replay (RFC-030), from its fingerprint and record: {record, candidate, commits, faithfulness}."""
+    code = ((m.get("fingerprint") or {}).get("deployment") or {}).get("code") or {}
+    if not code.get("record"):
+        return None
+    return {
+        "record": code["record"],
+        "candidate": code.get("candidate"),
+        "commits": len(code.get("commits") or {}),
+        "faithfulness": m.get("faithfulness"),
+    }
 
 
 class Adapter(Protocol):
@@ -530,6 +543,8 @@ class HarnessAdapter:
             "labels_source": labels_source,
             # Production's recorded decisions (RFC-023): the capture they came from; no model was called.
             "recorded": str(params.get("capture") or "") if params.get("provider") == "recorded" else "",
+            # A replay of a system's code (RFC-030): its code record, a candidate's commit, and its faithfulness.
+            "replay": _replay_of(m),
         }
 
     # -- scores -------------------------------------------------------------------------
@@ -776,14 +791,16 @@ class HarnessAdapter:
         on the items both label (where the label texts are here; a release keeps only labels.json)."""
         ds = _json(self.data_dir / "datasets" / f"{dataset}.json") or {}
         by_sha: dict = {}
+        sha_of: dict = {}
         for it in ds.get("items") or [] if isinstance(ds, dict) else []:
             if it.get("source_sha256"):
                 by_sha.setdefault(it["source_sha256"], []).append(it["item_id"])
+                sha_of[it["item_id"]] = it["source_sha256"]
         sets, texts = [], {}
         for ls in self.label_sets():
             covers: dict = {}
             for iid, row in ls["items"].items():
-                for mine in by_sha.get((row or {}).get("item_sha256") or "", []):
+                for mine in self._label_targets(ls, dataset, iid, row, by_sha, sha_of):
                     t = ls["dir"] / f"{iid}.txt"
                     covers[mine] = (
                         _store.read_text(t, encoding="utf-8").strip() if _store.is_file(t) else None
@@ -806,6 +823,23 @@ class HarnessAdapter:
                     agreement.append({"a": a, "b": b, **compare([(texts[a][x], texts[b][x]) for x in both])})
         return {"sets": sets, "agreement": agreement}
 
+    def _label_targets(self, ls: dict, dataset: str, iid: str, row: Any, by_sha: dict, sha_of: dict) -> list:
+        """The items of `dataset` a set's label of `iid` labels, as _label_sets.labels_for decides: by id on the set's
+        own dataset; by the item's sha256 on another, unless two of the set's items share it with labels that differ
+        or cannot be read here (ambiguous: none)."""
+        sha = (row or {}).get("item_sha256") or ""
+        if ls["dataset"] == dataset:
+            return [iid] if sha and sha_of.get(iid) == sha else []
+        twins = [k for k, r in ls["items"].items() if (r or {}).get("item_sha256") == sha]
+        if len(twins) > 1:
+            seen = set()
+            for k in twins:
+                t = ls["dir"] / f"{k}.txt"
+                seen.add(_store.read_text(t, encoding="utf-8").strip() if _store.is_file(t) else None)
+            if len(seen) != 1 or None in seen:
+                return []
+        return by_sha.get(sha, [])
+
     def item_labels(self, dataset: str, item: str) -> list[dict]:
         """Every label one item has (RFC-023): {set ("<dataset>/<set>"), kind, by, text} from each set holding an item
         with its bytes (labels follow the item); the text only where it is here (a release keeps labels.json only)."""
@@ -820,7 +854,7 @@ class HarnessAdapter:
         out = []
         for ls in self.label_sets() if sha else []:
             for iid, row in ls["items"].items():
-                if (row or {}).get("item_sha256") == sha:
+                if item in self._label_targets(ls, dataset, iid, row, {sha: [item]}, {item: sha}):
                     t = ls["dir"] / f"{iid}.txt"
                     src = ls.get("source") or {}
                     out.append(

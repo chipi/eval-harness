@@ -91,6 +91,23 @@ try:
             check(f"parse: {name} = {raw!r} is refused", False, "accepted")
         except ValueError:
             check(f"parse: {name} = {raw!r} is refused", True)
+    moment = {"name": "at", "type": "datetime"}
+    dt_good = ("2026-10-02T09:00:00Z", "2026-10-02T09:00:00.800+00:00", "2026-10-02T11:00+02:00")
+    dt_bad = ("2026-10-02", "2026-10-02T09:00:00", "2026-10-02 09:00:00Z", "2026-13-02T09:00:00Z")
+    refused = []
+    for raw in dt_bad:
+        try:
+            _fields.parse(moment, raw)
+        except ValueError:
+            refused.append(raw)
+    check(
+        "parse: a datetime (RFC-030) is a date and time with its offset, kept as written; no offset, no time or no "
+        "such date is refused",
+        all(_fields.parse(moment, x) == x for x in dt_good)
+        and refused == list(dt_bad)
+        and _fields.moment(dt_good[0]) == _fields.moment("2026-10-02T11:00:00+02:00"),
+        refused,
+    )
     check(
         "matches: a number range, either end open",
         _fields.matches(F["wait"], 150, "100..")

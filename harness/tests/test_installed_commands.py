@@ -486,6 +486,14 @@ def main() -> int:
             ("prompt-diff", ["a/0123456789abcdef", "b/0123456789abcdef"], "no prompt version"),
             ("prompt-version", ["bad name!", "--text", "x", "--note", "n"], "prompt name"),
             ("prompt-export", ["a/0123456789abcdef", "--to", "x.txt"], "no prompt version"),
+            # Replay and faithfulness (RFC-030): installed, each answers in words; the flow is test_replay.py.
+            ("faithfulness", ["--config", "no_such.yaml", "--production", "x"], "no config at no_such.yaml"),
+            (
+                "faithfulness-name",
+                ["--model", "no_such", "--item", "x", "--cause", "c"],
+                "no model record 'no_such'",
+            ),
+            ("faithfulness-show", ["--model", "no_such"], "no model record 'no_such'"),
             ("jobs-status", [], "ok:no jobs"),
             ("jobs-start", ["datasets"], "not a job"),
             ("jobs-logs", ["20990101T000000-abcdef"], "no job"),

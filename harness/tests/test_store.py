@@ -616,6 +616,9 @@ ALLOWED = {
     "harness/scripts/_jobs.py": "jobs and their lock files, under .build/, outside data/ (RFC-026)",
     "harness/scripts/jobs_supervisor.py": "a job's own folder under .build/jobs, outside data/ (RFC-026)",
     "harness/scripts/_prompts.py": "reads the prompt files a config names and copies a prompt root under .build/, outside data/; versions go through _store (RFC-028)",
+    "harness/scripts/_coderec.py": "unpacks each commit of a code record's checkout under .build/code, outside data/; records go through _store (RFC-030)",
+    "harness/scripts/_coverage.py": "reads the source files of the version copies a replay ran, under .build/code (RFC-030)",
+    "harness/scripts/faithfulness.py": "a replay's outputs while it runs, under .build/faithfulness, removed after (RFC-030)",
     "harness/scripts/_spend.py": "a round's ledger under .build/rounds and a child's spend in a temp file, outside data/ (RFC-026)",
     "harness/scripts/sources/*.py": "a dataset source reads the file or folder a person names to it, outside data/",
     "harness/scripts/importers/*.py": "an importer reads the file a person names to it",
@@ -630,6 +633,8 @@ ALLOWED = {
     "examples/_shared/gateway.py": "reads examples/models.json beside the code",
     "examples/_shared/hf_identity.py": "reads the Hugging Face cache, outside the project",
     "examples/triage-fleet/*.py": "reads and writes the sheets and decision files a person names",
+    "examples/replay-filing/system/*/filing.py": "the example's system under test: its own ledger file, which a replay points at a temp file",
+    "examples/replay-filing/*.py": "makes the example's system repository and frozen history in a folder a person names, outside data/; data files go through _store (RFC-030)",
     "examples/audit_locks.py": "checks the examples' lock files",
     "examples/signal-fleet-dedup/test_dedup.py": "a test of the example's own fixtures",
 }

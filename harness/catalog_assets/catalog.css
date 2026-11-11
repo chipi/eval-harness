@@ -568,6 +568,9 @@ tr.t-labels td:first-child { box-shadow: inset 3px 0 0 var(--muted); padding-lef
 .badge.recorded { display: inline-block; font: 600 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
   padding: 3px 6px; border-radius: 4px; color: var(--ink); background: color-mix(in srgb, var(--accent) 18%, transparent);
   vertical-align: 1px; }
+/* A replay scored though it did not reproduce production (RFC-030): drawn as a warning, outlined, never filled. */
+.badge.unfaithful { display: inline-block; font: 600 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  padding: 2px 5px; border-radius: 4px; color: var(--ink); border: 1px solid var(--ink); vertical-align: 1px; }
 .cmdbox { margin-top: 12px; }
 .cmdbox button[hidden] { display: none; }
 .cmdbox pre { white-space: pre-wrap; overflow-wrap: anywhere; }

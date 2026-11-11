@@ -223,6 +223,12 @@ def main() -> int:
     )
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
+    ap.add_argument(
+        "--unfaithful",
+        action="store_true",
+        help="promote a replay (RFC-030) whose faithfulness record does not agree with production, as a person (an "
+        "agent is refused); the baseline says so",
+    )
     add_by(ap)
     ap.add_argument(
         "--json",
@@ -246,6 +252,9 @@ def main() -> int:
         if not _store.is_file(src):
             die(f"no run {args.run!r} (looked for {src})", "not-found")
         m = read_json(src)
+        from evaluation_harness import _faith  # noqa: PLC0415
+
+        faith = _faith.allow_scoring(m, "promoting", args.unfaithful)
 
         build = m.get("build") or {}
         if build.get("ref", "unknown") == "unknown" and not args.allow_unknown_build:
@@ -310,6 +319,7 @@ def main() -> int:
                 # same number.
                 **{k: v for k, v in carried(m).items() if k != "goal"},
                 **({"repeats": repeats} if repeats else {}),
+                **({"faithfulness": faith} if faith is not None else {}),
             }
             return doc
 

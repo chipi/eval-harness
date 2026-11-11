@@ -939,6 +939,40 @@ try:
         r.returncode != 0 and "FAIL V19" in out(r) and "never edited" in out(r),
         out(r)[-400:],
     )
+
+    # ── two items with the same text (the same alert twice): each keeps its own label ─────────────────────────────
+    # labels_for matched labels to items by their text's sha256 alone, so twins got each other's labels and the
+    # reference promoted from them held the last one twice (found by RFC-030's replay example, 2026-11-11).
+    for side in ("twins", "twins2"):
+        (proj / side).mkdir()
+        for name, text in (("a", "the same alert\n"), ("b", "the same alert\n"), ("c", "another alert\n")):
+            (proj / side / f"{name}.txt").write_text(text)
+    (proj / "twin_labels").mkdir()
+    for name, text in (("a", "create\n"), ("b", "comment\n"), ("c", "none\n")):
+        (proj / "twin_labels" / f"{name}.txt").write_text(text)
+    steps = [
+        ("dataset-create", "--dataset-id", "twins_v1", "--source-dir", "twins"),
+        ("dataset-materialize", "--dataset-id", "twins_v1"),
+        ("dataset-create", "--dataset-id", "twins_v2", "--source-dir", "twins2"),
+        ("dataset-materialize", "--dataset-id", "twins_v2"),
+        ("label-import", "twin_labels", "--dataset-id", "twins_v1", "--set", "s", "--by", "person:t"),
+        ("reference-promote", "--dataset-id", "twins_v1", "--labels", "s", "--tier", "gold",
+         "--reason", "each twin has its own answer", "--by", "person:t"),
+        ("reference-promote", "--dataset-id", "twins_v2", "--labels", "twins_v1/s", "--tier", "gold",
+         "--reason", "carried by the items' text", "--by", "person:t"),
+    ]  # fmt: skip
+    got = [evh(*argv) for argv in steps]
+    ref1 = {n: _runstore.read_text(proj, f"references/gold/twins_v1/{n}.txt").strip() for n in ("a", "b", "c")
+            if _runstore.is_file(proj, f"references/gold/twins_v1/{n}.txt")}  # fmt: skip
+    ref2 = sorted(n for n in ("a", "b", "c") if _runstore.is_file(proj, f"references/gold/twins_v2/{n}.txt"))
+    check(
+        "two items with the same text keep their own labels on their dataset; on another dataset a text two labels "
+        "disagree on carries neither (ambiguous), and one with one label carries it",
+        all(x.returncode == 0 for x in got)
+        and ref1 == {"a": "create", "b": "comment", "c": "none"}
+        and ref2 == ["c"],
+        ([out(x)[-200:] for x in got if x.returncode], ref1, ref2),
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
 

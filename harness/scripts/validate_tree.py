@@ -1770,6 +1770,56 @@ def v25_looks() -> None:
         print("  --   V25 test-set looks (no test sets)")
 
 
+def v26_faithfulness() -> None:
+    """V26 (RFC-030): each faithfulness record is valid against its schema, of a code record (a model record of kind:
+    code) that exists, and its exceptions name its own disagreements, once each, with a cause, by a person. A code
+    record's deployed periods are V18's (no two versions at one moment)."""
+    import json  # noqa: PLC0415
+
+    import jsonschema  # noqa: PLC0415
+    from evaluation_harness import _common, _faith, _models  # noqa: PLC0415
+
+    bad: list[str] = []
+    root = DATA / "faithfulness"
+    schema = json.loads(_store.read_text(_common.SCHEMAS / "faithfulness.schema.json"))
+    n = 0
+    for d in sorted(_store.iterdir(root)) if _store.is_dir(root) else []:
+        if (_models.find(DATA, d.name) or {}).get("kind") != "code":
+            bad.append(f"data/faithfulness/{d.name}: no code record {d.name!r} (data/models/, kind: code)")
+        for k in _faith.numbers(d.name):
+            n += 1
+            rec = _common.read_json(d / f"{k}.json")
+            try:
+                jsonschema.validate(rec, schema)
+            except jsonschema.ValidationError as exc:
+                bad.append(f"{d.name}/{k}: {exc.message}")
+                continue
+            if rec["n"] != k or rec["model_id"] != d.name:
+                bad.append(f"{d.name}/{k}: says it is {rec['model_id']}/{rec['n']}")
+            mine = {x["item_id"] for x in rec["disagreements"]}
+            seen: set = set()
+            for e in _faith.exceptions(d.name, k):
+                iid = e.get("item_id")
+                if iid not in mine:
+                    bad.append(f"{d.name}/{k}: an exception names {iid!r}, not one of its disagreements")
+                elif iid in seen:
+                    bad.append(f"{d.name}/{k}: {iid} is named twice")
+                elif not (e.get("cause") and (e.get("actor") or {}).get("type") == "person"):
+                    bad.append(
+                        f"{d.name}/{k}: the exception of {iid} has no cause or was not named by a person"
+                    )
+                seen.add(iid)
+    if bad:
+        problems.append("V26")
+        print(f"  FAIL V26 faithfulness records — {len(bad)} problem(s):")
+        for b in bad[:20]:
+            print(f"       {b}")
+    elif n:
+        print(f"  ok   V26 faithfulness records — {n} record(s)")
+    else:
+        print("  --   V26 faithfulness records (none)")
+
+
 def v23_run_outputs() -> None:
     """V23: every run's outputs can be read (RFC-024): none is left in the old layout (an outputs/ folder), and a
     derived run without outputs of its own finds its source's. And the project is files or its database, never both
@@ -1962,6 +2012,7 @@ def main() -> int:
             v23_run_outputs,
             v24_prompt_versions,
             v25_looks,
+            v26_faithfulness,
             note_uncommitted_runs,
             note_round_scorers,
         ):

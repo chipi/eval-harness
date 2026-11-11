@@ -397,6 +397,7 @@ def rescore_one(
     reference_id: str | None = None,
     adapters: dict[str, Any] | None = None,
     quiet: bool = False,
+    faith: dict[str, Any] | None = None,
 ) -> tuple[Path, dict] | None:
     """Re-score one finished run into `out_dir` (default: designated_dir for the adapter it recorded), writing a
     derived record beside a copy of its outputs; (the new run's directory, its metrics), or None when the run
@@ -509,6 +510,8 @@ def rescore_one(
         metric_directions=_directions(adapter_path) or m.get("metric_directions"),
         reference_tier=tier if reference_id else None,
     )
+    if faith is not None:
+        new["faithfulness"] = faith  # a replay's (RFC-030), as the records stood when it was re-scored
     if run_metrics:
         new["run_metrics"] = run_metrics
     else:
@@ -534,13 +537,22 @@ def rescore_runs(
     out: Path | None = None,
     reference_id: str | None = None,
     quiet: bool = False,
+    faith: dict[str, Any] | None = None,
 ) -> list[tuple[Path, dict]]:
     """Re-score each run (rescore_one), warning once per directory written that git will not keep."""
     adapters: dict[str, Any] = {}
     done = []
     warned: set[Path] = set()
     for d, m in sorted(todo, key=lambda t: t[0].name):
-        got = rescore_one(d, m, out_dir=out, reference_id=reference_id, adapters=adapters, quiet=quiet)
+        got = rescore_one(
+            d,
+            m,
+            out_dir=out,
+            reference_id=reference_id,
+            adapters=adapters,
+            quiet=quiet,
+            faith=(faith or {}).get(d.name),
+        )
         if got is None:
             continue
         done.append(got)
@@ -582,6 +594,12 @@ def main() -> int:
         "--round", dest="round_id", help="the round whose arms (its own and those it carried) to re-score"
     )
     ap.add_argument("--why", default="", help="with --round: why the scoring changed, recorded on the round")
+    ap.add_argument(
+        "--unfaithful",
+        action="store_true",
+        help="re-score a replay (RFC-030) whose faithfulness record does not agree with production, as a person (an "
+        "agent is refused); the record says so",
+    )
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
@@ -637,10 +655,14 @@ def main() -> int:
                 "new records beside them, so give it another directory (or none: the tool designates one)",
                 "bad-argument",
             )
+        # A replay is scored only once it reproduces production (RFC-030): every run checked before any is written.
+        from evaluation_harness import _faith  # noqa: PLC0415
+
+        faith = {d.name: _faith.allow_scoring(m, "re-scoring", args.unfaithful) for d, m in todo}
         print(f"rescoring {len(todo)} run(s)" + (f" -> {args.out}" if args.out else ""))
         if args.out:
             _store.mkdir(args.out, parents=True, exist_ok=True)
-        done = rescore_runs(todo, out=args.out, reference_id=args.reference_id)
+        done = rescore_runs(todo, out=args.out, reference_id=args.reference_id, faith=faith)
         dirs = sorted(
             {
                 str(d.parent.relative_to(DATA)) if d.parent.is_relative_to(DATA) else str(d.parent)

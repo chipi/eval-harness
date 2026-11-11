@@ -650,11 +650,14 @@ def build_fingerprint(
     adapter_sha256: str | None = None,
     cfg: dict[str, Any] | None = None,
     prompt_settings: dict[str, Any] | None = None,
+    replay: Any = None,
 ) -> dict[str, Any]:
     """The full fingerprint, with a sha256 per hashed part and one hash over the four. `data_dir` is
     the project's data root (`_common.DATA`, which honours EVAL_DATA_DIR); it defaults to
     `<root>/data`. `cfg` is the arm's resolved config: the model record and deployment it names
-    (`model_record`, `deployment`) are where the deployment comes from, best first.
+    (`model_record`, `deployment`) are where the deployment comes from, best first. `replay` is a replay's plan
+    (RFC-030): its code record and commits are `deployment.code`, its settings `settings.replay`, and the adapter's
+    hash covers its support modules.
 
     The hash is the point: comparing two runs field by field is work nobody does, and a
     single differing hash answers "did anything else move?" at a glance. If it matches,
@@ -705,6 +708,12 @@ def build_fingerprint(
     if prompt_settings:  # the config's declared prompts (RFC-028): only when declared, so no other run moves
         fp["settings"].update(prompt_settings)
     code = code_of(cfg, fp["deployment"], root)
+    if replay is not None:
+        from evaluation_harness import _replay  # noqa: PLC0415
+
+        code = _replay.code_part(replay)
+        fp["settings"]["replay"] = replay.settings
+        fp["instrument"]["adapter"] = _replay.adapter_identity(adapter_id, adapter_path, replay)
     if code is not None:
         fp["deployment"]["code"] = code
     return seal(fp)
