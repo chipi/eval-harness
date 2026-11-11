@@ -481,7 +481,10 @@ class HarnessAdapter:
     def _dirs(self, arm: str) -> list[Path]:
         return self._index().get(arm, [])
 
+    @_memo
     def _metrics(self, arm: str) -> dict:
+        # Once per arm, for as long as the index it is read from: an inspector answer read every arm's
+        # metrics.json again (7,370 reads for 40 answers, a third of each). Callers only read it.
         ds = self._dirs(arm)
         return (_json(ds[-1] / "metrics.json") or {}) if ds else {}
 
@@ -572,11 +575,13 @@ class HarnessAdapter:
     @property
     def preferred_metrics(self) -> tuple:
         """Every arm's primary metric, most common first: the inspector's default yardstick."""
+        return self._preferred_metrics()
+
+    @_memo
+    def _preferred_metrics(self) -> tuple:
         from collections import Counter  # noqa: PLC0415
 
-        c = Counter(
-            (_json(ds[-1] / "metrics.json") or {}).get("primary_metric") for ds in self._index().values()
-        )
+        c = Counter(self._metrics(arm).get("primary_metric") for arm in self._index())
         return tuple(k for k, _ in c.most_common() if k)
 
     def recorded_means(self, arm: str) -> dict[str, float]:

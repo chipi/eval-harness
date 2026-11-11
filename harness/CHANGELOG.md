@@ -328,6 +328,12 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **`budget-check`'s cached answer timed recomputes**: the warm-up stops at 3/4 of the cache's 32 MB (151 of this
+  repository's 2,931 catalog links), so most sampled links were computed on the request, and the median followed the
+  runner's speed (26 to 53 ms against 50). Each link is now asked once and then timed (0.5 ms); the check prints how
+  many links the warm-up cached, and an answer the cache does not hold stays the cold budget's. The inspector also reads
+  each arm's `metrics.json` once instead of on every answer (an uncached answer 25.7 → 21.8 ms here; `--warm`'s peak
+  116 → 128 MB).
 - **An agent could not act through the API, and the server's own actor reached every job** (RFC-026, RFC-027; an
   independent review): a job had no `for`, so an agent's job failed when its command first recorded who acted (a run:
   after its last item, its cap spent), and every job inherited the server's `EVH_ACTOR` / `EVH_FOR`. A job call now
