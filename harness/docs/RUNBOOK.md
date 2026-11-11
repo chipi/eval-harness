@@ -11,23 +11,20 @@ further. This page is the reference for each step.
 
 ## Every command
 
+The loop comes first; the rest, by what it is for, below it.
+
+### The loop
+
+What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, runs, a comparison, a choice.
+
 | step | command |
 |---|---|
 | start a project | `evh init [--tutorial]` |
 | what is configured | `evh env-check` |
 | freeze | `evh dataset-create --dataset-id … --source-dir … [--licence ID]` |
-| a licence, a description (no new version) | `evh licences` · `evh dataset-describe --dataset-id … --licence …` |
-| the card; as Croissant 1.1 | `evh dataset-card --dataset-id …` · `… --format croissant --creator … --out …` |
-| a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
-| fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
 | materialize | `evh dataset-materialize --dataset-id …` |
-| a model's labels (a run's outputs) | `evh label-from-run --run <run_id> --set … [--not-redistributed]` |
 | a person's labels | `evh label-sheet --dataset-id … --out sheet.csv` · `evh label-import sheet.csv --dataset-id … --set … --by …` (or a folder of `<item_id>.txt`) |
-| the label sets | `evh labels [--dataset-id …]` |
-| how arms fail (failure modes) | `evh inspect --sheet --dataset-id … --runs A,B --csv tags.csv --fill tags --modes …` · `evh sheet-import tags.csv --dataset-id … --by … --tags … --modes …` · `evh tags [--dataset-id …]` |
 | a reference (labels you promote) | `evh reference-promote --dataset-id … --labels … --tier gold\|silver --reason "…" --by …` |
-| gold a script builds, promoted | `evh reference-manifest --reference-id gold/… --source … --labelled-by … --reason "…" --by …` |
-| score against labels | `evh rescore --dataset-id … --labels …` · `evh run --config … --labels …` |
 | cost before spending | `evh run --config … --dry-run` |
 | measure (+ own noise) | `evh run --config … --repeat 3` |
 | many arms | `evh sweep --configs "data/configs/arm_*.yaml"` |
@@ -36,23 +33,67 @@ further. This page is the reference for each step.
 | two runs | `evh run-compare --baseline … --candidate … --noise …` |
 | a pre-named pair | `evh pair-test --dataset-id … --a … --b …` (or `--round rN`: A its leader, B the baseline it started from; a leader chosen from the table is corrected for the comparisons it could have been, every arm in play but B). A `hypothesis:` committed in A's config before the run is what makes the pair "named in advance" (§4) |
 | a winner claim | `evh family-test --dataset-id … --a … --against …` |
+| what it is for | `data/goals/<goal_id>.yaml` (every field: [§4c](#4c-the-goal-file-field-by-field)), and `goal:` on each config |
+| baseline | `evh run-promote --run … --reason "…"` · `evh baselines` · `evh baseline-rollback --goal G --dataset D --to N --reason "…"` |
+| browse and inspect | `evh catalog` · `evh catalog-serve` · `evh dataset-profile` · `evh dataset-items` |
+| consistency | `evh validate` |
+| does the installed harness work here | `evh self-test` |
+
+### Datasets
+
+| step | command |
+|---|---|
+| a licence, a description (no new version) | `evh licences` · `evh dataset-describe --dataset-id … --licence …` |
+| the card; as Croissant 1.1 | `evh dataset-card --dataset-id …` · `… --format croissant --creator … --out …` |
+| a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
+| fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
+| validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
+| a sealed held-out side | `evh dataset-split … --split-by time --key F --at T --seal` · `evh dataset-unseal …_test --config C --reason "…"` |
+| pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
+| the next version of a dataset | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) |
+
+### Labels, references and scoring
+
+| step | command |
+|---|---|
+| a model's labels (a run's outputs) | `evh label-from-run --run <run_id> --set … [--not-redistributed]` |
+| the label sets | `evh labels [--dataset-id …]` |
+| how arms fail (failure modes) | `evh inspect --sheet --dataset-id … --runs A,B --csv tags.csv --fill tags --modes …` · `evh sheet-import tags.csv --dataset-id … --by … --tags … --modes …` · `evh tags [--dataset-id …]` |
+| gold a script builds, promoted | `evh reference-manifest --reference-id gold/… --source … --labelled-by … --reason "…" --by …` |
+| score against labels | `evh rescore --dataset-id … --labels …` · `evh run --config … --labels …` |
 | re-score, $0 | `evh rescore --dataset-id … [--reference-id gold/…] --out …` |
 | re-measure with a judge (optional) | `evh judge-score --dataset-id … --scorer … [--dry-run]` |
 | read the judged runs | `EVAL_RUNS_DIR=data/runs-judged/<scorer> evh leaderboard --dataset-id …` |
 | is silver good enough | `evh silver-calibrate --dataset-id …` |
-| how many items | `evh rank-stability --dataset-id …` |
-| pilot-slice-free result | `evh holdout --dataset-id … --exclude-dataset …` |
 | scores made elsewhere | `evh import-run --dataset-id … --config-id … --scores … --scorer-file …` |
 | billed cost | `evh cost-report` |
-| baseline | `evh run-promote --run … --reason "…"` · `evh baselines` · `evh baseline-rollback --goal G --dataset D --to N --reason "…"` |
-| what it is for | `data/goals/<goal_id>.yaml` (every field: [§4c](#4c-the-goal-file-field-by-field)), and `goal:` on each config |
+
+### Statistics beyond the pair
+
+| step | command |
+|---|---|
+| how many items | `evh rank-stability --dataset-id …` |
+| pilot-slice-free result | `evh holdout --dataset-id … --exclude-dataset …` |
 | rounds (optional) | `evh round-open` · `evh round-retire` · `evh round-close` · `evh rounds --goal …` |
-| browse and inspect | `evh catalog` · `evh catalog-serve` · `evh dataset-profile` · `evh dataset-items` |
-| background jobs (the Workbench's) | `evh jobs-start run --arg config=ID --max-cost-usd N` · `evh jobs-status` · `evh jobs-logs JOB --follow` · `evh jobs-stop JOB` · `evh jobs-resume JOB` |
-| ask from an agent | `evh mcp` |
+| a result with and without a set of items | `evh pair-test … --items FILE` (only the ids in the file, one per line; the rest is a second file, or `--exclude-dataset D` when the set is a dataset) · `evh inspect --runs A,B --where F:V` (the items with that field value; a boolean or choice field marking the set) |
+
+### Reading results
+
+| step | command |
+|---|---|
 | the same, in the terminal | `evh overview [--period P]` · `evh activity` · `evh datasets` · `evh arms` (`--by …`, `--configs`, `--arm …`) · `evh references` · `evh metrics --metric …` · `evh goals` · `evh goals --goal G [--arms PATTERN] [--top N]` (a goal with many arms: only the arms matching, or the first N, always with the baseline, the leader and the recommended arm; each arm's paired test against the leader) · `evh search …` · `evh inspect --runs …` (`--analysis`, `--item …`) · `evh inspect --sheet --dataset-id … --runs …`; every list takes `--period P` |
-| consistency | `evh validate` |
-| does the installed harness work here | `evh self-test` |
+| where arms decided differently | `evh inspect --runs A,B --disagree` |
+| the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh inspect --sheet --dataset-id … --runs A,B [--wrong-against SET] [--new-vs V] [--csv FILE [--fill label\|pick\|scores]]` |
+| how two per-item scores relate, by a recorded field (a gate that saved a false dismissal, one that cost a false alarm) | `evh inspect --runs A --crosstab M1,M2 [--group _meta.gates [--group-match REGEX]] [--where F:V]` ([§14](#14-browse-the-catalog-and-the-inspector)) |
+| why items flipped: each run's whole output beside the reference, many items at once | `evh inspect --runs A,B --items-out [--disagree] [--where F:V] [--max-chars N] --json` ([§14](#14-browse-the-catalog-and-the-inspector)) |
+| a sheet filled elsewhere, read back | `evh sheet-import sheet.csv --dataset-id … --by WHO [--set S \| --scorer S]` |
+
+### Production
+
+[§15](#15-datasets-from-production-the-capture-lane) onwards.
+
+| step | command |
+|---|---|
 | keep a production system's records | `evh capture --importer jsonl --query '{"path": "export.jsonl"}' --capture c1` · `evh captures` ([§15](#15-datasets-from-production-the-capture-lane)) |
 | test an importer | `evh importer-check path/to/importer.py:Importer --query …` |
 | scrub a capture | `evh capture-scrub c1 --command "python scrub.py {records}"` |
@@ -60,20 +101,17 @@ further. This page is the reference for each step.
 | a dataset from a capture | `evh dataset-from-capture c1 --dataset-id … [--where F:V] [--one-per F] [--tag K=V]` |
 | labels from what happened afterwards | `evh label-from-capture --dataset-id … --capture c1 --map rules.yaml --set …` |
 | how far outcome rules label a dataset now | `evh label-coverage --dataset-id … --capture c1 --map rules.yaml` |
-| validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
-| a sealed held-out side | `evh dataset-split … --split-by time --key F --at T --seal` · `evh dataset-unseal …_test --config C --reason "…"` |
 | production's own decisions as an arm | `evh arm-from-capture --dataset-id … --capture c1 --as production_v1 [--like CONFIG]` ([§15b](#15b-evaluating-what-production-did)) |
-| where arms decided differently | `evh inspect --runs A,B --disagree` |
-| the sheet: every item, every arm's output and scores, the labels, the winner, the signals | `evh inspect --sheet --dataset-id … --runs A,B [--wrong-against SET] [--new-vs V] [--csv FILE [--fill label\|pick\|scores]]` |
-| how two per-item scores relate, by a recorded field (a gate that saved a false dismissal, one that cost a false alarm) | `evh inspect --runs A --crosstab M1,M2 [--group _meta.gates [--group-match REGEX]] [--where F:V]` ([§14](#14-browse-the-catalog-and-the-inspector)) |
-| why items flipped: each run's whole output beside the reference, many items at once | `evh inspect --runs A,B --items-out [--disagree] [--where F:V] [--max-chars N] --json` ([§14](#14-browse-the-catalog-and-the-inspector)) |
-| a result with and without a set of items | `evh pair-test … --items FILE` (only the ids in the file, one per line; the rest is a second file, or `--exclude-dataset D` when the set is a dataset) · `evh inspect --runs A,B --where F:V` (the items with that field value; a boolean or choice field marking the set) |
-| a sheet filled elsewhere, read back | `evh sheet-import sheet.csv --dataset-id … --by WHO [--set S \| --scorer S]` |
-| pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
-| the next version of a dataset | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) |
 | what production must match | `evh deploy-sheet --config ARM [--capture C]` |
 | replay the code that ran, item by item | `evh run --config REPLAY` (a config with `replay:` and `model_record:` a `kind: code` record) · `evh models --model …` ([§15c](#15c-replaying-the-code-that-ran)) |
 | is the replay faithful to production | `evh faithfulness --config REPLAY --production RUN` · `evh faithfulness-show --model …` · `evh faithfulness-name --model … --item … --cause "…"` |
+
+### Agents and jobs
+
+| step | command |
+|---|---|
+| ask from an agent | `evh mcp` |
+| background jobs (the Workbench's) | `evh jobs-start run --arg config=ID --max-cost-usd N` · `evh jobs-status` · `evh jobs-logs JOB --follow` · `evh jobs-stop JOB` · `evh jobs-resume JOB` |
 
 ---
 
