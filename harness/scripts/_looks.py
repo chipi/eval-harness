@@ -216,3 +216,17 @@ def double_spent(dataset_id: str) -> list[tuple[int, list[str]]]:
     for x in recorded(dataset_id):
         by.setdefault(int(x.get("number") or 0), set()).add(str(x.get("key")))
     return [(n, sorted(ks)) for n, ks in sorted(by.items()) if len(ks) > 1]
+
+
+def said(dataset_id: str) -> str | None:
+    """A test set's looks in one line, for its goals' pages and `evh goals`; None for any other dataset."""
+    if not is_test_set(dataset_id):
+        return None
+    s = summary(dataset_id)
+    taken = len({x.get("key") for x in s["looks"]})
+    return (
+        f"test set: {taken} look(s) of {s['limit']}; a decision here is look {s['next']}, one-sided at "
+        f"{s['next_level']:.4%}"
+        + (f"; used {s['prior_use']} time(s) before looks were counted" if s["prior_use"] else "")
+        + " (evh looks)"
+    )

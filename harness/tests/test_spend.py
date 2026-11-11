@@ -60,6 +60,40 @@ check(
     (calls, stopped),
 )
 
+# ── judge: the lower of its config's cap and EVAL_MAX_COST_USD, enforced by its item loop ─────────────────────────
+from evaluation_harness import judge_panel  # noqa: E402
+from evaluation_harness.panel_judges import ItemScore  # noqa: E402
+
+
+class _PayingJudge:
+    """A judge that charges $0.01 an item and calls nothing."""
+
+    def score(self, *, run_id, item_id, item_content, dimensions):
+        return ItemScore(
+            run_id=run_id, item_id=item_id, per_dimension=dict.fromkeys(dimensions, 3), total_cost_usd=0.01
+        )
+
+
+panel = {"judging": {"cost_cap_usd": 1.0}}
+caps = []
+for env_cap in (None, "0.03", "5"):
+    if env_cap is None:
+        os.environ.pop("EVAL_MAX_COST_USD", None)
+    else:
+        os.environ["EVAL_MAX_COST_USD"] = env_cap
+    caps.append(judge_panel.cost_cap(panel))
+os.environ.pop("EVAL_MAX_COST_USD", None)
+fin = type("F", (), {"run_id": "r1"})()
+scored, paid, _ = judge_panel.judge_finalist(
+    finalist=fin, judge=_PayingJudge(), items=[{"item_id": f"i{k}"} for k in range(10)], dimensions=["q"],
+    cost_budget_remaining=caps[1],
+)  # fmt: skip
+check(
+    "judge: the lower of its config's cap ($1) and EVAL_MAX_COST_USD; at $0.03 it stops after 3 items of 10",
+    caps == [1.0, 0.03, 1.0] and len(scored) == 3 and abs(paid - 0.03) < 1e-9,
+    (caps, len(scored), paid),
+)
+
 proj = Path(tempfile.mkdtemp(prefix="evh-spend-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-spend")
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_FOR", "EVH_SPENT_TO"):

@@ -303,6 +303,16 @@ def close(argv: list[str]) -> int:
         metavar="RUN_ID",
         help="promote this run to the goal's baseline on the round's dataset, the conclusion as its reason",
     )
+    ap.add_argument(
+        "--confirm-extra-look",
+        action="store_true",
+        help="--promote on a test set past its limit of looks (RFC-029): the person's consent (passed to run-promote)",
+    )
+    ap.add_argument(
+        "--override-no-evidence",
+        action="store_true",
+        help="--promote on a test set whose items cannot show it: promote anyway, inconclusive (passed to run-promote)",
+    )
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
@@ -332,6 +342,8 @@ def close(argv: list[str]) -> int:
                     args.goal,
                     "--round",
                     args.round,
+                    *(["--confirm-extra-look"] if args.confirm_extra_look else []),
+                    *(["--override-no-evidence"] if args.override_no_evidence else []),
                 ],
                 capture_output=True,
                 text=True,

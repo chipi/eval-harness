@@ -166,6 +166,16 @@ def promote_finalists(
 # Step 2 — Judge (with cost cap, partial-result preservation)
 
 
+def cost_cap(cfg: dict[str, Any]) -> float:
+    """What the panel may spend: its config's `cost_cap_usd`, or EVAL_MAX_COST_USD (a job's max_cost_usd) when that
+    is lower (RFC-026 step 5)."""
+    from evaluation_harness import _spend  # noqa: PLC0415
+
+    own = _spend.own_cap()
+    cap = float(cfg["judging"]["cost_cap_usd"])
+    return own if own is not None and own < cap else cap
+
+
 def judge_finalist(
     *,
     finalist: RunCandidate,
@@ -488,13 +498,7 @@ def main(argv: list[str]) -> int:
             )
         cross = build_judge(cfg["judging"].get("cross_judge"), use_fake=args.use_fake_judge)
         dims = cfg["judging"]["dimensions"]
-        # The config's cap, and EVAL_MAX_COST_USD (a job's max_cost_usd) when lower (RFC-026 step 5).
-        from evaluation_harness import _spend  # noqa: PLC0415
-
-        own = _spend.own_cap()
-        cost_remaining = float(cfg["judging"]["cost_cap_usd"])
-        if own is not None and own < cost_remaining:
-            cost_remaining = own
+        cost_remaining = cost_cap(cfg)
         max_items = int(cfg["judging"]["max_items_per_finalist"])
 
         aggregates: list[FinalistAggregate] = []

@@ -42,7 +42,7 @@ from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common, _fields, _jsonout, _store, _visibility  # noqa: E402
+from evaluation_harness import _common, _fields, _jsonout, _looks, _store, _visibility  # noqa: E402
 from evaluation_harness._common import ROOT, die  # noqa: E402
 from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
@@ -3142,6 +3142,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             + (f" · made from {dataset_link(lin, '../')}" if lin else "")
             + "</p>"
             + (f'<p class="small muted">{e(ans["notes"])}</p>' if ans["notes"] else "")
+            + (f'<p class="small">{e(looks_line)}</p>' if (looks_line := _looks.said(ds)) else "")
             + (
                 '<p class="small">references: '
                 + ", ".join(

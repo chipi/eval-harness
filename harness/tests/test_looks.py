@@ -259,6 +259,52 @@ try:
         (p1.stderr[-200:], p2.stderr[-300:], p3.stdout[-300:], p3.stderr[-300:], ev.get("look")),
     )  # fmt: skip
 
+    # round-close --promote on the test set: the same look rules, its flags passed to run-promote.
+    ro = evh("round-open", "--goal", "g", "--dataset", "tk_v1_test", "--hypothesis", "one sentence against two",
+             "--keep", "base_v1,cand_v1")  # fmt: skip
+    commit("round r1")
+    base_run = run_of("base_v1")
+    rc1 = evh(
+        "round-close",
+        "--goal",
+        "g",
+        "--round",
+        "r1",
+        "--conclusion",
+        "the one-sentence arm after all",
+        "--promote",
+        base_run,
+    )
+    rc2 = evh(
+        "round-close", "--goal", "g", "--round", "r1", "--conclusion", "the one-sentence arm after all",
+        "--promote", base_run, "--confirm-extra-look", "--override-no-evidence",
+    )  # fmt: skip
+    versions = sorted(_runstore.listdir(proj, "baselines/g/tk_v1_test"))
+    ev = (
+        _runstore.read_json(proj, f"baselines/g/tk_v1_test/{versions[-1]}").get("evidence", {})
+        if versions
+        else {}
+    )
+    check(
+        "round-close --promote on a test set is a look: past the limit refused, then with the person's flags passed "
+        "through, look 4 recorded inconclusive and the round closed",
+        ro.returncode == 0 and rc1.returncode != 0 and "--confirm-extra-look" in rc1.stderr
+        and rc2.returncode == 0 and (ev.get("look") or {}).get("number") == 4
+        and (ev.get("look") or {}).get("verdict") == "INCONCLUSIVE",
+        (ro.stderr[-300:], rc1.stderr[-300:], rc2.stdout[-300:], rc2.stderr[-300:], ev.get("look")),
+    )  # fmt: skip
+
+    # The goal's page and `evh goals` say the test set's looks.
+    gv = evh("goals", "--goal", "g")
+    cat = evh("catalog")
+    page = (proj / ".build" / "catalog" / "g" / "g.html").read_text() if cat.returncode == 0 else ""
+    line = "test set: 4 look(s) of 2; a decision here is look 5"
+    check(
+        "the goal's page and evh goals: the test set's looks, its limit and the next look's level",
+        line in gv.stdout and line in page,
+        (gv.stdout[-500:], cat.stderr[-300:]),
+    )
+
     # V25: two questions on one number (two clones deciding at once).
     ok = evh("validate")
     doc = _runstore.read_json(proj, "datasets/tk_v1_test.json")

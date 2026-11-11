@@ -612,7 +612,8 @@ asked: an unseal for a candidate and its later promotion against the same arm sh
 `test_looks: K`) a look needs the person's own `--confirm-extra-look` (an agent cannot give it); fresh items are the
 better way out. A promotion whose items could never reach its look's level (5 items reach 1/32 at best, above 1.52%)
 is refused, or with the person's `--override-no-evidence` recorded inconclusive. `pair-test` on a test set labels its
-answer "nominal, not a look"; `evh looks` lists each test set's looks and the next level; V25 reports a number two
+answer "nominal, not a look"; `evh looks` lists each test set's looks and the next level, and a goal's page and
+`evh goals` say it under each test set; `round-close --promote` takes the same two flags. V25 reports a number two
 decisions took (two clones deciding at once).
 
 **Where runs go.** Measured runs go in `data/runs`: leave `EVAL_RUNS_DIR` unset, on every

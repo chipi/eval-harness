@@ -1125,6 +1125,11 @@ def goals(argv) -> int:
         print(f"\n{ds}" + (f" · {ans['role']}" if ans["role"] else ""))
         if ans["notes"]:
             print(textwrap.fill(ans["notes"], width=96, initial_indent="  ", subsequent_indent="  "))
+        from evaluation_harness import _looks  # noqa: PLC0415
+
+        looks_line = _looks.said(ds)
+        if looks_line:
+            print(f"  {looks_line}")
         if not ans["groups"]:
             print(f"  no arm records {prim.get('measure', '')}")
         for grp in ans["groups"]:
