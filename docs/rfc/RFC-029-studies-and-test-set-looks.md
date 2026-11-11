@@ -180,7 +180,7 @@ append end; close the round
 | `study-stop STUDY` | job | `study:<goal>/<id>` |
 | `study-confirm STUDY --test D --rule R` | job, spends, a decision (`by` required) | `study:<goal>/<id>`, `dataset:<test>` |
 | `study-import FILE --goal G` | job (Karpathy's `results.tsv` as a closed study; its trials not confirmable) | `study:<goal>/<id>` |
-| `studies [--goal G]`, `study-status STUDY`, `looks [--dataset D]` | reads | none |
+| `studies [--goal G]`, `studies --study STUDY`, `looks [--dataset D]` | reads | none |
 
 `study-ask` and `study-tell` are MCP tools as well (owner, 2026-11-09: "also MCP tools"): the first writes on the MCP
 server, an exception to RFC-027's read-only rule for the agent sampler alone. Each runs as the command does, through

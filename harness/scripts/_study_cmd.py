@@ -4,7 +4,7 @@
     evh study-ask STUDY                                          the state for the agent sampler, with an ask id
     evh study-tell STUDY --ask ID --proposal FILE               the agent's proposal run as the next trial
     evh study-stop STUDY                                         the loop stops after its trial; the study ends
-    evh studies [--goal G]  ·  evh study-status STUDY            what the logs say
+    evh studies [--goal G]  ·  evh studies --study STUDY         what the logs say
     evh study-confirm STUDY --test D --rule superiority|noninferiority [--trial K] [--dry-run]
     evh study-import FILE --goal G --study ID                   Karpathy's results.tsv as a closed study
 
@@ -248,41 +248,39 @@ def stop(argv: list[str]) -> int:
     return 0
 
 
-def status(argv: list[str]) -> int:
-    """evh study-status: one study, as its log says."""
-    ap = _ap("one study, as its log says (RFC-029)")
-    ap.add_argument("study")
-    _json_flag(ap)
-    a = ap.parse_args(argv)
-    with _jsonout.collect("study-status", a.json):
-        goal, sid = _study.resolve(a.study)
-        st = _study.state(goal, sid)
+def _one(study: str) -> None:
+    """`evh studies --study`: one study, as its log says."""
+    goal, sid = _study.resolve(study)
+    st = _study.state(goal, sid)
+    print(
+        f"study {goal}/{sid}: {st['status']}, round {st['round']}, from {st['baseline']}, ${st['spent_usd']:.4f} spent"
+    )
+    for t in st["trials"]:
         print(
-            f"study {goal}/{sid}: {st['status']}, round {st['round']}, from {st['baseline']}, ${st['spent_usd']:.4f} spent"
+            f"  t{t['k']}  {t.get('outcome'):<9} {t.get('hypothesis') or t.get('change')}  — {t.get('reason')}"
         )
-        for t in st["trials"]:
-            print(
-                f"  t{t['k']}  {t.get('outcome'):<9} {t.get('hypothesis') or t.get('change')}  — {t.get('reason')}"
-            )
-        best = st["best"]
-        print(f"  best so far: {best['config_id'] if best else st['baseline'] + ' (the baseline)'}")
-        for c in st["confirms"]:
-            print(
-                f"  confirm on {c.get('test')}: {c.get('outcome', 'started')} (look {(c.get('look') or {}).get('number')})"
-            )
-        if st["end"]:
-            print(f"  ended: {st['end'].get('reason')}. {st['end'].get('summary')}")
-        _jsonout.value("study", st)
-    return 0
+    best = st["best"]
+    print(f"  best so far: {best['config_id'] if best else st['baseline'] + ' (the baseline)'}")
+    for c in st["confirms"]:
+        print(
+            f"  confirm on {c.get('test')}: {c.get('outcome', 'started')} (look {(c.get('look') or {}).get('number')})"
+        )
+    if st["end"]:
+        print(f"  ended: {st['end'].get('reason')}. {st['end'].get('summary')}")
+    _jsonout.value("study", st)
 
 
 def studies(argv: list[str]) -> int:
-    """evh studies: every study, by goal."""
-    ap = _ap("every study, by goal (RFC-029)")
+    """evh studies: every study, by goal; or one, as its log says."""
+    ap = _ap("every study, by goal; or one with --study, as its log says (RFC-029)")
     ap.add_argument("--goal")
+    ap.add_argument("--study", help="one study (GOAL/ID): each trial, the best so far, its confirmations")
     _json_flag(ap)
     a = ap.parse_args(argv)
     with _jsonout.collect("studies", a.json):
+        if a.study:
+            _one(a.study)
+            return 0
         out = []
         root = _study.root()
         for p in sorted(_store.glob(root, "*/*.yaml")) if _store.is_dir(root) else []:
@@ -553,6 +551,6 @@ def import_tsv(argv: list[str]) -> int:
 def run(sub: str) -> int:
     """One of the study commands, by name."""
     return {
-        "run": run_study, "ask": ask, "tell": tell, "stop": stop, "status": status, "studies": studies,
+        "run": run_study, "ask": ask, "tell": tell, "stop": stop, "studies": studies,
         "confirm": confirm, "import": import_tsv,
     }[sub](sys.argv[1:])  # fmt: skip

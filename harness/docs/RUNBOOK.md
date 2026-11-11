@@ -638,7 +638,7 @@ and closes with the study) and runs the loop: each trial is the best so far with
 set, kept or dropped by the rule (its p values nominal: this is research), its limits checked against the baseline so
 concessions cannot add up. With `sampler: agent` the agent asks and tells: `evh study-ask <study>` gives the state and an
 ask id, `evh study-tell <study> --ask ID --proposal-json '{"params": {...}, "prompts": {...}, "hypothesis": "..."}'`
-runs it (both also MCP tools, for an agent with `EVH_ACTOR=agent:NAME` and `EVH_FOR=person:NAME`). `evh study-status`,
+runs it (both also MCP tools, for an agent with `EVH_ACTOR=agent:NAME` and `EVH_FOR=person:NAME`). `evh studies --study`,
 `evh studies`, `evh study-stop`. A study never promotes: `evh study-confirm <study> --test <test set> --rule superiority`
 runs the best trial and the baseline once on the test items no study saw, as one look at the set's next level, and
 suggests the promotion only when the outcome meets the rule. `evh study-import results.tsv --goal G --study ID` brings

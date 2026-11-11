@@ -77,7 +77,6 @@ READ_TOOLS = (
     "prompt-diff",
     "looks",
     "studies",
-    "study-status",
     "faithfulness-show",
 )
 #: Tools that write, for the agent sampler of a study alone (owner, 2026-11-09, RFC-029): offered by a local server
@@ -167,7 +166,7 @@ JSON = {
 JSON |= {"dataset-items", "captures", "labels", "tags", "licences", "picks", "deploy-sheet"}
 JSON |= {"runs-list", "rounds", "leaderboard", "pair-test", "family-test", "rank-stability", "run-compare"}
 JSON |= {"label-coverage", "baselines"}
-JSON |= {"dataset-card", "validate", "prompts", "prompt-diff", "looks", "studies", "study-status"}
+JSON |= {"dataset-card", "validate", "prompts", "prompt-diff", "looks", "studies"}
 JSON |= {"faithfulness-show"}
 JSON |= set(AGENT_TOOLS)
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an

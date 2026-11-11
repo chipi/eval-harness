@@ -31,7 +31,7 @@ that can move a result is never a patch release without saying so under **Change
   like any config; it is kept or dropped by the spec's rule against the best so far, its limits against the baseline,
   every p labelled nominal. Stop rules: trials, dollars, wall time, patience, a changed spec. `evh study-confirm` is
   the one step to evidence: the trial and the baseline on a test set's items no study saw (`run --items`), one look
-  at the set's next level, the rule given first. `study-stop`, `studies`, `study-status`, and `study-import` for
+  at the set's next level, the rule given first. `study-stop`, `studies` (`--study` for one), and `study-import` for
   Karpathy's `results.tsv`. A sampler is shown the best's weakest validation items (recorded; a confirmation leaves
   them out); a trial may change a prompt root's varied files; a changed scorer stops a study; `study-run --resume`
   after a crash; each goal's page shows its studies' trials.

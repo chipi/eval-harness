@@ -469,7 +469,7 @@ def main() -> int:
             ("looks", ["--dataset", "no_such_v1"], "not a test set"),
             # Studies (RFC-029): installed, each answers in words; the flow is test_study.py.
             ("studies", [], "ok:no studies"),
-            ("study-status", ["g/no_such"], "no study"),
+            ("studies", ["--study", "g/no_such"], "no study"),
             ("study-run", ["g/no_such"], "no spec at"),
             ("study-ask", ["g/no_such"], "no study"),
             ("study-tell", ["g/no_such", "--ask", "x", "--proposal-json", "{}"], "no study"),

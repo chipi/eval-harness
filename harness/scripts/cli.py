@@ -209,11 +209,7 @@ COMMANDS = {
     "rounds": ("round_status.py", "a goal's rounds, and what the evidence suggests next"),
     "studies": (
         "view_studies.py",
-        "every study, by goal: its status, trials, what it kept and spent (RFC-029)",
-    ),
-    "study-status": (
-        "study_status.py",
-        "one study as its log says: each trial, the best so far, its confirmations",
+        "every study, by goal: its status, trials, what it kept and spent; --study one, trial by trial (RFC-029)",
     ),
     "study-run": (
         "study_run.py",
