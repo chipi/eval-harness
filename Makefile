@@ -63,7 +63,7 @@ compare: $(PY)
 site: $(PY)
 	$(MAKE) -C harness site
 
-# Both front ends in headless Chromium: the catalog and run inspector, then the public site
+# The front ends in headless Chromium: the catalog and run inspector, the Workbench mockup, then the public site
 # served with production's headers. Needs `make -C harness browser-install` once.
 serve: $(PY)
 	$(MAKE) -C harness serve STORE=$(STORE) FRESH=$(FRESH) ARGS="$(ARGS)"

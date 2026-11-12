@@ -9,8 +9,9 @@
 #   commands   the report tools and the operational commands as a user runs them, on data where the
 #              answer is known (harness/tests/test_report_tools.py, test_ops_commands.py): a few
 #              minutes, so beside verify rather than in it.
-#   browser    the catalog, the run inspector and the public site in headless Chromium, as a reader uses
-#              them (harness/tests/test_inspector_browser.py, site/test_browser.py): a tutorial project built from
+#   browser    the catalog, the run inspector, the Workbench mockup and the public site in headless Chromium, as a
+#              reader uses them (harness/tests/test_inspector_browser.py, test_workbench_browser.py,
+#              site/test_browser.py): a tutorial project built from
 #              the package's wheel and the site served with production's headers, any console error or
 #              CSP violation a failure. The same make targets a developer runs.
 #   stores     every test file again on the SQLite store (RFC-025): the jobs above run the files store, and a
