@@ -251,7 +251,7 @@ def strip(exp: dict, width: int = 1000, height: int = 92, title: bool = True, co
     dx = min(max(x(d["score"]), left + half), right - half)
     out.append(
         f'<circle cx="{x(d["score"]):.1f}" cy="{y}" r="11" class="ring"/>'
-        f'<text x="{dx:.1f}" y="{y - 18}" text-anchor="middle" class="t-ink" font-size="{fs}">dearest · {ordinal(d["rank"])} · {d["score"]:.3f}</text>'
+        f'<text x="{dx:.1f}" y="{y - 18}" text-anchor="middle" class="t-ink" font-size="{fs}">most expensive · {ordinal(d["rank"])} · {d["score"]:.3f}</text>'
     )
     if t["arm"] != d["arm"]:
         out.append(
@@ -530,6 +530,9 @@ addEventListener('scroll',()=>tip.classList.remove('on'),{passive:true});
 const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}}),{rootMargin:'0px 0px -8% 0px'});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in')),2500);
+/* the phone menu closes on Escape (focus back on its button) and on a tap outside it */
+document.addEventListener('keydown',ev=>{if(ev.key!=='Escape')return;document.querySelectorAll('details.menu[open]').forEach(d=>{d.open=false;d.querySelector('summary').focus();});});
+document.addEventListener('click',ev=>{document.querySelectorAll('details.menu[open]').forEach(d=>{if(!d.contains(ev.target))d.open=false;});});
 </script>"""
 
 
@@ -619,7 +622,7 @@ def author(place: str) -> str:
   <div class="eyebrow">Who built this</div>
   <h2>Built by Marko Dragoljevic.</h2>
   <p class="lede">I have led engineering teams for twenty years — at ServiceNow, EclecticIQ and Backbase — and through <b>Human Copilot</b> I now advise technology leaders. Which model, build or buy, own or rent: the questions this harness answers are the ones I help teams answer, on their own data.</p>
-  <div class="btns">{out(HUMAN, f"author-{place}", "Work with Human Copilot →", "btn primary")}{out(DWO, f"author-{place}", "DevWhateverOps: principles for building end to end ↗", "btn")}</div>
+  <div class="btns">{out(HUMAN, f"author-{place}", "Work with Human Copilot →", "btn" if place == "home" else "btn primary")}{out(DWO, f"author-{place}", "DevWhateverOps: principles for building end to end ↗", "btn")}</div>
 </div></section>
 """
 
@@ -849,7 +852,7 @@ def dearest_note(f: dict, up: str = "") -> str:
     names = sorted({by[s]["dearest"]["arm"] for s, _ in pairs})
     return (
         f' The headline is on each eval\'s primary metric. <a href="{up}evals/judging.html">Re-measured</a>, '
-        f"against labels a person corrected and by LLM judges, the dearest model, {' / '.join(names)}, is first "
+        f"against labels a person corrected and by LLM judges, the most expensive model, {' / '.join(names)}, is first "
         f"on the point estimate in {word(len(leads))}: {' and '.join(leads)}; neither re-measurement is confirmed."
     )
 
@@ -1116,13 +1119,16 @@ def home(f: dict) -> str:
     )
     body = f"""
 <section class="hero hero-grid"><div class="wrap">
+  <div class="hero-cols"><div class="hero-text">
   <div class="kicker"><b>eval-harness</b> · open source · MIT · by {out(HUMAN, "hero", "Marko Dragoljevic", "byline")}</div>
   <h1>Is the ranking real, or <em>a lucky sample?</em></h1>
   <p class="dek">A small, <a href="{REPO}">open source drop-in harness</a> for evaluating AI systems on your own data. Freeze a dataset, run your system against it, and get the answer most leaderboards skip: whether one system is actually better than another, or only ahead on this sample.</p>
+  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="evals.html">See it on {hosted_n} LLMs</a></div>
+  </div>{hero_sketch(exps)}</div>
+  <div class="hero-more">
   <p class="dek-note">This is ongoing work: the harness and its method are the point, and the six evals are worked examples of them, not a benchmark.</p>
-  <p class="dek">Three parts: this site, why the harness exists and what it found; <a href="{CATALOG}">the catalog</a>, the harness's own pages over every run behind it, with an inspector that re-tests any comparison; and <a href="docs/">the docs</a>, how to do the same on your own system. An agent can ask the catalog too, over MCP (<a href="#mcp">how</a>).</p>
-  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="evals.html">See it on {hosted_n} LLMs</a><a class="btn" href="{CATALOG}">Browse every run</a><a class="btn" href="{REPO}">GitHub ↗</a></div>
-  {hero_sketch(exps)}
+  <p class="dek-note">Three parts: this site, why the harness exists and what it found; <a href="{CATALOG}">the catalog</a>, the harness's own pages over every run behind it, with an inspector that re-tests any comparison (<a href="{CATALOG}">browse every run</a>); and <a href="docs/">the docs</a>, how to do the same on your own system. An agent can ask the catalog too, over MCP (<a href="#mcp">how</a>).</p>
+  </div>
 </div></section>
 
 <section class="block" id="why" data-nav="Why"><div class="wrap">
@@ -1166,21 +1172,22 @@ def home(f: dict) -> str:
 
 <section class="block" id="proof" data-nav="Examples"><div class="wrap">
   <div class="eyebrow"><span class="num">04</span>Worked examples · {hosted_n} LLMs</div>
-  <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won.</em></h2>
+  <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won</em> on the primary metric.</h2>
   <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)} Each is also a goal in <a href="{CATALOG}">the catalog</a>, with every run, dataset and reference set behind it.</p>
   <div class="stats">
-    <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">evals with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
+    <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">evals with frontier models where the most expensive model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader is not significantly different from others (at 100–280 items)</div></div>
     <div class="stat"><div class="n">$0</div>{marks(f["local_first_or_contender"], len(exps))}<div class="l">for a model that is first, or not significantly different from first, in {f["local_first_or_contender"]} of the {len(exps)}; {f["local_first_or_contender"] - remeasured_counts(f)["local_lost"]} of {len(exps)} if the <a href="evals/judging.html">re-measured scores</a> are taken at face value</div></div>
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_ok, cal_n)}<div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
   </div>
+  <p class="note" style="margin-top:28px"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
   <div class="chart benches" style="margin-top:48px">{legend(reading="higher score: further right →", baseline=False)}{benches}</div>
   <p class="dek-note">In the catalog: {goal_links}.</p>
   <div class="btns"><a class="btn primary" href="evals.html">All the findings</a><a class="btn" href="{CATALOG}">Browse them in the catalog</a><a class="btn" href="evals.html#reproduce">Reproduce them</a></div>
 </div></section>
 
-<section class="block" id="mcp" data-nav="Agentic"><div class="wrap">
-  <div class="eyebrow">For agents</div>
+<section class="block" id="mcp" data-nav="For agents"><div class="wrap">
+  <div class="eyebrow"><span class="num">05</span>For agents</div>
   <h2>Ask it from your agent.</h2>
   <div class="cols">
     <div class="prose"><p>The harness is also an MCP server. <code>evh mcp</code> gives an agent the same read commands you use: datasets and what is inside them, goals and what they recommend, arms, reference sets, metrics, activity, the inspector's paired comparisons and its sheet of every item and arm, the label sets and how two agree, and what production decided (its captures, the deploy sheet, the picks waiting for a dataset's next version), each answering exactly what the command prints. Nothing it does writes your project, spends or runs a model (the one file it keeps is a cache of the goals' tests).</p>
@@ -1195,9 +1202,11 @@ def home(f: dict) -> str:
   </div>
 </div></section>
 
-{method.landing_teaser(H, f, "05")}
-<section class="block"><div class="wrap">
-  <p class="note"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
+{method.landing_teaser(H, f, "06")}
+<section class="block" id="start" data-nav=""><div class="wrap">
+  <h2>Try it on your own data.</h2>
+  <p class="lede">Install the pinned release; getting started takes a six-ticket tutorial kit through the loop in about fifteen minutes — a dataset, arms, a reference set, a comparison, a choice — offline, no API key.</p>
+  <div class="btns"><a class="btn primary" href="docs/GUIDE/">Try the whole loop</a><a class="btn" href="use.html">Use it on your problem</a></div>
 </div></section>
 {author("home")}"""
     return page(
@@ -1285,7 +1294,7 @@ def landing(f: dict) -> str:
   <h1>The most expensive model <em>never won.</em></h1>
   <p class="dek">{hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and the baselines they have to beat, run through {n_exp} public benchmarks as worked examples of the harness and its method. Every comparison is tested for significance, every cost is read off the provider's bill, and the instrument itself is checked against the published literature.{dearest_note(f)}</p>
   <div class="stats">
-    <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div><div class="l">evals with frontier models where the dearest model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
+    <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div><div class="l">evals with frontier models where the most expensive model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where the leader is not significantly different from others (at 100–280 items)</div></div>
     <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not significantly different from first, in {f["local_first_or_contender"]} of the {len(exps)}; {f["local_first_or_contender"] - remeasured_counts(f)["local_lost"]} of {len(exps)} if the <a href="evals/judging.html">re-measured scores</a> are taken at face value</div></div>
     <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
@@ -1294,7 +1303,7 @@ def landing(f: dict) -> str:
 
 <section class="block" id="findings" data-nav="Price"><div class="wrap">
   <div class="eyebrow"><span class="num">01</span>Price</div>
-  <h2>The dearest model was never the best.</h2>
+  <h2>The most expensive model was never the best.</h2>
   <p class="lede">Each row is one benchmark; each dot is one system, placed by its score. The ringed dot is the most expensive hosted model. <strong>In {in_all} it finished behind something cheaper</strong> — and in {word(behind_free)}, behind something free. On SciFact only the twelve cheapest hosted models ran, so there it is the dearest of those; no Anthropic or OpenAI arm was run.</p>
   <div class="chart reveal">{legend(reading="higher score: further right →", baseline=False)}{strips}
   <figcaption>Baselines (lead-3, keyword rules, empty output) are left off the axis to keep the field readable; they are in each eval's page. A dot left of the ⫽ break sits far below the rest, off the scale. Hover or tap any dot for its score, rank and bill.</figcaption></div>
@@ -1322,7 +1331,7 @@ def landing(f: dict) -> str:
   <ol class="findings reveal">
     <li><div><h3>A free local model was first, or not significantly different from first, in {f["local_first_or_contender"]} of {len(exps)}.</h3><p>Against hosted LLMs run with one prompt, no examples and no reasoning. {q("Every one is under 2 GB and needs no GPU", SYN)} — $0 per item — against hosted models billing up to {money(dear["cost"])} for {dear_x["n_items"]} items ({e(dear["arm"])}, {e(dear_x["bench"])}).</p></div></li>
     <li><div><h3>The clearest wins were on text like the text it was trained on.</h3><p>{q("The same BART architecture, fine-tuned on XSum's one-sentence BBC summaries instead of CNN/DailyMail's, finishes last of 29 — below copying the first three sentences.", "research/REPORT_SUMMARIZATION.md")} The XSum control also decodes shorter, so it does not isolate style.</p></div></li>
-    <li><div><h3>On one task, even a free model trained for it lost to LLM judges — and the dearest judge was not needed.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out); UniEval, the best free scorer and an evaluator trained for the task, reaches 64%.", JUDGE)} {q("The judges rank all 16 summaries in one call while UniEval scores one at a time, and a pointwise LLM judge was not run; a no-model lookup of which system wrote each summary reaches 63%.", JUDGE)} {q("The cheapest judge the leader is not significantly different from, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task and one trained evaluator, and why it lost is not tested: the direction, not the size.</p></div></li>
+    <li><div><h3>On one task, even a free model trained for it lost to LLM judges — and the most expensive judge was not needed.</h3><p>{q("Judging summaries, scored against the mean of two experts as one expert is against the other two, the best judges reach 93% of a human's agreement (the best of 24, chosen on the same articles; 92% held out); UniEval, the best free scorer and an evaluator trained for the task, reaches 64%.", JUDGE)} {q("The judges rank all 16 summaries in one call while UniEval scores one at a time, and a pointwise LLM judge was not run; a no-model lookup of which system wrote each summary reaches 63%.", JUDGE)} {q("The cheapest judge the leader is not significantly different from, gemma_l, has open weights and bills $278 per million articles — 1/23 of the leader.", JUDGE)} One task and one trained evaluator, and why it lost is not tested: the direction, not the size.</p></div></li>
     <li><div><h3>And part of a fine-tune's lead is learning the dataset's own conventions.</h3><p>{q("On AG News, the lead of the three fine-tunes is concentrated in 17 items the hosted field mostly gets wrong.", "research/REPORT_CLASSIFICATION.md")} Adjudicated by topic by one reader shown the hosted answer, the gold was wrong on all 17, and on that gold every hosted LLM scores above every fine-tune. {q("On Few-NERD, 57% of the winner's margin over openai_m is one entity type the prompt never defined (30–57% across the hosted arms).", "research/REPORT_NER.md")} The leaders are better at the benchmark; how much of that is better at the task is a separate question, measured in each report.</p></div></li>
   </ol>
 </div></section>
@@ -1471,10 +1480,10 @@ def findings_for(x: dict, f: dict) -> list:
     )
     common = [
         (
-            f"The dearest model finished {ordinal(d['rank'])} of {x['n_arms']}.",
+            f"The most expensive model finished {ordinal(d['rank'])} of {x['n_arms']}.",
             f"{d['arm']} billed {money(d['cost'])} for {x['n_items']} items. "
             + (
-                "Only the twelve cheapest hosted models ran here, so this is the dearest of those; no Anthropic or OpenAI arm was run. "
+                "Only the twelve cheapest hosted models ran here, so this is the most expensive of those; no Anthropic or OpenAI arm was run. "
                 if s == "scifact"
                 else ""
             )

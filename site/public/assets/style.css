@@ -6,7 +6,7 @@
   --surface-2: #1c1c1a;
   --ink: #f0efec;
   --ink-2: #b9b7ad;
-  --muted: #7d7b74;
+  --muted: #8a8880;
   --hair: #2a2a27;
   --axis: #3a3a36;
   --accent: #c8ff3d;          /* editorial highlight, never data */
@@ -25,7 +25,7 @@
   :root:not([data-theme="dark"]) {
     color-scheme: light;
     --page: #f6f5f1; --surface: #fcfcfb; --surface-2: #efeee9;
-    --ink: #0b0b0b; --ink-2: #4a4945; --muted: #7a7872; --hair: #dddbd3; --axis: #c3c2b7;
+    --ink: #0b0b0b; --ink-2: #4a4945; --muted: #66645e; --hair: #dddbd3; --axis: #c3c2b7;
     --accent: #3d5c00; --accent-ink: #f6f5f1;
     --proprietary: #2a78d6; --local: #eb6834; --open: #1baf7a; --baseline: #9a988f;
     --band: rgba(61, 92, 0, 0.16);
@@ -35,7 +35,7 @@
 :root[data-theme="light"] {
   color-scheme: light;
   --page: #f6f5f1; --surface: #fcfcfb; --surface-2: #efeee9;
-  --ink: #0b0b0b; --ink-2: #4a4945; --muted: #7a7872; --hair: #dddbd3; --axis: #c3c2b7;
+  --ink: #0b0b0b; --ink-2: #4a4945; --muted: #66645e; --hair: #dddbd3; --axis: #c3c2b7;
   --accent: #3d5c00; --accent-ink: #f6f5f1;
   --proprietary: #2a78d6; --local: #eb6834; --open: #1baf7a; --baseline: #9a988f;
   --band: rgba(61, 92, 0, 0.16);
@@ -547,3 +547,15 @@ footer .wrap.foot { display: block; }
 /* MCP, the switcher's fourth entry, leaves the bar on phones: four entries no longer fit 390 px beside
    the search, GitHub and theme buttons (the home page's "For agents" section links it still). */
 @media (max-width: 560px) { .bar .sections a[href$="#mcp"] { display: none; } }
+
+/* the home page's critique (2026-11-12): the question and the chart that answers it on the first screen; the notes
+   about the site below them */
+.hero-cols { display: grid; gap: 40px; }
+.hero-more { margin-top: 40px; max-width: 44rem; }
+@media (min-width: 900px) {
+  .hero-cols { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 56px; }
+  .hero-cols h1 { font-size: clamp(44px, 5.2vw, 80px); max-width: 12ch; }
+  .hero-cols .hero-chart { margin-top: 0; }
+  .hero-cols .vw { display: none; }
+  .hero-cols .vn { display: block; }
+}

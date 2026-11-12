@@ -7,7 +7,7 @@ colors:
   surface-raised: "#1c1c1a"
   paper-ink: "#f0efec"
   ink-secondary: "#b9b7ad"
-  muted: "#7d7b74"
+  muted: "#8a8880"
   hairline: "#2a2a27"
   axis: "#3a3a36"
   highlighter-lime: "#c8ff3d"
@@ -20,7 +20,11 @@ colors:
   ink-light: "#0b0b0b"
   ink-secondary-light: "#4a4945"
   hairline-light: "#dddbd3"
+  muted-light: "#66645e"
   highlighter-olive-light: "#3d5c00"
+  proprietary-blue-light: "#2a78d6"
+  local-ember-light: "#eb6834"
+  open-weights-green-light: "#1baf7a"
 typography:
   display:
     fontFamily: "Inter Tight, Inter, Helvetica Neue, system-ui, -apple-system, Segoe UI, sans-serif"
@@ -124,7 +128,8 @@ that keeps every role.
 - Monospace for every label, kicker, eyebrow, navigation link and number; a humanist sans for reading.
 - Flat surfaces separated by hairlines and a single tone step, never by shadow.
 - Three categorical colours for the kinds of model, kept apart from the accent.
-- No web fonts and no external requests: the type falls back to the system's sans and mono.
+- No web fonts, and no external request but the cookieless analytics PRODUCT.md names: the type falls back to the
+  system's sans and mono.
 
 ## Colors
 
@@ -154,7 +159,10 @@ Near-black ink and warm grey text, one highlighter, three data colours. The ligh
 - **Muted** (`muted`): eyebrows, table heads, figure captions, the footer.
 - **Hairline** (`hairline`) and **Axis** (`axis`): every border and rule; a chart's axis.
 - The light theme's counterparts: **Paper** (`paper-light`), **Surface** (`surface-light`), **Ink** (`ink-light`),
-  **Ink Secondary** (`ink-secondary-light`), **Hairline** (`hairline-light`).
+  **Ink Secondary** (`ink-secondary-light`), **Muted** (`muted-light`), **Hairline** (`hairline-light`), and the kinds'
+  light steps (`proprietary-blue-light`, `local-ember-light`, `open-weights-green-light`).
+- **Muted** clears 4.5:1 on every surface in both themes, the catalog's and the Workbench's values (the home page's
+  critique, 2026-11-12, found the earlier step at 3.7–4.4:1).
 
 ### Named Rules
 
@@ -272,5 +280,5 @@ a tooltip), pills for buttons and the section switcher (999px), circles for icon
 
 - **Don't** use the lime accent for a data series, a value or a status.
 - **Don't** add a shadow to a card, a chart or a table; only a floating panel has one.
-- **Don't** load a web font or any other external resource.
+- **Don't** load a web font or any other external resource (the cookieless analytics excepted).
 - **Don't** add decoration that carries no meaning: the grid is graph paper, the glow is the highlighter.

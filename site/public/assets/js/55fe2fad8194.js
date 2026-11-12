@@ -21,3 +21,6 @@ addEventListener('scroll',()=>tip.classList.remove('on'),{passive:true});
 const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}}),{rootMargin:'0px 0px -8% 0px'});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in')),2500);
+/* the phone menu closes on Escape (focus back on its button) and on a tap outside it */
+document.addEventListener('keydown',ev=>{if(ev.key!=='Escape')return;document.querySelectorAll('details.menu[open]').forEach(d=>{d.open=false;d.querySelector('summary').focus();});});
+document.addEventListener('click',ev=>{document.querySelectorAll('details.menu[open]').forEach(d=>{if(!d.contains(ev.target))d.open=false;});});
