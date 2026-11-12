@@ -366,6 +366,10 @@ that can move a result is never a patch release without saying so under **Change
 - **`dataset-from-capture` deleted what sat in its items' folder**: `data/sources/<dataset>/` was emptied before the
   items were written, and a capture's own export kept there was deleted without a word (the fleet's beta). A file
   there that the dataset's record does not name is now refused (`would-overwrite`), and stays.
+- **`pair-test --round` gave one reason for three**: a round whose only arm is its baseline, or whose leader is its
+  baseline, was said to "record no other baseline run". Each is now named (the fleet's beta).
+- **`label-mutants` reported a join mutant it could not apply as SURVIVED**: a project's join mutant with a key the
+  join does not read (`item_field`) ran the unchanged join. It is refused now, the key named (the fleet's beta).
 - **`validate` V24 failed every replay run**: it required a run's `deployment.code` to be one checkout (repo, commit,
   dirty, path), and a replay's (RFC-030) is its code record, the record's versions' hash and the commits it ran. The
   replay test read only V26's line of `validate`; it now holds V24 too.

@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _jsonout, _outcome_join
-from evaluation_harness._common import evh_prog, load_module
+from evaluation_harness._common import die, evh_prog, load_module
 from evaluation_harness._outcome_rules import load_rules
 from evaluation_harness.label_coverage import coverage
 
@@ -142,6 +142,21 @@ def main() -> int:
                 plans.append((f"{name} (the project's)", m, join))
             if jargs is not None:
                 for name, j in getattr(mod, "join_mutants", lambda j: [])(dict(jargs)) or []:
+                    # A key the join does not read would run the unchanged join and be reported SURVIVED (the
+                    # fleet's beta): refused, so the mutant is written in the keys that are read.
+                    unread = sorted(set(j) - set(jargs)) if isinstance(j, dict) else []
+                    if not isinstance(j, dict) or unread:
+                        die(
+                            f"--mutants {args.mutants}: join mutant {name!r} "
+                            + (
+                                f"has key(s) the join does not read: {', '.join(unread)}"
+                                if unread
+                                else "is not a dict"
+                            )
+                            + f". A join mutant changes {', '.join(sorted(jargs))}; the fields joined are one "
+                            "'join': 'ITEM_FIELD=RECORD_FIELD'.",
+                            "bad-argument",
+                        )
                     plans.append((f"{name} (the project's)", rules, make_join(j)))
         print(
             f"{args.dataset_id}: {len(plans)} mutant(s) of the labeller over capture {args.capture}"

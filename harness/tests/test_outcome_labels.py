@@ -312,6 +312,18 @@ try:
         and any("window moved" in n and k > 0 for n, k in names.items()),
         said(r)[-900:],
     )
+    # The fleet's beta (F6): a join mutant with a key the harness does not read ran the unchanged join and was
+    # reported SURVIVED. Refused now, the key named.
+    (proj / "mut_bad.py").write_text(
+        "def join_mutants(join):\n    return [('the item side keyed on the wrong field', {**join, 'item_field': 'ticket'})]\n"
+    )
+    r = evh("label-mutants", "--dataset-id", "tickets_v1", "--capture", "dec", "--map", "rules.yaml", *join("iss"),
+            "--mutants", "mut_bad.py")  # fmt: skip
+    check(
+        "label-mutants: a project join mutant with a key the harness does not read is refused, the key named",
+        r.returncode not in (0, 6) and "item_field" in said(r) and "SURVIVED" not in said(r),
+        said(r)[-500:],
+    )
     r = evh("validate")
     check("validate passes with the new label fields", r.returncode == 0, r.stdout[-600:])
 finally:
