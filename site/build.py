@@ -788,7 +788,9 @@ def sketch(exps: list, compact: bool = False) -> str:
     else:
         left, right = 170, width - 150
     # It holds links (each row opens its eval), so it is a group a screen reader enters, each link named in words.
-    out = [f'<svg viewBox="0 0 {width} {height}" role="group" aria-label="The six evals, one row each" class="sketch">']
+    out = [
+        f'<svg viewBox="0 0 {width} {height}" role="group" aria-label="The six evals, one row each" class="sketch">'
+    ]
     for i, x in enumerate(exps):
         learned = [a for a in x["arms"] if a["kind"] != "baseline"]
         on, _off = off_scale(learned)
@@ -848,14 +850,14 @@ def hero_sketch(exps: list) -> str:
     return (
         f'<figure class="chart hero-chart hero-sketch reveal" aria-label="{e(finding)}">'
         f"{key}{both(sketch(exps), sketch(exps, compact=True))}"
-        f'<figcaption>{e(finding)}'
+        f"<figcaption>{e(finding)}"
         + (
             " On SciFact only the twelve cheapest hosted models ran, so its ring is the dearest of those."
             if any(x["slug"] == "scifact" for x in exps)
             else ""
         )
         + ' <a href="evals.html#findings">See each one →</a>'
-        f"</figcaption></figure>"
+        "</figcaption></figure>"
     )
 
 
