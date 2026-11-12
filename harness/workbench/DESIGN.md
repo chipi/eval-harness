@@ -7,7 +7,7 @@ colors:
   surface-raised: "#1c1c1a"
   paper-ink: "#f0efec"
   ink-secondary: "#b9b7ad"
-  muted: "#7d7b74"
+  muted: "#8a8880"
   hairline: "#2a2a27"
   axis: "#3a3a36"
   highlighter-lime: "#c8ff3d"
@@ -17,7 +17,7 @@ colors:
   paper-light: "#f6f5f1"
   surface-light: "#fcfcfb"
   ink-light: "#0b0b0b"
-  muted-light: "#7a7872"
+  muted-light: "#66645e"
   hairline-light: "#dddbd3"
   highlighter-olive-light: "#3d5c00"
   status-ok-light: "#12805a"
@@ -141,6 +141,8 @@ The site's palette for the page and the accent, and three status colours.
 - The site's neutrals: **Ink Black** (`ink-black`), **Surface** (`surface`), **Surface Raised** (`surface-raised`),
   **Paper Ink** (`paper-ink`), **Ink Secondary** (`ink-secondary`), **Muted** (`muted`), **Hairline** (`hairline`),
   **Axis** (`axis`), with their light-theme counterparts.
+- **Muted** is the catalog's, not the site's: 4.81:1 or more on every surface in dark, 5.09:1 or more in light (the
+  eval screen's critique found the site's step at 3.8–4.4:1).
 
 ### Named Rules
 

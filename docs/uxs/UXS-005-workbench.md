@@ -399,6 +399,21 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
 - **The eval**: the baseline's version, who promoted it and why, `baselines` and `baseline-rollback` (RFC-027); a
   round's close records who. **Models**: the prompt a person writes is saved as a prompt version, named by its
   content (RFC-028). **Settings**: `evh migrate` after an upgrade; the public repos the leak check searches.
+- **The eval, after its critique** (owner, 2026-11-12: the decision moment first; a promotion is refused with the fix,
+  not warned):
+  - "The answer so far" is the latest closed round's conclusion, with the baseline it left.
+  - The comparison names its correction ("Holm across 28; the p shown is raw").
+  - An arm is opened by its name, a button. The chart's dots are for the mouse; the table is the keyboard and
+    screen-reader path. Focus stays on the control used, after every redraw.
+  - The rounds are a tab list with a panel and arrow keys.
+  - A disabled "Open round r4" says on screen why.
+  - A round's run, its job and its status count the same arms.
+  - "Make baseline" is offered only where `round-close --promote` would accept it: the arm's own run in this round,
+    significantly ahead of the baseline, corrected for the round's arms. Otherwise the row says why it "can't be the
+    baseline" and what would make it so. The project's real r1 arms are all refused this way.
+  - The baseline cannot be retired.
+  - A prompt opens under its row and names the arm.
+  - "Close the round" needs a conclusion, and is confirmed with a restatement of what it decides.
 
 ## Help, for someone who is new to this
 

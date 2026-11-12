@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-12T15:37:00Z",
+  "generatedAt": "2026-11-12T16:18:22Z",
   "title": "Design System: evh workbench",
   "extensions": {
     "colorMeta": {
@@ -82,13 +82,13 @@
       "muted": {
         "role": "neutral",
         "displayName": "Muted",
-        "canonical": "#7d7b74",
+        "canonical": "#8a8880",
         "tonalRamp": [
           "#272725",
-          "#454441",
-          "#64625d",
-          "#828079",
-          "#9e9d97",
+          "#464541",
+          "#64635d",
+          "#838179",
+          "#9f9d97",
           "#bab9b6",
           "#d6d6d4",
           "#f3f2f2"
@@ -232,13 +232,13 @@
       "muted-light": {
         "role": "neutral",
         "displayName": "Muted Light",
-        "canonical": "#7a7872",
+        "canonical": "#66645e",
         "tonalRamp": [
           "#272725",
-          "#454442",
-          "#63625e",
-          "#828079",
-          "#9e9c98",
+          "#464441",
+          "#64625d",
+          "#838079",
+          "#9f9d97",
           "#bab9b6",
           "#d6d6d4",
           "#f3f2f2"
