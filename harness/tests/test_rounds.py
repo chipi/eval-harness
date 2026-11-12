@@ -423,6 +423,17 @@ try:
         and "against tickets_lead1_v1" in out(r),
         out(r)[-400:],
     )
+    r = evh(
+        "pair-test", "--dataset-id", "tickets_v1", "--goal", "tickets_summary", "--round", "r3",
+        "--a", "tickets_lead1_v1",
+    )  # fmt: skip
+    check(
+        "pair-test --round with --a its baseline: says the arm is the baseline, not that none is recorded",
+        r.returncode != 0
+        and "tickets_lead1_v1 is round r3's baseline" in out(r)
+        and "records no baseline" not in out(r),
+        out(r)[-400:],
+    )
 
     evh("catalog")
     page = (proj / ".build/catalog/g/tickets_summary.html").read_text()
@@ -468,6 +479,30 @@ try:
         and (rep.get("tickets_lead1_v1") or {}).get("same") == 6
         and "tickets_lead2_v1" not in rep,
         r.stdout[-800:] + r.stderr[-300:],
+    )
+
+    # The fleet's beta (F3): a new round whose only arm is its baseline was said to "record no other baseline run".
+    evh(
+        "round-close",
+        "--goal",
+        "tickets_summary",
+        "--round",
+        "r3",
+        "--conclusion",
+        "closed to open r4 in the test",
+    )
+    r = evh(
+        "round-open", "--goal", "tickets_summary", "--dataset", "tickets_v1",
+        "--keep", "tickets_lead1_v1", "--baseline", "tickets_lead1_v1",
+    )  # fmt: skip
+    r4 = evh("pair-test", "--dataset-id", "tickets_v1", "--goal", "tickets_summary", "--round", "r4")
+    check(
+        "pair-test --round on a round whose only arm is its baseline: says so, not that no baseline is recorded",
+        r.returncode == 0
+        and r4.returncode != 0
+        and "round r4 has no arm besides its baseline tickets_lead1_v1" in out(r4)
+        and "records no baseline" not in out(r4),
+        out(r)[-300:] + out(r4)[-400:],
     )
 finally:
     shutil.rmtree(proj, ignore_errors=True)

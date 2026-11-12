@@ -141,8 +141,21 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
     if not args.b:
         base = rnd.get("baseline")
         args.b = next((m["config_id"] for d, m in runs if d.name == base), None)
-        if not args.b or args.b == args.a:
-            die(f"round {args.round} records no other baseline run: name --b", "not-enough")
+        if not args.b:
+            die(f"round {args.round} records no baseline run: name --b", "not-enough")
+        if args.b == args.a:
+            # The fleet's beta: a new round whose only arm is its baseline was said to record no baseline.
+            if not [c for c in in_play if c != args.b]:
+                die(
+                    f"round {args.round} has no arm besides its baseline {args.b}: run an arm in it, or name --a",
+                    "not-enough",
+                )
+            die(
+                f"{args.a} is round {args.round}'s baseline"
+                + (f" and its leader on {args.metric}" if chose else "")
+                + ": name another arm with --a to test it against the baseline, or --b",
+                "not-enough",
+            )
     print(f"  round {args.round}: {args.a}{' (its leader)' if chose else ''} against {args.b}")
     # The comparisons the leader could have been: every arm in play but B, whether or not B is in play.
     return chose, len([c for c in in_play if c != args.b])
