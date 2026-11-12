@@ -708,9 +708,10 @@ models page lists records only: an arm's model with no record is not a row of it
 onboarded" chip for it.
 
 On the arms page each arm that uses a record gets it under the model column, linked, with the deployment its
-config named after it ("@ dgx"), and a badge: "smoked", "smoke: check", or "not smoked" (the record's latest
-arm smoke of the arm's config). `evh arms` shows the same in a "model record" column ("gem@dgx (smoked)"),
-when any arm has a record. An arm's page names the deployment beside its config, and its conditions list the
+config named after it ("@ dgx"), and a badge when an arm smoke ran: "smoked" or "smoke: check" (the record's
+latest arm smoke of the arm's config); none when it did not ("not smoked" was on 568 of 646 rows, so it said
+nothing). `evh arms` names all three in a "model record" column ("gem@dgx (smoked)", "(not smoked)"), when any
+arm has a record. An arm's page names the deployment beside its config, and its conditions list the
 runner (`machine.*`, `library.*`: where `evh` ran, outside the fingerprint's hash) and where the system under
 test ran (`deployment.machine`, `deployment.backend`, `deployment.server`).
 
