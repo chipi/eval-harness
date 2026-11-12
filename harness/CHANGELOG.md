@@ -266,7 +266,9 @@ that can move a result is never a patch release without saying so under **Change
   never labelled; each label keeps when its outcome happened and when it became knowable, and the set its `as_of`; a
   relabel (`--from-set`) keeps the earlier labels, adds what matured and marks what changed after maturing, and never
   drops a label silently; a rule's `under: action` keeps production's action, and a run or rescore against the set
-  leaves out an item where the variant acted otherwise ("not scorable under this variant", recorded).
+  leaves out an item where the variant acted otherwise ("not scorable under this variant", recorded). Several outside
+  systems in one label run: `--outcomes` again, each with its own options, read under its own name; the set records
+  each (`source.outcomes`, a list) and `label-mutants` mutates each join (the fleet's beta).
 
 - **Replays with production's own writes hidden, and the history confound** (RFC-031 P1): `replay.hide: {kinds:
   [...]}` hands the adapter what to hide (production's own writes of those kinds inside the replayed window), as part

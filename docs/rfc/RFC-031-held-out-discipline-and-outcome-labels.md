@@ -260,6 +260,9 @@ Every part is built, each with a test that fails before it (`tests/test_exposure
 - **L1, X3**: `--outcomes-as NAME` (default: the capture's id) is the prefix the rules read, so a later capture of the
   same source keeps the rules' names. `--gone-if-missing` is for a capture of the very objects the items name (a
   GlitchTip issue): in a window join no match is no outcome, not gone. The identity check makes a reused id gone.
+  Several outside systems (the fleet's beta, 2026-11-12: GitHub's close reason and GlitchTip's recurrence; owner yes):
+  `--outcomes` repeats, each with the options after it, and a label set's `source.outcomes` is a list, one record
+  per capture. Two captures read under one name are refused. `label-mutants` mutates each join in turn.
 - **L2**: an item's age is measured to the newest capture read (`as_of`). `--keep-vanished` keeps a label today's
   rules no longer give, said.
 - **L3**: `--action-field` names the record field holding production's action; `same()` of the run's adapter decides

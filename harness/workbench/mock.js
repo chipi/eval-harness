@@ -3391,7 +3391,7 @@ window.MOCK = {
       "name": "owner",
       "type": "person"
      },
-     "at": "2026-11-12T12:49:26Z",
+     "at": "2026-11-12T14:49:23Z",
      "change": {
       "params": {
        "sentences": 2
@@ -3409,7 +3409,7 @@ window.MOCK = {
      "rationale": "grid: the next value of the group",
      "reason": "beat the best so far by 0.25 (needed more than 0)",
      "runs": [
-      "s1-t1_20261112T124925Z"
+      "s1-t1_20261112T144922Z"
      ],
      "shown": [],
      "vs_baseline": {
@@ -3434,7 +3434,7 @@ window.MOCK = {
       "name": "owner",
       "type": "person"
      },
-     "at": "2026-11-12T12:49:27Z",
+     "at": "2026-11-12T14:49:24Z",
      "change": {
       "params": {
        "sentences": 3
@@ -3452,7 +3452,7 @@ window.MOCK = {
      "rationale": "grid: the next value of the group",
      "reason": "gained -0.1667 on the best so far, not more than 0",
      "runs": [
-      "s1-t2_20261112T124926Z"
+      "s1-t2_20261112T144924Z"
      ],
      "shown": [],
      "vs_baseline": {
@@ -3477,7 +3477,7 @@ window.MOCK = {
       "name": "owner",
       "type": "person"
      },
-     "at": "2026-11-12T12:49:28Z",
+     "at": "2026-11-12T14:49:26Z",
      "change": {
       "params": {
        "sentences": 4
@@ -3495,7 +3495,7 @@ window.MOCK = {
      "rationale": "grid: the next value of the group",
      "reason": "gained -0.2593 on the best so far, not more than 0",
      "runs": [
-      "s1-t3_20261112T124927Z"
+      "s1-t3_20261112T144925Z"
      ],
      "shown": [],
      "vs_baseline": {
@@ -3521,7 +3521,7 @@ window.MOCK = {
      "name": "owner",
      "type": "person"
     },
-    "at": "2026-11-12T12:49:26Z",
+    "at": "2026-11-12T14:49:23Z",
     "change": {
      "params": {
       "sentences": 2
@@ -3539,7 +3539,7 @@ window.MOCK = {
     "rationale": "grid: the next value of the group",
     "reason": "beat the best so far by 0.25 (needed more than 0)",
     "runs": [
-     "s1-t1_20261112T124925Z"
+     "s1-t1_20261112T144922Z"
     ],
     "shown": [],
     "vs_baseline": {
@@ -3564,13 +3564,13 @@ window.MOCK = {
      "name": "owner",
      "type": "person"
     },
-    "at": "2026-11-12T12:49:24Z",
+    "at": "2026-11-12T14:49:22Z",
     "baseline": "one_v1",
     "event": "start",
     "instruction": null,
     "references_sha256": "fb3a6d8ac4975e4c11739561e7824fbe734044c23a651c468e94a5b113f3bc54",
     "round": "r1",
-    "scorer_sha256": "0516696e645371a44285eef1bfdfc45705731de9d38321a7822d35aa4bcd6681",
+    "scorer_sha256": "15394244a7b57ce51e2eca655b823ee14faa917513db9214049f13b6680426e7",
     "spec_sha256": "3854e527aa28c7c70d18836261e06ddc02a74d706d9a934d2cd60479c65975d0"
    },
    "spent_usd": 0.0,
@@ -3581,17 +3581,17 @@ window.MOCK = {
      "name": "owner",
      "type": "person"
     },
-    "at": "2026-11-12T12:49:28Z",
+    "at": "2026-11-12T14:49:26Z",
     "event": "end",
     "reason": "the space is exhausted",
     "spent_usd": 0.0,
     "summary": "3 trial(s), 1 kept; best: s1-t1 (sentences = 2 (how much of a ticket to keep)). Research: no evidence; study-confirm on a test set is the one step that gives it."
    },
    "confirms": [],
-   "started_at": "2026-11-12T12:49:24Z"
+   "started_at": "2026-11-12T14:49:22Z"
   },
   "confirm": {
-   "at": "2026-11-12T12:49:30Z",
+   "at": "2026-11-12T14:49:27Z",
    "actor": {
     "type": "person",
     "name": "owner",
@@ -3608,10 +3608,10 @@ window.MOCK = {
    "n": 12,
    "runs": {
     "s1-t1-on-tk_test": [
-     "s1-t1-on-tk_test_20261112T124929Z"
+     "s1-t1-on-tk_test_20261112T144926Z"
     ],
     "one_v1-on-tk_test": [
-     "one_v1-on-tk_test_20261112T124929Z"
+     "one_v1-on-tk_test_20261112T144927Z"
     ]
    },
    "validation_delta": 0.2500000000000001,
@@ -3621,7 +3621,7 @@ window.MOCK = {
     "level": 0.01519817754635067,
     "set": "876b4306dfca95b7a4a77901a3e3604453814e18e5c4efb2cfc70552e54e3d0f",
     "dataset_id": "tk_test",
-    "harness": "0.7.2",
+    "harness": "0.8.0.dev0",
     "beyond_limit": false
    }
   },
@@ -3633,7 +3633,7 @@ window.MOCK = {
      {
       "beyond_limit": false,
       "dataset_id": "tk_test",
-      "harness": "0.7.2",
+      "harness": "0.8.0.dev0",
       "key": "ad1fdc02010b6e10",
       "level": 0.01519817754635067,
       "number": 1,
@@ -3644,12 +3644,12 @@ window.MOCK = {
        "name": "owner",
        "type": "person"
       },
-      "at": "2026-11-12T12:49:28Z"
+      "at": "2026-11-12T14:49:26Z"
      },
      {
       "beyond_limit": false,
       "dataset_id": "tk_test",
-      "harness": "0.7.2",
+      "harness": "0.8.0.dev0",
       "key": "ad1fdc02010b6e10",
       "level": 0.01519817754635067,
       "number": 1,
@@ -3660,7 +3660,7 @@ window.MOCK = {
        "name": "owner",
        "type": "person"
       },
-      "at": "2026-11-12T12:49:30Z"
+      "at": "2026-11-12T14:49:27Z"
      }
     ],
     "next": 2,
@@ -3681,15 +3681,15 @@ window.MOCK = {
    {
     "argv": [
      "--run-id",
-     "one_v1_20261112T124930-76944d",
+     "one_v1_20261112T144928-3c3199",
      "--config",
      "data/configs/one_v1.yaml"
     ],
     "by": "person:owner",
     "command": "run",
-    "created_at": "2026-11-12T12:49:30Z",
-    "harness": "0.7.2",
-    "id": "20261112T124930-76944d",
+    "created_at": "2026-11-12T14:49:28Z",
+    "harness": "0.8.0.dev0",
+    "id": "20261112T144928-3c3199",
     "locks": [
      [
       "config:one_v1",
@@ -3705,32 +3705,32 @@ window.MOCK = {
      ]
     ],
     "reason": null,
-    "run_id": "one_v1_20261112T124930-76944d",
-    "ended_at": "2026-11-12T12:49:31Z",
+    "run_id": "one_v1_20261112T144928-3c3199",
+    "ended_at": "2026-11-12T14:49:29Z",
     "exit": 0,
-    "pgid": 59193,
+    "pgid": 1659828,
     "refusal": null,
-    "started_at": "2026-11-12T12:49:30Z",
+    "started_at": "2026-11-12T14:49:28Z",
     "state": "succeeded",
-    "supervisor_pid": 59191,
+    "supervisor_pid": 1659826,
     "waiting_for": null
    }
   ],
   "job_started": {
    "argv": [
     "--run-id",
-    "one_v1_20261112T124930-76944d",
+    "one_v1_20261112T144928-3c3199",
     "--config",
     "data/configs/one_v1.yaml"
    ],
    "by": "person:owner",
    "command": "run",
-   "created_at": "2026-11-12T12:49:30Z",
+   "created_at": "2026-11-12T14:49:28Z",
    "env": {
     "EVAL_MAX_COST_USD": "1.0"
    },
-   "harness": "0.7.2",
-   "id": "20261112T124930-76944d",
+   "harness": "0.8.0.dev0",
+   "id": "20261112T144928-3c3199",
    "locks": [
     [
      "config:one_v1",
@@ -3746,7 +3746,7 @@ window.MOCK = {
     ]
    ],
    "reason": null,
-   "run_id": "one_v1_20261112T124930-76944d",
+   "run_id": "one_v1_20261112T144928-3c3199",
    "state": "queued",
    "waiting_for": null,
    "result": null
@@ -3796,11 +3796,11 @@ window.MOCK = {
    "dataset_id": "sup_v1_test",
    "named": 1,
    "new": 1,
-   "sealed_at": "2026-11-12T12:49:31Z"
+   "sealed_at": "2026-11-12T14:49:29Z"
   },
   "unseal": [
    "  look 1: decisions on it are tested one-sided at 1.5198% (evh looks)",
-   "data/datasets/sup_v1_test.json  unsealed for sup_cand_v1 against sup_base_v1 (look 1 at this held-out side; hypothesis committed 7c56bef3)",
+   "data/datasets/sup_v1_test.json  unsealed for sup_cand_v1 against sup_base_v1 (look 1 at this held-out side; hypothesis committed 36c30151)",
    "  now open to: sup_base_v1, sup_cand_v1"
   ],
   "heldout_pair": {
@@ -3886,7 +3886,7 @@ window.MOCK = {
      "items": 8,
      "exceptions": [],
      "run": "toy_filing/1",
-     "at": "2026-11-12T12:49:34Z"
+     "at": "2026-11-12T14:49:32Z"
     }
    },
    {
@@ -3901,7 +3901,7 @@ window.MOCK = {
      "items": 6,
      "exceptions": [],
      "run": "toy_filing/1",
-     "at": "2026-11-12T12:49:34Z"
+     "at": "2026-11-12T14:49:32Z"
     }
    },
    {
@@ -3916,7 +3916,7 @@ window.MOCK = {
      "items": 6,
      "exceptions": [],
      "run": "toy_filing/1",
-     "at": "2026-11-12T12:49:34Z"
+     "at": "2026-11-12T14:49:32Z"
     }
    }
   ],
@@ -3937,7 +3937,7 @@ window.MOCK = {
     "history_confound": {
      "filing_candidate_v3_hidden": {
       "items": 1,
-      "of": 20
+      "of": 8
      }
     }
    },
@@ -3953,13 +3953,7 @@ window.MOCK = {
     "counts": true,
     "disagree": 0,
     "delta": -0.6666666666666666,
-    "p": 0.125,
-    "history_confound": {
-     "filing_candidate_v3_hidden": {
-      "items": 1,
-      "of": 20
-     }
-    }
+    "p": 0.125
    },
    {
     "period": "period 3 (035e0b768f72)",
@@ -3973,13 +3967,7 @@ window.MOCK = {
     "counts": true,
     "disagree": 0,
     "delta": -0.6666666666666666,
-    "p": 0.125,
-    "history_confound": {
-     "filing_candidate_v3_hidden": {
-      "items": 1,
-      "of": 20
-     }
-    }
+    "p": 0.125
    }
   ],
   "code_records": [
@@ -4020,8 +4008,8 @@ window.MOCK = {
      "text": "rule 2: label dismiss (when, min_age_days)",
      "now": 3,
      "when_mature": 1,
-     "first_matures": "2026-11-23T12:49:36+00:00",
-     "last_matures": "2026-11-23T12:49:36+00:00"
+     "first_matures": "2026-11-23T14:49:34+00:00",
+     "last_matures": "2026-11-23T14:49:34+00:00"
     }
    ],
    "by_item": [
@@ -4037,7 +4025,7 @@ window.MOCK = {
      "item_id": "t02_invoice",
      "class": "not_mature",
      "rule": 2,
-     "matures": "2026-11-23T12:49:36+00:00",
+     "matures": "2026-11-23T14:49:34+00:00",
      "today": null
     },
     {
@@ -4059,7 +4047,7 @@ window.MOCK = {
     {
      "item_id": "t05_delete",
      "class": "gone",
-     "last_seen": "2026-10-13T12:49:36Z"
+     "last_seen": "2026-10-13T14:49:34Z"
     },
     {
      "item_id": "t06_mobile",
@@ -4070,14 +4058,14 @@ window.MOCK = {
      ]
     }
    ],
-   "captured_at": "2026-11-12T12:49:36Z"
+   "captured_at": "2026-11-12T14:49:34Z"
   },
   "label_set": {
    "source": {
-    "as_of": "2026-11-12T12:49:36+00:00",
+    "as_of": "2026-11-12T14:49:35+00:00",
     "capture": "decisions",
-    "capture_sha256": "23e26cd0ee875c08f88b5ddeeca5cab7edf0d34905239353a3f9a155032ca679",
-    "captured_at": "2026-11-12T12:49:36Z",
+    "capture_sha256": "596a23294acb7dceda8864143f7a9c0e27a1c7588d50419fc216b6b01519d98b",
+    "captured_at": "2026-11-12T14:49:34Z",
     "gone": 1,
     "kind": "rule",
     "mapping": "rules.yaml",
@@ -4085,49 +4073,51 @@ window.MOCK = {
     "matched": 4,
     "no_record": 0,
     "not_mature": 1,
-    "outcomes": {
-     "as": "issue",
-     "capture": "issues",
-     "capture_sha256": "feba5584b278c29ba7a7727b409ac453b4e2c78021eab8a66b0edefa529808e9",
-     "captured_at": "2026-11-12T12:49:36Z",
-     "gone_if_missing": false,
-     "identity": "first_seen=first_seen",
-     "join": "fp=fp",
-     "within": "-1m,+15m"
-    },
+    "outcomes": [
+     {
+      "as": "issue",
+      "capture": "issues",
+      "capture_sha256": "becc345af1bf28437f58caad8b436cdc241bd6a005851a3af1363dff5ed198d4",
+      "captured_at": "2026-11-12T14:49:35Z",
+      "gone_if_missing": false,
+      "identity": "first_seen=first_seen",
+      "join": "fp=fp",
+      "within": "-1m,+15m"
+     }
+    ],
     "skipped": 0,
     "unmatched": 0
    },
    "items": {
     "t01_login": {
-     "happened_at": "2026-10-15T12:49:36+00:00",
+     "happened_at": "2026-10-15T14:49:34+00:00",
      "item_sha256": "933f3670443b2db518e9029009cc20aba278d14bf2af1d8719962ff34ae6712a",
-     "knowable_at": "2026-10-15T12:49:36+00:00",
+     "knowable_at": "2026-10-15T14:49:34+00:00",
      "sha256": "8b911a8716b94442f9ca3dff20584048536e4c2f47b8b5bb9096cbd43c3432d5",
      "under_action": "file",
      "label": "file"
     },
     "t03_export": {
      "item_sha256": "8c5fafabd25867b726a8687f72ab2c241e1f99ead4d89641a58f741eb33e3fbd",
-     "knowable_at": "2026-10-27T12:49:36+00:00",
+     "knowable_at": "2026-10-27T14:49:34+00:00",
      "sha256": "b09e710e641f0a4b8dfc942068ac368d86acf134b3a795db5d4b305bbcb8dc13",
      "label": "dismiss"
     },
     "t04_api": {
      "item_sha256": "ec3adf1a26bf245b3d13028a6f660bddbf6bea0288c14653b93e840d0937d365",
-     "knowable_at": "2026-10-27T12:49:36+00:00",
+     "knowable_at": "2026-10-27T14:49:34+00:00",
      "sha256": "b09e710e641f0a4b8dfc942068ac368d86acf134b3a795db5d4b305bbcb8dc13",
      "label": "dismiss"
     },
     "t06_mobile": {
      "item_sha256": "5bf7be3c776a6d5820a0c4f987e45440717cc431af25044e847718779e4ac94f",
-     "knowable_at": "2026-11-06T12:49:36+00:00",
+     "knowable_at": "2026-11-06T14:49:34+00:00",
      "sha256": "b09e710e641f0a4b8dfc942068ac368d86acf134b3a795db5d4b305bbcb8dc13",
      "label": "dismiss"
     }
    },
    "gone": {
-    "t05_delete": "2026-10-13T12:49:36Z"
+    "t05_delete": "2026-10-13T14:49:34Z"
    }
   },
   "label_mutants": {

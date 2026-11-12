@@ -156,12 +156,73 @@ try:
         and doc["source"].get("gone") == 1
         and doc["source"].get("not_mature") == 1
         and sorted(doc.get("gone") or {}) == [items[4]]
-        and doc["source"]["outcomes"]["join"] == "fp=fp"
-        and doc["source"]["outcomes"]["within"] == "-1m,+15m"
-        and doc["source"]["outcomes"]["as"] == "iss"
-        and len(doc["source"]["outcomes"]["capture_sha256"]) == 64
+        and doc["source"]["outcomes"][0]["join"] == "fp=fp"
+        and doc["source"]["outcomes"][0]["within"] == "-1m,+15m"
+        and doc["source"]["outcomes"][0]["as"] == "iss"
+        and len(doc["source"]["outcomes"][0]["capture_sha256"]) == 64
         and bool(doc["source"].get("as_of")),
         said(r)[-400:] + json.dumps(doc)[-700:],
+    )
+
+    # The fleet's beta (F4): labels read from two outside systems at once (GitHub's close reason, GlitchTip's
+    # recurrence), each --outcomes with its own options, each read by the rules under its own name.
+    capture("gtrec", [{"id": "g3", "created_at": iso(t[3] + MIN), "fp": "fp3", "recurred": True}])
+    (proj / "rules2.yaml").write_text(
+        "- {when: {gt.recurred: true}, label: escalate}\n"
+        "- {when: {iss.state_reason: completed}, date: iss.closed_at, label: file}\n"
+        "- {when: {iss.count: 0}, min_age_days: 14, label: dismiss}\n"
+    )
+    two = [*join("iss"), "--outcomes", "gtrec", "--outcomes-as", "gt", "--join", "fp=fp"]
+    r = evh("label-from-capture", "--dataset-id", "tickets_v1", "--map", "rules2.yaml", "--capture", "dec",
+            "--set", "s_two", *two)  # fmt: skip
+    doc2 = labels_doc("s_two") if r.returncode == 0 else {}
+    rows2 = {
+        i: _runstore.read_text(proj, f"labels/tickets_v1/s_two/{i}.txt").strip()
+        for i in (doc2.get("items") or {})
+    }
+    check(
+        "two --outcomes: each joined by its own options, the rules read both; both captures recorded",
+        rows2.get(items[3]) == "escalate"
+        and rows2.get(items[0]) == "file"
+        and [o.get("as") for o in (doc2.get("source") or {}).get("outcomes") or []] == ["iss", "gt"]
+        and [o.get("within") for o in doc2["source"]["outcomes"]] == ["-1m,+15m", None],
+        said(r)[-400:] + json.dumps(rows2),
+    )
+    r = evh("label-coverage", *BASE, "--capture", "dec", "--outcomes-as", "iss", "--join", "fp=fp",
+            "--within=-1m,+15m", "--identity", "first_seen=first_seen", "--outcomes", "iss", "--json")  # fmt: skip
+    check(
+        "one --outcomes: its options are its own wherever they stand (the MCP server writes them in name order)",
+        values(r).get("counts")
+        == {"labelled": 3, "skipped": 0, "not_mature": 1, "unmatched": 0, "no_record": 1, "gone": 1},
+        said(r)[-400:],
+    )
+    r = evh("label-coverage", *BASE, "--capture", "dec", "--outcomes", "iss", "--join", "fp=fp",
+            "--outcomes", "gtrec", "--join", "fp=fp", "--outcomes-as", "iss")  # fmt: skip
+    check(
+        "two --outcomes read under one name are refused, naming it",
+        r.returncode != 0 and "same name (iss)" in said(r),
+        said(r)[-300:],
+    )
+    r = evh(
+        "label-mutants",
+        "--dataset-id",
+        "tickets_v1",
+        "--map",
+        "rules2.yaml",
+        "--capture",
+        "dec",
+        *two,
+        "--json",
+    )
+    names2 = [
+        m["mutant"]
+        for m in (json.loads(r.stdout)["result"]["values"] if r.stdout.strip() else {}).get("mutants") or []
+    ]
+    check(
+        "label-mutants over two joins: the windowed one's window moved, named by the capture it belongs to",
+        any(n.startswith("the join's window moved an hour later (iss)") for n in names2)
+        and not any("(gt)" in n and "window" in n for n in names2),
+        said(r)[-400:],
     )
 
     # A later read: item 1 has matured (no issue for 14 days), item 2 recurred inside the window.

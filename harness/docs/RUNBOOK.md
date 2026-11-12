@@ -1636,7 +1636,9 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   own outcome (one name across later captures of the same source). `--identity first_seen=first_seen` makes a match
   whose identity differs (an id reused after a project was deleted) "gone from the source, or its id reused"; with
   `--gone-if-missing`, when the other capture holds the very objects the items name, an item none carries is gone too.
-  A gone item is its own class: never "no outcome", never a negative label (X3).
+  A gone item is its own class: never "no outcome", never a negative label (X3). Outcomes from several systems (an
+  issue's close reason and the errors' recurrence): `--outcomes` again, each followed by its own `--outcomes-as`,
+  `--join` and the rest up to the next one; the rules read each under its name, and the label set records each.
 - **Two dates per label, and relabels that only add** (L2). A rule's `date: FIELD` names when its outcome happened (an
   issue's `closed_at`); a label becomes knowable at the item's time plus `min_age_days`, else when it happened. Both
   are kept per item, and the set records `as_of`. A relabel is a new set: `label-from-capture … --set s2 --from-set s1`

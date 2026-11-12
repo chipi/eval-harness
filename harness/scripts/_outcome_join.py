@@ -15,6 +15,12 @@ X3, gone from the source, or its id reused: with `--gone-if-missing`, an item wh
 carries at all is "gone" (the outside object was deleted), and with `--identity ITEM_FIELD=RECORD_FIELD` a match whose
 identity field differs from the item's (a GlitchTip short id reused after a project was deleted) is gone too, never
 another item's outcome. A gone item is its own class: never "no outcome", never a negative label.
+
+Several outside systems (the fleet's beta: GitHub's close reason and GlitchTip's recurrence): `--outcomes` again, each
+followed by its own options up to the next one; the rules read each under its own name.
+
+    ... --outcomes issues --outcomes-as gh --join fp=fp --within -1m,+15m \\
+        --outcomes glitchtip --outcomes-as gt --join short_id=short_id --identity first_seen=first_seen --gone-if-missing
 """
 
 from __future__ import annotations
@@ -207,13 +213,95 @@ def argv(raw: list[str] | None = None) -> list[str]:
     return out
 
 
-def from_args(args: Any) -> Join | None:
-    """The join the arguments ask for, or None."""
-    if not getattr(args, "outcomes", None):
-        for flag in ("join", "within", "identity", "outcomes_as"):
-            if getattr(args, flag, None):
-                die(f"--{flag.replace('_', '-')}: with --outcomes CAPTURE", "bad-argument")
-        if getattr(args, "gone_if_missing", False):
-            die("--gone-if-missing: with --outcomes CAPTURE", "bad-argument")
+class Joins:
+    """Every outside capture an item's outcome is read from, each under its own name: the rules see them all."""
+
+    def __init__(self, joins: list[Join]) -> None:
+        names = [j.name for j in joins]
+        twice = sorted({n for n in names if names.count(n) > 1})
+        if twice:
+            die(
+                f"--outcomes: two captures read under the same name ({', '.join(twice)}): name each with --outcomes-as",
+                "bad-argument",
+            )
+        self.joins = joins
+
+    @property
+    def doc(self) -> dict[str, Any]:
+        """The latest of the captures' read times: what a label's maturity is measured to."""
+        times = [str(j.doc.get("captured_at")) for j in self.joins if j.doc.get("captured_at")]
+        return {"captured_at": max(times, key=lambda t: parse_time(t) or t)} if times else {}
+
+    @property
+    def capture(self) -> str:
+        return ", ".join(j.capture for j in self.joins)
+
+    def source(self) -> list[dict[str, Any]]:
+        """What the label set records about each outside capture (its provenance)."""
+        return [j.source() for j in self.joins]
+
+    def outcome(self, rec: dict) -> tuple[dict[str, Any], bool]:
+        """(the fields the rules see from every outside capture, whether an outside object is gone or its id reused)."""
+        out: dict[str, Any] = {}
+        for j in self.joins:
+            seen, gone = j.outcome(rec)
+            if gone:
+                return {}, True
+            out |= seen
+        return out, False
+
+
+_VALUED = {"--outcomes-as": "outcomes_as", "--join": "join", "--within": "within", "--identity": "identity"}
+
+
+def groups(raw: list[str] | None = None) -> list[dict[str, Any]]:
+    """Each `--outcomes CAPTURE` with the join options after it, up to the next `--outcomes`. With one `--outcomes`,
+    every join option is its own wherever it stands (the MCP server writes a tool call's options in name order)."""
+    args = argv(raw)
+    if sum(1 for a in args if a == "--outcomes" or a.startswith("--outcomes=")) == 1:
+        first = next(i for i, a in enumerate(args) if a == "--outcomes" or a.startswith("--outcomes="))
+        width = 1 if "=" in args[first] else 2
+        args = args[first : first + width] + args[:first] + args[first + width :]
+    out: list[dict[str, Any]] = []
+    i = 0
+    while i < len(args):
+        name, eq, val = args[i].partition("=") if args[i].startswith("--") else (args[i], "", "")
+        if name == "--outcomes" or name in _VALUED:
+            if not eq:
+                i += 1
+                val = args[i] if i < len(args) else ""
+            if name == "--outcomes":
+                out.append({"outcomes": val})
+            else:
+                if not out:
+                    die(f"{name}: after the --outcomes CAPTURE it belongs to", "bad-argument")
+                if _VALUED[name] in out[-1]:
+                    die(f"{name}: given twice for --outcomes {out[-1]['outcomes']}", "bad-argument")
+                out[-1][_VALUED[name]] = val
+        elif name == "--gone-if-missing":
+            if not out:
+                die("--gone-if-missing: after the --outcomes CAPTURE it belongs to", "bad-argument")
+            out[-1]["gone_if_missing"] = True
+        i += 1
+    return out
+
+
+def from_args(args: Any, raw: list[str] | None = None) -> Joins | None:
+    """The joins the command line asks for (one per `--outcomes`, each with the options after it), or None."""
+    del args  # the options' order says which capture each belongs to, which the parsed namespace has lost
+    gs = groups(raw)
+    if not gs:
         return None
-    return Join(args.outcomes, args.join, args.within, args.identity, args.gone_if_missing, args.outcomes_as)
+    return Joins(
+        [
+            Join(
+                g["outcomes"],
+                g.get("join"),
+                g.get("within"),
+                g.get("identity"),
+                g.get("gone_if_missing", False),
+                g.get("outcomes_as"),
+            )
+            for g in gs
+        ]
+    )

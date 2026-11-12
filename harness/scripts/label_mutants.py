@@ -13,7 +13,8 @@ it changed), as a surviving replay mutant is (RFC-030 R5), and the command exits
 Built in: each rule's `min_age_days` halved and one and a half times; each pair of neighbouring rules swapped; each
 `when` value replaced; the join's `--within` window moved an hour later. A project adds its own with `--mutants
 FILE.py`, a module defining `mutants(rules) -> [(name, rules)]` and, optionally, `join_mutants(join) -> [(name,
-join)]` (join: {"capture", "join", "within", "identity", "gone_if_missing", "as"}). Nothing is written.
+join)]` (join: {"capture", "join", "within", "identity", "gone_if_missing", "as"}), called once for each
+`--outcomes`, the other joins left as they are. Nothing is written.
 """
 
 from __future__ import annotations
@@ -100,18 +101,16 @@ def main() -> int:
         base = _signature(coverage(args.dataset_id, args.capture, rules, join))
         labelled = sum(1 for c, _l in base.values() if c == "labelled")
         plans: list[tuple[str, list[dict], Any]] = [(name, m, join) for name, m in builtin(rules)]
-        jargs: dict[str, Any] | None = (
-            {
-                "capture": join.capture,
-                "join": f"{join.item_field}={join.record_field}",
-                "within": join.within_text,
-                "identity": "=".join(join.identity) if join.identity else None,
-                "gone_if_missing": join.gone_if_missing,
-                "as": join.name,
+
+        def describe(j: Any) -> dict[str, Any]:
+            return {
+                "capture": j.capture,
+                "join": f"{j.item_field}={j.record_field}",
+                "within": j.within_text,
+                "identity": "=".join(j.identity) if j.identity else None,
+                "gone_if_missing": j.gone_if_missing,
+                "as": j.name,
             }
-            if join
-            else None
-        )
 
         def make_join(j: dict) -> Any:
             return _outcome_join.Join(
@@ -123,14 +122,13 @@ def main() -> int:
                 j.get("as"),
             )
 
-        if jargs and jargs.get("within"):
-            plans.append(
-                (
-                    f"the join's window moved an hour later ({jargs['within']} -> {_shift(jargs['within'])})",
-                    rules,
-                    make_join({**jargs, "within": _shift(jargs["within"])}),
-                )
-            )
+        # Each outside capture's join is mutated in turn, the others as they are (several: the fleet's beta).
+        joins = join.joins if join else []
+
+        def with_one(k: int, j: dict) -> Any:
+            return _outcome_join.Joins([make_join(j) if n == k else o for n, o in enumerate(joins)])
+
+        mod = None
         if args.mutants:
             from evaluation_harness import _common  # noqa: PLC0415
 
@@ -138,26 +136,37 @@ def main() -> int:
                 (_common.ROOT / args.mutants).resolve() if not args.mutants.is_absolute() else args.mutants,
                 "evh_label_mutants",
             )
+        for k, one in enumerate(joins):
+            jargs = describe(one)
+            which = f" ({jargs['as']})" if len(joins) > 1 else ""
+            if jargs.get("within"):
+                plans.append(
+                    (
+                        f"the join's window moved an hour later{which} ({jargs['within']} -> {_shift(jargs['within'])})",
+                        rules,
+                        with_one(k, {**jargs, "within": _shift(jargs["within"])}),
+                    )
+                )
+            for name, j in (getattr(mod, "join_mutants", lambda j: [])(dict(jargs)) or []) if mod else []:
+                # A key the join does not read would run the unchanged join and be reported SURVIVED (the
+                # fleet's beta): refused, so the mutant is written in the keys that are read.
+                unread = sorted(set(j) - set(jargs)) if isinstance(j, dict) else []
+                if not isinstance(j, dict) or unread:
+                    die(
+                        f"--mutants {args.mutants}: join mutant {name!r} "
+                        + (
+                            f"has key(s) the join does not read: {', '.join(unread)}"
+                            if unread
+                            else "is not a dict"
+                        )
+                        + f". A join mutant changes {', '.join(sorted(jargs))}; the fields joined are one "
+                        "'join': 'ITEM_FIELD=RECORD_FIELD'.",
+                        "bad-argument",
+                    )
+                plans.append((f"{name}{which} (the project's)", rules, with_one(k, j)))
+        if mod is not None:
             for name, m in getattr(mod, "mutants", lambda r: [])(copy.deepcopy(rules)) or []:
                 plans.append((f"{name} (the project's)", m, join))
-            if jargs is not None:
-                for name, j in getattr(mod, "join_mutants", lambda j: [])(dict(jargs)) or []:
-                    # A key the join does not read would run the unchanged join and be reported SURVIVED (the
-                    # fleet's beta): refused, so the mutant is written in the keys that are read.
-                    unread = sorted(set(j) - set(jargs)) if isinstance(j, dict) else []
-                    if not isinstance(j, dict) or unread:
-                        die(
-                            f"--mutants {args.mutants}: join mutant {name!r} "
-                            + (
-                                f"has key(s) the join does not read: {', '.join(unread)}"
-                                if unread
-                                else "is not a dict"
-                            )
-                            + f". A join mutant changes {', '.join(sorted(jargs))}; the fields joined are one "
-                            "'join': 'ITEM_FIELD=RECORD_FIELD'.",
-                            "bad-argument",
-                        )
-                    plans.append((f"{name} (the project's)", rules, make_join(j)))
         print(
             f"{args.dataset_id}: {len(plans)} mutant(s) of the labeller over capture {args.capture}"
             + (f" and {join.capture}" if join else "")

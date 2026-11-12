@@ -72,12 +72,13 @@
   // ── production: labels from what happened later, in other systems ──
   function screenProductionLabels() {
     const cov = R.label_coverage || {}, src = (R.label_set || {}).source || {}, items = (R.label_set || {}).items || {};
-    const o = src.outcomes || {}, cn = cov.counts || {}, mu = R.label_mutants || {};
+    const outs = Array.isArray(src.outcomes) ? src.outcomes : [], cn = cov.counts || {}, mu = R.label_mutants || {};
+    const joined = (o) => `<div class="stats"><div><b>${esc(o.as || o.capture || "")}</b><span>read as, from capture ${esc(o.capture || "")}</span></div><div><b class="mono">${esc(o.join || "")}</b><span>joined by</span></div><div><b class="mono">${esc(o.within || "—")}</b><span>within, after the decision</span></div><div><b class="mono">${esc(o.identity || "—")}</b><span>and the same object</span></div></div>`;
     const said = { labelled: "labelled now", skipped: "skipped by design", not_mature: "not yet mature", unmatched: "no rule matches", no_record: "not in the capture", gone: "gone from the source, or its id reused" };
     return `<div class="screen wide">
       ${head("Production · labels", "Labels from what happened later", "A decision's outcome often lives in another system (the issue it filed, the errors that followed) and some outcomes take time to show. Read that system once, as a capture of its own, and join it to the decisions.", "plabels.what")}
-      ${part("1", "plabels.join", "Joined from another system", `<div class="stats"><div><b>${esc(o.capture || "")}</b><span>the other capture</span></div><div><b class="mono">${esc(o.join || "")}</b><span>joined by</span></div><div><b class="mono">${esc(o.within || "")}</b><span>within, after the decision</span></div><div><b class="mono">${esc(o.identity || "")}</b><span>and the same object</span></div></div>
-        <div class="note">What was read is kept, hashed and dated (read ${esc(day(o.captured_at))}); a new read is a new capture, and a relabel.</div>`)}
+      ${part("1", "plabels.join", "Joined from other systems", `${outs.map(joined).join("")}
+        <div class="note">Each system is read once, as a capture of its own, kept, hashed and dated (read ${outs.map((o) => esc(day(o.captured_at))).join(", ")}); the rules read each under its name (<span class="mono">issue.state_reason</span>). Another system is another <span class="mono">--outcomes</span>, with its own join.</div>`)}
       ${part("2", "plabels.coverage", "How far the rules label it now", table(["", { t: "items", num: true }], Object.entries(said).map(([k, t]) => `<tr><td>${esc(t)}</td><td class="num">${cn[k] || 0}</td></tr>`)) +
         `<div class="note">An item still maturing waits for its window ("not seen again within 14 days" is knowable only then); one whose outside record is gone, or whose id now names another object, is never labelled.</div>`)}
       ${part("3", "plabels.dates", "Each label, with two dates", table(["decision", "label", "happened", "knowable", "holds only under"], Object.entries(items).map(([id, r]) => `<tr><td class="mono" style="font-size:12px">${esc(id)}</td><td>${esc(r.label || "")}</td><td class="mono">${esc(day(r.happened_at)) || "—"}</td><td class="mono">${esc(day(r.knowable_at))}</td><td>${r.under_action ? `production's <b>${esc(r.under_action)}</b>` : "any action"}</td></tr>`)) +
