@@ -95,7 +95,7 @@ COMMANDS = {
         "onboard a model once: probe a deployment, write what was found into its record",
     ),
     "sweep": ("sweep.py", "run several arms, then the leaderboard"),
-    "runs-list": ("list_runs.py", "list runs (or baselines)"),
+    "runs-list": ("list_runs.py", "list runs (the baselines: evh baselines)"),
     "rescore": ("rescore.py", "re-score stored outputs, a round's or a dataset's, for $0"),
     "score-preview": (
         "score_preview.py",

@@ -388,6 +388,9 @@
         ${pr.picked ? `<div class="note">${pr.picked} rows picked (“${esc(pr.why)}”), waiting for the next version.</div>`
           : `<div class="inline"><input type="text" id="pickwhy" placeholder="why these rows, recorded with each pick" style="width:340px"><button class="btn primary" type="button" id="pickrows">Pick the checked rows</button></div>`}
         ${note(`the ${M.wrong.length} decisions where production's model disagreed with the owner's labels, as evh inspect --sheet --wrong-against finds them.`)}`, pr.picked ? `${pr.picked} picked` : "")}
+      <div class="steps" style="margin-top:18px">
+        <div class="row"><span class="dot">·</span><div><h3>Labels from what happened later</h3><p>outcomes joined from another system, labels that mature, and a test of the labeller itself</p></div><a class="btn" href="#production-labels">Open</a></div>
+        <div class="row"><span class="dot">·</span><div><h3>Replay the code that ran</h3><p>production's own code over its history, proved faithful, then a candidate compared period by period</p></div><a class="btn" href="#production-replay">Open</a></div></div>
       ${part("4", null, "The next dataset version", !!pr.picked, pr.extended ? `<div class="note">${esc(p.dataset)} + ${pr.picked} picks → the next version, recorded as made from it.</div>` : `<div class="actions" style="margin-top:0"><button class="btn primary" type="button" id="extend">Make the next version</button></div>`)}
       <div class="actions">${back("#home", "Home")}</div>
       ${cmd(`evh capture … (the deployment's importer)\nevh arm-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --as production_<date>_v1\nevh label-from-capture --dataset-id ${p.dataset} --capture ${p.capture} --map rules.yaml --set outcomes\nevh inspect --goal ${p.goal} --wrong-against gold_${p.dataset}\nevh pick --dataset-id ${p.dataset} --item ${(pr.ids || [])[0] || "<id>"} --note "${pr.why || "<why>"}"\nevh dataset-extend ${p.dataset} --dataset-id <next> --picks`)}
@@ -410,6 +413,8 @@
   function screenSettings() {
     const rows = [
       ["Where the project keeps its data", "files (data/ in git) or one SQLite database; moving keeps everything", "evh data-migrate --to sqlite --dry-run"],
+      ["Bring the data to this release's formats", "after upgrading the harness: runs, datasets, records and fingerprints, once; a second run changes nothing", "evh migrate --dry-run"],
+      ["Public repos a held-out side must not leak into", "config.yaml's exposure: the repos and the item fields that hold an item's own ids", "evh exposure-check --dataset-id <held-out side>"],
       ["Check the project", "the integrity checks over every dataset, run and reference; a job, not a Save button", "evh validate"],
       ["Committed runs and their floors", "which run folders the checks hold to their numbers", "evh data-put validate.json …"],
       ["The goal policy", "what every goal must have before a round closes", "evh data-put goals/policy.yaml …"],

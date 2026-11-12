@@ -1,7 +1,8 @@
-# UXS-005: The Workbench (sketches round 3, mockup round 4)
+# UXS-005: The Workbench (sketches round 3, mockup round 5)
 
 - **Status**: Draft — sketches and the clickable mockup for review (owner, 2026-11-06: "agree on the structure … see
-  some sketches … then a mock-up"; 2026-11-08: "complete the mock-up really with everything we've been saying"); 0.8.0
+  some sketches … then a mock-up"; 2026-11-08: "complete the mock-up really with everything we've been saying";
+  2026-11-12, the owner's request: the mockups brought up to the code built since round 4, round 5); 0.8.0
 - **Authors**: Marko Dragoljevic
 - **Related PRDs**: [PRD-017](../prd/PRD-017-workbench.md) (the Workbench: workflows, decisions)
 - **Related UX specs**: [UXS-001](UXS-001-catalog.md) (the catalog: shell, tokens), [UXS-002](UXS-002-inspector.md)
@@ -289,7 +290,10 @@ decision kept with its reason. This is where people spend most of their time (W1
 ### Jobs
 
 - Every step that runs is a job: its cost first, then progress and the log, then its result. A job keeps running when
-  the page closes; it can be stopped, and resumed where its command allows (`run --resume`). The list shows each job,
+  the page closes; it can be stopped (`jobs-stop`), and a run resumed (`jobs-resume`) with what the stopped job left
+  of its cap; one that spent it all is not resumed. A job that spends carries its cap (`--max-cost-usd`); one that
+  waits for what another holds is "queued", naming it; one whose supervisor stopped is "running (unsupervised)" while
+  its command lives, "lost" after (RFC-026). The list shows each job,
   its status, when it started and how far it is.
 
 ### W2 Review and label
@@ -359,6 +363,42 @@ decision kept with its reason. This is where people spend most of their time (W1
 
 - Rare, so terse, one row each with its command: where the project keeps its data (`data-migrate`), checking the
   project (`validate`, a job), committed runs and their floors, the goal policy, budgets, publishing a dataset.
+
+## Round 5: what 0.8.0 built after round 4
+
+The owner asked (2026-11-12) for the mockups to follow the code built since round 4. Everything below is the harness's own answer, made by
+`harness/workbench/round5_inputs.py` in throwaway projects (the tutorial's tickets and the replay example), because
+this project holds no held-out side, study, prompt version, job or replay yet; each screen's "mockup:" note says so.
+`round5.js` holds the new screens.
+
+- **The held-out test** (a goal's day-to-day; RFC-029, RFC-031 H1, H2): the seal and what its counts may show; who
+  has read it (each read by whom and what, a read recorded by hand, the leak check's find); counts per day by the
+  fields fixed at the seal, for safety only; opening it for one candidate (one look); the confirmation, the read items
+  left out and the full number beside it, marked.
+
+```text
+ The held-out test                                              sup_v1_test
+ 1 The seal             5 held-out items · sealed · counts by kind
+ 2 Who has read it      2 of 5 read · agent:homelab 1 · person:owner 1   [ what was read … ] [ Record a read ]
+ 3 Counts, for safety   day  items  kind=access  kind=bug  kind=question
+ 4 Open it              look 1: decisions on it are tested one-sided at 1.5198%
+ 5 The confirmation     the number that counts (2 read items left out)  3 items  +0.0676  p 0.25
+                        with the read items kept (not the one that counts)  5 items  +0.0414
+```
+
+- **A study** (a goal's day-to-day; RFC-029): what it searches, its trials (kept or dropped against the best so far),
+  and its confirmation on the test set as one look.
+- **Production · labels from what happened later** (RFC-031 L1-L3, X1, X3): the other system joined by key, window and
+  identity; how far the rules label it now (labelled, not yet mature, gone from the source or its id reused); each
+  label with when it happened and when it became knowable, and whether it holds only under production's action; the
+  labeller's mutants, the survivors flagged.
+- **Production · replay the code that ran** (RFC-030, RFC-031 P1, P2): the code record's periods and their
+  faithfulness; production's own writes hidden and the replay still agreeing on every decision; a candidate and its
+  history confound; period by period, production beside the code that ran then and the candidate.
+- **Jobs** (RFC-026): a real job with its cap and the locks it holds; the states a job can be in; `jobs-*`.
+- **The eval**: the baseline's version, who promoted it and why, `baselines` and `baseline-rollback` (RFC-027); a
+  round's close records who. **Models**: the prompt a person writes is saved as a prompt version, named by its
+  content (RFC-028). **Settings**: `evh migrate` after an upgrade; the public repos the leak check searches.
 
 ## Help, for someone who is new to this
 
@@ -523,6 +563,11 @@ erDiagram
 | Capture | which deployment, since when | its records and their hashes | `captures/<id>/` |
 | Pick | which record, for which dataset, why | when, by whom | the picks (`evh picks`) |
 | Failure modes / Tag | the list of modes; a tag on an output (in review) | counts per arm | `failure-modes/<id>.yaml`, a label set |
+| Baseline (round 5) | who promotes, why; a rollback | its versions, the evidence (the paired test) | `baselines/<goal>/<dataset>/<n>.json` |
+| Prompt version (round 5) | its text | its hash, its parent | `prompts/<name>/` |
+| Study, look (round 5) | the spec; the rule of a confirmation | trials, the looks a test set has had | `studies/<goal>/`, the dataset's record |
+| Held-out side, read (round 5) | a read, by hand; the fields counts may show | reads the harness makes, the leak check | the dataset's `sealed`, `exposure/<dataset>.jsonl` |
+| Code record, faithfulness (round 5) | its versions and when each ran | each faithfulness record, its summary | `models/<id>.yaml` (`kind: code`), `faithfulness/<id>/` |
 
 ## To review in this round
 

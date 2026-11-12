@@ -13,6 +13,7 @@ Two inputs are the harness's own printed answers, saved first (both slow to comp
     evh inspect --sheet --runs triage_baseline_pro_v2data_v1 --dataset-id orrery_triage_v1_labelled_v2 \
         --wrong-against gold_orrery_triage_v1_labelled_v2 --csv build/prod_wrong.csv --fill label
     evh label-sheet --dataset-id cnn_dailymail_200 --out build/label_sheet_cnn200.csv --items all
+    python workbench/round5_inputs.py                          (build/round5/: round 5's screens, see that file)
     python workbench/mock_data.py > workbench/mock.js          (all from harness/)
 """
 
@@ -376,6 +377,105 @@ wrong = [
 # the label sheet `evh label-sheet --dataset-id cnn_dailymail_200 --items all` writes
 sheet = (H / "build" / "label_sheet_cnn200.csv").read_text(encoding="utf-8-sig")
 
+
+def r5(name: str) -> dict:
+    """A round-5 input's values (a command's --json answer, saved by round5_inputs.py)."""
+    doc = json.loads((H / "build" / "round5" / f"{name}.json").read_text())
+    return (doc.get("result") or {}).get("values") or doc
+
+
+def r5_lines(name: str) -> list[str]:
+    doc = json.loads((H / "build" / "round5" / f"{name}.json").read_text())
+    return [x for b in (doc.get("result") or {}).get("blocks") or [] for x in b.get("lines") or []]
+
+
+replay_runs = json.loads((H / "build" / "round5" / "replay_runs.json").read_text())
+label_doc = json.loads((H / "build" / "round5" / "label_set_doc.json").read_text())
+code_rows = [
+    row
+    for b in json.loads((H / "build" / "round5" / "models_code.json").read_text())["result"]["blocks"]
+    for row in b.get("rows") or []
+    if row.get("kind") == "code"
+]
+this_baselines = json.loads((H / "build" / "round5" / "baselines.json").read_text())["baselines"]
+cnn_base = next((b for b in this_baselines if b.get("goal") == "news_summary_cnn"), None)
+round5 = {
+    "baseline": {
+        k: cnn_base.get(k)
+        for k in (
+            "goal",
+            "dataset",
+            "current",
+            "promoted_from",
+            "promoted_at",
+            "reason",
+            "actor",
+            "history",
+            "migrated",
+        )
+    }
+    if cnn_base
+    else None,
+    "baselines": len(this_baselines),
+    "study": r5("study").get("study"),
+    "confirm": r5("study_confirm").get("confirm"),
+    "looks": r5("looks").get("sets"),
+    "prompts": r5("prompts").get("prompts"),
+    "jobs": r5("jobs").get("jobs"),
+    "job_started": r5("job_start").get("job"),  # the job as started: its cap and the locks it holds
+    "sealed_counts": r5("sealed_counts"),
+    "exposure": (r5("exposure").get("exposure") or [None])[0],
+    "exposure_check": r5("exposure_check"),
+    "unseal": r5_lines("unseal"),
+    "heldout_pair": {
+        k: r5("heldout_pair").get(k)
+        for k in (
+            "a",
+            "b",
+            "metric",
+            "n",
+            "delta",
+            "p",
+            "verdict",
+            "left_out_exposed",
+            "with_exposed",
+            "look",
+        )
+    },
+    "faithfulness": {
+        k: (r5("faithfulness").get("faithfulness") or {}).get(k)
+        for k in ("n", "counts", "commits", "adapter", "coverage")
+    },
+    "replay_scores": {
+        "replay": (replay_runs["replay_metrics"].get("scores") or {}).get("exact"),
+        "candidate": (replay_runs["candidate_metrics"].get("scores") or {}).get("exact"),
+        "confound": replay_runs["candidate_metrics"].get("history_confound"),
+        "replay_confound": replay_runs["replay_metrics"].get("history_confound"),
+    },
+    "periods": r5("periods").get("periods"),
+    "period_compare": [r5(f"period_compare_{n}") for n in (1, 2, 3)],
+    "code_records": code_rows,
+    "label_coverage": {k: r5("label_coverage").get(k) for k in ("counts", "rules", "by_item", "captured_at")},
+    "label_set": {
+        "source": label_doc.get("source"),
+        # the label texts are files beside labels.json; label-coverage's answer names each labelled item's label
+        "items": {
+            i: {
+                **row,
+                "label": " | ".join(
+                    next(
+                        (x.get("label") or [] for x in r5("label_coverage")["by_item"] if x["item_id"] == i),
+                        [],
+                    )
+                ),
+            }
+            for i, row in (label_doc.get("items") or {}).items()
+        },
+        "gone": label_doc.get("gone"),
+    },
+    "label_mutants": r5("label_mutants"),
+}
+
 out = {
     "goal": {k: goal.get(k) for k in ("goal_id", "title", "statement", "decision")}
     | {
@@ -423,6 +523,7 @@ out = {
     "reruns": reruns,
     "wrong": wrong,
     "sheet": sheet,
+    "round5": round5,
 }
 print("// The Workbench mockup's data, read from this project by its extractor (never invented).")
 print("window.MOCK = " + json.dumps(out, indent=1, ensure_ascii=False) + ";")

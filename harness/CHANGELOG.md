@@ -104,7 +104,7 @@ that can move a result is never a patch release without saying so under **Change
   serves the whole local inspector (pages, items, outputs, references) to the named Hosts as well as this machine,
   with `--bind 0.0.0.0` in a container behind a team's own proxy; no rate limit and nothing withheld, unlike
   `--public`.
-- **A sealed held-out side** (the fleet's feedback 29): `evh dataset-split D --by time --key F --at T --seal` splits
+- **A sealed held-out side** (the fleet's feedback 29): `evh dataset-split D --split-by time --key F --at T --seal` splits
   at a time boundary and seals the test side: runs, labels, label sheets, references, rescores and judging onto it
   are refused until `evh dataset-unseal D_test --config C --reason "..."` names a candidate whose hypothesis is
   committed; it opens to that config and the one it is against, and records the look. `validate` (V22) fails when

@@ -109,7 +109,8 @@ against people's labels before it may decide.
 ### One-off or rare: terse forms, or the commands
 
 **W8 Govern and maintain.** The validate policy (committed run folders and their floors), the goal policy, budgets,
-`validate`, moving the project between stores (`data-migrate`), publishing a dataset (`dataset-publish`), a release.
+`validate`, bringing the data to a release's formats (`migrate`), moving the project between stores (`data-migrate`),
+publishing a dataset (`dataset-publish`), a release.
 
 ## Functional Requirements
 
@@ -119,7 +120,8 @@ against people's labels before it may decide.
    (the command, for the person who wants it), and runs it.
 3. **Jobs:** a step that runs is a job: its cost estimate first (the dry run, the budget cap), then progress and the
    log, then its result with a link into the catalog. A job keeps running when the browser closes, can be watched again,
-   stopped, and resumed where the command supports it (`run --resume`). One job at a time touches the same data.
+   stopped, and a run resumed with what the stopped job left of its cap (`jobs-resume`). One job at a time touches
+   the same data.
 4. **Forms ask only what is decided at that point.** Links to other things are pickers of what exists (datasets,
    models and their deployments, goals, references). What commands write (a model's onboarding, smokes, history; a
    judge's validation numbers; hashes) is shown, never an input. Expert settings start from named defaults, behind

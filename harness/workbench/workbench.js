@@ -62,7 +62,7 @@
   const prepared = () => S.fetched && S.looked && !!S.reference;
   const done = (id) => ({ goal: !!S.goal, dataset: !!S.dataset, prepare: prepared(), models: (S.checked || []).length >= 2, eval: !!(S.r4 && S.r4.closed) })[id];
   const open = (id) => ({ goal: true, dataset: !!S.goal, prepare: !!S.dataset, models: prepared(), eval: prepared() })[id];
-  const OUTSIDE = ["start", "home", "jobs", "settings", "glossary", "model-new", "production-live", "catalog", "docs"];
+  const OUTSIDE = ["start", "home", "jobs", "settings", "glossary", "model-new", "production-live", "production-labels", "production-replay", "catalog", "docs"];
   function drawRail(route) {
     if (!S.goal || OUTSIDE.includes(route)) { layout.classList.add("no-rail"); rail.innerHTML = ""; return; }
     layout.classList.remove("no-rail");
@@ -75,7 +75,7 @@
         return `<a class="step ${cls}" href="${href}" ${cur === s.id ? 'aria-current="page"' : ""}><span class="dot">${done(s.id) ? "✓" : s.n}</span>${s.name}</a>`;
       }).join("")}
       <div class="label" style="margin-top:18px">Day to day</div>
-      ${[["review", "Review and label"], ["production", "Production"], ["judge", "A judge"]].map(([id, name]) => `<a class="step" href="#${id}" ${route === id || route.startsWith(id + "-") ? 'aria-current="page"' : ""}><span class="dot">·</span>${name}</a>`).join("")}`;
+      ${[["review", "Review and label"], ["production", "Production"], ["judge", "A judge"], ...(window.WB.dayToDay || []).map(([id, name]) => [id, name])].map(([id, name]) => `<a class="step" href="#${id}" ${route === id || route.startsWith(id + "-") ? 'aria-current="page"' : ""}><span class="dot">·</span>${name}</a>`).join("")}`;
   }
 
   // ── step 0: an empty project ─────────────────────────────────────────────
@@ -187,7 +187,7 @@ success_criteria:
           ${can ? `<a class="btn ${!ok && can ? "primary" : ""}" href="${r.go}">${r.label}</a>` : `<span class="status">${i >= 3 && prepared() && r.id === "models" ? "" : "after the step before"}</span>`}</div>`;
       }).join("")}</div>
       <h2 style="margin:28px 0 10px">Day to day</h2>
-      <div class="steps">${[["#review", "Review and label", "read outputs side by side, pick the better, tag what went wrong"], ["#production", "Production", "what the deployed choice decided, and the next dataset version from it"], ["#judge", "A judge", "a model that scores like a person, validated against people first"]].map(([h, t, d]) => `<div class="row"><span class="dot">·</span><div><h3>${t}</h3><p>${d}</p></div><a class="btn" href="${h}">Open</a></div>`).join("")}</div>
+      <div class="steps">${[["#review", "Review and label", "read outputs side by side, pick the better, tag what went wrong"], ["#production", "Production", "what the deployed choice decided, and the next dataset version from it"], ["#judge", "A judge", "a model that scores like a person, validated against people first"], ...(window.WB.dayToDay || []).map(([id, t, d]) => [`#${id}`, t, d])].map(([h, t, d]) => `<div class="row"><span class="dot">·</span><div><h3>${t}</h3><p>${d}</p></div><a class="btn" href="${h}">Open</a></div>`).join("")}</div>
     </div>`;
   }
 
@@ -407,7 +407,7 @@ success_criteria:
       <div class="inline"><span class="muted" style="font-size:13px">${chosen.size} chosen</span><span class="grow"></span>
         <button class="btn" type="button" id="newmodel">Bring a model that isn't here</button></div>
       <div id="newmodelbox"></div>`;
-    const settings = `<div class="field"><div class="name">The prompt</div><div><textarea rows="2" id="prompt">${esc(S.prompt ?? M.prompt)}</textarea><div class="hint" style="grid-column:auto">the same for every arm; the r1 arms used this one (${esc(a0.prompt_file)})</div></div></div>
+    const settings = `<div class="field"><div class="name">The prompt</div><div><textarea rows="2" id="prompt">${esc(S.prompt ?? M.prompt)}</textarea><div class="hint" style="grid-column:auto">the same for every arm; the r1 arms used this one (${esc(a0.prompt_file)}). Saved, it is a prompt version named by its content${(M.round5.prompts || [])[0] ? ` (this one: <span class="mono">${esc(M.round5.prompts[0].latest)}</span>)` : ""}, and each arm records the version it ran: a changed prompt is a new version, never an edit.</div></div></div>
       <div class="field"><div class="name">Temperature</div><div class="inline"><input type="text" value="${a0.temperature}" style="width:80px"><span class="muted" style="font-size:13px">0: the same reply each time, so a rerun measures the same thing</span></div></div>
       <div class="field"><div class="name">Most it may write</div><div class="inline"><input type="text" value="${a0.max_tokens}" style="width:80px"><span class="muted" style="font-size:13px">tokens; a reply cut off here is flagged</span></div></div>
       ${note("ML models (BART) take no prompt; their arms carry their own settings.")}`;
@@ -520,11 +520,21 @@ success_criteria:
       <h1>The eval</h1>
       <p class="lead hintable">The goal measured on its dataset, in ${w("round", "rounds")}: each round asks one question, compares its ${w("arm", "arms")}, and ends in a decision kept with its reason. ${q("eval")}</p>
       <div class="answer"><div class="kicker">the answer so far · baseline bart_l</div><p>${esc(M.answer)}</p></div>
+      ${baselineLine()}
       <div class="tabs" role="tablist">${tabs.map(([id, label]) => `<button type="button" role="tab" data-tab="${id}" aria-selected="${id === tab}">${esc(label)}</button>`).join("")}
         ${r4 ? "" : `<button type="button" class="btn primary" id="openr4" ${(S.checked || []).length >= 2 ? "" : "disabled"} title="${(S.checked || []).length >= 2 ? "" : "check two arms in step 4 first"}">Open round r4</button>`}</div>
       ${note("r1 to r3 are this project's real rounds; r4 is the one this walk-through opens.")}
       ${body}
     </div>`;
+  }
+  function baselineLine() {
+    const b = (M.round5 || {}).baseline;
+    if (!b) return "";
+    const who = b.actor && b.actor.type !== "unknown" ? `by ${b.actor.type}:${b.actor.name}` : "who promoted it was not recorded (before 0.8.0)";
+    const reason = (b.reason || "").replace(/\.+$/, "");
+    const fresh = reason && !(M.answer || "").startsWith(reason.slice(0, 40));
+    return `<div class="note" style="margin-bottom:16px"><b>The baseline</b> ${q("eval.baseline")} version ${b.current} for this goal on ${esc(b.dataset)}: ${esc((b.promoted_from || "").replace(/_\d{8}T\d{6}Z$/, ""))}, promoted ${esc((b.promoted_at || "").slice(0, 10))}; ${esc(who)}${fresh ? `; its reason: ${esc(reason)}` : "; its reason is the answer above"}. Every later promotion is a new version with who and why; an earlier one comes back by rollback, never by editing.
+      ${cmd(`evh baselines --goal ${esc(b.goal)} --all-versions\nevh baseline-rollback --goal ${esc(b.goal)} --dataset ${esc(b.dataset)} --to <version> --reason "…" --by person:<you>`, "the commands that show and roll it back")}</div>`;
   }
   function roundOpen(r4) {
     const picked = (S.checked || []).map((id) => armOf(M.models.find((m) => m.id === id))).filter(Boolean);
@@ -565,7 +575,7 @@ success_criteria:
           ${r4.closed ? `<div class="note"><b>Closed.</b> ${esc(r4.conclusion)}${promoted ? ` The baseline is now ${esc(M.arms.find((a) => a.config_id === promoted).arm)}.` : ""}</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided"></textarea></div></div>
           <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button">Close the round</button><span class="muted" style="font-size:13px">${promoted ? `promotes ${esc(M.arms.find((a) => a.config_id === promoted).arm)} as the baseline` : "the baseline stays bart_l unless you make another one the baseline"}</span></div>`}</div>` : ""}</div>
       <div class="actions"><a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a></div>
-      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --hypothesis "${r4.question || "<the question>"}"\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml --dry-run`).join("\n")}\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml`).join("\n")}${Object.entries(retired).map(([id, why]) => `\nevh round-retire --goal ${M.goal.goal_id} --round r4 --arm ${id} --reason "${why}"`).join("")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "<what it showed and decided>"${promoted ? ` \\\n  --promote ${runOf(M.arms.find((a) => a.config_id === promoted))}` : ""}`)}`;
+      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --hypothesis "${r4.question || "<the question>"}"\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml --dry-run`).join("\n")}\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml`).join("\n")}${Object.entries(retired).map(([id, why]) => `\nevh round-retire --goal ${M.goal.goal_id} --round r4 --arm ${id} --reason "${why}"`).join("")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "<what it showed and decided>" --by person:<you>${promoted ? ` \\\n  --promote ${runOf(M.arms.find((a) => a.config_id === promoted))}` : ""}`)}`;
   }
   function wireEval() {
     main.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => { S.tab = b.dataset.tab; S.arm = null; save(); render(); }));
