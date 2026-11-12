@@ -291,6 +291,11 @@ window.HELP = {
 };
 
 window.GLOSSARY = {
+  "raw p": "How often a gap this large would come up by chance if the two arms were equal, for this one pair, before any correction for the other pairs tested.",
+  "corrected p": "The raw p made stricter for the number of pairs tested together, so that testing many pairs does not find a difference by luck.",
+  Holm: "A correction for many pairs tested at once: the smallest p is held to the strictest bar, each next one to a looser one. It needs every pair's p together.",
+  Bonferroni: "A correction for one pair tested among n: its p is multiplied by n. Stricter than Holm; it is what a single pair-test can do.",
+  "Δ": "The difference in the measure, this arm minus the one it is compared with, averaged over the items both scored.",
   goal: "The decision an evaluation helps you make, and how a winner is picked for it.",
   dataset: "A frozen list of items, each with a hash, that every system is tested on.",
   item: "One example in a dataset: what a system receives.",

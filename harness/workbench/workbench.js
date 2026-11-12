@@ -73,7 +73,8 @@
     if (!S.goal || OUTSIDE.includes(route)) { layout.classList.add("no-rail"); rail.innerHTML = ""; return; }
     layout.classList.remove("no-rail");
     const cur = route.startsWith("dataset") ? "dataset" : route === "goal-edit" ? "goal" : route;
-    rail.innerHTML = `<div class="label">Goal</div><div class="goalname">${esc(S.goal.title)}</div>
+    const curStep = STEPS.find((s) => s.id === cur);
+    rail.innerHTML = `<button type="button" class="railtoggle" aria-expanded="false">${curStep ? `Step ${curStep.n} of ${STEPS.length} · ${esc(curStep.name)}` : "The steps"} ▾</button><div class="label">Goal</div><div class="goalname">${esc(S.goal.title)}</div>
       <a class="step" href="#hub" ${route === "hub" ? 'aria-current="page"' : ""}><span class="dot">≡</span>Overview</a>
       ${STEPS.map((s) => {
         const cls = done(s.id) ? "done" : open(s.id) ? (cur === s.id ? "now" : "") : "locked";
@@ -309,14 +310,14 @@ success_criteria:
     S.jobs = S.jobs || [];
     const rec = { name, total, unit, n: 0, status: "running", started: new Date().toTimeString().slice(0, 8) };
     S.jobs.push(rec); save();
-    el.innerHTML = `<div class="job"><span>${esc(name)}</span><span class="status num" data-n>0 / ${total} ${esc(unit)}</span><div class="bar-track"><div class="bar-fill"></div></div></div>${note("a pretend job; the real one runs on the server and survives closing the page.")}`;
+    el.innerHTML = `<div class="job"><span>${esc(name)}</span><span class="status num" data-n aria-hidden="true">0 / ${total} ${esc(unit)}</span><div class="bar-track"><div class="bar-fill"></div></div></div><span class="vh" data-say>${esc(name)} started: ${total} ${esc(unit)}</span>${note("a pretend job; the real one runs on the server and survives closing the page.")}`;
     let k = 0;
     const t = setInterval(() => {
       k = Math.min(total, k + Math.ceil(total / 24));
       $(".bar-fill", el).style.width = `${(100 * k) / total}%`;
       $("[data-n]", el).textContent = `${k} / ${total} ${unit}`;
       rec.n = k;
-      if (k >= total) { clearInterval(t); rec.status = "done"; save(); setTimeout(then, 350); }
+      if (k >= total) { clearInterval(t); rec.status = "done"; save(); const say = $("[data-say]", el); if (say) say.textContent = `${name} done: ${total} ${unit}`; setTimeout(then, 350); }
     }, 60);
   }
 
@@ -490,7 +491,10 @@ success_criteria:
   }
   function compareTable(arms, sel, family) {
     const max = Math.max(...arms.map((a) => a.coverage));
-    return `<div class="tablewrap"><table class="cmp"><thead><tr><th class="num">#</th><th>arm</th><th>${w("measure", "coverage")}</th><th>vs the leader<small>Holm across ${family}; the p shown is raw</small></th><th class="num">per 1M articles</th><th class="num">per article</th></tr></thead><tbody>
+    const srt = S.sort || { col: "rank", dir: 1 }, val = { rank: (a) => a.rank, arm: (a) => a.arm, coverage: (a) => -a.coverage, cost: (a) => a.usd_per_item, speed: (a) => a.p50_ms };
+    arms = [...arms].sort((x, y) => { const f = val[srt.col] || val.rank, a = f(x), b = f(y); return (a < b ? -1 : a > b ? 1 : 0) * srt.dir; });
+    const sh = (col, label, cls = "") => `<th class="${cls}" aria-sort="${srt.col === col ? (srt.dir > 0 ? "ascending" : "descending") : "none"}"><button type="button" class="sortbtn" data-sort="${col}">${label}${srt.col === col ? (srt.dir > 0 ? " ↑" : " ↓") : ""}</button></th>`;
+    return `<div class="tablewrap"><table class="cmp"><thead><tr>${sh("rank", "#", "num")}${sh("arm", "arm")}${sh("coverage", "coverage, best first")}<th>vs the leader<small>${w("Holm")} across ${family}; the ${w("raw p")} is shown</small></th>${sh("cost", "per 1M articles", "num")}${sh("speed", "per article", "num")}</tr></thead><tbody>
       ${arms.map((a) => { const [v, k] = VERD(a); return `<tr data-arm="${esc(a.config_id)}" class="${a.config_id === sel ? "sel" : ""}"><td class="num">${a.rank}</td>
         <td><button type="button" class="armbtn mono" data-armbtn="${esc(a.config_id)}" aria-expanded="${a.config_id === sel}">${esc(a.arm)}</button> ${a.baseline ? '<span class="tag gold">baseline</span>' : ""} ${a.recommended ? '<span class="tag rec">recommended</span>' : ""}</td>
         <td><div class="cov"><span class="num">${a.coverage.toFixed(3)}</span><i style="width:${(100 * a.coverage) / max}%"></i></div></td>
@@ -558,19 +562,25 @@ success_criteria:
     const est = own.reduce((s, a) => s + a.usd_per_item * 200, 0);
     const ran = !!r4.ran, retired = r4.retired || {}, promoted = r4.promoted || null;
     const results = ran ? [base, ...own].sort((a, b) => a.rank - b.rank) : [];
+    const paid = results.some((a) => a.usd_per_item > 0);
+    const covMax = Math.max(...results.map((a) => ((a !== base ? M.reruns[a.config_id] : (M.reruns || {})[base.config_id]) || a).coverage), 0.0001);
     // The baseline's own re-run on the same machine is what the pair tests compared against (its r1 run was a Mac's).
     const baseRe = (M.reruns || {})[base.config_id];
     const CH = { prompt: "the prompt", model: "the model", temperature: "the temperature", max_tokens: "the most it may write" };
     const runOf = (a) => a.run_id;
     // A promotion needs what `evh round-close --promote` needs: the arm's own run in this round, significantly ahead of
-    // the baseline it started from, corrected for the round's arms (Bonferroni here, over the one-pair p).
+    // the baseline it started from, corrected for the round's arms as `pair-test --round` corrects: one pair at a
+    // time, Bonferroni across the arms in play (Holm's step-down needs every p at once; r1's table has them, so Holm).
     const n = Math.max(own.length, 1);
     const pnum = (x) => (String(x).startsWith("<") ? parseFloat(String(x).slice(1)) : parseFloat(x));
+    const adj = (a) => { const r = M.reruns[a.config_id]; return r && r.p != null ? { p: Math.min(1, pnum(r.p) * n), lt: String(r.p).startsWith("<") } : { p: 1, lt: false }; };
+    const pTxt = (h) => `${h.lt ? "<" : ""}${h.p < 0.0001 ? "0.0001" : h.p.toFixed(4)}`;
+    const verdictOf = (rr, h) => (h.p < 0.05 ? (rr.delta > 0 ? ["significantly ahead", "lead"] : ["significantly worse", "worse"]) : ["not significantly different", "ns"]);
     const hold = (a, rr) => !rr
       ? { why: "It has no run in this round: its scores are its r1 run, made before this round's question.",
           fix: `Run it in r4 (evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml), then test it against bart_l.` }
-      : !(rr.delta > 0 && Math.min(1, pnum(rr.p) * n) < 0.05)
-        ? { why: `Not shown ahead of bart_l: Δ ${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)}, p ${rr.p} (over ${n} arms: ${Math.min(1, pnum(rr.p) * n).toFixed(4)}).`,
+      : !(rr.delta > 0 && adj(a).p < 0.05)
+        ? { why: `Not shown ahead of bart_l: Δ ${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)}, p ${pTxt(adj(a))} with Bonferroni across the round's ${n} arms (raw ${rr.p}).`,
             fix: "The baseline stays bart_l. More items, or this arm's one change in a round of its own, could show it ahead." }
         : null;
     return `<div class="roundhead"><h2 class="kicker">round r4 · ${r4.closed ? `closed ${esc(r4.closedAt || "")} by you` : "open"} · from r1</h2>${r4.closed ? `<p class="question">${esc(r4.question || "")}</p>` : ""}</div>
@@ -587,18 +597,19 @@ success_criteria:
             <input type="text" id="clto" placeholder="its new value" style="width:220px"><button class="btn" type="button" id="cladd">Add the clone</button></div>
             <div class="hint" style="margin:6px 0 0">one change, so a difference in its score is that change's; a clone runs once its config is written (not in this mockup)</div></details>`}</div></div>
       <div class="part"><div class="parthead"><span class="letter">2</span><h3>Run</h3><span class="grow"></span>${ran ? `<span class="status ok">${own.length} runs · 200 items each</span>` : ""}</div>
-        <div class="body">${ran ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" id="runr4" type="button" ${r4.question ? "" : "disabled"}>Run ${own.length} arms · about ${usd(est, 2)}</button><span class="muted" id="r4hint" style="font-size:13px">${r4.question ? "jobs on the server; you can close the page" : "write the round's question first"}</span></div><div id="runjob" role="status" aria-live="polite"></div>`}</div></div>
+        ${ran ? "" : `<div class="body"><div class="actions" style="margin-top:0"><button class="btn primary" id="runr4" type="button" ${r4.question ? "" : "disabled"}>Run ${own.length} arms · about ${usd(est, 2)}</button><span class="muted" id="r4hint" style="font-size:13px">${r4.question ? "jobs on the server; you can close the page" : "write the round's question first"}</span></div><div id="runjob" role="status" aria-live="polite"></div></div>`}</div>
       <div class="part ${ran ? "" : "off"}"><div class="parthead"><span class="letter">3</span><h3 id="results-h">Results</h3>${q("eval.compare")}</div>
         ${ran ? `<div class="body">${note("each arm shows its own re-run (the project's Linux re-runs, compared with bart_l's by evh pair-test); a clone has no run, so no scores.")}
-          ${(() => { const held = own.filter((a) => !retired[a.config_id] && hold(a, M.reruns[a.config_id])); return !r4.closed && !promoted && held.length && held.length === own.filter((a) => !retired[a.config_id]).length ? `<div class="note"><b>None of the ${held.length} can be the baseline.</b> None was shown ahead of bart_l once corrected over the round's ${n} arms (each row's Δ and raw p are below; the corrected p is the raw p × ${n}). The baseline stays bart_l; more items, or one change in a round of its own, could show an arm ahead.</div>` : ""; })()}
-          <div class="tablewrap"><table class="cmp r4res"><thead><tr><th>arm</th><th></th><th class="num">coverage</th><th>vs bart_l<small>one pair each, raw p</small></th><th class="num">per 1M articles</th><th class="num">per article</th></tr></thead><tbody>
+          ${(() => { const held = own.filter((a) => !retired[a.config_id] && hold(a, M.reruns[a.config_id])); return !r4.closed && !promoted && held.length && held.length === own.filter((a) => !retired[a.config_id]).length ? `<div class="note"><b>None of the ${held.length} can be the baseline.</b> None was shown ahead of bart_l once corrected across the round's ${n} arms, as <code>evh round-close --promote</code> tests it (each row gives its verdict, the corrected p and the raw one). The baseline stays bart_l; more items, or one change in a round of its own, could show an arm ahead.</div>` : ""; })()}
+          ${paid ? "" : `<p class="muted fine">Every arm here runs locally: $0 per article, so no cost column.</p>`}
+          <div class="tablewrap"><table class="cmp r4res"><thead><tr><th>arm</th><th></th><th>coverage</th><th>vs bart_l<small>one pair at a time, ${w("Bonferroni")} across the round's ${n} arms, as promotion tests it (r1, every pair at once, uses ${w("Holm")}): ${w("Δ")}, the ${w("corrected p")} and the ${w("raw p")}</small></th>${paid ? '<th class="num">per 1M articles</th>' : ""}<th class="num">per article</th></tr></thead><tbody>
           ${results.map((a) => { const [v, k] = VERD(a); const rt = retired[a.config_id]; const isBase = promoted ? promoted === a.config_id : a === base; const rr = a !== base ? M.reruns[a.config_id] : baseRe;
             const run = rr ? `${a === base ? "its re-run" : "its own run"}, ${esc(rr.created_at.slice(0, 10))}, Linux` : "r1's (no re-run)";
             const act = !r4.closed && rt ? `<button class="linkbtn" type="button" data-unretire="${esc(a.config_id)}">Undo the retire</button>` : r4.closed || rt || isBase ? "" : `<button class="linkbtn" type="button" data-retire="${esc(a.config_id)}" data-name="${esc(a.arm)}">Retire</button>${hold(a, rr) ? "" : ` <button class="linkbtn" type="button" data-promote="${esc(a.config_id)}" data-name="${esc(a.arm)}">Make baseline</button>`}`;
-            return `<tr class="${rt ? "retired" : ""}"><td class="mono" data-rowname="${esc(a.config_id)}">${esc(a.arm)} ${isBase ? '<span class="tag gold">baseline</span>' : ""}<div class="muted runof">${run}</div>${rt ? `<div class="muted runof">retired: ${esc(rt)}</div>` : ""}</td><td class="acts">${act}</td><td class="num">${(rr ? rr.coverage : a.coverage).toFixed(3)}</td>
-              <td>${a === base ? '<span class="muted">the baseline</span>' : rr ? `<span class="num">${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)}</span> <small class="muted p">raw p ${esc(rr.p)}</small>${hold(a, rr) && rr.delta > 0 ? ` <small class="muted">× ${n} = ${Math.min(1, pnum(rr.p) * n).toFixed(4)}</small>` : ""}` : `<span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}`}</td><td class="num">${perM(a.usd_per_item)}</td>
+            return `<tr class="${rt ? "retired" : ""}"><td class="mono" data-rowname="${esc(a.config_id)}">${esc(a.arm)} ${isBase ? '<span class="tag gold">baseline</span>' : ""}<div class="muted runof">${run}</div>${rt ? `<div class="muted runof">retired: ${esc(rt)}</div>` : ""}</td><td class="acts">${act}</td><td><div class="cov"><span class="num">${(rr ? rr.coverage : a.coverage).toFixed(3)}</span><i style="width:${(100 * (rr ? rr.coverage : a.coverage)) / covMax}%"></i></div></td>
+              <td>${a === base ? '<span class="muted">the baseline</span>' : rr ? (() => { const h = adj(a), [vv, kk] = verdictOf(rr, h); return `<span class="verdict v-${kk}">${vv}</span><br><small class="muted p">Δ ${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)} · p ${pTxt(h)} (raw ${esc(rr.p)})</small>`; })() : `<span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}`}</td>${paid ? `<td class="num">${perM(a.usd_per_item)}</td>` : ""}
               <td class="num">${secs(rr ? rr.p50_ms : a.p50_ms)}</td></tr>`; }).join("")}
-          ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span><div class="muted runof">not run</div></td><td></td><td class="num">—</td><td class="muted">no run in the project</td><td class="num">—</td><td class="num">—</td></tr>`).join("")}</tbody></table></div>
+          ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span><div class="muted runof">not run</div></td><td></td><td class="num">—</td><td class="muted">no run in the project</td>${paid ? '<td class="num">—</td>' : ""}<td class="num">—</td></tr>`).join("")}</tbody></table></div>
           ${r4.closed ? `<div class="note"><b>Closed.</b> ${esc(r4.conclusion)}${promoted ? ` The baseline is now ${esc(M.arms.find((a) => a.config_id === promoted).arm)}.` : ""}</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided">${esc(r4.draft || "")}</textarea></div></div>
           <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button" ${(r4.draft || "").trim() ? "" : "disabled"}>Close the round</button><span class="muted" style="font-size:13px">${promoted ? `promotes ${esc(M.arms.find((a) => a.config_id === promoted).arm)} as the baseline` : "the baseline stays bart_l"}<span id="closehint">${(r4.draft || "").trim() ? "" : " · write the conclusion first"}</span></span></div><div id="closeconfirm"></div>`}</div>` : ""}</div>
       <div class="actions">${r4.closed ? `<a class="btn primary" href="#review">Review the outputs</a>${S.r5 ? "" : `<button class="btn" type="button" id="openr5">Open the next round</button>`}<a class="btn" href="#judge">Score with a judge too</a>` : `<a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a>`}</div>
@@ -627,6 +638,8 @@ success_criteria:
     main.querySelectorAll("tr[data-arm], circle[data-arm]").forEach((el) => el.addEventListener("click", () => pickArm(el.dataset.arm)));
     $("[data-closearm]")?.addEventListener("click", () => { focusNext = `[data-armbtn="${CSS.escape(S.arm || "")}"]`; S.arm = null; save(); render(); });
     $("#showall")?.addEventListener("click", () => { S.showAll = !S.showAll; save(); render(); });
+    main.querySelectorAll("[data-sort]").forEach((b) => b.addEventListener("click", () => { const c = b.dataset.sort, cur = S.sort || { col: "rank", dir: 1 };
+      S.sort = { col: c, dir: cur.col === c ? -cur.dir : 1 }; focusNext = `[data-sort="${c}"]`; save(); render(); }));
     $("#openr4")?.addEventListener("click", () => { S.r4 = { question: "" }; S.tab = "r4"; S.arm = null; focusNext = "#r4q"; save(); render(); });
     $("#openr5")?.addEventListener("click", () => { S.r5 = { question: "" }; S.tab = "r5"; focusNext = "#r5q"; save(); render(); });
     $("#r5q")?.addEventListener("input", (e) => { S.r5.question = e.target.value; save(); });
@@ -710,6 +723,7 @@ success_criteria:
     const html = screen();
     if (!html) return;
     main.innerHTML = html;
+    main.querySelectorAll("details.cmd").forEach((d) => { if ((S.openCmds || []).includes(d.querySelector("summary").textContent)) d.open = true; });
     drawRail(route);
     if (wire) wire();
     const h1 = main.querySelector("h1");
@@ -727,6 +741,11 @@ success_criteria:
     else if (newScreen && h1) h1.focus({ preventScroll: true });
   }
   const nextStep = () => (!S.dataset ? "add a dataset" : !prepared() ? "prepare the dataset" : (S.checked || []).length < 2 ? "choose the models" : !S.r4 ? "open a round" : S.r4.closed ? "review the outputs" : "finish round r4");
+  // the commands a person opened, kept open across redraws
+  document.addEventListener("toggle", (e) => { const d = e.target; if (!d.matches || !d.matches("details.cmd")) return;
+    const k = d.querySelector("summary").textContent, o = new Set(S.openCmds || []); if (d.open) o.add(k); else o.delete(k); S.openCmds = [...o]; save(); }, true);
+  // the rail's one line on a phone opens the steps
+  rail.addEventListener("click", (e) => { const b = e.target.closest(".railtoggle"); if (!b) return; const on = rail.classList.toggle("open"); b.setAttribute("aria-expanded", String(on)); });
   window.WB = { get S() { return S; }, M, H, G, esc, $, w, q, field, cmd, note, save, render, progress, usd, perM, secs, armOf, routes: ROUTES, nextStep };
   // on a phone a table of four or more columns stacks (workbench.css): each row a card, each cell named by its column;
   // a comparison, or a table to pick rows from (its first column a checkbox), stacks compact: its row's name as the

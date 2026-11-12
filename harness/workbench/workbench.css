@@ -166,7 +166,7 @@ details.cmd pre { margin: 10px 0 0; padding: 12px; background: var(--surface); b
 
 /* a job's line */
 .job { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; font-size: 13px; }
-.bar-track { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+.bar-track { grid-column: 1 / -1; height: 4px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
 .bar-fill { height: 100%; background: var(--accent); width: 0; transition: width .15s linear; }
 
 /* tables */
@@ -194,7 +194,7 @@ td.clip div { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: v
 .reader .pane { border: 1px solid var(--hair); border-radius: 6px; padding: 12px; font-size: 13.5px; background: var(--page); }
 .reader .pane .kicker { margin-bottom: 6px; }
 .pager { display: flex; gap: 8px; align-items: center; font: 500 12px/1 var(--mono); color: var(--muted); }
-.pager button { background: none; border: 1px solid var(--hair); border-radius: 4px; padding: 4px 8px; cursor: pointer; color: var(--ink-2); }
+.pager button { background: none; border: 1px solid var(--hair); border-radius: 6px; padding: 4px 8px; cursor: pointer; color: var(--ink-2); }
 
 /* the help panel */
 .help { width: 340px; border-left: 1px solid var(--hair); background: var(--surface); padding: 24px 20px; position: sticky;
@@ -398,3 +398,19 @@ table.r4res td.acts { white-space: nowrap; }
 .answer p.source { margin: 6px 0 0; font: 400 12px/1.4 var(--mono); color: var(--muted); }
 #actmsg:not(:empty) { color: var(--bad); }
 input[aria-invalid="true"] { border-color: var(--bad); }
+
+/* r4's verdicts and bars as r1's; text for a screen reader only */
+table.r4res .cov { min-width: 120px; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* r1's sortable heads; the rail folded to one line on a phone */
+table.cmp th .sortbtn { background: none; border: 0; padding: 0; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+table.cmp th .sortbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.railtoggle { display: none; }
+@media (max-width: 900px) {
+  .railtoggle { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 4px 0; font: 500 13px/1.4 var(--mono); color: var(--ink-2); cursor: pointer; }
+  .rail:not(.open) > :not(.railtoggle) { display: none; }
+}
+/* a column head that carries a note wraps it: the note is a sentence, not a label */
+table.cmp thead th:has(> small) { white-space: normal; min-width: 24ch; }
+table.cmp thead th > small { white-space: normal; }

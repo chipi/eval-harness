@@ -426,6 +426,16 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
   - A prompt opens under its row and names the arm; Enter confirms it, Escape cancels it; an empty reason is an error
     in the bad status, tied to its field. The confirm of a close shows one "Close the round"; the hint under it stops
     asking for a conclusion once one is written. The answer's source is a quiet line under it.
+  - r4's results give each arm a verdict (significantly ahead / not significantly different / significantly worse)
+    with Δ, the corrected p and the raw p, and r1's coverage bars. The correction is the one promotion uses:
+    `round-close --promote` runs `pair-test --round`, one pair at a time, Bonferroni across the round's arms (Holm's
+    step-down needs every p at once, which r1's table has, so r1 says Holm); the column says so. A cost column every
+    arm of which is $0 gives way to one line; after the run the Run part is its status line.
+  - The statistics words (raw p, corrected p, Holm, Bonferroni, Δ) are glossary buttons. r1's table sorts by rank,
+    arm, coverage, cost or speed. A command a person opened stays open across redraws. A job's moving count is not
+    announced; its start and its end are.
+  - On a phone the rail is one line naming the step ("Step 5 of 5 · Eval ▾") that opens to every step, so the screen's
+    answer is in view without scrolling past eleven steps.
   - A closed round says when it closed and by whom, shows its question as text, and offers its next steps: review the
     outputs, or open the next round. r5 opens from r4's conclusion with its question in focus and the command it
     writes; the project has no runs past r4's re-runs, so the walk-through stops at r5's question and says so.
