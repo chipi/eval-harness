@@ -2,7 +2,7 @@
 name: evh-evaluate-a-system
 description: Measure a system with eval-harness (evh) from nothing to a recorded decision — freeze a dataset (from files or from production records), make a reference, run each version of the system as an arm, compare them with paired tests, and promote the winner with a reason. Use when asked to "evaluate", "measure", "benchmark", "compare versions of" or "improve" a system with evh, or when starting evh in a project.
 metadata:
-  harness-version: "0.7.2"
+  harness-version: "0.8.0.dev0"
 ---
 
 # Evaluate a system with evh

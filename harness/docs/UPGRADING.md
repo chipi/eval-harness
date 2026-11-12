@@ -7,6 +7,9 @@ correctness bugs, not just missing features.
 
 ## From 0.7.2 to 0.8.0 (unreleased)
 
+- **Before the release**, a pin on a commit of the 0.8.0 branch installs `0.8.0.dev0`, the version every commit of it
+  carries until the release: moving such a pin from one commit to another takes `pip install --force-reinstall`, as
+  pip keeps an installed copy of the same version.
 - **Run `evh migrate` once** (`--dry-run` first shows what each step will do; a second run changes nothing). Its
   steps, in order:
   - *runs* (RFC-024): a run's outputs become one `outputs.jsonl` instead of an `outputs/` folder of `<item>.txt`,
