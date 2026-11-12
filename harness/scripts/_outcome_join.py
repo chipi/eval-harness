@@ -189,6 +189,24 @@ def add_arguments(ap: Any) -> None:
     )
 
 
+def argv(raw: list[str] | None = None) -> list[str]:
+    """The command line with `--within -1m,+15m` joined into `--within=-1m,+15m`: before Python 3.12 argparse reads a
+    value starting with "-" as another option ("expected one argument"), and this is how a window is written."""
+    import sys  # noqa: PLC0415
+
+    args = list(sys.argv[1:] if raw is None else raw)
+    out: list[str] = []
+    i = 0
+    while i < len(args):
+        if args[i] == "--within" and i + 1 < len(args) and args[i + 1].startswith("-"):
+            out.append(f"--within={args[i + 1]}")
+            i += 2
+            continue
+        out.append(args[i])
+        i += 1
+    return out
+
+
 def from_args(args: Any) -> Join | None:
     """The join the arguments ask for, or None."""
     if not getattr(args, "outcomes", None):

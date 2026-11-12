@@ -149,7 +149,7 @@ def main() -> int:
         action="store_true",
         help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    args = ap.parse_args()
+    args = ap.parse_args(_outcome_join.argv())
     with _jsonout.collect("label-from-capture", args.json, live=sys.stderr):
         from evaluation_harness.dataset_from_capture import load_capture  # noqa: PLC0415
 
@@ -193,7 +193,12 @@ def main() -> int:
             t = parse_time(rec.get("created_at"))
             age = (as_of - t).total_seconds() / 86400 if as_of and t else None
             rule = next((r for r in rules if matches(r, out, age)), None)
-            if rule is None:
+            if rule is None and any(
+                "min_age_days" in r and matches({k: v for k, v in r.items() if k != "min_age_days"}, out, age)
+                for r in rules
+            ):
+                counts["not_mature"] += 1  # a rule fits it but for its age: label-coverage names the date
+            elif rule is None:
                 counts["unmatched"] += 1
             elif rule.get("skip"):
                 counts["skipped"] += 1
@@ -272,7 +277,7 @@ def main() -> int:
             **({"outcomes": join.source()} if join else {}),
             **({"relabel": relabel} if relabel else {}),
             **({"reproduced_by": reproduced} if reproduced else {}),
-            **{k: counts[k] for k in ("matched", "skipped", "unmatched", "no_record", "gone")},
+            **{k: counts[k] for k in ("matched", "skipped", "not_mature", "unmatched", "no_record", "gone")},
         }
         out = write_set(
             args.dataset_id,
@@ -285,7 +290,7 @@ def main() -> int:
         )
         print(
             f"data/labels/{args.dataset_id}/{args.name}: {out['n_items']} of {len(ds['items'])} item(s) labelled "
-            f"({counts['skipped']} skipped, {counts['unmatched']} matched no rule, {counts['no_record']} not in the capture"
+            f"({counts['skipped']} skipped, {counts['unmatched']} matched no rule, {counts['not_mature']} not yet mature, {counts['no_record']} not in the capture"
             + (f", {counts['gone']} gone from the source or their id reused" if counts["gone"] else "")
             + ")"
             + (f", as of {source['as_of'][:10]}" if source.get("as_of") else "")

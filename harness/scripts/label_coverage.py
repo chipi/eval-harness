@@ -186,7 +186,7 @@ def main() -> int:
     ap.add_argument(
         "--json", action="store_true", help="the same answer as one JSON object: counts, rules and every item"
     )
-    args = ap.parse_args()
+    args = ap.parse_args(_outcome_join.argv())
     with _jsonout.collect("label-coverage", args.json):
         cov = coverage(
             args.dataset_id, args.capture, load_rules(args.map), _outcome_join.from_args(args), args.from_set

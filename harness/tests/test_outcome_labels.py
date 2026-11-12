@@ -154,6 +154,7 @@ try:
         and "under_action" not in r2_
         and r2_.get("knowable_at", "")[:10] == iso(t[2] + 14 * DAY)[:10]
         and doc["source"].get("gone") == 1
+        and doc["source"].get("not_mature") == 1
         and sorted(doc.get("gone") or {}) == [items[4]]
         and doc["source"]["outcomes"]["join"] == "fp=fp"
         and doc["source"]["outcomes"]["within"] == "-1m,+15m"

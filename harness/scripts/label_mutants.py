@@ -93,7 +93,7 @@ def main() -> int:
         action="store_true",
         help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
     )
-    args = ap.parse_args()
+    args = ap.parse_args(_outcome_join.argv())
     with _jsonout.collect("label-mutants", args.json, live=sys.stderr):
         rules = load_rules(args.map)
         join = _outcome_join.from_args(args)
