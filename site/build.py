@@ -1237,24 +1237,26 @@ def home(f: dict) -> str:
 {method.landing_teaser(H, f, "06")}
 <section class="block" id="start" data-nav="Start"><div class="wrap">
   <h2>Try it on your own data.</h2>
-  <p class="lede">Install the pinned release, take the tutorial kit through the whole loop offline, then start from your own problem: what to freeze, what to run, what to compare.</p>
-  <div class="cols" style="margin-top:32px">
-    <div class="prose"><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference set from the best arm's labels, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference set and judges, rounds and dataset versions, datasets from production, and setting a model up. Last, look at it all: <code>evh catalog</code> builds the catalog of your own runs and <code>evh catalog-serve</code> opens it with the inspector (<a href="docs/tutorials/5-catalog-and-inspector/">tutorial 5</a>); <a href="{CATALOG}">ours</a> shows the six worked examples. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
-      <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="docs/GUIDE/">Getting started</a></div></div>
-<pre class="term"><span class="p">$ </span>pip install "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
+  <p class="lede">About fifteen minutes, offline, no API key: install the pinned release, take its tutorial kit through the whole loop, then start from your own problem.</p>
+  <div class="paths">
+    <div><h3>1 · Try the whole loop</h3>
+<pre class="term"><span class="p">$ </span>pip install \
+  "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
 <span class="p">$ </span>evh init --tutorial
-<span class="c"># the guide walks the tutorial from here; then, on your own system</span>
-<span class="p">$ </span>evh dataset-create --dataset-id my_v1 --source-dir data/sources
-<span class="p">$ </span>evh run --config data/configs/arm_a.yaml --repeat 3
+<span class="c"># then the guide walks the six tickets</span></pre></div>
+    <div><h3>2 · On your own system</h3>
+<pre class="term"><span class="p">$ </span>evh dataset-create --dataset-id my_v1 \
+    --source-dir data/sources
+<span class="p">$ </span>evh run --config data/configs/arm_a.yaml
 <span class="p">$ </span>evh leaderboard --dataset-id my_v1
-<span class="p">$ </span>evh catalog && evh catalog-serve
-<span class="c"># or, from a checkout: the bundled demo</span>
-<span class="p">$ </span>git clone {REPO}
+<span class="p">$ </span>evh catalog && evh catalog-serve</pre></div>
+    <div><h3>3 · Or the bundled demo</h3>
+<pre class="term"><span class="p">$ </span>git clone {REPO}
 <span class="p">$ </span>cd eval-harness/harness
-<span class="p">$ </span>make install
-<span class="p">$ </span>make demo
-<span class="p">$ </span>make leaderboard</pre>
+<span class="p">$ </span>make install && make demo</pre></div>
   </div>
+  <p class="dek-note">Needs Python 3.10 or newer; a hosted model needs your own key. The tutorials then add a local model, a hosted LLM, judges, rounds, datasets from production and setting a model up (<a href="docs/GUIDE/#where-to-go-next">the tutorials</a>).</p>
+  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="docs/GUIDE/">Getting started</a></div>
 </div></section>
 {author("home")}"""
     return page(

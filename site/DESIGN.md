@@ -261,7 +261,8 @@ a tooltip), pills for buttons and the section switcher (999px), circles for icon
 
 - A Surface frame with a hairline, the legend in monospace above, the caption in Muted below. Series use the three kinds'
   colours and Baseline Grey, each 3:1 or more against every surface of its theme; a band of Ink at 8–9% shows a
-  region (the arms not significantly different from the leader), never a series. The band is a result, so it is
+  region (the arms not significantly different from the leader) with a 1px outline of Ink at 50% (3:1 or more), never a
+  series. The band is a result, so it is
   never the accent.
 
 ### Terminal

@@ -142,7 +142,7 @@ figure { margin: 0; }
 .chart svg .t-head { font-family: var(--display); font-weight: 700; fill: var(--ink); letter-spacing: -0.01em; }
 .chart svg .grid { stroke: var(--hair); stroke-width: 1; }
 .chart svg .axis { stroke: var(--axis); stroke-width: 1; }
-.chart svg .band { fill: var(--band); }
+.chart svg .band { fill: var(--band); stroke: color-mix(in srgb, var(--ink) 50%, transparent); stroke-width: 1; }
 .chart svg .accent { fill: var(--accent); }
 .chart svg .k-proprietary { fill: var(--proprietary); }
 .chart svg .k-open { fill: var(--open); }
@@ -581,7 +581,14 @@ main:focus { outline: none; }
   .hero-text { display: contents; }
   .hero-text .kicker { order: 1; }
   .hero-text h1 { order: 2; }
-  .hero-cols .hero-chart { order: 3; margin-top: 0; }
-  .hero-text .dek { order: 4; }
-  .hero-text .btns { order: 5; }
+  .hero-cols .hero-chart { order: 5; margin-top: 0; }
+  .hero-text .dek { order: 3; }
+  .hero-text .btns { order: 4; }
 }
+
+/* the closing band's three paths, side by side on a desktop, stacked on a phone */
+.paths { display: grid; gap: 20px; margin-top: 32px; }
+@media (min-width: 900px) { .paths { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.paths h3 { font: 600 13px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.paths pre.term { min-height: 0; }
+.paths > div { min-width: 0; }
