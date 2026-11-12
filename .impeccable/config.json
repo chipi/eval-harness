@@ -1,0 +1,3 @@
+{
+  "projectRoots": ["site", "harness/catalog_assets", "harness/workbench"]
+}
