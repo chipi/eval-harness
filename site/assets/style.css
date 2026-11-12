@@ -559,3 +559,11 @@ footer .wrap.foot { display: block; }
   .hero-cols .vw { display: none; }
   .hero-cols .vn { display: block; }
 }
+
+/* the site's left-out critique items (2026-11-12): the skip link; the arm key under section 01's lede */
+.skip { position: absolute; left: 8px; top: -48px; z-index: 50; padding: 8px 12px; border-radius: 6px; background: var(--accent);
+  color: var(--accent-ink); font: 600 13px/1 var(--mono); text-decoration: none; }
+.skip:focus { top: 8px; }
+main:focus { outline: none; }
+.lede-note { color: var(--muted); font-size: 15px; max-width: 70ch; margin: -32px 0 48px; }
+.lede-note dfn { font-style: normal; font-weight: 600; color: var(--ink); }

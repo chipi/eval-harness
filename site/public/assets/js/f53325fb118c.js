@@ -1,6 +1,7 @@
-document.getElementById('theme').addEventListener('click',()=>{const r=document.documentElement;
-const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
-r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}});
+(()=>{const b=document.getElementById('theme'),r=document.documentElement;
+const dark=()=>r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+const show=()=>b.setAttribute('aria-pressed',String(dark()));show();
+b.addEventListener('click',()=>{r.dataset.theme=dark()?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}show();});})();
 /* the on-this-page line: the section in view marked, its link kept in sight on a narrow screen */
 (()=>{const links=[...document.querySelectorAll('.onpage a')];if(!links.length)return;
 const secs=links.map(a=>[a,document.getElementById(decodeURIComponent(a.hash.slice(1)))]).filter(x=>x[1]);

@@ -507,9 +507,10 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 </script>"""
 
 JS = """<script>
-document.getElementById('theme').addEventListener('click',()=>{const r=document.documentElement;
-const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
-r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}});
+(()=>{const b=document.getElementById('theme'),r=document.documentElement;
+const dark=()=>r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+const show=()=>b.setAttribute('aria-pressed',String(dark()));show();
+b.addEventListener('click',()=>{r.dataset.theme=dark()?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}show();});})();
 /* the on-this-page line: the section in view marked, its link kept in sight on a narrow screen */
 (()=>{const links=[...document.querySelectorAll('.onpage a')];if(!links.length)return;
 const secs=links.map(a=>[a,document.getElementById(decodeURIComponent(a.hash.slice(1)))]).filter(x=>x[1]);
@@ -708,13 +709,14 @@ def page(title: str, desc: str, body: str, depth: int = 0, here: str = "", card:
 <link rel="apple-touch-icon" href="{up}assets/apple-touch-icon.png">
 </head>
 <body>
+<a class="skip" href="#main">Skip to the page</a>
 <header class="bar"><div class="wrap">
   <a class="brand" href="{up or "./"}" aria-label="eval-harness home"><img class="mark" src="{up}assets/icon.svg" alt="" width="28" height="28"><span>eval-harness</span></a>
   <nav class="sections" aria-label="Harness, catalog and docs">{sections}</nav>
   <details class="menu"><summary class="hbtn" aria-label="Menu">{ICON["menu"]}</summary><nav class="menu-links">{links}{mcp_menu}{github_menu}</nav></details>
-  <nav class="nav">{links}{github_btn}<a class="hbtn search-btn" href="{up}docs/?q=" aria-label="Search the docs">{ICON["search"]}</a><button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button></nav>
+  <nav class="nav">{links}{github_btn}<a class="hbtn search-btn" href="{up}docs/?q=" aria-label="Search the docs">{ICON["search"]}</a><button id="theme" class="theme hbtn" aria-label="Dark theme" aria-pressed="false">{ICON["theme"]}</button></nav>
 </div>{onpage}</header>
-<main>
+<main id="main" tabindex="-1">
 {body}
 </main>
 {footer(up)}
@@ -1107,7 +1109,7 @@ def home(f: dict) -> str:
     why_html = "".join(
         f'<div class="why-q reveal"><span class="n">{i:02d}</span><h3>{e(qn)}</h3>'
         f"<p><b>What it found</b>{found}</p>"
-        f'<a href="{href}">{e(label)} →</a></div>'
+        f'<a href="{href}">{e(label)}{" on GitHub ↗" if href.startswith(REPO) else " →"}</a></div>'
         for i, (qn, found, href, label) in enumerate(why, 1)
     )
     goal_links = " · ".join(f'<a href="{CATALOG}{x["goal"]["goal_page"]}">{e(x["bench"])}</a>' for x in exps)
@@ -1135,6 +1137,7 @@ def home(f: dict) -> str:
   <div class="eyebrow"><span class="num">01</span>Why the harness exists</div>
   <h2>Four questions anyone building with AI ends up asking.</h2>
   <p class="lede">There are dozens of models, a leaderboard for each, and none of them measured on your problem. <a href="docs/GUIDE/">The harness</a> exists to answer these on your own data; below, what it answered when pointed at 24 LLMs. How it does that is in <a href="method.html">the method</a>.</p>
+  <p class="lede-note">One model run with its prompt and settings is an <dfn>arm</dfn>. Arms are named by family and size: <code>anthropic_l</code> is the family's largest model here (Claude Opus), <code>_m</code> its middle one, <code>_s</code> its smallest.</p>
   <div class="why">{why_html}</div>
 </div></section>
 
@@ -1192,7 +1195,7 @@ def home(f: dict) -> str:
   <div class="cols">
     <div class="prose"><p>The harness is also an MCP server. <code>evh mcp</code> gives an agent the same read commands you use: datasets and what is inside them, goals and what they recommend, arms, reference sets, metrics, activity, the inspector's paired comparisons and its sheet of every item and arm, the label sets and how two agree, and what production decided (its captures, the deploy sheet, the picks waiting for a dataset's next version), each answering exactly what the command prints. Nothing it does writes your project, spends or runs a model (the one file it keeps is a cache of the goals' tests).</p>
     <p>On your machine it serves your own project; for a team, <code>evh mcp --http</code> serves one checkout to everyone. The worked examples above are served at <code>https://evals.humancopilot.eu/mcp</code>, read-only and without sign-in, answering what the site and the catalog publish and never an item's text (so without the sheet), for Claude, ChatGPT and the OpenAI API, Gemini, or any MCP client.</p>
-      <div class="btns"><a class="btn primary" href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">Connect an agent</a><a class="btn" href="{BLOB}/docs/rfc/RFC-018-read-only-mcp-server.md">How it works</a></div></div>
+      <div class="btns"><a class="btn primary" href="docs/harness/INTEGRATION/#for-an-agent-evh-mcp">Connect an agent</a><a class="btn" href="{BLOB}/docs/rfc/RFC-018-read-only-mcp-server.md">How it works, on GitHub ↗</a></div></div>
 <pre class="term"><span class="c"># the worked examples, from Claude Code</span>
 <span class="p">$ </span>claude mcp add --transport http evals https://evals.humancopilot.eu/mcp
 <span class="c"># your own project, on your machine</span>
@@ -1388,7 +1391,7 @@ def landing(f: dict) -> str:
         <a class="btn" href="docs/PROTOCOL/">The protocol</a>
         <a class="btn" href="docs/">Full documentation</a>
       </div>
-      <p class="note" style="margin-top:32px">Reviewed in adversarial rounds: the <a href="{REPO}/tree/main/research/internal">lab notebook</a> records what was wrong, how it was found, and what changed; the reports state today's figures, and git keeps every earlier version.</p>
+      <p class="note" style="margin-top:32px">Reviewed in adversarial rounds: the <a href="{REPO}/tree/main/research/internal">lab notebook</a> (on GitHub) records what was wrong, how it was found, and what changed; the reports state today's figures, and git keeps every earlier version.</p>
     </div>
   </div>
 </div></section>
