@@ -152,9 +152,33 @@ try:
         and metrics_of("tickets_oldguard_v1").get("expect_identical_to") is None,
         v.stdout[-600:],
     )
+    # The fleet's retest (F10): a project keeps its configs in a folder of its own (`evh run --config` takes a path);
+    # the declaration there was not seen. The project's config.yaml names such folders under `configs:`.
+    own = proj / "projects" / "dedup" / "configs"
+    own.mkdir(parents=True)
+    (cfgs / "old_guard.yaml").rename(own / "old_guard.yaml")
+    v = evh("validate")
+    check(
+        "setup: a declaration in a folder the project has not named is not seen",
+        "FAIL V5" in v.stdout,
+        v.stdout[-400:],
+    )
+    proj_cfg = proj / "config.yaml"
+    before = proj_cfg.read_text() if proj_cfg.exists() else None
+    proj_cfg.write_text((before or "") + "configs: [projects/dedup/configs]\n")
+    v = evh("validate")
+    check(
+        "validate: config.yaml's configs: names where the project keeps its configs; their declarations count",
+        "FAIL V5" not in v.stdout and "1 regression guard(s) reproduce what they must" in v.stdout,
+        v.stdout[-600:],
+    )
+    if before is None:
+        proj_cfg.unlink()
+    else:
+        proj_cfg.write_text(before)
     for f in (proj / "data" / "runs").glob("tickets_oldguard_v1_*"):
         shutil.rmtree(f)
-    (cfgs / "old_guard.yaml").unlink()
+    (own / "old_guard.yaml").unlink()
 
     # ── outside git: not determinable ─────────────────────────────────────────────────────────────────
     write_cfg("nogit.yaml", "tickets_nogit_v1", 2, HYP)

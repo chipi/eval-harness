@@ -369,12 +369,14 @@ that can move a result is never a patch release without saying so under **Change
   items were written, and a capture's own export kept there was deleted without a word (the fleet's beta). A file
   there that the dataset's record does not name is now refused (`would-overwrite`), and stays.
 - **`pair-test --round` gave one reason for three**: a round whose only arm is its baseline, or whose leader is its
-  baseline, was said to "record no other baseline run". Each is now named (the fleet's beta).
+  baseline, was said to "record no other baseline run". Each is now named; `--a` naming the baseline itself is said
+  as that, whatever else the round holds (the fleet's beta and retest).
 - **`label-mutants` reported a join mutant it could not apply as SURVIVED**: a project's join mutant with a key the
   join does not read (`item_field`) ran the unchanged join. It is refused now, the key named (the fleet's beta).
 - **A regression guard could not cover runs made before it was declared**: V5 read `expect_identical_to` only from a
   run's `metrics.json`, which a frozen run never gains. It now also reads the config's own declaration, so a guard
-  pair from before 0.8.0 is checked as the guard, not flagged as a copied result (the fleet's beta).
+  pair from before 0.8.0 is checked as the guard, not flagged as a copied result. A config kept outside
+  `data/configs/` is read from the folders `config.yaml` names under `configs:` (the fleet's beta and retest).
 - **A history confound had two denominators**: the run's note counted every item (5 of 287), while its score's mean
   counted only the items the adapter marked (5 of 34, 0.147). An unmarked item now counts as 0, so both read 5 of
   287. A command reading part of a run (`period-compare`'s period) counts the confound over the items it reads

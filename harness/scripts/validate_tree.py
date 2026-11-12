@@ -487,12 +487,37 @@ def _declared_together(base: Path, configs: set) -> bool:
     return reach == configs
 
 
+def _config_dirs() -> list[Path]:
+    """Where the project keeps its arm configs besides data/configs: config.yaml's `configs:` folders, each inside the
+    project (the fleet's retest: `evh run --config` takes any path, and a guard's declaration there went unseen)."""
+    import yaml  # noqa: PLC0415
+    from evaluation_harness import _common  # noqa: PLC0415
+
+    cfg = _common.ROOT / "config.yaml"
+    try:
+        listed = (
+            (yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}).get("configs") if cfg.is_file() else None
+        )
+    except (yaml.YAMLError, AttributeError):
+        listed = None  # a broken config.yaml is the store's own refusal
+    root = _common.ROOT.resolve()
+    out = []
+    for d in listed if isinstance(listed, list) else []:
+        p = (root / str(d)).resolve()
+        if p.is_relative_to(root) and p.is_dir():
+            out.append(p)
+    return out
+
+
 def _declared_in_configs() -> dict[str, str]:
-    """config_id -> the config it must reproduce, as each config file declares it today."""
+    """config_id -> the config it must reproduce, as each config file declares it today (data/configs, and the
+    folders config.yaml names under `configs:`)."""
     import yaml  # noqa: PLC0415
 
     out: dict[str, str] = {}
-    for f in sorted(_store.glob(CONFIGS, "*.yaml")) if _store.is_dir(CONFIGS) else []:
+    files = sorted(_store.glob(CONFIGS, "*.yaml")) if _store.is_dir(CONFIGS) else []
+    files += [f for d in _config_dirs() for f in sorted(d.glob("*.yaml"))]
+    for f in files:
         try:
             doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
         except yaml.YAMLError:

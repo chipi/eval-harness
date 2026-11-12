@@ -387,7 +387,12 @@ with no effect; with the declaration it reads them as the agreement asked for, a
 per-item results or its outputs differ from the latest run of the config it names on the same dataset ("must
 reproduce my_config_v1: its outputs differ from …"). The run records the key in `metrics.json`; it is not part of
 the fingerprint. A run made before its config said so (runs are frozen) is held to the config's declaration as it
-stands.
+stands. The declarations are read from `data/configs/` and from the folders the project's `config.yaml` names under
+`configs:` (for configs kept elsewhere in the project, as `evh run --config` takes any path):
+
+```yaml
+configs: [projects/signal-fleet-dedup/configs]
+```
 
 **What a run records as its cost.** Each call's `cost_usd` is the provider's bill when the
 response carries one (`usage.cost`), and otherwise the config's price table, tokens ×

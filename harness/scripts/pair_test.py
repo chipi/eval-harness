@@ -145,7 +145,8 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
             die(f"round {args.round} records no baseline run: name --b", "not-enough")
         if args.b == args.a:
             # The fleet's beta: a new round whose only arm is its baseline was said to record no baseline.
-            if not [c for c in in_play if c != args.b]:
+            # When --a named the baseline itself, that is the reason, whatever else is in play (the fleet's retest).
+            if chose and not [c for c in in_play if c != args.b]:
                 die(
                     f"round {args.round} has no arm besides its baseline {args.b}: run an arm in it, or name --a",
                     "not-enough",

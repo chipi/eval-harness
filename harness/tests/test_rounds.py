@@ -504,6 +504,18 @@ try:
         and "records no baseline" not in out(r4),
         out(r)[-300:] + out(r4)[-400:],
     )
+    # The fleet's retest (F3b): --a naming the baseline, in that same round, was told there is no other arm.
+    r4a = evh(
+        "pair-test", "--dataset-id", "tickets_v1", "--goal", "tickets_summary", "--round", "r4",
+        "--a", "tickets_lead1_v1",
+    )  # fmt: skip
+    check(
+        "pair-test --round --a the baseline, in a round of only the baseline: says --a is the baseline",
+        r4a.returncode != 0
+        and "tickets_lead1_v1 is round r4's baseline" in out(r4a)
+        and "no arm besides" not in out(r4a),
+        out(r4a)[-400:],
+    )
 finally:
     shutil.rmtree(proj, ignore_errors=True)
     # _runstore aimed this process at the test project; the checks below read this repository's committed data,
