@@ -42,7 +42,7 @@ from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 
-from evaluation_harness import _common, _fields, _jsonout, _looks, _store, _visibility  # noqa: E402
+from evaluation_harness import _common, _exposure, _fields, _jsonout, _looks, _store, _visibility  # noqa: E402
 from evaluation_harness._common import ROOT, die  # noqa: E402
 from evaluation_harness.axes import (  # noqa: E402
     STRATEGIES,
@@ -1923,7 +1923,7 @@ def render_dataset(A: Adapter, ds: str, v: dict, out: Path, nav: list) -> None:
         e(ds or "(no dataset_id)"),
         f"{v['items']} {e(A.item_word)}s · {len(arms)} arms. Headline: each arm's own "
         "primary metric, mean over its items; arms with different primary metrics are "
-        "not ranked against each other.",
+        "not ranked against each other." + (f" {e(read_line)}." if (read_line := _exposure.line(ds)) else ""),
         btn,
     )
     body += block(
@@ -3175,6 +3175,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
             + "</p>"
             + (f'<p class="small muted">{e(ans["notes"])}</p>' if ans["notes"] else "")
             + (f'<p class="small">{e(looks_line)}</p>' if (looks_line := _looks.said(ds)) else "")
+            + (f'<p class="small">{e(read_line)}</p>' if (read_line := _exposure.line(ds)) else "")
             + (
                 '<p class="small">references: '
                 + ", ".join(

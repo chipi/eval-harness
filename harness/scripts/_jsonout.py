@@ -109,6 +109,18 @@ class _Tee:
         self.live.flush()
 
 
+def _say_exposed() -> None:
+    """After a command's body: the held-out items its scores left out (RFC-031 H1), said once, wherever it printed,
+    and under result.values.left_out_exposed. Every score that leaves them out says so, whichever command."""
+    from evaluation_harness import _exposure  # noqa: PLC0415
+
+    if not _exposure.LEFT:
+        return
+    _exposure.say()
+    if _ACTIVE is not None:
+        _ACTIVE.values["left_out_exposed"] = {ds: len(ids) for ds, ids in sorted(_exposure.LEFT.items())}
+
+
 @contextlib.contextmanager
 def collect(command: str, enabled: bool = True, live=None) -> Iterator[None]:
     """Run the body with its printing collected, then print the envelope. A refusal raises through
@@ -119,6 +131,7 @@ def collect(command: str, enabled: bool = True, live=None) -> Iterator[None]:
     global _ACTIVE
     if not enabled:
         yield
+        _say_exposed()
         return
     c = _Collector()
     _ACTIVE = c
@@ -134,6 +147,7 @@ def collect(command: str, enabled: bool = True, live=None) -> Iterator[None]:
     try:
         with contextlib.redirect_stdout(c.buf if live is None else _Tee(c.buf, live)):
             yield
+            _say_exposed()
     finally:
         _ACTIVE = None
         if saved_fd is not None:

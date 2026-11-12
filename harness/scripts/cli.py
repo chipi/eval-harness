@@ -170,6 +170,23 @@ COMMANDS = {
         "how far an outcome rule set labels a dataset now: labelled, skipped, not yet mature (and when), unmatched",
     ),
     "pick": ("pick.py", "pick production items for the next version of governed datasets, or drop a pick"),
+    "exposure-add": (
+        "exposure_add.py",
+        "record reads of a held-out side's items: each is left out of every later score on it (RFC-031)",
+    ),
+    "exposure": ("view_exposure.py", "a held-out side's exposure register, in counts (RFC-031)"),
+    "exposure-check": (
+        "exposure_check.py",
+        "search the project's public repos for a held-out side's item ids: leaks the register lacks (RFC-031)",
+    ),
+    "sealed-counts": (
+        "sealed_counts.py",
+        "counts over a held-out side by the fields it was sealed with: for safety, never to judge effect (RFC-031)",
+    ),
+    "dataset-seal-counts": (
+        "dataset_seal_counts.py",
+        "allow one more field in a held-out side's counts: a person's decision, recorded (RFC-031)",
+    ),
     "picks": (
         "view_picks.py",
         "the picks waiting: per target, where each came from, its labels, tags and note",

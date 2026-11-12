@@ -470,6 +470,20 @@ def main() -> int:
             # Studies (RFC-029): installed, each answers in words; the flow is test_study.py.
             ("studies", [], "ok:no studies"),
             ("studies", ["--study", "g/no_such"], "no study"),
+            # Held-out discipline (RFC-031): installed, each answers in words; the flow is test_exposure.py.
+            ("exposure", [], "ok:No held-out sides"),
+            (
+                "exposure-add",
+                ["--dataset-id", "tickets_v1", "--item", "x", "--what", "a read"],
+                "not a held-out side",
+            ),
+            ("exposure-check", ["--dataset-id", "tickets_v1"], "not a held-out side"),
+            ("sealed-counts", ["--dataset-id", "tickets_v1"], "not a held-out side"),
+            (
+                "dataset-seal-counts",
+                ["--dataset-id", "tickets_v1", "--add", "x", "--reason", "only to read the arguments"],
+                "not a held-out side",
+            ),
             ("study-run", ["g/no_such"], "no spec at"),
             ("study-ask", ["g/no_such"], "no study"),
             ("study-tell", ["g/no_such", "--ask", "x", "--proposal-json", "{}"], "no study"),

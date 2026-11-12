@@ -347,6 +347,14 @@ def main_items(argv: list[str] | None = None) -> int:
         if args.item:
             die(f"{args.dataset_id} is `text: hidden`: no item is shown here", "not-public")
         p = _visibility.public_profile(p)
+    if args.item:  # an item's text, shown: on a held-out side, a read (RFC-031 H1)
+        from evaluation_harness import _exposure  # noqa: PLC0415
+
+        _exposure.read_by_harness(
+            p["dataset_id"],
+            [r["item_id"] for r in p["rows"] if r["item_id"].startswith(args.item)],
+            "dataset-items --item",
+        )
     if args.json:
         if args.item:
             rows = [dict(r) for r in p["rows"] if r["item_id"].startswith(args.item)]

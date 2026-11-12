@@ -127,6 +127,14 @@ def main() -> int:
         _seal.refuse_if_sealed(args.dataset_id, "a label sheet")
         header, rows, n = build(args.dataset_id, args.items, args.item, args.runs, args.propose, choices)
         write_csv(header, rows, args.out)
+        from evaluation_harness import _exposure  # noqa: PLC0415
+
+        at = header.index("item_id")
+        _exposure.read_by_harness(
+            args.dataset_id,
+            [r[at] if isinstance(r, (list, tuple)) else r["item_id"] for r in rows],
+            "a label sheet",
+        )
         print(f"{args.out}: {len(rows)} item(s) of {n} to label")
         print(
             "  fill `label` (or `yes` for the proposal; answers just as right in `also right`, separated by |), "

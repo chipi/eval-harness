@@ -214,6 +214,11 @@ LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
     "baseline-rollback": _promote_locks,
     # The pick list is one per project (data/picks.jsonl): one lock for it, whichever dataset a pick is from.
     "pick": lambda a: [("picks", True)],
+    # A held-out side's register is one per dataset (data/exposure/<id>.jsonl).
+    "dataset-seal-counts": _ds,
+    "exposure-add": lambda a: [
+        (f"exposure:{_first(a.get('dataset-id')) or _first(a.get('dataset_id'))}", True)
+    ],
     "dataset-extend": lambda a: [*_ds(a), *([("picks", True)] if a.get("picks") or a.get("pick") else [])],
     "capture": lambda a: [("captures", True)],
     "capture-restore": lambda a: [("captures", True)],
@@ -233,6 +238,8 @@ LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
 MIGRATIONS = {"data-migrate", "migrate"}
 #: Job commands that write nothing another job writes (reports, checks, estimates): `project` shared only.
 PROJECT_ONLY = {
+    "exposure-check",  # reads the project's public checkouts; its --out goes into the job's own folder
+    "sealed-counts",
     "study-ask",  # its ask is appended under the study's own lock, briefly
     "study-stop",
     "study-import",

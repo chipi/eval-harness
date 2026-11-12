@@ -48,7 +48,8 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | a new version | `evh dataset-create --dataset-id …_v2 --source-dir … --from …_v1` |
 | fields on an existing dataset | `evh dataset-create --dataset-id … --update-fields --fieldset … --fields …` |
 | validation and test | `evh dataset-split … --test 0.3 --seed 7 [--key F]` |
-| a sealed held-out side | `evh dataset-split … --split-by time --key F --at T --seal` · `evh dataset-unseal …_test --config C --reason "…"` |
+| a sealed held-out side | `evh dataset-split … --split-by time --key F --at T --seal [--count-by F,…]` · `evh dataset-unseal …_test --config C --reason "…"` |
+| who read a held-out item; counts only | `evh exposure-add --dataset-id …_test --item ID --what "…"` · `evh exposure` · `evh exposure-check --dataset-id …_test` · `evh sealed-counts --dataset-id …_test` · `evh dataset-seal-counts --dataset-id …_test --add F --reason "…"` |
 | pick for the next version | `evh pick --dataset-id … --item … --for V` · `evh picks [--for V]` |
 | the next version of a dataset | `evh dataset-extend V1 --dataset-id V2 --picks` (or `--pick ITEM …`) |
 
@@ -1647,6 +1648,25 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   `validate` (V22) fails when the validation side's items changed after the seal, or a run on the sealed side has
   no unseal behind it. In the project's database the configs are not in git: there the unseal itself, timestamped
   before any run it allows, is the naming in advance, and the look records the commit as not determinable.
+- **A read of a held-out item is recorded, and the item counts in no score after it**
+  ([RFC-031](../../docs/rfc/RFC-031-held-out-discipline-and-outcome-labels.md) H1). A seal refuses runs and labels;
+  a read is neither, and on the triage fleet 78 of 91 held-out items were read (a comparison, a test fixture)
+  before anyone noticed. `evh exposure-add --dataset-id prod_v1_test --item ID --what "decision and reason"
+  [--read-by agent:NAME] [--at T]` (or `--from reads.tsv`: `item_id`, `what`, and optionally `by`, `at`) records a
+  read; the harness records its own when it shows a held-out item's text, an output or a label on it (`inspect
+  --item`, `--sheet`, `--items-out`, `label-sheet`, `dataset-items --item`, the inspector). Every score on the side
+  (`pair-test`, `family-test`, the leaderboard, goals, the catalog and the inspector) leaves the read items out and
+  says "N item(s) left out (exposed)"; `pair-test --include-exposed` shows the full number beside it, marked as not
+  the one that counts. `evh exposure --dataset-id prod_v1_test` counts the reads (`--ids`, a person only, lists
+  them). `evh exposure-check --dataset-id prod_v1_test [--out leaks.tsv]` searches the public repos `config.yaml`
+  names (`exposure: {public_repos: [...], ids: [fields], ids_hook: file.py:fn}`) for each item's ids in commits made
+  after its time, exits 6 on one the register lacks, and says what it cannot catch (a paraphrase, a title, a list
+  written without the ids' prefix).
+- **Counts over a held-out side, for safety only** (RFC-031 H2). `dataset-split … --seal --count-by kind,gate` fixes
+  the fields its counts may be grouped by; `evh sealed-counts --dataset-id prod_v1_test [--by kind] [--capture
+  live]` counts per day by them (with `--capture`, also a capture's records on the held-out side of the boundary:
+  the live watch), prints no id or text, and records no read. A person widens the list with `evh
+  dataset-seal-counts --dataset-id prod_v1_test --add F --reason "..."` (recorded); an agent cannot.
 
 ## 15b. Evaluating what production did
 

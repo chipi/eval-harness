@@ -61,6 +61,8 @@ PATH_KINDS: dict[tuple[str, str], str] = {
     ("arm-smoke", "--config"): NAME,
     ("model-onboard", "--config"): NAME,
     ("sweep", "--configs"): NAME,
+    ("exposure-add", "--from"): UPLOAD,
+    ("exposure-check", "--out"): ARTIFACT,
     ("dataset-create", "--fields"): UPLOAD,
     ("dataset-create", "--manifest"): UPLOAD,
     ("dataset-describe", "--card"): UPLOAD,
@@ -286,16 +288,18 @@ DECISIONS = {
     "dataset-unseal",
     "study-confirm",
     "faithfulness-name",
+    "dataset-seal-counts",
 }
 MAX_UPLOAD = 50 * 1024 * 1024  # owner, 2026-11-08
 #: Where `by` and the reason go on the command line, for the commands that take them as who acted and why.
-BY_FLAG = {"label-import", "sheet-import", "pick", "reference-manifest", "reference-promote"}
+BY_FLAG = {"label-import", "sheet-import", "pick", "reference-manifest", "reference-promote", "exposure-add"}
 REASON_FLAG = {
     "run-promote": "reason",
     "reference-promote": "reason",
     "reference-manifest": "reason",
     "round-retire": "reason",
     "dataset-unseal": "reason",
+    "dataset-seal-counts": "reason",
     "baseline-rollback": "reason",
     "round-close": "conclusion",
 }

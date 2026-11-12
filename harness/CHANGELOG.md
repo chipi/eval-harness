@@ -251,6 +251,15 @@ that can move a result is never a patch release without saying so under **Change
   fetchers read, and the 12 committed Hub datasets fetched fresh match every frozen hash and gold checksum. The
   examples cap pyarrow below 26, which refuses the NumPy 1.x they pin on Intel macOS (18.1 to 25.0 checked).
 
+- **A held-out side's reads, recorded, and its counts for safety only** (RFC-031 H1, H2; the triage fleet's 78 of
+  91 held-out items read before anyone noticed): `evh exposure-add` records a read (by hand or a TSV), the harness
+  records its own when it shows a held-out item's text, an output or a label, and every score on the side leaves the
+  read items out and says how many (`pair-test --include-exposed` shows the full number beside it, marked);
+  `evh exposure` counts the reads; `evh exposure-check` searches the project's public repos for held-out ids named
+  after their time and exits 6 on one the register lacks. `dataset-split --seal --count-by` fixes what a held-out
+  side's counts may be grouped by, `evh sealed-counts` counts by those fields per day (a capture's newer records too),
+  and `evh dataset-seal-counts` lets a person add one.
+
 ### Changed
 
 - **One `evh migrate` brings a project to 0.8.0's formats**, in four steps (runs, datasets, records, fingerprints),

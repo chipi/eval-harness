@@ -1305,7 +1305,7 @@ def load_catalog_adapter(spec: str | None = None) -> Adapter:
                 "adapter"
             )
     if not spec:
-        return HarnessAdapter()
+        return exposure_aware(HarnessAdapter())
     target, _, cls = spec.rpartition(":")
     if not target or not cls:
         from evaluation_harness._common import die  # noqa: PLC0415
@@ -1327,4 +1327,38 @@ def load_catalog_adapter(spec: str | None = None) -> Adapter:
             die(f"catalog adapter: cannot load {path}", "failed")
     else:
         mod = importlib.import_module(target)
-    return getattr(mod, cls)()
+    return exposure_aware(getattr(mod, cls)())
+
+
+def exposure_aware(adapter):
+    """The adapter, its `scores` leaving out a held-out side's read items (RFC-031 H1): every page, goal, round and
+    inspector answer reads scores through it, a project's own adapter's too, so the read items count in none of them.
+    What it leaves out is counted (`_exposure.LEFT`) for whoever shows the scores to say."""
+    from evaluation_harness import _exposure  # noqa: PLC0415
+
+    read = adapter.scores
+
+    def scores(arm, *args, **kw):
+        out = read(arm, *args, **kw)
+        dataset = str(arm).rpartition("/")[0].rpartition("/")[2]
+        if not _exposure.applies(dataset):
+            return out
+        ids = {i for sc in out.values() for i in (sc.get("values") or {})}
+        kept = _exposure.keep(dataset, ids)
+        if kept is None:
+            return out
+        return {
+            k: {
+                **sc,
+                "values": {i: v for i, v in (sc.get("values") or {}).items() if i in kept},
+                **(
+                    {"repeats": {i: v for i, v in sc["repeats"].items() if i in kept}}
+                    if isinstance(sc.get("repeats"), dict)
+                    else {}
+                ),
+            }
+            for k, sc in out.items()
+        }
+
+    adapter.scores = scores
+    return adapter

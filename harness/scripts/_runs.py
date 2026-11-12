@@ -118,8 +118,12 @@ def per_item(
     """item_id -> `metric` over the given runs (an arm's repeats), combined by `reduce` (stats.reduce_repeats: the
     mean by default). `keep` restricts the items; `raw` collects every value as stored, before averaging (the
     leaderboard measures stored precision on it)."""
+    from evaluation_harness import _exposure  # noqa: PLC0415
+
     acc: dict[str, list[float]] = {}
-    for d, _m in runs:
+    datasets: set[str] = set()
+    for d, m in runs:
+        datasets.add(str((m or {}).get("dataset_id") or ""))
         for row in item_rows(d, strict=strict):
             v = score_of(row, metric)
             if v is None or (keep is not None and row["item_id"] not in keep):
@@ -127,6 +131,12 @@ def per_item(
             acc.setdefault(row["item_id"], []).append(v)
             if raw is not None:
                 raw.append(v)
+    # A held-out side's read items count in no score on it (RFC-031 H1): left out here, where every paired command's
+    # scores come from, and counted for the command to say.
+    for ds in datasets:
+        kept = _exposure.keep(ds, acc)
+        if kept is not None:
+            acc = {i: v for i, v in acc.items() if i in kept}
     if reduce not in ("", "mean"):
         from evaluation_harness.stats import reduce_repeats  # noqa: PLC0415
 

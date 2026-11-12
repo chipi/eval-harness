@@ -1141,6 +1141,10 @@ def goals(argv) -> int:
         looks_line = _looks.said(ds)
         if looks_line:
             print(f"  {looks_line}")
+        from evaluation_harness import _exposure  # noqa: PLC0415
+
+        if read_line := _exposure.line(ds):
+            print(f"  {read_line}")
         if not ans["groups"]:
             print(f"  no arm records {prim.get('measure', '')}")
         for grp in ans["groups"]:
@@ -1715,6 +1719,11 @@ def _sheet_view(A, args) -> int:
         if on
     ]
     shown = _sheet.by_signals(found, wanted)
+    from evaluation_harness import _exposure  # noqa: PLC0415
+
+    _exposure.read_by_harness(
+        args.dataset_id, [r["item"] for r in shown], "inspect --sheet" + (" (a CSV)" if args.csv else "")
+    )
     if args.csv:
         return _sheet_csv(args, model, shown)
     counts = _sheet.counts(found)
@@ -2099,6 +2108,9 @@ def _items_out(A, args) -> None:
     _jsonout.values(
         {"items_out": {"dataset_id": ds, "runs": [a["run"] for a in model["arms"]], "items": records}}
     )
+    from evaluation_harness import _exposure  # noqa: PLC0415
+
+    _exposure.read_by_harness(ds, [r["item_id"] for r in records], "inspect --items-out")
     print(f"{ds}: {len(shown)} of {len(found)} {A.item_word}(s)" + (" (disagree)" if args.disagree else ""))
     cut = args.max_chars
     for rec in records:

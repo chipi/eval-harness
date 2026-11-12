@@ -66,6 +66,11 @@ def main() -> int:
         "with a committed hypothesis",
     )
     ap.add_argument(
+        "--count-by",
+        help="with --seal: item fields a counts-only report (evh sealed-counts) may group the held-out side by, "
+        "comma-separated; fixed now, so whoever reads the counts does not choose what they show (RFC-031)",
+    )
+    ap.add_argument(
         "--force", action="store_true", help="overwrite the two datasets if nothing cites them yet"
     )
     from evaluation_harness._actor import add_by  # noqa: PLC0415
@@ -87,6 +92,9 @@ def main() -> int:
         boundary = parse_time(args.at) if args.at is not None else None
         if args.at is not None and boundary is None:
             die(f"--at {args.at!r}: not an ISO time (2026-11-07T00:00:00Z)", "bad-argument")
+        count_by = [f.strip() for f in (args.count_by or "").split(",") if f.strip()]
+        if count_by and not args.seal:
+            die("--count-by names what a sealed side's counts may show: with --seal", "bad-argument")
         if args.split_by == "time" and not args.key:
             die(
                 "--split-by time needs --key: the item field holding each item's date or time", "bad-argument"
@@ -116,6 +124,9 @@ def main() -> int:
             newest = {it["item_id"] for it in order[len(order) - n_held :]}
             assign = {it["item_id"]: "test" if it["item_id"] in newest else "validation" for it in items}
 
+        missing = [f for f in count_by if not any(f in (it.get("fields") or {}) for it in items)]
+        if missing:
+            die(f"--count-by: no item has the field(s) {', '.join(missing)}", "not-found")
         fieldset = _fields.load_fieldset(parent["fieldset"]) if parent.get("fieldset") else None
         share = (
             args.test
@@ -157,6 +168,7 @@ def main() -> int:
                             "at": now(),
                             "open_side": f"{args.dataset_id}_validation",
                             "open_sha256": _seal.items_digest(open_items),
+                            **({"count_by": count_by} if count_by else {}),
                         }
                     }
                     if args.seal and part == "test"

@@ -93,6 +93,7 @@ nav:
           - "RFC-028: Prompt versions, and the code a system runs (built, 0.8.0)": rfc/RFC-028-prompt-versions-and-code-ref.md
           - "RFC-029: Studies, and the looks a test set allows (accepted, 0.8.0)": rfc/RFC-029-studies-and-test-set-looks.md
           - "RFC-030: Replay the code that ran, and prove it faithful (draft, 0.8.0)": rfc/RFC-030-replay-and-faithfulness.md
+          - "RFC-031: Held-out discipline, maturing outside labels, decisions scored by what followed (0.8.0)": rfc/RFC-031-held-out-discipline-and-outcome-labels.md
       - Decisions (ADRs):
           - Index: adr/index.md
           - "ADR-0001: Judge scorers: re-measuring frozen outputs with a validated LLM judge": adr/ADR-0001-judge-scorers.md

@@ -717,6 +717,12 @@ def item(params: dict) -> dict:
     if not _visibility.text_shown(dataset, public=public):
         # `text: hidden` (RFC-019): nothing that comes from this dataset's text, whatever is published.
         published = ()
+    if not public or "outputs" in published:
+        from evaluation_harness import _exposure  # noqa: PLC0415
+
+        _exposure.read_by_harness(
+            dataset, [it], "the inspector's item view" + (" (served)" if public else "")
+        )
     if public and "outputs" not in published:
         withheld = {
             "kind": "none",
@@ -842,6 +848,9 @@ def sheet(params: dict) -> dict:
         return one if len(one) <= 160 else one[:159] + "…"
 
     tokens = [a["token"] for a in model["arms"]]
+    from evaluation_harness import _exposure  # noqa: PLC0415
+
+    _exposure.read_by_harness(ds, [r["item"] for r in shown], "the inspector's sheet")
     out_rows = []
     for r in shown:
         p = state.get((ds, r["item"])) or {}

@@ -78,6 +78,8 @@ READ_TOOLS = (
     "looks",
     "studies",
     "faithfulness-show",
+    "exposure",
+    "sealed-counts",
 )
 #: Tools that write, for the agent sampler of a study alone (owner, 2026-11-09, RFC-029): offered by a local server
 #: only, never a public one, and named as not read-only. Every other write is the command line's or a job's.
@@ -90,6 +92,9 @@ NOT_TOOLS = {
     "prompt-version": "records a prompt version",
     "faithfulness": "replays a system's code and spends: a job",
     "faithfulness-name": "a decision that lets a replay be scored: a person's command or a job",
+    "exposure-add": "writes a held-out side's exposure register",
+    "exposure-check": "reads the project's git checkouts and can write a file: a job",
+    "dataset-seal-counts": "a person's decision on what a held-out side's counts show",
     "prompt-export": "writes a file",
     "jobs-start": "starts a job: the agents act through the command line or the API (RFC-026)",
     "jobs-status": "the jobs of this machine's project, not its data",
@@ -167,7 +172,7 @@ JSON |= {"dataset-items", "captures", "labels", "tags", "licences", "picks", "de
 JSON |= {"runs-list", "rounds", "leaderboard", "pair-test", "family-test", "rank-stability", "run-compare"}
 JSON |= {"label-coverage", "baselines"}
 JSON |= {"dataset-card", "validate", "prompts", "prompt-diff", "looks", "studies"}
-JSON |= {"faithfulness-show"}
+JSON |= {"faithfulness-show", "exposure", "sealed-counts"}
 JSON |= set(AGENT_TOOLS)
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
@@ -386,6 +391,7 @@ TOOL_HIDDEN = {
     "pair-test": {"--runs-dir", "--items"},
     "study-tell": {"--proposal"},  # a path of the server's: a call sends --proposal-json
     "family-test": {"--runs-dir", "--items"},
+    "exposure": {"--ids"},  # a held-out side's ids: a person's command
 }
 #: In --public mode, the options that would answer with an item's text, an arm's output or a label (the
 #: sheet): a public server answers with numbers and ids only, as catalog-serve --public does without
@@ -419,6 +425,8 @@ PUBLIC_DROPPED = {
     "data-ls": "the project's files are this machine's (the data page, UXS-004)",
     "data-show": "a file's text is this machine's: a hidden dataset's items too (the data page, UXS-004)",
     "label-coverage": "it reads a rules file by path and the captures, which are this machine's",
+    "exposure": "a held-out side's reads are the project's own",
+    "sealed-counts": "a held-out side's counts are for the project's own safety watch",
 }
 
 

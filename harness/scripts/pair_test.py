@@ -277,6 +277,12 @@ def main() -> int:
     ap.add_argument("--runs-dir", type=Path, default=None, help="default: EVAL_RUNS_DIR, else data/runs")
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument(
+        "--include-exposed",
+        action="store_true",
+        help="on a held-out side, also show the mean difference with its read (exposed) items kept, marked: the "
+        "number without them is the one that counts (RFC-031)",
+    )
+    ap.add_argument(
         "--items",
         type=Path,
         help="file of item_ids (one per line); restrict the test to exactly these",
@@ -390,10 +396,14 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
                 "metric (pass --asc or --desc to decide)",
                 "mismatch",
             )
-        A, B = (
-            per_item(arm_a, args.metric, reduce=args.reduce or "mean"),
-            per_item(arm_b, args.metric, reduce=args.reduce or "mean"),
-        )
+
+        def scores_now() -> tuple[dict, dict]:
+            return (
+                per_item(arm_a, args.metric, reduce=args.reduce or "mean"),
+                per_item(arm_b, args.metric, reduce=args.reduce or "mean"),
+            )
+
+        A, B = scores_now()
         # A measure that is not stored per item (the goal computes it at re-score) is a missing metric, not an
         # item mismatch: say which side, what is stored, and how to get it (2026-11-04, the first real use).
         for arm, ds, got, rs in ((args.a, args.dataset_id, A, arm_a), (args.b, args.b_dataset, B, arm_b)):
@@ -407,15 +417,24 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
                 )
     else:
         lower = direction(runs, args.metric, args.asc, args.desc)
-        if values is not None:
-            A, B = values(args.a, args.metric), values(args.b, args.metric)
-        else:
-            A = per_item(
-                [r for r in runs if r[1]["config_id"] == args.a], args.metric, reduce=args.reduce or "mean"
+
+        def scores_now() -> tuple[dict, dict]:
+            if values is not None:
+                return values(args.a, args.metric), values(args.b, args.metric)
+            return (
+                per_item(
+                    [r for r in runs if r[1]["config_id"] == args.a],
+                    args.metric,
+                    reduce=args.reduce or "mean",
+                ),
+                per_item(
+                    [r for r in runs if r[1]["config_id"] == args.b],
+                    args.metric,
+                    reduce=args.reduce or "mean",
+                ),
             )
-            B = per_item(
-                [r for r in runs if r[1]["config_id"] == args.b], args.metric, reduce=args.reduce or "mean"
-            )
+
+        A, B = scores_now()
     items = sorted(set(A) & set(B))
     if args.exclude_dataset:
         prior = dataset_item_ids(args.exclude_dataset)
@@ -700,7 +719,34 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             else None,
         }
     )
+    if args.include_exposed:
+        _with_exposed(scores_now, items_all=set(A) | set(B), lower=lower)
     return 0
+
+
+def _with_exposed(scores_now, items_all: set, lower: bool) -> None:
+    """--include-exposed: the mean difference with the held-out side's read items kept, beside the result, marked. No
+    test is run on it (a test set's look is spent on the number that counts)."""
+    from evaluation_harness import _exposure  # noqa: PLC0415
+
+    if not _exposure.LEFT:
+        print("  with exposed items: none were left out")
+        return
+    _exposure.INCLUDE[0] = True
+    try:
+        A, B = scores_now()
+    finally:
+        _exposure.INCLUDE[0] = False
+    shared = sorted(set(A) & set(B))
+    if not shared:
+        return
+    d = statistics.fmean(A[i] - B[i] for i in shared)
+    n_more = len(shared) - len(set(shared) & items_all)
+    print(
+        f"  with the exposed items kept (NOT the number that counts): n {len(shared)} (+{n_more}), "
+        f"delta (A - B) {d:+.4f}{' (lower is better)' if lower else ''}"
+    )
+    _jsonout.value("with_exposed", {"n": len(shared), "delta": d})
 
 
 if __name__ == "__main__":
