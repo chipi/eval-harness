@@ -637,6 +637,22 @@ success_criteria:
   }
   const nextStep = () => (!S.dataset ? "add a dataset" : !prepared() ? "prepare the dataset" : (S.checked || []).length < 2 ? "choose the models" : !S.r4 ? "open a round" : S.r4.closed ? "review the outputs" : "finish round r4");
   window.WB = { get S() { return S; }, M, H, G, esc, $, w, q, field, cmd, note, save, render, progress, usd, perM, secs, armOf, routes: ROUTES, nextStep };
+  // on a phone a table of four or more columns stacks (workbench.css): each row a card, each cell named by its column;
+  // a comparison, or a table to pick rows from (its first column a checkbox), stacks compact: its row's name as the
+  // card's title, the other cells on a line or two
+  const stackTables = () => main.querySelectorAll("table").forEach((t) => {
+    const heads = [...t.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+    if (heads.length < 4) return;
+    const compact = t.classList.contains("cmp") || heads[0] === "";
+    const title = compact ? Math.max(0, heads.findIndex((h) => /^(arm|model|decision|capture)$/i.test(h))) : -1;
+    t.classList.add("stack");
+    t.classList.toggle("compact", compact);
+    t.querySelectorAll("tbody tr").forEach((tr) => [...tr.children].forEach((td, i) => {
+      if (heads[i]) td.dataset.label = heads[i];
+      td.classList.toggle("title", i === title);
+    }));
+  });
+  new MutationObserver(stackTables).observe(main, { childList: true, subtree: true });
   window.addEventListener("hashchange", () => { help.hidden = true; render(); window.scrollTo(0, 0); });
   $("#hints").addEventListener("change", (e) => { S.hints = e.target.checked; save(); render(); });
   $("#mocknotes").addEventListener("change", (e) => document.body.classList.toggle("mocknotes-off", !e.target.checked));

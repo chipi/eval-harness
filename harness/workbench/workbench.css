@@ -298,3 +298,28 @@ textarea.mono { width: 100%; }
 .note .mono, .note code { overflow-wrap: anywhere; }
 table.r4res td:first-child { white-space: normal; min-width: 160px; }
 table.r4res td:nth-child(3) { white-space: normal; }
+
+/* phone: a wide table stacks into one card per row (workbench.js names each cell); a part's head keeps its "?" beside the title */
+@media (max-width: 640px) {
+  table.stack thead { display: none; }
+  table.stack, table.stack tbody, table.stack tr { display: block; }
+  table.stack tr { padding: 10px 12px; border-top: 1px solid var(--hair); }
+  table.stack tbody tr:first-child { border-top: 0; }
+  table.stack td { display: flow-root; border: 0; padding: 3px 0 3px calc(7.5em + 10px); text-align: left;
+    white-space: normal; min-width: 0; max-width: none; overflow-wrap: anywhere; }
+  table.stack td::before { content: attr(data-label); float: left; width: 7.5em; margin: 2px 0 0 calc(-7.5em - 10px);
+    font: 500 10.5px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); overflow-wrap: anywhere; }
+  table.stack td:not([data-label]) { padding-left: 0; }
+  table.stack td:not([data-label])::before { content: none; }
+  table.stack td:empty { display: none; }
+  table.stack.compact tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
+  table.stack.compact td { padding: 0; font-size: 12.5px; }
+  table.stack.compact td::before { float: none; display: inline; margin: 0 5px 0 0; width: auto; }
+  table.stack.compact td.title { order: -1; flex: 1 1 calc(100% - 40px); font-size: 13px; font-weight: 600; }
+  table.stack.compact td.title::before { content: none; }
+  table.stack.compact td:has(> input[type="checkbox"]) { order: -2; flex: 0 0 auto; }
+  .parthead h2, .parthead h3 { flex: 1 1 0; min-width: 0; }
+  .parthead .grow { display: none; }
+  .parthead .status { flex-basis: 100%; }
+  .parthead .letter ~ .status { margin-left: 28px; }
+}
