@@ -185,6 +185,16 @@ def check_round(browser, base: str) -> None:
         and not errors,
         (answer[:200], errors[:2]),
     )
+    page.locator("#openr5").click()
+    page.wait_for_timeout(200)
+    check(
+        "workbench: a closed round leads on: the next round opens from it, its question in focus",
+        page.evaluate("document.activeElement.id") == "r5q"
+        and page.locator("[data-tab=r5][aria-selected=true]").count() == 1
+        and "from r4" in page.locator(".roundhead").inner_text().lower()  # the kicker is set in capitals
+        and not errors,
+        (page.evaluate("document.activeElement.id"), errors[:2]),
+    )
     page.close()
 
 

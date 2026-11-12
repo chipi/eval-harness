@@ -504,9 +504,10 @@ success_criteria:
     // instead of replacing it, and the baseline it names is the one the latest round left (the owner, 2026-11-12).
     const promotedArm = r4 && r4.closed && r4.promoted ? M.arms.find((a) => a.config_id === r4.promoted) : null;
     const latest = r4 && r4.closed ? { id: "r4", text: r4.conclusion, base: promotedArm ? promotedArm.arm : "bart_l" } : { id: "r1", text: M.answer, base: "bart_l" };
-    const tabs = [...M.rounds.map((r) => [r.id, `${r.id} · ${r.status}`]), ...(r4 ? [["r4", `r4 · ${r4.closed ? "closed" : "open"}`]] : [])];
+    const tabs = [...M.rounds.map((r) => [r.id, `${r.id} · ${r.status}`]), ...(r4 ? [["r4", `r4 · ${r4.closed ? "closed" : "open"}`]] : []), ...(S.r5 ? [["r5", "r5 · open"]] : [])];
     let body;
-    if (tab === "r4" && r4) body = roundOpen(r4);
+    if (tab === "r5" && S.r5) body = roundNext(S.r5);
+    else if (tab === "r4" && r4) body = roundOpen(r4);
     else {
       const r = M.rounds.find((x) => x.id === tab);
       const arms = r.id === "r1" ? M.arms : [];
@@ -600,8 +601,17 @@ success_criteria:
           ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span><div class="muted runof">not run</div></td><td></td><td class="num">—</td><td class="muted">no run in the project</td><td class="num">—</td><td class="num">—</td></tr>`).join("")}</tbody></table></div>
           ${r4.closed ? `<div class="note"><b>Closed.</b> ${esc(r4.conclusion)}${promoted ? ` The baseline is now ${esc(M.arms.find((a) => a.config_id === promoted).arm)}.` : ""}</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided">${esc(r4.draft || "")}</textarea></div></div>
           <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button" ${(r4.draft || "").trim() ? "" : "disabled"}>Close the round</button><span class="muted" style="font-size:13px">${promoted ? `promotes ${esc(M.arms.find((a) => a.config_id === promoted).arm)} as the baseline` : "the baseline stays bart_l"}${(r4.draft || "").trim() ? "" : " · write the conclusion first"}</span></div><div id="closeconfirm"></div>`}</div>` : ""}</div>
-      <div class="actions">${r4.closed ? `<a class="btn primary" href="#review">Review the outputs</a><a class="btn" href="#judge">Score with a judge too</a><span class="muted" style="font-size:13px">the next round opens from its conclusion: <code>evh round-open --goal ${M.goal.goal_id} --from r4</code></span>` : `<a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a>`}</div>
+      <div class="actions">${r4.closed ? `<a class="btn primary" href="#review">Review the outputs</a>${S.r5 ? "" : `<button class="btn" type="button" id="openr5">Open the next round</button>`}<a class="btn" href="#judge">Score with a judge too</a>` : `<a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a>`}</div>
       ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --hypothesis "${r4.question || "<the question>"}"\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml --dry-run`).join("\n")}\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml`).join("\n")}${Object.entries(retired).map(([id, why]) => `\nevh round-retire --goal ${M.goal.goal_id} --round r4 --arm ${id} --reason "${why}"`).join("")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "<what it showed and decided>" --by person:<you>${promoted ? ` \\\n  --promote ${runOf(M.arms.find((a) => a.config_id === promoted))}` : ""}`)}`;
+  }
+  // r5, opened from r4's conclusion: its question and what it would run. The project has no runs past r4's re-runs,
+  // so the round stops at its question and says so (a mockup shows only what the project holds).
+  function roundNext(r5) {
+    return `<div class="roundhead"><h2 class="kicker">round r5 · open · from r4</h2></div>
+      <p class="muted" style="margin:8px 0 0;max-width:72ch">It starts from r4's conclusion: ${esc(S.r4.conclusion || "")}</p>
+      <div class="form" style="margin-top:12px">${field("eval.question", `<input type="text" id="r5q" value="${esc(r5.question || "")}" placeholder="e.g. ${esc(H["eval.question"].example)}">`)}</div>
+      ${note("this project has no runs past r4's re-runs, so this walk-through stops at r5's question; its arms, run and results would follow as in r4.")}
+      ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r4 \\\n  --hypothesis "${r5.question || "<the question>"}"`)}`;
   }
   function wireEval() {
     main.querySelectorAll("[data-tab]").forEach((b) => {
@@ -618,6 +628,8 @@ success_criteria:
     $("[data-closearm]")?.addEventListener("click", () => { focusNext = `[data-armbtn="${CSS.escape(S.arm || "")}"]`; S.arm = null; save(); render(); });
     $("#showall")?.addEventListener("click", () => { S.showAll = !S.showAll; save(); render(); });
     $("#openr4")?.addEventListener("click", () => { S.r4 = { question: "" }; S.tab = "r4"; S.arm = null; focusNext = "#r4q"; save(); render(); });
+    $("#openr5")?.addEventListener("click", () => { S.r5 = { question: "" }; S.tab = "r5"; focusNext = "#r5q"; save(); render(); });
+    $("#r5q")?.addEventListener("input", (e) => { S.r5.question = e.target.value; save(); });
     $("#r4q")?.addEventListener("input", (e) => {
       S.r4.question = e.target.value; save();
       const ok = !!e.target.value.trim(), b = $("#runr4"), h = $("#r4hint");

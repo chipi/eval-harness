@@ -423,8 +423,9 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
     On this project's re-runs every local arm is behind bart_l, so the statement is what shows.
   - The baseline cannot be retired. A retire can be undone until the round closes; a retired row strikes its verdict.
   - A prompt opens under its row and names the arm; Enter confirms it.
-  - A closed round says when it closed and by whom, shows its question as text, and offers its next step: review the
-    outputs, with the command that opens the next round.
+  - A closed round says when it closed and by whom, shows its question as text, and offers its next steps: review the
+    outputs, or open the next round. r5 opens from r4's conclusion with its question in focus and the command it
+    writes; the project has no runs past r4's re-runs, so the walk-through stops at r5's question and says so.
   - A comparison's leader and a recommended arm are shown in the ok status, not in lime (a result, not an action).
   - A skip link focuses the screen without changing the route; a glossary word is a button that Enter or Space
     opens; the help panel opens with focus on its close button and gives focus back to what opened it; a reason's
