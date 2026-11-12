@@ -387,6 +387,8 @@ that can move a result is never a patch release without saying so under **Change
   - A filter that matched nothing left bare column heads. It says so, with a button that clears it.
   - A judged row was tinted in a model kind's colour and a silver row in a grey like a label set's: a judge's is the
     model source's colour, silver's the silver tier's, a label set's rule is thin. A baseline badge is plain.
+  - `evh arms` opens as the page does: grouped by dataset, the arms a goal decided on first, three a group with the
+    command that shows the rest; `--all` shows every row, `--by none` none grouped, `--dataset-id` one dataset in full.
 - **`dataset-from-capture` deleted what sat in its items' folder**: `data/sources/<dataset>/` was emptied before the
   items were written, and a capture's own export kept there was deleted without a word (the fleet's beta). A file
   there that the dataset's record does not name is now refused (`would-overwrite`), and stays.

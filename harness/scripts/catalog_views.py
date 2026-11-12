@@ -602,8 +602,14 @@ def arms(argv) -> int:
     ap.add_argument("--arm", help="one arm in full: its arm id, or a config id (its arm under runs/)")
     ap.add_argument(
         "--by",
-        choices=[k for k, _ in ca.GROUPS if k],
-        help="group the arms, as the arms page does (scored: what each is scored against)",
+        choices=[*(k for k, _ in ca.GROUPS if k), "none"],
+        default="dataset",
+        help="group the arms, as the arms page does (default dataset; scored: what each is scored against; none)",
+    )
+    ap.add_argument(
+        "--all",
+        action="store_true",
+        help="every arm of each group (by default a group shows three, what a goal decided on first, as the page does)",
     )
     ap.add_argument("--where", choices=("local", "hosted"), help="only arms run locally, or only hosted ones")
     ap.add_argument("--tier", help="only arms of this price tier (free, small, mid, large, ...)")
@@ -672,9 +678,11 @@ def arms(argv) -> int:
                 ],
             )
             return 0
-        key = {"scored": "scored"}.get(args.by or "", args.by or "")
+        key = "" if args.by == "none" else args.by
+        # One dataset asked for is that group opened; otherwise a group shows its first three, as the page does.
+        fold = 0 if args.all or args.dataset_id or not key else 3
         groups: dict = {}
-        for r in rows:
+        for r in sorted(rows, key=ca._reading_order):
             groups.setdefault(r[key] if key else "", []).append(r)
         has_record = any(r["record"] for r in rows)
         for name in sorted(groups):
@@ -714,9 +722,12 @@ def arms(argv) -> int:
                         f"{r['measure']} {_fmt(r['value'])}" if r["measure"] else "—",
                         *(_pcells(per[r["arm"]], flows) if per else []),
                     ]
-                    for r in groups[name]
+                    for r in (groups[name][:fold] if fold else groups[name])
                 ],
             )
+            if fold and len(groups[name]) > fold:
+                more = f"--dataset-id {name}" if key == "dataset" else "--all"
+                print(f"  … and {len(groups[name]) - fold} more: evh arms {more}")
         return 0
     want = _arm_ids(A, [args.arm], "runs")[0]
     hit = next(((ds, a) for ds, v in by_ds.items() for a in v["arms"] if a["arm"] == want), None)

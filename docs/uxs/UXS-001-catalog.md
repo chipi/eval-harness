@@ -591,10 +591,11 @@ tile opens it grouped by config (`arms.html?group=config`).
   cost and against speed, the frontier drawn), as on its goal page, one goal at a time, under the reference it is
   scored against. The frontier is drawn in ink (its dots) and the secondary ink (its line), never the accent or a
   group colour; speed's ticks read in ms or s.
-- Command: `evh arms [--dataset-id <id>] [--by dataset|config|model|provider|scored]
+- Command: `evh arms [--dataset-id <id>] [--by dataset|config|model|provider|scored|none] [--all]
   [--where local|hosted] [--tier <tier>] [--weights open|proprietary] [--quality contender|below]
-  [--period P]`, and `evh arms --configs` for `02`. A derived arm's **how measured** carries its
-  move, "(+0.033 vs measured)".
+  [--period P]`, and `evh arms --configs` for `02`. It opens as the page does: grouped by dataset, in reading order,
+  three a group with "… and N more: evh arms --dataset-id <id>"; `--all` shows every row, `--by none` none grouped,
+  and `--dataset-id` that dataset in full. A derived arm's **how measured** carries its move, "(+0.033 vs measured)".
 
 ## The arm page
 

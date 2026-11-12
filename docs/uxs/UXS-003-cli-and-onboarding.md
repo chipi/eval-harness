@@ -103,7 +103,7 @@ answer. Where the page has a `make` target in a checkout, it runs the same scrip
 | a goal page: the answer so far, arms per dataset and group (a judge's group on its score), retired marks, one line per round | `evh goals --goal <id>` | `make goals GOAL=<id>` |
 | a goal page: its rounds and suggestions (each suggestion's copy button copies its command) | `evh rounds --goal <id> [--round rN]` | `make rounds GOAL=<id>` |
 | a goal page: a round's **inspect** button | `evh inspect --round rN [--goal <id>]` | |
-| the arms page: every arm, grouped, filtered (local / hosted, price tier) | `evh arms [--by dataset\|config\|model\|provider\|scored] [--where local\|hosted] [--tier T]` | `make arms` |
+| the arms page: every arm, grouped, filtered (local / hosted, price tier) | `evh arms [--by dataset\|config\|model\|provider\|scored\|none] [--all] [--where local\|hosted] [--tier T]` (grouped by dataset by default, three a group) | `make arms` |
 | the arms page: the configs, with their rank on each goal | `evh arms --configs` | `make arms ARGS=--configs` |
 | an arm page: metrics, cost and speed, runs, config, conditions, rounds | `evh arms --arm <arm id or config id>` | `make arms ARM=<id>` |
 | the models page: every model record, its deployments, settings, onboarding, arms (0.6.0, RFC-020) | `evh models [--kind K] [--where self-hosted\|hosted] [--status vetted\|onboarded\|check\|none]` | |
