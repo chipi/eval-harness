@@ -1069,9 +1069,8 @@ def home(f: dict) -> str:
             ("docs/tutorials/4-rounds-and-versions/", "Tutorial 4"),
         ),
     ]
-    lasting_html = "".join(
-        f'<div class="habit-card"><b>{e(t)}</b><span>{e(d)} <a href="{href}">{e(name)} →</a></span></div>'
-        for t, d, (href, name) in lasting
+    lasting_links = "How, in the tutorials: " + " · ".join(
+        f'<a href="{href}">{e(t.lower())} ({e(name.lower())})</a>' for t, _d, (href, name) in lasting
     )
     idea_html = "".join(
         f'<div class="habit-card"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}'
@@ -1164,8 +1163,24 @@ def home(f: dict) -> str:
   <div class="why">{why_html}</div>
 </div></section>
 
+<section class="block" id="proof" data-nav="Examples"><div class="wrap">
+  <div class="eyebrow"><span class="num">02</span>Worked examples · {hosted_n} LLMs</div>
+  <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won</em> on the primary metric.</h2>
+  <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)} Each is also a goal in <a href="{CATALOG}">the catalog</a>, with every run, dataset and reference set behind it.</p>
+  <div class="stats">
+    <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">evals with frontier models where the most expensive model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
+    <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader is not significantly different from others (at 100–280 items)</div></div>
+    <div class="stat"><div class="n">$0</div>{marks(f["local_first_or_contender"], len(exps))}<div class="l">for a model that is first, or not significantly different from first, in {f["local_first_or_contender"]} of the {len(exps)}; {f["local_first_or_contender"] - remeasured_counts(f)["local_lost"]} of {len(exps)} if the <a href="evals/judging.html">re-measured scores</a> are taken at face value</div></div>
+    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_ok, cal_n)}<div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
+  </div>
+  <p class="note" style="margin-top:28px"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
+  <div class="chart benches" style="margin-top:48px">{legend(reading="higher score: further right →", baseline=False)}{benches}</div>
+  <p class="dek-note">In the catalog: {goal_links}.</p>
+  <div class="btns"><a class="btn primary" href="evals.html">All the findings</a><a class="btn" href="{CATALOG}">Browse them in the catalog</a><a class="btn" href="evals.html#reproduce">Reproduce them</a></div>
+</div></section>
+
 <section class="block" id="what" data-nav="What"><div class="wrap">
-  <div class="eyebrow"><span class="num">02</span>What the harness does</div>
+  <div class="eyebrow"><span class="num">03</span>What the harness does</div>
   <h2>Six ideas, one adapter file.</h2>
   <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. <a href="docs/GUIDE/">The harness</a> imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
   <div class="habits">{idea_html}</div>
@@ -1189,27 +1204,11 @@ def home(f: dict) -> str:
 </div></section>
 
 <section class="block" id="lasting" data-nav="Rounds"><div class="wrap">
-  <div class="eyebrow"><span class="num">03</span>Rounds, before deploy and after</div>
+  <div class="eyebrow"><span class="num">04</span>Rounds, before deploy and after</div>
   <h2>Evaluation that doesn\u2019t stop at deploy.</h2>
-  <p class="lede">A goal is answered in rounds. Before deploy they narrow a field: run twenty models, keep ten, fix a scoring rule, try a new prompt, choose. After deploy the same goal goes on, on what the deployed system actually decides, one version or A and B side by side: captured, scored against labels, and the rows worth keeping picked for the next version of the datasets you govern. The harness does no online A/B test and no drift detection: it measures what was captured, offline. Every part is optional, layered on the same method.</p>
+  <p class="lede">A goal is answered in rounds: before deploy they narrow a field to a choice; after it, what the deployed system decided is captured, scored against labels, and picked from for the next version of a dataset. Offline: no online A/B test, no drift detection.</p>
   {flow_html}
-  <div class="habits two" style="margin-top:48px">{lasting_html}</div>
-</div></section>
-
-<section class="block" id="proof" data-nav="Examples"><div class="wrap">
-  <div class="eyebrow"><span class="num">04</span>Worked examples · {hosted_n} LLMs</div>
-  <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won</em> on the primary metric.</h2>
-  <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)} Each is also a goal in <a href="{CATALOG}">the catalog</a>, with every run, dataset and reference set behind it.</p>
-  <div class="stats">
-    <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">evals with frontier models where the most expensive model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
-    <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader is not significantly different from others (at 100–280 items)</div></div>
-    <div class="stat"><div class="n">$0</div>{marks(f["local_first_or_contender"], len(exps))}<div class="l">for a model that is first, or not significantly different from first, in {f["local_first_or_contender"]} of the {len(exps)}; {f["local_first_or_contender"] - remeasured_counts(f)["local_lost"]} of {len(exps)} if the <a href="evals/judging.html">re-measured scores</a> are taken at face value</div></div>
-    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_ok, cal_n)}<div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
-  </div>
-  <p class="note" style="margin-top:28px"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
-  <div class="chart benches" style="margin-top:48px">{legend(reading="higher score: further right →", baseline=False)}{benches}</div>
-  <p class="dek-note">In the catalog: {goal_links}.</p>
-  <div class="btns"><a class="btn primary" href="evals.html">All the findings</a><a class="btn" href="{CATALOG}">Browse them in the catalog</a><a class="btn" href="evals.html#reproduce">Reproduce them</a></div>
+  <p class="dek-note">{lasting_links}</p>
 </div></section>
 
 <section class="block" id="mcp" data-nav="For agents"><div class="wrap">
