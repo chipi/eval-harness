@@ -1,3 +1,14 @@
 {
-  "projectRoots": ["site", "harness/catalog_assets", "harness/workbench"]
+  "projectRoots": [
+    "site",
+    "harness/catalog_assets",
+    "harness/workbench"
+  ],
+  "hook": {
+    "enabled": true,
+    "limits": {
+      "maxFindings": 5,
+      "maxChars": 8000
+    }
+  }
 }
