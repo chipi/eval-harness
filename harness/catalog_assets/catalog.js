@@ -88,3 +88,20 @@ box.addEventListener('change',ev=>{if(ev.target.classList.contains('cmdsel'))upd
 {const api=document.body.dataset.api||'/api/';
 if(location.protocol.startsWith('http')&&document.querySelector('.local-only'))fetch(api+'data/store',{cache:'no-store'})
 .then(r=>{if(r.ok||r.status===401)document.body.classList.add('local-data');}).catch(()=>{});}
+/* phones (catalog.css, max 640 px): a table of four or more columns stacks, one card per row, its first cell the
+   card's title and every other cell named by its column. The headers are hidden there, so a sortable table gets a
+   "sort by" menu that clicks them. Tables drawn later (the inspector) are stacked as they appear; the label sheet
+   stays a sheet: its item column stays put while it scrolls across the arms. */
+(function(){const name=th=>{const c=th.cloneNode(true);c.querySelectorAll('small,input,select,button').forEach(x=>x.remove());return c.textContent.trim();};
+const stack=t=>{const hr=t.tHead&&t.tHead.rows[t.tHead.rows.length-1];if(!hr||hr.cells.length<4)return;const hs=[...hr.cells].map(name);
+t.classList.add('stack');
+for(const b of t.tBodies)for(const r of b.rows){if('stacked' in r.dataset)continue;r.dataset.stacked='';let i=0;
+for(const c of r.cells){if(c.colSpan===1&&hs[i])c.dataset.label=hs[i];i+=c.colSpan;}}
+if(!t.classList.contains('sortable')||t._sortsel)return;
+const sel=document.createElement('select');sel.className='sortsel';sel.setAttribute('aria-label','sort by');
+const opt=(v,txt)=>{const o=document.createElement('option');o.value=v;o.textContent=txt;sel.appendChild(o);};
+opt('','sort by …');hs.forEach((h,i)=>{if(h){opt(i+':asc',h+' ↑');opt(i+':desc',h+' ↓');}});
+sel.addEventListener('change',()=>{if(!sel.value)return;const [i,d]=sel.value.split(':'),th=hr.cells[+i];th.dataset.dir=d==='asc'?'desc':'asc';th.click();});
+(t.closest('.scroll-x')||t).before(sel);t._sortsel=sel;};
+const all=()=>document.querySelectorAll('main table:not(.sheet)').forEach(stack);all();
+let due=false;new MutationObserver(()=>{if(due)return;due=true;requestAnimationFrame(()=>{due=false;all();});}).observe(document.body,{childList:true,subtree:true});})();
