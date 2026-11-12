@@ -381,6 +381,12 @@ that can move a result is never a patch release without saying so under **Change
     The frontier is no longer drawn in the accent.
   - A grouping or a facet picked was lost on reload; both are in the address now.
   - Every catalog page has a skip link to its content.
+  - The page opened on 690 arms in alphabetical order, no leader in sight. It opens grouped by dataset, the arms a
+    goal decided on first, three a group with "show N more" (owner, 2026-11-12); a group's count follows the
+    filter.
+  - A filter that matched nothing left bare column heads. It says so, with a button that clears it.
+  - A judged row was tinted in a model kind's colour and a silver row in a grey like a label set's: a judge's is the
+    model source's colour, silver's the silver tier's, a label set's rule is thin. A baseline badge is plain.
 - **`dataset-from-capture` deleted what sat in its items' folder**: `data/sources/<dataset>/` was emptied before the
   items were written, and a capture's own export kept there was deleted without a word (the fleet's beta). A file
   there that the dataset's record does not name is now refused (`would-overwrite`), and stays.

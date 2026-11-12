@@ -534,8 +534,12 @@ tile opens it grouped by config (`arms.html?group=config`).
   run again (the how column says which; group by config to see them together). Pick arms on one
   dataset to open them in the inspector.", then the period bar.
 - `01 every arm`:
-  - **group by** chips: no grouping, dataset, config, model, provider, scored against. A group
-    has a heading row with its name and arm count; a column's sort holds inside each group.
+  - **group by** chips: no grouping, dataset, config, model, provider, scored against. The page opens grouped by
+    dataset (owner, 2026-11-12), each dataset's arms in reading order: what a goal decided on first (recommended,
+    leader, baseline, then a contender), then best on the deciding measure; each group shows three rows and its
+    heading offers "show N more". A heading names the group and counts the arms the filter and chips leave; a
+    group with none left loses its heading. A grouped table is not paged; a column's sort holds inside each group.
+    "no grouping" is kept in the address as `?group=none`.
   - **only** chips: local, hosted (hosted when it runs through a provider that bills per call,
     litellm, openai, anthropic and the like, or its config prices tokens), then each price tier
     the configs declare (free, small, mid, large); a contender, below the leader (the arm's
@@ -543,7 +547,8 @@ tile opens it grouped by config (`arms.html?group=config`).
     not a contender; an arm no decision weighs is in neither); open weights, proprietary (the model's
     weights, from the model records in `data/models/`; an unlisted model is in neither; the chips
     show only when the file lists a model an arm ran). Within one kind any chip picked keeps a
-    row; across kinds all must.
+    row; across kinds all must. When the filter and the chips leave no arm, one row says so ("No arm matches
+    “…” with only: local") with a button that clears both.
   - the all / new / active chips; a compare bar once an arm is ticked: "N picked", **open in the
     inspector** (only when the picked arms share a dataset, else "the inspector compares arms on
     one dataset: pick arms of one"), **clear**.
@@ -561,8 +566,9 @@ tile opens it grouped by config (`arms.html?group=config`).
     **spend in period**. Filterable. An arm measured several ways is several rows, one per way,
     said by **how measured**; group by config to read them together. No nesting.
   - What each row is measured against (the page's critique, 2026-11-12; the rule every arms table keeps): the row
-    key above the table; each row tinted by its kind (scored against silver, by a judge, by the arm that wrote the
-    reference, against a label set); **how measured** names the reference with its tier pill ("measured · against
+    key above the table; each row tinted by its kind (scored against silver, in the silver tier's ink; by a judge, in
+    the model source's colour; by the arm that wrote the reference; against a label set, Muted with a thin rule),
+    never in a model kind's data colour; **how measured** names the reference with its tier pill ("measured · against
     gold/ag_news_200 GOLD", "rescored against …"), or "no reference".
   - Sorting: each column head holds a button (the head keeps its meaning); a value sorts by its number, a blank (—)
     last both ways, and **deciding measure** among its own measure's arms; a grouped table sorts inside each group.

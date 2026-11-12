@@ -56,11 +56,13 @@ let shown=step;const bar=document.createElement('p');bar.className='pager small 
 (t.closest('.scroll-x')||t).after(bar);
 const id=decodeURIComponent(location.hash.slice(1));
 if(id){const at=[...t.tBodies[0].rows].findIndex(r=>r.id===id);if(at>=step)shown=Infinity;}
-t._repage=function(){const live=[...t.tBodies[0].rows].filter(r=>!r.hidden&&!r.classList.contains('grouphead'));
-live.forEach((r,i)=>r.classList.toggle('paged-out',i>=shown));
-[...t.tBodies[0].rows].filter(r=>r.hidden).forEach(r=>r.classList.remove('paged-out'));
-const n=live.length,vis=Math.min(n,shown);
-if(n<=step){bar.hidden=true;return;}bar.hidden=false;
+/* a grouped table is not paged: each group folds its own rows (group.js), and a folded row is not on the page */
+t._repage=function(){const lim='grouped' in t.dataset?Infinity:shown;
+const live=[...t.tBodies[0].rows].filter(r=>!r.hidden&&!r.classList.contains('grouphead')&&!r.classList.contains('gfold'));
+live.forEach((r,i)=>r.classList.toggle('paged-out',i>=lim));
+[...t.tBodies[0].rows].filter(r=>r.hidden||r.classList.contains('gfold')).forEach(r=>r.classList.remove('paged-out'));
+const n=live.length,vis=Math.min(n,lim);
+if(n<=step||'grouped' in t.dataset){bar.hidden=true;return;}bar.hidden=false;
 bar.innerHTML=`Showing ${vis} of ${n}`+(vis<n?` <button type="button" class="btn small" data-more>show ${Math.min(step,n-vis)} more</button><button type="button" class="btn small" data-all>show all</button>`:` <button type="button" class="btn small" data-less>show ${step}</button>`);};
 bar.addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;
 shown='more' in b.dataset?shown+step:'all' in b.dataset?Infinity:step;t._repage();});

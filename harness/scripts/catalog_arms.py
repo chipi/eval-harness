@@ -275,6 +275,17 @@ def _role_tint(word: str) -> str:
     return ""
 
 
+def _reading_order(r: dict) -> tuple:
+    """A dataset's arms in the order to read them: what a goal decided first, then best on the deciding measure."""
+    roles = " ".join(r["roles"])
+    rank = next(
+        (i for i, w in enumerate(("recommended", "leader", "baseline")) if w in roles),
+        3 if r["quality"] == "a contender" else 4,
+    )
+    v = r["value"]
+    return (r["dataset"], rank, v is None, (v if r["lower"] else -v) if v is not None else 0, r["arm"])
+
+
 def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) -> None:
     """Write arms.html."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
@@ -284,7 +295,9 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
     w = cb.window(A, by_ds)
     rows = rows if rows is not None else arm_rows(A, by_ds)
     period_rows, trs = period_arms(A, by_ds, rows), []
-    for r in rows:
+    # The page opens grouped by dataset, three rows a group (owner, 2026-11-12): within a dataset the arms a goal
+    # decided on come first (recommended, leader, baseline, contender), then the best on the deciding measure.
+    for r in sorted(rows, key=_reading_order):
         latency = f"{r['latency']:.0f} ms" if r["latency"] else "—"
         badges = "".join(
             f'<span class="role{_role_tint(x)}">{e(x)}</span>' for x in dict.fromkeys(r["roles"])
@@ -491,6 +504,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
             "filter arms (name, model, provider…)",
             period=True,
             noun="arm",
+            attrs={"default-group": "dataset", "fold": "3"},
         ),
         "every",
     )

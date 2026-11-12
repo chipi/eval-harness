@@ -338,15 +338,15 @@ a.cell-link { text-decoration: underline; text-decoration-color: color-mix(in sr
 a.cell-link:hover { color: var(--accent); text-decoration-color: var(--accent); }
 
 /* rows by what their scores are measured against; gold rows stay plain */
-tr.t-silver td { background: color-mix(in srgb, var(--baseline) 12%, transparent); }
-tr.t-judged td { background: color-mix(in srgb, var(--proprietary) 10%, transparent); }
+tr.t-silver td { background: color-mix(in srgb, var(--silver-ink) 9%, transparent); }
+tr.t-judged td { background: color-mix(in srgb, var(--src-model) 10%, transparent); }
 tr.t-author td { background: color-mix(in srgb, var(--local) 12%, transparent); }
-tr.t-silver td:first-child { box-shadow: inset 3px 0 0 var(--baseline); padding-left: 10px; }
-tr.t-judged td:first-child { box-shadow: inset 3px 0 0 var(--proprietary); padding-left: 10px; }
+tr.t-silver td:first-child { box-shadow: inset 3px 0 0 var(--silver-ink); padding-left: 10px; }
+tr.t-judged td:first-child { box-shadow: inset 3px 0 0 var(--src-model); padding-left: 10px; }
 tr.t-author td:first-child { box-shadow: inset 3px 0 0 var(--local); padding-left: 10px; }
 .rowkey { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 14px; font: 12px var(--mono); }
-.rowkey .key { padding-left: 10px; box-shadow: inset 3px 0 0 var(--baseline); }
-.rowkey .key.t-judged { box-shadow: inset 3px 0 0 var(--proprietary); }
+.rowkey .key { padding-left: 10px; box-shadow: inset 3px 0 0 var(--silver-ink); }
+.rowkey .key.t-judged { box-shadow: inset 3px 0 0 var(--src-model); }
 .rowkey .key.t-author { box-shadow: inset 3px 0 0 var(--local); }
 .nowrap { white-space: nowrap; }
 .block code.nowrap { overflow-wrap: normal; }
@@ -518,7 +518,7 @@ select.chip.more.on { color: var(--accent-ink); background-color: var(--accent);
 select.chip.more { padding-right: 8px; max-width: 100%; text-overflow: ellipsis; }
 #actds, #actarms, #actkinds { --c: var(--s4); }
 /* the arms page: a derived arm under the arm it came from, the role badges, group headings, the compare bar */
-span.role { display: inline-block; margin: 0 4px 2px 0; padding: 0 6px; border-radius: 999px; font: 500 10px/1.6 var(--mono); color: var(--ink-2); background: color-mix(in srgb, var(--s3) 18%, transparent); white-space: nowrap; }
+span.role { display: inline-block; margin: 0 4px 2px 0; padding: 0 6px; border-radius: 999px; font: 500 10px/1.6 var(--mono); color: var(--ink-2); background: var(--surface-2); white-space: nowrap; }
 tr.grouphead td { padding-top: 18px; border-bottom: 1px solid var(--hair); }
 tr.fout { display: none; }
 .arm-tools { display: flex; flex-wrap: wrap; gap: 4px 18px; }
@@ -555,8 +555,8 @@ footer .elsewhere code { overflow-wrap: anywhere; }
 .src.src-rule { color: var(--src-rule); }
 .src.src-unknown { color: var(--muted); }
 tr.t-labels td { background: color-mix(in srgb, var(--muted) 10%, transparent); }
-tr.t-labels td:first-child { box-shadow: inset 3px 0 0 var(--muted); padding-left: 10px; }
-.rowkey .key.t-labels { box-shadow: inset 3px 0 0 var(--muted); }
+tr.t-labels td:first-child { box-shadow: inset 1px 0 0 var(--muted); padding-left: 10px; }
+.rowkey .key.t-labels { box-shadow: inset 1px 0 0 var(--muted); }
 /* On a desktop, a label set's long ids may break, so the columns after them (promoted, the agreement counts) are on
    screen; there is room for a line or two, never a letter per line. Narrow screens keep the sideways scroll above. */
 @media (min-width: 761px) {
@@ -777,7 +777,7 @@ dl.df-view dl.df-view { padding-left: 12px; border-left: 2px solid var(--hair); 
   table.stack.stack tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 16px; padding: 10px 2px;
     border-top: 1px solid var(--hair); }
   table.stack.stack tbody tr:first-child { border-top: 0; }
-  table.stack.stack tr[hidden], table.stack.stack tr.paged-out { display: none; }
+  table.stack.stack tr[hidden], table.stack.stack tr.paged-out, table.stack.stack tr.gfold { display: none; }
   table.stack.stack td { border: 0; padding: 0; text-align: left; min-width: 0; max-width: 100%; white-space: normal;
     overflow: visible; }
   table.stack.stack td::before { content: attr(data-label); margin-right: 6px; font: 500 10.5px/1.4 var(--mono);
@@ -817,3 +817,10 @@ input.pick { vertical-align: middle; margin: 0; }
 .skip:focus { top: 8px; }
 .skip:hover { color: var(--accent-ink); }
 main:focus { outline: none; }
+
+/* the arms page's third critique (2026-11-12): a group's folded rows; a group heading's "show N more"; the empty
+   state's row */
+tr.gfold { display: none; }
+tr.grouphead [data-gfold] .btn { margin-left: 8px; }
+tr.emptyrow td { padding: 18px 12px; color: var(--ink-2); }
+tr.emptyrow .btn { margin-left: 8px; }

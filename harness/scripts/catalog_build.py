@@ -558,12 +558,21 @@ def block(num: str, eyebrow: str, inner: str, anchor: str = "") -> str:
 PROSE = re.compile(r"[A-Za-z]{2,}(?=\s)")
 
 
-def table(tid: str, heads: list, rows: list, filt: str = "", period: bool = False, noun: str = "") -> str:
+def table(
+    tid: str,
+    heads: list,
+    rows: list,
+    filt: str = "",
+    period: bool = False,
+    noun: str = "",
+    attrs: dict | None = None,
+) -> str:
     """Build an HTML table with optional search filter. A row is a list of cells, or
     {"cells": [...], "cls": "...", "id": "...", "key": "...", "made": "...", "data": {...}} for a
     row with a class, an anchor, a place in the period (`period`: catalog_assets/period.js reads
     the row's key and the day it was made, and fills its `data-flow` cells), or attributes
-    group.js groups and filters on (`data`; `noun` names a row in a group's heading)."""
+    group.js groups and filters on (`data`; `noun` names a row in a group's heading). `attrs` are the table's own
+    data- attributes (group.js reads default-group and fold)."""
     th = "".join(f"<th>{h}</th>" for h in heads)
     f = ""
     if filt:
@@ -591,7 +600,9 @@ def table(tid: str, heads: list, rows: list, filt: str = "", period: bool = Fals
     body = "".join(tr(r) for r in rows)
     return (
         f'{f}<div class="scroll-x"><table id="{tid}" class="data sortable"{" data-period-rows" if period else ""}'
-        f"{f' data-noun={chr(34)}{e(noun)}{chr(34)}' if noun else ''}><thead><tr>{th}</tr>"
+        f"{f' data-noun={chr(34)}{e(noun)}{chr(34)}' if noun else ''}"
+        + "".join(f' data-{k}="{e(v)}"' for k, v in (attrs or {}).items())
+        + f"><thead><tr>{th}</tr>"
         f"</thead><tbody>{body}</tbody></table></div>"
     )
 

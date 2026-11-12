@@ -215,8 +215,8 @@ the site's float shadow. A row the reader opened in the inspector is shown by a 
 ## Shapes
 
 Smaller corners than the site's cards, for denser things: 10px tiles, 8px actions, 4px tags, full pills for chips and
-tiers, 14px only where a site card appears. A group's 3px top rule on a tile; a 3px inset rule on the first cell of a
-row scored against a label set.
+tiers, 14px only where a site card appears. A group's 3px top rule on a tile; an inset rule on the first cell of a
+tinted row (3px, 1px for a label set; see Tables).
 
 ## Components
 
@@ -240,8 +240,13 @@ row scored against a label set.
 ### Tables
 
 - Monospace uppercase heads in Muted, a hairline under each row, sortable heads that say their direction (an arrow in
-  the accent), a filter above and a pager below. Row tints mark how an arm was scored: an arm scored against a label
-  set carries a Muted tint and an inset rule.
+  the accent), a filter above and a pager below. Row tints mark how an arm was scored, each a faint tint and a 3px
+  inset rule on the first cell, keyed above the table: against silver in the silver tier's ink, by a judge in the
+  model source's colour (a model scored it), by the arm that wrote its reference in the local series colour,
+  against a label set in Muted with a 1px rule (told from silver by weight, not hue alone); gold is unmarked. None
+  uses a model kind's data colour.
+- A role badge is a pill: a result (leader, recommended) set solid in ink, an arm left out drawn as an outline, a
+  baseline plain on Surface Raised; never a group or status colour.
 
 ### Reference tiers and label sources
 

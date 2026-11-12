@@ -105,16 +105,67 @@ def check_arms_skip_and_address(browser, base: str) -> None:
         f"{fg} on {bg}, focus {page.evaluate('document.activeElement.id')}, url {page.url}",
     )
     page.locator('.facet-chips button[data-value="local"]').click()
-    page.locator("button[data-group-by=dataset]").first.click()
+    page.locator("button[data-group-by=config]").first.click()
     page.goto(page.url)
-    page.wait_for_selector("#arms tbody tr", timeout=30000)
+    # a config group with no local arm keeps its heading hidden, and it can be the first row
+    page.wait_for_selector("#arms tbody tr:not([hidden])", timeout=30000)
     pressed = page.evaluate(
         "[...document.querySelectorAll('[aria-pressed=true]')].map(b => b.textContent.trim())"
     )
     check(
         "arms: a grouping and a facet picked are kept in the address and come back on reload",
-        "dataset" in pressed and "local" in pressed and page.locator("#arms tr.grouphead").count() > 1,
+        "config" in pressed and "local" in pressed and page.locator("#arms tr.grouphead").count() > 1,
         pressed,
+    )
+    page.close()
+
+
+def check_arms_default_view(browser, base: str) -> None:
+    """The arms page's third critique (owner, 2026-11-12): it opened on every arm alphabetically, no leader in sight,
+    and a filter that matched nothing left bare column heads. It opens grouped by dataset, the arms a goal decided on
+    first, three a group; nothing left says so, with a way back."""
+    page = browser.new_page(viewport={"width": 1280, "height": 900})
+    errors: list = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(base + "arms.html")
+    page.wait_for_selector("#arms tbody tr", timeout=30000)
+    page.wait_for_timeout(300)
+    # Each visible row: a group's heading, an arm a goal decided on (leader, recommended, baseline), or another arm.
+    rows = page.evaluate(
+        "[...document.querySelectorAll('#arms tbody tr')].filter(r => r.offsetParent !== null).map(r =>"
+        " r.classList.contains('grouphead') ? 'head' : [...r.querySelectorAll('.role')].some(b =>"
+        " b.classList.contains('role-result') || b.textContent.trim() === 'baseline') ? 'decided' : 'arm')"
+    )
+    groups: list = []
+    for x in rows:
+        if x == "head":
+            groups.append([])
+        elif groups:
+            groups[-1].append(x)
+    check(
+        "arms: opens grouped by dataset, each group at most three rows, a decided arm never after an undecided one",
+        rows[:1] == ["head"]
+        and all(len(g) <= 3 for g in groups)
+        and not any(a == "arm" and b == "decided" for g in groups for a, b in zip(g, g[1:]))
+        and any("decided" in g for g in groups),
+        groups[:6],
+    )
+    page.fill("input[data-filter=arms]", "zzzz-no-arm")
+    page.wait_for_timeout(200)
+    empty = page.locator("#arms tr.emptyrow")
+    check(
+        "arms: a filter that matches nothing says so, and its button clears it",
+        empty.count() == 1 and "No arm matches" in empty.inner_text(),
+        empty.inner_text() if empty.count() else "no empty row",
+    )
+    page.locator("#arms [data-clearall]").click()
+    page.wait_for_timeout(200)
+    check(
+        "arms: ... and after clearing, the rows are back",
+        page.locator("#arms tr.emptyrow").count() == 0
+        and page.input_value("input[data-filter=arms]") == ""
+        and not errors,
+        errors[:2],
     )
     page.close()
 
@@ -135,7 +186,7 @@ def check_arms_sort_and_kinds(browser, base: str) -> None:
         not errors and page.locator("#arms tr.grouphead").count() > 1,
         errors[:2],
     )
-    page.goto(base + "arms.html")
+    page.goto(base + "arms.html?group=none")  # the page opens grouped by dataset; this is the ungrouped sort
     page.wait_for_selector("#arms tbody tr", timeout=30000)
     head = page.locator("#arms th .sortbtn", has_text="cost")
     head.click()
@@ -239,6 +290,7 @@ def drive(cat: Path, base: str) -> None:
 
         check_home_tiles(browser, base)
         check_arms_sort_and_kinds(browser, base)
+        check_arms_default_view(browser, base)
         check_arms_skip_and_address(browser, base)
 
         page = browser.new_page(viewport={"width": 1280, "height": 900})
@@ -310,8 +362,9 @@ def drive(cat: Path, base: str) -> None:
         n_arms, n_cfg = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
         check(
             f"arms page: the table lists the {n_arms} arms it says",
-            n_arms > 100 and page.locator("table#arms tbody tr").count() == n_arms,
-            f"hero {hero[:80]!r}, rows {page.locator('table#arms tbody tr').count()}",
+            # the page opens grouped by dataset: a group's heading is a row of the table, not an arm
+            n_arms > 100 and page.locator("table#arms tbody tr:not(.grouphead)").count() == n_arms,
+            f"hero {hero[:80]!r}, rows {page.locator('table#arms tbody tr:not(.grouphead)').count()}",
         )
         page.click('.group-chips[data-for="arms"] [data-group-by="config"]')
         heads = page.locator("table#arms tr.grouphead").count()
