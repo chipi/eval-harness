@@ -22,7 +22,8 @@ production's own writes of those kinds made since then (the stale check's confou
 own labels and nudged nothing), and leaves everything else as recorded. The setting is part of the adapter's identity,
 so only a faithfulness record made with it lets such a replay be scored. The adapter reports per item, in
 `Result.extra["history_confound"]` (1 or 0), whether the variant met a human reaction recorded after an action
-production took and it did not: the run counts them, and every score on it says so.
+production took and it did not: the run counts them over all its items (an item the adapter leaves unmarked is 0),
+and every score on it says so, counted over the items that score reads.
 """
 
 from __future__ import annotations

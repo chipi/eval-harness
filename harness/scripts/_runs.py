@@ -133,15 +133,25 @@ def per_item(
         datasets.add(str((m or {}).get("dataset_id") or ""))
         if (m or {}).get("not_scorable"):  # RFC-031 L3: said by the command (_jsonout)
             NOT_SCORABLE.setdefault(str(m.get("config_id")), set()).update(m["not_scorable"])
-        if ((m or {}).get("history_confound") or {}).get("items"):  # RFC-031 P1: said by the command
-            CONFOUND[str(m.get("config_id"))] = dict(m["history_confound"])
+        # RFC-031 P1, said by the command: counted over the items this command reads (a period's, under `keep`), not
+        # the whole run's (the fleet's beta: "5 of 287" beside a comparison of 52).
+        confounded = ((m or {}).get("history_confound") or {}).get("items")
+        hit: set[str] = set()
+        seen: set[str] = set()
         for row in item_rows(d, strict=strict):
+            if keep is not None and row["item_id"] not in keep:
+                continue
+            seen.add(row["item_id"])
+            if row.get("history_confound") == 1.0:
+                hit.add(row["item_id"])
             v = score_of(row, metric)
-            if v is None or (keep is not None and row["item_id"] not in keep):
+            if v is None:
                 continue
             acc.setdefault(row["item_id"], []).append(v)
             if raw is not None:
                 raw.append(v)
+        if confounded and hit:
+            CONFOUND[str(m.get("config_id"))] = {"items": len(hit), "of": len(seen)}
     # A held-out side's read items count in no score on it (RFC-031 H1): left out here, where every paired command's
     # scores come from, and counted for the command to say.
     for ds in datasets:

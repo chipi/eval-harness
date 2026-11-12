@@ -31,11 +31,20 @@ from evaluation_harness._adapter import same_of
 from evaluation_harness._common import die, evh_prog, load_dataset
 
 
-def _latest(dataset_id: str, config_id: str) -> tuple[Any, dict]:
-    runs = _runs.runs_on(dataset_id, config_id=config_id)
-    if not runs:
-        die(f"no run of {config_id} on {dataset_id}: run it first (evh run --config …)", "not-found")
-    return runs[-1]
+def _latest(dataset_id: str, name: str) -> tuple[Any, dict]:
+    """A run named by its id, or the latest run of a config named by its config_id (the fleet's beta: `faithfulness
+    --production` takes a run id, and the same id given here was refused)."""
+    runs = _runs.runs_on(dataset_id)
+    by_id = [(d, m) for d, m in runs if d.name == name]
+    if by_id:
+        return by_id[0]
+    of_config = [(d, m) for d, m in runs if m.get("config_id") == name]
+    if not of_config:
+        die(
+            f"no run of {name} on {dataset_id}, by run id or config_id: run it first (evh run --config …)",
+            "not-found",
+        )
+    return of_config[-1]
 
 
 def window_of(rec: dict, period: int | None, start: str | None, end: str | None) -> tuple[Any, Any, str]:
@@ -67,9 +76,14 @@ def main() -> int:
         "--config", required=True, type=Path, help="the replay config (production's code as it ran)"
     )
     ap.add_argument(
-        "--candidate", required=True, help="the candidate's config_id (a run of it on the dataset)"
+        "--candidate",
+        required=True,
+        help="the candidate: a run id, or a config_id (its latest run on the dataset)",
     )
-    ap.add_argument("--production", help="production's recorded arm's config_id (arm-from-capture)")
+    ap.add_argument(
+        "--production",
+        help="production's recorded arm (arm-from-capture): a run id, as faithfulness takes, or a config_id",
+    )
     ap.add_argument("--period", type=int, help="the code record's deployed period, by number (evh periods)")
     ap.add_argument("--from", dest="start", help="the period's start (ISO, with an offset)")
     ap.add_argument("--to", dest="end", help="its end (default: now)")

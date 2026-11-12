@@ -73,6 +73,25 @@ def load(model_id: str) -> dict[str, Any]:
         )
     if not rec.get("versions"):
         _common.die(f"code record {model_id} lists no versions", "invalid-file")
+    # A key in the wrong place was read as absent (the fleet's beta: `dated_by` on a version, not on its deployment,
+    # dated nothing and said nothing): the record is held to its schema before anything reads it.
+    try:
+        import jsonschema  # noqa: PLC0415
+
+        schema = json.loads(_store.read_text(_common.SCHEMAS / "model.schema.json", encoding="utf-8"))
+        errs = [
+            f"{'/'.join(str(p) for p in e.absolute_path) or '(top)'}: {e.message[:120]}"
+            for e in jsonschema.Draft202012Validator(schema).iter_errors(rec)
+        ]
+    except ImportError:  # pragma: no cover - V1 says jsonschema is missing
+        errs = []
+    if errs:
+        hint = (
+            " (dated_by goes on a deployment: versions[].deployed[].dated_by)"
+            if any("dated_by" in e for e in errs)
+            else ""
+        )
+        _common.die(f"code record {model_id}: " + "; ".join(errs[:5]) + hint, "invalid-file")
     _p, bad = periods(rec)
     if bad:
         _common.die(f"code record {model_id}: " + "; ".join(bad), "invalid-file")

@@ -166,6 +166,13 @@ try:
         and "history confound:" in said(cand),
         said(cand)[-600:] + json.dumps(hc),
     )
+    # The fleet's beta (F7): the adapter marks only the items where production acted; the score's mean was taken over
+    # those (5 of 34) while the note said 5 of 287. One denominator: every item of the run.
+    check(
+        "the history confound's score and its note count the same items: an item the adapter left unmarked is 0",
+        (mc.get("scores") or {}).get("history_confound") == round(1 / 20, 6),
+        json.dumps((mc.get("scores") or {}).get("history_confound")),
+    )
     pt = evh(
         "pair-test", "--dataset-id", "filing_history_v1", "--a", "filing_candidate_v3_hidden",
         "--b", "filing_replay_hidden_v1", "--metric", "exact",
@@ -218,6 +225,24 @@ try:
         and pv.get("delta") is not None,
         said(pc)[-600:],
     )
+    check(
+        "period-compare: the candidate's history confound is counted over the period's items, not the run's 20 "
+        "(the fleet's beta: 5 of 287 beside a comparison of 52)",
+        "filing_candidate_v3_hidden: history confound: 1 of 8" in said(pc)
+        and (pv.get("history_confound") or {}).get("filing_candidate_v3_hidden") == {"items": 1, "of": 8},
+        said(pc)[-600:],
+    )
+    # The fleet's beta (F8): faithfulness --production takes a run id; the same id here was refused ("no run of").
+    prod_run = sorted(n for n in _runstore.listdir(proj, "runs") if n.startswith("filing_production_v1_"))[-1]
+    pc_id = evh(
+        *[prod_run if x == "filing_production_v1" else x for x in PC],
+        "--config", "data/configs/filing_replay_hidden_v1.yaml", "--candidate", "filing_candidate_v3_hidden",
+    )  # fmt: skip
+    check(
+        "period-compare --production takes a run id too, with the same answer as its config_id",
+        pc_id.returncode == 0 and values(pc_id).get("production") == pv.get("production"),
+        said(pc_id)[-400:],
+    )
     bad_pc = evh(
         *PC,
         "--config",
@@ -235,6 +260,15 @@ try:
     import yaml
 
     rec = yaml.safe_load(_runstore.read_text(proj, "models/toy_filing.yaml"))
+    # The fleet's beta (F9): dated_by on a version, not on its deployment, was accepted and dated nothing.
+    wrong = {**rec, "versions": [{**rec["versions"][0], "dated_by": "commit"}, *rec["versions"][1:]]}
+    _runstore.write_text(proj, "models/toy_filing.yaml", yaml.safe_dump(wrong, sort_keys=False))
+    w = evh("periods", "--model", "toy_filing")
+    check(
+        "a code record with dated_by on a version (not its deployment) is refused, saying where it goes",
+        w.returncode != 0 and "dated_by" in said(w) and "versions[].deployed[].dated_by" in said(w),
+        said(w)[-400:],
+    )
     rec["versions"][0]["deployed"][0]["dated_by"] = (
         "commit"  # the host's pull time no longer recorded: approximate
     )

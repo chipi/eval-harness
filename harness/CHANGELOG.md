@@ -373,6 +373,15 @@ that can move a result is never a patch release without saying so under **Change
 - **A regression guard could not cover runs made before it was declared**: V5 read `expect_identical_to` only from a
   run's `metrics.json`, which a frozen run never gains. It now also reads the config's own declaration, so a guard
   pair from before 0.8.0 is checked as the guard, not flagged as a copied result (the fleet's beta).
+- **A history confound had two denominators**: the run's note counted every item (5 of 287), while its score's mean
+  counted only the items the adapter marked (5 of 34, 0.147). An unmarked item now counts as 0, so both read 5 of
+  287. A command reading part of a run (`period-compare`'s period) counts the confound over the items it reads
+  (the fleet's beta).
+- **`period-compare --production` took only a config id**, where `faithfulness --production` takes a run id; the run
+  id was refused with "no run of". `--production` and `--candidate` now take either (the fleet's beta).
+- **A code record's misplaced key was ignored**: `dated_by` on a version, instead of on its deployment, dated
+  nothing and said nothing. A replay's code record is now held to its schema when it is read, and the refusal says
+  where `dated_by` goes (the fleet's beta).
 - **`validate` V24 failed every replay run**: it required a run's `deployment.code` to be one checkout (repo, commit,
   dirty, path), and a replay's (RFC-030) is its code record, the record's versions' hash and the commits it ran. The
   replay test read only V26's line of `validate`; it now holds V24 too.

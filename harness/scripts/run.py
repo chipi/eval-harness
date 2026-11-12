@@ -616,6 +616,12 @@ def one_pass(
                 flush=True,
             )
 
+    # A replay's history confound (RFC-031 P1) is counted over every item of the run, as its note says: an adapter
+    # may mark only the items where production acted, and the mean over those alone said 5 of 34 where the note said
+    # 5 of 287 (the fleet's beta). An unmarked item met no reaction to an action the variant did not take.
+    if any("history_confound" in r for r in predictions):
+        for r in predictions:
+            r.setdefault("history_confound", 0.0)
     scores = aggregate_scores(predictions, digits=6)
     run_metrics: list[str] = []
     if by_run is not None and run_items:

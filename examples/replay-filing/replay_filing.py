@@ -92,7 +92,8 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
             e.get("by") == "person" and replay_world.moment(e["at"]) > replay_world.moment(fields["ts"])
             for e in issue["events"]
         )
-        extra["history_confound"] = 1.0 if pi and not out.startswith("create") and reacted else 0.0
+        if pi:  # marked only where production acted, as a real adapter may: the run counts the rest as not confounded
+            extra["history_confound"] = 1.0 if not out.startswith("create") and reacted else 0.0
     return Result(
         output=out,
         cost_usd=0.0,
