@@ -1,0 +1,601 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-12T15:34:15Z",
+  "title": "Design System: eval catalog and run inspector",
+  "extensions": {
+    "colorMeta": {
+      "ink-black": {
+        "role": "neutral",
+        "displayName": "Ink Black",
+        "canonical": "#0b0b0a",
+        "tonalRamp": [
+          "#272725",
+          "#464641",
+          "#65655c",
+          "#848478",
+          "#9f9f97",
+          "#bbbbb5",
+          "#d6d6d4",
+          "#f3f3f2"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "#141413",
+        "tonalRamp": [
+          "#272726",
+          "#454542",
+          "#63635e",
+          "#81817a",
+          "#9d9d99",
+          "#b9b9b7",
+          "#d6d6d4",
+          "#f2f2f2"
+        ]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Surface Raised",
+        "canonical": "#1c1c1a",
+        "tonalRamp": [
+          "#272725",
+          "#454541",
+          "#64645d",
+          "#828279",
+          "#9e9e97",
+          "#babab6",
+          "#d6d6d4",
+          "#f3f3f2"
+        ]
+      },
+      "paper-ink": {
+        "role": "neutral",
+        "displayName": "Paper Ink",
+        "canonical": "#f0efec",
+        "tonalRamp": [
+          "#292823",
+          "#4a473d",
+          "#6b6656",
+          "#8c856f",
+          "#a5a090",
+          "#bfbbb1",
+          "#d9d7d2",
+          "#f3f3f1"
+        ]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary",
+        "canonical": "#b9b7ad",
+        "tonalRamp": [
+          "#282824",
+          "#48463f",
+          "#67655a",
+          "#888474",
+          "#a2a094",
+          "#bcbbb3",
+          "#d7d7d3",
+          "#f3f3f2"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "#8a8880",
+        "tonalRamp": [
+          "#272725",
+          "#464541",
+          "#64635d",
+          "#838179",
+          "#9f9d97",
+          "#bab9b6",
+          "#d6d6d4",
+          "#f3f2f2"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#2a2a27",
+        "tonalRamp": [
+          "#272725",
+          "#454541",
+          "#64645d",
+          "#828279",
+          "#9e9e97",
+          "#babab6",
+          "#d6d6d4",
+          "#f3f3f2"
+        ]
+      },
+      "axis": {
+        "role": "neutral",
+        "displayName": "Axis",
+        "canonical": "#3a3a36",
+        "tonalRamp": [
+          "#272725",
+          "#454541",
+          "#64645d",
+          "#828279",
+          "#9e9e98",
+          "#babab6",
+          "#d6d6d4",
+          "#f3f3f2"
+        ]
+      },
+      "highlighter-lime": {
+        "role": "primary",
+        "displayName": "Highlighter Lime",
+        "canonical": "#c8ff3d",
+        "tonalRamp": [
+          "#32400c",
+          "#5a780e",
+          "#86b70b",
+          "#b4fb01",
+          "#c2f540",
+          "#d1f17f",
+          "#e2f2b8",
+          "#f6faeb"
+        ]
+      },
+      "goals-violet": {
+        "role": "secondary",
+        "displayName": "Goals Violet",
+        "canonical": "#9085e9",
+        "tonalRamp": [
+          "#181438",
+          "#271f68",
+          "#32259c",
+          "#3a27d4",
+          "#6a5cda",
+          "#9990df",
+          "#c5c1e9",
+          "#eeedf8"
+        ]
+      },
+      "data-blue": {
+        "role": "secondary",
+        "displayName": "Data Blue",
+        "canonical": "#3987e5",
+        "tonalRamp": [
+          "#12243a",
+          "#1b406c",
+          "#1f5aa3",
+          "#1e75de",
+          "#5594e0",
+          "#8cb4e4",
+          "#bfd3ec",
+          "#ecf2f8"
+        ]
+      },
+      "arms-green": {
+        "role": "secondary",
+        "displayName": "Arms Green",
+        "canonical": "#199e70",
+        "tonalRamp": [
+          "#13392c",
+          "#1d6a4f",
+          "#229f74",
+          "#23d89a",
+          "#59ddaf",
+          "#8fe1c5",
+          "#c0eadc",
+          "#edf8f4"
+        ]
+      },
+      "work-amber": {
+        "role": "secondary",
+        "displayName": "Work Amber",
+        "canonical": "#c98500",
+        "tonalRamp": [
+          "#402f0c",
+          "#78550e",
+          "#b77c0b",
+          "#fba601",
+          "#f5b840",
+          "#f1ca7f",
+          "#f2dfb8",
+          "#faf5eb"
+        ]
+      },
+      "series-ember": {
+        "role": "secondary",
+        "displayName": "Series Ember",
+        "canonical": "#d95926",
+        "tonalRamp": [
+          "#391e14",
+          "#69331e",
+          "#9d4724",
+          "#d55826",
+          "#da7f5b",
+          "#e0a790",
+          "#eaccc1",
+          "#f8f0ed"
+        ]
+      },
+      "series-rose": {
+        "role": "secondary",
+        "displayName": "Series Rose",
+        "canonical": "#d55181",
+        "tonalRamp": [
+          "#361622",
+          "#64233b",
+          "#952c52",
+          "#ca3169",
+          "#d2648c",
+          "#db95ae",
+          "#e7c3d0",
+          "#f7eef1"
+        ]
+      },
+      "series-leaf": {
+        "role": "secondary",
+        "displayName": "Series Leaf",
+        "canonical": "#008300",
+        "tonalRamp": [
+          "#0c400c",
+          "#0e780e",
+          "#0bb70b",
+          "#01fb01",
+          "#40f540",
+          "#7ff17f",
+          "#b8f2b8",
+          "#ebfaeb"
+        ]
+      },
+      "series-coral": {
+        "role": "secondary",
+        "displayName": "Series Coral",
+        "canonical": "#e66767",
+        "tonalRamp": [
+          "#391313",
+          "#691d1d",
+          "#9e2323",
+          "#d72424",
+          "#dc5a5a",
+          "#e18f8f",
+          "#eac0c0",
+          "#f8eded"
+        ]
+      },
+      "gold-tier-bg": {
+        "role": "tertiary",
+        "displayName": "Gold Tier (fill)",
+        "canonical": "#4a3a0c",
+        "tonalRamp": [
+          "#392f13",
+          "#6a561d",
+          "#9f7f23",
+          "#d8a924",
+          "#dcba5a",
+          "#e1cc8f",
+          "#eadfc0",
+          "#f8f5ed"
+        ]
+      },
+      "gold-tier-ink": {
+        "role": "tertiary",
+        "displayName": "Gold Tier (text)",
+        "canonical": "#f3d77a",
+        "tonalRamp": [
+          "#3c3210",
+          "#705b17",
+          "#a88719",
+          "#e6b615",
+          "#e6c34f",
+          "#e7d188",
+          "#eee2bd",
+          "#f9f6ec"
+        ]
+      },
+      "silver-tier-bg": {
+        "role": "tertiary",
+        "displayName": "Silver Tier (fill)",
+        "canonical": "#3a3d42",
+        "tonalRamp": [
+          "#252628",
+          "#404347",
+          "#5b5f66",
+          "#767c86",
+          "#9599a1",
+          "#b4b7bc",
+          "#d3d5d7",
+          "#f2f2f3"
+        ]
+      },
+      "silver-tier-ink": {
+        "role": "tertiary",
+        "displayName": "Silver Tier (text)",
+        "canonical": "#dde2e8",
+        "tonalRamp": [
+          "#21262b",
+          "#39424e",
+          "#505f71",
+          "#667b96",
+          "#8999ac",
+          "#adb7c3",
+          "#cfd5db",
+          "#f1f2f4"
+        ]
+      },
+      "source-person": {
+        "role": "tertiary",
+        "displayName": "Source: a person",
+        "canonical": "#7fb3d5",
+        "tonalRamp": [
+          "#192934",
+          "#29495e",
+          "#356a8c",
+          "#3f8bbd",
+          "#6da4c9",
+          "#9bbed5",
+          "#c6d8e4",
+          "#eef3f6"
+        ]
+      },
+      "source-model": {
+        "role": "tertiary",
+        "displayName": "Source: a model",
+        "canonical": "#b39ddb",
+        "tonalRamp": [
+          "#231a32",
+          "#3c2b5c",
+          "#553988",
+          "#6d44b7",
+          "#8f71c5",
+          "#b09ed2",
+          "#d1c8e3",
+          "#f1eff6"
+        ]
+      },
+      "source-rule": {
+        "role": "tertiary",
+        "displayName": "Source: a rule",
+        "canonical": "#a5c9a0",
+        "tonalRamp": [
+          "#212d1f",
+          "#385235",
+          "#4f7849",
+          "#64a05b",
+          "#88b482",
+          "#acc8a8",
+          "#cfddcd",
+          "#f1f4f0"
+        ]
+      },
+      "paper-light": {
+        "role": "neutral",
+        "displayName": "Paper Light",
+        "canonical": "#f6f5f1",
+        "tonalRamp": [
+          "#2c2a21",
+          "#4f4a38",
+          "#736c4e",
+          "#998e63",
+          "#aea787",
+          "#c4bfac",
+          "#dbd9cf",
+          "#f4f3f1"
+        ]
+      },
+      "surface-light": {
+        "role": "neutral",
+        "displayName": "Surface Light",
+        "canonical": "#fcfcfb",
+        "tonalRamp": [
+          "#2a2a23",
+          "#4b4b3c",
+          "#6d6d54",
+          "#90906c",
+          "#a8a88e",
+          "#c0c0b0",
+          "#d9d9d1",
+          "#f3f3f1"
+        ]
+      },
+      "ink-light": {
+        "role": "neutral",
+        "displayName": "Ink Light",
+        "canonical": "#0b0b0b",
+        "tonalRamp": [
+          "#262626",
+          "#434343",
+          "#616161",
+          "#7e7e7e",
+          "#9b9b9b",
+          "#b8b8b8",
+          "#d5d5d5",
+          "#f2f2f2"
+        ]
+      },
+      "muted-light": {
+        "role": "neutral",
+        "displayName": "Muted Light",
+        "canonical": "#66645e",
+        "tonalRamp": [
+          "#272725",
+          "#464441",
+          "#64625d",
+          "#838079",
+          "#9f9d97",
+          "#bab9b6",
+          "#d6d6d4",
+          "#f3f2f2"
+        ]
+      },
+      "hairline-light": {
+        "role": "neutral",
+        "displayName": "Hairline Light",
+        "canonical": "#dddbd3",
+        "tonalRamp": [
+          "#2a2823",
+          "#4a473d",
+          "#6c6756",
+          "#8e876e",
+          "#a6a28f",
+          "#bfbcb1",
+          "#d9d7d1",
+          "#f3f3f1"
+        ]
+      },
+      "highlighter-olive-light": {
+        "role": "primary",
+        "displayName": "Highlighter Olive (light theme)",
+        "canonical": "#3d5c00",
+        "tonalRamp": [
+          "#2f400c",
+          "#55780e",
+          "#7db70b",
+          "#a6fb01",
+          "#b8f540",
+          "#cbf17f",
+          "#dff2b8",
+          "#f5faeb"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "page-title": {
+        "displayName": "Page title",
+        "purpose": "A list page's name."
+      },
+      "item-title": {
+        "displayName": "Item title",
+        "purpose": "One goal's, dataset's or arm's page."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "A page's one sentence on what it holds."
+      },
+      "table": {
+        "displayName": "Table",
+        "purpose": "Table cells."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Table heads, eyebrows, tile labels, fact keys."
+      },
+      "tile-number": {
+        "displayName": "Tile number",
+        "purpose": "A count on a home tile, scaled to the tile."
+      }
+    },
+    "shadows": [
+      {
+        "name": "float",
+        "value": "0 8px 24px rgba(0, 0, 0, .18)",
+        "purpose": "The navigation's drop-down list only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "action",
+        "value": "background .12s, border-color .12s",
+        "purpose": "An action's tint deepening on hover."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stack",
+        "value": "640px",
+        "purpose": "Tables of four or more columns become one card per row."
+      },
+      {
+        "name": "phone-bar",
+        "value": "760px",
+        "purpose": "The navigation folds; search becomes a button."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Tile",
+      "kind": "card",
+      "refersTo": "tile",
+      "description": "A count on the home page, its group's colour on a top rule.",
+      "html": "<a class=\"ds-tile\" href=\"#\" style=\"--c: #3987e5\"><span>Datasets</span><b>17</b><small>+4 new</small></a>",
+      "css": ".ds-tile { --c: var(--s1, #3987e5); display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; width: 150px; border: 1px solid var(--hair, #2a2a27); border-top: 3px solid var(--c); border-radius: 10px; background: var(--surface, #141413); color: var(--ink, #f0efec); text-decoration: none; } .ds-tile:hover, .ds-tile:focus-visible { border-color: var(--c); outline: none; } .ds-tile span { font: 500 11px/1.4 ui-monospace, Menlo, monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #8a8880); } .ds-tile b { font: 600 22px/1.2 'Inter Tight', Inter, system-ui, sans-serif; font-variant-numeric: tabular-nums; } .ds-tile small { align-self: flex-start; margin-top: 4px; padding: 1px 7px; border-radius: 999px; font: 500 11px/1.5 ui-monospace, Menlo, monospace; color: var(--ink-2, #b9b7ad); background: color-mix(in srgb, var(--c) 18%, transparent); }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "A grouping or filter; pressed is lime.",
+      "html": "<button class=\"ds-chip\" type=\"button\" aria-pressed=\"true\">no grouping</button> <button class=\"ds-chip\" type=\"button\" aria-pressed=\"false\">dataset</button>",
+      "css": ".ds-chip { font: 500 12px/1 ui-monospace, Menlo, monospace; padding: 7px 11px; border: 1px solid var(--hair, #2a2a27); border-radius: 999px; background: var(--surface, #141413); color: var(--muted, #8a8880); cursor: pointer; } .ds-chip:hover, .ds-chip:focus-visible { color: var(--ink, #f0efec); border-color: var(--accent, #c8ff3d); outline: none; } .ds-chip[aria-pressed=\"true\"] { color: var(--accent-ink, #0b0b0a); background: var(--accent, #c8ff3d); border-color: var(--accent, #c8ff3d); }"
+    },
+    {
+      "name": "Action",
+      "kind": "button",
+      "refersTo": "action-button",
+      "description": "A compact action that sits in a table row, tinted with the accent.",
+      "html": "<a class=\"ds-action\" href=\"#\">Inspect it</a>",
+      "css": ".ds-action { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 8px; font: 600 12px/1.2 ui-monospace, Menlo, monospace; letter-spacing: .02em; color: var(--ink, #f0efec); text-decoration: none; background: color-mix(in srgb, var(--accent, #c8ff3d) 12%, var(--surface, #141413)); border: 1px solid color-mix(in srgb, var(--accent, #c8ff3d) 38%, var(--hair, #2a2a27)); transition: background .12s, border-color .12s; } .ds-action::after { content: '\u2192'; color: var(--accent, #c8ff3d); } .ds-action:hover { background: color-mix(in srgb, var(--accent, #c8ff3d) 24%, var(--surface, #141413)); border-color: var(--accent, #c8ff3d); } .ds-action:focus-visible { outline: 2px solid var(--accent, #c8ff3d); outline-offset: 2px; }"
+    },
+    {
+      "name": "Reference Tier",
+      "kind": "chip",
+      "refersTo": "tier-gold",
+      "description": "A reference set's tier, in its own colour.",
+      "html": "<span class=\"ds-tier ds-gold\">Gold</span> <span class=\"ds-tier ds-silver\">Silver</span>",
+      "css": ".ds-tier { display: inline-block; font: 700 11px/1 ui-monospace, Menlo, monospace; letter-spacing: .08em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; } .ds-gold { background: var(--gold-bg, #4a3a0c); color: var(--gold-ink, #f3d77a); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold-ink, #f3d77a) 35%, transparent); } .ds-silver { background: var(--silver-bg, #3a3d42); color: var(--silver-ink, #dde2e8); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--silver-ink, #dde2e8) 30%, transparent); }"
+    },
+    {
+      "name": "Label Source",
+      "kind": "chip",
+      "refersTo": "",
+      "description": "Who wrote a label set: an outlined tag in its own neutral colour.",
+      "html": "<span class=\"ds-src\" style=\"color: var(--src-person, #7fb3d5)\">person</span> <span class=\"ds-src\" style=\"color: var(--src-model, #b39ddb)\">model</span> <span class=\"ds-src\" style=\"color: var(--src-rule, #a5c9a0)\">rule</span>",
+      "css": ".ds-src { display: inline-block; font: 600 11px/1 ui-monospace, Menlo, monospace; letter-spacing: .04em; padding: 3px 7px; border-radius: 4px; border: 1px solid currentColor; }"
+    },
+    {
+      "name": "Data Table",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "The main surface: monospace heads, hairline rows, a second line where it helps.",
+      "html": "<table class=\"ds-table\"><thead><tr><th>Arm</th><th>Dataset</th><th>Correct</th><th>Cost / item</th></tr></thead><tbody><tr><td class=\"ds-id\">ag_anthropic_l_n200_v1</td><td class=\"ds-id\">ag_news_200</td><td>0.900</td><td>$0.0009</td></tr><tr><td class=\"ds-id\">ag_bert_base_ta_n200_v1</td><td class=\"ds-id\">ag_news_200</td><td>0.960<br><small>+0.060 vs measured</small></td><td>$0</td></tr></tbody></table>",
+      "css": ".ds-table { border-collapse: collapse; font: 15px/1.45 Inter, system-ui, sans-serif; color: var(--ink, #f0efec); } .ds-table th { text-align: left; font: 500 11px/1.3 ui-monospace, Menlo, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--muted, #8a8880); padding: 0 16px 10px 0; border-bottom: 1px solid var(--hair, #2a2a27); } .ds-table td { padding: 12px 16px 12px 0; border-bottom: 1px solid var(--hair, #2a2a27); vertical-align: top; font-variant-numeric: tabular-nums; } .ds-table small { color: var(--muted, #8a8880); font-size: 12px; } .ds-id { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Notebook's Ledger",
+    "overview": "The catalog is the site's lab notebook turned to its tables. The site states a finding; the catalog keeps every run behind it, in columns a person can sort, filter and check, and the inspector reopens any comparison item by item. It shares the site's foundation (near-black and warm paper, Highlighter Lime, a heavy grotesk over a calm sans, monospace for everything exact) and spends it on reading rather than on occasion: titles are smaller, tables are the main surface, and colour is wayfinding.\n\nThe voice is the same, confident and plain, at working density. A page opens with a short title and one sentence on what it holds, then tiles and tables. Tables are comfortable to read: a row has room for a second line (a model's provider, a rescore's change), and a long table shows ten rows at a time. Nothing on a page writes to the project: a decision it suggests is the command that makes it.\n\n- The site's tokens, with muted text darkened to 4.5:1 on every surface and a visible lime focus ring. - Four group colours as wayfinding: goals violet, data blue, arms green, work and spend amber. - Sortable, filterable, paged tables as the main surface; on a phone each row becomes a card. - Reference tiers as pills in their own colours (gold, silver), never in the accent or the group colours. - Monospace for every id, number, label, chip and action.",
+    "keyCharacteristics": [
+      "The site's tokens, with muted text darkened to 4.5:1 on every surface and a visible lime focus ring.",
+      "Four group colours as wayfinding: goals violet, data blue, arms green, work and spend amber.",
+      "Sortable, filterable, paged tables as the main surface; on a phone each row becomes a card.",
+      "Reference tiers as pills in their own colours (gold, silver), never in the accent or the group colours.",
+      "Monospace for every id, number, label, chip and action."
+    ],
+    "rules": [
+      {
+        "name": "The Wayfinding Rule",
+        "body": "A group colour says which part of the catalog something belongs to, never whether it is good: a trend is tinted in its group's colour whichever way it moves.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tier Is Its Own Colour Rule",
+        "body": "Gold and silver belong to reference tiers only; a label set's source has a neutral colour of its own, never a tier's.",
+        "section": "colors"
+      },
+      {
+        "name": "The Highlighter Rule",
+        "body": "As on the site: the accent marks what is current or selected, never a value.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "**Do** mark which part of the catalog something belongs to with its group colour, on a 3px rule or a chart line.",
+      "**Do** keep muted text at 4.5:1 or more and the lime focus ring on everything that takes focus.",
+      "**Do** show a suggested decision as the command that makes it.",
+      "**Do** keep tables comfortable: room for a second line, ten rows a page, filter and sort over every row."
+    ],
+    "donts": [
+      "**Don't** use a group colour, the accent or a tier colour to say a value is good or bad.",
+      "**Don't** give a label set's source a tier's gold or silver.",
+      "**Don't** add a shadow to a tile, a table or a card.",
+      "**Don't** let a page write to the project."
+    ]
+  }
+}
