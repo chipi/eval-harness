@@ -10,11 +10,19 @@ record of `kind: code` (the fleet's feedback 27), whose versions say which commi
       version_field: deployed_commit          # optional: production's own record of its commit wins
       support: [replay_world.py]              # the adapter's own modules, beside it, hashed with it
       commit: <sha>                           # a candidate: every item at this one commit
+      hide: {kinds: [stale-label]}            # production's own writes of these kinds, made inside the replayed
+                                              # window, hidden from the replay (RFC-031 P1)
 
 Each call is made once (a retry would repeat side effects), and `--resume`, `--items` and `--repeat` above 1 are
 refused: state the skipped or replayed items wrote would be missing, or a second pass would inherit the first's. The
 adapter gets `params["item"]` ({item_id, fields}) and `params["code"]` ({record, commit, path, changed}); `changed` is
 true on the first item at a new commit, where it imports that version (`_codeload.use`) and re-applies its patches.
+With `hide`, it also gets `params["hide"]` ({kinds, since: the first replayed item's time}): its world stand-in hides
+production's own writes of those kinds made since then (the stale check's confound: a later variant saw production's
+own labels and nudged nothing), and leaves everything else as recorded. The setting is part of the adapter's identity,
+so only a faithfulness record made with it lets such a replay be scored. The adapter reports per item, in
+`Result.extra["history_confound"]` (1 or 0), whether the variant met a human reaction recorded after an action
+production took and it did not: the run counts them, and every score on it says so.
 """
 
 from __future__ import annotations
@@ -34,7 +42,7 @@ from typing import Any
 
 from evaluation_harness import _coderec, _common, _fields, _store
 
-KEYS = ("order", "time_field", "version_field", "support", "commit")
+KEYS = ("order", "time_field", "version_field", "support", "commit", "hide")
 
 
 @dataclass
@@ -163,6 +171,25 @@ def prepare(
             "not-found",
         )
     settings = {"order": order, "time_field": tf, "version_field": vf, "support": sorted(support)}
+    hide = spec.get("hide")
+    if hide is not None:
+        kinds = hide.get("kinds") if isinstance(hide, dict) else None
+        if not (
+            isinstance(hide, dict)
+            and set(hide) <= {"kinds", "window"}
+            and isinstance(kinds, list)
+            and kinds
+            and all(isinstance(k, str) and k.strip() for k in kinds)
+            and hide.get("window", "replayed") == "replayed"
+        ):
+            _common.die(
+                f"{config_path}: replay.hide is {{kinds: [the kinds of production's own writes to hide]}}, hidden "
+                "when made inside the replayed window (window: replayed, the one window)",
+                "invalid-file",
+            )
+        first = ordered[0] if ordered else {}
+        since = (first.get("fields") or {}).get(tf) if tf else None
+        settings["hide"] = {"kinds": sorted(kinds), "window": "replayed", "since": since}
     return Plan(rec, ordered, commit_of, candidate, settings, support)
 
 
@@ -176,10 +203,13 @@ def item_params(plan: Plan) -> Any:
         path = _coderec.copy_of(plan.record, c)
         if changed:
             last.append(c)
-        return {
+        out = {
             "item": {"item_id": item["item_id"], "fields": dict(item.get("fields") or {})},
             "code": {"record": plan.model_id, "commit": c, "path": str(path), "changed": changed},
         }
+        if plan.settings.get("hide"):
+            out["hide"] = {"kinds": plan.settings["hide"]["kinds"], "since": plan.settings["hide"]["since"]}
+        return out
 
     return per_item
 
@@ -190,8 +220,12 @@ def adapter_identity(adapter_id: str, adapter_path: Path | None, plan: Plan) -> 
 
     support = {n: file_sha256(p) for n, p in sorted(plan.support.items())}
     own = file_sha256(adapter_path) if adapter_path else None
+    # What the replay hides is part of the instrument: a faithfulness record made without it does not cover it.
+    hide = plan.settings.get("hide")
     joint = hashlib.sha256(
-        json.dumps({"adapter": own, "support": support}, sort_keys=True).encode()
+        json.dumps(
+            {"adapter": own, "support": support, **({"hide": hide["kinds"]} if hide else {})}, sort_keys=True
+        ).encode()
     ).hexdigest()
     return {"id": adapter_id, "sha256": joint, "adapter_sha256": own, "support": support or None}
 

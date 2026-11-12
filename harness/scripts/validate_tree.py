@@ -1697,7 +1697,8 @@ def v22_dataset_records() -> None:
 
 def v24_prompt_versions() -> None:
     """V24 (RFC-028): every prompt version's bytes hash to its name and its record, its parent exists, and every
-    run's `settings.prompts` names a recorded version; a run's `deployment.code` has its four keys."""
+    run's `settings.prompts` names a recorded version; a run's `deployment.code` has its four keys (one checkout,
+    RFC-028), or, for a replay (RFC-030), its code record, the record's versions' hash and the commits it ran."""
     from evaluation_harness import _prompts, _runs  # noqa: PLC0415
 
     bad: list[str] = []
@@ -1731,9 +1732,14 @@ def v24_prompt_versions() -> None:
             if (name, str(sha)) not in known:
                 bad.append(f"{d.name}: prompt {name} {str(sha)[:16]} is not a recorded version")
         code = (fp.get("deployment") or {}).get("code")
-        if code is not None and not (
-            isinstance(code, dict) and {"repo", "commit", "dirty", "path"} <= set(code)
-        ):
+        if code is None:
+            continue
+        if isinstance(code, dict) and code.get(
+            "record"
+        ):  # a replay's (RFC-030): many commits, from its record
+            if not {"record", "versions_sha256", "commits"} <= set(code):
+                bad.append(f"{d.name}: a replay's deployment.code lacks record, versions_sha256 or commits")
+        elif not (isinstance(code, dict) and {"repo", "commit", "dirty", "path"} <= set(code)):
             bad.append(f"{d.name}: deployment.code lacks repo, commit, dirty or path")
     if bad:
         problems.append("V24")

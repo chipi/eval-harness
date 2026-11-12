@@ -69,6 +69,7 @@ SIGNALS: list[tuple[int, int, dict[str, Any]]] = [
 CLOSES = [
     (0, 200, "API 500s on checkout"),
     (1, 200, "Cert expires in 9 days"),
+    (2, 100, "disk 97% on DB3"),  # RFC-031 P1: a reaction to the issue production filed, which v3 merges
     (2, 180, "API 500s on checkout"),
 ]
 #: Where the reference set says production was wrong: the info alert on day 1 should have filed nothing.
@@ -273,18 +274,30 @@ def main() -> int:
     adapter = rel(HERE / "replay_filing.py")
     replay = (
         "dataset_id: filing_history_v1\ngoal: filing\nadapter: {adapter}\nmodel_record: toy_filing\n"
-        "replay: {{order: [ts], time_field: started, support: [replay_world.py]{commit}}}\n"
+        "replay: {{order: [ts], time_field: started, support: [replay_world.py]{commit}{hide}}}\n"
         "params:\n  world: {world}\n"
     )
     world = rel(out / "frozen")
     write_data(
         "configs/filing_replay_v1.yaml",
-        "config_id: filing_replay_v1\n" + replay.format(adapter=adapter, commit="", world=world),
+        "config_id: filing_replay_v1\n" + replay.format(adapter=adapter, commit="", hide="", world=world),
+    )
+    # RFC-031 P1: production's own reopens inside the replayed window hidden; the replay's own stand in for them.
+    hidden = ", hide: {kinds: [reopened]}"
+    write_data(
+        "configs/filing_replay_hidden_v1.yaml",
+        "config_id: filing_replay_hidden_v1\n"
+        + replay.format(adapter=adapter, commit="", hide=hidden, world=world),
+    )
+    write_data(
+        "configs/filing_candidate_v3_hidden.yaml",
+        "config_id: filing_candidate_v3_hidden\n"
+        + replay.format(adapter=adapter, commit=f", commit: {commits[-1]}", hide=hidden, world=world),
     )
     write_data(
         "configs/filing_candidate_v3.yaml",
         "config_id: filing_candidate_v3\n"
-        + replay.format(adapter=adapter, commit=f", commit: {commits[-1]}", world=world),
+        + replay.format(adapter=adapter, commit=f", commit: {commits[-1]}", hide="", world=world),
     )
     write_data(
         "configs/filing_production_v1.yaml",

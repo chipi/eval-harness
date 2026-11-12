@@ -268,6 +268,12 @@ that can move a result is never a patch release without saying so under **Change
   drops a label silently; a rule's `under: action` keeps production's action, and a run or rescore against the set
   leaves out an item where the variant acted otherwise ("not scorable under this variant", recorded).
 
+- **Replays with production's own writes hidden, and the history confound** (RFC-031 P1): `replay.hide: {kinds:
+  [...]}` hands the adapter what to hide (production's own writes of those kinds inside the replayed window), as part
+  of its identity, so only a faithfulness record made with it lets the replay be scored; an adapter marks the items
+  where a variant met a person's reaction to an action it did not take, and the run and every score on it say how
+  many (`history_confound`, the ids in `confound.jsonl`, never a held-out side's). The replay example shows both.
+
 ### Changed
 
 - **One `evh migrate` brings a project to 0.8.0's formats**, in four steps (runs, datasets, records, fingerprints),
@@ -345,6 +351,9 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **`validate` V24 failed every replay run**: it required a run's `deployment.code` to be one checkout (repo, commit,
+  dirty, path), and a replay's (RFC-030) is its code record, the record's versions' hash and the commits it ran. The
+  replay test read only V26's line of `validate`; it now holds V24 too.
 - **`budget-check`'s cached answer timed recomputes**: the warm-up stops at 3/4 of the cache's 32 MB (151 of this
   repository's 2,931 catalog links), so most sampled links were computed on the request, and the median followed the
   runner's speed (26 to 53 ms against 50). Each link is now asked once and then timed (0.5 ms); the check prints how

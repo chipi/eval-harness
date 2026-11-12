@@ -55,7 +55,8 @@
         "time_field": {"type": "string"},
         "version_field": {"type": "string"},
         "support": {"type": "array", "items": {"type": "string"}},
-        "commit": {"type": "string", "minLength": 4}
+        "commit": {"type": "string", "minLength": 4},
+        "hide": {"type": "object", "description": "Production's own writes of these kinds, made inside the replayed window, hidden from the replay (RFC-031 P1); part of the adapter's identity, so the faithfulness record must be made with it.", "additionalProperties": false, "required": ["kinds"], "properties": {"kinds": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "window": {"const": "replayed"}}}
       }
     },
     "model_record": {"type": "string", "description": "The model record this arm runs (RFC-020, optional): data/models/<id>.yaml. Its settings go under the config's params (the config wins); `model` comes from its first alias when params give none."},

@@ -109,6 +109,7 @@ def _replay_of(m: dict) -> dict | None:
         "candidate": code.get("candidate"),
         "commits": len(code.get("commits") or {}),
         "faithfulness": m.get("faithfulness"),
+        "history_confound": m.get("history_confound"),
     }
 
 

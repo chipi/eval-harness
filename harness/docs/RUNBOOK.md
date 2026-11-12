@@ -1813,6 +1813,19 @@ each item at the commit that ran it, and scores the replay only once it is shown
   refused.
 - `evh faithfulness-show --model ID [--n N]` prints a record whole (the disagreements, who named which, the
   coverage); a replay's arm page names its code record and its faithfulness. `validate` V26 checks the records.
+- **Production's own writes, hidden** ([RFC-031](../../docs/rfc/RFC-031-held-out-discipline-and-outcome-labels.md)
+  P1). A frozen history carries production's own writes (its labels, its reopens); a variant replayed over it sees
+  them and acts on production's decisions instead of its own (the fleet's stale check nudged nothing at 10 and 14
+  days, because the frozen tracker carried production's own stale labels). `replay: {…, hide: {kinds: [reopened]}}`
+  passes the adapter `params["hide"]` (`kinds`, and `since`: the first replayed item's time); its stand-in hides
+  production's own writes of those kinds made since then, the replay's own stand in for them, and a person's stay
+  (they are history). The setting is part of the adapter's identity, so the gate needs a faithfulness record made with
+  it: the default variant with hiding on must still reproduce production before any variant counts.
+- **The history confound**: hiding cannot remove a person's reaction to an action production took and a variant did
+  not. The adapter marks each such item (`Result.extra["history_confound"] = 1`); the run records `history_confound:
+  {items, of}` and writes the ids to `confound.jsonl` beside it (a count only on a held-out side), and the run and
+  every score on it say "history confound: N of M". `examples/replay-filing/` shows both (`filing_replay_hidden_v1`,
+  `filing_candidate_v3_hidden`).
 
 ## 16. Set up a model before you test it
 

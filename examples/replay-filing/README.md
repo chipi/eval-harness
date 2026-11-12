@@ -45,6 +45,11 @@ python examples/replay-filing/mutants.py --system replay-filing/system --product
 
 ## What it shows
 
+- **Production's own writes, hidden (RFC-031 P1).** `filing_replay_hidden_v1` hides production's own reopens made inside the
+  replayed window (`replay.hide: {kinds: [reopened]}`): the replay's own reopens stand in for them and still agree with
+  production on all 20, which `evh faithfulness` must show for this config before it is scored. `filing_candidate_v3_hidden`
+  merges the alert production filed at d05 into an existing issue; a person closed production's issue on day 3, a
+  reaction to an action the candidate never took: its history confound, 1 of 20.
 - **Each decision at its commit.** The replay at the recorded commits agrees with production on all 20: the reopen
   after a person closed an issue, the v2 key that files a new issue for an alert v1 had filed under another key, the
   v3 info rule. Run every decision at v3 instead (the candidate) and they differ: that difference is what a change

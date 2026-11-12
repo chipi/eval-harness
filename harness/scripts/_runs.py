@@ -109,6 +109,8 @@ def score_of(row: dict, metric: str) -> float | None:
 #: Items each arm's runs left unscored this process: its action differed from production's, under which their labels
 #: hold (RFC-031 L3). {config_id: item ids}; the command says it (`_jsonout`).
 NOT_SCORABLE: dict[str, set[str]] = {}
+#: A replay arm's history confound (RFC-031 P1): {config_id: {items, of}}, said by the command.
+CONFOUND: dict[str, dict[str, int]] = {}
 
 
 def per_item(
@@ -131,6 +133,8 @@ def per_item(
         datasets.add(str((m or {}).get("dataset_id") or ""))
         if (m or {}).get("not_scorable"):  # RFC-031 L3: said by the command (_jsonout)
             NOT_SCORABLE.setdefault(str(m.get("config_id")), set()).update(m["not_scorable"])
+        if ((m or {}).get("history_confound") or {}).get("items"):  # RFC-031 P1: said by the command
+            CONFOUND[str(m.get("config_id"))] = dict(m["history_confound"])
         for row in item_rows(d, strict=strict):
             v = score_of(row, metric)
             if v is None or (keep is not None and row["item_id"] not in keep):

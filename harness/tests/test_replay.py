@@ -377,8 +377,10 @@ try:
     v_bad = evh("validate")
     _runstore.write_text(proj, ex, before)
     check(
-        "validate V26: the faithfulness records pass; an exception naming an item that agreed fails",
+        "validate V26: the faithfulness records pass; an exception naming an item that agreed fails; V24 takes a "
+        "replay's code part (its record and commits, not one checkout)",
         "ok   V26" in v_ok.stdout
+        and "FAIL V24" not in v_ok.stdout
         and "FAIL V26" in v_bad.stdout
         and "'d01', not one of its disagreements" in v_bad.stdout,
         (v_ok.stdout[-600:], v_bad.stdout[-600:]),

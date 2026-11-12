@@ -122,6 +122,13 @@ def _say_exposed() -> None:
             )
         if _ACTIVE is not None:
             _ACTIVE.values["not_scorable"] = {c: len(ids) for c, ids in sorted(_runs.NOT_SCORABLE.items())}
+    for cid, hc in sorted(_runs.CONFOUND.items()):
+        print(
+            f"  note: {cid}: history confound: {hc['items']} of {hc['of']} item(s) met a human reaction to an action "
+            "production took and this variant did not (RFC-031)"
+        )
+    if _runs.CONFOUND and _ACTIVE is not None:
+        _ACTIVE.values["history_confound"] = dict(sorted(_runs.CONFOUND.items()))
     if not _exposure.LEFT:
         return
     _exposure.say()

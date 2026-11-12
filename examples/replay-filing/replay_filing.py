@@ -61,6 +61,10 @@ def warmup(params: dict[str, Any]) -> None:
         ledger=str(Path(tempfile.mkdtemp(prefix="replay-filing-")) / "filed.json"),
         filing=None,
     )
+    hide = params.get("hide") or {}
+    if hide:  # RFC-031 P1: production's own writes of these kinds, inside the replayed window, are hidden
+        world.hide_kinds = set(hide.get("kinds") or [])
+        world.hide_since = replay_world.moment(hide["since"]) if hide.get("since") else None
 
 
 def call_system(text: str, params: dict[str, Any]) -> Result:
@@ -78,9 +82,21 @@ def call_system(text: str, params: dict[str, Any]) -> Result:
     gh.create_as = fields.get("production_issue")
     gh.writes = []
     out = _S["filing"].file(json.loads(text))
+    extra: dict[str, float] = {}
+    if params.get("hide"):
+        # The history confound (RFC-031 P1): production filed an issue here, this replay did not, and a person
+        # closed that issue afterwards: a reaction to an action this variant never took.
+        pi = fields.get("production_issue")
+        issue = _S["world"].issues.get(int(pi)) if pi else None
+        reacted = bool(issue) and any(
+            e.get("by") == "person" and replay_world.moment(e["at"]) > replay_world.moment(fields["ts"])
+            for e in issue["events"]
+        )
+        extra["history_confound"] = 1.0 if pi and not out.startswith("create") and reacted else 0.0
     return Result(
         output=out,
         cost_usd=0.0,
+        extra=extra,
         meta={"commit": code["commit"][:12], "changed": code["changed"], "writes": gh.writes},
     )
 

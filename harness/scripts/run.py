@@ -659,6 +659,14 @@ def one_pass(
     }
 
 
+def _confound(rows: list[dict[str, Any]]) -> dict[str, int] | None:
+    """A replay's history confound (RFC-031 P1): how many rows its adapter marked, of how many; None when it marks none."""
+    marked = [r for r in rows if "history_confound" in r]
+    if not marked:
+        return None
+    return {"items": sum(1 for r in marked if r.get("history_confound") == 1.0), "of": len(rows)}
+
+
 def _smoke_cost(cfg: dict[str, Any]) -> dict[str, Any] | None:
     """What the last `evh arm-smoke` of this config measured, from its model record: {per_item_usd, items, at,
     model_record}; None when the config names no record, the record holds no smoke of it, or it priced nothing."""
@@ -1413,10 +1421,26 @@ def _run(args: argparse.Namespace) -> int:
             resume=result.get("resume") or None,
             failed_items=result.get("failed_items") or None,
             not_scorable=result.get("not_scorable") or None,
+            history_confound=_confound(result["predictions"]),
             repeat_index=(i + 1) if args.repeat > 1 else None,
             faithfulness=faith,
         )
         write_json(run_dir / "metrics.json", metrics)
+        if (metrics.get("history_confound") or {}).get("items"):
+            hc = metrics["history_confound"]
+            print(
+                f"  note: history confound: {hc['items']} of {hc['of']} item(s) met a human reaction recorded after "
+                "an action production took and this variant did not (RFC-031): its score there reads that reaction"
+            )
+            from evaluation_harness import _exposure  # noqa: PLC0415
+
+            if not _exposure.applies(
+                cfg["dataset_id"]
+            ):  # a held-out side's ids stay off the record: a count only
+                ids = [r["item_id"] for r in result["predictions"] if r.get("history_confound") == 1.0]
+                _store.write_text(
+                    run_dir / "confound.jsonl", "".join(json.dumps({"item_id": i}) + "\n" for i in ids)
+                )
         made.append(run_dir)
         written.append(
             {

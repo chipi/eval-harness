@@ -33,11 +33,24 @@ class World:
         self.reopened: dict[int, dt.datetime] = {}
         self.created: dict[int, dt.datetime] = {}
         self.next_synthetic = SYNTHETIC_FROM
+        # RFC-031 P1: production's own writes ("by": "fleet") of these kinds, made since the replayed window began, are
+        # hidden; the replay's own writes stand in for them, and a person's stay (they are history).
+        self.hide_kinds: set[str] = set()
+        self.hide_since: dt.datetime | None = None
 
     @classmethod
     def from_folder(cls, folder: str | Path) -> World:
         lines = (Path(folder) / "issues.jsonl").read_text(encoding="utf-8").splitlines()
         return cls([json.loads(x) for x in lines if x.strip()])
+
+    def hidden(self, e: dict[str, Any]) -> bool:
+        """A write production itself made, of a hidden kind, inside the replayed window."""
+        return (
+            e.get("by") == "fleet"
+            and e.get("type") in self.hide_kinds
+            and self.hide_since is not None
+            and moment(e["at"]) >= self.hide_since
+        )
 
     def state(self, n: int, at: dt.datetime) -> str:
         issue = self.issues.get(int(n))
@@ -48,6 +61,8 @@ class World:
         for e in issue["events"]:
             if moment(e["at"]) > at:
                 break
+            if self.hidden(e):
+                continue
             if e["type"] == "closed":
                 state, closed_at = "closed", moment(e["at"])
             elif e["type"] == "reopened":
