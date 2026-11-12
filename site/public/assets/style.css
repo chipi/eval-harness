@@ -102,7 +102,7 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.035em; margin: 0; }
 .sketch-key .ring-i { background: transparent; border: 2px solid var(--ink); width: 12px; height: 12px; }
 .dek { font-size: clamp(18px, 2vw, 22px); line-height: 1.5; color: var(--ink-2); max-width: 44rem; margin: 0; }
 /* The notes under a lede share its width: at 66ch of their smaller type they ran a narrow, tall column. */
-.dek-note { font-size: 15px; line-height: 1.5; color: var(--muted); max-width: 44rem; margin: 14px 0 0; }
+.dek-note { font-size: 15px; line-height: 1.5; color: var(--muted); max-width: 66ch; margin: 14px 0 0; }
 .dek + .dek, .dek-note + .dek { margin-top: 14px; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 72px; border-top: 1px solid var(--hair); }
 .stat { padding: 22px 20px 0 0; border-right: 1px solid var(--hair); margin-right: 20px; }
@@ -445,7 +445,7 @@ body:has(.onpage) section[id], body:has(.onpage) .chapter { scroll-margin-top: 1
   .stats { margin-top: 36px; }
   .facts { grid-template-columns: 1fr 1fr; grid-auto-flow: row dense; }
   .facts .fact:nth-child(1), .facts .fact:nth-child(3), .facts .fact:nth-child(4), .facts .fact:nth-child(5) { grid-column: 1 / -1; }
-  pre.term { font-size: 12.5px; padding: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre.term { font-size: 12.5px; padding: 14px; }
   .card { min-height: 0; padding: 20px; }
   .doors .card { min-height: 0; }
   .habit-card { padding: 16px 18px 18px; }
@@ -563,11 +563,9 @@ footer .wrap.foot { display: block; }
 /* the site's left-out critique items (2026-11-12): the skip link; the arm key under section 01's lede */
 .skip { position: absolute; left: 8px; top: -48px; z-index: 50; padding: 8px 12px; border-radius: 6px; background: var(--accent);
   color: var(--accent-ink); font: 600 13px/1 var(--mono); text-decoration: none; }
-.skip:focus { top: 8px; }
+.skip:focus { top: 72px; }
 .skip:hover { color: var(--accent-ink); }
 main:focus { outline: none; }
-.lede-note { color: var(--muted); font-size: 15px; max-width: 70ch; margin: -32px 0 48px; }
+.lede-note { color: var(--muted); font-size: 15px; max-width: 66ch; margin: -32px 0 48px; }
 .lede-note dfn { font-style: normal; font-weight: 600; color: var(--ink); }
 
-/* the site's third critique (2026-11-12): a terminal's long line (the pinned install) wraps instead of being cut off */
-pre.term { white-space: pre-wrap; overflow-wrap: anywhere; }

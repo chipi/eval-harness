@@ -251,7 +251,7 @@ def strip(exp: dict, width: int = 1000, height: int = 92, title: bool = True, co
     dx = min(max(x(d["score"]), left + half), right - half)
     out.append(
         f'<circle cx="{x(d["score"]):.1f}" cy="{y}" r="11" class="ring"/>'
-        f'<text x="{dx:.1f}" y="{y - 18}" text-anchor="middle" class="t-ink" font-size="{fs}">most expensive · {ordinal(d["rank"])} · {d["score"]:.3f}</text>'
+        f'<text x="{dx:.1f}" y="{y - 18}" text-anchor="middle" class="t-ink" font-size="{fs}">{"dearest run here" if exp["slug"] == "scifact" else "most expensive"} · {ordinal(d["rank"])} · {d["score"]:.3f}</text>'
     )
     if t["arm"] != d["arm"]:
         out.append(
