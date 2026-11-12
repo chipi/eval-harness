@@ -487,13 +487,33 @@ def _declared_together(base: Path, configs: set) -> bool:
     return reach == configs
 
 
+def _declared_in_configs() -> dict[str, str]:
+    """config_id -> the config it must reproduce, as each config file declares it today."""
+    import yaml  # noqa: PLC0415
+
+    out: dict[str, str] = {}
+    for f in sorted(_store.glob(CONFIGS, "*.yaml")) if _store.is_dir(CONFIGS) else []:
+        try:
+            doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
+        except yaml.YAMLError:
+            continue  # V1 reports the file
+        if isinstance(doc, dict) and doc.get("config_id") and isinstance(doc.get("expect_identical_to"), str):
+            out[str(doc["config_id"])] = doc["expect_identical_to"]
+    return out
+
+
 def _guards_in(base: Path) -> list[tuple]:
-    """(config_id, the config it must reproduce, its run directory) for every run in `base` that declares one."""
+    """(config_id, the config it must reproduce, its run directory) for every run in `base` that declares one: the
+    run's own record, else its config's declaration (the fleet's beta: runs made before the config declared it are
+    frozen, and the guard holds for them too)."""
     out = []
+    by_config = _declared_in_configs()
     for run in sorted(_store.iterdir(base)):
         m = run / "metrics.json"
-        if _store.is_file(m) and (d := parsed(m)) is not None and d.get("expect_identical_to"):
-            out.append((d.get("config_id"), d["expect_identical_to"], run))
+        if _store.is_file(m) and (d := parsed(m)) is not None:
+            target = d.get("expect_identical_to") or by_config.get(str(d.get("config_id")))
+            if target:
+                out.append((d.get("config_id"), target, run))
     return out
 
 

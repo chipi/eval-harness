@@ -128,6 +128,34 @@ try:
         shutil.rmtree(f)
     (cfgs / "guard.yaml").unlink()
 
+    # The fleet's beta (F2): a guard's runs made before 0.8.0 do not carry the declaration, and runs are frozen. The
+    # config's own `expect_identical_to` declares it for them: V5 reads the pair as the guard, not as a copied result.
+    (cfgs / "old_guard.yaml").write_text(
+        "config_id: tickets_oldguard_v1\ndataset_id: tickets_v1\n"
+        "params:\n  provider: echo\n  sentences: 1\n  commit: 8213775\ngoal: tickets_summary\n"
+    )
+    r = evh("run", "--config", "data/configs/old_guard.yaml", extra_env={"EVAL_BUILD_REF": "no-git-test"})
+    v = evh("validate")
+    check(
+        "setup: an undeclared pair with other params and the same outputs is V5's copied result",
+        r.returncode == 0 and "FAIL V5" in v.stdout and "tickets_oldguard_v1" in v.stdout,
+        out(r)[-300:] + v.stdout[-600:],
+    )
+    (cfgs / "old_guard.yaml").write_text(
+        (cfgs / "old_guard.yaml").read_text() + "expect_identical_to: tickets_lead1_v1\n"
+    )
+    v = evh("validate")
+    check(
+        "validate: a config's expect_identical_to declares the guard for its runs made before it (frozen, unchanged)",
+        "FAIL V5" not in v.stdout
+        and "1 regression guard(s) reproduce what they must" in v.stdout
+        and metrics_of("tickets_oldguard_v1").get("expect_identical_to") is None,
+        v.stdout[-600:],
+    )
+    for f in (proj / "data" / "runs").glob("tickets_oldguard_v1_*"):
+        shutil.rmtree(f)
+    (cfgs / "old_guard.yaml").unlink()
+
     # ── outside git: not determinable ─────────────────────────────────────────────────────────────────
     write_cfg("nogit.yaml", "tickets_nogit_v1", 2, HYP)
     r = evh("run", "--config", "data/configs/nogit.yaml", extra_env={"EVAL_BUILD_REF": "no-git-test"})

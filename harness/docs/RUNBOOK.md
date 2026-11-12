@@ -386,7 +386,8 @@ expect_identical_to: my_config_v1   # its runs must reproduce that config's, ite
 with no effect; with the declaration it reads them as the agreement asked for, and fails the guard instead when its
 per-item results or its outputs differ from the latest run of the config it names on the same dataset ("must
 reproduce my_config_v1: its outputs differ from …"). The run records the key in `metrics.json`; it is not part of
-the fingerprint.
+the fingerprint. A run made before its config said so (runs are frozen) is held to the config's declaration as it
+stands.
 
 **What a run records as its cost.** Each call's `cost_usd` is the provider's bill when the
 response carries one (`usage.cost`), and otherwise the config's price table, tokens ×

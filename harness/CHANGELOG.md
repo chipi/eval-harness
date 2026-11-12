@@ -370,6 +370,9 @@ that can move a result is never a patch release without saying so under **Change
   baseline, was said to "record no other baseline run". Each is now named (the fleet's beta).
 - **`label-mutants` reported a join mutant it could not apply as SURVIVED**: a project's join mutant with a key the
   join does not read (`item_field`) ran the unchanged join. It is refused now, the key named (the fleet's beta).
+- **A regression guard could not cover runs made before it was declared**: V5 read `expect_identical_to` only from a
+  run's `metrics.json`, which a frozen run never gains. It now also reads the config's own declaration, so a guard
+  pair from before 0.8.0 is checked as the guard, not flagged as a copied result (the fleet's beta).
 - **`validate` V24 failed every replay run**: it required a run's `deployment.code` to be one checkout (repo, commit,
   dirty, path), and a replay's (RFC-030) is its code record, the record's versions' hash and the commits it ran. The
   replay test read only V26's line of `validate`; it now holds V24 too.
