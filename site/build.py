@@ -61,10 +61,18 @@ ICON = {
     ' 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>',
 }
 OUT = HERE / "public"
-#: The harness version the site describes, from the one place it is set.
+#: The harness version the site describes, from the one place it is set. A branch before its release reads X.Y.Z.devN,
+#: a tag nobody can install: the site then names the newest release the CHANGELOG dates, the pin a reader can use.
 VERSION = re.search(
     r'__version__ = "([^"]+)"', _store.read_text(ROOT / "harness" / "scripts" / "_version.py")
 ).group(1)
+if ".dev" in VERSION:
+    _dated = re.search(
+        r"^## (\d+\.\d+\.\d+) — \d{4}-\d{2}-\d{2}$",
+        _store.read_text(ROOT / "harness" / "CHANGELOG.md"),
+        re.MULTILINE,
+    )
+    VERSION = _dated.group(1) if _dated else VERSION
 #: Replaced at deploy (pages.yml) with the commit being served; a local build says so.
 BUILD_MARK = "build: local"
 
