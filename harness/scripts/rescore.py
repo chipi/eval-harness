@@ -124,6 +124,7 @@ def _rescore_row(
     score: Any,
     wants_source: bool,
     extra_keys: set[str],
+    unscorable: Any = None,
 ) -> tuple[dict[str, Any], bool, bool]:
     """One stored prediction row, scored again from its stored output: (the new row, whether
     a reference was found for it, whether its cost was re-read from the bill)."""
@@ -150,7 +151,12 @@ def _rescore_row(
         if _store.is_file(cand):
             source_text = _store.read_text(cand, encoding="utf-8", errors="replace")
             break
-    scored = score(output, reference, source_text) if wants_source else score(output, reference)
+    if unscorable is not None and unscorable(item_id, output):
+        scored: dict[
+            str, Any
+        ] = {}  # RFC-031 L3: its label holds only under production's action, and this run's differs
+    else:
+        scored = score(output, reference, source_text) if wants_source else score(output, reference)
     row: dict[str, Any] = {"item_id": item_id, **scored}
     for k, v in old.items():
         if k == "item_id" or k in scored:
@@ -442,9 +448,22 @@ def rescore_one(
     extra_keys = set(m.get("metric_kinds", {})) & {"truncated", "reasoning_tokens"}
     extra_keys |= {"truncated", "reasoning_tokens"}
     dropped: set = set()
+    from evaluation_harness._adapter import same_of  # noqa: PLC0415
+    from evaluation_harness._label_sets import action_bound  # noqa: PLC0415
+
+    bound = action_bound(ref_dir)
+    same = same_of(m.get("adapter"))
+    not_scorable: list[str] = []
+
+    def unscorable(iid: str, output: str) -> bool:
+        if iid in bound and not same(output, bound[iid]):
+            not_scorable.append(iid)
+            return True
+        return False
+
     for old in _runs.item_rows(d):
         row, had_ref, recost = _rescore_row(
-            old, d, ref_dir, mat, item_source, score, wants_source, extra_keys
+            old, d, ref_dir, mat, item_source, score, wants_source, extra_keys, unscorable if bound else None
         )
         refs_found += had_ref
         recosted += recost
@@ -512,6 +531,14 @@ def rescore_one(
     )
     if faith is not None:
         new["faithfulness"] = faith  # a replay's (RFC-030), as the records stood when it was re-scored
+    if not_scorable:
+        new["not_scorable"] = not_scorable
+        print(
+            f"  note: {d.name}: {len(not_scorable)} item(s) not scorable under this variant: their label holds only "
+            "under production's action, and this run acted otherwise (RFC-031); left out of its scores"
+        )
+    else:
+        new.pop("not_scorable", None)
     if run_metrics:
         new["run_metrics"] = run_metrics
     else:

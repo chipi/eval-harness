@@ -106,6 +106,11 @@ def score_of(row: dict, metric: str) -> float | None:
     return float(v)
 
 
+#: Items each arm's runs left unscored this process: its action differed from production's, under which their labels
+#: hold (RFC-031 L3). {config_id: item ids}; the command says it (`_jsonout`).
+NOT_SCORABLE: dict[str, set[str]] = {}
+
+
 def per_item(
     runs: Iterable[Run],
     metric: str,
@@ -124,6 +129,8 @@ def per_item(
     datasets: set[str] = set()
     for d, m in runs:
         datasets.add(str((m or {}).get("dataset_id") or ""))
+        if (m or {}).get("not_scorable"):  # RFC-031 L3: said by the command (_jsonout)
+            NOT_SCORABLE.setdefault(str(m.get("config_id")), set()).update(m["not_scorable"])
         for row in item_rows(d, strict=strict):
             v = score_of(row, metric)
             if v is None or (keep is not None and row["item_id"] not in keep):

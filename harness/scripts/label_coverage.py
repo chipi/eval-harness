@@ -30,13 +30,14 @@ from evaluation_harness._importers import parse_time
 from evaluation_harness._outcome_rules import load_rules, matches
 from evaluation_harness.dataset_from_capture import load_capture
 
-CLASSES = ("labelled", "skipped", "not_mature", "unmatched", "no_record")
+CLASSES = ("labelled", "skipped", "not_mature", "unmatched", "no_record", "gone")
 SAID = {
     "labelled": "labelled now",
     "skipped": "skipped by design",
     "not_mature": "not yet mature",
     "unmatched": "no rule matches",
     "no_record": "not in the capture",
+    "gone": "gone from the source, or its id reused",
 }
 
 
@@ -46,12 +47,25 @@ def _rule_text(n: int, r: dict) -> str:
     return f"rule {n}: {what}" + (f" ({', '.join(conds)})" if conds else "")
 
 
-def coverage(dataset_id: str, capture: str, rules: list) -> dict[str, Any]:
-    """Each item's class under the rules, the counts per class and per rule, and the maturing dates."""
+def coverage(
+    dataset_id: str, capture: str, rules: list, join: Any = None, from_set: str | None = None
+) -> dict[str, Any]:
+    """Each item's class under the rules, the counts per class and per rule, and the maturing dates; with `join`, the
+    outcome from another capture (RFC-031 L1, X3); with `from_set`, what a relabel of that set would add today."""
     ds = load_dataset(dataset_id)
     doc, recs = load_capture(capture)
     by_id = {r["id"]: r for r in recs}
-    captured = parse_time(doc.get("captured_at"))
+    captured = max(
+        (
+            t
+            for t in (
+                parse_time(doc.get("captured_at")),
+                parse_time(join.doc.get("captured_at")) if join else None,
+            )
+            if t is not None
+        ),
+        default=None,
+    )
     items: list[dict[str, Any]] = []
     lacking: Counter[str] = Counter()
     for it in ds["items"]:
@@ -60,7 +74,13 @@ def coverage(dataset_id: str, capture: str, rules: list) -> dict[str, Any]:
         if rec is None:
             items.append({"item_id": iid, "class": "no_record"})
             continue
-        out = rec.get("outcome") if isinstance(rec.get("outcome"), dict) else {}
+        out = dict(rec.get("outcome")) if isinstance(rec.get("outcome"), dict) else {}
+        if join is not None:
+            joined, gone = join.outcome(rec)
+            if gone:
+                items.append({"item_id": iid, "class": "gone", "last_seen": rec.get("created_at")})
+                continue
+            out |= joined
         t = parse_time(rec.get("created_at"))
         age = (captured - t).total_seconds() / 86400 if captured and t else None
         now = next((n for n, r in enumerate(rules, 1) if matches(r, out, age)), None)
@@ -98,6 +118,9 @@ def coverage(dataset_id: str, capture: str, rules: list) -> dict[str, Any]:
             lacking.update(row["lacks"])
         else:
             row |= {"class": "skipped" if rules[now - 1].get("skip") else "labelled", "rule": now}
+            if row["class"] == "labelled":
+                lab = rules[now - 1]["label"]
+                row["label"] = sorted(str(a) for a in lab) if isinstance(lab, list) else [str(lab)]
         items.append(row)
     counts = Counter(r["class"] for r in items)
     per_rule = []
@@ -114,9 +137,26 @@ def coverage(dataset_id: str, capture: str, rules: list) -> dict[str, Any]:
                 "last_matures": max((x["matures"] for x in waits), default=None),
             }
         )
+    relabel = None
+    if from_set:
+        from evaluation_harness._label_sets import answers  # noqa: PLC0415
+        from evaluation_harness.label_from_capture import _previous  # noqa: PLC0415
+
+        _prev, before = _previous(dataset_id, from_set)
+        now_lab = {x["item_id"]: x["label"] for x in items if x["class"] == "labelled"}
+        relabel = {
+            "from_set": from_set,
+            "in_set": len(before),
+            "would_add": sum(1 for i in now_lab if i not in before),
+            "would_change": sum(
+                1 for i, lab in now_lab.items() if i in before and sorted(answers(before[i])) != lab
+            ),
+            "no_longer_given": sum(1 for i in before if i not in now_lab),
+        }
     return {
         "dataset_id": dataset_id,
         "capture": capture,
+        "relabel": relabel,
         "captured_at": doc.get("captured_at"),
         "items": len(items),
         "counts": {c: counts.get(c, 0) for c in CLASSES},
@@ -137,12 +177,20 @@ def main() -> int:
     ap.add_argument(
         "--items", action="store_true", help="also list every item with its class (and maturing date)"
     )
+    from evaluation_harness import _outcome_join  # noqa: PLC0415
+
+    _outcome_join.add_arguments(ap)
+    ap.add_argument(
+        "--from-set", help="also say what a relabel of this earlier set would add and change today"
+    )
     ap.add_argument(
         "--json", action="store_true", help="the same answer as one JSON object: counts, rules and every item"
     )
     args = ap.parse_args()
     with _jsonout.collect("label-coverage", args.json):
-        cov = coverage(args.dataset_id, args.capture, load_rules(args.map))
+        cov = coverage(
+            args.dataset_id, args.capture, load_rules(args.map), _outcome_join.from_args(args), args.from_set
+        )
         print(
             f"{args.dataset_id}: {cov['items']} item(s), rules {args.map.as_posix()} over capture {args.capture}"
             + (f" (captured {cov['captured_at']})" if cov.get("captured_at") else "")
@@ -150,6 +198,12 @@ def main() -> int:
         if not _jsonout.table(["class", "items"], [[SAID[c], cov["counts"][c]] for c in CLASSES]):
             for c in CLASSES:
                 print(f"  {SAID[c]:20} {cov['counts'][c]}")
+        if cov.get("relabel"):
+            r = cov["relabel"]
+            print(
+                f"  a relabel of {r['from_set']} ({r['in_set']} label(s)) would add {r['would_add']} matured since, "
+                f"change {r['would_change']} (changed after maturing), and {r['no_longer_given']} are no longer given"
+            )
         if cov["lacking"]:
             print("  the unmatched lack: " + ", ".join(f"{f} ({n})" for f, n in cov["lacking"].items()))
         if not _jsonout.table(

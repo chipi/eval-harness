@@ -46,6 +46,7 @@ from evaluation_harness._adapter import (
     metric_directions,
     metric_kinds,
     primary_metric,
+    same_at,
     score_wants_source,
     transient_markers,
 )
@@ -366,6 +367,7 @@ def one_pass(
     score_run: Any = None,
     per_item: Any = None,
     once: bool = False,
+    same: Any = None,
 ) -> dict[str, Any]:
     """One pass over the dataset. ``score_failure`` is the adapter's optional score_failure(reference): what an item
     whose call failed scores (A5); without it, an empty answer's score. ``scored_against`` is (the folder, its tier) the caller chose: a label set with
@@ -389,6 +391,12 @@ def one_pass(
     params = dict(cfg.get("params") or {})
     params.setdefault("seed", idx)
     ref_dir, ref_tier = scored_against or _reference_for(ds["dataset_id"])
+    # Labels that hold only under production's action (RFC-031 L3): where this run acted otherwise it has no observed
+    # outcome of its own, so the item is not scored (counted: "not scorable under this variant").
+    from evaluation_harness._label_sets import action_bound  # noqa: PLC0415
+
+    bound = action_bound(ref_dir)
+    not_scorable: list[str] = []
 
     predictions: list[dict[str, Any]] = []
     outputs: dict[str, str] = {}
@@ -523,7 +531,14 @@ def one_pass(
         # hallucination check simply never ran and nothing said so.
         # A failed item scores as an empty answer (0 on most measures), or as the adapter's score_failure(reference)
         # says when it has one: a failure never makes an arm look better.
-        if failed and score_failure is not None:
+        if (
+            item["item_id"] in bound
+            and not failed
+            and not (same or (lambda a, b: a.strip() == b.strip()))(res.output, bound[item["item_id"]])
+        ):
+            scored = {}
+            not_scorable.append(item["item_id"])
+        elif failed and score_failure is not None:
             scored = score_failure(reference)
         else:
             scored = (
@@ -640,6 +655,7 @@ def one_pass(
         "capped_at": capped_at,
         "spent_usd": round(spent, 8),
         "failed_items": failed_items,
+        "not_scorable": not_scorable,
     }
 
 
@@ -1324,6 +1340,7 @@ def _run(args: argparse.Namespace) -> int:
                 primary=primary_metric(adapter_path, cfg.get("params") or {}),
                 per_item=_replay.item_params(plan) if plan is not None else None,
                 once=plan is not None,
+                same=same_at(adapter_path),
             )
         except BaseException as exc:
             _say_stopped(run_dir, len(ds.get("items") or []), args.config, exc)
@@ -1395,6 +1412,7 @@ def _run(args: argparse.Namespace) -> int:
             # replayed items nothing could.
             resume=result.get("resume") or None,
             failed_items=result.get("failed_items") or None,
+            not_scorable=result.get("not_scorable") or None,
             repeat_index=(i + 1) if args.repeat > 1 else None,
             faithfulness=faith,
         )
@@ -1412,6 +1430,11 @@ def _run(args: argparse.Namespace) -> int:
             }
         )
         per_repeat.append(result["scores"])
+        if result.get("not_scorable"):
+            print(
+                f"  note: {len(result['not_scorable'])} item(s) not scorable under this variant: their label holds "
+                "only under production's action, and this run acted otherwise (RFC-031); left out of its scores"
+            )
         print(
             f"  {run_id}  "
             + "  ".join(

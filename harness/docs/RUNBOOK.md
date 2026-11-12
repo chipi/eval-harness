@@ -102,6 +102,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | a dataset from a capture | `evh dataset-from-capture c1 --dataset-id … [--where F:V] [--one-per F] [--tag K=V]` |
 | labels from what happened afterwards | `evh label-from-capture --dataset-id … --capture c1 --map rules.yaml --set …` |
 | how far outcome rules label a dataset now | `evh label-coverage --dataset-id … --capture c1 --map rules.yaml` |
+| an outcome from another system; relabels that only add | `evh label-from-capture … --outcomes C2 --join F=F --within -1m,+15m` · `… --set s2 --from-set s1` · `evh label-coverage … --from-set s1` |
 | production's own decisions as an arm | `evh arm-from-capture --dataset-id … --capture c1 --as production_v1 [--like CONFIG]` ([§15b](#15b-evaluating-what-production-did)) |
 | what production must match | `evh deploy-sheet --config ARM [--capture C]` |
 | replay the code that ran, item by item | `evh run --config REPLAY` (a config with `replay:` and `model_record:` a `kind: code` record) · `evh models --model …` ([§15c](#15c-replaying-the-code-that-ran)) |
@@ -1624,6 +1625,26 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   outcome fields those items lack) or not in the capture; per rule, the items it takes now and when mature.
   `--items` lists every item; `--json` gives all of it. A rule waiting to mature that comes before the one that
   labels an item today counts the item as not yet mature, with today's label beside it: that label can change.
+- **An outcome from another system** ([RFC-031](../../docs/rfc/RFC-031-held-out-discipline-and-outcome-labels.md)
+  L1). A decision's outcome often lives on another object: the issue it filed, the errors that followed. Capture that
+  source too (its own importer: what was read is kept, hashed and dated), then join it: `label-from-capture` and
+  `label-coverage` take `--outcomes issues_2026_11 --join fingerprint=fingerprint [--within -1m,+15m]
+  [--outcomes-as issue]`, and the rules read `issue.<field>`, `issue.count` and `issue.created_at` beside the item's
+  own outcome (one name across later captures of the same source). `--identity first_seen=first_seen` makes a match
+  whose identity differs (an id reused after a project was deleted) "gone from the source, or its id reused"; with
+  `--gone-if-missing`, when the other capture holds the very objects the items name, an item none carries is gone too.
+  A gone item is its own class: never "no outcome", never a negative label (X3).
+- **Two dates per label, and relabels that only add** (L2). A rule's `date: FIELD` names when its outcome happened (an
+  issue's `closed_at`); a label becomes knowable at the item's time plus `min_age_days`, else when it happened. Both
+  are kept per item, and the set records `as_of`. A relabel is a new set: `label-from-capture … --set s2 --from-set s1`
+  keeps s1's labels, adds what matured since, and marks an item whose outcome changed after maturing (a reopen, a
+  recurrence) `changed_after_maturing`; a label s1 has that no rule gives today is refused unless `--keep-vanished`
+  keeps it, said. `label-coverage --from-set s1` says what a relabel would add and change today.
+- **A label that holds only under production's action** (L3). `under: action` on a rule: the outcome was observed
+  because production acted so (an issue's close reason exists because production filed it). With `--action-field F`
+  the set keeps production's action per item; a run or rescore against it does not score an item where its output is
+  not that action (the adapter's `same()`), says "N item(s) not scorable under this variant", and records them
+  (`not_scorable`). Related decisions (one fingerprint decided many times) count once with a goal's `cluster:`.
 - **The catalog's Captures page** lists every capture (records, importer, the time its records span,
   what it continues) with the datasets made from each; a dataset's origin links to it.
 - **Only the body becomes the item.** Fields are typed by a field set: `--fieldset S` keeps every field

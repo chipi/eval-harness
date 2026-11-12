@@ -260,6 +260,14 @@ that can move a result is never a patch release without saying so under **Change
   side's counts may be grouped by, `evh sealed-counts` counts by those fields per day (a capture's newer records too),
   and `evh dataset-seal-counts` lets a person add one.
 
+- **Labels from what happened later, in other systems** (RFC-031 L1-L3, X3): `label-from-capture` and
+  `label-coverage` join an outcome from another capture (`--outcomes C --join F=F --within -1m,+15m`, `--outcomes-as`
+  one name across later captures), with an identity check and a "gone from the source, or its id reused" class that is
+  never labelled; each label keeps when its outcome happened and when it became knowable, and the set its `as_of`; a
+  relabel (`--from-set`) keeps the earlier labels, adds what matured and marks what changed after maturing, and never
+  drops a label silently; a rule's `under: action` keeps production's action, and a run or rescore against the set
+  leaves out an item where the variant acted otherwise ("not scorable under this variant", recorded).
+
 ### Changed
 
 - **One `evh migrate` brings a project to 0.8.0's formats**, in four steps (runs, datasets, records, fingerprints),

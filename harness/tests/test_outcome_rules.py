@@ -234,7 +234,8 @@ try:
     check(
         "label-coverage: labelled now, skipped, not yet mature (with its date), unmatched (and what they lack), "
         "not in the capture",
-        cov.get("counts") == {"labelled": 2, "skipped": 1, "not_mature": 1, "unmatched": 1, "no_record": 1}
+        cov.get("counts")
+        == {"labelled": 2, "skipped": 1, "not_mature": 1, "unmatched": 1, "no_record": 1, "gone": 0}
         and young.get("rule") == 2
         and str(young.get("matures", ""))[:10] == ago(3 - 14)[:10]
         and young.get("today") is None

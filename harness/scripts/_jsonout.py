@@ -112,8 +112,16 @@ class _Tee:
 def _say_exposed() -> None:
     """After a command's body: the held-out items its scores left out (RFC-031 H1), said once, wherever it printed,
     and under result.values.left_out_exposed. Every score that leaves them out says so, whichever command."""
-    from evaluation_harness import _exposure  # noqa: PLC0415
+    from evaluation_harness import _exposure, _runs  # noqa: PLC0415
 
+    if _runs.NOT_SCORABLE:
+        for cid, ids in sorted(_runs.NOT_SCORABLE.items()):
+            print(
+                f"  note: {cid}: {len(ids)} item(s) not scorable under this variant (its action differs from "
+                "production's, under which their labels hold; RFC-031)"
+            )
+        if _ACTIVE is not None:
+            _ACTIVE.values["not_scorable"] = {c: len(ids) for c, ids in sorted(_runs.NOT_SCORABLE.items())}
     if not _exposure.LEFT:
         return
     _exposure.say()

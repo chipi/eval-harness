@@ -236,8 +236,12 @@ def write_set(
     guideline: Path | None = None,
     notes: dict[str, str] | None = None,
     rebuild: str | None = None,
+    item_info: dict[str, dict[str, Any]] | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Write a new label set and return its record. Refused when the set exists (a set is never edited: a
+    """Write a new label set and return its record. `item_info`: more per item beside its sha256s (a rule label's
+    dates, the action it holds under, a relabel's marks: RFC-031); `extra`: more on the set (the items gone from the
+    source). Refused when the set exists (a set is never edited: a
     correction is a new set), when an item is not in the dataset, when a label is empty or the source is unknown.
     `rebuild`: the texts are kept out of git (a .gitignore beside them), and this command writes them again."""
     if source.get("kind") not in SOURCES:
@@ -284,8 +288,12 @@ def write_set(
     # written into a hidden folder beside it, then renamed into place: never a half set.
     guide = guideline_of(guideline)
     texts = {iid: label_text(answers(str(labels[iid]))) + "\n" for iid in sorted(labels)}
-    rows: dict[str, dict[str, str]] = {
-        iid: {"sha256": _sha(t), "item_sha256": str(items[iid].get("source_sha256") or "")}
+    rows: dict[str, dict[str, Any]] = {
+        iid: {
+            **{k: v for k, v in ((item_info or {}).get(iid) or {}).items() if v is not None},
+            "sha256": _sha(t),
+            "item_sha256": str(items[iid].get("source_sha256") or ""),
+        }
         for iid, t in texts.items()
     }
     doc: dict[str, Any] = {
@@ -296,6 +304,7 @@ def write_set(
         "guideline": guide,
         "n_items": len(rows),
         "items": rows,
+        **(extra or {}),
     }
     from evaluation_harness._actor import actor  # noqa: PLC0415
 
@@ -482,3 +491,26 @@ def source_line(source: dict[str, Any]) -> str:
     kind = source.get("kind", "?")
     who = source.get("by") or source.get("run_id") or source.get("capture") or ""
     return f"{kind} · {who}" if who else kind
+
+
+def action_bound(ref_dir: Path | None) -> dict[str, str]:
+    """{item: production's action} for the labels that hold only under that action (RFC-031 L3: an outcome observed
+    because production acted so, as an issue's close reason exists because production filed it), read from a label
+    set's labels.json, or from the set a reference was promoted from. Empty for any other reference."""
+    if ref_dir is None:
+        return {}
+    doc_path = ref_dir / "labels.json"
+    if not _store.is_file(doc_path):
+        man = ref_dir / "manifest.json"
+        pf = (read_json(man).get("promoted_from") or {}) if _store.is_file(man) else {}
+        if not pf.get("labels") or not pf.get("dataset_id"):
+            return {}
+        doc_path = set_dir(str(pf["dataset_id"]), str(pf["labels"])) / "labels.json"
+        if not _store.is_file(doc_path):
+            return {}
+    rows = read_json(doc_path).get("items") or {}
+    return {
+        i: str(r["under_action"])
+        for i, r in rows.items()
+        if isinstance(r, dict) and r.get("under_action") is not None
+    }
