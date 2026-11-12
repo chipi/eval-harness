@@ -62,6 +62,8 @@ PATH_KINDS: dict[tuple[str, str], str] = {
     ("model-onboard", "--config"): NAME,
     ("sweep", "--configs"): NAME,
     ("exposure-add", "--from"): UPLOAD,
+    ("period-compare", "--config"): NAME,
+    ("periods", "--config"): NAME,
     ("exposure-check", "--out"): ARTIFACT,
     ("dataset-create", "--fields"): UPLOAD,
     ("dataset-create", "--manifest"): UPLOAD,

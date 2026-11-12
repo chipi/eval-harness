@@ -175,6 +175,14 @@ COMMANDS = {
         "record reads of a held-out side's items: each is left out of every later score on it (RFC-031)",
     ),
     "exposure": ("view_exposure.py", "a held-out side's exposure register, in counts (RFC-031)"),
+    "periods": (
+        "view_periods.py",
+        "a code record's deployed periods, numbered, dated, with their faithfulness (RFC-031)",
+    ),
+    "period-compare": (
+        "period_compare.py",
+        "a past period's items: production, the code that ran then, and a candidate, with the paired test (RFC-031)",
+    ),
     "exposure-check": (
         "exposure_check.py",
         "search the project's public repos for a held-out side's item ids: leaks the register lacks (RFC-031)",

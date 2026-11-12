@@ -323,6 +323,10 @@
                 },
                 "to": {
                   "type": "string"
+                },
+                "dated_by": {
+                  "enum": ["pull", "commit"],
+                  "description": "How `from` was dated (RFC-031 X2): the host's own pull time, or the commit's time when the pull is no longer recorded (approximate: a host's reflog keeps 90 days)."
                 }
               }
             }

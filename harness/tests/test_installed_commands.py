@@ -470,6 +470,12 @@ def main() -> int:
             # Studies (RFC-029): installed, each answers in words; the flow is test_study.py.
             ("studies", [], "ok:no studies"),
             ("studies", ["--study", "g/no_such"], "no study"),
+            ("periods", ["--model", "no_such"], "no model record 'no_such'"),
+            (
+                "period-compare",
+                ["--config", "no.yaml", "--candidate", "x", "--period", "1"],
+                "no config at no.yaml",
+            ),
             # Held-out discipline (RFC-031): installed, each answers in words; the flow is test_exposure.py.
             ("exposure", [], "ok:No held-out sides"),
             (

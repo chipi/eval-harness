@@ -107,6 +107,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | what production must match | `evh deploy-sheet --config ARM [--capture C]` |
 | replay the code that ran, item by item | `evh run --config REPLAY` (a config with `replay:` and `model_record:` a `kind: code` record) · `evh models --model …` ([§15c](#15c-replaying-the-code-that-ran)) |
 | is the replay faithful to production | `evh faithfulness --config REPLAY --production RUN` · `evh faithfulness-show --model …` · `evh faithfulness-name --model … --item … --cause "…"` |
+| a past period at its own code, beside a candidate | `evh periods --model …` · `evh period-compare --config REPLAY --candidate C --production P --period N` |
 
 ### Agents and jobs
 
@@ -1826,6 +1827,13 @@ each item at the commit that ran it, and scores the replay only once it is shown
   {items, of}` and writes the ids to `confound.jsonl` beside it (a count only on a held-out side), and the run and
   every score on it say "history confound: N of M". `examples/replay-filing/` shows both (`filing_replay_hidden_v1`,
   `filing_candidate_v3_hidden`).
+- **A past period at its own code** (RFC-031 P2). A window over several deployments mixes a fix's before and after.
+  `evh periods --model ID [--config REPLAY]` numbers the code record's deployed periods (each with how it was dated:
+  `dated_by: pull`, or `commit` when the host no longer records the pull, approximate) and counts the items in each;
+  `evh period-compare --config REPLAY --candidate C [--production P] --period N` (or `--from T --to T`) reads the
+  latest run of each on the period's items: what production recorded, the code that ran then (it must agree with
+  production on those items, or the report says it does not count) and the candidate, with the paired test between
+  the last two. Nothing is called: run them first.
 
 ## 16. Set up a model before you test it
 

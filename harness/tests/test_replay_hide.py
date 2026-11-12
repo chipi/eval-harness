@@ -10,6 +10,8 @@ without it has a faithfulness record, and scoring the hidden replay is refused u
 the default variant reproduces production on all 20 (the fleet's requirement before any variant counts). A
 candidate at the third commit, with the same hiding, records its history confound (items where production filed an
 issue it did not, and a person closed that issue later), writes their ids beside the run, and every score on it says so.
+P2: `evh periods` numbers the code record's deployed periods; `evh period-compare` puts a period's production, its
+code as it ran and the candidate side by side, and says when the as-run replay disagrees with production there.
 """
 
 import json
@@ -170,6 +172,61 @@ try:
         "a paired score on the candidate says its history confound",
         f"filing_candidate_v3_hidden: history confound: {hc.get('items')} of 20" in said(pt),
         said(pt)[-600:],
+    )
+
+    # ── P2: a past period at its own code, beside the candidate ───────────────────────────────────────────────────
+    per = evh(
+        "periods", "--model", "toy_filing", "--config", "data/configs/filing_replay_hidden_v1.yaml", "--json"
+    )
+    ps = values(per).get("periods") or []
+    check(
+        "periods: the code record's three deployed periods, numbered, with the items of the replay's dataset in each",
+        per.returncode == 0
+        and [x["period"] for x in ps] == [1, 2, 3]
+        and [x["items"] for x in ps] == [8, 6, 6],
+        said(per)[-500:],
+    )
+    PC = [
+        "period-compare",
+        "--production",
+        "filing_production_v1",
+        "--period",
+        "1",
+        "--metric",
+        "exact",
+        "--json",
+    ]
+    pc = evh(
+        *PC,
+        "--config",
+        "data/configs/filing_replay_hidden_v1.yaml",
+        "--candidate",
+        "filing_candidate_v3_hidden",
+    )
+    pv = values(pc)
+    check(
+        "period-compare: period 1's eight items; the replay agrees with production there, so it counts; production "
+        "and the code that ran score alike, 7 of 8 (gold fixes the info alert), the candidate beside them",
+        pc.returncode == 0
+        and pv.get("items") == 8
+        and pv.get("counts") is True
+        and pv.get("as_run") == 0.875
+        and pv.get("production") == 0.875
+        and isinstance(pv.get("candidate"), float)
+        and pv.get("delta") is not None,
+        said(pc)[-600:],
+    )
+    bad_pc = evh(
+        *PC,
+        "--config",
+        "data/configs/filing_candidate_v3_hidden.yaml",
+        "--candidate",
+        "filing_replay_hidden_v1",
+    )
+    check(
+        "period-compare: a 'code that ran' that disagrees with production on the period (v3 merges d05) does not count",
+        bad_pc.returncode == 0 and values(bad_pc).get("counts") is False and "DOES NOT COUNT" in said(bad_pc),
+        said(bad_pc)[-500:],
     )
     _runstore.unlink(proj, "configs/filing_bad_hide_v1.yaml")
     v = evh("validate")

@@ -274,6 +274,11 @@ that can move a result is never a patch release without saying so under **Change
   where a variant met a person's reaction to an action it did not take, and the run and every score on it say how
   many (`history_confound`, the ids in `confound.jsonl`, never a held-out side's). The replay example shows both.
 
+- **A past period at its own code, beside a candidate** (RFC-031 P2): `evh periods --model ID` numbers a code
+  record's deployed periods (with how each was dated, `dated_by: pull | commit`) and counts a replay's items in each;
+  `evh period-compare` reads a period's production, its code as it ran and a candidate, refuses to count when the
+  replay disagrees with production there, and gives the paired test on that period's items only.
+
 ### Changed
 
 - **One `evh migrate` brings a project to 0.8.0's formats**, in four steps (runs, datasets, records, fingerprints),
