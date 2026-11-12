@@ -488,7 +488,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
         + cb.table(
             "arms",
             [
-                "",
+                '<span class="vh">pick</span>',
                 "arm",
                 "how measured",
                 "dataset",

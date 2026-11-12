@@ -824,3 +824,6 @@ tr.gfold { display: none; }
 tr.grouphead [data-gfold] .btn { margin-left: 8px; }
 tr.emptyrow td { padding: 18px 12px; color: var(--ink-2); }
 tr.emptyrow .btn { margin-left: 8px; }
+
+/* text for a screen reader only (a column head's name where the column shows no heading) */
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

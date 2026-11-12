@@ -406,7 +406,8 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
     2026-11-12).
   - The comparison names its correction ("Holm across 28; the p shown is raw").
   - An arm is opened by its name, a button, and its panel opens as the row under it. The chart's dots are for the
-    mouse; the table is the keyboard and screen-reader path.
+    mouse; the table is the keyboard and screen-reader path (a dot in the tab order would repeat every arm button).
+    On a phone a chart's words are set to stay near 11px as the drawing scales down.
   - Focus goes where each action leads: an arm's name after opening or closing it; the question after opening a
     round; the results after its run; the row after a retire; the new answer, in view, after a close.
   - The rounds are a tab list with a panel and arrow keys.

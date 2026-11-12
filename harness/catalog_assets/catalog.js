@@ -39,7 +39,7 @@ const c=document.querySelector(`[data-count="${inp.dataset.filter}"]`);if(c)c.te
    A cell's value is its own data-v, else its first [data-v]'s; a blank (none, or —) sorts last both ways; a value
    with data-g (a measure's name) sorts among its own group's; group headings stay out (group.js regroups after). */
 document.querySelectorAll('table.sortable th').forEach(th=>{th.setAttribute('aria-sort','none');
-if(!th.querySelector('input,button')&&th.textContent.trim()){const b=document.createElement('button');b.type='button';b.className='sortbtn';
+if(!th.querySelector('input,button,.vh')&&th.textContent.trim()){const b=document.createElement('button');b.type='button';b.className='sortbtn';
 while(th.firstChild)b.appendChild(th.firstChild);th.appendChild(b);}
 th.addEventListener('click',ev=>{if(ev.target.closest('input')||!th.querySelector('.sortbtn'))return;const tb=th.closest('table').tBodies[0],i=th.cellIndex;
 const dir=th.dataset.dir==='asc'?'desc':'asc';th.closest('tr').querySelectorAll('th').forEach(x=>{delete x.dataset.dir;x.setAttribute('aria-sort','none');});th.dataset.dir=dir;th.setAttribute('aria-sort',dir==='asc'?'ascending':'descending');

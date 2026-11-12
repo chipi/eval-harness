@@ -573,7 +573,9 @@ tile opens it grouped by config (`arms.html?group=config`).
   - Sorting: each column head holds a button (the head keeps its meaning); a value sorts by its number, a blank (—)
     last both ways, and **deciding measure** among its own measure's arms; a grouped table sorts inside each group.
     A free arm's **cost / item** is "$0", not a blank.
-  - The compare bar floats at the screen's foot while an arm is picked, its count announced.
+  - The compare bar floats at the screen's foot while an arm is picked, its count announced; a pick the filter, the
+    chips or a folded group hides stays picked and the bar says so ("2 picked, 1 of them not shown here"). The pick
+    column's head is named "pick" for a screen reader.
   - **role** badges: a result (leader, recommended) set solid, an arm left out (over a limit, not eligible,
     retired) drawn as an outline, a baseline plain; none in a status colour. A leader says how far it is from the
     rest: "leader, not significantly ahead of N" (the eligible arms whose test against it is not significant),

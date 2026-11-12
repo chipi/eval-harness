@@ -760,17 +760,22 @@ def marks(k: int, n: int) -> str:
     )
 
 
-def row_name(x: dict) -> str:
-    """A hero row in words, for a screen reader: the leader, the arms not significantly different from it, and where
-    the most expensive model finished."""
+def row_name(x: dict, tail: str = "Open the eval.") -> str:
+    """An eval's row in words, for a screen reader: the leader, the arms not significantly different from it, and
+    where the most expensive model finished (on SciFact, the most expensive of the twelve hosted models run)."""
     near = (
         f"{x['n_contenders']} other{'' if x['n_contenders'] == 1 else 's'} not significantly different from it"
         if x["n_contenders"]
         else "significantly ahead of every other"
     )
+    dearest = (
+        "the most expensive of the twelve hosted models run"
+        if x["slug"] == "scifact"
+        else "the most expensive model"
+    )
     return (
-        f"{x['bench']}: {x['top']['arm']} leads, {near}; the most expensive model, {x['dearest']['arm']}, finished "
-        f"{ordinal(x['dearest']['rank'])} of {x['n_arms']}. Open the eval."
+        f"{x['bench']}: {x['top']['arm']} leads, {near}; {dearest}, {x['dearest']['arm']}, finished "
+        f"{ordinal(x['dearest']['rank'])} of {x['n_arms']}. {tail}"
     )
 
 
@@ -1136,9 +1141,11 @@ def home(f: dict) -> str:
     )
     goal_links = " · ".join(f'<a href="{CATALOG}{x["goal"]["goal_page"]}">{e(x["bench"])}</a>' for x in exps)
     # Step 2: each benchmark as its own field, the same strips as the evals page.
+    # Each strip's dots tell their story to a pointer (a tooltip each); its link says it in words: the leader, the
+    # arms not significantly different from it, where the most expensive finished, and the eval's finding.
     benches = "".join(
-        f'<a class="bench-row reveal" href="evals/{x["slug"]}.html" aria-label="{e(x["bench"])}: '
-        f'{e(CARD[x["slug"]])}">{both(strip(x), strip(x, compact=True))}</a>'
+        f'<a class="bench-row reveal" href="evals/{x["slug"]}.html" aria-label="{e(row_name(x, CARD[x["slug"]]))}">'
+        f"{both(strip(x), strip(x, compact=True))}</a>"
         for x in exps
     )
     body = f"""

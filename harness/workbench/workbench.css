@@ -386,3 +386,7 @@ tr.retired td .verdict, tr.retired td .p { text-decoration: line-through; }
 .muted.fine { font-size: 12px; max-width: 72ch; }
 table.r4res .runof { font: 400 12px/1.4 var(--text); margin-top: 2px; }
 table.r4res td.acts { white-space: nowrap; }
+
+/* a chart's words on a phone: the drawing scales to about 0.56 of its 640 units there, so its 11-unit text came out
+   about 6px; 19 units keep it near 11px (the critique, 2026-11-12) */
+@media (max-width: 640px) { main svg[role="img"] { overflow: visible; } main svg[role="img"] text { font-size: 19px; } }
