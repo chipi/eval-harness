@@ -496,7 +496,9 @@ def _config_dirs() -> list[Path]:
     cfg = _common.ROOT / "config.yaml"
     try:
         listed = (
-            (yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}).get("configs") if cfg.is_file() else None
+            (yaml.safe_load(_store.read_text(cfg, encoding="utf-8")) or {}).get("configs")
+            if _store.is_file(cfg)
+            else None
         )
     except (yaml.YAMLError, AttributeError):
         listed = None  # a broken config.yaml is the store's own refusal
@@ -504,7 +506,7 @@ def _config_dirs() -> list[Path]:
     out = []
     for d in listed if isinstance(listed, list) else []:
         p = (root / str(d)).resolve()
-        if p.is_relative_to(root) and p.is_dir():
+        if p.is_relative_to(root) and _store.is_dir(p):
             out.append(p)
     return out
 
@@ -516,7 +518,7 @@ def _declared_in_configs() -> dict[str, str]:
 
     out: dict[str, str] = {}
     files = sorted(_store.glob(CONFIGS, "*.yaml")) if _store.is_dir(CONFIGS) else []
-    files += [f for d in _config_dirs() for f in sorted(d.glob("*.yaml"))]
+    files += [f for d in _config_dirs() for f in sorted(_store.glob(d, "*.yaml"))]
     for f in files:
         try:
             doc = yaml.safe_load(_store.read_text(f, encoding="utf-8"))
