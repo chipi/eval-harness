@@ -71,7 +71,7 @@ evh label-from-capture --dataset-id tickets_desk_v1 --capture desk_2026_10 \
     --map tutorial/production/outcomes.yaml --set desk_outcomes
 ```
 ```text
-data/labels/tickets_desk_v1/desk_outcomes: 5 of 6 item(s) labelled (1 skipped, 0 matched no rule, 0 not in the capture)
+data/labels/tickets_desk_v1/desk_outcomes: 5 of 6 item(s) labelled (1 skipped, 0 matched no rule, 0 not yet mature, 0 not in the capture)
 ```
 
 `outcomes.yaml` is a rule list, first match wins:
@@ -139,7 +139,7 @@ evh label-from-capture --dataset-id tickets_desk_v1 --capture desk_2026_11_outco
 ```
 ```text
 data/captures/desk_2026_11_outcomes: 6 record(s) from jsonl
-data/labels/tickets_desk_v1/desk_outcomes_2026_11: 5 of 6 item(s) labelled (1 skipped, 0 matched no rule, 0 not in the capture)
+data/labels/tickets_desk_v1/desk_outcomes_2026_11: 5 of 6 item(s) labelled (1 skipped, 0 matched no rule, 0 not yet mature, 0 not in the capture)
 ```
 
 The items are matched by id, so the dataset stays as it was frozen and only its labels move. A rule's
