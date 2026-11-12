@@ -20,7 +20,7 @@ colors:
   muted-light: "#66645e"
   hairline-light: "#dddbd3"
   highlighter-olive-light: "#3d5c00"
-  status-ok-light: "#12805a"
+  status-ok-light: "#0f7550"
   status-warn-light: "#9a6b00"
   status-bad-light: "#b23a26"
   gold-tier-bg: "#4a3a0c"
@@ -138,7 +138,9 @@ The site's palette for the page and the accent, and three status colours.
 - **Status OK** (`status-ok`): a check that holds (faithful, caught, set), a step's recorded value.
 - **Status Warn** (`status-warn`): something to read before trusting (a survivor, a part needing attention).
 - **Status Bad** (`status-bad`): a check that failed (significantly worse, refused).
-- Each has a darker light-theme step (`status-ok-light`, `status-warn-light`, `status-bad-light`).
+- Each has a darker light-theme step (`status-ok-light`, `status-warn-light`, `status-bad-light`). The ok step is
+  4.9:1 or more on every light surface, a selected row's included (the eval screen's third critique measured the
+  earlier `#12805a` at 4.2:1 there).
 
 ### Neutral
 

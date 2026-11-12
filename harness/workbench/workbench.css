@@ -15,7 +15,7 @@
     --page: #f6f5f1; --surface: #fcfcfb; --surface-2: #efeee9;
     --ink: #0b0b0b; --ink-2: #4a4945; --muted: #66645e; --hair: #dddbd3; --axis: #c3c2b7;
     --accent: #3d5c00; --accent-ink: #f6f5f1; --band: rgba(61, 92, 0, 0.12);
-    --ok: #12805a; --warn: #9a6b00; --bad: #b23a26;
+    --ok: #0f7550; --warn: #9a6b00; --bad: #b23a26;
   }
 }
 :root[data-theme="light"] {
@@ -23,7 +23,7 @@
   --page: #f6f5f1; --surface: #fcfcfb; --surface-2: #efeee9;
   --ink: #0b0b0b; --ink-2: #4a4945; --muted: #66645e; --hair: #dddbd3; --axis: #c3c2b7;
   --accent: #3d5c00; --accent-ink: #f6f5f1; --band: rgba(61, 92, 0, 0.12);
-  --ok: #12805a; --warn: #9a6b00; --bad: #b23a26;
+  --ok: #0f7550; --warn: #9a6b00; --bad: #b23a26;
 }
 
 * { box-sizing: border-box; }
@@ -378,3 +378,11 @@ main:focus { outline: none; }
 tr.retired td .verdict, tr.retired td .p { text-decoration: line-through; }
 .roundhead h2.kicker { font: 500 11px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0; }
 .roundhead p.question { font: 600 20px/1.3 var(--display); margin: 6px 0 0; }
+
+/* the eval screen's third critique (2026-11-12): the standing answer's amendment; step 4's picks said in body text;
+   r4's run under each arm's name and its actions beside it, so the table fits; the dry-run note's measure */
+.answer p.amend { margin: 8px 0 0; color: var(--ink-2); }
+.part .body p.picks { margin: 0 0 12px; max-width: 72ch; }
+.muted.fine { font-size: 12px; max-width: 72ch; }
+table.r4res .runof { font: 400 12px/1.4 var(--text); margin-top: 2px; }
+table.r4res td.acts { white-space: nowrap; }

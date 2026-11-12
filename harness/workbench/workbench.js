@@ -23,6 +23,9 @@
   const note = (text) => `<p class="mocknote">mockup: ${esc(text)}</p>`;
 
   // ── the help panel ───────────────────────────────────────────────────────
+  // It opens with focus on its close button (it sits after the screen) and gives focus back to what opened it.
+  let opener = null;
+  const shut = () => { if (help.hidden) return; help.hidden = true; document.querySelectorAll(".q[aria-expanded=true]").forEach((x) => x.setAttribute("aria-expanded", "false")); if (opener && opener.isConnected) opener.focus(); opener = null; };
   function openHelp(key, btn) {
     document.querySelectorAll(".q[aria-expanded=true]").forEach((b) => b.setAttribute("aria-expanded", "false"));
     const h = H[key];
@@ -33,22 +36,25 @@
       <dl>${row("What it is", h.what)}${row("Why it matters", h.why)}${row("Example", h.example)}${row("If it is wrong", h.wrong)}</dl>
       ${h.more ? `<p class="more">Read more: <a href="#docs">${esc(h.more)} ↗</a></p>` : ""}`;
     help.hidden = false;
+    opener = btn || document.activeElement; help.querySelector("[data-close]").focus();
   }
   function openWord(word) {
     help.innerHTML = `<header><h2>${esc(word)}</h2><button type="button" data-close aria-label="Close">×</button></header>
       <dl><div><dt>Meaning</dt><dd>${esc(G[word])}</dd></div></dl><p class="more"><a href="#glossary">Every word ↗</a></p>`;
     help.hidden = false;
+    opener = document.activeElement; help.querySelector("[data-close]").focus();
   }
   document.addEventListener("click", (e) => {
     const b = e.target.closest(".q");
     if (b) { openHelp(b.dataset.help, b); return; }
     const d = e.target.closest("dfn[data-word]");
     if (d) { openWord(d.dataset.word); return; }
-    if (e.target.closest("[data-close]")) { help.hidden = true; document.querySelectorAll(".q[aria-expanded=true]").forEach((x) => x.setAttribute("aria-expanded", "false")); }
+    if (e.target.closest("[data-close]")) shut();
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") help.hidden = true;
-    if (e.key === "Enter" && e.target.matches("dfn[data-word]")) openWord(e.target.dataset.word);
+    if (e.key === "Escape") shut();
+    // a glossary word is a button: Enter and Space open it (Space no longer scrolls the page)
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches("dfn[data-word]")) { e.preventDefault(); openWord(e.target.dataset.word); }
   });
 
   // ── the journey rail ─────────────────────────────────────────────────────
@@ -386,7 +392,7 @@ success_criteria:
   const armOf = (m) => M.arms.find((a) => a.rank === m.cnn_rank);
   const usd = (x, d = 4) => (x == null ? "—" : x === 0 ? "$0" : `$${x.toFixed(d)}`);
   const perM = (x) => (x == null ? "—" : x === 0 ? "$0" : `$${Math.round(x * 1e6).toLocaleString("en")}`);
-  const secs = (ms) => (ms == null ? "—" : ms < 100 ? `${(ms / 1000).toFixed(4)} s` : `${(ms / 1000).toFixed(1)} s`);
+  const secs = (ms) => (ms == null ? "—" : ms < 1 ? "<1 ms" : ms < 100 ? `${ms.toFixed(0)} ms` : `${(ms / 1000).toFixed(1)} s`);
   function screenModels() {
     if (!prepared()) { location.hash = "#hub"; return ""; }
     const all = !!S.allModels, chosen = new Set(S.models || []);
@@ -494,8 +500,8 @@ success_criteria:
   function screenEval() {
     if (!S.goal) { location.hash = "#start"; return ""; }
     const r4 = S.r4, tab = S.tab || (r4 ? "r4" : "r1");
-    // The answer so far is the latest closed round's, with the baseline it left (the critique: after r4 closed, four
-    // places named different baselines).
+    // The answer so far is the standing answer (r1's, with its cost guidance); a closed round amends it under it
+    // instead of replacing it, and the baseline it names is the one the latest round left (the owner, 2026-11-12).
     const promotedArm = r4 && r4.closed && r4.promoted ? M.arms.find((a) => a.config_id === r4.promoted) : null;
     const latest = r4 && r4.closed ? { id: "r4", text: r4.conclusion, base: promotedArm ? promotedArm.arm : "bart_l" } : { id: "r1", text: M.answer, base: "bart_l" };
     const tabs = [...M.rounds.map((r) => [r.id, `${r.id} · ${r.status}`]), ...(r4 ? [["r4", `r4 · ${r4.closed ? "closed" : "open"}`]] : [])];
@@ -522,7 +528,7 @@ success_criteria:
       <div class="kicker">Step 5 of 5 · ${esc(S.goal.goal_id)} · ${esc(ds() || "cnn_dailymail_200")}</div>
       <h1>The eval</h1>
       <p class="lead hintable">The goal measured on its dataset, in ${w("round", "rounds")}: each round asks one question, compares its ${w("arm", "arms")}, and ends in a decision kept with its reason. ${q("eval")}</p>
-      <div class="answer"><div class="kicker">the answer so far · from ${latest.id} · baseline ${esc(latest.base)}</div><p>${esc(latest.text)}</p></div>
+      <div class="answer"><div class="kicker">the answer so far · ${latest.id === "r4" ? "r1, amended by r4" : "from r1"} · baseline ${esc(latest.base)}</div><p>${esc(M.answer)}</p>${latest.id === "r4" ? `<p class="amend"><b>r4 added:</b> ${esc(latest.text)}</p>` : ""}</div>
       ${baselineLine()}
       <div class="tabs"><div role="tablist" aria-label="rounds" class="tablist">${tabs.map(([id, label]) => `<button type="button" role="tab" id="tab-${id}" data-tab="${id}" aria-controls="roundpanel" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}">${esc(label)}</button>`).join("")}</div>
         ${r4 ? "" : `<button type="button" class="btn primary" id="openr4">Open round r4</button>`}</div>
@@ -535,7 +541,7 @@ success_criteria:
     if (!b) return "";
     const who = b.actor && b.actor.type !== "unknown" ? `by ${b.actor.type}:${b.actor.name}` : "who promoted it was not recorded (before 0.8.0)";
     const reason = (b.reason || "").replace(/\.+$/, "");
-    const above = S.r4 && S.r4.closed ? S.r4.conclusion || "" : M.answer || "";
+    const above = M.answer || "";
     const fresh = reason && !above.startsWith(reason.slice(0, 40));
     const r4 = S.r4, moved = r4 && r4.closed && r4.promoted;
     return `<div class="note" style="margin-bottom:16px"><b>The baseline</b> ${q("eval.baseline")} ${moved ? `version ${b.current + 1}, promoted when r4 closed: ${esc((M.arms.find((a) => a.config_id === r4.promoted) || {}).arm || r4.promoted)}, because ${esc(r4.promoteWhy || "")}. Before it, ` : ""}version ${b.current} for this goal on ${esc(b.dataset)}: ${esc((b.promoted_from || "").replace(/_\d{8}T\d{6}Z$/, ""))}, promoted ${esc((b.promoted_at || "").slice(0, 10))}; ${esc(who)}${fresh ? `; its reason: ${esc(reason)}` : "; its reason is the answer above"}. Every later promotion is a new version with who and why; an earlier one comes back by rollback, never by editing.
@@ -551,6 +557,8 @@ success_criteria:
     const est = own.reduce((s, a) => s + a.usd_per_item * 200, 0);
     const ran = !!r4.ran, retired = r4.retired || {}, promoted = r4.promoted || null;
     const results = ran ? [base, ...own].sort((a, b) => a.rank - b.rank) : [];
+    // The baseline's own re-run on the same machine is what the pair tests compared against (its r1 run was a Mac's).
+    const baseRe = (M.reruns || {})[base.config_id];
     const CH = { prompt: "the prompt", model: "the model", temperature: "the temperature", max_tokens: "the most it may write" };
     const runOf = (a) => a.run_id;
     // A promotion needs what `evh round-close --promote` needs: the arm's own run in this round, significantly ahead of
@@ -566,12 +574,12 @@ success_criteria:
         : null;
     return `<div class="roundhead"><h2 class="kicker">round r4 · ${r4.closed ? `closed ${esc(r4.closedAt || "")} by you` : "open"} · from r1</h2>${r4.closed ? `<p class="question">${esc(r4.question || "")}</p>` : ""}</div>
       ${r4.closed ? "" : `<div class="form" style="margin-top:12px">${field("eval.question", `<input type="text" id="r4q" value="${esc(r4.question || "")}" placeholder="e.g. ${esc(H["eval.question"].example)}">`)}</div>`}
-      <div class="part" style="margin-top:18px"><div class="parthead"><span class="letter">1</span><h3>Its arms</h3><span class="grow"></span><span class="status">${own.length} local arms, each re-run${clones.length ? ` · ${clones.length} cloned` : ""} · the baseline carried from r1</span></div>
-        <div class="body"><div class="tablewrap"><table><thead><tr><th>arm</th><th>model</th><th class="num">dry run: 200 items</th></tr></thead><tbody>
+      <div class="part" style="margin-top:18px"><div class="parthead"><span class="letter">1</span><h3>Its arms</h3><span class="grow"></span><span class="status">${own.length} local arms, each re-run${clones.length ? ` · ${clones.length} cloned` : ""}${hosted.length ? ` · your ${hosted.length} pick${hosted.length === 1 ? "" : "s"} stay in r1` : ""}</span></div>
+        <div class="body">${hosted.length ? `<p class="picks">Your ${hosted.length} pick${hosted.length === 1 ? "" : "s"} from step 4 (${hosted.map((a) => esc(a.arm)).join(", ")}) ha${hosted.length === 1 ? "s" : "ve"} no re-run in the project, so this round re-runs the ${own.length} local arms that have one; ${hosted.length === 1 ? "it stays" : "they stay"} in r1, where ${hosted.length === 1 ? "it was" : "they were"} compared.</p>` : ""}<div class="tablewrap"><table><thead><tr><th>arm</th><th>model</th><th class="num">${ran ? "cost of 200 items" : "dry run: 200 items"}</th></tr></thead><tbody>
           <tr><td class="mono">bart_l <span class="tag gold">baseline</span></td><td class="mono">${esc(base.model)}</td><td class="num">carried, not re-run</td></tr>
           ${own.map((a) => `<tr><td class="mono">${esc(a.arm)}</td><td class="mono">${esc(a.model || "—")}</td><td class="num">${usd(a.usd_per_item * 200, 2)}</td></tr>`).join("")}
           ${clones.map((c) => { const f = M.arms.find((a) => a.config_id === c.from); return `<tr><td class="mono">${esc(f.arm)} · ${esc(c.change)} <span class="tag new">clone</span></td><td class="mono">${esc(f.model || "—")}</td><td class="num">${usd(f.usd_per_item * 200, 2)}</td></tr>`; }).join("")}</tbody></table></div>
-          <div class="muted" style="font-size:12px">Each estimate is the arm's real r1 cost per item × 200 (a clone's, its source's); a local arm costs nothing but the machine's time.${hosted.length ? ` The ${hosted.length} hosted arm${hosted.length === 1 ? "" : "s"} checked in step 4 (${hosted.map((a) => esc(a.arm)).join(", ")}) ha${hosted.length === 1 ? "s" : "ve"} no re-run in the project, so ${hosted.length === 1 ? "it stays" : "they stay"} in r1.` : ""}</div>
+          <div class="muted fine">Each estimate is the arm's real r1 cost per item × 200 (a clone's, its source's); a local arm costs nothing but the machine's time.</div>
           ${ran || r4.closed ? "" : `<details class="adv"><summary>Clone an arm and change one thing</summary><div class="inline" style="margin-top:10px">
             <select id="clfrom" aria-label="the arm to clone">${[...own].map((a) => `<option value="${esc(a.config_id)}">${esc(a.arm)}</option>`).join("")}</select>
             <select id="clwhat" aria-label="what changes">${Object.entries(CH).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select>
@@ -581,13 +589,15 @@ success_criteria:
         <div class="body">${ran ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" id="runr4" type="button" ${r4.question ? "" : "disabled"}>Run ${own.length} arms · about ${usd(est, 2)}</button><span class="muted" id="r4hint" style="font-size:13px">${r4.question ? "jobs on the server; you can close the page" : "write the round's question first"}</span></div><div id="runjob" role="status" aria-live="polite"></div>`}</div></div>
       <div class="part ${ran ? "" : "off"}"><div class="parthead"><span class="letter">3</span><h3 id="results-h">Results</h3>${q("eval.compare")}</div>
         ${ran ? `<div class="body">${note("each arm shows its own re-run (the project's Linux re-runs, compared with bart_l's by evh pair-test); a clone has no run, so no scores.")}
-          <div class="tablewrap"><table class="cmp r4res"><thead><tr><th>arm</th><th class="num">coverage</th><th>vs bart_l<small>one pair each, raw p; a promotion corrects over ${n} arms</small></th><th class="num">per 1M articles</th><th class="num">per article</th><th>its run</th><th></th></tr></thead><tbody>
-          ${results.map((a) => { const [v, k] = VERD(a); const rt = retired[a.config_id]; const isBase = promoted ? promoted === a.config_id : a === base; const rr = a !== base && M.reruns[a.config_id];
-            return `<tr class="${rt ? "retired" : ""}"><td class="mono" data-rowname="${esc(a.config_id)}">${esc(a.arm)} ${isBase ? '<span class="tag gold">baseline</span>' : ""}${rt ? `<div class="muted" style="font-size:12px">retired: ${esc(rt)}</div>` : ""}</td><td class="num">${(rr ? rr.coverage : a.coverage).toFixed(3)}</td>
-              <td>${rr ? `<span class="num">${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)}</span> <small class="muted p">raw p ${esc(rr.p)}</small>` : `<span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}`}</td><td class="num">${perM(a.usd_per_item)}</td>
-              <td class="num">${secs(rr ? rr.p50_ms : a.p50_ms)}</td><td class="muted" style="font-size:12px">${a === base ? "carried from r1" : rr ? `its own, ${esc(rr.created_at.slice(0, 10))}, Linux` : "r1's (no re-run)"}</td>
-              <td>${!r4.closed && rt ? `<button class="linkbtn" type="button" data-unretire="${esc(a.config_id)}">Undo the retire</button>` : r4.closed || rt || isBase ? "" : (() => { const h = hold(a, rr); return `<button class="linkbtn" type="button" data-retire="${esc(a.config_id)}" data-name="${esc(a.arm)}">Retire</button> ${h ? `<details class="refused"><summary>can't be the baseline</summary><p>${esc(h.why)}</p><p>${esc(h.fix)}</p></details>` : `<button class="linkbtn" type="button" data-promote="${esc(a.config_id)}" data-name="${esc(a.arm)}">Make baseline</button>`}`; })()}</td></tr>`; }).join("")}
-          ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span></td><td class="num">—</td><td class="muted">no run in the project</td><td class="num">—</td><td class="num">—</td><td class="muted" style="font-size:12px">not run</td><td></td></tr>`).join("")}</tbody></table></div>
+          ${(() => { const held = own.filter((a) => !retired[a.config_id] && hold(a, M.reruns[a.config_id])); return !r4.closed && !promoted && held.length && held.length === own.filter((a) => !retired[a.config_id]).length ? `<div class="note"><b>None of the ${held.length} can be the baseline.</b> None was shown ahead of bart_l once corrected over the round's ${n} arms (each row's Δ and raw p are below; the corrected p is the raw p × ${n}). The baseline stays bart_l; more items, or one change in a round of its own, could show an arm ahead.</div>` : ""; })()}
+          <div class="tablewrap"><table class="cmp r4res"><thead><tr><th>arm</th><th></th><th class="num">coverage</th><th>vs bart_l<small>one pair each, raw p</small></th><th class="num">per 1M articles</th><th class="num">per article</th></tr></thead><tbody>
+          ${results.map((a) => { const [v, k] = VERD(a); const rt = retired[a.config_id]; const isBase = promoted ? promoted === a.config_id : a === base; const rr = a !== base ? M.reruns[a.config_id] : baseRe;
+            const run = rr ? `${a === base ? "its re-run" : "its own run"}, ${esc(rr.created_at.slice(0, 10))}, Linux` : "r1's (no re-run)";
+            const act = !r4.closed && rt ? `<button class="linkbtn" type="button" data-unretire="${esc(a.config_id)}">Undo the retire</button>` : r4.closed || rt || isBase ? "" : `<button class="linkbtn" type="button" data-retire="${esc(a.config_id)}" data-name="${esc(a.arm)}">Retire</button>${hold(a, rr) ? "" : ` <button class="linkbtn" type="button" data-promote="${esc(a.config_id)}" data-name="${esc(a.arm)}">Make baseline</button>`}`;
+            return `<tr class="${rt ? "retired" : ""}"><td class="mono" data-rowname="${esc(a.config_id)}">${esc(a.arm)} ${isBase ? '<span class="tag gold">baseline</span>' : ""}<div class="muted runof">${run}</div>${rt ? `<div class="muted runof">retired: ${esc(rt)}</div>` : ""}</td><td class="acts">${act}</td><td class="num">${(rr ? rr.coverage : a.coverage).toFixed(3)}</td>
+              <td>${a === base ? '<span class="muted">the baseline</span>' : rr ? `<span class="num">${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)}</span> <small class="muted p">raw p ${esc(rr.p)}</small>${hold(a, rr) && rr.delta > 0 ? ` <small class="muted">× ${n} = ${Math.min(1, pnum(rr.p) * n).toFixed(4)}</small>` : ""}` : `<span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}`}</td><td class="num">${perM(a.usd_per_item)}</td>
+              <td class="num">${secs(rr ? rr.p50_ms : a.p50_ms)}</td></tr>`; }).join("")}
+          ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span><div class="muted runof">not run</div></td><td></td><td class="num">—</td><td class="muted">no run in the project</td><td class="num">—</td><td class="num">—</td></tr>`).join("")}</tbody></table></div>
           ${r4.closed ? `<div class="note"><b>Closed.</b> ${esc(r4.conclusion)}${promoted ? ` The baseline is now ${esc(M.arms.find((a) => a.config_id === promoted).arm)}.` : ""}</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided">${esc(r4.draft || "")}</textarea></div></div>
           <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button" ${(r4.draft || "").trim() ? "" : "disabled"}>Close the round</button><span class="muted" style="font-size:13px">${promoted ? `promotes ${esc(M.arms.find((a) => a.config_id === promoted).arm)} as the baseline` : "the baseline stays bart_l"}${(r4.draft || "").trim() ? "" : " · write the conclusion first"}</span></div><div id="closeconfirm"></div>`}</div>` : ""}</div>
       <div class="actions">${r4.closed ? `<a class="btn primary" href="#review">Review the outputs</a><a class="btn" href="#judge">Score with a judge too</a><span class="muted" style="font-size:13px">the next round opens from its conclusion: <code>evh round-open --goal ${M.goal.goal_id} --from r4</code></span>` : `<a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a>`}</div>
@@ -642,12 +652,12 @@ success_criteria:
       main.querySelector("tr.askrow")?.remove();
       const row = btn.closest("tr"), tr = document.createElement("tr"), close = $("#closer4");
       tr.className = "askrow";
-      tr.innerHTML = `<td colspan="${row.children.length}"><div class="inline"><label for="actwhy">${esc(label)}</label><input type="text" id="actwhy" placeholder="the reason, recorded with it" style="width:min(320px,100%)"><button class="btn primary" type="button" id="actok">Confirm</button><button class="btn" type="button" id="actno">Cancel</button></div><div class="why-off" id="actmsg" role="status"></div></td>`;
+      tr.innerHTML = `<td colspan="${row.children.length}"><div class="inline"><label for="actwhy">${esc(label)}</label><input type="text" id="actwhy" placeholder="the reason, recorded with it" aria-describedby="actmsg" style="width:min(320px,100%)"><button class="btn primary" type="button" id="actok">Confirm</button><button class="btn" type="button" id="actno">Cancel</button></div><div class="why-off" id="actmsg" role="status"></div></td>`;
       row.after(tr);
       if (close) close.classList.remove("primary");
       $("#actwhy").focus();
       $("#actwhy").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#actok").click(); } });
-      $("#actok").addEventListener("click", () => { const why = $("#actwhy").value.trim(); if (!why) { $("#actmsg").textContent = "the reason is recorded with it: write one"; $("#actwhy").focus(); return; } then(why); });
+      $("#actok").addEventListener("click", () => { const why = $("#actwhy").value.trim(); if (!why) { $("#actmsg").textContent = "the reason is recorded with it: write one"; $("#actwhy").setAttribute("aria-invalid", "true"); $("#actwhy").focus(); return; } then(why); });
       $("#actno").addEventListener("click", () => { tr.remove(); if (close) close.classList.add("primary"); btn.focus(); });
     };
     main.querySelectorAll("[data-unretire]").forEach((b) => b.addEventListener("click", () => { const r = { ...(S.r4.retired || {}) }; delete r[b.dataset.unretire]; S.r4.retired = r; focusNext = `[data-rowname="${CSS.escape(b.dataset.unretire)}"]`; save(); render(); }));

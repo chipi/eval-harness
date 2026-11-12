@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-12T18:24:46Z",
+  "generatedAt": "2026-11-12T19:22:55Z",
   "title": "Design System: evh workbench",
   "extensions": {
     "colorMeta": {
@@ -277,16 +277,16 @@
       "status-ok-light": {
         "role": "secondary",
         "displayName": "Status OK (light theme)",
-        "canonical": "#12805a",
+        "canonical": "#0f7550",
         "tonalRamp": [
-          "#133a2c",
-          "#1b6b50",
-          "#20a175",
-          "#20dc9b",
-          "#57dfb0",
-          "#8de3c5",
-          "#bfebdc",
-          "#edf8f4"
+          "#123a2c",
+          "#1a6c4f",
+          "#1ea373",
+          "#1dde98",
+          "#55e1ae",
+          "#8ce4c4",
+          "#bfecdb",
+          "#ecf8f4"
         ]
       },
       "status-warn-light": {

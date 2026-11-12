@@ -401,7 +401,9 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
   content (RFC-028). **Settings**: `evh migrate` after an upgrade; the public repos the leak check searches.
 - **The eval, after its critique** (owner, 2026-11-12: the decision moment first; a promotion is refused with the fix,
   not warned):
-  - "The answer so far" is the latest closed round's conclusion, with the baseline it left.
+  - "The answer so far" is the standing answer (r1's, with its cost guidance); a closed round amends it under it
+    ("r4 added: …") instead of replacing it, and the kicker names the baseline the latest round left (owner,
+    2026-11-12).
   - The comparison names its correction ("Holm across 28; the p shown is raw").
   - An arm is opened by its name, a button, and its panel opens as the row under it. The chart's dots are for the
     mouse; the table is the keyboard and screen-reader path.
@@ -410,19 +412,23 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
   - The rounds are a tab list with a panel and arrow keys.
   - A round's run, its job and its status count the same arms.
   - Round r4 is built from the local arms the project has re-runs of (owner, 2026-11-12, after the re-critique), so
-    every result on it is real. Hosted arms checked in step 4 have no re-run in the project and stay in r1, as the
-    round says.
+    every result on it is real. The models picked in step 4 that have no re-run in the project are named in the
+    round's arms part, in body text and its status line: they stay in r1, where they were compared.
+  - Its results compare each arm's own Linux re-run with bart_l's own Linux re-run (the pair tests' baseline), so
+    speed and coverage are from one machine; each row says which run under the arm's name, and its actions sit
+    beside the name, so the table fits a desktop screen.
   - "Make baseline" is offered only where `round-close --promote` would accept it: the arm's own run in this round,
-    significantly ahead of the baseline, corrected for the round's arms. Otherwise the row says why it "can't be the
-    baseline" and what would make it so. On this project's re-runs every local arm is behind bart_l, so all are
-    refused this way.
+    significantly ahead of the baseline, corrected for the round's arms. When none can be, one statement above the
+    results says so, why (corrected over the round's arms) and what could change it, instead of a refusal per row.
+    On this project's re-runs every local arm is behind bart_l, so the statement is what shows.
   - The baseline cannot be retired. A retire can be undone until the round closes; a retired row strikes its verdict.
   - A prompt opens under its row and names the arm; Enter confirms it.
   - A closed round says when it closed and by whom, shows its question as text, and offers its next step: review the
     outputs, with the command that opens the next round.
   - A comparison's leader and a recommended arm are shown in the ok status, not in lime (a result, not an action).
-  - A skip link leads to the screen; a glossary word is a button; the run's progress is announced; the tabs take
-    Home and End.
+  - A skip link focuses the screen without changing the route; a glossary word is a button that Enter or Space
+    opens; the help panel opens with focus on its close button and gives focus back to what opened it; a reason's
+    error is tied to its field; the run's progress is announced; the tabs take Home and End.
   - "Close the round" needs a conclusion, and is confirmed with a restatement of what it decides.
 
 ## Help, for someone who is new to this
