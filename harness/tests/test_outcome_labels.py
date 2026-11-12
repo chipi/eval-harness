@@ -175,18 +175,18 @@ try:
     two = [*join("iss"), "--outcomes", "gtrec", "--outcomes-as", "gt", "--join", "fp=fp"]
     r = evh("label-from-capture", "--dataset-id", "tickets_v1", "--map", "rules2.yaml", "--capture", "dec",
             "--set", "s_two", *two)  # fmt: skip
-    doc2 = labels_doc("s_two") if r.returncode == 0 else {}
-    rows2 = {
+    two_doc = labels_doc("s_two") if r.returncode == 0 else {}
+    two_labels = {
         i: _runstore.read_text(proj, f"labels/tickets_v1/s_two/{i}.txt").strip()
-        for i in (doc2.get("items") or {})
+        for i in (two_doc.get("items") or {})
     }
     check(
         "two --outcomes: each joined by its own options, the rules read both; both captures recorded",
-        rows2.get(items[3]) == "escalate"
-        and rows2.get(items[0]) == "file"
-        and [o.get("as") for o in (doc2.get("source") or {}).get("outcomes") or []] == ["iss", "gt"]
-        and [o.get("within") for o in doc2["source"]["outcomes"]] == ["-1m,+15m", None],
-        said(r)[-400:] + json.dumps(rows2),
+        two_labels.get(items[3]) == "escalate"
+        and two_labels.get(items[0]) == "file"
+        and [o.get("as") for o in (two_doc.get("source") or {}).get("outcomes") or []] == ["iss", "gt"]
+        and [o.get("within") for o in two_doc["source"]["outcomes"]] == ["-1m,+15m", None],
+        said(r)[-400:] + json.dumps(two_labels),
     )
     r = evh("label-coverage", *BASE, "--capture", "dec", "--outcomes-as", "iss", "--join", "fp=fp",
             "--within=-1m,+15m", "--identity", "first_seen=first_seen", "--outcomes", "iss", "--json")  # fmt: skip
