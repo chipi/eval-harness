@@ -34,7 +34,9 @@ const amount=(v,unit)=>unit==='tokens'?Math.round(v).toLocaleString('en-US')+' t
 const label=Object.fromEntries(P.periods.map(([k,l,c])=>[k,[l,c]]));
 const keys=P.periods.map(p=>p[0]);
 const listeners=[];let key=P.default;
-const fromHash=()=>{const m=/^#p([a-z0-9]+)$/.exec(location.hash);return m&&keys.includes(m[1])?m[1]:null;};
+/* the period lives in the address beside a page's other state (?period=); an older link's #p<key> still reads */
+const fromHash=()=>{const q=new URLSearchParams(location.search).get('period');if(q&&keys.includes(q))return q;
+const m=/^#p([a-z0-9]+)$/.exec(location.hash);return m&&keys.includes(m[1])?m[1]:null;};
 /* rows: [data-key] rows of a table[data-period-rows], their runs [[day, arm]], spend [[day, usd]] and
    events [[day, html]] (the build writes that html, its names already escaped and linked) */
 const R=window.PERIOD_ROWS||{};
@@ -77,7 +79,10 @@ const by=t.dataset.periodSort;if(by){const ds=r=>((r.querySelector(`[data-flow="
 const val=r=>+ds(r).v||0,moved=r=>ds(r).prev===undefined?0:Math.abs(val(r)-(+ds(r).prev||0));
 [...t.tBodies[0].rows].sort((x,y)=>moved(y)-moved(x)||val(y)-val(x)).forEach(r=>t.tBodies[0].appendChild(r));}
 const bar=document.querySelector(`.row-chips[data-for="${t.id}"] [data-rows]`)?.closest('.row-chips');
-if(bar){bar.querySelector('[data-rows="new"] b').textContent=nNew;bar.querySelector('[data-rows="active"] b').textContent=nAct;}
+if(bar){bar.querySelector('[data-rows="new"] b').textContent=nNew;bar.querySelector('[data-rows="active"] b').textContent=nAct;
+/* new and active the same: one chip says both */
+const same=nNew===nAct,nb=bar.querySelector('[data-rows="new"]');bar.querySelector('[data-rows="active"]').hidden=same;
+nb.firstChild.textContent=same?'new and active in period ':'new in period ';}
 /* a filter that leaves nothing says so, in words, where the table was */
 const box=t.closest('.scroll-x'),none=rowShow==='new'?!nNew:rowShow==='active'?!nAct:false;
 let msg=box.nextElementSibling&&box.nextElementSibling.classList.contains('pempty')?box.nextElementSibling:null;
@@ -97,7 +102,8 @@ pick.querySelectorAll('button.chip').forEach(c=>c.setAttribute('aria-pressed',St
 const more=pick.querySelector('select.more');if(more){const inMore=[...more.options].some(o=>o.value===key);more.value=inMore?key:'';more.classList.toggle('on',inMore);}
 const sp=document.getElementById('period-span');if(sp){sp.textContent=b.prev?`▲▼ compared with ${label[key][1]}`:`since ${b.since}`;
 sp.title=`${label[key][0]}: ${b.since} to ${b.until}`+(b.prev?`; compared with ${b.prev[0]} to ${b.prev[1]}`:'');}
-if(push!==false&&history.replaceState)history.replaceState(null,'','#p'+key);
+if(push!==false&&history.replaceState){const q=new URLSearchParams(location.search);q.set('period',key);
+history.replaceState(null,'',location.pathname+'?'+q+(/^#p[a-z0-9]+$/.test(location.hash)?'':location.hash));}
 rows(b);feeds(b);links();listeners.forEach(fn=>fn(key,b));}
 window.Period={DAY,iso,at,esc,today,bounds,within,trend,short,daysOf,amount,label,on:fn=>{listeners.push(fn);fn(key,bounds(key,today,P.first));},get key(){return key;}};
 pick.hidden=false;pick.addEventListener('click',ev=>{const c=ev.target.closest('button.chip');if(c)show(c.dataset.period);});

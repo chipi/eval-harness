@@ -23,9 +23,21 @@ if(g&&g!=='set')a.push('--by '+(g==='scored'?'scored':g));
 const only={};(q.get('only')||'').split(',').filter(Boolean).forEach(x=>{const i=x.indexOf(':');(only[x.slice(0,i)]=only[x.slice(0,i)]||[]).push(x.slice(i+1));});
 const flag={where:'where',tier:'tier',weights:'weights',quality:'quality'},val={quality:{'a contender':'contender','below the leader':'below'}};
 Object.entries(only).forEach(([k,v])=>{if(flag[k]&&v.length===1)a.push(`--${flag[k]} ${(val[k]||{})[v[0]]||v[0]}`);});
-const p=(location.hash.match(/^#p([a-z0-9]+)$/)||[])[1];if(p&&p!=='14d')a.push('--period '+p);term.textContent=a.join(' ');}
+const p=q.get('period')||(location.hash.match(/^#p([a-z0-9]+)$/)||[])[1];if(p&&p!=='14d')a.push('--period '+p);term.textContent=a.join(' ');}
 viewCmd();window.addEventListener('hashchange',viewCmd);document.addEventListener('click',()=>setTimeout(viewCmd,0));
 link&&link.addEventListener('click',ev=>{if(link.getAttribute('aria-disabled')==='true')ev.preventDefault();});
+/* on a phone the controls fold behind one line that says how many are on */
+const tools=document.querySelector('details.arm-tools');
+if(tools){const sum=tools.querySelector('summary');const count=()=>{const n=tools.querySelectorAll('.chip[aria-pressed=true]:not([data-group-by=""])').length;
+sum.textContent=n?`group, filter and key · ${n} on`:'group, filter and key';};
+if(matchMedia('(max-width: 640px)').matches)tools.open=false;count();tools.addEventListener('click',()=>setTimeout(count,0));}
+/* headers that stay in view: when the table fits its box it need not scroll sideways, so its head and each group's
+   heading can stick under the bar */
+function sticky(){const w=t.closest('.scroll-x'),bar=document.querySelector('.bar');if(!w)return;
+const fits=w.scrollWidth<=w.clientWidth+1;w.classList.toggle('stickyhead',fits);
+const b=bar?bar.offsetHeight:0,hd=t.tHead&&t.tHead.offsetParent?t.tHead.offsetHeight:0;
+t.style.setProperty('--top0',b+'px');t.style.setProperty('--top1',(b+hd)+'px');}
+sticky();addEventListener('resize',sticky);document.addEventListener('click',()=>setTimeout(sticky,0));
 /* one goal's trade-off charts at a time */
 const sel=document.getElementById('tradeoff-goal');
 sel&&sel.addEventListener('change',()=>document.querySelectorAll('[data-tradeoff]').forEach(d=>{d.hidden=d.dataset.tradeoff!==sel.value;}));})();

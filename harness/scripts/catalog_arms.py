@@ -411,7 +411,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                 "key": key,
                 "made": period_rows[key]["made"],
                 "cells": [
-                    f"<code>{e(c['config'])}</code>",
+                    f'<a href="?group=config&amp;q={e(c["config"])}#every"><code>{e(c["config"])}</code></a>',
                     (f"<code>{e(c['model'])}</code>" if c["model"] else "—")
                     + f'<br><small class="muted">{e(c["provider"] or "—")}{" · local" if c["local"] else ""}</small>',
                     "<br>".join(cb.dataset_link(d) for d in c["datasets"]),
@@ -484,20 +484,25 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
             )
             charts.append(f'<div data-tradeoff="{k}"{"" if not charts else " hidden"}>{ref}{svg}</div>')
 
-    facet_chips = "".join(
-        f'<button type="button" class="chip" data-facet="{f}" data-value="{v}" aria-pressed="false">{e(n)}</button>'
-        for f, v, n in (("where", "local", "local"), ("where", "hosted", "hosted"))
-    ) + "".join(
-        f'<button type="button" class="chip" data-facet="tier" data-value="{e(t)}" aria-pressed="false">{e(t)}</button>'
-        for t in sorted({r["tier"] for r in rows if r["tier"]})
+    facet_chips = (
+        '<span class="kind">runs</span>'
+        + "".join(
+            f'<button type="button" class="chip" data-facet="{f}" data-value="{v}" aria-pressed="false">{e(n)}</button>'
+            for f, v, n in (("where", "local", "local"), ("where", "hosted", "hosted"))
+        )
+        + '<span class="kind">price</span>'
+        + "".join(
+            f'<button type="button" class="chip" data-facet="tier" data-value="{e(t)}" aria-pressed="false">{e(t)}</button>'
+            for t in sorted({r["tier"] for r in rows if r["tier"]})
+        )
     )
     if any(r["quality"] for r in rows):
-        facet_chips += "".join(
+        facet_chips += '<span class="kind">against the leader</span>' + "".join(
             f'<button type="button" class="chip" data-facet="quality" data-value="{v}" aria-pressed="false">{v}</button>'
             for v in ("a contender", "below the leader")
         )
     if any(r["weights"] for r in rows):
-        facet_chips += "".join(
+        facet_chips += '<span class="kind">weights</span>' + "".join(
             f'<button type="button" class="chip" data-facet="weights" data-value="{v}" aria-pressed="false">{n}</button>'
             for v, n in (("open", "open weights"), ("proprietary", "proprietary"))
         )
@@ -513,13 +518,14 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
     body += cb.block(
         "01",
         "every arm",
-        '<div class="arm-tools">'
+        '<details class="arm-tools" open><summary>group, filter and key</summary>'
         + cb.group_chips("arms", GROUPS)
-        + f'<p class="row-chips facet-chips" data-for="arms" role="group" aria-label="only"><span class="muted small">only</span>{facet_chips}</p>'
-        + "</div>"
+        + f'<p class="row-chips facet-chips" data-for="arms" role="group" aria-label="only"><span class="muted small">only</span>{facet_chips}<span class="muted small">any in a kind, every kind at once</span></p>'
         + cp.row_chips("arms", "arms")
-        + '<p class="compare-bar" hidden><span data-picked role="status" aria-live="polite">0 picked</span> <a class="btn small" data-compare href="#">open in the inspector</a> <button type="button" class="btn small" data-unpick>clear</button> <small class="muted" data-why></small></p>'
         + cb.ROW_KEY
+        + '<p class="rolekey small muted"><span><b>leader</b> first on the goal\'s deciding measure among the arms its decision weighs; "not significantly ahead of N": N of them the paired test cannot tell apart from it</span><span><b>recommended</b> what the goal\'s rule picks from those (its strategy: cost, speed or quality first)</span><span><b>baseline</b> the arm the goal promoted</span><span><b>a contender</b> not significantly different from the leader; <b>below the leader</b> weighed and behind it</span></p>'
+        + "</details>"
+        + '<p class="compare-bar" hidden><span data-picked role="status" aria-live="polite">0 picked</span> <a class="btn small" data-compare href="#">open in the inspector</a> <button type="button" class="btn small" data-unpick>clear</button> <small class="muted" data-why></small></p>'
         + cb.table(
             "arms",
             [
@@ -539,7 +545,11 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
             "filter arms (name, model, provider…)",
             period=True,
             noun="arm",
-            attrs={"default-group": "set", "fold": "3"},
+            attrs={
+                "default-group": "set",
+                "fold": "3",
+                "undecided": "no goal decides here: listed best first, not tested against a leader",
+            },
         ),
         "every",
     )

@@ -432,7 +432,7 @@ small.retired { color: var(--local); font: 600 10px/1 var(--mono); letter-spacin
 .period-note { margin: 0; font: 12px var(--mono); color: var(--muted); }
 .period-switch + .tiles { margin-top: 14px; }
 /* a phone: the chips scroll sideways in one row instead of taking four */
-@media (max-width: 560px) { .chips, .row-chips { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; padding-bottom: 2px; } }
+/* chip rows wrap on a phone too: a sideways scroller hid the period's "more…" (the fifth review) */
 /* the period on a table: its rows' subject colour (the home tiles' groups), the new badge, a trend
    beside an in-period number, and the all / new / active chips over it */
 #datasets, #references { --c: var(--s1); }
@@ -852,3 +852,16 @@ table.data tr.grouphead th small { display: inline; }
 /* long ids and references break inside their cell instead of running into the next one */
 #arms td:nth-child(2) a, #arms td:nth-child(3) a, #arms td:nth-child(3) small { overflow-wrap: anywhere; }
 #arms td:nth-child(3) { min-width: 160px; }
+
+/* the arms page's last review items: kinds of only-chips labelled; a key to the role badges; the controls folded on a
+   phone; headers that stay in view when the table fits its box */
+.facet-chips .kind { font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-left: 6px; }
+.rolekey span b { color: var(--ink-2); font-weight: 600; }
+details.arm-tools > summary { display: none; }
+@media (max-width: 640px) {
+  details.arm-tools > summary { display: list-item; cursor: pointer; font: 500 13px/1.4 var(--mono); color: var(--ink-2); padding: 8px 0; }
+}
+.scroll-x.stickyhead { overflow: visible; }
+.scroll-x.stickyhead #arms thead th { position: sticky; top: var(--top0, 0); z-index: 3; background: var(--page); }
+.scroll-x.stickyhead #arms tr.grouphead th { position: sticky; top: var(--top1, 0); z-index: 2; background: var(--page); }
+.rolekey { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: -6px 0 14px; font: 12px/1.5 var(--mono); }

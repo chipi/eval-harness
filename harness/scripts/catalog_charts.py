@@ -316,8 +316,9 @@ def scatter(
     marks.extend(names)
     corner = ("left" if lower_x else "right") + (" top" if higher_y else " bottom")
     frame = (
-        f'<line x1="{left}" x2="{width - RIGHT}" y1="{h - bottom}" y2="{h - bottom}" stroke="var(--axis)"/>'
-        f'<line x1="{left}" x2="{left}" y1="{TOP}" y2="{h - bottom}" stroke="var(--axis)"/>'
+        # the axes in Muted: Axis was 1.6-1.75:1 on the card, under the 3:1 a graphic needs
+        f'<line x1="{left}" x2="{width - RIGHT}" y1="{h - bottom}" y2="{h - bottom}" stroke="var(--muted)"/>'
+        f'<line x1="{left}" x2="{left}" y1="{TOP}" y2="{h - bottom}" stroke="var(--muted)"/>'
         f'<text x="{x_of(x_lo):.1f}" y="{h - bottom + 16}" text-anchor="middle" class="tick">{_e(fmt_x(x_lo))}</text>'
         f'<text x="{x_of(x_hi):.1f}" y="{h - bottom + 16}" text-anchor="middle" class="tick">{_e(fmt_x(x_hi))}</text>'
         f'<text x="{(left + width) / 2:.0f}" y="{h - 6}" text-anchor="middle" class="tick">{_e(x_label)}</text>'

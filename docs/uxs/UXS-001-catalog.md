@@ -553,7 +553,15 @@ tile opens it grouped by config (`arms.html?group=config`).
   - A folded group opens ten rows at a time ("show 10 more", "show all N", "show 3"). Long ids and references break
     inside their cell. The footer's command is the view's (`evh arms --by config --where local --period 30d`): the
     grouping, one chip of a kind (the CLI takes one) and the period. A config's rank sorts by its best place as a
-    share of its field.
+    share of its field. A config's id links to its arms grouped by config.
+  - Under the row key, a key to the role badges (leader, "not significantly ahead of N", recommended, baseline, a
+    contender, below the leader). The only chips are labelled by kind (runs, price, against the leader, weights) and
+    say how they combine ("any in a kind, every kind at once"). A group no goal decides says so under its heading
+    ("no goal decides here: listed best first, not tested against a leader").
+  - When the table fits its box, its column heads and each group's heading stay in view under the bar as it scrolls.
+  - On a phone the grouping, the filters, the keys and the all / new / active chips fold behind one line ("group,
+    filter and key · N on"); every chip row wraps. When new and active count the same, one chip says both.
+  - The period is kept in the address beside the grouping (`?period=30d`); an older link's `#p30d` still opens it.
   - **only** chips: local, hosted (hosted when it runs through a provider that bills per call,
     litellm, openai, anthropic and the like, or its config prices tokens), then each price tier
     the configs declare (free, small, mid, large); a contender, below the leader (the arm's

@@ -28,7 +28,7 @@ const rows=[...body.rows];const key=r=>r.dataset[by]||'';
 rows.sort((a,b)=>key(a)<key(b)?-1:key(a)>key(b)?1:0).forEach(r=>body.appendChild(r));
 let last=null;[...body.rows].forEach(r=>{const k=key(r);if(k===last)return;last=k;
 const h=document.createElement('tr');h.className='grouphead';h.dataset.gkey=k;
-h.innerHTML=`<th colspan="${cols}" scope="rowgroup"><span class="muted small">${esc(label)}</span> <b>${esc(k)}</b> <small class="muted" data-n></small> <span data-gfold></span></th>`;
+h.innerHTML=`<th colspan="${cols}" scope="rowgroup"><span class="muted small">${esc(label)}</span> <b>${esc(k)}</b> <small class="muted" data-n></small> <span data-gfold></span>${undecided?`<br><small class="muted" data-undecided hidden>${esc(undecided)}</small>`:''}</th>`;
 r.before(h);});if(t._repage)t._repage();}
 gc&&gc.addEventListener('click',ev=>{const b=ev.target.closest('button[data-group-by]');if(!b)return;by=b.dataset.groupBy;open.clear();regroup();remember();});
 t.tHead.addEventListener('click',()=>{if(by)setTimeout(regroup,0);});
@@ -51,12 +51,14 @@ function folds(){let h=null,seen=0;[...body.rows].forEach(r=>{if(!isRow(r)){if(r
 const lim=fold+(h?open.get(h.dataset.gkey)||0:0);const on=by&&fold&&h&&shown(r)&&seen++>=lim;r.classList.toggle('gfold',!!on);});}
 /* a heading counts what is left in its group and offers the rest; a group with nothing left loses its heading;
    a table with nothing left says so */
+const undecided=t.dataset.undecided||'';let dec=false;
 function heads(){let h=null,n=0,more=0;const end=()=>{if(!h)return;h.hidden=!n;const c=h.querySelector('[data-n]');if(c)c.textContent=plural(n);
+const u=h.querySelector('[data-undecided]');if(u)u.hidden=dec||by!=='set'||!undecided;
 const g=h.querySelector('[data-gfold]'),k=esc(h.dataset.gkey);if(g)g.innerHTML=(more?`<button type="button" class="btn small" data-gopen="${k}" data-step="10" aria-expanded="false">show ${Math.min(10,more)} more</button>`
 +(more>10?` <button type="button" class="btn small" data-gopen="${k}" data-step="all" aria-expanded="false">show all ${more+(n-more)}</button>`:''):'')
 +(open.get(h.dataset.gkey)&&n>fold?` <button type="button" class="btn small" data-gopen="${k}" data-step="fold" aria-expanded="true">show ${fold}</button>`:'');};
-let total=0;[...body.rows].forEach(r=>{if(!isRow(r)){if(r.dataset.gkey!=null){end();h=r;n=0;more=0;}return;}
-if(shown(r)){n++;total++;if(r.classList.contains('gfold'))more++;}});end();
+let total=0;[...body.rows].forEach(r=>{if(!isRow(r)){if(r.dataset.gkey!=null){end();h=r;n=0;more=0;dec=false;}return;}
+if(shown(r)){n++;total++;if(r.classList.contains('gfold'))more++;}if(r.dataset.quality&&r.dataset.quality!=='not decided')dec=true;});end();
 let empty=body.querySelector('tr.emptyrow');
 if(total){if(empty)empty.remove();return;}
 if(!empty){empty=document.createElement('tr');empty.className='grouphead emptyrow';body.prepend(empty);}

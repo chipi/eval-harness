@@ -397,6 +397,10 @@ that can move a result is never a patch release without saying so under **Change
   - An arm scored against the reference it wrote led its group (coverage 1.000), told by colour alone: it says so in
     words, on the page and in `evh arms`, and is read last. Columns no longer overlap at 1280; a folded group opens ten
     at a time; the footer's command is the view's; a config's rank sorts by its number.
+  - The rest of the arms page's review: heads that stay in view; a key to the role badges and the only chips labelled
+    by kind; a group no goal decides says so; on a phone the controls and keys fold (the first arm from 1,135px down to
+    769px); the period in the address (`?period=`, `#p` links still read); config ids linked; chart axes in Muted
+    (they were 1.6:1).
 - **`dataset-from-capture` deleted what sat in its items' folder**: `data/sources/<dataset>/` was emptied before the
   items were written, and a capture's own export kept there was deleted without a word (the fleet's beta). A file
   there that the dataset's record does not name is now refused (`would-overwrite`), and stays.
