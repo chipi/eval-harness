@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-12T15:23:21Z",
+  "generatedAt": "2026-11-12T17:24:52Z",
   "title": "Design System: eval-harness, the public site",
   "extensions": {
     "colorMeta": {
@@ -82,13 +82,13 @@
       "muted": {
         "role": "neutral",
         "displayName": "Muted",
-        "canonical": "#7d7b74",
+        "canonical": "#8a8880",
         "tonalRamp": [
           "#272725",
-          "#454441",
-          "#64625d",
-          "#828079",
-          "#9e9d97",
+          "#464541",
+          "#64635d",
+          "#838179",
+          "#9f9d97",
           "#bab9b6",
           "#d6d6d4",
           "#f3f2f2"
@@ -274,6 +274,21 @@
           "#f3f3f1"
         ]
       },
+      "muted-light": {
+        "role": "neutral",
+        "displayName": "Muted Light",
+        "canonical": "#66645e",
+        "tonalRamp": [
+          "#272725",
+          "#464441",
+          "#64625d",
+          "#838079",
+          "#9f9d97",
+          "#bab9b6",
+          "#d6d6d4",
+          "#f3f2f2"
+        ]
+      },
       "highlighter-olive-light": {
         "role": "primary",
         "displayName": "Highlighter Olive (light theme)",
@@ -287,6 +302,51 @@
           "#cbf17f",
           "#dff2b8",
           "#f5faeb"
+        ]
+      },
+      "proprietary-blue-light": {
+        "role": "neutral",
+        "displayName": "Proprietary Blue Light",
+        "canonical": "#2a78d6",
+        "tonalRamp": [
+          "#152538",
+          "#1f4067",
+          "#265b9b",
+          "#2976d2",
+          "#5e95d8",
+          "#91b4de",
+          "#c1d3e9",
+          "#edf2f7"
+        ]
+      },
+      "local-ember-light": {
+        "role": "neutral",
+        "displayName": "Local Ember Light",
+        "canonical": "#eb6834",
+        "tonalRamp": [
+          "#3c1d11",
+          "#6f3118",
+          "#a7421a",
+          "#e45117",
+          "#e57b51",
+          "#e7a489",
+          "#edcbbd",
+          "#f8f0ec"
+        ]
+      },
+      "open-weights-green-light": {
+        "role": "neutral",
+        "displayName": "Open Weights Green Light",
+        "canonical": "#1baf7a",
+        "tonalRamp": [
+          "#13392c",
+          "#1c6a4e",
+          "#22a072",
+          "#22d998",
+          "#59ddae",
+          "#8ee2c4",
+          "#c0ebdb",
+          "#edf8f4"
         ]
       }
     },
@@ -414,13 +474,13 @@
   ],
   "narrative": {
     "northStar": "The Lab Notebook",
-    "overview": "The site reads like a working scientist's notebook made public. Every page states a finding in the largest type it can hold, then shows the measurement underneath: the number, what it was measured against, whether it is significant. The one colour that is not ink is a highlighter, used the way a person marks the line they want read again, and it never stands for data.\n\nThe voice is confident and plain. Headlines state findings (\"Small models lead, largely on disputed labels.\"), text underneath is quiet and grey, and nothing decorative appears unless it carries meaning: the faint grid behind the hero is graph paper, the glow is the highlighter's bleed. It is dark-first, on near-black, with a warm-paper light theme that keeps every role.\n\n- Very large, tightly set display headlines (800 weight, -0.035em), usually one clause turned in Highlighter Lime. - Monospace for every label, kicker, eyebrow, navigation link and number; a humanist sans for reading. - Flat surfaces separated by hairlines and a single tone step, never by shadow. - Three categorical colours for the kinds of model, kept apart from the accent. - No web fonts and no external requests: the type falls back to the system's sans and mono.",
+    "overview": "The site reads like a working scientist's notebook made public. Every page states a finding in the largest type it can hold, then shows the measurement underneath: the number, what it was measured against, whether it is significant. The one colour that is not ink is a highlighter, used the way a person marks the line they want read again, and it never stands for data.\n\nThe voice is confident and plain. Headlines state findings (\"Small models lead, largely on disputed labels.\"), text underneath is quiet and grey, and nothing decorative appears unless it carries meaning: the faint grid behind the hero is graph paper, the glow is the highlighter's bleed. It is dark-first, on near-black, with a warm-paper light theme that keeps every role.\n\n- Very large, tightly set display headlines (800 weight, -0.035em), usually one clause turned in Highlighter Lime. - Monospace for every label, kicker, eyebrow, navigation link and number; a humanist sans for reading. - Flat surfaces separated by hairlines and a single tone step, never by shadow. - Three categorical colours for the kinds of model, kept apart from the accent. - No web fonts, and no external request but the cookieless analytics PRODUCT.md names: the type falls back to the system's sans and mono.",
     "keyCharacteristics": [
       "Very large, tightly set display headlines (800 weight, -0.035em), usually one clause turned in Highlighter Lime.",
       "Monospace for every label, kicker, eyebrow, navigation link and number; a humanist sans for reading.",
       "Flat surfaces separated by hairlines and a single tone step, never by shadow.",
       "Three categorical colours for the kinds of model, kept apart from the accent.",
-      "No web fonts and no external requests: the type falls back to the system's sans and mono."
+      "No web fonts, and no external request but the cookieless analytics PRODUCT.md names: the type falls back to the"
     ],
     "rules": [
       {
@@ -454,7 +514,7 @@
     "donts": [
       "**Don't** use the lime accent for a data series, a value or a status.",
       "**Don't** add a shadow to a card, a chart or a table; only a floating panel has one.",
-      "**Don't** load a web font or any other external resource.",
+      "**Don't** load a web font or any other external resource (the cookieless analytics excepted).",
       "**Don't** add decoration that carries no meaning: the grid is graph paper, the glow is the highlighter."
     ]
   }
