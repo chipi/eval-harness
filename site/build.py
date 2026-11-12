@@ -760,6 +760,20 @@ def marks(k: int, n: int) -> str:
     )
 
 
+def row_name(x: dict) -> str:
+    """A hero row in words, for a screen reader: the leader, the arms not significantly different from it, and where
+    the most expensive model finished."""
+    near = (
+        f"{x['n_contenders']} other{'' if x['n_contenders'] == 1 else 's'} not significantly different from it"
+        if x["n_contenders"]
+        else "significantly ahead of every other"
+    )
+    return (
+        f"{x['bench']}: {x['top']['arm']} leads, {near}; the most expensive model, {x['dearest']['arm']}, finished "
+        f"{ordinal(x['dearest']['rank'])} of {x['n_arms']}. Open the eval."
+    )
+
+
 def sketch(exps: list, compact: bool = False) -> str:
     """Six benchmarks as one picture: each row on its own scale, from its weakest learned
     system to its best, so rows compare by shape, not score. Every other system is a faint
@@ -773,7 +787,8 @@ def sketch(exps: list, compact: bool = False) -> str:
         left, right = 10, width - 10
     else:
         left, right = 170, width - 150
-    out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-hidden="true" class="sketch">']
+    # It holds links (each row opens its eval), so it is a group a screen reader enters, each link named in words.
+    out = [f'<svg viewBox="0 0 {width} {height}" role="group" aria-label="The six evals, one row each" class="sketch">']
     for i, x in enumerate(exps):
         learned = [a for a in x["arms"] if a["kind"] != "baseline"]
         on, _off = off_scale(learned)
@@ -786,7 +801,7 @@ def sketch(exps: list, compact: bool = False) -> str:
         group = [a for a in learned if a["arm"] in x["contenders"]] + [x["leader_row"]]
         tag = f"leader + {x['n_contenders']}" if x["n_contenders"] else "clear winner"
         out.append(
-            f'<a href="evals/{x["slug"]}.html" class="sketch-row"><title>{e(x["bench"])}: '
+            f'<a href="evals/{x["slug"]}.html" class="sketch-row" aria-label="{e(row_name(x))}"><title>{e(x["bench"])}: '
             f'the eval</title><rect x="0" y="{top + row * i}" width="{width}" height="{row}" class="hit-row"/>'
         )
         if compact:
@@ -826,14 +841,20 @@ def hero_sketch(exps: list) -> str:
     )
     key = (
         '<div class="legend sketch-key"><span><i class="lead-i"></i>the leader</span>'
-        '<span><i class="sw-band"></i>not significantly different from it</span>'
+        '<span><i class="sw-band"></i>not significantly different from it (the +N)</span>'
         '<span><i class="ring-i"></i>the most expensive model</span>'
         '<span class="read">each row: worst to best, on its own scale →</span></div>'
     )
     return (
         f'<figure class="chart hero-chart hero-sketch reveal" aria-label="{e(finding)}">'
         f"{key}{both(sketch(exps), sketch(exps, compact=True))}"
-        f'<figcaption>{e(finding)} <a href="evals.html#findings">See each one →</a>'
+        f'<figcaption>{e(finding)}'
+        + (
+            " On SciFact only the twelve cheapest hosted models ran, so its ring is the dearest of those."
+            if any(x["slug"] == "scifact" for x in exps)
+            else ""
+        )
+        + ' <a href="evals.html#findings">See each one →</a>'
         f"</figcaption></figure>"
     )
 
@@ -1148,7 +1169,7 @@ def home(f: dict) -> str:
   <div class="habits">{idea_html}</div>
   <div class="cols" style="margin-top:48px">
     <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference set from the best arm's labels, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference set and judges, rounds and dataset versions, datasets from production, and setting a model up. Last, look at it all: <code>evh catalog</code> builds the catalog of your own runs and <code>evh catalog-serve</code> opens it with the inspector (<a href="docs/tutorials/5-catalog-and-inspector/">tutorial 5</a>); <a href="{CATALOG}">ours</a> shows the six worked examples. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
-      <div class="btns"><a class="btn primary" href="docs/GUIDE/">Getting started</a><a class="btn" href="docs/GUIDE/#where-to-go-next">The tutorials</a><a class="btn" href="{CATALOG}">The catalog</a></div></div>
+      <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="docs/GUIDE/">Getting started</a><a class="btn" href="{CATALOG}">The catalog</a></div></div>
 <pre class="term"><span class="p">$ </span>pip install "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
 <span class="p">$ </span>evh init --tutorial
 <span class="c"># the guide walks the tutorial from here; then, on your own system</span>
@@ -1208,8 +1229,8 @@ def home(f: dict) -> str:
 {method.landing_teaser(H, f, "06")}
 <section class="block" id="start" data-nav=""><div class="wrap">
   <h2>Try it on your own data.</h2>
-  <p class="lede">Install the pinned release; getting started takes a six-ticket tutorial kit through the loop in about fifteen minutes — a dataset, arms, a reference set, a comparison, a choice — offline, no API key.</p>
-  <div class="btns"><a class="btn primary" href="docs/GUIDE/">Try the whole loop</a><a class="btn" href="use.html">Use it on your problem</a></div>
+  <p class="lede">Start from your problem: what to freeze, what to run, what to compare, step by step, with the tutorial kit to try the whole loop offline first.</p>
+  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a></div>
 </div></section>
 {author("home")}"""
     return page(

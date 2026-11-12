@@ -568,3 +568,6 @@ footer .wrap.foot { display: block; }
 main:focus { outline: none; }
 .lede-note { color: var(--muted); font-size: 15px; max-width: 70ch; margin: -32px 0 48px; }
 .lede-note dfn { font-style: normal; font-weight: 600; color: var(--ink); }
+
+/* the site's third critique (2026-11-12): a terminal's long line (the pinned install) wraps instead of being cut off */
+pre.term { white-space: pre-wrap; overflow-wrap: anywhere; }
