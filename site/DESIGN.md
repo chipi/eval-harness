@@ -23,8 +23,9 @@ colors:
   muted-light: "#66645e"
   highlighter-olive-light: "#3d5c00"
   proprietary-blue-light: "#2a78d6"
-  local-ember-light: "#eb6834"
-  open-weights-green-light: "#1baf7a"
+  local-ember-light: "#de4f16"
+  open-weights-green-light: "#179568"
+  baseline-grey-light: "#858278"
 typography:
   display:
     fontFamily: "Inter Tight, Inter, Helvetica Neue, system-ui, -apple-system, Segoe UI, sans-serif"
@@ -259,7 +260,9 @@ a tooltip), pills for buttons and the section switcher (999px), circles for icon
 ### Charts
 
 - A Surface frame with a hairline, the legend in monospace above, the caption in Muted below. Series use the three kinds'
-  colours and Baseline Grey; a band of the accent at 9% shows a region, never a series.
+  colours and Baseline Grey, each 3:1 or more against every surface of its theme; a band of Ink at 8–9% shows a
+  region (the arms not significantly different from the leader), never a series. The band is a result, so it is
+  never the accent.
 
 ### Terminal
 

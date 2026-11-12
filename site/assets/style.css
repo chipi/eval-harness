@@ -15,7 +15,7 @@
   --local: #d95926;           /* slot 2 */
   --open: #199e70;            /* slot 3 */
   --baseline: #6f6d66;
-  --band: rgba(200, 255, 61, 0.09);
+  --band: rgba(240, 239, 236, 0.09);
   --grid-line: rgba(240, 239, 236, 0.035);
   --display: "Inter Tight", "Inter", "Helvetica Neue", system-ui, -apple-system, "Segoe UI", sans-serif;
   --text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -27,8 +27,8 @@
     --page: #f6f5f1; --surface: #fcfcfb; --surface-2: #efeee9;
     --ink: #0b0b0b; --ink-2: #4a4945; --muted: #66645e; --hair: #dddbd3; --axis: #c3c2b7;
     --accent: #3d5c00; --accent-ink: #f6f5f1;
-    --proprietary: #2a78d6; --local: #eb6834; --open: #1baf7a; --baseline: #9a988f;
-    --band: rgba(61, 92, 0, 0.16);
+    --proprietary: #2a78d6; --local: #de4f16; --open: #179568; --baseline: #858278;
+    --band: rgba(11, 11, 11, 0.08);
     --grid-line: rgba(11, 11, 11, 0.045);
   }
 }
@@ -37,8 +37,8 @@
   --page: #f6f5f1; --surface: #fcfcfb; --surface-2: #efeee9;
   --ink: #0b0b0b; --ink-2: #4a4945; --muted: #66645e; --hair: #dddbd3; --axis: #c3c2b7;
   --accent: #3d5c00; --accent-ink: #f6f5f1;
-  --proprietary: #2a78d6; --local: #eb6834; --open: #1baf7a; --baseline: #9a988f;
-  --band: rgba(61, 92, 0, 0.16);
+  --proprietary: #2a78d6; --local: #de4f16; --open: #179568; --baseline: #858278;
+  --band: rgba(11, 11, 11, 0.08);
   --grid-line: rgba(11, 11, 11, 0.045);
 }
 
@@ -161,7 +161,7 @@ figcaption { margin-top: 14px; font-size: 13px; color: var(--muted); line-height
 .legend span { display: inline-flex; align-items: center; gap: 7px; }
 .legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .legend .read { margin-left: auto; color: var(--muted); }
-.legend .sw-band { width: 16px; height: 10px; border-radius: 2px; background: var(--band); outline: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+.legend .sw-band { width: 16px; height: 10px; border-radius: 2px; background: var(--band); outline: 1px solid color-mix(in srgb, var(--ink) 30%, transparent); }
 #tip { position: fixed; pointer-events: none; z-index: 50; background: var(--ink); color: var(--page);
   font: 500 12px/1.4 var(--mono); padding: 7px 9px; border-radius: 6px; opacity: 0; transform: translateY(4px);
   transition: opacity .12s, transform .12s; max-width: 280px; white-space: pre-line; }
@@ -566,6 +566,22 @@ footer .wrap.foot { display: block; }
 .skip:focus { top: 72px; }
 .skip:hover { color: var(--accent-ink); }
 main:focus { outline: none; }
-.lede-note { color: var(--muted); font-size: 15px; max-width: 66ch; margin: -32px 0 48px; }
+.lede-note { color: var(--ink-2); font-size: 15px; max-width: 66ch; margin: -32px 0 48px; }
 .lede-note dfn { font-style: normal; font-weight: 600; color: var(--ink); }
 
+
+/* the home page's author: one line above the footer (the fourth critique: the page ended on a pitch) */
+.author-line { padding-block: 28px; }
+.author-line p { margin: 0; color: var(--muted); font-size: 15px; }
+
+/* the hero on a phone: its chart right after the question, before the paragraph and the buttons (the fourth critique:
+   it started below the first screen) */
+@media (max-width: 899px) {
+  .hero-cols { display: flex; flex-direction: column; gap: 24px; }
+  .hero-text { display: contents; }
+  .hero-text .kicker { order: 1; }
+  .hero-text h1 { order: 2; }
+  .hero-cols .hero-chart { order: 3; margin-top: 0; }
+  .hero-text .dek { order: 4; }
+  .hero-text .btns { order: 5; }
+}

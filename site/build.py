@@ -210,7 +210,7 @@ def strip(exp: dict, width: int = 1000, height: int = 92, title: bool = True, co
 
     group = [a for a in arms if a["arm"] in exp["contenders"]] + [exp["leader_row"]]
     out = [
-        f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{e(exp["bench"])}: every learned arm by {e(exp["metric_label"])}">'
+        f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{e(exp["bench"])}: every model and fine-tune by {e(exp["metric_label"])}">'
     ]
     if title and compact:
         out.append(
@@ -623,6 +623,13 @@ def out(url: str, place: str, label: str, cls: str = "") -> str:
 
 def author(place: str) -> str:
     """Who built this, and where to find them: the closing section of the main pages."""
+    if place == "home":
+        # The home page ends on adoption; who built it is one line, above the footer.
+        return f"""
+<section class="block author author-line" id="author" data-nav=""><div class="wrap">
+  <p>Built by Marko Dragoljevic, who advises technology leaders through {out(HUMAN, "author-home", "Human Copilot", "")} · {out(DWO, "author-home", "DevWhateverOps ↗", "")}</p>
+</div></section>
+"""
     return f"""
 <section class="block author" id="author" data-nav=""><div class="wrap">
   <div class="eyebrow">Who built this</div>
@@ -860,7 +867,7 @@ def hero_sketch(exps: list) -> str:
     return (
         f'<figure class="chart hero-chart hero-sketch reveal" aria-label="{e(finding)}">'
         f"{key}{both(sketch(exps), sketch(exps, compact=True))}"
-        f"<figcaption>{e(finding)}"
+        f"<figcaption>{e(finding)} Not significantly different: on this many items, the gap could be chance."
         + (
             " On SciFact only the twelve cheapest hosted models ran, so its ring is the dearest of those."
             if any(x["slug"] == "scifact" for x in exps)
@@ -913,6 +920,10 @@ def home(f: dict) -> str:
     ties = sum(x["n_contenders"] > 0 for x in exps)
     cal_n, cal_ok = len(f["calibration"]), f["calibration_consistent"]
     cal_in = f["calibration_inside"]
+    if f["dearest_not_best_frontier"] != f["frontier_exps"]:
+        raise SystemExit(
+            "the home page's headline says the most expensive model won none of the frontier evals; it won one"
+        )
     hosted_n = max(x["n_hosted"] for x in exps)
     ideas = [
         (
@@ -1106,9 +1117,8 @@ def home(f: dict) -> str:
         (
             "Which model is best for what I need — not for someone else's benchmark?",
             (
-                f"The most expensive model was not the best in any of the {f['frontier_exps']} evals where "
-                f"frontier models ran. In {ties} of {len(exps)}, the leader was not significantly different "
-                "from other systems: at 100–280 items, not the same as equal."
+                f"In {ties} of {len(exps)} evals, the leader was not significantly different from other systems: at "
+                "100–280 items, not the same as equal. The worked examples below show each."
             ),
             "evals.html",
             "The evals",
@@ -1178,13 +1188,13 @@ def home(f: dict) -> str:
 
 <section class="block" id="proof" data-nav="Examples"><div class="wrap">
   <div class="eyebrow"><span class="num">02</span>Worked examples · {hosted_n} LLMs</div>
-  <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">never won</em> on the primary metric.</h2>
+  <h2>The most expensive model <em style="font-style:normal;color:var(--accent)">won none</em> of the {word(f["frontier_exps"])} evals it ran in, on the primary metric.</h2>
   <p class="lede">These are examples of the harness and its method at work, not a leaderboard, and they are still being extended. To show the harness doing something real, it measured {hosted_n} hosted LLMs, proprietary and open-weight from small to frontier tiers, small fine-tuned models and baselines on {word(len(exps))} public benchmarks — {f["total_arms"]} runs, {money(f["total_billed"])} billed, every cost read off the provider's bill.{dearest_note(f)} Each is also a goal in <a href="{CATALOG}">the catalog</a>, with every run, dataset and reference set behind it.</p>
   <div class="stats">
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div>{marks(f["dearest_not_best_frontier"], f["frontier_exps"])}<div class="l">evals with frontier models where the most expensive model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div>{marks(ties, len(exps))}<div class="l">leaderboards where the leader is not significantly different from others (at 100–280 items)</div></div>
     <div class="stat"><div class="n">$0</div>{marks(f["local_first_or_contender"], len(exps))}<div class="l">for a model that is first, or not significantly different from first, in {f["local_first_or_contender"]} of the {len(exps)}; {f["local_first_or_contender"] - remeasured_counts(f)["local_lost"]} of {len(exps)} if the <a href="evals/judging.html">re-measured scores</a> are taken at face value</div></div>
-    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_ok, cal_n)}<div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
+    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div>{marks(cal_ok, cal_n)}<div class="l">published models re-run here that score what their papers report (within the run's 95% interval plus 2 points), {cal_in} inside the interval itself (<a href="evals.html#trust">the checks</a>)</div></div>
   </div>
   <p class="note" style="margin-top:28px"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
   <div class="chart benches" style="margin-top:48px">{legend(reading="higher score: further right →", baseline=False)}{benches}</div>
@@ -1198,23 +1208,6 @@ def home(f: dict) -> str:
   <h2>Six ideas, one adapter file.</h2>
   <p class="lede">Most eval code answers \u201cwhich scored highest\u201d. That is the easy half; the hard half is whether the answer survives being asked again. <a href="docs/GUIDE/">The harness</a> imports nothing domain-specific — everything about your system lives in one file, <code>adapter.py</code>, with two functions you write: <code>call_system()</code> and <code>score()</code>.</p>
   <div class="habits">{idea_html}</div>
-  <div class="cols" style="margin-top:48px">
-    <div class="prose"><h3 style="font-size:28px;line-height:1.15;margin-bottom:16px">Try the whole loop.</h3><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference set from the best arm's labels, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference set and judges, rounds and dataset versions, datasets from production, and setting a model up. Last, look at it all: <code>evh catalog</code> builds the catalog of your own runs and <code>evh catalog-serve</code> opens it with the inspector (<a href="docs/tutorials/5-catalog-and-inspector/">tutorial 5</a>); <a href="{CATALOG}">ours</a> shows the six worked examples. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
-      <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="docs/GUIDE/">Getting started</a><a class="btn" href="{CATALOG}">The catalog</a></div></div>
-<pre class="term"><span class="p">$ </span>pip install "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
-<span class="p">$ </span>evh init --tutorial
-<span class="c"># the guide walks the tutorial from here; then, on your own system</span>
-<span class="p">$ </span>evh dataset-create --dataset-id my_v1 --source-dir data/sources
-<span class="p">$ </span>evh run --config data/configs/arm_a.yaml --repeat 3
-<span class="p">$ </span>evh leaderboard --dataset-id my_v1
-<span class="p">$ </span>evh catalog && evh catalog-serve
-<span class="c"># or, from a checkout: the bundled demo</span>
-<span class="p">$ </span>git clone {REPO}
-<span class="p">$ </span>cd eval-harness/harness
-<span class="p">$ </span>make install
-<span class="p">$ </span>make demo
-<span class="p">$ </span>make leaderboard</pre>
-  </div>
 </div></section>
 
 <section class="block" id="lasting" data-nav="Rounds"><div class="wrap">
@@ -1242,10 +1235,26 @@ def home(f: dict) -> str:
 </div></section>
 
 {method.landing_teaser(H, f, "06")}
-<section class="block" id="start" data-nav=""><div class="wrap">
+<section class="block" id="start" data-nav="Start"><div class="wrap">
   <h2>Try it on your own data.</h2>
-  <p class="lede">Start from your problem: what to freeze, what to run, what to compare, step by step, with the tutorial kit to try the whole loop offline first.</p>
-  <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a></div>
+  <p class="lede">Install the pinned release, take the tutorial kit through the whole loop offline, then start from your own problem: what to freeze, what to run, what to compare.</p>
+  <div class="cols" style="margin-top:32px">
+    <div class="prose"><p>Install the pinned release in a new folder; <code>evh init --tutorial</code> writes the project's folders and a six-ticket tutorial kit, and getting started takes it through the loop in about fifteen minutes — a dataset, arms, a reference set from the best arm's labels, a comparison, a choice — offline, no API key. Tutorials then add a local model, a hosted LLM with your own key, a frontier reference set and judges, rounds and dataset versions, datasets from production, and setting a model up. Last, look at it all: <code>evh catalog</code> builds the catalog of your own runs and <code>evh catalog-serve</code> opens it with the inspector (<a href="docs/tutorials/5-catalog-and-inspector/">tutorial 5</a>); <a href="{CATALOG}">ours</a> shows the six worked examples. From a checkout of this repository, <code>make demo</code> runs the loop on bundled synthetic data in a minute.</p>
+      <div class="btns"><a class="btn primary" href="use.html">Use it on your problem</a><a class="btn" href="docs/GUIDE/">Getting started</a></div></div>
+<pre class="term"><span class="p">$ </span>pip install "evaluation-harness @ git+{REPO}@v{VERSION}#subdirectory=harness"
+<span class="p">$ </span>evh init --tutorial
+<span class="c"># the guide walks the tutorial from here; then, on your own system</span>
+<span class="p">$ </span>evh dataset-create --dataset-id my_v1 --source-dir data/sources
+<span class="p">$ </span>evh run --config data/configs/arm_a.yaml --repeat 3
+<span class="p">$ </span>evh leaderboard --dataset-id my_v1
+<span class="p">$ </span>evh catalog && evh catalog-serve
+<span class="c"># or, from a checkout: the bundled demo</span>
+<span class="p">$ </span>git clone {REPO}
+<span class="p">$ </span>cd eval-harness/harness
+<span class="p">$ </span>make install
+<span class="p">$ </span>make demo
+<span class="p">$ </span>make leaderboard</pre>
+  </div>
 </div></section>
 {author("home")}"""
     return page(
@@ -1265,6 +1274,10 @@ def landing(f: dict) -> str:
     ties = sum(x["n_contenders"] > 0 for x in exps)
     cal_n, cal_ok = len(f["calibration"]), f["calibration_consistent"]
     cal_in = f["calibration_inside"]
+    if f["dearest_not_best_frontier"] != f["frontier_exps"]:
+        raise SystemExit(
+            "the home page's headline says the most expensive model won none of the frontier evals; it won one"
+        )
     hosted_n = max(x["n_hosted"] for x in exps)
     local_n = sum(x["n_arms"] - x["n_hosted"] for x in exps)
     billed_all = f"{f['total_billed']:.2f}"
@@ -1336,7 +1349,7 @@ def landing(f: dict) -> str:
     <div class="stat"><div class="n">{f["dearest_not_best_frontier"]}<small>/{f["frontier_exps"]}</small></div><div class="l">evals with frontier models where the most expensive model was not the best (the same model each time; SciFact ran only the twelve cheapest hosted models)</div></div>
     <div class="stat"><div class="n">{ties}<small>/{len(exps)}</small></div><div class="l">leaderboards where the leader is not significantly different from others (at 100–280 items)</div></div>
     <div class="stat"><div class="n">$0</div><div class="l">for a model that is first, or not significantly different from first, in {f["local_first_or_contender"]} of the {len(exps)}; {f["local_first_or_contender"] - remeasured_counts(f)["local_lost"]} of {len(exps)} if the <a href="evals/judging.html">re-measured scores</a> are taken at face value</div></div>
-    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">calibration checks that agree with the published numbers, {cal_in} inside their own interval</div></div>
+    <div class="stat"><div class="n">{cal_ok}<small>/{cal_n}</small></div><div class="l">published models re-run here that score what their papers report (within the run's 95% interval plus 2 points), {cal_in} inside the interval itself (<a href="evals.html#trust">the checks</a>)</div></div>
   </div>
 </div></section>
 

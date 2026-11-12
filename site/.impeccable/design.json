@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-12T17:24:52Z",
+  "generatedAt": "2026-11-12T21:22:10Z",
   "title": "Design System: eval-harness, the public site",
   "extensions": {
     "colorMeta": {
@@ -322,12 +322,12 @@
       "local-ember-light": {
         "role": "neutral",
         "displayName": "Local Ember Light",
-        "canonical": "#eb6834",
+        "canonical": "#de4f16",
         "tonalRamp": [
           "#3c1d11",
           "#6f3118",
           "#a7421a",
-          "#e45117",
+          "#e45217",
           "#e57b51",
           "#e7a489",
           "#edcbbd",
@@ -337,16 +337,31 @@
       "open-weights-green-light": {
         "role": "neutral",
         "displayName": "Open Weights Green Light",
-        "canonical": "#1baf7a",
+        "canonical": "#179568",
         "tonalRamp": [
           "#13392c",
-          "#1c6a4e",
-          "#22a072",
+          "#1c6a4f",
+          "#22a073",
           "#22d998",
           "#59ddae",
           "#8ee2c4",
           "#c0ebdb",
           "#edf8f4"
+        ]
+      },
+      "baseline-grey-light": {
+        "role": "neutral",
+        "displayName": "Baseline Grey Light",
+        "canonical": "#858278",
+        "tonalRamp": [
+          "#282725",
+          "#464541",
+          "#65635c",
+          "#848177",
+          "#9f9d96",
+          "#bbbab5",
+          "#d7d6d4",
+          "#f3f2f2"
         ]
       }
     },

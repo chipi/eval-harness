@@ -1043,7 +1043,7 @@ def landing_teaser(H, f: dict, num: str = "03") -> str:
   <h2>The harness enforces a method.</h2>
   <p class="lede">Nothing here needed special access or a big budget. It took six habits — each learned by getting something wrong first — and a harness that enforces them. They work on any problem you can put into a dataset. The framing builds on Chip Huyen's <i>AI Engineering</i> and <i>Designing Machine Learning Systems</i>.</p>
   <div class="habits">{habits}</div>
-  <div class="btns"><a class="btn primary" href="method.html">Read the method</a><a class="btn" href="use.html">Use it on your problem</a></div>
+  <div class="btns"><a class="btn primary" href="method.html">Read the method</a></div>
 </div></section>
 """
 
