@@ -363,6 +363,9 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **`dataset-from-capture` deleted what sat in its items' folder**: `data/sources/<dataset>/` was emptied before the
+  items were written, and a capture's own export kept there was deleted without a word (the fleet's beta). A file
+  there that the dataset's record does not name is now refused (`would-overwrite`), and stays.
 - **`validate` V24 failed every replay run**: it required a run's `deployment.code` to be one checkout (repo, commit,
   dirty, path), and a replay's (RFC-030) is its code record, the record's versions' hash and the commits it ran. The
   replay test read only V26's line of `validate`; it now holds V24 too.

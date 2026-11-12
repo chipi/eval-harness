@@ -319,6 +319,27 @@ check(
     r.returncode != 0 and "--sample" in out(r),
     out(r)[-200:],
 )
+# The fleet's beta (2026-11-12): the folder a dataset's items go in held the capture's own export, and it was deleted
+# without a word. A file the harness did not write there is refused, and stays.
+_runstore.write_text(proj, "sources/m_own/export.jsonl", '{"id": "x"}\n')
+r = evh("dataset-from-capture", "m", "--dataset-id", "m_own")
+check(
+    "from-capture: a folder holding a file the harness did not write is refused, the file kept",
+    r.returncode != 0
+    and "export.jsonl" in out(r)
+    and _runstore.exists(proj, "sources/m_own/export.jsonl")
+    and not _runstore.exists(proj, "datasets/m_own.json"),
+    out(r)[-300:],
+)
+r = evh("dataset-from-capture", "m", "--dataset-id", "m_where", "--where", "kind:b", "--force")
+check("from-capture --force: the dataset's own items are replaced", r.returncode == 0, out(r)[-300:])
+_runstore.write_text(proj, "sources/m_where/notes.txt", "mine\n")
+r = evh("dataset-from-capture", "m", "--dataset-id", "m_where", "--where", "kind:b", "--force")
+check(
+    "from-capture --force: a file beside the dataset's items that it did not write is refused, kept",
+    r.returncode != 0 and "notes.txt" in out(r) and _runstore.exists(proj, "sources/m_where/notes.txt"),
+    out(r)[-300:],
+)
 
 # ── a sample is the capture's (owner, 2026-11-01: 1 billion records a day are sampled as they are read) ──
 logs = [

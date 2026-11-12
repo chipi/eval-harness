@@ -191,6 +191,28 @@ def main() -> int:
 
         src = SOURCES / args.dataset_id
         if _store.exists(src):
+            # Only what this dataset's record says the harness wrote here goes: anything else in the folder (a
+            # capture's own export, say) may be the only copy, so it is refused, never deleted.
+            ours = (
+                {
+                    it.get("source_path", it["item_id"])
+                    for it in load_dataset(args.dataset_id).get("items") or []
+                }
+                if _store.exists(out)
+                else set()
+            )
+            other = sorted(
+                p.relative_to(src).as_posix()
+                for p in _store.rglob(src, "*")
+                if _store.is_file(p) and p.relative_to(src).as_posix() not in ours
+            )
+            if other:
+                die(
+                    f"{src} holds {len(other)} file(s) the harness did not write ({', '.join(other[:3])}"
+                    f"{', …' if len(other) > 3 else ''}): items go in this folder and replace what is there. "
+                    "Move them, or name the dataset differently.",
+                    "would-overwrite",
+                )
             _store.rmtree(src)
         _store.mkdir(src, parents=True)
         items, bad = [], []
