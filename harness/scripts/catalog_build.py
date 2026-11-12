@@ -4109,6 +4109,17 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
                 + (f" <b>scored anyway by {e(by)} (--unfaithful)</b>" if by else ""),
             )
         )
+        hc = rp.get("history_confound") or {}
+        if hc.get("items"):  # RFC-031 P1
+            facts.append(
+                (
+                    "history confound",
+                    (
+                        f"{hc['items']} of {hc['of']} item(s) met a person's reaction to an action production took and this "
+                        "variant did not: its score there reads that reaction"
+                    ),
+                )
+            )
     if a.get("superseded_by"):
         facts.append(
             (

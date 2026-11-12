@@ -103,6 +103,7 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | labels from what happened afterwards | `evh label-from-capture --dataset-id … --capture c1 --map rules.yaml --set …` |
 | how far outcome rules label a dataset now | `evh label-coverage --dataset-id … --capture c1 --map rules.yaml` |
 | an outcome from another system; relabels that only add | `evh label-from-capture … --outcomes C2 --join F=F --within -1m,+15m` · `… --set s2 --from-set s1` · `evh label-coverage … --from-set s1` |
+| the labeller tested; labels where production is reproduced | `evh label-mutants --dataset-id … --capture c1 --map rules.yaml` · `evh label-from-capture … --reproduced-by REPLAY_RUN --production RUN` |
 | production's own decisions as an arm | `evh arm-from-capture --dataset-id … --capture c1 --as production_v1 [--like CONFIG]` ([§15b](#15b-evaluating-what-production-did)) |
 | what production must match | `evh deploy-sheet --config ARM [--capture C]` |
 | replay the code that ran, item by item | `evh run --config REPLAY` (a config with `replay:` and `model_record:` a `kind: code` record) · `evh models --model …` ([§15c](#15c-replaying-the-code-that-ran)) |
@@ -1646,6 +1647,16 @@ evh dataset-split prod_v1 --test 0.3 --seed 7 --key fingerprint     # prod_v1_va
   the set keeps production's action per item; a run or rescore against it does not score an item where its output is
   not that action (the adapter's `same()`), says "N item(s) not scorable under this variant", and records them
   (`not_scorable`). Related decisions (one fingerprint decided many times) count once with a goal's `cluster:`.
+- **The labeller mutation-tested** (RFC-031 X1). `evh label-mutants --dataset-id D --capture C --map rules.yaml
+  [--outcomes …] [--mutants my_mutants.py]` labels again with each named change (each `min_age_days` halved and one
+  and a half times, neighbouring rules swapped, each `when` value replaced, the join's window moved an hour; a
+  project's own from `mutants(rules)` and `join_mutants(join)`) and counts the labels each moves. A mutant that moves
+  none survives: the labelled items do not reach what it changes, a finding to read; the command exits 6.
+- **A label counts only where production's decision is reproduced** (RFC-031 X2). `label-from-capture …
+  --reproduced-by REPLAY_RUN --production PROD_RUN` keeps a label only where the replay at the recorded versions
+  (RFC-030) gives production's decision on that item, and leaves the rest out, counted. An item whose version's
+  deployment was dated by commit time (`dated_by: commit` in the code record: the host no longer records its pull) is
+  kept as `reproduced: approximate`, counted apart from the ones dated by the pull.
 - **The catalog's Captures page** lists every capture (records, importer, the time its records span,
   what it continues) with the datasets made from each; a dataset's origin links to it.
 - **Only the body becomes the item.** Fields are typed by a field set: `--fieldset S` keeps every field

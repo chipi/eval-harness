@@ -175,6 +175,10 @@ COMMANDS = {
         "record reads of a held-out side's items: each is left out of every later score on it (RFC-031)",
     ),
     "exposure": ("view_exposure.py", "a held-out side's exposure register, in counts (RFC-031)"),
+    "label-mutants": (
+        "label_mutants.py",
+        "mutation-test a labeller: each named change to the rules or the join must move some labels (RFC-031)",
+    ),
     "periods": (
         "view_periods.py",
         "a code record's deployed periods, numbered, dated, with their faithfulness (RFC-031)",

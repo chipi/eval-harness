@@ -476,6 +476,11 @@ def main() -> int:
                 ["--config", "no.yaml", "--candidate", "x", "--period", "1"],
                 "no config at no.yaml",
             ),
+            (
+                "label-mutants",
+                ["--dataset-id", "tickets_v1", "--capture", "no_such", "--map", "no.yaml"],
+                "--map: no file no.yaml",
+            ),
             # Held-out discipline (RFC-031): installed, each answers in words; the flow is test_exposure.py.
             ("exposure", [], "ok:No held-out sides"),
             (

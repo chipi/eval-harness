@@ -82,6 +82,7 @@ READ_TOOLS = (
     "sealed-counts",
     "periods",
     "period-compare",
+    "label-mutants",
 )
 #: Tools that write, for the agent sampler of a study alone (owner, 2026-11-09, RFC-029): offered by a local server
 #: only, never a public one, and named as not read-only. Every other write is the command line's or a job's.
@@ -174,7 +175,7 @@ JSON |= {"dataset-items", "captures", "labels", "tags", "licences", "picks", "de
 JSON |= {"runs-list", "rounds", "leaderboard", "pair-test", "family-test", "rank-stability", "run-compare"}
 JSON |= {"label-coverage", "baselines"}
 JSON |= {"dataset-card", "validate", "prompts", "prompt-diff", "looks", "studies"}
-JSON |= {"faithfulness-show", "exposure", "sealed-counts", "periods", "period-compare"}
+JSON |= {"faithfulness-show", "exposure", "sealed-counts", "periods", "period-compare", "label-mutants"}
 JSON |= set(AGENT_TOOLS)
 #: Left out of every schema: the server uses the project's own adapter (an agent must not load an
 #: arbitrary file), and sets --json itself.
@@ -394,6 +395,7 @@ TOOL_HIDDEN = {
     "study-tell": {"--proposal"},  # a path of the server's: a call sends --proposal-json
     "family-test": {"--runs-dir", "--items"},
     "exposure": {"--ids"},  # a held-out side's ids: a person's command
+    "label-mutants": {"--mutants"},  # a Python file it runs: never from a tool call
 }
 #: In --public mode, the options that would answer with an item's text, an arm's output or a label (the
 #: sheet): a public server answers with numbers and ids only, as catalog-serve --public does without
@@ -429,6 +431,7 @@ PUBLIC_DROPPED = {
     "label-coverage": "it reads a rules file by path and the captures, which are this machine's",
     "exposure": "a held-out side's reads are the project's own",
     "sealed-counts": "a held-out side's counts are for the project's own safety watch",
+    "label-mutants": "it reads a rules file by path and the captures, which are this machine's",
 }
 
 

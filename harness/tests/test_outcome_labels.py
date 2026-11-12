@@ -13,6 +13,7 @@ label-coverage counts it all; label-from-capture writes the dates and the action
 matured, another recurred: a relabel keeps two, adds one, marks one changed after maturing; a label no rule gives any
 more is refused unless kept. A capture of the objects the items name, missing two: those are gone. Production's own
 arm scores every labelled item; a variant that acted otherwise is not scored on the action-bound one, and says so.
+X1: the labeller's mutants (built in, and a project's): the ones that move labels are killed, the survivors named.
 """
 
 import datetime as _dt
@@ -283,6 +284,32 @@ try:
         "run --labels: a variant run says the item it is not scored on, and records it",
         r.returncode == 0 and "1 item(s) not scorable under this variant" in said(r),
         said(r)[-500:],
+    )
+    # X1: the labeller mutation-tested.
+    (proj / "mut.py").write_text(
+        "def mutants(rules):\n"
+        "    out = [dict(r) for r in rules]\n"
+        "    out[0] = {**out[0], 'when': {'iss.closed_at': 'completed'}}\n"
+        "    return [('the close reason read from the wrong field', out)]\n"
+    )
+    r = evh("label-mutants", "--dataset-id", "tickets_v1", "--capture", "dec", "--map", "rules.yaml", *join("iss"),
+            "--mutants", "mut.py", "--json")  # fmt: skip
+    try:
+        mv = json.loads(r.stdout)["result"]["values"]
+    except ValueError:
+        mv = {}
+    names = {m["mutant"]: m["moved"] for m in mv.get("mutants") or []}
+    check(
+        "label-mutants: 7 mutants; the field, window and project mutants kill; the age shifts and the swap survive "
+        "(the labelled items are far from the window's edge, and the two rules never take the same item), exit 6",
+        r.returncode == 6
+        and len(names) == 7
+        and sorted(mv.get("survived") or []) == sorted(n for n, k in names.items() if k == 0)
+        and len(mv.get("survived") or []) == 3
+        and all("min_age_days" in n or "swapped" in n for n in mv.get("survived") or [])
+        and names.get("the close reason read from the wrong field (the project's)", 0) > 0
+        and any("window moved" in n and k > 0 for n, k in names.items()),
+        said(r)[-900:],
     )
     r = evh("validate")
     check("validate passes with the new label fields", r.returncode == 0, r.stdout[-600:])

@@ -1,6 +1,7 @@
 # RFC-031: Held-out discipline, labels that mature from outside systems, and decisions scored by what followed
 
-- **Status**: Accepted (owner, 2026-11-12: "accept and build"; decisions below). The triage fleet's seven new gaps, approved by the owner on 2026-11-12
+- **Status**: Accepted and built (0.8.0, 2026-11-12; owner: "accept and build", decisions below). What the build
+  changed is under **As built**. The triage fleet's seven new gaps, approved by the owner on 2026-11-12
   ("I did approve them … implement all of them"), sent by the homelab session from fleet-eval-data's
   `BOUNDARY-PROPOSAL.md`; each one's reason is the fleet session's own answer (2026-11-12) and its hand-built tool in
   fleet-eval-data, read the same day.
@@ -241,6 +242,42 @@ hidden-write case and a period. Both stores.
 ## Migration
 
 None: every record gains optional fields; nothing existing changes.
+
+## As built (2026-11-12)
+
+Every part is built, each with a test that fails before it (`tests/test_exposure.py`, `test_outcome_labels.py`,
+`test_replay_hide.py`), the killing mutants checked by hand. Where the build differs from the design above:
+
+- **H1**: `exposure-check` writes the leaks it finds to `--out FILE.tsv` (ready for `exposure-add --from`) and prints
+  counts, never ids. The scores leave read items out at the two places every score reads through: `_runs.per_item`
+  (pair-test, family-test, the leaderboard) and the catalog adapter's `scores`, wrapped where every adapter is built
+  (a project's own too); `_jsonout` says "N item(s) left out (exposed)" after any command whose scores did.
+  `--include-exposed` is on `pair-test`: the mean difference with the read items kept, marked, no test run on it
+  (a test set's look is spent on the number that counts). The dataset page, the goal page and `evh goals` carry a
+  held-out side's read count.
+- **H2**: `sealed-counts --no-day` gives totals; a counted field holding text (over 60 characters, or a newline)
+  is refused. The counts hook is called with the capture's records on the held-out side and the side's items.
+- **L1, X3**: `--outcomes-as NAME` (default: the capture's id) is the prefix the rules read, so a later capture of the
+  same source keeps the rules' names. `--gone-if-missing` is for a capture of the very objects the items name (a
+  GlitchTip issue): in a window join no match is no outcome, not gone. The identity check makes a reused id gone.
+- **L2**: an item's age is measured to the newest capture read (`as_of`). `--keep-vanished` keeps a label today's
+  rules no longer give, said.
+- **L3**: `--action-field` names the record field holding production's action; `same()` of the run's adapter decides
+  whether a variant acted the same. The items left out are `not_scorable` on the run's record, and `_jsonout` says
+  so after any command that read them.
+- **P1**: the hide setting is in the replay adapter's identity hash, so the existing gate needs a faithfulness record
+  made with it. The run counts `history_confound` from the rows the adapter marked and writes `confound.jsonl` beside
+  it, except on a held-out side; the arm page and every score say it. The replay example hides production's own
+  reopens (still 20 of 20) and gained one person's close in its history, so its third-version candidate meets one
+  confound (d05). Found while building it: `validate` V24 rejected every replay run's code part (an RFC-030 bug),
+  fixed, and the replay test now holds V24.
+- **P2**: `period-compare` reads the latest run of each config (nothing is called); with no primary metric on the
+  runs it asks for `--metric`, as pair-test does.
+- **X1**: the built-in mutants are each `min_age_days` halved and one and a half times, each pair of neighbouring
+  rules swapped, each `when` value replaced and the join's window moved an hour; the project's mutants file is never
+  taken through the API or a tool (it is code).
+- **X2**: a replay run records each item's commit on its row (`_commit`), so a reproduction is dated whatever the
+  adapter records; `dated_by: pull | commit` on a code record's deployment, shown by `evh periods`.
 
 ## Decisions (owner, 2026-11-12)
 

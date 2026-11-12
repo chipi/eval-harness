@@ -12,6 +12,8 @@ candidate at the third commit, with the same hiding, records its history confoun
 issue it did not, and a person closed that issue later), writes their ids beside the run, and every score on it says so.
 P2: `evh periods` numbers the code record's deployed periods; `evh period-compare` puts a period's production, its
 code as it ran and the candidate side by side, and says when the as-run replay disagrees with production there.
+X2: a rule label set keeps a label only where the replay at the recorded versions reproduces production's decision;
+a version whose deployment was dated by commit time counts as approximate.
 """
 
 import json
@@ -227,6 +229,70 @@ try:
         "period-compare: a 'code that ran' that disagrees with production on the period (v3 merges d05) does not count",
         bad_pc.returncode == 0 and values(bad_pc).get("counts") is False and "DOES NOT COUNT" in said(bad_pc),
         said(bad_pc)[-500:],
+    )
+
+    # ── X2: a label counts only where the replay at the recorded versions reproduces production's decision ─────────
+    import yaml
+
+    rec = yaml.safe_load(_runstore.read_text(proj, "models/toy_filing.yaml"))
+    rec["versions"][0]["deployed"][0]["dated_by"] = (
+        "commit"  # the host's pull time no longer recorded: approximate
+    )
+    _runstore.write_text(proj, "models/toy_filing.yaml", yaml.safe_dump(rec, sort_keys=False))
+    (proj / "lab.yaml").write_text("- {absent: [no_such_field], label: decided}\n")
+    LAB = [
+        "label-from-capture",
+        "--dataset-id",
+        "filing_history_v1",
+        "--capture",
+        "filing_prod",
+        "--map",
+        "lab.yaml",
+    ]
+    x = evh(*LAB, "--set", "lab_hidden", "--reproduced-by", run_id(hid), "--production", prod_id)
+    doc = (
+        _runstore.read_json(proj, "labels/filing_history_v1/lab_hidden/labels.json")
+        if x.returncode == 0
+        else {}
+    )
+    rb = (doc.get("source") or {}).get("reproduced_by") or {}
+    kinds = sorted({r.get("reproduced") for r in (doc.get("items") or {}).values()})
+    check(
+        "X2: the replay reproduces production on all 20: every label kept, the first period's 8 (its deployment dated "
+        "by commit time) counted as approximate, apart from the 12 dated by the pull",
+        x.returncode == 0
+        and (rb.get("reproduced"), rb.get("approximate"), rb.get("not_reproduced")) == (20, 8, 0)
+        and kinds == ["approximate", "yes"],
+        said(x)[-500:] + json.dumps(rb),
+    )
+    x2 = evh(*LAB, "--set", "lab_cand", "--reproduced-by", cid, "--production", prod_id)
+    doc2 = (
+        _runstore.read_json(proj, "labels/filing_history_v1/lab_cand/labels.json")
+        if x2.returncode == 0
+        else {}
+    )
+    rb2 = (doc2.get("source") or {}).get("reproduced_by") or {}
+    check(
+        "X2: by a replay that does not reproduce production everywhere (v3 merges d05), those labels are left out, counted",
+        x2.returncode == 0
+        and rb2.get("not_reproduced", 0) >= 1
+        and "d05" in (rb2.get("left_out") or [])
+        and doc2.get("n_items") == 20 - rb2.get("not_reproduced", 0),
+        said(x2)[-500:] + json.dumps(rb2),
+    )
+    per2 = evh("periods", "--model", "toy_filing", "--json")
+    check(
+        "periods says how each period was dated: the first by commit time (approximate)",
+        [x.get("dated_by") for x in values(per2).get("periods") or []][:1] == ["commit"]
+        and "approximate" in said(per2),
+        said(per2)[-400:],
+    )
+    evh("catalog")
+    page = next((proj / ".build" / "catalog" / "a").glob("*filing_candidate_v3_hidden*.html"), None)
+    check(
+        "the catalog's arm page marks the candidate's history confound",
+        page is not None and "history confound" in page.read_text() and "1 of 20 item(s)" in page.read_text(),
+        str(page),
     )
     _runstore.unlink(proj, "configs/filing_bad_hide_v1.yaml")
     v = evh("validate")

@@ -454,6 +454,7 @@ def one_pass(
         src = mat / rel
         source_text = _store.read_text(src, encoding="utf-8", errors="replace")
 
+        commit_here: str | None = None  # a replay's commit for this item (RFC-030), on its row
         if resumed:
             res: Any = _Resumed(prior_out[item["item_id"]], (prior_rows or {}).get(item["item_id"]))
         elif recorded is not None:
@@ -468,6 +469,7 @@ def one_pass(
             n_called += 1
             try:
                 call_params = {**params, **per_item(item)} if per_item is not None else params
+                commit_here = (call_params.get("code") or {}).get("commit") if per_item is not None else None
                 res = (
                     _timed(call_system)(source_text, call_params)
                     if once
@@ -580,6 +582,10 @@ def one_pass(
         # loop trying to average it.
         if res.meta:
             row["_meta"] = res.meta
+        if commit_here:
+            row["_commit"] = (
+                commit_here  # the commit this item ran at: what a label's reproduction is dated by (X2)
+            )
         predictions.append(row)
 
         # THE ROW GOES TO DISK NOW, NOT AT THE END OF THE PASS.

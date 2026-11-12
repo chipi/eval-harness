@@ -279,6 +279,13 @@ that can move a result is never a patch release without saying so under **Change
   `evh period-compare` reads a period's production, its code as it ran and a candidate, refuses to count when the
   replay disagrees with production there, and gives the paired test on that period's items only.
 
+- **The labeller mutation-tested, and labels kept only where production is reproduced** (RFC-031 X1, X2): `evh
+  label-mutants` labels again with each named change to the rules or the join (built in, and a project's own) and
+  exits 6 on a mutant that moves no label; `label-from-capture --reproduced-by REPLAY_RUN --production RUN` keeps a
+  label only where the replay at the recorded versions reproduces production's decision, and counts one at a version
+  dated by commit time (`dated_by: commit` on a code record's deployment) as approximate. A replay run records each
+  item's commit on its row (`_commit`).
+
 ### Changed
 
 - **One `evh migrate` brings a project to 0.8.0's formats**, in four steps (runs, datasets, records, fingerprints),

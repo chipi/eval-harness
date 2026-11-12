@@ -71,6 +71,7 @@ PATH_KINDS: dict[tuple[str, str], str] = {
     ("import-run", "--scores"): UPLOAD,
     ("import-run", "--scorer-file"): UPLOAD,
     ("label-coverage", "--map"): UPLOAD,
+    ("label-mutants", "--map"): UPLOAD,
     ("label-from-capture", "--map"): UPLOAD,
     ("label-from-run", "--guideline"): UPLOAD,
     ("label-import", "sheet"): UPLOAD,
@@ -91,6 +92,7 @@ PATH_KINDS: dict[tuple[str, str], str] = {
 #: a file of the server's, a page's own assets. A path-typed argument in neither table fails a test.
 NEVER_PATHS = {
     ("arm-from-capture", "--like"),
+    ("label-mutants", "--mutants"),  # a Python file it runs: the project's own, on its machine
     ("bootstrap-test", "--items"),
     ("pair-test", "--items"),
     ("family-test", "--items"),

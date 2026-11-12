@@ -65,6 +65,56 @@ def _previous(dataset_id: str, name: str) -> tuple[dict[str, Any], dict[str, str
     return doc, texts
 
 
+def _reproduced(
+    replay_id: str, production_id: str, labels: dict[str, str], info: dict[str, dict]
+) -> dict[str, Any]:
+    """RFC-031 X2: keep each label only where the replay reproduces production's decision; mark one at a version whose
+    deployment was dated by commit time (approximate). Mutates `labels` and `info`; returns the counts."""
+    from evaluation_harness import _coderec, _outputs, _runs  # noqa: PLC0415
+    from evaluation_harness._adapter import same_of  # noqa: PLC0415
+    from evaluation_harness._common import RUNS  # noqa: PLC0415
+
+    rd, pd = RUNS / replay_id, RUNS / production_id
+    rm, pm = _runs.read_metrics(rd), _runs.read_metrics(pd)
+    if rm is None or pm is None:
+        die(f"no run {replay_id if rm is None else production_id} in {RUNS}", "not-found")
+    code = ((rm.get("fingerprint") or {}).get("deployment") or {}).get("code") or {}
+    if not code.get("record"):
+        die(f"{replay_id} is not a replay run (RFC-030): it names no code record", "bad-argument")
+    rec = _coderec.load(str(code["record"]))
+    approximate_commits = {
+        str(v.get("commit"))
+        for v in rec.get("versions") or []
+        if any(p.get("dated_by") == "commit" for p in v.get("deployed") or [])
+    }
+    commit_of = {r["item_id"]: str(r.get("_commit") or "") for r in _runs.item_rows(rd, strict=False)}
+    same = same_of(rm.get("adapter"))
+    out: dict[str, Any] = {
+        "replay": replay_id,
+        "production": production_id,
+        "reproduced": 0,
+        "approximate": 0,
+        "not_reproduced": 0,
+    }
+    left: list[str] = []
+    for iid in sorted(labels):
+        a, b = _outputs.output(rd, iid), _outputs.output(pd, iid)
+        if a is None or b is None or not same(a, b):
+            left.append(iid)
+            continue
+        out["reproduced"] += 1
+        c = commit_of.get(iid, "")
+        approx = bool(c) and any(full.startswith(c) for full in approximate_commits)
+        info.setdefault(iid, {})["reproduced"] = "approximate" if approx else "yes"
+        out["approximate"] += approx
+    for iid in left:
+        labels.pop(iid, None)
+        info.pop(iid, None)
+    out["not_reproduced"] = len(left)
+    out["left_out"] = left
+    return out
+
+
 def main() -> int:
     """Label a dataset's items from a capture's outcomes, by rules."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.splitlines()[0])
@@ -81,6 +131,12 @@ def main() -> int:
         action="store_true",
         help="with --from-set: keep an earlier label today's rules no longer give (said), instead of refusing",
     )
+    ap.add_argument(
+        "--reproduced-by",
+        help="a replay run at the recorded versions (RFC-030): keep a label only where it reproduces production's "
+        "decision (with --production); a version dated by commit time counts as approximate (RFC-031 X2)",
+    )
+    ap.add_argument("--production", help="with --reproduced-by: production's recorded run")
     ap.add_argument(
         "--action-field",
         help="the record field holding production's action, for rules with under: action (RFC-031)",
@@ -193,6 +249,14 @@ def main() -> int:
                 "changed_after_maturing": changed,
                 "vanished_kept": len(vanished),
             }
+        reproduced: dict[str, Any] = {}
+        if args.reproduced_by or args.production:
+            if not (args.reproduced_by and args.production):
+                die(
+                    "--reproduced-by and --production go together (the replay and what it must reproduce)",
+                    "bad-argument",
+                )
+            reproduced = _reproduced(args.reproduced_by, args.production, labels, info)
         if not labels:
             die(f"no item got a label ({dict(counts)}): nothing written", "not-enough")
         source = {
@@ -207,6 +271,7 @@ def main() -> int:
             "mapping_sha256": hashlib.sha256(_store.read_bytes(args.map)).hexdigest(),
             **({"outcomes": join.source()} if join else {}),
             **({"relabel": relabel} if relabel else {}),
+            **({"reproduced_by": reproduced} if reproduced else {}),
             **{k: counts[k] for k in ("matched", "skipped", "unmatched", "no_record", "gone")},
         }
         out = write_set(
@@ -225,6 +290,12 @@ def main() -> int:
             + ")"
             + (f", as of {source['as_of'][:10]}" if source.get("as_of") else "")
         )
+        if reproduced:
+            print(
+                f"  reproduced by {args.reproduced_by}: {reproduced['reproduced']} kept, of them "
+                f"{reproduced['approximate']} at a version dated by commit time (approximate); "
+                f"{reproduced['not_reproduced']} left out (the replay does not reproduce production's decision)"
+            )
         if relabel:
             print(
                 f"  relabel of {args.from_set}: {relabel['kept']} kept, {relabel['added']} added (matured since), "
