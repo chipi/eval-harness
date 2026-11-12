@@ -374,6 +374,13 @@ that can move a result is never a patch release without saying so under **Change
   - A free arm's cost read "—". It reads "$0".
   - The picked arms' bar hid under the header.
   - Sections are headings, and a column head keeps its meaning around its sort button.
+  - "leader" did not say whether the lead was real. It says how many eligible arms it is not significantly
+    ahead of, or that it is significantly ahead.
+  - The role badges looked alike: a result is set solid, an arm left out drawn as an outline.
+  - The trade-off charts did not name their reference; they do. Speed's ticks read "57.5 s", not "57500.0".
+    The frontier is no longer drawn in the accent.
+  - A grouping or a facet picked was lost on reload; both are in the address now.
+  - Every catalog page has a skip link to its content.
 - **`dataset-from-capture` deleted what sat in its items' folder**: `data/sources/<dataset>/` was emptied before the
   items were written, and a capture's own export kept there was deleted without a word (the fleet's beta). A file
   there that the dataset's record does not name is now refused (`would-overwrite`), and stays.

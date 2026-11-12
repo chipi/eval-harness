@@ -71,9 +71,26 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
     measure_of: dict = {}
     for r in cb.glance(A, by_ds):
         g, dec = r["goal"], r["dec"]
+        # A leader is named with how far it is from the rest: the arms its lead over is not significant.
+        lead = "leader"
+        if dec and r["leader"]:
+            near = [
+                a
+                for a in dec["eligible"]
+                if a != r["leader"]
+                and not str(
+                    (dec["rows"][a]["quality"].get("vs_leader") or {}).get("verdict") or ""
+                ).startswith("significant")
+            ]
+            if len(dec["eligible"]) > 1:
+                lead = (
+                    f"leader, not significantly ahead of {len(near)}"
+                    if near
+                    else "leader, significantly ahead"
+                )
         for arm, word in (
             (r["baseline"], "baseline"),
-            (r["leader"], "leader"),
+            (r["leader"], lead),
             (r["recommended"], "recommended"),
         ):
             if arm:
@@ -249,6 +266,15 @@ def period_arms(A, by_ds: dict, rows: list[dict]) -> dict:
     return out
 
 
+def _role_tint(word: str) -> str:
+    """A role's badge class: a result (leader, recommended) set solid, an arm left out drawn dashed."""
+    if word.startswith(("leader", "recommended")):
+        return " role-result"
+    if word.startswith(("over a limit", "not eligible", "retired")):
+        return " role-out"
+    return ""
+
+
 def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) -> None:
     """Write arms.html."""
     from evaluation_harness import catalog_build as cb  # noqa: PLC0415
@@ -260,7 +286,9 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
     period_rows, trs = period_arms(A, by_ds, rows), []
     for r in rows:
         latency = f"{r['latency']:.0f} ms" if r["latency"] else "—"
-        badges = "".join(f'<span class="role">{e(x)}</span>' for x in dict.fromkeys(r["roles"]))
+        badges = "".join(
+            f'<span class="role{_role_tint(x)}">{e(x)}</span>' for x in dict.fromkeys(r["roles"])
+        )
         attrs = {
             "dataset": r["dataset"],
             "config": r["config"],
@@ -401,7 +429,12 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
             options.append(
                 f'<option value="{k}">{e(gr["goal"].get("title") or gr["goal"]["goal_id"])} · {e(gr["dataset"])}</option>'
             )
-            charts.append(f'<div data-tradeoff="{k}"{"" if not charts else " hidden"}>{svg}</div>')
+            ref = (
+                f'<p class="small muted">scored against <code>{e(gr["group"])}</code></p>'
+                if gr["group"]
+                else ""
+            )
+            charts.append(f'<div data-tradeoff="{k}"{"" if not charts else " hidden"}>{ref}{svg}</div>')
 
     facet_chips = "".join(
         f'<button type="button" class="chip" data-facet="{f}" data-value="{v}" aria-pressed="false">{e(n)}</button>'

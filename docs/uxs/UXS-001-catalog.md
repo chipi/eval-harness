@@ -568,6 +568,11 @@ tile opens it grouped by config (`arms.html?group=config`).
     last both ways, and **deciding measure** among its own measure's arms; a grouped table sorts inside each group.
     A free arm's **cost / item** is "$0", not a blank.
   - The compare bar floats at the screen's foot while an arm is picked, its count announced.
+  - **role** badges: a result (leader, recommended) set solid, an arm left out (over a limit, not eligible,
+    retired) drawn as an outline, a baseline plain; none in a status colour. A leader says how far it is from the
+    rest: "leader, not significantly ahead of N" (the eligible arms whose test against it is not significant),
+    "leader, significantly ahead", or "leader" alone when it is the only eligible arm.
+  - The group and facet chips follow the address (`?group=dataset&only=where:local`), so a view can be shared.
 - `02 configs`: the all / new / active chips, then one row per config: **config**, **model ·
   provider**, **datasets** (each linked), **arms**, **spend**, **rank on each goal** (its best
   arm's place among the arms the goal's decision weighs, "#3 of 33"), **runs in period**,
@@ -577,7 +582,8 @@ tile opens it grouped by config (`arms.html?group=config`).
   one dataset re-measured the same way on one day (a rescore of every arm) are one line, "N arms
   on `<dataset>`", so they do not bury the rest.
 - `04 cost and quality, by goal`: a goal list; the goal's trade-off charts (its quality against
-  cost and against speed, the frontier drawn), as on its goal page, one goal at a time.
+  cost and against speed, the frontier drawn), as on its goal page, one goal at a time, under the reference it is
+  scored against. The frontier is drawn in the secondary ink, not the accent; speed's ticks read in ms or s.
 - Command: `evh arms [--dataset-id <id>] [--by dataset|config|model|provider|scored]
   [--where local|hosted] [--tier <tier>] [--weights open|proprietary] [--quality contender|below]
   [--period P]`, and `evh arms --configs` for `02`. A derived arm's **how measured** carries its
@@ -769,6 +775,7 @@ names and the verdicts' metric open their pages.
 
 - The page still carries counts and means only.
 - Every arms table keeps the row key and the tints.
+- Every catalog page opens with a skip link to its content, the first stop of the Tab key.
 - The same view is still a command, with the same numbers (`evh datasets`, `goals`,
   `references`, `metrics`, `arms`, `activity`), or the command gains it in the same change; a
   page's period numbers come from its builder in `catalog_build.py` (`period_*`), never computed

@@ -447,7 +447,7 @@ try:
     r = evh("arms")
     check(
         "catalog: an arm below the goal's quality limit is badged over a limit, on the page and in evh arms",
-        '<span class="role">over a limit</span>' in arms_page and "over a limit" in r.stdout,
+        '<span class="role role-out">over a limit</span>' in arms_page and "over a limit" in r.stdout,
         r.stdout[-500:] + r.stderr[-300:],
     )
     _runstore.write_text(proj, GOAL, original)

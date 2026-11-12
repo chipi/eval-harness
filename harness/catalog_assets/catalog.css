@@ -806,3 +806,13 @@ th .sortbtn { background: none; border: 0; padding: 0; margin: 0; font: inherit;
 span.role { font-size: 11px; }
 input.pick { width: 20px; height: 20px; }
 ::placeholder { color: var(--muted); opacity: 1; }
+
+/* the arms page's left-out critique items (2026-11-12): role badges told apart by shape, not by a status colour;
+   the pick box on the row's text line; the skip link */
+span.role.role-result { color: var(--ink); background: color-mix(in srgb, var(--ink) 14%, transparent); font-weight: 600; }
+span.role.role-out { color: var(--muted); background: transparent; box-shadow: inset 0 0 0 1px var(--axis); }
+input.pick { vertical-align: middle; margin: 0; }
+.skip { position: absolute; left: 8px; top: -48px; z-index: 50; padding: 8px 12px; border-radius: 6px; background: var(--accent);
+  color: var(--accent-ink); font: 600 13px/1 var(--mono); text-decoration: none; }
+.skip:focus { top: 8px; }
+main:focus { outline: none; }

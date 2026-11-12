@@ -282,7 +282,7 @@ def scatter(
     line = sorted((points[i] for i in front), key=lambda p: p[0])
     if len(line) > 1:
         marks.append(
-            '<polyline fill="none" stroke="var(--accent)" stroke-width="1.5" points="'
+            '<polyline fill="none" stroke="var(--ink-2)" stroke-width="1.5" points="'
             + " ".join(f"{x_of(p[0]):.1f},{y_of(p[1]):.1f}" for p in line)
             + '"/>'
         )

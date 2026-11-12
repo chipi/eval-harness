@@ -514,6 +514,7 @@ def page(
 <link rel="icon" href="{up}assets/icon.svg" type="image/svg+xml">
 {HEAD}</head>
 <body data-up="{up}" data-item="{e(item)}" data-serve="{e(serve)}" data-api="{e(API)}">
+<a class="skip" href="#main">Skip to the page</a>
 <header class="bar"><div class="wrap">
   <a class="brand" href="{logo_href}" aria-label="{e(parts[0][0] if parts else brand)}"><img class="mark"
     src="{up}assets/icon.svg" alt="" width="28" height="28">{brand_text}</a>{sections}
@@ -524,7 +525,7 @@ def page(
   <button class="hbtn search-btn" type="button" aria-label="Search" aria-expanded="false" aria-controls="q">{ICON["search"]}</button>
   <button id="theme" class="theme hbtn" aria-label="Toggle light and dark">{ICON["theme"]}</button>
 </div></header>
-<main>
+<main id="main" tabindex="-1">
 {body}
 </main>
 <footer><div class="wrap"><p>{foot}</p>{elsewhere_line(elsewhere)}</div></footer>
@@ -3704,7 +3705,9 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
             and dec["rows"][a]["quality"]["value"] is not None
         ]
         stat = "" if ax["stat"] == "mean" else f" {ax['stat']}"
-        unit = f" ({ax['unit']})" if ax.get("unit") else ""
+        ms = ax.get("unit") == "ms"
+        # milliseconds read as ms or s on the ticks, so the unit is on each tick, not the title
+        unit = f" ({ax['unit']})" if ax.get("unit") and not ms else ""
         if len(pts) > 1 and len({p[0] for p in pts}) == 1:
             # Every arm the same on this axis (all free): no trade-off to draw, and the drawn one had a "$-1" axis.
             usd = ax["name"] == "cost" and ax["measure"] == "cost_usd"
@@ -3720,7 +3723,11 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
             # a number draws its line; the baseline limit is a paired test, not a line
             x_limit=ax.get("limit") if isinstance(ax.get("limit"), (int, float)) else None,
             y_limit=q.get("limit") if isinstance(q.get("limit"), (int, float)) else None,
-            fmt_x=(lambda v: f"${v:.4f}") if ax["name"] == "cost" and ax["measure"] == "cost_usd" else None,
+            fmt_x=(lambda v: f"${v:.4f}")
+            if ax["name"] == "cost" and ax["measure"] == "cost_usd"
+            else (lambda v: f"{v / 1000:.1f} s" if v >= 1000 else f"{v:.0f} ms")
+            if ms
+            else None,
             width=HALF,
         )
         if svg:
