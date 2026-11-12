@@ -1,7 +1,12 @@
-(()=>{const b=document.getElementById('theme'),r=document.documentElement;
-const dark=()=>r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
-const show=()=>b.setAttribute('aria-pressed',String(dark()));show();
-b.addEventListener('click',()=>{r.dataset.theme=dark()?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}show();});})();
+/* the theme: the toggle uses the theme opposite to the system's; pressed again, the page follows the system again */
+(()=>{const b=document.getElementById('theme'),r=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
+const sys=()=>mq.matches?'dark':'light',other=()=>sys()==='dark'?'light':'dark';
+const follow=()=>{delete r.dataset.theme;try{localStorage.removeItem('theme');}catch(e){}};
+if(r.dataset.theme===sys())follow();
+const show=()=>{const on=!!r.dataset.theme;b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',`Use the ${on?r.dataset.theme:other()} theme`);
+b.title=on?`The ${r.dataset.theme} theme; press to follow the system's (${sys()})`:`Following the system's theme (${sys()}); press for ${other()}`;};show();
+b.addEventListener('click',()=>{if(r.dataset.theme)follow();else{r.dataset.theme=other();try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}}show();});
+mq.addEventListener('change',()=>{if(r.dataset.theme===sys())follow();show();});})();
 /* the on-this-page line: the section in view marked, its link kept in sight on a narrow screen */
 (()=>{const links=[...document.querySelectorAll('.onpage a')];if(!links.length)return;
 const secs=links.map(a=>[a,document.getElementById(decodeURIComponent(a.hash.slice(1)))]).filter(x=>x[1]);

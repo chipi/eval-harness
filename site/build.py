@@ -507,10 +507,15 @@ if(!p.has('static'))document.documentElement.classList.add('js');})();
 </script>"""
 
 JS = """<script>
-(()=>{const b=document.getElementById('theme'),r=document.documentElement;
-const dark=()=>r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
-const show=()=>b.setAttribute('aria-pressed',String(dark()));show();
-b.addEventListener('click',()=>{r.dataset.theme=dark()?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}show();});})();
+/* the theme: the toggle uses the theme opposite to the system's; pressed again, the page follows the system again */
+(()=>{const b=document.getElementById('theme'),r=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
+const sys=()=>mq.matches?'dark':'light',other=()=>sys()==='dark'?'light':'dark';
+const follow=()=>{delete r.dataset.theme;try{localStorage.removeItem('theme');}catch(e){}};
+if(r.dataset.theme===sys())follow();
+const show=()=>{const on=!!r.dataset.theme;b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',`Use the ${on?r.dataset.theme:other()} theme`);
+b.title=on?`The ${r.dataset.theme} theme; press to follow the system's (${sys()})`:`Following the system's theme (${sys()}); press for ${other()}`;};show();
+b.addEventListener('click',()=>{if(r.dataset.theme)follow();else{r.dataset.theme=other();try{localStorage.setItem('theme',r.dataset.theme);}catch(e){}}show();});
+mq.addEventListener('change',()=>{if(r.dataset.theme===sys())follow();show();});})();
 /* the on-this-page line: the section in view marked, its link kept in sight on a narrow screen */
 (()=>{const links=[...document.querySelectorAll('.onpage a')];if(!links.length)return;
 const secs=links.map(a=>[a,document.getElementById(decodeURIComponent(a.hash.slice(1)))]).filter(x=>x[1]);
@@ -932,7 +937,8 @@ def home(f: dict) -> str:
             "A leaderboard that argues with itself",
             (
                 "Before it prints an order it tests every pair at once — a Friedman permutation test "
-                "and a Nemenyi critical difference — and says plainly when nothing is distinguishable."
+                "and a Nemenyi critical difference, two tests that compare every arm with every other on the same "
+                "items — and says plainly when nothing is distinguishable."
             ),
         ),
         (
@@ -1166,7 +1172,7 @@ def home(f: dict) -> str:
   <div class="eyebrow"><span class="num">01</span>Why the harness exists</div>
   <h2>Four questions anyone building with AI ends up asking.</h2>
   <p class="lede">There are dozens of models, a leaderboard for each, and none of them measured on your problem. <a href="docs/GUIDE/">The harness</a> exists to answer these on your own data; below, what it answered when pointed at 24 LLMs. How it does that is in <a href="method.html">the method</a>.</p>
-  <p class="lede-note">One model run with its prompt and settings is an <dfn>arm</dfn>. Arms are named by family and size: <code>anthropic_l</code> is the family's largest model here (Claude Opus), <code>_m</code> its middle one, <code>_s</code> its smallest.</p>
+  <p class="lede-note">The words the page uses. One model run with its prompt and settings is an <dfn>arm</dfn>; arms are named by family and size: <code>anthropic_l</code> is the family's largest model here (Claude Opus), <code>_m</code> its middle one, <code>_s</code> its smallest. A <dfn>goal</dfn> is the decision to be made and the measure that makes it; a <dfn>reference set</dfn> is the answers an arm is scored against; a <dfn>round</dfn> is one question a goal puts to its arms. A <dfn>point estimate</dfn> is a score on these items alone, before asking whether a difference is significant.</p>
   <div class="why">{why_html}</div>
 </div></section>
 
@@ -1182,6 +1188,7 @@ def home(f: dict) -> str:
   </div>
   <p class="note" style="margin-top:28px"><b>No figure on this site is typed in by hand.</b> Every figure is recomputed from the committed runs each time the site is built, and every number the prose quotes must appear in the report it comes from, or the build fails. Behind the reports, a checker verifies {f["claims_checked"]} claims against the runs on every commit.</p>
   <div class="chart benches" style="margin-top:48px">{legend(reading="higher score: further right →", baseline=False)}{benches}</div>
+  <p class="dek-note">Each row on its benchmark's own measure: <b>accuracy</b>, the share of items labelled right; <b>F1</b> per sentence, the entities found against those missed or invented; <b>coverage</b>, how much of the reference summary a summary recalls, clipped to the reference's length; <b>nDCG@10</b>, how well the ten abstracts ranked first are ordered; <b>Kendall tau vs experts</b>, how closely a judge orders the summaries as the experts do.</p>
   <p class="dek-note">In the catalog: {goal_links}.</p>
   <div class="btns"><a class="btn primary" href="evals.html">All the findings</a><a class="btn" href="{CATALOG}">Browse them in the catalog</a><a class="btn" href="evals.html#reproduce">Reproduce them</a></div>
 </div></section>
