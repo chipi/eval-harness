@@ -390,8 +390,8 @@ with tempfile.TemporaryDirectory() as td:
     check(
         "arms page: the model once, linked to its record, with smoked / smoke: check; no chip where no smoke ran",
         'href="models/gem.html"' in a_row
-        and '<span class="role">smoked</span>' in a_row
-        and '<span class="role">smoke: check</span>' in b_row
+        and '<span class="smoke">smoked</span>' in a_row
+        and '<span class="smoke">smoke: check</span>' in b_row
         and "not smoked" not in c_row
         and 'href="models/span.html"' in c_row,
     )

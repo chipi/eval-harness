@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-12T19:33:58Z",
+  "generatedAt": "2026-11-12T21:33:59Z",
   "title": "Design System: eval catalog and run inspector",
   "extensions": {
     "colorMeta": {
@@ -572,6 +572,11 @@
       {
         "name": "The Wayfinding Rule",
         "body": "A group colour says which part of the catalog something belongs to, never whether it is good: a trend is tinted in its group's colour whichever way it moves.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three To One Rule",
+        "body": "A data or series colour is 3:1 or more against every surface of its theme (WCAG 1.4.11); the light theme takes a darker step of the same hue where the dark one would fall under it (the fourth critique measured the series amber at 1.9:1, rose 2.3, green 2.4, ember 2.8).",
         "section": "colors"
       },
       {

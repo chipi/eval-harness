@@ -178,7 +178,7 @@ def check_arms_sort_and_kinds(browser, base: str) -> None:
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(base + "arms.html")
     page.wait_for_selector("#arms tbody tr", timeout=30000)
-    page.locator("button[data-group-by=dataset]").first.click()
+    page.locator("button[data-group-by=set]").first.click()
     page.locator("#arms th .sortbtn", has_text="cost").click()
     page.wait_for_timeout(300)
     check(

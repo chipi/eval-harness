@@ -21,14 +21,14 @@ const isRow=r=>!r.classList.contains('grouphead');
 const shown=r=>!r.hidden&&!r.classList.contains('fout')&&!r.classList.contains('pout');
 function regroup(){body.querySelectorAll('tr.grouphead').forEach(r=>r.remove());
 chips.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.groupBy===by)));
-if(by)t.dataset.grouped='';else delete t.dataset.grouped;
+if(by){t.dataset.grouped='';t.dataset.groupedBy=by;}else{delete t.dataset.grouped;delete t.dataset.groupedBy;}
 if(!by){if(t._repage)t._repage();return;}
 const label=(chips.find(b=>b.dataset.groupBy===by)||{}).dataset.label||by;
 const rows=[...body.rows];const key=r=>r.dataset[by]||'';
 rows.sort((a,b)=>key(a)<key(b)?-1:key(a)>key(b)?1:0).forEach(r=>body.appendChild(r));
 let last=null;[...body.rows].forEach(r=>{const k=key(r);if(k===last)return;last=k;
 const h=document.createElement('tr');h.className='grouphead';h.dataset.gkey=k;
-h.innerHTML=`<td colspan="${cols}"><span class="muted small">${esc(label)}</span> <b>${esc(k)}</b> <small class="muted" data-n></small> <span data-gfold></span></td>`;
+h.innerHTML=`<th colspan="${cols}" scope="rowgroup"><span class="muted small">${esc(label)}</span> <b>${esc(k)}</b> <small class="muted" data-n></small> <span data-gfold></span></th>`;
 r.before(h);});if(t._repage)t._repage();}
 gc&&gc.addEventListener('click',ev=>{const b=ev.target.closest('button[data-group-by]');if(!b)return;by=b.dataset.groupBy;open.clear();regroup();remember();});
 t.tHead.addEventListener('click',()=>{if(by)setTimeout(regroup,0);});

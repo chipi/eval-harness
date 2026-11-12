@@ -22,9 +22,10 @@ HOSTED_PROVIDERS = ("litellm", "openai", "anthropic", "openrouter", "together", 
 FEED_FOLD = 3
 
 #: How a table of arms can be grouped: (key, the chip's name).
+# The "dataset" chip groups by what can be ranked together (`set_key`): a dataset, scored one way, on one measure.
 GROUPS = (
     ("", "no grouping"),
-    ("dataset", "dataset"),
+    ("set", "dataset"),
     ("config", "config"),
     ("model", "model"),
     ("provider", "provider"),
@@ -46,8 +47,8 @@ def _base(arm: str) -> str:
 def arm_rows(A, by_ds: dict) -> list[dict]:
     """One row per arm, by dataset, then config, the config's own measurement first:
     {"arm", "label", "dataset", "config", "model", "provider", "family", "tier", "local",
-    "weights", "record", "smoke", "quality", "scored", "how", "roles", "goal", "measure", "value", "lower", "repeats",
-    "cost", "latency", "first", "last"}. `weights` is "open", "proprietary" or "" (unknown: the
+    "weights", "record", "smoke", "quality", "scored", "reference", "how", "roles", "goal", "measure", "value", "lower",
+    "repeats", "cost", "latency", "first", "last"}. `reference` is the reference set's id ("" when none). `weights` is "open", "proprietary" or "" (unknown: the
     adapter's model_facts does not list the model). `record` is the model record the arm uses ("" when
     none), `deployment` the deployment of it its config named ("" when none) and `smoke` that record's latest smoke of the arm's config: pass, check or none ("" without a
     record). `quality` is "a contender" when a goal's
@@ -154,6 +155,7 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                     # What the row is measured against, as every arms table says it (UXS index rule 4).
                     "kind": cb.row_kind(a, tiers),
                     "against": cb.scored_against(a, ""),
+                    "reference": a.get("reference") or "",
                     "how": how,
                     "roles": roles.get(a["arm"], []),
                     "goal": g,
@@ -275,6 +277,14 @@ def _role_tint(word: str) -> str:
     return ""
 
 
+def set_key(r: dict) -> str:
+    """What an arm can be ranked with: its dataset, how it is scored (against one reference, or by one judge) and the
+    measure that decides, with its direction. Two arms in one group are on one scale."""
+    how = r["how"] if r["how"].startswith("judged") else f"against {r['reference'] or 'no reference'}"
+    measure = f" · {r['measure']} {'↓' if r['lower'] else '↑'}" if r["measure"] else ""
+    return f"{r['dataset']} · {how}{measure}"
+
+
 def _reading_order(r: dict) -> tuple:
     """A dataset's arms in the order to read them: what a goal decided first, then best on the deciding measure."""
     roles = " ".join(r["roles"])
@@ -298,12 +308,19 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
     # The page opens grouped by dataset, three rows a group (owner, 2026-11-12): within a dataset the arms a goal
     # decided on come first (recommended, leader, baseline, contender), then the best on the deciding measure.
     for r in sorted(rows, key=_reading_order):
-        latency = f"{r['latency']:.0f} ms" if r["latency"] else "—"
+        latency = (
+            "—"
+            if not r["latency"]
+            else f"{r['latency'] / 1000:.1f} s"
+            if r["latency"] >= 1000
+            else f"{r['latency']:.0f} ms"
+        )
         badges = "".join(
             f'<span class="role{_role_tint(x)}">{e(x)}</span>' for x in dict.fromkeys(r["roles"])
         )
         attrs = {
             "dataset": r["dataset"],
+            "set": set_key(r),
             "config": r["config"],
             "model": r["model"] or "—",
             "provider": r["provider"] or "—",
@@ -361,7 +378,9 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                     + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>',
                     (
                         cb.metric_link(r["measure"])
-                        + f' <span data-v="{r["value"]}" data-g="{e(r["measure"])}">{cb.fmt(r["value"])}</span>'
+                        + f' <span data-v="{r["value"]}" data-g="{e(r["measure"])}" data-better="{"lower" if r["lower"] else "higher"}">'
+                        + f'{cb.fmt(r["value"])}</span> <span class="dir" title="{"lower" if r["lower"] else "higher"} is better">'
+                        + f"{'↓' if r['lower'] else '↑'}</span>"
                     )
                     if r["measure"] and r["value"] is not None
                     else "—",
@@ -493,7 +512,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                 "how measured",
                 "dataset",
                 "model · provider",
-                "deciding measure",
+                '<span data-first="desc">deciding measure</span>',
                 "repeats",
                 "cost / item",
                 "latency",
@@ -504,7 +523,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
             "filter arms (name, model, provider…)",
             period=True,
             noun="arm",
-            attrs={"default-group": "dataset", "fold": "3"},
+            attrs={"default-group": "set", "fold": "3"},
         ),
         "every",
     )

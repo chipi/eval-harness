@@ -222,8 +222,8 @@ section.block.tight { padding: 32px 0; }
 /* inspector charts: the dataviz reference categorical order, validated on these surfaces */
 :root { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767; }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
-  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948; } }
-:root[data-theme="light"] { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948; }
+  --s1: #2a78d6; --s2: #e8551a; --s3: #179669; --s4: #b47a00; --s5: #e15187; --s6: #008300; --s7: #6250d6; --s8: #e34948; } }
+:root[data-theme="light"] { --s1: #2a78d6; --s2: #e8551a; --s3: #179669; --s4: #b47a00; --s5: #e15187; --s6: #008300; --s7: #6250d6; --s8: #e34948; }
 #app figure.chart { margin: 0 0 22px; padding: 18px 18px 8px; border: 1px solid var(--hair); border-radius: 14px; background: var(--surface); }
 #app figure.chart figcaption { font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
 #app figure.chart figcaption b { color: var(--ink); font-weight: 600; }
@@ -519,7 +519,7 @@ select.chip.more { padding-right: 8px; max-width: 100%; text-overflow: ellipsis;
 #actds, #actarms, #actkinds { --c: var(--s4); }
 /* the arms page: a derived arm under the arm it came from, the role badges, group headings, the compare bar */
 span.role { display: inline-block; margin: 0 4px 2px 0; padding: 0 6px; border-radius: 999px; font: 500 10px/1.6 var(--mono); color: var(--ink-2); background: var(--surface-2); white-space: nowrap; }
-tr.grouphead td { padding-top: 18px; border-bottom: 1px solid var(--hair); }
+tr.grouphead td, tr.grouphead th { padding-top: 18px; border-bottom: 1px solid var(--hair); text-align: left; font-weight: 400; }
 tr.fout { display: none; }
 .arm-tools { display: flex; flex-wrap: wrap; gap: 4px 18px; }
 .group-chips span.muted, .facet-chips span.muted { align-self: center; margin-right: 4px; }
@@ -827,3 +827,24 @@ tr.emptyrow .btn { margin-left: 8px; }
 
 /* text for a screen reader only (a column head's name where the column shows no heading) */
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* the arms page's fourth critique (2026-11-12): a measure's direction beside its value; while a heading names the
+   dataset (grouped by what ranks together), the dataset column leaves, and the table fits a desktop screen */
+span.dir { color: var(--muted); font: 500 12px/1 var(--mono); }
+#arms[data-grouped-by="set"] tr > :nth-child(4) { display: none; }
+/* the arm and how-measured columns wrap their badges and words, so the grouped table fits 1280 */
+#arms td:nth-child(2) { max-width: 230px; }
+#arms td:nth-child(2) span.role { white-space: normal; }
+#arms td:nth-child(3) { max-width: 180px; }
+
+/* a smoke's result: an outlined badge, not a role pill; the filter's focus a ring; a chart's points as a table; a
+   chart's words on a phone near 11px as the drawing scales down */
+span.smoke { display: inline-block; margin: 0 4px 2px 0; padding: 0 6px; border-radius: 999px; font: 500 11px/1.6 var(--mono);
+  color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--hair); white-space: nowrap; }
+.filter input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+details.chart-table { margin-top: 8px; }
+details.chart-table summary { cursor: pointer; font: 500 12px/1.4 var(--mono); color: var(--muted); }
+@media (max-width: 640px) { figure.chart svg text, figure.chart svg .tick { font-size: 18px; } }
+/* a group's heading is a header cell for its rows (scope=rowgroup) but reads as the body text it was */
+table.data tr.grouphead th { font: 400 14px/1.5 var(--text); letter-spacing: 0; text-transform: none; color: var(--ink); padding: 18px 12px 10px 0; }
+table.data tr.grouphead th small { display: inline; }

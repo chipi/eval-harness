@@ -540,6 +540,14 @@ tile opens it grouped by config (`arms.html?group=config`).
     heading offers "show N more". A heading names the group and counts the arms the filter and chips leave; a
     group with none left loses its heading. A grouped table is not paged; a column's sort holds inside each group.
     "no grouping" is kept in the address as `?group=none`.
+  - The dataset chip groups by what can be ranked together (the fourth critique: one group held gold and adjudicated
+    gold, coverage and a judge's score): one dataset, scored one way (against one reference, or by one judge), on one
+    measure, its heading "dataset ag_news_200 · against gold/ag_news_200 · correct ↑" (`?group=set`). While grouped
+    so, the dataset column leaves (the heading names it) and the arm and how-measured columns wrap, so the table fits
+    1280. A heading is a header cell for its rows (`scope=rowgroup`).
+  - **deciding measure** carries its direction (↑ higher is better, ↓ lower); its first sort is best first, a
+    lower-is-better measure included. **latency** reads in s past a second, as the charts do.
+  - A model record's smoke badge ("smoked", "smoke: check") is outlined, not a role pill.
   - **only** chips: local, hosted (hosted when it runs through a provider that bills per call,
     litellm, openai, anthropic and the like, or its config prices tokens), then each price tier
     the configs declare (free, small, mid, large); a contender, below the leader (the arm's
@@ -592,7 +600,9 @@ tile opens it grouped by config (`arms.html?group=config`).
 - `04 cost and quality, by goal`: a goal list; the goal's trade-off charts (its quality against
   cost and against speed, the frontier drawn), as on its goal page, one goal at a time, under the reference it is
   scored against. The frontier is drawn in ink (its dots) and the secondary ink (its line), never the accent or a
-  group colour; speed's ticks read in ms or s.
+  group colour; speed's ticks read in ms or s. Under each chart, "the N points as a table" (folded): each arm, its
+  quality and its value on the axis, best first, what a dot's tooltip says, for a keyboard and a screen reader too. On
+  a phone a chart's words stay near 11px as the drawing scales down.
 - Command: `evh arms [--dataset-id <id>] [--by dataset|config|model|provider|scored|none] [--all]
   [--where local|hosted] [--tier <tier>] [--weights open|proprietary] [--quality contender|below]
   [--period P]`, and `evh arms --configs` for `02`. It opens as the page does: grouped by dataset, in reading order,

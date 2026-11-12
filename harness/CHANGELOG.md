@@ -389,6 +389,11 @@ that can move a result is never a patch release without saying so under **Change
     model source's colour, silver's the silver tier's, a label set's rule is thin. A baseline badge is plain.
   - `evh arms` opens as the page does: grouped by dataset, the arms a goal decided on first, three a group with the
     command that shows the rest; `--all` shows every row, `--by none` none grouped, `--dataset-id` one dataset in full.
+  - A dataset's group mixed references and measures (gold and adjudicated gold; coverage and a judge's score) and read
+    as one ranking. A group is now one dataset scored one way on one measure, its direction named; the page and `evh
+    arms` say "dataset ag_news_200 · against gold/ag_news_200 · correct ↑". The deciding measure's first sort is best
+    first. The table fits 1280. Each trade-off chart lists its points as a table, and its words are readable on a
+    phone. The light theme's series colours are 3:1 or more on every light surface (amber was 1.9:1).
 - **`dataset-from-capture` deleted what sat in its items' folder**: `data/sources/<dataset>/` was emptied before the
   items were written, and a capture's own export kept there was deleted without a word (the fleet's beta). A file
   there that the dataset's record does not name is now refused (`would-overwrite`), and stays.

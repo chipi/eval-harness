@@ -3742,7 +3742,26 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
             width=HALF,
         )
         if svg:
-            charts.append(f"<div>{svg}</div>")
+            # The chart's points as a table: what a dot's tooltip says, for a keyboard and a screen reader too.
+            fx = (
+                (lambda v: f"${v:.4f}")
+                if ax["name"] == "cost" and ax["measure"] == "cost_usd"
+                else (lambda v: f"{v / 1000:.1f} s" if v >= 1000 else f"{v:.0f} ms")
+                if ms
+                else fmt
+            )
+            rows = "".join(
+                f'<tr><td>{e(lab)}</td><td class="num">{fmt(y)}</td><td class="num">{e(fx(x))}</td></tr>'
+                for x, y, lab, _tip in sorted(
+                    pts, key=lambda p: -p[1] if q["direction"] == "higher" else p[1]
+                )
+            )
+            table = (
+                f'<details class="chart-table"><summary>the {len(pts)} points as a table</summary><div class="scroll-x">'
+                f'<table class="data" data-nopage><thead><tr><th>arm</th><th>{e(quality_name)}</th><th>{e(ax["name"])}{e(stat)}</th></tr></thead>'
+                f"<tbody>{rows}</tbody></table></div></details>"
+            )
+            charts.append(f"<div>{svg}{table}</div>")
     note = f'<p class="small muted">{e("; ".join(notes))}.</p>' if notes else ""
     return (f'<div class="duo">{"".join(charts)}</div>' if charts else "") + note
 

@@ -42,10 +42,10 @@ document.querySelectorAll('table.sortable th').forEach(th=>{th.setAttribute('ari
 if(!th.querySelector('input,button,.vh')&&th.textContent.trim()){const b=document.createElement('button');b.type='button';b.className='sortbtn';
 while(th.firstChild)b.appendChild(th.firstChild);th.appendChild(b);}
 th.addEventListener('click',ev=>{if(ev.target.closest('input')||!th.querySelector('.sortbtn'))return;const tb=th.closest('table').tBodies[0],i=th.cellIndex;
-const dir=th.dataset.dir==='asc'?'desc':'asc';th.closest('tr').querySelectorAll('th').forEach(x=>{delete x.dataset.dir;x.setAttribute('aria-sort','none');});th.dataset.dir=dir;th.setAttribute('aria-sort',dir==='asc'?'ascending':'descending');
+const dir=th.dataset.dir?(th.dataset.dir==='asc'?'desc':'asc'):((th.querySelector('[data-first]')||{dataset:{}}).dataset.first||'asc');th.closest('tr').querySelectorAll('th').forEach(x=>{delete x.dataset.dir;x.setAttribute('aria-sort','none');});th.dataset.dir=dir;th.setAttribute('aria-sort',dir==='asc'?'ascending':'descending');
 const key=r=>{const c=r.cells[i];if(!c)return{blank:true,g:''};const s=c.dataset.v!=null?c:c.querySelector('[data-v]');
 const raw=(s?s.dataset.v:c.textContent).trim(),g=(s&&s.dataset.g)||'';if(raw===''||/^—/.test(raw))return{blank:true,g};
-const n=parseFloat(raw);return{g,v:isNaN(n)?raw.toLowerCase():n};};
+const n=parseFloat(raw),down=s&&s.dataset.better==='lower';return{g,v:isNaN(n)?raw.toLowerCase():down?-n:n};};
 const cmp=(x,y)=>x.blank||y.blank?(x.blank&&y.blank?0:x.blank?1:-1):x.g!==y.g?(x.g<y.g?-1:1):(x.v>y.v?1:x.v<y.v?-1:0)*(dir==='asc'?1:-1);
 [...tb.rows].filter(r=>!r.classList.contains('grouphead')).sort((a,b)=>cmp(key(a),key(b))).forEach(r=>tb.appendChild(r));});});
 /* paging: a long table shows 10 rows at a time, "show 10 more" and "show all" below it. It pages

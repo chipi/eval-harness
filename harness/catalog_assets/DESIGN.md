@@ -171,6 +171,10 @@ charts; tier and source colours for references and labels.
 **The Wayfinding Rule.** A group colour says which part of the catalog something belongs to, never whether it is good:
 a trend is tinted in its group's colour whichever way it moves.
 
+**The Three To One Rule.** A data or series colour is 3:1 or more against every surface of its theme (WCAG 1.4.11); the
+light theme takes a darker step of the same hue where the dark one would fall under it (the fourth critique measured
+the series amber at 1.9:1, rose 2.3, green 2.4, ember 2.8).
+
 **The Tier Is Its Own Colour Rule.** Gold and silver belong to reference tiers only; a label set's source has a
 neutral colour of its own, never a tier's.
 

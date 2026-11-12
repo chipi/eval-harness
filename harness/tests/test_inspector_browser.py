@@ -277,11 +277,12 @@ def drive(base: str, overview: str = "") -> None:
             "arms page: every arm a row, each saying how it was measured",
             rows.count() >= 3 and "measured" in page.locator("table#arms").inner_text(),
         )
-        page.click('.group-chips [data-group-by="dataset"]')
+        page.click('.group-chips [data-group-by="set"]')
+        heads = page.locator("table#arms tr.grouphead:not(.emptyrow)").all_inner_texts()
         check(
-            "arms page: grouped by dataset, one heading naming it and its arms",
-            page.locator("table#arms tr.grouphead").count() == 1
-            and "tickets_v1" in page.locator("table#arms tr.grouphead").inner_text(),
+            "arms page: grouped by dataset, each heading naming it, how its arms are scored and the measure",
+            bool(heads) and all("tickets_v1" in h and ("against" in h or "judged" in h) for h in heads),
+            heads,
         )
         page.locator("table#arms input.pick").nth(0).check()
         page.locator("table#arms input.pick").nth(1).check()

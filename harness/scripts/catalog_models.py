@@ -28,7 +28,8 @@ STATUS_WORDS = {
 }
 #: How an arm that uses a record says whether it was smoked (`evh arm-smoke`): pass, check or none.
 SMOKE_WORDS = {"pass": "smoked", "check": "smoke: check", "none": "not smoked"}
-SMOKE_BADGE = {k: f'<span class="role">{v}</span>' for k, v in SMOKE_WORDS.items()}
+# a smoke's result is a check, not a role: its own outlined badge
+SMOKE_BADGE = {k: f'<span class="smoke">{v}</span>' for k, v in SMOKE_WORDS.items()}
 
 
 def e(s) -> str:
