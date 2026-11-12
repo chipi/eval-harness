@@ -157,7 +157,7 @@ details.cmd pre { margin: 10px 0 0; padding: 12px; background: var(--surface); b
 .part { border: 1px solid var(--hair); border-radius: 8px; padding: 18px; background: var(--surface); }
 .part + .part { margin-top: 14px; }
 .part.off { background: transparent; }
-.part.off > .parthead h2 { color: var(--muted); }
+.part.off > .parthead h2, .part.off > .parthead h3 { color: var(--muted); }
 .parthead { display: flex; gap: 10px; align-items: center; margin-bottom: 4px; }
 .parthead .letter { font: 600 12px/1 var(--mono); color: var(--muted); width: 18px; }
 .parthead .grow { flex: 1; }
@@ -360,7 +360,7 @@ tr.panelrow > td { padding: 4px 10px 12px; background: transparent; }
 tr.panelrow .armpanel { margin: 0; border: 0; border-radius: 0; background: var(--surface-2); }
 @media (max-width: 640px) { table.stack tr.panelrow { display: block; padding: 0; border-top: 0; }
   table.stack tr.panelrow > td { display: block; padding: 0 0 12px; } }
-.answer:focus { outline: none; }
+.answer:focus { outline: 2px solid var(--accent); outline-offset: 6px; }
 
 /* the eval screen's left-out critique items (2026-11-12): results in the ok status, not lime; the catalog's gold tier;
    the skip link; a retired row's verdict struck; a closed round's question as text */
@@ -390,3 +390,11 @@ table.r4res td.acts { white-space: nowrap; }
 /* a chart's words on a phone: the drawing scales to about 0.56 of its 640 units there, so its 11-unit text came out
    about 6px; 19 units keep it near 11px (the critique, 2026-11-12) */
 @media (max-width: 640px) { main svg[role="img"] { overflow: visible; } main svg[role="img"] text { font-size: 19px; } }
+
+/* the eval screen's fourth critique (2026-11-12): a [hidden] control stays hidden whatever its display; the notes a
+   round writes keep a reading measure; the answer's source a quiet line; a field's error in the bad status */
+[hidden] { display: none !important; }
+.part .body p.picks, .part .body .note { max-width: 66ch; }
+.answer p.source { margin: 6px 0 0; font: 400 12px/1.4 var(--mono); color: var(--muted); }
+#actmsg:not(:empty) { color: var(--bad); }
+input[aria-invalid="true"] { border-color: var(--bad); }

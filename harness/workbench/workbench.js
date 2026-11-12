@@ -529,11 +529,11 @@ success_criteria:
       <div class="kicker">Step 5 of 5 · ${esc(S.goal.goal_id)} · ${esc(ds() || "cnn_dailymail_200")}</div>
       <h1>The eval</h1>
       <p class="lead hintable">The goal measured on its dataset, in ${w("round", "rounds")}: each round asks one question, compares its ${w("arm", "arms")}, and ends in a decision kept with its reason. ${q("eval")}</p>
-      <div class="answer"><div class="kicker">the answer so far · ${latest.id === "r4" ? "r1, amended by r4" : "from r1"} · baseline ${esc(latest.base)}</div><p>${esc(M.answer)}</p>${latest.id === "r4" ? `<p class="amend"><b>r4 added:</b> ${esc(latest.text)}</p>` : ""}</div>
+      <div class="answer"><div class="kicker">the answer so far · ${latest.id === "r4" ? "r1, amended by r4" : "from r1"} · baseline ${esc(latest.base)}</div>${(() => { const m = /\s([A-Z][A-Z_]{5,}[^.]*\.)$/.exec(M.answer || ""); const text = m ? M.answer.slice(0, m.index) : M.answer; return `<p>${esc(text)}</p>${m ? `<p class="source">source: ${esc(m[1].replace(/\.$/, ""))}</p>` : ""}`; })()}${latest.id === "r4" ? `<p class="amend"><b>r4 added:</b> ${esc(latest.text)}</p>` : ""}</div>
       ${baselineLine()}
       <div class="tabs"><div role="tablist" aria-label="rounds" class="tablist">${tabs.map(([id, label]) => `<button type="button" role="tab" id="tab-${id}" data-tab="${id}" aria-controls="roundpanel" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}">${esc(label)}</button>`).join("")}</div>
         ${r4 ? "" : `<button type="button" class="btn primary" id="openr4">Open round r4</button>`}</div>
-      ${note("r1 to r3 are this project's real rounds; r4 is the one this walk-through opens.")}
+      ${note(tab === "r5" ? "r1 to r3 are this project's real rounds; r4 and r5 are the ones this walk-through opens." : "r1 to r3 are this project's real rounds; r4 is the one this walk-through opens.")}
       <div role="tabpanel" id="roundpanel" aria-labelledby="tab-${tab}">${body}</div>
     </div>`;
   }
@@ -600,7 +600,7 @@ success_criteria:
               <td class="num">${secs(rr ? rr.p50_ms : a.p50_ms)}</td></tr>`; }).join("")}
           ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span><div class="muted runof">not run</div></td><td></td><td class="num">—</td><td class="muted">no run in the project</td><td class="num">—</td><td class="num">—</td></tr>`).join("")}</tbody></table></div>
           ${r4.closed ? `<div class="note"><b>Closed.</b> ${esc(r4.conclusion)}${promoted ? ` The baseline is now ${esc(M.arms.find((a) => a.config_id === promoted).arm)}.` : ""}</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided">${esc(r4.draft || "")}</textarea></div></div>
-          <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button" ${(r4.draft || "").trim() ? "" : "disabled"}>Close the round</button><span class="muted" style="font-size:13px">${promoted ? `promotes ${esc(M.arms.find((a) => a.config_id === promoted).arm)} as the baseline` : "the baseline stays bart_l"}${(r4.draft || "").trim() ? "" : " · write the conclusion first"}</span></div><div id="closeconfirm"></div>`}</div>` : ""}</div>
+          <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button" ${(r4.draft || "").trim() ? "" : "disabled"}>Close the round</button><span class="muted" style="font-size:13px">${promoted ? `promotes ${esc(M.arms.find((a) => a.config_id === promoted).arm)} as the baseline` : "the baseline stays bart_l"}<span id="closehint">${(r4.draft || "").trim() ? "" : " · write the conclusion first"}</span></span></div><div id="closeconfirm"></div>`}</div>` : ""}</div>
       <div class="actions">${r4.closed ? `<a class="btn primary" href="#review">Review the outputs</a>${S.r5 ? "" : `<button class="btn" type="button" id="openr5">Open the next round</button>`}<a class="btn" href="#judge">Score with a judge too</a>` : `<a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a>`}</div>
       ${cmd(`evh round-open --goal ${M.goal.goal_id} --dataset ${ds() || "cnn_dailymail_200"} --from r1 \\\n  --hypothesis "${r4.question || "<the question>"}"\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml --dry-run`).join("\n")}\n${own.map((a) => `evh run --config examples/summarization-cnn-dailymail/configs/arm_${a.arm}_n200.yaml`).join("\n")}${Object.entries(retired).map(([id, why]) => `\nevh round-retire --goal ${M.goal.goal_id} --round r4 --arm ${id} --reason "${why}"`).join("")}\nevh round-close --goal ${M.goal.goal_id} --round r4 --conclusion "<what it showed and decided>" --by person:<you>${promoted ? ` \\\n  --promote ${runOf(M.arms.find((a) => a.config_id === promoted))}` : ""}`)}`;
   }
@@ -644,6 +644,7 @@ success_criteria:
     $("#r4c")?.addEventListener("input", (e) => {
       S.r4.draft = e.target.value; save();
       const b = $("#closer4"); if (b) b.disabled = !e.target.value.trim();
+      const h = $("#closehint"); if (h) h.textContent = e.target.value.trim() ? "" : " · write the conclusion first";
     });
     // Closing is recorded and cannot be edited: it is confirmed, restating what it decides.
     $("#closer4")?.addEventListener("click", (e) => {
@@ -668,8 +669,8 @@ success_criteria:
       row.after(tr);
       if (close) close.classList.remove("primary");
       $("#actwhy").focus();
-      $("#actwhy").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#actok").click(); } });
-      $("#actok").addEventListener("click", () => { const why = $("#actwhy").value.trim(); if (!why) { $("#actmsg").textContent = "the reason is recorded with it: write one"; $("#actwhy").setAttribute("aria-invalid", "true"); $("#actwhy").focus(); return; } then(why); });
+      $("#actwhy").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#actok").click(); } if (e.key === "Escape") { e.preventDefault(); $("#actno").click(); } });
+      $("#actok").addEventListener("click", () => { const why = $("#actwhy").value.trim(); if (!why) { $("#actmsg").textContent = "Error: write the reason; it is recorded with the retire."; $("#actwhy").setAttribute("aria-invalid", "true"); $("#actwhy").focus(); return; } then(why); });
       $("#actno").addEventListener("click", () => { tr.remove(); if (close) close.classList.add("primary"); btn.focus(); });
     };
     main.querySelectorAll("[data-unretire]").forEach((b) => b.addEventListener("click", () => { const r = { ...(S.r4.retired || {}) }; delete r[b.dataset.unretire]; S.r4.retired = r; focusNext = `[data-rowname="${CSS.escape(b.dataset.unretire)}"]`; save(); render(); }));

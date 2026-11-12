@@ -423,7 +423,9 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
     results says so, why (corrected over the round's arms) and what could change it, instead of a refusal per row.
     On this project's re-runs every local arm is behind bart_l, so the statement is what shows.
   - The baseline cannot be retired. A retire can be undone until the round closes; a retired row strikes its verdict.
-  - A prompt opens under its row and names the arm; Enter confirms it.
+  - A prompt opens under its row and names the arm; Enter confirms it, Escape cancels it; an empty reason is an error
+    in the bad status, tied to its field. The confirm of a close shows one "Close the round"; the hint under it stops
+    asking for a conclusion once one is written. The answer's source is a quiet line under it.
   - A closed round says when it closed and by whom, shows its question as text, and offers its next steps: review the
     outputs, or open the next round. r5 opens from r4's conclusion with its question in focus and the command it
     writes; the project has no runs past r4's re-runs, so the walk-through stops at r5's question and says so.

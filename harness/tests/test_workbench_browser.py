@@ -166,14 +166,31 @@ def check_round(browser, base: str) -> None:
     )
     page.locator("[data-retire]").first.click()
     page.locator("#actok").click()
-    check(
-        "workbench: a retire's empty reason is an error tied to its field",
-        page.get_attribute("#actwhy", "aria-invalid") == "true"
-        and page.get_attribute("#actwhy", "aria-describedby") == "actmsg",
+    msg_colour, bad = page.evaluate(
+        "[getComputedStyle(document.getElementById('actmsg')).color,"
+        " getComputedStyle(document.documentElement).getPropertyValue('--bad').trim()]"
     )
-    page.locator("#actno").click()
+    check(
+        "workbench: a retire's empty reason is an error tied to its field, said in the bad status",
+        page.get_attribute("#actwhy", "aria-invalid") == "true"
+        and page.get_attribute("#actwhy", "aria-describedby") == "actmsg"
+        and page.locator("#actmsg").inner_text().startswith("Error:")
+        and msg_colour != page.evaluate("getComputedStyle(document.querySelector('.muted')).color"),
+        (msg_colour, bad),
+    )
+    page.keyboard.press("Escape")
+    check("workbench: Escape cancels the retire prompt", page.locator("tr.askrow").count() == 0)
     page.locator("#r4c").fill("No local arm was shown ahead of bart_l.")
+    check(
+        "workbench: the close hint stops asking for a conclusion once one is written",
+        "write the conclusion first" not in page.locator("#closehint").inner_text(),
+    )
     page.locator("#closer4").click()
+    check(
+        "workbench: the confirm shows one 'Close the round', not two",
+        page.locator("button:visible", has_text="Close the round").count() == 1,
+        page.locator("button:visible", has_text="Close the round").count(),
+    )
     page.locator("#closeok").click()
     page.wait_for_timeout(200)
     answer = page.locator(".answer").inner_text()
