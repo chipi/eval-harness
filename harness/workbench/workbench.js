@@ -489,7 +489,7 @@ success_criteria:
         <td><button type="button" class="armbtn mono" data-armbtn="${esc(a.config_id)}" aria-expanded="${a.config_id === sel}">${esc(a.arm)}</button> ${a.baseline ? '<span class="tag gold">baseline</span>' : ""} ${a.recommended ? '<span class="tag new">recommended</span>' : ""}</td>
         <td><div class="cov"><span class="num">${a.coverage.toFixed(3)}</span><i style="width:${(100 * a.coverage) / max}%"></i></div></td>
         <td><span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted num p">raw p ${esc(a.p)}</small>` : ""}</td>
-        <td class="num">${perM(a.usd_per_item)}</td><td class="num">${secs(a.p50_ms)}</td></tr>`; }).join("")}</tbody></table></div>`;
+        <td class="num">${perM(a.usd_per_item)}</td><td class="num">${secs(a.p50_ms)}</td></tr>${a.config_id === sel ? `<tr class="panelrow"><td colspan="6">${armPanel(a)}</td></tr>` : ""}`; }).join("")}</tbody></table></div>`;
   }
   function screenEval() {
     if (!S.goal) { location.hash = "#start"; return ""; }
@@ -512,7 +512,6 @@ success_criteria:
           <div class="cmpgrid"><div>${scatter(arms, S.arm)}<div class="legend"><span><i class="dot-lead"></i>leader</span><span><i class="dot-ns"></i>not significantly different</span><span><i class="dot-worse"></i>significantly worse</span></div></div>
             <div class="note"><b>What the goal's rule picks.</b> Balanced: the arms shown no worse than the best by more than 5% of it, then the cheapest. Here none could be shown within the margin, so the leader stands: <b>bart_l</b>.
               <div style="margin-top:8px">${esc(M.detectable)} ${q("eval.detect")}</div></div></div>
-          ${armPanel(M.arms.find((a) => a.config_id === S.arm))}
           ${compareTable(shown, S.arm, arms.length - 1)}
           <div class="inline" style="margin-top:8px"><button type="button" class="btn" id="showall">${S.showAll ? "Hide" : "Show"} the ${arms.length - arms.filter((a) => a.verdict !== "significant: worse").length} significantly worse</button><span class="muted" style="font-size:13px">select an arm to read its summaries</span></div>`
           : `<p class="muted">${r.retired} run${r.retired === 1 ? "" : "s"} retired in this round; no new arms.</p>`}
@@ -526,7 +525,7 @@ success_criteria:
       <div class="answer"><div class="kicker">the answer so far · from ${latest.id} · baseline ${esc(latest.base)}</div><p>${esc(latest.text)}</p></div>
       ${baselineLine()}
       <div class="tabs"><div role="tablist" aria-label="rounds" class="tablist">${tabs.map(([id, label]) => `<button type="button" role="tab" id="tab-${id}" data-tab="${id}" aria-controls="roundpanel" aria-selected="${id === tab}" tabindex="${id === tab ? 0 : -1}">${esc(label)}</button>`).join("")}</div>
-        ${r4 ? "" : (S.checked || []).length >= 2 ? `<button type="button" class="btn primary" id="openr4">Open round r4</button>` : `<span class="why-off">a new round needs two arms checked in step 4</span><button type="button" class="btn" id="openr4" disabled>Open round r4</button>`}</div>
+        ${r4 ? "" : `<button type="button" class="btn primary" id="openr4">Open round r4</button>`}</div>
       ${note("r1 to r3 are this project's real rounds; r4 is the one this walk-through opens.")}
       <div role="tabpanel" id="roundpanel" aria-labelledby="tab-${tab}">${body}</div>
     </div>`;
@@ -536,15 +535,18 @@ success_criteria:
     if (!b) return "";
     const who = b.actor && b.actor.type !== "unknown" ? `by ${b.actor.type}:${b.actor.name}` : "who promoted it was not recorded (before 0.8.0)";
     const reason = (b.reason || "").replace(/\.+$/, "");
-    const fresh = reason && !(M.answer || "").startsWith(reason.slice(0, 40));
+    const above = S.r4 && S.r4.closed ? S.r4.conclusion || "" : M.answer || "";
+    const fresh = reason && !above.startsWith(reason.slice(0, 40));
     const r4 = S.r4, moved = r4 && r4.closed && r4.promoted;
     return `<div class="note" style="margin-bottom:16px"><b>The baseline</b> ${q("eval.baseline")} ${moved ? `version ${b.current + 1}, promoted when r4 closed: ${esc((M.arms.find((a) => a.config_id === r4.promoted) || {}).arm || r4.promoted)}, because ${esc(r4.promoteWhy || "")}. Before it, ` : ""}version ${b.current} for this goal on ${esc(b.dataset)}: ${esc((b.promoted_from || "").replace(/_\d{8}T\d{6}Z$/, ""))}, promoted ${esc((b.promoted_at || "").slice(0, 10))}; ${esc(who)}${fresh ? `; its reason: ${esc(reason)}` : "; its reason is the answer above"}. Every later promotion is a new version with who and why; an earlier one comes back by rollback, never by editing.
       ${cmd(`evh baselines --goal ${esc(b.goal)} --all-versions\nevh baseline-rollback --goal ${esc(b.goal)} --dataset ${esc(b.dataset)} --to <version> --reason "…" --by person:<you>`, "the commands that show and roll it back")}</div>`;
   }
   function roundOpen(r4) {
-    const picked = (S.checked || []).map((id) => armOf(M.models.find((m) => m.id === id))).filter(Boolean);
     const base = M.arms[0];
-    const own = picked.filter((a) => a !== base);
+    // r4 re-runs the local arms the project has re-runs of (its Linux re-runs), so every result on it is real; a hosted
+    // arm has no re-run in the project and stays in r1 (the re-critique: a run said "3 runs", its rows "no run").
+    const own = Object.keys(M.reruns || {}).filter((id) => id !== base.config_id).map((id) => M.arms.find((a) => a.config_id === id)).filter(Boolean);
+    const hosted = (S.checked || []).map((id) => armOf(M.models.find((m) => m.id === id))).filter((a) => a && a !== base && !own.includes(a));
     const clones = r4.clones || [];
     const est = own.reduce((s, a) => s + a.usd_per_item * 200, 0);
     const ran = !!r4.ran, retired = r4.retired || {}, promoted = r4.promoted || null;
@@ -564,12 +566,12 @@ success_criteria:
         : null;
     return `<div class="roundhead"><div class="kicker">round r4 · ${r4.closed ? "closed" : "open"} · from r1</div></div>
       <div class="form" style="margin-top:12px">${field("eval.question", `<input type="text" id="r4q" value="${esc(r4.question || "")}" placeholder="e.g. ${esc(H["eval.question"].example)}" ${r4.closed ? "readonly" : ""}>`)}</div>
-      <div class="part" style="margin-top:18px"><div class="parthead"><span class="letter">1</span><h3>Its arms</h3><span class="grow"></span><span class="status">${own.length} from step 4${clones.length ? ` · ${clones.length} cloned` : ""} · the baseline carried from r1</span></div>
+      <div class="part" style="margin-top:18px"><div class="parthead"><span class="letter">1</span><h3>Its arms</h3><span class="grow"></span><span class="status">${own.length} local arms, each re-run${clones.length ? ` · ${clones.length} cloned` : ""} · the baseline carried from r1</span></div>
         <div class="body"><div class="tablewrap"><table><thead><tr><th>arm</th><th>model</th><th class="num">dry run: 200 items</th></tr></thead><tbody>
           <tr><td class="mono">bart_l <span class="tag gold">baseline</span></td><td class="mono">${esc(base.model)}</td><td class="num">carried, not re-run</td></tr>
           ${own.map((a) => `<tr><td class="mono">${esc(a.arm)}</td><td class="mono">${esc(a.model || "—")}</td><td class="num">${usd(a.usd_per_item * 200, 2)}</td></tr>`).join("")}
           ${clones.map((c) => { const f = M.arms.find((a) => a.config_id === c.from); return `<tr><td class="mono">${esc(f.arm)} · ${esc(c.change)} <span class="tag new">clone</span></td><td class="mono">${esc(f.model || "—")}</td><td class="num">${usd(f.usd_per_item * 200, 2)}</td></tr>`; }).join("")}</tbody></table></div>
-          <div class="muted" style="font-size:12px">Each estimate is the arm's real r1 cost per item × 200 (a clone's, its source's).</div>
+          <div class="muted" style="font-size:12px">Each estimate is the arm's real r1 cost per item × 200 (a clone's, its source's); a local arm costs nothing but the machine's time.${hosted.length ? ` The ${hosted.length} hosted arm${hosted.length === 1 ? "" : "s"} checked in step 4 (${hosted.map((a) => esc(a.arm)).join(", ")}) ha${hosted.length === 1 ? "s" : "ve"} no re-run in the project, so ${hosted.length === 1 ? "it stays" : "they stay"} in r1.` : ""}</div>
           ${ran || r4.closed ? "" : `<details class="adv"><summary>Clone an arm and change one thing</summary><div class="inline" style="margin-top:10px">
             <select id="clfrom" aria-label="the arm to clone">${[...own].map((a) => `<option value="${esc(a.config_id)}">${esc(a.arm)}</option>`).join("")}</select>
             <select id="clwhat" aria-label="what changes">${Object.entries(CH).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select>
@@ -577,16 +579,15 @@ success_criteria:
             <div class="hint" style="margin:6px 0 0">one change, so a difference in its score is that change's; a clone runs once its config is written (not in this mockup)</div></details>`}</div></div>
       <div class="part"><div class="parthead"><span class="letter">2</span><h3>Run</h3><span class="grow"></span>${ran ? `<span class="status ok">${own.length} runs · 200 items each</span>` : ""}</div>
         <div class="body">${ran ? "" : `<div class="actions" style="margin-top:0"><button class="btn primary" id="runr4" type="button" ${r4.question ? "" : "disabled"}>Run ${own.length} arms · about ${usd(est, 2)}</button><span class="muted" id="r4hint" style="font-size:13px">${r4.question ? "jobs on the server; you can close the page" : "write the round's question first"}</span></div><div id="runjob"></div>`}</div></div>
-      <div class="part ${ran ? "" : "off"}"><div class="parthead"><span class="letter">3</span><h3>Results</h3>${q("eval.compare")}</div>
-        ${ran ? `<div class="body">${note("a local arm shows its own re-run (the project's Linux re-runs, compared with bart_l's by evh pair-test); a hosted arm has no re-run in the project, so its r1 run is shown and says so; a clone has no run, so no scores.")}
-          <div class="tablewrap"><table class="cmp r4res"><thead><tr><th>arm</th><th class="num">coverage</th><th>vs bart_l</th><th class="num">per 1M articles</th><th class="num">per article</th><th>its run</th><th></th></tr></thead><tbody>
+      <div class="part ${ran ? "" : "off"}"><div class="parthead"><span class="letter">3</span><h3 id="results-h">Results</h3>${q("eval.compare")}</div>
+        ${ran ? `<div class="body">${note("each arm shows its own re-run (the project's Linux re-runs, compared with bart_l's by evh pair-test); a clone has no run, so no scores.")}
+          <div class="tablewrap"><table class="cmp r4res"><thead><tr><th>arm</th><th class="num">coverage</th><th>vs bart_l<small>one pair each, raw p; a promotion corrects over ${n} arms</small></th><th class="num">per 1M articles</th><th class="num">per article</th><th>its run</th><th></th></tr></thead><tbody>
           ${results.map((a) => { const [v, k] = VERD(a); const rt = retired[a.config_id]; const isBase = promoted ? promoted === a.config_id : a === base; const rr = a !== base && M.reruns[a.config_id];
-            return `<tr class="${rt ? "retired" : ""}"><td class="mono">${esc(a.arm)} ${isBase ? '<span class="tag gold">baseline</span>' : ""}${rt ? `<div class="muted" style="font-size:12px">retired: ${esc(rt)}</div>` : ""}</td><td class="num">${(rr ? rr.coverage : a.coverage).toFixed(3)}</td>
-              <td>${rr ? `<span class="num">${rr.delta.toFixed(4)}</span> <small class="muted">p ${esc(rr.p)}, one pair, uncorrected</small>` : `<span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}`}</td><td class="num">${perM(a.usd_per_item)}</td>
+            return `<tr class="${rt ? "retired" : ""}"><td class="mono" data-rowname="${esc(a.config_id)}">${esc(a.arm)} ${isBase ? '<span class="tag gold">baseline</span>' : ""}${rt ? `<div class="muted" style="font-size:12px">retired: ${esc(rt)}</div>` : ""}</td><td class="num">${(rr ? rr.coverage : a.coverage).toFixed(3)}</td>
+              <td>${rr ? `<span class="num">${rr.delta >= 0 ? "+" : ""}${rr.delta.toFixed(4)}</span> <small class="muted p">raw p ${esc(rr.p)}</small>` : `<span class="verdict v-${k}">${esc(v)}</span>${a.p ? ` <small class="muted">p ${esc(a.p)}</small>` : ""}`}</td><td class="num">${perM(a.usd_per_item)}</td>
               <td class="num">${secs(rr ? rr.p50_ms : a.p50_ms)}</td><td class="muted" style="font-size:12px">${a === base ? "carried from r1" : rr ? `its own, ${esc(rr.created_at.slice(0, 10))}, Linux` : "r1's (no re-run)"}</td>
               <td>${r4.closed || rt || isBase ? "" : (() => { const h = hold(a, rr); return `<button class="linkbtn" type="button" data-retire="${esc(a.config_id)}" data-name="${esc(a.arm)}">Retire</button> ${h ? `<details class="refused"><summary>can't be the baseline</summary><p>${esc(h.why)}</p><p>${esc(h.fix)}</p></details>` : `<button class="linkbtn" type="button" data-promote="${esc(a.config_id)}" data-name="${esc(a.arm)}">Make baseline</button>`}`; })()}</td></tr>`; }).join("")}
           ${clones.map((c) => `<tr><td class="mono">${esc(M.arms.find((a) => a.config_id === c.from).arm)} · ${esc(c.change)} <span class="tag new">clone</span></td><td class="num">—</td><td class="muted">no run in the project</td><td class="num">—</td><td class="num">—</td><td class="muted" style="font-size:12px">not run</td><td></td></tr>`).join("")}</tbody></table></div>
-          ${armPanel(M.arms.find((a) => a.config_id === S.arm))}
           ${r4.closed ? `<div class="note"><b>Closed.</b> ${esc(r4.conclusion)}${promoted ? ` The baseline is now ${esc(M.arms.find((a) => a.config_id === promoted).arm)}.` : ""}</div>` : `<div class="field"><div class="name">The conclusion ${q("eval.close")}</div><div><textarea id="r4c" rows="2" placeholder="what the round showed, and what it decided">${esc(r4.draft || "")}</textarea></div></div>
           <div class="actions" style="margin-top:0"><button class="btn primary" id="closer4" type="button" ${(r4.draft || "").trim() ? "" : "disabled"}>Close the round</button><span class="muted" style="font-size:13px">${promoted ? `promotes ${esc(M.arms.find((a) => a.config_id === promoted).arm)} as the baseline` : "the baseline stays bart_l"}${(r4.draft || "").trim() ? "" : " · write the conclusion first"}</span></div><div id="closeconfirm"></div>`}</div>` : ""}</div>
       <div class="actions"><a class="btn" href="#judge">Score with a judge too</a><a class="btn" href="#review">Review the outputs</a></div>
@@ -601,11 +602,11 @@ success_criteria:
         e.preventDefault(); to.focus(); to.click();
       });
     });
-    const pickArm = (id) => { S.arm = S.arm === id ? null : id; save(); render(); };
+    const pickArm = (id) => { S.arm = S.arm === id ? null : id; focusNext = `[data-armbtn="${CSS.escape(id)}"]`; save(); render(); };
     main.querySelectorAll("tr[data-arm], circle[data-arm]").forEach((el) => el.addEventListener("click", () => pickArm(el.dataset.arm)));
-    $("[data-closearm]")?.addEventListener("click", () => { S.arm = null; save(); render(); });
+    $("[data-closearm]")?.addEventListener("click", () => { focusNext = `[data-armbtn="${CSS.escape(S.arm || "")}"]`; S.arm = null; save(); render(); });
     $("#showall")?.addEventListener("click", () => { S.showAll = !S.showAll; save(); render(); });
-    $("#openr4")?.addEventListener("click", () => { S.r4 = { question: "" }; S.tab = "r4"; S.arm = null; save(); render(); });
+    $("#openr4")?.addEventListener("click", () => { S.r4 = { question: "" }; S.tab = "r4"; S.arm = null; focusNext = "#r4q"; save(); render(); });
     $("#r4q")?.addEventListener("input", (e) => {
       S.r4.question = e.target.value; save();
       const ok = !!e.target.value.trim(), b = $("#runr4"), h = $("#r4hint");
@@ -614,8 +615,8 @@ success_criteria:
     });
     $("#runr4")?.addEventListener("click", (e) => {
       e.target.disabled = true;
-      const k = (S.checked || []).filter((id) => { const a = armOf(M.models.find((m) => m.id === id)); return a && a !== M.arms[0]; }).length;
-      progress($("#runjob"), `run · ${k} arms`, k * 200, "items", () => { S.r4.ran = true; save(); render(); });
+      const k = Object.keys(M.reruns || {}).filter((id) => id !== M.arms[0].config_id && M.arms.some((a) => a.config_id === id)).length;
+      progress($("#runjob"), `run · ${k} arms`, k * 200, "items", () => { S.r4.ran = true; save(); focusNext = "#results-h"; render(); });
     });
     $("#r4c")?.addEventListener("input", (e) => {
       S.r4.draft = e.target.value; save();
@@ -628,7 +629,7 @@ success_criteria:
       e.target.hidden = true;
       $("#closeconfirm").innerHTML = `<div class="confirm"><p>Close r4 with the conclusion “${esc(text.replace(/[.\s]+$/, ""))}.” ${p ? `It promotes ${esc(p.arm)} as the baseline, because: ${esc(S.r4.promoteWhy)}.` : "The baseline stays bart_l."} A closed round is kept as it is; a later change is a new round.</p><div class="inline"><button class="btn primary" type="button" id="closeok">Close the round</button><button class="btn" type="button" id="closeno">Back</button></div></div>`;
       $("#closeok").focus();
-      $("#closeok").addEventListener("click", () => { S.r4.closed = true; S.r4.conclusion = text; delete S.r4.draft; save(); render(); });
+      $("#closeok").addEventListener("click", () => { S.r4.closed = true; S.r4.conclusion = text; delete S.r4.draft; focusNext = ".answer"; save(); render(); });
       $("#closeno").addEventListener("click", () => { $("#closeconfirm").innerHTML = ""; e.target.hidden = false; e.target.focus(); });
     });
     $("#cladd")?.addEventListener("click", () => {
@@ -647,8 +648,8 @@ success_criteria:
       $("#actok").addEventListener("click", () => { const why = $("#actwhy").value.trim(); if (!why) { $("#actmsg").textContent = "the reason is recorded with it: write one"; $("#actwhy").focus(); return; } then(why); });
       $("#actno").addEventListener("click", () => { tr.remove(); if (close) close.classList.add("primary"); btn.focus(); });
     };
-    main.querySelectorAll("[data-retire]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); ask(b, `Retire ${b.dataset.name}:`, (why) => { S.r4.retired = { ...(S.r4.retired || {}), [b.dataset.retire]: why }; save(); render(); }); }));
-    main.querySelectorAll("[data-promote]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); ask(b, `Make ${b.dataset.name} the baseline:`, (why) => { S.r4.promoted = b.dataset.promote; S.r4.promoteWhy = why; save(); render(); }); }));
+    main.querySelectorAll("[data-retire]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); ask(b, `Retire ${b.dataset.name}:`, (why) => { S.r4.retired = { ...(S.r4.retired || {}), [b.dataset.retire]: why }; focusNext = `[data-rowname="${CSS.escape(b.dataset.retire)}"]`; save(); render(); }); }));
+    main.querySelectorAll("[data-promote]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); ask(b, `Make ${b.dataset.name} the baseline:`, (why) => { S.r4.promoted = b.dataset.promote; S.r4.promoteWhy = why; focusNext = `[data-rowname="${CSS.escape(b.dataset.promote)}"]`; save(); render(); }); }));
   }
 
   // ── the glossary ─────────────────────────────────────────────────────────
@@ -666,6 +667,8 @@ success_criteria:
     models: [screenModels, wireModels], eval: [screenEval, wireEval],
     glossary: [screenGlossary], catalog: [() => outside("The catalog")], docs: [() => outside("The docs")],
   };
+  // Where focus goes after a redraw an action caused (the re-critique: it fell to the page's start after six actions).
+  let focusNext = null;
   const focusKey = (el) => {
     if (!el || el === document.body || !main.contains(el)) return null;
     if (el.id) return `#${CSS.escape(el.id)}`;
@@ -685,6 +688,14 @@ success_criteria:
     if (wire) wire();
     const h1 = main.querySelector("h1");
     if (h1) h1.tabIndex = -1;
+    const next = focusNext && main.querySelector(focusNext);
+    focusNext = null;
+    if (next) {
+      if (!next.matches("a, button, input, select, textarea, [tabindex]")) next.tabIndex = -1;
+      next.focus({ preventScroll: true });
+      requestAnimationFrame(() => next.scrollIntoView({ block: "center" }));
+      return;
+    }
     const back = keep && main.querySelector(keep);
     if (back) back.focus({ preventScroll: true });
     else if (newScreen && h1) h1.focus({ preventScroll: true });
@@ -695,13 +706,13 @@ success_criteria:
   // a comparison, or a table to pick rows from (its first column a checkbox), stacks compact: its row's name as the
   // card's title, the other cells on a line or two
   const stackTables = () => main.querySelectorAll("table").forEach((t) => {
-    const heads = [...t.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+    const heads = [...t.querySelectorAll("thead th")].map((th) => { const c = th.cloneNode(true); c.querySelectorAll("small").forEach((x) => x.remove()); return c.textContent.trim(); });
     if (heads.length < 4) return;
     const compact = t.classList.contains("cmp") || heads[0] === "";
     const title = compact ? Math.max(0, heads.findIndex((h) => /^(arm|model|decision|capture)$/i.test(h))) : -1;
     t.classList.add("stack");
     t.classList.toggle("compact", compact);
-    t.querySelectorAll("tbody tr").forEach((tr) => [...tr.children].forEach((td, i) => {
+    t.querySelectorAll("tbody tr:not(.panelrow)").forEach((tr) => [...tr.children].forEach((td, i) => {
       if (heads[i]) td.dataset.label = heads[i];
       td.classList.toggle("title", i === title);
     }));

@@ -403,14 +403,19 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
   not warned):
   - "The answer so far" is the latest closed round's conclusion, with the baseline it left.
   - The comparison names its correction ("Holm across 28; the p shown is raw").
-  - An arm is opened by its name, a button. The chart's dots are for the mouse; the table is the keyboard and
-    screen-reader path. Focus stays on the control used, after every redraw.
+  - An arm is opened by its name, a button, and its panel opens as the row under it. The chart's dots are for the
+    mouse; the table is the keyboard and screen-reader path.
+  - Focus goes where each action leads: an arm's name after opening or closing it; the question after opening a
+    round; the results after its run; the row after a retire; the new answer, in view, after a close.
   - The rounds are a tab list with a panel and arrow keys.
-  - A disabled "Open round r4" says on screen why.
   - A round's run, its job and its status count the same arms.
+  - Round r4 is built from the local arms the project has re-runs of (owner, 2026-11-12, after the re-critique), so
+    every result on it is real. Hosted arms checked in step 4 have no re-run in the project and stay in r1, as the
+    round says.
   - "Make baseline" is offered only where `round-close --promote` would accept it: the arm's own run in this round,
     significantly ahead of the baseline, corrected for the round's arms. Otherwise the row says why it "can't be the
-    baseline" and what would make it so. The project's real r1 arms are all refused this way.
+    baseline" and what would make it so. On this project's re-runs every local arm is behind bart_l, so all are
+    refused this way.
   - The baseline cannot be retired.
   - A prompt opens under its row and names the arm.
   - "Close the round" needs a conclusion, and is confirmed with a restatement of what it decides.

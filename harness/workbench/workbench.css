@@ -354,3 +354,10 @@ details.refused p { white-space: normal; min-width: 28ch; overflow-wrap: anywher
 table.cmp td:last-child { white-space: normal; }
 /* a new screen's title takes focus (for a screen reader's place), never shown as a ring */
 h1[tabindex="-1"]:focus { outline: none; }
+/* the re-critique: the worse arms' rings visible over the chart's page-coloured outline; the arm panel as a row */
+.scatter circle.dot-worse { fill: none; stroke: var(--muted); }
+tr.panelrow > td { padding: 4px 10px 12px; background: transparent; }
+tr.panelrow .armpanel { margin: 0; border: 0; border-radius: 0; background: var(--surface-2); }
+@media (max-width: 640px) { table.stack tr.panelrow { display: block; padding: 0; border-top: 0; }
+  table.stack tr.panelrow > td { display: block; padding: 0 0 12px; } }
+.answer:focus { outline: none; }
