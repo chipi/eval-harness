@@ -108,7 +108,7 @@ for(const c of r.cells){if(c.colSpan===1&&hs[i])c.dataset.label=hs[i];i+=c.colSp
 if(!t.classList.contains('sortable')||t._sortsel)return;
 const sel=document.createElement('select');sel.className='sortsel';sel.setAttribute('aria-label','sort by');
 const opt=(v,txt)=>{const o=document.createElement('option');o.value=v;o.textContent=txt;sel.appendChild(o);};
-opt('','sort by …');hs.forEach((h,i)=>{if(h){opt(i+':asc',h+' ↑');opt(i+':desc',h+' ↓');}});
+opt('','sort by …');hs.forEach((h,i)=>{if(h&&hr.cells[i].querySelector('.sortbtn')){opt(i+':asc',h+' ↑');opt(i+':desc',h+' ↓');}});
 sel.addEventListener('change',()=>{if(!sel.value)return;const [i,d]=sel.value.split(':'),th=hr.cells[+i];th.dataset.dir=d==='asc'?'desc':'asc';th.click();});
 (t.closest('.scroll-x')||t).before(sel);t._sortsel=sel;};
 const all=()=>document.querySelectorAll('main table:not(.sheet)').forEach(stack);all();

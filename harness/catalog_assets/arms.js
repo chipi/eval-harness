@@ -14,7 +14,17 @@ body.addEventListener('change',ev=>{if(ev.target.matches('input.pick'))repick();
 /* a pick the view stops showing is still picked: the bar says so, recounted when the view changes */
 document.querySelector('input[data-filter="arms"]')?.addEventListener('input',()=>setTimeout(repick,0));
 document.addEventListener('click',ev=>{if(ev.target.closest('.facet-chips,.group-chips,.row-chips,[data-gopen],[data-clearall]'))setTimeout(repick,0);});
-bar&&bar.querySelector('[data-unpick]').addEventListener('click',()=>{body.querySelectorAll('input.pick:checked').forEach(p=>{p.checked=false;});repick();});
+bar&&bar.querySelector('[data-unpick]').addEventListener('click',()=>{body.querySelectorAll('input.pick:checked').forEach(p=>{p.checked=false;});repick();
+document.querySelector('input[data-filter="arms"]')?.focus();});
+/* the footer's command is the view's: grouping, one chip of a kind (the CLI takes one) and the period */
+const term=document.querySelector('[data-elsewhere=term] code');
+function viewCmd(){if(!term)return;const q=new URLSearchParams(location.search),a=['evh arms'];const g=q.get('group');
+if(g&&g!=='set')a.push('--by '+(g==='scored'?'scored':g));
+const only={};(q.get('only')||'').split(',').filter(Boolean).forEach(x=>{const i=x.indexOf(':');(only[x.slice(0,i)]=only[x.slice(0,i)]||[]).push(x.slice(i+1));});
+const flag={where:'where',tier:'tier',weights:'weights',quality:'quality'},val={quality:{'a contender':'contender','below the leader':'below'}};
+Object.entries(only).forEach(([k,v])=>{if(flag[k]&&v.length===1)a.push(`--${flag[k]} ${(val[k]||{})[v[0]]||v[0]}`);});
+const p=(location.hash.match(/^#p([a-z0-9]+)$/)||[])[1];if(p&&p!=='14d')a.push('--period '+p);term.textContent=a.join(' ');}
+viewCmd();window.addEventListener('hashchange',viewCmd);document.addEventListener('click',()=>setTimeout(viewCmd,0));
 link&&link.addEventListener('click',ev=>{if(link.getAttribute('aria-disabled')==='true')ev.preventDefault();});
 /* one goal's trade-off charts at a time */
 const sel=document.getElementById('tradeoff-goal');

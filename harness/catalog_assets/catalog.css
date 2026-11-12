@@ -848,3 +848,7 @@ details.chart-table summary { cursor: pointer; font: 500 12px/1.4 var(--mono); c
 /* a group's heading is a header cell for its rows (scope=rowgroup) but reads as the body text it was */
 table.data tr.grouphead th { font: 400 14px/1.5 var(--text); letter-spacing: 0; text-transform: none; color: var(--ink); padding: 18px 12px 10px 0; }
 table.data tr.grouphead th small { display: inline; }
+
+/* long ids and references break inside their cell instead of running into the next one */
+#arms td:nth-child(2) a, #arms td:nth-child(3) a, #arms td:nth-child(3) small { overflow-wrap: anywhere; }
+#arms td:nth-child(3) { min-width: 160px; }

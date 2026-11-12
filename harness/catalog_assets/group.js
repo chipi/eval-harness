@@ -16,7 +16,7 @@ const filt=document.querySelector(`input[data-filter="${t.id}"]`),dflt=t.dataset
 const chips=gc?[...gc.querySelectorAll('button[data-group-by]')]:[];
 let by=new URLSearchParams(location.search).get('group');by=by==null?dflt:by==='none'?'':by;
 if(!chips.some(b=>b.dataset.groupBy===by))by='';
-const open=new Set(),plural=n=>`${n} ${esc(noun)}${n===1?'':'s'}`;
+const open=new Map(),plural=n=>`${n} ${esc(noun)}${n===1?'':'s'}`;
 const isRow=r=>!r.classList.contains('grouphead');
 const shown=r=>!r.hidden&&!r.classList.contains('fout')&&!r.classList.contains('pout');
 function regroup(){body.querySelectorAll('tr.grouphead').forEach(r=>r.remove());
@@ -48,12 +48,13 @@ const b=fc&&[...fc.querySelectorAll('button[data-facet]')].find(c=>c.dataset.fac
 if(!b)return;(picked[b.dataset.facet]||(picked[b.dataset.facet]=new Set())).add(b.dataset.value);b.setAttribute('aria-pressed','true');});
 /* each group shows its first `fold` rows the filter leaves; the rest wait behind its heading */
 function folds(){let h=null,seen=0;[...body.rows].forEach(r=>{if(!isRow(r)){if(r.dataset.gkey!=null){h=r;seen=0;}return;}
-const on=by&&fold&&h&&!open.has(h.dataset.gkey)&&shown(r)&&seen++>=fold;r.classList.toggle('gfold',!!on);});}
+const lim=fold+(h?open.get(h.dataset.gkey)||0:0);const on=by&&fold&&h&&shown(r)&&seen++>=lim;r.classList.toggle('gfold',!!on);});}
 /* a heading counts what is left in its group and offers the rest; a group with nothing left loses its heading;
    a table with nothing left says so */
 function heads(){let h=null,n=0,more=0;const end=()=>{if(!h)return;h.hidden=!n;const c=h.querySelector('[data-n]');if(c)c.textContent=plural(n);
-const g=h.querySelector('[data-gfold]');if(g)g.innerHTML=more?`<button type="button" class="btn small" data-gopen="${esc(h.dataset.gkey)}" aria-expanded="false">show ${more} more</button>`
-:open.has(h.dataset.gkey)&&n>fold?`<button type="button" class="btn small" data-gopen="${esc(h.dataset.gkey)}" aria-expanded="true">show ${fold}</button>`:'';};
+const g=h.querySelector('[data-gfold]'),k=esc(h.dataset.gkey);if(g)g.innerHTML=(more?`<button type="button" class="btn small" data-gopen="${k}" data-step="10" aria-expanded="false">show ${Math.min(10,more)} more</button>`
++(more>10?` <button type="button" class="btn small" data-gopen="${k}" data-step="all" aria-expanded="false">show all ${more+(n-more)}</button>`:''):'')
++(open.get(h.dataset.gkey)&&n>fold?` <button type="button" class="btn small" data-gopen="${k}" data-step="fold" aria-expanded="true">show ${fold}</button>`:'');};
 let total=0;[...body.rows].forEach(r=>{if(!isRow(r)){if(r.dataset.gkey!=null){end();h=r;n=0;more=0;}return;}
 if(shown(r)){n++;total++;if(r.classList.contains('gfold'))more++;}});end();
 let empty=body.querySelector('tr.emptyrow');
@@ -63,8 +64,8 @@ const what=filt&&filt.value.trim()?` matches “${esc(filt.value.trim())}”`:' 
 const only=Object.values(picked).some(s=>s.size)?` with only: ${esc(Object.values(picked).flatMap(s=>[...s]).join(', '))}`:'';
 empty.innerHTML=`<td colspan="${cols}">No ${esc(noun)}${what}${only}. <button type="button" class="btn small" data-clearall>Clear the filter and the chips</button></td>`;}
 body.addEventListener('click',ev=>{const g=ev.target.closest('button[data-gopen]');
-if(g){const k=g.dataset.gopen;if(open.has(k))open.delete(k);else open.add(k);if(t._repage)t._repage();
-const again=body.querySelector(`button[data-gopen="${CSS.escape(k)}"]`);if(again)again.focus();return;}
+if(g){const k=g.dataset.gopen,step=g.dataset.step;if(step==='fold')open.delete(k);else open.set(k,step==='all'?Infinity:(open.get(k)||0)+10);
+if(t._repage)t._repage();const again=body.querySelector(`button[data-gopen="${CSS.escape(k)}"][data-step="${step}"]`)||body.querySelector(`button[data-gopen="${CSS.escape(k)}"]`);if(again)again.focus();return;}
 if(ev.target.closest('button[data-clearall]')){Object.keys(picked).forEach(f=>delete picked[f]);
 fc&&fc.querySelectorAll('button[data-facet]').forEach(b=>b.setAttribute('aria-pressed','false'));
 if(filt)filt.value='';refacet();remember();if(filt)filt.focus();}});

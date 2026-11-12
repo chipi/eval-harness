@@ -548,6 +548,12 @@ tile opens it grouped by config (`arms.html?group=config`).
   - **deciding measure** carries its direction (↑ higher is better, ↓ lower); its first sort is best first, a
     lower-is-better measure included. **latency** reads in s past a second, as the charts do.
   - A model record's smoke badge ("smoked", "smoke: check") is outlined, not a role pill.
+  - An arm scored against the reference it wrote says so in words ("wrote its own reference", and the same in `evh
+    arms`), not by its tint alone, and is read after the others in its group: its score is its own outputs.
+  - A folded group opens ten rows at a time ("show 10 more", "show all N", "show 3"). Long ids and references break
+    inside their cell. The footer's command is the view's (`evh arms --by config --where local --period 30d`): the
+    grouping, one chip of a kind (the CLI takes one) and the period. A config's rank sorts by its best place as a
+    share of its field.
   - **only** chips: local, hosted (hosted when it runs through a provider that bills per call,
     litellm, openai, anthropic and the like, or its config prices tokens), then each price tier
     the configs declare (free, small, mid, large); a contender, below the leader (the arm's

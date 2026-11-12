@@ -394,6 +394,9 @@ that can move a result is never a patch release without saying so under **Change
     arms` say "dataset ag_news_200 · against gold/ag_news_200 · correct ↑". The deciding measure's first sort is best
     first. The table fits 1280. Each trade-off chart lists its points as a table, and its words are readable on a
     phone. The light theme's series colours are 3:1 or more on every light surface (amber was 1.9:1).
+  - An arm scored against the reference it wrote led its group (coverage 1.000), told by colour alone: it says so in
+    words, on the page and in `evh arms`, and is read last. Columns no longer overlap at 1280; a folded group opens ten
+    at a time; the footer's command is the view's; a config's rank sorts by its number.
 - **`dataset-from-capture` deleted what sat in its items' folder**: `data/sources/<dataset>/` was emptied before the
   items were written, and a capture's own export kept there was deleted without a word (the fleet's beta). A file
   there that the dataset's record does not name is now refused (`would-overwrite`), and stays.

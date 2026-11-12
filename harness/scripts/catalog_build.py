@@ -578,7 +578,7 @@ def table(
     if filt:
         f = (
             f'<div class="filter"><input type="search" data-filter="{tid}" placeholder="{e(filt)}" '
-            f'aria-label="{e(filt)}"><span class="muted small"><span data-count="{tid}">{len(rows)}</span>'
+            f'aria-label="{e(filt)}"><span class="muted small" aria-live="polite"><span data-count="{tid}">{len(rows)}</span>'
             f" shown</span></div>"
         )
 
@@ -3689,6 +3689,15 @@ def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "", said
     return f'<div class="decision"><p class="lead">{head}</p><ul class="small">{why}</ul>{rule}</div>'
 
 
+def axis_fmt(ax: dict):
+    """How an axis's value reads: dollars to four places for cost, ms or s for milliseconds, else fmt."""
+    if ax["name"] == "cost" and ax["measure"] == "cost_usd":
+        return lambda v: f"${v:.4f}"
+    if ax.get("unit") == "ms":
+        return lambda v: f"{v / 1000:.1f} s" if v >= 1000 else f"{v:.0f} ms"
+    return fmt
+
+
 def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
     """Quality against each other axis, for the eligible arms, the frontier drawn: the trade-off at
     a glance. Two to a row."""
@@ -3708,7 +3717,7 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
                 labels[a],
                 (
                     f"{labels[a]}: {quality_name} {fmt(dec['rows'][a]['quality']['value'])}, {ax['name']} "
-                    f"{fmt(dec['rows'][a][ax['name']]['value'])}"
+                    f"{axis_fmt(ax)(dec['rows'][a][ax['name']]['value'])}"
                 ),
             )
             for a in eligible
@@ -3743,13 +3752,7 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
         )
         if svg:
             # The chart's points as a table: what a dot's tooltip says, for a keyboard and a screen reader too.
-            fx = (
-                (lambda v: f"${v:.4f}")
-                if ax["name"] == "cost" and ax["measure"] == "cost_usd"
-                else (lambda v: f"{v / 1000:.1f} s" if v >= 1000 else f"{v:.0f} ms")
-                if ms
-                else fmt
-            )
+            fx = axis_fmt(ax)
             rows = "".join(
                 f'<tr><td>{e(lab)}</td><td class="num">{fmt(y)}</td><td class="num">{e(fx(x))}</td></tr>'
                 for x, y, lab, _tip in sorted(

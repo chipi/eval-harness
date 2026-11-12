@@ -705,6 +705,7 @@ def arms(argv) -> int:
                     [
                         r["arm"],
                         r["how"]
+                        + (" (wrote its own reference)" if r["kind"] == "t-author" else "")
                         + (f" ({r['moved']:+.3f} vs measured)" if r["moved"] is not None else "")
                         + ("; the goals read its re-score" if r["superseded_by"] else ""),
                         r["dataset"],

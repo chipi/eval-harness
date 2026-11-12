@@ -288,9 +288,14 @@ def set_key(r: dict) -> str:
 def _reading_order(r: dict) -> tuple:
     """A dataset's arms in the order to read them: what a goal decided first, then best on the deciding measure."""
     roles = " ".join(r["roles"])
-    rank = next(
-        (i for i, w in enumerate(("recommended", "leader", "baseline")) if w in roles),
-        3 if r["quality"] == "a contender" else 4,
+    # An arm scored against the reference it wrote is read after the others: its score is its own outputs.
+    rank = (
+        5
+        if r["kind"] == "t-author"
+        else next(
+            (i for i, w in enumerate(("recommended", "leader", "baseline")) if w in roles),
+            3 if r["quality"] == "a contender" else 4,
+        )
     )
     v = r["value"]
     return (r["dataset"], rank, v is None, (v if r["lower"] else -v) if v is not None else 0, r["arm"])
@@ -349,7 +354,12 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                     cb.arm_link(r["arm"], r["label"]) + (f"<br>{badges}" if badges else ""),
                     how
                     + (
-                        f'<br><small class="muted nowrap">{cb.fmt(r["value"] - r["moved"])} → {cb.fmt(r["value"])} '
+                        '<br><span class="smoke">wrote its own reference</span>'
+                        if r["kind"] == "t-author"
+                        else ""
+                    )
+                    + (
+                        f'<br><small class="muted">{cb.fmt(r["value"] - r["moved"])} → {cb.fmt(r["value"])} '
                         f"({r['moved']:+.3f}) vs measured</small>"
                         if r["moved"] is not None
                         else ""
@@ -407,11 +417,17 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                     "<br>".join(cb.dataset_link(d) for d in c["datasets"]),
                     f'<span data-v="{c["arms"]}">{c["arms"]}</span>',
                     f'<span data-v="{c["usd"] or 0}">{cb.fmt_amount(c["usd"], "usd") if c["usd"] else "—"}</span>',
-                    "<br>".join(
-                        f'{cb.goal_link(g)} <span class="nowrap">#{i} of {n}</span>'
-                        for g, _ds, i, n in c["ranks"]
+                    # sorts by its best place, as a share of its field (#3 of 33 before #10 of 33)
+                    (
+                        f'<span data-v="{min(i / n for _g, _ds, i, n in c["ranks"]):.4f}">'
+                        + "<br>".join(
+                            f'{cb.goal_link(g)} <span class="nowrap">#{i} of {n}</span>'
+                            for g, _ds, i, n in c["ranks"]
+                        )
+                        + "</span>"
                     )
-                    or "—",
+                    if c["ranks"]
+                    else "—",
                     f'<span data-flow="runs" data-line>{len(period_rows[key]["runs"])}</span>',
                     '<span data-flow="usd">—</span>',
                 ],
