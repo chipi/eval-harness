@@ -23,6 +23,10 @@ colors:
   status-ok-light: "#12805a"
   status-warn-light: "#9a6b00"
   status-bad-light: "#b23a26"
+  gold-tier-bg: "#4a3a0c"
+  gold-tier-ink: "#f3d77a"
+  gold-tier-bg-light: "#f6e3a1"
+  gold-tier-ink-light: "#5c4300"
 typography:
   screen-title:
     fontFamily: "Inter Tight, Inter, Helvetica Neue, system-ui, -apple-system, Segoe UI, sans-serif"
@@ -150,7 +154,14 @@ The site's palette for the page and the accent, and three status colours.
 always a status colour.
 
 **The Status Is Not Data Rule.** Green, amber and red say how a check came out, never what kind of model an arm is
-(the catalog's colours do that).
+(the catalog's colours do that). A comparison's leader and an arm the goal recommends are results: the ok status, not
+lime.
+
+**The Gold Tier Rule.** A baseline's or reference's gold is the catalog's gold tier (`gold-tier-bg`, `gold-tier-ink`),
+never a colour of its own.
+
+**The Two Rules Rule.** Two blocks carry a left rule, and only these: the answer so far, 3px in lime (what to read),
+and a note, 2px in Axis (an aside). No other card, row or callout has one.
 
 ## Typography
 

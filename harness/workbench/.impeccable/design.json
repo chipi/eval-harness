@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-12T16:18:22Z",
+  "generatedAt": "2026-11-12T18:24:46Z",
   "title": "Design System: evh workbench",
   "extensions": {
     "colorMeta": {
@@ -318,6 +318,66 @@
           "#e8c8c2",
           "#f7efed"
         ]
+      },
+      "gold-tier-bg": {
+        "role": "neutral",
+        "displayName": "Gold Tier Bg",
+        "canonical": "#4a3a0c",
+        "tonalRamp": [
+          "#392f13",
+          "#6a561d",
+          "#9f7f23",
+          "#d8a924",
+          "#dcba5a",
+          "#e1cc8f",
+          "#eadfc0",
+          "#f8f5ed"
+        ]
+      },
+      "gold-tier-ink": {
+        "role": "neutral",
+        "displayName": "Gold Tier Ink",
+        "canonical": "#f3d77a",
+        "tonalRamp": [
+          "#3c3210",
+          "#705b17",
+          "#a88719",
+          "#e6b615",
+          "#e6c34f",
+          "#e7d188",
+          "#eee2bd",
+          "#f9f6ec"
+        ]
+      },
+      "gold-tier-bg-light": {
+        "role": "neutral",
+        "displayName": "Gold Tier Bg Light",
+        "canonical": "#f6e3a1",
+        "tonalRamp": [
+          "#3c3211",
+          "#6f5c18",
+          "#a7881a",
+          "#e5b717",
+          "#e6c450",
+          "#e7d289",
+          "#ede2bd",
+          "#f9f6ec"
+        ]
+      },
+      "gold-tier-ink-light": {
+        "role": "neutral",
+        "displayName": "Gold Tier Ink Light",
+        "canonical": "#5c4300",
+        "tonalRamp": [
+          "#40320c",
+          "#785c0e",
+          "#b7880b",
+          "#fbb701",
+          "#f5c440",
+          "#f1d27f",
+          "#f2e2b8",
+          "#faf6eb"
+        ]
       }
     },
     "typographyMeta": {
@@ -434,7 +494,17 @@
       },
       {
         "name": "The Status Is Not Data Rule",
-        "body": "Green, amber and red say how a check came out, never what kind of model an arm is (the catalog's colours do that).",
+        "body": "Green, amber and red say how a check came out, never what kind of model an arm is (the catalog's colours do that). A comparison's leader and an arm the goal recommends are results: the ok status, not lime.",
+        "section": "colors"
+      },
+      {
+        "name": "The Gold Tier Rule",
+        "body": "A baseline's or reference's gold is the catalog's gold tier (`gold-tier-bg`, `gold-tier-ink`), never a colour of its own.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Rules Rule",
+        "body": "Two blocks carry a left rule, and only these: the answer so far, 3px in lime (what to read), and a note, 2px in Axis (an aside). No other card, row or callout has one.",
         "section": "colors"
       },
       {

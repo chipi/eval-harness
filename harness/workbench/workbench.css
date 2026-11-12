@@ -177,7 +177,7 @@ thead th { border-top: 0; font: 500 11px/1.4 var(--mono); letter-spacing: .08em;
 td.clip { max-width: 360px; }
 td.clip div { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .tag { display: inline-block; font: 500 11px/1.6 var(--mono); padding: 0 6px; border-radius: 3px; background: var(--surface-2); color: var(--ink-2); }
-.tag.gold { background: color-mix(in srgb, #e0b43a 22%, var(--surface)); color: var(--ink); }
+.tag.gold { background: var(--gold-bg); color: var(--gold-ink); }
 .tag.new { background: var(--band); color: var(--accent); }
 
 /* the profile */
@@ -361,3 +361,19 @@ tr.panelrow .armpanel { margin: 0; border: 0; border-radius: 0; background: var(
 @media (max-width: 640px) { table.stack tr.panelrow { display: block; padding: 0; border-top: 0; }
   table.stack tr.panelrow > td { display: block; padding: 0 0 12px; } }
 .answer:focus { outline: none; }
+
+/* the eval screen's left-out critique items (2026-11-12): results in the ok status, not lime; the catalog's gold tier;
+   the skip link; a retired row's verdict struck; a closed round's question as text */
+:root { --gold-bg: #4a3a0c; --gold-ink: #f3d77a; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --gold-bg: #f6e3a1; --gold-ink: #5c4300; } }
+:root[data-theme="light"] { --gold-bg: #f6e3a1; --gold-ink: #5c4300; }
+.v-lead { color: var(--ok); }
+.dot-lead { fill: var(--ok); background: var(--ok); }
+.tag.rec { background: color-mix(in srgb, var(--ok) 20%, var(--surface)); color: var(--ink); }
+.skip { position: absolute; left: 8px; top: -48px; z-index: 50; padding: 8px 12px; border-radius: 6px; background: var(--accent);
+  color: var(--accent-ink); font: 600 13px/1 var(--mono); text-decoration: none; }
+.skip:focus { top: 8px; }
+main:focus { outline: none; }
+tr.retired td .verdict, tr.retired td .p { text-decoration: line-through; }
+.roundhead h2.kicker { font: 500 11px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.roundhead p.question { font: 600 20px/1.3 var(--display); margin: 6px 0 0; }

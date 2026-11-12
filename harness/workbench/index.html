@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="workbench.css">
 </head>
 <body>
+  <a class="skip" href="#main">Skip to the screen</a>
 <div class="mockbar" role="note">
   <span><b>Mockup, round 5</b> · static: the data is read from this project, nothing is saved to it</span>
   <span class="grow"></span>
@@ -31,7 +32,7 @@
 </header>
 <div class="layout" id="layout">
   <aside class="rail" id="rail" aria-label="The goal's steps"></aside>
-  <main id="main"></main>
+  <main id="main" tabindex="-1"></main>
   <aside class="help" id="help" hidden aria-live="polite"></aside>
 </div>
 <script src="mock.js"></script>

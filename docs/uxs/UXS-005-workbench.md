@@ -416,8 +416,13 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
     significantly ahead of the baseline, corrected for the round's arms. Otherwise the row says why it "can't be the
     baseline" and what would make it so. On this project's re-runs every local arm is behind bart_l, so all are
     refused this way.
-  - The baseline cannot be retired.
-  - A prompt opens under its row and names the arm.
+  - The baseline cannot be retired. A retire can be undone until the round closes; a retired row strikes its verdict.
+  - A prompt opens under its row and names the arm; Enter confirms it.
+  - A closed round says when it closed and by whom, shows its question as text, and offers its next step: review the
+    outputs, with the command that opens the next round.
+  - A comparison's leader and a recommended arm are shown in the ok status, not in lime (a result, not an action).
+  - A skip link leads to the screen; a glossary word is a button; the run's progress is announced; the tabs take
+    Home and End.
   - "Close the round" needs a conclusion, and is confirmed with a restatement of what it decides.
 
 ## Help, for someone who is new to this
