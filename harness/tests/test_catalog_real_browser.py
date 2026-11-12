@@ -85,6 +85,52 @@ def visible_rows(page, tid: str) -> int:
     )
 
 
+def check_arms_sort_and_kinds(browser, base: str) -> None:
+    """The arms page's critique (2026-11-12): sorting a grouped table threw on a group's heading row; a cost sorted as
+    text, blanks first; no row said what it was scored against."""
+    page = browser.new_page(viewport={"width": 1280, "height": 900})
+    errors: list = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(base + "arms.html")
+    page.wait_for_selector("#arms tbody tr", timeout=30000)
+    page.locator("button[data-group-by=dataset]").first.click()
+    page.locator("#arms th .sortbtn", has_text="cost").click()
+    page.wait_for_timeout(300)
+    check(
+        "arms: a grouped table sorts by a column without an error, its groups kept",
+        not errors and page.locator("#arms tr.grouphead").count() > 1,
+        errors[:2],
+    )
+    page.goto(base + "arms.html")
+    page.wait_for_selector("#arms tbody tr", timeout=30000)
+    head = page.locator("#arms th .sortbtn", has_text="cost")
+    head.click()
+    head.click()  # descending: a blank must still come last
+    page.wait_for_timeout(300)
+    vals = page.evaluate(
+        "[...document.querySelectorAll('#arms tbody tr')].filter(r => !r.hidden).map(r => (r.cells[7].querySelector('[data-v]') || {dataset: {v: ''}}).dataset.v)"
+    )
+    shown = [v for v in vals if v != ""]
+    check(
+        "arms: cost sorts by its value, descending, every blank after every number",
+        bool(shown)
+        and all(float(a) >= float(b) for a, b in zip(shown, shown[1:]))
+        and "" not in vals[: len(shown)],
+        vals[:12],
+    )
+    kinds = page.evaluate(
+        "['t-judged','t-silver'].map(k => document.querySelectorAll('#arms tbody tr.' + k).length)"
+    )
+    check(
+        "arms: every row says what it is measured against (the row key, judged and silver rows tinted, the reference named)",
+        page.locator(".rowkey").count() == 1
+        and all(n > 0 for n in kinds)
+        and page.locator("#arms tbody td", has_text="measured · against").count() > 0,
+        kinds,
+    )
+    page.close()
+
+
 def check_home_tiles(browser, base: str) -> None:
     """At 1400 px the ten period tiles share one row, each about 104 px wide: a number must stay on one line there,
     the ones the catalog shows and the widest a small project has (a bill of $0.1992, 190,334 tokens)."""
@@ -158,6 +204,7 @@ def drive(cat: Path, base: str) -> None:
         )
 
         check_home_tiles(browser, base)
+        check_arms_sort_and_kinds(browser, base)
 
         page = browser.new_page(viewport={"width": 1280, "height": 900})
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)

@@ -365,6 +365,15 @@ that can move a result is never a patch release without saying so under **Change
 
 ### Fixed
 
+- **The catalog's arms page** (its design critique, 2026-11-12):
+  - Sorting a grouped table threw on a group's heading row and did nothing; it sorts inside each group now.
+  - A column sorted its cells' text: a cost as "$0.0009", a blank first, every measure in one ranking. It sorts each
+    cell's value now, blanks last, a measure among its own.
+  - No row said what it was measured against. Each is tinted by its kind, under the row key, and "measured" names
+    its reference and tier.
+  - A free arm's cost read "—". It reads "$0".
+  - The picked arms' bar hid under the header.
+  - Sections are headings, and a column head keeps its meaning around its sort button.
 - **`dataset-from-capture` deleted what sat in its items' folder**: `data/sources/<dataset>/` was emptied before the
   items were written, and a capture's own export kept there was deleted without a word (the fleet's beta). A file
   there that the dataset's record does not name is now refused (`would-overwrite`), and stays.

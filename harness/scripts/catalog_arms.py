@@ -134,6 +134,9 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                     "smoke": cm.smoke_of(records[a["arm"]], cid) if a["arm"] in records else "",
                     "quality": quality.get(a["arm"], ""),
                     "scored": "judge" if a["judge"] else (tiers.get(a["reference"]) or "none"),
+                    # What the row is measured against, as every arms table says it (UXS index rule 4).
+                    "kind": cb.row_kind(a, tiers),
+                    "against": cb.scored_against(a, ""),
                     "how": how,
                     "roles": roles.get(a["arm"], []),
                     "goal": g,
@@ -269,15 +272,24 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
             "weights": r["weights"] or "unknown",
             "quality": r["quality"] or "not decided",
         }
+        against = r["against"] if r["against"] != "—" else "no reference"
+        how = (
+            e(r["how"])
+            if r["how"].startswith("judged")
+            else f"rescored against {against}"
+            if r["how"].startswith("rescored against")
+            else f"{e(r['how'])} · against {against}"
+        )
         trs.append(
             {
                 "key": r["arm"],
+                "cls": r["kind"],
                 "made": r["first"],
                 "data": attrs,
                 "cells": [
                     f'<input type="checkbox" class="pick" aria-label="pick {e(r["label"])}" data-arm="{e(r["arm"])}" data-ds="{e(r["dataset"])}">',
                     cb.arm_link(r["arm"], r["label"]) + (f"<br>{badges}" if badges else ""),
-                    e(r["how"])
+                    how
                     + (
                         f'<br><small class="muted nowrap">{cb.fmt(r["value"] - r["moved"])} → {cb.fmt(r["value"])} '
                         f"({r['moved']:+.3f}) vs measured</small>"
@@ -308,12 +320,12 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                     + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>',
                     (
                         cb.metric_link(r["measure"])
-                        + f' <span data-v="{r["value"]}">{cb.fmt(r["value"])}</span>'
+                        + f' <span data-v="{r["value"]}" data-g="{e(r["measure"])}">{cb.fmt(r["value"])}</span>'
                     )
                     if r["measure"] and r["value"] is not None
                     else "—",
                     f'<span data-v="{r["repeats"]}">{r["repeats"]}</span>',
-                    f'<span data-v="{r["cost"] if r["cost"] is not None else ""}">{cb.fmt_amount(r["cost"], "usd") if r["cost"] else "—"}</span>',
+                    f'<span data-v="{r["cost"] if r["cost"] is not None else ""}">{"$0" if r["cost"] == 0 else cb.fmt_amount(r["cost"], "usd") if r["cost"] is not None else "—"}</span>',
                     f'<span data-v="{r["latency"] if r["latency"] is not None else ""}">{latency}</span>',
                     f'<span data-flow="runs" data-line>{len(period_rows[r["arm"]]["runs"])}</span>',
                     '<span data-flow="usd">—</span>',
@@ -425,7 +437,8 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
         + f'<p class="row-chips facet-chips" data-for="arms" role="group" aria-label="only"><span class="muted small">only</span>{facet_chips}</p>'
         + "</div>"
         + cp.row_chips("arms", "arms")
-        + '<p class="compare-bar" hidden><span data-picked>0 picked</span> <a class="btn small" data-compare href="#">open in the inspector</a> <button type="button" class="btn small" data-unpick>clear</button> <small class="muted" data-why></small></p>'
+        + '<p class="compare-bar" hidden><span data-picked role="status" aria-live="polite">0 picked</span> <a class="btn small" data-compare href="#">open in the inspector</a> <button type="button" class="btn small" data-unpick>clear</button> <small class="muted" data-why></small></p>'
+        + cb.ROW_KEY
         + cb.table(
             "arms",
             [

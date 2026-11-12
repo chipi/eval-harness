@@ -35,13 +35,19 @@ document.querySelectorAll('input[data-filter]').forEach(inp=>{const t=document.g
 inp.addEventListener('input',()=>{const w=inp.value.toLowerCase().split(/\s+/).filter(Boolean);let n=0;
 t.querySelectorAll('tbody tr').forEach(r=>{if(r.classList.contains('grouphead'))return;const ok=w.every(x=>r.textContent.toLowerCase().includes(x));const show=ok&&!r.classList.contains('pout')&&!r.classList.contains('fout');r.hidden=!show;n+=show;});
 const c=document.querySelector(`[data-count="${inp.dataset.filter}"]`);if(c)c.textContent=n;});});
-/* sort: a header is a button (click, or Enter/Space from the keyboard), and says how its column is sorted (aria-sort) */
-document.querySelectorAll('table.sortable th').forEach(th=>{th.tabIndex=0;th.setAttribute('role','button');th.setAttribute('aria-sort','none');
-th.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();th.click();}});
-th.addEventListener('click',ev=>{if(ev.target.closest('input'))return;const tb=th.closest('table').tBodies[0],i=th.cellIndex;
+/* sort: a header holds a button (a column head keeps its meaning), and says how its column is sorted (aria-sort).
+   A cell's value is its own data-v, else its first [data-v]'s; a blank (none, or —) sorts last both ways; a value
+   with data-g (a measure's name) sorts among its own group's; group headings stay out (group.js regroups after). */
+document.querySelectorAll('table.sortable th').forEach(th=>{th.setAttribute('aria-sort','none');
+if(!th.querySelector('input,button')&&th.textContent.trim()){const b=document.createElement('button');b.type='button';b.className='sortbtn';
+while(th.firstChild)b.appendChild(th.firstChild);th.appendChild(b);}
+th.addEventListener('click',ev=>{if(ev.target.closest('input')||!th.querySelector('.sortbtn'))return;const tb=th.closest('table').tBodies[0],i=th.cellIndex;
 const dir=th.dataset.dir==='asc'?'desc':'asc';th.closest('tr').querySelectorAll('th').forEach(x=>{delete x.dataset.dir;x.setAttribute('aria-sort','none');});th.dataset.dir=dir;th.setAttribute('aria-sort',dir==='asc'?'ascending':'descending');
-const key=r=>{const c=r.cells[i];const v=c.dataset.v??c.textContent.trim();const n=parseFloat(v);return isNaN(n)?v.toLowerCase():n;};
-[...tb.rows].sort((a,b)=>{const x=key(a),y=key(b);return (x>y?1:x<y?-1:0)*(dir==='asc'?1:-1);}).forEach(r=>tb.appendChild(r));});});
+const key=r=>{const c=r.cells[i];if(!c)return{blank:true,g:''};const s=c.dataset.v!=null?c:c.querySelector('[data-v]');
+const raw=(s?s.dataset.v:c.textContent).trim(),g=(s&&s.dataset.g)||'';if(raw===''||/^—/.test(raw))return{blank:true,g};
+const n=parseFloat(raw);return{g,v:isNaN(n)?raw.toLowerCase():n};};
+const cmp=(x,y)=>x.blank||y.blank?(x.blank&&y.blank?0:x.blank?1:-1):x.g!==y.g?(x.g<y.g?-1:1):(x.v>y.v?1:x.v<y.v?-1:0)*(dir==='asc'?1:-1);
+[...tb.rows].filter(r=>!r.classList.contains('grouphead')).sort((a,b)=>cmp(key(a),key(b))).forEach(r=>tb.appendChild(r));});});
 /* paging: a long table shows 10 rows at a time, "show 10 more" and "show all" below it. It pages
    the rows the filter leaves (r.hidden), so filter and sort work over every row; a link to a row
    (#anchor) opens the table at it. window.paginate(table) for tables drawn later (the inspector). */
@@ -92,7 +98,7 @@ if(location.protocol.startsWith('http')&&document.querySelector('.local-only'))f
    card's title and every other cell named by its column. The headers are hidden there, so a sortable table gets a
    "sort by" menu that clicks them. Tables drawn later (the inspector) are stacked as they appear; the label sheet
    stays a sheet: its item column stays put while it scrolls across the arms. */
-(function(){const name=th=>{const c=th.cloneNode(true);c.querySelectorAll('small,input,select,button').forEach(x=>x.remove());return c.textContent.trim();};
+(function(){const name=th=>{const c=th.cloneNode(true);c.querySelectorAll('small,input,select,button:not(.sortbtn)').forEach(x=>x.remove());return c.textContent.trim();};
 const stack=t=>{const hr=t.tHead&&t.tHead.rows[t.tHead.rows.length-1];if(!hr||hr.cells.length<4)return;const hs=[...hr.cells].map(name);
 t.classList.add('stack');
 for(const b of t.tBodies)for(const r of b.rows){if('stacked' in r.dataset)continue;r.dataset.stacked='';let i=0;

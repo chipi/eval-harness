@@ -560,6 +560,14 @@ tile opens it grouped by config (`arms.html?group=config`).
     headline), **repeats**, **cost / item**, **latency**, **runs in period** (with its line),
     **spend in period**. Filterable. An arm measured several ways is several rows, one per way,
     said by **how measured**; group by config to read them together. No nesting.
+  - What each row is measured against (the page's critique, 2026-11-12; the rule every arms table keeps): the row
+    key above the table; each row tinted by its kind (scored against silver, by a judge, by the arm that wrote the
+    reference, against a label set); **how measured** names the reference with its tier pill ("measured · against
+    gold/ag_news_200 GOLD", "rescored against …"), or "no reference".
+  - Sorting: each column head holds a button (the head keeps its meaning); a value sorts by its number, a blank (—)
+    last both ways, and **deciding measure** among its own measure's arms; a grouped table sorts inside each group.
+    A free arm's **cost / item** is "$0", not a blank.
+  - The compare bar floats at the screen's foot while an arm is picked, its count announced.
 - `02 configs`: the all / new / active chips, then one row per config: **config**, **model ·
   provider**, **datasets** (each linked), **arms**, **spend**, **rank on each goal** (its best
   arm's place among the arms the goal's decision weighs, "#3 of 33"), **runs in period**,

@@ -549,8 +549,8 @@ def block(num: str, eyebrow: str, inner: str, anchor: str = "") -> str:
     """Build a block section with a number, eyebrow text, and inner HTML."""
     aid = f' id="{anchor}"' if anchor else ""
     return (
-        f'<section class="block tight"{aid}><div class="wrap"><p class="eyebrow">'
-        f'<span class="num">{num}</span>{e(eyebrow)}</p>{inner}</div></section>'
+        f'<section class="block tight"{aid}><div class="wrap"><h2 class="eyebrow">'
+        f'<span class="num">{num}</span>{e(eyebrow)}</h2>{inner}</div></section>'
     )
 
 

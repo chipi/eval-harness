@@ -793,3 +793,16 @@ dl.df-view dl.df-view { padding-left: 12px; border-left: 2px solid var(--hair); 
   .sortsel { display: block; font: 500 13px/1 var(--mono); color: var(--ink); background: var(--surface);
     border: 1px solid var(--hair); border-radius: 10px; padding: 9px 12px; margin: 0 0 10px; max-width: 100%; }
 }
+
+/* the arms page's critique (2026-11-12) */
+section.block h2.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+  margin: 0; max-width: none; }
+section.block h2.eyebrow .num { color: var(--accent); font-weight: 700; font-size: 13px; }
+th .sortbtn { background: none; border: 0; padding: 0; margin: 0; font: inherit; letter-spacing: inherit; text-transform: inherit;
+  color: inherit; text-align: inherit; cursor: pointer; min-height: 24px; }
+/* the picked arms' bar floats at the screen's foot while there is a pick: the sticky one hid under the header */
+.compare-bar { position: fixed; top: auto; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  width: max-content; max-width: min(760px, calc(100% - 32px)); z-index: 20; margin: 0; box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
+span.role { font-size: 11px; }
+input.pick { width: 20px; height: 20px; }
+::placeholder { color: var(--muted); opacity: 1; }
