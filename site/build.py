@@ -1094,7 +1094,7 @@ def home(f: dict) -> str:
         (
             "Own it or rent it?",
             q(
-                "The best proprietary arm never significantly different from the best open-weight arm in any of the "
+                "The best proprietary arm was never significantly different from the best open-weight arm in any of the "
                 "six evals",
                 SYN,
             )
