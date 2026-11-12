@@ -196,6 +196,8 @@ reading, the monospace for every id, number and control.
 - **Body** (400, 17px, 1.6): a page's one sentence on what it holds.
 - **Table** (400, 15px): table cells; ids in monospace, numbers with tabular figures.
 - **Label** (500 monospace, 11–12px, 0.06–0.1em, uppercase): table heads, eyebrows, tile labels, fact keys.
+- **Note** (400 sans, 12px, Muted): a cell's or a heading's second line (a derived arm's move, a group's count); never
+  under 12px in the sans. A chart's words render at 11px or more at the size the chart is drawn.
 - **Tile number** (600, up to 22px, scaled to the tile's width): a count on a home tile.
 
 ## Layout
@@ -249,8 +251,10 @@ tinted row (3px, 1px for a label set; see Tables).
   model source's colour (a model scored it), by the arm that wrote its reference in the local series colour,
   against a label set in Muted with a 1px rule (told from silver by weight, not hue alone); gold is unmarked. None
   uses a model kind's data colour.
-- A role badge is a pill: a result (leader, recommended) set solid in ink, an arm left out drawn as an outline, a
-  baseline plain on Surface Raised; never a group or status colour.
+- A role badge is a pill, 2px by 7px inside: a result (leader, recommended) in bold ink on an Ink tint (14%), an arm
+  left out drawn as an outline, a baseline plain on Surface Raised; never a group or status colour. "wrote its own
+  reference" is an outline in the local series colour.
+- An element marked hidden stays hidden whatever its display rule (`[hidden] { display: none !important }`).
 
 ### Reference tiers and label sources
 

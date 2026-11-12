@@ -259,7 +259,14 @@ def drive(base: str, overview: str = "") -> None:
         )
         page.click('#period button.chip[data-period="all"]')
         page.goto(base + "datasets.html#plastmonth")
-        page.click('.row-chips [data-rows="active"]')
+        # new and active both 0: one chip says both (a new row has run in the period, so equal counts are one set)
+        merged = page.locator('.row-chips [data-rows="new"]')
+        check(
+            "datasets page: when new and active count the same, one chip says both",
+            "new and active" in merged.inner_text()
+            and not page.locator('.row-chips [data-rows="active"]').is_visible(),
+        )
+        merged.click()
         check(
             "datasets page: last month (the tutorial ran today) has no active dataset, and says so",
             page.locator("p.pempty").first.is_visible() and not page.locator("table#datasets").is_visible(),

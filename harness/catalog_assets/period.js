@@ -4,7 +4,7 @@
    Periods are counted from today, the viewer's date; scripts/catalog_periods.py computes the
    same for evh. window.PERIOD (periods.js) holds the periods; window.PERIOD_ROWS each row's
    dated runs and spend. Without this script a page shows all time. */
-(function(){const P=window.PERIOD,pick=document.getElementById('period');if(!P||!pick)return;
+(function(){const P=window.PERIOD,pick=document.querySelector('.period-switch > .chips');/* not by id: the home page's section is #period too */if(!P||!pick)return;
 const DAY=864e5,iso=t=>new Date(t).toISOString().slice(0,10),at=s=>Date.parse(s+'T00:00:00Z');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c]);
 const today=(()=>{const d=new Date();return Date.UTC(d.getFullYear(),d.getMonth(),d.getDate());})();

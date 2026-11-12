@@ -688,7 +688,9 @@ def arms(argv) -> int:
         has_record = any(r["record"] for r in rows)
         for name in sorted(groups):
             if key:
-                print(f"\n{dict(ca.GROUPS)[key]} {name or '—'} ({len(groups[name])} arms)")
+                print(
+                    f"\n{dict(ca.GROUPS)[key]} {name or '—'} ({len(groups[name])} arm{'' if len(groups[name]) == 1 else 's'})"
+                )
             _table(
                 [
                     "arm id",
@@ -699,6 +701,8 @@ def arms(argv) -> int:
                     *(["model record"] if has_record else []),
                     "role",
                     "deciding measure",
+                    "cost / item",
+                    "latency",
                     *heads_p,
                 ],
                 [
@@ -724,14 +728,32 @@ def arms(argv) -> int:
                         f"{r['measure']} {_fmt(r['value'])} {'↓' if r['lower'] else '↑'}"
                         if r["measure"]
                         else "—",
+                        "—" if r["cost"] is None else "$0" if r["cost"] == 0 else f"${r['cost']:.4f}",
+                        "—"
+                        if not r["latency"]
+                        else f"{r['latency'] / 1000:.1f} s"
+                        if r["latency"] >= 1000
+                        else f"{r['latency']:.0f} ms",
                         *(_pcells(per[r["arm"]], flows) if per else []),
                     ]
                     for r in (groups[name][:fold] if fold else groups[name])
                 ],
             )
             if fold and len(groups[name]) > fold:
-                more = f"--dataset-id {groups[name][0]['dataset']}" if key == "set" else "--all"
-                print(f"  … and {len(groups[name]) - fold} more: evh arms {more}")
+                ds = groups[name][0]["dataset"]
+                more = (
+                    f"evh arms --dataset-id {ds} lists them, with the dataset's other groups "
+                    f"({sum(r['dataset'] == ds for r in rows)} arms)"
+                    if key == "set"
+                    else "evh arms --all"
+                )
+                print(f"  … and {len(groups[name]) - fold} more: {more}")
+        if any(r["roles"] for r in rows):
+            print(
+                "\nroles: leader, first on the goal's deciding measure among the arms its decision weighs (not "
+                "significantly ahead of N: N it cannot be told apart from); recommended, what the goal's rule picks; "
+                "baseline, the arm the goal promoted. ×N after an arm: N runs of it, averaged per item."
+            )
         return 0
     want = _arm_ids(A, [args.arm], "runs")[0]
     hit = next(((ds, a) for ds, v in by_ds.items() for a in v["arms"] if a["arm"] == want), None)

@@ -22,6 +22,8 @@ HOSTED_PROVIDERS = ("litellm", "openai", "anthropic", "openrouter", "together", 
 FEED_FOLD = 3
 
 #: How a table of arms can be grouped: (key, the chip's name).
+TIERS = ("free", "small", "mid", "large")
+
 # The "dataset" chip groups by what can be ranked together (`set_key`): a dataset, scored one way, on one measure.
 GROUPS = (
     ("", "no grouping"),
@@ -151,7 +153,7 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
                     "deployment": (c or {}).get("deployment") or "",
                     "smoke": cm.smoke_of(records[a["arm"]], cid) if a["arm"] in records else "",
                     "quality": quality.get(a["arm"], ""),
-                    "scored": "judge" if a["judge"] else (tiers.get(a["reference"]) or "none"),
+                    "scored": "judge" if a["judge"] else (tiers.get(a["reference"]) or "no reference"),
                     # What the row is measured against, as every arms table says it (UXS index rule 4).
                     "kind": cb.row_kind(a, tiers),
                     "against": cb.scored_against(a, ""),
@@ -354,7 +356,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                     cb.arm_link(r["arm"], r["label"]) + (f"<br>{badges}" if badges else ""),
                     how
                     + (
-                        '<br><span class="smoke">wrote its own reference</span>'
+                        '<br><span class="selfref">wrote its own reference</span>'
                         if r["kind"] == "t-author"
                         else ""
                     )
@@ -388,7 +390,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                     + f'<br><small class="muted">{e(r["provider"] or "—")}{" · local" if r["local"] else ""}</small>',
                     (
                         cb.metric_link(r["measure"])
-                        + f' <span data-v="{r["value"]}" data-g="{e(r["measure"])}" data-better="{"lower" if r["lower"] else "higher"}">'
+                        + f' <span data-v="{r["value"]}" data-g="{e(set_key(r))}" data-better="{"lower" if r["lower"] else "higher"}">'
                         + f'{cb.fmt(r["value"])}</span> <span class="dir" title="{"lower" if r["lower"] else "higher"} is better">'
                         + f"{'↓' if r['lower'] else '↑'}</span>"
                     )
@@ -485,24 +487,31 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
             charts.append(f'<div data-tradeoff="{k}"{"" if not charts else " hidden"}>{ref}{svg}</div>')
 
     facet_chips = (
-        '<span class="kind">runs</span>'
+        '</span><span class="kindgroup"><span class="kind">runs</span>'
         + "".join(
             f'<button type="button" class="chip" data-facet="{f}" data-value="{v}" aria-pressed="false">{e(n)}</button>'
             for f, v, n in (("where", "local", "local"), ("where", "hosted", "hosted"))
         )
-        + '<span class="kind">price</span>'
+        + '</span><span class="kindgroup"><span class="kind">price</span>'
         + "".join(
             f'<button type="button" class="chip" data-facet="tier" data-value="{e(t)}" aria-pressed="false">{e(t)}</button>'
-            for t in sorted({r["tier"] for r in rows if r["tier"]})
+            # in their own order, cheapest first; a tier the configs name beyond these after them
+            for t in sorted(
+                {r["tier"] for r in rows if r["tier"]},
+                key=lambda t: (TIERS.index(t) if t in TIERS else len(TIERS), t),
+            )
         )
     )
     if any(r["quality"] for r in rows):
-        facet_chips += '<span class="kind">against the leader</span>' + "".join(
-            f'<button type="button" class="chip" data-facet="quality" data-value="{v}" aria-pressed="false">{v}</button>'
-            for v in ("a contender", "below the leader")
+        facet_chips += (
+            '</span><span class="kindgroup"><span class="kind">against the leader</span>'
+            + "".join(
+                f'<button type="button" class="chip" data-facet="quality" data-value="{v}" aria-pressed="false">{v}</button>'
+                for v in ("a contender", "below the leader")
+            )
         )
     if any(r["weights"] for r in rows):
-        facet_chips += '<span class="kind">weights</span>' + "".join(
+        facet_chips += '</span><span class="kindgroup"><span class="kind">weights</span>' + "".join(
             f'<button type="button" class="chip" data-facet="weights" data-value="{v}" aria-pressed="false">{n}</button>'
             for v, n in (("open", "open weights"), ("proprietary", "proprietary"))
         )
@@ -520,10 +529,10 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
         "every arm",
         '<details class="arm-tools" open><summary>group, filter and key</summary>'
         + cb.group_chips("arms", GROUPS)
-        + f'<p class="row-chips facet-chips" data-for="arms" role="group" aria-label="only"><span class="muted small">only</span>{facet_chips}<span class="muted small">any in a kind, every kind at once</span></p>'
+        + f'<p class="row-chips facet-chips" data-for="arms" role="group" aria-label="only"><span class="muted small">only</span><span>{facet_chips}</span><span class="muted small">any in a kind, every kind at once</span></p>'
         + cp.row_chips("arms", "arms")
         + cb.ROW_KEY
-        + '<p class="rolekey small muted"><span><b>leader</b> first on the goal\'s deciding measure among the arms its decision weighs; "not significantly ahead of N": N of them the paired test cannot tell apart from it</span><span><b>recommended</b> what the goal\'s rule picks from those (its strategy: cost, speed or quality first)</span><span><b>baseline</b> the arm the goal promoted</span><span><b>a contender</b> not significantly different from the leader; <b>below the leader</b> weighed and behind it</span></p>'
+        + '<p class="rolekey small muted"><span><b>leader</b> first on the goal\'s deciding measure among the arms its decision weighs; "not significantly ahead of N": N of them the paired test cannot tell apart from it</span><span><b>recommended</b> what the goal\'s rule picks from those (its strategy: cost, speed or quality first)</span><span><b>baseline</b> the arm the goal promoted</span><span><b>×N</b> after an arm: N runs of it, averaged per item</span><span><b>a contender</b> not significantly different from the leader; <b>below the leader</b> weighed and behind it</span></p>'
         + "</details>"
         + '<p class="compare-bar" hidden><span data-picked role="status" aria-live="polite">0 picked</span> <a class="btn small" data-compare href="#">open in the inspector</a> <button type="button" class="btn small" data-unpick>clear</button> <small class="muted" data-why></small></p>'
         + cb.table(
@@ -599,6 +608,7 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
                     for d, a, w_ in feed
                 ],
             ).replace('class="data sortable"', 'class="data sortable" data-period-feed', 1),
+            "changed",
         )
     if charts:
         body += cb.block(
@@ -606,7 +616,17 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
             "cost and quality, by goal",
             f'<p><select id="tradeoff-goal" class="chip more" aria-label="goal">{"".join(options)}</select></p>'
             + "".join(charts),
+            "bygoal",
         )
+    # a way past the 690 rows: a keyboard reached the first row after 37 stops and had no way to sections 02-04
+    jump = '<nav class="jump small" aria-label="on this page">On this page: <a href="#every">every arm</a> · <a href="#configs">configs</a>'
+    jump += ' · <a href="#changed">what changed</a>' if '"changed"' in body or 'id="changed"' in body else ""
+    jump += ' · <a href="#bygoal">cost and quality, by goal</a>' if charts else ""
+    body = body.replace(
+        '<section class="block tight" id="every">',
+        f'<div class="wrap">{jump}</nav></div><section class="block tight" id="every">',
+        1,
+    )
     cb.write(
         out,
         "arms.html",

@@ -506,7 +506,15 @@ check(
 placed = [(100.0, 200.0, 50.0)]
 check("labels: a clear spot is kept", label_y(80.0, 100.0, 200.0, placed, 10, 200) == 80.0)
 moved = label_y(52.0, 150.0, 260.0, placed, 10, 200)
-check("labels: an overlapping name moves at least a line away", abs(moved - 50.0) >= LABEL_H, moved)
+check(
+    "labels: an overlapping name moves at least a line away",
+    moved is not None and abs(moved - 50.0) >= LABEL_H,
+    moved,
+)
+check(
+    "labels: a name with no clear line in the plot is left off (None), not drawn over another",
+    label_y(52.0, 150.0, 260.0, placed, 45, 55) is None,
+)
 check(
     "labels: names that do not overlap in x share a line",
     label_y(50.0, 210.0, 300.0, placed, 10, 200) == 50.0,

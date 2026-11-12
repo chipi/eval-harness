@@ -562,6 +562,22 @@ tile opens it grouped by config (`arms.html?group=config`).
   - On a phone the grouping, the filters, the keys and the all / new / active chips fold behind one line ("group,
     filter and key · N on"); every chip row wraps. When new and active count the same, one chip says both.
   - The period is kept in the address beside the grouping (`?period=30d`); an older link's `#p30d` still opens it.
+    The picks (`?pick=`) and the sort (`?sort=<column>:<asc|desc>`) are kept there too; a shared link opens them.
+  - Every grouping keeps what ranks together together: inside a config, model, provider or "scored against" group the
+    rows cluster by dataset, reference and measure, and the deciding measure sorts within that set; with no grouping
+    it sorts within each set too. The undecided note sits on its heading's line. "no reference" names an arm scored
+    against none, as `evh arms` says it. The price chips run free, small, mid, large.
+  - "On this page" under the hero jumps to every arm, configs, what changed and the charts. Each cell names its
+    group's heading and its column (`headers`). Keyboard focus lands below the bar, the column heads and a group's
+    heading (scroll padding), not under them.
+  - The footer's command follows every way the period changes, and says when it left a chip out (the terminal takes
+    one of a kind). On a phone the fold counts only what was picked, and the sort menu says "low first" / "high
+    first" and offers only the columns shown.
+  - A chart's points table marks the arms on the frontier; a free cost reads $0 there. A speed axis spanning more than
+    100× is drawn on a log scale. A frontier name with no clear line is left off the drawing (its dot stays, its
+    tooltip and the table name it); on a phone the names are left off and the table carries them.
+  - `evh arms` says "1 arm", names how many of a group are folded and how to list them, shows cost and latency, and
+    keys its roles.
   - **only** chips: local, hosted (hosted when it runs through a provider that bills per call,
     litellm, openai, anthropic and the like, or its config prices tokens), then each price tier
     the configs declare (free, small, mid, large); a contender, below the leader (the arm's

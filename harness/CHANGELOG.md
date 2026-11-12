@@ -401,6 +401,12 @@ that can move a result is never a patch release without saying so under **Change
     by kind; a group no goal decides says so; on a phone the controls and keys fold (the first arm from 1,135px down to
     769px); the period in the address (`?period=`, `#p` links still read); config ids linked; chart axes in Muted
     (they were 1.6:1).
+  - The sixth review: "no goal decides here" showed under groups a goal decides, and a configs chip showed at an equal
+    count (a display rule beat [hidden]; the catalog keeps hidden hidden now, which also showed the home page's
+    period chips were found by a duplicate id: period.js finds them by place). Every grouping ranks like with like.
+    Keyboard focus clears the sticky heads. The footer's command follows the period's "more…". Picks and the sort
+    are in the address. A jump to the page's sections; cells name their group. Role pills padded; a sans note 12px;
+    chart words 11px or more. `evh arms` says "1 arm", shows cost and latency, keys its roles.
 - **`dataset-from-capture` deleted what sat in its items' folder**: `data/sources/<dataset>/` was emptied before the
   items were written, and a capture's own export kept there was deleted without a word (the fleet's beta). A file
   there that the dataset's record does not name is now refused (`would-overwrite`), and stays.

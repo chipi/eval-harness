@@ -491,7 +491,7 @@ try:
     grouped = _view(_cv.arms, ["--by", "config"])
     check(
         "evh arms --by config: a heading per config, its arms under it",
-        "config arm_t (2 arms)" in grouped and "config arm_s (1 arms)" in grouped,
+        "config arm_t (2 arms)" in grouped and "config arm_s (1 arm)" in grouped,
         grouped[:400],
     )
     check(

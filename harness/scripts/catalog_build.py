@@ -3692,7 +3692,7 @@ def decision_html(dec: dict, labels: dict, g: dict, up: str, gap: str = "", said
 def axis_fmt(ax: dict):
     """How an axis's value reads: dollars to four places for cost, ms or s for milliseconds, else fmt."""
     if ax["name"] == "cost" and ax["measure"] == "cost_usd":
-        return lambda v: f"${v:.4f}"
+        return lambda v: "$0" if v == 0 else f"${v:.4f}"
     if ax.get("unit") == "ms":
         return lambda v: f"{v / 1000:.1f} s" if v >= 1000 else f"{v:.0f} ms"
     return fmt
@@ -3749,19 +3749,30 @@ def tradeoff_charts(dec: dict, labels: dict, quality_name: str) -> str:
             if ms
             else None,
             width=HALF,
+            # a speed spanning more than 100x (0.06 ms to 57 s) crowds every point at one end on a linear axis
+            log_x=ms
+            and len(pts) > 1
+            and min(p[0] for p in pts) > 0
+            and max(p[0] for p in pts) / min(p[0] for p in pts) > 100,
         )
         if svg:
             # The chart's points as a table: what a dot's tooltip says, for a keyboard and a screen reader too.
             fx = axis_fmt(ax)
+            front = {
+                pts[i][2]
+                for i in ch.frontier(
+                    [(p[0], p[1]) for p in pts], ax["direction"] == "lower", q["direction"] == "higher"
+                )
+            }
             rows = "".join(
-                f'<tr><td>{e(lab)}</td><td class="num">{fmt(y)}</td><td class="num">{e(fx(x))}</td></tr>'
+                f'<tr><td>{e(lab)}</td><td class="num">{fmt(y)}</td><td class="num">{e(fx(x))}</td><td>{"yes" if lab in front else ""}</td></tr>'
                 for x, y, lab, _tip in sorted(
                     pts, key=lambda p: -p[1] if q["direction"] == "higher" else p[1]
                 )
             )
             table = (
                 f'<details class="chart-table"><summary>the {len(pts)} points as a table</summary><div class="scroll-x">'
-                f'<table class="data" data-nopage><thead><tr><th>arm</th><th>{e(quality_name)}</th><th>{e(ax["name"])}{e(stat)}</th></tr></thead>'
+                f'<table class="data" data-nopage><thead><tr><th>arm</th><th>{e(quality_name)}</th><th>{e(ax["name"])}{e(stat)}</th><th>on the frontier</th></tr></thead>'
                 f"<tbody>{rows}</tbody></table></div></details>"
             )
             charts.append(f"<div>{svg}{table}</div>")
