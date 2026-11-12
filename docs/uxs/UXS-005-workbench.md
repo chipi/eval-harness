@@ -404,7 +404,9 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
   - "The answer so far" is the standing answer (r1's, with its cost guidance); a closed round amends it under it
     ("r4 added: …") instead of replacing it, and the kicker names the baseline the latest round left (owner,
     2026-11-12).
-  - The comparison names its correction ("Holm across 28; the p shown is raw").
+  - The comparison names its correction (Holm across 28) and shows each arm's corrected p beside the raw one; its
+    verdicts use r4's words ("not significantly different"). On a phone, where the table's head is hidden, a sort
+    menu sits above the cards.
   - An arm is opened by its name, a button, and its panel opens as the row under it. The chart's dots are for the
     mouse; the table is the keyboard and screen-reader path (a dot in the tab order would repeat every arm button).
     On a phone a chart's words are set to stay near 11px as the drawing scales down.
@@ -418,24 +420,34 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
   - Its results compare each arm's own Linux re-run with bart_l's own Linux re-run (the pair tests' baseline), so
     speed and coverage are from one machine; each row says which run under the arm's name, and its actions sit
     beside the name, so the table fits a desktop screen.
-  - "Make baseline" is offered only where `round-close --promote` would accept it: the arm's own run in this round,
-    significantly ahead of the baseline, corrected for the round's arms. When none can be, one statement above the
-    results says so, why (corrected over the round's arms) and what could change it, instead of a refusal per row.
-    On this project's re-runs every local arm is behind bart_l, so the statement is what shows.
+  - The results open with the round's answer in one line ("No arm was shown ahead of bart_l: 2 not significantly
+    different, 2 significantly worse. bart_l stays the baseline."), then the correction as a note above the table
+    (a phone hides the table's head), then the table; the mockup note and the cost line come after it.
+  - "Make baseline" is offered only where `evh rounds` would suggest the promotion: the arm's own run in this round,
+    significantly ahead of the baseline it started from, corrected over the arms in play. When none can be, one
+    statement under the results says so and what could change it, instead of a refusal per row. On this project's
+    re-runs every local arm is behind bart_l, so the statement is what shows.
   - The baseline cannot be retired. A retire can be undone until the round closes; a retired row strikes its verdict.
   - A prompt opens under its row and names the arm; Enter confirms it, Escape cancels it; an empty reason is an error
-    in the bad status, tied to its field. The confirm of a close shows one "Close the round"; the hint under it stops
-    asking for a conclusion once one is written. The answer's source is a quiet line under it.
+    in the bad status, tied to its field. The confirm of a close shows one "Close the round", and Escape backs out of
+    it. Close is enabled for a conclusion of three words or more (`round-close` refuses a shorter one), and the hint
+    asks for a sentence until then. A clone can be removed before the run. The answer's source is a quiet line under it.
   - r4's results give each arm a verdict (significantly ahead / not significantly different / significantly worse)
-    with Δ, the corrected p and the raw p, and r1's coverage bars. The correction is the one promotion uses:
-    `round-close --promote` runs `pair-test --round`, one pair at a time, Bonferroni across the round's arms (Holm's
-    step-down needs every p at once, which r1's table has, so r1 says Holm); the column says so. A cost column every
-    arm of which is $0 gives way to one line; after the run the Run part is its status line.
+    with Δ, the corrected p and the raw p, and r1's coverage bars. The correction is the one `evh rounds` uses to
+    decide whether to suggest promoting the round's leader: one pair at a time, Bonferroni over the arms in play other
+    than the baseline, the retired left out (`rounds._against_family`, `_rounds.arms_of`), so a retire narrows it.
+    `round-close --promote` records that test but does not refuse on it. (Holm's step-down needs every p at once,
+    which r1's table has, so r1 says Holm.) A cost column every arm of which is $0 gives way to one line, in the
+    results and in the arms part; a local run's button says "local, no API cost"; after the run the Run part is its
+    status line. On a phone an arm's actions sit on their own line at its card's foot, and the column is named
+    "actions" for a screen reader.
   - The statistics words (raw p, corrected p, Holm, Bonferroni, Δ) are glossary buttons. r1's table sorts by rank,
     arm, coverage, cost or speed. A command a person opened stays open across redraws. A job's moving count is not
     announced; its start and its end are.
   - On a phone the rail is one line naming the step ("Step 5 of 5 · Eval ▾") that opens to every step, so the screen's
     answer is in view without scrolling past eleven steps.
+  - A closed round folds its arms behind one line, says its conclusion once (in the answer at the top), carries it in
+    the folded command, and dates the close in local time.
   - A closed round says when it closed and by whom, shows its question as text, and offers its next steps: review the
     outputs, or open the next round. r5 opens from r4's conclusion with its question in focus and the command it
     writes; the project has no runs past r4's re-runs, so the walk-through stops at r5's question and says so.
@@ -443,7 +455,7 @@ this project holds no held-out side, study, prompt version, job or replay yet; e
   - A skip link focuses the screen without changing the route; a glossary word is a button that Enter or Space
     opens; the help panel opens with focus on its close button and gives focus back to what opened it; a reason's
     error is tied to its field; the run's progress is announced; the tabs take Home and End.
-  - "Close the round" needs a conclusion, and is confirmed with a restatement of what it decides.
+  - "Close the round" needs a conclusion of a sentence, and is confirmed with a restatement of what it decides.
 
 ## Help, for someone who is new to this
 

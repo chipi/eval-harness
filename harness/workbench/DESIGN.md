@@ -163,7 +163,8 @@ lime.
 never a colour of its own.
 
 **The Two Rules Rule.** Two blocks carry a left rule, and only these: the answer so far, 3px in lime (what to read),
-and a note, 2px in Axis (an aside). No other card, row or callout has one.
+and a note, 2px in Axis (an aside). No other card, row or callout has one. The answer's focus ring is Ink
+Secondary, so it is not read as a second lime rule.
 
 ## Typography
 
@@ -183,11 +184,14 @@ the site's, the sans for fields and hints, monospace for kickers, ids, commands 
 - **Hint** (400, 13px, Muted): the line under a field; hidden when hints are off.
 - **Label** (500 monospace, 11–12px, uppercase): kickers ("Step 1 of 5"), the rail's headings, status, commands.
 - **Control** (sans, 14px): buttons, the rail's steps, a fold's summary, the help panel's definitions.
-- **Caption** (sans, 12px, Muted): a chart's caption and legend, a refusal's text, fine print under a table.
+- **Caption** (sans, 12px, Muted): a chart's caption and legend, a refusal's text, fine print under a table, a
+  verdict's Δ and p line.
 - **Question** (600 display, 20px): a round's question, read as the round's title.
 - **Stat** (600, 17px): a figure in an arm's panel.
 - **Start title** (display, 38px): the empty project's one question, the only screen without the journey.
-- A chart's words render at 11px or more at the size it is drawn (19 units on a phone, where it is drawn at ~0.56).
+- A chart's words render at 11px or more at the size it is drawn: 12.5 units on a desktop (drawn at ~0.885), 20 on
+  a phone (drawn at ~0.56).
+- **Round answer** (sans, 16px, its lead in bold): the one line that answers a round's question, above its table.
 
 ## Layout
 
@@ -211,7 +215,7 @@ app.
 ## Shapes
 
 Small, even corners for a tool: 6px on buttons, inputs and the folded command, 8px on parts, cards and lists of steps,
-3px on tags, full circles for the rail's dots and the "?" buttons, full pills for review chips and a job's progress track.
+3px on tags and the brand's mark, full circles for the rail's dots and the "?" buttons, full pills for review chips and a job's progress track.
 A table inside a part keeps its own hairline frame (6px): the part is the step, the frame the data; nothing else
 nests a framed block in a part.
 

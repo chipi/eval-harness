@@ -11,9 +11,11 @@ Served from a static server on a free port, with Chromium:
   - the skip link is the first Tab stop, keeps its ink when hovered, and focuses the screen without changing it;
   - the help panel opens with focus on its close button and gives it back to what opened it; a glossary word opens
     on Space without scrolling the page;
-  - round r4's results fit a desktop screen, each arm on its own Linux re-run (bart_l's too), with one statement when
-    no arm can be the baseline;
+  - round r4's results fit a desktop screen, each arm on its own Linux re-run (bart_l's too), the round's answer in one
+    line above them, and one statement when no arm can be the baseline;
+  - r4's correction is `evh rounds`': Bonferroni over the arms in play, so a retire narrows it;
   - a retire's empty reason is an error tied to its field;
+  - Close needs a sentence, as round-close does; Escape backs out of its confirm;
   - closing the round keeps the standing answer and amends it.
 """
 
@@ -161,7 +163,8 @@ def check_round(browser, base: str) -> None:
         over <= 0
         and "its re-run" in base_row
         and "6.3 s" in base_row
-        and page.locator(".note", has_text="None of the").count() == 1,
+        and page.locator(".note", has_text="None of the").count() == 1
+        and page.locator(".roundanswer").inner_text().startswith("No arm was shown ahead of bart_l"),
         f"overflow {over}px, baseline row {base_row!r}",
     )
     page.locator("[data-retire]").first.click()
@@ -180,10 +183,24 @@ def check_round(browser, base: str) -> None:
     )
     page.keyboard.press("Escape")
     check("workbench: Escape cancels the retire prompt", page.locator("tr.askrow").count() == 0)
+    page.locator("#r4c").fill("bart_l stays")
+    short_off = (
+        page.locator("#closer4").is_disabled()
+        and "write a sentence" in page.locator("#closehint").inner_text()
+    )
     page.locator("#r4c").fill("No local arm was shown ahead of bart_l.")
     check(
-        "workbench: the close hint stops asking for a conclusion once one is written",
-        "write the conclusion first" not in page.locator("#closehint").inner_text(),
+        "workbench: Close needs a sentence of three words or more, as round-close does",
+        short_off
+        and page.locator("#closer4").is_enabled()
+        and not page.locator("#closehint").inner_text().strip(),
+    )
+    page.locator("#closer4").click()
+    page.locator("#closeno").focus()
+    page.keyboard.press("Escape")
+    check(
+        "workbench: Escape backs out of the close confirm, focus back on Close",
+        page.locator("#closeok").count() == 0 and page.evaluate("document.activeElement.id") == "closer4",
     )
     page.locator("#closer4").click()
     check(
@@ -216,9 +233,10 @@ def check_round(browser, base: str) -> None:
 
 
 def check_verdicts_and_reading(browser, base: str) -> None:
-    """r4's verdicts are the harness's: Bonferroni across the round's arms, as `round-close --promote` tests (a Holm
-    step-down here once called bart_s significantly worse at 0.0316; the harness says 0.0632). r1 sorts; an opened
-    command stays open; on a phone the rail is one line."""
+    """r4's verdicts are the harness's: Bonferroni over the arms in play other than the baseline, as `evh rounds` decides
+    whether to suggest a promotion (a Holm step-down here once called bart_s significantly worse at 0.0316; the harness
+    says 0.0632), and a retire narrows it (bart_s then 3 x 0.0158 = 0.0474). r1 sorts; an opened command stays open; on
+    a phone the rail is one line."""
     state = {
         **STATE,
         "r4": {"question": "Does a smaller local model match bart_l?", "ran": True},
@@ -232,10 +250,25 @@ def check_verdicts_and_reading(browser, base: str) -> None:
     )
     bart_s = next((r for r in rows if r.startswith("bart_s:")), "")
     check(
-        "workbench: r4 gives each arm a verdict with its corrected p, as promotion tests it (bart_s: 0.0632, not significant)",
+        "workbench: r4 gives each arm a verdict with its corrected p, as evh rounds tests it (bart_s: 0.0632, not significant)",
         "not significantly different" in bart_s
         and "p 0.0632" in bart_s
         and any("significantly worse" in r for r in rows),
+        rows,
+    )
+    page.locator("table.r4res tbody tr").filter(has_text="bart_m").locator("[data-retire]").click()
+    page.locator("#actwhy").fill("slower than bart_s at the same coverage")
+    page.locator("#actok").click()
+    page.wait_for_timeout(200)
+    rows = page.evaluate(
+        "[...document.querySelectorAll('table.r4res tbody tr')].map(t => t.cells[0].firstChild.textContent.trim() + ': ' + t.cells[3].textContent.replace(/\\s+/g, ' ').trim())"
+    )
+    bart_s = next((r for r in rows if r.startswith("bart_s:")), "")
+    check(
+        "workbench: a retire narrows r4's correction, as evh rounds leaves the retired out (bart_s: 3 x 0.0158 = 0.0474)",
+        "significantly worse" in bart_s
+        and "p 0.0474" in bart_s
+        and "3 arms in play" in page.locator(".cmpnote").inner_text(),
         rows,
     )
     page.locator('[data-tab="r1"]').click()

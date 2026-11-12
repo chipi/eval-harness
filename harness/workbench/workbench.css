@@ -45,7 +45,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   height: 52px; padding: 0 16px; border-bottom: 1px solid var(--hair);
   background: color-mix(in srgb, var(--page) 86%, transparent); backdrop-filter: blur(12px); }
 .brand { font: 600 13px/1 var(--mono); letter-spacing: .04em; display: flex; gap: 8px; align-items: center; text-decoration: none; }
-.brand i { width: 10px; height: 10px; border-radius: 2px; background: var(--accent); display: block; }
+.brand i { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); display: block; }
 .brand span { color: var(--muted); font-weight: 500; }
 .bar .project { font: 500 12px/1 var(--mono); color: var(--ink-2); border-left: 1px solid var(--hair); padding-left: 16px; }
 .bar .grow { flex: 1; }
@@ -360,7 +360,7 @@ tr.panelrow > td { padding: 4px 10px 12px; background: transparent; }
 tr.panelrow .armpanel { margin: 0; border: 0; border-radius: 0; background: var(--surface-2); }
 @media (max-width: 640px) { table.stack tr.panelrow { display: block; padding: 0; border-top: 0; }
   table.stack tr.panelrow > td { display: block; padding: 0 0 12px; } }
-.answer:focus { outline: 2px solid var(--accent); outline-offset: 6px; }
+.answer:focus { outline: 2px solid var(--ink-2); outline-offset: 6px; }
 
 /* the eval screen's left-out critique items (2026-11-12): results in the ok status, not lime; the catalog's gold tier;
    the skip link; a retired row's verdict struck; a closed round's question as text */
@@ -389,7 +389,7 @@ table.r4res td.acts { white-space: nowrap; }
 
 /* a chart's words on a phone: the drawing scales to about 0.56 of its 640 units there, so its 11-unit text came out
    about 6px; 19 units keep it near 11px (the critique, 2026-11-12) */
-@media (max-width: 640px) { main svg[role="img"] { overflow: visible; } main svg[role="img"] text { font-size: 19px; } }
+@media (max-width: 640px) { main svg[role="img"] { overflow: visible; } }
 
 /* the eval screen's fourth critique (2026-11-12): a [hidden] control stays hidden whatever its display; the notes a
    round writes keep a reading measure; the answer's source a quiet line; a field's error in the bad status */
@@ -414,3 +414,16 @@ table.cmp th .sortbtn:focus-visible { outline: 2px solid var(--accent); outline-
 /* a column head that carries a note wraps it: the note is a sentence, not a label */
 table.cmp thead th:has(> small) { white-space: normal; min-width: 24ch; }
 table.cmp thead th > small { white-space: normal; }
+
+/* the sixth review: the round's answer first; the correction a note above the table (a phone hides the head); r1's
+   sort menu on a phone; r4's actions on their own line on a phone; chart words 11px or more as drawn (12.5 units at
+   ~0.885 on a desktop, 20 at ~0.56 on a phone); the Δ/p line a 12px caption; the answer at 62ch; the brand on the scale */
+.roundanswer { margin: 0 0 10px; font-size: 16px; }
+.cmpnote { margin: 0 0 8px; }
+.sortpick { display: none; font: 500 12px/1 var(--mono); color: var(--muted); margin: 0 0 8px; }
+@media (max-width: 640px) { .sortpick { display: block; } table.stack.compact.r4res td.acts { order: 99; flex: 1 1 100%; } table.stack.compact.r4res td.acts::before { content: none; } }
+main svg[role="img"] text { font-size: 12.5px; }
+@media (max-width: 640px) { main svg[role="img"] text { font-size: 20px; } }
+small.p { font-size: 12px; }
+.answer p { max-width: 62ch; }
+details.armsfold > summary { font: 500 13px/1.4 var(--mono); color: var(--ink-2); padding: 6px 0; cursor: pointer; }
