@@ -722,6 +722,8 @@ success_criteria:
   });
   new MutationObserver(stackTables).observe(main, { childList: true, subtree: true });
   window.addEventListener("hashchange", () => { help.hidden = true; render(true); window.scrollTo(0, 0); });
+  // the screens are routes in the hash: the skip link focuses the screen without changing it
+  document.querySelector("a.skip")?.addEventListener("click", (e) => { e.preventDefault(); main.focus(); });
   $("#hints").addEventListener("change", (e) => { S.hints = e.target.checked; save(); render(); });
   $("#mocknotes").addEventListener("change", (e) => document.body.classList.toggle("mocknotes-off", !e.target.checked));
   $("#reset").addEventListener("click", () => { S = fresh(); save(); help.hidden = true; location.hash = "#start"; render(); });

@@ -85,6 +85,40 @@ def visible_rows(page, tid: str) -> int:
     )
 
 
+def check_arms_skip_and_address(browser, base: str) -> None:
+    """The arms page's second critique (2026-11-12): the skip link drew accent text on the accent when hovered, and
+    a grouping or facet picked was lost on reload."""
+    page = browser.new_page(viewport={"width": 1280, "height": 900})
+    page.goto(base + "arms.html")
+    page.wait_for_selector("#arms tbody tr", timeout=30000)
+    page.keyboard.press("Tab")
+    page.locator("a.skip").hover()
+    fg, bg = page.evaluate(
+        "(() => { const s = getComputedStyle(document.querySelector('a.skip')); return [s.color, s.backgroundColor]; })()"
+    )
+    page.keyboard.press("Enter")
+    check(
+        "arms: the skip link is the first stop, keeps its ink when hovered, and focuses the page without leaving it",
+        fg != bg
+        and page.evaluate("document.activeElement.id") == "main"
+        and page.url.split("#")[0].endswith("arms.html"),
+        f"{fg} on {bg}, focus {page.evaluate('document.activeElement.id')}, url {page.url}",
+    )
+    page.locator('.facet-chips button[data-value="local"]').click()
+    page.locator("button[data-group-by=dataset]").first.click()
+    page.goto(page.url)
+    page.wait_for_selector("#arms tbody tr", timeout=30000)
+    pressed = page.evaluate(
+        "[...document.querySelectorAll('[aria-pressed=true]')].map(b => b.textContent.trim())"
+    )
+    check(
+        "arms: a grouping and a facet picked are kept in the address and come back on reload",
+        "dataset" in pressed and "local" in pressed and page.locator("#arms tr.grouphead").count() > 1,
+        pressed,
+    )
+    page.close()
+
+
 def check_arms_sort_and_kinds(browser, base: str) -> None:
     """The arms page's critique (2026-11-12): sorting a grouped table threw on a group's heading row; a cost sorted as
     text, blanks first; no row said what it was scored against."""
@@ -205,6 +239,7 @@ def drive(cat: Path, base: str) -> None:
 
         check_home_tiles(browser, base)
         check_arms_sort_and_kinds(browser, base)
+        check_arms_skip_and_address(browser, base)
 
         page = browser.new_page(viewport={"width": 1280, "height": 900})
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)

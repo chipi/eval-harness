@@ -293,7 +293,7 @@ def scatter(
         on = i in front
         marks.append(
             f'<circle cx="{x_of(x):.1f}" cy="{y_of(y):.1f}" r="{5 if on else 4}" '
-            f'fill="{"var(--s1)" if on else "var(--muted)"}"><title>{_e(tip)}</title></circle>'
+            f'fill="{"var(--ink)" if on else "var(--muted)"}"><title>{_e(tip)}</title></circle>'
         )
         if on:
             # Named beside the dot on the side the name fits inside the plot (never cut off, never over

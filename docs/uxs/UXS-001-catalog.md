@@ -583,7 +583,8 @@ tile opens it grouped by config (`arms.html?group=config`).
   on `<dataset>`", so they do not bury the rest.
 - `04 cost and quality, by goal`: a goal list; the goal's trade-off charts (its quality against
   cost and against speed, the frontier drawn), as on its goal page, one goal at a time, under the reference it is
-  scored against. The frontier is drawn in the secondary ink, not the accent; speed's ticks read in ms or s.
+  scored against. The frontier is drawn in ink (its dots) and the secondary ink (its line), never the accent or a
+  group colour; speed's ticks read in ms or s.
 - Command: `evh arms [--dataset-id <id>] [--by dataset|config|model|provider|scored]
   [--where local|hosted] [--tier <tier>] [--weights open|proprietary] [--quality contender|below]
   [--period P]`, and `evh arms --configs` for `02`. A derived arm's **how measured** carries its
