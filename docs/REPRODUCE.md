@@ -57,7 +57,7 @@ make compare   EXP=scifact
 ```
 
 `LEVEL=baselines` runs only the floors (seconds); `ARMS=bm25,e5_base` picks arms by name.
-Reruns go to `harness/data/runs-repro/<eval>/`, which is gitignored and never
+Reruns are throwaway runs in `harness/.build/scratch/runs/` (`evh run --scratch`), never
 mixed with the committed runs — those stay the record.
 
 Model weights download from Hugging Face on first use, at the revision the committed run
@@ -129,7 +129,7 @@ system that is not an OpenAI-compatible endpoint, write an adapter instead:
 
 ## The replication card
 
-`make compare` writes `harness/data/runs-repro/<eval>/REPLICATION.md`:
+`make compare` writes `harness/.build/reproduce/<eval>/REPLICATION.md`:
 
 | column | meaning |
 |---|---|

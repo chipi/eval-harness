@@ -101,4 +101,4 @@ jobs:
         if: always()
         with:
           name: replication-${{ matrix.exp }}
-          path: harness/data/runs-repro/${{ matrix.exp }}/REPLICATION.md
+          path: harness/.build/reproduce/${{ matrix.exp }}/REPLICATION.md
