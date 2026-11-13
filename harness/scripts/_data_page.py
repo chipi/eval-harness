@@ -15,6 +15,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, NoReturn
 
 from evaluation_harness import _common, _outputs, _store
+from evaluation_harness.model import runs as model_runs
 
 #: The settings, by folder: (what one is, its schema, the key that is its id, whether that id must be the file name).
 #: Each is found by its id (validate checks systems, goals, scorers, models and failure-mode lists; a fieldset is read
@@ -40,6 +41,7 @@ WRITERS: dict[str, tuple[str, str]] = {
     "labels": ("label sets", "the label-* commands and evh sheet-import"),
     "judging-sets": ("judging sets", "evh judge-score"),
     "judge-verdicts": ("judge verdicts", "evh judge-score"),
+    "judge-summaries": ("judge summaries", "evh judge-score"),
     "judge-validation": (
         "judge validations",
         "the judge-validation tools (harness/tools/validate_judge_*.py)",
@@ -109,11 +111,11 @@ def kind_of(rel: str) -> str:
         len(parts) == 2 and parts[0] in SETTINGS and parts[1].endswith((".yaml", ".yml"))
     ):
         return "setting"
-    if parts[0].startswith("runs"):
+    if parts[0] == "runs":
         d = _data() / rel
-        if _store.is_dir(d) and (_store.is_file(d / "metrics.json") or _store.is_file(d / "run.json")):
+        if len(parts) == 2 and _store.is_dir(d) and _store.is_file(d / "run.json"):
             return "run"
-        if _store.is_file(d) and len(parts) >= 2:
+        if _store.is_file(d) and len(parts) >= 3:
             return "run-file"
     return "data"
 
@@ -121,8 +123,8 @@ def kind_of(rel: str) -> str:
 def writer_of(rel: str) -> str:
     """The command that writes a harness-written file."""
     top = rel.split("/")[0]
-    if top.startswith("runs"):
-        return "evh run and the commands that derive runs (rescore, judge-score, sheet-import, import-run)"
+    if top == "runs":
+        return "evh run and the commands that score runs (rescore, judge-score, sheet-import, import-run)"
     return WRITERS.get(top, ("", "the harness's commands"))[1]
 
 
@@ -147,7 +149,7 @@ def overview() -> dict[str, Any]:
     for name in tops:
         if name in SETTINGS or name == POLICY or name.startswith(_store.DB) or not _store.is_dir(data / name):
             continue
-        word = WRITERS.get(name, ("runs" if name.startswith("runs") else name, ""))[0]
+        word = WRITERS.get(name, (name, ""))[0]
         other.append({"folder": name, "kind": word, "files": _files_under(data / name)})
     return {
         "store": store,
@@ -159,21 +161,12 @@ def overview() -> dict[str, Any]:
 
 
 def _run_row(d: Path) -> dict[str, Any]:
-    rec = _store.read_text(d / "metrics.json") if _store.is_file(d / "metrics.json") else None
-    rec = (
-        rec
-        if rec is not None
-        else (_store.read_text(d / "run.json") if _store.is_file(d / "run.json") else "{}")
-    )
-    try:
-        m = json.loads(rec)
-    except ValueError:
-        m = {}
+    m = model_runs.run(d) or {}
     return {
         "dataset": m.get("dataset_id"),
         "items": m.get("n_items"),
         "made": _iso_when(m.get("created_at") or m.get("started_at")),
-        "finished": _store.is_file(d / "metrics.json"),
+        "finished": bool(model_runs.scores_of(d)),
     }
 
 
@@ -220,7 +213,7 @@ def listing(rel: str, offset: int = 0) -> dict[str, Any]:
 
 
 def _iso_when(iso: Any) -> str | None:
-    """A run record's ISO time (`created_at` in metrics.json, `started_at` in run.json) as the page shows times."""
+    """A run record's ISO time (`created_at`, or `started_at` of a pass not finished) as the page shows times."""
     try:
         from datetime import datetime  # noqa: PLC0415
 
@@ -237,15 +230,7 @@ def _when(ts: float) -> str:
 
 def runs_of_system(system_id: str) -> int:
     """How many runs were made with this system (their records name it)."""
-    n = 0
-    data = _data()
-    for base in _store.glob(data, "runs*"):
-        for m in _store.rglob(base, "metrics.json"):
-            try:
-                n += json.loads(_store.read_text(m)).get("config_id") == system_id
-            except ValueError:
-                continue
-    return n
+    return sum(1 for rid in model_runs.run_ids() if (model_runs.run(rid) or {}).get("config_id") == system_id)
 
 
 def show(rel: str) -> dict[str, Any]:
@@ -273,8 +258,7 @@ def show(rel: str) -> dict[str, Any]:
     if k != "setting":
         out["written_by"] = "never edited here (code)" if k == "code" else writer_of(norm)
     if k == "run-file":
-        run_dir = norm.rsplit("/", 1)[0]
-        out["run"] = run_dir
+        out["run"] = "/".join(norm.split("/")[:2])
     if k == "setting":
         out["setting_kind"] = (
             "validate policy"
@@ -361,6 +345,12 @@ def put(rel: str, text: str, new: bool = False) -> dict[str, Any]:
     return show(norm)
 
 
+def _run_counts(d: Path) -> tuple[int, int]:
+    """A run's outputs, and the rows of all its scores."""
+    rows = sum(len((_outputs.rows_text(sd) or "").splitlines()) for sd in model_runs.scores_of(d))
+    return len(_outputs.lines(d)), rows
+
+
 def deletable(rel: str) -> str:
     """The kind (`setting` or `run`) of something `remove` may delete; refuses anything else, as `remove` would,
     touching nothing."""
@@ -398,8 +388,7 @@ def _remove(rel: str) -> dict[str, Any]:
         _store.unlink(f)
         return {"deleted": norm, "kind": "setting"}
     if k == "run":
-        outs = len(_outputs.lines(f))
-        rows = len((_outputs.rows_text(f) or "").splitlines())
+        outs, rows = _run_counts(f)
         files = _files_under(f)
         _store.rmtree(f)
         return {"deleted": norm, "kind": "run", "files": files, "outputs": outs, "rows": rows}
@@ -414,12 +403,8 @@ def run_summary(rel: str) -> dict[str, Any]:
     norm, d = resolve(rel)
     if kind_of(norm) != "run":
         raise Refused(f"{norm} is not a run.", "bad-argument")
-    return {
-        "path": norm,
-        "files": _files_under(d),
-        "outputs": len(_outputs.lines(d)),
-        "rows": len((_outputs.rows_text(d) or "").splitlines()),
-    }
+    outs, rows = _run_counts(d)
+    return {"path": norm, "files": _files_under(d), "outputs": outs, "rows": rows}
 
 
 def search(text: str) -> dict[str, Any]:

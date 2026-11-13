@@ -57,7 +57,6 @@ from evaluation_harness import (  # noqa: E402
     _store,
 )
 from evaluation_harness._common import (  # noqa: E402
-    DATA,
     GOALS,
     ROOT,
     ROUNDS,
@@ -77,6 +76,7 @@ from evaluation_harness._runs import (  # noqa: E402 -- one implementation of "s
     runs_on,
     warn_on_ambiguous_runs,
 )
+from evaluation_harness.model import runs as model_runs  # noqa: E402
 from evaluation_harness.stats import (  # noqa: E402 -- one implementation of the paired test
     EXACT_UP_TO,
     LARGE_SAMPLE,
@@ -105,10 +105,10 @@ def _opponents(runs: list, against: str, exclude: str) -> list[str]:
 CACHE = ROOT / ".cache" / "family_test"
 
 
-def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
+def _cache_key(argv: list[str], args) -> str:
     """Everything the answer depends on: this script and every module it imports (read from
     the source, as the run code hash is: a hand-kept list missed an import added later), the exact
-    arguments, the bytes of every run of this dataset (metrics.json + predictions.jsonl),
+    arguments, the bytes of every score read of this dataset (its run.json, score.json, metrics.json + predictions.jsonl),
     the project's goals (a goal sets a metric's direction, so it moves the wins and "ahead"
     counts), and any --items / --exclude-dataset input. Change any of them and the key
     changes, so a hit is the same computation, already done -- the test is seeded and
@@ -116,18 +116,22 @@ def _cache_key(argv: list[str], runs_dir: Path, args) -> str:
     h = hashlib.sha256()
     for f in measuring_modules(Path(__file__).resolve().parent, ("family_test.py",)):
         h.update(f.name.encode() + b"\0" + _store.read_bytes(f))
-    h.update("\0".join([*argv, str(runs_dir.resolve())]).encode())
-    for d, _m in runs_on(args.dataset_id, runs_dir=runs_dir):
-        mj = d / "metrics.json"
-        h.update(d.name.encode() + _store.read_bytes(mj) + (_outputs.rows_text(d) or "").encode("utf-8"))
+    h.update("\0".join(argv).encode())
+    for d, _m in runs_on(args.dataset_id, label=args.label):
+        run = model_runs.run_of(d)
+        for f in (run / model_runs.RUN, d / model_runs.SCORE, d / model_runs.METRICS):
+            h.update(f"{run.name}/{d.name}/{f.name}".encode() + b"\0" + _store.read_bytes(f))
+        h.update((_outputs.rows_text(d) or "").encode("utf-8"))
     for g in sorted(_store.glob(GOALS, "*.yaml")) if _store.is_dir(GOALS) else []:
         h.update(g.name.encode() + b"\0" + _store.read_bytes(g))
     # A round's record decides which arms --round keeps (its retirements, its carried arms).
     for r in sorted(_store.glob(ROUNDS, "*/*.yaml")) if _store.is_dir(ROUNDS) else []:
         h.update(r.as_posix().encode() + b"\0" + _store.read_bytes(r))
     if args.round:  # a re-score stands in for its run in the round's reading, and picks its leader
-        for f in sorted(_store.glob(DATA / "runs-rescored", "*/*/*/metrics.json")):
-            h.update(f.as_posix().encode() + b"\0" + _store.read_bytes(f))
+        for d, _m in model_runs.scored(args.dataset_id, label_is=None):
+            if model_runs.label(d, _m).startswith("rescored"):
+                key = f"{model_runs.run_of(d).name}/{d.name}"
+                h.update(key.encode() + b"\0" + _store.read_bytes(d / model_runs.METRICS))
     if args.items:
         h.update(_store.read_bytes(args.items))
     if args.exclude_dataset:
@@ -145,10 +149,9 @@ def main() -> int:
     args = ap.parse_args()
     if not args.round and not (args.a and args.against):
         ap.error("--a and --against are required (or --round, which defaults them)")
-    runs_dir = args.runs_dir or RUNS
-    use_cache = not os.environ.get("EVAL_NO_CACHE") and _store.is_dir(runs_dir)
+    use_cache = not os.environ.get("EVAL_NO_CACHE") and _store.is_dir(RUNS)
     if use_cache:
-        hit = CACHE / f"{_cache_key(sys.argv[1:], runs_dir, args)}.json"
+        hit = CACHE / f"{_cache_key(sys.argv[1:], args)}.json"
         if _store.is_file(hit):
             c = json.loads(_store.read_text(hit, encoding="utf-8"))
             sys.stdout.write(c["stdout"])
@@ -189,7 +192,12 @@ def _parser() -> argparse.ArgumentParser:
         "list of system ids (with --round: default every other arm in play in it)",
     )
     ap.add_argument("--metric", help="default: the primary metric the runs recorded")
-    ap.add_argument("--runs-dir", type=Path, default=None, help="default: EVAL_RUNS_DIR, else data/runs")
+    ap.add_argument(
+        "--label",
+        default="",
+        help='the arm label the runs are read under (default: "", the plain runs; `evh runs-list` shows the '
+        "labels present)",
+    )
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument("--items", type=Path, help="file of item_ids; restrict to exactly these")
     ap.add_argument(
@@ -269,13 +277,11 @@ def _round_defaults(args, runs: list) -> Any:
 
 
 def _run(args) -> int:
-    # The directory read is the directory warned about: --runs-dir, else EVAL_RUNS_DIR.
-    runs_dir = args.runs_dir or RUNS
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(runs_dir, args.dataset_id, label=runs_dir.name)
-    args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
-    runs = runs_on(args.dataset_id, runs_dir=runs_dir)
+    warn_on_ambiguous_runs(args.label, args.dataset_id)
+    args.metric = args.metric or default_metric(args.dataset_id, label=args.label)
+    runs = runs_on(args.dataset_id, label=args.label)
     refuse_run_level(runs, args.metric, "family-test")
     values = None
     if args.round:

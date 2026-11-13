@@ -31,6 +31,8 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
+from evaluation_harness.model import runs as _R  # noqa: E402
 
 
 def _set_output(d, item, text):
@@ -67,15 +69,20 @@ def refused(r, text):
 
 
 def clone(run_id, name, edit):
-    """A copy of a run under a new id, changed by `edit(run_dir, metrics)`."""
+    """A copy of a run (its first score too) under a new id, changed by `edit(run_dir, score_dir, record)`; the record
+    is the score's, written back unless the edit removed the score."""
     with _runstore._InProject(proj) as data:
         src, dst = data / "runs" / run_id, data / "runs" / name
         _runstore.copy_run(src, dst)
-        m = json.loads(_store.read_text(dst / "metrics.json"))
+        first = _R.first_score(src)
+        _runstore.copy_run(first, dst / "scores" / first.name)
+        sd, meta = dst / "scores" / first.name, _R.meta(first)
+        m = _R.record(sd)
         m["run_id"] = name
-        edit(dst, m)
-        if _store.is_file(dst / "metrics.json"):
-            _store.write_text(dst / "metrics.json", json.dumps(m))
+        edit(dst, sd, m)
+        if _store.is_dir(dst / "scores"):
+            _R.write_run(name, {**(_R.run(dst) or {}), **_R.run_part(m)})
+            _R.write_score(name, meta["scorer"], meta["reference"], m, label_as=meta["label"], first=True)
     return name
 
 
@@ -140,24 +147,24 @@ try:
         check(f"setup: the {arm} arm runs", r.returncode == 0, out(r)[-300:])
     author = next(n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_"))
 
-    def unfinished(d, m):
-        _store.unlink(d / "metrics.json")
+    def unfinished(d, sd, m):
+        _store.rmtree(d / "scores")
 
-    def derived(d, m):
+    def derived(d, sd, m):
         m["derived"] = {"kind": "rescore", "from": author}
 
-    def dirty(d, m):
+    def dirty(d, sd, m):
         m["build"] = {"ref": "abc", "dirty": True}
 
-    def empty(d, m):
+    def empty(d, sd, m):
         _set_output(d, "t03_export", "   \n")
 
-    def cut_off(d, m):
+    def cut_off(d, sd, m):
         m["params"]["max_tokens"] = 40
-        rows = _runstore.rows(d)
+        rows = _runstore.rows(sd)
         for row in rows[:2]:
             row["tokens_out"] = 40
-        _runstore.put_rows_text(d, "".join(json.dumps(x) + "\n" for x in rows))
+        _runstore.put_rows_text(sd, "".join(json.dumps(x) + "\n" for x in rows))
 
     for name, edit, text in (
         ("unfinished", unfinished, "no finished run"),
@@ -180,7 +187,7 @@ try:
 
     r = evh("label-from-run", "--run", author, "--set", "author_v1")
     doc = _runstore.read_json(proj, f"{LABELS}/author_v1/labels.json") if r.returncode == 0 else {}
-    run_m = _runstore.read_json(proj, f"runs/{author}/metrics.json")
+    run_m = _runview.record_of(proj, author)[1]
     with _runstore._InProject(proj) as data:
         src_run_outputs = _outputs.outputs(data / "runs" / author)
     same = all(
@@ -222,10 +229,8 @@ try:
         "tickets_v1",
         "--reference-id",
         "silver/tickets_v1",
-        "--out",
-        "data/runs-silver",
     )
-    board = evh("leaderboard", "--dataset-id", "tickets_v1", extra={"EVAL_RUNS_DIR": "data/runs-silver"})
+    board = evh("leaderboard", "--dataset-id", "tickets_v1", "--label", "silver")
     check(
         "promoted: the leaderboard marks the arm that wrote the reference, and says why",
         r.returncode == 0

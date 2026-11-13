@@ -1,0 +1,67 @@
+{
+  "derived": {
+    "at": "2026-10-01T16:13:58Z",
+    "from": "fn_mistral_l_n200_v1_20261001T130836Z",
+    "kind": "rescore",
+    "with": {
+      "adapter": "examples/ner-few-nerd/adapter.py",
+      "scorer": {
+        "normalizer_sha256": "9664fa3cb17f6df87ffc7de387cb9ec20d6fa4988d6a3a400dadf0f415d0552d",
+        "parser_sha256": "23058c218b1c50eb679099082cd2df8150b0e33d8f707b38479caa4173f88769",
+        "scorer_sha256": "f3cf13af2b8fd609528a547c391b23422b5e3490304be0a7811f1faa6d9ba334"
+      },
+      "sha256": "d147da55107305786c21b75ac87d748b9ea4fb3e57ebdff622aafecd826559b1"
+    }
+  },
+  "metric_kinds": {
+    "confidence": "descriptive",
+    "f1": "quality",
+    "fn": "descriptive",
+    "fp": "descriptive",
+    "n_gold": "descriptive",
+    "n_predicted": "descriptive",
+    "parsed": "quality",
+    "precision": "quality",
+    "reasoning_tokens": "descriptive",
+    "recall": "quality",
+    "resumed": "descriptive",
+    "tp": "descriptive",
+    "truncated": "descriptive",
+    "type_penalty": "descriptive",
+    "untyped_f1": "quality",
+    "untyped_fn": "descriptive",
+    "untyped_fp": "descriptive",
+    "untyped_tp": "descriptive"
+  },
+  "primary_metric": "f1",
+  "reference_tier": "gold",
+  "rescore_dropped_metrics": [
+    "resumed"
+  ],
+  "scores": {
+    "cost_usd": 0.0001495089,
+    "f1": 0.5978758761,
+    "fn": 0.8535714286,
+    "fp": 1.2107142857,
+    "latency_ms": 10247.1173178571,
+    "n_gold": 2.7357142857,
+    "n_predicted": 3.0928571429,
+    "parsed": 0.9964285714,
+    "precision": 0.5871066087,
+    "reasoning_tokens": 0.0,
+    "recall": 0.629814724,
+    "tokens_in": 114.1535714286,
+    "tokens_out": 61.6214285714,
+    "total_cost_usd": 0.0418625,
+    "total_tokens_in": 31963.0,
+    "total_tokens_out": 17254.0,
+    "tp": 1.8821428571,
+    "truncated": 0.0,
+    "type_penalty": 0.0967290275,
+    "untyped_f1": 0.6946049036,
+    "untyped_fn": 0.5464285714,
+    "untyped_fp": 0.9035714286,
+    "untyped_tp": 2.1892857143
+  },
+  "source_created_at": "2026-10-01T14:21:01Z"
+}

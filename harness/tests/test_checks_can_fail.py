@@ -193,17 +193,16 @@ PLANTS = [
         "examples/_shared/retrieval.py",
         '_ID_TOKEN = re.compile(r"^[\\w.\\-]+$")',
         '_ID_TOKEN = re.compile(r"^[Z\\w.\\-]+$")',
-        "FAIL V10 runs: scorer_sha256 match the code (19 run(s))",
+        "FAIL V10 runs: scorer_sha256 match the code (19 score(s))",
     ),
 ]
 
 
 def shadow_tree() -> Path:
     """A private copy of the repository. Code, reports and docs are copied; harness/data is
-    links to the real one, except the runs directories (those validate.json names and every other
-    `runs*`, since V9 checks each tracked one), which are hard-linked because V9 lists them through
-    git, which refuses a path through a link out of the tree, and a test writes into them:
-    replace() a file there, never write it in place."""
+    links to the real one, except data/runs (every run with its scores) and the judging passes' summaries, which
+    are hard-linked because V9 lists the runs through git, which refuses a path through a link out of the tree,
+    and a test writes into them: replace() a file there, never write it in place."""
     shadow = Path(tempfile.mkdtemp(prefix="checks-can-fail-"))
     atexit.register(shutil.rmtree, shadow, True)
     shutil.copytree(
@@ -215,8 +214,6 @@ def shadow_tree() -> Path:
     )
     data = shadow / "harness" / "data"
     data.mkdir()
-    policy = json.loads((HARNESS / "data" / "validate.json").read_text(encoding="utf-8"))
-    committed = {d.split("/")[0] for d in policy.get("committed") or []}
 
     def link_or_copy(s, d):
         try:
@@ -232,7 +229,7 @@ def shadow_tree() -> Path:
             dst_db.close()
         elif child.name.startswith(_store.DB + "-"):
             continue  # the database's write-ahead log: in the copy already
-        elif child.name in committed or (child.is_dir() and child.name.startswith("runs")):
+        elif child.name in ("runs", "judge-summaries"):
             shutil.copytree(child, data / child.name, symlinks=True, copy_function=link_or_copy)
         else:
             (data / child.name).symlink_to(child)
@@ -265,31 +262,48 @@ def run_in(shadow: Path, script: str) -> str:
     return out
 
 
+def runs_of(shadow: Path, purpose: str, stem: str = "") -> list[Path]:
+    """The runs of this purpose in the shadow, by id (optionally those whose id starts with `stem`)."""
+    base = shadow / "harness" / "data" / "runs"
+    return [
+        d
+        for d in sorted(base.glob(f"{stem}*"))
+        if (d / "run.json").is_file()
+        if (json.loads((d / "run.json").read_text(encoding="utf-8")).get("purpose") or "run") == purpose
+    ]
+
+
 def plant_runs_linux(shadow: Path) -> None:
-    """The defects V8 and V9 exist for. runs-linux was outside V8's list once, and V9 read
+    """The defects V8 and V9 exist for. The re-timed runs (the `linux` arm) were outside V8's list once, and V9 read
     presence while a truncated predictions.jsonl left `make ci` green. The emptied and
     truncated runs are ones no planted claim above depends on."""
-    linux = shadow / "harness" / "data" / "runs-linux"
-    src = sorted(linux.glob("cnn_bart_s_*/"))[0]
-    _runstore.copy_run(src, linux / (src.name + "b"))
+    src = runs_of(shadow, "retime", "cnn_bart_s_")[0]
+    twin = src.parent / (src.name + "b")
+    _runstore.copy_run(src, twin)
+    rec = json.loads((twin / "run.json").read_text(encoding="utf-8"))
+    replace(twin / "run.json", json.dumps({**rec, "run_id": twin.name}))
     # Rows are replaced through the store: a new file (never the hard-linked one) or the shadow's own database.
-    _runstore.put_rows_text(sorted(linux.glob("ag_bert_base_fy_*/"))[0], "")
-    partial = sorted(linux.glob("cnn_bart_m_*/"))[0]
+    emptied = runs_of(shadow, "retime", "ag_bert_base_fy_")[0]
+    _runstore.put_rows_text(sorted((emptied / "scores").glob("*"))[0], "")
+    partial = sorted((runs_of(shadow, "retime", "cnn_bart_m_")[0] / "scores").glob("*"))[0]
     _runstore.put_rows_text(
         partial, "".join((_outputs.rows_text(partial) or "").splitlines(keepends=True)[:-3])
     )
 
 
 def plant_runs_pair(shadow: Path) -> str:
-    """The defects V1-V3 exist for, in a derived directory. Planted after the claims check has
-    run: that check reads this run, and a run with no scores crashes it."""
-    run = sorted((shadow / "harness" / "data" / "runs-pair").glob("*/metrics.json"))[0]
-    m = json.loads(run.read_text(encoding="utf-8"))
+    """The defects V1-V3 exist for, in a pair run (read under the `pair` arm). Planted after the claims check has
+    run: that check reads this run, and a run with no scores crashes it. Returns the run's id."""
+    run = runs_of(shadow, "pair")[0]
+    m = json.loads((run / "run.json").read_text(encoding="utf-8"))
     m["dataset_id"] = "no_such_dataset"
     m["build"] = {**(m.get("build") or {}), "ref": "unknown"}
-    m.pop("scores", None)
-    replace(run, json.dumps(m))
-    return f"runs-pair/{run.parent.name}"
+    replace(run / "run.json", json.dumps(m))
+    for sd in sorted((run / "scores").glob("*")):
+        sm = json.loads((sd / "metrics.json").read_text(encoding="utf-8"))
+        sm.pop("scores", None)
+        replace(sd / "metrics.json", json.dumps(sm))
+    return run.name
 
 
 def main() -> int:
@@ -314,21 +328,22 @@ def main() -> int:
             if s == script and says:
                 check(f"{script} names {what}", says in out, out[-400:])
         if script == "tools/check_report_claims.py":
-            check("...and refuses a duplicated runs-linux arm", "FAIL runs-linux names each arm once" in out)
-        if script == "scripts/validate_tree.py":
-            check("validate: V1 checks the schema of a run in runs-pair", "FAIL V1" in out)
-            check("validate: V2 names the dangling dataset in runs-pair", "FAIL V2" in out and pair in out)
             check(
-                "validate: V3 names the run in runs-pair with no build ref", "FAIL V3" in out and pair in out
+                "...and refuses a duplicated re-timed arm",
+                re.search(r"FAIL .*names each arm once", out) is not None,
             )
-            check("validate: V8 refuses a duplicate config_id in runs-linux", "FAIL V8" in out)
+        if script == "scripts/validate_tree.py":
+            check("validate: V1 checks the schema of a score of a pair run", "FAIL V1" in out)
+            check("validate: V2 names the pair run's dangling dataset", "FAIL V2" in out and pair in out)
+            check("validate: V3 names the pair run with no build ref", "FAIL V3" in out and pair in out)
+            check("validate: V8 refuses a duplicate config_id in the linux arm", "FAIL V8" in out)
             check("validate: V9 refuses an empty predictions.jsonl", "is empty" in out)
             check("validate: V9 refuses fewer rows than n_items", "prediction rows" in out)
             # The NER parser and the extraction scorer plants land on the same 28 runs: all
             # three digests mismatching on every one of them is both plants caught.
             m = re.search(
                 r"V10 runs: normalizer_sha256, parser_sha256, scorer_sha256 match the code "
-                r"\((\d+) run\(s\)\) — (\d+) mismatch",
+                r"\((\d+) score\(s\)\) — (\d+) mismatch",
                 out,
             )
             check(
@@ -338,10 +353,10 @@ def main() -> int:
             )
 
     # A git that cannot list what is committed lists nothing, and nothing listed once read as
-    # nothing missing. A committed directory behind a link leaving the repository does it.
-    repeats = shadow / "harness" / "data" / "runs-repeats"
-    shutil.rmtree(repeats)
-    repeats.symlink_to(HARNESS / "data" / "runs-repeats")
+    # nothing missing. The runs behind a link leaving the repository do it.
+    runs = shadow / "harness" / "data" / "runs"
+    shutil.rmtree(runs)
+    runs.symlink_to(HARNESS / "data" / "runs")
     out = run_in(shadow, "scripts/validate_tree.py")
     check("validate: V9 fails when git cannot list the committed runs", "git ls-files failed" in out)
 

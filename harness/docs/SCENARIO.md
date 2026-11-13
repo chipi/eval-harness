@@ -138,10 +138,10 @@ evh reference-promote --dataset-id briefs_v1 --labels opus_v1 --tier silver --re
 evh label-from-run --run <the intents_opus_v1 run_id> --set opus_v1
 evh reference-promote --dataset-id intents_v1 --labels opus_v1 --tier silver --reason "The frontier arm ranks the rest." --by me
 git add data/labels data/references && git commit -qm "silver from the frontier arm's labels"
-evh rescore --dataset-id briefs_v1 --reference-id silver/briefs_v1 --out data/runs-silver
-evh rescore --dataset-id intents_v1 --reference-id silver/intents_v1 --out data/runs-silver
-git add data/runs-silver && git commit -qm "the runs re-scored against silver"
-EVAL_RUNS_DIR=data/runs-silver evh leaderboard --dataset-id briefs_v1    # the author's row is marked
+evh rescore --dataset-id briefs_v1 --reference-id silver/briefs_v1
+evh rescore --dataset-id intents_v1 --reference-id silver/intents_v1
+git add data/runs && git commit -qm "the runs re-scored against silver"
+evh leaderboard --dataset-id briefs_v1 --label silver    # the author's row is marked
 evh silver-calibrate --dataset-id briefs_v1                              # silver authors vs your gold
 ```
 

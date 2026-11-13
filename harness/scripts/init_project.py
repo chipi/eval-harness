@@ -50,9 +50,16 @@ IGNORE = """\
 .cache/
 data/materialized/
 __pycache__/
-# throwaway passes (smoke runs, sweeps): never results, never in the catalog
-data/runs-smoke*/
-data/runs-tune*/
+# runs: each run's record, outputs and scores are the results; the pass's checkpoint is not (a throwaway pass is
+# `evh run --scratch`, under .build/)
+data/runs/*/*
+!data/runs/*/run.json
+!data/runs/*/outputs.jsonl
+!data/runs/*/scores/
+data/runs/*/scores/*/*
+!data/runs/*/scores/*/score.json
+!data/runs/*/scores/*/metrics.json
+!data/runs/*/scores/*/predictions.jsonl
 # the sqlite store (store: sqlite): the project's data in one database, not in git
 data/project.sqlite*
 """
@@ -73,7 +80,7 @@ def main() -> int:
     # Every write below is the new project's, wherever init runs from: in a SQLite project the store keys a path by the
     # project it is in, and `evh init elsewhere` run inside another project wrote into that one's database.
     os.environ["EVAL_HOME"] = str(root)
-    for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_GOALS_DIR"):
+    for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
         os.environ.pop(k, None)
     from evaluation_harness import _outputs  # noqa: PLC0415
 

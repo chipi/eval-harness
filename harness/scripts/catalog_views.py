@@ -60,6 +60,7 @@ from evaluation_harness.axes import (
     tie_break_of,
 )
 from evaluation_harness.catalog_adapter import load_catalog_adapter, scores_once
+from evaluation_harness.model import runs as model_runs
 from evaluation_harness.stats import fmt_p
 
 KINDS = {"t-silver": "silver", "t-judged": "judged", "t-author": "wrote its reference"}
@@ -1306,21 +1307,22 @@ def goals(argv) -> int:
     return 0
 
 
-def _arm_ids(A, tokens: list, from_dir: str) -> list:
-    """Arm ids from what the user typed: a full arm id, or a system id looked up under `from_dir`."""
+def _arm_ids(A, tokens: list, label: str) -> list:
+    """Arm ids from what the user typed: a full arm id, or a system id looked up among the arms read under `label`."""
     known = A.arms()
     out = []
     for t in tokens:
         if t in known:
             out.append(t)
             continue
-        hits = [a for a in known if a.rsplit("/", 1)[-1] == t and a.split("/", 1)[0] == from_dir]
+        prefix = model_runs.arm_prefix(label)
+        hits = [a for a in known if a.rsplit("/", 1)[-1] == t and a.split("/", 1)[0] == prefix]
         if len(hits) != 1:
             near = [a for a in known if a.rsplit("/", 1)[-1] == t]
             die(
                 f"{t!r}: "
                 + (
-                    f"{len(hits)} arms under {from_dir}/ match; name the arm id: {', '.join(near)}"
+                    f"{len(hits)} arms read as {label or 'the plain label'} match; name the arm id: {', '.join(near)}"
                     if near
                     else "no arm with that id; `evh datasets --dataset-id <id>` lists them"
                 ),
@@ -1339,7 +1341,7 @@ def inspect(argv) -> int:
         allow_abbrev=False,
     )
     pick = ap.add_mutually_exclusive_group()
-    pick.add_argument("--runs", help="arms: system ids (looked up under --from) or arm ids, comma-separated")
+    pick.add_argument("--runs", help="arms: system ids (looked up under --label) or arm ids, comma-separated")
     pick.add_argument("--round", help="the arms in play in this round of a goal (rN; ADR-0004)")
     ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
     ap.add_argument(
@@ -1348,10 +1350,10 @@ def inspect(argv) -> int:
     )
     ap.add_argument("--metric", help="default: a round's goal measure, else the arms' primary metric")
     ap.add_argument(
-        "--from",
-        dest="from_dir",
-        default="runs",
-        help="where system ids are looked up: runs, runs-silver, runs-judged/<scorer> (default: runs)",
+        "--label",
+        default="",
+        help='the label system ids are looked up under: "", silver, repeats, "rescored cd35dc1f", '
+        "judged/<scorer> (default: the plain arm); `evh runs-list` shows what is there",
     )
     ap.add_argument(
         "--where",
@@ -1555,9 +1557,9 @@ def inspect(argv) -> int:
         )
     else:
         tokens = [t.strip() for t in args.runs.split(",") if t.strip()]
-    arms = _arm_ids(A, tokens, args.from_dir)
+    arms = _arm_ids(A, tokens, args.label)
     base = (
-        _arm_ids(A, [args.baseline], args.from_dir)[0]
+        _arm_ids(A, [args.baseline], args.label)[0]
         if args.baseline
         else (round_leader if round_leader and round_leader in arms else arms[0])
     )
@@ -1610,7 +1612,7 @@ def inspect(argv) -> int:
     if round_leader and not args.baseline and d["baseline"] == round_leader:
         from evaluation_harness.rounds import _dirs  # noqa: PLC0415
 
-        if not any(x.name == rnd.get("baseline") for x in _dirs(A, round_leader)):
+        if not any(model_runs.run_of(x).name == rnd.get("baseline") for x in _dirs(A, round_leader)):
             what = " (the round's leader)"
     print(
         f"{d['metric']} ({better} is better) · baseline {label.get(d['baseline'], d['baseline'])}{what}: mean {_fmt(statistics.fmean(vals) if vals else None)} · Holm across {d['family_size']}\n"
@@ -1737,7 +1739,7 @@ def _sheet_view(A, args) -> int:
         runs,
         cs._fields_of,
         metric=args.metric,
-        from_dir=args.from_dir,
+        label=args.label,
         wrong_against=args.wrong_against,
         new_vs=args.new_vs,
     )
@@ -1989,7 +1991,7 @@ def _crosstab(A, args) -> None:
             rx = re.compile(args.group_match)
         except re.error as exc:
             die(f"--group-match {args.group_match!r}: {exc}", "bad-argument")
-    arms = _arm_ids(A, [t.strip() for t in args.runs.split(",") if t.strip()], args.from_dir)
+    arms = _arm_ids(A, [t.strip() for t in args.runs.split(",") if t.strip()], args.label)
     out = []
     for arm in arms:
         ds, d = _run_of(A, arm)
@@ -2098,9 +2100,9 @@ def _items_out(A, args) -> None:
             "--disagree needs two runs or more in --runs (the first is the one the others are compared to)",
             "bad-argument",
         )
-    arms = _arm_ids(A, tokens, args.from_dir)
+    arms = _arm_ids(A, tokens, args.label)
     if args.baseline:
-        base = _arm_ids(A, [args.baseline], args.from_dir)[0]
+        base = _arm_ids(A, [args.baseline], args.label)[0]
         if base not in arms:
             die(f"--baseline {args.baseline}: not among --runs", "bad-argument")
         tokens.insert(0, tokens.pop(arms.index(base)))
@@ -2111,7 +2113,7 @@ def _items_out(A, args) -> None:
             "bad-argument",
         )
     ds = dss.pop()
-    model = _sheet.build(ds, tokens, cs._fields_of, metric=args.metric, from_dir=args.from_dir)
+    model = _sheet.build(ds, tokens, cs._fields_of, metric=args.metric, label=args.label)
     found = _sheet.by_where(model, args.where)
     shown = _sheet.by_signals(found, ["disagree"] if args.disagree else [])
     # Only the shown items' rows: one query per item in the sqlite store, each run's rows indexed once in files.

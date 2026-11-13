@@ -80,8 +80,8 @@ wins over silver, and the run records which it used). The runs you already have 
 paid for again: their outputs are stored, so re-scoring is arithmetic.
 
 ```bash
-evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --out data/runs-gold
-EVAL_RUNS_DIR=data/runs-gold evh leaderboard --dataset-id tickets_v1
+evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --label gold
+evh leaderboard --dataset-id tickets_v1 --label gold
 ```
 <!-- guide-check: varies lead2_noisy author global distinguishable sorted ordering -->
 ```text
@@ -136,7 +136,7 @@ rank by silver, check it against a gold slice. How big a gold set must be is a m
 
 ```bash
 evh family-test --dataset-id tickets_v1 --a tickets_lead2_v1 --against tickets_ \
-    --runs-dir data/runs-gold
+    --label gold
 ```
 <!-- guide-check: varies tickets_lead1_v1 tickets_author_v1 lead2_noisy ahead -->
 ```text
@@ -267,11 +267,11 @@ verdict?) and a repeat on half (the **noise** check: does the judge agree with i
 
 ```bash
 evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1 --unvalidated
-EVAL_RUNS_DIR=data/runs-judged/tickets-judge-v1 evh leaderboard --dataset-id tickets_v1 --wide
+evh leaderboard --dataset-id tickets_v1 --label "judged/tickets-judge-v1" --wide
 ```
 <!-- guide-check: varies tickets_ global FRONTIER agree reshuffled -->
 ```text
-4 scored run(s) -> .../data/runs-judged/tickets-judge-v1  (6/6 items, unvalidated judge)
+4 scored run(s) -> .../data/runs (6/6 items, unvalidated judge)
   calls 24, spent this run $0.0000, stored total $0.0000  (the provider's bill where it reports one, else the price table)
   ...
 dataset: tickets_v1   ranked by: judge_score_unvalidated (higher is better)
@@ -289,7 +289,7 @@ dataset: tickets_v1   ranked by: judge_score_unvalidated (higher is better)
   ...
   Scored by an LLM judge, not against references: tickets-judge-v1, unvalidated judge.
   ...
-  The judging pass (tickets-judge-v1, 6/6 items, unvalidated judge), from summary.json:
+  The judging pass (tickets-judge-v1, 6/6 items, unvalidated judge), from data/judge-summaries:
     judges judge_a and judge_b agree: item tau 0.040, arm order spearman 0.400
     judge_a: reshuffled outputs tau 1.000 (position), the same call repeated tau 1.000 (noise)
   ...
@@ -315,7 +315,7 @@ detectable arm effect.
 Commit what the judging wrote, as everything under `data/`:
 
 ```bash
-git add data/judging-sets data/judge-verdicts data/runs-judged && git commit -qm "tickets_v1: judged by tickets-judge-v1"
+git add data/judging-sets data/judge-verdicts data/runs data/judge-summaries && git commit -qm "tickets_v1: judged by tickets-judge-v1"
 ```
 
 **When a real judge's scores disagree with your primary metric**, nothing changes until you

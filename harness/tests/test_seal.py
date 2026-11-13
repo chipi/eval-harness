@@ -29,7 +29,7 @@ import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-seal-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj))
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_BUILD_REF"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_BUILD_REF"):
     env.pop(k, None)
 
 HYP = {

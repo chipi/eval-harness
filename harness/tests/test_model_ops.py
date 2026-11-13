@@ -38,7 +38,7 @@ env = dict(
     EVAL_BUILD_REF="test-model-ops",
     EVAL_STORE="files",
 )
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_GOALS_DIR"):
+for k in ("EVAL_DATA_DIR", "EVAL_GOALS_DIR"):
     env.pop(k, None)
 
 

@@ -242,7 +242,14 @@ and the Workbench's screens that need it are wired behind it.
    the renames where a live system is matched (`_common.system_now`); `judge-score` finds a stored set by its runs. The
    prompt versions (RFC-028) have their operations (`prompt-list`, `prompt-show`); a system names its prompt version
    when runs move (step 4).
-4. Runs and scores (the eight folders; a migration step).
+4. Runs and scores (the eight folders; a migration step). Built 2026-11-13 as format 4 (`m0004_runs`): 305 passes
+   became runs in `data/runs/<id>/` (`purpose` 273 run, 17 repeat, 9 retime, 6 pair; 20 re-runs with no single run
+   they re-do, so no `of`), 711 scores under them (25 copies with a run's own scorer, reference and rows kept once,
+   owner 2026-11-13). A score's record is the run's facts with the score's over it (`model/runs.record`), so every
+   reader kept its `(directory, record)` pairs, a score's directory in place of a run's; all 736 records read back
+   as they were. The folder flags went, `--label` picks what a command reads. Every view was compared before and
+   after: the same numbers; the differences are the copies kept once, the arms' order where it follows their new ids,
+   and the re-scores of runs a round retired, retired with them. The prompt version a run read is step 4b.
 5. Rounds with their arms and the evidence view; baselines.
 6. Datasets (items, source, profile, versions, the sealed side), fieldsets, label sets, references, picks, captures,
    failure modes and tags, exposure.
@@ -346,3 +353,21 @@ Quoted from the discussion, typing slips corrected.
     renaming its arms would move its id, its verdicts' place and a judged score recomputed later. A set and its
     verdicts are frozen evidence, as a run's id is; `judge-score` finds a stored set by the runs it judged and joins
     a set's arms to runs by run id. Every other reference is rewritten.
+- **Step 4, runs and scores** (after an inventory: 305 passes in four folders, 431 scores of them in four more, the
+  folder the only record of a pass's purpose, no fingerprint holding a folder or a run id), "I agree with six":
+  - one `runs/<run_id>/` for every pass: `run.json` (the outputs' facts, cost, latency, fingerprint, `system_id`)
+    and `outputs.jsonl`; what the folder meant becomes `purpose` (`run`, `repeat`, `pair`, `retime`) and `machine`
+    (from the fingerprint's runner); `of: <run id>` only where exactly one other run of the system on the dataset
+    exists, else left empty and counted;
+  - every score under its run, `runs/<run_id>/scores/<scorer>@<reference>/` (metrics and rows): the run's own first
+    score, silver, adjudicated, rescored, judged and label-set scores; the scorer an adapter's 12-character hash or a
+    judge scorer's id, the reference `gold/<ds>`, `silver/<ds>` or `labels/<set>` (a judge score names its judging
+    set there); a run rescored or re-parsed in place keeps that as its score's `derived`;
+  - rounds now: a retirement names run ids, not a folder; `scoring.written` names scores; arms stored stay step 5;
+  - every view gives the same numbers and the same labels ("silver", "repeats", "rescored cd35dc1f"); arm ids and
+    page URLs change, the old pages redirect;
+  - the folder flags go, no shims (`EVAL_RUNS_DIR`, `--runs-dir`, `inspect --from`, `rescore --out`, `judge-score
+    --out`, `sheet-import --scorer`'s folder): commands select by purpose, scorer and reference; throwaway smoke and
+    tune runs go under `.build/`, outside the data;
+  - prompt versions are a step of their own (4b): a run records the version of the prompt file it read; past runs
+    keep the hash they carry. Judging sets and reference and label manifests keep the ids they were made under (B).

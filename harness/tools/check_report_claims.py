@@ -28,8 +28,9 @@ from evaluation_harness._common import (
     no_options,
 )
 from evaluation_harness._common import system_now as _system_now
-from evaluation_harness._runs import AmbiguousRuns, item_rows, runs_by_arm
+from evaluation_harness._runs import AmbiguousRuns, item_rows, read_metrics, runs_by_arm, runs_on
 from evaluation_harness.cost_report import billed_and_recorded
+from evaluation_harness.model import runs as _model_runs
 
 _ARGS = no_options(__doc__, "--print-judge-figures")  # --help prints this; anything else is refused
 
@@ -44,11 +45,13 @@ if _ARGS.print_judge_figures:
         _j0.pop("best_pick_per_article", None)
     print(json.dumps(_f0, indent=1))
     raise SystemExit(0)
-DATA = HERE.parent / "data" / "runs"
+#: Where the runs are read from is a LABEL now (model.runs): the plain runs' own scores are "", and the
+#: one-machine re-timing is "linux".
+DATA = ""
 #: The pre-registered first-stage prediction. Its four runs lived in an ignored
 #: directory until round 2, so the most-advertised number in the repo -- 0.7891 -- was
 #: the one number no reader could check.
-PAIR = HERE.parent / "data" / "runs-pair"
+PAIR = "pair"
 
 #: The evals, from the one registry reproduce.py and the site read
 #: (examples/evals.json). These tables restated it by hand, so a renamed dataset or
@@ -61,7 +64,7 @@ _EVALS = [
     if e.get("site")
 ]
 
-#: (label, runs-dir, config_id, metric, claimed). NER reads the rescored directory,
+#: (label, the label the runs are read under, config_id, metric, claimed). NER reads the rescored runs,
 #: because that is the instrument its report states -- the un-rescored copies carry the
 #: pre-fix glm_l and comparing against them would pass for the wrong reason.
 #: (label, runs dir, system id, metric, claimed[, dataset]): the dataset when the id ran on more than one.
@@ -207,24 +210,72 @@ def check(label: str, cond: object, detail: str = "") -> None:
     print(f"  {'ok  ' if cond else 'FAIL'} {label}{('   ' + detail) if detail and not cond else ''}")
 
 
-#: {runs dir: [(run dir, metrics)]}. A run's directory keeps the id it was made under; its metrics.json carries
-#: the system's present id (RFC-032 step 3, data/renames.json), so a run is found by what metrics.json says.
+#: {label: [(score dir, record)]}: the scores read under a label, by run id. A record carries the system's present
+#: id (RFC-032 step 3, data/renames.json), so a run is found by what its record says.
 _RUNS_READ: dict = {}
 _DATASET_OF_PREFIX = {e["prefix"]: e["dataset"] for e in _EVALS}
 
 
-def _runs_in(base: Path) -> list:
-    """Every run of a runs directory with its metrics, in directory order."""
-    key = str(base)
-    if key not in _RUNS_READ:
-        _RUNS_READ[key] = [
-            (Path(f).parent, json.loads(_store.read_text(Path(f), encoding="utf-8")))
-            for f in sorted(_store.glob_str(str(base / "*" / "metrics.json")))
-        ]
-    return _RUNS_READ[key]
+def _runs_in(label: str) -> list:
+    """Every score read under a label with its record, by run id."""
+    if label not in _RUNS_READ:
+        _RUNS_READ[label] = runs_on(label=label)
+    return _RUNS_READ[label]
 
 
-def _runs_of(base: Path, cid: str, dataset: str | None = None) -> list:
+def _record(score_dir: Path) -> dict:
+    """A score's record; a claim is checked against a record that exists."""
+    rec = read_metrics(score_dir)
+    if rec is None:
+        raise SystemExit(f"no readable record in {score_dir}")
+    return rec
+
+
+def _prefixed(label: str, prefix: str) -> list:
+    """The scores read under a label of the runs whose id starts with `prefix` (a system's family of ids)."""
+    return [(d, m) for d, m in _runs_in(label) if m["run_id"].startswith(prefix)]
+
+
+def _label_of(base: str) -> str:
+    """The label whose arm prefix is `base` (an eval's `base` in examples/evals.json: "runs" is the plain label)."""
+    for lbl in _model_runs.labels():
+        if _model_runs.arm_prefix(lbl) == base:
+            return lbl
+    raise SystemExit(f"no scores read under {base!r}")
+
+
+def _family_on(dataset_id, held, argv):
+    """family_test's stdout (None on failure) over runs held in a temporary project: `held` is
+    [(system id, run id, rows)], each a run of its own with one score of those rows, read under the plain label."""
+    import os as _os  # noqa: PLC0415
+    import subprocess as _sp  # noqa: PLC0415
+    import tempfile as _tf  # noqa: PLC0415
+
+    with _tf.TemporaryDirectory() as td:
+        for cid, rid, rows in held:
+            rd = Path(td) / "data" / "runs" / rid
+            sd = rd / "scores" / "t@none"
+            _store.mkdir(sd, parents=True)
+            _store.write_text(
+                rd / "run.json",
+                json.dumps({"run_id": rid, "config_id": cid, "dataset_id": dataset_id, "purpose": "run"}),
+            )
+            _store.write_text(
+                sd / "score.json", json.dumps({"scorer": "t", "reference": None, "label": "", "first": True})
+            )
+            _store.write_text(sd / "metrics.json", "{}")
+            _outputs.write_rows(sd, rows)
+        env = {k: v for k, v in _os.environ.items() if not k.startswith("EVAL_")} | {"EVAL_HOME": td}
+        r = _sp.run(
+            [sys.executable, str(HERE / "family_test.py"), "--dataset-id", dataset_id, *argv],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+    return r.stdout if r.returncode == 0 else None
+
+
+def _runs_of(base: str, cid: str, dataset: str | None = None) -> list:
     """The (run dir, metrics) of one system, in directory order, on one dataset: a system serves every dataset of
     its example, so the same id has runs on the 200-article slice and on the DailyMail one. Default: the eval of the
     id's prefix."""
@@ -236,7 +287,7 @@ def _runs_of(base: Path, cid: str, dataset: str | None = None) -> list:
     ]
 
 
-def score(base: Path, cid: str, metric: str, dataset: str | None = None):
+def score(base: str, cid: str, metric: str, dataset: str | None = None):
     """Retrieve a metric score from a run by system id (and dataset)."""
     for _d, m in _runs_of(base, cid, dataset):
         return m["scores"].get(metric)
@@ -303,11 +354,10 @@ def _first_arm_cell(cells):
 
 def _billed_and_recorded(prefix, dataset_id):
     out = {}
-    for f in sorted(_store.glob_str(str(DATA / f"{prefix}*" / "metrics.json"))):
-        m = json.loads(_store.read_text(Path(f), encoding="utf-8"))
-        if m.get("dataset_id") != dataset_id or not _outputs.has_rows(Path(f).parent):
+    for d, m in _prefixed(DATA, prefix):
+        if m.get("dataset_id") != dataset_id or not _outputs.has_rows(d):
             continue
-        bil, rec, _, _ = billed_and_recorded(Path(f).parent)
+        bil, rec, _, _ = billed_and_recorded(d)
         out[_arm_name(m["config_id"], prefix)] = (bil, rec)
     return out
 
@@ -393,9 +443,7 @@ for _rep, (_pref, _ds) in COST_REPORTS.items():
 # record `correct`), `_vals` came back empty and 0 classification rows were checked for a
 # week, while the aggregate floor of 40 was cleared by the other three reports. Found by
 # external review. The floor per report below still catches a metric that matches nothing.
-PRIMARY_BY_DATASET = {
-    e["dataset"]: (e["prefix"], e["metric"], HERE.parent / "data" / e["base"]) for e in _EVALS
-}
+PRIMARY_BY_DATASET = {e["dataset"]: (e["prefix"], e["metric"], _label_of(e["base"])) for e in _EVALS}
 REPORT_DATASETS: dict[str, list[str]] = {}
 for _e in _EVALS:
     REPORT_DATASETS.setdefault(_e["report"], []).append(_e["dataset"])
@@ -450,10 +498,9 @@ for _rep, _dss in REPORT_DATASETS.items():
     for _ds in _dss:
         _pref, _metric, _base = PRIMARY_BY_DATASET[_ds]
         _vals = {}
-        for f in _store.glob_str(str(_base / f"{_pref}*" / "metrics.json")):
-            if "20260929" in Path(f).parent.name:
+        for _d, _m in _prefixed(_base, _pref):
+            if "20260929" in _m["run_id"]:
                 continue
-            _m = json.loads(_store.read_text(Path(f), encoding="utf-8"))
             if _m.get("dataset_id") != _ds:
                 continue
             _v = (_m.get("scores") or {}).get(_metric)
@@ -520,8 +567,8 @@ for _rep, _dss in REPORT_DATASETS.items():
         _pref, _metric, _base = PRIMARY_BY_DATASET[_ds]
         _vals, _bills = {}, {}
         for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
-            _m = json.loads(_store.read_text(Path(_dirs[0] / "metrics.json"), encoding="utf-8"))
-            _v = (_m.get("scores") or {}).get(_metric)
+            _score_rec = _record(_dirs[0])
+            _v = (_score_rec.get("scores") or {}).get(_metric)
             if _v is not None:
                 _vals[_arm] = _v
             _bills[_arm] = _billed_of(_dirs[0])
@@ -649,10 +696,7 @@ for _rep, _dss in REPORT_DATASETS.items():
         _pref, _metric, _base = PRIMARY_BY_DATASET[_ds]
         _vals = {}
         for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
-            _v = (
-                json.loads(_store.read_text(Path(_dirs[0] / "metrics.json"), encoding="utf-8")).get("scores")
-                or {}
-            ).get(_metric)
+            _v = (_record(_dirs[0]).get("scores") or {}).get(_metric)
             if _v is not None:
                 _vals[_arm] = _v
         _fenced = False
@@ -713,13 +757,12 @@ check(
 def _arm_costs(prefix, dataset_id):
     """Billed cost per arm, excluding the 2026-09-29 re-runs (which duplicate arms)."""
     out = {}
-    for f in sorted(_store.glob_str(str(DATA / f"{prefix}*" / "metrics.json"))):
-        if "20260929" in Path(f).parent.name:
+    for d, m in _prefixed(DATA, prefix):
+        if "20260929" in m["run_id"]:
             continue
-        m = json.loads(_store.read_text(Path(f), encoding="utf-8"))
-        if m.get("dataset_id") != dataset_id or not _outputs.has_rows(Path(f).parent):
+        if m.get("dataset_id") != dataset_id or not _outputs.has_rows(d):
             continue
-        bil, rec, _, _ = billed_and_recorded(Path(f).parent)
+        bil, rec, _, _ = billed_and_recorded(d)
         out[_arm_name(m["config_id"], prefix)] = bil or rec
     return out
 
@@ -819,7 +862,7 @@ def _family_ids(runs_dir, dataset_id, prefix):
     return sorted(
         {
             m["config_id"]
-            for _d, m in _runs_in(Path(runs_dir))
+            for _d, m in _runs_in(runs_dir)
             if m.get("dataset_id") == dataset_id
             and m["config_id"].startswith(prefix)
             and not re.search(r"_n\d+_(?!v\d+$)", m["config_id"])
@@ -844,8 +887,8 @@ def _not_significant(leader, runs_dir, dataset_id, metric):
             ",".join(family),
             "--metric",
             metric,
-            "--runs-dir",
-            str(runs_dir),
+            "--label",
+            runs_dir,
         ],
         capture_output=True,
         text=True,
@@ -858,8 +901,8 @@ def _not_significant(leader, runs_dir, dataset_id, metric):
 
 
 def _provider(runs_dir, config_id, dataset_id):
-    for d, m in _runs_of(Path(runs_dir), config_id, dataset_id):
-        if "20260929" in d.name:
+    for _d, m in _runs_of(runs_dir, config_id, dataset_id):
+        if "20260929" in m["run_id"]:
             continue
         return (m.get("params") or {}).get("provider")
     return None
@@ -1097,8 +1140,8 @@ if "bert_mini" in _AG and "qwen_m" in _DB:
             ",".join(_family_ids(DATA, "dbpedia_280", "db_")),
             "--metric",
             "correct",
-            "--runs-dir",
-            str(DATA),
+            "--label",
+            DATA,
         ],
         capture_output=True,
         text=True,
@@ -1202,52 +1245,29 @@ def _v2_family(exp, dataset_id, prefix, leader, metric="correct"):
     """The leader's Holm family test on adjudicated gold: a runs dir built in a temp dir
     from the committed predictions, each adjudicated item's correctness replaced by the
     verdict (the same rule as _adjudicated_acc). Returns the test's stdout, or None."""
-    import tempfile as _tf  # noqa: PLC0415
-
     adj = json.loads(_store.read_text(ROOT / "examples" / exp / "adjudication.json"))
     verdict = {i["item_id"]: i["adjudicated"] for i in adj["items"]}
-    with _tf.TemporaryDirectory() as td:
-        for dirs in _runs_for(DATA, dataset_id, prefix).values():
-            d = dirs[0]
-            m = json.loads(_store.read_text(d / "metrics.json"))
-            out = Path(td) / d.name
-            _store.mkdir(out)
-            _store.write_text(
-                out / "metrics.json", json.dumps({"config_id": m["config_id"], "dataset_id": dataset_id})
-            )
-            _outputs.write_rows(
-                out,
-                [
-                    {
-                        "item_id": r["item_id"],
-                        "correct": float(
-                            (r["_meta"].get("predicted") == verdict[r["item_id"]])
-                            if r["item_id"] in verdict
-                            else r["correct"]
-                        ),
-                    }
-                    for r in item_rows(d)
-                ],
-            )
-        r = _clsp.run(
-            [
-                sys.executable,
-                str(HERE / "family_test.py"),
-                "--dataset-id",
-                dataset_id,
-                "--a",
-                leader,
-                "--against",
-                ",".join(_family_ids(DATA, dataset_id, prefix)),
-                "--metric",
-                metric,
-                "--runs-dir",
-                td,
-            ],
-            capture_output=True,
-            text=True,
-        )
-    return r.stdout if r.returncode == 0 else None
+    held = []
+    for dirs in _runs_for(DATA, dataset_id, prefix).values():
+        d = dirs[0]
+        m = read_metrics(d)
+        rows = [
+            {
+                "item_id": r["item_id"],
+                "correct": float(
+                    (r["_meta"].get("predicted") == verdict[r["item_id"]])
+                    if r["item_id"] in verdict
+                    else r["correct"]
+                ),
+            }
+            for r in item_rows(d)
+        ]
+        held.append((m["config_id"], m["run_id"], rows))
+    return _family_on(
+        dataset_id,
+        held,
+        ["--a", leader, "--against", ",".join(_family_ids(DATA, dataset_id, prefix)), "--metric", metric],
+    )
 
 
 _fo2 = _v2_family("classification-ag-news", "ag_news_200", "ag_", "ag_anthropic_l_v1")
@@ -1509,8 +1529,6 @@ def _judged_family(scorer, a):
     from the committed judging-set manifest and stored verdicts (data/runs-judged is
     gitignored, and --no-calls would need the gitignored article texts; the projection does
     not). Returns the family test's stdout."""
-    import tempfile as _tf  # noqa: PLC0415
-
     from evaluation_harness import judge_score as _js  # noqa: PLC0415
 
     _m = json.loads(_store.read_text(_jfm.grading_set()))
@@ -1518,38 +1536,18 @@ def _judged_family(scorer, a):
     _vd = HERE.parent / "data" / "judge-verdicts" / scorer / _m["judging_set_id"]
     _ids = [i["item_id"] for i in _m["items"]]
     _pj = _js.project(_sc, _js.load_scores(_m, _sc, _vd), _ids)
-    with _tf.TemporaryDirectory() as td:
-        for arm in _m["arms"]:
-            out = Path(td) / arm["run"]
-            _store.mkdir(out)
-            _store.write_text(
-                out / "metrics.json",
-                json.dumps({"config_id": arm["config_id"], "dataset_id": "cnn_dailymail_200"}),
-            )
-            _outputs.write_rows(
-                out,
-                [{"item_id": i, "judge_score": _pj[i][arm["config_id"]]["_mean"]} for i in _ids if i in _pj],
-            )
-        r = _clsp.run(
-            [
-                sys.executable,
-                str(HERE / "family_test.py"),
-                "--dataset-id",
-                "cnn_dailymail_200",
-                "--a",
-                a,
-                "--against",
-                "_n200_v1",
-                "--metric",
-                "judge_score",
-                "--runs-dir",
-                td,
-            ],
-            capture_output=True,
-            text=True,
-            cwd=HERE.parent,
+    held = [
+        (
+            arm["config_id"],
+            arm["run"],
+            [{"item_id": i, "judge_score": _pj[i][arm["config_id"]]["_mean"]} for i in _ids if i in _pj],
         )
-        return r.stdout
+        for arm in _m["arms"]
+    ]
+    return (
+        _family_on("cnn_dailymail_200", held, ["--a", a, "--against", "_n200_v1", "--metric", "judge_score"])
+        or ""
+    )
 
 
 def _significant_from(stdout):
@@ -1772,10 +1770,9 @@ for dear, cheap in (("anthropic_m", "deepseek_m"), ("openai_l", "deepseek_m")):
 
 # Pareto frontier over the 24 HOSTED summarisation arms: quality, cost, latency.
 _cnn_q = {}
-for f in sorted(_store.glob_str(str(DATA / "cnn_*" / "metrics.json"))):
-    if "20260929" in Path(f).parent.name:
+for _, m in _prefixed(DATA, "cnn_"):
+    if "20260929" in m["run_id"]:
         continue
-    m = json.loads(_store.read_text(Path(f), encoding="utf-8"))
     if m.get("dataset_id") != "cnn_dailymail_200":
         continue
     arm = _arm_name(m["config_id"], "cnn_")
@@ -1853,12 +1850,7 @@ if len(_hq) == 24 and all(CNN.get(_a) for _a in _hq):
     _prov = {}
     for _a, _dirs in _runs_for(DATA, "cnn_dailymail_200", "cnn_").items():
         if _a in _hq:
-            _prov[_a] = len(
-                json.loads(_store.read_text(Path(_dirs[0] / "metrics.json"), encoding="utf-8")).get(
-                    "providers_seen"
-                )
-                or {}
-            )
+            _prov[_a] = len(_record(_dirs[0]).get("providers_seen") or {})
     _multi = [_a for _a in _prov if _prov[_a] > 1]
     _one = [_a for _a in _prov if _prov[_a] == 1]
     _dear7 = sorted(_hq, key=lambda a: -CNN[a])[:7]
@@ -1932,7 +1924,7 @@ else:
 #
 # MEDIANS, not means: a local arm's first one to three items pay a one-off
 # initialisation the warm-up does not absorb, which is why the reports quote medians.
-_LINUX = ROOT / "harness" / "data" / "runs-linux"
+_LINUX = "linux"
 #: (config_id, the report that quotes it, the unit, decimals). The figure itself is
 #: DERIVED from the runs and then looked for in the report -- it is deliberately not
 #: written here. A literal here would make this check compare the runs to the checker,
@@ -1952,9 +1944,9 @@ _LATENCY = [
     ("ag_bert_base_fy_v1", "bert_base_fy", "REPORT_CLASSIFICATION.md", "ms", 1.0, 0),
     ("ag_bert_mini_v1", "bert_mini", "REPORT_CLASSIFICATION.md", "ms", 1.0, 1),
 ]
-if not _store.is_dir(_LINUX):
+if not _runs_in(_LINUX):
     missing += 1
-    print("  --   re-timed latency: data/runs-linux is absent — skipped")
+    print("  --   re-timed latency: no scores read as linux — skipped")
 else:
     # LAST WRITE WINS WAS THE BUG. This built `_medians[config_id]` over a sorted glob,
     # so a second run of one arm overwrote the first or did not, purely by how the two
@@ -1962,10 +1954,10 @@ else:
     # refuse. V8 now also covers `runs-linux`, and this refuses independently, because
     # a checker that silently picks one of two measurements is the thing being fixed.
     _medians, _dupes = {}, []
-    for _d in sorted(
-        p for p in _store.glob(_LINUX, "*") if _store.is_file(p / "metrics.json") and _outputs.has_rows(p)
-    ):
-        _cid = json.loads(_store.read_text(Path(_d / "metrics.json"), encoding="utf-8")).get("config_id")
+    for _d, _lm in _runs_in(_LINUX):
+        if not _outputs.has_rows(_d):
+            continue
+        _cid = _lm.get("config_id")
         _lat = [_r["latency_ms"] for _r in item_rows(_d)]
         if not _lat:
             continue
@@ -2018,12 +2010,9 @@ else:
     # They compare `data/runs` (the 12-core Mac) to `runs-linux` (the 4-core Linux
     # box), so they are derived from BOTH trees. Found by external review, round 5.
     _mac = {}
-    for _d in sorted(
-        p
-        for p in _store.glob(DATA, "cnn_bart_*")
-        if _store.is_file(p / "metrics.json") and _outputs.has_rows(p)
-    ):
-        _met = json.loads(_store.read_text(Path(_d / "metrics.json"), encoding="utf-8"))
+    for _d, _met in _prefixed(DATA, "cnn_bart_"):
+        if not _outputs.has_rows(_d):
+            continue
         _cid = _met.get("config_id")
         if _met.get("dataset_id") != "cnn_dailymail_200":  # bart_l is also a system of the DailyMail slice
             continue
@@ -2079,11 +2068,11 @@ else:
 # fails until the headline is updated.
 _SLICES = ("cnn_dailymail_200", "ag_news_200", "dbpedia_280", "few_nerd_280", "scifact_200", "summeval_100")
 _arm_n, _billed = 0, 0.0
-for _d in sorted(_store.glob(DATA, "*/metrics.json")):
-    if json.loads(_store.read_text(Path(_d), encoding="utf-8")).get("dataset_id") not in _SLICES:
+for _d, _dm in _runs_in(DATA):
+    if _dm.get("dataset_id") not in _SLICES:
         continue
     _arm_n += 1
-    _billed += _billed_of(_d.parent)
+    _billed += _billed_of(_d)
 _syn = _store.read_text(ROOT / "research" / "REPORT_SYNTHESIS.md")
 # EVERY statement of each, not the first. The synthesis says "N measured arms" twice --
 # the headline and the executive summary -- and an `in` test passed with the headline
@@ -2338,8 +2327,8 @@ _ft = _subp.run(
         "_n100_v1",
         "--metric",
         "tau",
-        "--runs-dir",
-        str(DATA),
+        "--label",
+        DATA,
     ],
     capture_output=True,
     text=True,
@@ -2376,8 +2365,8 @@ _bft = _subp.run(
         "_n100_v1",
         "--metric",
         "tau",
-        "--runs-dir",
-        str(DATA),
+        "--label",
+        DATA,
     ],
     capture_output=True,
     text=True,
@@ -2418,8 +2407,8 @@ for _u in ("unievalpub", "unieval"):
             "_n100_v1",
             "--metric",
             "tau",
-            "--runs-dir",
-            str(DATA),
+            "--label",
+            DATA,
         ],
         capture_output=True,
         text=True,
@@ -2873,10 +2862,7 @@ for _key, _pref, _ds, _metric, _base in _SLOPE_EXPS:
     _x, _y = [], []
     for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
         _bill = _billed_of(_dirs[0])
-        _v = (
-            json.loads(_store.read_text(Path(_dirs[0] / "metrics.json"), encoding="utf-8")).get("scores")
-            or {}
-        ).get(_metric)
+        _v = (_record(_dirs[0]).get("scores") or {}).get(_metric)
         if _bill > 0 and _v is not None:
             _x.append(_math.log10(_bill))
             _y.append(_v)
@@ -2979,11 +2965,11 @@ _hosted_by_exp: dict = {}
 for _key, _pref, _ds, _metric, _base in _SLOPE_EXPS:
     _hosted_by_exp[_ds] = {}
     for _arm, _dirs in _runs_for(_base, _ds, _pref).items():
-        _m = json.loads(_store.read_text(Path(_dirs[0] / "metrics.json"), encoding="utf-8"))
-        if (_m.get("params") or {}).get("provider") in ("litellm", "rerank") and (_m.get("scores") or {}).get(
-            _metric
-        ) is not None:
-            _hosted_by_exp[_ds][_arm] = _m["scores"][_metric]
+        _score_rec = _record(_dirs[0])
+        if (_score_rec.get("params") or {}).get("provider") in ("litellm", "rerank") and (
+            _score_rec.get("scores") or {}
+        ).get(_metric) is not None:
+            _hosted_by_exp[_ds][_arm] = _score_rec["scores"][_metric]
 _common = set.intersection(*[set(v) for v in _hosted_by_exp.values()])
 
 

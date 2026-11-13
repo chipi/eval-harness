@@ -24,15 +24,17 @@ sys.path.insert(
     0, str(HARNESS)
 )  # the evaluation_harness package: every read of the data goes through its store
 from evaluation_harness import _store  # noqa: E402
+from evaluation_harness._runs import read_metrics, runs_on  # noqa: E402
+from evaluation_harness.model import runs as model_runs  # noqa: E402
 
 sys.path.insert(0, str(ROOT / "examples" / "_shared"))
 from eval_arms import arm_of  # noqa: E402
 from evaluation_harness._common import system_now  # noqa: E402
 
 #: The test slices on the site, from the registry `make reproduce` uses too -- so the site
-#: and a stranger's rerun cannot mean different evals. `base` is the directory the
-#: REPORT is computed from; billed cost always comes from data/runs, where the provider's
-#: response was recorded.
+#: and a stranger's rerun cannot mean different evals. `base` is the arm prefix (model.runs.arm_prefix) of
+#: the label the REPORT is computed from; billed cost always comes from the plain label's runs, where the
+#: provider's response was recorded.
 EVALS = [e for e in json.loads(_store.read_text(ROOT / "examples" / "evals.json"))["evals"] if e.get("site")]
 
 #: Arms that are not models at all — calibration floors for the scorer. On SummEval that
@@ -55,26 +57,35 @@ BASELINES = {
 }
 
 
+def label_of(base: str) -> str:
+    """The label whose arm prefix is `base` ("runs": the plain label, a run's own score)."""
+    for lbl in model_runs.labels():
+        if model_runs.arm_prefix(lbl) == base:
+            return lbl
+    raise SystemExit(f"no scores read under {base!r}")
+
+
 def _runs(base: str, dataset: str, prefix: str) -> dict:
-    """{arm: run_dir} for one slice. Two runs sharing an arm is an error, as in V8."""
+    """{arm: score dir} for one slice: the scores read under `base`'s label of the runs whose id starts with
+    `prefix`. Two runs sharing an arm is an error, as in V8."""
     out: dict = {}
-    for f in sorted(_store.glob(DATA / base, f"{prefix}*/metrics.json")):
-        m = json.loads(_store.read_text(f))
-        cid = m.get("config_id", "")
-        arm = arm_of(prefix, cid)
-        if m.get("dataset_id") != dataset or arm is None:
+    for d, m in runs_on(dataset, label=label_of(base)):
+        if not m["run_id"].startswith(prefix):
+            continue
+        arm = arm_of(prefix, m["config_id"])
+        if arm is None:
             continue
         if arm in out:
-            raise SystemExit(f"two runs for {cid} under {base}: {out[arm].name}, {f.parent.name}")
-        out[arm] = f.parent
+            raise SystemExit(
+                f"two runs for {m['config_id']} under {base}: {m['run_id']}, {model_runs.run_of(out[arm]).name}"
+            )
+        out[arm] = d
     return out
 
 
 def system_id(exp: dict, arm: str) -> str:
     """The id of the system behind an arm of an eval, as its run records it."""
-    return json.loads(
-        _store.read_text(_runs(exp["base"], exp["dataset"], exp["prefix"])[arm] / "metrics.json")
-    )["config_id"]
+    return read_metrics(_runs(exp["base"], exp["dataset"], exp["prefix"])[arm])["config_id"]
 
 
 def _billed(run_dir: Path) -> float:
@@ -105,7 +116,7 @@ def _weights() -> dict:
 def _not_significant(exp: dict) -> list:
     """Opponents the leader's Holm family test finds not significantly different."""
     cids = {
-        json.loads(_store.read_text(d / "metrics.json"))["config_id"]: arm
+        read_metrics(d)["config_id"]: arm
         for arm, d in _runs(exp["base"], exp["dataset"], exp["prefix"]).items()
     }
     leader = next(c for c, arm in cids.items() if arm == exp["leader"])
@@ -121,8 +132,8 @@ def _not_significant(exp: dict) -> list:
             ",".join(cids),
             "--metric",
             exp["metric"],
-            "--runs-dir",
-            str(DATA / exp["base"]),
+            "--label",
+            label_of(exp["base"]),
         ],
         capture_output=True,
         text=True,
@@ -142,7 +153,7 @@ def eval_figures(exp: dict, weights: dict) -> dict:
     billed = _runs("runs", exp["dataset"], exp["prefix"])
     arms = []
     for arm, d in scored.items():
-        m = json.loads(_store.read_text(d / "metrics.json"))
+        m = read_metrics(d)
         provider = (m.get("params") or {}).get("provider")
         kind = "baseline" if arm in BASELINES else "hosted" if provider in ("litellm", "rerank") else "local"
         arms.append(
@@ -165,7 +176,7 @@ def eval_figures(exp: dict, weights: dict) -> dict:
     contenders_paid = [a for a in hosted if a["arm"] in contenders]
     cheapest_contender = min(contenders_paid, key=lambda a: a["cost"]) if contenders_paid else None
     leader = next(a for a in arms if a["arm"] == exp["leader"])
-    n_items = json.loads(_store.read_text(next(iter(scored.values())) / "metrics.json"))["n_items"]
+    n_items = read_metrics(next(iter(scored.values())))["n_items"]
     return {
         **exp,
         "n_items": n_items,
@@ -239,7 +250,7 @@ def hardware() -> list:
     machines = [{**m, "hosted": 0, "local": 0} for m in hw]
     for exp in EVALS:
         for _arm, d in _runs("runs", exp["dataset"], exp["prefix"]).items():
-            fp = json.loads(_store.read_text(d / "metrics.json")).get("fingerprint") or {}
+            fp = read_metrics(d).get("fingerprint") or {}
             host = fp.get("runner") or {}
             hits = [
                 m
@@ -250,10 +261,10 @@ def hardware() -> list:
             ]
             if len(hits) != 1:
                 raise SystemExit(
-                    f"{d.name}: host {host.get('platform')}/{host.get('cpu_count')} "
+                    f"{model_runs.run_of(d).name}: host {host.get('platform')}/{host.get('cpu_count')} "
                     f"matches {len(hits)} machines in docs/evidence/hardware.json"
                 )
-            prov = (json.loads(_store.read_text(d / "metrics.json")).get("params") or {}).get("provider")
+            prov = (read_metrics(d).get("params") or {}).get("provider")
             hits[0]["hosted" if prov in ("litellm", "rerank") else "local"] += 1
     return machines
 
@@ -264,8 +275,8 @@ def dailymail() -> list:
     cnn = _runs("runs", "cnn_dailymail_200", "cnn_")
     dm = _runs("runs", "cnn_dailymail_dm200", "cnn_")
     for arm in ("bart_l", "bart_m", "bart_s", "lead3", "bart_l_xsum"):
-        c = json.loads(_store.read_text(cnn[arm] / "metrics.json"))["scores"]["coverage"]
-        d = json.loads(_store.read_text(dm[arm] / "metrics.json"))["scores"]["coverage"]
+        c = read_metrics(cnn[arm])["scores"]["coverage"]
+        d = read_metrics(dm[arm])["scores"]["coverage"]
         out.append({"arm": arm, "cnn": c, "dm": d})
     return out
 

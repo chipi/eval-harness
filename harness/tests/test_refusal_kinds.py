@@ -69,7 +69,7 @@ check("the Runbook's Refusals table is REFUSALS, word for word", documented == R
 proj = Path(tempfile.mkdtemp(prefix="evh-refusal-"))
 (proj / "data").mkdir()
 env = dict(os.environ, EVAL_HOME=str(proj))
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
+for k in ("EVAL_DATA_DIR",):
     env.pop(k, None)
 r = subprocess.run(
     [sys.executable, str(HARNESS / "scripts" / "cli.py"), "goals", "--goal", "no_such_goal"],

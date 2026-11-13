@@ -64,8 +64,8 @@ scoring:
     one version, the combined cost (owner 2026-10-30); recorded by hand: the re-score was made before
     RFC-022, by evh rescore --out, and moved to its designated place'
   written:
-  - runs-rescored/cd35dc1ffccc/runs
-  - runs-rescored/cd35dc1ffccc/runs-repeats
+  - rescored cd35dc1f
+  - rescored cd35dc1f, repeats
   runs: 65
 - at: '2026-11-02T08:17:49Z'
   scorer: 5f2c057cdaa5
@@ -73,8 +73,8 @@ scoring:
     ["escalate", "file"]}, and the adapter reads it with answers(); one adapter version and one gold for
     the round''s evidence'
   written:
-  - runs-rescored/5f2c057cdaa5/runs
-  - runs-rescored/5f2c057cdaa5/runs-repeats
+  - rescored 5f2c057c
+  - rescored 5f2c057c, repeats
   runs: 65
 status: closed
 opened_at: '2026-10-31T13:18:37Z'

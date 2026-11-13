@@ -68,8 +68,8 @@ def billed_and_recorded(run_dir: Path) -> tuple[float, float, int, int]:
 
 
 def _repeat_names(runs: list) -> dict[Path, str]:
-    """{run dir: the name its row carries}: the system id, and for a system that ran more than once the repeat
-    (r1, r2, r3: the run directory's own _rN, else its place in run order), so no two rows read alike."""
+    """{score dir: the name its row carries}: the system id, and for a system that ran more than once the repeat
+    (r1, r2, r3: the run id's own _rN, else its place in run order), so no two rows read alike."""
     seen: dict[str, int] = {}
     for _d, m in runs:
         seen[m["config_id"]] = seen.get(m["config_id"], 0) + 1
@@ -78,7 +78,7 @@ def _repeat_names(runs: list) -> dict[Path, str]:
     for d, m in runs:
         cid = m["config_id"]
         nth[cid] = nth.get(cid, 0) + 1
-        own = re.search(r"_(r\d+)$", d.name)
+        own = re.search(r"_(r\d+)$", m["run_id"])
         out[d] = f"{cid} {own.group(1) if own else f'r{nth[cid]}'}" if seen[cid] > 1 else cid
     return out
 

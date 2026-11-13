@@ -3,7 +3,7 @@
 
     evh data-rm goals/old_goal.yaml --dry-run   what would go
     evh data-rm goals/old_goal.yaml             the setting
-    evh data-rm runs/arm_v1_20261106T101010Z    the run: its record, outputs and rows
+    evh data-rm runs/arm_v1_20261106T101010Z    the run: its record, outputs, scores and rows
 
 Anything else under data/ is written by the harness's own commands and is refused here. A delete cannot be undone.
 """

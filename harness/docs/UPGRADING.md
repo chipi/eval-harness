@@ -11,7 +11,7 @@ correctness bugs, not just missing features.
   carries until the release: moving such a pin from one commit to another takes `pip install --force-reinstall`, as
   pip keeps an installed copy of the same version.
 - **Run `evh migrate` once** (`--dry-run` first shows what each step will do; a second run changes nothing). It
-  brings the data to format 3 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
+  brings the data to format 4 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
   format, `evh migrate --check` compares it with the release's, and a deploy runs that check (the RUNBOOK's "The
   data's format"). A SQLite project's database is copied beside it first. Commit `data/project.yaml` with the
   migrated data. Its steps, in order:
@@ -50,6 +50,25 @@ correctness bugs, not just missing features.
     [--goal G] [--round R]` (a run names its goal and round now), `evh sweep --systems … --dataset …`, `arm-smoke`,
     `faithfulness`, `period-compare`, `periods` and `model-onboard` take `--system`/`--dataset`, `deploy-sheet` and
     `dataset-unseal` take `--system`, `arm-from-capture --like` takes a system id, `make run SYSTEM=… DATASET_ID=…`.
+  - *runs and scores* (RFC-032 step 4, format 4): every pass of a system over a dataset is one run in
+    `data/runs/<run_id>/` (`run.json`, `outputs.jsonl`) and every score of it sits under it, in
+    `scores/<scorer>@<reference>/` (`score.json`, `metrics.json`, `predictions.jsonl`). The folders `runs-linux`,
+    `runs-pair` and `runs-repeats` become a run's `purpose` (`retime`, `pair`, `repeat`, with `machine` and, when
+    there is exactly one other run of the system on the dataset, `of`); `runs-silver`, `runs-adjudicated`,
+    `runs-rescored/<scorer>/<folder>`, `runs-judged/<scorer>` and `runs-labels-*` become scores of the runs they
+    re-scored, each read under the label its folder gave it ("silver", "rescored cd35dc1f", "judged/<scorer>"). A
+    judging pass's `summary.json` moves to `data/judge-summaries/`. A record reads back exactly as its metrics.json
+    did; a re-score by the scorer a run already had, with the same rows, is the same measurement and is kept once. A
+    round's retirement names its runs instead of a folder; validate.json's `committed`, `floors` and
+    `scorer_sources` name arms by label (`runs`, `linux`, `silver`, `judged-<scorer>`), `scorer_sources[].dir`
+    becomes `arms`. A pass in a folder whose purpose is not one of those is refused before anything is written:
+    move it into one, or delete it, and migrate again. `data/renames.json` lists each arm whose id changed, and the
+    catalog redirects its old page. Then: a `.gitignore` that re-admits run files names the new ones (this
+    repository's `harness/.gitignore` shows the pattern), and change your commands: `EVAL_RUNS_DIR` is gone (a
+    throwaway pass is `evh run --scratch`; a re-run is `evh run --purpose repeat|retime|pair [--of RUN_ID]`),
+    `--runs-dir` (pair-test, family-test) and `inspect --from` are `--label`, `round-retire` takes `--runs`, and
+    `rescore`/`judge-score` write under the runs they score (no `--out`; `rescore --label` names what its scores are
+    read as).
 
   `run-migrate`, `dataset-migrate` and `baselines-migrate` (built during 0.8.0, never released) and
   `fingerprint-migrate` (0.6.0 to 0.7.2) are this one command now. Moving the data into SQLite is

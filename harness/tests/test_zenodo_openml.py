@@ -92,7 +92,7 @@ proj = Path(tempfile.mkdtemp(prefix="evh-zo-"))
 env = dict(
     os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-zo", ZENODO_ENDPOINT=api, OPENML_ENDPOINT=api
 )
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_FETCH_HEADERS"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_FETCH_HEADERS"):
     env.pop(k, None)
 
 

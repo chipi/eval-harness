@@ -30,7 +30,7 @@ import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-baselines-"))
 env = dict(os.environ, EVH_ACTOR="person:ana", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-baselines")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_FOR"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_FOR"):
     env.pop(k, None)
 
 

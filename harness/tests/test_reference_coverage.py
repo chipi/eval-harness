@@ -26,6 +26,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-coverage-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-coverage")
@@ -78,7 +79,7 @@ try:
 
     r = evh("run", "--system", "tickets_lead1_v1", "--dataset", "tickets_v1", "--run-id", "partial")
     out = r.stdout + r.stderr
-    m = _runstore.read_json(proj, "runs/partial/metrics.json") if r.returncode == 0 else {}
+    m = _runview.record_of(proj, "partial")[1] if r.returncode == 0 else {}
     check(
         "partial gold: the run warns how many items have a reference",
         r.returncode == 0 and f"only 2 of {len(files)} items have a gold reference" in out,
@@ -129,18 +130,14 @@ try:
     )
     env["PYTHONPATH"] = str(HERE)
     r = evh("run", "--system", "own_v1", "--dataset", "tickets_v1", "--run-id", "own")
+    # A scorer that gives other numbers: the same scorer on the same references would be the score the run has.
+    (proj / "adapter.py").write_text(
+        (proj / "adapter.py").read_text().replace('{"overlap_f1": 0.5}', '{"overlap_f1": 0.75}')
+    )
     r2 = evh("rescore", "--dataset-id", "tickets_v1", "--match", "own_v1")
-    # where the tool designates a re-score (RFC-022): runs-rescored/<scorer>/<source>/
-    resc = next(
-        (
-            p
-            for p in _runstore.files_under(proj, "runs-rescored")
-            if len(p.split("/")) == 5 and p.split("/")[2] == "runs" and p.split("/")[3].startswith("own")
-            and p.endswith("/metrics.json")
-        ),
-        None,
-    ) if r2.returncode == 0 else None  # fmt: skip
-    mr = _runstore.read_json(proj, resc) if resc else {}
+    # a re-score is a score under the run, read as "rescored <8 characters of the scorer>" (RFC-022)
+    resc = [rec for _k, lb, rec in _runview.scores_of(proj, "own") if lb.startswith("rescored ")]
+    mr = resc[-1] if r2.returncode == 0 and resc else {}
     check(
         "rescore keeps a project adapter's call-time extra, and reports nothing as dropped",
         r.returncode == 0

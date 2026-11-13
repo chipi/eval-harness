@@ -151,8 +151,8 @@ try:
         and ids_b[0].startswith("tickets_lead1_v2_")
         and f"runs of A          {ids_a[0]}" in r.stdout
         and f"runs of B          {ids_b[0]}" in r.stdout
-        and "read from          " in r.stdout
-        and "--runs-dir" in r.stdout,
+        and "read as            runs" in r.stdout
+        and "--label" in r.stdout,
         (ids_a, ids_b, r.stdout[-600:]),
     )
     missing = [a if a != "overlap_f1" else "no_such_measure" for a in base]

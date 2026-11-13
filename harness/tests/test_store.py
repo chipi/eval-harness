@@ -6,9 +6,9 @@
 The setting: files with no key, `store: sqlite` in config.yaml, EVAL_STORE winning over it, any other value refused.
 `_store` on both stores: write, read, exists, a directory as the files it holds, glob, rglob, iterdir, stat, open for
 reading, writing and appending, copy into a directory, copy a tree, replace, unlink, and rmtree, which in the
-database removes a run's outputs and rows too (a run made again at the same path never reads the old one's). An
-object that is not a path keeps its own methods. `data-migrate` to the database and back on a project with a run
-(outputs, rows, a row checkpoint), a dataset, nested folders and binary bytes: every file byte-identical, nothing
+database removes a run's outputs and its scores' rows too (a run made again at the same path never reads the old
+one's). An object that is not a path keeps its own methods. `data-migrate` to the database and back on a project
+with a run (outputs, a score's rows, a row checkpoint), a dataset, nested folders and binary bytes: every file byte-identical, nothing
 under data/ on disk but the database in between, V23 saying so; refused while the store is not the target, while
 data/ holds Python, while a run is in the layout before 0.8.0. Two writers and a reader at once. A release of a
 project in its database: the same files layout, a hidden dataset's outputs left out and its rows cut to the call.
@@ -32,7 +32,7 @@ HERE = HARNESS / "scripts"
 sys.path.insert(0, str(HARNESS))
 proj = Path(tempfile.mkdtemp(prefix="evh-store-"))
 os.environ["EVAL_HOME"] = str(proj)
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_STORE"):
+for k in ("EVAL_DATA_DIR", "EVAL_STORE"):
     os.environ.pop(k, None)
 from evaluation_harness import _common, _outputs, _store  # noqa: E402
 from evaluation_harness import validate_tree as vt  # noqa: E402
@@ -81,6 +81,14 @@ def v23():
     with contextlib.redirect_stdout(io.StringIO()) as out:
         vt.v23_run_outputs()
     return list(vt.problems), out.getvalue()
+
+
+#: A score of a run, under it (model/runs): where its rows are.
+SCORE = "s1@gold.ds"
+
+
+def score_of(run):
+    return run / "scores" / SCORE
 
 
 def disk_files():
@@ -151,24 +159,26 @@ try:
         )
         # A run deleted with its directory takes its outputs and rows; made again it starts empty.
         run = data / "runs" / "arm_v1_x"
-        _store.mkdir(run, parents=True, exist_ok=True)
-        _store.write_text(run / "metrics.json", "{}")
+        _store.mkdir(score_of(run), parents=True, exist_ok=True)
+        _store.write_text(run / "run.json", "{}")
+        _store.write_text(score_of(run) / "metrics.json", "{}")
         _outputs.writer(run).add("i1", "old output")
-        _outputs.write_rows(run, [{"item_id": "i1", "score": 1}])
+        _outputs.write_rows(score_of(run), [{"item_id": "i1", "score": 1}])
         # read first, as a running catalog-serve has: what it keeps must go with the run (advisor review,
         # 2026-11-06: the same process kept answering with the deleted run's outputs and rows)
-        was = (_outputs.outputs(run), _outputs.rows_text(run))
+        was = (_outputs.outputs(run), _outputs.rows_text(score_of(run)), _outputs.outputs(score_of(run)))
         _store.rmtree(run)
         _store.mkdir(run, parents=True, exist_ok=True)
         _store.write_text(run / "run.json", "{}")
         check(
-            f"{store}: rmtree of a run read before takes its outputs and rows, in this process too; made again, it starts empty",
+            f"{store}: rmtree of a run read before takes its outputs and its scores' rows, in this process too; made again, it starts empty",
             was[0] == {"i1": "old output"}
             and was[1] is not None
+            and was[2] == {"i1": "old output"}
             and _outputs.outputs(run) == {}
-            and _outputs.rows_text(run) is None
-            and not _store.is_file(run / "metrics.json"),
-            (was, _outputs.outputs(run), _outputs.rows_text(run)),
+            and _outputs.rows_text(score_of(run)) is None
+            and not _store.is_file(score_of(run) / "metrics.json"),
+            (was, _outputs.outputs(run), _outputs.rows_text(score_of(run))),
         )
         if store == "sqlite":
             # A COMMIT that fails (a full disk): the shared connection is not left in a transaction that every later
@@ -298,7 +308,7 @@ try:
         refused,
     )
     run = data / "runs" / "arm_v9_y"
-    _store.write_text(run / "metrics.json", "{}")
+    _store.write_text(run / "run.json", "{}")
     _outputs.writer(run).add("i1", "kept")
     try:
         _store.copy_tree(run, data / "runs" / "arm_v9_copy")
@@ -358,12 +368,16 @@ try:
     _store.close()
     run = data / "runs" / "arm_v1_x"
     run.mkdir(parents=True)
-    (run / "metrics.json").write_text(json.dumps({"run_id": run.name, "dataset_id": "ds"}))
-    (run / "run.json").write_text(json.dumps({"config_id": "arm_v1"}))
+    score_of(run).mkdir(parents=True)
+    (run / "run.json").write_text(json.dumps({"run_id": run.name, "dataset_id": "ds", "config_id": "arm_v1"}))
+    (score_of(run) / "score.json").write_text(
+        json.dumps({"scorer": "s1", "reference": "gold/ds", "label": ""})
+    )
+    (score_of(run) / "metrics.json").write_text(json.dumps({"scores": {"s": 0.75}}))
     w = _outputs.writer(run)
     for i, t in (("i2", "two é\r\n"), ("i1", "")):
         w.add(i, t)
-    _outputs.write_rows(run, [{"item_id": "i1", "s": 1.5}, {"item_id": "i2", "s": 0}])
+    _outputs.write_rows(score_of(run), [{"item_id": "i1", "s": 1.5}, {"item_id": "i2", "s": 0}])
     stopped = data / "runs" / "arm_v1_stopped"
     stopped.mkdir()
     (stopped / "run.json").write_text("{}")
@@ -419,10 +433,12 @@ try:
         and _store.read_bytes(data / "references" / "gold" / "ds" / "i1.txt")
         == before["references/gold/ds/i1.txt"]
         and _outputs.outputs(run) == {"i2": "two é\r\n", "i1": ""}
-        and _outputs.rows_text(run) == before["runs/arm_v1_x/predictions.jsonl"].decode()
+        and _outputs.rows_text(score_of(run))
+        == before[f"runs/arm_v1_x/scores/{SCORE}/predictions.jsonl"].decode()
         and _outputs.rows_text(stopped, partial=True)
         == before["runs/arm_v1_stopped/rows.partial.jsonl"].decode()
-        and _store.is_file(run / "metrics.json")
+        and _store.is_file(run / "run.json")
+        and _store.is_file(score_of(run) / "metrics.json")
         and _store.stat(data / "datasets" / "ds.json").st_mtime_ns == old_ns,
         ((r.stdout + r.stderr)[-300:], disk_files(), _store.stat(data / "datasets" / "ds.json").st_mtime_ns),
     )
@@ -455,13 +471,13 @@ try:
         ((r.stdout + r.stderr)[-300:], sorted(set(before) ^ set(after))),
     )
 
-    # A migration a crash stopped after it had moved a run's record, before the run's outputs and rows: the next one
-    # finishes it, the outputs and rows into their own tables (advisor review, 2026-11-06: they went into the files
-    # table, and the run read empty).
+    # A migration a crash stopped after it had moved a run's and its score's records, before the run's outputs and the
+    # score's rows: the next one finishes it, the outputs and rows into their own tables (advisor review, 2026-11-06:
+    # they went into the files table, and the run read empty).
     use("sqlite")
-    for name in ("metrics.json", "run.json"):
-        _store.write_bytes(run / name, (run / name).read_bytes())
-        (run / name).unlink()
+    for rec in (run / "run.json", score_of(run) / "score.json", score_of(run) / "metrics.json"):
+        _store.write_bytes(rec, rec.read_bytes())
+        rec.unlink()
     _store.close()
     r = evh("data-migrate", "--to", "sqlite", store="sqlite")
     use("sqlite")
@@ -469,9 +485,10 @@ try:
         "--to sqlite resumed after a crash: the run's outputs and rows go to their tables, not the files",
         r.returncode == 0
         and _outputs.outputs(run) == {"i2": "two é\r\n", "i1": ""}
-        and _outputs.rows_text(run) == before["runs/arm_v1_x/predictions.jsonl"].decode()
+        and _outputs.rows_text(score_of(run))
+        == before[f"runs/arm_v1_x/scores/{SCORE}/predictions.jsonl"].decode()
         and not _store.is_file(run / _outputs.FILE)
-        and not _store.is_file(run / _outputs.PREDICTIONS),
+        and not _store.is_file(score_of(run) / _outputs.PREDICTIONS),
         ((r.stdout + r.stderr)[-300:], _outputs.outputs(run)),
     )
     _store.close()  # this process read the database just now: moving back is refused while it has it open
@@ -510,7 +527,7 @@ try:
 
     old = data / "runs" / "arm_v1_old"
     (old / "outputs").mkdir(parents=True)
-    (old / "metrics.json").write_text("{}")
+    (old / "run.json").write_text("{}")
     (old / "outputs" / "i1.txt").write_text("x")
     r = evh("data-migrate", "--to", "sqlite", store="sqlite")
     check(
@@ -573,17 +590,21 @@ try:
 
     for name, ds, text in (("rel_h", "h", "HIDDEN-MARK-7781"), ("rel_s", "s", "SHOWN-MARK-2213")):
         d = data / "runs" / name
-        _store.write_text(d / "metrics.json", json.dumps({"run_id": name, "dataset_id": ds}))
+        _store.write_text(d / "run.json", json.dumps({"run_id": name, "dataset_id": ds}))
+        _store.write_text(score_of(d) / "metrics.json", json.dumps({"scores": {}}))
         _outputs.writer(d).add("x1", text)
         _outputs.write_rows(
-            d, [{"item_id": "x1", "score": 0.25, "_meta": {"usage": {"t": 3}, "prompt": text}}]
+            score_of(d), [{"item_id": "x1", "score": 0.25, "_meta": {"usage": {"t": 3}, "prompt": text}}]
         )
     _store.write_text(data / "datasets" / "h.json", json.dumps({"dataset_id": "h", "text": "hidden"}))
     _store.write_text(data / "datasets" / "s.json", json.dumps({"dataset_id": "s"}))
     rel = proj / ".release"
     copy_data(data, rel)
     blob = b"".join(p.read_bytes() for p in rel.rglob("*") if p.is_file())
-    hid = [json.loads(x) for x in (rel / "runs" / "rel_h" / "predictions.jsonl").read_text().splitlines()]
+    hid = [
+        json.loads(x)
+        for x in (score_of(rel / "runs" / "rel_h") / "predictions.jsonl").read_text().splitlines()
+    ]
     check(
         "release from the database: the files layout, the shown run's outputs, none of the hidden run's text",
         b"SHOWN-MARK-2213" in blob
@@ -638,6 +659,7 @@ ALLOWED = {
     "examples/replay-filing/system/*/filing.py": "the example's system under test: its own ledger file, which a replay points at a temp file",
     "examples/replay-filing/*.py": "makes the example's system repository and frozen history in a folder a person names, outside data/; data files go through _store (RFC-030)",
     "examples/audit_locks.py": "checks the examples' lock files",
+    "examples/reproduce.py": "builds a temporary project of links to the reruns for family-test, in the system's temp folder",
     "examples/signal-fleet-dedup/test_dedup.py": "a test of the example's own fixtures",
 }
 METHODS = {"read_text", "read_bytes", "write_text", "write_bytes", "is_file", "is_dir", "exists", "glob", "rglob",

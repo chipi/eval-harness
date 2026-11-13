@@ -61,8 +61,6 @@ from evaluation_harness import (  # noqa: E402
     _store,
 )
 from evaluation_harness._common import (  # noqa: E402
-    RUNS,
-    data_rel,
     dataset_item_ids,
     die,
     evh_prog,
@@ -140,7 +138,7 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
         args.a = (min if prim.get("direction") == "lower" else max)(means, key=lambda c: means[c])
     if not args.b:
         base = rnd.get("baseline")
-        args.b = next((m["config_id"] for d, m in runs if d.name == base), None)
+        args.b = next((m["config_id"] for d, m in runs if m["run_id"] == base), None)
         if not args.b:
             die(f"round {args.round} records no baseline run: name --b", "not-enough")
         if args.b == args.a:
@@ -288,7 +286,12 @@ def main() -> int:
         "--metric",
         help="default: the round's goal measure with --round, else the primary metric the runs recorded",
     )
-    ap.add_argument("--runs-dir", type=Path, default=None, help="default: EVAL_RUNS_DIR, else data/runs")
+    ap.add_argument(
+        "--label",
+        default="",
+        help='the arm label the runs are read under (default: "", the plain runs; `evh runs-list` shows the '
+        'labels present, e.g. "repeats" or a re-score\'s)',
+    )
     ap.add_argument("--exclude-dataset", help="drop items this dataset also contains")
     ap.add_argument(
         "--include-exposed",
@@ -360,12 +363,10 @@ def main() -> int:
 
 
 def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
-    # The directory read is the directory warned about: --runs-dir, else EVAL_RUNS_DIR.
-    runs_dir = args.runs_dir or RUNS
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(runs_dir, args.dataset_id, label=runs_dir.name)
-    runs = runs_on(args.dataset_id, runs_dir=runs_dir)
+    warn_on_ambiguous_runs(args.label, args.dataset_id)
+    runs = runs_on(args.dataset_id, label=args.label)
     cross = bool(args.b_dataset)
     runs_b = []
     if cross:
@@ -375,8 +376,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
                 "bad-argument",
             )
         ids_a, ids_b = dataset_item_ids(args.dataset_id), dataset_item_ids(args.b_dataset)
-        warn_on_ambiguous_runs(runs_dir, args.b_dataset, label=runs_dir.name)
-        runs_b = runs_on(args.b_dataset, runs_dir=runs_dir)
+        warn_on_ambiguous_runs(args.label, args.b_dataset)
+        runs_b = runs_on(args.b_dataset, label=args.label)
     values = _round_values(args.dataset_id, args) if args.round else None
     chose, candidates = False, None
     if args.round:
@@ -388,10 +389,10 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
     if args.family is None:
         args.family = 1
     _named_metric = bool(args.metric)
-    args.metric = args.metric or default_metric(args.dataset_id, runs_dir=runs_dir)
+    args.metric = args.metric or default_metric(args.dataset_id, label=args.label)
     refuse_run_level([*runs, *runs_b], args.metric, "pair-test")
     if cross and not _named_metric:
-        other = default_metric(args.b_dataset, runs_dir=runs_dir)
+        other = default_metric(args.b_dataset, label=args.label)
         if other != args.metric:
             die(
                 f"the two datasets' runs record different primary metrics ({args.dataset_id}: {args.metric}, "
@@ -426,7 +427,7 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
                 die(
                     f"{args.metric} is not stored per item in {arm}'s runs on {ds} (stored: {', '.join(stored)}). "
                     "A measure computed at re-score is stored only in the re-scored runs (`evh rescore`): "
-                    "point --runs-dir at them.",
+                    "read them with --label (the re-score's label, `evh runs-list`).",
                     "not-enough",
                 )
     else:
@@ -481,8 +482,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
                 "not-enough",
             )
         refs = _check_same_reference(args, arm_a, arm_b, items)
-        ids_run_a = sorted({d.name for d, _m in arm_a})
-        ids_run_b = sorted({d.name for d, _m in arm_b})
+        ids_run_a = sorted({m["run_id"] for _d, m in arm_a})
+        ids_run_b = sorted({m["run_id"] for _d, m in arm_b})
         n_a, n_b = len(ids_run_a), len(ids_run_b)
         cross_note = [
             f"  CROSS-VERSION comparison: {args.a} on {args.dataset_id}  vs  {args.b} on {args.b_dataset}",
@@ -493,8 +494,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
             f"    runs of A          {', '.join(ids_run_a)}",
             f"    runs of B          {', '.join(ids_run_b)}",
             (
-                f"    read from          {data_rel(Path(runs_dir))} (another set of an arm's runs, e.g. a repeat set: "
-                "--runs-dir)"
+                f"    read as            {args.label or 'runs'} (another set of an arm's runs, e.g. a repeat set: "
+                "--label)"
             ),
             f"    establishes        {_ESTABLISHES}",
             f"    does not           {_DOES_NOT}",
@@ -691,8 +692,8 @@ def _run(args: argparse.Namespace, ap: argparse.ArgumentParser) -> int:
                 {}
                 if cross
                 else {
-                    "run_ids_a": sorted(d.name for d, m in runs if m.get("config_id") == args.a),
-                    "run_ids_b": sorted(d.name for d, m in runs if m.get("config_id") == args.b),
+                    "run_ids_a": sorted(m["run_id"] for _d, m in runs if m.get("config_id") == args.a),
+                    "run_ids_b": sorted(m["run_id"] for _d, m in runs if m.get("config_id") == args.b),
                 }
             ),
             "repeats": agree or None,

@@ -19,8 +19,7 @@ HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
 proj = Path(tempfile.mkdtemp(prefix="evh-item-index-"))
 os.environ["EVAL_HOME"] = str(proj)
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
-    os.environ.pop(k, None)
+os.environ.pop("EVAL_DATA_DIR", None)
 from evaluation_harness import _common, _outputs, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 

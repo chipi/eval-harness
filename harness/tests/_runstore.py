@@ -1,7 +1,9 @@
 """Run fixtures in the store the suite runs in (RFC-025): EVAL_STORE, files by default.
 
 What a test needs beyond `_outputs` and `_runs.item_rows`: raw rows text (a malformed line, an emptied file), every
-line parsed, and a run copied with its outputs and rows, in whichever store the project is.
+line parsed, a run made with its scores, and a run copied with its outputs and scores' rows, in whichever store the
+project is. A score's rows are in its directory (`runs/<id>/scores/<key>/`, model/runs), the run's outputs and its
+checkpoint in the run's.
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness import _outputs, _store
+from evaluation_harness.model import runs as model_runs
 
 
 def sqlite() -> bool:
@@ -20,33 +23,74 @@ def sqlite() -> bool:
 
 
 def put_rows_text(run_dir: Path, text: str, partial: bool = False) -> None:
-    """A run's rows exactly as given, malformed lines included (a test of a reader's refusals)."""
+    """A score's rows (a run's checkpoint with `partial`) exactly as given, malformed lines included (a test of a
+    reader's refusals)."""
     _store.mkdir(run_dir, parents=True, exist_ok=True)
     _outputs.store().put_rows(Path(run_dir), text, partial)
 
 
 def rows(run_dir: Path, partial: bool = False) -> list[dict[str, Any]]:
-    """A run's rows, each non-blank line parsed (a row without an item id included)."""
+    """A score's rows, each non-blank line parsed (a row without an item id included)."""
     text = _outputs.rows_text(Path(run_dir), partial) or ""
     return [json.loads(x) for x in text.splitlines() if x.strip()]
 
 
+def run_rows(run_dir: Path) -> list[dict[str, Any]]:
+    """The rows of a run's first score: the measurement the pass made."""
+    sd = model_runs.first_score(Path(run_dir))
+    return rows(sd) if sd else []
+
+
 def drop_rows(run_dir: Path, partial: bool = False) -> None:
-    """A run's rows (or its checkpoint) removed."""
+    """A score's rows (or a run's checkpoint) removed."""
     _outputs.store().drop_rows(Path(run_dir), partial)
 
 
+def make_run(
+    runs: Path,
+    run_id: str,
+    run_rec: dict[str, Any],
+    *,
+    outputs: dict[str, str] | None = None,
+    scores: list[dict[str, Any]] | tuple[dict[str, Any], ...] = (),
+) -> Path:
+    """A run in `runs` (a project's data/runs, or a folder of a test's own), written as `model.runs` writes one:
+    run.json (`run_rec`, with its run_id), its outputs, and each score of `scores` under it: {scorer, reference,
+    label, first, metrics (what the score keeps beside run.json), rows}. Returns the run's directory."""
+    d = Path(runs) / run_id
+    _store.mkdir(d, parents=True, exist_ok=True)
+    _store.write_text(d / model_runs.RUN, json.dumps({"run_id": run_id, **run_rec}, indent=2) + "\n")
+    if outputs:
+        _outputs.write_all(d, outputs, list(outputs))
+    for sc in scores:
+        sd = d / "scores" / model_runs.key(sc["scorer"], sc.get("reference"))
+        _store.mkdir(sd, parents=True, exist_ok=True)
+        meta = {"scorer": sc["scorer"], "reference": sc.get("reference"), "label": sc.get("label", "")}
+        if sc.get("first"):
+            meta["first"] = True
+        _store.write_text(sd / model_runs.SCORE, json.dumps(meta, indent=2) + "\n")
+        _store.write_text(sd / model_runs.METRICS, json.dumps(sc.get("metrics") or {}, indent=2) + "\n")
+        if sc.get("rows") is not None:
+            _outputs.write_rows(sd, sc["rows"])
+    return d
+
+
 def copy_run(src: Path, dst: Path) -> None:
-    """A run copied, its directory and its outputs, rows and row checkpoint, wherever each run's store keeps them."""
+    """A run copied, its directory and its outputs, its checkpoint and each score's rows, wherever each run's store
+    keeps them."""
     _store.copy_tree(src, dst, files_only=True)  # its outputs and rows are copied below
     st = _outputs.store()
     outs = st.lines(Path(src))
     if outs:
         st.write_all(Path(dst), {o["item_id"]: o["text"] for o in outs}, [o["item_id"] for o in outs])
-    for partial in (False, True):
-        text = st.rows_text(Path(src), partial)
-        if text is not None:
-            st.put_rows(Path(dst), text, partial)
+    for sd in model_runs.scores_of(Path(src)):
+        for partial in (False, True):
+            text = st.rows_text(sd, partial)
+            if text is not None:
+                st.put_rows(Path(dst) / "scores" / sd.name, text, partial)
+    text = st.rows_text(Path(src), True)
+    if text is not None:
+        st.put_rows(Path(dst), text, True)
 
 
 # ── a test project's data, read and written in its store ──────────────────────────────────────────────────────────
@@ -54,7 +98,7 @@ def copy_run(src: Path, dst: Path) -> None:
 # where the store keeps them: on disk in the files store, in data/project.sqlite in the sqlite store. These aim
 # _store at that project for the call only (its EVAL_HOME), whatever this process's own project is, and refuse to
 # touch anything when the project's data/ is not where they were told: a test must never write this repository's data.
-_PROJECT_KEYS = ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_GOALS_DIR")
+_PROJECT_KEYS = ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_GOALS_DIR")
 
 
 class _InProject:
@@ -122,6 +166,15 @@ def write_bytes(proj: Path | str, rel: str, content: bytes) -> None:
     """A file's bytes written into the test project's data/."""
     with _InProject(proj) as data:
         _store.write_bytes(data / rel, content)
+
+
+def record_of(proj: Path | str, run_id: str) -> dict[str, Any]:
+    """The record of a run of the test project: its run.json with its first score's metrics over it (what a run's
+    metrics.json held before RFC-032 step 4); the run's own when it has no score; {} when there is no such run."""
+    with _InProject(proj) as data:
+        d = data / "runs" / run_id
+        sd = model_runs.first_score(d)
+        return (model_runs.record(sd) if sd else model_runs.run(d)) or {}
 
 
 def exists(proj: Path | str, rel: str) -> bool:

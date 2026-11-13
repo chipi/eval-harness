@@ -6,7 +6,8 @@
     evh data-migrate --to files              back, byte for byte (store: files first)
 
 A project is files or its database, never both. Each file is written to the target, read back and compared (a file's
-sha256; a run's outputs by item, text, sha256 and order; its rows by their exact text) before the old copy is removed;
+sha256; a run's outputs by item, text, sha256 and order; its checkpoint's rows and each of its scores' rows by their
+exact text) before the old copy is removed;
 any difference stops the move with that file in its old place. A move a crash stopped is finished by the next one.
 Refused while the project's store (`store` in config.yaml, or EVAL_STORE) is not the target, while data/ holds Python
 (code is never in the database: keep it outside data/ and name it by path), and while a run is still in the layout
@@ -31,7 +32,8 @@ from pathlib import Path
 from evaluation_harness import _common, _jsonout, _outputs, _store
 from evaluation_harness._common import die, evh_prog
 
-#: A run's per-item files: kept in the database's per-item tables, not as files.
+#: The per-item files of a run (its outputs, its checkpoint) and of each of its scores (their rows): kept in the
+#: database's per-item tables, not as files.
 PER_ITEM = (_outputs.FILE, _outputs.PREDICTIONS, _outputs.ROWS)
 
 
@@ -53,9 +55,11 @@ def _disk_files(data: Path) -> list[Path]:
 
 
 def _is_run(d: Path) -> bool:
-    """Whether `d` is a run: its record is on disk, or already in the database (a migration a crash stopped after
-    moving the record, before the run's outputs and rows, is finished by the next one)."""
-    return any((d / n).is_file() or _store.is_file(d / n) for n in ("metrics.json", "run.json"))
+    """Whether `d` holds per-item files: a run (its run.json) or one of its scores (its score.json under scores/), the
+    record on disk or already in the database (a migration a crash stopped after moving the record, before the
+    per-item files, is finished by the next one)."""
+    names = ("score.json", "metrics.json") if d.parent.name == "scores" else ("run.json",)
+    return any((d / n).is_file() or _store.is_file(d / n) for n in names)
 
 
 def _links(data: Path) -> list[Path]:
@@ -122,7 +126,7 @@ def to_sqlite(dry_run: bool) -> dict[str, int]:
         p.unlink()
     for d in runs:
         outs = disk.lines(d)
-        n["runs"] += 1
+        n["runs"] += d.parent.name != "scores"
         n["outputs"] += len(outs)
         texts = [(o["item_id"], o["text"], o["sha256"]) for o in outs]
         bad = [i for i, t, s in texts if _outputs.sha256(t) != s]
@@ -218,7 +222,7 @@ def to_files(dry_run: bool) -> dict[str, int]:
         runs |= {r[0] for r in conn.execute("SELECT DISTINCT run FROM rows")}
     for key in sorted(runs):
         d = data / key
-        n["runs"] += 1
+        n["runs"] += Path(key).parent.name != "scores"
         outs = (
             conn.execute(
                 "SELECT item_id, text, sha256 FROM outputs WHERE run = ? ORDER BY rowid", (key,)

@@ -42,8 +42,18 @@ from evaluation_harness._common import (
     how,
     load_goals,
     now,
-    read_json,
 )
+from evaluation_harness.model import runs as model_runs
+
+
+def run_record(run_id: str) -> dict | None:
+    """The record of a run's measurement (its first score's: what a baseline is promoted from), None when the run
+    is not there or was never scored."""
+    d = RUNS / run_id
+    if not _store.is_file(d / model_runs.RUN):
+        return None
+    sd = model_runs.first_score(d) or next(iter(model_runs.scores_of(d)), None)
+    return model_runs.record(sd) if sd else None
 
 
 def _repeats(m: dict) -> dict | None:
@@ -57,7 +67,7 @@ def _repeats(m: dict) -> dict | None:
     base = re.sub(r"_r\d+$", "", m["run_id"])
     sibs = []
     for d in sorted(_store.glob(RUNS, f"{base}_r*")):
-        mm = read_json(d / "metrics.json") if _store.is_file(d / "metrics.json") else {}
+        mm = run_record(d.name) or {}
         if mm.get("config_id") == m["config_id"] and mm.get("repeat_index"):
             sibs.append(mm)
     if len(sibs) < 2:
@@ -87,8 +97,7 @@ def carried(m: dict) -> dict:
 
 
 def _config_of(run_id: str) -> str | None:
-    f = RUNS / run_id / "metrics.json"
-    return read_json(f).get("config_id") if _store.is_file(f) else None
+    return (run_record(run_id) or {}).get("config_id")
 
 
 def evidence(
@@ -248,10 +257,9 @@ def main() -> int:
 
         who = require_named("run-promote")
 
-        src = RUNS / args.run / "metrics.json"
-        if not _store.is_file(src):
-            die(f"no run {args.run!r} (looked for {src})", "not-found")
-        m = read_json(src)
+        m = run_record(args.run)
+        if m is None:
+            die(f"no scored run {args.run!r} (looked for {RUNS / args.run})", "not-found")
         from evaluation_harness import _faith  # noqa: PLC0415
 
         faith = _faith.allow_scoring(m, "promoting", args.unfaithful)

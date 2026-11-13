@@ -32,7 +32,6 @@ import _runstore  # noqa: E402
 proj = Path(tempfile.mkdtemp(prefix="evh-fields-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-fields")
 env.pop("EVAL_DATA_DIR", None)
-env.pop("EVAL_RUNS_DIR", None)
 
 
 def evh(*args):

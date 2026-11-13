@@ -63,8 +63,8 @@ from evaluation_harness import (  # noqa: E402
     _outputs,
     _store,
 )
-from evaluation_harness._common import REFERENCES, RUNS, die, item_path, read_json, reference_texts  # noqa: E402
-from evaluation_harness._runs import item_rows, warn_on_ambiguous_runs  # noqa: E402
+from evaluation_harness._common import REFERENCES, die, item_path, reference_texts  # noqa: E402
+from evaluation_harness._runs import item_rows, runs_on, warn_on_ambiguous_runs  # noqa: E402
 
 try:
     from extraction import as_members, match_one_to_one, normalize
@@ -94,16 +94,10 @@ def predictions(dataset_id: str, match: str | None) -> dict:
     apart: an arm that could not be read did not predict the empty set.
     """
     out: dict = defaultdict(dict)
-    for d in sorted(_store.glob(RUNS, "*")):
-        mj = d / "metrics.json"
-        if not (_store.is_file(mj) and _outputs.has_rows(d)):
+    for d, m in runs_on(dataset_id, match=match):
+        if not _outputs.has_rows(d):
             continue
-        m = read_json(mj)
-        cid = m.get("config_id")
-        if m.get("dataset_id") != dataset_id or not cid:
-            continue
-        if match and match not in cid:
-            continue
+        cid = m["config_id"]
         for row in item_rows(d):
             out[cid][row["item_id"]] = (row.get("_meta") or {}).get("predicted")
     return out
@@ -316,7 +310,7 @@ def main() -> int:
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    warn_on_ambiguous_runs("", args.dataset_id)
 
     gold = gold_sets(args.dataset_id)
     preds = predictions(args.dataset_id, args.match)

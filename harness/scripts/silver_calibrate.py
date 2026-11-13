@@ -52,7 +52,6 @@ from evaluation_harness._adapter import load_recorded_adapter, score_wants_sourc
 from evaluation_harness._common import (
     MATERIALIZED,
     REFERENCES,
-    RUNS,
     adapter_search_dirs,
     die,
     evh_prog,
@@ -151,7 +150,7 @@ def main() -> int:
     with _jsonout.collect("silver-calibrate", args.json, live=sys.stderr):
         # Two runs sharing a config_id are averaged together below without
         # saying so. See _runs.warn_on_ambiguous_runs.
-        warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+        warn_on_ambiguous_runs("", args.dataset_id)
 
         refs_side = _collect(args.dataset_id, args.ref_match)
         arms_side = _collect(args.dataset_id, args.arm_match)

@@ -26,10 +26,11 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _jsonout, _rounds, _store
+from evaluation_harness import _common, _jsonout, _rounds
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import rescore as rs
 from evaluation_harness._common import die, load_goals
+from evaluation_harness._runs import runs_on
 from evaluation_harness.catalog_adapter import HarnessAdapter, load_catalog_adapter
 
 
@@ -107,15 +108,14 @@ def main() -> int:
         adapters: dict = {}
         n = 0
         per_ds: dict[str, int] = {}
+        # The scratch root (model.runs) is where a preview's runs and scores go: pointed at the temporary directory
+        # for this process, so the catalog below reads them as it reads data/runs.
+        _common.SCRATCH_RUNS = root
         with contextlib.redirect_stdout(io.StringIO()):
             for ds in datasets:
                 per_ds[ds] = 0
                 for d, m in rs.measured_runs(ds, configs):
-                    try:
-                        rel = d.parent.resolve().relative_to(_common.DATA.resolve()).as_posix()
-                    except ValueError:
-                        rel = d.parent.name
-                    if rs.rescore_one(d, m, out_dir=root / rel, adapters=adapters, quiet=True):
+                    if rs.rescore_one(d, m, adapters=adapters, quiet=True, preview=True):
                         n += 1
                         per_ds[ds] += 1
         after = decisions(HarnessAdapter(runs_root=root), goal)
@@ -130,13 +130,11 @@ def main() -> int:
 
 def _derived_on(dataset_id: str) -> int:
     """How many re-scored (derived) runs on the dataset the goal can read: what score-preview leaves alone."""
-    n = 0
-    bases = [b for b in sorted(_store.glob(_common.DATA, "runs*")) if b.name != rs.RESCORED]
-    bases += sorted(_store.glob(_common.DATA / rs.RESCORED, "*/*"))
-    for base in bases:
-        if _store.is_dir(base) and not _common.ignored_by_git(base):
-            n += sum(1 for _d, m in rs.runs_on(dataset_id, runs_dir=base) if m.get("derived"))
-    return n
+    return sum(
+        1
+        for _d, m in runs_on(dataset_id, label=None)
+        if (m.get("derived") or {}).get("kind") in ("rescore", "reparse")
+    )
 
 
 def _print(goal: str, scorer: str, n: int, before: dict, after: dict, per_ds: dict[str, int]) -> None:
@@ -152,9 +150,6 @@ def _print(goal: str, scorer: str, n: int, before: dict, after: dict, per_ds: di
             print(
                 f"{ds}: no measured runs to re-score here, so nothing was compared. The {_derived_on(ds)} run(s) "
                 "this goal reads are themselves re-scores, and a re-score is not re-scored again by a preview.\n"
-                f"  To check them against the scorer in this tree: evh rescore --dataset-id {ds} --out <a directory of "
-                "your own>, then evh leaderboard --dataset-id "
-                f"{ds} with EVAL_RUNS_DIR=<that directory>.\n"
             )
             continue
         b, a = before.get(ds) or {"rows": {}}, after.get(ds) or {"rows": {}}

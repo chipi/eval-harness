@@ -59,7 +59,7 @@ GOOD_GOAL_EDIT = "# the margin a person changed on the page\n"
 def setup(store: str) -> tuple[Path, dict]:
     proj = Path(tempfile.mkdtemp(prefix=f"evh-datapage-{store}-"))
     env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-data-page", PYTHONPATH=str(site()))
-    for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_STORE", "EVAL_MAX_COST_USD"):
+    for k in ("EVAL_DATA_DIR", "EVAL_STORE", "EVAL_MAX_COST_USD"):
         env.pop(k, None)
 
     def evh(*args: str) -> None:
@@ -197,7 +197,7 @@ def run_case(store: str) -> None:
             ]["entries"]
             if e["type"] == "run"
         )
-        r = cli(proj, env, "data-show", f"{run}/metrics.json")
+        r = cli(proj, env, "data-show", f"{run}/run.json")
         check(f"{store}: a run's file says it is written by evh run and is not edited here",
               r.returncode == 0 and "written by evh run" in r.stdout, r.stdout[-200:])  # fmt: skip
 
@@ -291,7 +291,7 @@ def run_case(store: str) -> None:
         check(f"{store}: a change the schema allows but evh validate refuses is put back, and says why",
               r.returncode != 0 and "V20" in r.stderr and "no_such_v1" in r.stderr
               and cli(proj, env, "data-show", lead1, "--text").stdout == cfg_after, r.stderr[-400:])  # fmt: skip
-        for target, why in ((f"{run}/metrics.json", "written by evh run"), ("datasets/tickets_v1.json", "written by the dataset-* commands"),
+        for target, why in ((f"{run}/run.json", "written by evh run"), ("datasets/tickets_v1.json", "written by the dataset-* commands"),
                             ("../config.yaml", "outside the project's data"), ("systems/x.py", "code")):  # fmt: skip
             r = cli(proj, env, "data-put", target, "-", stdin="x: 1\n")
             check(
@@ -334,13 +334,15 @@ def run_case(store: str) -> None:
                 "/api/health",
                 f"/data/{goal}",
                 "/api/compare?runs=" + run,
-                f"/data/{run}/metrics.json",
+                f"/data/{run}/run.json",
             ] * 20
             with ThreadPoolExecutor(max_workers=16) as pool:
-                codes = list(pool.map(lambda rt: http(port, "GET", rt)[0], routes))
+                got = list(pool.map(lambda rt: (rt, *http(port, "GET", rt)), routes))
+            codes = [c for _rt, c, _b in got]
+            odd = next(((rt, c, str(b)[:300]) for rt, c, b in got if c != 200), None)
             alive = http(port, "GET", "/api/health")[0]
             check(f"{store}: {len(routes)} requests at once all answered, the server still up",
-                  codes == [200] * len(routes) and alive == 200, sorted(set(codes)))  # fmt: skip
+                  codes == [200] * len(routes) and alive == 200, (sorted(set(codes)), odd, odd and (proj / "serve.log").read_text()[-1800:]))  # fmt: skip
         finally:
             os.killpg(p.pid, 15)
             p.wait(timeout=30)
@@ -365,6 +367,20 @@ def run_case(store: str) -> None:
             "ERROR (not-allowed)" in r.stderr,
             r.stderr[-200:],
         )
+        # A run is deleted whole: its record, its outputs, and every score under it with its rows.
+        r = cli(proj, env, "data-rm", run, "--dry-run")
+        check(f"{store}: data-rm --dry-run names what a run takes, its score's rows with its outputs",
+              r.returncode == 0 and "would delete the run" in r.stdout and "6 output(s), 6 row(s)" in r.stdout
+              and cli(proj, env, "data-show", f"{run}/run.json").returncode == 0, r.stdout + r.stderr[-200:])  # fmt: skip
+        r = cli(proj, env, "data-rm", run)
+        left = [
+            e for e in json.loads(cli(proj, env, "data-ls", "runs", "--json").stdout)["result"]["values"]["listing"]["entries"]
+            if e["path"] == run
+        ]  # fmt: skip
+        check(f"{store}: data-rm deletes the run whole: no record, no outputs, no score",
+              r.returncode == 0 and "6 output(s), 6 row(s)" in r.stdout and not left
+              and cli(proj, env, "data-show", f"{run}/run.json").returncode != 0
+              and cli(proj, env, "data-ls", f"{run}/scores").returncode != 0, r.stdout + r.stderr[-200:])  # fmt: skip
     finally:
         shutil.rmtree(proj, ignore_errors=True)
 

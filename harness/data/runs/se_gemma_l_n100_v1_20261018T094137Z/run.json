@@ -1,0 +1,140 @@
+{
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "adapter": "examples/summeval-judging/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "90b88fd29bd7d0478327032dba57aa2ee733e379",
+    "source": "git"
+  },
+  "config_id": "se_gemma_l_n100_v1",
+  "created_at": "2026-10-18T09:52:50Z",
+  "dataset_id": "summeval_100",
+  "fingerprint": {
+    "arm": {
+      "config_id": "se_gemma_l_n100_v1",
+      "labels": {
+        "family": "gemma",
+        "price_tier": "large",
+        "usd_per_mtok_in": 0.1,
+        "usd_per_mtok_out": 0.2
+      }
+    },
+    "data": {
+      "dataset_id": "summeval_100",
+      "items_sha256": "b59999b281b2cbe87c57e4af34cc475c01ba1d531c7b77cb93a136665119c613",
+      "n_items": 100,
+      "reference_id": "gold/summeval_100",
+      "reference_tier": "gold",
+      "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
+    },
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "alias": "eval-gemma-31b",
+        "endpoint": "http://homelab:4001",
+        "id": "openrouter/google/gemma-4-31b-it",
+        "id_source": "proxy-model-info",
+        "provider_routing": null
+      },
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/google/gemma-4-31b-it",
+        "route": null
+      },
+      "id": "eval-gemma-31b",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-gemma-31b",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "dd3bab4bddf4fb17dfd91e763f3ea46b79a4d8010957fb244be95285db0065e8",
+    "hash": "d6a76180c648714f167ded1b222ac2575ef7a4360d8f7dcef40583c38c583bcf",
+    "instrument": {
+      "adapter": {
+        "id": "examples/summeval-judging/adapter.py",
+        "sha256": "b757ca07e3388b96f6eeefc7033c421ca6b74ae836785f683787dd9edc870473"
+      },
+      "harness": {
+        "commit": "90b88fd29bd7",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "e6437e0946ecf508a329ab2c33c286e0448540e7def56433a515aa168eecc221",
+    "runner": {
+      "cpu_count": 32,
+      "label": "omarchy",
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.11.16",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "declared": {
+        "prompt_sha256": "6c02d00929048d9c3fea511af40c3ddf90fdf1550afb7713d3f5f4d86e44f5ee",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "max_tokens": 1500,
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0
+    },
+    "settings_sha256": "88319b7c02881c89e35207aafde4204cc1d8a021eb01acf2e39f027f18118b8a",
+    "version": 5
+  },
+  "goal": "summary_judge_summeval",
+  "n_items": 100,
+  "params": {
+    "family": "gemma",
+    "max_tokens": 1500,
+    "model": "eval-gemma-31b",
+    "price_tier": "large",
+    "prompt_file": "prompt.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 0.1,
+    "usd_per_mtok_out": 0.2
+  },
+  "providers_seen": {
+    "CoreWeave": 99,
+    "DeepInfra": 1
+  },
+  "round": "r1",
+  "run_id": "se_gemma_l_n100_v1_20261018T094137Z",
+  "warmup_ms": 570.514,
+  "purpose": "run",
+  "machine": "linux"
+}

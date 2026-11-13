@@ -1,0 +1,32 @@
+{
+  "metric_kinds": {
+    "answer_words": "descriptive",
+    "confidence": "descriptive",
+    "correct": "quality",
+    "correct_after_repair": "descriptive",
+    "fmt_markdown": "descriptive",
+    "fmt_verbose": "descriptive",
+    "parsed": "quality",
+    "reasoning_tokens": "descriptive",
+    "truncated": "descriptive"
+  },
+  "primary_metric": "correct",
+  "reference_tier": "gold",
+  "scores": {
+    "answer_words": 1.0,
+    "correct": 0.957143,
+    "correct_after_repair": 0.0,
+    "cost_usd": 6.7e-05,
+    "fmt_markdown": 0.0,
+    "fmt_verbose": 0.0,
+    "latency_ms": 439.4898,
+    "parsed": 1.0,
+    "reasoning_tokens": 0.0,
+    "tokens_in": 153.167857,
+    "tokens_out": 2.953571,
+    "total_cost_usd": 0.0188088,
+    "total_tokens_in": 42887.0,
+    "total_tokens_out": 827.0,
+    "truncated": 0.0
+  }
+}

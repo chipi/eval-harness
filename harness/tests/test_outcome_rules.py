@@ -26,6 +26,7 @@ from evaluation_harness._outcome_rules import matches  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
 
 KIT = HERE.parent / "tutorial"
 
@@ -55,7 +56,6 @@ for rule, age, want, label in (
 proj = Path(tempfile.mkdtemp(prefix="evh-outrules-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-outrules")
 env.pop("EVAL_DATA_DIR", None)
-env.pop("EVAL_RUNS_DIR", None)
 
 
 def evh(*args):
@@ -292,8 +292,6 @@ try:
         "tickets_v1",
         "--reference-id",
         f"silver/{name}",
-        "--out",
-        "data/runs-outcomes",
     )
     check("the runs rescore against it", r.returncode == 0, said(r)[-300:])
     r = evh("goals", "--goal", "tickets_summary")
@@ -339,7 +337,11 @@ try:
 
     # With no gold, the promoted rule set is a silver like any (ADR-0022): its group recommends.
     _runstore.rmtree(proj, "references/gold")
-    _runstore.rmtree(proj, "runs")
+    # (the runs' own scores go, the silver ones stay)
+    for rid in _runstore.listdir(proj, "runs"):
+        for key, lbl, _rec in _runview.scores_of(proj, rid):
+            if lbl == "":
+                _runstore.rmtree(proj, f"runs/{rid}/scores/{key}")
     r = evh("goals", "--goal", "tickets_summary")
     check(
         "NO GOLD: the promoted rule set is governed like any silver: its group recommends",

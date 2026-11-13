@@ -1,0 +1,121 @@
+{
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "adapter": "examples/classification-ag-news/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "1e80be6531e2f71118762f498b4493e946f0c944",
+    "source": "git"
+  },
+  "config_id": "ag_bart_mnli_v1",
+  "created_at": "2026-09-27T09:03:16Z",
+  "dataset_id": "ag_news_200",
+  "fingerprint": {
+    "arm": {
+      "config_id": "ag_bart_mnli_v1",
+      "labels": {
+        "family": "bart",
+        "price_tier": "free"
+      }
+    },
+    "data": {
+      "dataset_id": "ag_news_200",
+      "items_sha256": "d7bf61eb3b27e79d492bbe5a445659813dfcacf6fadcae4d26255c45291bedd2",
+      "n_items": 200,
+      "reference_id": "gold/ag_news_200",
+      "reference_tier": "gold",
+      "references_sha256": "e671b1a159664de82a0a5f35d36150d81abc99d45ac19e7df8ec1d66164bcc04"
+    },
+    "data_sha256": "42c37455220776fdf99bbc061bb396453b6fed3842e8ae4d76e316d3392cd318",
+    "deployment": {
+      "declared": {
+        "hypothesis_template": "This news article is about {}.",
+        "labels": [
+          "World",
+          "Sports",
+          "Business",
+          "Sci/Tech"
+        ],
+        "labels_sha256": "c7a1ee508b78c0e92f28d159d340a6537ac31ff70ff566430fe2507da58464a3",
+        "parser_sha256": "87f75633ea16670ab5a3169fe3125c91107f84959e79c56dd2f17c66a418246d",
+        "provider": "hf_zeroshot",
+        "weight_files": [
+          "model.safetensors:1629437147"
+        ]
+      },
+      "hosted": null,
+      "id": "facebook/bart-large-mnli",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.2.2",
+        "transformers": "4.55.4"
+      },
+      "model": "facebook/bart-large-mnli",
+      "provider": "hf_zeroshot",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": "d7645e127eaf1aefc7862fd59a17a5aa8558b8ce",
+        "revision_source": "hf-snapshot"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
+    },
+    "deployment_sha256": "e6a413f5d1b68a728ea8e6e4e576aac91762e63eeca97ce409f57ffc3fb09e91",
+    "hash": "b4b1756827fbd17d8a3196a43f99b68aa247bd543ccba49ac308c096b79fbce7",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-ag-news/adapter.py",
+        "sha256": "8e4dffce35059b76949a0c95860cbcb5bd372fbdb6bdf33e0e55f4df78045b94"
+      },
+      "harness": {
+        "commit": "1e80be6531e2",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "4ce9ff50ed29a71be8d4a04f4f0ea3e3faa9a19979c7d104fe7b959ce65b864b",
+    "runner": {
+      "cpu_count": 12,
+      "label": "mac-dev",
+      "libraries": null,
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "hypothesis_template": "This news article is about {}."
+    },
+    "settings_sha256": "394ced68ec9f0ffe23ae374b2462446c3c854b6d35409f359012cc820bb958b2",
+    "version": 5
+  },
+  "goal": "news_topic_ag",
+  "n_items": 200,
+  "params": {
+    "device": "cpu",
+    "family": "bart",
+    "hypothesis_template": "This news article is about {}.",
+    "model": "facebook/bart-large-mnli",
+    "precision": "fp32",
+    "price_tier": "free",
+    "provider": "hf_zeroshot"
+  },
+  "providers_seen": {},
+  "round": "r1",
+  "run_id": "ag_bart_mnli_n200_v1_20260927T085832Z",
+  "warmup_ms": 5910.874,
+  "purpose": "run",
+  "machine": "darwin"
+}

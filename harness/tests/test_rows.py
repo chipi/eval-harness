@@ -29,8 +29,11 @@ from evaluation_harness import _outputs, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runfix  # noqa: E402
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
+from evaluation_harness.model import runs as _R  # noqa: E402
 
 
 def _set_output(run, item, text):
@@ -450,7 +453,8 @@ try:
     run_names = {k: next(n for n in _runstore.listdir(proj, "runs") if n.startswith(f"{T[k]}_")) for k in T}
     with _runstore._InProject(proj) as data_:
         for n, k in enumerate(T):
-            run_dir = data_ / "runs" / run_names[k]
+            run_dir = _R.first_score(run_names[k])
+            assert run_dir is not None, f"{run_names[k]} has no first score"
             lines = []
             for row in _runstore.rows(run_dir):
                 row["overlap_f1"], row["latency_ms"] = f1[row["item_id"]][n], lat[row["item_id"]][n]
@@ -554,7 +558,7 @@ try:
     # ── judged runs: the judge's scores in the cells, a winner per pick/pairwise scorer ─────────────
     def judged(scorer, metric, values):
         for k, name in run_names.items():
-            m = _runstore.read_json(proj, f"runs/{name}/metrics.json")
+            _, m = _runview.record_of(proj, name)
             m["derived"] = {
                 "kind": "judge",
                 "from": name,
@@ -563,15 +567,17 @@ try:
             }
             m["primary_metric"] = metric
             with _runstore._InProject(proj) as data_:
-                jd = data_ / "runs-judged" / scorer / name
-                _store.mkdir(jd, parents=True)
-                _store.write_text(jd / "metrics.json", json.dumps(m))
-                _runstore.put_rows_text(
-                    jd,
+                _runfix.put_run(
+                    data_,
+                    m,
                     "".join(
                         json.dumps({"item_id": i, metric: v[list(T).index(k)]}) + "\n"
                         for i, v in values.items()
                     ),
+                    label=f"judged/{scorer}",
+                    scorer=scorer,
+                    reference="set1",
+                    first=False,
                 )
 
     grade = {i: (n % 5 + 1.0, (n * 2) % 5 + 1.0, (n * 3) % 5 + 1.0) for n, i in enumerate(f1)}
@@ -629,7 +635,7 @@ try:
         and abs(jr.get(T["author"], 0) - 2 / 6) < 1e-9,
         json.dumps(jr) + str(by.get("t06_mobile", {}).get("winner: judge_b")),
     )
-    r, rs, foot = sheet_of("--from", "runs-judged/judge_b", runs=two_shown)
+    r, rs, foot = sheet_of("--label", "judged/judge_b", runs=two_shown)
     by = {x["item_id"]: x for x in rs}
     jr = foot.get("win rate · winner: judge_won", {})
     check(
@@ -727,9 +733,9 @@ try:
     check("refused: --seed without a blind fill", refused(r, "--fill pick or scores"), out(r)[-200:])
     for made in ("out.csv", "lab.csv", "sc.csv"):
         (proj / made).unlink(missing_ok=True)
-    r, rs, foot = sheet_of("--from", "runs-judged/judge_a", runs=T["lead1"])
+    r, rs, foot = sheet_of("--label", "judged/judge_a", runs=T["lead1"])
     check(
-        "--from DIR looks the config ids up there: a judging pass read as the run itself, its score the primary",
+        "--label LABEL looks the config ids up there: a judging pass read as the run itself, its score the primary",
         r.returncode == 0
         and rs
         and "mean judge_score" in foot
@@ -737,19 +743,19 @@ try:
         and f"{T['lead1']}: overlap_f1" not in rs[0],
         out(r)[-300:],
     )
-    r2, rs2, foot2 = sheet_of(runs=f"runs-judged/judge_a/{D}/{T['lead1']}")
+    r2, rs2, foot2 = sheet_of(runs=f"judged-judge-a/{D}/{T['lead1']}")
     check(
-        "an arm id as the catalog names it, under a nested folder (runs-judged/<scorer>/<dataset>/<config>): the same sheet as --from",
+        "an arm id as the catalog names it (judged-<scorer>/<dataset>/<config>): the same sheet as --label",
         r2.returncode == 0
         and rs2
         and "mean judge_score" in foot2
         and [x["item_id"] for x in rs2] == [x["item_id"] for x in rs],
         out(r2)[-300:],
     )
-    r2 = evh("inspect", "--sheet", "--dataset-id", D, "--runs", f"runs-judged/judge_a/other_v1/{T['lead1']}")
+    r2 = evh("inspect", "--sheet", "--dataset-id", D, "--runs", f"judged-judge-a/other_v1/{T['lead1']}")
     check("refused: a nested arm id on another dataset", refused(r2, f"not an arm on {D}"), out(r2)[-200:])
-    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", T["lead1"], "--from", "runs-judged/no_such")
-    check("refused: a --from that holds no such run", refused(r, "no run of that system"), out(r)[-200:])
+    r = evh("inspect", "--sheet", "--dataset-id", D, "--runs", T["lead1"], "--label", "judged/no_such")
+    check("refused: a --label that holds no such run", refused(r, "no run of that system"), out(r)[-200:])
     # A metric an arm has on some rows only: its win rate is over the rows it was scored on, and an arm scored on
     # none has no win rate (it was never compared, not always beaten).
     part: dict[str, tuple] = dict.fromkeys(f1, (None, 2.0, None))
@@ -779,7 +785,10 @@ try:
         "nothing to compare" in str(vr.get(T["lead1"], "")) and "recommended" not in json.dumps(vr),
         json.dumps(vr),
     )
-    _runstore.rmtree(proj, "runs-judged")
+    for name in run_names.values():
+        for key, lbl, _rec in _runview.scores_of(proj, name):
+            if lbl.startswith("judged/"):
+                _runstore.rmtree(proj, f"runs/{name}/scores/{key}")
 
     # ── refusals ─────────────────────────────────────────────────────────────────────────────
     two = "tickets_lead1_v1,tickets_author_v1"

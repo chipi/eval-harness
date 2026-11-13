@@ -29,8 +29,7 @@ import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-cluster-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-cluster")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
-    env.pop(k, None)
+env.pop("EVAL_DATA_DIR", None)
 
 
 def evh(*args):
@@ -141,7 +140,7 @@ try:
     for arm in ("tickets_lead1_v1", "tickets_lead2_v1"):
         run = data / "runs" / next(n for n in _runstore.listdir(proj, "runs") if n.startswith(f"{arm}_"))
         with _runstore._InProject(proj):
-            rows = _runstore.rows(run)
+            rows = _runstore.run_rows(run)
         per[arm] = {x["item_id"]: x[v.get("metric", "overlap_f1")] for x in rows}
     area = {
         "t01_login": "account",

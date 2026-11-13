@@ -38,7 +38,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import _jsonout  # noqa: E402
-from evaluation_harness._common import RUNS, die, evh_prog  # noqa: E402
+from evaluation_harness._common import die, evh_prog  # noqa: E402
 from evaluation_harness._runs import default_metric, direction, matrix, runs_on, warn_on_ambiguous_runs  # noqa: E402  # noqa: E402
 from evaluation_harness.stats import spearman  # noqa: E402 - midranks of midranks are the midranks: same rho
 
@@ -123,7 +123,7 @@ def main() -> int:
 def _run(args: argparse.Namespace) -> int:
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    warn_on_ambiguous_runs("", args.dataset_id)
 
     args.metric = args.metric or default_metric(args.dataset_id, args.match)
     M = load(args.dataset_id, args.metric, args.match)

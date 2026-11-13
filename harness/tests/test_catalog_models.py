@@ -19,7 +19,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import yaml
-from evaluation_harness import _outputs
 from evaluation_harness import catalog_build as cb
 from evaluation_harness import catalog_models as cm
 from evaluation_harness import catalog_views as cv
@@ -27,16 +26,14 @@ from evaluation_harness._check import check, summary
 from evaluation_harness.catalog_adapter import HarnessAdapter
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _catalog_fixture as fx
 import _model_records
-import _runstore
 
 COMMITTED = Path(__file__).resolve().parents[1] / "data" / "models"
 COMMITTED_DEPLOYMENTS = COMMITTED.parent / "deployments"
 
 
 def run(data, run_id, config, params, record=None, deployment=None):
-    d = data / "runs" / run_id
-    d.mkdir(parents=True)
     m = {
         "run_id": run_id,
         "dataset_id": "ds1",
@@ -51,9 +48,13 @@ def run(data, run_id, config, params, record=None, deployment=None):
         m["model_record"] = record
     if deployment:
         m["deployment_id"] = deployment
-    (d / "metrics.json").write_text(json.dumps(m))
-    _runstore.put_rows_text(d, "".join(json.dumps({"item_id": f"i{i}", "acc": 0.5}) + "\n" for i in range(4)))
-    _outputs.writer(d).add("i0", "out")
+    fx.put(
+        data,
+        run_id,
+        m,
+        "".join(json.dumps({"item_id": f"i{i}", "acc": 0.5}) + "\n" for i in range(4)),
+        outputs={"i0": "out"},
+    )
 
 
 def record(data, doc):

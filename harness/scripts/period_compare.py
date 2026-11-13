@@ -34,7 +34,7 @@ def _latest(dataset_id: str, name: str) -> tuple[Any, dict]:
     """A run named by its id, or the latest run of a system named by its config_id (the fleet's beta: `faithfulness
     --production` takes a run id, and the same id given here was refused)."""
     runs = _runs.runs_on(dataset_id)
-    by_id = [(d, m) for d, m in runs if d.name == name]
+    by_id = [(d, m) for d, m in runs if m["run_id"] == name]
     if by_id:
         return by_id[0]
     of_config = [(d, m) for d, m in runs if m.get("config_id") == name]

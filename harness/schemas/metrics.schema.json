@@ -7,6 +7,9 @@
   "required": ["run_id", "dataset_id", "config_id", "build", "created_at", "scores", "n_items"],
   "properties": {
     "run_id": {"type": "string"},
+    "purpose": {"enum": ["run", "repeat", "pair", "retime"], "description": "What the pass was for (RFC-032 step 4): the run, a repeat of it, a pair-test side, or a re-timing on another machine. Absent: a run."},
+    "machine": {"type": "string", "description": "The operating system a pass ran on, from its fingerprint's runner (named by a re-timing's label)."},
+    "of": {"type": "string", "description": "The run a repeat, pair or retime is of, when exactly one other run of the system on the dataset exists."},
     "actor": {"type": "object", "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.", "required": ["type", "name"], "additionalProperties": false, "properties": {"type": {"enum": ["person", "agent", "unknown"]}, "name": {"type": "string"}, "for": {"type": "string", "description": "the person an agent acted for"}, "from": {"enum": ["flag", "environment", "terminal", "migration"]}}},
     "dataset_id": {"type": "string"},
     "config_id": {"type": "string"},

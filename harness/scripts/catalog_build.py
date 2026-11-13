@@ -628,32 +628,46 @@ def write(out: Path, rel: str, content: str) -> None:
     _store.write_text(p, content, encoding="utf-8")
 
 
+def _redirect(out: Path, rel: str, to: str, was: str, now: str) -> None:
+    """A page at `rel` that sends the reader to `to`; nothing is written over a page that exists."""
+    if _store.exists(out / rel):
+        return
+    write(
+        out,
+        rel,
+        '<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex">'
+        f'<link rel="canonical" href="{e(to)}"><meta http-equiv="refresh" content="0; url={e(to)}">'
+        f"<title>{e(was)} is now {e(now)}</title>"
+        f'<p>{e(was)} is now <a href="{e(to)}">{e(now)}</a>.</p>\n',
+    )
+
+
 def write_redirects(A: Adapter, by_ds: dict, out: Path) -> None:
-    """An arm page under a system's old id (a migration renamed it, RFC-032 step 3) sends the reader to the page under
-    its new id: a link someone kept still arrives. Nothing is written over a page that exists."""
+    """An arm page under an old id sends the reader to the page under its new id, so a link someone kept still
+    arrives: a system a migration renamed (RFC-032 step 3), and an arm whose id changed when the runs folders became
+    labels (RFC-032 step 4, `renamed_arms`: the copies kept once go to the run's own arm)."""
     fn = getattr(A, "renamed_systems", None)
     renamed = fn() if callable(fn) else {}
-    if not renamed:
-        return
     olds: dict[str, list[str]] = {}
     for old, new in renamed.items():
         olds.setdefault(new, []).append(old)
+    fn = getattr(A, "renamed_arms", None)
+    moved = fn() if callable(fn) else {}
     for v in by_ds.values():
         for a in v["arms"]:
             prefix, _, cid = a["arm"].rpartition("/")
+            to = arm_page(a["arm"]).split("/", 1)[1]
             for old in olds.get(cid, []):
-                rel = arm_page(f"{prefix}/{old}")
-                if _store.exists(out / rel):
-                    continue
-                to = arm_page(a["arm"]).split("/", 1)[1]
-                write(
-                    out,
-                    rel,
-                    '<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex">'
-                    f'<link rel="canonical" href="{e(to)}"><meta http-equiv="refresh" content="0; url={e(to)}">'
-                    f"<title>{e(old)} is now {e(cid)}</title>"
-                    f'<p>{e(old)} is now <a href="{e(to)}">{e(cid)}</a>.</p>\n',
-                )
+                _redirect(out, arm_page(f"{prefix}/{old}"), to, old, cid)
+    here = {a["arm"]: a for v in by_ds.values() for a in v["arms"]}
+    for old, new in moved.items():
+        if new in here:
+            to = arm_page(new).split("/", 1)[1]
+            _redirect(out, arm_page(old), to, old, here[new]["label"])
+            # A page under both old names (the old folder, the system's id before step 3) arrives too.
+            old_prefix, _, cid = old.rpartition("/")
+            for o in olds.get(cid, []):
+                _redirect(out, arm_page(f"{old_prefix}/{o}"), to, f"{old_prefix}/{o}", here[new]["label"])
 
 
 def write_periods(A: Adapter, by_ds: dict, out: Path) -> None:
@@ -828,6 +842,7 @@ def collect(A: Adapter) -> dict:
     """{dataset: {"arms": [row], "refs": [ref], "items": n}}: what every page needs, read once."""
     by_ds: dict = {}
     runs_of = getattr(A, "arm_runs", None)
+    read_as = getattr(A, "read_as", None)
     RECORDED.clear()
     for arm in A.arms():
         d = A.describe(arm)
@@ -841,6 +856,7 @@ def collect(A: Adapter) -> dict:
             {
                 "arm": arm,
                 "label": d["label"],
+                "read_as": read_as(arm) if callable(read_as) else "",
                 "runs": d.get("runs", 1),
                 "metric": head,
                 "mean": statistics.fmean(values.values()) if values else None,
@@ -2955,7 +2971,7 @@ def _rounds_block(
                     '<div class="hyp">' + e(r.get("hypothesis", "") or "—") + "</div>",
                     # Arms, best and the comparison in one narrow cell: three columns of mostly "—" took the width
                     # the conclusion needs (owner, 2026-10-31).
-                    # Counted by system, as `evh rounds` counts: a re-score of a run (runs-rescored/...) is that arm.
+                    # Counted by system, as `evh rounds` counts: a re-score of a run is that arm.
                     f'<div class="armsbest"><span data-v="{n_cfg}">{n_cfg} arms</span>'
                     + (f" <small>({len(r.get('retired') or [])} retired)</small>" if r.get("retired") else "")
                     # The round's arms in the inspector, against its leader: `evh inspect --round`.
@@ -3400,12 +3416,10 @@ def retired_in_of(A: Adapter, g: dict) -> dict:
 
 
 def retired_round(retired_in: dict, arm: str) -> str | None:
-    """The round that retired this arm: by its arm id, else by its system id. An arm read through its re-score
-    (`runs-rescored/<scorer>/<arm>`, RFC-022, the goal's reading of it) is the arm it re-scored: without this, an
+    """The round that retired this arm: by its arm id, else by its system id. A retirement names runs, and every arm
+    a retired run is scored in (its re-scores, RFC-022, the goal's reading of it) is retired with it: otherwise an
     arm a round retired stayed among the goal's contenders whenever it had been re-scored (found 2026-11-01: 25 of
     the triage goal's 76 contenders were round 3's retirements)."""
-    if arm.startswith("runs-rescored/") and arm.count("/") >= 3:
-        arm = arm.split("/", 2)[2]
     return retired_in.get(arm) or retired_in.get(arm.rsplit("/", 1)[-1])
 
 

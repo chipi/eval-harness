@@ -23,7 +23,7 @@ def _runs_of() -> dict[tuple[str, str], list[dict[str, Any]]]:
     from evaluation_harness import _runs  # noqa: PLC0415
 
     out: dict[tuple[str, str], list[dict[str, Any]]] = {}
-    for d, m in _runs.runs_on():
+    for _d, m in _runs.runs_on():
         used = (((m.get("fingerprint") or {}).get("settings") or {}).get("prompts")) or {}
         if not isinstance(used, dict):
             continue
@@ -32,7 +32,7 @@ def _runs_of() -> dict[tuple[str, str], list[dict[str, Any]]]:
         for name, sha in used.items():
             out.setdefault((name, str(sha)), []).append(
                 {
-                    "run_id": d.name,
+                    "run_id": m["run_id"],
                     "config_id": m.get("config_id"),
                     "dataset_id": m.get("dataset_id"),
                     "metric": prim,

@@ -23,8 +23,8 @@ import argparse
 import json
 from typing import Any
 
-from evaluation_harness import _baselines, _store
-from evaluation_harness._common import BOOKKEEPING_PREFIXES, RUNS, die, evh_prog, how, load_goals, read_json
+from evaluation_harness import _baselines
+from evaluation_harness._common import BOOKKEEPING_PREFIXES, die, evh_prog, how, load_goals
 
 SCHEMA = "evh-baselines/1"
 
@@ -32,18 +32,19 @@ SCHEMA = "evh-baselines/1"
 def _reproduce(run_id: str) -> dict[str, Any] | None:
     """How to reproduce the baseline: the deploy sheet of its run (one definition), less what it says of promotion."""
     from evaluation_harness.deploy_sheet import sheet  # noqa: PLC0415
+    from evaluation_harness.promote_baseline import run_record  # noqa: PLC0415
 
-    f = RUNS / run_id / "metrics.json"
-    if not _store.is_file(f):
+    rec = run_record(run_id)
+    if rec is None:
         return None
     try:
-        s = sheet(str(read_json(f).get("config_id")))
+        s = sheet(str(rec.get("config_id")))
     except SystemExit:  # the sheet refused (its run unreadable): the baseline still lists, without it
         return None
     if (
         s.get("run_id") != run_id
     ):  # the arm's sheet names another of its runs: describe this one by its record
-        return {"run_id": run_id, "config_id": read_json(f).get("config_id")}
+        return {"run_id": run_id, "config_id": rec.get("config_id")}
     return {k: v for k, v in s.items() if k != "promoted"}
 
 

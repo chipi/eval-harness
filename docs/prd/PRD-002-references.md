@@ -142,8 +142,8 @@ against the books in [LABELS_ANALYSIS_0.6.0](https://github.com/chipi/eval-harne
 
 ### FR5: Changing the reference
 
-- **FR5.1**: `evh rescore --dataset-id … --reference-id gold/… --out data/runs-gold` re-scores every run's stored
-  outputs against another reference, $0, into a separate directory; the originals are never touched (RFC-002).
+- **FR5.1**: `evh rescore --dataset-id … --reference-id gold/…` re-scores every run's stored
+  outputs against another reference, $0; the originals are never touched (RFC-002).
 - **FR5.2**: A re-scored run records the reference it was first measured against (`reference_id_at_measurement`).
 - **FR5.3**: `evh silver-calibrate --dataset-id …` reports how far silver references drift from gold.
 - **FR5.4**: The inspector, on a metric scored against a reference, does not test an arm scored against another

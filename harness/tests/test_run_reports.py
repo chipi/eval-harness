@@ -26,6 +26,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-reports-"))
@@ -89,8 +90,7 @@ try:
 
     r = evh("run", *system("plain"))
     run = run_dir("plain_v1")
-    with _runstore._InProject(proj):
-        rows = _runstore.rows(run) if run else []
+    rows = _runview.rows_of(proj, run.name) if run else []
     rows_plain = rows
     check(
         "the core times every call: latency_ms on each row, from an adapter that reports none",
@@ -152,7 +152,7 @@ try:
         and "every model call failed" in out
         and "Connection refused" in out
         and "Traceback" not in out
-        and not _runstore.exists(proj, f"runs/{gone.name}/metrics.json")
+        and not _runstore.exists(proj, f"runs/{gone.name}/scores")
         and "no decision" not in said,
         out[-600:],
     )
@@ -161,8 +161,8 @@ try:
     # A resume is a run of its own (config id and the time it started), unless both start in the same second:
     # read the newest run of the arm, never assume it is the stopped one's directory.
     resumed = run_dir("refused_v1")
+    rows = _runview.rows_of(proj, resumed.name)
     with _runstore._InProject(proj):
-        rows = _runstore.rows(resumed)
         answers = list(_outputs.outputs(resumed).values())
     check(
         "resumed with the server back, the refused item is called again and every item is an answer",
@@ -176,7 +176,7 @@ try:
     run = run_dir("broken_v1")
     check(
         "a model's own failed calls (not an unreachable server) are a measurement: the run completes",
-        r.returncode == 0 and run is not None and _runstore.exists(proj, f"runs/{run.name}/metrics.json"),
+        r.returncode == 0 and run is not None and _runstore.exists(proj, f"runs/{run.name}/scores"),
         (r.stdout + r.stderr)[-300:],
     )
 finally:

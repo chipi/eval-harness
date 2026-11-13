@@ -17,49 +17,46 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the ev
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 sys.path.insert(0, str(HERE.parent))
 
-from evaluation_harness import _adapter, _outputs  # noqa: E402
+from evaluation_harness import _adapter  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _catalog_fixture as fx  # noqa: E402
 import _runstore  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness._runs import direction, item_rows, matrix, per_item, runs_on  # noqa: E402
 
 
-def _run(base: Path, name: str, metrics: dict, rows: list, outputs: dict | None = None) -> Path:
-    d = base / name
-    d.mkdir(parents=True)
-    (d / "metrics.json").write_text(json.dumps(metrics), encoding="utf-8")
-    _runstore.put_rows_text(d, "".join(json.dumps(r) + "\n" for r in rows))
-    for item, text in (outputs or {}).items():
-        _outputs.writer(d).add(item, text)
-    return d
+def _run(data: Path, name: str, metrics: dict, rows: list, outputs: dict | None = None) -> Path:
+    """A run, its own score the plain label's (data/runs/<name>/scores/...); returns the score's directory."""
+    return fx.put(
+        data, name, metrics, "".join(json.dumps(r) + "\n" for r in rows), outputs=outputs, purpose="run"
+    )
 
 
-with tempfile.TemporaryDirectory() as tmp:
-    base = Path(tmp) / "runs"
+with tempfile.TemporaryDirectory() as tmp, _runstore._InProject(tmp) as data:
     m = {"dataset_id": "ds", "scores": {"f1": 0.5}, "primary_metric": "f1"}
-    _run(base, "b_r2", {**m, "config_id": "b", "run_id": "b_r2"}, [{"item_id": "i1", "f1": 0.4}])
-    _run(base, "b_r1", {**m, "config_id": "b", "run_id": "b_r1"}, [{"item_id": "i1", "f1": 0.2}])
-    _run(
-        base,
+    _run(data, "b_r2", {**m, "config_id": "b", "run_id": "b_r2"}, [{"item_id": "i1", "f1": 0.4}])
+    _run(data, "b_r1", {**m, "config_id": "b", "run_id": "b_r1"}, [{"item_id": "i1", "f1": 0.2}])
+    a_dir = _run(
+        data,
         "a",
         {**m, "config_id": "a", "run_id": "a"},
         [{"item_id": "i1", "f1": 0.9}, {"item_id": "i2", "f1": True}],
         outputs={"i1": "the first output"},
     )
-    _run(base, "other", {**m, "dataset_id": "elsewhere", "config_id": "c", "run_id": "c"}, [])
-    (base / "no_config").mkdir()
-    (base / "no_config" / "metrics.json").write_text('{"dataset_id": "ds"}', encoding="utf-8")
+    _run(data, "other", {**m, "dataset_id": "elsewhere", "config_id": "c", "run_id": "c"}, [])
+    _run(data, "no_config", {"dataset_id": "ds", "run_id": "no_config"}, [])
+    base = data / "runs"
 
-    runs = runs_on("ds", runs_dir=base)
+    runs = runs_on("ds")
     check(
-        "runs_on: sorted by directory, one dataset, a run needs a config_id",
-        [d.name for d, _ in runs] == ["a", "b_r1", "b_r2"],
-        [d.name for d, _ in runs],
+        "runs_on: sorted by run id, one dataset, a run needs a config_id",
+        [m["run_id"] for _, m in runs] == ["a", "b_r1", "b_r2"],
+        [m["run_id"] for _, m in runs],
     )
     check(
         "runs_on: match filters config_ids",
-        [m["config_id"] for _, m in runs_on("ds", runs_dir=base, match="b")] == ["b", "b"],
+        [m["config_id"] for _, m in runs_on("ds", match="b")] == ["b", "b"],
     )
     check(
         "per_item: repeats are averaged",
@@ -72,16 +69,16 @@ with tempfile.TemporaryDirectory() as tmp:
     )
     check("matrix: config_id -> item -> mean", set(matrix(runs, "f1")) == {"a", "b"})
 
-    _runstore.put_rows_text(base / "a", '{"item_id": "i1", "f1": 0.9}\nnot json\n')
+    _runstore.put_rows_text(a_dir, '{"item_id": "i1", "f1": 0.9}\nnot json\n')
     try:
-        list(item_rows(base / "a"))
+        list(item_rows(a_dir))
         raised = False
     except ValueError as exc:
         raised = "predictions.jsonl:2" in str(exc)
     check("item_rows: a malformed line names its file and line", raised)
     check(
         "item_rows: strict=False skips it (a page may, a test may not)",
-        len(list(item_rows(base / "a", strict=False))) == 1,
+        len(list(item_rows(a_dir, strict=False))) == 1,
     )
 
     check("direction: a cost metric is lower-is-better without a flag", direction(runs, "cost_usd"))
@@ -155,10 +152,10 @@ with tempfile.TemporaryDirectory() as tmp:
     )
 
     # The judge panel: real runs are judged on their own outputs, found where every command looks.
-    _runstore.put_rows_text(base / "a", '{"item_id": "i1", "f1": 0.9}\n')
+    _runstore.put_rows_text(a_dir, '{"item_id": "i1", "f1": 0.9}\n')
     from evaluation_harness import judge_panel as runner
 
-    cands = runner._candidates_from({"runs_from": str(base), "dataset_id": "ds"})
+    cands = runner._candidates_from({"runs_from": "runs", "dataset_id": "ds"})
     check(
         "panel: candidates come from the runs, ranked by their primary metric",
         sorted(c.run_id for c in cands) == ["a", "b_r1", "b_r2"] and all(c.run_dir for c in cands),
@@ -171,7 +168,7 @@ with tempfile.TemporaryDirectory() as tmp:
         items,
     )
     try:
-        runner._candidates_from({"runs_from": str(base), "dataset_id": "ds", "primary_metric": "latency_ms"})
+        runner._candidates_from({"runs_from": "runs", "dataset_id": "ds", "primary_metric": "latency_ms"})
         refused = False
     except SystemExit as exc:
         refused = "lower-is-better" in str(exc)
@@ -236,25 +233,23 @@ with tempfile.TemporaryDirectory() as tmp:
         "test_unrelated.py" not in {p.name for p in _fingerprint.measuring_modules(code)},
     )
 
-# EVAL_RUNS_DIR is relative to the project, as EVAL_DATA_DIR is. It resolved against the shell's
-# directory, so with EVAL_HOME set a run was written in one place and read from another.
+# The project's runs are <project>/data/runs, wherever the shell is: EVAL_HOME decides, not the working directory.
 
 with tempfile.TemporaryDirectory() as proj, tempfile.TemporaryDirectory() as elsewhere:
     r = subprocess.run(
         [sys.executable, "-c", "from evaluation_harness import _common; print(_common.RUNS.resolve())"],
         cwd=elsewhere,
         env={
-            **os.environ,
+            **{k: v for k, v in os.environ.items() if not k.startswith("EVAL_")},
             "PYTHONPATH": str(HERE.parent),
             "EVAL_HOME": proj,
-            "EVAL_RUNS_DIR": "data/runs-scratch",
         },
         capture_output=True,
         text=True,
     )
     check(
-        "EVAL_RUNS_DIR: a relative path is the project's, not the shell's directory",
-        r.stdout.strip() == str((Path(proj) / "data" / "runs-scratch").resolve()),
+        "runs: <project>/data/runs, not relative to the shell's directory",
+        r.stdout.strip() == str((Path(proj) / "data" / "runs").resolve()),
         (r.stdout + r.stderr).strip()[-200:],
     )
 
@@ -334,32 +329,31 @@ with tempfile.TemporaryDirectory() as tmp:
 # V14 fails a goal that contradicts what its runs record.
 with tempfile.TemporaryDirectory() as tmp:
     data = Path(tmp) / "data"
-    for sub in ("goals", "runs/r1", "datasets"):
+    for sub in ("goals", "datasets"):
         (data / sub).mkdir(parents=True)
     src = HERE.parent / "data" / "goals" / "entities_few_nerd.yaml"
     (data / "goals" / "g1.yaml").write_text(
         src.read_text(encoding="utf-8").replace("goal_id: entities_few_nerd", "goal_id: g1"), encoding="utf-8"
     )
-    (data / "runs" / "r1" / "metrics.json").write_text(
-        json.dumps(
-            {
-                "run_id": "r1",
-                "config_id": "c",
-                "dataset_id": "few_nerd_280",
-                "goal": "g1",
-                "created_at": "2026-10-23",
-                "build": {"ref": "t"},
-                "scores": {"f1": 0.5},
-                "metric_directions": {"f1": "lower"},
-            }
-        ),
-        encoding="utf-8",
+    fx.put(
+        data,
+        "r1",
+        {
+            "run_id": "r1",
+            "config_id": "c",
+            "dataset_id": "few_nerd_280",
+            "goal": "g1",
+            "created_at": "2026-10-23",
+            "build": {"ref": "t"},
+            "scores": {"f1": 0.5},
+            "metric_directions": {"f1": "lower"},
+        },
     )
     _runstore.migrate_in(tmp)
     r = subprocess.run(
         [sys.executable, str(HERE / "validate_tree.py")],
         cwd=tmp,
-        env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""},
+        env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""},
         capture_output=True,
         text=True,
     )
@@ -382,7 +376,7 @@ with tempfile.TemporaryDirectory() as tmp:
     r = subprocess.run(
         [sys.executable, str(HERE / "validate_tree.py")],
         cwd=tmp,
-        env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""},
+        env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""},
         capture_output=True,
         text=True,
     )
@@ -403,7 +397,7 @@ with tempfile.TemporaryDirectory() as tmp:
         "print(_adapter.load_adapter(None)[2])\n",
         encoding="utf-8",
     )
-    env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""}
+    env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""}
 
     def _default_id() -> str:
         r = subprocess.run([sys.executable, str(adapter_probe)], env=env, capture_output=True, text=True)
@@ -425,30 +419,26 @@ with tempfile.TemporaryDirectory() as tmp:
 # B11: a baseline carries what its number means (reference tier, adapter, fingerprint), and
 # V6 fails a baseline that no longer says what its run records.
 with tempfile.TemporaryDirectory() as tmp:
-    run_dir = Path(tmp) / "data" / "runs" / "r1"
-    run_dir.mkdir(parents=True)
-    (run_dir / "metrics.json").write_text(
-        json.dumps(
-            {
-                "run_id": "r1",
-                "config_id": "c",
-                "dataset_id": "d",
-                "created_at": "2026-10-23",
-                "build": {"ref": "abc", "dirty": False},
-                "scores": {"f1": 0.5},
-                "reference_tier": "gold",
-                "adapter": "adapter.py",
-                "fingerprint": {"hash": "0" * 64},
-            }
-        ),
-        encoding="utf-8",
+    fx.put(
+        Path(tmp) / "data",
+        "r1",
+        {
+            "run_id": "r1",
+            "config_id": "c",
+            "dataset_id": "d",
+            "created_at": "2026-10-23",
+            "build": {"ref": "abc", "dirty": False},
+            "scores": {"f1": 0.5},
+            "reference_tier": "gold",
+            "adapter": "adapter.py",
+            "fingerprint": {"hash": "0" * 64},
+        },
     )
     _runstore.migrate_in(tmp)
     env = {
         **os.environ,
         "EVAL_HOME": tmp,
         "EVAL_DATA_DIR": "",
-        "EVAL_RUNS_DIR": "",
         "EVH_ACTOR": "person:test",
     }
     subprocess.run(
@@ -487,31 +477,31 @@ with tempfile.TemporaryDirectory() as tmp:
     check("V6: a baseline as promoted passes", as_promoted.startswith("  ok "), as_promoted)
     check("V6: a baseline whose tier no longer matches its run fails", edited.startswith("  FAIL "), edited)
 
-# rescore refuses to write over the directory it reads its runs from: it died with a
-# SameFileError traceback after creating directories there.
+# `rescore --out` is gone: a re-score is a score of the run it reads, never a copy somewhere else.
 with tempfile.TemporaryDirectory() as tmp:
-    runs_dir = Path(tmp) / "data" / "runs"
-    _run(
-        runs_dir,
+    fx.put(
+        Path(tmp) / "data",
         "r1",
         {"run_id": "r1", "config_id": "c", "dataset_id": "d", "scores": {}},
-        [{"item_id": "i1"}],
+        '{"item_id": "i1"}\n',
     )
     _runstore.migrate_in(tmp)
-    files_before = sorted(p_.relative_to(tmp) for p_ in Path(tmp).rglob("*"))
     r = subprocess.run(
-        [sys.executable, str(HERE / "rescore.py"), "--dataset-id", "d", "--out", str(runs_dir)],
-        env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "", "EVAL_RUNS_DIR": ""},
+        [
+            sys.executable,
+            str(HERE / "rescore.py"),
+            "--dataset-id",
+            "d",
+            "--out",
+            str(Path(tmp) / "elsewhere"),
+        ],
+        env={**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": ""},
         capture_output=True,
         text=True,
     )
-    files_after = sorted(p_.relative_to(tmp) for p_ in Path(tmp).rglob("*"))
     check(
-        "rescore: --out the runs' own directory is refused, and nothing is written",
-        r.returncode == 1
-        and "is where the runs being rescored are read from" in r.stderr
-        and "Traceback" not in r.stderr
-        and files_before == files_after,
+        "rescore: --out is not a flag any more",
+        r.returncode != 0 and "unrecognized arguments: --out" in r.stderr and "Traceback" not in r.stderr,
         r.stderr[-300:],
     )
 
@@ -535,16 +525,16 @@ def _stats_project(tmp: str, rec: dict) -> None:
     """A project whose data root is data/eval/stats and whose goals sit beside it, with one run `rec`."""
     data = Path(tmp) / "data" / "eval" / "stats"
     goals = Path(tmp) / "data" / "eval" / "goals"
-    for d in (data / "runs" / "r1", data / "datasets", goals):
+    for d in (data / "datasets", goals):
         d.mkdir(parents=True)
     src_goal = HERE.parent / "data" / "goals" / "entities_few_nerd.yaml"
     (goals / "g1.yaml").write_text(
         src_goal.read_text(encoding="utf-8").replace("goal_id: entities_few_nerd", "goal_id: g1"),
         encoding="utf-8",
     )
-    (data / "runs" / "r1" / "metrics.json").write_text(json.dumps(rec), encoding="utf-8")
+    fx.put(data, "r1", rec)
     if _runstore.sqlite():  # the data root is not data/, so _runstore.migrate_in does not apply
-        env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "data/eval/stats", "EVAL_RUNS_DIR": ""}
+        env = {**os.environ, "EVAL_HOME": tmp, "EVAL_DATA_DIR": "data/eval/stats"}
         env.pop("EVAL_GOALS_DIR", None)
         moved = subprocess.run(
             [sys.executable, "-m", "evaluation_harness", "data-migrate", "--to", "sqlite"],
@@ -564,7 +554,6 @@ def _validate(tmp: str, extra: dict) -> str:
             **os.environ,
             "EVAL_HOME": tmp,
             "EVAL_DATA_DIR": "data/eval/stats",
-            "EVAL_RUNS_DIR": "",
             **extra,
         },
         capture_output=True,

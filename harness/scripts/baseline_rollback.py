@@ -19,8 +19,8 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import sys
 
-from evaluation_harness import _baselines, _jsonout, _store
-from evaluation_harness._common import RUNS, die, evh_prog, load_goals, now, read_json
+from evaluation_harness import _baselines, _jsonout
+from evaluation_harness._common import die, evh_prog, load_goals, now
 
 
 def main() -> int:
@@ -59,15 +59,15 @@ def main() -> int:
             )
         if target["version"] == vs[-1]["version"]:
             die(f"{line}: version {args.to} is the current one", "not-allowed")
-        src = RUNS / str(target.get("promoted_from")) / "metrics.json"
-        if not _store.is_file(src):
+        from evaluation_harness.promote_baseline import evidence, run_record  # noqa: PLC0415
+
+        m = run_record(str(target.get("promoted_from")))
+        if m is None:
             die(
                 f"version {args.to}'s run {target.get('promoted_from')} is gone: nothing to restore",
                 "not-found",
             )
-        m = read_json(src)
         goal = load_goals().get(goal_id) if goal_id else None
-        from evaluation_harness.promote_baseline import evidence  # noqa: PLC0415
 
         def make(cur: dict | None, n: int) -> dict:
             keep = {

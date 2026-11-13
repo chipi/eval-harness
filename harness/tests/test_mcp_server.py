@@ -43,7 +43,6 @@ except ImportError as exc:  # the package depends on mcp; a checkout's venv may 
 proj = Path(tempfile.mkdtemp(prefix="evh-mcp-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-mcp")
 env.pop("EVAL_DATA_DIR", None)
-env.pop("EVAL_RUNS_DIR", None)
 
 
 def evh(*args):
@@ -259,7 +258,7 @@ try:
                     "unlabelled",
                     "scores-only",
                     "metric",
-                    "from",
+                    "label",
                 }
                 <= props
                 and not {"csv", "fill", "choices", "seed", "rubric", "scale", "rows", "items"} & props,

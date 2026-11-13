@@ -30,7 +30,7 @@ base = Path(tempfile.mkdtemp(prefix="evh-format-"))
 
 def evh(proj: Path, *args: str, store: str = "files") -> subprocess.CompletedProcess:
     """`evh <args>` in the project `proj`, with the store given."""
-    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env = {k: v for k, v in os.environ.items() if k != "EVAL_DATA_DIR"}
     env.update(EVAL_HOME=str(proj), EVAL_STORE=store, EVAL_BUILD_REF="test-format")
     return subprocess.run(
         [sys.executable, str(HERE / "cli.py"), *args], cwd=proj, env=env, capture_output=True, text=True,
@@ -52,6 +52,18 @@ try:
         "migrate --check holds on a stamped project",
         r.returncode == 0 and f"data format {_format.FORMAT}" in r.stdout,
         (r.returncode, r.stdout[-200:]),
+    )
+
+    # A runs-* folder is format 3 data (RFC-032 step 4): validate names it (V23), and the command that moves it.
+    f3 = base / "format3"
+    evh(base, "init", str(f3))
+    (f3 / "data" / _format.NAME).write_text("format: 3\nwritten_by: 0.8.0\n")
+    (f3 / "data" / "runs-linux").mkdir()
+    r = evh(f3, "validate")
+    check(
+        "a project with a runs-* folder (format 3) fails validate, naming the folder and evh migrate",
+        r.returncode != 0 and "runs-linux" in r.stdout and "evh migrate" in r.stdout and "V23" in r.stdout,
+        (r.returncode, r.stdout[-300:], r.stderr[-300:]),
     )
 
     # The deploy's gate (infra/deploy/render.sh): the release's copy of the data carries the stamp, and --check on it
@@ -180,6 +192,18 @@ try:
         lb = evh(proj, "leaderboard", "--dataset-id", "tickets_v1", "--json")
         want = board(json.loads((fx / "leaderboard-0.7.2.json").read_text())) if old == 0 else None
         got = board(json.loads(lb.stdout)) if lb.returncode == 0 else None
+        # step 4: every run in data/runs with its record, each with a first score; no folder of the old layout left
+        runs = sorted((proj / "data" / "runs").glob("*")) if (proj / "data" / "runs").is_dir() else []
+        layout = old >= 4 or (
+            bool(runs)
+            and all((r / "run.json").is_file() and list((r / "scores").glob("*/score.json")) for r in runs)
+            and not list((proj / "data").glob("runs-*"))
+        )
+        check(
+            f"the frozen format-{old} project's runs are in the new layout: each a run.json with its scores, no runs-* folder",
+            layout,
+            [str(r.name) for r in runs][:3],
+        )
         check(
             f"the frozen format-{old} project is refused, migrates to format {_format.FORMAT}, and keeps its numbers",
             (before.returncode == 1) == (old < _format.FORMAT)

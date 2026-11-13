@@ -32,9 +32,9 @@ from typing import Any
 
 from evaluation_harness import _models, _runs, _store
 from evaluation_harness._adapter import adapter_module
-from evaluation_harness._common import DATA, EXIT_PROBLEMS, RUNS, die, evh_prog, read_json
-from evaluation_harness._runs import runs_on
+from evaluation_harness._common import DATA, EXIT_PROBLEMS, die, evh_prog
 from evaluation_harness.dataset_from_capture import load_capture
+from evaluation_harness.model import runs as _model_runs
 
 #: A `_meta` key is shown as what the system reported when its items give at most this many values (a model, a
 #: prompt's hash), not a per-item account (the gates each item passed).
@@ -44,28 +44,37 @@ FEW = 3
 def promoted_run(
     config_id: str, data_dir: Path | None = None, runs_dir: Path | None = None
 ) -> tuple[Path, dict[str, Any] | None]:
-    """(the run, the baseline it was promoted as, or None): of the current baselines of every goal and every
-    dataset's own (RFC-027), the latest whose run is this arm's, else the arm's latest run. The project's
-    directories, or `data_dir` and `runs_dir` (the catalog's)."""
+    """(the run as the score it made when it ran, the baseline it was promoted as, or None): of the current baselines
+    of every goal and every dataset's own (RFC-027), the latest whose run is this arm's, else the arm's latest run.
+    The project's directories, or `data_dir` and `runs_dir` (the catalog's)."""
     from evaluation_harness import _baselines  # noqa: PLC0415
 
-    runs = runs_dir or RUNS
+    runs = runs_dir or _model_runs.root()
     best: tuple[str, Path, dict[str, Any]] | None = None
     for b in _baselines.all_current(data_dir):
-        run = runs / str(b.get("promoted_from") or "")
+        first = _model_runs.first_score(runs / str(b.get("promoted_from") or "x"))
+        rec = _model_runs.record(first) if first else None
         if (
             b.get("promoted_from")
-            and _store.is_file(run / "metrics.json")
-            and read_json(run / "metrics.json").get("config_id") == config_id
+            and first is not None
+            and rec is not None
+            and rec.get("config_id") == config_id
             and (best is None or str(b.get("promoted_at")) > best[0])
         ):
-            best = (str(b.get("promoted_at")), run, b)
+            best = (str(b.get("promoted_at")), first, b)
     if best:
         return best[1], best[2]
-    found = runs_on(config_id=config_id, runs_dir=runs)
+    found = []
+    for run in sorted(_store.iterdir(runs)) if _store.is_dir(runs) else []:
+        first = _model_runs.first_score(run)
+        rec = _model_runs.record(first) if first else None
+        if first is None or rec is None:
+            continue
+        if rec.get("config_id") == config_id and _model_runs.label(first, rec) == "":
+            found.append(first)
     if not found:
         die(f"--system {config_id}: no run of that system (evh runs-list)", "not-found")
-    return found[-1][0], None
+    return found[-1], None
 
 
 def reported(run: Path) -> dict[str, list[str]]:
@@ -83,7 +92,7 @@ def sheet(config_id: str, data_dir: Path | None = None, runs_dir: Path | None = 
     """Everything production must match, as a dict."""
     run, base = promoted_run(config_id, data_dir, runs_dir)
     data_root = data_dir or DATA
-    m = read_json(run / "metrics.json")
+    m = _model_runs.record(run) or {}
     fp = m.get("fingerprint") or {}
     params = m.get("params") or {}
     not_sent = set(((fp.get("arm") or {}).get("labels") or {}).keys())
@@ -104,7 +113,7 @@ def sheet(config_id: str, data_dir: Path | None = None, runs_dir: Path | None = 
     weights = dep.get("weights") or {}
     return {
         "system_id": config_id,
-        "run_id": run.name,
+        "run_id": m.get("run_id"),
         "promoted": None
         if base is None
         else {k: base.get(k) for k in ("goal", "version", "dataset_id", "promoted_at", "reason")},

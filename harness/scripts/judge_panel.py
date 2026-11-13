@@ -18,7 +18,6 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
 import argparse
 import json
 import logging
-import pathlib
 import subprocess
 import sys
 from collections.abc import Iterable
@@ -29,9 +28,9 @@ from typing import Any
 import yaml
 
 # The harness's own run reading, so the panel finds runs where every command does (the
-# project, EVAL_RUNS_DIR) and picks the metric the same way.
+# project's data/runs) and picks the metric the same way.
 from evaluation_harness import _jsonout, _outputs, _store
-from evaluation_harness._common import ROOT, RUNS, die, evh_prog
+from evaluation_harness._common import ROOT, die, evh_prog
 from evaluation_harness._runs import default_metric, direction, item_rows, runs_on
 from evaluation_harness.panel_judges import ItemScore, build_judge
 
@@ -391,7 +390,7 @@ def _items_of(finalist: RunCandidate, n: int) -> list[dict[str, Any]]:
         if len(items) == n:
             break
     if not items:
-        die(f"{finalist.run_id}: no stored outputs under {d / 'outputs'} to judge", "not-enough")
+        die(f"{finalist.run_id}: no stored outputs to judge", "not-enough")
     return items
 
 
@@ -402,24 +401,19 @@ def _candidates_from(cfg: dict[str, Any]) -> list[RunCandidate]:
     could not judge the runs the rest of this harness produces — you had to
     copy ids and scores across by hand. Setting
 
-        runs_from: data/runs          # any path, or the string "runs"
+        runs_from: runs               # the arm the runs are read as: `runs`, or a label (silver, "rescored cd35dc1f")
         primary_metric: overlap_f1    # which score ranks them
         dataset_id: my_v1             # optional filter
 
-    reads `metrics.json` from each run directory instead. The stratum defaults
+    reads the score of each run in that arm instead. The stratum defaults
     to the config_id, so repeats of one arm group together.
     """
     src = cfg.get("runs_from")
     if not src:
         return [RunCandidate(**r) for r in cfg["runs"]]
 
-    # "runs" is the runs directory every command reads (EVAL_RUNS_DIR, else <project>/data/runs);
-    # a relative path is the PROJECT's, not this file's directory's.
-    root = RUNS if src == "runs" else pathlib.Path(src)
-    if not root.is_absolute():
-        root = ROOT / root
-    if not _store.is_dir(root):
-        die(f"runs_from: no such directory: {root}", "not-found")
+    # `runs` is the arm every command reads by default (a plain run's own score); any other value is a label.
+    label = "" if src == "runs" else str(src)
 
     want_ds: str | None = cfg.get("dataset_id")
     metric: str | None = cfg.get("primary_metric")
@@ -430,8 +424,8 @@ def _candidates_from(cfg: dict[str, Any]) -> list[RunCandidate]:
                 "invalid-file",
             )
         # The metric every command defaults to: the primary metric the runs recorded.
-        metric = default_metric(want_ds, runs_dir=root)
-    runs = runs_on(want_ds, runs_dir=root)
+        metric = default_metric(want_ds, label=label)
+    runs = runs_on(want_ds, label=label)
     if direction(runs, metric):
         die(
             f"{metric!r} is lower-is-better; the panel promotes the HIGHEST scores within a "
@@ -453,12 +447,12 @@ def _candidates_from(cfg: dict[str, Any]) -> list[RunCandidate]:
         )
     if not out:
         die(
-            f"runs_from={root} matched no runs"
+            f"runs_from={src} matched no runs"
             + (f" on dataset {want_ds}" if want_ds else "")
             + (f" carrying metric {metric!r}" if metric else ""),
             "not-found",
         )
-    logger.info("Loaded %d candidate run(s) from %s", len(out), root)
+    logger.info("Loaded %d candidate run(s) from %s", len(out), src)
     return out
 
 

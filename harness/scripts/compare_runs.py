@@ -34,9 +34,9 @@ from evaluation_harness._common import (
     die,
     evh_prog,
     how,
-    read_json,
     verdict_for,
 )
+from evaluation_harness.model import runs as model_runs
 
 
 def _short(v: object, n: int = 40) -> str:
@@ -165,15 +165,19 @@ def _report_fingerprint_delta(a: dict, b: dict) -> None:
 
 
 def load(run_id: str) -> dict:
-    """Load metrics.json for a run; die if not found."""
+    """A run's record, as its first score reads it; die if there is no such run or it has no score."""
     # A run is a directory of the runs folder: an id that names a path ("../x") is not one (the MCP tool
     # takes ids from an agent).
     if run_id in ("", ".", "..") or run_id != Path(run_id).name:
         die(f"no run {run_id!r}: a run id names a directory of {RUNS.name}, not a path", "bad-argument")
-    p = RUNS / run_id / "metrics.json"
-    if not _store.is_file(p):
-        die(f"no run {run_id!r} (looked for {p})", "not-found")
-    return read_json(p)
+    d = RUNS / run_id
+    if not _store.is_file(d / model_runs.RUN):
+        die(f"no run {run_id!r} (looked for {d / model_runs.RUN})", "not-found")
+    sd = model_runs.first_score(d) or next(iter(model_runs.scores_of(d)), None)
+    rec = model_runs.record(sd) if sd else None
+    if rec is None:
+        die(f"run {run_id!r} has no score to compare", "not-found")
+    return rec
 
 
 def main() -> int:

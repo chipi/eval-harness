@@ -32,6 +32,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
 
 # ── the provider layer's own net, in this process ──────────────────────────────────────────────────────────────────
@@ -129,11 +130,11 @@ def system(name, cid, **extra):
 
 
 def spent_of(prefix):
-    """What the finished runs of this config spent (their metrics), in either store."""
+    """What the finished runs of this config spent (their first score's record), in either store."""
     total = 0.0
     for name in _runstore.listdir(proj, "runs"):
-        if name.startswith(prefix) and _runstore.is_file(proj, f"runs/{name}/metrics.json"):
-            m = _runstore.read_json(proj, f"runs/{name}/metrics.json")
+        if name.startswith(prefix) and _runstore.exists(proj, f"runs/{name}/scores"):
+            m = _runview.record_of(proj, name)[1]
             total += float((m.get("scores") or {}).get("total_cost_usd") or 0)
     return round(total, 6)
 

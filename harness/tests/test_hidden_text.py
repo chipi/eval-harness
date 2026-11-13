@@ -27,7 +27,6 @@ KIT = HERE.parent / "tutorial"
 proj = Path(tempfile.mkdtemp(prefix="evh-hidden-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-hidden")
 env.pop("EVAL_DATA_DIR", None)
-env.pop("EVAL_RUNS_DIR", None)
 env.pop("EVH_PUBLIC", None)
 # The in-process surfaces below resolve the project's paths on first read: set before any import.
 os.environ.clear()
@@ -333,20 +332,24 @@ try:
         rc == 0 and "tickets_h" in out and MARK["h"] not in out + err,
         (out + err)[-300:],
     )
-    # A judging of a hidden run sits a level deeper (data/runs-judged/<scorer>/<run>) and its rows carry the source
+    # A judging of a hidden run is another score of it (runs/<run>/scores/<judge>@<set>) and its rows carry the source
     # row's `_meta`, which can quote the item: the release cuts them to the call too.
     hrun = next(
         d
         for d in _runstore.listdir(proj, "runs")
-        if _runstore.is_file(proj, f"runs/{d}/metrics.json")
-        and _runstore.read_json(proj, f"runs/{d}/metrics.json").get("dataset_id") == "tickets_h"
+        if _runstore.is_file(proj, f"runs/{d}/run.json")
+        and _runstore.read_json(proj, f"runs/{d}/run.json").get("dataset_id") == "tickets_h"
     )
-    jdir = data / "runs-judged" / "j1" / hrun
+    jrel = f"runs/{hrun}/scores/j1@judging-set"
+    jdir = data / jrel
     _store.mkdir(jdir, parents=True)
     _runstore.write_text(
         proj,
-        f"runs-judged/j1/{hrun}/metrics.json",
-        json.dumps({"run_id": hrun, "dataset_id": "tickets_h", "derived": {"kind": "judge", "from": hrun}}),
+        f"{jrel}/score.json",
+        json.dumps({"scorer": "j1", "reference": "judging-set", "label": "judged/j1"}),
+    )
+    _runstore.write_text(
+        proj, f"{jrel}/metrics.json", json.dumps({"derived": {"kind": "judge", "from": hrun}})
     )
     _runstore.put_rows_text(
         jdir,
@@ -375,7 +378,7 @@ try:
     check("release: nothing of the hidden dataset's text", not found(rel, MARK["h"]), found(rel, MARK["h"]))
     check(
         "release: the hidden dataset's runs, reference (manifest only) and profile are there, numbers only",
-        counts["hidden_runs"] == 3
+        counts["hidden_runs"] == 2
         and counts["hidden_refs"] == 1
         and (rel / "references" / "gold" / "tickets_h").is_dir()
         and not [

@@ -28,6 +28,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-prompts-"))
@@ -67,8 +68,8 @@ def system(name, cid, extra=""):
 def metrics_of(prefix):
     out = []
     for n in _runstore.listdir(proj, "runs"):
-        if n.startswith(prefix) and _runstore.is_file(proj, f"runs/{n}/metrics.json"):
-            out.append(_runstore.read_json(proj, f"runs/{n}/metrics.json"))
+        if n.startswith(prefix):
+            out.append(_runview.record_of(proj, n)[1])
     return sorted(out, key=lambda m: m["run_id"])
 
 

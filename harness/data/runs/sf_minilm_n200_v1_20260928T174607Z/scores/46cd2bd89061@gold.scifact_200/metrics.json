@@ -1,0 +1,46 @@
+{
+  "derived": {
+    "at": "2026-09-29T20:21:59+02:00",
+    "from": "sf_minilm_n200_v1_20260928T174607Z",
+    "kind": "reparse",
+    "with": {
+      "parser": "examples/_shared/retrieval.parse_ranking",
+      "scorer_sha256": "a534747b2a5d9712a1965473ab8e1d60b82aa2f73cf385c789d0fb4e83a51cd3"
+    }
+  },
+  "metric_kinds": {
+    "confidence": "descriptive",
+    "duplicate_ids": "descriptive",
+    "found_any": "descriptive",
+    "mrr_10": "quality",
+    "n_relevant": "descriptive",
+    "n_returned": "descriptive",
+    "ndcg_10": "quality",
+    "parsed": "quality",
+    "rank_of_first": "descriptive",
+    "reasoning_tokens": "descriptive",
+    "recall_10": "quality",
+    "recall_100": "quality",
+    "truncated": "descriptive",
+    "unknown_ids": "descriptive"
+  },
+  "primary_metric": "ndcg_10",
+  "reference_tier": "gold",
+  "scores": {
+    "cost_usd": 0.0,
+    "duplicate_ids": 0.0,
+    "found_any": 0.915,
+    "latency_ms": 17.24438,
+    "mrr_10": 0.6211924603,
+    "n_relevant": 1.135,
+    "n_returned": 100.0,
+    "ndcg_10": 0.65334427,
+    "parsed": 1.0,
+    "rank_of_first": 6.21,
+    "recall_10": 0.7705,
+    "recall_100": 0.9125,
+    "total_cost_usd": 0.0,
+    "unknown_ids": 0.0
+  },
+  "source_created_at": "2026-09-28T17:46:20Z"
+}

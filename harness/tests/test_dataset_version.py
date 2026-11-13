@@ -48,7 +48,7 @@ check("two integers only", dv.parse("1.10") == (1, 10) and dv.parse("1.01") is N
 
 proj = Path(tempfile.mkdtemp(prefix="evh-dsver-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-dataset-version")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 

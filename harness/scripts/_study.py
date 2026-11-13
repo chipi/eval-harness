@@ -27,6 +27,7 @@ from typing import Any
 
 import yaml
 from evaluation_harness import _common, _store
+from evaluation_harness.model import runs as _model_runs
 
 SAMPLERS = ("grid", "command", "agent")
 STUDY_ID = re.compile(r"[a-z0-9][a-z0-9_-]{0,60}")
@@ -412,9 +413,10 @@ def decide(
 def _mean(run_ids: list[str], metric: str) -> float | None:
     vals = []
     for r in run_ids:
-        f = _common.RUNS / r / "metrics.json"
-        if _store.is_file(f):
-            v = (json.loads(_store.read_text(f, encoding="utf-8")).get("scores") or {}).get(metric)
+        first = _model_runs.first_score(r)
+        rec = _model_runs.record(first) if first else None
+        if rec is not None:
+            v = (rec.get("scores") or {}).get(metric)
             if isinstance(v, (int, float)):
                 vals.append(float(v))
     return sum(vals) / len(vals) if vals else None
@@ -492,7 +494,7 @@ def _runs_of(dataset: str, cid: str) -> list[str]:
     """The system's runs on the study's dataset (a confirmation's runs on the test set are not its trials')."""
     from evaluation_harness import _runs  # noqa: PLC0415
 
-    return [d.name for d, _m in _runs.runs_on(dataset, config_id=cid)]
+    return [m["run_id"] for _d, m in _runs.runs_on(dataset, config_id=cid)]
 
 
 # ── samplers ───────────────────────────────────────────────────────────────────────────────────────────────────────

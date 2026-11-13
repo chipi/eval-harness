@@ -26,6 +26,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-run-metrics-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-run-metrics")
@@ -53,8 +54,7 @@ def out(r):
 
 
 def metrics_of(prefix):
-    name = next(n for n in _runstore.listdir(proj, "runs") if n.startswith(prefix))
-    return name, _runstore.read_json(proj, f"runs/{name}/metrics.json")
+    return _runview.record_of(proj, prefix)
 
 
 try:
@@ -95,8 +95,7 @@ try:
         and "overlap_f1" in m["scores"],
         json.dumps(m.get("scores")) + str(m.get("run_metrics")),
     )
-    with _runstore._InProject(proj) as data:
-        rows = _runstore.rows(data / "runs" / name)
+    rows = _runview.rows_of(proj, name)
     check(
         "run: a run-level metric is on no item's row",
         len(rows) == 6 and not any("share_longer" in x or "items_seen" in x for x in rows),
@@ -169,16 +168,8 @@ try:
         ADAPTER.replace('"items_seen": len(items)', '"items_seen": len(items) + 100')
     )
     r = evh("rescore", "--match", "one_v1", "--dataset-id", "tickets_v1")
-    rs = [
-        p
-        for p in (proj / "data").rglob("metrics.json")
-        if "runs-rescored" in str(p) and p.parent.name.startswith("one_v1_")
-    ] + [
-        Path(n)
-        for n in _runstore.files_under(proj, "")
-        if n.startswith("runs-rescored/") and n.endswith("metrics.json") and "/one_v1_" in n
-    ]
-    rm = _runstore.read_json(proj, str(rs[-1]).split("data/")[-1]) if rs else {}
+    rs = [rec for _k, lb, rec in _runview.scores_of(proj, name) if lb.startswith("rescored ")]
+    rm = rs[-1] if rs else {}
     check(
         "rescore: the run-level metric is recomputed by the current score_run, from the stored outputs",
         r.returncode == 0 and (rm.get("scores") or {}).get("items_seen") == 106 and rm.get("run_metrics"),

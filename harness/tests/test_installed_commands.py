@@ -65,7 +65,7 @@ def main() -> int:
             "GIT_COMMITTER_NAME": "t",
             "GIT_COMMITTER_EMAIL": "t@example.invalid",
         }
-        for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+        for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
             env.pop(k, None)
 
         def evh(*args: str, timeout: int = 600, cwd: Path | None = None) -> subprocess.CompletedProcess:
@@ -217,8 +217,6 @@ def main() -> int:
                     "tickets_v1",
                     "--reference-id",
                     "gold/tickets_v1",
-                    "--out",
-                    "data/runs-gold",
                 ],
                 "ok",
             ),
@@ -725,7 +723,7 @@ def main() -> int:
                 (r.stdout, r.stderr[-300:]),
             )
         # `evh run` names the runs it wrote, and with --json says so as data, its progress on stderr.
-        env_ids = {**env, "EVAL_RUNS_DIR": str(proj / "data" / "runs-smoke-ids")}
+        env_ids = env
         r = subprocess.run(
             [
                 sys.executable,
@@ -738,6 +736,7 @@ def main() -> int:
                 "tickets_v1",
                 "--run-id",
                 "ids_probe",
+                "--scratch",
             ],
             cwd=proj,
             env=env_ids,
@@ -766,6 +765,7 @@ def main() -> int:
                 "tickets_v1",
                 "--run-id",
                 "ids_json",
+                "--scratch",
                 "--json",
             ],
             cwd=proj,
@@ -783,8 +783,7 @@ def main() -> int:
             and "fingerprint" in r.stderr,
             r.stdout[-300:] + r.stderr[-300:],
         )
-        if _runstore.exists(proj, "runs-smoke-ids"):
-            _runstore.rmtree(proj, "runs-smoke-ids")
+        shutil.rmtree(proj / ".build" / "scratch", ignore_errors=True)
 
         # From a subfolder of the project, a command finds the project (the nearest directory
         # up with data/): from the current directory it read an empty project.

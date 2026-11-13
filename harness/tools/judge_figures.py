@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Every number the summarisation report states about the judge re-measurement, recomputed
 from what is committed: the judging-set manifest, the stored verdicts, the committed runs
-(for which arms are hosted) and the human-check record. data/runs-judged is gitignored and
-is not read. The Goyal et al. comparison is recomputed from the stored per-article records
+(for which arms are hosted) and the human-check record. The Goyal et al. comparison is recomputed from the stored per-article records
 plus the human data when data/external/goyal2022 is present; otherwise it falls back to the
 committed report.json and says so in `goyal_source`.
 
@@ -26,6 +25,7 @@ import validate_judge_goyal as vg  # noqa: E402
 import validate_judge_zhang as vz  # noqa: E402
 from evaluation_harness import _store  # noqa: E402
 from evaluation_harness import judge_score as js  # noqa: E402
+from evaluation_harness.model import runs as model_runs  # noqa: E402
 
 REPO = HERE.parents[1]
 DATA = HERE.parent / "data"
@@ -186,8 +186,7 @@ def compute(scorer: str = SCORER) -> dict[str, Any]:
     files = [json.loads(_store.read_text(f)) for f in _store.glob(vdir, "*/*.json")]
     hosted = []
     for a in m["arms"]:
-        met = json.loads(_store.read_text(DATA / "runs" / a["run"] / "metrics.json"))
-        if (met.get("params") or {}).get("provider") == "litellm":
+        if ((model_runs.run(a["run"]) or {}).get("params") or {}).get("provider") == "litellm":
             hosted.append(a["config_id"])
     pa = summ["per_arm"]
     hscores = [pa[c]["judge_score"] for c in hosted]

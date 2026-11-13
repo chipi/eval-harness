@@ -123,7 +123,6 @@ def setup(tmp: Path) -> tuple:
     for k in (
         "EVAL_HOME",
         "EVAL_DATA_DIR",
-        "EVAL_RUNS_DIR",
         "OPENROUTER_API_KEY",
         "LITELLM_BASE_URL",
         "EVAL_MAX_COST_USD",

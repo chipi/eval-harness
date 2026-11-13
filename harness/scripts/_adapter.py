@@ -272,7 +272,7 @@ def score_wants_source(score: Any) -> bool:
 def _portable_id(path: Path) -> str:
     """A path safe to write into a run record: relative, resolved, never a home directory.
 
-    This is recorded in `metrics.json` and hashed into the fingerprint, so an absolute
+    This is recorded in the run record and hashed into the fingerprint, so an absolute
     path both leaks the author's username into anything published and makes two identical
     runs on two machines look different.
 

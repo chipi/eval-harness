@@ -9,7 +9,7 @@ keeps has a kind:
   upload     a file the call carries (at most 50 MB), kept under .build/uploads/<sha256> for the job
   artifact   a file the job writes under .build/jobs/<id>/, fetched from there
 
-and an argument with none (a path the command would read or write on the server: `--runs-dir`, `--source-dir`,
+and an argument with none (a path the command would read or write on the server: `--source-dir`,
 `--out` folders) is never taken. A path-typed argument the table below does not name fails a test, so a command that
 gains one cannot be served by accident.
 """
@@ -104,7 +104,7 @@ PATH_KINDS: dict[tuple[str, str], str] = {
     ("dataset-card", "--out"): ARTIFACT,
     ("data-put", "file"): UPLOAD,
 }
-#: Path-typed arguments never taken, each a decision (RFC-026 revision 2): another runs folder or output folder,
+#: Path-typed arguments never taken, each a decision (RFC-026 revision 2): an output folder,
 #: a file of the server's, a page's own assets. A path-typed argument in neither table fails a test.
 NEVER_PATHS = {
     ("label-mutants", "--mutants"),  # a Python file it runs: the project's own, on its machine
@@ -116,13 +116,11 @@ NEVER_PATHS = {
     ("catalog", "--about"),
     ("inspect", "--csv"),
     ("inspect", "--rubric"),
-    ("judge-score", "--out"),
-    ("rescore", "--out"),
 }
 #: Paths the parser types as text, never taken either.
-TEXT_PATHS = {("round-retire", "--runs-dir"), ("judge", "--config")}
+TEXT_PATHS = {("judge", "--config")}
 #: Options never taken from any command: they load code or reach outside the project.
-NEVER = {"--adapter", "--help", "--json", "--runs-dir", "--source-dir", "--data-dir"}
+NEVER = {"--adapter", "--help", "--json", "--source-dir", "--data-dir"}
 _NAME_ONLY = re.compile(r"[a-z0-9][a-z0-9_]*")
 #: Text arguments that the command line also reads as a code file (`path.py:Class`) or a file to read (`@file`):
 #: the API takes their other form only. A served argument whose help offers either and has no rule fails a test.

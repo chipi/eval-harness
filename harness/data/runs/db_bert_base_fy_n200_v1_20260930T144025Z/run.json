@@ -1,0 +1,175 @@
+{
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "adapter": "examples/classification-dbpedia-14/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "4068ea23007d6d8057a61f0abd54b08da3eaba40",
+    "source": "git"
+  },
+  "config_id": "db_bert_base_fy_v1",
+  "created_at": "2026-09-30T14:41:30Z",
+  "dataset_id": "dbpedia_280",
+  "fingerprint": {
+    "arm": {
+      "config_id": "db_bert_base_fy_v1",
+      "labels": {
+        "family": "bert",
+        "price_tier": "free"
+      }
+    },
+    "data": {
+      "dataset_id": "dbpedia_280",
+      "items_sha256": "a7419dc6a5876490c3ed1f96eae9398969a2f8b794e744d45ace5790bc0146f2",
+      "n_items": 280,
+      "reference_id": "gold/dbpedia_280",
+      "reference_tier": "gold",
+      "references_sha256": "e0564fe65fb011e37717e037a6ad662f44e796b7d7de8e62ed2344ba56fa7a8a"
+    },
+    "data_sha256": "ba266b3e1c4e465a922638baee9aea990c34420aa92c1b6ab2f97610c3e981e1",
+    "deployment": {
+      "declared": {
+        "encoder_window": 512,
+        "label_order": [
+          "Company",
+          "EducationalInstitution",
+          "Artist",
+          "Athlete",
+          "OfficeHolder",
+          "MeanOfTransportation",
+          "Building",
+          "NaturalPlace",
+          "Village",
+          "Animal",
+          "Plant",
+          "Album",
+          "Film",
+          "WrittenWork"
+        ],
+        "labels": [
+          "Company",
+          "EducationalInstitution",
+          "Artist",
+          "Athlete",
+          "OfficeHolder",
+          "MeanOfTransportation",
+          "Building",
+          "NaturalPlace",
+          "Village",
+          "Animal",
+          "Plant",
+          "Album",
+          "Film",
+          "WrittenWork"
+        ],
+        "labels_sha256": "d3a33437c1e2b2fe45fdb7a425b14796d89d31a0d8919d899149e27f5c6f899d",
+        "parser_sha256": "4ad032219af088a127d97f358471c648a50d9665e3b32cd2f3e2f2dca7d8ded2",
+        "provider": "hf_local"
+      },
+      "hosted": null,
+      "id": "fabriceyhc/bert-base-uncased-dbpedia_14",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.19.2",
+        "torch": "2.14.0",
+        "transformers": "4.55.4"
+      },
+      "model": "fabriceyhc/bert-base-uncased-dbpedia_14",
+      "provider": "hf_local",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": "fp32",
+        "quantization": null,
+        "revision": null,
+        "revision_source": "unavailable"
+      },
+      "where": {
+        "backend": null,
+        "device": "cpu",
+        "machine": null
+      }
+    },
+    "deployment_sha256": "0c3d2b6d9c3d9f3004b10b4202dbde642476434e43f0f1d17e96f0f5bb69e591",
+    "hash": "bdda287a52cb18707af2b0ecbc5948e49bd1b2b70f72dbcb8dc9f49f70af55e0",
+    "instrument": {
+      "adapter": {
+        "id": "examples/classification-dbpedia-14/adapter.py",
+        "sha256": "58b55c964f8bb40746c359621beb25bfd0a071fca079961bdf15be1e7c0a77a8"
+      },
+      "harness": {
+        "commit": "4068ea23007d",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "3ac66c0eb0bb12f6e2ec8d73eccee9dd3614f0bc92c1a01be4a50c6a614bd18f",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v50"
+    },
+    "settings": {
+      "label_order": [
+        "Company",
+        "EducationalInstitution",
+        "Artist",
+        "Athlete",
+        "OfficeHolder",
+        "MeanOfTransportation",
+        "Building",
+        "NaturalPlace",
+        "Village",
+        "Animal",
+        "Plant",
+        "Album",
+        "Film",
+        "WrittenWork"
+      ]
+    },
+    "settings_sha256": "3485aeb6c75b2013eeb7e4a4c58cd38bc9cafacd4160b725ad02550baf875262",
+    "version": 5
+  },
+  "goal": "entity_topic_dbpedia",
+  "n_items": 280,
+  "params": {
+    "device": "cpu",
+    "family": "bert",
+    "label_order": [
+      "Company",
+      "EducationalInstitution",
+      "Artist",
+      "Athlete",
+      "OfficeHolder",
+      "MeanOfTransportation",
+      "Building",
+      "NaturalPlace",
+      "Village",
+      "Animal",
+      "Plant",
+      "Album",
+      "Film",
+      "WrittenWork"
+    ],
+    "model": "fabriceyhc/bert-base-uncased-dbpedia_14",
+    "precision": "fp32",
+    "price_tier": "free",
+    "provider": "hf_local"
+  },
+  "providers_seen": {},
+  "round": "r2",
+  "run_id": "db_bert_base_fy_n200_v1_20260930T144025Z",
+  "warmup_ms": 18297.13,
+  "purpose": "retime",
+  "machine": "linux",
+  "of": "db_bert_base_fy_n200_v1_20260930T091006Z"
+}

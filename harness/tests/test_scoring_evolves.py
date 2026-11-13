@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Scoring that evolves (RFC-022): a round recorded from runs made before it (--adopt), a scoring change previewed
-without writing anything, applied to a round (rescore --round) into the place the tool designates, adopted from
+without writing anything, applied to a round (rescore --round) as a score under each run, adopted from
 the next round (round-open --scoring, the carried arms re-scored), read by the goal and the round alike, and a
 round whose arms one adapter scored in two versions noted by validate.
 
@@ -26,6 +26,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-scoring-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-scoring")
@@ -64,6 +65,16 @@ def set_bonus(b: float) -> None:
 
 def files_under() -> set[str]:
     return set(_runstore.files_under(proj))
+
+
+def rescored_scores() -> list:
+    """[(run id, label, record)] of every score read as "rescored <scorer>" under the project's runs."""
+    return [
+        (rid, lb, rec)
+        for rid in _runstore.listdir(proj, "runs")
+        for _k, lb, rec in _runview.scores_of(proj, rid)
+        if lb.startswith("rescored ")
+    ]
 
 
 # A module edited within the second to a value of the same length is loaded as edited: a stale .pyc (trusted while
@@ -168,18 +179,14 @@ try:
     )
     check("score-preview: writes nothing to the project", files_under() == before)
 
-    # apply it to r1: the designated place, the round's record
+    # apply it to r1: a score under each run, the round's record
     r = evh(
         "rescore", "--goal", "tickets_summary", "--round", "r1", "--why", "a bonus to see the scoring move"
     )
-    placed = [
-        p
-        for p in _runstore.files_under(proj, "runs-rescored")
-        if re.fullmatch(r"runs-rescored/[^/]+/runs/[^/]+/metrics\.json", p)
-    ]
+    placed = rescored_scores()
     r1 = _runstore.read_text(proj, "rounds/tickets_summary/r1.yaml")
     check(
-        "rescore --round: writes runs-rescored/<scorer>/runs/, one re-score per run",
+        "rescore --round: writes a score under each run, read as rescored <scorer>, one re-score per run",
         r.returncode == 0 and len(placed) == 2,
         out(r)[-600:],
     )
@@ -190,7 +197,7 @@ try:
     )
     g = evh("goals", "--goal", "tickets_summary")
     check(
-        "the goal reads the re-score: one row per arm, from runs-rescored",
+        "the goal reads the re-score: one row per arm, from its re-score",
         g.stdout.count("rescored") >= 2,
         g.stdout[-900:],
     )
@@ -266,7 +273,7 @@ try:
         "--scoring", "a larger bonus, adopted from this round",
     )  # fmt: skip
     r2 = _runstore.read_text(proj, "rounds/tickets_summary/r2.yaml") if r.returncode == 0 else ""
-    scorers = _runstore.listdir(proj, "runs-rescored")
+    scorers = {lb for _rid, lb, _rec in rescored_scores()}
     check(
         "round-open --scoring: the carried arms re-scored by this tree's scorer, before and after printed",
         r.returncode == 0

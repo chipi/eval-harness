@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from fnmatch import fnmatchcase
 
-from evaluation_harness import _store
 from evaluation_harness.stats import fmt_p
 
 
@@ -99,16 +98,11 @@ def hypothesis_of(A, arm: str) -> dict | None:
     }
 
 
-def _metrics_json(run_dir) -> dict | None:
-    """A run directory's metrics.json, or None when it has none or it does not parse."""
-    import json  # noqa: PLC0415
-    from pathlib import Path  # noqa: PLC0415
+def _metrics_json(score_dir) -> dict | None:
+    """A score's record, or None when it has none or it does not parse."""
+    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
 
-    f = Path(run_dir) / "metrics.json"
-    try:
-        return json.loads(_store.read_text(f, encoding="utf-8")) if _store.is_file(f) else None
-    except (OSError, ValueError):
-        return None
+    return model_runs.record(score_dir)
 
 
 def hypothesis_text(h: dict | None) -> str:

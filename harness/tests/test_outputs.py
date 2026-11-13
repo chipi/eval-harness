@@ -4,7 +4,7 @@
     python tests/test_outputs.py
 
 The module: appended lines are read back, a torn last line is not an output, finish() writes dataset order and drops
-the row checkpoint, a derived run reads its source's outputs (followed along a chain), V5's signature is the value the
+the row checkpoint, a score reads its run's outputs (a judged and a re-scored one alike), V5's signature is the value the
 per-item files gave. Through the commands: a run writes outputs.jsonl and no outputs/ folder; a run stopped mid-pass
 resumes, the done items not called again and the finished file whole; no module but _outputs builds an outputs/ path.
 All of it runs twice: the files store, then the sqlite store (data/project.sqlite).
@@ -27,7 +27,7 @@ sys.path.insert(0, str(HARNESS))
 proj = Path(tempfile.mkdtemp(prefix="evh-outputs-"))
 os.environ["EVAL_HOME"] = str(proj)
 os.environ.pop("EVAL_STORE", None)
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
+for k in ("EVAL_DATA_DIR",):
     os.environ.pop(k, None)
 from evaluation_harness import (  # noqa: E402
     _format,
@@ -35,6 +35,7 @@ from evaluation_harness import (  # noqa: E402
     _store,
 )
 from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness.model import runs as R  # noqa: E402
 
 env = dict(os.environ, EVAL_BUILD_REF="test-outputs")
 env.pop("EVAL_MAX_COST_USD", None)
@@ -75,15 +76,11 @@ def body(store: str) -> None:
             and _outputs.rows_text(a, partial=True) is None,
             rows,
         )
-        _store.write_text(a / "metrics.json", json.dumps({"run_id": a.name}))
-        j = proj / "data" / "runs-judged" / "judge1" / a.name
-        _store.mkdir(j, parents=True)
-        _store.write_text(j / "metrics.json", json.dumps({"derived": {"kind": "judge", "from": a.name}}))
-        r = proj / "data" / "runs-rescored" / "s1" / "runs-judged" / a.name
-        _store.mkdir(r, parents=True)
-        _store.write_text(r / "metrics.json", json.dumps({"derived": {"kind": "rescore", "from": a.name}}))
+        R.write_run(a.name, {"run_id": a.name, "config_id": "arm_a_v1", "dataset_id": "d"})
+        j = R.write_score(a.name, "judge1", "set1", {"run_id": a.name}, label_as="judged/judge1")
+        r = R.write_score(a.name, "abcdefabcdef", "gold/d", {"run_id": a.name}, label_as="rescored abcdefab")
         check(
-            f"{store}: a derived run reads its source's outputs; one of a derived run too",
+            f"{store}: a score reads its run's outputs, a judged one and a re-scored one alike",
             _outputs.output(j, "i2") == "second"
             and _outputs.outputs(r) == _outputs.outputs(a)
             and _outputs.source(r) == a,
@@ -126,7 +123,7 @@ def body(store: str) -> None:
             and _outputs.rows_text(run, partial=True) is None,
             (r1.stdout + r1.stderr)[-300:],
         )
-        # A run stopped after two items: its outputs file and run.json, no metrics.json; resume it.
+        # A run stopped after two items: its outputs file and run.json, no score; resume it.
         stopped = proj / "data" / "runs" / "tickets_lead1_v1_stopped"
         _store.mkdir(stopped)
         done = _outputs.lines(run)
@@ -153,8 +150,7 @@ def body(store: str) -> None:
         check(
             f"{store}: --resume: the two done items replayed, the third called again; the new run's outputs whole",
             r2.returncode == 0
-            and json.loads(_store.read_text(new / "metrics.json")).get("resume", {}).get("replayed_items")
-            == 2
+            and (R.run(new) or {}).get("resume", {}).get("replayed_items") == 2
             and _outputs.outputs(new) == _outputs.outputs(run),
             (r2.stdout + r2.stderr)[-400:],
         )

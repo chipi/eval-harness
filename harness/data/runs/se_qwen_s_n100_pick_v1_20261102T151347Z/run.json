@@ -1,0 +1,142 @@
+{
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "adapter": "examples/summeval-judging/adapter.py",
+  "build": {
+    "dirty": true,
+    "ref": "72bbce15fb5f781157c856672a8c2b3a3c2cdd68",
+    "source": "git"
+  },
+  "config_id": "se_qwen_s_n100_pick_v1",
+  "created_at": "2026-11-02T15:16:20Z",
+  "dataset_id": "summeval_100",
+  "fingerprint": {
+    "arm": {
+      "config_id": "se_qwen_s_n100_pick_v1",
+      "labels": {
+        "family": "qwen",
+        "price_tier": "small",
+        "usd_per_mtok_in": 0.05,
+        "usd_per_mtok_out": 0.2
+      }
+    },
+    "data": {
+      "dataset_id": "summeval_100",
+      "items_sha256": "b59999b281b2cbe87c57e4af34cc475c01ba1d531c7b77cb93a136665119c613",
+      "n_items": 100,
+      "reference_id": "gold/summeval_100",
+      "reference_tier": "gold",
+      "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
+    },
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "alias": "eval-qwen-flash",
+        "endpoint": "http://homelab:4001",
+        "id": "openrouter/qwen/qwen3.8-flash",
+        "id_source": "proxy-model-info",
+        "mode": "pick",
+        "provider_routing": null
+      },
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/qwen/qwen3.8-flash",
+        "route": null
+      },
+      "id": "eval-qwen-flash",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-qwen-flash",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "9c602d45943d1db66cb25b3c88eb32bd450b7c181b82d26462e98c38382367ec",
+    "hash": "d89ec9473ea42b4b43a119c926b9d46cb898598f2ee366adc4cf112ef202a903",
+    "instrument": {
+      "adapter": {
+        "id": "examples/summeval-judging/adapter.py",
+        "sha256": "2ad9193bcb91f7218b9eac0c9e9f68daf372e989cdfa2cd318e4833e693c88c9"
+      },
+      "harness": {
+        "code_sha256": "fd4cd92c896bc9d1d43a63ce5809ee1a831a95a66ae786275a750501d93ac77a",
+        "commit": "72bbce15fb5f",
+        "dirty": true,
+        "installed": false,
+        "version": "0.5.0"
+      }
+    },
+    "instrument_sha256": "eb3badbd590ec4dea80a7c3ef3354a741ede1e46d16c8e03bad5890441f198b8",
+    "runner": {
+      "cpu_count": 32,
+      "label": "mac-dev",
+      "libraries": {
+        "anthropic": "2.3.0",
+        "numpy": "2.5.4",
+        "openai": "3.41.0",
+        "rouge-score": "0.1.2"
+      },
+      "platform": "Linux/x86_64",
+      "processor": null,
+      "python": "3.14.7",
+      "release": "7.2.5-3-omarchy"
+    },
+    "settings": {
+      "declared": {
+        "prompt_sha256": "7f2becef44aae979433c02983916f81234e54bef10eab7a4c606c2574c7042b7",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "max_tokens": 1500,
+      "mode": "pick",
+      "prompt_file": "prompt_pick.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0
+    },
+    "settings_sha256": "34be4bdf61b7f92193d7c0c8deaf94c312b8e088760c9a2e0dfe18af60bb11b9",
+    "version": 5
+  },
+  "n_items": 100,
+  "params": {
+    "family": "qwen",
+    "max_tokens": 1500,
+    "mode": "pick",
+    "model": "eval-qwen-flash",
+    "price_tier": "small",
+    "prompt_file": "prompt_pick.txt",
+    "provider": "litellm",
+    "reasoning": {
+      "enabled": false
+    },
+    "temperature": 0.0,
+    "usd_per_mtok_in": 0.05,
+    "usd_per_mtok_out": 0.2
+  },
+  "providers_seen": {
+    "Alibaba": 100
+  },
+  "run_id": "se_qwen_s_n100_pick_v1_20261102T151347Z",
+  "warmup_ms": 1532.412,
+  "purpose": "run",
+  "machine": "linux"
+}

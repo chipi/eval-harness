@@ -8,17 +8,20 @@ opened_at: '2026-09-30T14:38:35Z'
 closed_at: '2026-09-30T14:40:24Z'
 retired:
 - config_id: ag_bert_base_fy_v1
-  runs_dir: runs-linux
   reason: a re-timing of the record's config on one Linux machine; data/runs is the record
   at: '2026-09-30T14:40:24Z'
+  runs:
+  - ag_bert_base_fy_n200_v1_20260930T143928Z
 - config_id: ag_bert_base_ta_v1
-  runs_dir: runs-linux
   reason: a re-timing of the record's config on one Linux machine; data/runs is the record
   at: '2026-09-30T14:40:24Z'
+  runs:
+  - ag_bert_base_ta_n200_v1_20260930T143836Z
 - config_id: ag_bert_mini_v1
-  runs_dir: runs-linux
   reason: a re-timing of the record's config on one Linux machine; data/runs is the record
   at: '2026-09-30T14:40:24Z'
+  runs:
+  - ag_bert_mini_n200_v1_20260930T143805Z
 conclusion:
   text: 'Re-timed together on the Linux machine (medians): bert_base_ta 49 ms, bert_base_fy 55 ms, bert_mini
     4.3 ms. bert_mini is 11× faster than bert_base_ta, at accuracy not significantly different from it

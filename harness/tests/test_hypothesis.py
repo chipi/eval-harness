@@ -34,6 +34,7 @@ env = dict(os.environ)
 
 from evaluation_harness import _format, _hypothesis  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness.model import runs as _R  # noqa: E402
 
 
 def evh(*args, extra_env=None):
@@ -61,8 +62,9 @@ def commit(msg):
 
 
 def metrics_of(config_id):
-    found = sorted((proj / "data" / "runs").glob(f"{config_id}_*/metrics.json"))
-    return json.loads(found[-1].read_text()) if found else {}
+    ids = sorted(rid for rid in _R.run_ids() if rid.startswith(f"{config_id}_"))
+    first = _R.first_score(ids[-1]) if ids else None
+    return (_R.record(first) if first else None) or {}
 
 
 def write_system(system_id, sentences, hypothesis=None):

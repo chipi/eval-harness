@@ -228,16 +228,12 @@ def record_faithfulness(model_id: str, n: int, rec: dict[str, Any]) -> None:
 
 def runs_of(model_id: str) -> list[dict[str, Any]]:
     """The runs whose fingerprint names this record (`deployment.code.record`): run_id, config_id, commits."""
+    from evaluation_harness.model import runs as _model_runs  # noqa: PLC0415
+
     out: list[dict[str, Any]] = []
-    if not _store.is_dir(_common.RUNS):
-        return out
-    for d in sorted(_store.iterdir(_common.RUNS)):
-        m = d / "metrics.json"
-        if not _store.is_file(m):
-            continue
-        try:
-            rec = _common.read_json(m)
-        except ValueError:
+    for rid in _model_runs.run_ids():
+        rec = _model_runs.run(rid)
+        if rec is None:
             continue
         code = ((rec.get("fingerprint") or {}).get("deployment") or {}).get("code") or {}
         if code.get("record") == model_id:

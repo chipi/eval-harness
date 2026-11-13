@@ -735,7 +735,7 @@ def drive(cat: Path, base: str) -> None:
         # The triage sheet's rows stay short: an item's fields in two lines, winners and arms named by what sets them
         # apart (listed whole, a row was 187 px tall).
         pair = ",".join(
-            f"runs-rescored/5f2c057cdaa5/runs/orrery_triage_v1_labelled/{c}"
+            f"rescored-5f2c057c/orrery_triage_v1_labelled/{c}"
             for c in ("triage_baseline_pro_v1", "triage_local_dgx_gpt_oss_120b_v2")
         )
         page.goto(f"{base}inspect.html?dataset=orrery_triage_v1_labelled&sheet=1&runs={pair}")
@@ -747,11 +747,11 @@ def drive(cat: Path, base: str) -> None:
             "sheet: the triage sheet's rows stay under 100 px", tallest < 100, f"tallest row {tallest:.0f} px"
         )
 
-        # The sheet of a judging pass's arms, as a dataset page names them (runs-judged/<scorer>/<dataset>/<config>).
-        judged = sorted(q for q in links if "runs=runs-judged/" in q)
+        # The sheet of a judging pass's arms, as a dataset page names them (judged-<scorer>/<dataset>/<system>).
+        judged = sorted(q for q in links if "runs=judged-" in q)
         if judged:
             q = max(judged, key=lambda x: x.count(","))
-            ds = q.split("runs=runs-judged/", 1)[1].split("/")[1]
+            ds = q.split("runs=judged-", 1)[1].split("/")[1]
             arms = q.split("runs=", 1)[1].split("&", 1)[0].split(",")[:3]
             page.goto(f"{base}inspect.html?dataset={ds}&sheet=1&runs={','.join(arms)}")
             page.wait_for_selector("#sheettable, .callout, p.err", timeout=60000)
@@ -768,7 +768,7 @@ def drive(cat: Path, base: str) -> None:
         # Against a silver reference the inspector names its author and marks that arm's row, so a "better 1.000" is
         # read as the author scored against its own output; an item's cards lead with the item's score.
         silver = sorted(
-            (q for q in links if "runs=runs-silver/" in q and "baseline=" in q), key=lambda x: -x.count(",")
+            (q for q in links if "runs=silver/" in q and "baseline=" in q), key=lambda x: -x.count(",")
         )
         for q in silver:
             page.goto(base + "inspect.html?" + q)

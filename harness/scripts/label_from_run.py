@@ -28,8 +28,9 @@ import sys
 from pathlib import Path
 
 from evaluation_harness import _jsonout, _outputs, _runs, _store
-from evaluation_harness._common import RUNS, die, evh_prog, load_dataset, read_json
+from evaluation_harness._common import die, evh_prog, load_dataset, read_json
 from evaluation_harness._label_sets import set_dir, write_set
+from evaluation_harness.model import runs as _model_runs
 
 
 def _unusable(rows: list[tuple[str, str, object]], max_tokens: object) -> tuple[list[str], list[str]]:
@@ -72,17 +73,23 @@ def _refuse_unusable(
         )
 
 
+def _finished(run_id: str) -> tuple[Path, dict]:
+    """The score a finished run made when it ran, and its record; refused for a run that has none."""
+    run_dir = _model_runs.first_score(run_id)
+    m = _model_runs.record(run_dir) if run_dir else None
+    if run_dir is None or m is None:
+        hint = " (it has no score: it did not finish)" if _store.is_dir(_model_runs.run_dir(run_id)) else ""
+        die(f"no finished run {run_id!r} under data/runs{hint}", "not-found")
+    return run_dir, m
+
+
 def _from_run(run_id: str, dataset_id: str, items: list[dict], args: argparse.Namespace) -> tuple[list, dict]:
     """A finished run's outputs, and the provenance its reference carries.
 
     The refusals are run-promote's: a reference is a decision every later score depends on,
     so it must name the code and the system that produced it.
     """
-    run_dir = RUNS / run_id
-    if not _store.is_file(run_dir / "metrics.json"):
-        hint = " (it has no metrics.json: it did not finish)" if _store.is_dir(run_dir) else ""
-        die(f"no finished run {run_id!r} under {RUNS}{hint}", "not-found")
-    m = read_json(run_dir / "metrics.json")
+    run_dir, m = _finished(run_id)
     if m.get("dataset_id") != dataset_id:
         die(f"REFUSED: run {run_id} is on {m.get('dataset_id')!r}, not {dataset_id!r}", "mismatch")
     if (m.get("derived") or {}).get("kind"):
@@ -197,10 +204,7 @@ def main() -> int:
     )
     args = ap.parse_args()
     with _jsonout.collect("label-from-run", args.json, live=sys.stderr):
-        m = RUNS / args.run / "metrics.json"
-        if not _store.is_file(m):
-            die(f"no finished run {args.run!r} under {RUNS}", "not-found")
-        dataset_id = read_json(m).get("dataset_id")
+        dataset_id = _finished(args.run)[1].get("dataset_id")
         if not dataset_id:
             die(f"run {args.run} names no dataset", "invalid-file")
         rows, meta = _from_run(args.run, dataset_id, load_dataset(dataset_id)["items"], args)

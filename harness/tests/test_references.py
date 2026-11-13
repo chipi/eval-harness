@@ -27,7 +27,6 @@ import _runstore  # noqa: E402
 proj = Path(tempfile.mkdtemp(prefix="evh-refs-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-references")
 env.pop("EVAL_DATA_DIR", None)
-env.pop("EVAL_RUNS_DIR", None)
 
 
 def evh(*args):

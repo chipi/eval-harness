@@ -40,8 +40,8 @@ from evaluation_harness import (  # noqa: E402
     _outputs,
     _store,
 )
-from evaluation_harness._common import REFERENCES, RUNS, die, read_json, reference_texts  # noqa: E402
-from evaluation_harness._runs import item_rows, warn_on_ambiguous_runs  # noqa: E402
+from evaluation_harness._common import REFERENCES, die, reference_texts  # noqa: E402
+from evaluation_harness._runs import item_rows, runs_on, warn_on_ambiguous_runs  # noqa: E402
 
 try:
     from retrieval import NDCG_AT, dcg
@@ -61,16 +61,10 @@ def qrels(dataset_id: str) -> dict:
 def runs(dataset_id: str, match: str | None) -> dict:
     """All runs on this dataset; optionally filtered by config_id substring."""
     out: dict = {}
-    for d in sorted(_store.glob(RUNS, "*")):
-        mj = d / "metrics.json"
-        if not (_store.is_file(mj) and _outputs.has_rows(d)):
+    for d, m in runs_on(dataset_id, match=match):
+        if not _outputs.has_rows(d):
             continue
-        m = read_json(mj)
-        cid = m.get("config_id")
-        if m.get("dataset_id") != dataset_id or not cid:
-            continue
-        if match and match not in cid:
-            continue
+        cid = m["config_id"]
         rows = {r["item_id"]: r for r in item_rows(d)}
         out[cid] = (m, rows)
     return out
@@ -95,7 +89,7 @@ def main() -> int:
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    warn_on_ambiguous_runs("", args.dataset_id)
 
     gold = qrels(args.dataset_id)
     R = runs(args.dataset_id, args.match)

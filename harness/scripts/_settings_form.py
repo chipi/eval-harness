@@ -60,7 +60,7 @@ REFS: dict[str, dict[str, str]] = {
     "fields": {},
     "models": {},
     "failure-modes": {},
-    _data_page.POLICY: {"committed.*": "runs_folders", "scorer_sources.*.dir": "runs_folders"},
+    _data_page.POLICY: {"committed.*": "arms", "scorer_sources.*.arms": "arms"},
 }
 #: A new setting's values, before its id is filled in.
 NEW: dict[str, dict[str, Any]] = {

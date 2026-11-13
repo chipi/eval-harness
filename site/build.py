@@ -34,6 +34,7 @@ import method  # noqa: E402
 import releases  # noqa: E402
 import remeasured  # noqa: E402
 from evaluation_harness import _store  # noqa: E402
+from evaluation_harness._runs import runs_on  # noqa: E402
 
 ROOT = HERE.parent
 REPO = "https://github.com/chipi/eval-harness"
@@ -1881,9 +1882,8 @@ def catalog_inspect(x: dict) -> str:
         cid = figures.system_id(x, a["arm"])
         require(
             any(
-                (m := json.loads(_store.read_text(p))).get("config_id") == cid
-                and m.get("dataset_id") == x["dataset"]
-                for p in _store.glob(figures.DATA / x["base"], f"{x['prefix']}*/metrics.json")
+                m["run_id"].startswith(x["prefix"])
+                for _d, m in runs_on(x["dataset"], label=figures.label_of(x["base"]), config_id=cid)
             ),
             f"{x['slug']}: a committed run of {cid} on {x['dataset']} for the inspector link",
         )

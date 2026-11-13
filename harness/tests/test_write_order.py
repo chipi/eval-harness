@@ -3,7 +3,7 @@
 
     python tests/test_write_order.py
 
-In a throwaway project ($0, offline): a run killed partway is not listed (its metrics.json, written last, is
+In a throwaway project ($0, offline): a run killed partway is not listed (its score, written last, is
 missing); a rescore whose scorer fails partway leaves nothing listed; a reference promotion that fails partway
 leaves no reference folder and no staging folder (it is built beside its place and moved in whole). And a file
 written over is never seen cut short: the old bytes or the new ones.
@@ -26,6 +26,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-write-order-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-write-order")
@@ -100,10 +101,10 @@ try:
     )
     r = evh("run", "--system", "a_v1", "--dataset", "tk_v1", "--run-id", "a_killed", KILL_AT="3")
     check(
-        "a run killed partway is not listed: its metrics.json is written last",
+        "a run killed partway is not listed: its score is written last",
         r.returncode != 0
         and "a_killed" not in listed()
-        and not _runstore.exists(proj, "runs/a_killed/metrics.json"),
+        and not _runstore.exists(proj, "runs/a_killed/scores"),
         out(r)[-300:],
     )
     r = evh("run", "--system", "a_v1", "--dataset", "tk_v1", "--run-id", "a_whole")
@@ -114,11 +115,9 @@ try:
         "tk_v1",
         "--match",
         "a_v1",
-        "--out",
-        "data/runs-rescored-test",
         SCORE_FAILS="1",
     )
-    gone = not _runstore.exists(proj, "runs-rescored-test/a_whole/metrics.json")
+    gone = [lb for _k, lb, _rec in _runview.scores_of(proj, "a_whole")] == [""]
     check(
         "a rescore whose scorer fails partway leaves no rescored run",
         r.returncode != 0 and "the scorer broke partway" in out(r) and gone,

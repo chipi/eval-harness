@@ -31,6 +31,8 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
+from evaluation_harness.model import runs as _R  # noqa: E402
 
 
 def _set_output(d, item, text):
@@ -689,20 +691,8 @@ try:
         "tickets_v1",
         "--reference-id",
         "silver/tickets_v1_author",
-        "--out",
-        "data/runs-author",
     )
-    r = (
-        r
-        if r.returncode
-        else subprocess.run(
-            [sys.executable, str(HERE / "cli.py"), "leaderboard", "--dataset-id", "tickets_v1"],
-            cwd=proj,
-            env={**env, "EVAL_RUNS_DIR": "data/runs-author"},
-            capture_output=True,
-            text=True,
-        )
-    )
+    r = r if r.returncode else evh("leaderboard", "--dataset-id", "tickets_v1", "--label", "silver")
     check(
         "scored against it, the author arm is marked as graded against its own answers",
         r.returncode == 0
@@ -745,7 +735,7 @@ try:
     )
     cfg_text = _runstore.read_text(proj, "systems/desk_production_v1.yaml") if r.returncode == 0 else ""
     rec_run = next((data / "runs" / n for n in runs_named("desk_production_v1_")), None)
-    rec_m = _runstore.read_json(proj, f"runs/{rec_run.name}/metrics.json") if rec_run else {}
+    rec_m = _runview.record_of(proj, rec_run.name)[1] if rec_run else {}
     cap_recs = {}
     for n in _runstore.listdir(proj, "captures/desk_c1/records"):
         if n.endswith(".json"):
@@ -789,9 +779,17 @@ try:
     )
 
     # ── agreement: --disagree keeps the items the arms decided differently (step 5) ──────────────
-    alt = data / "runs-alt" / lead
+    # the same run once more, as a repeat of it (its own arm): two of one system that decided differently
+    alt_id = lead + "_alt"
+    alt = data / "runs" / alt_id
     with _runstore._InProject(proj):
+        src_first = _R.first_score(data / "runs" / lead)
+        assert src_first is not None, f"{lead} has no first score"
         _runstore.copy_run(data / "runs" / lead, alt)
+        _runstore.copy_run(src_first, alt / "scores" / src_first.name)
+        alt_rec = _R.run(alt)
+        assert alt_rec is not None, f"{alt_id} was not copied"
+        _R.write_run(alt_id, {**alt_rec, "run_id": alt_id, "purpose": "repeat", "of": lead})
         changed = sorted(_outputs.outputs(alt))[:2]
     for i in changed:
         _set_output(alt, i, "a different decision")
@@ -800,7 +798,7 @@ try:
         r = evh(
             "inspect",
             "--runs",
-            "tickets_lead1_v1,runs-alt/tickets_v1/tickets_lead1_v1",
+            "tickets_lead1_v1,repeats/tickets_v1/tickets_lead1_v1",
             "--metric",
             "output_words",
             "--json",
@@ -831,22 +829,24 @@ try:
         "same(a, b): the adapter's when it has one, else the same text",
         _adapter.same_of(None)("a decision ", "a decision") and not _adapter.same_of(None)("a", "b"),
     )
-    _runstore.rmtree(proj, "runs-alt")
+    _runstore.rmtree(proj, f"runs/{alt_id}")
 
     # ── scoring against labels (step 4) ───────────────────────────────────────────────────
     r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "author_v1")
-    lab_dir = "runs-labels-tickets_v1-author_v1"
-    ms = (
-        [
-            _runstore.read_json(proj, f"{lab_dir}/{n}/metrics.json")
-            for n in _runstore.listdir(proj, lab_dir)
-            if _runstore.is_file(proj, f"{lab_dir}/{n}/metrics.json")
+    lab_label = "labels-tickets_v1-author_v1"
+
+    def lab_scores():
+        """[(run id, record)] of the scores read as the label set's own arm."""
+        return [
+            (rid, rec)
+            for rid in _runstore.listdir(proj, "runs")
+            for _k, lb, rec in _runview.scores_of(proj, rid)
+            if lb == lab_label
         ]
-        if r.returncode == 0
-        else []
-    )
+
+    ms = [rec for _rid, rec in lab_scores()] if r.returncode == 0 else []
     check(
-        "rescore --labels: every run scored against the set, beside the runs, never in the re-score goals read",
+        "rescore --labels: every run scored against the set, read as an arm of its own, never in the re-score goals read",
         len(ms) == 2
         and all(
             m["fingerprint"]["data"]["reference_id"] == "labels/tickets_v1/author_v1"
@@ -854,7 +854,11 @@ try:
             and len(m["fingerprint"]["data"]["references_sha256"] or "") == 64
             for m in ms
         )
-        and not _runstore.exists(proj, "runs-rescored"),
+        and not any(
+            lb.startswith("rescored ")
+            for rid in _runstore.listdir(proj, "runs")
+            for _k, lb, _rec in _runview.scores_of(proj, rid)
+        ),
         out(r)[-300:],
     )
     r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "tickets_v2/owner_v1")
@@ -866,11 +870,19 @@ try:
     r = evh("rescore", "--dataset-id", "tickets_v1", "--labels", "no_such_set")
     check("rescore --labels: an unknown set is refused", refused(r, "no label set at"), out(r)[-200:])
 
+    def plain_runs():
+        """The runs of the system whose first score is read as its plain arm."""
+        return sorted(
+            n
+            for n in runs_named("tickets_lead1_v1_")
+            if any(lb == "" for _k, lb, _rec in _runview.scores_of(proj, n))
+        )
+
     def lab_runs():
-        return {n for n in _runstore.listdir(proj, lab_dir) if n.startswith("tickets_lead1_v1_")}
+        return {n for n in runs_named("tickets_lead1_v1_") if n not in plain_runs()}
 
     before_lab = lab_runs()
-    before_runs = sorted(runs_named("tickets_lead1_v1_"))
+    before_runs = plain_runs()
     r = subprocess.run(
         [
             sys.executable,
@@ -891,19 +903,20 @@ try:
         text=True,
     )
     made = sorted(lab_runs() - before_lab)
-    run_m: dict = _runstore.read_json(proj, f"{lab_dir}/{made[-1]}/metrics.json") if made else {}
+    run_m: dict = _runview.record_of(proj, made[-1])[1] if made else {}
     check(
-        "evh run --labels: an arm of its own, beside the runs (data/runs-labels-<dataset>-<set>/), never one more"
-        " run of the config's arm in data/runs; the run records the set",
+        "evh run --labels: an arm of its own (labels-<dataset>-<set>), never one more run of the config's plain arm;"
+        " the run records the set",
         r.returncode == 0
         and "the label set labels/tickets_v1/author_v1" in out(r)
         and run_m.get("reference_tier") == "labels"
         and run_m["fingerprint"]["data"]["reference_id"] == "labels/tickets_v1/author_v1"
-        and sorted(runs_named("tickets_lead1_v1_")) == before_runs,
+        and plain_runs() == before_runs
+        and len(made) == 1,
         out(r)[-300:],
     )
     for d in made:
-        _runstore.rmtree(proj, f"{lab_dir}/{d}")
+        _runstore.rmtree(proj, f"runs/{d}")
     r = evh("goals", "--goal", "tickets_summary")
     group = (
         out(r).split("labels/tickets_v1/author_v1", 1)[1] if "labels/tickets_v1/author_v1" in out(r) else ""
@@ -936,11 +949,7 @@ try:
     )
     check(
         "validate V1: a run scored against a label set (reference_tier labels) is a valid run",
-        "FAIL V1 " not in out(r)
-        and any(
-            f.startswith("runs-labels-") and f.endswith("/metrics.json") and f.count("/") == 2
-            for f in _runstore.files_under(proj)
-        ),
+        "FAIL V1 " not in out(r) and bool(lab_scores()),
         out(r)[-600:],
     )
     _runstore.write_text(proj, f"{LABELS}/tickets_v1/owner_v1/{rows[0]['item_id']}.txt", "edited by hand\n")

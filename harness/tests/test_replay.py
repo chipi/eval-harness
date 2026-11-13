@@ -32,6 +32,8 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
+from evaluation_harness.model import runs as _R  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-replay-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-replay")
@@ -59,7 +61,7 @@ def run_id(r):
 
 
 def metrics(rid):
-    return _runstore.read_json(proj, f"runs/{rid}/metrics.json")
+    return _runview.record_of(proj, rid)[1]
 
 
 def py(script, *args):
@@ -153,8 +155,9 @@ try:
     rep_id = run_id(rr)
     m = metrics(rep_id) if rep_id else {}
     code = ((m.get("fingerprint") or {}).get("deployment") or {}).get("code") or {}
-    with _runstore._InProject(proj) as data:  # the run's rows, wherever the project's store keeps them
-        rows = _runstore.rows(data / "runs" / rep_id) if rep_id else []
+    rows = (
+        _runview.rows_of(proj, rep_id) if rep_id else []
+    )  # the run's rows, wherever the project's store keeps them
     changed = [x["item_id"] for x in rows if (x.get("_meta") or {}).get("changed")]
     copies = sorted(p.name for p in (proj / ".build" / "code" / "toy_filing").iterdir()) if rep_id else []
     check(
@@ -416,10 +419,8 @@ try:
     resc_ok = evh(
         "rescore", "--dataset-id", "filing_history_v1", "--match", "filing_buggy", "--unfaithful", "--json"
     )
-    rescored = [
-        _runstore.read_json(proj, str(Path(x).relative_to(proj / "data")) + "/metrics.json")
-        for x in values(resc_ok).get("rescored") or []
-    ]
+    with _runstore._InProject(proj):
+        rescored = [_R.record(Path(x)) or {} for x in values(resc_ok).get("rescored") or []]
     check(
         "a finished replay is judged by what its own fingerprint names: rescoring an unfaithful one is refused, a "
         "person's --unfaithful rescores it, and the derived record carries the replay's faithfulness",

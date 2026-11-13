@@ -57,7 +57,7 @@ def project(tmp: Path) -> tuple:
         "PYTHONDONTWRITEBYTECODE": "1",
         "EVAL_BUILD_REF": "browser-check",
     }
-    for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
+    for k in ("EVAL_HOME", "EVAL_DATA_DIR"):
         env.pop(k, None)
 
     def evh(*args: str) -> None:

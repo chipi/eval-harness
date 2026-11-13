@@ -1,4 +1,5 @@
-"""The run record (metrics.json): one constructor for a measured run, one for a derived one.
+"""The record of a scored run (the run's run.json and its score's metrics.json): one constructor for a measured run,
+one for a derived one.
 
 Four writers built the record by hand: evh run and import-run field by field, rescore
 and judge-score by copying the source run and patching it, each with its own provenance
@@ -29,6 +30,7 @@ from pathlib import Path
 from typing import Any
 
 from evaluation_harness._common import now
+from evaluation_harness.model.runs import RUN_ONLY
 
 #: The kinds of derivation, and what each one's `with` names.
 DERIVED_KINDS = ("rescore", "judge", "reparse")
@@ -157,16 +159,15 @@ def derived_record(
     n_items: int,
     at: str | None = None,
     drop: tuple[str, ...] = (),
-    source_path: Path | None = None,
     **changes: Any,
 ) -> dict[str, Any]:
     """A run computed from `source` (the record in `source_dir`) by a `kind` of derivation,
     `with_` naming what computed it. Its own created_at is the derivation's; the source's is
     kept as source_created_at. A source that was itself derived keeps its block, nested as
     `derived.source`. `drop` removes source fields that do not describe the new scores;
-    `changes` sets fields (metric_kinds, primary_metric, fingerprint, ...). `source_path`, the source's directory, is
-    recorded under the data directory as `derived.from_dir`, so its outputs are read from that run and no other of the
-    same name (RFC-024)."""
+    `changes` sets fields (metric_kinds, primary_metric, fingerprint, ...). `source_dir` is the run the score is of:
+    `derived.from_dir` names it, `runs/<id>`. The fields a run holds for what a folder used to mean (purpose,
+    machine, of) are the run's, not the score's: left off."""
     if kind not in DERIVED_KINDS:
         raise ValueError(f"unknown derivation {kind!r}; one of {', '.join(DERIVED_KINDS)}")
     from evaluation_harness import _seal  # noqa: PLC0415
@@ -174,16 +175,15 @@ def derived_record(
     _seal.refuse_if_sealed(source.get("dataset_id"), f"a {kind}", source.get("config_id"))
     when = at or now()
     record = json.loads(json.dumps(source))
-    for key in drop:
+    for key in (*drop, *RUN_ONLY):
         record.pop(key, None)
-    block: dict[str, Any] = {"kind": kind, "from": source_dir, "at": when, "with": with_}
-    if source_path is not None:
-        from evaluation_harness import _common  # noqa: PLC0415
-
-        try:
-            block["from_dir"] = Path(source_path).resolve().relative_to(_common.DATA.resolve()).as_posix()
-        except ValueError:
-            pass  # a source outside the data directory (EVAL_RUNS_DIR elsewhere): found by name
+    block: dict[str, Any] = {
+        "kind": kind,
+        "from": source_dir,
+        "at": when,
+        "with": with_,
+        "from_dir": f"runs/{source_dir}",
+    }
     if isinstance(source.get("derived"), dict):
         block["source"] = source["derived"]
     record.update(

@@ -26,8 +26,7 @@ import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-capture-restore-"))
 env = dict(os.environ, EVAL_HOME=str(proj))
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
-    env.pop(k, None)
+env.pop("EVAL_DATA_DIR", None)
 
 
 def evh(*args):

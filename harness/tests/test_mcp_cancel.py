@@ -48,7 +48,6 @@ env = dict(
     EVH_TEST_SLOW_PID=str(pid_file),
 )
 env.pop("EVAL_DATA_DIR", None)
-env.pop("EVAL_RUNS_DIR", None)
 
 
 slow: list[int] = []

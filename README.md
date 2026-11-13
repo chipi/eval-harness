@@ -116,7 +116,7 @@ offline, with the real output of every command. The tutorials take it further:
 | `evh holdout --dataset-id my_v1 --exclude-dataset …` | the same test minus items a smaller dataset already contained |
 | `evh rank-stability --dataset-id my_v1` | how many items before the ordering stops moving: measured, not assumed |
 | `evh silver-calibrate --dataset-id my_v1` | is a silver reference usable? How far it drifts from gold, read against the ceiling it prints |
-| `evh rescore --dataset-id my_v1 --out data/runs-rescored` | recompute scores from stored outputs, no API calls |
+| `evh rescore --dataset-id my_v1` | recompute scores from stored outputs, no API calls |
 | `evh judge-score --dataset-id my_v1 --scorer …` | optional: re-measure stored outputs with LLM judges that grade each output, pick the best or compare two (the scorer's `mode`), refused until they are validated against people in that mode ([tutorial 3](docs/tutorials/3-frontier-reference-and-judging.md)) |
 | `evh inspect --sheet --dataset-id my_v1 --runs …` | one sheet: every item, what each arm wrote and its scores, the labels, the winner and a footer per arm; `--csv FILE --fill label\|pick\|scores` for a person or a tool to fill, `evh sheet-import` to read it back |
 | `evh catalog-serve` | browse every run and test any arms against a baseline, item by item; every view is also a command ([tutorial 5](docs/tutorials/5-catalog-and-inspector.md)) |

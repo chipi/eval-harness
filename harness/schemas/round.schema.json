@@ -24,7 +24,7 @@
         "additionalProperties": false,
         "properties": {
           "config_id": {"type": "string"},
-          "runs_dir": {"type": "string", "description": "The runs directory, relative to data/, whose copy of the config is retired (runs-linux: a re-timing of the same config on another machine). Absent: the project's runs directory."},
+          "runs": {"type": "array", "items": {"type": "string"}, "description": "The retired runs of the system (run ids; a re-timing of it on another machine, say). The system is out once every run of it on the dataset, read as one arm, is named; none named: it is retired from the plain runs outright."},
           "reason": {"type": "string"},
           "at": {"type": "string"},
           "actor": {"$ref": "#/properties/actor"}
@@ -45,7 +45,7 @@
           "at": {"type": "string"},
           "scorer": {"type": "string"},
           "why": {"type": "string"},
-          "written": {"type": "array", "items": {"type": "string"}, "description": "The directories the re-scores were written to, relative to data/."},
+          "written": {"type": "array", "items": {"type": "string"}, "description": "The labels the re-scores are read under (\"rescored 5f2c057c\")."},
           "runs": {"type": "integer", "minimum": 0, "description": "How many runs were re-scored."}
         }
       }

@@ -218,7 +218,7 @@ def agreement(direction: str, delta: float, lower: bool, significant: bool) -> s
 
 
 def across_runs(runs: list[dict], against: str | None = None, measure: str | None = None) -> dict | None:
-    """An arm's hypothesis as all its runs (their metrics.json) give it, or None when none carries one. Named
+    """An arm's hypothesis as all its runs (their records) give it, or None when none carries one. Named
     in advance only when EVERY run carries it and each was named in advance: a test averages all of an arm's runs,
     so one run made before the hypothesis (or carrying another) means part of the evidence predates the
     prediction, whatever a later run records. `against`/`measure` keep only the hypothesis a comparison tests."""

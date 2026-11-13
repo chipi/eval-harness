@@ -113,11 +113,11 @@ def save(doc: dict[str, Any]) -> Path:
     return p
 
 
-def runs_of(rnd: dict[str, Any], runs_dir: Path | None = None) -> list[tuple[Path, dict]]:
-    """The runs that name this round (and its goal), in data/runs or `runs_dir`."""
+def runs_of(rnd: dict[str, Any], label: str = "") -> list[tuple[Path, dict]]:
+    """The scores of runs that name this round (and its goal), read under `label` ("": the plain runs)."""
     return [
         (d, m)
-        for d, m in runs_on(rnd.get("dataset_id"), runs_dir=runs_dir)
+        for d, m in runs_on(rnd.get("dataset_id"), label=label)
         if m.get("round") == rnd["round_id"] and m.get("goal") == rnd["goal"]
     ]
 
@@ -131,7 +131,7 @@ def harness_now() -> dict[str, Any]:
     return {k: h.get(k) for k in ("version", "commit", "code_sha256", "installed")}
 
 
-def off_harness(rnd: dict[str, Any], runs_dir: Path | None = None) -> list[tuple[str, dict]]:
+def off_harness(rnd: dict[str, Any], label: str = "") -> list[tuple[str, dict]]:
     """The round's runs that ran on other harness code than it opened on (the fleet's feedback 17: code taken
     mid-round splits the round's instrument), as (run id, the harness it recorded). Empty for a round
     opened before rounds recorded it."""
@@ -139,10 +139,10 @@ def off_harness(rnd: dict[str, Any], runs_dir: Path | None = None) -> list[tuple
     if not want:
         return []
     out = []
-    for d, m in runs_of(rnd, runs_dir):
+    for _d, m in runs_of(rnd, label):
         h = ((m.get("fingerprint") or {}).get("instrument") or {}).get("harness") or {}
         if h.get("code_sha256") and h["code_sha256"] != want:
-            out.append((d.name, h))
+            out.append((m["run_id"], h))
     return out
 
 
@@ -157,25 +157,27 @@ def how_to_run_on(rnd: dict[str, Any]) -> str:
     )
 
 
-def arms_of(rnd: dict[str, Any], runs_dir: Path | None = None) -> list[str]:
-    """The round's arms still in play: systems whose runs name it, and those carried into it
-    unchanged from an earlier round, less the retired."""
-    here = runs_dir_name(runs_dir)
-    retired = {
-        r["config_id"] for r in rnd.get("retired") or [] if (r.get("runs_dir") or runs_dir_name(None)) == here
-    }
-    ran = {m["config_id"] for _, m in runs_of(rnd, runs_dir)}
-    return sorted((ran | set(rnd.get("carried") or [])) - retired)
-
-
-def runs_dir_name(runs_dir: Path | None) -> str:
-    """A runs directory as a retirement names it: relative to data/ (runs, runs-linux), or its
-    own name when it lies elsewhere."""
-    base = (runs_dir or _common.RUNS).resolve()
-    try:
-        return base.relative_to(_common.DATA.resolve()).as_posix()
-    except ValueError:
-        return base.name
+def arms_of(rnd: dict[str, Any], label: str = "") -> list[str]:
+    """The round's arms still in play, read under `label`: systems whose runs name it, and (in the plain runs) those
+    carried into it unchanged from an earlier round, less the retired. A retirement names the runs it retires: the
+    system is out once every run of it on the dataset (read under `label`) is named, and a run of it made afterwards
+    brings it back. One that names none retires the system from the plain runs outright."""
+    retired = rnd.get("retired") or []
+    named: dict[str, set[str]] = {}
+    for r in retired:
+        named.setdefault(r["config_id"], set()).update(r.get("runs") or [])
+    nothing = {r["config_id"] for r in retired if not r.get("runs")}
+    on_dataset: dict[str, set[str]] = {}
+    for _d, m in runs_on(rnd.get("dataset_id"), label=label):
+        on_dataset.setdefault(m["config_id"], set()).add(m["run_id"])
+    ran = {m["config_id"] for _d, m in runs_of(rnd, label)}
+    in_play = ran | set(rnd.get("carried") or []) if not label else ran
+    return sorted(
+        c
+        for c in in_play
+        if not (not label and c in nothing)
+        and not (named.get(c) and on_dataset.get(c) and on_dataset[c] <= named[c])
+    )
 
 
 def config_round(cfg: dict[str, Any], config_path: Any) -> dict[str, Any] | None:
@@ -249,7 +251,9 @@ def problems() -> list[str]:
         doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {} if yaml else {}
         if doc.get("from") and (doc.get("goal"), doc["from"]) not in known:
             out.append(f"rounds/{f.relative_to(base).as_posix()}: from {doc['from']!r}, which does not exist")
-    for d, m in runs_on():
+    for _d, m in runs_on():
         if m.get("round") and (m.get("goal"), m["round"]) not in known:
-            out.append(f"run {d.name} names round {m['round']!r} of {m.get('goal')!r}, which does not exist")
+            out.append(
+                f"run {m['run_id']} names round {m['round']!r} of {m.get('goal')!r}, which does not exist"
+            )
     return out

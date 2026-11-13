@@ -10,7 +10,7 @@ WHY THIS EXISTS
   A project that already has runs -- made by its own pipeline, scored by its own scorers
   -- should not have to re-run anything to get significance tests on them. What the
   paired tests need is one score per item per arm, on the same frozen items. This writes
-  exactly that as an ordinary run directory (metrics.json + predictions.jsonl + run.json),
+  exactly that as an ordinary run (run.json, and under it the score: metrics.json + predictions.jsonl),
   so pair-test, family-test, leaderboard, rank-stability and validate read it like any
   other run.
 
@@ -53,17 +53,16 @@ from evaluation_harness._common import (
     DATA,
     DATASETS,
     ROOT,
-    RUNS,
     dataset_id_ok,
     die,
     evh_prog,
     now,
     read_json,
     sha256,
-    write_json,
 )
 from evaluation_harness._fingerprint import build_fingerprint
 from evaluation_harness._record import run_record
+from evaluation_harness.model import runs as _model_runs
 
 
 def _rows(path: Path) -> list:
@@ -183,7 +182,7 @@ def main() -> int:
             scores[m] = round(sum(vals) / len(vals), 6)
 
         run_id = args.run_id or f"{args.system_id}_{now().replace('-', '').replace(':', '')}"
-        run_dir = RUNS / run_id
+        run_dir = _model_runs.run_dir(run_id)
         if _store.exists(run_dir):
             die(f"{run_dir} already exists", "would-overwrite")
 
@@ -229,18 +228,6 @@ def main() -> int:
         )
         fingerprint["imported"] = imported
 
-        _store.mkdir(run_dir, parents=True)
-        write_json(
-            run_dir / "run.json",
-            {
-                "config_id": args.system_id,
-                "dataset_id": args.dataset_id,
-                "run_id": run_id,
-                "started_at": now(),
-                "imported": True,
-            },
-        )
-        _outputs.write_rows(run_dir, rows)
         metrics_doc = run_record(
             run_id=run_id,
             dataset_id=args.dataset_id,
@@ -258,7 +245,23 @@ def main() -> int:
             imported=imported,
             reference_tier=args.reference_tier or None,
         )
-        write_json(run_dir / "metrics.json", metrics_doc)
+        _model_runs.write_run(
+            run_id,
+            {
+                **_model_runs.run_part(metrics_doc),
+                "started_at": now(),
+                "purpose": "run",
+                "machine": _model_runs.machine_of(fingerprint),
+            },
+        )
+        # An import without scorer files has no instrument hash: the scorer's id stands in, hashed, so the score has
+        # a key.
+        scorer = (
+            _model_runs.scorer_of(metrics_doc)
+            or hashlib.sha256(f"imported:{args.scorer_id}".encode()).hexdigest()[:12]
+        )
+        score_dir = _model_runs.write_score(run_id, scorer, args.reference_id, metrics_doc, first=True)
+        _outputs.write_rows(score_dir, rows)
         cover = f"{len(seen)}/{len(known)} items" + (" (subset)" if missing else "")
         print(
             f"imported {run_id}: {cover}, {len(metrics)} metric(s), "

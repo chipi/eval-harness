@@ -14,10 +14,10 @@ best and cannot score an arm added next week.
 - a filled `label` column (with `also right` and `note`, as label-import reads them) becomes a label set, `--set`; its
   source is `person`, or `model` with `--kind model` (`--by` then names the tool);
 - a filled `pick` column (the letter of the best output; `A|B` for a tie, each then taking half) or `score: X` columns
-  (a number on the rubric's scale) become judged runs under data/runs-judged/<scorer>/, `--scorer`: one run per arm,
-  `judge_won_unvalidated` (1 for the pick, 0 for the others, split on a tie) or `judge_score_unvalidated` per item,
-  mapped back through the key (`sheet.key.json`, beside the sheet; `--key` names another). Such runs are
-  unvalidated, labelled so as judge-score's `--unvalidated` runs are, until the same judge is validated as any is;
+  (a number on the rubric's scale) become judged scores, `--scorer`: a score under each arm's run (read as
+  judged/<scorer>), `judge_won_unvalidated` (1 for the pick, 0 for the others, split on a tie) or `judge_score_unvalidated` per item,
+  mapped back through the key (`sheet.key.json`, beside the sheet; `--key` names another). Such scores are
+  unvalidated, labelled so as judge-score's `--unvalidated` scores are, until the same judge is validated as any is;
 - filled `failure_modes: X` columns (modes of a failure-mode list, `mode|mode` for several, `ok` for an output read
   and found fine; a blank cell was not read) become a tag set under data/tags/<dataset>/<name>/, `--tags`, checked
   against its key and the list `--modes` names. A tag says what went wrong in that arm's output; it scores nothing.
@@ -44,16 +44,15 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from evaluation_harness import _common, _jsonout, _outputs, _store, _tags
+from evaluation_harness import _jsonout, _outputs, _store, _tags
 from evaluation_harness._codeid import file_sha256
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
+    DATA,
     classify_metrics,
     die,
     evh_prog,
     load_dataset,
-    read_json,
-    write_json,
 )
 from evaluation_harness._fingerprint import seal
 from evaluation_harness._label_sets import set_dir, write_set
@@ -63,6 +62,7 @@ from evaluation_harness._sheet import NOT_AN_ITEM, key_path, read_key, text_sha2
 from evaluation_harness._sheets import read_csv
 from evaluation_harness.label_import import labels_from_rows
 from evaluation_harness.label_sheet import run_dir
+from evaluation_harness.model import runs as _model_runs
 
 NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
 #: What describes the call that made an arm's output, not how it was judged: carried across, as judge-score carries
@@ -84,7 +84,9 @@ def main() -> int:
     )
     ap.add_argument("--set", dest="name", help="the label set's name, for a filled `label` column")
     ap.add_argument(
-        "--scorer", help="the name of the judged runs (data/runs-judged/<scorer>/), for `pick`/`score:`"
+        "--scorer",
+        help="the name of the judged scores (read as judged/<scorer>; key <scorer>@none under each arm's run), for "
+        "`pick`/`score:`",
     )
     ap.add_argument(
         "--tags", help="the tag set's name, for filled `failure_modes:` columns (data/tags/<dataset>/<name>/)"
@@ -146,7 +148,7 @@ def main() -> int:
             die("the sheet has labels: name the label set with --set", "bad-argument")
         if (has_pick or has_scores) and not args.scorer:
             die(
-                "the sheet has judgements: name the judged runs with --scorer (data/runs-judged/<scorer>/)",
+                "the sheet has judgements: name the judging scorer with --scorer (its scores are read as judged/<scorer>)",
                 "bad-argument",
             )
 
@@ -166,12 +168,6 @@ def main() -> int:
                 die(
                     f"--scorer {args.scorer!r}: letters, digits, _ . - (at most 100), starting with a letter or digit",
                     "bad-argument",
-                )
-            target = _common.DATA / "runs-judged" / args.scorer
-            if _store.exists(target) and any(_store.iterdir(target)):
-                die(
-                    f"{target} exists: judged runs are never overwritten. Name another --scorer.",
-                    "would-overwrite",
                 )
             judged = _judgements(args, rows, has_pick)
 
@@ -297,17 +293,27 @@ def _judgements(args: argparse.Namespace, rows: list[dict[str, str]], pick: bool
 
 
 def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> None:
-    """One run per arm under data/runs-judged/<scorer>/, named as its source run, shaped as judge-score's."""
+    """One score per arm under its run (key <scorer>@none, read as judged/<scorer>), shaped as judge-score's."""
     key, metric, values = judged["key"], judged["metric"], judged["values"]
-    root = _common.DATA / "runs-judged" / args.scorer
     kinds_known = classify_metrics()
-    written = 0
+    held = _model_runs.key(args.scorer, None)
+    sources = []
     for k, per_item in sorted(values.items()):
         arm = key["arms"][k]
-        src = _common.DATA / arm["path"] if arm.get("path") else None
-        if src is None or not _store.is_file(src / "metrics.json"):
+        src = DATA / arm["path"] if arm.get("path") else None
+        if src is None or _model_runs.record(src) is None:
             src = run_dir(arm["run"], args.dataset_id)
-        m = read_json(src / "metrics.json")
+        sources.append((per_item, src, _model_runs.run_of(src).name))
+    taken = [rid for _p, _s, rid in sources if _store.is_dir(_model_runs.run_dir(rid) / "scores" / held)]
+    if taken:
+        die(
+            f"{held} already scores {', '.join(taken[:6])}{' ...' if len(taken) > 6 else ''}: judged scores are "
+            "never overwritten. Name another --scorer.",
+            "would-overwrite",
+        )
+    written = 0
+    for per_item, src, rid in sources:
+        m = _model_runs.record(src) or {}
         old = {r["item_id"]: r for r in item_rows(src, strict=False)}
         recs = []
         for item in sorted(per_item):
@@ -327,8 +333,7 @@ def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> 
         new = derived_record(
             m,
             kind="judge",
-            source_dir=src.name,
-            source_path=src,
+            source_dir=rid,
             scores=aggregate_scores(recs),
             n_items=len(recs),
             drop=("reference_tier",),
@@ -362,16 +367,12 @@ def _write(args: argparse.Namespace, judged: dict[str, Any], sheet_sha: str) -> 
                 "see derived.with"
             )
             new["fingerprint"] = fp
-        out = root / src.name
-        _store.mkdir(
-            out, parents=True, exist_ok=True
-        )  # no outputs of its own: they are its source's (RFC-024)
-        _outputs.write_rows(out, recs)
-        write_json(out / "metrics.json", new)
+        sd = _model_runs.write_score(rid, args.scorer, None, new, label_as=f"judged/{args.scorer}")
+        _outputs.write_rows(sd, recs)  # no outputs of its own: they are its run's (RFC-024)
         written += 1
     n = sum(len(v) for v in values.values())
     print(
-        f"data/runs-judged/{args.scorer}: {written} run(s), {n} judgement(s), {metric}, unvalidated · {args.kind} {args.by}"
+        f"judged/{args.scorer}: {written} score(s), {n} judgement(s), {metric}, unvalidated · {args.kind} {args.by}"
     )
     print(
         f"  look at it: evh inspect --sheet --dataset-id {args.dataset_id} --runs {','.join(a['arm'] for a in key['arms'])}"

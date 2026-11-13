@@ -31,7 +31,7 @@ import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-exposure-"))
 env = dict(os.environ, EVH_ACTOR="person:ana", EVAL_HOME=str(proj))
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_BUILD_REF", "EVH_FOR"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_BUILD_REF", "EVH_FOR"):
     env.pop(k, None)
 AGENT = dict(env, EVH_ACTOR="agent:probe", EVH_FOR="person:ana")
 HYP = {"against": "base_x_v1", "measure": "overlap_f1", "direction": "better", "statement": "two sentences"}

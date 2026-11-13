@@ -1,0 +1,109 @@
+{
+  "actor": {
+    "from": "migration",
+    "name": "before 0.8.0",
+    "type": "unknown"
+  },
+  "adapter": "examples/summeval-judging/adapter.py",
+  "build": {
+    "dirty": false,
+    "ref": "605e549e67a40c4345829ff3b99b1325d0286206",
+    "source": "git"
+  },
+  "config_id": "se_random_n100_v1",
+  "created_at": "2026-10-15T13:05:21Z",
+  "dataset_id": "summeval_100",
+  "fingerprint": {
+    "arm": {
+      "config_id": "se_random_n100_v1",
+      "labels": {
+        "family": "baseline",
+        "price_tier": "free"
+      }
+    },
+    "data": {
+      "dataset_id": "summeval_100",
+      "items_sha256": "b59999b281b2cbe87c57e4af34cc475c01ba1d531c7b77cb93a136665119c613",
+      "n_items": 100,
+      "reference_id": "gold/summeval_100",
+      "reference_tier": "gold",
+      "references_sha256": "7b5e618e23b7f2b222665d83e99006eb0e9a51066e63e2e5ff8c51ae3c696c21"
+    },
+    "data_sha256": "4f1989f81af5313fc011c02f9a294432742ea188c8c6a1c517bc198565d69e29",
+    "deployment": {
+      "declared": {
+        "code_sha256": "b255bb830e5865a770e0c205350dda86d61eb243da688a2e078781904b467578",
+        "kind": "deterministic metric, no model and no network",
+        "provider": "random"
+      },
+      "hosted": null,
+      "id": "random",
+      "in_process": true,
+      "libraries": {
+        "numpy": "1.26.4",
+        "openai": "3.31.0",
+        "rouge-score": "0.1.2",
+        "torch": "2.14.1",
+        "transformers": "4.55.4"
+      },
+      "model": "random",
+      "provider": "random",
+      "server": null,
+      "source": "params",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "not-a-model"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "c705411bb30399093ed09d5d0cb2ce00411c872559651f9c15a5d57866d0b1d1",
+    "hash": "64a9e786efe6bddc7999553f4a1df49f8fa3db738ccfe36898b08bb6357aa89b",
+    "instrument": {
+      "adapter": {
+        "id": "examples/summeval-judging/adapter.py",
+        "sha256": "b7d5e2e5ce84ea0fe683e3488ba09fbcc416464d2b8f5abc47956930bf0262eb"
+      },
+      "harness": {
+        "commit": "605e549e67a4",
+        "dirty": false
+      }
+    },
+    "instrument_sha256": "811a89ab82100a8bb586c026679bcf973654b99a86f8893ca1e0967f0ec923e4",
+    "runner": {
+      "cpu_count": 4,
+      "label": null,
+      "libraries": null,
+      "platform": "Linux/x86_64",
+      "processor": "x86_64",
+      "python": "3.11.15",
+      "release": "6.18.44-fc-v114"
+    },
+    "settings": {
+      "seed": 20261015
+    },
+    "settings_sha256": "eb6789ad7ed0e0bb62bd1dd1d566457a6b33b623c2317cb873a2845a4b72b572",
+    "version": 5
+  },
+  "goal": "summary_judge_summeval",
+  "n_items": 100,
+  "params": {
+    "family": "baseline",
+    "price_tier": "free",
+    "provider": "random",
+    "seed": 20261015
+  },
+  "providers_seen": {},
+  "round": "r1",
+  "run_id": "se_random_n100_v1_20261015T130521Z",
+  "warmup_ms": 0.785,
+  "purpose": "run",
+  "machine": "linux"
+}

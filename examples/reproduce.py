@@ -14,8 +14,9 @@ plan     what a rerun involves before anything is spent: every arm, what it cost
          which route a hosted arm would take. Free, offline.
 data     the example's environment (`uv sync`), its public data (`fetch.py`), and the
          hash check against the committed dataset files (`make dataset-materialize`).
-run      reruns the chosen arms into harness/data/runs-repro/<eval>/ -- gitignored,
-         never beside the committed runs, which stay the record. A hosted arm's spend is
+run      reruns the chosen arms as throwaway runs (`scripts/run.py --scratch`, under
+         harness/.build/scratch/runs/ -- gitignored, read by nothing that reads runs), never
+         beside the committed runs, which stay the record. A hosted arm's spend is
          capped at twice what it was billed when measured (EVAL_MAX_COST_USD per run).
          Each arm is `scripts/run.py --system <id> --dataset <the eval's dataset>` on the
          system in the example's systems/ folder. --system adds a system of your own, on the
@@ -24,7 +25,7 @@ run      reruns the chosen arms into harness/data/runs-repro/<eval>/ -- gitignor
          installed as data/systems/<id>.yaml for the length of the run and removed after.
 compare a replication card: each rerun arm against its committed run on the same items,
          and every committed verdict (significant or not) re-tested with your reruns substituted
-         in. Written to harness/data/runs-repro/<eval>/REPLICATION.md.
+         in. Written to harness/.build/reproduce/<eval>/REPLICATION.md.
 
 What counts as reproduced is different for the two kinds of arm, and the card says which
 applies. A local model with pinned weights should give the same answers, so its card
@@ -54,11 +55,13 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 HARNESS = ROOT / "harness"
 DATA = HARNESS / "data"
-REPRO = DATA / "runs-repro"
+CARDS = HARNESS / ".build" / "reproduce"
 sys.path.insert(0, str(HERE / "_shared"))
 sys.path.insert(0, str(HARNESS))  # the evaluation_harness package (a link to scripts/)
 from eval_arms import arm_of  # noqa: E402
 from evaluation_harness import _store  # noqa: E402
+from evaluation_harness._runs import runs_on  # noqa: E402
+from evaluation_harness.model import runs as model_runs  # noqa: E402
 
 #: Arms that are not models -- floors that check the scorer. Free and deterministic.
 BASELINES = {"lead3", "keyword", "constant", "capitalized", "nothing", "random", "first_k", "length"}
@@ -83,13 +86,13 @@ def _arm(exp: dict, cid: str) -> str | None:
 
 
 def committed(exp: dict) -> dict:
-    """{arm: {cid, dir, score, kind, cost, minutes, model, goal}} from the committed record."""
+    """{arm: {cid, dir, score, kind, cost, minutes, model, goal}} from the committed record: the score each run
+    made when it ran, read under the label `base` names ("runs": a plain run's own)."""
     out = {}
-    for f in sorted(_store.glob(DATA / exp["base"], f"{exp['prefix']}*/metrics.json")):
-        m = json.loads(_store.read_text(f))
+    for d, m in runs_on(exp["dataset"], label="" if exp["base"] == "runs" else exp["base"]):
         cid = m.get("config_id", "")
-        arm = _arm(exp, cid)
-        if m.get("dataset_id") != exp["dataset"] or arm is None:
+        arm = _arm(exp, cid) if cid.startswith(exp["prefix"]) else None
+        if arm is None:
             continue
         params = m.get("params") or {}
         kind = (
@@ -101,22 +104,19 @@ def committed(exp: dict) -> dict:
         )
         out[arm] = {
             "cid": cid,
-            "dir": f.parent,
+            "dir": d,
             "score": m["scores"][exp["metric"]],
             "kind": kind,
             "model": params.get("model"),
             "n": m.get("n_items"),
             "goal": m.get("goal"),
         }
-    # Cost and time come from data/runs, where the provider's response was recorded.
+    # Cost and time come from the runs themselves, where the provider's response was recorded.
     table = json.loads(_store.read_text(HERE / "local_models.json"))
     pins, safe = table["revisions"], table.get("safetensors", {})
-    # A run's directory keeps the id it was made under; its metrics.json has the system's present one.
     made: dict = {}
-    for f in _store.glob(DATA / "runs", f"{exp['prefix']}*/metrics.json"):
-        m = json.loads(_store.read_text(f))
-        if m.get("dataset_id") == exp["dataset"]:
-            made.setdefault(m.get("config_id"), []).append((f, m))
+    for d, m in runs_on(exp["dataset"]):
+        made.setdefault(m.get("config_id"), []).append((d, m))
     for _arm_name, a in out.items():
         a["cost"], a["minutes"] = 0.0, None
         # A rerun loads the safetensors conversion where one was verified to give identical
@@ -127,10 +127,10 @@ def committed(exp: dict) -> dict:
             if a["kind"] == "local"
             else None
         )
-        for f, m in made.get(a["cid"], []):
+        for d, m in made.get(a["cid"], []):
             from evaluation_harness._runs import item_rows  # noqa: PLC0415 - harness/ is on sys.path above
 
-            rows = list(item_rows(f.parent))
+            rows = list(item_rows(d))
             a["cost"] = sum(float(((r.get("_meta") or {}).get("usage") or {}).get("cost") or 0) for r in rows)
             lat = (m.get("scores") or {}).get("latency_ms")
             if lat is not None:
@@ -187,7 +187,7 @@ def plan(exp: dict, level: str, only: str | None) -> int:
     chosen = select(arms, level, only)
     print(
         f"\n{exp['bench']} · {exp['dataset']} · metric {exp['metric']} · "
-        f"{len(arms)} measured arms, committed record: harness/data/{exp['base']}/\n"
+        f"{len(arms)} measured arms, committed record: harness/data/runs/\n"
     )
     print(f"  {'arm':16s} {'kind':9s} {'committed':>10s} {'billed':>9s} {'time':>9s}")
     for a in sorted(chosen, key=lambda a: (arms[a]["kind"], a)):
@@ -272,13 +272,11 @@ def run(exp: dict, level: str, only: str | None, extra: str | None = None) -> in
             "hosted arms selected but no route: put OPENROUTER_API_KEY in "
             "harness/.env (see docs/REPRODUCE.md)"
         )
-    out = REPRO / exp["slug"]
-    _store.mkdir(out, parents=True, exist_ok=True)
     for a in chosen:
         cid = arms[a]["cid"]
         if cid not in known:
             raise SystemExit(f"no system with system_id {cid} under {exp['example']}/systems")
-        env = {**os.environ, "EVAL_RUNS_DIR": str(out)}
+        env = dict(os.environ)
         if arms[a]["kind"] == "hosted":
             # Twice what it was billed, never less than five cents: room for a dearer
             # provider route, not for a runaway loop.
@@ -287,8 +285,11 @@ def run(exp: dict, level: str, only: str | None, extra: str | None = None) -> in
         with _pinned(known[cid], arms[a]) as system_id:
             _run(_run_cmd(venv, system_id, exp, arms[a]["goal"]), cwd=HARNESS, env=env)
     if extra:
-        _run_new_arm(exp, arms, extra, venv, out)
-    print(f"\nreruns are in {out.relative_to(ROOT)}/   next: make compare EXP={exp['slug']}")
+        _run_new_arm(exp, arms, extra, venv)
+    print(
+        f"\nreruns are throwaway runs in {model_runs.root(scratch=True).relative_to(ROOT)}/   "
+        f"next: make compare EXP={exp['slug']}"
+    )
     return 0
 
 
@@ -301,6 +302,7 @@ def _run_cmd(venv: Path, system_id: str, exp: dict, goal: str | None) -> list:
         system_id,
         "--dataset",
         exp["dataset"],
+        "--scratch",
         *(["--goal", goal] if goal else []),
     ]
 
@@ -361,7 +363,7 @@ def _pinned(system_path: Path, arm: dict):
         yield sid
 
 
-def _run_new_arm(exp: dict, arms: dict, given: str, venv: Path, out: Path) -> None:
+def _run_new_arm(exp: dict, arms: dict, given: str, venv: Path) -> None:
     """Your own system, measured on the same items and scored by the same code: a system id the harness
     can find, or a system file (installed under its id for the run)."""
     path = Path(given).resolve()
@@ -382,7 +384,7 @@ def _run_new_arm(exp: dict, arms: dict, given: str, venv: Path, out: Path) -> No
         )
     if sid in {a["cid"] for a in arms.values()}:
         raise SystemExit(f"{sid} is a committed arm; give yours a new name")
-    env = {**os.environ, "EVAL_RUNS_DIR": str(out)}
+    env = dict(os.environ)
     if not env.get("EVAL_MAX_COST_USD"):
         env["EVAL_MAX_COST_USD"] = "1.00"
         print("  EVAL_MAX_COST_USD not set -- capping this arm at $1.00")
@@ -405,17 +407,21 @@ def _items(run_dir: Path, metric: str) -> dict:
 
 
 def _latest_repro(exp: dict) -> dict:
-    """{arm: run_dir} -- the newest rerun of each measured arm."""
+    """{arm: score dir} -- the newest rerun (throwaway run) of each measured arm, as the score it made when it ran."""
     out: dict = {}
-    for f in sorted(_store.glob(REPRO / exp["slug"], f"{exp['prefix']}*/metrics.json")):
-        m = json.loads(_store.read_text(f))
-        arm = _arm(exp, m.get("config_id", ""))
+    root = model_runs.root(scratch=True)
+    for run in sorted(_store.iterdir(root)) if _store.is_dir(root) else []:
+        first = model_runs.first_score(run)
+        m = model_runs.record(first) if first else None
+        if m is None or not m.get("config_id", "").startswith(exp["prefix"]):
+            continue
+        arm = _arm(exp, m["config_id"])
         if (
             m.get("dataset_id") == exp["dataset"]
             and arm is not None
             and (arm not in out or m.get("created_at", "") >= out[arm][1])
         ):
-            out[arm] = (f.parent, m.get("created_at", ""))
+            out[arm] = (first, m.get("created_at", ""))
     return {a: d for a, (d, _) in out.items()}
 
 
@@ -426,31 +432,41 @@ def _paired_p(a: list, b: list, perms: int = 10000, seed: int = 20261014) -> flo
     return sign_flip_p([x - y for x, y in zip(a, b)], permutations=perms, seed=seed)
 
 
-def _family(exp: dict, runs_dir: Path, cids: dict, arm: str | None = None) -> tuple[list, list]:
-    """(not significant, significant) opponents of `arm` (the leader by default), Holm-corrected.
+def _family(exp: dict, runs: list, cids: dict, arm: str | None = None) -> tuple[list, list]:
+    """(not significant, significant) opponents of `arm` (the leader by default), Holm-corrected, over `runs` (run
+    directories, one for each arm of the family).
 
-    `cids` is {arm: system id}: the family is the eval's arms, named one by one (the ids no longer share a suffix)."""
+    `cids` is {arm: system id}: the family is the eval's arms, named one by one (the ids no longer share a suffix).
+    The runs are read by `family-test` in a project of their own: a temporary one whose data is this project's, but for
+    its runs, which are links to `runs` (a rerun in place of the run it re-does)."""
     a_cid = cids[arm or exp["leader"]]
     by_cid = {c: a for a, c in cids.items()}
-    r = subprocess.run(
-        [
-            sys.executable,
-            str(HARNESS / "scripts" / "family_test.py"),
-            "--dataset-id",
-            exp["dataset"],
-            "--a",
-            a_cid,
-            "--against",
-            ",".join(cids.values()),
-            "--metric",
-            exp["metric"],
-            "--runs-dir",
-            str(runs_dir),
-        ],
-        capture_output=True,
-        text=True,
-        cwd=HARNESS,
-    )
+    with tempfile.TemporaryDirectory(prefix="evh-reproduce-") as tmp:
+        home = Path(tmp)
+        (home / "data" / "runs").mkdir(parents=True)
+        for entry in sorted(_store.iterdir(DATA)):
+            if entry.name != "runs":
+                (home / "data" / entry.name).symlink_to(entry.resolve(), target_is_directory=entry.is_dir())
+        for run in runs:
+            (home / "data" / "runs" / run.name).symlink_to(run.resolve(), target_is_directory=True)
+        r = subprocess.run(
+            [
+                sys.executable,
+                str(HARNESS / "scripts" / "family_test.py"),
+                "--dataset-id",
+                exp["dataset"],
+                "--a",
+                a_cid,
+                "--against",
+                ",".join(cids.values()),
+                "--metric",
+                exp["metric"],
+            ],
+            capture_output=True,
+            text=True,
+            cwd=HARNESS,
+            env={**os.environ, "EVAL_HOME": str(home)},
+        )
     if r.returncode != 0:
         raise SystemExit(f"family test failed:\n{r.stderr[-800:]}")
     level, sep = [], []
@@ -466,14 +482,14 @@ def compare(exp: dict) -> int:
     reruns = _latest_repro(exp)
     if not reruns:
         raise SystemExit(
-            f"no reruns yet under {(REPRO / exp['slug']).relative_to(ROOT)}: make reproduce EXP={exp['slug']}"
+            f"no reruns yet under {model_runs.root(scratch=True).relative_to(ROOT)}: make reproduce EXP={exp['slug']}"
         )
     lines = [
         f"# Replication card · {exp['bench']}",
         "",
         (
             f"Dataset `{exp['dataset']}`, metric `{exp['metric']}`. Committed record: "
-            f"`harness/data/{exp['base']}/`. Reruns: `harness/data/runs-repro/{exp['slug']}/`."
+            "`harness/data/runs/`. Reruns: throwaway runs, `harness/.build/scratch/runs/`."
         ),
         "",
         "| arm | kind | committed | rerun | Δ | identical items | paired p | upstream | status |",
@@ -491,8 +507,8 @@ def compare(exp: dict) -> int:
         ca, ra = [c[i] for i in common], [r[i] for i in common]
         same = sum(abs(x - y) < 1e-9 for x, y in zip(ca, ra))
         p = _paired_p(ca, ra)
-        m_new = json.loads(_store.read_text(reruns[a] / "metrics.json"))
-        m_old = json.loads(_store.read_text(arms[a]["dir"] / "metrics.json"))
+        m_new = model_runs.record(reruns[a]) or {}
+        m_old = model_runs.record(arms[a]["dir"]) or {}
         up_new, up_old = (_upstream(x) for x in (m_new, m_old))
         upstream = (
             "—"
@@ -517,26 +533,17 @@ def compare(exp: dict) -> int:
     # VERDICTS. Substitute every rerun for its committed run and re-test the leader against
     # the same family: the committed findings are statements about significant differences, so that is
     # what a replication has to check.
-    with tempfile.TemporaryDirectory() as tmp:
-        merged = Path(tmp)
-        for a, v in arms.items():
-            src = reruns.get(a, v["dir"])
-            (merged / src.name).symlink_to(src.resolve(), target_is_directory=True)
-        cids = {a: v["cid"] for a, v in arms.items()}
-        level_c, sep_c = _family(exp, DATA / exp["base"], cids)
-        level_m, sep_m = _family(exp, merged, cids)
-        new = sorted(a for a in reruns if a not in arms)
-        placed = {}
-        if new:
-            # Each new arm against the committed field only -- one family per new arm.
-            for a in new:
-                with tempfile.TemporaryDirectory() as tmp2:
-                    field = Path(tmp2)
-                    for _b, v in arms.items():
-                        (field / v["dir"].name).symlink_to(v["dir"].resolve(), target_is_directory=True)
-                    (field / reruns[a].name).symlink_to(reruns[a].resolve(), target_is_directory=True)
-                    rerun_cid = json.loads(_store.read_text(reruns[a] / "metrics.json"))["config_id"]
-                    placed[a] = _family(exp, field, {**cids, a: rerun_cid}, a)
+    of = model_runs.run_of
+    cids = {a: v["cid"] for a, v in arms.items()}
+    level_c, sep_c = _family(exp, [of(v["dir"]) for v in arms.values()], cids)
+    level_m, sep_m = _family(exp, [of(reruns.get(a, v["dir"])) for a, v in arms.items()], cids)
+    new = sorted(a for a in reruns if a not in arms)
+    placed = {}
+    # Each new arm against the committed field only -- one family per new arm.
+    for a in new:
+        field = [of(v["dir"]) for v in arms.values()] + [of(reruns[a])]
+        rerun_cid = (model_runs.record(reruns[a]) or {})["config_id"]
+        placed[a] = _family(exp, field, {**cids, a: rerun_cid}, a)
     moved = sorted(set(level_c) ^ set(level_m))
     lines += [
         "",
@@ -581,9 +588,10 @@ def compare(exp: dict) -> int:
         ),
     ]
     card = "\n".join(lines) + "\n"
-    _store.write_text(REPRO / exp["slug"] / "REPLICATION.md", card)
+    _store.mkdir(CARDS / exp["slug"], parents=True, exist_ok=True)
+    _store.write_text(CARDS / exp["slug"] / "REPLICATION.md", card)
     print(card)
-    print(f"written to {(REPRO / exp['slug'] / 'REPLICATION.md').relative_to(ROOT)}")
+    print(f"written to {(CARDS / exp['slug'] / 'REPLICATION.md').relative_to(ROOT)}")
     return 1 if moved or any(s.startswith("DIFFERS") for s in statuses.values()) else 0
 
 

@@ -1,0 +1,176 @@
+{
+  "created_at": "2026-11-02T16:17:08Z",
+  "derived": {
+    "at": "2026-11-02T16:17:08Z",
+    "from": "cnn_anthropic_s_n200_v1_20260926T064810Z",
+    "from_dir": "runs/cnn_anthropic_s_n200_v1_20260926T064810Z",
+    "kind": "judge",
+    "with": {
+      "judges": [
+        {
+          "family": "gemma",
+          "fp": "5031d8671837eb80",
+          "id": "gemma_l",
+          "model": "eval-gemma-31b"
+        },
+        {
+          "family": "qwen",
+          "fp": "c0ecf5eb99cea0b5",
+          "id": "qwen_s",
+          "model": "eval-qwen-flash"
+        }
+      ],
+      "judging_set_id": "cnn_dailymail_200-29arms-c11e64dd47ac",
+      "judging_set_sha256": "c11e64dd47ac32f0978d73166d64264d603a6eb690434af2586cc99c1c258830",
+      "label": "validated on summeval_100 (provenance)",
+      "mode": "pick",
+      "prompt_sha256_at_16": "7f2becef44aae979433c02983916f81234e54bef10eab7a4c606c2574c7042b7",
+      "protocol": {
+        "blinding": true,
+        "block_sizes": [
+          29
+        ],
+        "order_seed": 0,
+        "outputs_per_call": 29
+      },
+      "scorer_id": "judge-summ-pick-v1",
+      "scorer_sha256": "25d9c154221901bad4693a4dec994d859a5d2864084871b496d7b72f609e13ba",
+      "self_family": {
+        "gemma_l": false,
+        "qwen_s": false
+      },
+      "source_reference_tier": "gold",
+      "validated": true
+    }
+  },
+  "fingerprint": {
+    "arm": {
+      "config_id": "cnn_anthropic_s_v2",
+      "labels": {
+        "family": "anthropic",
+        "price_tier": "small",
+        "usd_per_mtok_in": 1.0,
+        "usd_per_mtok_out": 5.0
+      }
+    },
+    "data": {
+      "dataset_id": "cnn_dailymail_200",
+      "items_sha256": "257feda902391b934b8cde940c15e91201096dbe96ec5a81337e9da007ce3ec7",
+      "n_items": 200,
+      "reference_id": "gold/cnn_dailymail_200",
+      "reference_tier": "gold",
+      "references_sha256": "5d0b02c3798017535572d24dd3ce0592332938a0c91e93684d163963a60a7cd9"
+    },
+    "data_sha256": "a9b234845c4f4d69a498556c1f6324f5839721e805795a1f3d5946301307a0e8",
+    "deployment": {
+      "declared": {
+        "alias": "eval-claude-haiku",
+        "endpoint": "http://127.0.0.1:4001",
+        "id": "openrouter/anthropic/claude-haiku-4.5",
+        "id_source": "proxy-model-info",
+        "provider_routing": null
+      },
+      "hosted": {
+        "provider": "litellm",
+        "provider_id": "openrouter/anthropic/claude-haiku-4.5",
+        "route": null
+      },
+      "id": "eval-claude-haiku",
+      "in_process": false,
+      "libraries": null,
+      "model": "eval-claude-haiku",
+      "provider": "litellm",
+      "server": null,
+      "source": "adapter",
+      "weights": {
+        "digest": null,
+        "file_hash": null,
+        "precision": null,
+        "quantization": null,
+        "revision": null,
+        "revision_source": "api-model-string"
+      },
+      "where": {
+        "backend": null,
+        "device": null,
+        "machine": null
+      }
+    },
+    "deployment_sha256": "b7479bd31992bf88a3e263d02909a81b47858799c6628c5ac70ed90a6540b6bf",
+    "hash": null,
+    "hash_invalid_because": "scores were produced by a judge scorer, not the adapter this fingerprint was built from; see derived.with",
+    "instrument": {
+      "adapter": {
+        "id": "judge-score:judge-summ-pick-v1",
+        "sha256": "7046021641ded3f501d1f940ca5cbf5cd06fa66131cbca684f2566f1a031844c"
+      },
+      "harness": {
+        "commit": "e0810991f3fb",
+        "dirty": true
+      }
+    },
+    "instrument_sha256": "b22c2dc9b916a8cd1a283d89d6a2d23597ac61b4be52b9fb24a82940d8313add",
+    "runner": {
+      "cpu_count": 12,
+      "label": null,
+      "libraries": {
+        "numpy": "2.4.6",
+        "openai": "3.19.2",
+        "rouge-score": "0.1.2"
+      },
+      "platform": "Darwin/x86_64",
+      "processor": "i386",
+      "python": "3.11.8",
+      "release": "24.6.0"
+    },
+    "settings": {
+      "declared": {
+        "prompt_sha256": "d98ecfbd4054a47476257c2a48ab9f9fc8731098afe4bc1093c69e89c0cbe2f0",
+        "reasoning": {
+          "enabled": false
+        },
+        "temperature": 0.0
+      },
+      "max_tokens": 1200,
+      "prompt_file": "prompt.txt",
+      "reasoning": {
+        "enabled": false
+      },
+      "temperature": 0.0
+    },
+    "settings_sha256": "3a1994b513b8640a68e264b318c09dda581082a53ddb3403a465b6399b9eba7e",
+    "version": 5
+  },
+  "metric_kinds": {
+    "cost_usd": "cost",
+    "judge_gemma_l": "quality",
+    "judge_qwen_s": "quality",
+    "judge_won": "quality",
+    "latency_ms": "speed",
+    "reasoning_tokens": "descriptive",
+    "self_family_gemma_l": "descriptive",
+    "self_family_qwen_s": "descriptive",
+    "tokens_in": "cost",
+    "tokens_out": "cost",
+    "truncated": "descriptive"
+  },
+  "n_items": 198,
+  "primary_metric": "judge_won",
+  "scores": {
+    "cost_usd": 0.0012988333,
+    "judge_gemma_l": 0.2406204906,
+    "judge_qwen_s": 0.2121212121,
+    "judge_won": 0.2263708514,
+    "latency_ms": 2022.5642777778,
+    "reasoning_tokens": 0.0,
+    "self_family_gemma_l": 0.0,
+    "self_family_qwen_s": 0.0,
+    "tokens_in": 789.8939393939,
+    "tokens_out": 101.7878787879,
+    "total_cost_usd": 0.257169,
+    "total_tokens_in": 156399.0,
+    "total_tokens_out": 20154.0,
+    "truncated": 0.0
+  },
+  "source_created_at": "2026-09-26T06:54:59Z"
+}

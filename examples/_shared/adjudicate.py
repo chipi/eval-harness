@@ -17,7 +17,7 @@ against it, $0:
         --reason "the adjudicated labels sit beside the dataset's own, never deciding alone" --by <you>
 
     evh rescore --dataset-id ag_news_200 \\
-        --reference-id gold/ag_news_200_adj1 --out data/runs-adjudicated
+        --reference-id gold/ag_news_200_adj1 --label adjudicated
 """
 
 from __future__ import annotations

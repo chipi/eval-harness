@@ -145,16 +145,17 @@ def filter_dirt(status: str, data_rel: str | None) -> list:
     """`git status --porcelain` lines that make a tree dirty, minus untracked run output.
 
     EVERY RUN AFTER THE FIRST WAS RECORDED DIRTY. A finished run directory under
-    `data/runs*/` is an untracked file until someone commits it, and any untracked file
+    `data/runs/` is an untracked file until someone commits it, and any untracked file
     used to count -- so the second run on a machine always said `dirty: true` about code
     byte-identical to the recorded commit, and "commit before you run" really meant
     "commit after every run". All six local ML arms of 2026-09-30 needed
-    `EVAL_RUNS_DIR` pointed outside the tree to get an honest flag.
+    their runs written outside the tree to get an honest flag.
 
-    Run output is not code. An UNTRACKED path under `<data_rel>runs*` is ignored, and under `<data_rel>prompts/` (the
-    prompt versions runs record, RFC-028);
-    anything else still counts -- a modified tracked file anywhere (a committed run
-    included), and untracked files outside the runs directories, which could be code.
+    Run output is not code. An UNTRACKED path under `<data_rel>runs/` is ignored, and under
+    `<data_rel>judge-summaries/` (a judging pass's summary) and `<data_rel>prompts/` (the prompt versions runs
+    record, RFC-028); anything else still counts -- a modified tracked file anywhere (a committed run included),
+    and untracked files outside the runs, which could be code. A throwaway pass (`evh run --scratch`) is under
+    `.build/`, which git ignores.
     Pure, so the rule is tested without a git tree.
     """
     dirt = []
@@ -164,7 +165,7 @@ def filter_dirt(status: str, data_rel: str | None) -> list:
             line.startswith("?? ")
             and data_rel
             and path.startswith(data_rel)
-            and path[len(data_rel) :].startswith(("runs", "prompts/"))
+            and path[len(data_rel) :].startswith(("runs/", "judge-summaries/", "prompts/"))
         ):
             continue
         dirt.append(line)

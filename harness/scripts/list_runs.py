@@ -20,9 +20,9 @@ from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     data_rel,
     how,
-    read_json,
 )
 from evaluation_harness._runs import runs_on
+from evaluation_harness.model import runs as model_runs
 
 
 def _common_prog() -> str | None:
@@ -57,14 +57,19 @@ def main() -> int:
         action="store_true",
         help="the same answer as one JSON object: one row per run, with its scores as numbers",
     )
+    ap.add_argument(
+        "--label",
+        default="",
+        help='the arm label to list (default: "", the plain runs; the labels present are named below the list)',
+    )
     args = ap.parse_args()
     with _jsonout.collect("runs-list", args.json):
-        return _runs()
+        return _runs(args.label)
 
 
-def _runs() -> int:
-    dirs = [d for d, _m in runs_on()]
-    if not dirs:
+def _runs(label: str) -> int:
+    metrics = runs_on(label=label)
+    if not metrics:
         print(
             "no runs yet — "
             + how("start with `evh run --system <id> --dataset <id>` (docs/GUIDE.md)", "try:  make demo")
@@ -72,7 +77,6 @@ def _runs() -> int:
         _jsonout.table(_RUN_COLUMNS, [])
         _jsonout.values({"kind": "runs", "count": 0})
         return 0
-    metrics = [(d, read_json(d / "metrics.json")) for d in dirs]
     _jsonout.values({"kind": "runs", "count": len(metrics)})
     if _jsonout.table(
         _RUN_COLUMNS,
@@ -84,7 +88,7 @@ def _runs() -> int:
                 m.get("created_at"),
                 m["build"].get("ref"),
                 bool(m["build"].get("dirty")),
-                data_rel(d),
+                data_rel(model_runs.run_of(d)),
                 _shown(m["scores"]),
             ]
             for d, m in metrics
@@ -97,6 +101,9 @@ def _runs() -> int:
         dirty = "*" if m["build"].get("dirty") else " "
         print(f"{m['run_id']:44} {m['dataset_id']:18} {m['build'].get('ref', '?')[:12]}{dirty} {scores}")
     print("\n  * = produced by a dirty tree; its build ref does not describe what ran")
+    others = [x for x in model_runs.labels() if x != label]
+    if others:
+        print(f"  also present under --label: {', '.join(repr(x) for x in others)}")
     return 0
 
 

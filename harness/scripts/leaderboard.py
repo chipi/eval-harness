@@ -31,12 +31,11 @@ import shutil
 import statistics
 import textwrap
 
-from evaluation_harness import _jsonout, _store
+from evaluation_harness import _common, _jsonout, _store
 from evaluation_harness._adapter import recorded_metric_kinds
 from evaluation_harness._common import (
     BOOKKEEPING_PREFIXES,
     REFERENCES,
-    RUNS,
     classify_metrics,
     die,
     evh_prog,
@@ -605,6 +604,12 @@ def main() -> int:
     # the older runs or to read past them. Deleting paid-for results to tidy a table is how
     # 18 arms were lost once; this is the alternative.
     ap.add_argument("--match", help="only arms whose config_id contains this substring")
+    ap.add_argument(
+        "--label",
+        default="",
+        help='the arms read under this label: "" (default) the runs\' own scores; "silver", "repeats", "linux", '
+        '"judged/<scorer>", "rescored <scorer>" ... (evh runs-list names those present)',
+    )
     ap.add_argument("--round", help="only the arms in play in this round of a goal (rN; ADR-0004)")
     ap.add_argument("--goal", help="the goal --round belongs to, when several goals have one")
     ap.add_argument(
@@ -627,11 +632,11 @@ def _run(args: argparse.Namespace) -> int:
     # Each run with its directory, so the significance test can reach its predictions.jsonl.
     # Per-item scores are what make a PAIRED comparison possible, and a comparison that is
     # not paired throws away the fact that every arm was graded on the same items.
-    found = runs_on(args.dataset_id, match=args.match)
+    found = runs_on(args.dataset_id, label=args.label, match=args.match)
     if args.round:
         from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
 
-        keep = set(arms_of(resolve(args.round, args.goal)))
+        keep = set(arms_of(resolve(args.round, args.goal), args.label))
         found = [(d, m) for d, m in found if m["config_id"] in keep]
     # ONE TABLE PER REFERENCE. Runs scored against silver and against gold were averaged into
     # one row and one ranking (0.90 silver beside 0.24 gold, the table labelled silver): two
@@ -660,19 +665,19 @@ def _run(args: argparse.Namespace) -> int:
 
 
 def _judging_summary(found: list) -> None:
-    """The judging pass's own checks (its summary.json, beside the judged runs): how far the
-    judges agree, and how much a verdict moves with the order of the outputs (position) and
-    when the same call is repeated (noise). Read them before the ranking."""
+    """The judging pass's own checks (its summary, data/judge-summaries/<judge scorer>@<judging set>.json, named by
+    the judged score's key): how far the judges agree, and how much a verdict moves with the order of the
+    outputs (position) and when the same call is repeated (noise). Read them before the ranking."""
     seen = set()
     for d, _m in found:
-        f = d.parent / "summary.json"
+        f = _common.DATA / "judge-summaries" / f"{d.name}.json"
         if f in seen or not _store.is_file(f):
             continue
         seen.add(f)
         s = read_json(f)
         print(
-            f"\n  The judging pass ({f.parent.name}, {s.get('items_scored')}/{s.get('items_total')} items, "
-            f"{s.get('label', '')}), from {f.name}:"
+            f"\n  The judging pass ({d.name.split('@', 1)[0]}, {s.get('items_scored')}/{s.get('items_total')} items, "
+            f"{s.get('label', '')}), from data/judge-summaries:"
         )
 
         def num(v: object) -> str:
@@ -713,7 +718,7 @@ def _table(args: argparse.Namespace, found: list) -> dict:
     arm_runs = by_arm(found)
     by_config: dict[str, list[dict]] = {cid: [m for _d, m in rs] for cid, rs in arm_runs.items()}
 
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    warn_on_ambiguous_runs(args.label, args.dataset_id)
     if not by_config:
         die(
             f"no runs on dataset {args.dataset_id!r}"

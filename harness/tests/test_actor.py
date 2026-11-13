@@ -75,7 +75,7 @@ check(
 
 proj = Path(tempfile.mkdtemp(prefix="evh-actor-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-actor")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_ACTOR", "EVH_FOR"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_ACTOR", "EVH_FOR"):
     env.pop(k, None)
 
 
@@ -139,7 +139,7 @@ try:
         "run", "--system", "lead1_v1", "--dataset", "tk_v1", EVH_ACTOR="agent:fleet", EVH_FOR="person:ana"
     )
     run = next((n for n in _runstore.listdir(proj, "runs") if n.startswith("lead1_v1_")), None)
-    m = _runstore.read_json(proj, f"runs/{run}/metrics.json") if run else {}
+    m = _runstore.read_json(proj, f"runs/{run}/run.json") if run else {}
     check(
         "run: the record names the agent and the person it acted for",
         m.get("actor") == {"type": "agent", "name": "fleet", "from": "environment", "for": "ana"},

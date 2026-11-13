@@ -29,7 +29,7 @@ import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-propose-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-fieldset-propose")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 CSV = "id,text,label,words\nn1,first note,a,2\nn2,second note,b,2\nn3,third note,a,2\nn4,fourth note,b,2\n"
 

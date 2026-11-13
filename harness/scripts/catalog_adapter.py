@@ -10,14 +10,13 @@ these questions, so a project with its own layout writes one adapter and gets bo
 
 Without one, HarnessAdapter reads the harness's own layout:
 
-    <data>/runs*/<run_id>/{metrics.json, predictions.jsonl, outputs/<item_id>.txt}
-    <data>/runs-judged/<scorer_id>/<run_id>/...        (evh judge-score, 0.3.0+)
-    <data>/runs-rescored/<scorer>/<source>/<run_id>/... (evh rescore, RFC-022)
+    <data>/runs/<run_id>/{run.json, outputs.jsonl}
+    <data>/runs/<run_id>/scores/<key>/{score.json, metrics.json, predictions.jsonl}   (model/runs)
     <data>/references/<tier>/<dataset_id>/<item_id>.txt
 
-An ARM is a string id the adapter chooses. HarnessAdapter's is `<runs dir>/<dataset_id>/<config_id>`:
-every repeat of a system on a dataset, averaged per item, exactly as `pair-test` and
-`family-test` read them, so the inspector and the command line give the same p.
+An ARM is a string id the adapter chooses. HarnessAdapter's is `<label prefix>/<dataset_id>/<system id>`
+(model.runs.arm_id): every score of a system on a dataset read under one label, averaged per item, exactly as
+`pair-test` and `family-test` read them, so the inspector and the command line give the same p.
 
 Item text (outputs, references) is only ever returned by item_view / reference_view. The static
 catalog never embeds it. The local inspector shows it; a public server (--public) serves it only for
@@ -39,6 +38,7 @@ import json
 import re
 import statistics
 import sys
+import threading
 from functools import wraps
 from pathlib import Path
 from typing import Any, Protocol
@@ -61,20 +61,25 @@ from evaluation_harness._fields import fieldset_problems, load_fieldset  # noqa:
 from evaluation_harness._fingerprint import items_digest  # noqa: E402
 from evaluation_harness._label_sets import compare, label_line  # noqa: E402
 from evaluation_harness._record import derived_with  # noqa: E402
-from evaluation_harness._runs import item_rows, lower_is_better_on, runs_on, score_of  # noqa: E402
+from evaluation_harness._runs import item_rows, lower_is_better_on, read_metrics, score_of  # noqa: E402
+from evaluation_harness.model import runs as model_runs  # noqa: E402
 
 
 def _memo(fn):
     """Cache a method's answers on its instance. `functools.lru_cache` on a method keys on
     `self` in a module-level cache, so every adapter ever made (one per test, per server
-    start) stays alive with its data; this cache goes when the adapter does."""
+    start) stays alive with its data; this cache goes when the adapter does. One lock per instance: catalog-serve
+    answers on threads, and two building `_index` at once each reset what the other was filling (a KeyError, a 500)."""
     slot = f"_memo_{fn.__name__}"
 
     @wraps(fn)
     def wrapper(self, *args):
         cache = self.__dict__.setdefault(slot, {})
-        if args not in cache:
-            cache[args] = fn(self, *args)
+        if args in cache:
+            return cache[args]
+        with self.__dict__.setdefault("_memo_lock", threading.RLock()):
+            if args not in cache:
+                cache[args] = fn(self, *args)
         return cache[args]
 
     return wrapper
@@ -320,33 +325,14 @@ def _flat_conditions(fp: dict) -> dict[str, str]:
     return out
 
 
-def in_place_dirs(every: list[tuple[str, Path, dict, str]]) -> set[Path]:
-    """The derived runs that replaced their run where it lay. Every derivation keeps its run's id, a copy
-    (runs-judged, runs-rescored, runs-silver, runs-adjudicated) as well as a re-score in place, so the id alone
-    cannot tell them apart: of the runs sharing an id, the measured one is the run never derived when it is still
-    there, else the earliest derivation (a copy of the replaced run comes after it)."""
-    by_id: dict[str, list[tuple[Path, dict]]] = {}
-    for _ds, d, m, _arm in every:
-        by_id.setdefault(m.get("run_id") or d.name, []).append((d, m))
-    out = set()
-    for run_id, runs in by_id.items():
-        if any(not m.get("derived") for _d, m in runs):
-            continue
-        same = [(d, m) for d, m in runs if (m.get("derived") or {}).get("from") == run_id]
-        if same:
-            out.add(min(same, key=lambda x: ((x[1]["derived"].get("at") or ""), str(x[0])))[0])
-    return out
-
-
-def measured(m: dict, dir_name: str, in_place: bool) -> tuple[bool, str]:
-    """(re-scored or re-parsed in place, when it was measured). A derivation that replaced its run where it lay
-    (`in_place_dirs`) is still the run that was measured (its calls, its bill), dated when it was, which the run id
-    keeps (created_at was rewritten with the re-score's time). Any other run: (False, its created_at)."""
-    run_id = m.get("run_id") or dir_name
+def measured(m: dict, first: bool) -> tuple[bool, str]:
+    """(re-scored or re-parsed in place, when it was measured). The score a run made when it ran, re-scored where it
+    lay (its record has `derived`), is still the run that was measured (its calls, its bill), dated when it was, which
+    the run id keeps (created_at was rewritten with the re-score's time). Any other score: (False, its created_at)."""
     made = m.get("created_at") or ""
-    if not in_place:
+    if not (first and m.get("derived")):
         return False, made
-    stamp = re.search(r"_(\d{8})T(\d{6})Z$", run_id)
+    stamp = re.search(r"_(\d{8})T(\d{6})Z$", str(m.get("run_id") or ""))
     if stamp:
         day, hms = stamp.groups()
         made = f"{day[:4]}-{day[4:6]}-{day[6:]}T{hms[:2]}:{hms[2:4]}:{hms[4:]}Z"
@@ -383,14 +369,10 @@ def _plain_name(name: str) -> bool:
     return bool(name) and "/" not in name and "\\" not in name and ".." not in name and "\0" not in name
 
 
-def _dir_label(runs_dir: str) -> str:
-    """How an arm's runs directory reads beside its system: "silver", "repeats", "rescored cd35dc1f", "rescored
-    cd35dc1f, repeats" (runs-rescored/<scorer>/<source>, RFC-022)."""
-    parts = runs_dir.split("/")
-    if parts[0] == "runs-rescored" and len(parts) == 3:
-        src = parts[2].removeprefix("runs-")
-        return f"rescored {parts[1][:8]}" + ("" if parts[2] == "runs" else f", {src}")
-    return runs_dir.removeprefix("runs-")
+def _ignored_runs(run_jsons: list[Path]) -> set[Path]:
+    """Of these run.json files, the ones git ignores (a run on this disk only: the local catalog shows what a clone, CI
+    and the published one show)."""
+    return _common.ignored_paths(run_jsons)
 
 
 def _promoted_from_now(pf: Any) -> Any:
@@ -418,48 +400,52 @@ class HarnessAdapter:
         self.data_dir = Path(data_dir or _common.DATA)
         # The project's goals (EVAL_GOALS_DIR when set) unless a data directory is named.
         self.goals_dir = _common.GOALS if data_dir is None else self.data_dir / "goals"
-        # Where the runs* directories are read from: the data directory, or another one beside the project's
+        # Where the runs are read from: the data directory's runs, or another directory of runs beside the project's
         # references and goals (evh score-preview reads re-scores it made in a temporary directory, RFC-022).
-        self.runs_root = Path(runs_root) if runs_root else self.data_dir
+        self.runs_root = Path(runs_root) if runs_root else self.data_dir / "runs"
 
     # -- arms ---------------------------------------------------------------------------
     @_memo
     def _index(self) -> dict[str, list[Path]]:
-        """{arm id: [run dirs]}, from every runs* directory and runs-judged/<scorer>/ that git keeps. A directory
-        git ignores (a smoke pass, a sweep) is not read: the local catalog shows what a clone, CI and the published
-        one show, never runs that exist on this disk only. Outside a git checkout every directory is read."""
+        """{arm id: [score dirs]}: every score of every run, grouped by the label it is read under, its dataset and
+        its system (model.runs.arm_id). A run git ignores is not read: the local catalog shows what a clone, CI and the
+        published one show, never runs that exist on this disk only. Outside a git checkout every run is read."""
         out: dict[str, list[Path]] = {}
-        nested = ("runs-judged", "runs-rescored")
-        bases = [
-            p
-            for p in sorted(_store.glob(self.runs_root, "runs*"))
-            if _store.is_dir(p) and p.name not in nested
-        ]
-        bases += sorted(p for p in _store.glob(self.runs_root / "runs-judged", "*") if _store.is_dir(p))
-        bases += sorted(p for p in _store.glob(self.runs_root / "runs-rescored", "*/*") if _store.is_dir(p))
-        bases = [p for p in bases if not _common.ignored_by_git(p)]
+        runs = (
+            sorted(p for p in _store.iterdir(self.runs_root) if _store.is_file(p / model_runs.RUN))
+            if _store.is_dir(self.runs_root)
+            else []
+        )
+        skipped = _ignored_runs([r / model_runs.RUN for r in runs])
         refs: dict[Path, str] = {}
         made: dict[Path, str] = {}
-        # Every run seen, before any is set aside below: what was billed counts them all.
+        # What each score's record says, read once; and the label each arm is read under.
+        self._rec: dict[Path, dict] = {}
+        self._label: dict[str, str] = {}
+        # Every score seen, before any is set aside below: what was billed counts the runs behind them all.
         self._every: list[tuple[str, Path, dict, str]] = []
-        for base in bases:
-            for d, m in runs_on(runs_dir=base):
-                if not m.get("dataset_id"):
+        for r in runs:
+            if r / model_runs.RUN in skipped:
+                continue
+            for d in model_runs.scores_of(r):
+                m = model_runs.record(d)
+                if not m or not m.get("dataset_id") or not m.get("config_id"):
                     continue
-                rel = base.relative_to(self.runs_root).as_posix()
-                arm = f"{rel}/{m['dataset_id']}/{m['config_id']}"
+                arm = model_runs.arm_id(d, m)
+                self._rec[d] = m
+                self._label[arm] = model_runs.label(d, m)
                 self._every.append((m["dataset_id"], d, m, arm))
                 out.setdefault(arm, []).append(d)
                 refs[d] = ((m.get("fingerprint") or {}).get("data") or {}).get("reference_id") or ""
                 made[d] = m.get("created_at") or ""
-        self._in_place = in_place_dirs(self._every)
+        out = dict(sorted(out.items(), key=lambda kv: (not kv[0].startswith("runs/"), kv[0])))
         # ONE REFERENCE PER ARM: the one its latest run was scored against. An arm's runs were
         # averaged whatever they were scored against, so a run on silver and a run on gold read
         # as two repeats of one measurement. Runs on another reference are left out, and said so.
         self._stale: dict[str, list[str]] = {}
         for arm, dirs in out.items():
-            # Latest by when it was measured, not by its directory name (a --run-id can be anything).
-            ref = refs[max(dirs, key=lambda d: (made[d], d.name))]
+            # Latest by when it was measured, not by its run id (a --run-id can be anything).
+            ref = refs[max(dirs, key=lambda d: (made[d], self._rec[d]["run_id"]))]
             old = [d for d in dirs if refs[d] != ref]
             if old:
                 out[arm] = [d for d in dirs if refs[d] == ref]
@@ -472,6 +458,16 @@ class HarnessAdapter:
                 ]
         return out
 
+    def read_as(self, arm: str) -> str:
+        """The label the arm's scores are read under ("" for the plain arm; model.runs.label): what a folder used to
+        say, "silver", "repeats", "rescored cd35dc1f", "judged/judge-summ-v1"."""
+        self._index()
+        return self._label.get(arm, "")
+
+    def _run_id(self, d: Path) -> str:
+        """The id of the run a score is of."""
+        return model_runs.run_of(d).name
+
     def arms(self) -> list[str]:
         """Return all arm ids."""
         return list(self._index())
@@ -481,11 +477,14 @@ class HarnessAdapter:
         path = path.strip("/")
         if path in self._index():
             return [path]
-        # a run directory selects the arm it belongs to
+        # a run, or one of its scores' directories, selects the arms it belongs to
         return [
             a
             for a, ds in self._index().items()
-            if any(d.relative_to(self.runs_root).as_posix() == path for d in ds)
+            if any(
+                path in (f"runs/{self._run_id(d)}", d.relative_to(self.runs_root.parent).as_posix())
+                for d in ds
+            )
         ]
 
     def _dirs(self, arm: str) -> list[Path]:
@@ -494,9 +493,14 @@ class HarnessAdapter:
     @_memo
     def _metrics(self, arm: str) -> dict:
         # Once per arm, for as long as the index it is read from: an inspector answer read every arm's
-        # metrics.json again (7,370 reads for 40 answers, a third of each). Callers only read it.
+        # record again (7,370 reads for 40 answers, a third of each). Callers only read it.
         ds = self._dirs(arm)
-        return (_json(ds[-1] / "metrics.json") or {}) if ds else {}
+        return self._record(ds[-1]) if ds else {}
+
+    def _record(self, d: Path) -> dict:
+        """A score's record, as the index read it (read now for a directory it did not list)."""
+        self._index()
+        return self._rec[d] if d in self._rec else (read_metrics(d) or {})
 
     def same_output(self, arm: str):
         """`same(a, b)` for this arm's outputs (RFC-023): its adapter's, else the same text."""
@@ -507,10 +511,10 @@ class HarnessAdapter:
     def describe(self, arm: str) -> dict:
         """Return arm metadata: id, label, dataset, task, etc."""
         base, _, rest = arm.rpartition("/")
-        runs_dir, _, dataset = base.rpartition("/")
+        dataset = base.rpartition("/")[2]
         m = self._metrics(arm)
         n = len(self._dirs(arm))
-        label = rest + ("" if runs_dir == "runs" else f" · {_dir_label(runs_dir)}")
+        label = rest + (f" · {self.read_as(arm)}" if self.read_as(arm) else "")
         label += f" ×{n}" if n > 1 else ""
         judged = derived_with(m, "judge").get("scorer_id")
         primary = m.get("primary_metric") or ""
@@ -623,6 +627,17 @@ class HarnessAdapter:
         except (ValueError, AttributeError):
             return {}
 
+    def renamed_arms(self) -> dict[str, str]:
+        """{old arm id: new arm id} for the arms a migration renamed (data/renames.json, RFC-032 step 4): their old
+        pages redirect to the new ones."""
+        f = self.data_dir / "renames.json"
+        if not _store.is_file(f):
+            return {}
+        try:
+            return dict(json.loads(_store.read_text(f, encoding="utf-8")).get("arms") or {})
+        except (ValueError, AttributeError):
+            return {}
+
     @_memo
     def lower_is_better(self, metric: str, dataset: str | None = None) -> bool:
         """Whether a decrease in this metric is an improvement, by the rule every command uses
@@ -634,7 +649,7 @@ class HarnessAdapter:
             for arm, ds in self._index().items()
             if dataset is None or arm.rsplit("/", 2)[-2] == dataset
             for d in ds
-            for m in [_json(d / "metrics.json") or {}]
+            for m in [self._record(d)]
         ]
         goals = {g["goal_id"]: g for g in self.goals()}
         return lower_is_better_on(runs, metric, goals)
@@ -646,7 +661,7 @@ class HarnessAdapter:
         latest run."""
         out: dict = {}
         for arm, ds in self._index().items():
-            m = _json(ds[-1] / "metrics.json") or {}
+            m = self._record(ds[-1])
             seen = out.setdefault(arm.rsplit("/", 2)[-2], {})
             for k, v in (m.get("metric_kinds") or {}).items():
                 seen[k] = seen.get(k, False) or v == "descriptive"
@@ -669,19 +684,15 @@ class HarnessAdapter:
         return bool(declared) and all(declared)
 
     def arm_of(self, dataset: str, config_id: str) -> str:
-        """The arm id of a system's runs on a dataset: `<runs dir>/<dataset>/<config_id>`, the
-        runs directory as this project names it (EVAL_RUNS_DIR), relative to its data."""
-        try:
-            base = _common.RUNS.resolve().relative_to(self.data_dir.resolve()).as_posix()
-        except ValueError:
-            base = "runs"
-        return f"{base}/{dataset}/{config_id}"
+        """The arm id of a system's runs on a dataset, read as a goal reads them (the plain label):
+        `runs/<dataset>/<system id>`."""
+        return f"{model_runs.arm_prefix('')}/{dataset}/{config_id}"
 
     @_memo
     def _kinds(self) -> dict:
         out: dict = {}
         for ds in self._index().values():
-            out.update((_json(ds[-1] / "metrics.json") or {}).get("metric_kinds") or {})
+            out.update(self._record(ds[-1]).get("metric_kinds") or {})
         return out
 
     def reference_free(self, metric: str) -> bool:
@@ -750,7 +761,7 @@ class HarnessAdapter:
         if not cid:
             return None
         try:
-            sh = dsh.sheet(cid, self.data_dir, self.runs_root / "runs")
+            sh = dsh.sheet(cid, self.data_dir, self.runs_root)
         except SystemExit:
             return None
         if not sh.get("promoted"):
@@ -775,7 +786,7 @@ class HarnessAdapter:
         {"outputs": read, "tagged": with a failure, "modes": {mode: n}}; None when nothing of it was tagged."""
         from collections import Counter  # noqa: PLC0415
 
-        runs = {d.name for d in self._dirs(arm)}
+        runs = {self._run_id(d) for d in self._dirs(arm)}
         outputs = tagged = 0
         modes: Counter = Counter()
         for tf in sorted(_store.glob(self.data_dir / "tags" / dataset, "*/tags.json")):
@@ -926,7 +937,7 @@ class HarnessAdapter:
         adapters: set[str] = set()
         for ds in self._index().values():
             for d in ds:
-                m = _json(d / "metrics.json") or {}
+                m = self._record(d)
                 out.update(m.get("metric_descriptions") or {})
                 if m.get("adapter"):
                     adapters.add(m["adapter"])
@@ -955,7 +966,7 @@ class HarnessAdapter:
         for d in reversed(dirs):  # the latest repeat
             text = _outputs.output(d, item)
             if text is not None:
-                info = {"run": d.name}
+                info = {"run": self._run_id(d)}
                 if len(dirs) > 1:
                     # One output beside a score that is the mean of every repeat: say so.
                     info["shown"] = (
@@ -1017,7 +1028,7 @@ class HarnessAdapter:
         field the arm's repeats disagree on reads "varies: a | b"."""
         seen: dict[str, list[str]] = {}
         for d in self._dirs(arm):
-            fp = (_json(d / "metrics.json") or {}).get("fingerprint") or {}
+            fp = self._record(d).get("fingerprint") or {}
             flat = _flat_conditions(fp)
             for k, v in flat.items():
                 if v not in seen.setdefault(k, []):
@@ -1055,9 +1066,9 @@ class HarnessAdapter:
     @_memo
     def rounds(self) -> list[dict]:
         """Eval rounds (ADR-0004, optional): each round's record, plus "arms" (the arm ids in
-        play: runs in any runs directory that name it, and the systems carried in, less the retired)
-        and "retired_arms" (the arm ids it retired: a retirement names a runs directory, else the
-        project's)."""
+        play: runs that name it, read under any label, and the systems carried in, less the retired)
+        and "retired_arms" (the arm ids it retired: every arm a retired run is scored in; a retirement naming
+        no run retires the system from the plain label's arm)."""
         import yaml  # noqa: PLC0415
 
         out = []
@@ -1072,15 +1083,23 @@ class HarnessAdapter:
                 for arm, dirs in self._index().items()
                 if arm.split("/")[-2:-1] == [ds]
                 and any(
-                    (m := _json(d / "metrics.json") or {}).get("round") == doc["round_id"]
+                    (m := self._record(d)).get("round") == doc["round_id"]
                     and m.get("goal") == doc.get("goal")
                     for d in dirs
                 )
             }
-            home = self.arm_of(ds, "").split("/", 1)[0]
-            retired = {
-                f"{r.get('runs_dir') or home}/{ds}/{r.get('config_id')}" for r in doc.get("retired") or []
-            }
+            retired: set[str] = set()
+            for r in doc.get("retired") or []:
+                gone = set(r.get("runs") or [])
+                if not gone:
+                    retired.add(self.arm_of(ds, r.get("config_id")))
+                    continue
+                retired |= {
+                    arm
+                    for arm, dirs in self._index().items()
+                    if arm.split("/")[-2:] == [ds, r.get("config_id")]
+                    and any(self._run_id(d) in gone for d in dirs)
+                }
             carried = {self.arm_of(ds, c) for c in doc.get("carried") or []}
             in_play = sorted(a for a in (ran | carried) - retired if a in self._index())
             out.append(dict(doc, arms=in_play, retired_arms=sorted(retired)))
@@ -1097,8 +1116,8 @@ class HarnessAdapter:
             run = b.get("promoted_from")
             if not run or not b.get("dataset_id"):
                 continue
-            # A rescored copy keeps its source's run name; run-promote reads data/runs.
-            hits = [a for a, ds in self._index().items() if any(d.name == run for d in ds)]
+            # A re-score is a score of the run it re-scored; the baseline's arm is the run's own.
+            hits = [a for a, ds in self._index().items() if any(self._run_id(d) == run for d in ds)]
             arm = next((a for a in hits if a.startswith("runs/")), hits[0] if hits else None)
             out.append(
                 {
@@ -1182,10 +1201,10 @@ class HarnessAdapter:
         it was derived ("" for a measured run)."""
         out = []
         for d in self._dirs(arm):
-            m = _json(d / "metrics.json") or {}
-            run_id = m.get("run_id") or d.name
+            m = self._record(d)
+            run_id = m.get("run_id") or self._run_id(d)
             frm = (m.get("derived") or {}).get("from", "")
-            in_place, made = measured(m, d.name, d in self._in_place)
+            in_place, made = measured(m, bool(model_runs.meta(d).get("first")))
             out.append(
                 {
                     "run_id": run_id,
@@ -1229,8 +1248,8 @@ class HarnessAdapter:
 
     @_memo
     def spend(self) -> list[dict]:
-        """What was spent and when, in USD and in tokens: every measured run (a derived run re-reads
-        stored outputs and calls nothing), and the judges' calls per judging set and day, from the
+        """What was spent and when, in USD and in tokens: every measured run, once, by the score it made when it
+        ran (a re-score reads stored outputs and calls nothing), and the judges' calls per judging set and day, from the
         stored verdicts. Either may be None: a local model bills nothing but still counts tokens
         when its adapter reports them; an unpriced call has tokens and no USD."""
         self._index()
@@ -1239,8 +1258,9 @@ class HarnessAdapter:
             sc = m.get("scores") or {}
             usd = _number(sc.get("total_cost_usd"))
             tokens = _tokens(sc.get("total_tokens_in"), sc.get("total_tokens_out"))
-            in_place, at = measured(m, d.name, d in self._in_place)
-            if (m.get("derived") and not in_place) or (usd is None and tokens is None):
+            first = bool(model_runs.meta(d).get("first"))
+            _in_place, at = measured(m, first)
+            if not first or (usd is None and tokens is None):
                 continue
             out.append(
                 {
@@ -1249,7 +1269,7 @@ class HarnessAdapter:
                     "tokens": tokens,
                     "kind": "arm",
                     "dataset": ds,
-                    "what": d.name,
+                    "what": self._run_id(d),
                     "arm": arm,
                 }
             )

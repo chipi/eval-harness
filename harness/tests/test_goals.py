@@ -30,7 +30,6 @@ from evaluation_harness._check import check, summary  # noqa: E402
 proj = Path(tempfile.mkdtemp(prefix="evh-goals-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-goals")
 env.pop("EVAL_DATA_DIR", None)
-env.pop("EVAL_RUNS_DIR", None)
 GOAL = "goals/tickets_summary.yaml"
 
 
@@ -112,9 +111,9 @@ try:
     _runstore.write_text(proj, L2, cfg + "format: paragraph\n")
     r = evh(*RUN_L2, "--goal", "tickets_summary")
     runs = [
-        f"runs/{n}/metrics.json"
+        f"runs/{n}/run.json"
         for n in _runstore.listdir(proj, "runs")
-        if _runstore.is_file(proj, f"runs/{n}/metrics.json")
+        if _runstore.is_file(proj, f"runs/{n}/run.json")
     ]
     m = _runstore.read_json(proj, runs[0]) if runs else {}
     check(

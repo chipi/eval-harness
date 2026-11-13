@@ -168,16 +168,9 @@ def _paths() -> dict[str, Path]:
     # the project root). Everything below is derived from it.
     data_override = os.environ.get("EVAL_DATA_DIR", "").strip()
     data = (root / Path(data_override).expanduser()).resolve() if data_override else root / "data"
-    # Where run artifacts land. Redirectable via EVAL_RUNS_DIR so a throwaway pass -- a
-    # smoke check after a harness change -- cannot add repeats to the arms of a real sweep
-    # and silently move numbers that have already been reported. ONLY runs are redirected:
-    # sources, datasets and references stay shared, so a smoke run is scored against the
-    # same references as the real thing and is therefore actually a check of the real path.
-    # Relative to the PROJECT root, as EVAL_DATA_DIR is.
-    runs_override = os.environ.get("EVAL_RUNS_DIR", "").strip()
     # Goals can live outside the data root: a project whose harness records sit in a
     # subdirectory keeps one copy of its goals where the rest of its tooling reads them.
-    # Relative to the project root, as EVAL_RUNS_DIR is.
+    # Relative to the project root, as EVAL_DATA_DIR is.
     goals_override = os.environ.get("EVAL_GOALS_DIR", "").strip()
     return {
         "ROOT": root,
@@ -186,7 +179,10 @@ def _paths() -> dict[str, Path]:
         "DATASETS": data / "datasets",
         "MATERIALIZED": data / "materialized",
         "SYSTEMS": data / "systems",
-        "RUNS": root / Path(runs_override).expanduser() if runs_override else data / "runs",
+        # Every run, each score of it under it (RFC-032 step 4: model/runs).
+        "RUNS": data / "runs",
+        # A throwaway pass (`evh run --scratch`): the same layout, outside the data, read by nothing that reads runs.
+        "SCRATCH_RUNS": root / ".build" / "scratch" / "runs",
         "BASELINES": data / "baselines",
         "REFERENCES": data / "references",
         # What each evaluation is FOR (ADR-0002): one <goal_id>.yaml per goal, plus policy.yaml.
@@ -205,7 +201,7 @@ def _paths() -> dict[str, Path]:
 
 
 # The project's paths, read as module attributes (`_common.DATA`, `from _common import DATA`)
-# and resolved on the first read, after `.env` has had its say on EVAL_DATA_DIR/EVAL_RUNS_DIR.
+# and resolved on the first read, after `.env` has had its say on EVAL_DATA_DIR.
 ROOT: Path
 DATA: Path
 SOURCES: Path
@@ -213,6 +209,7 @@ DATASETS: Path
 MATERIALIZED: Path
 SYSTEMS: Path
 RUNS: Path
+SCRATCH_RUNS: Path
 BASELINES: Path
 REFERENCES: Path
 GOALS: Path
@@ -284,16 +281,16 @@ def ignored_by_git(path: Path) -> bool:
     published catalog, which copies only what git tracks, will not show them. False outside a checkout."""
     import subprocess  # noqa: PLC0415
 
-    # A run's metrics file, not the directory: the re-allow blocks admit `<dir>/<run>/metrics.json`
-    # under a denied `data/runs-*/`, so only that path answers the question. Absolute, because `-C`
-    # moves git's working directory and a relative probe would then name some other file.
+    # A run's record, not the directory: the re-allow block admits `data/runs/<run>/run.json` under a denied
+    # `data/runs/*/*`, so only that path answers the question. Absolute, because `-C` moves git's working
+    # directory and a relative probe would then name some other file.
     target = Path(path).resolve()
     # In the database a run's place is its key under data/, wherever the database file is (a copy under .build/,
     # make serve STORE=sqlite): asked as the project's own data/<key>, a copy shows what the project shows.
     data = _paths()["DATA"].resolve()
     if store() == "sqlite" and target.is_relative_to(data):
         target = _paths()["ROOT"].resolve() / "data" / target.relative_to(data)
-    probe = target / "_probe_run" / "metrics.json"
+    probe = target / "_probe_run" / "run.json"
     anchor = next((p for p in probe.parents if p.exists()), Path.cwd())
     try:
         r = subprocess.run(
@@ -304,31 +301,45 @@ def ignored_by_git(path: Path) -> bool:
     return r.returncode == 0
 
 
-#: Directory names that are throwaway by convention (.gitignore denies them by glob): writing there is the point.
-THROWAWAY_RUNS = ("runs-smoke", "runs-tune")
+def ignored_paths(paths: list[Path]) -> set[Path]:
+    """Of these files (runs' run.json, say), the ones git ignores: one question to git for all of them; none outside a
+    checkout. Asked from the first folder of theirs that exists on disk, so a project other than this process's own
+    answers with its own .gitignore."""
+    import subprocess  # noqa: PLC0415
+
+    if not paths:
+        return set()
+    # In the database a file's place is its key under data/, wherever the database file is (a copy under .build/):
+    # asked as the project's own data/<key>, a copy shows what the project shows (as `ignored_by_git`).
+    data = _paths()["DATA"].resolve()
+    asked: dict[str, Path] = {}
+    for f in paths:
+        t = Path(f).resolve()
+        if store() == "sqlite" and t.is_relative_to(data):
+            t = _paths()["ROOT"].resolve() / "data" / t.relative_to(data)
+        asked[str(t)] = f
+    anchor = next((q for q in Path(next(iter(asked))).parents if q.exists()), Path.cwd())
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(anchor), "check-ignore", "-z", "--stdin"],
+            input="\0".join(asked).encode(),
+            capture_output=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    if r.returncode not in (0, 1):  # 128: not a git checkout
+        return set()
+    return {asked[x] for x in r.stdout.decode().split("\0") if x in asked}
 
 
-def warn_if_ignored(runs_dir: Path, data_dir: Path | None = None) -> None:
-    """Say, loudly, when runs are about to land where they will not be kept or read: a directory git ignores, or
-    one outside the project's data (`data_dir`, default the project's). Silent for the throwaway directories
-    (runs-smoke*, runs-tune*), where not keeping them is the intent."""
-    runs_dir = Path(runs_dir)
-    if runs_dir.name.startswith(THROWAWAY_RUNS):
+def warn_if_ignored(run_dir: Path) -> None:
+    """Say, loudly, when a run is about to land where git will not keep it (the project ignores data/runs)."""
+    if not ignored_by_git(Path(run_dir)):
         return
-    where = Path(data_dir) if data_dir else _paths()["DATA"]
-    outside = not runs_dir.resolve().is_relative_to(where.resolve())
-    if not outside and not ignored_by_git(runs_dir):
-        return
-    why = (
-        f"is outside the project's data ({where}): no catalog, goal or validate reads it"
-        if outside
-        else "is ignored by git: its runs are not committed, so no clone, CI run or catalog (this one included) has them"
-    )
     print(
-        f"  WARNING: {runs_dir} {why}. Measured runs go in data/runs (the default: leave EVAL_RUNS_DIR unset). "
-        "A derived set (re-scored, re-judged) keeps the measured runs' config_ids, so it needs its own "
-        "data/runs-<name> directory, re-allowed in .gitignore beside the others under '--- re-allowed'. Throwaway "
-        "passes go in data/runs-smoke*."
+        f"  WARNING: {run_dir} is ignored by git: its runs are not committed, so no clone, CI run or catalog (this one "
+        "included) has them. A throwaway pass is `evh run --scratch`, which writes under .build/."
     )
 
 

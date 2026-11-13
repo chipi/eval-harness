@@ -27,7 +27,7 @@ import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-sources-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-sources")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 MINE = """

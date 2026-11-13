@@ -107,12 +107,9 @@ def runs_on_sealed(docs: dict[str, dict[str, Any]], runs: list[tuple[Any, dict[s
             continue
         when = _opened_at(doc)
         cid = m.get("config_id")
+        rid = m.get("run_id") or getattr(d, "name", d)
         if cid not in when:
-            out.append(
-                f"{getattr(d, 'name', d)}: a run of {cid} on sealed {m.get('dataset_id')}, which no unseal names"
-            )
+            out.append(f"{rid}: a run of {cid} on sealed {m.get('dataset_id')}, which no unseal names")
         elif str(m.get("created_at") or "") < when[cid]:
-            out.append(
-                f"{getattr(d, 'name', d)}: a run of {cid} on sealed {m.get('dataset_id')} from before its unseal"
-            )
+            out.append(f"{rid}: a run of {cid} on sealed {m.get('dataset_id')} from before its unseal")
     return out

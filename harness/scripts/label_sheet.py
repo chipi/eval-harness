@@ -30,45 +30,48 @@ import json
 import sys
 from pathlib import Path
 
-from evaluation_harness import _common, _jsonout, _outputs, _store
-from evaluation_harness._common import die, evh_prog, item_path, load_dataset, read_json
+from evaluation_harness import _jsonout, _outputs, _store
+from evaluation_harness._common import die, evh_prog, item_path, load_dataset
 from evaluation_harness._label_sets import labels_for, sets, text_of
 from evaluation_harness._runs import runs_on
 from evaluation_harness._sheets import ALSO, NOTE, label_header, write_csv
+from evaluation_harness.model import runs as _model_runs
 
 VIEW = 160
 
 
-def run_dir(name: str, dataset_id: str) -> Path:
-    """A run by its id, or a system's latest run on the dataset: in data/runs, else in a label set's runs
-    (data/runs-labels-<dataset>-<set>/, where a run scored against labels lands)."""
-    bases = [_common.RUNS, *sorted(_store.glob(_common.DATA, f"runs-labels-{dataset_id}-*"))]
-    # An arm id, as the catalog names it (catalog_adapter._index): <runs dir>/<dataset>/<config_id>, the runs dir
-    # nested for a judging or a re-scoring pass (runs-judged/<scorer>, runs-rescored/<scoring>/runs).
+def run_dir(name: str, dataset_id: str, label: str = "") -> Path:
+    """The score a run id, or a system's latest run on the dataset, is read as under `label` ("": a plain run's own
+    score, else that of a run scored against a label set of the dataset, where a run scored against labels lands).
+    An arm id, as the catalog names it (<prefix>/<dataset>/<system>, model.runs.arm_id), is that arm's latest run."""
+    scores = runs_on(dataset_id, label=None)
     if name.count("/") >= 2:
-        where, ds, config_id = name.rsplit("/", 2)
-        base = _common.RUNS if where == "runs" else _common.DATA / where
-        if (
-            ds != dataset_id
-            or not where.startswith("runs")
-            or ".." in where.split("/")
-            or not _store.is_dir(base)
-        ):
+        _prefix, ds, _config_id = name.rsplit("/", 2)
+        if ds != dataset_id:
             die(f"--runs {name}: not an arm on {dataset_id}", "not-found")
-        found = runs_on(dataset_id, runs_dir=base, config_id=config_id)
+        found = [d for d, m in scores if _model_runs.arm_id(d, m) == name]
         if not found:
             die(f"--runs {name}: no run of that arm", "not-found")
-        return found[-1][0]
-    for base in bases:
-        d = base / name
-        if _store.is_file(d / "metrics.json"):
-            if read_json(d / "metrics.json").get("dataset_id") != dataset_id:
-                die(f"--runs {name}: that run is not on {dataset_id}", "mismatch")
-            return d
-    for base in bases:
-        found = runs_on(dataset_id, runs_dir=base, config_id=name)
+        return found[-1]
+    # In the order they are looked up: the label asked for, then (for the plain one) the label sets' own.
+    own = [(d, m) for d, m in scores if _model_runs.label(d, m) == label]
+    sets_ = (
+        [(d, m) for d, m in scores if _model_runs.label(d, m).startswith(f"labels-{dataset_id}-")]
+        if not label
+        else []
+    )
+    for group in (own, sets_):
+        for d, m in group:
+            if m["run_id"] == name:
+                return d
+    for group in (own, sets_):
+        found = [d for d, m in group if m["config_id"] == name]
         if found:
-            return found[-1][0]
+            return found[-1]
+    if any(m["run_id"] == name for _d, m in runs_on(label=None)) and not any(
+        m["run_id"] == name and m.get("dataset_id") == dataset_id for _d, m in scores
+    ):
+        die(f"--runs {name}: that run is not on {dataset_id}", "mismatch")
     die(f"--runs {name}: no run with that id, and no run of that system on {dataset_id}", "not-found")
 
 
@@ -179,7 +182,7 @@ def build(
         from evaluation_harness._adapter import same_of  # noqa: PLC0415
 
         first = next(iter(dirs.values()))
-        same = same_of(read_json(first / "metrics.json").get("adapter"))
+        same = same_of((_model_runs.record(first) or {}).get("adapter"))
         chosen = []
         for i in ids:
             outs = [o for d in dirs.values() if (o := output(d, i)) is not None]

@@ -108,7 +108,7 @@ check('"public": true makes it public', got["private"] is False)
 
 proj = Path(tempfile.mkdtemp(prefix="evh-publish-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-publish")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 
 

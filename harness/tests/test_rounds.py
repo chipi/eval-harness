@@ -31,7 +31,7 @@ import _runstore  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-rounds-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-rounds")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
     env.pop(k, None)
 
 
@@ -131,7 +131,7 @@ try:
         "a run naming the round runs in it, and the run records the round",
         r.returncode == 0
         and run is not None
-        and _runstore.read_json(proj, f"runs/{run.name}/metrics.json").get("round") == "r1",
+        and _runstore.read_json(proj, f"runs/{run.name}/run.json").get("round") == "r1",
         out(r)[-300:],
     )
 
@@ -344,24 +344,24 @@ try:
     )
     _runstore.unlink(proj, "rounds/tickets_summary/r3.yaml")
 
-    # A re-timing of the same config on another machine (data/runs-linux) is its own arm in the
-    # catalog; a round retires that copy alone, by naming its runs directory.
+    # A re-timing of the same system on another machine (purpose retime, machine linux) is its own arm in the
+    # catalog; a round retires that copy alone, by naming its runs.
     assert run is not None, "a run of round r1 is needed to copy"
-    linux = data / "runs-linux" / run.name
+    linux_id = f"{run.name}_linux"
     with _runstore._InProject(proj):
-        _runstore.copy_run(run, linux)
-    m = _runstore.read_json(proj, f"runs-linux/{run.name}/metrics.json")
-    m["round"] = "r2"
-    _runstore.write_text(proj, f"runs-linux/{run.name}/metrics.json", json.dumps(m))
+        _runstore.copy_run(run, data / "runs" / linux_id)
+    m = _runstore.read_json(proj, f"runs/{linux_id}/run.json")
+    m.update(run_id=linux_id, round="r2", purpose="retime", machine="linux", of=run.name)
+    _runstore.write_text(proj, f"runs/{linux_id}/run.json", json.dumps(m))
     cfg_id = m["config_id"]
     r = evh(
         "round-retire", "--goal", "tickets_summary", "--round", "r2", "--arm", cfg_id,
-        "--runs-dir", "runs-linux", "--reason", "a re-timing of the same config on another machine",
+        "--runs", linux_id, "--reason", "a re-timing of the same config on another machine",
     )  # fmt: skip
     doc2 = _runstore.read_text(proj, "rounds/tickets_summary/r2.yaml")
     check(
-        "round-retire --runs-dir: the retirement names the runs directory it applies to",
-        r.returncode == 0 and "runs_dir: runs-linux" in doc2,
+        "round-retire --runs: the retirement names the runs it applies to",
+        r.returncode == 0 and f"- {linux_id}" in doc2 and "runs_dir" not in doc2,
         out(r) + doc2,
     )
     r = evh("goals", "--goal", "tickets_summary")
@@ -424,7 +424,7 @@ try:
     )
     r3run = next(
         (n for n in _runstore.listdir(proj, "runs") if n.startswith("tickets_author_v1_")
-         and _runstore.read_json(proj, f"runs/{n}/metrics.json").get("round") == "r3"),
+         and _runstore.read_json(proj, f"runs/{n}/run.json").get("round") == "r3"),
         None,
     )  # fmt: skip
     r = evh("rounds", "--goal", "tickets_summary", "--round", "r3")
@@ -434,10 +434,10 @@ try:
         out(r)[-600:],
     )
     if r3run:
-        m = _runstore.read_json(proj, f"runs/{r3run}/metrics.json")
+        m = _runstore.read_json(proj, f"runs/{r3run}/run.json")
         m["fingerprint"]["instrument"]["harness"]["code_sha256"] = "0" * 64
         m["fingerprint"]["instrument"]["harness"]["version"] = "9.9.9"
-        _runstore.write_text(proj, f"runs/{r3run}/metrics.json", json.dumps(m))
+        _runstore.write_text(proj, f"runs/{r3run}/run.json", json.dumps(m))
     r = evh("rounds", "--goal", "tickets_summary", "--round", "r3")
     check(
         "rounds: a run on other harness code than the round opened on is named, with how to run it on the round's",

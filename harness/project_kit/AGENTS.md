@@ -17,13 +17,13 @@ The procedures are skills: `evh skills-install` copies them into `.claude/skills
 
 ## The rules
 
-1. **Frozen means frozen.** Never edit or delete anything under `data/datasets/`, `data/runs*/`,
+1. **Frozen means frozen.** Never edit or delete anything under `data/datasets/`, `data/runs/`, `data/judge-summaries/`,
    `data/labels/`, `data/references/` or `data/baselines/`. A change is a new id: a dataset
    `_v2`, a new label set, a new reference.
 2. **One change, one new `system_id`.** A system is a file in `data/systems/`, named by its
    `system_id`; a run puts it on a dataset (`evh run --system S --dataset D`). To try a change (a
    prompt, a model, a setting), copy the system and give it a new `system_id`; never edit a system
-   that has runs. Running the same system again is `evh run --repeat N`, a deliberate repeat; any
+   that has runs. Running the same system again is `evh run --repeat N` or `--purpose repeat --of RUN_ID`, a deliberate repeat; any
    other second run of a system on the same dataset fails `evh validate` (V8).
 3. **Commit before you run.** A run records the commit it was made from; a run from a dirty tree
    is refused later (`label-from-run`, `run-promote`). Commit `data/` as the harness writes it,

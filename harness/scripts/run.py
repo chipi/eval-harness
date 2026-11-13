@@ -70,9 +70,7 @@ from evaluation_harness._common import (
     load_dataset,
     load_goals,
     now,
-    read_json,
     warn_if_ignored,
-    write_json,
 )
 from evaluation_harness._fingerprint import build_fingerprint
 from evaluation_harness._providers import secret_params
@@ -84,6 +82,7 @@ from evaluation_harness._record import (
     run_scorer,
 )
 from evaluation_harness._retry import call_with_retries, is_transient
+from evaluation_harness.model import runs as _model_runs
 
 
 class _Resumed:
@@ -867,7 +866,8 @@ def _resume_source(
     resume: str | None, cfg: dict[str, Any], runs: Path = RUNS
 ) -> tuple[Path | None, dict[str, dict[str, Any]]]:
     """For `--resume <run_id>`: (its run directory, {item_id: its row}); (None, {}) without. The run is looked
-    for in `runs` (the runs directory, or a label set's). Dies when the run cannot be resumed as this arm."""
+    for in `runs` (data/runs, or the scratch runs of a --scratch pass). Dies when the run cannot be resumed as this
+    arm."""
     if not resume:
         return None, {}
     resume_dir = runs / resume
@@ -894,18 +894,10 @@ def _resume_source(
     # tidy case and not the crash, which is the only case resume exists for.
     #
     # `run.json` is now written BEFORE the first item, so identity survives a kill.
-    src_id = runs / resume / "run.json"
-    src_metrics = runs / resume / "metrics.json"
-    ident = (
-        read_json(src_id)
-        if _store.is_file(src_id)
-        else read_json(src_metrics)
-        if _store.is_file(src_metrics)
-        else None
-    )
+    ident = _model_runs.run(runs / resume)
     if ident is None:
         die(
-            f"cannot resume: {resume} has neither run.json nor metrics.json, so the "
+            f"cannot resume: {resume} has no run.json, so the "
             f"arm that produced those outputs cannot be identified.\n"
             f"  Resuming anyway would replay whatever is in that directory and record it "
             f"under {cfg.get('config_id')!r}.",
@@ -930,11 +922,15 @@ def _resume_source(
     # THE PRIOR ROWS, so a replayed item keeps the cost, tokens, latency and _meta
     # measured for it. The row checkpoint is appended DURING the pass and so
     # survives a crash; predictions.jsonl is the tidy-exit copy of the same thing.
+    first = _model_runs.first_score(runs / resume)
     for partial in (True, False):
-        text = _outputs.rows_text(runs / resume, partial=partial)
+        at = runs / resume if partial else first
+        if at is None:
+            continue
+        text = _outputs.rows_text(at, partial=partial)
         if text is None:
             continue
-        src = runs / resume / (_outputs.ROWS if partial else _outputs.PREDICTIONS)
+        src = at / (_outputs.ROWS if partial else _outputs.PREDICTIONS)
         for line in text.splitlines():
             if not line.strip():
                 continue
@@ -974,6 +970,21 @@ def main() -> int:
         help="score against this label set of the dataset (SET or DATASET/SET) instead of its gold or silver (RFC-023)",
     )
     ap.add_argument("--repeat", type=int, default=1, help="run N times to measure the arm's spread")
+    ap.add_argument(
+        "--purpose",
+        choices=_model_runs.PURPOSES,
+        default="run",
+        help="what the run is for (RFC-032): run (default), repeat (another measurement of a system's run), retime "
+        "(the same on another machine), pair (a run for a paired test); a re-run is read as an arm of its own",
+    )
+    ap.add_argument(
+        "--of", metavar="RUN_ID", help="the run a re-run (--purpose repeat, retime, pair) re-does"
+    )
+    ap.add_argument(
+        "--scratch",
+        action="store_true",
+        help="a throwaway pass: written under .build/scratch/runs, where nothing that reads runs looks",
+    )
     ap.add_argument("--run-id", help="default: <system>_<timestamp>")
     ap.add_argument(
         "--items",
@@ -1113,12 +1124,14 @@ def _run(args: argparse.Namespace) -> int:
 
         ref_id = labels_reference(args.labels, cfg["dataset_id"])
         ref_dir, ref_tier = scored_against_dir(ref_id), LABELS_TIER
-    # A run scored against a label set lands beside the runs, as a re-score against one does: an arm of its own.
-    runs = (
-        DATA / f"runs-labels-{cfg['dataset_id']}-{ref_id.rsplit('/', 1)[1]}"
-        if args.labels and ref_id
-        else RUNS
-    )
+    # A run scored against a label set is a run like any other; its score is read as an arm of its own, as a
+    # re-score against one is (its label names the set).
+    runs = _model_runs.root(args.scratch)
+    label_as = f"labels-{cfg['dataset_id']}-{ref_id.rsplit('/', 1)[1]}" if args.labels and ref_id else ""
+    if args.of and not _model_runs.run(args.of):
+        die(f"--of {args.of}: no run of that id in {runs}", "not-found")
+    if args.purpose == "run" and args.of:
+        die("--of names the run a re-run re-does: give its --purpose (repeat, retime, pair)", "bad-argument")
     # HOW MANY ITEMS HAVE A REFERENCE, counted before any call. A metric scored against a
     # missing reference is not computed, so with gold for 20 of 200 items the run's mean is a
     # mean over 20, recorded as a 200-item gold run. None is a refusal (nothing would be
@@ -1261,7 +1274,8 @@ def _run(args: argparse.Namespace) -> int:
         )
 
     resume_dir, prior_rows = _resume_source(args.resume, cfg, runs)
-    warn_if_ignored(runs)
+    if not args.scratch:
+        warn_if_ignored(runs)
 
     made: list[Path] = []
     written: list[dict[str, Any]] = []
@@ -1328,17 +1342,15 @@ def _run(args: argparse.Namespace) -> int:
         # which made `--resume`'s arm guard unenforceable in the one case resume is
         # for. This is small, written first, and never rewritten.
         _store.mkdir(run_dir, parents=True, exist_ok=True)
-        write_json(
-            run_dir / "run.json",
-            {
-                "config_id": cfg.get("config_id"),
-                "dataset_id": cfg.get("dataset_id"),
-                "started_at": now(),
-                "run_id": run_id,
-                "note": "written before the first item so a crashed run can still be "
-                "identified; metrics.json is written only on a clean exit",
-            },
-        )
+        identity = {
+            "config_id": cfg.get("config_id"),
+            "dataset_id": cfg.get("dataset_id"),
+            "started_at": now(),
+            "run_id": run_id,
+            "purpose": args.purpose,
+            **({"of": args.of} if args.of else {}),
+        }
+        _model_runs.write_run(run_id, identity, scratch=args.scratch)
         try:
             result = one_pass(
                 {**ds, "items": plan.items} if plan is not None else ds,
@@ -1369,7 +1381,6 @@ def _run(args: argparse.Namespace) -> int:
                 sys.exit(EXIT_TRY_LATER)  # said above in full; a traceback adds nothing
             raise
         _store.mkdir(run_dir, parents=True, exist_ok=True)
-        _outputs.write_rows(run_dir, result["predictions"])
         # The outputs were appended as produced; the finished file is every output in dataset order, a resumed
         # item's included (it came from the PREVIOUS run, and this one must be self-contained), a failed item's
         # left out (not done: --resume calls it again). The row checkpoint goes: predictions.jsonl has the rows.
@@ -1436,7 +1447,29 @@ def _run(args: argparse.Namespace) -> int:
             repeat_index=(i + 1) if args.repeat > 1 else None,
             faithfulness=faith,
         )
-        write_json(run_dir / "metrics.json", metrics)
+        # The pass (run.json: what ran, on what, how) and the score it made (scores/<scorer>@<reference>/), its rows
+        # beside it (RFC-032 step 4).
+        _model_runs.write_run(
+            run_id,
+            {
+                **_model_runs.run_part(metrics),
+                "started_at": identity["started_at"],
+                "purpose": args.purpose,
+                "machine": _model_runs.machine_of(metrics.get("fingerprint")),
+                **({"of": args.of} if args.of else {}),
+            },
+            scratch=args.scratch,
+        )
+        score_dir = _model_runs.write_score(
+            run_id,
+            _model_runs.scorer_of(metrics),
+            ref_id,
+            metrics,
+            label_as=label_as,
+            first=True,
+            scratch=args.scratch,
+        )
+        _outputs.write_rows(score_dir, result["predictions"])
         if (metrics.get("history_confound") or {}).get("items"):
             hc = metrics["history_confound"]
             print(
@@ -1452,7 +1485,7 @@ def _run(args: argparse.Namespace) -> int:
                 _store.write_text(
                     run_dir / "confound.jsonl", "".join(json.dumps({"item_id": i}) + "\n" for i in ids)
                 )
-        made.append(run_dir)
+        made.append(score_dir)
         written.append(
             {
                 "run_id": run_id,
@@ -1496,7 +1529,7 @@ def _run(args: argparse.Namespace) -> int:
         shown = sorted(k for k in per_repeat[0] if not k.startswith(BOOKKEEPING_PREFIXES))
         w = max(len(k) for k in shown)
         kinds = classify_metrics(
-            read_json(made[-1] / "metrics.json").get("metric_kinds") or {} if made else {}
+            (_model_runs.record(made[-1]) or {}).get("metric_kinds") or {} if made else {}
         )
         for k in shown:
             vals = [r[k] for r in per_repeat if k in r]
@@ -1512,7 +1545,7 @@ def _run(args: argparse.Namespace) -> int:
         # every repeat scored the same, so k repeats are read as k samples only when they are (feedback 33).
         from evaluation_harness._runs import repeat_agreement, say_agreement  # noqa: PLC0415
 
-        prim = read_json(made[-1] / "metrics.json").get("primary_metric") if made else None
+        prim = (_model_runs.record(made[-1]) or {}).get("primary_metric") if made else None
         ag = repeat_agreement([(d, {}) for d in made], prim) if prim else None
         if ag:
             print(
@@ -1522,11 +1555,11 @@ def _run(args: argparse.Namespace) -> int:
 
     print(f"\nwrote {len(made)} run(s) to {runs}")
     for d in made:
-        print(f"  run {d.name}")
+        print(f"  run {_model_runs.run_of(d).name}")
     _jsonout.value("runs", written)
     # What this command spent, so nobody adds up total_cost_usd by hand across repeats.
     spent = sum(
-        float((read_json(d / "metrics.json").get("scores") or {}).get("total_cost_usd") or 0) for d in made
+        float(((_model_runs.record(d) or {}).get("scores") or {}).get("total_cost_usd") or 0) for d in made
     )
     if spent:
         from evaluation_harness.cost_report import billed_and_recorded  # noqa: PLC0415
@@ -1546,11 +1579,11 @@ def _run(args: argparse.Namespace) -> int:
     # of the design was deliberate and is not changed. What changes is that the caller is
     # told, because "the cap stopped me after 3 of 200 items" and "I measured 200 items"
     # must not both be exit 0.
-    empty = [d for d in made if not (read_json(d / "metrics.json").get("scores") or {})]
+    empty = [d for d in made if not ((_model_runs.record(d) or {}).get("scores") or {})]
     if empty:
         print(f"\n  FAILED: {len(empty)} run(s) scored NO items and carry empty scores:")
         for d in empty:
-            print(f"    {d.name}")
+            print(f"    {_model_runs.run_of(d).name}")
         print("  Nothing was measured. Raise EVAL_MAX_COST_USD, or check the adapter.")
         return EXIT_NOTHING
     if capped:
@@ -1558,7 +1591,8 @@ def _run(args: argparse.Namespace) -> int:
         # results" from "produced nothing".
         print(f"\n  Stopped early by the cost cap — exit {EXIT_STOPPED}. Partial results above are kept.")
         return EXIT_STOPPED
-    warn_if_ignored(runs)
+    if not args.scratch:
+        warn_if_ignored(runs)
     return 0
 
 

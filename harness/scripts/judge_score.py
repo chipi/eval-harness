@@ -3,7 +3,7 @@
 
     make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1 ARGS=--dry-run
     make judge-score DATASET_ID=cnn_dailymail_200 SCORER=judge-summ-v1
-    EVAL_RUNS_DIR=data/runs-judged/judge-summ-v1 make leaderboard DATASET_ID=cnn_dailymail_200
+    make leaderboard DATASET_ID=cnn_dailymail_200 ARGS='--label judged/judge-summ-v1'
 
 `evh judge` is the older judge PANEL (judge_panel.py): pointwise, finalists only, verdicts not
 stored. This is the judging PASS: listwise, every arm, verdicts stored as a frozen record.
@@ -22,8 +22,9 @@ THE PASS, IN ORDER
                 skips what is stored (resume) and re-reading costs $0. Cost-capped mid-run;
                 what was bought is kept.
   4. projection one score per arm per item (mean of the task's dimensions, per judge; the
-                primary is the mean over judges) written as scored runs, shaped like
-                rescore's, plus summary.json with the controls.
+                primary is the mean over judges) written as a score under each judged
+                run (key <scorer>@<judging set>, label judged/<scorer>), plus
+                data/judge-summaries/<scorer>@<judging set>.json with the controls.
 
 THE TASK. What is judged comes from the scorer's optional `task` block: the label of the
 source item, the label of the numbered outputs, the dimensions and the scale. Without one it
@@ -77,7 +78,6 @@ from evaluation_harness._common import (
     EXIT_UNVALIDATED,
     MATERIALIZED,
     ROOT,
-    RUNS,
     CostCapExceeded,
     classify_metrics,
     dataset_id_ok,
@@ -115,6 +115,7 @@ from evaluation_harness.judging import (
     task_of,
     withheld_reason,
 )
+from evaluation_harness.model import runs as _model_runs
 
 try:
     import yaml
@@ -124,7 +125,7 @@ except ImportError:  # pragma: no cover
 SCORERS = DATA / "scorers"
 SETS = DATA / "judging-sets"
 VERDICTS = DATA / "judge-verdicts"
-JUDGED = DATA / "runs-judged"
+SUMMARIES = DATA / "judge-summaries"
 
 PASSES = ("primary", "position", "noise")
 
@@ -381,9 +382,10 @@ OUTPUT_PARAMS = ("provider", "model", "temperature", "reasoning", "max_tokens")
 
 
 def validation_problems(
-    sc: dict[str, Any], runs_dir: Path = RUNS, prompt_root: Path | None = None
+    sc: dict[str, Any], prompt_root: Path | None = None, runs_dir: Path | None = None
 ) -> list[str]:
-    """Why this scorer is not validated; empty means it is."""
+    """Why this scorer is not validated; empty means it is. The validation runs are run ids under `runs_dir`
+    (default data/runs), each read as the score it made when it ran."""
     fakes = [j["id"] for j in sc["judges"] if j["params"].get("provider") == FAKE]
     if fakes:
         return [f"judge {i!r} uses provider: fake, a stand-in that can never be validated" for i in fakes]
@@ -407,11 +409,11 @@ def validation_problems(
         if not r:
             out.append(f"judge {j['id']!r}: no validation run names it")
             continue
-        d = runs_dir / str(r.get("run", ""))
-        if not _store.is_file(d / "metrics.json"):
-            out.append(f"judge {j['id']!r}: validation run {r.get('run')!r} is not in {runs_dir}")
+        first = _model_runs.first_score((runs_dir or _model_runs.root()) / str(r.get("run", "")))
+        m = _model_runs.record(first) if first else None
+        if m is None:
+            out.append(f"judge {j['id']!r}: validation run {r.get('run')!r} is not in data/runs")
             continue
-        m = read_json(d / "metrics.json")
         if v.get("dataset_id") and m.get("dataset_id") != v["dataset_id"]:
             out.append(
                 f"judge {j['id']!r}: run {r['run']} is on {m.get('dataset_id')!r}, not {v['dataset_id']!r}"
@@ -518,14 +520,15 @@ def pick_subset(item_ids: Sequence[str], frac: float, seed: Any, salt: str) -> l
 
 
 # ── arms and the judging set ─────────────────────────────────────────────────
-def discover_arms(dataset_id: str, match: str, runs_dir: Path = RUNS) -> list[dict[str, Any]]:
-    """The primary run of every arm on the dataset: config_id contains `match`, latest wins."""
+def discover_arms(dataset_id: str, match: str) -> list[dict[str, Any]]:
+    """The primary run of every arm on the dataset: config_id contains `match`, latest wins. `dir` is the score the
+    run made, whose outputs and rows are read."""
     latest: dict[str, tuple[str, Path, dict[str, Any]]] = {}
     # One run per arm, the latest, on purpose: judging scores an arm's outputs, so repeats
     # are not averaged as they are everywhere else (_runs.per_item).
-    for d, m in runs_on(dataset_id, runs_dir=runs_dir, match=match or None):
+    for d, m in runs_on(dataset_id, match=match or None):
         cid = m["config_id"]
-        key = m.get("created_at", "") + d.name
+        key = m.get("created_at", "") + m["run_id"]
         if cid not in latest or key > latest[cid][0]:
             latest[cid] = (key, d, m)
     arms = []
@@ -533,7 +536,7 @@ def discover_arms(dataset_id: str, match: str, runs_dir: Path = RUNS) -> list[di
         arms.append(
             {
                 "config_id": cid,
-                "run": d.name,
+                "run": m["run_id"],
                 "dir": d,
                 "family": (m.get("params") or {}).get("family")
                 or (m.get("fingerprint", {}).get("settings") or {}).get("family"),
@@ -1413,13 +1416,13 @@ def write_scored_runs(
     sc: dict[str, Any],
     arms: Sequence[dict[str, Any]],
     proj: dict[str, dict[str, dict[str, float]]],
-    out_root: Path,
     label: str,
     validated: bool,
     self_path: Path = Path(__file__),
 ) -> list[Path]:
-    """One directory per original run, same name, predictions.jsonl + metrics.json, shaped
-    like rescore's so leaderboard / family_test / pair_test read them with EVAL_RUNS_DIR."""
+    """One score under each judged run (key <scorer>@<judging set>, read as `judged/<scorer>`), so leaderboard /
+    family_test / pair_test read them with `--label judged/<scorer>`. A pass run again over more stored verdicts
+    replaces its own earlier score of the same key; the same rows are not written twice. The scores' directories."""
     sfx = "" if validated else "_unvalidated"
     mode = mode_of(manifest)
     primary = f"{'judge_score' if mode == DEFAULT_MODE else 'judge_won'}{sfx}"
@@ -1428,7 +1431,7 @@ def write_scored_runs(
     written = []
     for a in arms:
         cid, src = a["config_id"], Path(a["dir"])
-        m = read_json(src / "metrics.json")
+        m = _model_runs.record(src) or {}
         old_rows = {r["item_id"]: r for r in _runs.item_rows(src)}
         rows = []
         for i in manifest["items"]:
@@ -1458,19 +1461,13 @@ def write_scored_runs(
                 if k.startswith(BOOKKEEPING_PREFIXES)
                 else kinds.get(k) or known.get(k) or ("quality" if k.startswith("judge_") else "descriptive")
             )
-        run_dir = out_root / src.name
-        _store.mkdir(
-            run_dir, parents=True, exist_ok=True
-        )  # no outputs of its own: they are its source's (RFC-024)
-        _outputs.write_rows(run_dir, rows)
         # A judge reads no reference, so the source run's tier does not describe these scores;
         # it is kept, as the source's, in derived.with.
         source_tier = m.get("reference_tier")
         new = derived_record(
             m,
             kind="judge",
-            source_dir=src.name,
-            source_path=src,
+            source_dir=a["run"],
             scores=scores,
             n_items=len(rows),
             drop=("reference_tier",),
@@ -1513,8 +1510,19 @@ def write_scored_runs(
                 "was built from; see derived.with"
             )
             new["fingerprint"] = fp
-        write_json(run_dir / "metrics.json", new)
-        written.append(run_dir)
+        key = _model_runs.key(sc["scorer_id"], manifest["judging_set_id"])
+        held = _model_runs.run_dir(a["run"]) / "scores" / key
+        text = "".join(_outputs.row_line(r) for r in rows)
+        if _model_runs.record(held) is None or _outputs.rows_text(held) != text:
+            held = _model_runs.write_score(
+                a["run"],
+                sc["scorer_id"],
+                manifest["judging_set_id"],
+                new,
+                label_as=f"judged/{sc['scorer_id']}",
+            )
+            _outputs.write_rows(held, rows)  # no outputs of its own: they are its run's (RFC-024)
+        written.append(held)
     return written
 
 
@@ -1641,7 +1649,6 @@ def main() -> int:
         help="comma-separated config_ids or substrings: judge only these "
         "arms (a subset is its own judging set id)",
     )
-    ap.add_argument("--out", type=Path, default=JUDGED)
     from evaluation_harness._actor import add_by  # noqa: PLC0415
 
     add_by(ap)
@@ -1702,7 +1709,7 @@ def main() -> int:
         if args.arms:
             arms = select_arms(arms, args.arms)
         if len(arms) < 2:
-            die(f"found {len(arms)} arm run(s) on {args.dataset_id} in {RUNS}", "not-enough")
+            die(f"found {len(arms)} arm run(s) on {args.dataset_id} in data/runs", "not-enough")
         vers = config_versions(arms)
         if len(vers) > 1:
             print(
@@ -1714,7 +1721,7 @@ def main() -> int:
         outputs = {a["config_id"]: read_outputs(a, item_ids) for a in arms}
         base = prompt_text(sc)
         items_sha = (
-            read_json(RUNS / arms[0]["run"] / "metrics.json")
+            (_model_runs.record(Path(arms[0]["dir"])) or {})
             .get("fingerprint", {})
             .get("data", {})
             .get("items_sha256")
@@ -1782,7 +1789,6 @@ def main() -> int:
         )
         scores = load_scores(manifest, sc, vdir)
         proj = project(sc, scores, item_ids)
-        out_root = args.out / sc["scorer_id"]
         if not proj:
             print("no item has a complete verdict from every judge; nothing to project")
             return EXIT_STOPPED if stats["aborted"] else EXIT_NOTHING
@@ -1790,14 +1796,19 @@ def main() -> int:
             print(f"  {sc['scorer_id']} supersedes {sc['supersedes']}: {sc.get('why')}")
         words = {c: {i: len(str(t).split()) for i, t in o.items()} for c, o in outputs.items()}
         summ = summarise(manifest, sc, arms, scores, proj, stats, label, validated, vdir, lengths=words)
-        written = write_scored_runs(manifest, sc, arms, proj, out_root, label, validated)
-        write_json(out_root / "summary.json", summ)
+        written = write_scored_runs(manifest, sc, arms, proj, label, validated)
+        summary = SUMMARIES / f"{_model_runs.key(sc['scorer_id'], sid)}.json"
+        _store.mkdir(SUMMARIES, parents=True, exist_ok=True)
+        write_json(summary, summ)
         for j, lb in (summ.get("length_bias") or {}).items():
             if lb:
                 print(
                     f"  judge {j}: its score against the output's length in words, Spearman {lb['spearman_length']:+.2f} over {lb['n']}"
                 )
-        print(f"\n{len(written)} scored run(s) -> {out_root}  ({len(proj)}/{len(item_ids)} items, {label})")
+        print(
+            f"\n{len(written)} score(s) under their runs, read as judged/{sc['scorer_id']}  "
+            f"({len(proj)}/{len(item_ids)} items, {label}); summary {summary.relative_to(DATA)}"
+        )
         if mode != DEFAULT_MODE:
             print_win_summary(summ)
         print(
@@ -1805,10 +1816,10 @@ def main() -> int:
             f"stored total ${stats['spent_usd']:.4f}  (the provider's bill where it reports one, else the price table)"
         )
         print(
-            f"  EVAL_RUNS_DIR={out_root} "
+            "  "
             + how(
-                f"evh leaderboard --dataset-id {args.dataset_id}",
-                f"make leaderboard DATASET_ID={args.dataset_id}",
+                f"evh leaderboard --dataset-id {args.dataset_id} --label judged/{sc['scorer_id']}",
+                f"make leaderboard DATASET_ID={args.dataset_id} ARGS='--label judged/{sc['scorer_id']}'",
             )
         )
         if stats["aborted"]:

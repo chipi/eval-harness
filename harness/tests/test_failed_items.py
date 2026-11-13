@@ -4,7 +4,7 @@
     python tests/test_failed_items.py
 
 In a throwaway project with the tutorial's six tickets: an adapter that fails on one ticket finishes the run, scores
-that ticket as an empty answer (0), marks its row `failed`, lists it in metrics.json and writes no output for it (so
+that ticket as an empty answer (0), marks its row `failed`, lists it in the run's record and writes no output for it (so
 --resume calls it again); one that fails on every ticket stops with ERROR (failed); a provider error that stays
 transient past its retries stops the run with exit 75, as an unreachable server does.
 """
@@ -25,7 +25,9 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
+from evaluation_harness.model import runs as _R  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-failed-"))
 env = dict(
@@ -107,10 +109,9 @@ try:
         )
 
     r = evh("run", "--system", "one_v1", "--dataset", "tickets_v1")
-    name = next((n for n in _runstore.listdir(proj, "runs") if n.startswith("one_v1_")), None)
-    m = _runstore.read_json(proj, f"runs/{name}/metrics.json") if name else {}
-    with _runstore._InProject(proj) as pdata:
-        run = pdata / "runs" / name if name else None
+    name, m = _runview.record_of(proj, "one_v1_")
+    with _runstore._InProject(proj):
+        run = _R.first_score(name)
         rows = _runstore.rows(run) if run else []
         out_bad = _outputs.output(run, "t02_invoice") if run else None
         out_ok = _outputs.output(run, "t01_login") if run else None

@@ -36,11 +36,12 @@ from evaluation_harness import _common  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runfix  # noqa: E402
 import _runstore  # noqa: E402
 
 
 def tool(script: str, data: Path | None, *args: str) -> subprocess.CompletedProcess:
-    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR")}
     if data is not None:
         env["EVAL_DATA_DIR"] = str(data)
     else:
@@ -60,12 +61,11 @@ def write_run(
     _common.project_root.cache_clear()  # _runstore aims at one project per process: forget the last one's
     proj = data.parent
     with _runstore._InProject(proj) as pdata:
-        _runstore.put_rows_text(pdata / "runs" / run_id, "".join(json.dumps(r) + "\n" for r in rows))
-    _runstore.write_text(
-        proj,
-        f"runs/{run_id}/metrics.json",
-        json.dumps({"run_id": run_id, "dataset_id": dataset, "config_id": config, "scores": scores or {}}),
-    )
+        _runfix.put_run(
+            pdata,
+            {"run_id": run_id, "dataset_id": dataset, "config_id": config, "scores": scores or {}},
+            "".join(json.dumps(r) + "\n" for r in rows),
+        )
 
 
 def fetched_gold(data: Path, dataset: str, items: dict, redistributed: bool = True) -> None:
@@ -78,7 +78,7 @@ def fetched_gold(data: Path, dataset: str, items: dict, redistributed: bool = Tr
         _runstore.write_text(
             data.parent, f"{ref}/{item}.txt", value if isinstance(value, str) else json.dumps(value)
         )
-    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR")}
     r = subprocess.run(
         [
             sys.executable,
@@ -320,7 +320,7 @@ def test_goal_decisions() -> None:
         bool(goals) and {x.get("goal_id") for x in rows} == goals,
         sorted({x.get("goal_id") for x in rows} ^ goals),
     )
-    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR")}
+    env = {k: v for k, v in os.environ.items() if k not in ("EVAL_HOME", "EVAL_DATA_DIR")}
     env["EVAL_STORE"] = "files"  # this repository's own data, which is files
     g = subprocess.run(
         [sys.executable, "-m", "evaluation_harness", "goals"],

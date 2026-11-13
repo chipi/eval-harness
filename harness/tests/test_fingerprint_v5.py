@@ -22,6 +22,7 @@ from evaluation_harness import _models, compare_runs  # noqa: E402
 from evaluation_harness import fingerprint_migrate as mig  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import _flat_conditions  # noqa: E402
+from evaluation_harness.model import runs as model_runs  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _model_records  # noqa: E402
@@ -536,7 +537,8 @@ check(
     and mig.migrate_fingerprint(older_local)["deployment"]["in_process"] is False,
 )
 
-# the tool, over a small tree: counts, the baseline's hash, idempotence, derived runs take their source's parts
+# the tool, over a small tree of the layout before step 4 (the migration runs its steps in order, so the runs end in
+# data/runs with their scores): counts, the baseline's hash, idempotence, derived runs take their source's parts
 with tempfile.TemporaryDirectory() as td:
     data = Path(td) / "data"
 
@@ -546,23 +548,34 @@ with tempfile.TemporaryDirectory() as td:
         f.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
         return f
 
+    ident = {"dataset_id": "d1", "build": {"ref": "x", "dirty": False}, "scores": {}}
     put(
         "runs/r1",
-        {"run_id": "r1", "params": {"model": "org/span"}, "fingerprint": v4(declared, {"model": "org/span"})},
+        {
+            **ident,
+            "run_id": "r1",
+            "config_id": "c1",
+            "params": {"model": "org/span"},
+            "fingerprint": v4(declared, {"model": "org/span"}),
+        },
     )
     put(
         "runs/r2",
         {
+            **ident,
             "run_id": "r2",
+            "config_id": "c2",
             "params": {"model": "gw"},
             "fingerprint": v4({"identity_declared": False}, {"model": "gw"}),
         },
     )
     put(
-        "runs-rescored/r1",
+        "runs-rescored/abcdef0123456789/runs/r1",
         {
+            **ident,
             "run_id": "r1",
-            "derived": {"kind": "rescore", "from": "r1"},
+            "config_id": "c1",
+            "derived": {"kind": "rescore", "from": "r1", "with": {"sha256": "t" * 64}},
             "params": {"model": "org/span"},
             "fingerprint": v4(declared, {"model": "org/span"}, derived=True),
         },
@@ -581,13 +594,17 @@ with tempfile.TemporaryDirectory() as td:
     # the fixture is a files project, whatever store the suite runs in
     menv = {**os.environ, "EVAL_HOME": td, "EVAL_DATA_DIR": "data", "EVAL_STORE": "files"}
     first = subprocess.run(cmd, capture_output=True, text=True, env=menv)
+    # a score as the project now reads it: <run>/<label>, its record (the run's facts with the score's over them)
     docs = {
-        p.parent.name + "/" + p.parent.parent.name: json.loads(p.read_text())
-        for p in data.glob("runs*/*/metrics.json")
+        f"{rd.name}/{model_runs.label(sd, rec) or 'runs'}": rec
+        for rd in sorted((data / "runs").glob("*"))
+        for sd in model_runs.scores_of(rd)
+        if (rec := model_runs.record(sd))
     }
     check(
         "migration tool: prints before and after, the runs migrated and the deployment sources",
-        "before: 3 v4" in first.stdout
+        first.returncode == 0
+        and "before: 3 v4" in first.stdout
         and "after:  3 v5" in first.stdout
         and "runs migrated: 3" in first.stdout
         and "deployment source adapter: 2" in first.stdout
@@ -602,20 +619,26 @@ with tempfile.TemporaryDirectory() as td:
     )
     check(
         "migration tool: a derived run carries its source run's deployment and settings, and its hash stays null",
-        docs["r1/runs-rescored"]["fingerprint"]["deployment"] == r1["deployment"]
-        and docs["r1/runs-rescored"]["fingerprint"]["settings"] == r1["settings"]
-        and docs["r1/runs-rescored"]["fingerprint"]["hash"] is None,
+        docs["r1/rescored abcdef01"]["fingerprint"]["deployment"] == r1["deployment"]
+        and docs["r1/rescored abcdef01"]["fingerprint"]["settings"] == r1["settings"]
+        and docs["r1/rescored abcdef01"]["fingerprint"]["hash"] is None,
     )
     check(
         "migration tool: the baseline carries the run's new hash",
         json.loads(b.read_text())["fingerprint_hash"] == r1["hash"],
     )
-    before_bytes = {p: p.read_bytes() for p in [*data.glob("runs*/*/metrics.json"), b]}
+
+    def tree_bytes() -> dict:
+        return {
+            p: p.read_bytes() for p in sorted(data.rglob("*")) if p.is_file() and p.name != "project.yaml"
+        }
+
+    before_bytes = tree_bytes()
     (data / "project.yaml").unlink()  # the steps again (the stamp would say "nothing to do")
     second = subprocess.run(cmd, capture_output=True, text=True, env=menv)
     check(
         "migration tool: idempotent, a v5 fingerprint is left as it is",
-        "runs migrated: 0" in second.stdout and before_bytes == {p: p.read_bytes() for p in before_bytes},
+        "runs migrated: 0" in second.stdout and before_bytes == tree_bytes(),
         second.stdout,
     )
 
@@ -703,17 +726,25 @@ with tempfile.TemporaryDirectory() as td:
         (Path(td) / "data" / "runs" / rid).mkdir(parents=True, exist_ok=True)
         put_in(
             td,
-            f"runs/{rid}/metrics.json",
+            f"runs/{rid}/run.json",
             json.dumps(
                 {
                     "run_id": rid,
                     "dataset_id": "d1",
+                    "config_id": "c1",
                     "build": {"ref": rid, "dirty": False},
-                    "scores": {"f1": 0.5},
+                    "n_items": 1,
+                    "created_at": "2026-11-13T00:00:00Z",
                     "fingerprint": f,
                 }
             ),
         )
+        put_in(
+            td,
+            f"runs/{rid}/scores/s@none/score.json",
+            json.dumps({"scorer": "s", "reference": None, "label": "", "first": True}),
+        )
+        put_in(td, f"runs/{rid}/scores/s@none/metrics.json", json.dumps({"scores": {"f1": 0.5}}))
     run = subprocess.run(
         [
             sys.executable,
@@ -789,7 +820,7 @@ import shutil  # noqa: E402
 KIT = HERE / "tutorial"
 proj = Path(tempfile.mkdtemp(prefix="evh-fp5-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-fp5", EVAL_MAX_RETRIES="0")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
     env.pop(k, None)
 ADAPTER = """
 from types import SimpleNamespace
@@ -815,9 +846,10 @@ def evh(*args):
 
 
 def metrics_of(prefix):
-    """The metrics.json of the first run in data/runs whose name starts with `prefix`, or {}."""
+    """The record of the first run in data/runs whose name starts with `prefix` (its run.json with its first score's
+    metrics over it), or {}."""
     d = next((n for n in _runstore.listdir(proj, "runs") if n.startswith(prefix)), None)
-    return _runstore.read_json(proj, f"runs/{d}/metrics.json") if d else {}
+    return _runstore.record_of(proj, d) if d else {}
 
 
 def system(name, extra):
@@ -871,7 +903,7 @@ try:
         (r.stdout + r.stderr)[-500:],
     )
     check(
-        "evh run: metrics.json records model_record and deployment_id",
+        "evh run: the run's record has model_record and deployment_id",
         m.get("model_record") == "gem" and m.get("deployment_id") == "dgx",
         {k: m.get(k) for k in ("model_record", "deployment_id")},
     )

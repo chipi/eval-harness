@@ -79,7 +79,6 @@ HERE = Path(__file__).resolve().parent
 
 from evaluation_harness import _jsonout  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
-    RUNS,
     die,
     evh_prog,
     item_clusters,
@@ -130,7 +129,7 @@ def main() -> int:
     with _jsonout.collect("bootstrap-test", args.json, live=sys.stderr):
         # Two runs sharing a config_id are averaged together below without
         # saying so. See _runs.warn_on_ambiguous_runs.
-        warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+        warn_on_ambiguous_runs("", args.dataset_id)
 
         gold = reference_labels(args.dataset_id, "gold")
         labels = sorted(set(gold.values()))

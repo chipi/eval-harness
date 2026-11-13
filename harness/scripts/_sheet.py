@@ -4,7 +4,7 @@
         --wrong-against owner_2026_11 --new-vs triage_v1
 
 The items down, a column per arm across: what each wrote, every score it has on that item (its run's metrics, the
-primary first, and the judge's, where a judging pass under data/runs-judged/<scorer>/ covered that run), a column
+primary first, and the judge's, where a judging pass, a score of that run read as judged/<scorer>, covered it), a column
 per label set or reference set, the winner per row, the signals, and a footer per arm. The inspector's page, the
 terminal and the CSV are this model, flattened three ways.
 
@@ -58,9 +58,10 @@ from evaluation_harness._common import (
     scored_against_dir,
 )
 from evaluation_harness._label_sets import answers, label_line, labels_for, sets, source_line
-from evaluation_harness._runs import item_rows, lower_is_better_on, read_metrics, runs_on
+from evaluation_harness._runs import item_rows, lower_is_better_on, read_metrics
 from evaluation_harness._sheets import ALSO, NOTE, label_header
 from evaluation_harness.label_sheet import run_dir, view
+from evaluation_harness.model import runs as _model_runs
 
 SIGNALS = ("wrong", "disagree", "split", "new", "unlabelled")
 #: --new-vs compares a field only when the governed dataset has at most this many values for it (a choice, an
@@ -139,60 +140,49 @@ def _numbers(row: dict) -> dict[str, float]:
     }
 
 
-def _arm_dir(token: str, dataset_id: str, from_dir: str) -> Path:
-    """A run by its id, or a system's latest run on the dataset, under `from_dir` (runs, runs-silver,
-    runs-judged/<scorer>); `runs` is also where label_sheet.run_dir looks (and in the label sets' runs)."""
-    if from_dir and from_dir != "runs":
-        if ".." in Path(from_dir).parts:
-            die(f"--from {from_dir}: a folder under data/", "bad-argument")
-        base = _common.DATA / from_dir
-        d = base / token
-        m = read_metrics(d) if _store.is_dir(d) else None
-        if m is not None:
-            if m.get("dataset_id") != dataset_id:
-                die(f"--runs {token}: that run is not on {dataset_id}", "mismatch")
-            return d
-        found = runs_on(dataset_id, runs_dir=base, config_id=token)
-        if found:
-            return found[-1][0]
-        die(f"--runs {token}: no run of that system on {dataset_id} under {from_dir}", "not-found")
-    return run_dir(token, dataset_id)
+def _arm_dir(token: str, dataset_id: str, label: str) -> Path:
+    """The score a run id, or a system's latest run on the dataset, is read as under `label` (runs: a plain run's own
+    score); label_sheet.run_dir, which is also where an arm id as the catalog names it is found."""
+    return run_dir(token, dataset_id, label)
 
 
 def _judged(d: Path, dataset_id: str) -> list[dict[str, Any]]:
-    """The judging passes that covered run `d`: data/runs-judged/<scorer>/<same run folder>, each {scorer, dir,
-    metrics, per_item {item: {metric: value}}, names (the judge's metrics a cell shows)}."""
-    root = _common.DATA / "runs-judged"
-    out = []
-    for sd in sorted(_store.iterdir(root)) if _store.is_dir(root) else []:
-        jd = sd / d.name
-        if not _store.is_dir(sd) or sd == d.parent or not _store.is_dir(jd):
-            continue
-        jm = read_metrics(jd)
+    """The judging passes that covered the run `d` is a score of: its other scores read as judged/<scorer> (the
+    latest, when a scorer judged more than one set), each {scorer, dir, metrics, per_item {item: {metric: value}},
+    names (the judge's metrics a cell shows)}."""
+    latest: dict[str, tuple[Path, dict[str, Any]]] = {}
+    for jd in _model_runs.scores_of(_model_runs.run_of(d)):
+        lbl = str(_model_runs.meta(jd).get("label") or "")
+        jm = read_metrics(jd) if jd != d and lbl.startswith("judged/") else None
         if (
             jm is None
             or jm.get("dataset_id") != dataset_id
             or (jm.get("derived") or {}).get("kind") != "judge"
         ):
             continue
+        scorer = lbl.removeprefix("judged/")
+        if scorer not in latest or (jm.get("created_at") or "") > (latest[scorer][1].get("created_at") or ""):
+            latest[scorer] = (jd, jm)
+    out = []
+    for scorer, (jd, jm) in sorted(latest.items()):
         per = {r["item_id"]: _numbers(r) for r in item_rows(jd, strict=False)}
         have = {k for r in per.values() for k in r}
         names = [n for n in dict.fromkeys([jm.get("primary_metric"), *WON, *GRADE]) if n and n in have]
         if names:
-            out.append({"scorer": sd.name, "dir": jd, "metrics": jm, "per_item": per, "names": names})
+            out.append({"scorer": scorer, "dir": jd, "metrics": jm, "per_item": per, "names": names})
     return out
 
 
 def _under_data(d: Path) -> str:
-    """A run folder as a path under data/ (where the key finds it again), else as it is."""
+    """A score's directory as a path under data/ (where the key finds it again), else as it is."""
     try:
         return d.resolve().relative_to(_common.DATA.resolve()).as_posix()
     except ValueError:
         return str(d)
 
 
-def _arm(token: str, dataset_id: str, from_dir: str) -> dict[str, Any]:
-    d = _arm_dir(token, dataset_id, from_dir)
+def _arm(token: str, dataset_id: str, label: str) -> dict[str, Any]:
+    d = _arm_dir(token, dataset_id, label)
     return {
         "token": token,
         "dir": d,
@@ -307,13 +297,13 @@ def build(
     fields_of,
     *,
     metric: str | None = None,
-    from_dir: str = "runs",
+    label: str = "",
     wrong_against: str | None = None,
     new_vs: str | None = None,
     items: list[str] | None = None,
 ) -> dict[str, Any]:
-    """The sheet of a dataset over runs (ids, or system ids: their latest run on the dataset; the first stands for
-    production): {dataset_id, arms [{token, run, path, config_id, scores [ref]}], metric (a ref), lower, goal, decl,
+    """The sheet of a dataset over runs (ids, or system ids: their latest run on the dataset, read under `label`; the
+    first stands for production): {dataset_id, arms [{token, run, path, config_id, scores [ref]}], metric (a ref), lower, goal, decl,
     label_cols, ref_cols, winner_cols, metrics (every ref one can be read on), rows}, one row per item of the dataset (or `items`) in its order, each
     {item, text, fields, decisions {token: output}, shown {token: what a view shows}, scores {token: {ref: value}},
     labels [{set, dataset_id, source, text}], label_text {key: line}, references {id: text}, winners {key: [token]},
@@ -324,7 +314,7 @@ def build(
     ds = load_dataset(dataset_id)
     if len(set(tokens)) != len(tokens):
         die("--runs names an arm twice", "bad-argument")
-    arms = [_arm(t, dataset_id, from_dir) for t in tokens]
+    arms = [_arm(t, dataset_id, label) for t in tokens]
     found_goal = _goal_for(dataset_id, arms)
     ref = _resolve_metric(arms, metric, found_goal[1] if found_goal else None)
     lower = bool(ref) and lower_is_better_on(_runs_of(arms, str(ref)), str(ref).rpartition("/")[2])
@@ -424,7 +414,8 @@ def build(
     from evaluation_harness import _tags  # noqa: PLC0415
 
     tagged = _tags.by_run(dataset_id)
-    tag_arms = [a["token"] for a in arms if a["dir"].name in tagged]
+    run_of = {a["token"]: _model_runs.run_of(a["dir"]).name for a in arms}
+    tag_arms = [a["token"] for a in arms if run_of[a["token"]] in tagged]
     wanted = set(items) if items is not None else None
     out = []
     # Each arm's outputs read once, not once an item: 50 arms on 10,000 items were 500,000 lookups, each finding the
@@ -507,7 +498,9 @@ def build(
                 "signals": sig,
                 # The failure modes tagged on each arm's output (PLAN_0.8.0 D1): [] read and fine; absent not read.
                 "tags": {
-                    a["token"]: tagged[a["dir"].name][i] for a in arms if i in tagged.get(a["dir"].name, {})
+                    a["token"]: tagged[run_of[a["token"]]][i]
+                    for a in arms
+                    if i in tagged.get(run_of[a["token"]], {})
                 },
             }
         )
@@ -517,7 +510,7 @@ def build(
         "arms": [
             {
                 "token": a["token"],
-                "run": a["dir"].name,
+                "run": _model_runs.run_of(a["dir"]).name,
                 "path": _under_data(a["dir"]),
                 "config_id": a["metrics"].get("config_id", ""),
                 "scores": score_refs[a["token"]],

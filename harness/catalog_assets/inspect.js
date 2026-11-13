@@ -699,7 +699,7 @@
     const arms = d.arms;
     const heads = [['sel', '<input type="checkbox" id="sall" aria-label="select all shown">'], ['item', ITEM], ['start', 'the start'], ['', 'signals']];
     // An arm by what sets it apart from the others shown (shorten: "baseline_pro_v1", not
-    // "runs-rescored/5f2c057cdaa5/runs/orrery_triage_v1_labelled/triage_baseline_pro_v1"), the whole id in its title.
+    // "rescored-5f2c057c/orrery_triage_v1_labelled/triage_baseline_pro_v1"), the whole id in its title.
     // A break is offered after each '/' of what is left.
     const named = shorten(Object.fromEntries(arms.map(a => [a.token, short(a.token)])));
     const armHead = t => `<span title="${esc(t)}">${esc(named[t] || short(t)).replace(/\//g, '/<wbr>')}</span>`;

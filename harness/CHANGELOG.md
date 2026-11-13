@@ -39,6 +39,24 @@ that can move a result is never a patch release without saying so under **Change
   aliases), the catalog says systems everywhere (the arms page's `#systems` and `?group=system`, the home tile, "systems
   filed" on the goals page and `evh goals`), the commands' hints print `evh run --system … --dataset …`, and
   `rescore --config-dir`, which was parsed and never read, is gone.
+- **Runs and scores** (RFC-032 step 4): every pass of a system over a dataset is one run in `data/runs/<run_id>/`
+  (`run.json`, its outputs), and every score of it sits under it, `scores/<scorer>@<reference>/`. What the
+  `runs-linux`, `runs-pair`, `runs-repeats`, `runs-silver`, `runs-adjudicated`, `runs-rescored`, `runs-judged` and
+  `runs-labels-*` folders meant is a field now: a run's `purpose` (`run`, `repeat`, `retime`, `pair`, with `machine`
+  and `of`) and a score's label ("silver", "rescored cd35dc1f", "judged/<scorer>"). Format 4 (`m0004_runs`) moves the
+  data: every record reads back exactly as its metrics.json did (checked on all 736 of this repository's), a judging
+  pass's summary goes to `data/judge-summaries/`, a retirement names its runs, validate.json names arms by label. A
+  re-score by the scorer a run already had, with the same rows, is the same measurement: the 25 triage copies a round's
+  scoring made are kept once (owner, 2026-11-13), and `rescore` writes no copy from now on. The folder flags are gone,
+  no aliases: `EVAL_RUNS_DIR` (a throwaway pass is `evh run --scratch`, a re-run `evh run --purpose repeat|retime|pair
+  [--of RUN_ID]`), `--runs-dir` and `inspect --from` (now `--label`, as on `leaderboard`, `runs-list` and
+  `family-test`), `round-retire --runs-dir` (now `--runs`), `rescore --out` and `judge-score --out` (they write under
+  the runs they score; `rescore --label` names what its scores are read as). Every view was compared before and after:
+  the same numbers, the arm ids renamed (`silver/…`, `rescored-cd35dc1f/…`; the plain arms keep `runs/…`, and the old
+  pages redirect), but for the 25 copies kept once (690 arms are 665), the arms' order where it follows their ids
+  (a round's inspect link, capped, now opens its plain arms where it opened their silver ones), and the re-scores of
+  the runs triage round r3 retired, now marked retired with them. `evh validate` fails on a `data/runs-*` folder left
+  unmigrated.
 - **Models and deployments, apart** (RFC-032 step 2): a model's deployments are records of their own,
   `data/deployments/<model>/<deployment>.yaml`, each with its checks as dated history: every onboarding, every arm
   smoke and every acceptance is kept, with who made it; the views read the latest of each, so `evh models`, the

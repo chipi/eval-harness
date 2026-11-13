@@ -26,11 +26,11 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
-from evaluation_harness import _format  # noqa: E402
+from evaluation_harness import _format, _store  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-lbrefs-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-lbrefs")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVAL_GOALS_DIR"):
     env.pop(k, None)
 
 
@@ -196,22 +196,20 @@ import io  # noqa: E402
 import json  # noqa: E402
 
 with tempfile.TemporaryDirectory() as td:
-    run = Path(td) / "arm_a_1"
-    run.mkdir()
-    (Path(td) / "summary.json").write_text(
-        json.dumps(
-            {
-                "items_scored": 3,
-                "items_total": 3,
-                "label": "unvalidated judge",
-                "judge_agreement": {"a~b": {"mean_item_tau": None, "arm_mean_spearman": None}},
-                "controls": {"a": {"position": {"mean_tau": None}, "noise": {}}},
-            }
-        )
-    )
+    key = "judge-summ-v1@set_a"
+    run = Path(td) / "runs" / "arm_a_1" / "scores" / key
+    summary_doc = {
+        "items_scored": 3,
+        "items_total": 3,
+        "label": "unvalidated judge",
+        "judge_agreement": {"a~b": {"mean_item_tau": None, "arm_mean_spearman": None}},
+        "controls": {"a": {"position": {"mean_tau": None}, "noise": {}}},
+    }
     buf = io.StringIO()
     try:
-        with contextlib.redirect_stdout(buf):
+        with contextlib.redirect_stdout(buf), _runstore._InProject(td) as data:
+            # in the suite's store: the summary is the project's data (its database in the sqlite store)
+            _store.write_text(data / "judge-summaries" / f"{key}.json", json.dumps(summary_doc))
             lb._judging_summary([(run, {})])
         ok = True
     except Exception as exc:  # noqa: BLE001

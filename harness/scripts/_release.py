@@ -3,7 +3,7 @@
 
     python harness/scripts/_release.py copy-data harness/data <release>/inspector/data
 
-Copies the run directories (runs*) and the data the catalog and the inspector read (COPIED_DIRS,
+Copies data/runs whole (each run with its scores) and the data the catalog and the inspector read (COPIED_DIRS,
 COPIED_FILES), and refuses, before anything is written, a release that would carry text the
 repository does not publish:
   - reference texts git does not track (a gold reference is not committed; a working copy may have
@@ -34,7 +34,7 @@ from evaluation_harness import _common, _outputs, _store
 from evaluation_harness._visibility import hidden, public_profile
 
 #: The directories of data/ the catalog and the inspector read (tests/test_render_data.py checks it
-#: against catalog_adapter.py), copied besides every runs* directory.
+#: against catalog_adapter.py), copied besides data/runs.
 COPIED_DIRS = (
     "references",
     "datasets",
@@ -45,6 +45,7 @@ COPIED_DIRS = (
     "scorers",
     "judging-sets",
     "judge-verdicts",
+    "judge-summaries",
     "profiles",
     "fields",
     "captures",
@@ -96,7 +97,7 @@ def _tracked(src: Path) -> set[str] | None:
 
 
 def _dataset_of_run(run: Path) -> str | None:
-    m = run / "metrics.json"
+    m = run / "run.json"
     try:
         return (
             json.loads(_store.read_text(m, encoding="utf-8")).get("dataset_id") if _store.is_file(m) else None
@@ -166,19 +167,20 @@ def _not_redistributed(ref_dir: Path) -> str | None:
 
 
 def _run_dirs(src: Path) -> list[Path]:
-    """Every run directory under data/runs*, at the depth it sits: data/runs/<run>, data/runs-judged/<scorer>/<run>,
-    data/runs-rescored/<scorer>/<source>/<run>. Whether a run's text is hidden is its own dataset's, so it is decided
-    per run, never for the folder that holds it."""
-    return sorted(
-        {
-            d
-            for base in _store.glob(src, "runs*")
-            if _store.is_dir(base)
-            for depth in ("*", "*/*", "*/*/*")
-            for d in _store.glob(base, depth)
-            if _store.is_dir(d) and _store.is_file(d / "metrics.json")
-        }
+    """Every run directory, data/runs/<run>. Whether a run's text is hidden is its own dataset's, so it is decided
+    per run."""
+    base = src / "runs"
+    return (
+        sorted(d for d in _store.iterdir(base) if _store.is_file(d / "run.json"))
+        if _store.is_dir(base)
+        else []
     )
+
+
+def _score_dirs(run: Path) -> list[Path]:
+    """A run's score directories, runs/<run>/scores/<key>: where its rows are."""
+    base = run / "scores"
+    return sorted(d for d in _store.iterdir(base) if _store.is_dir(d)) if _store.is_dir(base) else []
 
 
 def _hidden_key(src: Path, key: str) -> bool:
@@ -234,9 +236,9 @@ def copy_data(src: Path, dst: Path) -> dict:
     counts = {"hidden_runs": 0, "hidden_refs": 0, "hidden_verdicts": 0}
     hidden_runs = {str(d.resolve()) for d in _run_dirs(src) if hidden(_dataset_of_run(d), datasets)}
 
-    # Every file of every runs folder, a hidden dataset's run without its outputs; read through the store, so a
-    # project in its database (RFC-025) is released as the same files layout as a project in files.
-    for base in sorted(p for p in _store.glob(src, "runs*") if _store.is_dir(p)):
+    # Every file of every run, a hidden dataset's run without its outputs; read through the store, so a project in its
+    # database (RFC-025) is released as the same files layout as a project in files.
+    for base in [src / "runs"] if _store.is_dir(src / "runs") else []:
         for f in sorted(_store.rglob(base, "*")):
             if not _store.is_file(f):
                 continue
@@ -254,19 +256,24 @@ def copy_data(src: Path, dst: Path) -> dict:
             outs = st.lines(run)
             if outs and str(run.resolve()) not in hidden_runs:
                 files.write_all(out, {o["item_id"]: o["text"] for o in outs}, [o["item_id"] for o in outs])
-            for partial in (False, True):
-                text = st.rows_text(run, partial)
-                if text is not None:
-                    files.put_rows(out, text, partial)
+            for held in (
+                run,
+                *_score_dirs(run),
+            ):  # the pass's checkpoint is the run's, a score's rows its own
+                for partial in (False, True):
+                    text = st.rows_text(held, partial)
+                    if text is not None:
+                        files.put_rows(dst / held.relative_to(src), text, partial)
     for hidden_run in sorted(hidden_runs):
         out = dst / Path(hidden_run).relative_to(src.resolve())
         counts["hidden_runs"] += 1
-        for partial in (False, True):
-            text = files.rows_text(out, partial)
-            if text is not None:
-                files.put_rows(
-                    out, "".join(_call_only_line(x) for x in text.splitlines() if x.strip()), partial
-                )
+        for held in (out, *_score_dirs(out)):
+            for partial in (False, True):
+                text = files.rows_text(held, partial)
+                if text is not None:
+                    files.put_rows(
+                        held, "".join(_call_only_line(x) for x in text.splitlines() if x.strip()), partial
+                    )
     for name in COPIED_DIRS:
         d = src / name
         if not _store.is_dir(d):

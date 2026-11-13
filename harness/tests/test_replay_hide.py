@@ -33,6 +33,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-replay-hide-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-replay-hide")
@@ -166,7 +167,7 @@ try:
         "filing",
         "--json",
     )
-    mh = _runstore.read_json(proj, f"runs/{run_id(hid)}/metrics.json") if run_id(hid) else {}
+    mh = _runview.record_of(proj, run_id(hid))[1] if run_id(hid) else {}
     check(
         "the hidden replay is scored once its record exists; the default variant meets no confound (0 of 20)",
         hid.returncode == 0
@@ -185,7 +186,7 @@ try:
         "--json",
     )
     cid = run_id(cand)
-    mc = _runstore.read_json(proj, f"runs/{cid}/metrics.json") if cid else {}
+    mc = _runview.record_of(proj, cid)[1] if cid else {}
     hc = mc.get("history_confound") or {}
     ids = (
         [

@@ -24,6 +24,7 @@ from evaluation_harness._check import check, summary
 from evaluation_harness.stats import EXACT_UP_TO, fmt_p
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _runfix
 import _runstore
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -74,13 +75,9 @@ def write_run(
     outputs: dict | None = None,
     ref_id: str | None = None,
     adapter: str | None = None,
+    extra: dict | None = None,
 ) -> None:
-    """Write a single run with metrics.json and predictions.jsonl."""
-    run_dir = meta["runs"] / run_id
-    if not _runstore.sqlite():
-        run_dir.mkdir(parents=True, exist_ok=True)
-
-    # metrics.json with scores
+    """Write a single run: its run.json, and a score of it with metrics.json and predictions.jsonl."""
     metrics = {
         "run_id": run_id,
         "dataset_id": dataset_id,
@@ -97,15 +94,15 @@ def write_run(
     }
     if adapter:
         metrics["adapter"] = adapter
-    _runstore.write_text(project(meta), f"runs/{run_id}/metrics.json", json.dumps(metrics))
+    metrics.update(extra or {})
 
     # predictions.jsonl with per-item scores
     pred_rows = []
     for item_id, item_scores in (outputs or {}).items():
         row = {"item_id": item_id, **item_scores}
         pred_rows.append(json.dumps(row))
-    with _runstore._InProject(project(meta)):
-        _runstore.put_rows_text(run_dir, "\n".join(pred_rows) + "\n" if pred_rows else "")
+    with _runstore._InProject(project(meta)) as data:
+        _runfix.put_run(data, metrics, "\n".join(pred_rows) + "\n" if pred_rows else "")
 
 
 def write_reference(meta: dict, ref_type: str, dataset_id: str, items: dict) -> None:
@@ -144,15 +141,9 @@ def test_compare_runs_identical_builds() -> int:
     meta = setup_runs_tree(tmp)
 
     # Two runs, identical build, different scores
-    write_run(meta, "run_a", "ds1", "arm_a", {"f1": 0.850, "precision": 0.880})
-    write_run(meta, "run_b", "ds1", "arm_a", {"f1": 0.855, "precision": 0.875})
-
-    # Force both to have identical build hash
-    for run_id in ["run_a", "run_b"]:
-        rel = f"runs/{run_id}/metrics.json"
-        m = _runstore.read_json(project(meta), rel)
-        m["build"]["ref"] = "same_build_hash_xyz"
-        _runstore.write_text(project(meta), rel, json.dumps(m))
+    same = {"build": {"ref": "same_build_hash_xyz"}}  # both on one build
+    write_run(meta, "run_a", "ds1", "arm_a", {"f1": 0.850, "precision": 0.880}, extra=same)
+    write_run(meta, "run_b", "ds1", "arm_a", {"f1": 0.855, "precision": 0.875}, extra=same)
 
     env = {"EVAL_HOME": str(tmp)}
     result = run_script(
@@ -684,12 +675,11 @@ def json_tree() -> tuple[Path, dict, dict]:
     ):
         rows = {i: {"acc": 1.0 if n < wins else 0.0} for n, i in enumerate(ids)}
         scores = {"acc": wins / 40, "total_cost_usd": cost, "latency_ms": latency}
-        write_run(meta, f"run_{arm}", "dsj", arm, scores, outputs=rows)
-        rel = f"runs/run_{arm}/metrics.json"
-        m = _runstore.read_json(project(meta), rel)
-        m["metric_kinds"] = {"acc": "quality", "total_cost_usd": "cost", "latency_ms": "speed"}
-        m["created_at"] = "2026-11-01T10:00:00Z"
-        _runstore.write_text(project(meta), rel, json.dumps(m))
+        extra = {
+            "metric_kinds": {"acc": "quality", "total_cost_usd": "cost", "latency_ms": "speed"},
+            "created_at": "2026-11-01T10:00:00Z",
+        }
+        write_run(meta, f"run_{arm}", "dsj", arm, scores, outputs=rows, extra=extra)
     return tmp, meta, {"EVAL_HOME": str(tmp), "EVAL_NO_CACHE": "1"}
 
 
@@ -957,7 +947,7 @@ def test_json_run_compare() -> int:
         and wide["result"]["values"]["moved_beyond_noise"] == 0,
         wide["result"]["values"],
     )
-    rel = "runs/run_arm_b/metrics.json"
+    rel = "runs/run_arm_b/run.json"
     m = _runstore.read_json(project(meta), rel)
     del m["fingerprint"]
     _runstore.write_text(project(meta), rel, json.dumps(m))

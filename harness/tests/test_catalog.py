@@ -26,14 +26,14 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 
-from evaluation_harness import _outputs, stats  # noqa: E402
 from evaluation_harness import catalog_build as cb  # noqa: E402
 from evaluation_harness import catalog_serve as cs  # noqa: E402
+from evaluation_harness import stats  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import HarnessAdapter  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
-import _runstore  # noqa: E402
+import _catalog_fixture as fx  # noqa: E402
 
 _pf = cb.promoted_from_html(
     {"promoted_from": {"labels": None, "source": {"kind": "model", "config_id": "arm_x_v1"}}}
@@ -49,26 +49,24 @@ tmp = Path(tempfile.mkdtemp(prefix="evh-catalog-"))
 data = tmp / "data"
 
 
-def run(runs_dir, run_id, dataset, config, scores, text=SECRET, kinds=None, ref=None, root=None):
-    d = (root or data) / runs_dir / run_id
-    d.mkdir(parents=True)
-    (d / "metrics.json").write_text(
-        json.dumps(
-            {
-                "run_id": run_id,
-                "dataset_id": dataset,
-                "config_id": config,
-                "primary_metric": "acc",
-                "metric_kinds": kinds or {"acc": "quality", "words": "descriptive"},
-                "fingerprint": {"data": {"reference_id": ref or f"gold/{dataset}"}},
-            }
-        )
+def run(label, run_id, dataset, config, scores, text=SECRET, kinds=None, ref=None, root=None):
+    """A run's own score (label ""), or another score of it read under `label` ("silver", "judged/sc1")."""
+    rows = [json.dumps({"item_id": f"i{i:02d}", "acc": s, "words": 10.0 + i}) for i, s in enumerate(scores)]
+    fx.put(
+        root or data,
+        run_id,
+        {
+            "run_id": run_id,
+            "dataset_id": dataset,
+            "config_id": config,
+            "primary_metric": "acc",
+            "metric_kinds": kinds or {"acc": "quality", "words": "descriptive"},
+            "fingerprint": {"data": {"reference_id": ref or f"gold/{dataset}"}},
+        },
+        "\n".join(rows) + "\n",
+        label=label,
+        outputs={f"i{i:02d}": f"{text} {config} {i}" for i in range(len(scores))},
     )
-    rows = []
-    for i, s in enumerate(scores):
-        rows.append(json.dumps({"item_id": f"i{i:02d}", "acc": s, "words": 10.0 + i}))
-        _outputs.writer(d).add(f"i{i:02d}", f"{text} {config} {i}")
-    _runstore.put_rows_text(d, "\n".join(rows) + "\n")
 
 
 def promoted(ref_dir, tier, dataset, source, labels, **authorship):
@@ -94,10 +92,10 @@ def promoted(ref_dir, tier, dataset, source, labels, **authorship):
 
 try:
     base = [0.5] * 12
-    run("runs", "a_1", "ds1", "arm_a", base)
-    run("runs", "b_1", "ds1", "arm_b", [0.6] * 10 + [0.5, 0.4])
-    run("runs", "b_2", "ds1", "arm_b", [0.8] * 10 + [0.5, 0.4])  # a repeat: averaged per item
-    run("runs", "c_1", "ds2", "arm_c", base)
+    run("", "a_1", "ds1", "arm_a", base)
+    run("", "b_1", "ds1", "arm_b", [0.6] * 10 + [0.5, 0.4])
+    run("", "b_2", "ds1", "arm_b", [0.8] * 10 + [0.5, 0.4])  # a repeat: averaged per item
+    run("", "c_1", "ds2", "arm_c", base)
     (data / "references" / "gold" / "ds1").mkdir(parents=True)
     (data / "references" / "gold" / "ds1" / "i00.txt").write_text(SECRET + " reference")
     promoted(
@@ -118,10 +116,8 @@ try:
     check("descriptive metric kinds are neutral", A.is_neutral("words") and not A.is_neutral("acc"))
     # One adapter's descriptive `parsed` must not make it neutral where another declares it quality.
     kinds_tree = tmp / "mixed"
-    run("runs", "q_1", "dq", "arm_q", base, kinds={"acc": "quality", "parsed": "quality"}, root=kinds_tree)
-    run(
-        "runs", "d_1", "dd", "arm_d", base, kinds={"acc": "quality", "parsed": "descriptive"}, root=kinds_tree
-    )
+    run("", "q_1", "dq", "arm_q", base, kinds={"acc": "quality", "parsed": "quality"}, root=kinds_tree)
+    run("", "d_1", "dd", "arm_d", base, kinds={"acc": "quality", "parsed": "descriptive"}, root=kinds_tree)
     M = HarnessAdapter(kinds_tree)
     check(
         "neutral per dataset: a quality on one, descriptive on another",
@@ -202,12 +198,42 @@ try:
         and '<a class="brand" href="https://s.example/"' in ds_page
         and "<span>eval catalog</span></a>" in ds_page,
     )
+    # A round's retirement names runs: every arm one of them is scored in is retired, a re-score of it too.
+    data8 = tmp / "data8"
+    run("", "v_1", "ds_v1", "arm_v1", [0.5] * 4, root=data8)
+    run("rescored 3d3a6afd", "v_1", "ds_v1", "arm_v1", [0.6] * 4, root=data8)
+    run("", "w_1", "ds_v1", "other_v1", [0.5] * 4, root=data8)
+    (data8 / "rounds" / "g").mkdir(parents=True)
+    (data8 / "rounds" / "g" / "r3.yaml").write_text(
+        "round_id: r3\ngoal: g\ndataset_id: ds_v1\nretired:\n  - config_id: arm_v1\n    runs: [v_1]\n    reason: x\n"
+    )
+    gone = HarnessAdapter(data8).rounds()[0]["retired_arms"]
     check(
-        "a retired arm is retired when the goal reads it through its re-score (runs-rescored/<scorer>/<arm>)",
-        cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs-rescored/3d3a6afdb978/runs/ds_v1/arm_v1") == "r3"
-        and cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs/ds_v1/arm_v1") == "r3"
-        and cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs-rescored/3d3a6afdb978/runs/ds_v1/other_v1")
-        is None,
+        "a retired run retires every arm it is scored in (its re-score's too), and no other",
+        gone == ["rescored-3d3a6afd/ds_v1/arm_v1", "runs/ds_v1/arm_v1"],
+        gone,
+    )
+    check(
+        "retired_round: by the arm id, else by the system id",
+        cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs/ds_v1/arm_v1") == "r3"
+        and cb.retired_round({"runs/ds_v1/arm_v1": "r3"}, "runs/ds_v1/other_v1") is None
+        and cb.retired_round({"arm_v1": "r3"}, "runs/ds_v1/arm_v1") == "r3",
+    )
+    # An arm whose id changed when the runs folders became labels (data/renames.json "arms"): its old page redirects.
+    (data8 / "renames.json").write_text(
+        json.dumps(
+            {"arms": {"runs-rescored/3d3a6afdb978/runs/ds_v1/arm_v1": "rescored-3d3a6afd/ds_v1/arm_v1"}}
+        )
+    )
+    out8 = tmp / ".build" / "catalog8"
+    cb.build(HarnessAdapter(data8), out8)
+    old_page = out8 / "a" / "runs-rescored-3d3a6afdb978-runs-ds_v1-arm_v1.html"
+    check(
+        "an arm renamed by the migration: its old page redirects to the new one",
+        old_page.is_file()
+        and 'content="0; url=rescored-3d3a6afd-ds_v1-arm_v1.html"' in old_page.read_text()
+        and (out8 / "a" / "rescored-3d3a6afd-ds_v1-arm_v1.html").is_file(),
+        old_page.read_text()[:300] if old_page.is_file() else "no redirect page",
     )
     check(
         "overview tiles: a long count also in short form for a phone, a short one as it is",
@@ -236,15 +262,14 @@ try:
     # Metrics and references: a silver set written by arm_s, arm_s and arm_t scored against it,
     # and arm_t judged. Each row says what it is scored against; metric and reference link out.
     data3 = tmp / "data3"
-    run("runs", "s_1", "ds3", "arm_s", [0.9] * 6, ref="silver/ds3", root=data3)
-    run("runs", "t_1", "ds3", "arm_t", [0.5] * 6, ref="silver/ds3", root=data3)
-    run("runs-judged/sc1", "t_1", "ds3", "arm_t", [3.0] * 6, ref="silver/ds3", root=data3)
-    for rid, extra in (
-        ("runs/s_1", {"metric_descriptions": {"acc": "share of items right"}}),
-        ("runs-judged/sc1/t_1", {"derived": {"kind": "judge", "with": {"scorer_id": "sc1"}}}),
+    run("", "s_1", "ds3", "arm_s", [0.9] * 6, ref="silver/ds3", root=data3)
+    run("", "t_1", "ds3", "arm_t", [0.5] * 6, ref="silver/ds3", root=data3)
+    run("judged/sc1", "t_1", "ds3", "arm_t", [3.0] * 6, ref="silver/ds3", root=data3)
+    for rid, lbl, extra in (
+        ("s_1", "", {"metric_descriptions": {"acc": "share of items right"}}),
+        ("t_1", "judged/sc1", {"derived": {"kind": "judge", "with": {"scorer_id": "sc1"}}}),
     ):
-        mj = data3 / rid / "metrics.json"
-        mj.write_text(json.dumps({**json.loads(mj.read_text()), **extra}))
+        fx.patch(data3, rid, extra, lbl)
     silver = data3 / "references" / "silver" / "ds3"
     silver.mkdir(parents=True)
     (silver / "i00.txt").write_text("x")
@@ -477,13 +502,13 @@ try:
     check(
         "arms page: each arm says how it was measured",
         rows3["runs/ds3/arm_s"]["how"] == "measured"
-        and rows3["runs-judged/sc1/ds3/arm_t"]["how"] == "judged by sc1",
+        and rows3["judged-sc1/ds3/arm_t"]["how"] == "judged by sc1",
         str({k: v["how"] for k, v in rows3.items()}),
     )
     arms_html = (out3 / "arms.html").read_text()
     check(
         "arms page: every arm a row, with what the grouping and the filters read",
-        len(re.findall(r'<tr[^>]* data-key="runs', arms_html)) == len(rows3)
+        len(re.findall(r'<tr[^>]* data-key="(?:runs|judged)', arms_html)) == len(rows3)
         and 'data-system="arm_t"' in arms_html
         and 'data-scored="judge"' in arms_html
         and "judged by sc1" in arms_html,
@@ -571,9 +596,8 @@ try:
         ("p_1", "arm_p", "Linux/x86_64", "aa"),
         ("q_1", "arm_q", "Darwin/arm64", "bb"),
     ):
-        run("runs", rid, "ds4", cfg, [0.5] * 6, ref="gold/ds4", root=data4)
-        mj = data4 / "runs" / rid / "metrics.json"
-        m = json.loads(mj.read_text())
+        run("", rid, "ds4", cfg, [0.5] * 6, ref="gold/ds4", root=data4)
+        m = {}
         m["fingerprint"] = {
             "version": 5,
             "runner": {"platform": machine, "cpu_count": 8, "libraries": {"numpy": "2.0"}},
@@ -584,7 +608,7 @@ try:
             },
             "data": {"reference_id": "gold/ds4", "items_sha256": "c" * 64, "references_sha256": "d" * 64},
         }
-        mj.write_text(json.dumps(m))
+        fx.patch(data4, rid, m)
     cs.set_adapter(HarnessAdapter(data4))
     c4 = (
         cs.compare({"runs": ["runs/ds4/arm_p,runs/ds4/arm_q"], "baseline": ["runs/ds4/arm_p"]}).get(
@@ -674,7 +698,7 @@ try:
     st, body = get("/api/compare?runs=runs/ds1/arm_a,runs/ds1/arm_b")
     check("http: /api/compare answers", st == 200 and json.loads(body)["metric"] == "acc", st)
     check("http: the catalog is served", get("/.build/catalog/index.html")[0] == 200)
-    check("http: the data tree is served", get("/data/runs/a_1/metrics.json")[0] == 200)
+    check("http: the data tree is served", get("/data/runs/a_1/run.json")[0] == 200)
     check(
         "http: a foreign Host is refused (DNS rebinding)",
         get("/.build/catalog/index.html", "evil.example")[0] == 403,
@@ -701,7 +725,7 @@ try:
         for p in (
             "/api/../.env",
             "/api/%2e%2e/.env",
-            "/api/../data/runs/a_1/metrics.json",
+            "/api/../data/runs/a_1/run.json",
             "/api/x/../../.env",
         )
     }
@@ -732,7 +756,7 @@ try:
         check(
             "behind a proxy: the named Host gets the catalog, the data tree and the comparison",
             get("/.build/catalog/index.html", prox)[0] == 200
-            and get("/data/runs/a_1/metrics.json", prox)[0] == 200
+            and get("/data/runs/a_1/run.json", prox)[0] == 200
             and st == 200
             and json.loads(body)["metric"] == "acc",
             st,
@@ -797,11 +821,11 @@ try:
     check("public: refuses any other host, localhost included", get("/api/health")[0] == 403)
     check(
         "public: serves no files, catalog or data",
-        get("/.build/catalog/index.html", H)[0] == 404 and get("/data/runs/a_1/metrics.json", H)[0] == 404,
+        get("/.build/catalog/index.html", H)[0] == 404 and get("/data/runs/a_1/run.json", H)[0] == 404,
     )
     pub_leaks = {
         p: raw(p, H)[0]
-        for p in ("/api/../.env", "/api/../data/runs/a_1/metrics.json", "/api/%2e%2e/data/", "/api/../")
+        for p in ("/api/../.env", "/api/../data/runs/a_1/run.json", "/api/%2e%2e/data/", "/api/../")
     }
     check("public: serves no files through /api/ either", set(pub_leaks.values()) == {404}, pub_leaks)
     st, body = get("/api/compare?runs=runs/ds1/arm_a,runs/ds1/arm_b", H)
@@ -1077,14 +1101,14 @@ try:
     # (runs/ and a rescored copy, say) both record `acc`, but the numbers measure different
     # things, so the inspector must not pair them on it. Output length needs no reference.
     data2 = tmp / "data2"
-    run("runs", "g_1", "ds1", "arm_g", [0.5] * 12, root=data2)
-    run("runs-silver", "s_1", "ds1", "arm_s", [0.9] * 12, ref="silver/ds1", root=data2)
+    run("", "g_1", "ds1", "arm_g", [0.5] * 12, root=data2)
+    run("silver", "s_1", "ds1", "arm_s", [0.9] * 12, ref="silver/ds1", root=data2)
     cs.set_adapter(HarnessAdapter(data2))
-    mixed = cs.compare({"runs": ["runs/ds1/arm_g,runs-silver/ds1/arm_s"], "baseline": ["runs/ds1/arm_g"]})
+    mixed = cs.compare({"runs": ["runs/ds1/arm_g,silver/ds1/arm_s"], "baseline": ["runs/ds1/arm_g"]})
     check(
         "compare: an arm scored against another reference is not tested against the baseline",
         mixed.get("metric") == "acc"
-        and "runs-silver/ds1/arm_s" not in mixed.get("series", {})
+        and "silver/ds1/arm_s" not in mixed.get("series", {})
         and not mixed.get("rows"),
         list(mixed.get("series", {})),
     )
@@ -1096,20 +1120,20 @@ try:
     )
     words = cs.compare(
         {
-            "runs": ["runs/ds1/arm_g,runs-silver/ds1/arm_s"],
+            "runs": ["runs/ds1/arm_g,silver/ds1/arm_s"],
             "baseline": ["runs/ds1/arm_g"],
             "metric": ["words"],
         }
     )
     check(
         "compare: a metric that needs no reference compares them anyway",
-        "runs-silver/ds1/arm_s" in words.get("series", {}) and len(words.get("rows", [])) == 1,
+        "silver/ds1/arm_s" in words.get("series", {}) and len(words.get("rows", [])) == 1,
         words.get("warnings"),
     )
     # The dataset page offers one "inspect together" link per group the inspector can test as
     # a whole: same metric, same reference. One link over all four would mix gold and silver.
-    run("runs", "g_2", "ds1", "arm_h", [0.6] * 12, root=data2)
-    run("runs-silver", "s_2", "ds1", "arm_t", [0.8] * 12, ref="silver/ds1", root=data2)
+    run("", "g_2", "ds1", "arm_h", [0.6] * 12, root=data2)
+    run("silver", "s_2", "ds1", "arm_t", [0.8] * 12, ref="silver/ds1", root=data2)
     out2 = tmp / "out2"
     cb.build(HarnessAdapter(data2), out2)
     page2 = (out2 / "d" / "ds1.html").read_text(encoding="utf-8")
@@ -1120,7 +1144,8 @@ try:
         "build: one 'inspect together' link per reference, none mixing them",
         sorted(ref for _, ref in together) == ["gold/ds1", "silver/ds1"]
         and all(
-            ("runs-silver" in runs) == (ref == "silver/ds1") and runs.count(",") == 1
+            (runs.startswith("silver/") or ",silver/" in runs) == (ref == "silver/ds1")
+            and runs.count(",") == 1
             for runs, ref in together
         ),
         together,
@@ -1131,20 +1156,15 @@ try:
     # yardstick; the bill and the clock only when nothing else was recorded.
     data3 = tmp / "data3"
     for arm, accs in (("arm_p", [0.5] * 8), ("arm_q", [0.7] * 8)):
-        d = data3 / "runs" / f"{arm}_1"
-        d.mkdir(parents=True)
-        (d / "metrics.json").write_text(
-            json.dumps(
-                {
-                    "run_id": f"{arm}_1",
-                    "dataset_id": "ds1",
-                    "config_id": arm,
-                    "fingerprint": {"data": {"reference_id": "gold/ds1"}},
-                }
-            )
-        )
-        _runstore.put_rows_text(
-            d,
+        fx.put(
+            data3,
+            f"{arm}_1",
+            {
+                "run_id": f"{arm}_1",
+                "dataset_id": "ds1",
+                "config_id": arm,
+                "fingerprint": {"data": {"reference_id": "gold/ds1"}},
+            },
             "".join(
                 json.dumps(
                     {
@@ -1324,20 +1344,18 @@ try:
     from evaluation_harness import catalog_views as cv
 
     data6 = tmp / "data6"
-    run("runs", "p_1", "ds6", "arm_p", [0.5] * 6, root=data6)
-    run("runs", "q_1", "ds6", "arm_q", [0.7] * 6, root=data6)
-    avg = data6 / "runs" / "z_1"
-    avg.mkdir(parents=True)
-    (avg / "metrics.json").write_text(
-        json.dumps(
-            {
-                "run_id": "z_1",
-                "dataset_id": "ds6",
-                "config_id": "arm_z",
-                "primary_metric": "acc",
-                "scores": {"acc": 0.9},
-            }
-        )
+    run("", "p_1", "ds6", "arm_p", [0.5] * 6, root=data6)
+    run("", "q_1", "ds6", "arm_q", [0.7] * 6, root=data6)
+    fx.put(
+        data6,
+        "z_1",
+        {
+            "run_id": "z_1",
+            "dataset_id": "ds6",
+            "config_id": "arm_z",
+            "primary_metric": "acc",
+            "scores": {"acc": 0.9},
+        },
     )
     A6 = HarnessAdapter(data6)
     real_loader = cv.load_catalog_adapter
@@ -1355,33 +1373,26 @@ try:
         txt[-700:],
     )
 
-    # Arm ids come from the adapter (arm_of), which names the runs directory as the project does:
-    # with EVAL_RUNS_DIR=data/runs-v2 a round's arms are runs-v2/..., not an empty runs/... list.
-    import os
-    import subprocess
-
-    proj7 = tmp / "proj7"
-    (proj7 / "data" / "runs-v2").mkdir(parents=True)
-    harness_dir = str(Path(__file__).resolve().parents[1])  # the evaluation_harness package
-    probe = (
-        f"import sys; sys.path.insert(0, {harness_dir!r}); "
-        "from evaluation_harness.catalog_adapter import HarnessAdapter; "
-        "print(HarnessAdapter().arm_of('ds', 'c'))"
-    )
-    pf = tmp / "probe_arm_of.py"
-    pf.write_text(probe)
-    env7 = {k: v for k, v in os.environ.items() if not k.startswith("EVAL_")}
-    out7 = subprocess.run(
-        [sys.executable, str(pf)],
-        cwd=proj7,
-        env={**env7, "EVAL_HOME": str(proj7), "EVAL_RUNS_DIR": "data/runs-v2"},
-        capture_output=True,
-        text=True,
-    )
+    # Arm ids come from the adapter (arm_of): the plain label's arm is runs/<dataset>/<system>.
     check(
-        "arm_of names the runs directory as the project does (EVAL_RUNS_DIR)",
-        out7.stdout.strip() == "runs-v2/ds/c",
-        out7.stdout + out7.stderr[-300:],
+        "arm_of names the plain label's arm",
+        HarnessAdapter(data6).arm_of("ds", "c") == "runs/ds/c",
+        HarnessAdapter(data6).arm_of("ds", "c"),
+    )
+    # `evh inspect --label`: a system id is looked up among the arms read under that label (data2: arm_g plain,
+    # arm_s read as silver).
+    A2 = HarnessAdapter(data2)
+    refused_plain = ""
+    try:
+        cv._arm_ids(A2, ["arm_s"], "")
+    except SystemExit as exc:
+        refused_plain = str(exc)
+    check(
+        "inspect --label: a system id is found under its label, and not under the plain one",
+        cv._arm_ids(A2, ["arm_s"], "silver") == ["silver/ds1/arm_s"]
+        and cv._arm_ids(A2, ["arm_g"], "") == ["runs/ds1/arm_g"]
+        and "name the arm id: silver/ds1/arm_s" in refused_plain,
+        refused_plain,
     )
 finally:
     shutil.rmtree(tmp, ignore_errors=True)

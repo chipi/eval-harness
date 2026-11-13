@@ -8,7 +8,6 @@ nothing of theirs goes on sys.path and a project's own `stats.py` stays the proj
 Where the data lives is the PROJECT's business, not the package's:
   EVAL_HOME       the project root (default: the nearest directory up from here with data/)
   EVAL_DATA_DIR   the data root, relative to EVAL_HOME (default: data)
-  EVAL_RUNS_DIR   runs only, for a throwaway pass (default: <data>/runs)
 """
 
 from __future__ import annotations

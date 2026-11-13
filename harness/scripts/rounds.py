@@ -2,7 +2,7 @@
 
     evh round-open   --goal G --dataset D [--from rN] [--hypothesis "..."] [--change "..."]...
                      [--keep cfg,...] [--retire cfg,... --reason "..."] [--budget-usd N] [--baseline cfg|run]
-    evh round-retire --goal G --round rN --arm cfg [--runs-dir DIR] --reason "..."
+    evh round-retire --goal G --round rN --arm cfg [--runs RUN_ID,...] --reason "..."
     evh round-close  --goal G --round rN --conclusion "..." [--promote <run_id>]
     evh rounds       --goal G [--round rN]
 
@@ -36,6 +36,7 @@ from evaluation_harness import catalog_serve as cs
 from evaluation_harness._actor import actor, require_named
 from evaluation_harness._common import die, load_goals, now, read_json
 from evaluation_harness.catalog_adapter import load_catalog_adapter
+from evaluation_harness.model import runs as model_runs
 from evaluation_harness.stats import fmt_p
 
 HERE = Path(__file__).resolve().parent
@@ -151,15 +152,15 @@ def open_round(argv: list[str]) -> int:
             # Fleet feedback 22: a round opened with --keep carried its baseline arm in but recorded no baseline, and
             # `pair-test --round` then refused ("records no other baseline run").
             runs = rs.measured_runs(args.dataset)
-            named = [d for d, m in runs if d.name == args.baseline] or sorted(
-                (d for d, m in runs if m.get("config_id") == args.baseline), key=lambda d: d.name
+            named = [m["run_id"] for _d, m in runs if m["run_id"] == args.baseline] or sorted(
+                m["run_id"] for _d, m in runs if m.get("config_id") == args.baseline
             )
             if not named:
                 die(
                     f"--baseline {args.baseline}: no measured run of that system or with that run id on {args.dataset}",
                     "not-found",
                 )
-            start = named[-1].name
+            start = named[-1]
         rid = _rounds.next_id(args.goal)
         doc = {
             "round_id": rid,
@@ -226,7 +227,9 @@ def _adopt_scoring(doc: dict, why: str, rs) -> None:
         now_by[cur] = now_by.get(cur, 0) + 1
         if cur and cur != was:
             todo.append((d, m, read_from))
-    todo.sort(key=lambda t: t[0].name)  # rescore_runs returns in name order; zip below pairs them
+    todo.sort(
+        key=lambda t: (t[1]["run_id"], t[0].name)
+    )  # rescore_runs returns in this order; zip below pairs them
     scorer = max(now_by, key=lambda k: now_by[k]) if now_by else ""
     doc["scorer"] = scorer
     doc["changes"] = [*doc.get("changes", []), f"scoring: {why}"]
@@ -234,13 +237,13 @@ def _adopt_scoring(doc: dict, why: str, rs) -> None:
         f"  scoring: judged by {scorer or '(no adapter found)'}; {len(todo)} of {len(runs)} carried run(s) re-scored"
     )
     done = rs.rescore_runs([(d, m) for d, m, _r in todo], quiet=True)
-    for (d, m, read_from), (_new_dir, new) in zip(todo, done):
-        old = rs.read_json((read_from or d) / "metrics.json") if read_from else m
+    for (_d, m, read_from), (_new_dir, new) in zip(todo, done):
+        old = (model_runs.record(read_from) if read_from else None) or m
         before = (old.get("scores") or {}).get(measure)
         after = (new.get("scores") or {}).get(measure)
         fmt = lambda v: "—" if v is None else f"{v:.4g}"  # noqa: E731
-        print(f"    {m['config_id']:52} {measure} {fmt(before)} -> {fmt(after)}  ({d.name})")
-    written = sorted({str(x.parent.relative_to(_common.DATA)) for x, _ in done})
+        print(f"    {m['config_id']:52} {measure} {fmt(before)} -> {fmt(after)}  ({m['run_id']})")
+    written = sorted({str(model_runs.meta(x).get("label") or "") for x, _ in done})
     doc["scoring"] = [{"at": now(), "scorer": scorer, "why": why, "written": written, "runs": len(done)}]
 
 
@@ -251,9 +254,9 @@ def retire(argv: list[str]) -> int:
     ap.add_argument("--round", required=True)
     ap.add_argument("--arm", required=True, help="its system id")
     ap.add_argument(
-        "--runs-dir",
-        help="retire only the system's runs in this directory under data/ (runs-linux: a re-timing "
-        "of the same system on another machine); default: the project's runs directory",
+        "--runs",
+        help="retire only these runs of the system (run ids, comma-separated: a re-timing of it on another machine, "
+        "say); default: its runs on the round's dataset read as the plain runs",
     )
     ap.add_argument("--reason", required=True)
     from evaluation_harness._actor import add_by  # noqa: PLC0415
@@ -271,28 +274,35 @@ def retire(argv: list[str]) -> int:
             die(f"round {args.round} is closed", "not-allowed")
         if len(args.reason.split()) < 3:
             die("--reason must be a sentence: what did the tests show?", "bad-argument")
-        where = (_common.DATA / args.runs_dir) if args.runs_dir else None
-        if where is not None and not _store.is_dir(where):
-            die(f"--runs-dir {args.runs_dir}: no such directory under {_common.DATA}", "not-found")
-        in_play = _rounds.arms_of(rnd, where)
+        from evaluation_harness._runs import runs_on  # noqa: PLC0415
+
+        ds = rnd["dataset_id"]
+        of_arm = runs_on(ds, label=None, config_id=args.arm)
+        runs = _ids(args.runs)
+        if args.runs:
+            unknown = sorted(set(runs) - {m["run_id"] for _d, m in of_arm})
+            if unknown:
+                die(
+                    f"--runs: {', '.join(unknown)} {'is' if len(unknown) == 1 else 'are'} not "
+                    f"{'a run' if len(unknown) == 1 else 'runs'} of {args.arm} on {ds}",
+                    "not-found",
+                )
+            labels = {model_runs.label(d, m) for d, m in of_arm if m["run_id"] in runs}
+        else:
+            labels = {""}
+            runs = sorted({m["run_id"] for d, m in of_arm if model_runs.label(d, m) == ""})
+        in_play = sorted({a for lab in labels for a in _rounds.arms_of(rnd, lab)})
         if args.arm not in in_play:
             die(
                 f"{args.arm!r} is not in play in {args.round}: {', '.join(in_play) or '(no arms yet)'}",
                 "not-found",
             )
-        entry = {"config_id": args.arm, "reason": args.reason, "at": now(), "actor": actor()}
-        if args.runs_dir:
-            entry = {
-                "config_id": args.arm,
-                "runs_dir": _rounds.runs_dir_name(where),
-                "reason": args.reason,
-                "at": now(),
-                "actor": actor(),
-            }
-        rnd.setdefault("retired", []).append(entry)
+        rnd.setdefault("retired", []).append(
+            {"config_id": args.arm, "runs": runs, "reason": args.reason, "at": now(), "actor": actor()}
+        )
         _rounds.save(rnd)
         print(
-            f"{args.arm}{' in ' + args.runs_dir if args.runs_dir else ''} retired from {args.round}: {args.reason}"
+            f"{args.arm}{' (runs ' + ', '.join(runs) + ')' if args.runs else ''} retired from {args.round}: {args.reason}"
         )
         return 0
 
@@ -509,7 +519,8 @@ def evidence(goal: str, rnd: dict) -> dict:
     ds = rnd["dataset_id"]
     read = _reader(A)
     arm = {c: read(ds, c) for c in _rounds.arms_of(rnd)}
-    moved = sorted({a.split("/")[1] for a in arm.values() if a.startswith("runs-rescored/")})
+    rescored = [a for a in arm.values() if a.startswith("rescored-")]
+    moved = sorted({a.split("/")[0].removeprefix("rescored-") for a in rescored})
     known = set(A.arms())
     arms = [a for a in arm.values() if a in known]
     out: dict[str, Any] = {
@@ -519,11 +530,7 @@ def evidence(goal: str, rnd: dict) -> dict:
         "against": [],
         "suggest": [],
         "notes": (
-            [
-                f"{sum(a.startswith('runs-rescored/') for a in arm.values())} arm(s) read from their re-score by {', '.join(moved)}"
-            ]
-            if moved
-            else []
+            [f"{len(rescored)} arm(s) read from their re-score by {', '.join(moved)}"] if moved else []
         ),
     }
     # ONE INSTRUMENT PER ROUND (the fleet's feedback 17): harness code taken mid-round measures some arms with
@@ -587,7 +594,8 @@ def evidence(goal: str, rnd: dict) -> dict:
             (
                 a
                 for a in known
-                if a.startswith(_arm(A, ds, "")) and any(d.name == base_run for d in _dirs(A, a))
+                if a.startswith(_arm(A, ds, ""))
+                and any(model_runs.run_of(d).name == base_run for d in _dirs(A, a))
             ),
             None,
         )
@@ -678,9 +686,13 @@ def evidence(goal: str, rnd: dict) -> dict:
         out["notes"].append(
             "cost per item: " + ", ".join(f"{a.rsplit('/', 1)[-1]} ${c:.6f}" for a, c in priced.items())
         )
-    lead_run = sorted(d.name for d in _dirs(A, leader))[0] if _dirs(A, leader) else "<run_id>"
+    lead_run = (
+        sorted(model_runs.run_of(d).name for d in _dirs(A, leader))[0] if _dirs(A, leader) else "<run_id>"
+    )
     # Promote only what is not already the baseline: the leader may be the run the round began from.
-    already = lead_run == rnd.get("baseline") or any(d.name == rnd.get("baseline") for d in _dirs(A, leader))
+    already = lead_run == rnd.get("baseline") or any(
+        model_runs.run_of(d).name == rnd.get("baseline") for d in _dirs(A, leader)
+    )
     # And only a leader the evidence puts ahead: significantly better than the baseline it started from,
     # and not behind the previous round's best. A mean that leads by chance is no reason to promote.
     scorers_differ = any("different scorers" in n for n in out["notes"])

@@ -73,7 +73,7 @@ def main() -> int:
             "GIT_COMMITTER_NAME": "skills",
             "GIT_COMMITTER_EMAIL": "skills@example.invalid",
         }
-        for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "OPENROUTER_API_KEY", "EVAL_MAX_COST_USD"):
+        for k in ("EVAL_HOME", "EVAL_DATA_DIR", "OPENROUTER_API_KEY", "EVAL_MAX_COST_USD"):
             env.pop(k, None)
 
         def sh(script: str) -> subprocess.CompletedProcess:

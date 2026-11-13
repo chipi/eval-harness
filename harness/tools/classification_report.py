@@ -43,7 +43,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tool
 
 from evaluation_harness import _store  # noqa: E402
 from evaluation_harness._common import (  # noqa: E402
-    RUNS,
     die,
     item_path,
 )
@@ -113,7 +112,7 @@ def main() -> int:
     args = ap.parse_args()
     # Two runs sharing a config_id are averaged together below without
     # saying so. See _runs.warn_on_ambiguous_runs.
-    warn_on_ambiguous_runs(RUNS, args.dataset_id, label=RUNS.name)
+    warn_on_ambiguous_runs("", args.dataset_id)
 
     gold = reference_labels(args.dataset_id, "gold")
     labels = sorted(set(gold.values()))

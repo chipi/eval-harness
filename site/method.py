@@ -169,7 +169,7 @@ NODES = [
             "primary metric changes only by a recorded decision. A new scoring rule is previewed first, "
             "then re-scores a round, which records the scorer it is judged by."
         ),
-        "data/runs-rescored/&lt;scorer&gt;/ · data/runs-judged/&lt;scorer&gt;/",
+        "data/runs/&lt;run_id&gt;/scores/&lt;scorer&gt;@&lt;reference&gt;/",
         "evh score-preview --goal … · evh rescore --goal … --round …",
         (TUTORIAL4, "7-when-the-scoring-changes"),
     ),
@@ -882,7 +882,7 @@ STEPS = [
         (
             "evh label-import tutorial/gold --dataset-id tickets_v1 --set owner_gold --by owner\n"
             "evh reference-promote --dataset-id tickets_v1 --labels owner_gold --tier gold --reason … --by owner\n"
-            "evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1 --out data/runs-gold"
+            "evh rescore --dataset-id tickets_v1 --reference-id gold/tickets_v1"
         ),
         "NO detectable arm effect · pairs distinguishable: 0 of 6",
         TUTORIAL3,
@@ -895,7 +895,7 @@ STEPS = [
             "harness refuses a judge nobody validated; the tutorial's are fake, so it runs labelled."
         ),
         "evh judge-score --dataset-id tickets_v1 --scorer tickets-judge-v1 --unvalidated",
-        "data/runs-judged/tickets-judge-v1  (6/6 items, unvalidated judge)",
+        "judged/tickets-judge-v1  (6/6 items, unvalidated judge)",
         TUTORIAL3,
         "5-re-measure-with-an-llm-judge-optional",
     ),

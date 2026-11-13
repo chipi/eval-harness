@@ -36,18 +36,15 @@ from evaluation_harness import (
     _jsonout,
     _outputs,
     _replay,
-    _store,
 )
 from evaluation_harness._common import (
     DATA,
     EXIT_STOPPED,
     ROOT,
-    RUNS,
     die,
     evh_prog,
     load_dataset,
     now,
-    read_json,
 )
 
 #: Disagreements printed; the record keeps every one.
@@ -86,11 +83,12 @@ def main() -> int:
 
 def _production(run_id: str, ds: dict[str, Any]) -> dict[str, str]:
     from evaluation_harness._fingerprint import items_digest  # noqa: PLC0415
+    from evaluation_harness.model import runs as _model_runs  # noqa: PLC0415
 
-    d = RUNS / run_id
-    if not _store.is_file(d / "metrics.json"):
-        die(f"--production {run_id}: no finished run at {d}", "not-found")
-    m = read_json(d / "metrics.json")
+    d = _model_runs.first_score(run_id)
+    m = _model_runs.record(d) if d else None
+    if d is None or m is None:
+        die(f"--production {run_id}: no finished run in data/runs", "not-found")
     if m.get("dataset_id") != ds["dataset_id"]:
         die(
             f"--production {run_id} ran on {m.get('dataset_id')}, the replay on {ds['dataset_id']}",

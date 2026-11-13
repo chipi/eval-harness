@@ -141,17 +141,21 @@ def _alive(pid: Any) -> bool:
 
 
 def _run_spend(run_id: str) -> tuple[bool, float]:
-    """(whether the run is visible, what it spent): a finished run's metrics, else what its written items say."""
-    from evaluation_harness import _outputs, _store  # noqa: PLC0415
+    """(whether the run is visible, what it spent): a finished run's first score, else what its written items say. A
+    throwaway pass (`evh run --scratch`) is read where it was written, and is never visible to what reads data/runs."""
+    from evaluation_harness import _outputs  # noqa: PLC0415
+    from evaluation_harness.model import runs as _model_runs  # noqa: PLC0415
 
-    d = _common.RUNS / run_id
-    m = d / "metrics.json"
-    if _store.is_file(m):
-        try:
-            doc = json.loads(_store.read_text(m, encoding="utf-8"))
-        except ValueError:
-            doc = {}
-        return True, float((doc.get("scores") or {}).get("total_cost_usd") or 0)
+    d = _model_runs.run_dir(run_id)
+    scratch = (
+        not _model_runs.run(run_id) and _model_runs.run(_model_runs.run_dir(run_id, scratch=True)) is not None
+    )
+    if scratch:
+        d = _model_runs.run_dir(run_id, scratch=True)
+    first = _model_runs.first_score(d)
+    doc = _model_runs.record(first) if first else None
+    if doc is not None:
+        return not scratch, float((doc.get("scores") or {}).get("total_cost_usd") or 0)
     text = _outputs.store().rows_text(d, partial=True, errors="replace") or ""
     total = 0.0
     for line in text.splitlines():

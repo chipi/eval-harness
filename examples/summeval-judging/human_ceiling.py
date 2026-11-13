@@ -31,6 +31,7 @@ WHAT IT MEASURES
 
 from __future__ import annotations
 
+import fnmatch
 import hashlib
 import itertools
 import json
@@ -43,14 +44,14 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE.parent / "_shared"))
 sys.path.insert(0, str(HERE.parents[1] / "harness"))  # the evaluation_harness package: its store reads data/
-from evaluation_harness import _store  # noqa: E402
+from evaluation_harness import _outputs, _store  # noqa: E402
+from evaluation_harness._runs import runs_on  # noqa: E402
 from modules import load_module  # noqa: E402
 
 URL = "https://storage.googleapis.com/sfr-summarization-repo-research/model_annotations.aligned.jsonl"
 CACHE = ROOT / "harness" / "data" / "sources" / "summeval_original" / "model_annotations.aligned.jsonl"
 GOLD = ROOT / "harness" / "data" / "references" / "gold" / "summeval_100"
 MATERIALIZED = ROOT / "harness" / "data" / "materialized" / "summeval_100"
-RUNS = ROOT / "harness" / "data" / "runs"
 OUT = ROOT / "docs" / "evidence" / "summeval_human_ceiling.json"
 
 
@@ -159,14 +160,13 @@ def main() -> int:
     # leave-one-out reference, averaged over the three. Re-scoring against the full gold
     # first must reproduce the arm's committed tau, or the alignment is wrong.
     arms = {}
-    for mj in sorted(_store.glob(RUNS, "se_*_n100_v1_*/metrics.json")):
-        m = json.loads(_store.read_text(mj))
-        if m.get("dataset_id") != "summeval_100":
+    for run, m in runs_on("summeval_100"):
+        if not fnmatch.fnmatch(m["run_id"], "se_*_n100_v1_*"):
             continue
         arm = m["config_id"][len("se_") : -len("_n100_v1")]
         full, loo, loo_by_item = [], [], {}
         for stem, it in items.items():
-            out = _store.read_text(mj.parent / "outputs" / f"{stem}.txt", encoding="utf-8")
+            out = _outputs.output(run, stem)
             full.append(ad.score(out, json.dumps(it["gold"]))["tau"])
             loo.append(statistics.fmean(ad.score(out, rest_of(it, k))["tau"] for k in range(3)))
             loo_by_item[stem] = loo[-1]

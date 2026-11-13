@@ -81,15 +81,11 @@ def _system(system_id: str | None) -> dict:
 
 
 def _run_meta(run_id: str | None) -> dict:
-    from evaluation_harness import _store  # noqa: PLC0415
+    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
 
     if not run_id:
         return {}
-    f = _common.RUNS / run_id / "metrics.json"
-    try:
-        return json.loads(_store.read_text(f, encoding="utf-8")) if _store.is_file(f) else {}
-    except (OSError, ValueError):
-        return {}
+    return model_runs.run(run_id) or {}
 
 
 def _first(v: Any) -> Any:

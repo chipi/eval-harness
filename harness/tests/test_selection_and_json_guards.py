@@ -27,13 +27,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
 from evaluation_harness import _outputs  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
+from evaluation_harness.model import runs as model_runs  # noqa: E402
 
 RUNS = HARNESS / "data" / "runs"
 CLI = HARNESS / "scripts" / "cli.py"
 
 
-def evh(*args: str, cwd: Path = HARNESS) -> subprocess.CompletedProcess:
-    env = {**os.environ, "EVAL_NO_CACHE": "1"}
+def evh(*args: str, cwd: Path = HARNESS, **env_over: str) -> subprocess.CompletedProcess:
+    env = {**os.environ, "EVAL_NO_CACHE": "1", **env_over}
     env.pop("EVH_P_CACHE", None)
     return subprocess.run(
         [sys.executable, str(CLI), *args], cwd=cwd, env=env, capture_output=True, text=True, timeout=600
@@ -89,8 +90,9 @@ def main() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="evh-family-"))
     try:
         for cid in (a, b, c):
-            _runstore.copy_run(run_of(dirs[cid]), tmp / run_of(dirs[cid]).name)
-        short = tmp / run_of(dirs[c]).name
+            _runstore.copy_run(run_of(dirs[cid]), tmp / "runs" / run_of(dirs[cid]).name)
+        short = model_runs.first_score(tmp / "runs" / run_of(dirs[c]).name)
+        assert short is not None, "the copied run has no first score"
         _runstore.put_rows_text(
             short, "".join((_outputs.rows_text(short) or "").splitlines(keepends=True)[:40])
         )
@@ -102,9 +104,8 @@ def main() -> int:
             a,
             "--against",
             "ag_anthropic_",
-            "--runs-dir",
-            str(tmp),
             "--json",
+            EVAL_DATA_DIR=str(tmp),
         )
         v = json.loads(r.stdout)["result"]["values"] if r.returncode == 0 else {}
         t = evh(
@@ -115,8 +116,7 @@ def main() -> int:
             a,
             "--against",
             "ag_anthropic_",
-            "--runs-dir",
-            str(tmp),
+            EVAL_DATA_DIR=str(tmp),
         )
         check(
             "family-test: a family on 40 and 200 shared items has no single n, and the header gives the range",

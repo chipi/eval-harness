@@ -72,12 +72,13 @@ def _reproduced(
     deployment was dated by commit time (approximate). Mutates `labels` and `info`; returns the counts."""
     from evaluation_harness import _coderec, _outputs, _runs  # noqa: PLC0415
     from evaluation_harness._adapter import same_of  # noqa: PLC0415
-    from evaluation_harness._common import RUNS  # noqa: PLC0415
+    from evaluation_harness.model import runs as _model_runs  # noqa: PLC0415
 
-    rd, pd = RUNS / replay_id, RUNS / production_id
-    rm, pm = _runs.read_metrics(rd), _runs.read_metrics(pd)
-    if rm is None or pm is None:
-        die(f"no run {replay_id if rm is None else production_id} in {RUNS}", "not-found")
+    # A run read as the score it made when it ran (its outputs and rows are its run's).
+    rd, pd = _model_runs.first_score(replay_id), _model_runs.first_score(production_id)
+    rm, pm = (_model_runs.record(d) if d else None for d in (rd, pd))
+    if rd is None or pd is None or rm is None or pm is None:
+        die(f"no run {replay_id if rm is None else production_id} in data/runs", "not-found")
     code = ((rm.get("fingerprint") or {}).get("deployment") or {}).get("code") or {}
     if not code.get("record"):
         die(f"{replay_id} is not a replay run (RFC-030): it names no code record", "bad-argument")

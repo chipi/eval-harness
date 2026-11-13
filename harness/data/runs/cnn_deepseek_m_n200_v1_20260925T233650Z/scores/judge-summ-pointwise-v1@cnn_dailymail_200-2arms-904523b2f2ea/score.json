@@ -1,0 +1,9 @@
+{
+  "scorer": "judge-summ-pointwise-v1",
+  "reference": "cnn_dailymail_200-2arms-904523b2f2ea",
+  "label": "judged/judge-summ-pointwise-v1",
+  "unset": [
+    "actor",
+    "round"
+  ]
+}

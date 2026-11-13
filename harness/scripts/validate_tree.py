@@ -16,10 +16,10 @@ Each check exists because its absence let a real defect through somewhere:
                      guard) is expected to agree, and fails V5 when it does not
   V6  baselines      a baseline pointing at a run that no longer exists; a version that no longer matches its run, a
                      line whose versions do not run 1..n, or the old one-per-dataset layout (RFC-027)
-  V7  readable       a committed run with no metrics.json
-  V8  config_ids     two run directories claiming the same (dataset_id, config_id)
-  V9  present        a committed run deleted from disk, or a directory below its floor
-  V10 scorer drift   a DERIVED run naming a scorer that is not the code in this tree
+  V7  readable       a committed run that stopped before its first score (a run.json, nothing measured)
+  V8  config_ids     two runs of one arm claiming the same (dataset_id, config_id)
+  V9  present        a committed run or score file deleted from disk, or an arm below its floor
+  V10 scorer drift   a DERIVED score naming a scorer that is not the code in this tree
   V11 judging sets   a frozen judging set whose stored hash is not its content's hash
   V12 verdicts       a stored judge verdict naming a set, item, pass or block that does not
                      exist, or whose `n` is not that block's size
@@ -56,9 +56,9 @@ Each check exists because its absence let a real defect through somewhere:
                      that is not one of Croissant RAI's (E4); a sealed side whose open side changed
                      since it was sealed, or a run on it no unseal named (the fleet's feedback 29)
                      (PLAN_0.8.0 E3; `evh migrate` brings old records to the format)
-  V23 run outputs    a run still in the old layout (an outputs/ folder: `evh migrate`), or a derived
-                     run with no outputs of its own whose source run is not here (RFC-024); a project in both
-                     stores (RFC-025)
+  V23 run outputs    a run still in the old layout (an outputs/ folder, or a data/runs-* folder: `evh migrate`),
+                     or a score derived from outputs its run does not have (RFC-024); a project in both stores
+                     (RFC-025)
 
 Exit 1 on any failure, so it can gate.
 
@@ -78,6 +78,7 @@ import json
 import subprocess
 import sys
 from collections import defaultdict
+from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
 
@@ -94,11 +95,9 @@ from evaluation_harness._common import (
     ROOT,
     RUNS,
     SCHEMAS,
-    THROWAWAY_RUNS,
     data_rel,
     die,
     goal_policy,
-    ignored_by_git,
     load_goals,
     load_module,
     lower_is_better,
@@ -109,6 +108,7 @@ from evaluation_harness._common import (
 )
 from evaluation_harness._runs import recorded_direction
 from evaluation_harness.axes import axes_of
+from evaluation_harness.model import runs as _mr
 
 try:
     import jsonschema
@@ -125,10 +125,11 @@ _DEMO_DUPLICATE = ("smoke_v1", "demo_v1")
 
 
 def policy() -> dict:
-    """<data>/validate.json: what this project's validate holds it to (committed run
-    directories, floors, scorer sources, duplicate exceptions). These were this
-    repository's directory names and example paths written into the validator, so a pinned
-    project's own `runs-adjudicated` was never checked while six names it does not have were.
+    """<data>/validate.json: what this project's validate holds it to (committed arms, floors,
+    scorer sources, duplicate exceptions). These were this repository's directory names and
+    example paths written into the validator, so a pinned project's own `runs-adjudicated` was
+    never checked while six names it does not have were. An arm is named by its label's prefix
+    (`model.runs.arm_prefix`: `runs`, `pair`, `silver`, `judged-judge-summ-v1`, ...).
     """
     f = DATA / "validate.json"
     if not _store.is_file(f):
@@ -142,35 +143,44 @@ def policy() -> dict:
     return dict(doc)
 
 
-def committed_dirs() -> list[str]:
-    """The run directories that back the project's claims: those `committed` in validate.json names (with
-    their floors), then every other git-tracked <data>/runs* directory holding a run. A directory someone
-    re-allowed in .gitignore is checked whether or not they also listed it here: a re-scored set's
-    runs were committed and never checked because the list was not edited too."""
+def arm_of(sd: Path, rec: dict) -> str:
+    """The prefix of the arm a score is read in (`runs` for a plain run's own score)."""
+    return _mr.arm_prefix(_mr.label(sd, rec))
+
+
+def arms() -> dict[str, list[tuple[Path, dict]]]:
+    """arm prefix -> its scores with their records, by run id then key. Every run is in data/runs (a throwaway pass is
+    `evh run --scratch`, under .build/), so every score is the project's record."""
+    out: dict[str, list[tuple[Path, dict]]] = {}
+    for sd, rec in _mr.scored(label_is=None):
+        out.setdefault(arm_of(sd, rec), []).append((sd, rec))
+    return out
+
+
+def committed_arms() -> list[str]:
+    """The arms that back the project's claims: those `committed` in validate.json names (with their floors), then
+    every other arm with a score git tracks. An arm someone committed is checked whether or not they also listed it
+    here: a re-scored set's runs were committed and never checked because the list was not edited too."""
     declared = list(policy().get("committed") or [])
-    return declared + [d for d in tracked_run_dirs() if d not in declared]
+    return declared + [a for a in tracked_arms() if a not in declared]
 
 
-def tracked_run_dirs() -> list[str]:
-    """Every git-tracked <data>/runs* directory holding a run's metrics.json, and each
-    runs-rescored/<scorer>/<source> (RFC-022)."""
+def tracked_arms() -> list[str]:
+    """Every arm one of whose scores git tracks (RFC-025: in the sqlite store, the database holds what git holds in the
+    files store, so every score)."""
     from evaluation_harness import _common as _c  # noqa: PLC0415
 
-    if _c.store() == "sqlite":  # RFC-025: what the database holds is the record git holds in the files store
-        tracked = [data_rel(p) for p in _store.rglob(DATA, "metrics.json")]
+    if _c.store() == "sqlite":
+        tracked = {data_rel(p.parent) for p in _store.rglob(RUNS, "metrics.json")}
     else:
-        tracked = subprocess.run(
-            ["git", "ls-files", data_rel(DATA)], cwd=ROOT, capture_output=True, text=True
-        ).stdout.split()
-    prefix = data_rel(DATA).rstrip("/") + "/"
-    names = set()
-    for f in tracked:
-        parts = f[len(prefix) :].split("/") if f.startswith(prefix) else []
-        if len(parts) >= 5 and parts[0] == "runs-rescored" and parts[4] == "metrics.json":
-            names.add("/".join(parts[:3]))
-        elif len(parts) >= 3 and parts[0].startswith("runs") and parts[2] == "metrics.json":
-            names.add(parts[0])
-    return sorted(names)
+        tracked = {
+            f.rsplit("/", 1)[0]
+            for f in subprocess.run(
+                ["git", "ls-files", data_rel(RUNS)], cwd=ROOT, capture_output=True, text=True
+            ).stdout.split()
+            if f.endswith("/metrics.json")
+        }
+    return sorted({a for a, scores in arms().items() if any(data_rel(sd) in tracked for sd, _r in scores)})
 
 
 def check(label: str, ok: object, detail: str = "") -> None:
@@ -202,10 +212,6 @@ def v1_schemas() -> None:
 
     pairs = [
         (_store.glob(DATASETS, "*.json"), "dataset.schema.json"),
-        (
-            (r / "metrics.json" for _, r in all_runs() if _store.is_file(r / "metrics.json")),
-            "metrics.schema.json",
-        ),
         (_store.glob(BASELINES, "*/*/*.json"), "baseline.schema.json"),
         (system_files(), "system.schema.json"),
         (_store.glob(DATA / "scorers", "*.yaml"), "scorer.schema.json"),
@@ -222,6 +228,27 @@ def v1_schemas() -> None:
     ]
     bad = 0
     n = 0
+    # A run's files are read as their records (model/runs): the schema is of a score's whole record, the run's facts
+    # with the score's over them. A file that does not parse is named; one run or score with none of its files is not.
+    record_validator = jsonschema.Draft202012Validator(
+        json.loads(_store.read_text(SCHEMAS / "metrics.schema.json"))
+    )
+    for rid in _mr.run_ids():
+        if _mr.run(rid) is None:
+            bad += 1
+            print(f"       {data_rel(_mr.run_dir(rid))}/{_mr.RUN}: does not parse")
+        for sd in _mr.scores_of(rid):
+            for name, got in ((_mr.SCORE, _mr.meta(sd)), (_mr.METRICS, _mr._json(sd / _mr.METRICS))):
+                if not got:
+                    bad += 1
+                    print(f"       {data_rel(sd)}/{name}: does not parse")
+    for _label, sd, rec in all_scores():
+        n += 1
+        try:
+            record_validator.validate(rec)
+        except jsonschema.ValidationError as exc:
+            bad += 1
+            print(f"       {data_rel(sd)}: {exc.message[:90]}")
     for files, schema_name in pairs:
         schema = json.loads(_store.read_text(SCHEMAS / schema_name))
         for f in files:
@@ -249,12 +276,10 @@ def v2_dataset_ids() -> None:
     `derived_from` (the version it was made from)."""
     known = {p.stem for p in _store.glob(DATASETS, "*.json")}
     dangling = []
-    for label, run in all_runs():
-        m = run / "metrics.json"
-        if _store.is_file(m) and (doc := parsed(m)) is not None:
-            did = doc.get("dataset_id")
-            if did not in known:
-                dangling.append(f"{label} -> {did}")
+    for rid in _mr.run_ids():
+        did = (_mr.run(rid) or {}).get("dataset_id")
+        if did not in known:
+            dangling.append(f"{rid} -> {did}")
     for p in sorted(_store.glob(DATASETS, "*.json")):
         try:
             parent = (read_json(p).get("derived_from") or {}).get("dataset_id")
@@ -274,12 +299,10 @@ def v2_dataset_ids() -> None:
 def v3_provenance() -> None:
     """V3: every run identifies its build ref."""
     missing = []
-    for label, run in all_runs():
-        m = run / "metrics.json"
-        if _store.is_file(m) and (doc := parsed(m)) is not None:
-            b = doc.get("build") or {}
-            if b.get("ref", "unknown") == "unknown":
-                missing.append(label)
+    for rid in _mr.run_ids():
+        b = (_mr.run(rid) or {}).get("build") or {}
+        if b.get("ref", "unknown") == "unknown":
+            missing.append(rid)
     for r in missing:
         print(f"       {r}")
     check("V3 every run identifies its build", not missing, f"{len(missing)} without a ref")
@@ -337,29 +360,29 @@ _V5_RUN_PROPERTIES = (
 )
 
 
-def _outputs_signature(run: Path) -> str:
-    """A digest of what a run wrote (its outputs, by item: _outputs.signature). Runs without outputs all
+def _outputs_signature(score: Path) -> str:
+    """A digest of what a score's run wrote (its outputs, by item: _outputs.signature). Runs without outputs all
     share one value: what they wrote cannot tell them apart, so it excuses nothing."""
     from evaluation_harness import _outputs  # noqa: PLC0415
 
-    return _outputs.signature(run)
+    return _outputs.signature(score)
 
 
-def _per_item_signature(run_name: str | Path) -> str:
-    """A stable digest of one run's per-item scores, for telling ties from copies.
+def _per_item_signature(score: Path) -> str:
+    """A stable digest of one score's per-item rows, for telling ties from copies.
 
     Run-level properties are excluded for the same reason they are excluded from the key
     above: a fabricated result differs in latency like any other. A run with no readable
-    predictions returns its own name, so it can never match another run -- an unreadable
+    predictions returns its own name, so it can never match another score -- an unreadable
     file is a reason to say nothing, not a reason to accuse.
     """
     from evaluation_harness import _outputs  # noqa: PLC0415
 
     rows = []
     try:
-        text = _outputs.rows_text(run_name if isinstance(run_name, Path) else RUNS / run_name)
+        text = _outputs.rows_text(score)
         if text is None:
-            return f"<no-predictions:{run_name}>"
+            return f"<no-predictions:{score}>"
         for line in text.splitlines():
             if not line.strip():
                 continue
@@ -367,20 +390,22 @@ def _per_item_signature(run_name: str | Path) -> str:
             scored = {k: v for k, v in row.items() if k not in _V5_RUN_PROPERTIES and k != "_meta"}
             rows.append(json.dumps(scored, sort_keys=True))
     except (OSError, ValueError):
-        return f"<unreadable:{run_name}>"
+        return f"<unreadable:{score}>"
     return hashlib.sha256("\n".join(sorted(rows)).encode()).hexdigest()
 
 
 def v5_duplicate_scores() -> None:
-    """V5: no two runs in one directory report byte-identical scores and per-item results.
-    Within a directory: a rescore that left a run's scores as they were is identical to its
-    source in runs/ by design."""
+    """V5: no two runs in one arm report byte-identical scores and per-item results.
+    Within an arm: a rescore that left a run's scores as they were is identical to its
+    source in the `runs` arm by design."""
+    global _DECLARED
+    _DECLARED = None
     dupes: list[list] = []
     broken: list[str] = []
     guards = 0
-    for base in run_bases():
-        dupes += _v5_in(base)
-        n, bad = _v5_guards(base)
+    for arm, scores in arms().items():
+        dupes += _v5_in(arm, scores)
+        n, bad = _v5_guards(arm, scores)
         guards += n
         broken += bad
     for group in dupes:
@@ -399,17 +424,15 @@ def v5_duplicate_scores() -> None:
     )
 
 
-def _v5_in(base: Path) -> list[list]:
+def _v5_in(arm: str, scores: list[tuple[Path, dict]]) -> list[list]:
     by_key = defaultdict(list)
-    for run in sorted(_store.iterdir(base)):
-        m = run / "metrics.json"
-        if _store.is_file(m) and (d := parsed(m)) is not None:
-            # Compare what the arm PRODUCED. A fabricated or copy-pasted result differs in
-            # latency like any other, so keying on it let exactly the case this check exists
-            # for slip through.
-            produced = {k: v for k, v in (d.get("scores") or {}).items() if k not in _V5_RUN_PROPERTIES}
-            key = (d.get("dataset_id"), json.dumps(produced, sort_keys=True))
-            by_key[key].append((run, d.get("config_id"), json.dumps(d.get("params") or {}, sort_keys=True)))
+    for run, d in scores:
+        # Compare what the arm PRODUCED. A fabricated or copy-pasted result differs in
+        # latency like any other, so keying on it let exactly the case this check exists
+        # for slip through.
+        produced = {k: v for k, v in (d.get("scores") or {}).items() if k not in _V5_RUN_PROPERTIES}
+        key = (d.get("dataset_id"), json.dumps(produced, sort_keys=True))
+        by_key[key].append((run, d.get("config_id"), json.dumps(d.get("params") or {}, sort_keys=True)))
     # Identical scores from identical params is not suspicious — it is what a deterministic
     # arm DOES, and two systems may legitimately request the same thing. What deserves a look
     # is DIFFERENT params landing on byte-identical output: either a result was not measured,
@@ -419,7 +442,7 @@ def _v5_in(base: Path) -> list[list]:
         known = group
         # A regression guard (fleet feedback 28): the same code at two commits MUST agree; a group joined by
         # `expect_identical_to` declarations is the agreement asked for, not an inert knob.
-        if _declared_together(base, {c for _, c, _ in known}):
+        if _declared_together(scores, {c for _, c, _ in known}):
             continue
         if len({c for _, c, _ in known}) > 1 and len({p for _, _, p in known}) > 1:
             # AGREEING MEANS IS NOT AGREEING MEASUREMENT. The check's premise -- "independent
@@ -451,7 +474,7 @@ def _v5_in(base: Path) -> list[list]:
                     "item: no effect"
                 )
                 continue
-            dupes.append([(f"{base.name}/{n.name}", c, p) for n, c, p in known])
+            dupes.append([(f"{arm}/{_mr.run_of(n).name}", c, p) for n, c, p in known])
     return dupes
 
 
@@ -473,11 +496,11 @@ def _one_study(configs: set) -> str | None:
     return ", ".join(sorted(found)) if found and configs <= covered else None
 
 
-def _declared_together(base: Path, configs: set) -> bool:
+def _declared_together(scores: list[tuple[Path, dict]], configs: set) -> bool:
     """Whether every system of a V5 group is joined to the others by `expect_identical_to` declarations."""
     if len(configs) < 2:
         return False
-    edges = {(c, t) for c, t, _r in _guards_in(base) if c in configs and t in configs}
+    edges = {(c, t) for c, t, _r in _guards_in(scores) if c in configs and t in configs}
     reach, todo = set(), [next(iter(configs))]
     while todo:
         c = todo.pop()
@@ -488,9 +511,20 @@ def _declared_together(base: Path, configs: set) -> bool:
     return reach == configs
 
 
+#: What V5 read of the systems this run: each guard of every arm asks, and the systems are 300 files.
+_DECLARED: dict[str, str] | None = None
+
+
 def _declared_in_systems() -> dict[str, str]:
     """system id -> the system it must reproduce, as each system declares it today (every system of the project:
     data/systems and the folders validate.json's `systems` globs name)."""
+    global _DECLARED
+    if _DECLARED is None:
+        _DECLARED = _read_declared()
+    return _DECLARED
+
+
+def _read_declared() -> dict[str, str]:
     import yaml  # noqa: PLC0415
 
     out: dict[str, str] = {}
@@ -504,45 +538,40 @@ def _declared_in_systems() -> dict[str, str]:
     return out
 
 
-def _guards_in(base: Path) -> list[tuple]:
-    """(system id, the system it must reproduce, its run directory) for every run in `base` that declares one: the
+def _guards_in(scores: list[tuple[Path, dict]]) -> list[tuple]:
+    """(system id, the system it must reproduce, its score directory) for every score of an arm that declares one: the
     run's own record, else its system's declaration (the fleet's beta: runs made before the system declared it are
     frozen, and the guard holds for them too)."""
     out = []
     by_config = _declared_in_systems()
-    for run in sorted(_store.iterdir(base)):
-        m = run / "metrics.json"
-        if _store.is_file(m) and (d := parsed(m)) is not None:
-            target = d.get("expect_identical_to") or by_config.get(str(d.get("config_id")))
-            if target:
-                out.append((d.get("config_id"), target, run))
+    for run, d in scores:
+        target = d.get("expect_identical_to") or by_config.get(str(d.get("config_id")))
+        if target:
+            out.append((d.get("config_id"), target, run))
     return out
 
 
-def _v5_guards(base: Path) -> tuple[int, list[str]]:
-    """Every regression guard in `base` against the latest run of the system it names on the same dataset: the
+def _v5_guards(arm: str, scores: list[tuple[Path, dict]]) -> tuple[int, list[str]]:
+    """Every regression guard in an arm against the latest run of the system it names on the same dataset: the
     per-item results and the outputs must be the same. A guard whose system has no run there yet is not counted."""
     checked, bad = 0, []
-    for cfg, target, run in _guards_in(base):
-        d = parsed(run / "metrics.json") or {}
+    for cfg, target, run in _guards_in(scores):
+        d = _mr.record(run) or {}
         theirs = sorted(
-            r for r in _store.iterdir(base)
-            if _store.is_file(r / "metrics.json")
-            and (m := parsed(r / "metrics.json") or {}).get("config_id") == target
-            and m.get("dataset_id") == d.get("dataset_id")
+            r for r, m in scores
+            if m.get("config_id") == target and m.get("dataset_id") == d.get("dataset_id")
         )  # fmt: skip
         if not theirs:
             continue
         checked += 1
         other = theirs[-1]
+        mine, theirs_name = _mr.run_of(run).name, _mr.run_of(other).name
         if _per_item_signature(run) != _per_item_signature(other):
             bad.append(
-                f"{base.name}/{run.name} ({cfg}) must reproduce {target}: its per-item results differ from {other.name}"
+                f"{arm}/{mine} ({cfg}) must reproduce {target}: its per-item results differ from {theirs_name}"
             )
         elif _outputs_signature(run) != _outputs_signature(other):
-            bad.append(
-                f"{base.name}/{run.name} ({cfg}) must reproduce {target}: its outputs differ from {other.name}"
-            )
+            bad.append(f"{arm}/{mine} ({cfg}) must reproduce {target}: its outputs differ from {theirs_name}")
     return checked, bad
 
 
@@ -552,7 +581,7 @@ def v6_baselines() -> None:
     and a rollback restoring an earlier one (RFC-027). A baseline still in the old layout (one file per dataset)
     fails it, with the command that moves it."""
     from evaluation_harness import _baselines  # noqa: PLC0415
-    from evaluation_harness.promote_baseline import carried  # noqa: PLC0415
+    from evaluation_harness.promote_baseline import carried, run_record  # noqa: PLC0415
 
     broken = [
         f"{b.name}: the old layout, one baseline per dataset: evh migrate moves it"
@@ -576,19 +605,11 @@ def v6_baselines() -> None:
         d = parsed(b)
         if not isinstance(d, dict):
             continue  # V1 names it
-        src = next(
-            (
-                base / d.get("promoted_from", "")
-                for base in run_bases()
-                if _store.is_dir(base / d.get("promoted_from", ""))
-            ),
-            None,
-        )
         name = b.relative_to(BASELINES).as_posix()
-        if src is None:
+        if not d.get("promoted_from") or _mr.run(str(d["promoted_from"])) is None:
             broken.append(f"{name} -> {d.get('promoted_from')}: no such run")
             continue
-        m = (parsed(src / "metrics.json") or {}) if _store.is_file(src / "metrics.json") else {}
+        m = run_record(d["promoted_from"]) or {}
         # The goal is the line's, not the run's: a run may be promoted as another goal's baseline (--goal).
         for k, v in carried(m).items():
             if k != "goal" and d.get(k) != v:
@@ -609,58 +630,38 @@ def v6_baselines() -> None:
     )
 
 
-def run_bases() -> list[Path]:
-    """The runs directory and every committed run directory, each once. V1-V3, V5 and V14
-    read RUNS alone, so the derived directories reports cite (68 runs here) were never
-    schema- or integrity-checked while the RUNBOOK said every run was."""
-    out, seen = [], set()
-    for base in [RUNS, *(DATA / d for d in committed_dirs())]:
-        key = base.resolve()
-        if _store.is_dir(base) and key not in seen:
-            seen.add(key)
-            out.append(base)
-    return out
-
-
-def all_runs() -> list[tuple[str, Path]]:
-    """(label, run directory) for every run in run_bases(), labelled `<dir>/<run>` outside RUNS."""
+def all_scores() -> list[tuple[str, Path, dict]]:
+    """(label, score directory, record) for every score, labelled by its run's id, `<arm>/<run id>` outside the `runs`
+    arm."""
     out = []
-    for base in run_bases():
-        prefix = "" if base.resolve() == RUNS.resolve() else f"{base.name}/"
-        out += [(f"{prefix}{r.name}", r) for r in sorted(_store.iterdir(base)) if _store.is_dir(r)]
+    for sd, rec in _mr.scored(label_is=None):
+        prefix = arm_of(sd, rec)
+        rid = _mr.run_of(sd).name
+        out.append((rid if prefix == "runs" else f"{prefix}/{rid}", sd, rec))
     return out
 
 
-def _tracked_runs(runs_dir: Path) -> dict:
-    """{run id: names of its tracked top-level entries}, from the git INDEX, for a runs
-    directory wherever the data root sits (<runs dir>/<run id>/<file...>)."""
-    prefix = data_rel(runs_dir).rstrip("/") + "/"
-    tracked = subprocess.run(
-        ["git", "ls-files", prefix], cwd=ROOT, capture_output=True, text=True
+def _tracked_files() -> list[str]:
+    """Every file of data/runs git tracks, as paths from the project root."""
+    return subprocess.run(
+        ["git", "ls-files", data_rel(RUNS)], cwd=ROOT, capture_output=True, text=True
     ).stdout.split()
-    out: dict = {}
-    for f in tracked:
-        if not f.startswith(prefix):
-            continue
-        parts = f[len(prefix) :].split("/")
-        if len(parts) >= 2:
-            out.setdefault(parts[0], set()).add(parts[1])
-    return out
 
 
 def v7_committed_runs_are_readable() -> None:
-    """A run in the repo must carry `metrics.json`. Outputs alone are not a run.
+    """A run in the repo must have been scored. Outputs alone are not a measurement.
 
     144 directories were committed as outputs ONLY -- 2,880 files of CNN/DailyMail
     paraphrases with nothing to say which arm produced them, on which dataset, under
     which fingerprint. No tool here can read them: `rescore`, `leaderboard`,
-    `compare_runs` and every report script key off `metrics.json` and skip a directory
-    without one.
+    `compare_runs` and every report script key off a score and skip a run without one.
 
     The cause was two rules interacting. Those pilot runs are excluded BY NAME because
     they record an absolute username path; the exclusion named `metrics.json` and
     `predictions.jsonl`, and a later force-include of `outputs/**` reached underneath
-    it. All of the copyright exposure and none of the reproducibility benefit.
+    it. All of the copyright exposure and none of the reproducibility benefit. A run is now
+    its `run.json` (committed from the first item) and its scores; one with no first score
+    stopped before it finished.
 
     Checked against the INDEX rather than the working tree: an in-progress run on disk
     is fine and expected, a committed one is not.
@@ -670,26 +671,17 @@ def v7_committed_runs_are_readable() -> None:
     if _c.store() == "sqlite":  # RFC-025: nothing under data/ is in git; the database is the record
         print("  --   V7 committed runs (the sqlite store: nothing under data/ is in git)")
         return
-    have = _tracked_runs(RUNS)
-    bad = sorted(r for r, files in have.items() if "metrics.json" not in files)
-
-    # AND THE OTHER RUN DIRECTORIES, which V1 never looked at. Here `data/runs-rescored`,
-    # `-reparsed`, `-pair` and `-repeats` are all committed and all cited by reports,
-    # and nothing validated them at all. Found by external review.
-    for extra in committed_dirs():
-        base = DATA / extra
-        if not _store.is_dir(base) or base.resolve() == RUNS.resolve():
-            continue
-        seen = _tracked_runs(base)
-        bad += [f"{extra}/{r}" for r, files in sorted(seen.items()) if "metrics.json" not in files]
+    prefix = data_rel(RUNS).rstrip("/") + "/"
+    committed = {f[len(prefix) :].split("/")[0] for f in _tracked_files() if f.startswith(prefix)}
+    bad = sorted(r for r in committed if _mr.first_score(r) is None and _store.is_file(RUNS / r / _mr.RUN))
     for x in bad[:10]:
         print(f"       {x}")
     if len(bad) > 10:
         print(f"       ... and {len(bad) - 10} more")
     check(
-        "V7 every committed run has metrics.json",
+        "V7 every committed run has its first score",
         not bad,
-        f"{len(bad)} run(s) stopped before they finished (outputs, no metrics.json): resume each with evh run --resume <run_id>, or delete it",
+        f"{len(bad)} run(s) stopped before they finished (a run.json, nothing scored): resume each with evh run --resume <run_id>, or delete it",
     )
 
 
@@ -701,7 +693,7 @@ def v9_no_committed_evidence_is_missing() -> None:
     43/43 claims verified. A repo whose argument is "check the instrument" could lose a
     quarter of its evidence without a single red line. Found by external review.
 
-    Floors as well as presence: a directory could be emptied one run at a time and each
+    Floors as well as presence: an arm could be emptied one score at a time and each
     individual absence explained away.
     """
     from evaluation_harness import _common as _c  # noqa: PLC0415
@@ -709,25 +701,19 @@ def v9_no_committed_evidence_is_missing() -> None:
     if _c.store() == "sqlite":  # RFC-025: nothing under data/ is in git; the database is the record
         print("  --   V9 committed run files (the sqlite store: nothing under data/ is in git)")
         return
-    #: What each committed runs directory must contain. Raising one of these is a
-    #: deliberate edit; lowering one should need an argument.
-    #: `runs-linux` is here because it was NOT, and nothing else reached it either: the
-    #: re-timed latency figures in three reports come out of it, six documents cite it,
-    #: and `grep -n runs-linux scripts/*.py` returned nothing. Deleting the directory
-    #: that nine published latency numbers rest on passed every check. Found reviewing
-    #: the merged ML-arm work, which is the same defect round 4 found one directory over.
-    # The floors are PROJECT policy: how many runs each committed directory must keep is
-    # a fact about one project's evidence, not about the harness. They are read from
-    # <data>/validate.json (`policy`); a project without them has no floors (V9's
-    # missing-file and empty-rows checks still apply).
+    #: What each committed arm must contain. Raising one of these is a deliberate edit; lowering one should need an
+    #: argument.
+    #: The `linux` arm (the re-timed runs) is here because it was NOT, and nothing else reached it either: the
+    #: re-timed latency figures in three reports come out of it, six documents cite it. Deleting what nine published
+    #: latency numbers rest on passed every check. Found reviewing the merged ML-arm work, which is the same defect
+    #: round 4 found one directory over.
+    # The floors are PROJECT policy: how many scores each committed arm must keep is a fact about one project's
+    # evidence, not about the harness. They are read from <data>/validate.json (`policy`); a project without them has
+    # no floors (V9's missing-file and empty-rows checks still apply).
     FLOORS = policy().get("floors") or {}
 
     listed = subprocess.run(
-        [
-            "git",
-            "ls-files",
-            *(data_rel(DATA / d) for d in committed_dirs()),
-        ],
+        ["git", "ls-files", data_rel(RUNS)],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -752,46 +738,45 @@ def v9_no_committed_evidence_is_missing() -> None:
     seen: dict = {}
     data_prefix = data_rel(DATA).rstrip("/") + "/"
     for f in tracked:
-        # <data root>/<runs dir>/<run id>/<file>, wherever the data root sits.
+        # <data root>/runs/<run id>/scores/<key>/<file>, wherever the data root sits.
         if not f.startswith(data_prefix):
             continue
         parts = f[len(data_prefix) :].split("/")
-        if len(parts) < 3:
-            continue
-        seen.setdefault(f"{parts[0]}/{parts[1]}", set()).add(parts[2])
+        if len(parts) == 5 and parts[2] == "scores":
+            seen.setdefault("/".join(parts[:4]), set()).add(parts[4])
         if not _store.exists(ROOT / f):
             missing.append(f)
     # PRESENCE IS NOT CONTENT. `: > predictions.jsonl` left the file tracked, present
     # and zero bytes, and V9 said "every committed run file is present on disk" while
-    # the arm-row scan read `metrics.json` and reported 53/53. The evidence a run IS is
-    # its rows; a run whose rows are gone is deleted whatever the directory listing
+    # the arm-row scan read `metrics.json` and reported 53/53. The evidence a score IS
+    # is its rows; a score whose rows are gone is deleted whatever the directory listing
     # says. Found by external review, round 5.
     from evaluation_harness import _outputs  # noqa: PLC0415
 
     for key, files in sorted(seen.items()):
-        if "metrics.json" not in files:
+        if _mr.METRICS not in files:
             continue  # V7's business, not this one
         if _outputs.PREDICTIONS not in files:
             incomplete.append(f"{key} has no predictions.jsonl")
             continue
-        _mj = DATA / key / "metrics.json"
+        sd = DATA / key
         try:
-            _text = _outputs.rows_text(DATA / key)
+            _text = _outputs.rows_text(sd)
         except (OSError, ValueError):
             incomplete.append(f"{key} predictions.jsonl is unreadable")
             continue
-        if _text is None or not _store.is_file(_mj):
+        if _text is None or not _store.is_file(sd / _mr.METRICS):
             continue  # already counted as missing above
         try:
             _rows = sum(1 for _l in _text.splitlines() if _l.strip())
-            _want = int(read_json(_mj).get("n_items") or 0)
+            _want = int((_mr.record(sd) or {}).get("n_items") or 0)
         except (OSError, ValueError, TypeError):
             incomplete.append(f"{key} predictions.jsonl is unreadable")
             continue
         if _rows == 0:
             incomplete.append(f"{key} predictions.jsonl is empty")
         elif _want and _rows != _want:
-            incomplete.append(f"{key} has {_rows} prediction rows, metrics.json says n_items={_want}")
+            incomplete.append(f"{key} has {_rows} prediction rows, its record says n_items={_want}")
     for x in missing[:5] + incomplete[:5]:
         print(f"       {x}")
     if len(missing) > 5:
@@ -806,21 +791,20 @@ def v9_no_committed_evidence_is_missing() -> None:
         )
 
     short = []
+    by_arm = arms()
     for name, floor in sorted(FLOORS.items()):
-        base = DATA / name
-        n = len(list(_store.glob(base, "*/metrics.json"))) if _store.is_dir(base) else 0
+        n = len(by_arm.get(name, []))
         if n < floor:
-            short.append(f"{name}: {n} runs, expected at least {floor}")
+            short.append(f"{name}: {n} scores, expected at least {floor}")
     for x in short:
         print(f"       {x}")
-    check("V9 each committed runs directory meets its floor", not short, "; ".join(short))
+    check("V9 each committed arm meets its floor", not short, "; ".join(short))
 
 
 def v10_derived_runs_carry_the_current_scorer() -> None:
-    """A run that CLAIMS to be a product of the current code must carry ALL its hashes.
+    """A score that CLAIMS to be a product of the current code must carry ALL its hashes.
 
-    `runs-rescored` and `runs-reparsed` exist to be re-derivable for $0, and each run in
-    them records the scorer it was derived with. Nothing ever compared those to the code
+    Re-scores exist to be re-derivable for $0, and each records the scorer it was derived with. Nothing ever compared those to the code
     in the tree, so a change to `_shared/extraction.py` or `_shared/retrieval.py` left
     every stored figure attributed to a scorer that no longer exists, with `make ci`
     green.
@@ -832,29 +816,29 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
     `runs-rescored`, the component whose bugs rounds 2, 3 and 4 all found, and the
     component that changed in the very commit V10 shipped in. The can-fail guard planted
     `_ARTICLES`, a constant of the set scorer, so it proved V10 could see `extraction.py`
-    and nothing whatever about the parser. Every key the run stores is now compared.
+    and nothing whatever about the parser. Every key the score stores is now compared.
     Found by external review, round 5.
 
     AN ABSENT FIELD IS A FAILURE HERE, NOT A SKIP. It used to print `skip` and pass, so
     deleting `rescored_with` from all 27 runs left VALIDATION PASSED -- the check
     vanishing exactly when the thing it reads is gone, which is what its own docstring
-    said it must not do. A derived directory with runs in it must state its provenance.
-    Only `data/runs` may be silent. Also round 5.
+    said it must not do. A derived arm with scores in it must state its provenance.
+    Only the `runs` arm may be silent. Also round 5.
 
-    `data/runs` is a NOTE, never a failure. Those runs legitimately carry the hash they
+    The `runs` arm is a NOTE, never a failure. Those scores legitimately carry the hash they
     were measured with -- recording it is the entire point.
 
     An adapter whose dependencies are absent is a named skip, printed, not silence.
     """
-    #: (directory, glob, where the run states its hashes, module, callable).
+    #: (arm, glob of run ids, where the score states its hashes, module, callable).
     #: The callable returns either a str (one hash) or a dict of named hashes, and
     #: EVERY key of that dict is compared -- naming one key here is how the parser went
-    #: unwatched. `data/runs` predates `scorer_sha256` and states `parser_sha256` alone,
+    #: unwatched. The `runs` arm predates `scorer_sha256` and states `parser_sha256` alone,
     #: under the fingerprint's `deployment.declared`, so that is what is compared there.
     #: Declared per project in validate.json `scorer_sources`; a project without them has
     #: nothing for V10 to compare.
     SOURCES = [
-        (src["dir"], src["glob"], tuple(src["path"]), src["module"], src["callable"])
+        (src["arms"], src["glob"], tuple(src["path"]), src["module"], src["callable"])
         for src in policy().get("scorer_sources") or []
     ]
 
@@ -865,11 +849,9 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
             d = d.get(k)
         return d
 
+    by_arm = arms()
     for directory, pat, path, modfile, fn in SOURCES:
-        base = DATA / directory
-        if not _store.is_dir(base):
-            continue
-        runs = sorted(_store.glob(base, f"{pat}/metrics.json"))
+        runs = [(sd, rec) for sd, rec in by_arm.get(directory, []) if fnmatch(_mr.run_of(sd).name, pat)]
         if not runs:
             continue
         # By path, never by `import adapter`: every example's adapter is `adapter.py`, so a
@@ -894,13 +876,15 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
         if isinstance(current, dict) and path[-1] in current:
             current = {path[-1]: current[path[-1]]}  # the run names ONE of them
         checked, stale, silent, keys = 0, [], [], set()
-        for mj in runs:
-            doc = parsed(mj)
-            if doc is None:
-                continue  # V1 names it
+        for sd, doc in runs:
+            name = (
+                f"{_mr.run_of(sd).name}/{sd.name}"
+                if len(_mr.scores_of(_mr.run_of(sd))) > 1
+                else _mr.run_of(sd).name
+            )
             rec = _dig(doc, path)
             if rec is None:
-                silent.append(mj.parent.name)
+                silent.append(name)
                 continue
             checked += 1
             if isinstance(rec, str):
@@ -913,13 +897,13 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
             shared = sorted(set(pairs) & set(want))
             keys.update(shared)
             if not shared:
-                silent.append(f"{mj.parent.name} (states {sorted(pairs)}, code offers {sorted(want)})")
+                silent.append(f"{name} (states {sorted(pairs)}, code offers {sorted(want)})")
                 continue
             for k in shared:
                 if pairs[k] != want[k]:
-                    stale.append(f"{mj.parent.name} {k} {pairs[k][:12]}")
+                    stale.append(f"{name} {k} {pairs[k][:12]}")
         label = (
-            f"V10 {directory}: {', '.join(sorted(keys))} match the code ({checked} run(s))"
+            f"V10 {directory}: {', '.join(sorted(keys))} match the code ({checked} score(s))"
             if keys
             else f"V10 {directory}: a scorer hash was compared at all"
         )
@@ -929,24 +913,24 @@ def v10_derived_runs_carry_the_current_scorer() -> None:
         for x in silent[:5]:
             print(f"       {x} states no hash at {'.'.join(path)}")
         check(
-            f"V10 {directory}: every run states its scorer",
+            f"V10 {directory}: every score states its scorer",
             not silent,
-            f"{len(silent)} of {len(runs)} run(s) record nothing at "
-            f"{'.'.join(path)} — a derived run must say what derived it",
+            f"{len(silent)} of {len(runs)} score(s) record nothing at "
+            f"{'.'.join(path)} — a derived score must say what derived it",
         )
         for x in stale[:5]:
             print(f"       {x} != the code")
         check(
             label,
             not stale and checked > 0,
-            f"{len(stale)} mismatch(es) over {checked} derived run(s)"
+            f"{len(stale)} mismatch(es) over {checked} derived score(s)"
             if stale
             else "no run was compared at all",
         )
 
 
 def v8_no_duplicate_config_ids() -> None:
-    """No two run directories may claim the same (dataset_id, config_id).
+    """No two runs of one arm may claim the same (dataset_id, config_id).
 
     This is the round-3 ext4 failure made structural. `check_report_claims.py` globs
     for a run in SIX places and only one of them goes through `runs_by_arm`, which is
@@ -964,30 +948,24 @@ def v8_no_duplicate_config_ids() -> None:
     """
     import re as _re  # noqa: PLC0415
 
-    #: The directories whose runs back a report. Scratch dirs (runs-smoke, runs-tune)
-    #: are gitignored working artifacts where repeats are normal.
-    # `runs-linux` was omitted when it was added, so the sixth committed directory was
-    # the one place a duplicate config_id could still land -- and the latency claims read
-    # it by filesystem order, so a duplicate changed the answer depending on how the
-    # names sorted. That is the round-3 ext4 defect in the sixth directory. Round 5.
-    COMMITTED = committed_dirs()
+    #: The arms whose runs back a report. A throwaway pass (`evh run --scratch`) is outside the data.
+    # The `linux` arm was omitted when it was added, so the sixth committed arm was the one place a duplicate
+    # config_id could still land -- and the latency claims read it by filesystem order, so a duplicate changed the
+    # answer depending on how the names sorted. That is the round-3 ext4 defect in the sixth arm. Round 5.
+    COMMITTED = committed_arms()
     #: The bundled demo, plus the project's own `duplicate_ok`: named, never scoped away
     #: silently, so that adding an exception is a deliberate edit someone has to justify.
     ALLOWED = {_DEMO_DUPLICATE, *(tuple(x) for x in policy().get("duplicate_ok") or [])}
 
     bad = []
-    for base in [(DATA / n) for n in COMMITTED]:
-        if not _store.is_dir(base):
-            continue
+    by_arm = arms()
+    for arm in COMMITTED:
         groups: dict = {}
-        for mj in sorted(_store.glob(base, "*/metrics.json")):
-            try:
-                m = json.loads(_store.read_text(mj, encoding="utf-8"))
-            except (OSError, ValueError):
-                continue
+        for sd, m in by_arm.get(arm, []):
             key = (m.get("dataset_id"), m.get("config_id"))
-            if key[1]:
-                groups.setdefault(key, []).append(mj.parent.name)
+            rid = _mr.run_of(sd).name
+            if key[1] and rid not in groups.setdefault(key, []):
+                groups[key].append(rid)
         for (ds, cid), names in sorted(groups.items()):
             if len(names) < 2:
                 continue
@@ -996,11 +974,11 @@ def v8_no_duplicate_config_ids() -> None:
                 continue
             if (ds, cid) in ALLOWED:
                 notes.append(
-                    f"{base.name}/: {len(names)} {cid!r} runs on {ds} "
+                    f"{arm}: {len(names)} {cid!r} runs on {ds} "
                     f"(allowed: {'the bundled demo, cited by no report' if (ds, cid) == _DEMO_DUPLICATE else 'duplicate_ok in validate.json'})"
                 )
                 continue
-            bad.append(f"{base.name}/: {len(names)} runs claim {cid!r} on {ds} — {', '.join(sorted(names))}")
+            bad.append(f"{arm}: {len(names)} runs claim {cid!r} on {ds} — {', '.join(sorted(names))}")
     for x in bad[:6]:
         print(f"       {x}")
     if len(bad) > 6:
@@ -1245,16 +1223,18 @@ def v14_goals() -> None:
     since = str(goal_policy().get("required_from") or "")
     unnamed, n_runs = [], 0
     filed: dict[str, list] = defaultdict(list)
-    for label, run in all_runs():
-        m = parsed(run / "metrics.json") if _store.is_file(run / "metrics.json") else None
-        if not isinstance(m, dict):
-            continue
-        n_runs += 1
-        named(f"runs/{label}", m)
+    named_runs: set[str] = set()
+    for _label, run, m in all_scores():
+        rid = _mr.run_of(run).name
         if m.get("goal"):
             filed[str(m["goal"])].append((run, m))
+        if rid in named_runs:  # a run's goal and format are its own, whatever it was scored as
+            continue
+        named_runs.add(rid)
+        n_runs += 1
+        named(f"runs/{rid}", m)
         if since and not m.get("goal") and str(m.get("created_at", ""))[:10] >= since:
-            unnamed.append(label)
+            unnamed.append(rid)
     for b in sorted(_store.glob(BASELINES, "*/*/*.json")):
         if isinstance(doc := parsed(b), dict) and doc.get("goal"):
             named(f"baselines/{b.relative_to(BASELINES).as_posix()}", doc)
@@ -1695,7 +1675,7 @@ def v22_dataset_records() -> None:
 
     sealed = _seal.problems(docs)
     if any(d.get("sealed") for d in docs.values()):
-        runs = [(r, m) for _label, r in all_runs() if isinstance(m := parsed(r / "metrics.json"), dict)]
+        runs = [(_mr.run_dir(rid), m) for rid in _mr.run_ids() if isinstance(m := _mr.run(rid), dict)]
         sealed += _seal.runs_on_sealed(docs, runs)
     bad += sealed
     for b in bad[:10]:
@@ -1749,7 +1729,7 @@ def v24_prompt_versions() -> None:
             runs += 1
         for name, sha in used.items() if isinstance(used, dict) else []:
             if (name, str(sha)) not in known:
-                bad.append(f"{d.name}: prompt {name} {str(sha)[:16]} is not a recorded version")
+                bad.append(f"{_mr.run_of(d).name}: prompt {name} {str(sha)[:16]} is not a recorded version")
         code = (fp.get("deployment") or {}).get("code")
         if code is None:
             continue
@@ -1757,9 +1737,11 @@ def v24_prompt_versions() -> None:
             "record"
         ):  # a replay's (RFC-030): many commits, from its record
             if not {"record", "versions_sha256", "commits"} <= set(code):
-                bad.append(f"{d.name}: a replay's deployment.code lacks record, versions_sha256 or commits")
+                bad.append(
+                    f"{_mr.run_of(d).name}: a replay's deployment.code lacks record, versions_sha256 or commits"
+                )
         elif not (isinstance(code, dict) and {"repo", "commit", "dirty", "path"} <= set(code)):
-            bad.append(f"{d.name}: deployment.code lacks repo, commit, dirty or path")
+            bad.append(f"{_mr.run_of(d).name}: deployment.code lacks repo, commit, dirty or path")
     if bad:
         problems.append("V24")
         print(f"  FAIL V24 prompt versions — {len(bad)} problem(s):")
@@ -1847,7 +1829,7 @@ def v26_faithfulness() -> None:
 
 def v23_run_outputs() -> None:
     """V23: every run's outputs can be read (RFC-024): none is left in the old layout (an outputs/ folder), and a
-    derived run without outputs of its own finds its source's. And the project is files or its database, never both
+    score derived from them has them. And the project is files or its database, never both
     (RFC-025): with files no data/project.sqlite; with the database nothing under data/ on disk but it."""
     from evaluation_harness import _common, _outputs, _store  # noqa: PLC0415
 
@@ -1865,26 +1847,16 @@ def v23_run_outputs() -> None:
                 f"{len(on_disk)} file(s) under data/ on disk while the project's store is sqlite (first:"
                 f" {on_disk[0].relative_to(DATA)}): evh data-migrate --to sqlite"
             )
-    runs = sorted(
-        {
-            d
-            for root in _store.glob(DATA, "runs*")
-            if _store.is_dir(root)
-            for depth in ("*", "*/*", "*/*/*")
-            for d in _store.glob(root, depth)
-            if _store.is_file(d / "metrics.json")
-        }
-    )
+    runs = [_mr.run_dir(rid) for rid in _mr.run_ids()]
+    for old in sorted(_store.glob(DATA, "runs-*")):
+        bad.append(f"{old.relative_to(DATA)}: a folder of runs of the layout before format 4: evh migrate")
     for d in runs:
-        rel = d.relative_to(DATA)
         if _outputs.old_layout(d):
-            bad.append(f"{rel}: an outputs/ folder (the layout before 0.8.0): evh migrate")
-            continue
-        if _outputs.own(d):
-            continue
-        frm = _outputs._derived_from(d)
-        if frm and _outputs.source(d) is None:
-            bad.append(f"{rel}: a derived run with no outputs of its own, and its source {frm} is not here")
+            bad.append(f"{d.relative_to(DATA)}: an outputs/ folder (the layout before 0.8.0): evh migrate")
+    # A re-score reads its run's outputs: a score that says it was derived from them finds them.
+    for sd, rec in _mr.scored(label_is=None):
+        if rec.get("derived") and _outputs.source(sd) is None:
+            bad.append(f"{sd.relative_to(DATA)}: derived from its run's outputs, and the run has none")
     if not runs and not bad:
         print("  --   V23 run outputs (no runs)")
         return
@@ -1946,18 +1918,33 @@ def v18_model_records() -> None:
 
 
 def note_uncommitted_runs() -> None:
-    """A note, never a failure: finished runs in a runs directory git ignores. They are on this disk only;
-    a fresh clone, CI and the published catalog never see them, so a result kept there splits the record
-    in two (the self-hosted triage runs sat in data/runs-local that way). Throwaway names are skipped."""
-    for d in sorted(_store.glob(DATA, "runs*")):
-        if not _store.is_dir(d) or d.name.startswith(THROWAWAY_RUNS) or not ignored_by_git(d):
-            continue
-        n = sum(1 for r in _store.iterdir(d) if _store.is_file(r / "metrics.json"))
-        if n:
-            notes.append(
-                f"{data_rel(d)}: {n} finished run(s) that git ignores, so they are not committed and no catalog "
-                "shows them. Move measured runs to data/runs, or re-allow a derived set in .gitignore."
-            )
+    """A note, never a failure: finished runs whose run.json git ignores (a project that ignores data/runs). They are
+    on this disk only; a fresh clone, CI and the published catalog never see them. A throwaway pass is `evh run
+    --scratch`, which writes outside the data."""
+    from evaluation_harness import _common as _c  # noqa: PLC0415
+
+    if _c.store() == "sqlite":  # RFC-025: nothing under data/ is in git
+        return
+    finished = [rid for rid in _mr.run_ids() if _mr.first_score(rid) is not None]
+    if not finished:
+        return
+    try:
+        r = subprocess.run(
+            ["git", "check-ignore", "--stdin"],
+            cwd=ROOT,
+            input="\n".join(data_rel(_mr.run_dir(rid) / _mr.RUN) for rid in finished) + "\n",
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return
+    n = len(r.stdout.split()) if r.returncode == 0 else 0
+    if n:
+        notes.append(
+            f"{data_rel(RUNS)}: {n} finished run(s) that git ignores, so they are not committed and no catalog "
+            "shows them. Stop ignoring data/runs in .gitignore (a throwaway pass is evh run --scratch)."
+        )
 
 
 def note_round_scorers() -> None:

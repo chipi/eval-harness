@@ -10,15 +10,14 @@ directory under data/. Either way:
 
 A measured run adds an output per item as it is produced (`writer`), synced or committed before the next, so a stopped
 run keeps every finished output and `--resume` reads them back; a torn last line (a kill mid-append) is not an output,
-so that item is called again. `finish` rewrites them in dataset order when the run completes. A derived run (a
-re-score, a judging, a sheet import) writes no outputs of its own: `output()` and `outputs()` follow its
-`derived.from_dir` (else `derived.from`) to the run whose they are. Every module reads outputs through this one: a
-test fails on an `outputs/` path built anywhere else.
+so that item is called again. `finish` rewrites them in dataset order when the run completes. A score (RFC-032 step 4:
+`runs/<id>/scores/<key>/`) writes no outputs of its own: `output()` and `outputs()` of a score read its run's. Every
+module reads outputs through this one: a test fails on an `outputs/` path built anywhere else.
 
-A run's rows (one JSON object per item: its scores, cost, tokens, `_meta`) are its `predictions.jsonl` in the files
-store and table `rows (run, partial, n, item_id, row)` in the sqlite one, each line's exact text kept, so `rows_text`
-is the same bytes in either. `partial` rows are the pass's checkpoint (`rows.partial.jsonl`), appended per item and
-dropped by `finish`. `_runs.item_rows` and `write_rows` are how every module reads and writes them; a test fails on a
+A score's rows (one JSON object per item: its scores, cost, tokens, `_meta`) are its `predictions.jsonl` in the files
+store and table `rows (run, partial, n, item_id, row)` in the sqlite one, keyed by the score's directory, each line's
+exact text kept, so `rows_text` is the same bytes in either. `partial` rows are the pass's checkpoint
+(`rows.partial.jsonl`, keyed by the run's directory), appended per item and dropped by `finish`. `_runs.item_rows` and `write_rows` are how every module reads and writes them; a test fails on a
 `predictions.jsonl` path built anywhere else.
 """
 
@@ -44,7 +43,6 @@ ROWS = "rows.partial.jsonl"
 PREDICTIONS = "predictions.jsonl"
 SCHEMA_VERSION = "1"
 _CACHE: dict[str, tuple[float, dict[str, str]]] = {}
-_NAMES: dict[str, list[Path]] = {}
 #: How much rows text a process keeps read, per cache: the runs read last, by the size of their rows (one run's are
 #: a few kilobytes or a few megabytes). Unbounded, a warm catalog-serve kept every committed run's rows (94,650 of
 #: them) after reading each once, 48 MB more under --warm; bounded at 128 runs, still 29 MB (budget-check,
@@ -580,53 +578,8 @@ def reset() -> None:
     _ROWS_CACHE.clear()
     _ROWS_INDEX.clear()
     _common._STORE_SEEN.clear()  # the store setting is read again (a test that rewrites config.yaml)
-    _NAMES.clear()
     _SQLITE.close()
     _store.close()
-
-
-def _runs_named(name: str) -> list[Path]:
-    """Every run directory with this name under the project's runs trees (data/runs*, and EVAL_RUNS_DIR)."""
-    if not _NAMES:
-        roots = {*sorted(p for p in _store.glob(_common.DATA, "runs*") if _store.is_dir(p)), _common.RUNS}
-        for root in roots:
-            if not _store.is_dir(root):
-                continue
-            for depth in ("*", "*/*", "*/*/*"):
-                for d in _store.glob(root, depth):
-                    if _store.is_dir(d) and any(
-                        _store.is_file(d / f) for f in ("metrics.json", "run.json", FILE)
-                    ):
-                        _NAMES.setdefault(d.name, []).append(d)
-    return _NAMES.get(name, [])
-
-
-def _derived_from(d: Path) -> str | None:
-    """The run a derived run names in `derived.from`, None for a measured run (or an unreadable record)."""
-    m = d / "metrics.json"
-    try:
-        frm = (
-            (json.loads(_store.read_text(m, encoding="utf-8")).get("derived") or {}).get("from")
-            if _store.is_file(m)
-            else None
-        )
-    except ValueError:
-        return None
-    return str(frm) if frm else None
-
-
-def _from_dir(d: Path) -> Path | None:
-    """The source's exact directory a derived run recorded (`derived.from_dir`, under the data directory), if any."""
-    m = d / "metrics.json"
-    try:
-        rel = (
-            (json.loads(_store.read_text(m, encoding="utf-8")).get("derived") or {}).get("from_dir")
-            if _store.is_file(m)
-            else None
-        )
-    except ValueError:
-        return None
-    return _common.DATA / rel if rel else None
 
 
 def own(run_dir: Path) -> bool:
@@ -635,37 +588,11 @@ def own(run_dir: Path) -> bool:
 
 
 def source(run_dir: Path) -> Path | None:
-    """The run directory that holds this run's outputs: its own, or (a derived run) its source's, followed as far as
-    it goes; None when there is none."""
-    st = store()
-    seen: set[Path] = set()
+    """The run directory that holds these outputs: a score's run's, a run's own; None when it has none."""
     d = Path(run_dir)
-    while d not in seen:
-        seen.add(d)
-        if st.has(d):
-            return d
-        frm = _derived_from(d)
-        if not frm:
-            return None
-        exact = _from_dir(d)
-        if exact is not None:
-            if exact.resolve() == d.resolve():
-                return None
-            d = exact
-            continue
-        cands = [c for c in _runs_named(Path(str(frm)).name) if c.resolve() != d.resolve()]
-        with_outputs = [c for c in cands if st.has(c)]
-        # The measured run first (no `derived.from` of its own), never a derived run of the same name that kept its own
-        # (different) outputs; then the one directly under data/runs; then by path.
-        pick = sorted(
-            with_outputs,
-            key=lambda c: (_derived_from(c) is not None, c.parent != _common.DATA / "runs", str(c)),
-        )
-        pick = pick or cands
-        if not pick:
-            return None
-        d = pick[0]
-    return None
+    if d.parent.name == "scores":  # runs/<id>/scores/<key> (model/runs)
+        d = d.parent.parent
+    return d if store().has(d) else None
 
 
 def outputs(run_dir: Path) -> dict[str, str]:

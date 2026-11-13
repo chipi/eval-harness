@@ -62,9 +62,9 @@ What [Getting started](../../docs/GUIDE.md) walks: a dataset, its reference, run
 | how arms fail (failure modes) | `evh inspect --sheet --dataset-id … --runs A,B --csv tags.csv --fill tags --modes …` · `evh sheet-import tags.csv --dataset-id … --by … --tags … --modes …` · `evh tags [--dataset-id …]` |
 | gold a script builds, promoted | `evh reference-manifest --reference-id gold/… --source … --labelled-by … --reason "…" --by …` |
 | score against labels | `evh rescore --dataset-id … --labels …` · `evh run --system … --dataset … --labels …` |
-| re-score, $0 | `evh rescore --dataset-id … [--reference-id gold/…] --out …` |
+| re-score, $0 | `evh rescore --dataset-id … [--reference-id gold/…]` |
 | re-measure with a judge (optional) | `evh judge-score --dataset-id … --scorer … [--dry-run]` |
-| read the judged runs | `EVAL_RUNS_DIR=data/runs-judged/<scorer> evh leaderboard --dataset-id …` |
+| read the judged runs | `evh leaderboard --dataset-id … --label judged/<scorer>` |
 | is silver good enough | `evh silver-calibrate --dataset-id …` |
 | scores made elsewhere | `evh import-run --dataset-id … --system-id … --scores … --scorer-file …` |
 | billed cost | `evh cost-report` |
@@ -469,7 +469,7 @@ or write one `<item_id>.txt` per item in a folder (`{"accept": ["escalate", "fil
 it as a person's set and promote it with `--tier gold`. The sheet is CSV that Excel opens as it is (UTF-8 with
 the mark Excel needs); save it back as CSV, `,` or `;` both read. `--choices file,dismiss,escalate` writes the
 allowed answers into the label column's header, and the import refuses any other, naming its rows. Gold always wins over silver for new runs. Runs made before the gold set existed are re-scored against it for $0:
-`evh rescore --dataset-id my_v1 --reference-id gold/my_v1 --out data/runs-gold`.
+`evh rescore --dataset-id my_v1 --reference-id gold/my_v1`.
 
 Gold that a script builds (a dataset's own labels, fetched from where it is published) is promoted where the
 script puts it, its manifest recording the promotion as `reference-promote` does: whose labels they are, how they
@@ -891,7 +891,7 @@ into a *finding* is a separate verb: these are the tools behind the numbers in `
 | `evh holdout --dataset-id … --exclude-dataset …` | does the result survive on the items the pilot slice never contained |
 | `evh rank-stability --dataset-id …` | how many items before the ordering stops moving — measured, not assumed from a power table |
 | `evh bootstrap-test --dataset-id … --a … --against …` | a percentile interval for a corpus-level metric that has no per-item value |
-| `evh rescore --dataset-id … --out …` | recompute every score from stored outputs under the current scorer — or, with `--reference-id gold/…`, against a reference set that arrived later. **$0, no API calls** |
+| `evh rescore --dataset-id …` | recompute every score from stored outputs under the current scorer — or, with `--reference-id gold/…`, against a reference set that arrived later. **$0, no API calls** |
 | `evh cost-report` | what each arm actually cost, from the provider's bill (`_meta.usage.cost` in its predictions) against the cost the run recorded; runs with no bill there are listed apart (§4) |
 | `evh silver-calibrate --dataset-id …` | does a model-authored reference rank arms the way the trusted one does |
 
@@ -1098,8 +1098,8 @@ $0:
 
    ```bash
    python examples/_shared/adjudicate.py examples/<eval>/adjudication.json
-   evh rescore --dataset-id <id> --reference-id gold/<id>_adj1 --out data/runs-adjudicated
-   EVAL_RUNS_DIR=data/runs-adjudicated evh leaderboard --dataset-id <id>
+   evh rescore --dataset-id <id> --reference-id gold/<id>_adj1 --label adjudicated
+   evh leaderboard --dataset-id <id> --label adjudicated
    ```
 
 4. **Add a claim check** for every new number you report. It can recompute them from the
@@ -1213,7 +1213,7 @@ and to the news-summary judge, so neither is an `evh` command.
    noise check (the same call repeated on a subset):
 
    ```text
-     The judging pass (tickets-judge-v1, 6/6 items, unvalidated judge), from summary.json:
+     The judging pass (tickets-judge-v1, 6/6 items, unvalidated judge), from data/judge-summaries:
        judges judge_a and judge_b agree: item tau 0.040, arm order spearman 0.400
        judge_a: reshuffled outputs tau 1.000 (position), the same call repeated tau 1.000 (noise)
    ```
@@ -1357,7 +1357,7 @@ evh round-open --goal my_goal --dataset my_v1 --hypothesis "what this round sets
     --keep arm_a_v1,arm_b_v1 --baseline arm_a_v1   # round 1: carry in arms already run, one as the baseline
 evh rounds --goal my_goal                          # the evidence, and the next decisions as commands
 evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --reason "why it is dropped"
-evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --runs-dir runs-linux --reason "..."  # one copy only
+evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --runs <run_id>,<run_id> --reason "..."  # specific runs only
 evh round-close --goal my_goal --round r1 --conclusion "what it showed" [--promote <run_id>]
 evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed and why" \
     --keep arm_a_v1 --retire arm_c_v1 --reason "why" --budget-usd 0.50

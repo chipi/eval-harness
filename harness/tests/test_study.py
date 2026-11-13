@@ -25,6 +25,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+import _runview  # noqa: E402
 from evaluation_harness import _format  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-study-"))
@@ -288,11 +289,7 @@ try:
         else {}
     )
     trial_run = next((n for n in _runstore.listdir(proj, "runs") if n.startswith("s6-t1_")), None)
-    tfp = (
-        (_runstore.read_json(proj, f"runs/{trial_run}/metrics.json").get("fingerprint") or {})
-        if trial_run
-        else {}
-    )
+    tfp = (_runview.record_of(proj, trial_run)[1].get("fingerprint") or {}) if trial_run else {}
     import hashlib
 
     check(

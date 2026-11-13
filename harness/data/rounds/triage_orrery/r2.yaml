@@ -69,8 +69,8 @@ scoring:
     nothing); the false-alarm ceiling is no worse than production, the baseline, by the paired test, each
     arm on its own
   written:
-  - runs-rescored/77adc97b06a8/runs
-  - runs-rescored/77adc97b06a8/runs-repeats
+  - rescored 77adc97b
+  - rescored 77adc97b, repeats
   runs: 65
 - at: '2026-11-02T08:17:51Z'
   scorer: 5f2c057cdaa5
@@ -78,8 +78,8 @@ scoring:
     ["escalate", "file"]}, and the adapter reads it with answers(); one adapter version and one gold for
     the round''s evidence'
   written:
-  - runs-rescored/5f2c057cdaa5/runs
-  - runs-rescored/5f2c057cdaa5/runs-repeats
+  - rescored 5f2c057c
+  - rescored 5f2c057c, repeats
   runs: 65
 status: closed
 opened_at: '2026-10-31T13:23:23Z'

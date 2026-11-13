@@ -41,9 +41,8 @@ def e(s) -> str:
 
 
 def _base(arm: str) -> str:
-    """The runs directory an arm's id starts with (runs, runs-silver, runs-judged/<scorer>, ...)."""
-    parts = arm.split("/")
-    return "/".join(parts[:-2])
+    """The label prefix an arm's id starts with (runs, silver, rescored-cd35dc1f, ...)."""
+    return arm.split("/", 1)[0]
 
 
 def arm_rows(A, by_ds: dict) -> list[dict]:
@@ -121,17 +120,16 @@ def arm_rows(A, by_ds: dict) -> list[dict]:
             p = (c or {}).get("params") or {}
             cid = (c or {}).get("config_id") or a["arm"].rsplit("/", 1)[-1]
             derived = next((r.get("derived") for r in a["run_list"] if r.get("derived")), "")
-            base = _base(a["arm"])
             if a["judge"]:
                 how = f"judged by {a['judge']}"
             elif derived == "rescore":
                 how = f"rescored against {a['reference'] or 'no reference'}"
             elif derived:
                 how = {"reparse": "re-parsed"}.get(derived, derived)
-            elif base == "runs":
+            elif not a.get("read_as"):
                 how = "measured"
             else:
-                how = f"run again ({base.removeprefix('runs-')})"
+                how = f"run again ({a['read_as']})"
             g, m, lower = measure_of.get(a["arm"], (None, a["metric"], a["lower"]))
             value = (a["means"].get(m) or (None,))[0] if m else None
             dated = [r.get("created_at") or "" for r in a["run_list"] if r.get("created_at")]

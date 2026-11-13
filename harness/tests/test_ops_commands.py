@@ -74,7 +74,7 @@ def project_env(proj: Path, site: Path) -> dict:
         "GIT_COMMITTER_NAME": "t",
         "GIT_COMMITTER_EMAIL": "t@example.invalid",
     }
-    for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+    for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
         env.pop(k, None)
     return env
 
@@ -191,7 +191,7 @@ def test_self_check(tmp: Path) -> None:
         "PYTHONDONTWRITEBYTECODE": "1",
         "EVAL_BUILD_REF": "test-ops-selftest",
     }
-    for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD"):
+    for k in ("EVAL_HOME", "EVAL_DATA_DIR", "EVAL_MAX_COST_USD"):
         env.pop(k, None)
 
     # From an empty folder: `python -m` puts the working directory first on sys.path, and run from

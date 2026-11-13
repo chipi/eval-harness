@@ -25,8 +25,7 @@ sys.path.insert(0, str(HARNESS))
 proj = Path(tempfile.mkdtemp(prefix="evh-settings-save-"))
 os.environ["EVAL_HOME"] = str(proj)
 os.environ["EVAL_STORE"] = "sqlite"  # the data page is SQLite's (Configure needs it)
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
-    os.environ.pop(k, None)
+os.environ.pop("EVAL_DATA_DIR", None)
 from evaluation_harness import _data_page, _outputs, _settings_form, _store  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
@@ -150,7 +149,7 @@ try:
 
     calls.update(n=0, most=0)
     run = data / "runs" / "arm_v1_x"
-    _store.write_text(run / "metrics.json", "{}")
+    _store.write_text(run / "run.json", "{}")
     watch.append(run)
     gone: list[str] = []
 

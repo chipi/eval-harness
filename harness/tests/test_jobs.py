@@ -74,7 +74,7 @@ check(
 
 proj = Path(tempfile.mkdtemp(prefix="evh-jobs-"))
 env = dict(os.environ, EVH_ACTOR="person:test", EVAL_HOME=str(proj), EVAL_BUILD_REF="test-jobs")
-for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_MAX_COST_USD", "EVH_FOR"):
+for k in ("EVAL_DATA_DIR", "EVAL_MAX_COST_USD", "EVH_FOR"):
     env.pop(k, None)
 
 SLOW = """import time
@@ -197,8 +197,8 @@ try:
     done = until(j.get("id"), ("succeeded", "failed")) if st == 202 else {}
     run_id = (done.get("run_id") or "") if done else ""
     m = (
-        _runstore.read_json(proj, f"runs/{run_id}/metrics.json")
-        if run_id and _runstore.exists(proj, f"runs/{run_id}/metrics.json")
+        _runstore.read_json(proj, f"runs/{run_id}/run.json")
+        if run_id and _runstore.exists(proj, f"runs/{run_id}/run.json")
         else {}
     )
     check(

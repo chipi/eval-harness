@@ -73,8 +73,7 @@ def main() -> int:
             "EVAL_BUILD_REF": "self-check",
             "EVAL_MAX_COST_USD": "",
         }
-        for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR"):
-            env.pop(k, None)
+        env.pop("EVAL_DATA_DIR", None)
         evh = [sys.executable, "-m", "evaluation_harness"]
         step(
             "the paired test's own suite (test_stats.py)",
@@ -165,8 +164,6 @@ def main() -> int:
                         "tickets_v1",
                         "--reference-id",
                         "gold/tickets_v1",
-                        "--out",
-                        "data/runs-gold",
                     ],
                 ),
                 ("validate", ["validate"]),

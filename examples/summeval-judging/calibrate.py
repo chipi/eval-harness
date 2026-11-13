@@ -44,7 +44,6 @@ sys.path.insert(0, str(ROOT / "harness"))  # the evaluation_harness package (a l
 from evaluation_harness import _store  # noqa: E402
 from modules import load_module  # noqa: E402
 
-RUNS = ROOT / "harness" / "data" / "runs"
 SOURCE = "G-Eval (Liu et al. 2023), Table 1, tau averaged over the four dimensions"
 #: Kendall tau against the SummEval experts, as published: the four-dimension average, then
 #: coherence, consistency, fluency, relevance. Read from arXiv 2303.16634v3, Table 1.
@@ -66,9 +65,11 @@ def _shared():
 
 
 def run_dir(arm: str) -> Path:
+    """The score the committed run of the arm made when it ran (its rows and outputs)."""
     from evaluation_harness import _outputs  # noqa: PLC0415
+    from evaluation_harness._runs import runs_on  # noqa: PLC0415
 
-    hits = sorted(d for d in _store.glob(RUNS, f"se_{arm}_n100_v1_*") if _outputs.has_rows(d))
+    hits = [d for d, _m in runs_on("summeval_100", config_id=f"se_{arm}_n100_v1") if _outputs.has_rows(d)]
     if len(hits) != 1:
         raise SystemExit(f"expected one committed run for se_{arm}_n100_v1, found {len(hits)}")
     return hits[0]

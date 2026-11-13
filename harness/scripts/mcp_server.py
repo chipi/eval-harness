@@ -344,8 +344,8 @@ def public_error(text: str, project: Path) -> str:
     return re.sub(r"/(?:[\w.-]+/)+", "", msg)[:2000]
 
 
-#: The environment variables that name a path from where a command stands (EVAL_DATA_DIR and EVAL_RUNS_DIR are
-#: relative to the project root, _common._paths, so they stay as they are).
+#: The environment variables that name a path from where a command stands (EVAL_DATA_DIR is relative to
+#: the project root, _common._paths, so it stays as it is).
 PATH_VARS = ("EVAL_HOME", "EVH_P_CACHE")
 
 
@@ -406,10 +406,10 @@ def kill_group(p: subprocess.Popen) -> None:
 #: Options no tool offers: they write a file (the sheet's CSV and its key), and a tool writes nothing.
 TOOL_HIDDEN = {
     "inspect": {"--csv", "--fill", "--choices", "--seed", "--rubric", "--scale"},
-    # Both name a path of the server's: another runs folder, a file of item ids.
-    "pair-test": {"--runs-dir", "--items"},
+    # A file of item ids: a path of the server's.
+    "pair-test": {"--items"},
     "study-tell": {"--proposal"},  # a path of the server's: a call sends --proposal-json
-    "family-test": {"--runs-dir", "--items"},
+    "family-test": {"--items"},
     "exposure": {"--ids"},  # a held-out side's ids: a person's command
     "label-mutants": {"--mutants"},  # a Python file it runs: never from a tool call
 }
