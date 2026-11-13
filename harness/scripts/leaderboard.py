@@ -636,7 +636,7 @@ def _run(args: argparse.Namespace) -> int:
     if args.round:
         from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
 
-        keep = set(arms_of(resolve(args.round, args.goal), args.label))
+        keep = set(arms_of(resolve(args.round, args.goal)))
         found = [(d, m) for d, m in found if m["config_id"] in keep]
     # ONE TABLE PER REFERENCE. Runs scored against silver and against gold were averaged into
     # one row and one ranking (0.90 silver beside 0.24 gold, the table labelled silver): two

@@ -3,59 +3,579 @@ goal: triage_orrery
 dataset_id: orrery_triage_v1_labelled
 hypothesis: 'Which model should the triage fleet run: every candidate, hosted and self-hosted on three
   machines, on the 65 decisions the owner labelled, against production''s own model'
-carried:
-- triage_baseline_pro_v1
-- triage_deepseek_41flash_v1
-- triage_gemini_35_flash_lite_v1
-- triage_gemini_4_argon_v1
-- triage_gpt_61_sol_v1
-- triage_gpt_6_luna_v1
-- triage_haiku_55_v1
-- triage_hosted_gemma4_31b_v1
-- triage_hosted_gpt_oss_120b_v1
-- triage_hosted_mistral_medium_35_v1
-- triage_hosted_qwen35_122b_v1
-- triage_hosted_qwen3_30b_a3b_v1
-- triage_kimi_k31_pro_v1
-- triage_local_dgx_gemma4_12b_noreason_v1
-- triage_local_dgx_gemma4_31b_v1
-- triage_local_dgx_gpt_oss_120b_v1
-- triage_local_dgx_gpt_oss_20b_v1
-- triage_local_dgx_llama31_8b_v1
-- triage_local_dgx_llama4_scout_v1
-- triage_local_dgx_ministral_3_14b_v1
-- triage_local_dgx_mistral_medium_35_128b_v1
-- triage_local_dgx_nemotron_35_bolt_e4b_v1
-- triage_local_dgx_nemotron_35_lightning_30b_v1
-- triage_local_dgx_nemotron_35_super_120b_v1
-- triage_local_dgx_phi4_14b_v1
-- triage_local_dgx_qwen35_122b_v1
-- triage_local_dgx_qwen38_27b_v1
-- triage_local_dgx_qwen3_30b_a3b_v1
-- triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1
-- triage_local_mac_gemma4_12b_noreason_v1
-- triage_local_mac_gemma4_31b_v1
-- triage_local_mac_gpt_oss_20b_v1
-- triage_local_mac_llama31_8b_v1
-- triage_local_mac_ministral_3_14b_v1
-- triage_local_mac_nemotron_35_bolt_e4b_v1
-- triage_local_mac_nemotron_35_lightning_30b_v1
-- triage_local_mac_phi4_14b_v1
-- triage_local_mac_qwen38_27b_v1
-- triage_local_mac_qwen3_30b_a3b_v1
-- triage_local_x3_gemma4_31b_v1
-- triage_local_x3_gpt_oss_20b_v1
-- triage_local_x3_llama31_8b_v1
-- triage_local_x3_ministral_3_14b_v1
-- triage_local_x3_nemotron_35_bolt_e4b_v1
-- triage_local_x3_nemotron_35_lightning_30b_v1
-- triage_local_x3_phi4_14b_v1
-- triage_local_x3_qwen38_27b_v1
-- triage_local_x3_qwen3_30b_a3b_v1
-- triage_mistral_large_4_v1
-- triage_sonnet_55_v1
-- triage_stub_dismiss_v1
-- triage_stub_escalate_v1
+arms:
+- system: triage_baseline_pro_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_baseline_pro_v1_20261030T132352Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_deepseek_41flash_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_deepseek_41flash_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_gemini_35_flash_lite_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_gemini_35_flash_lite_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_gemini_4_argon_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_gemini_4_argon_v1_20261030T132352Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_gpt_61_sol_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_gpt_61_sol_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_gpt_6_luna_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_gpt_6_luna_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_haiku_55_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_haiku_55_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_hosted_gemma4_31b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_gemma4_31b_v1_20261030T141055Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_hosted_gpt_oss_120b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_gpt_oss_120b_v1_20261030T143242Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_hosted_mistral_medium_35_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_mistral_medium_35_v1_20261030T141055Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_hosted_qwen35_122b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_qwen35_122b_v1_20261030T141055Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_hosted_qwen3_30b_a3b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_qwen3_30b_a3b_v1_20261030T232632Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_kimi_k31_pro_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_kimi_k31_pro_v1_20261030T132352Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_gemma4_12b_noreason_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_gemma4_12b_noreason_v1_20261031T090223Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_gemma4_31b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_gemma4_31b_v1_20261031T072649Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_gpt_oss_120b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_gpt_oss_120b_v1_20261031T084551Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_gpt_oss_20b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_gpt_oss_20b_v1_20261030T201104Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_llama31_8b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_llama31_8b_v1_20261031T083301Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_llama4_scout_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_llama4_scout_v1_20261030T160437Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_ministral_3_14b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_ministral_3_14b_v1_20261031T075222Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_mistral_medium_35_128b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_mistral_medium_35_128b_v1_20261030T161906Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_nemotron_35_bolt_e4b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_nemotron_35_bolt_e4b_v1_20261030T191111Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_nemotron_35_lightning_30b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_nemotron_35_lightning_30b_v1_20261030T192744Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_nemotron_35_super_120b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_nemotron_35_super_120b_v1_20261030T190038Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_phi4_14b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_phi4_14b_v1_20261031T081434Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_qwen35_122b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_qwen35_122b_v1_20261030T152324Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_qwen38_27b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_qwen38_27b_v1_20261030T202541Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_qwen3_30b_a3b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_qwen3_30b_a3b_v1_20261031T083919Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1_20261031T041426Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_gemma4_12b_noreason_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_gemma4_12b_noreason_v1_20261031T085647Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_gemma4_31b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_gemma4_31b_v1_20261030T173427Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_gpt_oss_20b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_gpt_oss_20b_v1_20261030T171248Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_llama31_8b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_llama31_8b_v1_20261030T194901Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_ministral_3_14b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_ministral_3_14b_v1_20261031T083109Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_nemotron_35_bolt_e4b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_nemotron_35_bolt_e4b_v1_20261030T192357Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_nemotron_35_lightning_30b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_nemotron_35_lightning_30b_v1_20261030T201657Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_phi4_14b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_phi4_14b_v1_20261030T212828Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_qwen38_27b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_qwen38_27b_v1_20261030T215205Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_qwen3_30b_a3b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_qwen3_30b_a3b_v1_20261031T075848Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_gemma4_31b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_gemma4_31b_v1_20261030T172801Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_gpt_oss_20b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_gpt_oss_20b_v1_20261030T195313Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_llama31_8b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_llama31_8b_v1_20261030T150117Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_ministral_3_14b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_ministral_3_14b_v1_20261030T155008Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_nemotron_35_bolt_e4b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_nemotron_35_bolt_e4b_v1_20261030T192906Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_nemotron_35_lightning_30b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_nemotron_35_lightning_30b_v1_20261030T190919Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_phi4_14b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_phi4_14b_v1_20261030T161509Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_qwen38_27b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_qwen38_27b_v1_20261030T163759Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_qwen3_30b_a3b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_qwen3_30b_a3b_v1_20261031T003008Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_mistral_large_4_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_mistral_large_4_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_sonnet_55_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_sonnet_55_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_stub_dismiss_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_stub_dismiss_v1_20261031T072416Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_stub_escalate_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_stub_escalate_v1_20261031T072417Z
+  entered:
+    how: carried
+    at: '2026-10-31T13:18:37Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
 scorer: cd35dc1ffccc
 scoring:
 - at: '2026-10-31T11:08:49Z'
@@ -79,6 +599,10 @@ scoring:
 status: closed
 opened_at: '2026-10-31T13:18:37Z'
 closed_at: '2026-10-31T13:19:25Z'
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration
 conclusion:
   text: 'Nothing is decided at n = 65: on the combined cost the paired test finds no arm under the false-alarm
     ceiling significantly different from the leader, the arm that always dismisses among them; the ceiling
@@ -89,7 +613,3 @@ conclusion:
     paired test, and the gold grows to the 93 owner-labelled decisions before machines are booked.'
   promoted_run: triage_baseline_pro_v1_20261030T132352Z
 baseline: null
-actor:
-  type: unknown
-  name: before 0.8.0
-  from: migration

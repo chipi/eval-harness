@@ -6,13 +6,13 @@
 A format 3 project made here holds a pass in each folder that meant a purpose (data/runs, runs-repeats, runs-linux),
 a silver re-score, a re-score by the scorer the run already had (the same rows: the same measurement made twice),
 a judged score with its pass's summary, a round that retired a system in runs-repeats, and validate.json naming
-folders. `evh migrate` moves it to format 4, and then:
+folders. `evh migrate` moves it to format 4, and (step 5) to format 5, and then:
 
 - every record reads back through model.runs as it was (`derived.from_dir` naming the run's new directory), its rows
   and outputs the same, read under the label its folder gave it;
 - each pass is one run whose purpose and machine say what its folder meant, `of` naming the run a re-run re-does
   when there is exactly one; the copy is kept once, its old arm sent to the run's;
-- the round retires the runs, the policy names arms, the summary sits in data/judge-summaries, no data/runs-* is
+- the round keeps its retired runs as an arm read under its label, the policy names arms, the summary sits in data/judge-summaries, no data/runs-* is
   left;
 - a pass in a folder whose purpose is not known, and two different scores of one key, are refused with nothing
   written; a migrated project migrates to nothing.
@@ -135,7 +135,7 @@ try:
     )
     m = evh("migrate")
     _outputs.reset()
-    check("evh migrate brings it to format 4", m.returncode == 0 and "format: 4" in _store.read_text(DATA / "project.yaml"), (m.stdout + m.stderr)[-500:])  # fmt: skip
+    check("evh migrate brings it to format 5", m.returncode == 0 and "format: 5" in _store.read_text(DATA / "project.yaml"), (m.stdout + m.stderr)[-500:])  # fmt: skip
 
     def score(run_id: str, key: str) -> Path:
         return R.run_dir(run_id) / "scores" / key
@@ -201,9 +201,11 @@ try:
     rnd = yaml.safe_load(_store.read_text(DATA / "rounds" / "g1" / "r1.yaml"))
     policy = json.loads(_store.read_text(DATA / "validate.json"))
     check(
-        "the round retires the runs, its scoring names labels; the policy names arms",
-        rnd["retired"][0].get("runs") == ["sys_a_2"]
-        and "runs_dir" not in rnd["retired"][0]
+        "the round keeps the retired runs as an arm read under its label, its scoring names labels; the policy names arms",
+        [(a["system"], a.get("label"), a["runs"], "reason" in a["retired"]) for a in rnd["arms"]]
+        == [("sys_a", "repeats", ["sys_a_2"], True)]
+        and "retired" not in rnd
+        and "runs_dir" not in json.dumps(rnd)
         and rnd["scoring"][0]["written"] == ["rescored aaaaaaaa"]
         and policy["committed"] == ["runs", "repeats", "judged-judge-x"]
         and policy["floors"] == {"runs": 2, "linux": 1}

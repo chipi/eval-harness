@@ -541,6 +541,10 @@ def test_untracked_run_output_does_not_make_the_tree_dirty() -> None:
         filter_dirt("?? harness/data/judge-summaries/judge-summ-v1@set.json", d) == [],
     )
     check(
+        "dirty: nor a round's record, new or changed (a run made in a round joins its arm there)",
+        filter_dirt(" M harness/data/rounds/g/r1.yaml\n?? harness/data/rounds/g/r2.yaml", d) == [],
+    )
+    check(
         "dirty: a MODIFIED committed run still is",
         len(filter_dirt(" M harness/data/runs/x/run.json", d)) == 1,
     )
@@ -991,6 +995,10 @@ def test_example_scorer_suites_pass() -> None:
         (
             "test_model_runs.py",
             "runs and scores: format 3's folders migrated to one runs/ collection, every record read back as it was, a copy kept once, refusals",
+        ),
+        (
+            "test_model_rounds.py",
+            "rounds store their arms: format 4's rounds migrated, each arm's label, runs, entry and retirement, a baseline's round, refusals",
         ),
         (
             "test_format.py",

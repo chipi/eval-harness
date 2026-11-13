@@ -141,9 +141,12 @@ try:
         else {}
     )
     check(
-        "the study's round: marked study, closed when it ended, its dropped trials retired with their reasons",
+        "the study's round: marked study, closed when it ended, its dropped trials retired with their reasons, the baseline carried in",
         rnd.get("study") == "s1" and rnd.get("status") == "closed"
-        and {x["config_id"] for x in rnd.get("retired") or []} == {"s1-t2", "s1-t3"},
+        and {a["system"] for a in rnd.get("arms") or [] if a.get("retired")} == {"s1-t2", "s1-t3"}
+        and all(a["retired"]["reason"] for a in rnd["arms"] if a.get("retired"))
+        and {a["system"]: a["entered"]["how"] for a in rnd["arms"]}
+        == {"one_v1": "carried", "s1-t1": "ran", "s1-t2": "ran", "s1-t3": "ran"},
         rnd,
     )  # fmt: skip
 

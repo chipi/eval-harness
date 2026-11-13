@@ -130,7 +130,7 @@ def main() -> int:
     # the baseline can gate a promotion: Bonferroni over the round's arms. A raw p of 0.02 among four
     # arms is 0.08 corrected, not significant; among one it stands.
     sys.argv = ["rounds"]
-    from evaluation_harness import rounds  # noqa: PLC0415
+    from evaluation_harness.model import rounds  # noqa: PLC0415
 
     raw = {
         "label": "the baseline it started from",

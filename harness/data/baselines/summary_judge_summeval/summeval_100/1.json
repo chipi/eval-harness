@@ -44,5 +44,7 @@
     "total_tokens_out": 21751.0,
     "truncated": 0.0
   },
-  "version": 1
+  "version": 1,
+  "round": "r1",
+  "arm": "se_gemma_l_n100_v1"
 }

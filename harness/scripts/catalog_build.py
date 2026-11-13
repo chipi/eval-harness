@@ -2893,65 +2893,56 @@ def _fold(text: str, at: int = 200) -> str:
     return f'<details class="inline"><summary>{e(head)}</summary><small>{e(text)}</small></details>'
 
 
-def _rounds_block(
-    A: Adapter, g: dict, measure: str, lower: bool, by_ds: dict | None = None, above: str = ""
-) -> str:
+def _rounds_block(A: Adapter, g: dict, measure: str, above: str = "") -> str:
     """A goal's rounds (ADR-0004), newest first: what each set out to learn, what changed, its arms
     in play and those retired (with why), its best arm and how it compares with the previous
-    round's best, its conclusion; for the open round, what the evidence suggests next, each as the
-    command that does it. Empty when the goal has no rounds (they are optional). `above`: the page's answer
-    so far; a conclusion it already prints is folded here, not printed twice."""
+    round's best (both read from the round's evidence, model/rounds: one computation, read everywhere), its
+    conclusion; for the open round, what the evidence suggests next, each as the command that does it. Empty when
+    the goal has no rounds (they are optional). `above`: the page's answer so far; a conclusion it already prints
+    is folded here, not printed twice."""
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
     fn = getattr(A, "rounds", None)
     rounds = [r for r in (fn() if callable(fn) else []) if r.get("goal") == g["goal_id"]]
     if not rounds:
         return ""
-    by_id = {r["round_id"]: r for r in rounds}
-    # As the goal reads them (RFC-022): an arm every run of which was re-scored is read from its latest re-score.
-    instead = {
-        a["arm"]: a["superseded_by"]
-        for v in (by_ds if by_ds is not None else collect(A)).values()
-        for a in v["arms"]
-        if a.get("superseded_by")
-    }
-    for r in rounds:
-        r["arms"] = [instead.get(a, a) for a in r.get("arms") or []]
+    # The evidence reads the project's data (references, runs, the compare): the catalog's own adapter only.
+    live = getattr(A, "data_dir", None) == _common.DATA
+    evidence: dict = {}
+    for r in rounds if live else []:
+        try:
+            evidence[r["round_id"]] = model_rounds.evidence(
+                g["goal_id"], dict(r, arms=r.get("arm_records") or []), A
+            )
+        except SystemExit:
+            pass
 
-    info = {a["arm"]: a for v in (by_ds if by_ds is not None else collect(A)).values() for a in v["arms"]}
-
-    def comparable(r) -> list:
-        """The round's arms its best is read from: as the goal decides, on gold where the dataset has a gold
-        group, never a judged copy, never the arm that wrote the reference it is scored against (it scores 1.0)."""
-        arms = [
-            a
-            for a in r.get("arms") or []
-            if not (info.get(a) or {}).get("judge") and not (info.get(a) or {}).get("wrote")
-        ]
-        gold = [a for a in arms if str((info.get(a) or {}).get("reference") or "").startswith("gold/")]
-        return gold or arms
-
-    def best(r):
-        means = {}
-        for a in comparable(r):
-            vals = (A.scores(a).get(measure) or {}).get("values") or {}
-            if vals:
-                means[a] = statistics.fmean(vals.values())
-        if not means:
-            return None, None
-        a = (min if lower else max)(means, key=lambda x: means[x])
-        return a, means[a]
+    def best(r) -> tuple:
+        """The round's leader and its mean: the evidence's."""
+        arm = (evidence.get(r["round_id"]) or {}).get("leader")
+        vals = (A.scores(arm).get(measure) or {}).get("values") if arm else None
+        return (arm, statistics.fmean(vals.values())) if vals else (None, None)
 
     rows, details = [], []
     for r in sorted(rounds, key=lambda r: -int(r["round_id"][1:] or 0)):
         arm, mean = best(r)
-        n_cfg = len({a.rsplit("/", 1)[-1] for a in r.get("arms") or []})
-        prev = by_id.get(r.get("from") or "")
-        prev_best, _ = best(prev) if prev else (None, None)
+        n_cfg = len(r.get("arms") or [])
+        prev_id = r.get("from") or ""
+        prev_best = next(
+            (
+                v["other"]
+                for v in (evidence.get(r["round_id"]) or {}).get("against", [])
+                if v["label"] == f"{prev_id}'s best"
+            ),
+            None,
+        )
         vs = (
-            f'<a class="btn small" href="{inspect_url([prev_best, arm], "../", baseline=prev_best, metric=measure)}">vs {e((prev or {}).get("round_id", ""))}\'s best</a>'
-            if arm and prev_best and prev_best != arm
+            f'<a class="btn small" href="{inspect_url([prev_best, arm], "../", baseline=prev_best, metric=measure)}">vs {e(prev_id)}\'s best</a>'
+            if arm and prev_best
             else "—"
         )
         label = arm.rsplit("/", 1)[-1] if arm else "—"
+        n_retired = len([x for x in r.get("arm_records") or [] if x.get("retired")])
         concl = (r.get("conclusion") or {}).get("text", "")
         rows.append(
             {
@@ -2971,9 +2962,9 @@ def _rounds_block(
                     '<div class="hyp">' + e(r.get("hypothesis", "") or "—") + "</div>",
                     # Arms, best and the comparison in one narrow cell: three columns of mostly "—" took the width
                     # the conclusion needs (owner, 2026-10-31).
-                    # Counted by system, as `evh rounds` counts: a re-score of a run is that arm.
+                    # The arms in play and the arms retired, as the round stores them.
                     f'<div class="armsbest"><span data-v="{n_cfg}">{n_cfg} arms</span>'
-                    + (f" <small>({len(r.get('retired') or [])} retired)</small>" if r.get("retired") else "")
+                    + (f" <small>({n_retired} retired)</small>" if n_retired else "")
                     # The round's arms in the inspector, against its leader: `evh inspect --round`.
                     + (
                         f' <a class="btn small" title="evh inspect --round {e(r["round_id"])} --goal {e(g["goal_id"])}" '
@@ -2995,9 +2986,14 @@ def _rounds_block(
         # data tossed in (owner, 2026-10-31).
         changed = [f"<li>{e(c)}</li>" for c in r.get("changes") or []]
         by_reason: dict = {}
-        for x in r.get("retired") or []:
-            by_reason.setdefault(x["reason"], []).append(x["config_id"])
-        carried = r.get("carried") or []
+        for x in r.get("arm_records") or []:
+            if x.get("retired"):
+                by_reason.setdefault(x["retired"].get("reason", ""), []).append(x["system"])
+        carried = [
+            x["system"]
+            for x in r.get("arm_records") or []
+            if (x.get("entered") or {}).get("how") == "carried" and not x.get("retired")
+        ]
         arms_li = [
             f"<li><b>retired {len(cs)}</b>: {e(why)}<br><small>{', '.join(_config_link(A, r, c) for c in cs)}</small></li>"
             for why, cs in by_reason.items()
@@ -3019,29 +3015,24 @@ def _rounds_block(
         ]
         evidence_li: list = []
         sugg, notes = "", ""
-        if r.get("status") == "open" and getattr(A, "data_dir", None) == _common.DATA:
-            try:
-                from evaluation_harness.rounds import evidence  # noqa: PLC0415
-
-                ev = evidence(g["goal_id"], r)
-                evidence_li = [
-                    f"<li>the leader against {e(v['label'])} (<code>{e(v['other'].rsplit('/', 1)[-1])}</code>): "
-                    f"{e(v['verdict'])}, Δ {v['delta']:+.4f}, p {fmt_p(v['p'])}</li>"
-                    for v in ev["against"]
-                ]
-                sugg = "".join(
-                    f"<li>{_fold(what)}"
-                    + (
-                        f'<br><code class="cmd">{e(cmd)}</code> <button type="button" class="btn small copy" data-copy="{e(cmd)}">copy</button>'
-                        if cmd
-                        else ""
-                    )
-                    + "</li>"
-                    for what, cmd in ev["suggest"]
+        ev = evidence.get(r["round_id"])
+        if r.get("status") == "open" and ev:
+            evidence_li = [
+                f"<li>the leader against {e(v['label'])} (<code>{e(v['other'].rsplit('/', 1)[-1])}</code>): "
+                f"{e(v['verdict'])}, Δ {v['delta']:+.4f}, p {fmt_p(v['p'])}</li>"
+                for v in ev["against"]
+            ]
+            sugg = "".join(
+                f"<li>{_fold(what)}"
+                + (
+                    f'<br><code class="cmd">{e(cmd)}</code> <button type="button" class="btn small copy" data-copy="{e(cmd)}">copy</button>'
+                    if cmd
+                    else ""
                 )
-                notes = "".join(f"<li>{e(n)}</li>" for n in ev["notes"])
-            except SystemExit:
-                sugg = notes = ""
+                + "</li>"
+                for what, cmd in ev["suggest"]
+            )
+            notes = "".join(f"<li>{e(n)}</li>" for n in ev["notes"])
         # One section per round: its header is the row the rounds table had, its body the detail that sat in a
         # second list below the table; one place per round, folded until opened (owner, 2026-10-31).
         cells = rows[-1]["cells"]
@@ -3049,7 +3040,7 @@ def _rounds_block(
             x
             for x in (
                 f"{len(r.get('changes') or [])} change(s)" if r.get("changes") else "",
-                f"{len(r.get('retired') or [])} retired" if r.get("retired") else "",
+                f"{n_retired} retired" if n_retired else "",
                 f"{len(carried)} carried" if carried else "",
                 f"judged by {e(str(r['scorer'])[:12])}" if r.get("scorer") else "",
                 "suggested next" if sugg else "",
@@ -3206,7 +3197,7 @@ def render_goal(A: Adapter, g: dict, by_ds: dict, out: Path, nav: list) -> None:
     answer = _answer(A, g, by_ds, measure)
     body += block("02", "the answer so far", answer)
     n = 3
-    rounds_html = _rounds_block(A, g, measure, prim.get("direction") == "lower", by_ds, answer)
+    rounds_html = _rounds_block(A, g, measure, answer)
     if rounds_html:
         body += block(f"{n:02d}", "how we got here: rounds", rounds_html, "rounds")
         n += 1
@@ -3402,15 +3393,13 @@ def _failure_modes_html(A: Adapter, ds: str, rows: list) -> str:
 
 
 def retired_in_of(A: Adapter, g: dict) -> dict:
-    """{arm id: round_id} for every arm a round of this goal retired. An adapter that gives no
-    arm ids (`retired_arms`) retires by system id: the key is then the system id."""
+    """{arm id: round_id} for every arm a round of this goal retired (its `retired_arms`)."""
     rfn = getattr(A, "rounds", None)
     out: dict = {}
     for r in rfn() if callable(rfn) else []:
         if r.get("goal") != g["goal_id"]:
             continue
-        keys = r.get("retired_arms")
-        for k in keys if keys is not None else [x.get("config_id") for x in r.get("retired") or []]:
+        for k in r.get("retired_arms") or []:
             out[k] = r["round_id"]
     return out
 
@@ -3424,9 +3413,8 @@ def retired_round(retired_in: dict, arm: str) -> str | None:
 
 
 def _retired_arms(r: dict) -> set:
-    """The arm ids (or, from an adapter without them, system ids) a round retired."""
-    keys = r.get("retired_arms")
-    return set(keys if keys is not None else [x.get("config_id") for x in r.get("retired") or []])
+    """The arm ids a round retired."""
+    return set(r.get("retired_arms") or [])
 
 
 def axis_ratios(dec: dict, arm: str, base: str) -> list[str]:
@@ -4374,11 +4362,10 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
         )
         n += 1
     rfn = getattr(A, "rounds", None)
-    cid = a["arm"].rsplit("/", 1)[-1]
     rnds = [
         r
         for r in (rfn() if callable(rfn) else [])
-        if a["arm"] in (r.get("arms") or []) or {a["arm"], cid} & _retired_arms(r)
+        if a["arm"] in (r.get("arms") or []) or a["arm"] in _retired_arms(r)
     ]
     if rnds:
         # A sentence, not "r1 of … · in play · closed": what the round was and what it did with this arm.
@@ -4386,7 +4373,7 @@ def render_arm(A: Adapter, a: dict, ds: str, by_ds: dict, out: Path, nav: list) 
             f"<li>Round <b>{e(r['round_id'])}</b> of "
             f"{goal_link(goals[r['goal']], '../') if r.get('goal') in goals else e(r.get('goal', ''))}"
             + (f", {e(r['status'])}" if r.get("status") else "")
-            + (": <b>retired</b> in it" if {a["arm"], cid} & _retired_arms(r) else ": one of its arms")
+            + (": <b>retired</b> in it" if a["arm"] in _retired_arms(r) else ": one of its arms")
             + ".</li>"
             for r in rnds
         )

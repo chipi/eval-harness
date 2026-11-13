@@ -716,25 +716,35 @@ def open_study(goal: str, sid: str) -> dict[str, Any]:
     if usd is not None:
         own = _common.env_float("EVAL_MAX_COST_USD")
         os.environ["EVAL_MAX_COST_USD"] = str(min(float(usd), own) if own is not None else float(usd))
+    from evaluation_harness._runs import runs_on  # noqa: PLC0415
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
     rid = _rounds.next_id(goal)
-    _rounds.save(
-        {
-            "round_id": rid,
-            "goal": goal,
-            "dataset_id": s["dataset"],
-            "from": None,
-            "hypothesis": str(s.get("directions") or f"study {sid}"),
-            "changes": [],
-            "baseline": None,
-            "budget_usd": None,
-            "harness": _rounds.harness_now(),
-            "carried": [s["baseline"]["system"]],
-            "status": "open",
-            "opened_at": _common.now(),
-            "study": sid,
-            "retired": [],
-        }
+    rnd: dict[str, Any] = {
+        "round_id": rid,
+        "goal": goal,
+        "dataset_id": s["dataset"],
+        "from": None,
+        "hypothesis": str(s.get("directions") or f"study {sid}"),
+        "changes": [],
+        "baseline": None,
+        "arms": [],
+        "budget_usd": None,
+        "harness": _rounds.harness_now(),
+        "status": "open",
+        "opened_at": _common.now(),
+        "study": sid,
+    }
+    base = s["baseline"]["system"]
+    model_rounds.carry(
+        rnd,
+        base,
+        "",
+        sorted(m["run_id"] for _d, m in runs_on(s["dataset"], label="", config_id=base)),
+        None,
+        None,
     )
+    _rounds.save(rnd)
     return append(
         goal,
         sid,
@@ -778,11 +788,13 @@ def close_study(goal: str, sid: str, reason: str) -> dict[str, Any]:
     )
     rnd = _rounds.find(goal, st["round"]) if st["round"] else None
     if rnd is not None and rnd.get("status") != "closed":
-        rnd["retired"] = [
-            *(rnd.get("retired") or []),
-            *({"config_id": t["config_id"], "reason": t.get("reason") or t.get("outcome"), "at": _common.now()}
-              for t in st["trials"] if t.get("outcome") != "kept"),
-        ]  # fmt: skip
+        from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
+        for t in st["trials"]:
+            if t.get("outcome") != "kept":
+                model_rounds.retire(
+                    rnd, t["config_id"], str(t.get("reason") or t.get("outcome") or "dropped"), None
+                )
         rnd["status"] = "closed"
         rnd["closed_at"] = _common.now()
         rnd["conclusion"] = {"text": summary, "promoted_run": None}

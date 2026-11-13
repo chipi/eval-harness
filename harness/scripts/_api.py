@@ -343,6 +343,7 @@ DECISIONS = {
     "run-promote",
     "baseline-rollback",
     "round-close",
+    "round-carry",
     "dataset-unseal",
     "study-confirm",
     "faithfulness-name",

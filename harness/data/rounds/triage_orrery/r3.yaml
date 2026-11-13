@@ -9,34 +9,1017 @@ changes:
   each smoked first; a 1024-token reply cap
 - 'a new candidate: production''s model with reasoning off'
 baseline: triage_baseline_pro_v1_20261030T132352Z
-carried:
-- triage_baseline_pro_v1
-- triage_gemini_35_flash_lite_v1
-- triage_gemini_4_argon_v1
-- triage_gpt_61_sol_v1
-- triage_haiku_55_v1
-- triage_hosted_mistral_medium_35_v1
-- triage_hosted_qwen3_30b_a3b_v1
-- triage_local_dgx_gemma4_12b_noreason_v1
-- triage_local_dgx_llama31_8b_v1
-- triage_local_dgx_llama4_scout_v1
-- triage_local_dgx_ministral_3_14b_v1
-- triage_local_dgx_mistral_medium_35_128b_v1
-- triage_local_dgx_phi4_14b_v1
-- triage_local_dgx_qwen3_30b_a3b_v1
-- triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1
-- triage_local_mac_gemma4_12b_noreason_v1
-- triage_local_mac_llama31_8b_v1
-- triage_local_mac_ministral_3_14b_v1
-- triage_local_mac_phi4_14b_v1
-- triage_local_mac_qwen3_30b_a3b_v1
-- triage_local_x3_llama31_8b_v1
-- triage_local_x3_ministral_3_14b_v1
-- triage_local_x3_phi4_14b_v1
-- triage_local_x3_qwen3_30b_a3b_v1
-- triage_sonnet_55_v1
-- triage_stub_dismiss_v1
-- triage_stub_escalate_v1
+arms:
+- system: triage_baseline_pro_noreason_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_baseline_pro_noreason_v1_20261031T161404Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_deepseek_41flash_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_deepseek_41flash_v2_20261031T145019Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_gpt_6_luna_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_gpt_6_luna_v2_20261031T145354Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_hosted_gemma4_31b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_gemma4_31b_v2_20261031T150236Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_hosted_gpt_oss_120b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_gpt_oss_120b_v2_20261031T151404Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_hosted_qwen35_122b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_qwen35_122b_v2_20261031T152111Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_kimi_k31_pro_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_kimi_k31_pro_v2_20261031T152828Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_gemma4_31b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_gemma4_31b_v2_20261031T142955Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_gpt_oss_120b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_gpt_oss_120b_v2_20261031T155206Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_gpt_oss_20b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_gpt_oss_20b_v2_20261031T160035Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_nemotron_35_bolt_e4b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_nemotron_35_bolt_e4b_v2_20261031T150353Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_nemotron_35_lightning_30b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_nemotron_35_lightning_30b_v2_20261031T150838Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_nemotron_35_super_120b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_nemotron_35_super_120b_v2_20261031T153404Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_qwen35_122b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_qwen35_122b_v2_20261031T151700Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_qwen38_27b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_qwen38_27b_v2_20261031T144528Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_gemma4_31b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_gemma4_31b_v2_20261101T074610Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_gpt_oss_20b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_gpt_oss_20b_v2_20261031T163627Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_nemotron_35_bolt_e4b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_nemotron_35_bolt_e4b_v2_20261031T163002Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_nemotron_35_lightning_30b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_nemotron_35_lightning_30b_v2_20261031T164248Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_qwen38_27b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_qwen38_27b_v2_20261031T165450Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_gemma4_31b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_gemma4_31b_v2_20261031T145019Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_gpt_oss_20b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_gpt_oss_20b_v2_20261031T150553Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_nemotron_35_bolt_e4b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_nemotron_35_bolt_e4b_v2_20261031T151216Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_nemotron_35_lightning_30b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_nemotron_35_lightning_30b_v2_20261031T151824Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_qwen38_27b_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_qwen38_27b_v2_20261031T152653Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_mistral_large_4_v2
+  label: rescored 5f2c057c
+  runs:
+  - triage_mistral_large_4_v2_20261031T155150Z
+  entered:
+    how: ran
+    at: '2026-10-31T14:22:30Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_baseline_pro_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_baseline_pro_v1_20261030T132352Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_gemini_35_flash_lite_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_gemini_35_flash_lite_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_gemini_4_argon_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_gemini_4_argon_v1_20261030T132352Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_gpt_61_sol_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_gpt_61_sol_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_haiku_55_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_haiku_55_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_hosted_mistral_medium_35_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_mistral_medium_35_v1_20261030T141055Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_hosted_qwen3_30b_a3b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_qwen3_30b_a3b_v1_20261030T232632Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_gemma4_12b_noreason_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_gemma4_12b_noreason_v1_20261031T090223Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_llama31_8b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_llama31_8b_v1_20261031T083301Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_llama4_scout_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_llama4_scout_v1_20261030T160437Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_ministral_3_14b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_ministral_3_14b_v1_20261031T075222Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_mistral_medium_35_128b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_mistral_medium_35_128b_v1_20261030T161906Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_phi4_14b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_phi4_14b_v1_20261031T081434Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_qwen3_30b_a3b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_qwen3_30b_a3b_v1_20261031T083919Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_vllm_qwen3_30b_a3b_nvfp4_v1_20261031T041426Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_gemma4_12b_noreason_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_gemma4_12b_noreason_v1_20261031T085647Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_llama31_8b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_llama31_8b_v1_20261030T194901Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_ministral_3_14b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_ministral_3_14b_v1_20261031T083109Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_phi4_14b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_phi4_14b_v1_20261030T212828Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_mac_qwen3_30b_a3b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_qwen3_30b_a3b_v1_20261031T075848Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_llama31_8b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_llama31_8b_v1_20261030T150117Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_ministral_3_14b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_ministral_3_14b_v1_20261030T155008Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_phi4_14b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_phi4_14b_v1_20261030T161509Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_local_x3_qwen3_30b_a3b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_qwen3_30b_a3b_v1_20261031T003008Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_sonnet_55_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_sonnet_55_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_stub_dismiss_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_stub_dismiss_v1_20261031T072416Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_stub_escalate_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_stub_escalate_v1_20261031T072417Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+- system: triage_deepseek_41flash_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_deepseek_41flash_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_gpt_6_luna_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_gpt_6_luna_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_hosted_gemma4_31b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_gemma4_31b_v1_20261030T141055Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_hosted_gpt_oss_120b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_gpt_oss_120b_v1_20261030T143242Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_hosted_qwen35_122b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_hosted_qwen35_122b_v1_20261030T141055Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_kimi_k31_pro_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_kimi_k31_pro_v1_20261030T132352Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_dgx_gemma4_31b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_gemma4_31b_v1_20261031T072649Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_dgx_gpt_oss_120b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_gpt_oss_120b_v1_20261031T084551Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_dgx_gpt_oss_20b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_gpt_oss_20b_v1_20261030T201104Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_dgx_nemotron_35_bolt_e4b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_nemotron_35_bolt_e4b_v1_20261030T191111Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_dgx_nemotron_35_lightning_30b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_nemotron_35_lightning_30b_v1_20261030T192744Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_dgx_nemotron_35_super_120b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_nemotron_35_super_120b_v1_20261030T190038Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_dgx_qwen35_122b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_qwen35_122b_v1_20261030T152324Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_dgx_qwen38_27b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_dgx_qwen38_27b_v1_20261030T202541Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_mac_gemma4_31b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_gemma4_31b_v1_20261030T173427Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_mac_gpt_oss_20b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_gpt_oss_20b_v1_20261030T171248Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_mac_nemotron_35_bolt_e4b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_nemotron_35_bolt_e4b_v1_20261030T192357Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_mac_nemotron_35_lightning_30b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_nemotron_35_lightning_30b_v1_20261030T201657Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_mac_qwen38_27b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_mac_qwen38_27b_v1_20261030T215205Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_x3_gemma4_31b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_gemma4_31b_v1_20261030T172801Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_x3_gpt_oss_20b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_gpt_oss_20b_v1_20261030T195313Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_x3_nemotron_35_bolt_e4b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_nemotron_35_bolt_e4b_v1_20261030T192906Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_x3_nemotron_35_lightning_30b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_nemotron_35_lightning_30b_v1_20261030T190919Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_local_x3_qwen38_27b_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_local_x3_qwen38_27b_v1_20261030T163759Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
+- system: triage_mistral_large_4_v1
+  label: rescored 5f2c057c
+  runs:
+  - triage_mistral_large_4_v1_20261030T125624Z
+  entered:
+    how: carried
+    at: '2026-10-31T14:22:30Z'
+    from: r2
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-31T14:22:30Z'
+    reason: run at the server's default reasoning for a model that reasons by default; re-run in this
+      round as _v2 with the model's onboarded settings
 scoring:
 - at: '2026-11-01T08:14:08Z'
   scorer: 3d3a6afdb978
@@ -59,157 +1042,10 @@ scoring:
 status: closed
 opened_at: '2026-10-31T14:22:30Z'
 closed_at: '2026-11-01T08:15:46Z'
-retired:
-- config_id: triage_deepseek_41flash_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_deepseek_41flash_v1_20261030T125624Z
-- config_id: triage_gpt_6_luna_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_gpt_6_luna_v1_20261030T125624Z
-- config_id: triage_hosted_gemma4_31b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_hosted_gemma4_31b_v1_20261030T141055Z
-- config_id: triage_hosted_gpt_oss_120b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_hosted_gpt_oss_120b_v1_20261030T143242Z
-- config_id: triage_hosted_qwen35_122b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_hosted_qwen35_122b_v1_20261030T141055Z
-- config_id: triage_kimi_k31_pro_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_kimi_k31_pro_v1_20261030T132352Z
-- config_id: triage_local_dgx_gemma4_31b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_dgx_gemma4_31b_v1_20261031T072649Z
-- config_id: triage_local_dgx_gpt_oss_120b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_dgx_gpt_oss_120b_v1_20261031T084551Z
-- config_id: triage_local_dgx_gpt_oss_20b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_dgx_gpt_oss_20b_v1_20261030T201104Z
-- config_id: triage_local_dgx_nemotron_35_bolt_e4b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_dgx_nemotron_35_bolt_e4b_v1_20261030T191111Z
-- config_id: triage_local_dgx_nemotron_35_lightning_30b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_dgx_nemotron_35_lightning_30b_v1_20261030T192744Z
-- config_id: triage_local_dgx_nemotron_35_super_120b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_dgx_nemotron_35_super_120b_v1_20261030T190038Z
-- config_id: triage_local_dgx_qwen35_122b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_dgx_qwen35_122b_v1_20261030T152324Z
-- config_id: triage_local_dgx_qwen38_27b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_dgx_qwen38_27b_v1_20261030T202541Z
-- config_id: triage_local_mac_gemma4_31b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_mac_gemma4_31b_v1_20261030T173427Z
-- config_id: triage_local_mac_gpt_oss_20b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_mac_gpt_oss_20b_v1_20261030T171248Z
-- config_id: triage_local_mac_nemotron_35_bolt_e4b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_mac_nemotron_35_bolt_e4b_v1_20261030T192357Z
-- config_id: triage_local_mac_nemotron_35_lightning_30b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_mac_nemotron_35_lightning_30b_v1_20261030T201657Z
-- config_id: triage_local_mac_qwen38_27b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_mac_qwen38_27b_v1_20261030T215205Z
-- config_id: triage_local_x3_gemma4_31b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_x3_gemma4_31b_v1_20261030T172801Z
-- config_id: triage_local_x3_gpt_oss_20b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_x3_gpt_oss_20b_v1_20261030T195313Z
-- config_id: triage_local_x3_nemotron_35_bolt_e4b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_x3_nemotron_35_bolt_e4b_v1_20261030T192906Z
-- config_id: triage_local_x3_nemotron_35_lightning_30b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_x3_nemotron_35_lightning_30b_v1_20261030T190919Z
-- config_id: triage_local_x3_qwen38_27b_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_local_x3_qwen38_27b_v1_20261030T163759Z
-- config_id: triage_mistral_large_4_v1
-  reason: run at the server's default reasoning for a model that reasons by default; re-run in this round
-    as _v2 with the model's onboarded settings
-  at: '2026-10-31T14:22:30Z'
-  runs:
-  - triage_mistral_large_4_v1_20261030T125624Z
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration
 conclusion:
   text: 'Onboarding was the fix round 1 needed, not a winner. The 25 arms re-run with their model records''
     settings (reasoning off, or low where a model cannot stop; a reply cap; gpt-oss on Ollama read through
@@ -224,7 +1060,3 @@ conclusion:
     put it at about 135-175 independent decisions). The next step is more labelled decisions, not more
     arms.'
   promoted_run: null
-actor:
-  type: unknown
-  name: before 0.8.0
-  from: migration

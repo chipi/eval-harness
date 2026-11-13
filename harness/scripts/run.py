@@ -1102,9 +1102,9 @@ def _run(args: argparse.Namespace) -> int:
         )
     # A run may name a round of its goal (ADR-0004, optional): refused before a cent is spent
     # when the round does not exist, is closed, or runs on another dataset.
-    from evaluation_harness._rounds import config_round  # noqa: PLC0415
+    from evaluation_harness import _rounds  # noqa: PLC0415
 
-    rnd = config_round(cfg, args.config)
+    rnd = _rounds.config_round(cfg, args.config)
     # A hypothesis (ADR-0025, optional) is refused with the same words validate V20 uses.
     from evaluation_harness import _hypothesis  # noqa: PLC0415
 
@@ -1520,6 +1520,23 @@ def _run(args: argparse.Namespace) -> int:
                     run_dir / "confound.jsonl", "".join(json.dumps({"item_id": i}) + "\n" for i in ids)
                 )
         made.append(score_dir)
+        if rnd is not None and not args.scratch:
+            # The run joins its system's arm in the round (RFC-032 step 5), read under the label of its own score.
+            from evaluation_harness import _actor  # noqa: PLC0415
+
+            joined = _rounds.join(
+                rnd["goal"],
+                rnd["round_id"],
+                cfg["config_id"],
+                run_id,
+                _model_runs.label(score_dir),
+                _actor.actor(),
+            )
+            if joined is None:
+                print(
+                    f"  note: {rnd['round_id']} reads {cfg['config_id']} under a re-score this run is not yet: it is "
+                    f"read in the round once re-scored (evh rescore --goal {rnd['goal']} --round {rnd['round_id']})"
+                )
         written.append(
             {
                 "run_id": run_id,

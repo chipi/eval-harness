@@ -127,6 +127,8 @@
       "minimum": 1,
       "description": "Its number in the line: the file's name."
     },
+    "round": {"type": "string", "pattern": "^r[0-9]+$", "description": "The round that promoted this version (RFC-032 step 5): round-close --promote, its goal's round."},
+    "arm": {"type": "string", "description": "The system of that round's arm the promoted run is read in."},
     "replaces": {
       "type": [
         "integer",

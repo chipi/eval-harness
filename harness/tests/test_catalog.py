@@ -205,13 +205,21 @@ try:
     run("", "w_1", "ds_v1", "other_v1", [0.5] * 4, root=data8)
     (data8 / "rounds" / "g").mkdir(parents=True)
     (data8 / "rounds" / "g" / "r3.yaml").write_text(
-        "round_id: r3\ngoal: g\ndataset_id: ds_v1\nretired:\n  - config_id: arm_v1\n    runs: [v_1]\n    reason: x\n"
+        "round_id: r3\ngoal: g\ndataset_id: ds_v1\narms:\n  - system: arm_v1\n    runs: [v_1]\n"
+        "    entered: {how: ran, at: '2026-11-01T00:00:00Z'}\n    retired: {at: '2026-11-02T00:00:00Z', reason: x}\n"
+        "  - system: other_v1\n    runs: [w_1]\n    entered: {how: ran, at: '2026-11-01T00:00:00Z'}\n"
     )
-    gone = HarnessAdapter(data8).rounds()[0]["retired_arms"]
+    r3 = HarnessAdapter(data8).rounds()[0]
+    gone = r3["retired_arms"]
     check(
         "a retired run retires every arm it is scored in (its re-score's too), and no other",
         gone == ["rescored-3d3a6afd/ds_v1/arm_v1", "runs/ds_v1/arm_v1"],
         gone,
+    )
+    check(
+        "a round's arms are the arms it stores that the index has, never computed from the runs",
+        r3["arms"] == ["runs/ds_v1/other_v1"],
+        r3["arms"],
     )
     check(
         "retired_round: by the arm id, else by the system id",

@@ -63,27 +63,22 @@ def table() -> str:
     rows = grp["rows"]
     # In or out as the goal's own decision says (its limits, whatever they are), never re-derived here.
     tiers = {r["id"]: r["tier"] for r in (by_ds.get(DATASET) or {}).get("refs", [])}
+    retired_in = cb.retired_in_of(A, goal)
     dec = cb.group_decision(
         A,
         goal,
         DATASET,
         rows,
         rows[0].get("measure") or "",
-        cb.retired_in_of(A, goal),
+        retired_in,
         cb.gold_beside(tiers, ans["groups"], grp["key"]),
     )
-    # An arm a round retired (re-run as _v2 with its model set up) is listed last and says so: as one more row it
-    # read as a result beside the re-run that replaced it (round 3, 2026-11-01).
-    # By config id: the rows are the arms the goal reads (a re-score in place of a run), the round names configs.
-    gone = {
-        x["config_id"]: rd["round_id"]
-        for rd in A.rounds()
-        if rd.get("goal") == GOAL
-        for x in rd.get("retired") or []
-    }
 
+    # An arm a round retired (re-run as _v2 with its model set up) is listed last and says so: as one more row it
+    # read as a result beside the re-run that replaced it (round 3, 2026-11-01). The rounds' retired arms, as the
+    # catalog reads them.
     def retired(r: dict) -> str:
-        return gone.get(r["arm"].rsplit("/", 1)[-1], "")
+        return cb.retired_round(retired_in, r["arm"]) or ""
 
     live = [r for r in rows if not retired(r)]
     ok = [r for r in live if r["arm"] not in dec["out"]]

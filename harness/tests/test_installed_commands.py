@@ -494,7 +494,11 @@ def main() -> int:
             # Rounds (optional; the flow is test_rounds.py): installed, each answers in words.
             ("rounds", ["--goal", "no_such_goal"], "no goal 'no_such_goal'"),
             ("round-open", ["--goal", "no_such_goal", "--dataset", "tickets_v1"], "no goal 'no_such_goal'"),
+            ("round-carry", ["--goal", "g", "--round", "r1", "--arm", "a"], "no round"),
             ("round-retire", ["--goal", "g", "--round", "r1", "--arm", "a", "--reason", "x y z"], "no round"),
+            ("round-list", ["no_such_goal"], "no goal 'no_such_goal'"),
+            ("round-show", ["no_such_goal", "r1"], "no goal 'no_such_goal'"),
+            ("round-evidence", ["no_such_goal", "r1"], "no goal 'no_such_goal'"),
             ("round-close", ["--goal", "g", "--round", "r1", "--conclusion", "x y z"], "no round"),
             # The terminal's jobs (RFC-026): installed, each answers in words; the flow is test_jobs.py.
             # Prompt versions (RFC-028): installed, each answers in words; the flow is test_prompts.py.

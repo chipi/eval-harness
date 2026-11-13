@@ -45,6 +45,7 @@ def status(goal_id: str) -> dict[str, Any]:
     """Where a goal stands: each of its datasets (made, materialized, its reference, its runs and arms, its baseline),
     its rounds, the jobs working on it, and the next step, with the command that takes it."""
     from evaluation_harness import _baselines, _jobs, _rounds, _runs  # noqa: PLC0415
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
 
     g = GOAL.get(goal_id)
     refs = [r.get("reference_id") for r in g.get("references") or [] if isinstance(r, dict)]
@@ -54,6 +55,8 @@ def status(goal_id: str) -> dict[str, Any]:
             "status": r.get("status"),
             "dataset": r.get("dataset_id"),
             "question": r.get("hypothesis"),
+            "arms": len(model_rounds.in_play(r)),
+            "retired": len(model_rounds.arms(r)) - len(model_rounds.in_play(r)),
         }
         for r in _rounds.load_rounds(goal_id)
     ]

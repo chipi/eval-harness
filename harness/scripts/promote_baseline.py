@@ -308,6 +308,16 @@ def main() -> int:
                 )
 
         look_ctx: dict = {}
+        in_round: dict = {}
+        if args.round and goal_id:
+            from evaluation_harness import _rounds  # noqa: PLC0415
+            from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
+            rnd = _rounds.find(goal_id, args.round)
+            held = next(
+                (a for a in model_rounds.arms(rnd or {}) if m["run_id"] in (a.get("runs") or [])), None
+            )
+            in_round = {"round": args.round, **({"arm": held["system"]} if held else {})}
 
         def make(cur: dict | None, n: int) -> dict:
             ev = evidence(m, cur, goal, args.round, look_ctx.get("look"))
@@ -315,6 +325,7 @@ def main() -> int:
                 "dataset_id": m["dataset_id"],
                 "goal": goal_id,
                 "promoted_from": m["run_id"],
+                **in_round,
                 "promoted_at": now(),
                 "actor": who,
                 "reason": args.reason,

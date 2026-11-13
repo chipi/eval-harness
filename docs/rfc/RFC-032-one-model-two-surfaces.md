@@ -254,7 +254,13 @@ and the Workbench's screens that need it are wired behind it.
    `prompts(params)` hook, only when its fingerprint declares a `prompt_sha256` and only a text of that hash; the
    examples' six adapters have the hook, and on every committed run that declares one it gives the text hashed
    (with the fleet code the triage runs used).
-5. Rounds with their arms and the evidence view; baselines.
+5. Rounds with their arms and the evidence view; baselines. Built 2026-11-13 as format 5 (`m0005_rounds`): 17 rounds,
+   372 arms (44 retired), each arm a system, its label, its runs, how it entered and its retirement; 7 baselines
+   linked to the round that promoted them. `model/rounds` holds the arms and `evidence`, read by every view of a
+   round; all 17 rounds gave the same evidence before and after. An arm's view reads its system under its label (the
+   catalog's arm), its runs listed beside; V14 names an arm whose runs are not runs of that system on the round's
+   dataset scored under its label. A run made in a round joins its arm under the goal's lock; the round file is not
+   dirt in a fingerprint.
 6. Datasets (items, source, profile, versions, the sealed side), fieldsets, label sets, references, picks, captures,
    failure modes and tags, exposure.
 7. Scorers and judges, studies, faithfulness.
@@ -375,3 +381,22 @@ Quoted from the discussion, typing slips corrected.
     tune runs go under `.build/`, outside the data;
   - prompt versions are a step of their own (4b): a run records the version of the prompt file it read; past runs
     keep the hash they carry. Judging sets and reference and label manifests keep the ids they were made under (B).
+- **Step 5, rounds, arms and baselines** (after an inventory: 17 rounds, all closed; a round's arms worked out by
+  two computations that disagree, 29 against 87 on CNN r1; the evidence and its leader computed in four places; no
+  baseline naming the round that promoted it), "I agree with all 5":
+  - a round stores its arms: each a system, the label it is read under, the runs it is read through, how and when
+    it entered (ran in the round, carried or adopted from an earlier one) and who added it, and its retirement
+    (when, who, why); `carried` and `retired` go; a run made in a round joins its system's arm or adds one, and
+    keeps `round` and `goal` as where it came from; format 5 writes each round's arms from what is read today
+    (membership as `evh rounds` computes it, runs read through the round's scorer);
+  - an arm is a system read under one label: a silver, judged or adjudicated scoring of its runs is another
+    scoring, not another arm;
+  - the rounds that only retired re-timings, repeats or pair runs get those as arms read under their label, retired
+    with the reason recorded;
+  - one evidence computation (`model/rounds.evidence`) read by `evh rounds`, the goal page for every round,
+    `inspect --round`, pair-test's and family-test's `--round`, `leaderboard --round` and the API's
+    `/goals/{id}/rounds/{r}/evidence`, its leader by the catalog's rules (gold first; no judged arm and no
+    reference author leads); a closed round's "best" that moves under them is shown before the commit;
+  - a baseline version names the round and arm that promoted it; the seven an r1 promoted get the link from the
+    round's `conclusion.promoted_run` (their `evidence` stays null); rounds get their operations (`round-list`,
+    `round-show`, open, close, retire, carry) and the API's resources under `/goals/{id}/rounds`.

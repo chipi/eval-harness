@@ -195,6 +195,16 @@ try:
         "scoring:" in r1 and "a bonus to see the scoring move" in r1,
         r1,
     )
+    import yaml
+
+    arms1 = yaml.safe_load(r1)["arms"]
+    check(
+        "rescore --round: each arm is read under the label its runs were re-scored as, through those runs",
+        len(arms1) == 2
+        and all(a["label"].startswith("rescored ") and len(a["runs"]) == 1 for a in arms1)
+        and len({a["label"] for a in arms1}) == 1,
+        arms1,
+    )
     g = evh("goals", "--goal", "tickets_summary")
     check(
         "the goal reads the re-score: one row per arm, from its re-score",
@@ -286,6 +296,14 @@ try:
         "round-open --scoring: the round records its scorer and the change",
         "scorer:" in r2 and "scoring: a larger bonus" in r2 and "tickets_lead1_v1" in r2,
         r2,
+    )
+    arms2 = yaml.safe_load(r2)["arms"] if r2 else []
+    check(
+        "round-open --scoring: the carried arms are read under the new scorer's label, carried from r1",
+        len(arms2) == 2
+        and all(a["entered"]["how"] == "carried" and a["entered"]["from"] == "r1" for a in arms2)
+        and all(a["label"].startswith("rescored ") and a["label"] != arms1[0]["label"] for a in arms2),
+        arms2,
     )
     rs2 = evh("rounds", "--goal", "tickets_summary", "--round", "r2")
     check(

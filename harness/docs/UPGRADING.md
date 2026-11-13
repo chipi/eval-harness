@@ -11,7 +11,7 @@ correctness bugs, not just missing features.
   carries until the release: moving such a pin from one commit to another takes `pip install --force-reinstall`, as
   pip keeps an installed copy of the same version.
 - **Run `evh migrate` once** (`--dry-run` first shows what each step will do; a second run changes nothing). It
-  brings the data to format 4 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
+  brings the data to format 5 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
   format, `evh migrate --check` compares it with the release's, and a deploy runs that check (the RUNBOOK's "The
   data's format"). A SQLite project's database is copied beside it first. Commit `data/project.yaml` with the
   migrated data. Its steps, in order:
@@ -66,9 +66,19 @@ correctness bugs, not just missing features.
     catalog redirects its old page. Then: a `.gitignore` that re-admits run files names the new ones (this
     repository's `harness/.gitignore` shows the pattern), and change your commands: `EVAL_RUNS_DIR` is gone (a
     throwaway pass is `evh run --scratch`; a re-run is `evh run --purpose repeat|retime|pair [--of RUN_ID]`),
-    `--runs-dir` (pair-test, family-test) and `inspect --from` are `--label`, `round-retire` takes `--runs`, and
-    `rescore`/`judge-score` write under the runs they score (no `--out`; `rescore --label` names what its scores are
-    read as).
+    `--runs-dir` (pair-test, family-test) and `inspect --from` are `--label`, `round-retire --runs-dir` is `--label`
+    (below), and `rescore`/`judge-score` write under the runs they score (no `--out`; `rescore --label` names what its
+    scores are read as).
+  - *rounds* (RFC-032 step 5, format 5): a round stores its arms, `arms:` in its record, each a system, the label it
+    is read under, the runs it is read through, how and when it entered (`ran` in the round, or `carried` from an
+    earlier one) and its retirement (when, why, who); `carried` and `retired` go. Each round's arms are what it read
+    before: the systems whose plain runs name it and those it carried, less the retired, read under the re-score its
+    `scoring` last wrote; a retirement of a re-timing, a repeat or a pair run is an arm read under that label,
+    retired. A retirement naming some but not all of a system's runs is refused before anything is written. A
+    baseline version a round promoted names the round and the arm. Then: `round-retire` retires an arm whole, every
+    arm of the system in play or the one `--label` names (`--runs` is gone), `evh round-carry` carries an arm of an
+    earlier round into the open one, and `evh rounds --json` gives a round's `arms`. A run made with `--round` joins
+    its system's arm, so the round's file changes with every run: commit it with the runs.
 
   `run-migrate`, `dataset-migrate` and `baselines-migrate` (built during 0.8.0, never released) and
   `fingerprint-migrate` (0.6.0 to 0.7.2) are this one command now. Moving the data into SQLite is

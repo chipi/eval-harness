@@ -45,5 +45,7 @@
     "total_tokens_in": 139450.0,
     "total_tokens_out": 13235.0
   },
-  "version": 1
+  "version": 1,
+  "round": "r1",
+  "arm": "cnn_bart_l_v1"
 }

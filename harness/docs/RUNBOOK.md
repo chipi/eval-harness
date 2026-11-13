@@ -1357,7 +1357,7 @@ evh round-open --goal my_goal --dataset my_v1 --hypothesis "what this round sets
     --keep arm_a_v1,arm_b_v1 --baseline arm_a_v1   # round 1: carry in arms already run, one as the baseline
 evh rounds --goal my_goal                          # the evidence, and the next decisions as commands
 evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --reason "why it is dropped"
-evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --runs <run_id>,<run_id> --reason "..."  # specific runs only
+evh round-retire --goal my_goal --round r1 --arm arm_b_v1 --label linux --reason "..."  # only the arm under that label
 evh round-close --goal my_goal --round r1 --conclusion "what it showed" [--promote <run_id>]
 evh round-open --goal my_goal --dataset my_v1 --from r1 --change "what changed and why" \
     --keep arm_a_v1 --retire arm_c_v1 --reason "why" --budget-usd 0.50

@@ -691,6 +691,12 @@ def main() -> int:
             rnd.setdefault("scoring", []).append(
                 {"at": now(), "scorer": sha[:12], "why": args.why, "written": labels, "runs": len(done)}
             )
+            src_ref = {m["run_id"]: _reference_of(m) for _d, m in todo}
+            _rounds.read_under_rescore(
+                rnd,
+                done,
+                frozenset(m["config_id"] for _d, m in done if src_ref.get(m["run_id"]) != _reference_of(m)),
+            )
             _rounds.save(rnd)
             print(f"  round {rnd['round_id']} of {rnd['goal']} records the scoring: {args.why}")
         for line in cut_off_lines(todo, done):

@@ -40,5 +40,7 @@
     "total_tokens_in": 225100.0,
     "total_tokens_out": 86257.0
   },
-  "version": 1
+  "version": 1,
+  "round": "r1",
+  "arm": "triage_baseline_pro_v1"
 }

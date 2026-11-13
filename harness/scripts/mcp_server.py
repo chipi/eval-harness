@@ -153,6 +153,7 @@ NOT_TOOLS = {
     "run-promote": "a decision, recorded with who acted",
     "baseline-rollback": "a decision, recorded with who acted",
     "round-open": "a decision, recorded with who acted",
+    "round-carry": "a decision, recorded with who acted",
     "round-retire": "a decision, recorded with who acted",
     "round-close": "a decision, recorded with who acted",
     "catalog": "writes the pages",

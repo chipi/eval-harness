@@ -83,14 +83,21 @@ from evaluation_harness.stats import noninferior as stats_noninferior  # noqa: E
 
 
 def _round_values(dataset_id: str, args: Any = None) -> Any:
-    """values(config_id, metric) -> {item_id: value} as the round reads the arm (RFC-022): its latest re-score when
-    one stands in for its runs. Read from data/runs alone, an arm scored before a measure existed had none, and a
-    test the round itself had run (production's run on triage_cost) found 0 shared items."""
+    """values(config_id, metric) -> {item_id: value} as the round reads the arm: the arm the round stores for the
+    system (its label says whether a re-score stands in for its runs), else the plain runs. Read from data/runs
+    alone, an arm scored before a measure existed had none, and a test the round itself had run (production's run
+    on triage_cost) found 0 shared items."""
     from evaluation_harness import rounds as rd  # noqa: PLC0415
+    from evaluation_harness._rounds import resolve  # noqa: PLC0415
     from evaluation_harness.catalog_adapter import load_catalog_adapter  # noqa: PLC0415
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
 
     ca = load_catalog_adapter(None)
-    read = rd._reader(ca)
+    rnd = resolve(args.round, args.goal) if getattr(args, "round", None) else None
+
+    def read(dataset: str, config_id: str) -> str:
+        held = model_rounds.find_arm(rnd, config_id) if rnd else None
+        return model_rounds.arm_id(rnd, held) if rnd and held else rd._arm(ca, dataset, config_id)
 
     def values(config_id: str, metric: str) -> dict:
         arm = read(dataset_id, config_id)
@@ -112,6 +119,7 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
     table, how many arms were in play: the candidates it was chosen from)."""
     from evaluation_harness import _common  # noqa: PLC0415
     from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
 
     rnd = resolve(args.round, args.goal)
     if rnd["dataset_id"] != args.dataset_id:
@@ -128,14 +136,11 @@ def _round_defaults(args: argparse.Namespace, runs: list, values: Any) -> tuple[
             die(f"{x} is not in play in round {args.round} ({', '.join(in_play)})", "not-found")
     chose = not args.a
     if not args.a:
-        means = {}
-        for c in in_play:
-            v = values(c, args.metric)
-            if v:
-                means[c] = statistics.fmean(v.values())
-        if not means:
+        # The round's leader as every view of the round reads it (model/rounds): the evidence's.
+        leader = model_rounds.evidence(rnd["goal"], rnd).get("leader")
+        if not leader:
             die(f"no arm in round {args.round} records {args.metric} yet", "not-enough")
-        args.a = (min if prim.get("direction") == "lower" else max)(means, key=lambda c: means[c])
+        args.a = leader.rsplit("/", 1)[-1]
     if not args.b:
         base = rnd.get("baseline")
         args.b = next((m["config_id"] for d, m in runs if m["run_id"] == base), None)

@@ -3,26 +3,44 @@ goal: summary_judge_summeval
 dataset_id: summeval_100
 from: r1
 hypothesis: Does UniEval's text move the judge, and does the provider?
+arms:
+- system: se_gemma_l_pubtext_n100_v1
+  label: pair
+  runs:
+  - se_gemma_l_pubtext_n100_v1_20261019T070854Z
+  entered:
+    how: ran
+    at: '2026-10-19T07:08:57Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-19T07:22:24Z'
+    reason: a paired side run, not on the leaderboard; data/runs is the record
+- system: se_gemma_l_pubtextcw_n100_v1
+  label: pair
+  runs:
+  - se_gemma_l_pubtextcw_n100_v1_20261019T071647Z
+  entered:
+    how: ran
+    at: '2026-10-19T07:08:57Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-10-19T07:22:24Z'
+    reason: a paired side run, not on the leaderboard; data/runs is the record
 status: closed
 opened_at: '2026-10-19T07:08:57Z'
 closed_at: '2026-10-19T07:22:24Z'
-retired:
-- config_id: se_gemma_l_pubtext_n100_v1
-  reason: a paired side run, not on the leaderboard; data/runs is the record
-  at: '2026-10-19T07:22:24Z'
-  runs:
-  - se_gemma_l_pubtext_n100_v1_20261019T070854Z
-- config_id: se_gemma_l_pubtextcw_n100_v1
-  reason: a paired side run, not on the leaderboard; data/runs is the record
-  at: '2026-10-19T07:22:24Z'
-  runs:
-  - se_gemma_l_pubtextcw_n100_v1_20261019T071647Z
+actor:
+  type: unknown
+  name: before 0.8.0
+  from: migration
 conclusion:
   text: 'Pinned to CoreWeave on UniEval''s text, gemma_l scores 0.5397 against its 0.5384 (+0.0013, not
     significant); routed to SambaNova it scored 0.5510 and billed 3.7× as much: consistent with a provider
     effect, one run per provider. (REPORT_SUMMEVAL §3.3.)'
   promoted_run: null
-actor:
-  type: unknown
-  name: before 0.8.0
-  from: migration

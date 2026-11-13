@@ -33,5 +33,7 @@
     "resumed": 0.0,
     "total_cost_usd": 0.0
   },
-  "version": 1
+  "version": 1,
+  "round": "r1",
+  "arm": "db_bert_base_fy_v1"
 }

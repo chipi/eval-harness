@@ -16,7 +16,7 @@ NOISE ?=
 TIER ?= silver
 
 .PHONY: help demo init env-check install venv-init catalog catalog-serve serve \
-        overview activity datasets arms references metrics goals inspect round-open round-retire round-close rounds \
+        overview activity datasets arms references metrics goals inspect round-open round-carry round-retire round-close rounds \
         dataset-create dataset-materialize dataset-profile dataset-items reference-manifest \
         mcp search self-test \
         reference-promote arm-smoke model-onboard score-preview importer-check capture \
@@ -472,6 +472,9 @@ inspect:
 round-open:
 	@test -n "$(GOAL)" -a -n "$(DATASET_ID)" || { echo "GOAL=<goal_id> DATASET_ID=<dataset> are required"; exit 1; }
 	$(PYTHON) scripts/round_open.py --goal $(GOAL) --dataset $(DATASET_ID) $(ARGS)
+
+round-carry:
+	$(PYTHON) scripts/round_carry.py --goal $(GOAL) --round $(ROUND) $(ARGS)
 
 round-retire:
 	$(PYTHON) scripts/round_retire.py --goal $(GOAL) --round $(ROUND) $(ARGS)

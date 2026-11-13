@@ -125,7 +125,10 @@ def say_status(r: dict[str, Any]) -> str:
             f"  dataset     {d['dataset']} ({role}): {made}{mat}{ref}, {d['runs']} run(s) of {d['arms']} arm(s){base}"
         )
     for rd in r["rounds"]:
-        lines.append(f"  round       {rd['round']} {rd['status']}: {rd.get('question') or ''}")
+        lines.append(
+            f"  round       {rd['round']} {rd['status']}, {rd['arms']} arm(s) in play, {rd['retired']} retired: "
+            f"{rd.get('question') or ''}"
+        )
     for j in r["running"]:
         lines.append(f"  running     {j['command']} ({j['state']}), job {j['job']}")
     lines.append(f"  next        {r['next']['what']}: {r['next']['command']}")

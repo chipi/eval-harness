@@ -61,6 +61,20 @@ that can move a result is never a patch release without saying so under **Change
   name, and a run whose fingerprint declares that text's `prompt_sha256` records it as a prompt version
   (`run.json` `prompt_versions`; `evh prompt-show` lists the runs that sent it), outside the fingerprint's hash, so
   no run's fingerprint moves; a scratch pass records none. The examples' adapters have the hook.
+- **Rounds store their arms** (RFC-032 step 5): each arm in a round's record is a system read under one label, the
+  runs it is read through, how and when it entered (ran in the round, or carried from an earlier one) and its
+  retirement; a run made with `--round` joins its arm (a run the round would read under a re-score is told to
+  re-score the round), and the round's file is not dirt in a run's fingerprint. One evidence computation
+  (`model/rounds.evidence`) is read by `evh rounds`, the goal page for every round, `inspect --round`, pair-test's
+  and family-test's `--round` and the API (`evh round-list`, `round-show`, `round-evidence`; `/api/v1/goals/{goal}/
+  rounds…`), its leader read as a goal decides (gold first, no judged arm, no arm that wrote its reference). New:
+  `evh round-carry`; `round-retire` retires an arm whole, or the one `--label` names (no `--runs`). A baseline
+  version names the round and arm that promoted it. Format 5 (`m0005_rounds`) writes every round's arms from what it
+  read before: all 17 rounds of this repository give the same evidence (arms, leader, every test) before and after.
+  Views that move, by the decision that an arm is a system read under one label: the catalog's count of a round's
+  arms (CNN r1 87 to 29, AG r1 60 to 30, triage r3 80 to 53), AG r1's best on the goal page (an adjudicated copy
+  scored against another reference before; the round's own arm now), triage r4's "vs r3's best" (another dataset:
+  no comparison), and which arm pages list a round (the arms the round stores, under their label).
 - **Models and deployments, apart** (RFC-032 step 2): a model's deployments are records of their own,
   `data/deployments/<model>/<deployment>.yaml`, each with its checks as dated history: every onboarding, every arm
   smoke and every acceptance is kept, with who made it; the views read the latest of each, so `evh models`, the

@@ -35,5 +35,7 @@
     "total_cost_usd": 0.0,
     "unknown_ids": 0.0
   },
-  "version": 1
+  "version": 1,
+  "round": "r1",
+  "arm": "sf_e5_base_v1"
 }

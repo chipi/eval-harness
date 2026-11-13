@@ -838,9 +838,8 @@ def arms(argv) -> int:
             [[x["arm"], _scored(x), x["metric"], _fmt(x["mean"]), _kind(x, tiers)] for x in sib],
         )
     rfn = getattr(A, "rounds", None)
-    cid = a["arm"].rsplit("/", 1)[-1]
     for r in rfn() if callable(rfn) else []:
-        retired = a["arm"] in cb._retired_arms(r) or cid in cb._retired_arms(r)
+        retired = a["arm"] in cb._retired_arms(r)
         if a["arm"] in (r.get("arms") or []) or retired:
             g = goals.get(r.get("goal", ""), {})
             print(
@@ -1301,8 +1300,9 @@ def goals(argv) -> int:
         print("\nrounds (evh rounds --goal " + g["goal_id"] + " for the evidence):")
         for r in rounds:
             c = (r.get("conclusion") or {}).get("text", "")
+            gone = sum(1 for x in r.get("arm_records") or [] if x.get("retired"))
             print(
-                f"  {r['round_id']:4} {r.get('status', ''):7} {len(r.get('arms') or [])} arm(s), {len(r.get('retired') or [])} retired  {c[:70]}"
+                f"  {r['round_id']:4} {r.get('status', ''):7} {len(r.get('arms') or [])} arm(s), {gone} retired  {c[:70]}"
             )
     return 0
 
@@ -1524,11 +1524,13 @@ def inspect(argv) -> int:
         die("one of --runs, --round or --sheet (with --dataset-id) is required", "bad-argument")
     round_leader = None
     if args.round:
-        from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
-        from evaluation_harness.rounds import _best, _goal  # noqa: PLC0415
+        from evaluation_harness._rounds import resolve  # noqa: PLC0415
+        from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+        from evaluation_harness.rounds import _goal  # noqa: PLC0415
 
         rnd = resolve(args.round, args.goal)
-        tokens = arms_of(rnd)
+        known = set(A.arms())
+        tokens = [a for a in model_rounds.arm_ids(rnd) if a in known]
         if not tokens:
             die(f"round {args.round} has no arms in play yet", "not-enough")
         # A round is read on its goal's measure, against its leader (as `evh rounds` reads it):
@@ -1537,24 +1539,16 @@ def inspect(argv) -> int:
         prim = (_goal(rnd["goal"]).get("success_criteria") or {}).get("primary") or {}
         if not args.metric and prim.get("measure"):
             args.metric = prim["measure"]
-        known = set(A.arms())
-        from evaluation_harness.rounds import _arm  # noqa: PLC0415
-
-        in_play = [a for a in (_arm(A, rnd["dataset_id"], c) for c in tokens) if a in known]
-        unscored = [
-            a.rsplit("/", 1)[-1] for a in in_play if not (A.scores(a).get(args.metric) or {}).get("values")
-        ]
+        unscored = [a for a in tokens if not (A.scores(a).get(args.metric) or {}).get("values")]
         if unscored:
-            print(f"NOTE: no {args.metric} recorded for {', '.join(unscored)}: left out of the comparison")
+            print(
+                f"NOTE: no {args.metric} recorded for {', '.join(a.rsplit('/', 1)[-1] for a in unscored)}: "
+                "left out of the comparison"
+            )
             tokens = [t for t in tokens if t not in unscored]
             if not tokens:
                 die(f"no arm of round {args.round} records {args.metric} yet", "not-enough")
-        round_leader = _best(
-            A,
-            [a for a in in_play if a.rsplit("/", 1)[-1] in tokens],
-            args.metric,
-            prim.get("direction") == "lower",
-        )
+        round_leader = model_rounds.evidence(rnd["goal"], rnd, A).get("leader")
     else:
         tokens = [t.strip() for t in args.runs.split(",") if t.strip()]
     arms = _arm_ids(A, tokens, args.label)

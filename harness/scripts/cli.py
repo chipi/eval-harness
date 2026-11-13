@@ -232,6 +232,7 @@ COMMANDS = {
         "round_open.py",
         "open a round of a goal (optional): its hypothesis, changes, arms kept or dropped",
     ),
+    "round-carry": ("round_carry.py", "carry an arm of an earlier round into the open round, unchanged"),
     "round-retire": ("round_retire.py", "drop an arm from the open round, with the reason"),
     "round-close": ("round_close.py", "close a round with its conclusion, promoting the run it chose"),
     "rounds": ("round_status.py", "a goal's rounds, and what the evidence suggests next"),

@@ -239,6 +239,7 @@ def _round_defaults(args, runs: list) -> Any:
     metric) -> {item_id: value}. The family is the round's own list of arms, fixed before any p-value is computed."""
     from evaluation_harness import _common  # noqa: PLC0415
     from evaluation_harness._rounds import arms_of, resolve  # noqa: PLC0415
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
     from evaluation_harness.pair_test import _round_values  # noqa: PLC0415
 
     rnd = resolve(args.round, args.goal)
@@ -255,10 +256,10 @@ def _round_defaults(args, runs: list) -> Any:
     values = _round_values(args.dataset_id, args)
     chose = not args.a
     if chose:
-        means = {c: statistics.fmean(v.values()) for c in in_play if (v := values(c, args.metric))}
-        if not means:
+        leader = model_rounds.evidence(rnd["goal"], rnd).get("leader")
+        if not leader:
             die(f"no arm in round {args.round} records {args.metric} yet", "not-enough")
-        args.a = (min if prim.get("direction") == "lower" else max)(means, key=lambda c: means[c])
+        args.a = leader.rsplit("/", 1)[-1]
     declared = bool(args.against)
     if not declared:
         rest = [c for c in in_play if c != args.a]

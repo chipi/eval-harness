@@ -1,8 +1,9 @@
 """Eval rounds (ADR-0004), optional: the records, and which runs belong to which round.
 
-A round is data/rounds/<goal_id>/<round_id>.yaml (schemas/round.schema.json). Its arms are not
-listed in it: they are the systems whose runs name the round (`--round` on `evh run`, recorded on
-the run), less the ones retired. A project that never opens a round has none of this.
+A round is data/rounds/<goal_id>/<round_id>.yaml (schemas/round.schema.json). It stores its arms (RFC-032 step 5,
+model/rounds): each a system read under one label, the runs it is read through, how it entered and its retirement.
+A run made with `--round` names the round it came from and joins its system's arm. A project that never opens a
+round has none of this.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from pathlib import Path as _Path
 if not __package__:  # run as a file (a checkout's python scripts/x.py, or an installed copy by path)
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
+import json
 import re
 from pathlib import Path
 from typing import Any
@@ -95,16 +97,17 @@ def save(doc: dict[str, Any]) -> Path:
         "hypothesis",
         "changes",
         "baseline",
+        "arms",
         "budget_usd",
         "harness",
-        "carried",
         "scorer",
         "scoring",
     ]
     # `actor` (RFC-027) and `study` (RFC-029) were left out of this list, so a round opened by round-open lost its actor
     # on save (found building RFC-029, 2026-11-11).
-    order += ["study", "status", "opened_at", "closed_at", "actor", "retired", "conclusion"]
-    body = {k: doc[k] for k in order if k in doc and doc[k] not in (None, [], "")}
+    order += ["study", "status", "opened_at", "closed_at", "actor", "conclusion"]
+    # Through JSON: an actor shared by several arms is written out each time, not as a YAML anchor.
+    body = json.loads(json.dumps({k: doc[k] for k in order if k in doc and doc[k] not in (None, [], "")}))
     if doc.get("baseline") is None and "baseline" in doc:
         body["baseline"] = None
     _store.write_text(
@@ -157,27 +160,117 @@ def how_to_run_on(rnd: dict[str, Any]) -> str:
     )
 
 
-def arms_of(rnd: dict[str, Any], label: str = "") -> list[str]:
-    """The round's arms still in play, read under `label`: systems whose runs name it, and (in the plain runs) those
-    carried into it unchanged from an earlier round, less the retired. A retirement names the runs it retires: the
-    system is out once every run of it on the dataset (read under `label`) is named, and a run of it made afterwards
-    brings it back. One that names none retires the system from the plain runs outright."""
-    retired = rnd.get("retired") or []
-    named: dict[str, set[str]] = {}
-    for r in retired:
-        named.setdefault(r["config_id"], set()).update(r.get("runs") or [])
-    nothing = {r["config_id"] for r in retired if not r.get("runs")}
-    on_dataset: dict[str, set[str]] = {}
-    for _d, m in runs_on(rnd.get("dataset_id"), label=label):
-        on_dataset.setdefault(m["config_id"], set()).add(m["run_id"])
-    ran = {m["config_id"] for _d, m in runs_of(rnd, label)}
-    in_play = ran | set(rnd.get("carried") or []) if not label else ran
-    return sorted(
-        c
-        for c in in_play
-        if not (not label and c in nothing)
-        and not (named.get(c) and on_dataset.get(c) and on_dataset[c] <= named[c])
+def arms_of(rnd: dict[str, Any]) -> list[str]:
+    """The systems of the round's arms in play, as the round stores them (RFC-032 step 5); `model.rounds` has the
+    arms themselves (their labels, their runs, how they entered and their retirements)."""
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
+    return sorted({a["system"] for a in model_rounds.in_play(rnd)})
+
+
+def join(
+    goal: str, round_id: str, system: str, run_id: str, label: str = "", who: dict[str, Any] | None = None
+) -> dict[str, Any] | None:
+    """A run made in the round joins its system's arm read under the label of the run's own score, or adds that arm
+    (model.rounds.add_run); None when the round reads the system under a re-score the run is not yet. The round is
+    read afresh and saved under the goal's lock: two runs of one round finish at once, and each saved the round it
+    had read."""
+    from evaluation_harness import _spend  # noqa: PLC0415
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
+    with _spend._goal_lock(goal):
+        rnd = find(goal, round_id)
+        if rnd is None:
+            return None
+        arm = model_rounds.add_run(rnd, system, run_id, who, label)
+        if arm is not None:
+            save(rnd)
+        return arm
+
+
+def read_under_rescore(
+    rnd: dict[str, Any], done: list[tuple[Path, dict]], apart: frozenset[str] = frozenset()
+) -> None:
+    """After a re-score of the round's runs (`done`: the scores written): each arm in play whose runs were all
+    re-scored as one label is read under it, through the runs it has under it. A system re-scored against another
+    reference than it was measured on stays as it was (`apart`): the goals show that one as a table of its own."""
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
+
+    labels: dict[str, set[str]] = {}
+    for d, m in done:
+        labels.setdefault(m["config_id"], set()).add(model_runs.label(d))
+    for arm in model_rounds.in_play(rnd):
+        got = labels.get(arm["system"])
+        if not got or len(got) != 1 or arm["system"] in apart:
+            continue
+        lbl = next(iter(got))
+        arm["label"] = lbl
+        arm["runs"] = sorted(
+            m["run_id"] for _d, m in runs_on(rnd.get("dataset_id"), label=lbl, config_id=arm["system"])
+        )
+
+
+def summary(rnd: dict[str, Any]) -> dict[str, Any]:
+    """One round as a line of `evh rounds` and `round-list`: its arms in play and retired, counted from the stored arms."""
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
+    arms = model_rounds.arms(rnd)
+    return {
+        "round_id": rnd["round_id"],
+        "status": rnd["status"],
+        "dataset_id": rnd.get("dataset_id", ""),
+        "arms": len(arms_of(rnd)),
+        "retired": sum(1 for a in arms if a.get("retired")),
+        "conclusion": (rnd.get("conclusion") or {}).get("text", ""),
+    }
+
+
+def view(rnd: dict[str, Any]) -> dict[str, Any]:
+    """The round with its arms, as `evh rounds --json`, `round-show` and the API give it: each arm with the id the
+    catalog names it by."""
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
+    keys = (
+        "round_id",
+        "status",
+        "dataset_id",
+        "from",
+        "hypothesis",
+        "scorer",
+        "baseline",
+        "harness",
+        "budget_usd",
+        "opened_at",
+        "closed_at",
+        "study",
     )
+    return {k: rnd.get(k) for k in keys} | {
+        "changes": rnd.get("changes") or [],
+        "arms": [{"arm": model_rounds.arm_id(rnd, a), **a} for a in model_rounds.arms(rnd)],
+        "scoring": rnd.get("scoring") or [],
+        "conclusion": (rnd.get("conclusion") or {}).get("text"),
+    }
+
+
+def evidence_values(rnd: dict[str, Any], ev: dict[str, Any]) -> dict[str, Any]:
+    """`model.rounds.evidence`'s answer as JSON: the round's arms read, its leader, the tests, the spend and what to
+    decide next (a closed round takes no more decisions: none are given)."""
+    return {
+        "metric": ev["metric"],
+        "arms": ev["arms"],
+        "leader": ev.get("leader"),
+        "reference": ev.get("reference"),
+        "rows": ev["rows"],
+        "against": ev["against"],
+        "spent_usd": ev.get("spent"),
+        "left_usd": ev.get("left"),
+        "cost_per_item": ev.get("cost_per_item") or {},
+        "notes": ev["notes"],
+        "suggest": [{"what": what, "command": cmd or None} for what, cmd in ev["suggest"]]
+        if rnd["status"] == "open"
+        else [],
+    }
 
 
 def config_round(cfg: dict[str, Any], config_path: Any) -> dict[str, Any] | None:
@@ -206,6 +299,25 @@ def config_round(cfg: dict[str, Any], config_path: Any) -> dict[str, Any] | None
             "mismatch",
         )
     return rnd
+
+
+def _arm_problems(rel: str, rnd: dict[str, Any]) -> list[str]:
+    """An arm names runs that are not runs of its system on the round's dataset, or not scored under its label."""
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+    from evaluation_harness.model import runs as model_runs  # noqa: PLC0415
+
+    out: list[str] = []
+    ds = rnd.get("dataset_id")
+    for a in model_rounds.arms(rnd):
+        lbl = str(a.get("label") or "")
+        arm = f"{model_runs.arm_prefix(lbl)}/{ds}/{a['system']}"
+        for rid in a.get("runs") or []:
+            run = model_runs.run(str(rid))
+            if run is None or run.get("config_id") != a["system"] or run.get("dataset_id") != ds:
+                out.append(f"rounds/{rel}: arm {arm}: {rid} is not a run of {a['system']} on {ds}")
+            elif not any(model_runs.label(sd) == lbl for sd in model_runs.scores_of(str(rid))):
+                out.append(f"rounds/{rel}: arm {arm}: {rid} is not scored under {lbl or 'the plain runs'!r}")
+    return out
 
 
 def problems() -> list[str]:
@@ -246,6 +358,7 @@ def problems() -> list[str]:
             out.append(f"rounds/{rel}: dataset {doc.get('dataset_id')!r} does not exist")
         if doc.get("status") == "closed" and not (doc.get("conclusion") or {}).get("text"):
             out.append(f"rounds/{rel}: closed without a conclusion")
+        out += _arm_problems(rel, doc)
         known.add((doc.get("goal"), doc.get("round_id")))
     for f in sorted(_store.glob(base, "*/*.yaml")):
         doc = yaml.safe_load(_store.read_text(f, encoding="utf-8")) or {} if yaml else {}

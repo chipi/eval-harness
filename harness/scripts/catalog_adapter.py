@@ -94,10 +94,10 @@ def scores_once(adapter):
     read = adapter.scores
     kept: dict = {}
 
-    def scores(arm, *args, **kw):
-        k = (arm, args, tuple(sorted(kw.items())))
+    def scores(arm, rescore=False):
+        k = (arm, bool(rescore))  # scores(arm) and scores(arm, rescore=False) are one read
         if k not in kept:
-            kept[k] = read(arm, *args, **kw)
+            kept[k] = read(arm, rescore)
         return kept[k]
 
     adapter.scores = scores
@@ -237,7 +237,8 @@ class Adapter(Protocol):
     # Optional: the model records (data/models/) with the arms that use each, [{"record": {...},
     # "arms": [arm id]}]; the Models page and the arms page's model badge read it.
     # def models(self) -> list[dict]: ...
-    # Optional: eval rounds (ADR-0004), each round's record with "arms", the arm ids in play;
+    # Optional: eval rounds (ADR-0004), each round's record with "arms", the arm ids in play, "retired_arms", the arm ids
+    # it retired, and "arm_records", the arms as the round stores them (model/rounds);
     # a goal page shows them as its history.
     # def rounds(self) -> list[dict]: ...
     # Optional: every dataset id, including those no arm has run on yet.
@@ -1065,11 +1066,12 @@ class HarnessAdapter:
 
     @_memo
     def rounds(self) -> list[dict]:
-        """Eval rounds (ADR-0004, optional): each round's record, plus "arms" (the arm ids in
-        play: runs that name it, read under any label, and the systems carried in, less the retired)
-        and "retired_arms" (the arm ids it retired: every arm a retired run is scored in; a retirement naming
-        no run retires the system from the plain label's arm)."""
+        """Eval rounds (ADR-0004, optional): each round's record, plus "arms" (the arm ids in play, as the round
+        stores them, those the index has), "arm_records" (the arms as stored) and "retired_arms" (the arm ids it
+        retired, and every other arm a retired arm's runs are scored in: a re-score of a retired run is retired
+        with it)."""
         import yaml  # noqa: PLC0415
+        from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
 
         out = []
         base = self.data_dir / "rounds"
@@ -1078,31 +1080,18 @@ class HarnessAdapter:
             if not isinstance(doc, dict) or not doc.get("round_id"):
                 continue
             ds = doc.get("dataset_id", "")
-            ran = {
+            gone = {a["system"]: set(a.get("runs") or []) for a in model_rounds.arms(doc) if a.get("retired")}
+            retired = set(model_rounds.retired_ids(doc)) | {
                 arm
                 for arm, dirs in self._index().items()
                 if arm.split("/")[-2:-1] == [ds]
-                and any(
-                    (m := self._record(d)).get("round") == doc["round_id"]
-                    and m.get("goal") == doc.get("goal")
-                    for d in dirs
-                )
+                and gone.get(arm.rsplit("/", 1)[-1])
+                and any(self._run_id(d) in gone[arm.rsplit("/", 1)[-1]] for d in dirs)
             }
-            retired: set[str] = set()
-            for r in doc.get("retired") or []:
-                gone = set(r.get("runs") or [])
-                if not gone:
-                    retired.add(self.arm_of(ds, r.get("config_id")))
-                    continue
-                retired |= {
-                    arm
-                    for arm, dirs in self._index().items()
-                    if arm.split("/")[-2:] == [ds, r.get("config_id")]
-                    and any(self._run_id(d) in gone for d in dirs)
-                }
-            carried = {self.arm_of(ds, c) for c in doc.get("carried") or []}
-            in_play = sorted(a for a in (ran | carried) - retired if a in self._index())
-            out.append(dict(doc, arms=in_play, retired_arms=sorted(retired)))
+            in_play = [a for a in model_rounds.arm_ids(doc) if a in self._index()]
+            out.append(
+                dict(doc, arms=in_play, retired_arms=sorted(retired), arm_records=model_rounds.arms(doc))
+            )
         return out
 
     @_memo

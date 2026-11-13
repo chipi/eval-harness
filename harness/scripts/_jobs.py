@@ -196,6 +196,7 @@ LOCK_RULES: dict[str, Callable[[dict], list[tuple[str, bool]]]] = {
     "rescore": _rescore_locks,
     "judge-score": _rescore_locks,
     "round-open": lambda a: [(f"goal:{a['goal']}", True)] if a.get("goal") else [],
+    "round-carry": lambda a: [(f"goal:{a['goal']}", True)] if a.get("goal") else [],
     "round-retire": lambda a: [(f"goal:{a['goal']}", True)] if a.get("goal") else [],
     "round-close": lambda a: [(f"goal:{a['goal']}", True)] if a.get("goal") else [],
     "run-promote": _promote_locks,

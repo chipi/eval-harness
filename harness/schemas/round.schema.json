@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "round",
-  "description": "One round of an eval (ADR-0004), optional: what it set out to learn, what changed against the round before, the arms it dropped and why, the baseline it started from, and what it concluded. data/rounds/<goal_id>/<round_id>.yaml, written by evh round-open / round-retire / round-close. Its arms are the configs whose runs name it (`round:` in the config, recorded on the run).",
+  "description": "One round of an eval (ADR-0004), optional: what it set out to learn, what changed against the round before, the arms it dropped and why, the baseline it started from, and what it concluded. data/rounds/<goal_id>/<round_id>.yaml, written by evh round-open / round-retire / round-close. It stores its arms (RFC-032 step 5): a run made with `--round` names the round and joins its system's arm.",
   "type": "object",
   "required": ["round_id", "goal", "dataset_id", "status", "opened_at"],
   "additionalProperties": false,
@@ -15,19 +15,34 @@
     "hypothesis": {"type": "string", "description": "What the round sets out to learn, in a sentence."},
     "changes": {"type": "array", "items": {"type": "string"}, "description": "What changed against `from`, and why, one line each."},
     "baseline": {"type": ["string", "null"], "description": "The run it starts from and is measured against: the dataset's promoted baseline when it opened."},
-    "carried": {"type": "array", "items": {"type": "string"}, "description": "Config ids from earlier rounds kept in this one unchanged, compared without being run again."},
-    "retired": {
+    "arms": {
       "type": "array",
+      "description": "The round's arms (RFC-032 step 5): each a system placed in the round, read under one label, through the runs named; a retired arm stays, with when, why and who.",
       "items": {
         "type": "object",
-        "required": ["config_id", "reason", "at"],
+        "required": ["system", "runs", "entered"],
         "additionalProperties": false,
         "properties": {
-          "config_id": {"type": "string"},
-          "runs": {"type": "array", "items": {"type": "string"}, "description": "The retired runs of the system (run ids; a re-timing of it on another machine, say). The system is out once every run of it on the dataset, read as one arm, is named; none named: it is retired from the plain runs outright."},
-          "reason": {"type": "string"},
-          "at": {"type": "string"},
-          "actor": {"$ref": "#/properties/actor"}
+          "system": {"type": "string", "description": "The system's id."},
+          "label": {"type": "string", "description": "What its scores are read under (\"rescored 5f2c057c\", \"linux\", \"silver\"); absent: the plain runs."},
+          "runs": {"type": "array", "items": {"type": "string"}, "description": "The runs the arm is read through (run ids)."},
+          "entered": {
+            "type": "object",
+            "required": ["how", "at"],
+            "additionalProperties": false,
+            "properties": {
+              "how": {"enum": ["ran", "carried"], "description": "ran: a run of it named the round; carried: kept from an earlier round (round-open --keep, --adopt), compared without being run again."},
+              "at": {"type": ["string", "null"]},
+              "from": {"type": "string", "pattern": "^r[0-9]+$", "description": "The round it was carried from."},
+              "actor": {"$ref": "#/properties/actor"}
+            }
+          },
+          "retired": {
+            "type": "object",
+            "required": ["at", "reason"],
+            "additionalProperties": false,
+            "properties": {"at": {"type": ["string", "null"]}, "reason": {"type": "string"}, "actor": {"$ref": "#/properties/actor"}}
+          }
         }
       }
     },

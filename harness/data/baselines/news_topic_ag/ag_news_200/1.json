@@ -17,7 +17,7 @@
   "migrated": true,
   "promoted_at": "2026-10-25T14:08:24Z",
   "promoted_from": "ag_bert_mini_n200_v1_20260927T090317Z",
-  "reason": "bert_mini (44 MB, $0 marginal), for labels that follow AG News's house convention: 0.9450, not significantly different from bert_base_ta (0.9600, p = 0.55), and 11\u00d7 faster on one Linux machine (4.3 vs 49 ms median). REPORT_CLASSIFICATION, executive summary and \u00a73.1.",
+  "reason": "bert_mini (44 MB, $0 marginal), for labels that follow AG News's house convention: 0.9450, not significantly different from bert_base_ta (0.9600, p = 0.55), and 11× faster on one Linux machine (4.3 vs 49 ms median). REPORT_CLASSIFICATION, executive summary and §3.1.",
   "reference_tier": "gold",
   "replaces": null,
   "scores": {
@@ -32,5 +32,7 @@
     "parsed": 1.0,
     "total_cost_usd": 0.0
   },
-  "version": 1
+  "version": 1,
+  "round": "r1",
+  "arm": "ag_bert_mini_v1"
 }

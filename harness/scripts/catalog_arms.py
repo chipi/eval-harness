@@ -450,17 +450,16 @@ def render_arms(A, by_ds: dict, out, nav: list, rows: list[dict] | None = None) 
         for bl in v.get("baselines") or []:
             if bl.get("promoted_at") and bl.get("arm"):
                 feed.append([bl["promoted_at"][:10], bl["arm"], "promoted as the baseline"])
+    from evaluation_harness.model import rounds as model_rounds  # noqa: PLC0415
+
     fn = getattr(A, "rounds", None)
+    shown = {r["arm"] for r in rows}
     for rnd in fn() if callable(fn) else []:
-        for x in rnd.get("retired") or []:
-            day = (rnd.get("closed_at") or rnd.get("opened_at") or "")[:10]
-            match = [
-                r["arm"]
-                for r in rows
-                if r["system"] == x.get("config_id") and r["dataset"] == rnd.get("dataset_id")
-            ]
-            for arm in match[:1]:
-                feed.append([day, arm, f"retired in {rnd['round_id']}: {x.get('reason', '')}"])
+        for x in rnd.get("arm_records") or []:
+            arm = model_rounds.arm_id(rnd, x)
+            if x.get("retired") and arm in shown:
+                day = (rnd.get("closed_at") or rnd.get("opened_at") or "")[:10]
+                feed.append([day, arm, f"retired in {rnd['round_id']}: {x['retired'].get('reason', '')}"])
     feed.sort(key=lambda x: x[0], reverse=True)
     labels = {r["arm"]: r["label"] for r in rows}
     cb.write_period_rows(out, "arms", period_rows)

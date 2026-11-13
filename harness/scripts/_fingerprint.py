@@ -153,19 +153,20 @@ def filter_dirt(status: str, data_rel: str | None) -> list:
 
     Run output is not code. An UNTRACKED path under `<data_rel>runs/` is ignored, and under
     `<data_rel>judge-summaries/` (a judging pass's summary) and `<data_rel>prompts/` (the prompt versions runs
-    record, RFC-028); anything else still counts -- a modified tracked file anywhere (a committed run included),
-    and untracked files outside the runs, which could be code. A throwaway pass (`evh run --scratch`) is under
-    `.build/`, which git ignores.
+    record, RFC-028); and a round's record under `<data_rel>rounds/`, new or changed: a run made in a round joins its
+    arm there (RFC-032 step 5), so the round file changes with every run of it, and it says which arms a round
+    holds, not how anything is measured. Anything else still counts -- a modified tracked file anywhere else (a
+    committed run included), and untracked files outside those, which could be code. A throwaway pass
+    (`evh run --scratch`) is under `.build/`, which git ignores.
     Pure, so the rule is tested without a git tree.
     """
     dirt = []
     for line in (status or "").splitlines():
         path = line[3:].strip().strip('"')
-        if (
-            line.startswith("?? ")
-            and data_rel
-            and path.startswith(data_rel)
-            and path[len(data_rel) :].startswith(("runs/", "judge-summaries/", "prompts/"))
+        under = path[len(data_rel) :] if data_rel and path.startswith(data_rel) else None
+        if under is not None and (
+            under.startswith("rounds/")
+            or (line.startswith("?? ") and under.startswith(("runs/", "judge-summaries/", "prompts/")))
         ):
             continue
         dirt.append(line)

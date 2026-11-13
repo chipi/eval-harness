@@ -3,20 +3,29 @@ goal: news_summary_cnn
 dataset_id: cnn_dailymail_200
 from: r2
 hypothesis: Does a local arm's output change when it is run again on the same machine?
+arms:
+- system: cnn_bart_s_v1
+  label: repeats
+  runs:
+  - cnn_bart_s_n200_v1_20260930T085713Z
+  entered:
+    how: ran
+    at: '2026-09-30T09:12:12Z'
+    actor:
+      type: unknown
+      name: before 0.8.0
+      from: migration
+  retired:
+    at: '2026-09-30T09:12:12Z'
+    reason: a second run of the record's config; data/runs is the record
 status: closed
 opened_at: '2026-09-30T09:12:12Z'
 closed_at: '2026-09-30T09:12:12Z'
-retired:
-- config_id: cnn_bart_s_v1
-  reason: a second run of the record's config; data/runs is the record
-  at: '2026-09-30T09:12:12Z'
-  runs:
-  - cnn_bart_s_n200_v1_20260930T085713Z
-conclusion:
-  text: bart_s re-ran 200 of 200 outputs byte-identical on the same machine (three times, counting the
-    resumed run). (REPORT_SUMMARIZATION.)
-  promoted_run: null
 actor:
   type: unknown
   name: before 0.8.0
   from: migration
+conclusion:
+  text: bart_s re-ran 200 of 200 outputs byte-identical on the same machine (three times, counting the
+    resumed run). (REPORT_SUMMARIZATION.)
+  promoted_run: null

@@ -2,15 +2,16 @@
 
     evh round-open   --goal G --dataset D [--from rN] [--hypothesis "..."] [--change "..."]...
                      [--keep cfg,...] [--retire cfg,... --reason "..."] [--budget-usd N] [--baseline cfg|run]
-    evh round-retire --goal G --round rN --arm cfg [--runs RUN_ID,...] --reason "..."
+    evh round-carry  --goal G --round rN --arm cfg [--from rM]
+    evh round-retire --goal G --round rN --arm cfg --reason "..."
     evh round-close  --goal G --round rN --conclusion "..." [--promote <run_id>]
     evh rounds       --goal G [--round rN]
 
 A round is a record beside the goal, data/rounds/<goal>/<round>.yaml: what it sets out to learn,
-what changed, the arms it drops and why, the baseline it starts from, its conclusion. Its arms are
-the systems whose runs name it (`--round rN` on `evh run`) and those carried in unchanged
-(--keep). `evh rounds` reads the evidence the way the inspector does and suggests the next
-decision, each as the command that makes it; the commands are the only writers. A project that
+what changed, its arms, the baseline it starts from, its conclusion. It stores its arms: each a system, the label it is
+read under, the runs it is read through, how it entered (ran in the round, with `--round rN` on `evh run`; or carried
+in unchanged: --keep, round-carry) and its retirement. `evh rounds` reads the evidence the way the inspector does and
+suggests the next decision, each as the command that makes it; the commands are the only writers. A project that
 never opens a round loses nothing.
 """
 
@@ -23,20 +24,25 @@ if not __package__:  # run as a file (a checkout's python scripts/x.py, or an in
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))  # the package's parent
 
 import argparse
-import statistics
 import subprocess
 import sys
 import textwrap
-from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
 
 from evaluation_harness import _common, _jsonout, _rounds, _store
-from evaluation_harness import catalog_serve as cs
 from evaluation_harness._actor import actor, require_named
-from evaluation_harness._common import die, load_goals, now, read_json
-from evaluation_harness.catalog_adapter import load_catalog_adapter
+from evaluation_harness._common import die, load_goals, now
+from evaluation_harness.model import rounds as model_rounds
 from evaluation_harness.model import runs as model_runs
+from evaluation_harness.model.rounds import (  # noqa: F401  (rounds' evidence lives in the model)
+    _against,
+    _arm,
+    _best,
+    _dirs,
+    _promote_hold,
+    _silver_authors,
+    evidence,
+)
 from evaluation_harness.stats import fmt_p
 
 HERE = Path(__file__).resolve().parent
@@ -114,6 +120,7 @@ def open_round(argv: list[str]) -> int:
         from evaluation_harness import rescore as rs  # noqa: PLC0415
 
         carried = _ids(args.keep)
+        from_rnd = _round(args.goal, args.from_) if args.from_ else None
         if args.adopt:
             if args.from_ or _rounds.load_rounds(args.goal):
                 die(
@@ -126,9 +133,9 @@ def open_round(argv: list[str]) -> int:
             if not carried:
                 die(f"--adopt: no run on {args.dataset} names goal {args.goal}", "not-found")
         elif carried == ["all"]:
-            if not args.from_:
+            if from_rnd is None:
                 die("--keep all needs --from: the round whose arms are carried", "bad-argument")
-            carried = _rounds.arms_of(_round(args.goal, args.from_))
+            carried = _rounds.arms_of(from_rnd)
         if args.scoring and len(args.scoring.split()) < 3:
             die("--scoring needs a sentence: what changed in the scoring, and why?", "bad-argument")
         # A study's round (RFC-029) opens and closes with its study: it holds no other round back.
@@ -172,15 +179,15 @@ def open_round(argv: list[str]) -> int:
             "baseline": start,
             "budget_usd": args.budget_usd,
             "harness": _rounds.harness_now(),
-            "carried": carried,
+            "arms": [],
             "status": "open",
             "opened_at": now(),
             "actor": actor(),
-            "retired": [
-                {"config_id": c, "reason": args.reason, "at": now(), "actor": actor()}
-                for c in _ids(args.retire)
-            ],
         }
+        dropped = _ids(args.retire)
+        _carry_in(doc, list(dict.fromkeys([*carried, *dropped])), from_rnd)
+        for c in dropped:
+            model_rounds.retire(doc, c, args.reason, actor())
         if args.scoring:
             _adopt_scoring(doc, args.scoring, rs)
         p = _rounds.save(doc)
@@ -203,6 +210,8 @@ def open_round(argv: list[str]) -> int:
                 f"  Carried in as they are, their runs already count: {', '.join(carried)} "
                 "(they need not run again)."
             )
+        if dropped:
+            print(f"  Dropped here: {', '.join(dropped)} ({args.reason})")
         print(
             f"  A NEW system joins it by running in it: evh run --system <id> --dataset {args.dataset} "
             f"--goal {args.goal} --round {rid}; then: evh rounds --goal {args.goal}"
@@ -211,13 +220,31 @@ def open_round(argv: list[str]) -> int:
         return 0
 
 
+def _carry_in(doc: dict, systems: list[str], frm: dict | None) -> None:
+    """The systems carried into the round unchanged: an arm of the round they come from keeps its label and its runs
+    there; a system in none is read through its plain runs on the dataset."""
+    from evaluation_harness._runs import runs_on  # noqa: PLC0415
+
+    for c in systems:
+        src = model_rounds.find_arm(frm, c) if frm else None
+        if frm is not None and src is not None:
+            model_rounds.carry(
+                doc, c, src.get("label") or "", list(src.get("runs") or []), frm["round_id"], actor()
+            )
+            continue
+        runs = sorted(m["run_id"] for _d, m in runs_on(doc["dataset_id"], label="", config_id=c))
+        if not runs:
+            die(f"{c!r}: no run of it on {doc['dataset_id']} to carry in", "not-found")
+        model_rounds.carry(doc, c, "", runs, None, actor())
+
+
 def _adopt_scoring(doc: dict, why: str, rs) -> None:
     """The round is judged by the scorer in this tree (RFC-022): every carried arm whose runs another scorer judged
     is re-scored first ($0), so the round compares like with like; each one's deciding measure before and after is
     printed, and the round records the scorer and the change."""
     goal = _goal(doc["goal"])
     measure = ((goal.get("success_criteria") or {}).get("primary") or {}).get("measure", "")
-    runs = rs.measured_runs(doc["dataset_id"], set(doc["carried"]))
+    runs = rs.measured_runs(doc["dataset_id"], set(_rounds.arms_of(doc)))
     adapters: dict = {}
     todo: list = []
     now_by: dict[str, int] = {}
@@ -244,19 +271,87 @@ def _adopt_scoring(doc: dict, why: str, rs) -> None:
         fmt = lambda v: "—" if v is None else f"{v:.4g}"  # noqa: E731
         print(f"    {m['config_id']:52} {measure} {fmt(before)} -> {fmt(after)}  ({m['run_id']})")
     written = sorted({str(model_runs.meta(x).get("label") or "") for x, _ in done})
+    _rounds.read_under_rescore(doc, done)
     doc["scoring"] = [{"at": now(), "scorer": scorer, "why": why, "written": written, "runs": len(done)}]
+
+
+def carry(argv: list[str]) -> int:
+    """evh round-carry: bring an arm of an earlier round into the open round, unchanged."""
+    ap = argparse.ArgumentParser(
+        prog="evh round-carry",
+        description="Carry an arm of an earlier round of the goal into the open round: its system, the label it is "
+        "read under and its runs, unchanged; nothing is run again.",
+    )
+    ap.add_argument("--goal", required=True)
+    ap.add_argument("--round", required=True, help="the open round it joins")
+    ap.add_argument("--arm", required=True, help="its system id")
+    ap.add_argument(
+        "--from", dest="from_", help="the earlier round it comes from (default: the latest round that has it)"
+    )
+    from evaluation_harness._actor import add_by  # noqa: PLC0415
+
+    add_by(ap)
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="one JSON object on stdout when done (the text goes to stderr as it is printed): the envelope every --json command gives (result.blocks, result.values)",
+    )
+    args = ap.parse_args(argv)
+    with _jsonout.collect("round-carry", args.json, live=sys.stderr):
+        rnd = _round(args.goal, args.round)
+        if rnd.get("status") == "closed":
+            die(f"round {args.round} is closed", "not-allowed")
+        who = require_named("round-carry")
+        if args.arm in {a["system"] for a in model_rounds.in_play(rnd)}:
+            die(f"{args.arm!r} is in play in {args.round} already", "not-allowed")
+        earlier = [
+            r
+            for r in _rounds.load_rounds(args.goal)
+            if _rounds._num(r["round_id"]) < _rounds._num(rnd["round_id"])
+        ]
+        if args.from_:
+            src = _round(args.goal, args.from_)
+            if src not in earlier:
+                die(f"--from {args.from_}: not an earlier round than {args.round}", "bad-argument")
+            frm = [src]
+        else:
+            frm = sorted(earlier, key=lambda r: -_rounds._num(r["round_id"]))
+        found = next(((r, a) for r in frm if (a := model_rounds.find_arm(r, args.arm))), None)
+        if found is None:
+            where = args.from_ or "an earlier round"
+            have = ", ".join(sorted({a["system"] for r in frm for a in model_rounds.arms(r)})) or "no arms"
+            die(f"{where} of {args.goal} has no arm {args.arm!r} (it has: {have})", "not-found")
+        src, arm = found
+        if src["dataset_id"] != rnd["dataset_id"]:
+            die(
+                f"{src['round_id']} ran on {src['dataset_id']!r}, {args.round} on {rnd['dataset_id']!r}: "
+                "an arm is carried between rounds of one dataset",
+                "mismatch",
+            )
+        model_rounds.carry(
+            rnd, args.arm, arm.get("label") or "", list(arm.get("runs") or []), src["round_id"], who
+        )
+        _rounds.save(rnd)
+        print(
+            f"{args.arm} carried from {src['round_id']} into {args.round}: {len(arm.get('runs') or [])} run(s), unchanged"
+        )
+        return 0
 
 
 def retire(argv: list[str]) -> int:
     """evh round-retire: drop an arm from a round, with the reason."""
-    ap = argparse.ArgumentParser(prog="evh round-retire", description="Drop an arm from a round.")
+    ap = argparse.ArgumentParser(
+        prog="evh round-retire",
+        description="Drop an arm from a round, with the reason. An arm is retired whole (its system, its label and all "
+        "its runs); a run of it made afterwards brings it back.",
+    )
     ap.add_argument("--goal", required=True)
     ap.add_argument("--round", required=True)
     ap.add_argument("--arm", required=True, help="its system id")
     ap.add_argument(
-        "--runs",
-        help="retire only these runs of the system (run ids, comma-separated: a re-timing of it on another machine, "
-        "say); default: its runs on the round's dataset read as the plain runs",
+        "--label",
+        help='only the arm read under this label (a re-timing\'s "linux", say; "" the plain runs); default: every '
+        "arm of the system in play",
     )
     ap.add_argument("--reason", required=True)
     from evaluation_harness._actor import add_by  # noqa: PLC0415
@@ -274,36 +369,17 @@ def retire(argv: list[str]) -> int:
             die(f"round {args.round} is closed", "not-allowed")
         if len(args.reason.split()) < 3:
             die("--reason must be a sentence: what did the tests show?", "bad-argument")
-        from evaluation_harness._runs import runs_on  # noqa: PLC0415
-
-        ds = rnd["dataset_id"]
-        of_arm = runs_on(ds, label=None, config_id=args.arm)
-        runs = _ids(args.runs)
-        if args.runs:
-            unknown = sorted(set(runs) - {m["run_id"] for _d, m in of_arm})
-            if unknown:
-                die(
-                    f"--runs: {', '.join(unknown)} {'is' if len(unknown) == 1 else 'are'} not "
-                    f"{'a run' if len(unknown) == 1 else 'runs'} of {args.arm} on {ds}",
-                    "not-found",
-                )
-            labels = {model_runs.label(d, m) for d, m in of_arm if m["run_id"] in runs}
-        else:
-            labels = {""}
-            runs = sorted({m["run_id"] for d, m in of_arm if model_runs.label(d, m) == ""})
-        in_play = sorted({a for lab in labels for a in _rounds.arms_of(rnd, lab)})
-        if args.arm not in in_play:
+        gone = 0
+        while model_rounds.retire(rnd, args.arm, args.reason, actor(), args.label) is not None:
+            gone += 1  # every arm of the system in play (or the one under --label)
+        if not gone:
             die(
-                f"{args.arm!r} is not in play in {args.round}: {', '.join(in_play) or '(no arms yet)'}",
+                f"{args.arm!r}{'' if args.label is None else f' read under {args.label!r}'} is not in play in "
+                f"{args.round}: {', '.join(_rounds.arms_of(rnd)) or '(no arms yet)'}",
                 "not-found",
             )
-        rnd.setdefault("retired", []).append(
-            {"config_id": args.arm, "runs": runs, "reason": args.reason, "at": now(), "actor": actor()}
-        )
         _rounds.save(rnd)
-        print(
-            f"{args.arm}{' (runs ' + ', '.join(runs) + ')' if args.runs else ''} retired from {args.round}: {args.reason}"
-        )
+        print(f"{args.arm} retired from {args.round}: {args.reason}")
         return 0
 
 
@@ -384,332 +460,6 @@ def close(argv: list[str]) -> int:
         return 0
 
 
-def _best(A, arms: list[str], metric: str, lower: bool) -> str | None:
-    means = {}
-    for a in arms:
-        vals = (A.scores(a).get(metric) or {}).get("values") or {}
-        if vals:
-            means[a] = statistics.fmean(vals.values())
-    if not means:
-        return None
-    return (min if lower else max)(means, key=lambda a: means[a])
-
-
-def _arm(A, dataset: str, config_id: str) -> str:
-    """The adapter's arm id for a system (arm_of), else the harness's layout."""
-    fn = getattr(A, "arm_of", None)
-    return fn(dataset, config_id) if callable(fn) else f"runs/{dataset}/{config_id}"
-
-
-def _reader(A):
-    """read(dataset, config_id) -> the arm a round reads for it: as the goal reads it (RFC-022), its latest
-    re-score when every run of the measured arm was re-scored against the same reference, else the arm."""
-    from evaluation_harness import catalog_build as cb  # noqa: PLC0415
-
-    instead = {
-        a["arm"]: a["superseded_by"]
-        for v in cb.collect(A).values()
-        for a in v.get("arms", [])
-        if a.get("superseded_by")
-    }
-
-    def read(dataset: str, config_id: str) -> str:
-        arm = _arm(A, dataset, config_id)
-        return instead.get(arm, arm)
-
-    return read
-
-
-def _dirs(A, arm: str) -> list:
-    """The run directories behind an arm, where the adapter can say (HarnessAdapter)."""
-    fn = getattr(A, "_dirs", None)
-    return list(fn(arm)) if callable(fn) else []
-
-
-def _cost_per_item(A, arm: str) -> float | None:
-    vals = (A.scores(arm).get("cost_usd") or {}).get("values") or {}
-    return statistics.fmean(vals.values()) if vals else None
-
-
-def _silver_authors(A, ds: str) -> list[tuple[str, str]]:
-    """(reference id, arm) for each silver reference of this dataset whose author is a run here:
-    the frontier arm whose outputs became the reference, read from its manifest."""
-    out = []
-    root = _common.REFERENCES / "silver"
-    known = set(A.arms())
-    for mf in sorted(_store.glob(root, "*/manifest.json")) if _store.is_dir(root) else []:
-        m = read_json(mf)
-        cid = _common.system_now((m.get("from_run") or {}).get("config_id") or m.get("authored_by"))
-        if m.get("dataset_id") == ds and cid and _arm(A, ds, cid) in known:
-            out.append((f"silver/{mf.parent.name}", _arm(A, ds, cid)))
-    return out
-
-
-def _against(A, label: str, other: str, leader: str, metric: str) -> dict | None:
-    d = cs.compare({"runs": [f"{other},{leader}"], "baseline": [other], "metric": [metric]})
-    row = next(iter(d.get("rows") or []), None)
-    if not row:
-        return None
-    return {"label": label, "other": other, "verdict": row["verdict"], "p": row["p"], "delta": row["delta"]}
-
-
-def _against_family(A, label: str, other: str, leader: str, arms: list[str], metric: str) -> dict | None:
-    """The leader against `other`, corrected for having been chosen from the round's arms. The leader
-    is the best mean of the round, so testing it alone, uncorrected, would count the luck of the choice
-    as evidence (a selection effect). Bonferroni over the round's arms (every one could have been the
-    leader): significant only when p x K <= 0.05. Conservative, and it needs no more than the one
-    paired test, read as the inspector reads it (re-scored where the arms are)."""
-    row = _against(A, label, other, leader, metric)
-    if not row:
-        return None
-    k = max(1, len([a for a in arms if a != other]))
-    p_adj = min(1.0, row["p"] * k) if row.get("p") is not None else None
-    verdict = row["verdict"]
-    if verdict.startswith("significant") and (p_adj is None or p_adj > 0.05):
-        verdict = "not significant"
-    return {**row, "verdict": verdict, "p_adjusted": p_adj, "family": k}
-
-
-def _promote_hold(
-    against: list[dict], prev_id: str | None, tied: Sequence[str] = (), scorers_differ: bool = False
-) -> str:
-    """Why a round's leader is not to be promoted, from its `against` rows, or "" to promote it: it
-    must be significantly better than the baseline the round started from (corrected for the round's
-    arms, as it was chosen from them), not significantly worse than the previous round's best, and
-    separated from the other arms of the round. A mean that leads by chance is no reason to promote,
-    and neither is a test the round's own notes say not to read."""
-    row_of = {r["label"]: r for r in against}
-    vs_base = row_of.get("the baseline it started from")
-    vs_prev = next((r for k, r in row_of.items() if k.endswith("'s best")), None)
-
-    def said(r: dict) -> str:
-        fam = (
-            f", Bonferroni over {r['family']} arms: {fmt_p(r['p_adjusted'])}"
-            if r.get("family", 1) > 1 and r.get("p_adjusted") is not None
-            else ""
-        )
-        return f"{r['verdict']}, Δ {r['delta']:+.4f}, p {fmt_p(r['p'])}{fam}"
-
-    if scorers_differ:
-        return "measured by different scorers: re-score the arms before reading the test"
-    if vs_base is not None and vs_base["verdict"] != "significant: better":
-        return f"not ahead of the baseline it started from ({said(vs_base)})"
-    if prev_id and vs_prev is not None and vs_prev["verdict"] == "significant: worse":
-        return f"behind {prev_id}'s best ({said(vs_prev)})"
-    if tied:
-        shown = ", ".join(tied[:5]) + (f" and {len(tied) - 5} more" if len(tied) > 5 else "")
-        return (
-            f"not separated from {shown} (not significantly different after Holm): the goal's tie-break picks among "
-            "them, and `evh goals --goal` names the arm it recommends"
-        )
-    return ""
-
-
-def evidence(goal: str, rnd: dict) -> dict:
-    """What the evidence says about a round, read as the inspector reads it: its arms against its
-    leader; its leader against the previous round's best, the baseline it started from and the arm
-    that wrote a silver reference of the dataset (`against`); spend and cost per item; and the
-    decisions that follow, each with its command."""
-    g = _goal(goal)
-    prim = (g.get("success_criteria") or {}).get("primary") or {}
-    metric, lower = prim.get("measure", ""), prim.get("direction") == "lower"
-    # The project's own catalog adapter (--adapter, else config.yaml), as the pages read it.
-    A = load_catalog_adapter(None)
-    cs.set_adapter(A)
-    ds = rnd["dataset_id"]
-    read = _reader(A)
-    arm = {c: read(ds, c) for c in _rounds.arms_of(rnd)}
-    rescored = [a for a in arm.values() if a.startswith("rescored-")]
-    moved = sorted({a.split("/")[0].removeprefix("rescored-") for a in rescored})
-    known = set(A.arms())
-    arms = [a for a in arm.values() if a in known]
-    out: dict[str, Any] = {
-        "metric": metric,
-        "arms": arms,
-        "rows": [],
-        "against": [],
-        "suggest": [],
-        "notes": (
-            [f"{len(rescored)} arm(s) read from their re-score by {', '.join(moved)}"] if moved else []
-        ),
-    }
-    # ONE INSTRUMENT PER ROUND (the fleet's feedback 17): harness code taken mid-round measures some arms with
-    # other code than the rest. Named, never refused: the change may not touch what was measured.
-    split = _rounds.off_harness(rnd)
-    if split:
-        had = (rnd.get("harness") or {}).get("version")
-        out["notes"].append(
-            f"{len(split)} run(s) ran on other harness code than the round opened on ({had}, code "
-            f"{str(rnd['harness']['code_sha256'])[:12]}): "
-            + ", ".join(
-                f"{rid} ({h.get('version')}, code {str(h.get('code_sha256'))[:12]})" for rid, h in split
-            )
-            + f"; to compare like with like, {_rounds.how_to_run_on(rnd)}"
-        )
-    # ONE REFERENCE PER ROUND: a silver mean beside a gold mean is not a comparison. The round is
-    # read against the reference most of its arms are scored against (gold before silver on a
-    # tie); an arm on another one is named and left out, never silently.
-    ref_of = {a: A.describe(a).get("reference") or "" for a in arms}
-    if len(set(ref_of.values())) > 1:
-        from collections import Counter  # noqa: PLC0415
-
-        count = Counter(ref_of.values())
-        rank = {"gold": 0, "silver": 1}
-        ref = min(count, key=lambda r: (-count[r], rank.get(r.split("/")[0], 2), r))
-        off = [a for a in arms if ref_of[a] != ref]
-        out["notes"].append(
-            f"read against {ref or 'no reference'}; not compared: "
-            + ", ".join(f"{a.rsplit('/', 1)[-1]} (scored against {ref_of[a] or 'no reference'})" for a in off)
-            + " — run them again to score them against it"
-        )
-        arms = [a for a in arms if ref_of[a] == ref]
-        out["arms"] = arms
-        out["reference"] = ref
-    round_ref = out.get("reference") or next(iter(set(ref_of.values())), "")
-    spent = sum((m.get("scores") or {}).get("total_cost_usd") or 0 for _, m in _rounds.runs_of(rnd))
-    out["spent"] = spent
-    if rnd.get("budget_usd") is not None:
-        line = f"spent ${spent:.4f} of ${rnd['budget_usd']:.2f}"
-        if rnd.get("status") != "closed":
-            # What a spending command would be given now (RFC-026 step 5): running commands' reservations and a
-            # stopped run's paid items counted, as the commands count them.
-            from evaluation_harness import _spend  # noqa: PLC0415
-
-            left = _spend.round_left(rnd)
-            out["left"] = None if left is None else round(left, 8)
-            if left is not None and abs(rnd["budget_usd"] - spent - left) > 1e-9:
-                line += f"; ${max(left, 0):.4f} left, counting what running or stopped commands hold"
-        out["notes"].append(line + (" — over budget" if spent > rnd["budget_usd"] else ""))
-    leader = _best(A, arms, metric, lower)
-    out["leader"] = leader
-    if not leader:
-        out["notes"].append(
-            f"no arm in {rnd['round_id']} records {metric} yet: run them (evh run --system <id> --dataset <id> --goal {rnd['goal']} --round {rnd['round_id']})"
-        )
-        return out
-    # The arm the round started from: the goal's promoted baseline, never suggested for retirement.
-    base_run = rnd.get("baseline")
-    barm = (
-        next(
-            (
-                a
-                for a in known
-                if a.startswith(_arm(A, ds, ""))
-                and any(model_runs.run_of(d).name == base_run for d in _dirs(A, a))
-            ),
-            None,
-        )
-        if base_run
-        else None
-    )
-    # Read the baseline as the round reads its arms: its latest re-score where it has one. Its original
-    # arm is scored differently from the re-scored arms beside it, so the paired test had no rows and the
-    # rule "a leader must beat the baseline" never ran.
-    if barm:
-        barm = read(ds, barm.rsplit("/", 1)[-1])
-    level: list[str] = []  # the arms the leader is not separated from, after Holm
-    if len(arms) > 1:
-        from evaluation_harness import stats  # noqa: PLC0415
-
-        if len(arms) <= cs.LIMITS["max_arms"]:
-            d = cs.compare({"runs": [",".join(arms)], "baseline": [leader], "metric": [metric]})
-        else:
-            # More arms than the inspector compares in one request: the same paired test, Holm across them,
-            # read from the scores directly. The request's refusal used to leave the rows empty, without a word.
-            series = {a: (A.scores(a).get(metric) or {}).get("values") or {} for a in arms}
-            d = stats.compare(series, leader, higher_is_better=not lower, clusters=cs.goal_clusters_on(ds)[0])
-        if d.get("error"):
-            out["notes"].append(f"no comparison: {d['error']}")
-        out["rows"] = d.get("rows") or []
-        out["notes"] += [
-            w
-            for w in [*(d.get("warnings") or []), *((d.get("conditions") or {}).get("warnings") or [])]
-            if w not in out["notes"]
-        ]
-        # Scored against its own silver, the arm that wrote it is the yardstick, not a contender:
-        # losing to the leader there is the finding, not a reason to drop it. Against gold it is an
-        # arm like any other. The baseline the round started from is the goal's, not the round's to
-        # retire: promoting the leader on close replaces it.
-        authors = {a for rid, a in _silver_authors(A, ds) if rid == round_ref}
-        for r in out["rows"]:
-            cid = r["arm"].rsplit("/", 1)[-1]
-            if r["verdict"] == "significant: worse" and r["arm"] not in authors and r["arm"] != barm:
-                reason = f"significantly worse than {leader.rsplit('/', 1)[-1]} on {metric} after Holm (p {fmt_p(r['p'])})"
-                out["suggest"].append(
-                    (
-                        f"retire {cid}",
-                        f'evh round-retire --goal {goal} --round {rnd["round_id"]} --arm {cid} --reason "{reason}"',
-                    )
-                )
-        level = [r["arm"].rsplit("/", 1)[-1] for r in out["rows"] if r["verdict"] == "not significant"]
-        if level:
-            out["suggest"].append(
-                (
-                    f"{len(level)} arm(s) not significantly different from the leader ({', '.join(level)}): more items may tell them apart",
-                    f"evh rank-stability --dataset-id {ds}",
-                )
-            )
-    prev = _rounds.find(goal, rnd["from"]) if rnd.get("from") else None
-    if prev:
-        pbest = _best(A, [read(prev["dataset_id"], c) for c in _rounds.arms_of(prev)], metric, lower)
-        if pbest and pbest != leader and prev["dataset_id"] == ds:
-            row = _against(A, f"{prev['round_id']}'s best", pbest, leader, metric)
-            if row:
-                out["against"].append(row)
-                if row["verdict"] != "significant: better":
-                    how = (
-                        "is significantly worse than"
-                        if row["verdict"] == "significant: worse"
-                        else "is not significantly different from"
-                    )
-                    out["suggest"].append(
-                        (
-                            f"{rnd['round_id']}'s best {how} {prev['round_id']}'s ({pbest.rsplit('/', 1)[-1]}): change course, or close",
-                            "",
-                        )
-                    )
-    if barm and barm != leader:
-        row = _against_family(A, "the baseline it started from", barm, leader, arms, metric)
-        if row:
-            out["against"].append(row)
-    # The frontier arm whose outputs became a silver reference: how close the leader comes to it,
-    # scored on the same references as the round, and at what cost per item.
-    for ref_id, author in _silver_authors(A, ds):
-        if author != leader:
-            row = _against(A, f"the arm that wrote {ref_id}", author, leader, metric)
-            if row:
-                out["against"].append(row)
-    costs = {a: _cost_per_item(A, a) for a in [leader, *(r["other"] for r in out["against"])]}
-    priced = {a: c for a, c in costs.items() if c is not None}
-    if priced:
-        out["cost_per_item"] = priced
-        out["notes"].append(
-            "cost per item: " + ", ".join(f"{a.rsplit('/', 1)[-1]} ${c:.6f}" for a, c in priced.items())
-        )
-    lead_run = (
-        sorted(model_runs.run_of(d).name for d in _dirs(A, leader))[0] if _dirs(A, leader) else "<run_id>"
-    )
-    # Promote only what is not already the baseline: the leader may be the run the round began from.
-    already = lead_run == rnd.get("baseline") or any(
-        model_runs.run_of(d).name == rnd.get("baseline") for d in _dirs(A, leader)
-    )
-    # And only a leader the evidence puts ahead: significantly better than the baseline it started from,
-    # and not behind the previous round's best. A mean that leads by chance is no reason to promote.
-    scorers_differ = any("different scorers" in n for n in out["notes"])
-    hold = _promote_hold(out["against"], prev["round_id"] if prev else None, level, scorers_differ)
-    promote = not already and not hold
-    out["suggest"].append(
-        (
-            "close the round with what it showed"
-            + (f" ({leader.rsplit('/', 1)[-1]} is already the baseline)" if already else "")
-            + (f", promoting nothing: {leader.rsplit('/', 1)[-1]} is {hold}" if hold and not already else ""),
-            f'evh round-close --goal {goal} --round {rnd["round_id"]} --conclusion "..."'
-            + (f" --promote {lead_run}" if promote else ""),
-        )
-    )
-    return out
-
-
 def status(argv: list[str]) -> int:
     """evh rounds: every round of a goal, the open one with its evidence and suggestions."""
     ap = argparse.ArgumentParser(
@@ -737,24 +487,12 @@ def _status(args: argparse.Namespace) -> int:
         )
         _jsonout.values({"goal": args.goal, "rounds": []})
         return 0
-    if not _jsonout.table(
-        ["round_id", "status", "dataset_id", "arms", "retired", "conclusion"],
-        [
-            [
-                r["round_id"],
-                r["status"],
-                r.get("dataset_id", ""),
-                len(_rounds.arms_of(r)),
-                len(r.get("retired") or []),
-                (r.get("conclusion") or {}).get("text", ""),
-            ]
-            for r in rounds
-        ],
-    ):
-        for r in rounds:
-            c = (r.get("conclusion") or {}).get("text", "")
+    rows = [_rounds.summary(r) for r in rounds]
+    if not _jsonout.table(list(rows[0]), [list(r.values()) for r in rows]):
+        for r, row in zip(rounds, rows):
+            c = row["conclusion"]
             print(
-                f"  {r['round_id']:4} {r['status']:7} {r.get('dataset_id', '')}  {len(_rounds.arms_of(r))} arm(s), {len(r.get('retired') or [])} retired"
+                f"  {r['round_id']:4} {r['status']:7} {row['dataset_id']}  {row['arms']} arm(s), {row['retired']} retired"
             )
             if c:
                 print(textwrap.fill(c, 96, initial_indent="       ", subsequent_indent="       "))
@@ -772,8 +510,9 @@ def _status(args: argparse.Namespace) -> int:
             print(textwrap.fill(rnd[k], 96, initial_indent="  hypothesis: ", subsequent_indent="    "))
     for ch in rnd.get("changes") or []:
         print(textwrap.fill(str(ch), 100, initial_indent="  changed: ", subsequent_indent="           "))
-    for x in rnd.get("retired") or []:
-        print(f"  retired: {x['config_id']} ({x['reason']})")
+    for a in model_rounds.arms(rnd):
+        if a.get("retired"):
+            print(f"  retired: {a['system']} ({a['retired']['reason']})")
     if rnd.get("harness"):
         h = rnd["harness"]
         print(
@@ -809,39 +548,7 @@ def _status(args: argparse.Namespace) -> int:
                 f"  against {v['label']} ({v['other'].rsplit('/', 1)[-1]}): {v['verdict']}, Δ {v['delta']:+.4f}, p {fmt_p(v['p'])}"
             )
     _jsonout.values(
-        {
-            "goal": args.goal,
-            "round": {
-                k: rnd.get(k)
-                for k in (
-                    "round_id",
-                    "status",
-                    "dataset_id",
-                    "from",
-                    "hypothesis",
-                    "scorer",
-                    "baseline",
-                    "harness",
-                )
-            }
-            | {
-                "changes": rnd.get("changes") or [],
-                "retired": rnd.get("retired") or [],
-                "scoring": rnd.get("scoring") or [],
-                "conclusion": (rnd.get("conclusion") or {}).get("text"),
-            },
-            "metric": ev["metric"],
-            "arms": ev["arms"],
-            "leader": ev.get("leader"),
-            "reference": ev.get("reference"),
-            "spent_usd": ev.get("spent"),
-            "cost_per_item": ev.get("cost_per_item") or {},
-            "notes": ev["notes"],
-            # A closed round takes no more decisions: the text prints none, and neither does the data.
-            "suggest": [{"what": what, "command": cmd or None} for what, cmd in ev["suggest"]]
-            if rnd["status"] == "open"
-            else [],
-        }
+        {"goal": args.goal, "rounds": rows, "round": _rounds.view(rnd)} | _rounds.evidence_values(rnd, ev)
     )
     for n in ev["notes"]:
         print(f"  NOTE: {n}")
@@ -857,7 +564,7 @@ def _status(args: argparse.Namespace) -> int:
     return 0
 
 
-ACTIONS = {"open": open_round, "retire": retire, "close": close, "status": status}
+ACTIONS = {"open": open_round, "carry": carry, "retire": retire, "close": close, "status": status}
 
 
 def run(action: str) -> int:
