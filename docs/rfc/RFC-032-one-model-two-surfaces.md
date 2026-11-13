@@ -227,7 +227,11 @@ and the Workbench's screens that need it are wired behind it.
    from it (argparse, API routes, MCP), the project format and the numbered migrations (`--check`, verify by views,
    the frozen fixtures), the format gate in `render.sh`; `data-put`'s file argument checked (above).
 1. Goals and the goal's status view: proves the stack end to end (`evh goals`, `GET /goals`, the Workbench's home).
-2. Models and deployments, apart (a migration step).
+2. Models and deployments, apart (a migration step). Built 2026-11-13 as format 2 (`m0002_deployments`): a
+   deployment keeps an `order` (the record's list order, which the views keep) and its checks of three kinds,
+   `onboarding`, `smoke` (with its arm's config id) and `approval` (`deployment-accept`); a smoke is placed on the
+   deployment its config names, else the model's only one, else refused. The 65 `evh models` views and 64 model pages
+   of this repository were compared before and after: none differ.
 3. Prompts and systems (configs become systems; a migration step).
 4. Runs and scores (the eight folders; a migration step).
 5. Rounds with their arms and the evidence view; baselines.

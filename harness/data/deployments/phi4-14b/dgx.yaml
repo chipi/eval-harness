@@ -1,0 +1,38 @@
+model_id: phi4-14b
+deployment_id: dgx
+order: 1
+where: dgx
+tag: phi4:14b
+endpoint:
+  provider: openai
+  base_url: http://100.69.49.126:11434/v1
+  model: phi4:14b
+digest: ac896e5b8b34a1f4efa7b14d7520725140d5512484457fab45d2a4ea14c69dba
+checked_at: '2026-10-31T14:08:03Z'
+server: ollama 0.40.13
+checks:
+- kind: onboarding
+  status: pass
+  at: '2026-10-31T14:08:03Z'
+  where: dgx
+  flags: []
+  report:
+    endpoint:
+      provider: openai
+      base_url: http://100.69.49.126:11434/v1
+      model: phi4:14b
+    digest_found: ac896e5b8b34a1f4efa7b14d7520725140d5512484457fab45d2a4ea14c69dba
+    default:
+      s: 6.06
+      tokens_out: 28
+      reasoned: false
+      finish: stop
+    chosen:
+      s: 1.22
+      tokens_out: 28
+      reasoned: false
+      finish: stop
+      settings: {}
+    tokens_per_s: 23.0
+    deterministic: true
+    json_valid: true

@@ -1,26 +1,36 @@
 #!/usr/bin/env python3
-"""Model records (RFC-020): loading, the weights facts the arms page reads, and what V18 catches.
+"""Model records (RFC-020) and their deployments (RFC-032 step 2): loading a model with its deployments, the weights
+facts the arms page reads, the schemas, what V18 catches, and two writers each keeping their change.
 
 python tests/test_models.py
 """
 
+import json
 import sys
 import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import jsonschema
 import yaml
+from _model_records import files_of, stamp
 from evaluation_harness import _models
 from evaluation_harness._check import check, summary
 
 
 def write(base: Path, name: str, doc: dict) -> None:
-    (base / "models").mkdir(exist_ok=True)
-    (base / "models" / f"{name}.yaml").write_text(yaml.safe_dump(doc))
+    """The model's files under `base` (its record named `name`, whatever its id says), stamped."""
+    for rel, text in files_of(doc).items():
+        if rel.startswith("models/"):
+            rel = f"models/{name}.yaml"
+        (base / rel).parent.mkdir(parents=True, exist_ok=True)
+        (base / rel).write_text(text)
 
 
 with tempfile.TemporaryDirectory() as td:
     data = Path(td)
+    stamp(data)
     check("no records: no facts, no problems", _models.facts(data) == {} and _models.problems(data) == [])
     write(
         data,
@@ -45,12 +55,7 @@ with tempfile.TemporaryDirectory() as td:
     write(
         data,
         "set",
-        {
-            "model_id": "set",
-            "kind": "llm",
-            "aliases": ["set:1b"],
-            "settings": {"reasoning_effort": "none"},
-        },
+        {"model_id": "set", "kind": "llm", "aliases": ["set:1b"], "settings": {"reasoning_effort": "none"}},
     )
     got = _models.resolve(
         {"config_id": "a", "model_record": "set", "params": {"reasoning_effort": "low", "max_tokens": 2048}},
@@ -78,6 +83,7 @@ with tempfile.TemporaryDirectory() as td:
 
 with tempfile.TemporaryDirectory() as td:
     data = Path(td)
+    stamp(data)
     write(
         data,
         "dep",
@@ -89,14 +95,16 @@ with tempfile.TemporaryDirectory() as td:
             "deployments": [{"id": "mac", "where": "mac"}, {"id": "dgx", "where": "dgx"}],
         },
     )
+    rec = _models.find(data, "dep") or {}
     check(
-        "deployment_of: by id",
-        (_models.deployment_of(_models.find(data, "dep") or {}, "dgx") or {}).get("where") == "dgx",
+        "find: a model with its deployments, in the order it lists them, each its own record",
+        [d["id"] for d in rec.get("deployments") or []] == ["mac", "dgx"]
+        and (data / "deployments" / "dep" / "dgx.yaml").is_file()
+        and "deployments" not in yaml.safe_load((data / "models" / "dep.yaml").read_text()),
+        rec,
     )
-    check(
-        "deployment_of: an id the record lacks is None",
-        _models.deployment_of(_models.find(data, "dep") or {}, "x3") is None,
-    )
+    check("deployment_of: by id", (_models.deployment_of(rec, "dgx") or {}).get("where") == "dgx")
+    check("deployment_of: an id the record lacks is None", _models.deployment_of(rec, "x3") is None)
     got = _models.resolve({"config_id": "a", "model_record": "dep", "deployment": "mac", "params": {}}, data)
     check(
         "resolve: a config naming a deployment keeps both, and takes the record's settings",
@@ -106,70 +114,67 @@ with tempfile.TemporaryDirectory() as td:
         got,
     )
     for name, cfg, words in (
-        (
-            "a deployment the record lacks",
-            {"model_record": "dep", "deployment": "x3"},
-            "no such deployment (known: mac, dgx)",
-        ),
+        ("a deployment the record lacks", {"model_record": "dep", "deployment": "x3"}, "no such deployment (known: mac, dgx)"),
         ("a deployment without a record", {"deployment": "mac"}, "names no model_record"),
-    ):
+    ):  # fmt: skip
         try:
             _models.resolve(cfg, data)
             msg = ""
         except ValueError as exc:
             msg = str(exc)
         check(f"resolve: {name} is refused", words in msg, msg)
-    write(
-        data,
-        "twice",
-        {
-            "model_id": "twice",
-            "kind": "llm",
-            "aliases": ["twice:1b"],
-            "deployments": [{"id": "mac", "where": "mac"}, {"id": "mac", "where": "other"}],
-        },
+    (data / "deployments" / "ghost").mkdir(parents=True)
+    (data / "deployments" / "ghost" / "x.yaml").write_text(
+        yaml.safe_dump({"model_id": "ghost", "deployment_id": "x", "where": "x"})
+    )
+    (data / "deployments" / "dep" / "lost.yaml").write_text(
+        yaml.safe_dump({"model_id": "dep", "deployment_id": "other", "where": "x"})
     )
     probs = " | ".join(_models.problems(data))
     check(
-        "a deployment id used twice in one record is a problem",
-        "deployment id 'mac' is used more than once" in probs,
+        "a deployment of no model, or not named by its folder and file, is a problem",
+        "deployments/ghost/x.yaml: no model 'ghost'" in probs
+        and "deployments/dep/lost.yaml: model_id and deployment_id" in probs,
         probs,
     )
 
-import json  # noqa: E402
-
-import jsonschema  # noqa: E402
-
-schema = json.loads((Path(__file__).resolve().parents[1] / "schemas" / "model.schema.json").read_text())
-validator = jsonschema.Draft202012Validator(schema)
+schemas = Path(__file__).resolve().parents[1] / "schemas"
+model_v = jsonschema.Draft202012Validator(json.loads((schemas / "model.schema.json").read_text()))
+dep_v = jsonschema.Draft202012Validator(json.loads((schemas / "deployment.schema.json").read_text()))
 rec = {"model_id": "m", "kind": "llm", "aliases": ["m"]}
-dep = {"id": "mac", "where": "mac", "backend": "metal", "onboarding": {"status": "pass", "at": "2026-10-31"}}
+dep = {
+    "model_id": "m",
+    "deployment_id": "mac",
+    "where": "mac",
+    "backend": "metal",
+    "checks": [{"kind": "onboarding", "status": "pass", "at": "2026-10-31"}],
+}
+hosted = {
+    "model_id": "m",
+    "deployment_id": "or",
+    "where": "openrouter",
+    "backend": "hosted",
+    "provider_routing": ["nebius"],
+}
 check(
-    "schema: a deployment has an id, a backend, a provider route and its own onboarding",
-    not list(
-        validator.iter_errors(
-            {
-                **rec,
-                "deployments": [
-                    dep,
-                    {"id": "or", "where": "openrouter", "backend": "hosted", "provider_routing": ["nebius"]},
-                ],
-            }
-        )
-    ),
+    "schema: a deployment has its model, its id, a backend, a provider route and its checks",
+    not list(dep_v.iter_errors(dep)) and not list(dep_v.iter_errors(hosted)),
+)
+check("schema: a deployment needs its model and its id", bool(list(dep_v.iter_errors({"where": "mac"}))))
+check(
+    "schema: a check has a kind of the three, and a time",
+    bool(list(dep_v.iter_errors({**dep, "checks": [{"kind": "guess", "at": "x"}]})))
+    and bool(list(dep_v.iter_errors({**dep, "checks": [{"kind": "smoke"}]}))),
 )
 check(
-    "schema: a deployment needs an id",
-    bool(list(validator.iter_errors({**rec, "deployments": [{"where": "mac"}]}))),
+    "schema: a model holds no deployments and no smokes",
+    bool(list(model_v.iter_errors({**rec, "deployments": []})))
+    and bool(list(model_v.iter_errors({**rec, "smokes": {}}))),
 )
+check("schema: builds are gone", bool(list(model_v.iter_errors({**rec, "builds": [{"where": "mac"}]}))))
 check(
-    "schema: a deployment id is a slug",
-    bool(list(validator.iter_errors({**rec, "deployments": [{"id": "Mac Mini", "where": "mac"}]}))),
-)
-check("schema: builds are gone", bool(list(validator.iter_errors({**rec, "builds": [{"where": "mac"}]}))))
-check(
-    "schema: onboarding is per deployment, not per record",
-    bool(list(validator.iter_errors({**rec, "onboarding": {"status": "pass", "at": "2026-10-31"}}))),
+    "schema: onboarding is a deployment's check, not the model's",
+    bool(list(model_v.iter_errors({**rec, "onboarding": {"status": "pass", "at": "2026-10-31"}}))),
 )
 
 
@@ -177,22 +182,57 @@ check(
 # each applies its change to the record as it is on disk when it writes, not to the copy it read at its start.
 with tempfile.TemporaryDirectory() as td:
     data = Path(td) / "data"
-    (data / "models").mkdir(parents=True)
-    (data / "models" / "two.yaml").write_text(
-        yaml.safe_dump({"model_id": "two", "kind": "llm", "aliases": ["two:1b"]})
+    stamp(data)
+    write(
+        data,
+        "two",
+        {
+            "model_id": "two",
+            "kind": "llm",
+            "aliases": ["two:1b"],
+            "deployments": [{"id": "here", "where": "here"}],
+        },
     )
     stale = _models.find(data, "two")  # what both commands read when they started
-    _models.update_record(
-        data, "two", lambda d: d.setdefault("smokes", {}).__setitem__("arm_a", {"status": "pass"})
-    )
-    _models.update_record(
-        data, "two", lambda d: d.setdefault("smokes", {}).__setitem__("arm_b", {"status": "check"})
-    )
+    for cid, status, at in (("arm_a", "pass", "01"), ("arm_b", "check", "02"), ("arm_a", "check", "03")):
+        _models.add_check(
+            data,
+            "two",
+            "here",
+            {"kind": "smoke", "config": cid, "status": status, "at": f"2026-11-13T{at}:00:00Z"},
+        )
     got = _models.find(data, "two") or {}
+    checks = yaml.safe_load((data / "deployments" / "two" / "here.yaml").read_text())["checks"]
     check(
-        "update_record: the second change keeps the first, though both started from the same read",
-        set(got.get("smokes") or {}) == {"arm_a", "arm_b"} and "smokes" not in (stale or {}),
-        got,
+        "add_check: each check kept, none written over; the view gives each arm's latest smoke",
+        len(checks) == 3
+        and got.get("smokes")
+        == {
+            "arm_a": {"status": "check", "at": "2026-11-13T03:00:00Z"},
+            "arm_b": {"status": "check", "at": "2026-11-13T02:00:00Z"},
+        }
+        and "smokes" not in (stale or {}),
+        (checks, got.get("smokes")),
+    )
+    _models.update_record(
+        data, "two", lambda d: d.setdefault("history", []).append({"at": "a", "what": "one"})
+    )
+    _models.update_record(
+        data, "two", lambda d: d.setdefault("history", []).append({"at": "b", "what": "two"})
+    )
+    check(
+        "update_record: the second change keeps the first",
+        [h["what"] for h in (_models.find(data, "two") or {}).get("history") or []] == ["one", "two"],
+    )
+    try:
+        _models.update_record(data, "two", lambda d: d.__setitem__("smokes", {}))
+        refused = ""
+    except ValueError as exc:
+        refused = str(exc)
+    check(
+        "update_record: putting smokes back into the model is refused",
+        "records of their own" in refused,
+        refused,
     )
 
 acc_rec = {

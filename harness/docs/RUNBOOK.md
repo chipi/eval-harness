@@ -1906,14 +1906,16 @@ defaults as much as the models. Settle them before the full run, on purpose, and
 (RFC-020, RFC-021).
 
 ```bash
+evh model-new gemma4-12b --set kind=llm --set aliases.0=gemma4:12b   # the model's own facts
+evh deployment-new gemma4-12b mac --set where=mac --set tag=gemma4:12b # one per place it runs
 evh model-onboard gemma4-12b --deployment mac   # once per deployment: build, reasoning, JSON, determinism
 evh arm-smoke --config configs/my_arm.yaml       # once per arm, on its own task, before its full run
 evh models                                       # what is onboarded, vetted (an arm smoke passed), where it runs
 ```
 
-1. **Pin the build, per deployment.** Record the tag and its digest in the model record
-   (`data/models/<model>.yaml`) as one entry of `deployments`, one per place the model runs (`mac`, `dgx`,
-   `x3`, a hosted route with its `provider_routing`). One tag name can name different builds on different
+1. **Pin the build, per deployment.** Record the tag and its digest in the deployment's own record
+   (`data/deployments/<model>/<deployment>.yaml`, `evh deployment-new` / `deployment-set`), one per place the
+   model runs (`mac`, `dgx`, `x3`, a hosted route with its `provider_routing`). One tag name can name different builds on different
    machines (an MLX build on a Mac, an older pull on another host): compare digests across every deployment
    that will run the arm, and against the registry, before the first run. `evh model-onboard <model>
    --deployment dgx` probes one deployment and writes its onboarding. An arm names the record and the
@@ -1942,17 +1944,19 @@ evh models                                       # what is onboarded, vetted (an
    that hold whatever the task (reasoning; an ML model's device and precision) with one line of why
    (`settings_why`), and each change in `history`. In the arm: the task's own (its reply cap, its call
    limit), with a comment saying why; the schema refuses them in a record, where they would reach every
-   other eval's arms. The arm smokes are kept in the record, and an arm smoke that passed is what makes
-   the model *vetted* on the Models page.
+   other eval's arms. Each onboarding, arm smoke and acceptance is kept as a dated check of the
+   deployment it ran on (`evh deployment-show`, `--json` for all of them): an arm smoke on the deployment the arm
+   names, or the model's only one. An arm smoke that passed is what makes the model *vetted* on the Models page.
    - *Onboarding finds the settings that work*: probe, read the flags, change the record's settings (with why),
      probe again, until it passes or what remains is the model's own nature. Some models cannot stop reasoning
      (gpt-oss: `none` and `low` both reason; a hosted route answers "Reasoning is mandatory"): set the least they
      take and accept the flag in the record, `accepted: {reasoning: "<why>"}`. Onboarding and arm smokes then
      report it as accepted, with the why, and do not count it against the status. What one deployment always
-     raises goes on that deployment, `accepted` under it: a hosted gateway has no build to pin (`where it ran`)
+     raises goes on that deployment: `evh deployment-accept <model> <deployment> --flag "where it ran" --why "<a
+     sentence>"` keeps it under its `accepted` and the decision in its checks. A hosted gateway has no build to pin (`where it ran`)
      and its repeats vary (`determinism`); another deployment of the same model is still checked.
-   - Several machines may be onboarded at once: each command writes only its own deployment (or smoke) into the
-     record, re-read under a lock, so one never erases another's result.
+   - Several machines may be onboarded at once: each command adds its check to its own deployment's record,
+     re-read under a lock, so one never erases another's result.
 5. **Know what a repeat measures.** A self-hosted model at temperature 0 gives the same output on the same
    machine every time: a second pass there adds nothing. The spread comes from other machines and other
    builds; a hosted model's repeats do vary.
@@ -1963,7 +1967,7 @@ A project's data has a format: one number, `format` in `data/project.yaml` (RFC-
 release reads one format. `evh migrate --check` compares the two:
 
 ```sh
-evh migrate --check      # data format 1; this release reads 1 (exit 0), or ERROR (old-format) / ERROR (mismatch)
+evh migrate --check      # data format 2; this release reads 2 (exit 0), or ERROR (old-format) / ERROR (mismatch)
 evh migrate --dry-run    # what each step would change; nothing written
 evh migrate              # the steps the data needs, each recorded as it lands
 ```

@@ -27,9 +27,11 @@ from evaluation_harness._check import check, summary
 from evaluation_harness.catalog_adapter import HarnessAdapter
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _model_records
 import _runstore
 
 COMMITTED = Path(__file__).resolve().parents[1] / "data" / "models"
+COMMITTED_DEPLOYMENTS = COMMITTED.parent / "deployments"
 
 
 def run(data, run_id, config, params, record=None, deployment=None):
@@ -55,8 +57,7 @@ def run(data, run_id, config, params, record=None, deployment=None):
 
 
 def record(data, doc):
-    (data / "models").mkdir(exist_ok=True)
-    (data / "models" / f"{doc['model_id']}.yaml").write_text(yaml.safe_dump(doc))
+    _model_records.write(data, doc)
 
 
 def view(A, argv):
@@ -494,6 +495,8 @@ with tempfile.TemporaryDirectory() as td:
 with tempfile.TemporaryDirectory() as td:
     committed = Path(td) / "data"
     shutil.copytree(COMMITTED, committed / "models")
+    shutil.copytree(COMMITTED_DEPLOYMENTS, committed / "deployments")
+    _model_records.stamp(committed)
     n = len(list(COMMITTED.glob("*.yaml")))
     A = HarnessAdapter(committed)
     out = Path(td) / "site"

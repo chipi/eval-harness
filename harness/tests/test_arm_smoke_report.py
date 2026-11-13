@@ -22,10 +22,12 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this file is in tests/)
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 KIT = HERE.parent / "tutorial"
+import yaml  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from _model_records import deployment, put  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-smoke-report-"))
 env = dict(os.environ, EVAL_HOME=str(proj), EVAL_BUILD_REF="test-smoke-report", EVAL_MAX_RETRIES="0")
@@ -75,7 +77,13 @@ try:
         (proj / "data" / d).mkdir(parents=True)
     shutil.copytree(KIT / "tickets", proj / "tutorial" / "tickets")
     (proj / "smoke_adapter.py").write_text(ADAPTER)
-    _runstore.write_text(proj, "models/mrec.yaml", "model_id: mrec\nkind: llm\naliases: [mrec:1b]\n")
+    MREC = {
+        "model_id": "mrec",
+        "kind": "llm",
+        "aliases": ["mrec:1b"],
+        "deployments": [{"id": "here", "where": "here"}],
+    }
+    put(proj, MREC)
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset is frozen and materialized", r.returncode == 0, r.stderr[-300:])
@@ -105,11 +113,37 @@ try:
         and len(j.get("items", [])) == 3,
         (r.stdout[:500], r.stderr[-300:]),
     )
-    rec = _runstore.read_text(proj, "models/mrec.yaml")
+    checks = deployment(proj, "mrec", "here").get("checks") or []
     check(
-        "arm-smoke: the record's smoke carries the total spent, the determinism call included",
-        "spent_usd: 0.008" in rec,
-        rec[-500:],
+        "arm-smoke: the smoke is a check of the model's only deployment, carrying the total spent, the "
+        "determinism call included",
+        [(c.get("kind"), c.get("config")) for c in checks] == [("smoke", "billed2_v1")]
+        and (checks[0].get("report") or {}).get("spent_usd") == 0.008
+        and "smokes" not in yaml.safe_load(_runstore.read_text(proj, "models/mrec.yaml")),
+        checks,
+    )
+    put(proj, {**MREC, "deployments": [{"id": "here", "where": "here"}, {"id": "there", "where": "there"}]})
+    r = evh("arm-smoke", "--config", config("twodeps", record="mrec"))
+    check(
+        "arm-smoke: with two deployments and a config naming none, the smoke is not recorded, and it says why",
+        "not recorded: mrec has 2 deployment(s) and the config names none" in r.stdout
+        and not deployment(proj, "mrec", "here").get("checks")
+        and not deployment(proj, "mrec", "there").get("checks"),
+        r.stdout[-600:],
+    )
+    _runstore.write_text(
+        proj,
+        "configs/named.yaml",
+        "config_id: named_v1\ndataset_id: tickets_v1\nadapter: smoke_adapter.py\nmodel_record: mrec\n"
+        "deployment: there\nparams: {}\n",
+    )
+    r = evh("arm-smoke", "--config", "data/configs/named.yaml")
+    check(
+        "arm-smoke: a config naming a deployment records the smoke on that deployment only",
+        [c.get("config") for c in deployment(proj, "mrec", "there").get("checks") or []] == ["named_v1"]
+        and not deployment(proj, "mrec", "here").get("checks")
+        and "written into data/deployments/mrec/there.yaml" in r.stdout,
+        r.stdout[-600:],
     )
 
     # arm-smoke: replies

@@ -35,6 +35,7 @@ GOAL = Entity(
     plural="goals",
     folder="goals",
     id_field="goal_id",
+    schema="goal.schema.json",
     skip=frozenset({"policy.yaml"}),
     links=_links,
 )

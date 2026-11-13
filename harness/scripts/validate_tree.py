@@ -212,6 +212,7 @@ def v1_schemas() -> None:
         (_store.glob(DATA / "judging-sets", "*.json"), "judging-set.schema.json"),
         (_store.glob(DATA / "judge-verdicts", "*/*/*/*.json"), "verdict.schema.json"),
         (_store.glob(DATA / "models", "*.yaml"), "model.schema.json"),
+        (_store.glob(DATA / "deployments", "*/*.yaml"), "deployment.schema.json"),
         (_store.glob(DATA / "profiles", "*.json"), "profile.schema.json"),
         (_store.glob(CAPTURES, "*/capture.json"), "capture.schema.json"),
         (

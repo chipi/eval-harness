@@ -14,7 +14,39 @@
       "pattern": "^[a-z0-9][a-z0-9._-]*$",
       "description": "The record's id: its file's name."
     },
-    "actor": {"type": "object", "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.", "required": ["type", "name"], "additionalProperties": false, "properties": {"type": {"enum": ["person", "agent", "unknown"]}, "name": {"type": "string"}, "for": {"type": "string", "description": "the person an agent acted for"}, "from": {"enum": ["flag", "environment", "terminal", "migration"]}}},
+    "actor": {
+      "type": "object",
+      "description": "Who acted (RFC-027): a person, or an agent and the person it acted for. A recorded claim, not an identity.",
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "person",
+            "agent",
+            "unknown"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "for": {
+          "type": "string",
+          "description": "the person an agent acted for"
+        },
+        "from": {
+          "enum": [
+            "flag",
+            "environment",
+            "terminal",
+            "migration"
+          ]
+        }
+      }
+    },
     "kind": {
       "enum": [
         "llm",
@@ -45,117 +77,6 @@
     "licence": {
       "type": "string",
       "description": "The licence of open weights, as its publisher states it."
-    },
-    "deployments": {
-      "type": "array",
-      "description": "One entry per place the model runs (RFC-021): the system under test as it executes. An arm names one with `deployment: <id>`; `evh model-onboard <model_id> --deployment <id>` probes it and writes its onboarding.",
-      "items": {
-        "type": "object",
-        "required": [
-          "id",
-          "where"
-        ],
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^[a-z0-9][a-z0-9._-]*$",
-            "description": "Unique in the record: mac, dgx, x3, openrouter-nebius."
-          },
-          "where": {
-            "type": "string",
-            "description": "A machine (x3, dgx, mac) or a host (openrouter, a gateway)."
-          },
-          "backend": {
-            "anyOf": [
-              {
-                "enum": [
-                  "cuda",
-                  "rocm",
-                  "metal",
-                  "cpu",
-                  "hosted"
-                ]
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "description": "What computes it: cuda, rocm, metal, cpu or hosted, or another name."
-          },
-          "server": {
-            "type": "string",
-            "description": "What serves it there, with its version: \"ollama 0.40.13\", \"vllm 26.05\"."
-          },
-          "server_settings": {
-            "type": "object",
-            "description": "The server's settings that change the model's behaviour: context length, KV cache, flash attention."
-          },
-          "device": {
-            "type": "string"
-          },
-          "tag": {
-            "type": "string"
-          },
-          "digest": {
-            "type": "string"
-          },
-          "revision": {
-            "type": "string"
-          },
-          "file_hash": {
-            "type": "string"
-          },
-          "quantization": {
-            "type": "string"
-          },
-          "provider_id": {
-            "type": "string",
-            "description": "A hosted model's id at its provider."
-          },
-          "provider_routing": {
-            "type": [
-              "array",
-              "object"
-            ],
-            "description": "A hosted deployment's pinned route: the upstream providers it may be served by (a list), or the provider's routing object."
-          },
-          "endpoint": {
-            "type": "object",
-            "description": "How to reach this deployment for onboarding: a built-in provider (openai for an OpenAI-shaped server such as Ollama or vLLM, litellm, openrouter, anthropic), its base_url, the model name there, and api_key_env when it needs a key.",
-            "additionalProperties": false,
-            "properties": {
-              "provider": {
-                "type": "string"
-              },
-              "base_url": {
-                "type": "string"
-              },
-              "model": {
-                "type": "string"
-              },
-              "api_key_env": {
-                "type": "string"
-              }
-            }
-          },
-          "checked_at": {
-            "type": "string",
-            "description": "When the deployment was last checked (ISO date or time)."
-          },
-          "onboarding": {
-            "$ref": "#/$defs/smoke",
-            "description": "The latest task-independent onboarding of this deployment (evh model-onboard)."
-          },
-          "accepted": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Flag kinds accepted as this deployment's own nature, each with why (a hosted gateway: no build to pin, repeats vary); the record's `accepted` holds the model's."
-          }
-        }
-      }
     },
     "capabilities": {
       "type": "object",
@@ -251,13 +172,6 @@
       },
       "description": "Flag kinds (reasoning, format, ...) a person accepted as a known property of the model, each with why: onboarding and arm smokes report them as accepted, not as something to fix (gpt-oss cannot stop reasoning)."
     },
-    "smokes": {
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/$defs/smoke"
-      },
-      "description": "The latest arm smoke (evh arm-smoke) of each arm that names the record, by config id."
-    },
     "history": {
       "type": "array",
       "items": {
@@ -325,7 +239,10 @@
                   "type": "string"
                 },
                 "dated_by": {
-                  "enum": ["pull", "commit"],
+                  "enum": [
+                    "pull",
+                    "commit"
+                  ],
                   "description": "How `from` was dated (RFC-031 X2): the host's own pull time, or the commit's time when the pull is no longer recorded (approximate: a host's reflog keeps 90 days)."
                 }
               }
@@ -366,46 +283,7 @@
       }
     }
   },
-  "$defs": {
-    "smoke": {
-      "type": "object",
-      "required": [
-        "status",
-        "at"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "status": {
-          "enum": [
-            "pass",
-            "check"
-          ]
-        },
-        "at": {
-          "type": "string"
-        },
-        "where": {
-          "type": "string"
-        },
-        "flags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "accepted": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Flags the record's `accepted` names: reported, not counted against the status."
-        },
-        "report": {
-          "type": "object"
-        }
-      }
-    }
-  },
+  "$defs": {},
   "allOf": [
     {
       "if": {

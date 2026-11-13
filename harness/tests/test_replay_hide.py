@@ -28,6 +28,7 @@ HARNESS = Path(__file__).resolve().parents[1]
 HERE = HARNESS / "scripts"
 EXAMPLE = HARNESS.parent / "examples" / "replay-filing"
 sys.path.insert(0, str(HARNESS))
+from evaluation_harness import _format  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
@@ -66,6 +67,7 @@ def said(r):
 
 try:
     (proj / "data").mkdir()
+    _runstore.write_text(proj, _format.NAME, f"format: {_format.FORMAT}\n")  # as evh init stamps it
     shutil.copytree(EXAMPLE, MINE, ignore=shutil.ignore_patterns("__pycache__"))
     made = subprocess.run(
         [sys.executable, str(MINE / "make_history.py"), "--out", "replay-filing"], cwd=proj, env=env,

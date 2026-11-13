@@ -17,7 +17,6 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE))
-import yaml  # noqa: E402
 from evaluation_harness import _fingerprint as fpmod  # noqa: E402
 from evaluation_harness import _models, compare_runs  # noqa: E402
 from evaluation_harness import fingerprint_migrate as mig  # noqa: E402
@@ -25,6 +24,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.catalog_adapter import _flat_conditions  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _model_records  # noqa: E402
 import _runstore  # noqa: E402
 
 DATASET = {"dataset_id": "d1", "items": [{"item_id": "i1", "source_sha256": "aaa"}]}
@@ -113,16 +113,14 @@ check(
     priced["arm"],
 )
 with tempfile.TemporaryDirectory() as rd:
-    (Path(rd) / "models").mkdir()
-    (Path(rd) / "models" / "gem.yaml").write_text(
-        yaml.safe_dump(
-            {
-                "model_id": "gem",
-                "kind": "llm",
-                "aliases": ["m:1b"],
-                "deployments": [{"id": "dgx", "where": "dgx"}],
-            }
-        )
+    _model_records.write(
+        Path(rd),
+        {
+            "model_id": "gem",
+            "kind": "llm",
+            "aliases": ["m:1b"],
+            "deployments": [{"id": "dgx", "where": "dgx"}],
+        },
     )
     rec_fp = build(
         base_params,
@@ -332,34 +330,32 @@ check(
 
 with tempfile.TemporaryDirectory() as td:
     data = Path(td) / "data"
-    (data / "models").mkdir(parents=True)
-    (data / "models" / "gem.yaml").write_text(
-        yaml.safe_dump(
-            {
-                "model_id": "gem",
-                "kind": "llm",
-                "aliases": ["gem:1b"],
-                "deployments": [
-                    {
-                        "id": "dgx",
-                        "where": "dgx",
-                        "backend": "cuda",
-                        "server": "ollama 0.40.13",
-                        "server_settings": {"context_length": 32768},
-                        "tag": "gem:1b",
-                        "digest": "d" * 64,
-                        "quantization": "Q4_K_M",
-                    },
-                    {"id": "mac", "where": "mac", "backend": "metal", "tag": "gem:1b", "digest": "e" * 64},
-                    {
-                        "id": "or-nebius",
-                        "where": "openrouter",
-                        "provider_id": "vendor/gem",
-                        "provider_routing": ["nebius"],
-                    },
-                ],
-            }
-        )
+    _model_records.write(
+        data,
+        {
+            "model_id": "gem",
+            "kind": "llm",
+            "aliases": ["gem:1b"],
+            "deployments": [
+                {
+                    "id": "dgx",
+                    "where": "dgx",
+                    "backend": "cuda",
+                    "server": "ollama 0.40.13",
+                    "server_settings": {"context_length": 32768},
+                    "tag": "gem:1b",
+                    "digest": "d" * 64,
+                    "quantization": "Q4_K_M",
+                },
+                {"id": "mac", "where": "mac", "backend": "metal", "tag": "gem:1b", "digest": "e" * 64},
+                {
+                    "id": "or-nebius",
+                    "where": "openrouter",
+                    "provider_id": "vendor/gem",
+                    "provider_routing": ["nebius"],
+                },
+            ],
+        },
     )
     cfg = {"model_record": "gem", "deployment": "dgx"}
     params = {"model": "gem:1b", "base_url": "http://tunnel/v1", "max_tokens": 64}
@@ -841,26 +837,23 @@ try:
     r = evh("dataset-create", "--dataset-id", "tickets_v1", "--source-dir", "tutorial/tickets")
     r = r if r.returncode else evh("dataset-materialize", "--dataset-id", "tickets_v1")
     check("setup: the tutorial dataset is frozen and materialized", r.returncode == 0, r.stderr[-300:])
-    _runstore.write_text(
+    _model_records.put(
         proj,
-        "models/gem.yaml",
-        yaml.safe_dump(
-            {
-                "model_id": "gem",
-                "kind": "llm",
-                "aliases": ["gem:1b"],
-                "deployments": [
-                    {
-                        "id": "dgx",
-                        "where": "dgx",
-                        "backend": "cuda",
-                        "server": "ollama 0.40",
-                        "tag": "gem:1b",
-                        "digest": "d" * 64,
-                    }
-                ],
-            }
-        ),
+        {
+            "model_id": "gem",
+            "kind": "llm",
+            "aliases": ["gem:1b"],
+            "deployments": [
+                {
+                    "id": "dgx",
+                    "where": "dgx",
+                    "backend": "cuda",
+                    "server": "ollama 0.40",
+                    "tag": "gem:1b",
+                    "digest": "d" * 64,
+                }
+            ],
+        },
     )
     r = evh("run", "--config", config("named", "model_record: gem\ndeployment: dgx\n"))
     m = metrics_of("named_v1_")
@@ -879,7 +872,7 @@ try:
         m.get("model_record") == "gem" and m.get("deployment_id") == "dgx",
         {k: m.get(k) for k in ("model_record", "deployment_id")},
     )
-    rec = yaml.safe_load(_runstore.read_text(proj, "models/gem.yaml"))
+    rec = _model_records.view(proj, "gem")
     r = evh("run", "--config", config("rep0", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2")
     check(
         "evh run --repeat: no note while the deployment's own onboarding has not found it deterministic",
@@ -891,7 +884,7 @@ try:
         "at": "2026-10-31",
         "report": {"deterministic": True},
     }
-    _runstore.write_text(proj, "models/gem.yaml", yaml.safe_dump(rec))
+    _model_records.put(proj, rec)
     r = evh("run", "--config", config("rep", "model_record: gem\ndeployment: dgx\n"), "--repeat", "2")
     check(
         "evh run --repeat: a model onboarded as deterministic, at temperature 0, is said to give identical passes",
@@ -907,13 +900,9 @@ try:
         and "deployment_id" not in m2,
         (r.stdout + r.stderr)[-300:],
     )
-    _runstore.write_text(
-        proj,
-        "models/lead.yaml",
-        yaml.safe_dump({"model_id": "lead", "kind": "baseline", "aliases": ["lead-5"]}),
-    )
+    _model_records.put(proj, {"model_id": "lead", "kind": "baseline", "aliases": ["lead-5"]})
     r = evh("model-onboard", "lead", "--config", config("lead", ""))
-    lead = yaml.safe_load(_runstore.read_text(proj, "models/lead.yaml"))
+    lead = _model_records.view(proj, "lead")
     dep = (lead.get("deployments") or [{}])[0]
     check(
         "model-onboard --config: a baseline (or an ML model) is onboarded through an arm that runs it, end to end",

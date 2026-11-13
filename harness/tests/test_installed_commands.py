@@ -443,6 +443,24 @@ def main() -> int:
             ("goal-history", ["no_such_goal"], "no goal 'no_such_goal'"),
             ("goal-new", ["no_such_goal"], "goals/no_such_goal.yaml not saved"),
             ("goal-set", ["no_such_goal", "--set", "title=x"], "no goal 'no_such_goal'"),
+            # Models and deployments through the model (RFC-032 step 2): the flow is test_model_ops.py.
+            ("model-list", [], "ok:no model records yet"),
+            ("model-show", ["no_such_model"], "no model 'no_such_model'"),
+            ("model-new", ["no_such_model", "--set", "kind=llm"], "models/no_such_model.yaml not saved"),
+            ("model-set", ["no_such_model", "--set", "kind=llm"], "no model 'no_such_model'"),
+            ("deployment-show", ["no_such_model", "x"], "no deployment 'no_such_model/x'"),
+            ("deployment-history", ["no_such_model", "x"], "no deployment 'no_such_model/x'"),
+            (
+                "deployment-new",
+                ["no_such_model", "x", "--set", "where=x"],
+                "no model 'no_such_model' in this project",
+            ),
+            ("deployment-set", ["no_such_model", "x", "--set", "where=x"], "no deployment 'no_such_model/x'"),
+            (
+                "deployment-accept",
+                ["no_such_model", "x", "--flag", "where it ran", "--why", "a gateway has no build"],
+                "no deployment 'no_such_model/x'",
+            ),
             # Model records (RFC-020, optional): installed, each answers in words; the flows are
             # test_model_onboard.py, test_arm_smoke.py and test_catalog_models.py.
             ("models", [], "ok:no model records"),

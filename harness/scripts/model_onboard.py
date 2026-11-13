@@ -285,25 +285,32 @@ def main() -> int:
                 deployments.append(dep)
         flags, accepted = _models.split_accepted(rec, flags, dep["id"])
         status = "pass" if not flags else "check"
-        dep["onboarding"] = {"status": status, "at": now(), "where": where, "flags": flags, "report": report}
+        onboarding = {
+            "kind": "onboarding",
+            "status": status,
+            "at": now(),
+            "where": where,
+            "flags": flags,
+            "report": report,
+        }
         if accepted:
-            dep["onboarding"]["accepted"] = accepted
+            onboarding["accepted"] = accepted
         added = [h for h in rec.get("history") or [] if h not in (before.get("history") or [])]
 
+        def probed(d: dict) -> None:
+            # the deployment as probed (its build, when it was checked) and this run added to its checks; everything
+            # else as it is on disk now
+            d.update({k: v for k, v in dep.items() if k not in ("id", "onboarding")})
+            d.setdefault("checks", []).append(onboarding)
+
         def merge(doc: dict) -> None:
-            # this deployment as probed, the record's capabilities as found, and the history entries this run added;
-            # everything else as it is on disk now (another deployment onboarded meanwhile keeps its result)
-            deps = doc.setdefault("deployments", [])
-            at = next((i for i, d in enumerate(deps) if d.get("id") == dep["id"]), None)
-            if at is None:
-                deps.append(dep)
-            else:
-                deps[at] = dep
+            # the model's capabilities as found, and the history entries this run added
             if rec.get("capabilities") is not None:
                 doc["capabilities"] = rec["capabilities"]
             if added:
                 doc.setdefault("history", []).extend(h for h in added if h not in (doc.get("history") or []))
 
+        _models.update_deployment(DATA, args.model_id, dep["id"], probed, where=dep.get("where") or "local")
         _models.update_record(DATA, args.model_id, merge)
         print("ONBOARD PASS" if not flags else "ONBOARD CHECK")
         for f in accepted:
@@ -311,7 +318,7 @@ def main() -> int:
             print(f"  accepted: {f} ({why})")
         for f in flags:
             print(f"  - {f}")
-        print(f"  written into data/models/{args.model_id}.yaml (deployment {dep['id']})")
+        print(f"  written into data/deployments/{args.model_id}/{dep['id']}.yaml (its checks)")
         return 0 if not flags else EXIT_PROBLEMS
 
 

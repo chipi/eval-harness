@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
+import _model_records  # noqa: E402
 import _runstore  # noqa: E402
 
 PY = sys.executable
@@ -468,15 +469,27 @@ try:
     )
 
     # overview: arm-smoke spend beside the billed figure
-    (data / "models").mkdir(exist_ok=True)
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    rec = (
-        "model_id: smoked-model\nsmokes:\n  smoked_arm_v1:\n    status: pass\n    at: '"
-        + now
-        + "'\n    flags: []\n"
-        "    report:\n      items:\n      - {item: a, cost_usd: 0.25, scored: true}\n      - {item: b, cost_usd: 0.5, scored: true}\n"
+    _model_records.write(
+        data,
+        {
+            "model_id": "smoked-model",
+            "deployments": [{"id": "here", "where": "here"}],
+            "smokes": {
+                "smoked_arm_v1": {
+                    "status": "pass",
+                    "at": now,
+                    "flags": [],
+                    "report": {
+                        "items": [
+                            {"item": "a", "cost_usd": 0.25, "scored": True},
+                            {"item": "b", "cost_usd": 0.5, "scored": True},
+                        ]
+                    },
+                }
+            },
+        },
     )
-    (data / "models" / "smoked-model.yaml").write_text(rec)
     ov = evh(proj, "overview")
     billed = next((ln for ln in ov.stdout.splitlines() if ln.strip().startswith("billed")), "")
     check(

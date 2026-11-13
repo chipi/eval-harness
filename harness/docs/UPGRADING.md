@@ -11,7 +11,7 @@ correctness bugs, not just missing features.
   carries until the release: moving such a pin from one commit to another takes `pip install --force-reinstall`, as
   pip keeps an installed copy of the same version.
 - **Run `evh migrate` once** (`--dry-run` first shows what each step will do; a second run changes nothing). It
-  brings the data to format 1 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
+  brings the data to format 2 and records it in `data/project.yaml` (RFC-032): from 0.8.0 a project's data has a
   format, `evh migrate --check` compares it with the release's, and a deploy runs that check (the RUNBOOK's "The
   data's format"). A SQLite project's database is copied beside it first. Commit `data/project.yaml` with the
   migrated data. Its steps, in order:
@@ -29,6 +29,12 @@ correctness bugs, not just missing features.
     "promoted before 0.8.0, evidence not recorded"; every record without an actor gets `before 0.8.0`; a split
     side's `split.by` becomes `split.split_by`. No fingerprint moves.
   - *fingerprints* (RFC-021): a run still at version 4 moves to 5 (none left once `fingerprint-migrate` ran on 0.6.0).
+  - *deployments* (RFC-032 step 2, format 2): each model record's `deployments` become
+    `data/deployments/<model>/<deployment>.yaml`, in the order the record listed them, each with its onboarding as
+    its first check; each of the record's `smokes` becomes a check of the deployment its arm's config names (or the
+    model's only deployment). A smoke whose deployment is neither is refused before anything is written, naming the
+    config: set its `deployment:` and migrate again. The model record keeps its comments and loses only those two
+    keys. `evh models` and the catalog's model pages read the same as before.
 
   `run-migrate`, `dataset-migrate` and `baselines-migrate` (built during 0.8.0, never released) and
   `fingerprint-migrate` (0.6.0 to 0.7.2) are this one command now. Moving the data into SQLite is

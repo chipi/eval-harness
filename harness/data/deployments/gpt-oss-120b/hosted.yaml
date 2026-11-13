@@ -1,0 +1,120 @@
+model_id: gpt-oss-120b
+deployment_id: hosted
+order: 2
+where: homelab LiteLLM (the fleet's gateway)
+tag: eval-gpt-oss-120b
+endpoint:
+  provider: litellm
+  base_url: http://homelab:4001/v1
+  model: eval-gpt-oss-120b
+checked_at: '2026-10-31T14:10:52Z'
+accepted:
+  where it ran: a hosted gateway serves the provider's current build; there is no digest, revision or hash to pin
+  determinism: a hosted provider batches requests, so temperature 0 does not repeat exactly; repeats measure it
+checks:
+- kind: onboarding
+  status: pass
+  at: '2026-10-31T14:10:52Z'
+  where: homelab LiteLLM (the fleet's gateway)
+  flags: []
+  report:
+    endpoint:
+      provider: litellm
+      base_url: http://homelab:4001/v1
+      model: eval-gpt-oss-120b
+    digest_found: null
+    default:
+      s: 2.28
+      tokens_out: 83
+      reasoned: true
+      finish: stop
+    chosen:
+      s: 1.35
+      tokens_out: 38
+      reasoned: true
+      finish: stop
+      settings:
+        reasoning_effort: low
+    tokens_per_s: 28.1
+    deterministic: false
+    json_valid: true
+  accepted:
+  - 'reasoning: it still reasons with the record''s settings'
+- kind: smoke
+  config: triage_hosted_gpt_oss_120b_v2
+  status: pass
+  at: '2026-10-31T14:45:18Z'
+  flags: []
+  report:
+    items:
+    - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+      s: 6.68
+      output_chars: 1254
+      cost_usd: 0.0005875499999999999
+      scored: true
+      deterministic: false
+    - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+      s: 5.41
+      output_chars: 1353
+      cost_usd: 0.0007591499999999999
+      scored: true
+    - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+      s: 4.84
+      output_chars: 808
+      cost_usd: 0.0005105999999999999
+      scored: true
+    calls:
+    - tokens_out: 79
+      reasoning_tokens: 0
+      reasoning_chars: 99
+      finish_reason: stop
+      answered: true
+      s: 1.22
+    - tokens_out: 302
+      reasoning_tokens: 47
+      reasoning_chars: 217
+      finish_reason: stop
+      answered: true
+      s: 5.45
+    - tokens_out: 59
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 1.01
+    - tokens_out: 85
+      reasoning_tokens: 12
+      reasoning_chars: 60
+      finish_reason: stop
+      answered: true
+      s: 2.52
+    - tokens_out: 148
+      reasoning_tokens: 40
+      reasoning_chars: 158
+      finish_reason: stop
+      answered: true
+      s: 1.88
+    - tokens_out: 82
+      reasoning_tokens: 20
+      reasoning_chars: 79
+      finish_reason: stop
+      answered: true
+      s: 3.49
+    - tokens_out: 148
+      reasoning_tokens: 43
+      reasoning_chars: 246
+      finish_reason: stop
+      answered: true
+      s: 1.35
+    projection:
+      items: 65
+      minutes: 6.1
+      worst_minutes: 7.2
+      usd: 0.0402
+    settings:
+      model: eval-gpt-oss-120b
+      reasoning_effort: low
+      max_tokens: 1024
+  accepted:
+  - 'determinism: item 1 twice gave different outputs (repeats will vary)'
+  - 'where it ran: the build is not pinned (no digest, revision or hash in the model record''s deployment)'

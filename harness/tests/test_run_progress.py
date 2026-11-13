@@ -23,6 +23,7 @@ HERE = Path(__file__).resolve().parents[1] / "scripts"  # the core modules (this
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # harness/: the evaluation_harness package
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # its siblings in tests/
 KIT = HERE.parent / "tutorial"
+import _model_records  # noqa: E402
 import _runstore  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 from evaluation_harness.run import progress_every, progress_line  # noqa: E402
@@ -134,13 +135,28 @@ try:
     )
 
     # the dry run: a measured cost from an arm-smoke, read from the model record
-    _runstore.write_text(
+    _model_records.put(
         proj,
-        "models/mrec.yaml",
-        "model_id: mrec\nkind: llm\naliases: [mrec:1b]\nsmokes:\n  measured_v1:\n    status: pass\n"
-        "    at: '2026-11-03T10:00:00Z'\n    flags: []\n    report:\n      items:\n"
-        "      - {item: a, s: 1.0, cost_usd: 0.004}\n      - {item: b, s: 1.0, cost_usd: 0.008}\n"
-        "      projection: {items: 6, usd: 0.036}\n",
+        {
+            "model_id": "mrec",
+            "kind": "llm",
+            "aliases": ["mrec:1b"],
+            "deployments": [{"id": "here", "where": "here"}],
+            "smokes": {
+                "measured_v1": {
+                    "status": "pass",
+                    "at": "2026-11-03T10:00:00Z",
+                    "flags": [],
+                    "report": {
+                        "items": [
+                            {"item": "a", "s": 1.0, "cost_usd": 0.004},
+                            {"item": "b", "s": 1.0, "cost_usd": 0.008},
+                        ],
+                        "projection": {"items": 6, "usd": 0.036},
+                    },
+                }
+            },
+        },
     )
     r = evh(
         "run", "--config", config("measured", record="mrec", **priced), "--repeat", "3", "--dry-run", "--json"

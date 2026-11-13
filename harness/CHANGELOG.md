@@ -19,11 +19,20 @@ that can move a result is never a patch release without saying so under **Change
   datasets and references the goal names, keeps the file's comments, records who and the goal as it was, and is refused
   while a job writes the goal. The commands, the API routes and the MCP tools are made from one registry of the
   model's operations (`evaluation_harness/ops`); the model reads only data in this release's format.
+- **Models and deployments, apart** (RFC-032 step 2): a model's deployments are records of their own,
+  `data/deployments/<model>/<deployment>.yaml`, each with its checks as dated history: every onboarding, every arm
+  smoke and every acceptance is kept, with who made it; the views read the latest of each, so `evh models`, the
+  Models page and a model's page say what they said. `evh model-list`, `model-show`, `model-new`, `model-set`,
+  `deployment-show`, `deployment-history`, `deployment-new`, `deployment-set` and `deployment-accept` (with why, a
+  sentence), and the same as the API's resources under `/api/v1/models`. A deployment's checks are refused as an edit:
+  onboard it, smoke an arm, or accept a flag. An arm smoke is recorded on the deployment the arm names, or the model's
+  only one; with several and none named it says it is not recorded. `validate` checks each deployment against
+  `deployment.schema.json` and names one under no model or not named by its folder and file.
 - **The Workbench on its server** (PRD-017, RFC-032 step 1): `evh catalog-serve` serves it under `/workbench/` on
   this machine (never `--public` or `--behind-proxy`) and prints the link that signs in. Its home and a goal's screen
   read the model's API; a screen not wired yet says so. Opened as files, it is still the mockup.
 - **The data's format** (RFC-032): `data/project.yaml` records the format of a project's data, `evh init` writes it,
-  and `evh migrate --check` compares it with the release's (`ERROR (old-format)`, a new refusal kind, for older data;
+  and `evh migrate --check` compares it with the release's (format 2 in 0.8.0; `ERROR (old-format)`, a new refusal kind, for older data;
   `ERROR (mismatch)` for data a later release wrote). `evh migrate` runs numbered steps (`migrations/`), records the
   format after each, and copies a SQLite project's database first. This repository's deploy stops on data not in the
   release's format (`render.sh`), `make check` runs the same check first (CI's reproduce), and CI migrates a project 0.7.2's own code made (`tests/fixtures/formats/0/`) and

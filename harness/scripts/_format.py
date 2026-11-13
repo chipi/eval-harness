@@ -20,7 +20,7 @@ from evaluation_harness import _common, _store
 from evaluation_harness._version import __version__
 
 #: The format this release reads and writes.
-FORMAT = 1
+FORMAT = 2
 NAME = "project.yaml"
 
 
@@ -29,11 +29,11 @@ def path(data: _Path | None = None) -> _Path:
     return (data or _common.DATA) / NAME
 
 
-def record() -> dict[str, Any]:
-    """`data/project.yaml` as written, or {} when there is none (format 0)."""
+def record(data: _Path | None = None) -> dict[str, Any]:
+    """`data/project.yaml` (of the project, or of the folder `data`) as written, or {} when there is none (format 0)."""
     import yaml  # noqa: PLC0415
 
-    p = path()
+    p = path(data)
     if not _store.is_file(p):
         return {}
     try:
@@ -49,9 +49,9 @@ def record() -> dict[str, Any]:
     return doc
 
 
-def data_format() -> int:
-    """The format the project's data is in: 0 when it records none."""
-    return int(record().get("format", 0))
+def data_format(data: _Path | None = None) -> int:
+    """The format the project's data (or the folder `data`) is in: 0 when it records none."""
+    return int(record(data).get("format", 0))
 
 
 def stamp(n: int = FORMAT, data: _Path | None = None) -> None:
@@ -65,9 +65,9 @@ def stamp(n: int = FORMAT, data: _Path | None = None) -> None:
     )
 
 
-def require() -> None:
-    """Refuse a project whose data is not in this release's format."""
-    have = record()
+def require(data: _Path | None = None) -> None:
+    """Refuse a project (or a data folder) whose data is not in this release's format."""
+    have = record(data)
     n = int(have.get("format", 0))
     if n < FORMAT:
         _common.die(

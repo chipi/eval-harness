@@ -909,6 +909,10 @@ def test_example_scorer_suites_pass() -> None:
             "the goal through the model: the command line and the API alike, edits keep comments, checks, history, status, refusals, the lock, the format",
         ),
         (
+            "test_model_ops.py",
+            "models and deployments through the model: the command line and the API alike, a deployment's checks its history, accept with why, refusals",
+        ),
+        (
             "test_format.py",
             "the data's format: init stamps it, migrate --check refuses old and newer, steps stamp it, a SQLite backup, the deploy's gate, 0.7.2's frozen project keeps its numbers",
         ),

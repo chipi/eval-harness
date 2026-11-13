@@ -1,0 +1,146 @@
+model_id: gemma4-31b
+deployment_id: mac
+order: 2
+where: mac
+tag: gemma4:31b-it-q4_K_M
+endpoint:
+  provider: openai
+  base_url: http://127.0.0.1:11435/v1
+  model: gemma4:31b-it-q4_K_M
+server: ollama 0.40.13
+digest: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+quantization: Q4_K_M
+checked_at: '2026-10-31T14:05:04Z'
+checks:
+- kind: onboarding
+  status: pass
+  at: '2026-10-31T14:05:04Z'
+  where: mac
+  flags: []
+  report:
+    endpoint:
+      provider: openai
+      base_url: http://127.0.0.1:11435/v1
+      model: gemma4:31b-it-q4_K_M
+    digest_found: 17ba34c06c801ba22f6047bab21ced9429c6d43e0e42ecf339b0f3e5a61e8d97
+    default:
+      s: 24.35
+      tokens_out: 193
+      reasoned: true
+      finish: stop
+    chosen:
+      s: 2.0
+      tokens_out: 23
+      reasoned: false
+      finish: stop
+      settings:
+        reasoning_effort: none
+    tokens_per_s: 11.5
+    deterministic: true
+    json_valid: true
+- kind: smoke
+  config: triage_local_mac_gemma4_31b_v2
+  status: pass
+  at: '2026-10-31T14:46:01Z'
+  flags: []
+  report:
+    items:
+    - item: orrery-ORRERY-STAGING-14-2026-07-30T13:43:09Z
+      s: 54.62
+      output_chars: 1589
+      cost_usd: 0.0
+      scored: true
+      deterministic: true
+    - item: orrery-ORRERY-J-2026-08-06T21:52:38Z
+      s: 36.92
+      output_chars: 1941
+      cost_usd: 0.0
+      scored: true
+    - item: orrery-ORRERY-STAGING-13-2026-08-07T04:32:42Z
+      s: 34.91
+      output_chars: 1751
+      cost_usd: 0.0
+      scored: true
+    calls:
+    - tokens_out: 48
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 31.47
+    - tokens_out: 56
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 4.53
+    - tokens_out: 82
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 7.72
+    - tokens_out: 125
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 10.89
+    - tokens_out: 54
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 10.2
+    - tokens_out: 57
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 6.12
+    - tokens_out: 83
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 7.61
+    - tokens_out: 159
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 12.99
+    - tokens_out: 54
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 9.41
+    - tokens_out: 54
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 5.15
+    - tokens_out: 78
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 7.3
+    - tokens_out: 157
+      reasoning_tokens: 0
+      reasoning_chars: 0
+      finish_reason: stop
+      answered: true
+      s: 13.05
+    projection:
+      items: 65
+      minutes: 45.7
+      worst_minutes: 59.2
+      usd: 0.0
+    settings:
+      model: gemma4:31b-it-q4_K_M
+      reasoning_effort: none
+      max_tokens: 1024
+      call_timeout_s: 600

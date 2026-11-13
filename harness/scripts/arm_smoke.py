@@ -394,13 +394,21 @@ def _smoke(args: argparse.Namespace) -> int:
         }
         if accepted:
             smoke["accepted"] = accepted
-        _models.update_record(
-            DATA,
-            cfg["model_record"],
-            lambda doc: doc.setdefault("smokes", {}).__setitem__(cfg["config_id"], smoke),
-        )
-        path = _models.records_dir(DATA) / f"{cfg['model_record']}.yaml"
-        print(f"  written into {path.relative_to(DATA.parent) if DATA.parent in path.parents else path}")
+        # A smoke is a check of the deployment the arm runs on (RFC-032): the one its config names, or the model's
+        # only one; with neither it is not recorded rather than put on a deployment it may not have run on.
+        deps = rec.get("deployments") or []
+        dep_id = cfg.get("deployment") or (deps[0]["id"] if len(deps) == 1 else None)
+        if dep_id:
+            _models.add_check(
+                DATA, cfg["model_record"], dep_id, {"kind": "smoke", "config": cfg["config_id"], **smoke}
+            )
+            path = _models.deployments_dir(DATA, cfg["model_record"]) / f"{dep_id}.yaml"
+            print(f"  written into {path.relative_to(DATA.parent) if DATA.parent in path.parents else path}")
+        else:
+            print(
+                f"  not recorded: {cfg['model_record']} has {len(deps)} deployment(s) and the config names none "
+                "(deployment: <id> in the config records it on that deployment)"
+            )
     _jsonout.values(
         {
             "status": status,

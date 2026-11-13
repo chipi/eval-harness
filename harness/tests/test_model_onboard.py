@@ -21,6 +21,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from _model_records import deployment, put, view  # noqa: E402
 
 
 class Fake(http.server.BaseHTTPRequestHandler):
@@ -60,8 +61,6 @@ srv = http.server.HTTPServer(("127.0.0.1", 0), Fake)
 threading.Thread(target=srv.serve_forever, daemon=True).start()
 base = f"http://127.0.0.1:{srv.server_port}/v1"
 
-MODEL = "models/fake-1b.yaml"
-
 with tempfile.TemporaryDirectory() as td:
     data = Path(td) / "data"
     if not _runstore.sqlite():
@@ -81,7 +80,7 @@ with tempfile.TemporaryDirectory() as td:
         ],
         "settings": {"reasoning_effort": "none"},
     }
-    _runstore.write_text(td, MODEL, yaml.safe_dump(rec))
+    put(td, rec)
     env = {**os.environ, "EVAL_DATA_DIR": str(data), "OPENAI_API_KEY": "local"}
     run = subprocess.run(
         [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
@@ -95,7 +94,7 @@ with tempfile.TemporaryDirectory() as td:
         run.returncode == 0 and "ONBOARD PASS" in out,
         out[-600:],
     )
-    got = yaml.safe_load(_runstore.read_text(td, MODEL))
+    got = view(td, "fake-1b")
     caps = got.get("capabilities") or {}
     check(
         "onboard: it reasons by default, and the record's setting turns it off",
@@ -125,9 +124,17 @@ with tempfile.TemporaryDirectory() as td:
         (got["deployments"][0].get("onboarding") or {}).get("status") == "pass" and "onboarding" not in got,
     )
     check("onboard: the settings are never changed", got["settings"] == rec["settings"])
+    stored = deployment(td, "fake-1b", "here")
+    check(
+        "onboard: the onboarding is a dated check of the deployment's own record; the model record holds none",
+        [c.get("kind") for c in stored.get("checks") or []] == ["onboarding"]
+        and stored["checks"][0].get("at")
+        and "deployments" not in yaml.safe_load(_runstore.read_text(td, "models/fake-1b.yaml")),
+        stored,
+    )
 
     rec2 = {**rec, "settings": {}}
-    _runstore.write_text(td, MODEL, yaml.safe_dump(rec2))
+    put(td, rec2)
     run = subprocess.run(
         [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
         capture_output=True,
@@ -141,18 +148,14 @@ with tempfile.TemporaryDirectory() as td:
         and "reasoning: it reasons by default and the record sets no reasoning_effort" in out,
         out[-600:],
     )
-    _runstore.write_text(
-        td,
-        MODEL,
-        yaml.safe_dump({**rec2, "accepted": {"reasoning": "it cannot stop reasoning; low is the least"}}),
-    )
+    put(td, {**rec2, "accepted": {"reasoning": "it cannot stop reasoning; low is the least"}})
     run = subprocess.run(
         [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
         capture_output=True,
         text=True,
         env=env,
     )
-    acc = yaml.safe_load(_runstore.read_text(td, MODEL))["deployments"][0].get("onboarding") or {}
+    acc = view(td, "fake-1b")["deployments"][0].get("onboarding") or {}
     check(
         "onboard: a flag kind the record accepts is reported as accepted, with why, and does not fail it",
         run.returncode == 0
@@ -165,7 +168,7 @@ with tempfile.TemporaryDirectory() as td:
         run.stdout[-600:],
     )
     rec3 = {**rec, "deployments": [{**rec["deployments"][0], "digest": "ffffffffffff"}]}
-    _runstore.write_text(td, MODEL, yaml.safe_dump(rec3))
+    put(td, rec3)
     run = subprocess.run(
         [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b", "--deployment", "here"],
         capture_output=True,
@@ -177,7 +180,7 @@ with tempfile.TemporaryDirectory() as td:
         run.returncode == 6 and "build: here serves abc123def456" in run.stdout,
         run.stdout[-600:],
     )
-    got3 = yaml.safe_load(_runstore.read_text(td, MODEL))
+    got3 = view(td, "fake-1b")
     hist = got3.get("history") or []
     check(
         "onboard: the record takes the build it found, and its history keeps the one replaced",
@@ -190,7 +193,7 @@ with tempfile.TemporaryDirectory() as td:
     )
 
     other = {**rec["deployments"][0], "id": "there", "where": "there"}
-    _runstore.write_text(td, MODEL, yaml.safe_dump({**rec, "deployments": [rec["deployments"][0], other]}))
+    put(td, {**rec, "deployments": [rec["deployments"][0], other]})
     run = subprocess.run(
         [sys.executable, str(HERE / "scripts" / "model_onboard.py"), "fake-1b"],
         capture_output=True,
@@ -208,7 +211,7 @@ with tempfile.TemporaryDirectory() as td:
         text=True,
         env=env,
     )
-    got = yaml.safe_load(_runstore.read_text(td, MODEL))
+    got = view(td, "fake-1b")
     deps = {d["id"]: d for d in got["deployments"]}
     check(
         "onboard: --deployment writes the onboarding into that deployment only",

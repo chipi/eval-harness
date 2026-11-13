@@ -42,9 +42,6 @@ LONG = {
 WRITTEN: dict[str, dict[str, str]] = {
     "models": {
         "capabilities": "evh model-onboard",
-        "deployments.*.onboarding": "evh model-onboard",
-        "deployments.*.checked_at": "evh model-onboard",
-        "smokes": "evh arm-smoke",
     },
 }
 #: Fields that name other data, by kind: a dotted path and the list of the project's values it suggests.

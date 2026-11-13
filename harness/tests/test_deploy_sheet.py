@@ -26,6 +26,7 @@ from evaluation_harness._check import check, summary  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/: _runstore
 import _runstore  # noqa: E402
+from _model_records import put  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-deploy-"))
 env = dict(
@@ -79,12 +80,16 @@ try:
         "def call_system(text, params):\n"
         '    return Result(output=text.split(".")[0] + ".", cost_usd=0.0)\n'
     )
-    _runstore.write_text(
+    put(
         proj,
-        "models/m-one.yaml",
-        "model_id: m-one\nkind: llm\nname: Model one\naliases: [m-one-alias]\n"
-        "deployments:\n- id: hosted\n  where: a gateway\n  tag: m-one-alias\n"
-        "settings:\n  temperature: 0\n",
+        {
+            "model_id": "m-one",
+            "kind": "llm",
+            "name": "Model one",
+            "aliases": ["m-one-alias"],
+            "deployments": [{"id": "hosted", "where": "a gateway", "tag": "m-one-alias"}],
+            "settings": {"temperature": 0},
+        },
     )
     for cid, adapter in (("own_v1", "adapter.py"), ("own2_v1", "adapter.py"), ("plain_v1", "plain.py")):
         _runstore.write_text(
