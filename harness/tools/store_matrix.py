@@ -94,8 +94,8 @@ def main() -> int:
     for (n, s), c in sorted(got.items()):
         if c == 0:
             continue
-        f = log / f"{Path(n).stem}.{s}.log"
-        lines = f.read_text(errors="replace").splitlines() if f.is_file() else []
+        logf = log / f"{Path(n).stem}.{s}.log"
+        lines = logf.read_text(errors="replace").splitlines() if logf.is_file() else []
         said = [ln for ln in lines if ln.lstrip().startswith("FAIL")][:10]
         print(f"\n--- {n} ({s}): its failed checks, then its last lines ---")
         print("\n".join([*said, "  ...", *lines[-15:]]))
