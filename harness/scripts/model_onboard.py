@@ -19,9 +19,9 @@ provider: an OpenAI-shaped server such as Ollama or vLLM, LiteLLM, OpenRouter, A
 An ML model or a baseline is onboarded through an arm that runs it: `evh arm-smoke`'s checks on two
 items, with the facts its adapter reports (device, precision, load time).
 
-ONBOARD PASS (exit 0) or ONBOARD CHECK with the flags (exit 1). The deployment's `onboarding`, `digest` and
-`checked_at`, and the record's `capabilities` are written; its settings are never changed: a person
-chooses them, and records why.
+ONBOARD PASS (exit 0) or ONBOARD CHECK with the flags (exit 6). The onboarding is added to the deployment's checks
+(RFC-032: each one kept, naming who ran it), its `digest` and `checked_at` written, and the model record's
+`capabilities`; its settings are never changed: a person chooses them, and records why.
 """
 
 from __future__ import annotations
@@ -169,7 +169,7 @@ def probe_llm(rec: dict[str, Any], dep: dict[str, Any]) -> tuple[dict[str, Any],
 
 
 def main() -> int:
-    """Onboard one deployment (or an arm's model); exit 0 on ONBOARD PASS, 1 on ONBOARD CHECK."""
+    """Onboard one deployment (or an arm's model); exit 0 on ONBOARD PASS, 6 (EXIT_PROBLEMS) on ONBOARD CHECK."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.split("\n\n")[0])
     ap.add_argument("model_id")
     ap.add_argument(
@@ -292,6 +292,7 @@ def main() -> int:
             "where": where,
             "flags": flags,
             "report": report,
+            "by": _models.check_by(),
         }
         if accepted:
             onboarding["accepted"] = accepted

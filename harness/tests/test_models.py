@@ -204,13 +204,14 @@ with tempfile.TemporaryDirectory() as td:
     got = _models.find(data, "two") or {}
     checks = yaml.safe_load((data / "deployments" / "two" / "here.yaml").read_text())["checks"]
     check(
-        "add_check: each check kept, none written over; the view gives each arm's latest smoke",
+        "add_check: each check kept, none written over, each naming who made it; the view gives each arm's latest smoke",
         len(checks) == 3
-        and got.get("smokes")
+        and {k: {f: v for f, v in s.items() if f != "by"} for k, s in (got.get("smokes") or {}).items()}
         == {
             "arm_a": {"status": "check", "at": "2026-11-13T03:00:00Z"},
             "arm_b": {"status": "check", "at": "2026-11-13T02:00:00Z"},
         }
+        and all(c.get("by") for c in checks)
         and "smokes" not in (stale or {}),
         (checks, got.get("smokes")),
     )
@@ -219,6 +220,10 @@ with tempfile.TemporaryDirectory() as td:
     )
     _models.update_record(
         data, "two", lambda d: d.setdefault("history", []).append({"at": "b", "what": "two"})
+    )
+    check(
+        "a deployment's record names no actor of its own: its checks name who made them",
+        "actor" not in yaml.safe_load((data / "deployments" / "two" / "here.yaml").read_text()),
     )
     check(
         "update_record: the second change keeps the first",

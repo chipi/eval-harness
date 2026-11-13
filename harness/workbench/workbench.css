@@ -99,7 +99,7 @@ code, .mono { font-family: var(--mono); font-size: 13px; }
 .q { width: 18px; height: 18px; flex: none; border-radius: 50%; border: 1px solid var(--axis); background: none; color: var(--ink-2);
   font: 600 11px/1 var(--mono); cursor: pointer; padding: 0; display: inline-grid; place-items: center; }
 .q:hover, .q[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
-input[type=text], textarea, select { width: 100%; background: var(--surface); border: 1px solid var(--hair); border-radius: 6px; padding: 8px 10px; }
+input[type=text], input[type=number], textarea, select { width: 100%; background: var(--surface); border: 1px solid var(--hair); border-radius: 6px; padding: 8px 10px; }
 textarea { resize: vertical; min-height: 64px; }
 input::placeholder, textarea::placeholder { color: var(--muted); }
 input:focus, textarea:focus, select:focus { border-color: var(--accent); outline: none; }
@@ -431,3 +431,9 @@ small.p { font-size: 12px; }
 details.armsfold > summary { font: 500 13px/1.4 var(--mono); color: var(--ink-2); padding: 6px 0; cursor: pointer; }
 /* a sentence in a table's head is a caption, not a label */
 table.cmp th small { font: 400 12px/1.4 var(--text); }
+
+/* the live Workbench (RFC-032): a deployment's checks, read as one block; a number field no wider than its number */
+.checks p { margin: 0 0 6px; }
+.checks ul { margin: 0 0 12px; padding-left: 20px; }
+.part .body h3 { margin: 18px 0 8px; }
+input[type=number] { max-width: 12rem; }

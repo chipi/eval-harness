@@ -11,8 +11,9 @@ reply (its first 300 characters, all with --replies). For an arm that calls an L
 adapter reports as `meta["calls"]`) and flags reasoning, slow calls, long replies, cut-off replies and
 calls with no answer. An ML adapter's facts (`meta`: device, precision, load time) are printed beside.
 
-SMOKE PASS (exit 0) or SMOKE CHECK with the flags (exit 1). When the config names a model record
-(`model_record:`), the report is written into the record's `smokes` under the config's id. With
+SMOKE PASS (exit 0) or SMOKE CHECK with the flags (exit 6). When the config names a model record
+(`model_record:`), the report is kept as a check of the deployment it ran on (RFC-032): the one the config names
+(`deployment:`), or the model's only one; with several and none named it is not recorded, and says so. With
 `deployment:` the build is checked against that deployment, and a hosted deployment's pinned route
 (`provider_routing`) against the upstream provider each call reports.
 """
@@ -197,7 +198,7 @@ def projection(items: list[dict[str, Any]], n_items: int) -> dict[str, Any]:
 
 
 def main() -> int:
-    """Smoke one arm; exit 0 on SMOKE PASS, 1 on SMOKE CHECK."""
+    """Smoke one arm; exit 0 on SMOKE PASS, 6 (EXIT_PROBLEMS) on SMOKE CHECK."""
     ap = argparse.ArgumentParser(prog=evh_prog(), description=__doc__.split("\n\n")[0])
     ap.add_argument("--config", type=Path, required=True)
     ap.add_argument("--items", type=int, default=3, help="how many of the dataset's first items (default 3)")

@@ -117,10 +117,13 @@ def lock_path(record: Path) -> Path:
     return Path(tempfile.gettempdir()) / f"evh-model-{key}.lock"
 
 
-def _locked_write(f: Path, change: Callable[[dict[str, Any]], None], start: dict[str, Any]) -> dict[str, Any]:
+def _locked_write(
+    f: Path, change: Callable[[dict[str, Any]], None], start: dict[str, Any], stamp: bool = True
+) -> dict[str, Any]:
     """Apply `change` to the record as it is on disk NOW, under its lock, and write it: two commands writing one
     record (model-onboard on two machines, two arm-smokes) each keep their own change. Read at the start and written
-    at the end, the slower one wrote back the whole record it had read and the other's result was lost."""
+    at the end, the slower one wrote back the whole record it had read and the other's result was lost. `stamp`: the
+    record names who changed it last (a model record); a deployment's checks each name who made them instead."""
     import fcntl  # noqa: PLC0415
 
     from evaluation_harness import _common  # noqa: PLC0415
@@ -131,7 +134,8 @@ def _locked_write(f: Path, change: Callable[[dict[str, Any]], None], start: dict
         try:
             doc = (_read(f) if _store.is_file(f) else None) or dict(start)
             change(doc)
-            doc["actor"] = actor()  # who changed the record last (RFC-027)
+            if stamp:
+                doc["actor"] = actor()  # who changed the record last (RFC-027)
             _store.mkdir(f.parent, parents=True, exist_ok=True)
             _common.write_text_atomic(f, yaml.safe_dump(doc, sort_keys=False, allow_unicode=True))
         finally:
@@ -169,13 +173,22 @@ def update_deployment(
         "order": len(deployments(data_dir, model_id)),
         "where": where,
     }
-    return _locked_write(f, change, start)
+    return _locked_write(f, change, start, stamp=False)
+
+
+def check_by() -> str:
+    """This process's actor as a check's `by`: person:NAME, or agent:NAME for person:NAME."""
+    from evaluation_harness._actor import actor  # noqa: PLC0415
+
+    a = actor()
+    return f"{a['type']}:{a['name']}" + (f" for person:{a['for']}" if a.get("for") else "")
 
 
 def add_check(data_dir: Path, model_id: str, deployment_id: str, check: dict[str, Any]) -> dict[str, Any]:
     """Add a check (an onboarding run, an arm smoke, an approval) to a deployment's history: kept, never replaced."""
     if check.get("kind") not in ("onboarding", "smoke", "approval") or not check.get("at"):
         raise ValueError(f"a check has a kind (onboarding, smoke, approval) and a time: {check}")
+    check = {**check, "by": check.get("by") or check_by()}
     return update_deployment(
         data_dir, model_id, deployment_id, lambda d: d.setdefault("checks", []).append(check)
     )

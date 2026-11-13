@@ -30,7 +30,12 @@ that can move a result is never a patch release without saying so under **Change
   `deployment.schema.json` and names one under no model or not named by its folder and file.
 - **The Workbench on its server** (PRD-017, RFC-032 step 1): `evh catalog-serve` serves it under `/workbench/` on
   this machine (never `--public` or `--behind-proxy`) and prints the link that signs in. Its home and a goal's screen
-  read the model's API; a screen not wired yet says so. Opened as files, it is still the mockup.
+  read the model's API; a screen not wired yet says so. Opened as files, it is still the mockup. Its models (step 2, W5): the project's models and their state, a model's page with each deployment's checks,
+  "Run the probes" (`model-onboard` as a job, with the most it may spend, followed on the page), accepting a flag with
+  why, adding a deployment, and bringing a model in; every change names who made it, asked once and kept in the browser.
+  A deployment's record names no actor of its own: each of its checks names who made it (`by`), so a deployment
+  `model-onboard` wrote is saved again through the model. `model-onboard` and `arm-smoke` exit 6 on a CHECK, as their
+  help now says (it said 1).
 - **The data's format** (RFC-032): `data/project.yaml` records the format of a project's data, `evh init` writes it,
   and `evh migrate --check` compares it with the release's (format 2 in 0.8.0; `ERROR (old-format)`, a new refusal kind, for older data;
   `ERROR (mismatch)` for data a later release wrote). `evh migrate` runs numbered steps (`migrations/`), records the

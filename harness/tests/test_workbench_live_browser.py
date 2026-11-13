@@ -8,10 +8,17 @@ In a project with a goal, a dataset, its reference and a run: the startup prints
 home lists the project's goal with the next step its status names; the goal's screen shows its dataset as the API
 says; a screen not wired yet says so instead of showing the mockup's data; a browser with no cookie is asked to sign
 in; at a phone's width nothing scrolls sideways; and a public server has no /workbench/.
+
+The models (step 2): a model brought in through the form is made by the model's API with who made it, and a bad id is
+refused on the page; a deployment added on its page points at a fake OpenAI-shaped server; "Run the probes" starts
+model-onboard as a job, the page follows it and shows the onboarding's flag; accepting it with why keeps the decision
+in the deployment's checks; the model's page fits a phone.
 """
 
 from __future__ import annotations
 
+import http.server
+import json
 import os
 import re
 import shutil
@@ -19,6 +26,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -26,6 +34,7 @@ HARNESS = Path(__file__).resolve().parents[1]
 HERE = HARNESS / "scripts"
 KIT = HARNESS / "tutorial"
 sys.path.insert(0, str(HARNESS))
+import yaml  # noqa: E402
 from evaluation_harness._check import check, summary  # noqa: E402
 
 proj = Path(tempfile.mkdtemp(prefix="evh-wblive-"))
@@ -38,6 +47,38 @@ env = dict(
 )
 for k in ("EVAL_DATA_DIR", "EVAL_RUNS_DIR", "EVAL_GOALS_DIR"):
     env.pop(k, None)
+env["OPENAI_API_KEY"] = "local"  # the fake server's; the onboarding job inherits the server's environment
+
+
+class Fake(http.server.BaseHTTPRequestHandler):
+    """An OpenAI-shaped server whose model reasons unless told not to: its onboarding is flagged."""
+
+    def _send(self, doc):
+        data = json.dumps(doc).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def do_GET(self):
+        self._send({"models": [{"name": "fake:1b", "model": "fake:1b", "digest": "abc123def456" + "0" * 52}]})
+
+    def do_POST(self):
+        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        msg = {"role": "assistant", "content": '{"answer": "yes", "reason": "17 has no divisors"}'}
+        if body.get("reasoning_effort") != "none":
+            msg["reasoning"] = "Let me think. 17 divided by 2, 3, 5 ... prime."
+        self._send({"id": "x", "object": "chat.completion", "created": 0, "model": "fake:1b",
+                    "choices": [{"index": 0, "message": msg, "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 40, "completion_tokens": 60, "total_tokens": 100}})  # fmt: skip
+
+    def log_message(self, *a):
+        pass
+
+
+fake = http.server.HTTPServer(("127.0.0.1", 0), Fake)
+threading.Thread(target=fake.serve_forever, daemon=True).start()
 
 
 def evh(*args: str) -> subprocess.CompletedProcess:
@@ -149,6 +190,67 @@ try:
                 and "cnn_dailymail" not in page.content(),
                 page.locator("main").inner_text()[:200],
             )
+            # the models: bring one in, add where it runs, onboard it as a job, accept what it raises
+            page.goto(f"http://127.0.0.1:{port}/workbench/#models")
+            page.wait_for_selector("text=No models yet.", timeout=20000)
+            page.click("text=Bring in a model")
+            page.wait_for_selector("h1:has-text('Bring in a model')", timeout=20000)
+            page.fill("#nm-id", "Bad Id")
+            page.fill("#nm-aliases", "fake:1b")
+            page.fill("#nm-by", "tester")
+            page.click("#nm-save")
+            page.wait_for_selector("#nm-out [role=alert]", timeout=20000)
+            check(
+                "a model id the model refuses is said on the page, and nothing is made",
+                "is not a model id" in page.locator("#nm-out").inner_text()
+                and not any((proj / "data" / "models").glob("*.yaml")),
+                page.locator("#nm-out").inner_text()[:300],
+            )
+            page.fill("#nm-id", "fake-1b")
+            page.check("input[name=nm-weights][value=open]")
+            page.click("#nm-save")
+            page.wait_for_selector("h1:has-text('fake-1b')", timeout=20000)
+            hist = list((proj / "data" / "history" / "models").glob("fake-1b.jsonl"))
+            check(
+                "the form makes the model through the API, recorded as who made it",
+                (proj / "data" / "models" / "fake-1b.yaml").is_file()
+                and bool(hist)
+                and '"person:tester"' in hist[0].read_text(),
+                page.locator("main").inner_text()[:300],
+            )
+            page.fill("#dep-id", "here")
+            page.fill("#dep-where", "here")
+            page.fill("#dep-tag", "fake:1b")
+            page.fill("#dep-url", f"http://127.0.0.1:{fake.server_port}/v1")
+            page.click("#dep-add")
+            page.wait_for_selector("h2:has-text('here')", timeout=20000)
+            page.fill("#cap-here", "0.01")
+            page.click("[data-onboard=here]")
+            page.wait_for_selector("text=Accept what it raises", timeout=120000)
+            shown = page.locator("main").inner_text()
+            check(
+                "Run the probes starts model-onboard as a job; the page follows it and shows the onboarding's flag",
+                "reasoning" in shown and "The probes found something to read" in shown and not errors,
+                (shown[:800], errors[:2]),
+            )
+            if shots := os.environ.get("EVH_WB_SHOTS"):
+                page.screenshot(path=f"{shots}/desk-model.png", full_page=True)
+            page.fill("#flag-here", "reasoning")
+            page.fill("#why-here", "it reasons by default and this task is fine with it")
+            page.fill("#by-here", "tester")
+            page.click("[data-accept=here]")
+            page.locator("text=Accepted as this deployment's nature").or_(
+                page.locator("#acc-here [role=alert]")
+            ).first.wait_for(timeout=20000)
+            dep = yaml.safe_load((proj / "data" / "deployments" / "fake-1b" / "here.yaml").read_text())
+            kinds = [c.get("kind") for c in dep.get("checks") or []]
+            check(
+                "accepting it with why keeps the decision in the deployment's checks, with who made it",
+                kinds == ["onboarding", "approval"]
+                and dep["checks"][-1].get("by") == "person:tester"
+                and dep.get("accepted", {}).get("reasoning", "").startswith("it reasons by default"),
+                (dep, page.locator("main").inner_text()[-600:]),
+            )
             phone = browser.new_context(
                 viewport={"width": 390, "height": 844},
                 is_mobile=True,
@@ -158,6 +260,22 @@ try:
             phone.wait_for_selector("table >> text=Ticket summaries", timeout=20000)
             over = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
             check("at a phone's width the home does not scroll sideways", over <= 0, over)
+            wide = {}
+            for screen, h1 in (
+                ("models", "Models in this project"),
+                ("model/fake-1b", "fake-1b"),
+                ("model-new", "Bring in a model"),
+            ):
+                phone.goto(f"http://127.0.0.1:{port}/workbench/#{screen}")
+                phone.wait_for_selector(f"h1:has-text('{h1}')", timeout=20000)
+                if shots := os.environ.get("EVH_WB_SHOTS"):
+                    phone.screenshot(path=f"{shots}/phone-{screen.replace('/', '-')}.png", full_page=True)
+                wide[screen] = phone.evaluate("document.documentElement.scrollWidth - window.innerWidth")
+            check(
+                "at a phone's width the models' screens do not scroll sideways",
+                all(v <= 0 for v in wide.values()),
+                wide,
+            )
             stranger = browser.new_context().new_page()
             stranger.goto(f"http://127.0.0.1:{port}/workbench/")
             stranger.wait_for_selector("h1:has-text('Sign in')", timeout=20000)
@@ -187,5 +305,6 @@ try:
         pub.terminate()
         pub.wait(timeout=20)
 finally:
+    fake.shutdown()
     shutil.rmtree(proj, ignore_errors=True)
 sys.exit(summary())

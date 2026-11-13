@@ -129,10 +129,24 @@ with tempfile.TemporaryDirectory() as td:
         "onboard: the onboarding is a dated check of the deployment's own record; the model record holds none",
         [c.get("kind") for c in stored.get("checks") or []] == ["onboarding"]
         and stored["checks"][0].get("at")
+        and stored["checks"][0].get("by")
+        and "actor" not in stored
         and "deployments" not in yaml.safe_load(_runstore.read_text(td, "models/fake-1b.yaml")),
         stored,
     )
 
+    acc_run = subprocess.run(
+        [sys.executable, str(HERE / "scripts" / "cli.py"), "deployment-accept", "fake-1b", "here",
+         "--flag", "determinism", "--why", "it is checked again on every onboarding"],
+        capture_output=True, text=True, env={**env, "EVH_ACTOR": "person:tester"},
+    )  # fmt: skip
+    check(
+        "a deployment model-onboard wrote is saved again through the model (deployment-accept)",
+        acc_run.returncode == 0
+        and [c.get("kind") for c in deployment(td, "fake-1b", "here")["checks"]]
+        == ["onboarding", "approval"],
+        (acc_run.stdout + acc_run.stderr)[-400:],
+    )
     rec2 = {**rec, "settings": {}}
     put(td, rec2)
     run = subprocess.run(
